@@ -38,9 +38,7 @@ class AttentionModule(nn.Module):
         act = F.sigmoid(act)
 
         # multiply with input
-        se_out = inputs * act.view(act.shape[0], act.shape[1], 1, 1)
-
-        return se_out
+        return inputs * act.view(act.shape[0], act.shape[1], 1, 1)
 
 
 class SSPCAB(nn.Module):
@@ -77,5 +75,4 @@ class SSPCAB(nn.Module):
         masked_out += self.masked_conv4(padded[..., self.crop :, self.crop :])
 
         # apply channel attention module
-        sspcab_out = self.attention_module(masked_out)
-        return sspcab_out
+        return self.attention_module(masked_out)

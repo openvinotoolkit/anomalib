@@ -138,8 +138,7 @@ class ShanghaiTechTestClipsIndexer(ClipsIndexer):
         frames = self.clips[video_idx][frames_idx]
 
         vid_masks = np.load(mask_file)
-        masks = np.take(vid_masks, frames, 0)
-        return masks
+        return np.take(vid_masks, frames, 0)
 
     def _compute_frame_pts(self) -> None:
         """Retrieve the number of frames in each video."""

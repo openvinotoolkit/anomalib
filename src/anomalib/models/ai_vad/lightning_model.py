@@ -83,7 +83,7 @@ class AiVad(AnomalyModule):
     @staticmethod
     def configure_optimizers() -> None:
         """AI-VAD training does not involve fine-tuning of NN weights, no optimizers needed."""
-        return None
+        return
 
     def training_step(self, batch: dict[str, str | Tensor]) -> None:
         """Training Step of AI-VAD.

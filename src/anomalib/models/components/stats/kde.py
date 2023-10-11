@@ -93,5 +93,4 @@ class GaussianKDE(DynamicBufferModule):
         """
         mean = torch.mean(tensor, dim=1)
         tensor -= mean[:, None]
-        cov = torch.matmul(tensor, tensor.T) / (tensor.size(1) - 1)
-        return cov
+        return torch.matmul(tensor, tensor.T) / (tensor.size(1) - 1)

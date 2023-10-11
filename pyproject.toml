@@ -43,7 +43,7 @@ select = [
     "PIE",  # flake8-pie (`PIE`)
     "PT",   # flake8-pytest-style (`PT`)
     "RSE",  # flake8-raise (`RSE`)
-    # "RET",  # flake8-return (`RET`)
+    "RET",  # flake8-return (`RET`)
     # "SLF",  # flake8-self (`SLF`)
     # "SIM",  # flake8-simplify (`SIM`)
     # "TID",  # flake8-tidy-imports (`TID`)

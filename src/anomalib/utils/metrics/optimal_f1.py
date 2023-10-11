@@ -56,8 +56,7 @@ class OptimalF1(Metric):
         precision, recall, thresholds = self.precision_recall_curve.compute()
         f1_score = (2 * precision * recall) / (precision + recall + 1e-10)
         self.threshold = thresholds[torch.argmax(f1_score)]
-        optimal_f1_score = torch.max(f1_score)
-        return optimal_f1_score
+        return torch.max(f1_score)
 
     def reset(self) -> None:
         """Reset the metric."""

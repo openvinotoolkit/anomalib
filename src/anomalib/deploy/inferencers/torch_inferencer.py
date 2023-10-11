@@ -78,8 +78,7 @@ class TorchInferencer(Inferencer):
             msg = f"Unknown torch checkpoint file format {path.suffix}. Make sure you save the Torch model."
             raise ValueError(msg)
 
-        checkpoint = torch.load(path, map_location=self.device)
-        return checkpoint
+        return torch.load(path, map_location=self.device)
 
     def _load_metadata(self, path: str | Path | dict | None = None) -> dict | DictConfig:
         """Load metadata from file.

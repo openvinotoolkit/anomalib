@@ -41,6 +41,4 @@ class CfaLoss(nn.Module):
         score = (self.radius**2).to(distance.device) - distance[:, :, self.num_hard_negative_features :]
         l_rep = torch.mean(torch.max(torch.zeros_like(score), score - 0.1))
 
-        loss = (l_att + l_rep) * 1000
-
-        return loss
+        return (l_att + l_rep) * 1000

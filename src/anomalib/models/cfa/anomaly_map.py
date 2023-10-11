@@ -60,8 +60,7 @@ class AnomalyMapGenerator(nn.Module):
         anomaly_map = F.interpolate(anomaly_map, size=self.image_size, mode="bilinear", align_corners=False)
 
         gaussian_blur = GaussianBlur2d(sigma=self.sigma).to(score.device)
-        anomaly_map = gaussian_blur(anomaly_map)  # pylint: disable=not-callable
-        return anomaly_map
+        return gaussian_blur(anomaly_map)  # pylint: disable=not-callable
 
     def forward(self, **kwargs) -> Tensor:
         """Return anomaly map.
@@ -80,6 +79,4 @@ class AnomalyMapGenerator(nn.Module):
         scale: tuple[int, int] = kwargs["scale"]
 
         score = self.compute_score(distance=distance, scale=scale)
-        anomaly_map = self.compute_anomaly_map(score)
-
-        return anomaly_map
+        return self.compute_anomaly_map(score)

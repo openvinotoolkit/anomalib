@@ -95,8 +95,7 @@ class PCA(DynamicBufferModule):
 
         Returns: Inverse features
         """
-        inv_features = torch.matmul(features, self.singular_vectors.transpose(-2, -1))
-        return inv_features
+        return torch.matmul(features, self.singular_vectors.transpose(-2, -1))
 
     def forward(self, features: Tensor) -> Tensor:
         """Transforms the features.

@@ -216,8 +216,7 @@ class FastflowModel(nn.Module):
             list[Tensor]: List of features.
         """
         features = self.feature_extractor(input_tensor)
-        features = [self.norms[i](feature) for i, feature in enumerate(features)]
-        return features
+        return [self.norms[i](feature) for i, feature in enumerate(features)]
 
     def _get_cait_features(self, input_tensor: Tensor) -> list[Tensor]:
         """Get Class-Attention-Image-Transformers (CaiT) features.
@@ -237,8 +236,7 @@ class FastflowModel(nn.Module):
         feature = self.feature_extractor.norm(feature)
         feature = feature.permute(0, 2, 1)
         feature = feature.reshape(batch_size, num_channels, self.input_size[0] // 16, self.input_size[1] // 16)
-        features = [feature]
-        return features
+        return [feature]
 
     def _get_vit_features(self, input_tensor: Tensor) -> list[Tensor]:
         """Get Vision Transformers (ViT) features.
@@ -270,5 +268,4 @@ class FastflowModel(nn.Module):
         batch_size, _, num_channels = feature.shape
         feature = feature.permute(0, 2, 1)
         feature = feature.reshape(batch_size, num_channels, self.input_size[0] // 16, self.input_size[1] // 16)
-        features = [feature]
-        return features
+        return [feature]

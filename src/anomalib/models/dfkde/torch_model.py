@@ -64,8 +64,7 @@ class DfkdeModel(nn.Module):
             batch_size = len(layer_outputs[layer])
             layer_outputs[layer] = F.adaptive_avg_pool2d(input=layer_outputs[layer], output_size=(1, 1))
             layer_outputs[layer] = layer_outputs[layer].view(batch_size, -1)
-        layer_outputs = torch.cat(list(layer_outputs.values())).detach()
-        return layer_outputs
+        return torch.cat(list(layer_outputs.values())).detach()
 
     def forward(self, batch: Tensor) -> Tensor:
         """Prediction by normality model.
@@ -83,5 +82,4 @@ class DfkdeModel(nn.Module):
             return features
 
         # 2. apply density estimation
-        scores = self.classifier(features)
-        return scores
+        return self.classifier(features)

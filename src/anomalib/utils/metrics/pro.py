@@ -42,8 +42,7 @@ class PRO(Metric):
             comps = connected_components_gpu(target)
         else:
             comps = connected_components_cpu(target)
-        pro = pro_score(preds, comps, threshold=self.threshold)
-        return pro
+        return pro_score(preds, comps, threshold=self.threshold)
 
 
 def pro_score(predictions: Tensor, comps: Tensor, threshold: float = 0.5) -> Tensor:
@@ -68,5 +67,4 @@ def pro_score(predictions: Tensor, comps: Tensor, threshold: float = 0.5) -> Ten
     preds[~predictions] = 0
     if n_comps == 1:  # only background
         return torch.Tensor([1.0])
-    pro = recall(preds.flatten(), comps.flatten(), num_classes=n_comps, average="macro", ignore_index=0)
-    return pro
+    return recall(preds.flatten(), comps.flatten(), num_classes=n_comps, average="macro", ignore_index=0)

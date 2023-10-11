@@ -58,9 +58,7 @@ class AnomalyMapGenerator(nn.Module):
             score_map += layer_maps[layer_idx]
 
         # Invert probs to anomaly scores
-        anomaly_map = score_map.max() - score_map
-
-        return anomaly_map
+        return score_map.max() - score_map
 
     def forward(self, **kwargs: list[Tensor] | list[int] | list[list]) -> Tensor:
         """Returns anomaly_map.

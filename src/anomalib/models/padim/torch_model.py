@@ -162,5 +162,4 @@ class PadimModel(nn.Module):
 
         # subsample embeddings
         idx = self.idx.to(embeddings.device)
-        embeddings = torch.index_select(embeddings, 1, idx)
-        return embeddings
+        return torch.index_select(embeddings, 1, idx)

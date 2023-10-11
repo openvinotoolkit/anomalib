@@ -32,8 +32,7 @@ class AnomalyMapGenerator(nn.Module):
         norm_student_features = F.normalize(student_features)
 
         layer_map = 0.5 * torch.norm(norm_teacher_features - norm_student_features, p=2, dim=-3, keepdim=True) ** 2
-        layer_map = F.interpolate(layer_map, size=self.image_size, align_corners=False, mode="bilinear")
-        return layer_map
+        return F.interpolate(layer_map, size=self.image_size, align_corners=False, mode="bilinear")
 
     def compute_anomaly_map(
         self,

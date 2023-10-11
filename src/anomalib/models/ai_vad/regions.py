@@ -73,9 +73,7 @@ class RegionExtractor(nn.Module):
                 self.foreground_binary_threshold,
             )
 
-        regions = self.post_process_bbox_detections(regions)
-
-        return regions
+        return self.post_process_bbox_detections(regions)
 
     def add_foreground_boxes(
         self,

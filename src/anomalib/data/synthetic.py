@@ -104,9 +104,7 @@ def make_synthetic_dataset(
 
     anomalous_samples = anomalous_samples.apply(augment, axis=1)
 
-    samples = pd.concat([normal_samples, anomalous_samples], ignore_index=True)
-
-    return samples
+    return pd.concat([normal_samples, anomalous_samples], ignore_index=True)
 
 
 class SyntheticAnomalyDataset(AnomalibDataset):

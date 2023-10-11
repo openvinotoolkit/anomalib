@@ -226,9 +226,7 @@ def read_depth_image(path: str | Path) -> np.ndarray:
         image as numpy array
     """
     path = path if isinstance(path, str) else str(path)
-    image = tiff.imread(path)
-
-    return image
+    return tiff.imread(path)
 
 
 def pad_nextpow2(batch: Tensor) -> Tensor:
@@ -247,5 +245,4 @@ def pad_nextpow2(batch: Tensor) -> Tensor:
     l_dim = 2 ** math.ceil(math.log(max(*batch.shape[-2:]), 2))
     padding_w = [math.ceil((l_dim - batch.shape[-2]) / 2), math.floor((l_dim - batch.shape[-2]) / 2)]
     padding_h = [math.ceil((l_dim - batch.shape[-1]) / 2), math.floor((l_dim - batch.shape[-1]) / 2)]
-    padded_batch = F.pad(batch, pad=[*padding_h, *padding_w])
-    return padded_batch
+    return F.pad(batch, pad=[*padding_h, *padding_w])

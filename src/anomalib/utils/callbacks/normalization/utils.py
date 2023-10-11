@@ -72,5 +72,4 @@ def _parse_normalizer_config(normalization_method: DictConfig) -> Callback:
         class_path = class_path.split(".")[-1]
     module = importlib.import_module(module_path)
     class_ = getattr(module, class_path)
-    normalizer = class_(**init_args)
-    return normalizer
+    return class_(**init_args)

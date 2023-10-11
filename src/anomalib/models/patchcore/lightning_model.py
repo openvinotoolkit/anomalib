@@ -60,7 +60,7 @@ class Patchcore(AnomalyModule):
         Returns:
             None: Do not set optimizers by returning None.
         """
-        return None
+        return
 
     def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> None:
         """Generate feature embedding of the batch.

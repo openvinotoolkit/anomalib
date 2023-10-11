@@ -53,17 +53,13 @@ def get_datamodule(config: DictConfig | ListConfig) -> AnomalibDataModule:
     """
     logger.info("Loading the datamodule")
 
-    datamodule: AnomalibDataModule
-
     module = importlib.import_module(".".join(config.data.class_path.split(".")[:-1]))
     dataclass = getattr(module, config.data.class_path.split(".")[-1])
     init_args = {**config.data.get("init_args", {})}  # get dict
     if "image_size" in init_args:
         init_args["image_size"] = to_tuple(init_args["image_size"])
 
-    datamodule = dataclass(**init_args)
-
-    return datamodule
+    return dataclass(**init_args)
 
 
 __all__ = [

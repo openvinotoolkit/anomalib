@@ -94,11 +94,7 @@ class FeatureExtractor(nn.Module):
             feature_dict[FeatureType.DEEP] = [deep_features[indices == i] for i in range(batch_size)]
 
         # dict of lists to list of dicts
-        feature_collection = [
-            dict(zip(feature_dict, item, strict=True)) for item in zip(*feature_dict.values(), strict=True)
-        ]
-
-        return feature_collection
+        return [dict(zip(feature_dict, item, strict=True)) for item in zip(*feature_dict.values(), strict=True)]
 
 
 class DeepExtractor(nn.Module):
@@ -126,12 +122,9 @@ class DeepExtractor(nn.Module):
         """
         rgb_regions = roi_align(batch, boxes, output_size=[224, 224])
 
-        features = []
         batched_regions = torch.split(rgb_regions, batch_size)
         with torch.no_grad():
-            features = torch.vstack([self.encoder.encode_image(self.transform(batch)) for batch in batched_regions])
-
-        return features
+            return torch.vstack([self.encoder.encode_image(self.transform(batch)) for batch in batched_regions])
 
 
 class VelocityExtractor(nn.Module):

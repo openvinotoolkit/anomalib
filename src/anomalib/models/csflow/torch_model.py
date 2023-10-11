@@ -579,5 +579,4 @@ class CsFlowModel(nn.Module):
         # z_dist is a 3 length list of tensors with shape b x 304 x fx x fy
         flat_maps = [z_dist.reshape(z_dist.shape[0], -1) for z_dist in z_dists]
         flat_maps_tensor = torch.cat(flat_maps, dim=1)
-        anomaly_scores = torch.mean(flat_maps_tensor**2 / 2, dim=1)
-        return anomaly_scores
+        return torch.mean(flat_maps_tensor**2 / 2, dim=1)

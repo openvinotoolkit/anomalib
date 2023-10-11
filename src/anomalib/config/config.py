@@ -31,9 +31,7 @@ def get_default_root_directory(config: DictConfig | ListConfig) -> Path:
     # add datetime folder to the path as well so that runs with same configuration are not overwritten
     time_stamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S") if config.results_dir.unique else ""
     # loggers should write to results/model/dataset/category/ folder
-    default_root_dir = Path(root_dir, model_name, data_name, category, time_stamp)
-
-    return default_root_dir
+    return Path(root_dir, model_name, data_name, category, time_stamp)
 
 
 def update_config(config: DictConfig | ListConfig | Namespace) -> DictConfig | ListConfig | Namespace:
@@ -256,6 +254,4 @@ def get_configurable_parameters(
 
     config = OmegaConf.load(config_path)
 
-    config = update_config(config)
-
-    return config
+    return update_config(config)

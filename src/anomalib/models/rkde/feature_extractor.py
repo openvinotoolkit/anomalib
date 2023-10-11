@@ -75,5 +75,4 @@ class FeatureExtractor(nn.Module):
         features = self.features(transformed_batch)
         features = self.roi_align(features, rois)
         features = torch.flatten(features, 1)
-        features = self.classifier(features)
-        return features
+        return self.classifier(features)

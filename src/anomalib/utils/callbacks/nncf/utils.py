@@ -54,7 +54,7 @@ class InitLoader(PTInitializingDataLoader):
         Returns:
             None
         """
-        return None
+        return
 
 
 def wrap_nncf_model(

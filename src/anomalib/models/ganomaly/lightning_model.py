@@ -193,10 +193,9 @@ class Ganomaly(AnomalyModule):
         Returns:
             Tensor: Normalized scores.
         """
-        scores = (scores - self.min_scores.to(scores.device)) / (
+        return (scores - self.min_scores.to(scores.device)) / (
             self.max_scores.to(scores.device) - self.min_scores.to(scores.device)
         )
-        return scores
 
     @property
     def trainer_arguments(self) -> dict[str, Any]:

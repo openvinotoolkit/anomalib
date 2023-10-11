@@ -66,8 +66,7 @@ def convert_snake_to_pascal_case(snake_case: str) -> str:
         >>> convert_snake_to_pascal_case("patchcore")
         Patchcore
     """
-    pascal_case = "".join(word.capitalize() for word in snake_case.split("_"))
-    return pascal_case
+    return "".join(word.capitalize() for word in snake_case.split("_"))
 
 
 def convert_pascal_to_snake_case(pascal_case: str) -> str:
@@ -86,8 +85,7 @@ def convert_pascal_to_snake_case(pascal_case: str) -> str:
         >>> convert_pascal_to_snake_case("Patchcore")
         patchcore
     """
-    snake_case = re.sub(r"(?<!^)(?=[A-Z])", "_", pascal_case).lower()
-    return snake_case
+    return re.sub(r"(?<!^)(?=[A-Z])", "_", pascal_case).lower()
 
 
 def get_available_models() -> list[str]:
@@ -100,8 +98,7 @@ def get_available_models() -> list[str]:
         >>> get_available_models()
         ['ai_vad', 'cfa', 'cflow', 'csflow', 'dfkde', 'dfm', 'draem', 'efficient_ad', 'fastflow', ...]
     """
-    available_models = [convert_pascal_to_snake_case(cls.__name__) for cls in AnomalyModule.__subclasses__()]
-    return available_models
+    return [convert_pascal_to_snake_case(cls.__name__) for cls in AnomalyModule.__subclasses__()]
 
 
 def get_model(config: DictConfig | ListConfig) -> AnomalyModule:

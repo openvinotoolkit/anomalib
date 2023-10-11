@@ -105,8 +105,7 @@ class RegionExtractor(nn.Module):
 
         # convert from list of [N, 4] tensors to single [N, 5] tensor where each row is [index-in-batch, x1, y1, x2, y2]
         indices = torch.repeat_interleave(torch.arange(len(regions)), Tensor([rois.shape[0] for rois in regions]).int())
-        regions = torch.cat([indices.unsqueeze(1).to(batch.device), torch.cat(regions)], dim=1)
-        return regions
+        return torch.cat([indices.unsqueeze(1).to(batch.device), torch.cat(regions)], dim=1)
 
     def post_process_box_predictions(self, pred_boxes: Tensor, pred_scores: Tensor) -> list[Tensor]:
         """Post-processes the box predictions.

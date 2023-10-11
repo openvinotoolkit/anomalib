@@ -93,9 +93,7 @@ class DecoderBasicBlock(nn.Module):
             identity = self.upsample(batch)
 
         out += identity
-        out = self.relu(out)
-
-        return out
+        return self.relu(out)
 
 
 class DecoderBottleneck(nn.Module):
@@ -171,9 +169,7 @@ class DecoderBottleneck(nn.Module):
             identity = self.upsample(batch)
 
         out += identity
-        out = self.relu(out)
-
-        return out
+        return self.relu(out)
 
 
 class ResNet(nn.Module):
@@ -282,8 +278,7 @@ class ResNet(nn.Module):
 
 
 def _resnet(block: type[DecoderBasicBlock | DecoderBottleneck], layers: list[int], **kwargs: Any) -> ResNet:
-    model = ResNet(block, layers, **kwargs)
-    return model
+    return ResNet(block, layers, **kwargs)
 
 
 def de_resnet18() -> ResNet:

@@ -217,9 +217,7 @@ class AUPRO(Metric):
         fpr, tpr = self._compute()
 
         aupro = auc(fpr, tpr, reorder=True)
-        aupro = aupro / fpr[-1]  # normalize the area
-
-        return aupro
+        return aupro / fpr[-1]  # normalize the area
 
     def generate_figure(self) -> tuple[Figure, str]:
         """Generate a figure containing the PRO curve and the AUPRO.
@@ -269,6 +267,4 @@ class AUPRO(Metric):
         idx = torch.clamp(idx, 0, old_x.size(0) - 2)
 
         # perform actual linear interpolation
-        y_new = old_y[idx] + slope[idx] * (new_x - old_x[idx])
-
-        return y_new
+        return old_y[idx] + slope[idx] * (new_x - old_x[idx])

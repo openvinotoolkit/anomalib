@@ -49,9 +49,7 @@ class AnomalyMapGenerator(nn.Module):
 
         distances = (torch.matmul(delta, inv_covariance) * delta).sum(2).permute(1, 0)
         distances = distances.reshape(batch, 1, height, width)
-        distances = distances.clamp(0).sqrt()
-
-        return distances
+        return distances.clamp(0).sqrt()
 
     def up_sample(self, distance: Tensor) -> Tensor:
         """Up sample anomaly score to match the input image size.
@@ -63,13 +61,12 @@ class AnomalyMapGenerator(nn.Module):
             Resized distance matrix matching the input image size
         """
 
-        score_map = F.interpolate(
+        return F.interpolate(
             distance,
             size=self.image_size,
             mode="bilinear",
             align_corners=False,
         )
-        return score_map
 
     def smooth_anomaly_map(self, anomaly_map: Tensor) -> Tensor:
         """Apply gaussian smoothing to the anomaly map.
@@ -81,8 +78,7 @@ class AnomalyMapGenerator(nn.Module):
             Filtered anomaly scores
         """
 
-        blurred_anomaly_map = self.blur(anomaly_map)
-        return blurred_anomaly_map
+        return self.blur(anomaly_map)
 
     def compute_anomaly_map(self, embedding: Tensor, mean: Tensor, inv_covariance: Tensor) -> Tensor:
         """Compute anomaly score.
@@ -104,9 +100,7 @@ class AnomalyMapGenerator(nn.Module):
             stats=[mean.to(embedding.device), inv_covariance.to(embedding.device)],
         )
         up_sampled_score_map = self.up_sample(score_map)
-        smoothed_anomaly_map = self.smooth_anomaly_map(up_sampled_score_map)
-
-        return smoothed_anomaly_map
+        return self.smooth_anomaly_map(up_sampled_score_map)
 
     def forward(self, **kwargs) -> Tensor:
         """Returns anomaly_map.

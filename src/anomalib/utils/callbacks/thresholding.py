@@ -166,8 +166,7 @@ class _ThresholdCallback(Callback):
 
         module = importlib.import_module(module_path)
         class_ = getattr(module, class_path)
-        thresholder = class_(**init_args)
-        return thresholder
+        return class_(**init_args)
 
     def _reset(self, pl_module: AnomalyModule) -> None:
         pl_module.image_threshold.reset()

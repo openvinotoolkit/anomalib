@@ -89,8 +89,7 @@ def anomaly_map_to_color_map(anomaly_map: np.ndarray, normalize: bool = True) ->
     anomaly_map = anomaly_map.astype(np.uint8)
 
     anomaly_map = cv2.applyColorMap(anomaly_map, cv2.COLORMAP_JET)
-    anomaly_map = cv2.cvtColor(anomaly_map, cv2.COLOR_BGR2RGB)
-    return anomaly_map
+    return cv2.cvtColor(anomaly_map, cv2.COLOR_BGR2RGB)
 
 
 def superimpose_anomaly_map(
@@ -120,8 +119,7 @@ def superimpose_anomaly_map(
     """
 
     anomaly_map = anomaly_map_to_color_map(anomaly_map.squeeze(), normalize=normalize)
-    superimposed_map = cv2.addWeighted(anomaly_map, alpha, image, (1 - alpha), gamma)
-    return superimposed_map
+    return cv2.addWeighted(anomaly_map, alpha, image, (1 - alpha), gamma)
 
 
 def compute_mask(anomaly_map: np.ndarray, threshold: float, kernel_size: int = 4) -> np.ndarray:
