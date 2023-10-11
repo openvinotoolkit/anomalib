@@ -85,4 +85,3 @@ def train(args: Namespace):
 if __name__ == "__main__":
     args = get_parser().parse_args()
     train(args)
-    train(args)

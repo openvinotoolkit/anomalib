@@ -246,4 +246,3 @@ def pad_nextpow2(batch: Tensor) -> Tensor:
     padding_h = [math.ceil((l_dim - batch.shape[-1]) / 2), math.floor((l_dim - batch.shape[-1]) / 2)]
     padded_batch = F.pad(batch, pad=[*padding_h, *padding_w])
     return padded_batch
-    return padded_batch

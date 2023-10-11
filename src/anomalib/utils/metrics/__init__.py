@@ -189,4 +189,3 @@ def create_metric_collection(
         return metric_collection_from_dicts(metrics, prefix)
 
     raise ValueError(f"metrics must be a list or a dict, found {type(metrics)}")
-    raise ValueError(f"metrics must be a list or a dict, found {type(metrics)}")

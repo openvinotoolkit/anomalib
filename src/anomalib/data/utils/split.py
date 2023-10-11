@@ -135,4 +135,3 @@ def split_by_label(dataset: "data.AnomalibDataset") -> tuple["data.AnomalibDatas
     normal_subset = dataset.subsample(list(normal_indices))
     anomalous_subset = dataset.subsample(list(anomalous_indices))
     return normal_subset, anomalous_subset
-    return normal_subset, anomalous_subset
