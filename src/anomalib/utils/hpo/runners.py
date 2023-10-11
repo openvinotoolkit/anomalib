@@ -115,7 +115,7 @@ class CometSweep:
             comet_logger = CometLogger(workspace=self.entity)
 
             # allow pytorch-lightning to use the experiment from optimizer
-            comet_logger._experiment = experiment  # pylint: disable=protected-access
+            comet_logger._experiment = experiment  # noqa: SLF001
             run_params = experiment.params
             for param in run_params.keys():
                 # this check is needed as comet also returns model and sweep_config as keys

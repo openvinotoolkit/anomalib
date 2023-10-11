@@ -87,7 +87,7 @@ class AnomalibCLI(LightningCLI):
         # Add  export, benchmark and hpo
         for subcommand in self.anomalib_subcommands():
             sub_parser = ArgumentParser()
-            self.parser._subcommands_action.add_subcommand(
+            self.parser._subcommands_action.add_subcommand(  # noqa: SLF001
                 subcommand,
                 sub_parser,
                 help=self.anomalib_subcommands()[subcommand]["description"],

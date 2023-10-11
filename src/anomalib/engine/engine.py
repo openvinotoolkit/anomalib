@@ -160,7 +160,9 @@ class Engine:
                 **self.visualization,
             )
 
-        self.trainer.callbacks = _CallbackConnector._reorder_callbacks(self.trainer.callbacks + _callbacks)
+        self.trainer.callbacks = _CallbackConnector._reorder_callbacks(  # noqa: SLF001
+            self.trainer.callbacks + _callbacks,
+        )
 
     def fit(
         self,

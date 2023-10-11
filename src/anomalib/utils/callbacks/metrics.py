@@ -178,7 +178,7 @@ class _MetricsCallback(Callback):
     @staticmethod
     def _log_metrics(pl_module: AnomalyModule) -> None:
         """Log computed performance metrics."""
-        if pl_module.pixel_metrics._update_called:
+        if pl_module.pixel_metrics._update_called:  # noqa: SLF001
             pl_module.log_dict(pl_module.pixel_metrics, prog_bar=True)
             pl_module.log_dict(pl_module.image_metrics, prog_bar=False)
         else:

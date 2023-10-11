@@ -190,7 +190,7 @@ class _ThresholdCallback(Callback):
 
     def _compute(self, pl_module: AnomalyModule) -> None:
         pl_module.image_threshold.compute()
-        if pl_module.pixel_threshold._update_called:
+        if pl_module.pixel_threshold._update_called:  # noqa: SLF001
             pl_module.pixel_threshold.compute()
         else:
             pl_module.pixel_threshold.value = pl_module.image_threshold.value
