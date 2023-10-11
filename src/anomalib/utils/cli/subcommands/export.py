@@ -53,7 +53,10 @@ def _get_export_parser(subcommand: str):
     parser.add_argument("--model_config", type=Path, help="Path to the model config.", required=True)
     parser.add_argument("--export_path", type=Path, help="Path to save the exported model.")
     parser.add_argument(
-        "-c", "--config", action=ActionConfigFile, help="Path to a configuration file in json or yaml format."
+        "-c",
+        "--config",
+        action=ActionConfigFile,
+        help="Path to a configuration file in json or yaml format.",
     )
     return parser
 

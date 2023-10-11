@@ -46,8 +46,11 @@ class AnomalyMapGenerator(nn.Module):
             # upsample
             layer_maps.append(
                 F.interpolate(
-                    layer_map.unsqueeze(1), size=self.image_size, mode="bilinear", align_corners=True
-                ).squeeze(1)
+                    layer_map.unsqueeze(1),
+                    size=self.image_size,
+                    mode="bilinear",
+                    align_corners=True,
+                ).squeeze(1),
             )
         # score aggregation
         score_map = torch.zeros_like(layer_maps[0])
@@ -76,7 +79,8 @@ class AnomalyMapGenerator(nn.Module):
             torch.Tensor: anomaly map
         """
         if not ("distribution" in kwargs and "height" in kwargs and "width" in kwargs):
-            raise KeyError(f"Expected keys `distribution`, `height` and `width`. Found {kwargs.keys()}")
+            msg = f"Expected keys `distribution`, `height` and `width`. Found {kwargs.keys()}"
+            raise KeyError(msg)
 
         # placate mypy
         distribution: list[Tensor] = cast(list[Tensor], kwargs["distribution"])

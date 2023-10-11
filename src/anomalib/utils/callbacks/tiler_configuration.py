@@ -73,4 +73,5 @@ class TilerConfigurationCallback(Callback):
                     tile_count=self.tile_count,
                 )
             else:
-                raise ValueError("Model does not support tiling.")
+                msg = "Model does not support tiling."
+                raise ValueError(msg)

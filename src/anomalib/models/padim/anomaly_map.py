@@ -125,7 +125,8 @@ class AnomalyMapGenerator(nn.Module):
         """
 
         if not ("embedding" in kwargs and "mean" in kwargs and "inv_covariance" in kwargs):
-            raise ValueError(f"Expected keys `embedding`, `mean` and `covariance`. Found {kwargs.keys()}")
+            msg = f"Expected keys `embedding`, `mean` and `covariance`. Found {kwargs.keys()}"
+            raise ValueError(msg)
 
         embedding: Tensor = kwargs["embedding"]
         mean: Tensor = kwargs["mean"]

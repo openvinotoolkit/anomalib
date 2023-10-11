@@ -112,7 +112,10 @@ def upload_to_wandb(
             row = dict(row[1:])  # remove index column
             tags = [str(row[column]) for column in tag_list if column in row.keys()]
             wandb.init(
-                entity=team, project=project, name=f"{row['model_name']}_{row['dataset.category']}_{index}", tags=tags
+                entity=team,
+                project=project,
+                name=f"{row['model_name']}_{row['dataset.category']}_{index}",
+                tags=tags,
             )
             wandb.log(row)
             wandb.finish()

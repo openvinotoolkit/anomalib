@@ -31,13 +31,13 @@ logger = logging.getLogger(__name__)
 IMAGENETTE_DOWNLOAD_INFO = DownloadInfo(
     name="imagenette2.tgz",
     url="https://s3.amazonaws.com/fast-ai-imageclas/imagenette2.tgz",
-    hash="fe2fc210e6bb7c5664d602c3cd71e612",
+    checksum="fe2fc210e6bb7c5664d602c3cd71e612",
 )
 
 WEIGHTS_DOWNLOAD_INFO = DownloadInfo(
     name="efficientad_pretrained_weights.zip",
     url="https://github.com/openvinotoolkit/anomalib/releases/download/efficientad_pretrained_weights/efficientad_pretrained_weights.zip",
-    hash="ec6113d728969cd233271eeed7d692f2",
+    checksum="ec6113d728969cd233271eeed7d692f2",
 )
 
 
@@ -112,7 +112,7 @@ class EfficientAd(AnomalyModule):
                 A.CenterCrop(self.image_size[0], self.image_size[1]),  # and cropping the center 256 × 256 pixels
                 A.ToFloat(always_apply=False, p=1.0, max_value=255),
                 ToTensorV2(),
-            ]
+            ],
         )
 
         imagenet_dir = Path("./datasets/imagenette")
@@ -204,7 +204,8 @@ class EfficientAd(AnomalyModule):
             weight_decay=self.weight_decay,
         )
         num_steps = min(
-            self.trainer.max_steps, self.trainer.max_epochs * len(self.trainer.datamodule.train_dataloader())
+            self.trainer.max_steps,
+            self.trainer.max_epochs * len(self.trainer.datamodule.train_dataloader()),
         )
         scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=int(0.95 * num_steps), gamma=0.1)
         return {"optimizer": optimizer, "lr_scheduler": scheduler}

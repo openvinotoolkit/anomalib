@@ -100,7 +100,8 @@ def make_folder_dataset(
 
     # Create label index for normal (0) and abnormal (1) images.
     samples.loc[
-        (samples.label == DirType.NORMAL) | (samples.label == DirType.NORMAL_TEST), "label_index"
+        (samples.label == DirType.NORMAL) | (samples.label == DirType.NORMAL_TEST),
+        "label_index",
     ] = LabelName.NORMAL
     samples.loc[(samples.label == DirType.ABNORMAL), "label_index"] = LabelName.ABNORMAL
     samples.label_index = samples.label_index.astype("Int64")
@@ -281,9 +282,12 @@ class Folder(AnomalibDataModule):
         )
 
         if task == TaskType.SEGMENTATION and test_split_mode == TestSplitMode.FROM_DIR and mask_dir is None:
-            raise ValueError(
+            msg = (
                 f"Segmentation task requires mask directory if test_split_mode is {test_split_mode}. "
-                f"You could set test_split_mode to {TestSplitMode.NONE} or provide a mask directory."
+                "You could set test_split_mode to {TestSplitMode.NONE} or provide a mask directory."
+            )
+            raise ValueError(
+                msg,
             )
 
         self.normal_split_ratio = normal_split_ratio

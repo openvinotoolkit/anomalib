@@ -36,7 +36,7 @@ logger = logging.getLogger(__name__)
 DOWNLOAD_INFO = DownloadInfo(
     name="UCSD Pedestrian",
     url="http://www.svcl.ucsd.edu/projects/anomaly/UCSD_Anomaly_Dataset.tar.gz",
-    hash="5006421b89885f45a6f93b041145f2eb",
+    checksum="5006421b89885f45a6f93b041145f2eb",
 )
 
 CATEGORIES = ("UCSDped1", "UCSDped2")
@@ -134,7 +134,8 @@ class UCSDpedClipsIndexer(ClipsIndexer):
             video_idx (int): index of the video in `video_paths`
         """
         if idx >= self.num_clips():
-            raise IndexError(f"Index {idx} out of range ({self.num_clips()} number of clips)")
+            msg = f"Index {idx} out of range ({self.num_clips()} number of clips)"
+            raise IndexError(msg)
         video_idx, clip_idx = self.get_clip_location(idx)
         video_path = self.video_paths[video_idx]
         clip_pts = self.clips[video_idx][clip_idx]

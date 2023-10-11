@@ -30,13 +30,13 @@ select = [
     "BLE",  # flake8-blind-except (`BLE`)
     "FBT",  # flake8-boolean-trap (`FBT`)
     "B",    # flake8-bugbear (`B`)
-    # "A",    # flake8-builtins (`A`)
-    # "COM",  # flake8-commas (`COM`)
-    # "CPY",  # flake8-copyright (`CPY`)
-    # "C4",   # flake8-comprehensions (`C4`)
-    # "DTZ",  # flake8-datatimez (`DTZ`)
-    # "T10",  # flake8-debugger (`T10`)
-    # "EM",   # flake8-errmsg (`EM`)
+    "A",    # flake8-builtins (`A`)
+    "COM",  # flake8-commas (`COM`)
+    "CPY",  # flake8-copyright (`CPY`)
+    "C4",   # flake8-comprehensions (`C4`)
+    "DTZ",  # flake8-datatimez (`DTZ`)
+    "T10",  # flake8-debugger (`T10`)
+    "EM",   # flake8-errmsg (`EM`)
     # "FA",   # flake8-future-annotations (`FA`)
     # "ISC",  # flake8-implicit-str-concat (`ISC`)
     # "ICN",  # flake8-import-conventions (`ICN`)
@@ -97,6 +97,9 @@ ignore = [
     # flake8-boolean-trap (`FBT`)
     "FBT001",   # Boolean positional arg in function definition
     "FBT002",   # Boolean default value in function definition
+
+    # flake8-datatimez (`DTZ`)
+    "DTZ005"    # The use of `datetime.datetime.now()` without `tz` argument is not allowed
 
     # flake8-type-checking
     # "TCH001",   # typing-only-first-party-import, Sometimes this causes an incorrect error.

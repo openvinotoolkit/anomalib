@@ -72,7 +72,7 @@ class _TrainerArgumentsCache:
             if key in self._cached_args:
                 if self._cached_args[key] != value:
                     log.info(
-                        f"Overriding {key} from {self._cached_args[key]} with {value} for {model.__class__.__name__}"
+                        f"Overriding {key} from {self._cached_args[key]} with {value} for {model.__class__.__name__}",
                     )
                 self._cached_args[key] = value
 
@@ -155,7 +155,9 @@ class Engine:
             if image_save_path is None:
                 image_save_path = self.trainer.default_root_dir + "/images"
             _callbacks += get_visualization_callbacks(
-                task=self.task, image_save_path=image_save_path, **self.visualization
+                task=self.task,
+                image_save_path=image_save_path,
+                **self.visualization,
             )
 
         self.trainer.callbacks = _CallbackConnector._reorder_callbacks(self.trainer.callbacks + _callbacks)

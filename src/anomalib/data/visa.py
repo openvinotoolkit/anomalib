@@ -51,7 +51,7 @@ EXTENSIONS = (".png", ".jpg", ".JPG")
 DOWNLOAD_INFO = DownloadInfo(
     name="VisA",
     url="https://amazon-visual-anomaly.s3.us-west-2.amazonaws.com/VisA_20220922.tar",
-    hash="ef908989b6dc701fc218f643c127a4de",
+    checksum="ef908989b6dc701fc218f643c127a4de",
 )
 
 CATEGORIES = (
@@ -174,10 +174,18 @@ class Visa(AnomalibDataModule):
         )
 
         self.train_data = VisaDataset(
-            task=task, transform=transform_train, split=Split.TRAIN, root=self.split_root, category=category
+            task=task,
+            transform=transform_train,
+            split=Split.TRAIN,
+            root=self.split_root,
+            category=category,
         )
         self.test_data = VisaDataset(
-            task=task, transform=transform_eval, split=Split.TEST, root=self.split_root, category=category
+            task=task,
+            transform=transform_eval,
+            split=Split.TEST,
+            root=self.split_root,
+            category=category,
         )
 
     def prepare_data(self) -> None:

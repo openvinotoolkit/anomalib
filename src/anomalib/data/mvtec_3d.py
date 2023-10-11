@@ -50,14 +50,16 @@ DOWNLOAD_INFO = DownloadInfo(
     name="mvtec_3d",
     url="https://www.mydrive.ch/shares/45920/dd1eb345346df066c63b5c95676b961b/download/428824485-1643285832"
     "/mvtec_3d_anomaly_detection.tar.xz",
-    hash="d8bb2800fbf3ac88e798da6ae10dc819",
+    checksum="d8bb2800fbf3ac88e798da6ae10dc819",
 )
 
 CATEGORIES = ("bagel", "cable_gland", "carrot", "cookie", "dowel", "foam", "peach", "potato", "rope", "tire")
 
 
 def make_mvtec_3d_dataset(
-    root: str | Path, split: str | Split | None = None, extensions: Sequence[str] | None = None
+    root: str | Path,
+    split: str | Split | None = None,
+    extensions: Sequence[str] | None = None,
 ) -> DataFrame:
     """Create MVTec 3D-AD samples by parsing the MVTec AD data file structure.
 
@@ -116,7 +118,8 @@ def make_mvtec_3d_dataset(
     root = Path(root)
     samples_list = [(str(root),) + f.parts[-4:] for f in root.glob(r"**/*") if f.suffix in extensions]
     if not samples_list:
-        raise RuntimeError(f"Found 0 images in {root}")
+        msg = f"Found 0 images in {root}"
+        raise RuntimeError(msg)
 
     samples = DataFrame(samples_list, columns=["path", "split", "label", "type", "file_name"])
 
@@ -143,7 +146,8 @@ def make_mvtec_3d_dataset(
 
     # separate masks from samples
     mask_samples = samples.loc[((samples.split == "test") & (samples.type == "rgb"))].sort_values(
-        by="image_path", ignore_index=True
+        by="image_path",
+        ignore_index=True,
     )
     samples = samples.sort_values(by="image_path", ignore_index=True)
 
@@ -281,10 +285,18 @@ class MVTec3D(AnomalibDataModule):
         )
 
         self.train_data = MVTec3DDataset(
-            task=task, transform=transform_train, split=Split.TRAIN, root=root, category=category
+            task=task,
+            transform=transform_train,
+            split=Split.TRAIN,
+            root=root,
+            category=category,
         )
         self.test_data = MVTec3DDataset(
-            task=task, transform=transform_eval, split=Split.TEST, root=root, category=category
+            task=task,
+            transform=transform_eval,
+            split=Split.TEST,
+            root=root,
+            category=category,
         )
 
     def prepare_data(self) -> None:

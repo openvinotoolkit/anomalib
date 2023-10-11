@@ -84,7 +84,8 @@ class AnomalibTensorBoardLogger(ImageLoggerBase, TensorBoardLogger):
             kwargs: Accepts only `global_step` (int). The step at which to log the image.
         """
         if "global_step" not in kwargs:
-            raise ValueError("`global_step` is required for tensorboard logger")
+            msg = "`global_step` is required for tensorboard logger"
+            raise ValueError(msg)
 
         # Need to call different functions of `SummaryWriter` for  Figure vs np.ndarray
         if isinstance(image, Figure):

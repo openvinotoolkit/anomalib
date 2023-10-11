@@ -73,7 +73,8 @@ class KCenterGreedy:
         if isinstance(self.min_distances, Tensor):
             idx = int(torch.argmax(self.min_distances).item())
         else:
-            raise ValueError(f"self.min_distances must be of type Tensor. Got {type(self.min_distances)}")
+            msg = f"self.min_distances must be of type Tensor. Got {type(self.min_distances)}"
+            raise ValueError(msg)
 
         return idx
 
@@ -104,7 +105,8 @@ class KCenterGreedy:
             self.update_distances(cluster_centers=[idx])
             idx = self.get_new_idx()
             if idx in selected_idxs:
-                raise ValueError("New indices should not be in selected indices.")
+                msg = "New indices should not be in selected indices."
+                raise ValueError(msg)
             self.min_distances[idx] = 0
             selected_coreset_idxs.append(idx)
 

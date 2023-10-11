@@ -91,7 +91,7 @@ def get_experiment_logger(
                     name="Tensorboard Logs",
                     save_dir=os.path.join(config.project.path, "logs"),
                     log_graph=False,  # TODO: find location for log_graph key
-                )
+                ),
             )
         elif experiment_logger == "wandb":
             wandb_logdir = os.path.join(config.project.path, "logs")
@@ -106,7 +106,7 @@ def get_experiment_logger(
                     project=config.data.class_path.split(".")[-1],
                     name=name,
                     save_dir=wandb_logdir,
-                )
+                ),
             )
         elif experiment_logger == "comet":
             comet_logdir = os.path.join(config.project.path, "logs")
@@ -118,17 +118,21 @@ def get_experiment_logger(
             )
             logger_list.append(
                 AnomalibCometLogger(
-                    project_name=config.data.class_path.split(".")[-1], experiment_name=run_name, save_dir=comet_logdir
-                )
+                    project_name=config.data.class_path.split(".")[-1],
+                    experiment_name=run_name,
+                    save_dir=comet_logdir,
+                ),
             )
         elif experiment_logger == "csv":
             logger_list.append(CSVLogger(save_dir=os.path.join(config.project.path, "logs")))
         else:
+            msg = (
+                f"Unknown logger type: {config.trainer.logger}. Available loggers are: {AVAILABLE_LOGGERS}.\n"
+                "To enable the logger, set `project.logger` to `true` or use one of available loggers in "
+                "config.yaml\nTo disable the logger, set `project.logger` to `false`."
+            )
             raise UnknownLoggerError(
-                f"Unknown logger type: {config.trainer.logger}. "
-                f"Available loggers are: {AVAILABLE_LOGGERS}.\n"
-                f"To enable the logger, set `project.logger` to `true` or use one of available loggers in config.yaml\n"
-                f"To disable the logger, set `project.logger` to `false`."
+                msg,
             )
 
     # TODO remove this method and set these values in ``update_config``

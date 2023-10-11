@@ -31,7 +31,10 @@ ROOT = "./.tmp/synthetic_anomaly"
 
 
 def make_synthetic_dataset(
-    source_samples: DataFrame, image_dir: Path, mask_dir: Path, anomalous_ratio: float = 0.5
+    source_samples: DataFrame,
+    image_dir: Path,
+    mask_dir: Path,
+    anomalous_ratio: float = 0.5,
 ) -> DataFrame:
     """Convert a set of normal samples into a mixed set of normal and synthetic anomalous samples.
 
@@ -90,7 +93,13 @@ def make_synthetic_dataset(
         mask = (mask.squeeze() * 255).numpy()
         mask_path = mask_dir / file_name
         cv2.imwrite(str(mask_path), mask)
-        out = dict(image_path=str(im_path), label="abnormal", label_index=1, mask_path=str(mask_path), split=Split.VAL)
+        out = {
+            "image_path": str(im_path),
+            "label": "abnormal",
+            "label_index": 1,
+            "mask_path": str(mask_path),
+            "split": Split.VAL,
+        }
         return Series(out)
 
     anomalous_samples = anomalous_samples.apply(augment, axis=1)

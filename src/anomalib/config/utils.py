@@ -66,5 +66,6 @@ def to_tuple(input_size: int | ListConfig) -> tuple[int, int]:
         assert len(input_size) == 2, "Expected a single integer or tuple of length 2 for width and height."
         ret_val = cast(tuple[int, int], tuple(input_size))
     else:
-        raise ValueError(f"Expected either int or ListConfig, got {type(input_size)}")
+        msg = f"Expected either int or ListConfig, got {type(input_size)}"
+        raise ValueError(msg)
     return ret_val

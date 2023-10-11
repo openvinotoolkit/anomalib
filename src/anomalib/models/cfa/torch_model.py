@@ -43,7 +43,8 @@ def get_return_nodes(backbone: str) -> list[str]:
         list[str]: A list of return nodes for the given backbone.
     """
     if backbone == "efficientnet_b5":
-        raise NotImplementedError("EfficientNet feature extractor has not implemented yet.")
+        msg = "EfficientNet feature extractor has not implemented yet."
+        raise NotImplementedError(msg)
 
     return_nodes: list[str]
     if backbone in ("resnet18", "wide_resnet50_2"):
@@ -51,7 +52,8 @@ def get_return_nodes(backbone: str) -> list[str]:
     elif backbone == "vgg19_bn":
         return_nodes = ["features.25", "features.38", "features.52"]
     else:
-        raise ValueError(f"Backbone {backbone} is not supported. Supported backbones are {SUPPORTED_BACKBONES}.")
+        msg = f"Backbone {backbone} is not supported. Supported backbones are {SUPPORTED_BACKBONES}."
+        raise ValueError(msg)
     return return_nodes
 
 
@@ -127,15 +129,17 @@ class CfaModel(DynamicBufferModule):
         elif isinstance(resolution, tuple):
             self.scale = resolution
         else:
+            msg = f"Unknown type {type(resolution)} for `resolution`. Expected types are either int or tuple[int, int]."
             raise ValueError(
-                f"Unknown type {type(resolution)} for `resolution`. Expected types are either int or tuple[int, int]."
+                msg,
             )
 
         self.descriptor = Descriptor(self.gamma_d, backbone)
         self.radius = torch.ones(1, requires_grad=True) * radius
 
         self.anomaly_map_generator = AnomalyMapGenerator(
-            image_size=input_size, num_nearest_neighbors=num_nearest_neighbors
+            image_size=input_size,
+            num_nearest_neighbors=num_nearest_neighbors,
         )
 
     def initialize_centroid(self, data_loader: DataLoader) -> None:
@@ -198,7 +202,8 @@ class CfaModel(DynamicBufferModule):
             Tensor: Loss or anomaly map depending on the train/eval mode.
         """
         if self.memory_bank.ndim == 0:
-            raise ValueError("Memory bank is not initialized. Run `initialize_centroid` method first.")
+            msg = "Memory bank is not initialized. Run `initialize_centroid` method first."
+            raise ValueError(msg)
 
         self.feature_extractor.eval()
         with torch.no_grad():
@@ -224,7 +229,8 @@ class Descriptor(nn.Module):
 
         self.backbone = backbone
         if self.backbone not in SUPPORTED_BACKBONES:
-            raise ValueError(f"Supported backbones are {SUPPORTED_BACKBONES}. Got {self.backbone} instead.")
+            msg = f"Supported backbones are {SUPPORTED_BACKBONES}. Got {self.backbone} instead."
+            raise ValueError(msg)
 
         # TODO: Automatically infer the number of dims
         backbone_dims = {"vgg19_bn": 1280, "resnet18": 448, "wide_resnet50_2": 1792, "efficientnet_b5": 568}

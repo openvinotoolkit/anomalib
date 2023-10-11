@@ -159,7 +159,8 @@ def metric_collection_from_dicts(metrics: dict[str, dict[str, Any]], prefix: str
 
 
 def create_metric_collection(
-    metrics: list[str] | dict[str, dict[str, Any]], prefix: str | None
+    metrics: list[str] | dict[str, dict[str, Any]],
+    prefix: str | None,
 ) -> AnomalibMetricCollection:
     """Create a metric collection from a list of metric names or dictionaries.
 
@@ -188,4 +189,5 @@ def create_metric_collection(
         _validate_metrics_dict(metrics)
         return metric_collection_from_dicts(metrics, prefix)
 
-    raise ValueError(f"metrics must be a list or a dict, found {type(metrics)}")
+    msg = f"metrics must be a list or a dict, found {type(metrics)}"
+    raise ValueError(msg)

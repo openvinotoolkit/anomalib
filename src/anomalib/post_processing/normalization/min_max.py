@@ -24,5 +24,6 @@ def normalize(
         normalized = torch.minimum(normalized, torch.tensor(1))  # pylint: disable=not-callable
         normalized = torch.maximum(normalized, torch.tensor(0))  # pylint: disable=not-callable
     else:
-        raise ValueError(f"Targets must be either Tensor or Numpy array. Received {type(targets)}")
+        msg = f"Targets must be either Tensor or Numpy array. Received {type(targets)}"
+        raise ValueError(msg)
     return normalized

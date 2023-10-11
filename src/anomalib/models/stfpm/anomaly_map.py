@@ -36,7 +36,9 @@ class AnomalyMapGenerator(nn.Module):
         return layer_map
 
     def compute_anomaly_map(
-        self, teacher_features: dict[str, Tensor], student_features: dict[str, Tensor]
+        self,
+        teacher_features: dict[str, Tensor],
+        student_features: dict[str, Tensor],
     ) -> torch.Tensor:
         """Compute the overall anomaly map via element-wise production the interpolated anomaly maps.
 
@@ -76,7 +78,8 @@ class AnomalyMapGenerator(nn.Module):
         """
 
         if not ("teacher_features" in kwargs and "student_features" in kwargs):
-            raise ValueError(f"Expected keys `teacher_features` and `student_features. Found {kwargs.keys()}")
+            msg = f"Expected keys `teacher_features` and `student_features. Found {kwargs.keys()}"
+            raise ValueError(msg)
 
         teacher_features: dict[str, Tensor] = kwargs["teacher_features"]
         student_features: dict[str, Tensor] = kwargs["student_features"]

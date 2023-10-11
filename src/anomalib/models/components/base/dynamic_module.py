@@ -27,7 +27,8 @@ class DynamicBufferModule(ABC, nn.Module):
         if isinstance(attribute, Tensor):
             return attribute
 
-        raise ValueError(f"Attribute with name '{attribute_name}' is not a torch Tensor")
+        msg = f"Attribute with name '{attribute_name}' is not a torch Tensor"
+        raise ValueError(msg)
 
     def _load_from_state_dict(self, state_dict: dict, prefix: str, *args):
         """Resizes the local buffers to match those stored in the state dict.

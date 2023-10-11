@@ -66,7 +66,11 @@ class RegionExtractor(nn.Module):
 
         if self.enable_foreground_detections:
             regions = self.add_foreground_boxes(
-                regions, first_frame, last_frame, self.foreground_kernel_size, self.foreground_binary_threshold
+                regions,
+                first_frame,
+                last_frame,
+                self.foreground_kernel_size,
+                self.foreground_binary_threshold,
             )
 
         regions = self.post_process_bbox_detections(regions)
@@ -130,10 +134,10 @@ class RegionExtractor(nn.Module):
             # append boxes, labels and scores
             im_regions["boxes"] = torch.cat([im_regions["boxes"], boxes])
             im_regions["labels"] = torch.cat(
-                [im_regions["labels"], torch.zeros(boxes.shape[0], device=boxes.device)]
+                [im_regions["labels"], torch.zeros(boxes.shape[0], device=boxes.device)],
             )  # set label as background, in accordance with region extractor predictions
             im_regions["scores"] = torch.cat(
-                [im_regions["scores"], torch.ones(boxes.shape[0], device=boxes.device) * 0.5]
+                [im_regions["scores"], torch.ones(boxes.shape[0], device=boxes.device) * 0.5],
             )  # set confidence to 0.5
 
             # append masks
@@ -214,7 +218,7 @@ class RegionExtractor(nn.Module):
                 [
                     torch.max(regions["boxes"][indices[idx], :2], regions["boxes"][indices[idx + 1 :], :2]),  # x1, y1
                     torch.min(regions["boxes"][indices[idx], 2:], regions["boxes"][indices[idx + 1 :], 2:]),  # x2, y2
-                ]
+                ],
             )
             mask = torch.all(overlap_coords[:, :2] < overlap_coords[:, 2:], dim=1)  # filter non-overlapping
             overlap = box_area(overlap_coords) * mask.int()

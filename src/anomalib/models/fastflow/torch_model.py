@@ -143,13 +143,14 @@ class FastflowModel(nn.Module):
                     nn.LayerNorm(
                         [channel, int(input_size[0] / scale), int(input_size[1] / scale)],
                         elementwise_affine=True,
-                    )
+                    ),
                 )
         else:
-            raise ValueError(
+            msg = (
                 f"Backbone {backbone} is not supported. List of available backbones are "
                 "[cait_m48_448, deit_base_distilled_patch16_384, resnet18, wide_resnet50_2]."
             )
+            raise ValueError(msg)
 
         for parameter in self.feature_extractor.parameters():
             parameter.requires_grad = False
@@ -162,7 +163,7 @@ class FastflowModel(nn.Module):
                     conv3x3_only=conv3x3_only,
                     hidden_ratio=hidden_ratio,
                     flow_steps=flow_steps,
-                )
+                ),
             )
         self.anomaly_map_generator = AnomalyMapGenerator(input_size=input_size)
 

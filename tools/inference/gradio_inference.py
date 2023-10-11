@@ -64,15 +64,20 @@ def get_inferencer(weight_path: Path, metadata: Path | None = None) -> Inference
 
     elif extension in (".onnx", ".bin", ".xml"):
         if metadata is None:
-            raise ValueError("When using OpenVINO Inferencer, the following arguments are required: --metadata")
+            msg = "When using OpenVINO Inferencer, the following arguments are required: --metadata"
+            raise ValueError(msg)
 
         openvino_inferencer = module.OpenVINOInferencer
         inferencer = openvino_inferencer(path=weight_path, metadata=metadata)
 
     else:
+        msg = (
+            "Model extension is not supported. "
+            "Torch Inferencer exptects a .ckpt file,OpenVINO Inferencer expects either .onnx, .bin or .xml file. "
+            f"Got {extension}"
+        )
         raise ValueError(
-            f"Model extension is not supported. Torch Inferencer exptects a .ckpt file,"
-            f"OpenVINO Inferencer expects either .onnx, .bin or .xml file. Got {extension}"
+            msg,
         )
 
     return inferencer
@@ -102,7 +107,12 @@ if __name__ == "__main__":
         fn=lambda image: infer(image, gradio_inferencer),
         inputs=[
             gradio.inputs.Image(
-                shape=None, image_mode="RGB", source="upload", tool="editor", type="numpy", label="Image"
+                shape=None,
+                image_mode="RGB",
+                source="upload",
+                tool="editor",
+                type="numpy",
+                label="Image",
             ),
         ],
         outputs=[

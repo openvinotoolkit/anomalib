@@ -99,7 +99,8 @@ def update_input_size_config(config: DictConfig | ListConfig | Namespace) -> Dic
     elif isinstance(image_size, ListConfig | Sequence):
         assert len(image_size) == 2, "image_size must be a single integer or tuple of length 2 for width and height."
     else:
-        raise ValueError(f"image_size must be either int or ListConfig, got {type(image_size)}")
+        msg = f"image_size must be either int or ListConfig, got {type(image_size)}"
+        raise ValueError(msg)
 
     # Use input size from data to model input. If model input size is defined, warn and override.
     # If input_size is not part of the model parameters, remove it from the config. This is required due to argument
@@ -121,7 +122,7 @@ def update_input_size_config(config: DictConfig | ListConfig | Namespace) -> Dic
         else:
             logger.info(
                 f" Setting model input size {config.model.init_args.get('input_size', None)} to"
-                f" dataset size {config.data.init_args.image_size}."
+                f" dataset size {config.data.init_args.image_size}.",
             )
             config.model.init_args.input_size = config.data.init_args.image_size
         config.model.init_args.input_size = to_tuple(config.model.init_args.input_size)
@@ -184,12 +185,13 @@ def update_multi_gpu_training_config(config: DictConfig | ListConfig) -> DictCon
             if config.trainer.accelerator.lower() in ("dp", "ddp_spawn", "ddp2"):
                 logger.warn(
                     f"Using accelerator {config.trainer.accelerator.lower()} is discouraged. "
-                    f"Please use one of [null, ddp]. Setting accelerator to ddp"
+                    f"Please use one of [null, ddp]. Setting accelerator to ddp",
                 )
                 config.trainer.accelerator = "ddp"
             else:
+                msg = f"Unsupported accelerator found: {config.trainer.accelerator}. Should be one of [null, ddp]"
                 raise ValueError(
-                    f"Unsupported accelerator found: {config.trainer.accelerator}. Should be one of [null, ddp]"
+                    msg,
                 )
     # Increase learning rate
     # since pytorch averages the gradient over devices, the idea is to
@@ -214,7 +216,7 @@ def show_warnings(config: DictConfig | ListConfig | Namespace) -> None:
     if "clip_length_in_frames" in config.data.keys() and config.data.init_args.clip_length_in_frames > 1:
         logger.warn(
             "Anomalib's models and visualizer are currently not compatible with video datasets with a clip length > 1. "
-            "Custom changes to these modules will be needed to prevent errors and/or unpredictable behaviour."
+            "Custom changes to these modules will be needed to prevent errors and/or unpredictable behaviour.",
         )
 
 
@@ -236,9 +238,12 @@ def get_configurable_parameters(
         DictConfig | ListConfig: Configurable parameters in DictConfig object.
     """
     if model_name is None and config_path is None:
-        raise ValueError(
+        msg = (
             "Both model_name and model config path cannot be None! "
             "Please provide a model name or path to a config file!"
+        )
+        raise ValueError(
+            msg,
         )
 
     if model_name == "efficientad":

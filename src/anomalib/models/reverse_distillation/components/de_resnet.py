@@ -53,13 +53,21 @@ class DecoderBasicBlock(nn.Module):
         if norm_layer is None:
             norm_layer = nn.BatchNorm2d
         if groups != 1 or base_width != 64:
-            raise ValueError("BasicBlock only supports groups=1 and base_width=64")
+            msg = "BasicBlock only supports groups=1 and base_width=64"
+            raise ValueError(msg)
         if dilation > 1:
-            raise NotImplementedError("Dilation > 1 not supported in BasicBlock")
+            msg = "Dilation > 1 not supported in BasicBlock"
+            raise NotImplementedError(msg)
         # Both self.conv1 and self.downsample layers downsample the input when stride != 2
         if stride == 2:
             self.conv1 = nn.ConvTranspose2d(
-                inplanes, planes, kernel_size=2, stride=stride, groups=groups, bias=False, dilation=dilation
+                inplanes,
+                planes,
+                kernel_size=2,
+                stride=stride,
+                groups=groups,
+                bias=False,
+                dilation=dilation,
             )
         else:
             self.conv1 = conv3x3(inplanes, planes, stride)
@@ -127,7 +135,13 @@ class DecoderBottleneck(nn.Module):
         self.bn1 = norm_layer(width)
         if stride == 2:
             self.conv2 = nn.ConvTranspose2d(
-                width, width, kernel_size=2, stride=stride, groups=groups, bias=False, dilation=dilation
+                width,
+                width,
+                kernel_size=2,
+                stride=stride,
+                groups=groups,
+                bias=False,
+                dilation=dilation,
             )
         else:
             self.conv2 = conv3x3(width, width, stride, groups, dilation)
@@ -241,7 +255,7 @@ class ResNet(nn.Module):
 
         layers = []
         layers.append(
-            block(self.inplanes, planes, stride, upsample, self.groups, self.base_width, previous_dilation, norm_layer)
+            block(self.inplanes, planes, stride, upsample, self.groups, self.base_width, previous_dilation, norm_layer),
         )
         self.inplanes = planes * block.expansion
         for _ in range(1, blocks):
@@ -253,7 +267,7 @@ class ResNet(nn.Module):
                     base_width=self.base_width,
                     dilation=self.dilation,
                     norm_layer=norm_layer,
-                )
+                ),
             )
 
         return nn.Sequential(*layers)
@@ -339,5 +353,6 @@ def get_decoder(name: str) -> ResNet:
     ):
         decoder = globals()[f"de_{name}"]
     else:
-        raise ValueError(f"Decoder with architecture {name} not supported")
+        msg = f"Decoder with architecture {name} not supported"
+        raise ValueError(msg)
     return decoder()

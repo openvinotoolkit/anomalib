@@ -53,7 +53,8 @@ def get_image_height_and_width(image_size: int | tuple | None = None) -> tuple[i
     elif image_size is None:
         height_and_width = (None, None)
     else:
-        raise ValueError("``image_size`` could be either int or tuple[int, int]")
+        msg = "``image_size`` could be either int or tuple[int, int]"
+        raise ValueError(msg)
 
     return height_and_width
 
@@ -119,11 +120,12 @@ def get_transforms(
     logger.warning(msg)
 
     if config is None is image_size:
-        raise ValueError(
+        msg = (
             "Both config and image_size cannot be `None`. "
             "Provide either config file to de-serialize transforms "
             "or image_size to get the default transformations"
         )
+        raise ValueError(msg)
 
     transforms: A.Compose
 
@@ -136,7 +138,7 @@ def get_transforms(
                 A.Resize(height=height, width=width, always_apply=True),
                 A.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
                 ToTensorV2(),
-            ]
+            ],
         )
 
     if config is not None:
@@ -145,7 +147,8 @@ def get_transforms(
         elif isinstance(config, A.Compose):
             transforms = config
         else:
-            raise ValueError("config could be either ``str`` or ``A.Compose``")
+            msg = "config could be either ``str`` or ``A.Compose``"
+            raise ValueError(msg)
 
     if not to_tensor:
         if isinstance(transforms[-1], ToTensorV2):

@@ -88,7 +88,9 @@ class AnomalibCLI(LightningCLI):
         for subcommand in self.anomalib_subcommands():
             sub_parser = ArgumentParser()
             self.parser._subcommands_action.add_subcommand(
-                subcommand, sub_parser, help=self.anomalib_subcommands()[subcommand]["description"]
+                subcommand,
+                sub_parser,
+                help=self.anomalib_subcommands()[subcommand]["description"],
             )
             # add arguments to subcommand
             getattr(self, f"add_{subcommand}_arguments")(sub_parser)

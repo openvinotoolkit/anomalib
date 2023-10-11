@@ -45,7 +45,7 @@ logger = logging.getLogger(__name__)
 DATASET_DOWNLOAD_INFO = DownloadInfo(
     name="ShanghaiTech Dataset",
     url="http://101.32.75.151:8181/dataset/shanghaitech.tar.gz",
-    hash="08494decd30fb0fa213b519a9c555040",
+    checksum="08494decd30fb0fa213b519a9c555040",
 )
 
 
@@ -163,7 +163,8 @@ class ShanghaiTechTestClipsIndexer(ClipsIndexer):
             video_idx (int): index of the video in `video_paths`
         """
         if idx >= self.num_clips():
-            raise IndexError(f"Index {idx} out of range ({self.num_clips()} number of clips)")
+            msg = f"Index {idx} out of range ({self.num_clips()} number of clips)"
+            raise IndexError(msg)
         video_idx, clip_idx = self.get_clip_location(idx)
         video_path = self.video_paths[video_idx]
         clip_pts = self.clips[video_idx][clip_idx]
@@ -343,7 +344,7 @@ class ShanghaiTech(AnomalibVideoDataModule):
             video_folder (Path): Path to the folder of training videos.
             target_folder (Path): File system location where the converted videos will be stored.
         """
-        training_videos = sorted(list(video_folder.glob("*")))
+        training_videos = sorted(video_folder.glob("*"))
         for video_idx, video_path in enumerate(training_videos):
             logger.info("Converting training video %s (%i/%i)...", video_path.name, video_idx + 1, len(training_videos))
             file_name = video_path.name

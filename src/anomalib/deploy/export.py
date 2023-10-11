@@ -124,7 +124,8 @@ def export(
             export_to_openvino(export_path=export_path, input_model=onnx_path, metadata=metadata, input_size=input_size)
 
     else:
-        raise ValueError(f"Unknown export mode {export_mode}")
+        msg = f"Unknown export mode {export_mode}"
+        raise ValueError(msg)
 
 
 def export_to_torch(model: AnomalyModule, metadata: dict[str, Any], export_path: Path) -> None:
@@ -166,7 +167,11 @@ def export_to_onnx(model: AnomalyModule, input_size: tuple[int, int], export_pat
 
 
 def export_to_openvino(
-    export_path: str | Path, input_model: Path, metadata: dict[str, Any], input_size: tuple[int, int], **kwargs
+    export_path: str | Path,
+    input_model: Path,
+    metadata: dict[str, Any],
+    input_size: tuple[int, int],
+    **kwargs,
 ) -> None:
     """Convert onnx model to OpenVINO IR.
 

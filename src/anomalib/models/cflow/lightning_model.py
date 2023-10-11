@@ -135,7 +135,8 @@ class Cflow(AnomalyModule):
                 opt.zero_grad()
                 if batch_num < (fiber_batches - 1):
                     idx = torch.arange(
-                        batch_num * self.model.fiber_batch_size, (batch_num + 1) * self.model.fiber_batch_size
+                        batch_num * self.model.fiber_batch_size,
+                        (batch_num + 1) * self.model.fiber_batch_size,
                     )
                 else:  # When non-full batch is encountered batch_num * N will go out of bounds
                     idx = torch.arange(batch_num * self.model.fiber_batch_size, embedding_length)

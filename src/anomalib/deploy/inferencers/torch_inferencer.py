@@ -53,7 +53,8 @@ class TorchInferencer(Inferencer):
             torch.device: Device to use for inference.
         """
         if device not in ("auto", "cpu", "cuda", "gpu"):
-            raise ValueError(f"Unknown device {device}")
+            msg = f"Unknown device {device}"
+            raise ValueError(msg)
 
         if device == "auto":
             device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -74,7 +75,8 @@ class TorchInferencer(Inferencer):
             path = Path(path)
 
         if path.suffix not in (".pt", ".pth"):
-            raise ValueError(f"Unknown torch checkpoint file format {path.suffix}. Make sure you save the Torch model.")
+            msg = f"Unknown torch checkpoint file format {path.suffix}. Make sure you save the Torch model."
+            raise ValueError(msg)
 
         checkpoint = torch.load(path, map_location=self.device)
         return checkpoint
@@ -98,12 +100,16 @@ class TorchInferencer(Inferencer):
             # Torch model should ideally contain the metadata in the checkpoint.
             # Check if the metadata is present in the checkpoint.
             if "metadata" not in checkpoint.keys():
-                raise KeyError(
+                msg = (
                     "``metadata`` is not found in the checkpoint. Please ensure that you save the model as Torch model."
+                )
+                raise KeyError(
+                    msg,
                 )
             metadata = checkpoint["metadata"]
         else:
-            raise ValueError(f"Unknown ``path`` type {type(path)}")
+            msg = f"Unknown ``path`` type {type(path)}"
+            raise ValueError(msg)
 
         return metadata
 
@@ -119,7 +125,8 @@ class TorchInferencer(Inferencer):
 
         checkpoint = self._load_checkpoint(path)
         if "model" not in checkpoint.keys():
-            raise KeyError("``model`` is not found in the checkpoint. Please check the checkpoint file.")
+            msg = "``model`` is not found in the checkpoint. Please check the checkpoint file."
+            raise KeyError(msg)
 
         model = checkpoint["model"]
         model.eval()
@@ -153,7 +160,9 @@ class TorchInferencer(Inferencer):
         return self.model(image)
 
     def post_process(
-        self, predictions: Tensor | list[Tensor] | dict[str, Tensor], metadata: dict | DictConfig | None = None
+        self,
+        predictions: Tensor | list[Tensor] | dict[str, Tensor],
+        metadata: dict | DictConfig | None = None,
     ) -> dict[str, Any]:
         """Post process the output predictions.
 
@@ -182,7 +191,8 @@ class TorchInferencer(Inferencer):
             if "anomaly_map" in predictions:
                 anomaly_map = predictions["anomaly_map"].detach().cpu().numpy()
             else:
-                raise KeyError("``anomaly_map`` not found in the predictions.")
+                msg = "``anomaly_map`` not found in the predictions."
+                raise KeyError(msg)
 
             if "pred_score" in predictions:
                 pred_score = predictions["pred_score"].detach().cpu().numpy()
@@ -199,8 +209,9 @@ class TorchInferencer(Inferencer):
                 anomaly_map, pred_score = predictions
                 pred_score = pred_score.detach()
         else:
+            msg = f"Unknown prediction type {type(predictions)}. Expected Tensor, List[Tensor] or dict[str, Tensor]."
             raise ValueError(
-                f"Unknown prediction type {type(predictions)}. Expected Tensor, List[Tensor] or dict[str, Tensor]."
+                msg,
             )
 
         # Common practice in anomaly detection is to assign anomalous

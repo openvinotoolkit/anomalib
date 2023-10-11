@@ -247,7 +247,8 @@ class EfficientAdModel(nn.Module):
             self.student = SmallPatchDescriptionNetwork(out_channels=teacher_out_channels * 2, padding=padding)
 
         else:
-            raise ValueError(f"Unknown model size {model_size}")
+            msg = f"Unknown model size {model_size}"
+            raise ValueError(msg)
 
         self.ae: AutoEncoder = AutoEncoder(out_channels=teacher_out_channels, padding=padding, img_size=input_size)
         self.teacher_out_channels: int = teacher_out_channels
@@ -257,7 +258,7 @@ class EfficientAdModel(nn.Module):
             {
                 "mean": torch.zeros((1, self.teacher_out_channels, 1, 1)),
                 "std": torch.zeros((1, self.teacher_out_channels, 1, 1)),
-            }
+            },
         )
 
         self.quantiles: nn.ParameterDict = nn.ParameterDict(
@@ -266,7 +267,7 @@ class EfficientAdModel(nn.Module):
                 "qb_st": torch.tensor(0.0),
                 "qa_ae": torch.tensor(0.0),
                 "qb_ae": torch.tensor(0.0),
-            }
+            },
         )
 
     def is_set(self, p_dic: nn.ParameterDict) -> bool:
@@ -336,7 +337,9 @@ class EfficientAdModel(nn.Module):
 
             map_st = torch.mean(distance_st, dim=1, keepdim=True)
             map_stae = torch.mean(
-                (ae_output - student_output[:, self.teacher_out_channels :]) ** 2, dim=1, keepdim=True
+                (ae_output - student_output[:, self.teacher_out_channels :]) ** 2,
+                dim=1,
+                keepdim=True,
             )
 
             if self.pad_maps:

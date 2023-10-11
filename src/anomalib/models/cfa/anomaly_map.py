@@ -73,7 +73,8 @@ class AnomalyMapGenerator(nn.Module):
             Tensor: Anomaly heatmap.
         """
         if not ("distance" in kwargs and "scale" in kwargs):
-            raise ValueError(f"Expected keys `distance` and `scale. Found {kwargs.keys()}")
+            msg = f"Expected keys `distance` and `scale. Found {kwargs.keys()}"
+            raise ValueError(msg)
 
         distance: Tensor = kwargs["distance"]
         scale: tuple[int, int] = kwargs["scale"]

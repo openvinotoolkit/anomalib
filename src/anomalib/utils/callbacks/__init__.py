@@ -78,7 +78,7 @@ def get_callbacks(config: DictConfig | ListConfig | Namespace) -> list[Callback]
                 nncf_callback(
                     config=nncf_config,
                     export_dir=os.path.join(config.trainer.default_root_dir, "compressed"),
-                )
+                ),
             )
         if config.optimization.export_mode is not None:
             from .export import ExportCallback  # pylint: disable=import-outside-toplevel
@@ -90,7 +90,7 @@ def get_callbacks(config: DictConfig | ListConfig | Namespace) -> list[Callback]
                     dirpath=config.trainer.default_root_dir,
                     filename="model",
                     export_mode=ExportMode(config.optimization.export_mode),
-                )
+                ),
             )
         else:
             msg = f"Export option: {config.optimization.export_mode} not found. Defaulting to no model export"

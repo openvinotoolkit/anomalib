@@ -104,7 +104,9 @@ class DFMModel(nn.Module):
         self.layer = layer
         self.input_size = input_size if isinstance(input_size, tuple) else tuple(input_size)
         self.feature_extractor = FeatureExtractor(
-            backbone=self.backbone, pre_trained=pre_trained, layers=[layer]
+            backbone=self.backbone,
+            pre_trained=pre_trained,
+            layers=[layer],
         ).eval()
 
     def fit(self, dataset: Tensor) -> None:
@@ -142,7 +144,8 @@ class DFMModel(nn.Module):
             score_map = F.interpolate(fre_map, size=self.input_size, mode="bilinear", align_corners=False)
             score = torch.sum(torch.square(features - feats_reconstructed), dim=1)
         else:
-            raise ValueError(f"unsupported score type: {self.score_type}")
+            msg = f"unsupported score type: {self.score_type}"
+            raise ValueError(msg)
 
         if self.score_type == "nll":
             output = score

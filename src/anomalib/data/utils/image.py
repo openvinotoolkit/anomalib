@@ -41,7 +41,8 @@ def get_image_filenames(path: str | Path) -> list[Path]:
         image_filenames = [p for p in path.glob("**/*") if p.suffix in IMG_EXTENSIONS]
 
     if not image_filenames:
-        raise ValueError(f"Found 0 images in {path}")
+        msg = f"Found 0 images in {path}"
+        raise ValueError(msg)
 
     return image_filenames
 
@@ -123,7 +124,8 @@ def generate_output_image_filename(input_path: str | Path, output_path: str | Pa
 
     # This function expects an ``input_path`` that is a file. This is to check if output_path
     if input_path.is_file() is False:
-        raise ValueError("input_path is expected to be a file to generate a proper output filename.")
+        msg = "input_path is expected to be a file to generate a proper output filename."
+        raise ValueError(msg)
 
     file_path: Path
     if output_path.is_dir():
@@ -179,7 +181,8 @@ def get_image_height_and_width(image_size: int | Sequence[int]) -> tuple[int, in
     elif isinstance(image_size, Sequence):
         height_and_width = int(image_size[0]), int(image_size[1])
     else:
-        raise ValueError("``image_size`` could be either int or tuple[int, int]")
+        msg = "``image_size`` could be either int or tuple[int, int]"
+        raise ValueError(msg)
 
     return height_and_width
 

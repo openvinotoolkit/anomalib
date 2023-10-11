@@ -71,7 +71,8 @@ class AnomalibDataset(Dataset, ABC):
     def samples(self) -> DataFrame:
         """Get the samples dataframe."""
         if not self.is_setup:
-            raise RuntimeError("Dataset is not setup yet. Call setup() first.")
+            msg = "Dataset is not setup yet. Call setup() first."
+            raise RuntimeError(msg)
         return self._samples
 
     @samples.setter
@@ -117,7 +118,7 @@ class AnomalibDataset(Dataset, ABC):
         label_index = self._samples.iloc[index].label_index
 
         image = read_image(image_path)
-        item = dict(image_path=image_path, label=label_index)
+        item = {"image_path": image_path, "label": label_index}
 
         if self.task == TaskType.CLASSIFICATION:
             transformed = self.transform(image=image)
@@ -142,7 +143,8 @@ class AnomalibDataset(Dataset, ABC):
                 boxes, _ = masks_to_boxes(item["mask"])
                 item["boxes"] = boxes[0]
         else:
-            raise ValueError(f"Unknown task type: {self.task}")
+            msg = f"Unknown task type: {self.task}"
+            raise ValueError(msg)
 
         return item
 
