@@ -267,7 +267,7 @@ class EfficientAd(AnomalyModule):
 
     @property
     def trainer_arguments(self) -> dict[str, Any]:
-        return {"gradient_clip_val": 0, "max_epochs": 200, "max_steps": 70000, "num_sanity_val_steps": 0}
+        return {"gradient_clip_val": 0, "num_sanity_val_steps": 0}
 
 
 class EfficientAdLightning(EfficientAd):

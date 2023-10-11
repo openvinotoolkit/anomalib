@@ -91,7 +91,7 @@ class Csflow(AnomalyModule):
 
     @property
     def trainer_arguments(self) -> dict[str, Any]:
-        return {"gradient_clip_val": 1, "max_epochs": 240, "num_sanity_val_steps": 0}
+        return {"gradient_clip_val": 1, "num_sanity_val_steps": 0}
 
 
 class CsflowLightning(Csflow):
