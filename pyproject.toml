@@ -45,7 +45,7 @@ select = [
     "RSE",  # flake8-raise (`RSE`)
     "RET",  # flake8-return (`RET`)
     "SLF",  # flake8-self (`SLF`)
-    # "SIM",  # flake8-simplify (`SIM`)
+    "SIM",  # flake8-simplify (`SIM`)
     # "TID",  # flake8-tidy-imports (`TID`)
     # "TCH",  # flake8-type-checking (`TCH`)
     # "INT",  # flake8-gettext (`INT`)

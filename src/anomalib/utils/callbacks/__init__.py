@@ -63,11 +63,11 @@ def get_callbacks(config: DictConfig | ListConfig | Namespace) -> list[Callback]
 
     callbacks.extend([checkpoint, TimerCallback()])
 
-    if "ckpt_path" in config.trainer.keys() and config.ckpt_path is not None:
+    if "ckpt_path" in config.trainer and config.ckpt_path is not None:
         load_model = LoadModelCallback(config.ckpt_path)
         callbacks.append(load_model)
 
-    if "optimization" in config.keys():
+    if "optimization" in config:
         if "nncf" in config.optimization and config.optimization.nncf.apply:
             # NNCF wraps torch's jit which conflicts with kornia's jit calls.
             # Hence, nncf is imported only when required

@@ -184,7 +184,7 @@ class _ThresholdCallback(Callback):
     def _update(self, pl_module: AnomalyModule, outputs: STEP_OUTPUT) -> None:
         pl_module.image_threshold.cpu()
         pl_module.image_threshold.update(outputs["pred_scores"], outputs["label"].int())
-        if "mask" in outputs.keys() and "anomaly_maps" in outputs.keys():
+        if "mask" in outputs and "anomaly_maps" in outputs:
             pl_module.pixel_threshold.cpu()
             pl_module.pixel_threshold.update(outputs["anomaly_maps"], outputs["mask"].int())
 

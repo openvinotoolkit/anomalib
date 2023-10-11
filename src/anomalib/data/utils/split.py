@@ -91,7 +91,7 @@ def random_split(
     assert all(0 < ratio < 1 for ratio in split_ratio), f"all split ratios must be between 0 and 1, found {split_ratio}"
 
     # create list of source data
-    if label_aware and "label_index" in dataset.samples.keys():
+    if label_aware and "label_index" in dataset.samples:
         indices_per_label = [group.index for _, group in dataset.samples.groupby("label_index")]
         per_label_datasets = [dataset.subsample(indices) for indices in indices_per_label]
     else:

@@ -246,10 +246,7 @@ class Visa(AnomalibDataModule):
             next(csvreader)
             for row in csvreader:
                 category, split, label, image_path, mask_path = row
-                if label == "normal":
-                    label = "good"
-                else:
-                    label = "bad"
+                label = "good" if label == "normal" else "bad"
                 image_name = image_path.split("/")[-1]
                 mask_name = mask_path.split("/")[-1]
 

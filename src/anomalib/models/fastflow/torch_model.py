@@ -78,10 +78,7 @@ def create_fast_flow_block(
     """
     nodes = SequenceINN(*input_dimensions)
     for i in range(flow_steps):
-        if i % 2 == 1 and not conv3x3_only:
-            kernel_size = 1
-        else:
-            kernel_size = 3
+        kernel_size = 1 if i % 2 == 1 and not conv3x3_only else 3
         nodes.append(
             AllInOneBlock,
             subnet_constructor=subnet_conv_func(kernel_size, hidden_ratio),

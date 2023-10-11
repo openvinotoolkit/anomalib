@@ -212,12 +212,7 @@ class CfaModel(DynamicBufferModule):
         target_features = self.descriptor(features)
         distance = self.compute_distance(target_features)
 
-        if self.training:
-            output = distance
-        else:
-            output = self.anomaly_map_generator(distance=distance, scale=self.scale)
-
-        return output
+        return distance if self.training else self.anomaly_map_generator(distance=distance, scale=self.scale)
 
 
 class Descriptor(nn.Module):

@@ -295,10 +295,7 @@ class AllInOneBlock(InvertibleModule):
 
         x1, x2 = torch.split(x[0], self.splits, dim=1)
 
-        if self.conditional:
-            x1c = torch.cat([x1, *c], 1)
-        else:
-            x1c = x1
+        x1c = torch.cat([x1, *c], 1) if self.conditional else x1
 
         if not rev:
             a1 = self.subnet(x1c)

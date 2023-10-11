@@ -217,10 +217,7 @@ def is_file_potentially_dangerous(file_name: str) -> bool:
     """
     # Some example criteria. We could expand this.
     unsafe_patterns = ["/etc/", "/root/"]
-    for pattern in unsafe_patterns:
-        if re.search(pattern, file_name):
-            return True
-    return False
+    return any(re.search(pattern, file_name) for pattern in unsafe_patterns)
 
 
 def safe_extract(tar_file: TarFile, root: Path, members: list[TarInfo]) -> None:
@@ -291,10 +288,7 @@ def download_and_extract(root: Path, info: DownloadInfo) -> None:
     root.mkdir(parents=True, exist_ok=True)
 
     # save the compressed file in the specified root directory, using the same file name as on the server
-    if info.filename:
-        downloaded_file_path = root / info.filename
-    else:
-        downloaded_file_path = root / info.url.split("/")[-1]
+    downloaded_file_path = root / info.filename if info.filename else root / info.url.split("/")[-1]
 
     if downloaded_file_path.exists():
         logger.info("Existing dataset archive found. Skipping download stage.")

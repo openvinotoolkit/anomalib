@@ -129,7 +129,7 @@ def update_input_size_config(config: DictConfig | ListConfig | Namespace) -> Dic
         # argument linking adds model input size even if it is not present for that model
         del config.model.init_args.input_size
 
-    if "tiling" in config.keys() and config.tiling.apply:
+    if "tiling" in config and config.tiling.apply:
         if isinstance(config.tiling.tile_size, int):
             config.tiling.tile_size = (config.tiling.tile_size,) * 2
         if config.tiling.stride is None:
@@ -152,14 +152,12 @@ def update_nncf_config(config: DictConfig | ListConfig) -> DictConfig | ListConf
     if "input_size" in config.model.init_args:
         image_size = config.model.init_args.input_size
     sample_size = (image_size, image_size) if isinstance(image_size, int) else image_size
-    if "optimization" in config.keys():
-        if "nncf" in config.optimization.keys():
-            if "input_info" not in config.optimization.nncf.keys():
-                config.optimization.nncf["input_info"] = {"sample_size": None}
-            config.optimization.nncf.input_info.sample_size = [1, 3, *sample_size]
-            if config.optimization.nncf.apply:
-                if "update_config" in config.optimization.nncf:
-                    return OmegaConf.merge(config, config.optimization.nncf.update_config)
+    if "optimization" in config and "nncf" in config.optimization:
+        if "input_info" not in config.optimization.nncf.keys():
+            config.optimization.nncf["input_info"] = {"sample_size": None}
+        config.optimization.nncf.input_info.sample_size = [1, 3, *sample_size]
+        if config.optimization.nncf.apply and "update_config" in config.optimization.nncf:
+            return OmegaConf.merge(config, config.optimization.nncf.update_config)
     return config
 
 
@@ -178,19 +176,18 @@ def update_multi_gpu_training_config(config: DictConfig | ListConfig) -> DictCon
         DictConfig | ListConfig: Updated config
     """
     # validate accelerator
-    if config.trainer.accelerator is not None:
-        if config.trainer.accelerator.lower() != "ddp":
-            if config.trainer.accelerator.lower() in ("dp", "ddp_spawn", "ddp2"):
-                logger.warn(
-                    f"Using accelerator {config.trainer.accelerator.lower()} is discouraged. "
-                    f"Please use one of [null, ddp]. Setting accelerator to ddp",
-                )
-                config.trainer.accelerator = "ddp"
-            else:
-                msg = f"Unsupported accelerator found: {config.trainer.accelerator}. Should be one of [null, ddp]"
-                raise ValueError(
-                    msg,
-                )
+    if config.trainer.accelerator is not None and config.trainer.accelerator.lower() != "ddp":
+        if config.trainer.accelerator.lower() in ("dp", "ddp_spawn", "ddp2"):
+            logger.warn(
+                f"Using accelerator {config.trainer.accelerator.lower()} is discouraged. "
+                f"Please use one of [null, ddp]. Setting accelerator to ddp",
+            )
+            config.trainer.accelerator = "ddp"
+        else:
+            msg = f"Unsupported accelerator found: {config.trainer.accelerator}. Should be one of [null, ddp]"
+            raise ValueError(
+                msg,
+            )
     # Increase learning rate
     # since pytorch averages the gradient over devices, the idea is to
     # increase the learning rate by the number of devices
@@ -211,7 +208,7 @@ def show_warnings(config: DictConfig | ListConfig | Namespace) -> None:
         config (DictConfig | ListConfig | Namespace): Configurable parameters for the current run.
     """
 
-    if "clip_length_in_frames" in config.data.keys() and config.data.init_args.clip_length_in_frames > 1:
+    if "clip_length_in_frames" in config.data and config.data.init_args.clip_length_in_frames > 1:
         logger.warn(
             "Anomalib's models and visualizer are currently not compatible with video datasets with a clip length > 1. "
             "Custom changes to these modules will be needed to prevent errors and/or unpredictable behaviour.",

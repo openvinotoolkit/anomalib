@@ -67,10 +67,7 @@ class MultiVariateGaussian(nn.Module):
             observations = observations.t()
 
         if ddof is None:
-            if bias == 0:
-                ddof = 1
-            else:
-                ddof = 0
+            ddof = 1 if bias == 0 else 0
 
         weights = aweights
         weights_sum: Any
@@ -95,10 +92,7 @@ class MultiVariateGaussian(nn.Module):
 
         observations_m = observations.sub(avg.expand_as(observations))
 
-        if weights is None:
-            x_transposed = observations_m.t()
-        else:
-            x_transposed = torch.mm(torch.diag(weights), observations_m).t()
+        x_transposed = observations_m.t() if weights is None else torch.mm(torch.diag(weights), observations_m).t()
 
         covariance = torch.mm(x_transposed, observations_m)
         covariance = covariance / fact

@@ -265,10 +265,7 @@ class EfficientAdModel(nn.Module):
         )
 
     def is_set(self, p_dic: nn.ParameterDict) -> bool:
-        for _, value in p_dic.items():
-            if value.sum() != 0:
-                return True
-        return False
+        return any(value.sum() != 0 for _, value in p_dic.items())
 
     def choose_random_aug_image(self, image: Tensor) -> Tensor:
         transform_functions = [

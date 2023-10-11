@@ -80,7 +80,7 @@ def _validate_metrics_dict(metrics: dict[str, dict[str, Any]]) -> None:
 
     """
     assert all(
-        isinstance(metric, str) for metric in metrics.keys()
+        isinstance(metric, str) for metric in metrics
     ), f"All keys (metric names) must be strings, found {sorted(metrics.keys())}"
     assert all(
         isinstance(metric, dict | DictConfig) for metric in metrics.values()

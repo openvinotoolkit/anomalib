@@ -280,7 +280,7 @@ def sweep(
     model_config.seed_everything = seed
 
     model_config = cast(DictConfig, model_config)  # placate mypy
-    for param in run_config.keys():
+    for param in run_config:
         # grid search keys are always assumed to be strings
         param = cast(str, param)  # placate mypy
         set_in_nested_config(model_config, param.split("."), run_config[param])  # type: ignore

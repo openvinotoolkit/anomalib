@@ -328,7 +328,7 @@ class ShanghaiTech(AnomalibVideoDataModule):
         converted_vid_dir = training_root / "converted_videos"
         vid_count = len(list(vid_dir.glob("*")))
         converted_vid_count = len(list(converted_vid_dir.glob("*")))
-        if not vid_count == converted_vid_count:
+        if vid_count != converted_vid_count:
             self._convert_training_videos(vid_dir, converted_vid_dir)
 
     @staticmethod

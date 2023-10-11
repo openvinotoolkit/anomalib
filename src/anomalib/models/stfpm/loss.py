@@ -62,7 +62,7 @@ class STFPMLoss(nn.Module):
         """
 
         layer_losses: list[Tensor] = []
-        for layer in teacher_features.keys():
+        for layer in teacher_features:
             loss = self.compute_layer_loss(teacher_features[layer], student_features[layer])
             layer_losses.append(loss)
 

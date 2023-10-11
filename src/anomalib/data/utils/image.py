@@ -127,14 +127,10 @@ def generate_output_image_filename(input_path: str | Path, output_path: str | Pa
         msg = "input_path is expected to be a file to generate a proper output filename."
         raise ValueError(msg)
 
-    file_path: Path
-    if output_path.is_dir():
-        # If the output is a directory, then add parent directory name
-        # and filename to the path. This is to ensure we do not overwrite
-        # images and organize based on the categories.
-        file_path = output_path / input_path.parent.name / input_path.name
-    else:
-        file_path = output_path
+    # If the output is a directory, then add parent directory name
+    # and filename to the path. This is to ensure we do not overwrite
+    # images and organize based on the categories.
+    file_path = output_path / input_path.parent.name / input_path.name if output_path.is_dir() else output_path
 
     # This new ``file_path`` might contain a directory path yet to be created.
     # Create the parent directory to avoid such cases.

@@ -150,9 +150,8 @@ def get_transforms(
             msg = "config could be either ``str`` or ``A.Compose``"
             raise ValueError(msg)
 
-    if not to_tensor:
-        if isinstance(transforms[-1], ToTensorV2):
-            transforms = A.Compose(transforms[:-1])
+    if not to_tensor and isinstance(transforms[-1], ToTensorV2):
+        transforms = A.Compose(transforms[:-1])
 
     # always resize to specified image size
     if not any(isinstance(transform, A.Resize) for transform in transforms) and image_size is not None:

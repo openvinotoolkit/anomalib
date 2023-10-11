@@ -172,10 +172,7 @@ def _merge_dicts_and_lists_b_into_a(a, b, cur_key=None):
     """
 
     def _err_str(_a, _b, _key):
-        if _key is None:
-            _key_str = "of whole structures"
-        else:
-            _key_str = f"during merging for key=`{_key}`"
+        _key_str = "of whole structures" if _key is None else f"during merging for key=`{_key}`"
         return (
             f"Error in merging parts of config: different types {_key_str},"
             f" type(a) = {type(_a)},"
@@ -190,7 +187,7 @@ def _merge_dicts_and_lists_b_into_a(a, b, cur_key=None):
         return a + b
 
     a = copy(a)
-    for k in b.keys():
+    for k in b:
         if k not in a:
             a[k] = copy(b[k])
             continue

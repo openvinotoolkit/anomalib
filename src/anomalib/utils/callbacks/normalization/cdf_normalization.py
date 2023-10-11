@@ -126,9 +126,9 @@ class _CdfNormalizationCallback(Callback):
         assert predictions, "engine.predict returned no predictions"
         pl_module.normalization_metrics.reset()
         for batch in predictions:
-            if "pred_scores" in batch.keys():
+            if "pred_scores" in batch:
                 pl_module.normalization_metrics.update(anomaly_scores=batch["pred_scores"])
-            if "anomaly_maps" in batch.keys():
+            if "anomaly_maps" in batch:
                 pl_module.normalization_metrics.update(anomaly_maps=batch["anomaly_maps"])
         pl_module.normalization_metrics.compute()
 
@@ -144,7 +144,7 @@ class _CdfNormalizationCallback(Callback):
     def _standardize_batch(outputs: STEP_OUTPUT, pl_module) -> None:
         stats = pl_module.normalization_metrics.to(outputs["pred_scores"].device)
         outputs["pred_scores"] = standardize(outputs["pred_scores"], stats.image_mean, stats.image_std)
-        if "anomaly_maps" in outputs.keys():
+        if "anomaly_maps" in outputs:
             outputs["anomaly_maps"] = standardize(
                 outputs["anomaly_maps"],
                 stats.pixel_mean,
@@ -155,6 +155,6 @@ class _CdfNormalizationCallback(Callback):
     @staticmethod
     def _normalize_batch(outputs: STEP_OUTPUT, pl_module: AnomalyModule) -> None:
         outputs["pred_scores"] = normalize(outputs["pred_scores"], pl_module.image_threshold.value)
-        if "anomaly_maps" in outputs.keys():
+        if "anomaly_maps" in outputs:
             outputs["anomaly_maps"] = normalize(outputs["anomaly_maps"], pl_module.pixel_threshold.value)
             outputs["anomaly_maps"] = normalize(outputs["anomaly_maps"], pl_module.pixel_threshold.value)

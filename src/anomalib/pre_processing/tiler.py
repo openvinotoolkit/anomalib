@@ -390,11 +390,7 @@ class Tiler:
 
         image = upscale_image(image, size=(self.resized_h, self.resized_w), mode=self.mode)
 
-        if use_random_tiling:
-            image_tiles = self.__random_tile(image)
-        else:
-            image_tiles = self.__unfold(image)
-        return image_tiles
+        return self.__random_tile(image) if use_random_tiling else self.__unfold(image)
 
     def untile(self, tiles: Tensor) -> Tensor:
         """Untiles patches to reconstruct the original input image.
