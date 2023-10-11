@@ -5,16 +5,18 @@
 
 
 import logging
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from lightning.pytorch import Callback, Trainer
 from lightning.pytorch.utilities.types import STEP_OUTPUT
-from torch.distributions import LogNormal
 
 from anomalib import engine
 from anomalib.models.components import AnomalyModule
 from anomalib.post_processing.normalization.cdf import normalize, standardize
 from anomalib.utils.metrics import AnomalyScoreDistribution
+
+if TYPE_CHECKING:
+    from torch.distributions import LogNormal
 
 logger = logging.getLogger(__name__)
 

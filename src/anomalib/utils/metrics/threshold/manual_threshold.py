@@ -37,4 +37,5 @@ class ManualThreshold(BaseThreshold):
             *args: Any positional arguments.
             **kwargs: Any keyword arguments.
         """
+        del args, kwargs  # Unused arguments.
         return

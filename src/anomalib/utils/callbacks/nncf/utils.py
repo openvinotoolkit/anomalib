@@ -5,9 +5,8 @@
 
 
 import logging
-from collections.abc import Iterator
 from copy import copy
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from nncf import NNCFConfig
 from nncf.api.compression import CompressionAlgorithmController
@@ -16,6 +15,9 @@ from nncf.torch.initialization import PTInitializingDataLoader
 from nncf.torch.nncf_network import NNCFNetwork
 from torch import nn
 from torch.utils.data.dataloader import DataLoader
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
 
 logger = logging.getLogger(name="NNCF compression")
 

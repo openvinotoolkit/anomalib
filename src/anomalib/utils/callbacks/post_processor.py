@@ -34,6 +34,8 @@ class _PostProcessorCallback(Callback):
         batch_idx: int,
         dataloader_idx: int = 0,
     ) -> None:
+        del batch, batch_idx, dataloader_idx  # Unused arguments.
+
         if outputs is not None:
             self.post_process(trainer, pl_module, outputs)
 
@@ -46,6 +48,8 @@ class _PostProcessorCallback(Callback):
         batch_idx: int,
         dataloader_idx: int = 0,
     ) -> None:
+        del batch, batch_idx, dataloader_idx  # Unused arguments.
+
         if outputs is not None:
             self.post_process(trainer, pl_module, outputs)
 
@@ -58,6 +62,8 @@ class _PostProcessorCallback(Callback):
         batch_idx: int,
         dataloader_idx: int = 0,
     ) -> None:
+        del batch, batch_idx, dataloader_idx  # Unused arguments.
+
         if outputs is not None:
             self.post_process(trainer, pl_module, outputs)
 

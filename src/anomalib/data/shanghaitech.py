@@ -118,6 +118,7 @@ class ShanghaiTechTrainClipsIndexer(ClipsIndexer):
 
     def get_mask(self, idx: int) -> Tensor | None:
         """No masks available for training set."""
+        del idx  # Unused argument
         return None
 
 

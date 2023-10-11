@@ -35,12 +35,14 @@ class _ThresholdCallback(Callback):
         self.pixel_threshold: BaseThreshold
 
     def setup(self, trainer: Trainer, pl_module: AnomalyModule, stage: str) -> None:
+        del trainer, stage  # Unused arguments.
         if not hasattr(pl_module, "image_threshold"):
             pl_module.image_threshold = self.image_threshold
         if not hasattr(pl_module, "pixel_threshold"):
             pl_module.pixel_threshold = self.pixel_threshold
 
     def on_validation_epoch_start(self, trainer: Trainer, pl_module: AnomalyModule) -> None:
+        del trainer  # Unused argument.
         self._reset(pl_module)
 
     def on_validation_batch_end(
@@ -52,11 +54,13 @@ class _ThresholdCallback(Callback):
         batch_idx: int,
         dataloader_idx: int = 0,
     ) -> None:
+        del trainer, batch, batch_idx, dataloader_idx  # Unused arguments.
         if outputs is not None:
             self._outputs_to_cpu(outputs)
             self._update(pl_module, outputs)
 
     def on_validation_epoch_end(self, trainer: Trainer, pl_module: AnomalyModule) -> None:
+        del trainer  # Unused argument.
         self._compute(pl_module)
 
     def _initialize_thresholds(

@@ -16,9 +16,9 @@ Reference:
 
 import logging
 import math
-from collections.abc import Callable
 from pathlib import Path
 from shutil import move
+from typing import TYPE_CHECKING
 
 import albumentations as A  # noqa: N812
 import cv2
@@ -38,6 +38,9 @@ from anomalib.data.utils import (
     get_transforms,
 )
 from anomalib.data.utils.video import ClipsIndexer
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 logger = logging.getLogger(__name__)
 

@@ -279,6 +279,8 @@ class AllInOneBlock(InvertibleModule):
 
     def forward(self, x, c: list | None = None, rev: bool = False, jac: bool = True):
         """See base class docstring"""
+        del jac  # Unused argument.
+
         if c is None:
             c = []
 

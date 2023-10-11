@@ -6,16 +6,19 @@
 
 import logging
 from abc import ABC
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from lightning.pytorch import LightningDataModule
 from lightning.pytorch.utilities.types import EVAL_DATALOADERS, TRAIN_DATALOADERS
-from pandas import DataFrame
 from torch.utils.data.dataloader import DataLoader, default_collate
 
-from anomalib.data.base.dataset import AnomalibDataset
 from anomalib.data.synthetic import SyntheticAnomalyDataset
 from anomalib.data.utils import TestSplitMode, ValSplitMode, random_split, split_by_label
+
+if TYPE_CHECKING:
+    from pandas import DataFrame
+
+    from anomalib.data.base.dataset import AnomalibDataset
 
 logger = logging.getLogger(__name__)
 

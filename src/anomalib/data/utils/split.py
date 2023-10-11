@@ -16,10 +16,12 @@ import logging
 import math
 from collections.abc import Sequence
 from enum import Enum
+from typing import TYPE_CHECKING
 
 import torch
 
-from anomalib import data
+if TYPE_CHECKING:
+    from anomalib import data
 
 logger = logging.getLogger(__name__)
 

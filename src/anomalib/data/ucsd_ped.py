@@ -5,10 +5,9 @@
 
 
 import logging
-from collections.abc import Callable
 from pathlib import Path
 from shutil import move
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import albumentations as A  # noqa: N812
 import cv2
@@ -30,6 +29,9 @@ from anomalib.data.utils import (
     read_image,
 )
 from anomalib.data.utils.video import ClipsIndexer
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 logger = logging.getLogger(__name__)
 

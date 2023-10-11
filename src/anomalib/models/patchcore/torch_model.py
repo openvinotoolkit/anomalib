@@ -3,13 +3,17 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from typing import TYPE_CHECKING
+
 import torch
 from torch import Tensor, nn
 from torch.nn import functional as F  # noqa: N812
 
 from anomalib.models.components import DynamicBufferModule, FeatureExtractor, KCenterGreedy
 from anomalib.models.patchcore.anomaly_map import AnomalyMapGenerator
-from anomalib.pre_processing import Tiler
+
+if TYPE_CHECKING:
+    from anomalib.pre_processing import Tiler
 
 
 class PatchcoreModel(DynamicBufferModule, nn.Module):
