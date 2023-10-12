@@ -165,7 +165,7 @@ class Augmenter:
             beta = beta.view(batch_size, 1, 1, 1).expand_as(batch).to(batch.device)  # type: ignore
         else:
             msg = "Beta must be either float or tuple of floats"
-            raise ValueError(msg)
+            raise TypeError(msg)
 
         augmented_batch = batch * (1 - masks) + (beta) * perturbations + (1 - beta) * batch * (masks)
 

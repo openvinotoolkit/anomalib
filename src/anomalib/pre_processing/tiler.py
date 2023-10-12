@@ -208,7 +208,7 @@ class Tiler:
             output = (parameter[0], parameter[1])
         else:
             msg = f"Unknown type {type(parameter)} for tile or stride size. Could be int or Sequence type."
-            raise ValueError(msg)
+            raise TypeError(msg)
 
         if len(output) != 2:
             msg = f"Length of the size type must be 2 for height and width. Got {len(output)} instead."

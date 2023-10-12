@@ -102,9 +102,7 @@ class TorchFXFeatureExtractor(nn.Module):
             backbone = BackboneParams(class_path=backbone)
         elif not isinstance(backbone, nn.Module | BackboneParams):
             msg = f"backbone needs to be of type str | BackboneParams | dict | nn.Module, but was type {type(backbone)}"
-            raise ValueError(
-                msg,
-            )
+            raise TypeError(msg)
 
         self.feature_extractor = self.initialize_feature_extractor(
             backbone,

@@ -126,9 +126,9 @@ def get_model(config: DictConfig | ListConfig) -> AnomalyModule:
         module = import_module(".".join(config.model.class_path.split(".")[:-1]))
         model = getattr(module, config.model.class_path.split(".")[-1])
         model = model(**config.model.init_args)
-    except ModuleNotFoundError as exception:
-        logger.error("Could not find the model class: %s", config.model.class_path)
-        raise exception
+    except ModuleNotFoundError:
+        logger.exception("Could not find the model class: %s", config.model.class_path)
+        raise
 
     if "init_weights" in config and config.init_weights:
         model.load_state_dict(load(str(Path(config.project.path) / config.init_weights))["state_dict"], strict=False)

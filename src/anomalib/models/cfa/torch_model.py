@@ -130,9 +130,7 @@ class CfaModel(DynamicBufferModule):
             self.scale = resolution
         else:
             msg = f"Unknown type {type(resolution)} for `resolution`. Expected types are either int or tuple[int, int]."
-            raise ValueError(
-                msg,
-            )
+            raise TypeError(msg)
 
         self.descriptor = Descriptor(self.gamma_d, backbone)
         self.radius = torch.ones(1, requires_grad=True) * radius

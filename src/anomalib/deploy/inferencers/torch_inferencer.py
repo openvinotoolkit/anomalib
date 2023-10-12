@@ -108,7 +108,7 @@ class TorchInferencer(Inferencer):
             metadata = checkpoint["metadata"]
         else:
             msg = f"Unknown ``path`` type {type(path)}"
-            raise ValueError(msg)
+            raise TypeError(msg)
 
         return metadata
 
@@ -209,9 +209,7 @@ class TorchInferencer(Inferencer):
                 pred_score = pred_score.detach()
         else:
             msg = f"Unknown prediction type {type(predictions)}. Expected Tensor, List[Tensor] or dict[str, Tensor]."
-            raise ValueError(
-                msg,
-            )
+            raise TypeError(msg)
 
         # Common practice in anomaly detection is to assign anomalous
         # label to the prediction if the prediction score is greater

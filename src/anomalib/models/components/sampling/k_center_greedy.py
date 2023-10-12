@@ -74,7 +74,7 @@ class KCenterGreedy:
             idx = int(torch.argmax(self.min_distances).item())
         else:
             msg = f"self.min_distances must be of type Tensor. Got {type(self.min_distances)}"
-            raise ValueError(msg)
+            raise TypeError(msg)
 
         return idx
 

@@ -148,7 +148,7 @@ def get_transforms(
             transforms = config
         else:
             msg = "config could be either ``str`` or ``A.Compose``"
-            raise ValueError(msg)
+            raise TypeError(msg)
 
     if not to_tensor and isinstance(transforms[-1], ToTensorV2):
         transforms = A.Compose(transforms[:-1])

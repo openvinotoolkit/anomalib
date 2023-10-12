@@ -112,7 +112,7 @@ def get_transforms(
             transforms = config
         else:
             msg = "config could be either ``str`` or ``A.Compose``"
-            raise ValueError(msg)
+            raise TypeError(msg)
     else:
         logger.info("No config file has been provided. Using default transforms.")
         transforms_list = []
@@ -123,9 +123,7 @@ def get_transforms(
                 "Both config and image_size cannot be `None`. "
                 "Provide either config file to de-serialize transforms or image_size to get the default transformations"
             )
-            raise ValueError(
-                msg,
-            )
+            raise ValueError(msg)
         resize_height, resize_width = get_image_height_and_width(image_size)
         transforms_list.append(A.Resize(height=resize_height, width=resize_width, always_apply=True))
 

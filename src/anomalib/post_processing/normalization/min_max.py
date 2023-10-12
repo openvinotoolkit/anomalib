@@ -25,5 +25,5 @@ def normalize(
         normalized = torch.maximum(normalized, torch.tensor(0))  # pylint: disable=not-callable
     else:
         msg = f"Targets must be either Tensor or Numpy array. Received {type(targets)}"
-        raise ValueError(msg)
+        raise TypeError(msg)
     return normalized

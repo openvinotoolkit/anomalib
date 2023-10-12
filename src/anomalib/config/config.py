@@ -98,7 +98,7 @@ def update_input_size_config(config: DictConfig | ListConfig | Namespace) -> Dic
         assert len(image_size) == 2, "image_size must be a single integer or tuple of length 2 for width and height."
     else:
         msg = f"image_size must be either int or ListConfig, got {type(image_size)}"
-        raise ValueError(msg)
+        raise TypeError(msg)
 
     # Use input size from data to model input. If model input size is defined, warn and override.
     # If input_size is not part of the model parameters, remove it from the config. This is required due to argument
