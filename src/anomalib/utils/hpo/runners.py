@@ -5,10 +5,9 @@
 
 
 import gc
+import logging
 
 import torch
-import wandb
-from comet_ml import Optimizer
 from lightning.pytorch.loggers import CometLogger, WandbLogger
 from omegaconf import DictConfig, ListConfig, OmegaConf
 
@@ -16,9 +15,18 @@ from anomalib.config import update_input_size_config
 from anomalib.data import get_datamodule
 from anomalib.engine import Engine
 from anomalib.models import get_model
+from anomalib.utils.exceptions import try_import
 from anomalib.utils.sweep import flatten_sweep_params, get_sweep_callbacks, set_in_nested_config
 
 from .config import flatten_hpo_params
+
+logger = logging.getLogger(__name__)
+
+
+if try_import("wandb"):
+    import wandb
+if try_import("comet_ml"):
+    from comet_ml import Optimizer
 
 
 class WandbSweep:

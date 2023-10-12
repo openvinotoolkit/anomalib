@@ -3,16 +3,21 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 import string
 from glob import glob
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
-import wandb
-from comet_ml import Experiment
-from torch.utils.tensorboard.writer import SummaryWriter
+
+from anomalib.utils.exceptions import try_import
+
+if try_import("wandb"):
+    import wandb
+if try_import("comet_ml"):
+    from comet_ml import Experiment
+if try_import("torch.utils.tensorboard.writer"):
+    from torch.utils.tensorboard.writer import SummaryWriter
 
 
 def write_metrics(
