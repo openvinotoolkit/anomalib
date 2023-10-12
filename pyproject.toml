@@ -52,7 +52,7 @@ select = [
     "ARG",  # flake8-unsused-arguments (`ARG`)
     "PTH",  # flake8-use-pathlib (`PTH`)
     "TD",   # flake8-todos (`TD`)
-    # "FIX",  # flake8-fixme (`FIX`)
+    "FIX",  # flake8-fixme (`FIX`)
     "ERA",  # eradicate (`ERA`)
     # "PD",   # pandas-vet (`PD`)
     "PGH",  # pygrep-hooks (`PGH`)
@@ -99,10 +99,13 @@ ignore = [
     "FBT002",   # Boolean default value in function definition
 
     # flake8-datatimez (`DTZ`)
-    "DTZ005"    # The use of `datetime.datetime.now()` without `tz` argument is not allowed
+    "DTZ005",    # The use of `datetime.datetime.now()` without `tz` argument is not allowed
 
     # flake8-type-checking
     # "TCH001",   # typing-only-first-party-import, Sometimes this causes an incorrect error.
+
+    # flake8-fixme (`FIX`)
+    "FIX002",    # Line contains TODO, consider resolving the issue
 ]
 
 # Allow autofix for all enabled rules (when `--fix`) is provided.
