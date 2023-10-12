@@ -345,7 +345,7 @@ class Tiler:
         # divide the reconstucted image by the lookup to average out the values
         img = torch.divide(img, lookup)
         # alternative way of removing nan values (isnan not supported by openvino)
-        img[img != img] = 0  # pylint: disable=comparison-with-itself
+        img[img != img] = 0  # noqa: PLR0124
 
         return img
 

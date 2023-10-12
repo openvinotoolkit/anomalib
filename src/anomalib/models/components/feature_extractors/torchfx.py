@@ -145,22 +145,21 @@ class TorchFXFeatureExtractor(nn.Module):
         """
         if isinstance(backbone, nn.Module):
             backbone_model = backbone
+        elif isinstance(backbone.class_path, str):
+            backbone_class = self._get_backbone_class(backbone.class_path)
+            backbone_model = backbone_class(weights=weights, **backbone.init_args)
         else:
-            if isinstance(backbone.class_path, str):
-                backbone_class = self._get_backbone_class(backbone.class_path)
-                backbone_model = backbone_class(weights=weights, **backbone.init_args)
-            else:
-                backbone_class = backbone.class_path
-                backbone_model = backbone_class(**backbone.init_args)
-            if isinstance(weights, WeightsEnum):  # torchvision models
-                feature_extractor = create_feature_extractor(model=backbone_model, return_nodes=return_nodes)
-            else:
-                if weights is not None:
-                    assert isinstance(weights, str), "Weights should point to a path"
-                    model_weights = torch.load(weights)
-                    if "state_dict" in model_weights:
-                        model_weights = model_weights["state_dict"]
-                    backbone_model.load_state_dict(model_weights)
+            backbone_class = backbone.class_path
+            backbone_model = backbone_class(**backbone.init_args)
+
+        if isinstance(weights, WeightsEnum):  # torchvision models
+            feature_extractor = create_feature_extractor(model=backbone_model, return_nodes=return_nodes)
+        elif weights is not None:
+            assert isinstance(weights, str), "Weights should point to a path"
+            model_weights = torch.load(weights)
+            if "state_dict" in model_weights:
+                model_weights = model_weights["state_dict"]
+            backbone_model.load_state_dict(model_weights)
 
         feature_extractor = create_feature_extractor(backbone_model, return_nodes, tracer_kwargs=tracer_kwargs)
 
