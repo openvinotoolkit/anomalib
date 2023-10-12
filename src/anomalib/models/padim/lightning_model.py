@@ -35,7 +35,7 @@ class Padim(AnomalyModule):
 
     def __init__(
         self,
-        layers: list[str] = ["layer1", "layer2", "layer3"],
+        layers: list[str] = ["layer1", "layer2", "layer3"],  # noqa: B006
         input_size: tuple[int, int] = (256, 256),
         backbone: str = "resnet18",
         pre_trained: bool = True,
@@ -58,7 +58,7 @@ class Padim(AnomalyModule):
     @staticmethod
     def configure_optimizers() -> None:  # pylint: disable=arguments-differ
         """PADIM doesn't require optimization, therefore returns no optimizers."""
-        return None
+        return
 
     def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> None:
         """Training Step of PADIM. For each batch, hierarchical features are extracted from the CNN.

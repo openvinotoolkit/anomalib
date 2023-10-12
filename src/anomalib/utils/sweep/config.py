@@ -6,9 +6,9 @@
 
 import itertools
 import operator
-from collections.abc import Iterable, ValuesView
+from collections.abc import Generator, Iterable, ValuesView
 from functools import reduce
-from typing import Any, Generator
+from typing import Any
 
 from omegaconf import DictConfig
 
@@ -119,7 +119,7 @@ def get_run_config(params_dict: DictConfig) -> Generator[DictConfig, None, None]
     keys = params.keys()
     for combination in combinations:
         run_config = DictConfig({})
-        for key, val in zip(keys, combination):
+        for key, val in zip(keys, combination, strict=True):
             run_config[key] = val
         yield run_config
 

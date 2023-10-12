@@ -10,7 +10,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-from typing import Callable
+from collections.abc import Callable
 
 import torch
 from torch import Tensor, nn
@@ -82,7 +82,7 @@ class OCBE(nn.Module):
         for module in self.modules():
             if isinstance(module, nn.Conv2d):
                 nn.init.kaiming_normal_(module.weight, mode="fan_out", nonlinearity="relu")
-            elif isinstance(module, (nn.BatchNorm2d, nn.GroupNorm)):
+            elif isinstance(module, nn.BatchNorm2d | nn.GroupNorm):
                 nn.init.constant_(module.weight, 1)
                 nn.init.constant_(module.bias, 0)
 
@@ -117,7 +117,7 @@ class OCBE(nn.Module):
                 self.base_width,
                 previous_dilation,
                 norm_layer,
-            )
+            ),
         )
         self.inplanes = planes * block.expansion
         for _ in range(1, blocks):
@@ -129,7 +129,7 @@ class OCBE(nn.Module):
                     base_width=self.base_width,
                     dilation=self.dilation,
                     norm_layer=norm_layer,
-                )
+                ),
             )
 
         return nn.Sequential(*layers)
@@ -162,9 +162,4 @@ def get_bottleneck_layer(backbone: str, **kwargs) -> OCBE:
     Returns:
         Bottleneck_layer: One-Class Bottleneck Embedding module.
     """
-    if backbone in ("resnet18", "resnet34"):
-        ocbe = OCBE(BasicBlock, 2, **kwargs)
-    else:
-        ocbe = OCBE(Bottleneck, 3, **kwargs)
-
-    return ocbe
+    return OCBE(BasicBlock, 2, **kwargs) if backbone in ("resnet18", "resnet34") else OCBE(Bottleneck, 3, **kwargs)

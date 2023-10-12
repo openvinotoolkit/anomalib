@@ -7,7 +7,7 @@ import torch
 
 
 class KMeans:
-    def __init__(self, n_clusters: int, max_iter: int = 10):
+    def __init__(self, n_clusters: int, max_iter: int = 10) -> None:
         """
         Initializes the KMeans object.
 

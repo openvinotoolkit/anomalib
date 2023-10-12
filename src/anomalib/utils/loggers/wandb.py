@@ -11,10 +11,10 @@ from lightning.pytorch.loggers.wandb import WandbLogger
 from lightning.pytorch.utilities import rank_zero_only
 from matplotlib.figure import Figure
 
-try:
+from anomalib.utils.exceptions import try_import
+
+if try_import("wandb"):
     import wandb
-except ModuleNotFoundError:
-    print("To use wandb logger install it using `pip install wandb`")
 
 from .base import ImageLoggerBase
 
@@ -75,7 +75,7 @@ class AnomalibWandbLogger(ImageLoggerBase, WandbLogger):
         name: str | None = None,
         save_dir: str | None = None,
         offline: bool | None = False,
-        id: str | None = None,  # kept to match wandb init pylint: disable=redefined-builtin
+        id: str | None = None,  # kept to match wandb init # noqa: A002
         anonymous: bool | None = None,
         version: str | None = None,
         project: str | None = None,
@@ -107,6 +107,8 @@ class AnomalibWandbLogger(ImageLoggerBase, WandbLogger):
             image (np.ndarray | Figure): Image to log
             name (str | None): The tag of the image
         """
+        del kwargs  # Unused argument.
+
         image = wandb.Image(image, caption=name)
         self.image_list.append(image)
 

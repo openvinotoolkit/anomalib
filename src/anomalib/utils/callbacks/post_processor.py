@@ -34,6 +34,8 @@ class _PostProcessorCallback(Callback):
         batch_idx: int,
         dataloader_idx: int = 0,
     ) -> None:
+        del batch, batch_idx, dataloader_idx  # Unused arguments.
+
         if outputs is not None:
             self.post_process(trainer, pl_module, outputs)
 
@@ -46,6 +48,8 @@ class _PostProcessorCallback(Callback):
         batch_idx: int,
         dataloader_idx: int = 0,
     ) -> None:
+        del batch, batch_idx, dataloader_idx  # Unused arguments.
+
         if outputs is not None:
             self.post_process(trainer, pl_module, outputs)
 
@@ -58,6 +62,8 @@ class _PostProcessorCallback(Callback):
         batch_idx: int,
         dataloader_idx: int = 0,
     ) -> None:
+        del batch, batch_idx, dataloader_idx  # Unused arguments.
+
         if outputs is not None:
             self.post_process(trainer, pl_module, outputs)
 
@@ -73,11 +79,12 @@ class _PostProcessorCallback(Callback):
         outputs: dict[str, Any],
     ) -> None:
         outputs["pred_labels"] = outputs["pred_scores"] >= pl_module.image_threshold.value
-        if "anomaly_maps" in outputs.keys():
+        if "anomaly_maps" in outputs:
             outputs["pred_masks"] = outputs["anomaly_maps"] >= pl_module.pixel_threshold.value
             if "pred_boxes" not in outputs.keys():
                 outputs["pred_boxes"], outputs["box_scores"] = masks_to_boxes(
-                    outputs["pred_masks"], outputs["anomaly_maps"]
+                    outputs["pred_masks"],
+                    outputs["anomaly_maps"],
                 )
                 outputs["box_labels"] = [torch.ones(boxes.shape[0]) for boxes in outputs["pred_boxes"]]
         # apply thresholding to boxes
@@ -98,7 +105,7 @@ class _PostProcessorCallback(Callback):
             elif "pred_scores" not in outputs and "box_scores" in outputs:
                 # infer image score from bbox confidence scores
                 outputs["pred_scores"] = torch.zeros_like(outputs["label"]).float()
-                for idx, (boxes, scores) in enumerate(zip(outputs["pred_boxes"], outputs["box_scores"])):
+                for idx, (boxes, scores) in enumerate(zip(outputs["pred_boxes"], outputs["box_scores"], strict=True)):
                     if boxes.numel():
                         outputs["pred_scores"][idx] = scores.max().item()
 

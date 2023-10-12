@@ -99,6 +99,8 @@ class _MetricsCallback(Callback):
         trainer: Trainer,
         pl_module: AnomalyModule,
     ) -> None:
+        del trainer  # Unused argument.
+
         pl_module.image_metrics.reset()
         pl_module.pixel_metrics.reset()
 
@@ -111,6 +113,8 @@ class _MetricsCallback(Callback):
         batch_idx: int,
         dataloader_idx: int = 0,
     ) -> None:
+        del trainer, batch, batch_idx, dataloader_idx  # Unused arguments.
+
         if outputs is not None:
             self._outputs_to_device(outputs)
             self._update_metrics(pl_module.image_metrics, pl_module.pixel_metrics, outputs)
@@ -120,6 +124,8 @@ class _MetricsCallback(Callback):
         trainer: Trainer,
         pl_module: AnomalyModule,
     ) -> None:
+        del trainer  # Unused argument.
+
         self._set_threshold(pl_module)
         self._log_metrics(pl_module)
 
@@ -128,6 +134,8 @@ class _MetricsCallback(Callback):
         trainer: Trainer,
         pl_module: AnomalyModule,
     ) -> None:
+        del trainer  # Unused argument.
+
         pl_module.image_metrics.reset()
         pl_module.pixel_metrics.reset()
 
@@ -140,6 +148,8 @@ class _MetricsCallback(Callback):
         batch_idx: int,
         dataloader_idx: int = 0,
     ) -> None:
+        del trainer, batch, batch_idx, dataloader_idx  # Unused arguments.
+
         if outputs is not None:
             self._outputs_to_device(outputs)
             self._update_metrics(pl_module.image_metrics, pl_module.pixel_metrics, outputs)
@@ -149,6 +159,8 @@ class _MetricsCallback(Callback):
         trainer: Trainer,
         pl_module: AnomalyModule,
     ) -> None:
+        del trainer  # Unused argument.
+
         self._log_metrics(pl_module)
 
     def _set_threshold(self, pl_module: AnomalyModule) -> None:
@@ -163,7 +175,7 @@ class _MetricsCallback(Callback):
     ) -> None:
         image_metric.to(self.device)
         image_metric.update(output["pred_scores"], output["label"].int())
-        if "mask" in output.keys() and "anomaly_maps" in output.keys():
+        if "mask" in output and "anomaly_maps" in output:
             pixel_metric.to(self.device)
             pixel_metric.update(torch.squeeze(output["anomaly_maps"]), torch.squeeze(output["mask"].int()))
 
@@ -178,7 +190,7 @@ class _MetricsCallback(Callback):
     @staticmethod
     def _log_metrics(pl_module: AnomalyModule) -> None:
         """Log computed performance metrics."""
-        if pl_module.pixel_metrics._update_called:
+        if pl_module.pixel_metrics._update_called:  # noqa: SLF001
             pl_module.log_dict(pl_module.pixel_metrics, prog_bar=True)
             pl_module.log_dict(pl_module.image_metrics, prog_bar=False)
         else:

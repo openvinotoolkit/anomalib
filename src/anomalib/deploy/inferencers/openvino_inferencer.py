@@ -80,7 +80,8 @@ class OpenVINOInferencer(Inferencer):
             elif path.suffix == ".onnx":
                 model = ie_core.read_model(path)
             else:
-                raise ValueError(f"Path must be .onnx, .bin or .xml file. Got {path.suffix}")
+                msg = f"Path must be .onnx, .bin or .xml file. Got {path.suffix}"
+                raise ValueError(msg)
         # Create cache folder
         cache_folder = Path("cache")
         cache_folder.mkdir(exist_ok=True)
@@ -169,7 +170,9 @@ class OpenVINOInferencer(Inferencer):
                 pred_mask = (anomaly_map >= metadata["pixel_threshold"]).astype(np.uint8)
 
             anomaly_map, pred_score = self._normalize(
-                pred_scores=pred_score, anomaly_maps=anomaly_map, metadata=metadata
+                pred_scores=pred_score,
+                anomaly_maps=anomaly_map,
+                metadata=metadata,
             )
             assert anomaly_map is not None
 
@@ -181,7 +184,8 @@ class OpenVINOInferencer(Inferencer):
                 if pred_mask is not None:
                     pred_mask = cv2.resize(pred_mask, (image_width, image_height))
         else:
-            raise ValueError(f"Unknown task type: {task}")
+            msg = f"Unknown task type: {task}"
+            raise ValueError(msg)
 
         if self.task == TaskType.DETECTION:
             pred_boxes = self._get_boxes(pred_mask)
@@ -217,5 +221,4 @@ class OpenVINOInferencer(Inferencer):
         for label in labels[labels != 0]:
             y_loc, x_loc = np.where(comps == label)
             boxes.append([np.min(x_loc), np.min(y_loc), np.max(x_loc), np.max(y_loc)])
-        boxes = np.stack(boxes) if boxes else np.empty((0, 4))
-        return boxes
+        return np.stack(boxes) if boxes else np.empty((0, 4))

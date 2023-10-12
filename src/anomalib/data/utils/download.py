@@ -10,10 +10,10 @@ import logging
 import os
 import re
 import tarfile
+from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
 from tarfile import TarFile, TarInfo
-from typing import Iterable
 from urllib.request import urlretrieve
 from zipfile import ZipFile
 
@@ -28,7 +28,7 @@ class DownloadInfo:
 
     name: str
     url: str
-    hash: str
+    checksum: str
     filename: str | None = None
 
 
@@ -156,7 +156,7 @@ class DownloadProgressBar(tqdm):
         delay: float | None = 0,
         gui: bool | None = False,
         **kwargs,
-    ):
+    ) -> None:
         super().__init__(
             iterable=iterable,
             desc=desc,
@@ -217,10 +217,7 @@ def is_file_potentially_dangerous(file_name: str) -> bool:
     """
     # Some example criteria. We could expand this.
     unsafe_patterns = ["/etc/", "/root/"]
-    for pattern in unsafe_patterns:
-        if re.search(pattern, file_name):
-            return True
-    return False
+    return any(re.search(pattern, file_name) for pattern in unsafe_patterns)
 
 
 def safe_extract(tar_file: TarFile, root: Path, members: list[TarInfo]) -> None:
@@ -274,7 +271,8 @@ def extract(file_name: Path, root: Path) -> None:
             safe_extract(tar_file, root, safe_members)
 
     else:
-        raise ValueError(f"Unrecognized file format: {file_name}")
+        msg = f"Unrecognized file format: {file_name}"
+        raise ValueError(msg)
 
     logger.info("Cleaning up files.")
     file_name.unlink()
@@ -290,23 +288,20 @@ def download_and_extract(root: Path, info: DownloadInfo) -> None:
     root.mkdir(parents=True, exist_ok=True)
 
     # save the compressed file in the specified root directory, using the same file name as on the server
-    if info.filename:
-        downloaded_file_path = root / info.filename
-    else:
-        downloaded_file_path = root / info.url.split("/")[-1]
+    downloaded_file_path = root / info.filename if info.filename else root / info.url.split("/")[-1]
 
     if downloaded_file_path.exists():
         logger.info("Existing dataset archive found. Skipping download stage.")
     else:
         logger.info("Downloading the %s dataset.", info.name)
         with DownloadProgressBar(unit="B", unit_scale=True, miniters=1, desc=info.name) as progress_bar:
-            urlretrieve(  # nosec - suppress bandit warning (urls are hardcoded)
+            urlretrieve(  # noqa: S310
                 url=f"{info.url}",
                 filename=downloaded_file_path,
                 reporthook=progress_bar.update_to,
             )
         logger.info("Checking the hash of the downloaded file.")
-        hash_check(downloaded_file_path, info.hash)
+        hash_check(downloaded_file_path, info.checksum)
 
     extract(downloaded_file_path, root)
 

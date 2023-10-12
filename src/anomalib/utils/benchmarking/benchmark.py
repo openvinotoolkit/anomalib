@@ -3,7 +3,6 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 import functools
 import io
 import logging
@@ -67,7 +66,7 @@ def hide_output(func):
         sys.stdout = buf = io.StringIO()
         try:
             value = func(*args, **kwargs)
-        except Exception as exception:
+        except Exception as exception:  # noqa: BLE001
             raise Exception(buf.getvalue()) from exception
         sys.stdout = std_out
         return value
@@ -158,7 +157,10 @@ def compute_on_cpu(sweep_config: DictConfig | ListConfig, folder: str | None = N
     """Compute all run configurations over a sigle CPU."""
     for run_config in get_run_config(sweep_config.grid_search):
         model_metrics = sweep(
-            run_config=run_config, device=0, seed=sweep_config.seed_everything, convert_openvino=False
+            run_config=run_config,
+            device=0,
+            seed=sweep_config.seed_everything,
+            convert_openvino=False,
         )
         write_metrics(model_metrics, sweep_config.writer, folder)
 
@@ -182,19 +184,21 @@ def compute_on_gpu(
         compute_openvino (bool, optional): Compute OpenVINO throughput. Defaults to False.
     """
     for run_config in run_configs:
-        if isinstance(run_config, (DictConfig, ListConfig)):
+        if isinstance(run_config, DictConfig | ListConfig):
             model_metrics = sweep(run_config=run_config, device=device, seed=seed, convert_openvino=compute_openvino)
             write_metrics(model_metrics, writers, folder)
         else:
+            msg = f"Expecting `run_config` of type DictConfig or ListConfig. Got {type(run_config)} instead."
             raise ValueError(
-                f"Expecting `run_config` of type DictConfig or ListConfig. Got {type(run_config)} instead."
+                msg,
             )
 
 
 def distribute_over_gpus(sweep_config: DictConfig | ListConfig, folder: str | None = None):
     """Distribute metric collection over all available GPUs. This is done by splitting the list of configurations."""
     with ProcessPoolExecutor(
-        max_workers=torch.cuda.device_count(), mp_context=multiprocessing.get_context("spawn")
+        max_workers=torch.cuda.device_count(),
+        mp_context=multiprocessing.get_context("spawn"),
     ) as executor:
         run_configs = list(get_run_config(sweep_config.grid_search))
         jobs = []
@@ -210,13 +214,14 @@ def distribute_over_gpus(sweep_config: DictConfig | ListConfig, folder: str | No
                     sweep_config.writer,
                     folder,
                     sweep_config.compute_openvino,
-                )
+                ),
             )
         for job in jobs:
             try:
                 job.result()
-            except Exception as exc:
-                raise Exception(f"Error occurred while computing benchmark on GPU {job}") from exc
+            except Exception as exception:  # noqa: BLE001
+                msg = f"Error occurred while computing benchmark on GPU {job}"
+                raise Exception(msg) from exception
 
 
 def distribute(config_path: Path) -> None:
@@ -240,8 +245,9 @@ def distribute(config_path: Path) -> None:
             for job in as_completed(jobs):
                 try:
                     job.result()
-                except Exception as exception:
-                    raise Exception(f"Error occurred while computing benchmark on device {job}") from exception
+                except Exception as exception:  # noqa: BLE001
+                    msg = f"Error occurred while computing benchmark on device {job}"
+                    raise Exception(msg) from exception
     elif "cpu" in devices:
         compute_on_cpu(config, folder=runs_folder)
     elif "gpu" in devices:
@@ -253,7 +259,10 @@ def distribute(config_path: Path) -> None:
 
 
 def sweep(
-    run_config: DictConfig | ListConfig, device: int = 0, seed: int = 42, convert_openvino: bool = False
+    run_config: DictConfig | ListConfig,
+    device: int = 0,
+    seed: int = 42,
+    convert_openvino: bool = False,
 ) -> dict[str, str | float]:
     """Go over all the values mentioned in `grid_search` parameter of the benchmarking config.
 
@@ -271,7 +280,7 @@ def sweep(
     model_config.seed_everything = seed
 
     model_config = cast(DictConfig, model_config)  # placate mypy
-    for param in run_config.keys():
+    for param in run_config:
         # grid search keys are always assumed to be strings
         param = cast(str, param)  # placate mypy
         set_in_nested_config(model_config, param.split("."), run_config[param])  # type: ignore

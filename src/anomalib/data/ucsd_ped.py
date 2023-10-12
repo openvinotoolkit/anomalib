@@ -7,7 +7,7 @@
 import logging
 from pathlib import Path
 from shutil import move
-from typing import Any, Callable
+from typing import TYPE_CHECKING, Any
 
 import albumentations as A  # noqa: N812
 import cv2
@@ -30,12 +30,15 @@ from anomalib.data.utils import (
 )
 from anomalib.data.utils.video import ClipsIndexer
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
 logger = logging.getLogger(__name__)
 
 DOWNLOAD_INFO = DownloadInfo(
     name="UCSD Pedestrian",
     url="http://www.svcl.ucsd.edu/projects/anomaly/UCSD_Anomaly_Dataset.tar.gz",
-    hash="5006421b89885f45a6f93b041145f2eb",
+    checksum="5006421b89885f45a6f93b041145f2eb",
 )
 
 CATEGORIES = ("UCSDped1", "UCSDped2")
@@ -108,8 +111,7 @@ class UCSDpedClipsIndexer(ClipsIndexer):
         mask_frames = sorted(Path(mask_folder).glob("*.bmp"))
         mask_paths = [mask_frames[idx] for idx in frames.int()]
 
-        masks = np.stack([cv2.imread(str(mask_path), flags=0) / 255.0 for mask_path in mask_paths])
-        return masks
+        return np.stack([cv2.imread(str(mask_path), flags=0) / 255.0 for mask_path in mask_paths])
 
     def _compute_frame_pts(self) -> None:
         """Retrieve the number of frames in each video."""
@@ -133,7 +135,8 @@ class UCSDpedClipsIndexer(ClipsIndexer):
             video_idx (int): index of the video in `video_paths`
         """
         if idx >= self.num_clips():
-            raise IndexError(f"Index {idx} out of range ({self.num_clips()} number of clips)")
+            msg = f"Index {idx} out of range ({self.num_clips()} number of clips)"
+            raise IndexError(msg)
         video_idx, clip_idx = self.get_clip_location(idx)
         video_path = self.video_paths[video_idx]
         clip_pts = self.clips[video_idx][clip_idx]

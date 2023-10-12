@@ -21,8 +21,7 @@ from torch import Tensor
 
 def lerp_np(x, y, w):
     """Helper function."""
-    fin_out = (y - x) * w + x
-    return fin_out
+    return (y - x) * w + x
 
 
 def rand_perlin_2d_octaves_np(shape, res, octaves=1, persistence=0.5):
@@ -81,12 +80,13 @@ def random_2d_perlin(
     Returns:
         np.ndarray | Tensor: Random 2d-array/tensor generated using perlin noise.
     """
-    if isinstance(res[0], int):
+    if isinstance(res[0], int | np.integer):
         result = _rand_perlin_2d_np(shape, res, fade)
     elif isinstance(res[0], Tensor):
         result = _rand_perlin_2d(shape, res, fade)
     else:
-        raise TypeError(f"got scales of type {type(res[0])}")
+        msg = f"got scales of type {type(res[0])}"
+        raise TypeError(msg)
     return result
 
 
@@ -135,7 +135,8 @@ def _rand_perlin_2d(shape, res, fade=lambda t: 6 * t**5 - 15 * t**4 + 10 * t**3)
     def dot(grad, shift):
         return (
             torch.stack(
-                (grid[: shape[0], : shape[1], 0] + shift[0], grid[: shape[0], : shape[1], 1] + shift[1]), dim=-1
+                (grid[: shape[0], : shape[1], 0] + shift[0], grid[: shape[0], : shape[1], 1] + shift[1]),
+                dim=-1,
             )
             * grad[: shape[0], : shape[1]]
         ).sum(dim=-1)

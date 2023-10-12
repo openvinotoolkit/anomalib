@@ -5,6 +5,7 @@
 
 
 from random import sample
+from typing import TYPE_CHECKING
 
 import torch
 from torch import Tensor, nn
@@ -13,7 +14,9 @@ from torch.nn import functional as F  # noqa: N812
 from anomalib.models.components import FeatureExtractor, MultiVariateGaussian
 from anomalib.models.components.feature_extractors import dryrun_find_featuremap_dims
 from anomalib.models.padim.anomaly_map import AnomalyMapGenerator
-from anomalib.pre_processing import Tiler
+
+if TYPE_CHECKING:
+    from anomalib.pre_processing import Tiler
 
 # defaults from the paper
 _N_FEATURES_DEFAULTS = {
@@ -23,7 +26,9 @@ _N_FEATURES_DEFAULTS = {
 
 
 def _deduce_dims(
-    feature_extractor: FeatureExtractor, input_size: tuple[int, int], layers: list[str]
+    feature_extractor: FeatureExtractor,
+    input_size: tuple[int, int],
+    layers: list[str],
 ) -> tuple[int, int]:
     """Run a dry run to deduce the dimensions of the extracted features.
 
@@ -76,10 +81,11 @@ class PadimModel(nn.Module):
         n_features = n_features or _N_FEATURES_DEFAULTS.get(self.backbone)
 
         if n_features is None:
-            raise ValueError(
+            msg = (
                 f"n_features must be specified for backbone {self.backbone}. "
                 f"Default values are available for: {sorted(_N_FEATURES_DEFAULTS.keys())}"
             )
+            raise ValueError(msg)
 
         assert (
             0 < n_features <= self.n_features_original
@@ -135,7 +141,9 @@ class PadimModel(nn.Module):
             output = embeddings
         else:
             output = self.anomaly_map_generator(
-                embedding=embeddings, mean=self.gaussian.mean, inv_covariance=self.gaussian.inv_covariance
+                embedding=embeddings,
+                mean=self.gaussian.mean,
+                inv_covariance=self.gaussian.inv_covariance,
             )
         return output
 
@@ -157,5 +165,4 @@ class PadimModel(nn.Module):
 
         # subsample embeddings
         idx = self.idx.to(embeddings.device)
-        embeddings = torch.index_select(embeddings, 1, idx)
-        return embeddings
+        return torch.index_select(embeddings, 1, idx)

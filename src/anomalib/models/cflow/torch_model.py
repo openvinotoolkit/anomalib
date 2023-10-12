@@ -51,7 +51,7 @@ class CflowModel(nn.Module):
                     permute_soft=permute_soft,
                 )
                 for pool_dim in self.pool_dims
-            ]
+            ],
         )
 
         # encoder model is fixed
@@ -104,7 +104,7 @@ class CflowModel(nn.Module):
             # testing. In case it is observed in the future, we can use only this line and ensure that FIB is at
             # least 1 or set `drop_last` in the dataloader to drop the last non-full batch.
             fiber_batches = embedding_length // self.fiber_batch_size + int(
-                embedding_length % self.fiber_batch_size > 0
+                embedding_length % self.fiber_batch_size > 0,
             )
 
             for batch_num in range(fiber_batches):  # per-fiber processing

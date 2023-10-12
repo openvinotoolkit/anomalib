@@ -6,8 +6,8 @@ This script creates a custom dataset from a folder.
 # SPDX-License-Identifier: Apache-2.0
 
 
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Sequence
 
 import albumentations as A  # noqa: N812
 from pandas import DataFrame
@@ -81,13 +81,13 @@ def make_folder_dataset(
     dirs = {DirType.NORMAL: normal_dir}
 
     if abnormal_dir:
-        dirs = {**dirs, **{DirType.ABNORMAL: abnormal_dir}}
+        dirs[DirType.ABNORMAL] = abnormal_dir
 
     if normal_test_dir:
-        dirs = {**dirs, **{DirType.NORMAL_TEST: normal_test_dir}}
+        dirs[DirType.NORMAL_TEST] = normal_test_dir
 
     if mask_dir:
-        dirs = {**dirs, **{DirType.MASK: mask_dir}}
+        dirs[DirType.MASK] = mask_dir
 
     for dir_type, paths in dirs.items():
         for path in paths:
@@ -100,7 +100,8 @@ def make_folder_dataset(
 
     # Create label index for normal (0) and abnormal (1) images.
     samples.loc[
-        (samples.label == DirType.NORMAL) | (samples.label == DirType.NORMAL_TEST), "label_index"
+        (samples.label == DirType.NORMAL) | (samples.label == DirType.NORMAL_TEST),
+        "label_index",
     ] = LabelName.NORMAL
     samples.loc[(samples.label == DirType.ABNORMAL), "label_index"] = LabelName.ABNORMAL
     samples.label_index = samples.label_index.astype("Int64")
@@ -281,9 +282,12 @@ class Folder(AnomalibDataModule):
         )
 
         if task == TaskType.SEGMENTATION and test_split_mode == TestSplitMode.FROM_DIR and mask_dir is None:
-            raise ValueError(
+            msg = (
                 f"Segmentation task requires mask directory if test_split_mode is {test_split_mode}. "
-                f"You could set test_split_mode to {TestSplitMode.NONE} or provide a mask directory."
+                "You could set test_split_mode to {TestSplitMode.NONE} or provide a mask directory."
+            )
+            raise ValueError(
+                msg,
             )
 
         self.normal_split_ratio = normal_split_ratio

@@ -43,6 +43,4 @@ class AnomalyMapGenerator(nn.Module):
             )
             flow_maps.append(flow_map)
         flow_maps = torch.stack(flow_maps, dim=-1)
-        anomaly_map = torch.mean(flow_maps, dim=-1)
-
-        return anomaly_map
+        return torch.mean(flow_maps, dim=-1)
