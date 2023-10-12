@@ -30,10 +30,17 @@ DOCSTRING_USAGE = {
 
 
 def pre_parse_arguments() -> dict:
-    """Pre-parse arguments.
+    """
+    Parses command line arguments and returns a dictionary of key-value pairs.
 
     Returns:
-        dict[str, str]: Pased arguments.
+        A dictionary containing the parsed command line arguments.
+
+    Examples:
+        >>> import sys
+        >>> sys.argv = ['anomalib', 'fit', '--arg1', 'value1', '-a', 'value2', '-h']
+        >>> pre_parse_arguments()
+        {'subcommand': 'fit', 'arg1': 'value1', 'a': 'value2', 'h': None}
     """
     arguments: dict = {"subcommand": None}
     i = 1
@@ -91,14 +98,12 @@ def get_intro() -> Markdown:
     Returns:
         A Markdown object containing the introduction text for Anomalib CLI Guide.
     """
-    intro_markdown = """
-
-# Anomalib CLI Guide
-
-Github Repository: [https://github.com/openvinotoolkit/anomalib](https://github.com/openvinotoolkit/anomalib). \n
-A better guide is provided by the [documentation](https://anomalib.readthedocs.io/en/latest/index.html).
-
-"""  # noqa: E501
+    intro_markdown = (
+        "# Anomalib CLI Guide\n\n"
+        "Github Repository: [https://github.com/openvinotoolkit/anomalib](https://github.com/openvinotoolkit/anomalib)."
+        "\n\n"
+        "A better guide is provided by the [documentation](https://anomalib.readthedocs.io/en/latest/index.html)."
+    )  # noqa: E501
     return Markdown(intro_markdown)
 
 
@@ -111,15 +116,15 @@ def get_verbose_usage(subcommand: str = "train") -> str:
     Returns:
         str: A string containing verbose usage information for the specified subcommand.
     """
-    return f"""
-To get more overridable argument information, run the command below.\n
-```python
-# Verbosity Level 1
-anomalib {subcommand} [optional_arguments] -h -v
-# Verbosity Level 2
-anomalib {subcommand} [optional_arguments] -h -vv
-```
-"""
+    return (
+        "To get more overridable argument information, run the command below.\n"
+        "```python\n"
+        "# Verbosity Level 1\n"
+        f"anomalib {subcommand} [optional_arguments] -h -v\n"
+        "# Verbosity Level 2\n"
+        f"anomalib {subcommand} [optional_arguments] -h -vv\n"
+        "```"
+    )
 
 
 def get_cli_usage_docstring(component: object | None) -> str | None:
