@@ -111,7 +111,8 @@ class Cfa(AnomalyModule):
         """
         del optimizer, optimizer_idx, args, kwargs  # These variables are not used.
 
-        # TODO: Investigate why retain_graph is needed.
+        # TODO(samet-akcay): Investigate why retain_graph is needed.
+        # CVS-122673
         loss.backward(retain_graph=True)
 
     @property

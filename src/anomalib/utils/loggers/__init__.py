@@ -89,7 +89,9 @@ def get_experiment_logger(
                 AnomalibTensorBoardLogger(
                     name="Tensorboard Logs",
                     save_dir=str(Path(config.project.path) / "logs"),
-                    log_graph=False,  # TODO: find location for log_graph key
+                    # TODO(ashwinvaidya17): Find location for log_graph key
+                    # CVS-122658
+                    log_graph=False,
                 ),
             )
         elif experiment_logger == "wandb":
@@ -134,7 +136,8 @@ def get_experiment_logger(
                 msg,
             )
 
-    # TODO remove this method and set these values in ``update_config``
+    # TODO(ashwinvaidya17): Remove this method and set these values in ``update_config``
+    # CVS-122657
     del config.trainer.logger
 
     return logger_list

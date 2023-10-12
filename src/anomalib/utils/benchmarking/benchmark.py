@@ -303,7 +303,8 @@ def sweep(
 
     if run_config.model_name in ["patchcore", "cflow"]:
         convert_openvino = False  # `torch.cdist` is not supported by onnx version 11
-        # TODO Remove this line when issue #40 is fixed https://github.com/openvinotoolkit/anomalib/issues/40
+        # TODO(ashwinvaidya17): Remove this line when issue #40 is fixed
+        # https://github.com/openvinotoolkit/anomalib/issues/40
         if model_config.model.init_args.input_size != (224, 224):
             return {}  # go to next run
 

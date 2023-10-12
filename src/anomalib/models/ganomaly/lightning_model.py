@@ -75,8 +75,8 @@ class Ganomaly(AnomalyModule):
         self.discriminator_loss = DiscriminatorLoss()
         self.automatic_optimization = False
 
-        # TODO: LR should be part of optimizer in config.yaml! Since ganomaly has custom
-        #   optimizer this is to be addressed later.
+        # TODO(ashwinvaidya17): LR should be part of optimizer in config.yaml!
+        # CVS-122670
         self.learning_rate = lr
         self.beta1 = beta1
         self.beta2 = beta2

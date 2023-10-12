@@ -57,8 +57,8 @@ class Cflow(AnomalyModule):
             permute_soft=permute_soft,
         )
         self.automatic_optimization = False
-        # TODO: LR should be part of optimizer in config.yaml! Since cflow has custom
-        #   optimizer this is to be addressed later.
+        # TODO(ashwinvaidya17): Use padding="same" in nn.Conv2d once PyTorch v2.1 is released
+        # CVS-122671
         self.learning_rate = lr
 
     def configure_optimizers(self) -> Optimizer:
