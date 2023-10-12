@@ -116,15 +116,15 @@ def make_folder3d_dataset(
     if normal_depth_dir is not None:
         samples.loc[samples.label == DirType.NORMAL, "depth_path"] = samples.loc[
             samples.label == DirType.NORMAL_DEPTH
-        ].image_path.values
+        ].image_path.to_numpy()
         samples.loc[samples.label == DirType.ABNORMAL, "depth_path"] = samples.loc[
             samples.label == DirType.ABNORMAL_DEPTH
-        ].image_path.values
+        ].image_path.to_numpy()
 
         if normal_test_dir is not None:
             samples.loc[samples.label == DirType.NORMAL_TEST, "depth_path"] = samples.loc[
                 samples.label == DirType.NORMAL_TEST_DEPTH
-            ].image_path.values
+            ].image_path.to_numpy()
 
         # make sure every rgb image has a corresponding depth image and that the file exists
         assert (
@@ -145,8 +145,8 @@ def make_folder3d_dataset(
     if mask_dir is not None and abnormal_dir is not None:
         samples.loc[samples.label == DirType.ABNORMAL, "mask_path"] = samples.loc[
             samples.label == DirType.MASK
-        ].image_path.values
-        samples["mask_path"].fillna("", inplace=True)
+        ].image_path.to_numpy()
+        samples["mask_path"] = samples["mask_path"].fillna("")
         samples = samples.astype({"mask_path": "str"})
 
         # make sure all the files exist

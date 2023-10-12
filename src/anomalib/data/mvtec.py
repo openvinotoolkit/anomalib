@@ -153,7 +153,7 @@ def make_mvtec_dataset(
     samples.loc[
         (samples.split == "test") & (samples.label_index == LabelName.ABNORMAL),
         "mask_path",
-    ] = mask_samples.image_path.values
+    ] = mask_samples.image_path.to_numpy()
 
     # assert that the right mask files are associated with the right test images
     if len(samples.loc[samples.label_index == LabelName.ABNORMAL]):
