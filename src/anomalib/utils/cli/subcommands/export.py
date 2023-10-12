@@ -20,12 +20,6 @@ from anomalib.utils.exceptions import try_import
 
 logger = logging.getLogger(__name__)
 
-try:
-    from openvino.tools.mo.utils.cli_parser import get_common_cli_parser
-except ImportError:
-    get_common_cli_parser = None
-    logger.warn("Could not find OpenVINO. To export to OpenVINO IR, ensure that you have OpenVINO installed.")
-
 
 if try_import("openvino"):
     from openvino.tools.mo.utils.cli_parser import get_common_cli_parser
