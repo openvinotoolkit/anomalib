@@ -220,7 +220,7 @@ class UCSDped(AnomalibVideoDataModule):
     def __init__(
         self,
         root: Path | str = "./datasets/uscd",
-        category: str = "UCSDped1",
+        category: str = "UCSDped2",
         clip_length_in_frames: int = 1,
         frames_between_clips: int = 1,
         target_frame: VideoTargetFrame = VideoTargetFrame.LAST,

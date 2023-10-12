@@ -200,8 +200,8 @@ class Avenue(AnomalibVideoDataModule):
 
     def __init__(
         self,
-        root: Path | str = "./datasets",
-        gt_dir: Path | str = "",
+        root: Path | str = "./datasets/avenue",
+        gt_dir: Path | str = "./datasets/avenue/masks",
         clip_length_in_frames: int = 1,
         frames_between_clips: int = 1,
         target_frame: VideoTargetFrame = VideoTargetFrame.LAST,

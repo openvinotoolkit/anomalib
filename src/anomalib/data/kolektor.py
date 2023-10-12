@@ -180,7 +180,7 @@ class KolektorDataset(AnomalibDataset):
         self,
         task: TaskType,
         transform: A.Compose,
-        root: Path | str = "./datasets",
+        root: Path | str = "./datasets/kolektor",
         split: str | Split | None = None,
     ) -> None:
         super().__init__(task=task, transform=transform)
@@ -223,7 +223,7 @@ class Kolektor(AnomalibDataModule):
 
     def __init__(
         self,
-        root: Path | str = "./datasets",
+        root: Path | str = "./datasets/kolektor",
         image_size: int | tuple[int, int] = (256, 256),
         center_crop: int | tuple[int, int] | None = None,
         normalization: str | InputNormalizationMethod = InputNormalizationMethod.IMAGENET,
