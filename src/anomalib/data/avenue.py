@@ -152,7 +152,7 @@ class AvenueDataset(AnomalibVideoDataset):
         transform: A.Compose,
         split: Split,
         root: Path | str = "./datasets/avenue",
-        gt_dir: Path | str = "./datasets/avenue/masks",
+        gt_dir: Path | str = "./datasets/avenue/ground_truth_demo",
         clip_length_in_frames: int = 1,
         frames_between_clips: int = 1,
         target_frame: VideoTargetFrame = VideoTargetFrame.LAST,
@@ -201,7 +201,7 @@ class Avenue(AnomalibVideoDataModule):
     def __init__(
         self,
         root: Path | str = "./datasets/avenue",
-        gt_dir: Path | str = "./datasets/avenue/masks",
+        gt_dir: Path | str = "./datasets/avenue/ground_truth_demo",
         clip_length_in_frames: int = 1,
         frames_between_clips: int = 1,
         target_frame: VideoTargetFrame = VideoTargetFrame.LAST,
