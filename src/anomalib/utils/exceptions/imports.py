@@ -24,6 +24,6 @@ def try_import(import_path: str) -> bool:
     except ImportError:
         import_package = import_path.split(".")[0]
         logger.warn(
-            f"Could not find {import_package}. To use this feature, ensure that you have {import_package} installed."
+            f"Could not find {import_package}. To use this feature, ensure that you have {import_package} installed.",
         )
         return False
