@@ -73,6 +73,7 @@ class Ganomaly(AnomalyModule):
 
         self.generator_loss = GeneratorLoss(wadv, wcon, wenc)
         self.discriminator_loss = DiscriminatorLoss()
+        self.automatic_optimization = False
 
         # TODO: LR should be part of optimizer in config.yaml! Since ganomaly has custom
         #   optimizer this is to be addressed later.
@@ -113,7 +114,6 @@ class Ganomaly(AnomalyModule):
         self,
         batch: dict[str, str | Tensor],
         batch_idx: int,
-        optimizer_idx: int,
     ) -> STEP_OUTPUT:  # pylint: disable=arguments-differ
         """Training step.
 
@@ -126,20 +126,35 @@ class Ganomaly(AnomalyModule):
             STEP_OUTPUT: Loss
         """
         del batch_idx  # `batch_idx` variables is not used.
+        d_opt, g_opt = self.optimizers()
 
         # forward pass
         padded, fake, latent_i, latent_o = self.model(batch["image"])
         pred_real, _ = self.model.discriminator(padded)
 
-        if optimizer_idx == 0:  # Discriminator
-            pred_fake, _ = self.model.discriminator(fake.detach())
-            loss = self.discriminator_loss(pred_real, pred_fake)
-        else:  # Generator
-            pred_fake, _ = self.model.discriminator(fake)
-            loss = self.generator_loss(latent_i, latent_o, padded, fake, pred_real, pred_fake)
+        # generator update
+        pred_fake, _ = self.model.discriminator(fake)
+        g_loss = self.generator_loss(latent_i, latent_o, padded, fake, pred_real, pred_fake)
 
-        self.log("train_loss", loss.item(), on_epoch=True, prog_bar=True, logger=True)
-        return {"loss": loss}
+        g_opt.zero_grad()
+        self.manual_backward(g_loss, retain_graph=True)
+        g_opt.step()
+
+        # discrimator update
+        pred_fake, _ = self.model.discriminator(fake.detach())
+        d_loss = self.discriminator_loss(pred_real, pred_fake)
+
+        d_opt.zero_grad()
+        self.manual_backward(d_loss)
+        d_opt.step()
+
+        self.log_dict(
+            {"generator_loss": g_loss.item(), "discriminator_loss": d_loss.item()},
+            on_epoch=True,
+            prog_bar=True,
+            logger=True,
+        )
+        return {"generator_loss": g_loss, "discriminator_loss": d_loss}
 
     def on_validation_start(self) -> None:
         """Reset min and max values for current validation epoch."""
