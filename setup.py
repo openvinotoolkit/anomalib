@@ -68,7 +68,7 @@ def get_required_packages(requirement_files: list[str]) -> list[str]:
     required_packages: list[str] = []
 
     for requirement_file in requirement_files:
-        with open(f"requirements/{requirement_file}.txt", encoding="utf8") as file:
+        with Path(f"requirements/{requirement_file}.txt").open(encoding="utf8") as file:
             for line in file:
                 package = line.strip()
                 if package and not package.startswith(("#", "-f")):

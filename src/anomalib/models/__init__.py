@@ -5,9 +5,9 @@
 
 
 import logging
-import os
 import re
 from importlib import import_module
+from pathlib import Path
 
 from omegaconf import DictConfig, ListConfig
 from torch import load
@@ -131,6 +131,6 @@ def get_model(config: DictConfig | ListConfig) -> AnomalyModule:
         raise exception
 
     if "init_weights" in config and config.init_weights:
-        model.load_state_dict(load(os.path.join(config.project.path, config.init_weights))["state_dict"], strict=False)
+        model.load_state_dict(load(str(Path(config.project.path) / config.init_weights))["state_dict"], strict=False)
 
     return model

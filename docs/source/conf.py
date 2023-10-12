@@ -14,10 +14,11 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-import os
 import sys
+from pathlib import Path
 
-sys.path.insert(0, os.path.abspath("../.."))
+sys.path.insert(0, str(Path.cwd().parent.parent))
+
 
 import anomalib  # noqa
 

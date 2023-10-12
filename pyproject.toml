@@ -50,7 +50,7 @@ select = [
     "TCH",  # flake8-type-checking (`TCH`)
     "INT",  # flake8-gettext (`INT`)
     "ARG",  # flake8-unsused-arguments (`ARG`)
-    # "PTH",  # flake8-use-pathlib (`PTH`)
+    "PTH",  # flake8-use-pathlib (`PTH`)
     # "TD",   # flake8-todos (`TD`)
     # "FIX",  # flake8-fixme (`FIX`)
     # "ERA",  # eradicate (`ERA`)
