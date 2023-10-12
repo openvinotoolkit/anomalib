@@ -37,7 +37,9 @@ def _check_and_convert_path(path: str | Path) -> Path:
 
 
 def _prepare_files_labels(
-    path: str | Path, path_type: str, extensions: tuple[str, ...] | None = None
+    path: str | Path,
+    path_type: str,
+    extensions: tuple[str, ...] | None = None,
 ) -> tuple[list, list]:
     """Return a list of filenames and list corresponding labels.
 
@@ -63,7 +65,8 @@ def _prepare_files_labels(
         if f.suffix in extensions and not f.is_dir() and not any(part.startswith(".") for part in f.parts)
     ]
     if not filenames:
-        raise RuntimeError(f"Found 0 {path_type} images in {path}")
+        msg = f"Found 0 {path_type} images in {path}"
+        raise RuntimeError(msg)
 
     labels = [path_type] * len(filenames)
 

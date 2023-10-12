@@ -4,9 +4,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-import torch.nn.functional as F
 from omegaconf import ListConfig
 from torch import Tensor, nn
+from torch.nn import functional as F  # noqa: N812
 
 from anomalib.models.components import GaussianBlur2d
 
@@ -34,9 +34,7 @@ class AnomalyMapGenerator(nn.Module):
             Tensor: Map of the pixel-level anomaly scores
         """
         anomaly_map = F.interpolate(patch_scores, size=(self.input_size[0], self.input_size[1]))
-        anomaly_map = self.blur(anomaly_map)
-
-        return anomaly_map
+        return self.blur(anomaly_map)
 
     def forward(self, patch_scores: Tensor) -> Tensor:
         """Returns anomaly_map and anomaly_score.
@@ -51,5 +49,4 @@ class AnomalyMapGenerator(nn.Module):
         Returns:
             Tensor: anomaly_map
         """
-        anomaly_map = self.compute_anomaly_map(patch_scores)
-        return anomaly_map
+        return self.compute_anomaly_map(patch_scores)

@@ -4,12 +4,12 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-from typing import List, cast
+from typing import cast
 
 import torch
-import torch.nn.functional as F
 from omegaconf import ListConfig
 from torch import Tensor, nn
+from torch.nn import functional as F  # noqa: N812
 
 
 class AnomalyMapGenerator(nn.Module):
@@ -46,8 +46,11 @@ class AnomalyMapGenerator(nn.Module):
             # upsample
             layer_maps.append(
                 F.interpolate(
-                    layer_map.unsqueeze(1), size=self.image_size, mode="bilinear", align_corners=True
-                ).squeeze(1)
+                    layer_map.unsqueeze(1),
+                    size=self.image_size,
+                    mode="bilinear",
+                    align_corners=True,
+                ).squeeze(1),
             )
         # score aggregation
         score_map = torch.zeros_like(layer_maps[0])
@@ -55,9 +58,7 @@ class AnomalyMapGenerator(nn.Module):
             score_map += layer_maps[layer_idx]
 
         # Invert probs to anomaly scores
-        anomaly_map = score_map.max() - score_map
-
-        return anomaly_map
+        return score_map.max() - score_map
 
     def forward(self, **kwargs: list[Tensor] | list[int] | list[list]) -> Tensor:
         """Returns anomaly_map.
@@ -76,10 +77,11 @@ class AnomalyMapGenerator(nn.Module):
             torch.Tensor: anomaly map
         """
         if not ("distribution" in kwargs and "height" in kwargs and "width" in kwargs):
-            raise KeyError(f"Expected keys `distribution`, `height` and `width`. Found {kwargs.keys()}")
+            msg = f"Expected keys `distribution`, `height` and `width`. Found {kwargs.keys()}"
+            raise KeyError(msg)
 
         # placate mypy
-        distribution: list[Tensor] = cast(List[Tensor], kwargs["distribution"])
-        height: list[int] = cast(List[int], kwargs["height"])
-        width: list[int] = cast(List[int], kwargs["width"])
+        distribution: list[Tensor] = cast(list[Tensor], kwargs["distribution"])
+        height: list[int] = cast(list[int], kwargs["height"])
+        width: list[int] = cast(list[int], kwargs["width"])
         return self.compute_anomaly_map(distribution, height, width)

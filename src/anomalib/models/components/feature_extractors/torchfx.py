@@ -5,8 +5,8 @@
 
 
 import importlib
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Callable
 
 import torch
 from torch import Tensor, nn
@@ -94,19 +94,24 @@ class TorchFXFeatureExtractor(nn.Module):
         weights: str | WeightsEnum | None = None,
         requires_grad: bool = False,
         tracer_kwargs: dict | None = None,
-    ):
+    ) -> None:
         super().__init__()
         if isinstance(backbone, dict):
             backbone = BackboneParams(**backbone)
         elif isinstance(backbone, str):
             backbone = BackboneParams(class_path=backbone)
-        elif not isinstance(backbone, (nn.Module, BackboneParams)):
+        elif not isinstance(backbone, nn.Module | BackboneParams):
+            msg = f"backbone needs to be of type str | BackboneParams | dict | nn.Module, but was type {type(backbone)}"
             raise ValueError(
-                f"backbone needs to be of type str | BackboneParams | dict | nn.Module, but was type {type(backbone)}"
+                msg,
             )
 
         self.feature_extractor = self.initialize_feature_extractor(
-            backbone, return_nodes, weights, requires_grad, tracer_kwargs
+            backbone,
+            return_nodes,
+            weights,
+            requires_grad,
+            tracer_kwargs,
         )
 
     def initialize_feature_extractor(
@@ -162,7 +167,7 @@ class TorchFXFeatureExtractor(nn.Module):
         if not requires_grad:
             feature_extractor.eval()
             for param in feature_extractor.parameters():
-                param.requires_grad_(False)
+                param.requires_grad_(False)  # noqa: FBT003
 
         return feature_extractor
 
@@ -200,8 +205,9 @@ class TorchFXFeatureExtractor(nn.Module):
                 models = importlib.import_module("torchvision.models")
                 backbone_class = getattr(models, backbone)
         except ModuleNotFoundError as exception:
+            msg = f"Backbone {backbone} not found in torchvision.models nor in {backbone} module."
             raise ModuleNotFoundError(
-                f"Backbone {backbone} not found in torchvision.models nor in {backbone} module."
+                msg,
             ) from exception
 
         return backbone_class

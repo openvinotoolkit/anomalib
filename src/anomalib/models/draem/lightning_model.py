@@ -7,7 +7,8 @@ Paper https://arxiv.org/abs/2108.07610
 # SPDX-License-Identifier: Apache-2.0
 
 
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 import torch
 from lightning.pytorch.callbacks import EarlyStopping
@@ -32,7 +33,10 @@ class Draem(AnomalyModule):
     """
 
     def __init__(
-        self, enable_sspcab: bool = False, sspcab_lambda: float = 0.1, anomaly_source_path: str | None = None
+        self,
+        enable_sspcab: bool = False,
+        sspcab_lambda: float = 0.1,
+        anomaly_source_path: str | None = None,
     ) -> None:
         super().__init__()
 
@@ -90,7 +94,8 @@ class Draem(AnomalyModule):
 
         if self.sspcab:
             loss += self.sspcab_lambda * self.sspcab_loss(
-                self.sspcab_activations["input"], self.sspcab_activations["output"]
+                self.sspcab_activations["input"],
+                self.sspcab_activations["output"],
             )
 
         self.log("train_loss", loss.item(), on_epoch=True, prog_bar=True, logger=True)

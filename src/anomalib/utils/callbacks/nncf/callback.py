@@ -4,17 +4,19 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-import os
+import subprocess
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import lightning.pytorch as pl
 from lightning.pytorch import Callback
 from nncf import NNCFConfig
-from nncf.api.compression import CompressionAlgorithmController
 from nncf.torch import register_default_init_args
 
 from anomalib.utils.callbacks.nncf.utils import InitLoader, wrap_nncf_model
+
+if TYPE_CHECKING:
+    from nncf.api.compression import CompressionAlgorithmController
 
 
 class NNCFCallback(Callback):
@@ -58,7 +60,12 @@ class NNCFCallback(Callback):
         )
 
     def on_train_batch_start(
-        self, trainer: pl.Trainer, pl_module: pl.LightningModule, batch: Any, batch_idx: int, unused: int = 0
+        self,
+        trainer: pl.Trainer,
+        pl_module: pl.LightningModule,
+        batch: Any,
+        batch_idx: int,
+        unused: int = 0,
     ) -> None:
         """Call when the train batch begins.
 
@@ -90,7 +97,9 @@ class NNCFCallback(Callback):
             return
 
         Path(self.export_dir).mkdir(parents=True, exist_ok=True)
-        onnx_path = os.path.join(self.export_dir, "model_nncf.onnx")
+        onnx_path = str(Path(self.export_dir) / "model_nncf.onnx")
         self.nncf_ctrl.export_model(onnx_path)
-        optimize_command = "mo --input_model " + onnx_path + " --output_dir " + self.export_dir
-        os.system(optimize_command)
+
+        optimize_command = ["mo", "--input_model", onnx_path, "--output_dir", self.export_dir]
+        # TODO: Check if mo can be donw via python API
+        subprocess.run(optimize_command, check=True)  # noqa: S603

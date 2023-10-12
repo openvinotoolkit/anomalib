@@ -19,6 +19,8 @@ def get_sweep_callbacks(config: DictConfig | ListConfig) -> list[Callback]:
     Returns:
         list[Callback]: List of callbacks
     """
+    del config  # Unused argument.
+
     callbacks: list[Callback] = [TimerCallback()]
 
     return callbacks

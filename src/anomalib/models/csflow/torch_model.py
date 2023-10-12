@@ -15,10 +15,10 @@ from math import exp
 
 import numpy as np
 import torch
-import torch.nn.functional as F
 from FrEIA.framework import GraphINN, InputNode, Node, OutputNode
 from FrEIA.modules import InvertibleModule
 from torch import Tensor, nn
+from torch.nn import functional as F  # noqa: N812
 from torchvision.models.efficientnet import EfficientNet_B5_Weights
 
 from anomalib.models.components.feature_extractors import TorchFXFeatureExtractor
@@ -114,11 +114,21 @@ class CrossConvolutions(nn.Module):
         self.upsample = nn.Upsample(scale_factor=2, mode="bilinear", align_corners=False)
 
         self.up_conv10 = nn.Conv2d(
-            channels_hidden, channels, kernel_size=kernel_size, padding=pad, bias=True, padding_mode=pad_mode
+            channels_hidden,
+            channels,
+            kernel_size=kernel_size,
+            padding=pad,
+            bias=True,
+            padding_mode=pad_mode,
         )
 
         self.up_conv21 = nn.Conv2d(
-            channels_hidden, channels, kernel_size=kernel_size, padding=pad, bias=True, padding_mode=pad_mode
+            channels_hidden,
+            channels,
+            kernel_size=kernel_size,
+            padding=pad,
+            bias=True,
+            padding_mode=pad_mode,
         )
 
         self.down_conv01 = nn.Conv2d(
@@ -243,6 +253,8 @@ class ParallelPermute(InvertibleModule):
         Returns:
             tuple[Tensor, Tensor]: output tensor and log determinant of the Jacobian
         """
+        del jac  # Unused argument.
+
         if not rev:
             return [input_tensor[i][:, self.perm[i]] for i in range(self.n_inputs)], 0.0
 
@@ -292,6 +304,8 @@ class ParallelGlowCouplingLayer(InvertibleModule):
 
     def forward(self, input_tensor: list[Tensor], rev=False, jac=True) -> tuple[list[Tensor], Tensor]:
         """Applies GLOW coupling for the three scales."""
+
+        del jac  # Unused argument.
 
         # Even channel split. The two splits are used by cross-scale convolution to compute scale and transform
         # parameters.
@@ -388,7 +402,11 @@ class CrossScaleFlow(nn.Module):
     """
 
     def __init__(
-        self, input_dims: tuple[int, int, int], n_coupling_blocks: int, clamp: float, cross_conv_hidden_channels: int
+        self,
+        input_dims: tuple[int, int, int],
+        n_coupling_blocks: int,
+        clamp: float,
+        cross_conv_hidden_channels: int,
     ) -> None:
         super().__init__()
         self.input_dims = input_dims
@@ -471,7 +489,9 @@ class MultiScaleFeatureExtractor(nn.Module):
         self.n_scales = n_scales
         self.input_size = input_size
         self.feature_extractor = TorchFXFeatureExtractor(
-            backbone="efficientnet_b5", weights=EfficientNet_B5_Weights.DEFAULT, return_nodes=["features.6.8"]
+            backbone="efficientnet_b5",
+            weights=EfficientNet_B5_Weights.DEFAULT,
+            return_nodes=["features.6.8"],
         )
 
     def forward(self, input_tensor: Tensor) -> list[Tensor]:
@@ -487,7 +507,8 @@ class MultiScaleFeatureExtractor(nn.Module):
         for scale in range(self.n_scales):
             feat_s = (
                 F.interpolate(
-                    input_tensor, size=(self.input_size[0] // (2**scale), self.input_size[1] // (2**scale))
+                    input_tensor,
+                    size=(self.input_size[0] // (2**scale), self.input_size[1] // (2**scale)),
                 )
                 if scale > 0
                 else input_tensor
@@ -562,5 +583,4 @@ class CsFlowModel(nn.Module):
         # z_dist is a 3 length list of tensors with shape b x 304 x fx x fy
         flat_maps = [z_dist.reshape(z_dist.shape[0], -1) for z_dist in z_dists]
         flat_maps_tensor = torch.cat(flat_maps, dim=1)
-        anomaly_scores = torch.mean(flat_maps_tensor**2 / 2, dim=1)
-        return anomaly_scores
+        return torch.mean(flat_maps_tensor**2 / 2, dim=1)

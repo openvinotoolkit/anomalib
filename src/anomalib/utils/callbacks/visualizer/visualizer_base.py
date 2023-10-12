@@ -37,11 +37,13 @@ class BaseVisualizerCallback(Callback):
     ) -> None:
         """Visualizer callback."""
         if mode not in ("full", "simple"):
-            raise ValueError(f"Unknown visualization mode: {mode}. Please choose one of ['full', 'simple']")
+            msg = f"Unknown visualization mode: {mode}. Please choose one of ['full', 'simple']"
+            raise ValueError(msg)
         self.mode = mode
         if task not in (TaskType.CLASSIFICATION, TaskType.DETECTION, TaskType.SEGMENTATION):
+            msg = f"Unknown task type: {mode}. Please choose one of ['classification', 'detection', 'segmentation']"
             raise ValueError(
-                f"Unknown task type: {mode}. Please choose one of ['classification', 'detection', 'segmentation']"
+                msg,
             )
         self.task = task
         self.inputs_are_normalized = inputs_are_normalized
@@ -69,7 +71,8 @@ class BaseVisualizerCallback(Callback):
         """
         # Store names of logger and the logger in a dict
         available_loggers = {
-            type(logger).__name__.lower().rstrip("logger").lstrip("anomalib"): logger for logger in trainer.loggers
+            type(logger).__name__.lower().replace("logger", "").replace("anomalib", ""): logger
+            for logger in trainer.loggers
         }
         # save image to respective logger
         if self.log_images:

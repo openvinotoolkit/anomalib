@@ -10,12 +10,12 @@ Paper https://arxiv.org/abs/2206.04325
 
 
 import torch
-import torch.nn.functional as F
 import torchvision
 from einops import rearrange
 from sklearn.cluster import KMeans
 from torch import Tensor, nn
 from torch.fx.graph_module import GraphModule
+from torch.nn import functional as F  # noqa: N812
 from torch.nn.common_types import _size_2_t
 from torch.utils.data import DataLoader
 from torchvision.models.feature_extraction import create_feature_extractor
@@ -43,7 +43,8 @@ def get_return_nodes(backbone: str) -> list[str]:
         list[str]: A list of return nodes for the given backbone.
     """
     if backbone == "efficientnet_b5":
-        raise NotImplementedError("EfficientNet feature extractor has not implemented yet.")
+        msg = "EfficientNet feature extractor has not implemented yet."
+        raise NotImplementedError(msg)
 
     return_nodes: list[str]
     if backbone in ("resnet18", "wide_resnet50_2"):
@@ -51,7 +52,8 @@ def get_return_nodes(backbone: str) -> list[str]:
     elif backbone == "vgg19_bn":
         return_nodes = ["features.25", "features.38", "features.52"]
     else:
-        raise ValueError(f"Backbone {backbone} is not supported. Supported backbones are {SUPPORTED_BACKBONES}.")
+        msg = f"Backbone {backbone} is not supported. Supported backbones are {SUPPORTED_BACKBONES}."
+        raise ValueError(msg)
     return return_nodes
 
 
@@ -127,15 +129,17 @@ class CfaModel(DynamicBufferModule):
         elif isinstance(resolution, tuple):
             self.scale = resolution
         else:
+            msg = f"Unknown type {type(resolution)} for `resolution`. Expected types are either int or tuple[int, int]."
             raise ValueError(
-                f"Unknown type {type(resolution)} for `resolution`. Expected types are either int or tuple[int, int]."
+                msg,
             )
 
         self.descriptor = Descriptor(self.gamma_d, backbone)
         self.radius = torch.ones(1, requires_grad=True) * radius
 
         self.anomaly_map_generator = AnomalyMapGenerator(
-            image_size=input_size, num_nearest_neighbors=num_nearest_neighbors
+            image_size=input_size,
+            num_nearest_neighbors=num_nearest_neighbors,
         )
 
     def initialize_centroid(self, data_loader: DataLoader) -> None:
@@ -182,8 +186,7 @@ class CfaModel(DynamicBufferModule):
         features = target_oriented_features.pow(2).sum(dim=2, keepdim=True)
         centers = self.memory_bank.pow(2).sum(dim=0, keepdim=True).to(features.device)
         f_c = 2 * torch.matmul(target_oriented_features, (self.memory_bank.to(features.device)))
-        distance = features + centers - f_c
-        return distance
+        return features + centers - f_c
 
     def forward(self, input_tensor: Tensor) -> Tensor:
         """Forward pass.
@@ -198,7 +201,8 @@ class CfaModel(DynamicBufferModule):
             Tensor: Loss or anomaly map depending on the train/eval mode.
         """
         if self.memory_bank.ndim == 0:
-            raise ValueError("Memory bank is not initialized. Run `initialize_centroid` method first.")
+            msg = "Memory bank is not initialized. Run `initialize_centroid` method first."
+            raise ValueError(msg)
 
         self.feature_extractor.eval()
         with torch.no_grad():
@@ -208,12 +212,7 @@ class CfaModel(DynamicBufferModule):
         target_features = self.descriptor(features)
         distance = self.compute_distance(target_features)
 
-        if self.training:
-            output = distance
-        else:
-            output = self.anomaly_map_generator(distance=distance, scale=self.scale)
-
-        return output
+        return distance if self.training else self.anomaly_map_generator(distance=distance, scale=self.scale)
 
 
 class Descriptor(nn.Module):
@@ -224,7 +223,8 @@ class Descriptor(nn.Module):
 
         self.backbone = backbone
         if self.backbone not in SUPPORTED_BACKBONES:
-            raise ValueError(f"Supported backbones are {SUPPORTED_BACKBONES}. Got {self.backbone} instead.")
+            msg = f"Supported backbones are {SUPPORTED_BACKBONES}. Got {self.backbone} instead."
+            raise ValueError(msg)
 
         # TODO: Automatically infer the number of dims
         backbone_dims = {"vgg19_bn": 1280, "resnet18": 448, "wide_resnet50_2": 1792, "efficientnet_b5": 568}
@@ -247,8 +247,7 @@ class Descriptor(nn.Module):
                 else torch.cat((patch_features, F.interpolate(i, patch_features.size(2), mode="bilinear")), dim=1)
             )
 
-        target_oriented_features = self.layer(patch_features)
-        return target_oriented_features
+        return self.layer(patch_features)
 
 
 class CoordConv2d(nn.Conv2d):
@@ -308,8 +307,7 @@ class CoordConv2d(nn.Conv2d):
             Tensor: Output tensor after applying the CoordConv layer.
         """
         out = self.add_coords(input_tensor)
-        out = self.conv2d(out)
-        return out
+        return self.conv2d(out)
 
 
 class AddCoords(nn.Module):

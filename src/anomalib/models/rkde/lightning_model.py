@@ -65,7 +65,7 @@ class Rkde(AnomalyModule):
     @staticmethod
     def configure_optimizers() -> None:
         """RKDE doesn't require optimization, therefore returns no optimizers."""
-        return None
+        return
 
     def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> None:
         """Training Step of RKDE. For each batch, features are extracted from the CNN.

@@ -5,9 +5,9 @@
 
 
 import torch
-import torch.nn.functional as F
 from omegaconf import ListConfig
 from torch import Tensor, nn
+from torch.nn import functional as F  # noqa: N812
 
 
 class AnomalyMapGenerator(nn.Module):
@@ -43,6 +43,4 @@ class AnomalyMapGenerator(nn.Module):
             )
             flow_maps.append(flow_map)
         flow_maps = torch.stack(flow_maps, dim=-1)
-        anomaly_map = torch.mean(flow_maps, dim=-1)
-
-        return anomaly_map
+        return torch.mean(flow_maps, dim=-1)

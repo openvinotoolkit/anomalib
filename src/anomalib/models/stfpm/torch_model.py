@@ -4,11 +4,15 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
+from typing import TYPE_CHECKING
+
 from torch import Tensor, nn
 
 from anomalib.models.components import FeatureExtractor
 from anomalib.models.stfpm.anomaly_map import AnomalyMapGenerator
-from anomalib.pre_processing import Tiler
+
+if TYPE_CHECKING:
+    from anomalib.pre_processing import Tiler
 
 
 class STFPMModel(nn.Module):
@@ -32,7 +36,10 @@ class STFPMModel(nn.Module):
         self.backbone = backbone
         self.teacher_model = FeatureExtractor(backbone=self.backbone, pre_trained=True, layers=layers)
         self.student_model = FeatureExtractor(
-            backbone=self.backbone, pre_trained=False, layers=layers, requires_grad=True
+            backbone=self.backbone,
+            pre_trained=False,
+            layers=layers,
+            requires_grad=True,
         )
 
         # teacher model is fixed

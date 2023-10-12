@@ -5,12 +5,12 @@
 
 
 import logging
-import random
 from enum import Enum
 
+import numpy as np
 import torch
-import torch.nn.functional as F
 from torch import Tensor, nn
+from torch.nn import functional as F  # noqa: N812
 from torchvision import transforms
 
 logger = logging.getLogger(__name__)
@@ -19,8 +19,7 @@ logger = logging.getLogger(__name__)
 def imagenet_norm_batch(x):
     mean = torch.tensor([0.485, 0.456, 0.406])[None, :, None, None].to(x.device)
     std = torch.tensor([0.229, 0.224, 0.225])[None, :, None, None].to(x.device)
-    x_norm = (x - mean) / std
-    return x_norm
+    return (x - mean) / std
 
 
 def reduce_tensor_elems(tensor: torch.Tensor, m=2**24) -> torch.Tensor:
@@ -53,7 +52,7 @@ class EfficientAdModelSize(str, Enum):
     S = "small"
 
 
-class PDN_S(nn.Module):
+class SmallPatchDescriptionNetwork(nn.Module):
     """Patch Description Network small
 
     Args:
@@ -77,11 +76,10 @@ class PDN_S(nn.Module):
         x = F.relu(self.conv2(x))
         x = self.avgpool2(x)
         x = F.relu(self.conv3(x))
-        x = self.conv4(x)
-        return x
+        return self.conv4(x)
 
 
-class PDN_M(nn.Module):
+class MediumPatchDescriptionNetwork(nn.Module):
     """Patch Description Network medium
 
     Args:
@@ -109,8 +107,7 @@ class PDN_M(nn.Module):
         x = F.relu(self.conv3(x))
         x = F.relu(self.conv4(x))
         x = F.relu(self.conv5(x))
-        x = self.conv6(x)
-        return x
+        return self.conv6(x)
 
 
 class Encoder(nn.Module):
@@ -131,8 +128,7 @@ class Encoder(nn.Module):
         x = F.relu(self.enconv3(x))
         x = F.relu(self.enconv4(x))
         x = F.relu(self.enconv5(x))
-        x = self.enconv6(x)
-        return x
+        return self.enconv6(x)
 
 
 class Decoder(nn.Module):
@@ -186,8 +182,7 @@ class Decoder(nn.Module):
         x = self.dropout6(x)
         x = F.interpolate(x, size=self.last_upsample, mode="bilinear")
         x = F.relu(self.deconv7(x))
-        x = self.deconv8(x)
-        return x
+        return self.deconv8(x)
 
 
 class AutoEncoder(nn.Module):
@@ -206,8 +201,7 @@ class AutoEncoder(nn.Module):
     def forward(self, x):
         x = imagenet_norm_batch(x)
         x = self.encoder(x)
-        x = self.decoder(x)
-        return x
+        return self.decoder(x)
 
 
 class EfficientAdModel(nn.Module):
@@ -235,19 +229,20 @@ class EfficientAdModel(nn.Module):
         super().__init__()
 
         self.pad_maps = pad_maps
-        self.teacher: PDN_M | PDN_S
-        self.student: PDN_M | PDN_S
+        self.teacher: MediumPatchDescriptionNetwork | SmallPatchDescriptionNetwork
+        self.student: MediumPatchDescriptionNetwork | SmallPatchDescriptionNetwork
 
         if model_size == EfficientAdModelSize.M:
-            self.teacher = PDN_M(out_channels=teacher_out_channels, padding=padding).eval()
-            self.student = PDN_M(out_channels=teacher_out_channels * 2, padding=padding)
+            self.teacher = MediumPatchDescriptionNetwork(out_channels=teacher_out_channels, padding=padding).eval()
+            self.student = MediumPatchDescriptionNetwork(out_channels=teacher_out_channels * 2, padding=padding)
 
         elif model_size == EfficientAdModelSize.S:
-            self.teacher = PDN_S(out_channels=teacher_out_channels, padding=padding).eval()
-            self.student = PDN_S(out_channels=teacher_out_channels * 2, padding=padding)
+            self.teacher = SmallPatchDescriptionNetwork(out_channels=teacher_out_channels, padding=padding).eval()
+            self.student = SmallPatchDescriptionNetwork(out_channels=teacher_out_channels * 2, padding=padding)
 
         else:
-            raise ValueError(f"Unknown model size {model_size}")
+            msg = f"Unknown model size {model_size}"
+            raise ValueError(msg)
 
         self.ae: AutoEncoder = AutoEncoder(out_channels=teacher_out_channels, padding=padding, img_size=input_size)
         self.teacher_out_channels: int = teacher_out_channels
@@ -257,7 +252,7 @@ class EfficientAdModel(nn.Module):
             {
                 "mean": torch.zeros((1, self.teacher_out_channels, 1, 1)),
                 "std": torch.zeros((1, self.teacher_out_channels, 1, 1)),
-            }
+            },
         )
 
         self.quantiles: nn.ParameterDict = nn.ParameterDict(
@@ -266,14 +261,11 @@ class EfficientAdModel(nn.Module):
                 "qb_st": torch.tensor(0.0),
                 "qa_ae": torch.tensor(0.0),
                 "qb_ae": torch.tensor(0.0),
-            }
+            },
         )
 
     def is_set(self, p_dic: nn.ParameterDict) -> bool:
-        for _, value in p_dic.items():
-            if value.sum() != 0:
-                return True
-        return False
+        return any(value.sum() != 0 for _, value in p_dic.items())
 
     def choose_random_aug_image(self, image: Tensor) -> Tensor:
         transform_functions = [
@@ -282,8 +274,8 @@ class EfficientAdModel(nn.Module):
             transforms.functional.adjust_saturation,
         ]
         # Sample an augmentation coefficient λ from the uniform distribution U(0.8, 1.2)
-        coefficient = random.uniform(0.8, 1.2)  # nosec: B311
-        transform_function = random.choice(transform_functions)  # nosec: B311
+        coefficient = np.random.default_rng().uniform(0.8, 1.2)
+        transform_function = np.random.default_rng().choice(transform_functions)
         return transform_function(image, coefficient)
 
     def forward(self, batch: Tensor, batch_imagenet: Tensor = None) -> Tensor | dict:
@@ -330,26 +322,26 @@ class EfficientAdModel(nn.Module):
             loss_stae = torch.mean(distance_stae)
             return (loss_st, loss_ae, loss_stae)
 
-        else:
-            with torch.no_grad():
-                ae_output = self.ae(batch)
+        # Eval mode.
+        with torch.no_grad():
+            ae_output = self.ae(batch)
 
             map_st = torch.mean(distance_st, dim=1, keepdim=True)
             map_stae = torch.mean(
-                (ae_output - student_output[:, self.teacher_out_channels :]) ** 2, dim=1, keepdim=True
+                (ae_output - student_output[:, self.teacher_out_channels :]) ** 2,
+                dim=1,
+                keepdim=True,
             )
 
-            if self.pad_maps:
-                map_st = F.pad(map_st, (4, 4, 4, 4))
-                map_stae = F.pad(map_stae, (4, 4, 4, 4))
-            map_st = F.interpolate(map_st, size=(self.input_size[0], self.input_size[1]), mode="bilinear")
-            map_stae = F.interpolate(map_stae, size=(self.input_size[0], self.input_size[1]), mode="bilinear")
+        if self.pad_maps:
+            map_st = F.pad(map_st, (4, 4, 4, 4))
+            map_stae = F.pad(map_stae, (4, 4, 4, 4))
+        map_st = F.interpolate(map_st, size=(self.input_size[0], self.input_size[1]), mode="bilinear")
+        map_stae = F.interpolate(map_stae, size=(self.input_size[0], self.input_size[1]), mode="bilinear")
 
-            if self.is_set(self.quantiles):
-                map_st = 0.1 * (map_st - self.quantiles["qa_st"]) / (self.quantiles["qb_st"] - self.quantiles["qa_st"])
-                map_stae = (
-                    0.1 * (map_stae - self.quantiles["qa_ae"]) / (self.quantiles["qb_ae"] - self.quantiles["qa_ae"])
-                )
+        if self.is_set(self.quantiles):
+            map_st = 0.1 * (map_st - self.quantiles["qa_st"]) / (self.quantiles["qb_st"] - self.quantiles["qa_st"])
+            map_stae = 0.1 * (map_stae - self.quantiles["qa_ae"]) / (self.quantiles["qb_ae"] - self.quantiles["qa_ae"])
 
-            map_combined = 0.5 * map_st + 0.5 * map_stae
-            return {"anomaly_map": map_combined, "map_st": map_st, "map_ae": map_stae}
+        map_combined = 0.5 * map_st + 0.5 * map_stae
+        return {"anomaly_map": map_combined, "map_st": map_st, "map_ae": map_stae}

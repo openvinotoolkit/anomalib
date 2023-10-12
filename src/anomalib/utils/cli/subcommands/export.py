@@ -46,7 +46,7 @@ def add_openvino_export_arguments(subcommand: _ActionSubCommands):
         group = parser.add_argument_group("OpenVINO Model Optimizer arguments (optional)")
         mo_parser = get_common_cli_parser()
         # remove redundant keys from mo keys
-        for arg in mo_parser._actions:
+        for arg in mo_parser._actions:  # noqa: SLF001
             if arg.dest in ("help", "input_model", "output_dir"):
                 continue
             group.add_argument(f"--mo.{arg.dest}", type=arg.type, default=arg.default, help=arg.help)
@@ -62,7 +62,10 @@ def _get_export_parser(subcommand: str):
     parser.add_argument("--model_config", type=Path, help="Path to the model config.", required=True)
     parser.add_argument("--export_path", type=Path, help="Path to save the exported model.")
     parser.add_argument(
-        "-c", "--config", action=ActionConfigFile, help="Path to a configuration file in json or yaml format."
+        "-c",
+        "--config",
+        action=ActionConfigFile,
+        help="Path to a configuration file in json or yaml format.",
     )
     return parser
 

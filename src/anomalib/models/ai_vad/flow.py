@@ -5,7 +5,7 @@
 
 
 import torch
-import torchvision.transforms.functional as F
+import torchvision.transforms.functional as F  # noqa: N812
 from torch import Tensor, nn
 from torchvision.models.optical_flow import Raft_Large_Weights, raft_large
 
@@ -55,6 +55,4 @@ class FlowExtractor(nn.Module):
             flows = self.model(first_frame, last_frame)[-1]
 
         # convert back to original size
-        flows = F.resize(flows, [height, width], antialias=False)
-
-        return flows
+        return F.resize(flows, [height, width], antialias=False)

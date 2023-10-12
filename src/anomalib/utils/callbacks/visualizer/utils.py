@@ -44,7 +44,7 @@ def get_visualization_callbacks(
                 show_images=show_images,
                 log_images=log_images,
                 save_images=save_images,
-            )
+            ),
         )
 
     return callbacks

@@ -21,13 +21,15 @@ class BaseThreshold(Metric, ABC):
         Returns:
             Value of the optimal threshold.
         """
-        raise NotImplementedError("Subclass of BaseAnomalyScoreThreshold must implement the compute method")
+        msg = "Subclass of BaseAnomalyScoreThreshold must implement the compute method"
+        raise NotImplementedError(msg)
 
-    def update(self, *args, **kwargs) -> None:
+    def update(self, *args, **kwargs) -> None:  # noqa: ARG002
         """Update the metric state
 
         Args:
             *args: Any positional arguments.
             **kwargs: Any keyword arguments.
         """
-        raise NotImplementedError("Subclass of BaseAnomalyScoreThreshold must implement the update method")
+        msg = "Subclass of BaseAnomalyScoreThreshold must implement the update method"
+        raise NotImplementedError(msg)

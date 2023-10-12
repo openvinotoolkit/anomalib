@@ -18,7 +18,7 @@ class PCA(DynamicBufferModule):
           or a ratio between 0-1.
     """
 
-    def __init__(self, n_components: int | float):
+    def __init__(self, n_components: int | float) -> None:
         super().__init__()
         self.n_components = n_components
 
@@ -95,8 +95,7 @@ class PCA(DynamicBufferModule):
 
         Returns: Inverse features
         """
-        inv_features = torch.matmul(features, self.singular_vectors.transpose(-2, -1))
-        return inv_features
+        return torch.matmul(features, self.singular_vectors.transpose(-2, -1))
 
     def forward(self, features: Tensor) -> Tensor:
         """Transforms the features.

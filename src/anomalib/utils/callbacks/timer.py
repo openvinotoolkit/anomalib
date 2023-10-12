@@ -47,6 +47,7 @@ class TimerCallback(Callback):
         Returns:
             None
         """
+        del trainer, pl_module  # Unused arguments.
         logger.info("Training took %5.2f seconds", (time.time() - self.start))
 
     def on_test_start(self, trainer: Trainer, pl_module: LightningModule) -> None:  # pylint: disable=W0613
@@ -62,6 +63,8 @@ class TimerCallback(Callback):
         Returns:
             None
         """
+        del pl_module  # Unused argument.
+
         self.start = time.time()
         self.num_images = 0
 
@@ -84,6 +87,8 @@ class TimerCallback(Callback):
         Returns:
             None
         """
+        del pl_module  # Unused argument.
+
         testing_time = time.time() - self.start
         output = f"Testing took {testing_time} seconds\nThroughput "
         if trainer.test_dataloaders is not None:

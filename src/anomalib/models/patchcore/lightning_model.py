@@ -7,15 +7,17 @@ Paper https://arxiv.org/abs/2106.08265.
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
-from omegaconf import DictConfig, ListConfig
 from torch import Tensor
 
 from anomalib.models.components import AnomalyModule
 from anomalib.models.patchcore.torch_model import PatchcoreModel
+
+if TYPE_CHECKING:
+    from omegaconf import DictConfig, ListConfig
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +62,7 @@ class Patchcore(AnomalyModule):
         Returns:
             None: Do not set optimizers by returning None.
         """
-        return None
+        return
 
     def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> None:
         """Generate feature embedding of the batch.

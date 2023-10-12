@@ -13,10 +13,10 @@
 from enum import Enum
 
 import torch
-import torch.nn.functional as F
 from kornia.filters import gaussian_blur2d
 from omegaconf import ListConfig
 from torch import Tensor, nn
+from torch.nn import functional as F  # noqa: N812
 
 
 class AnomalyMapGenerationMode(str, Enum):
@@ -52,7 +52,8 @@ class AnomalyMapGenerator(nn.Module):
         self.kernel_size = 2 * int(4.0 * sigma + 0.5) + 1
 
         if mode not in (AnomalyMapGenerationMode.ADD, AnomalyMapGenerationMode.MULTIPLY):
-            raise ValueError(f"Found mode {mode}. Only multiply and add are supported.")
+            msg = f"Found mode {mode}. Only multiply and add are supported."
+            raise ValueError(msg)
         self.mode = mode
 
     def forward(self, student_features: list[Tensor], teacher_features: list[Tensor]) -> Tensor:
@@ -67,14 +68,16 @@ class AnomalyMapGenerator(nn.Module):
         """
         if self.mode == AnomalyMapGenerationMode.MULTIPLY:
             anomaly_map = torch.ones(
-                [student_features[0].shape[0], 1, *self.image_size], device=student_features[0].device
+                [student_features[0].shape[0], 1, *self.image_size],
+                device=student_features[0].device,
             )  # b c h w
         elif self.mode == AnomalyMapGenerationMode.ADD:
             anomaly_map = torch.zeros(
-                [student_features[0].shape[0], 1, *self.image_size], device=student_features[0].device
+                [student_features[0].shape[0], 1, *self.image_size],
+                device=student_features[0].device,
             )
 
-        for student_feature, teacher_feature in zip(student_features, teacher_features):
+        for student_feature, teacher_feature in zip(student_features, teacher_features, strict=True):
             distance_map = 1 - F.cosine_similarity(student_feature, teacher_feature)
             distance_map = torch.unsqueeze(distance_map, dim=1)
             distance_map = F.interpolate(distance_map, size=self.image_size, mode="bilinear", align_corners=True)
@@ -83,8 +86,8 @@ class AnomalyMapGenerator(nn.Module):
             elif self.mode == AnomalyMapGenerationMode.ADD:
                 anomaly_map += distance_map
 
-        anomaly_map = gaussian_blur2d(
-            anomaly_map, kernel_size=(self.kernel_size, self.kernel_size), sigma=(self.sigma, self.sigma)
+        return gaussian_blur2d(
+            anomaly_map,
+            kernel_size=(self.kernel_size, self.kernel_size),
+            sigma=(self.sigma, self.sigma),
         )
-
-        return anomaly_map
