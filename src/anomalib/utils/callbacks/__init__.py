@@ -81,7 +81,7 @@ def get_callbacks(config: DictConfig | ListConfig | Namespace) -> list[Callback]
                 ),
             )
         if config.optimization.export_mode is not None:
-            from .export import ExportCallback  # pylint: disable=import-outside-toplevel
+            from .export import ExportCallback
 
             logger.info("Setting model export to %s", config.optimization.export_mode)
             callbacks.append(

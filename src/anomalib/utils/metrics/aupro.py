@@ -53,8 +53,8 @@ class AUPRO(Metric):
             dist_sync_fn=dist_sync_fn,
         )
 
-        self.add_state("preds", default=[], dist_reduce_fx="cat")  # pylint: disable=not-callable
-        self.add_state("target", default=[], dist_reduce_fx="cat")  # pylint: disable=not-callable
+        self.add_state("preds", default=[], dist_reduce_fx="cat")
+        self.add_state("target", default=[], dist_reduce_fx="cat")
         self.register_buffer("fpr_limit", torch.tensor(fpr_limit))
         self.num_thresholds = num_thresholds
 

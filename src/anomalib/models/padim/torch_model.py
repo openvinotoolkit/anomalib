@@ -93,7 +93,6 @@ class PadimModel(nn.Module):
 
         self.n_features = n_features
 
-        # pylint: disable=not-callable
         # Since idx is randomly selected, save it with model to get same results
         self.register_buffer(
             "idx",
