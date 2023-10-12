@@ -128,7 +128,7 @@ def get_verbose_usage(subcommand: str = "train") -> str:
 
 
 def get_cli_usage_docstring(component: object | None) -> str | None:
-    r"""Get the cli usage from the docstring.
+    """Get the cli usage from the docstring.
 
     Args:
         component (Optional[object]): The component to get the docstring from

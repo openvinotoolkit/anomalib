@@ -78,7 +78,10 @@ class AnomalibCLI(LightningCLI):
         kwargs.setdefault("dump_header", [f"lightning.pytorch=={pl.__version__}"])
         parser = LightningArgumentParser(formatter_class=CustomHelpFormatter, **kwargs)
         parser.add_argument(
-            "-c", "--config", action=ActionConfigFile, help="Path to a configuration file in json or yaml format."
+            "-c",
+            "--config",
+            action=ActionConfigFile,
+            help="Path to a configuration file in json or yaml format.",
         )
         return parser
 
