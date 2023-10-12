@@ -22,7 +22,7 @@ from anomalib.data.task_type import TaskType
 from anomalib.data.utils import masks_to_boxes, read_image
 
 _EXPECTED_COLUMNS_CLASSIFICATION = ["image_path", "split"]
-_EXPECTED_COLUMNS_SEGMENTATION = _EXPECTED_COLUMNS_CLASSIFICATION + ["mask_path"]
+_EXPECTED_COLUMNS_SEGMENTATION = [*_EXPECTED_COLUMNS_CLASSIFICATION, "mask_path"]
 _EXPECTED_COLUMNS_PERTASK = {
     "classification": _EXPECTED_COLUMNS_CLASSIFICATION,
     "segmentation": _EXPECTED_COLUMNS_SEGMENTATION,

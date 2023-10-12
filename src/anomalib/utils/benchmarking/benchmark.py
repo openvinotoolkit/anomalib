@@ -219,7 +219,7 @@ def distribute_over_gpus(sweep_config: DictConfig | ListConfig, folder: str | No
             try:
                 job.result()
             # NOTE: A generic exception is used here to catch all exceptions.
-            except Exception as exception:  # noqa: BLE001
+            except Exception as exception:  # noqa: BLE001, PERF203
                 msg = f"Error occurred while computing benchmark on GPU {job}"
                 raise Exception(msg) from exception  # noqa: TRY002
 
@@ -246,7 +246,7 @@ def distribute(config_path: Path) -> None:
                 try:
                     job.result()
                 # NOTE: A generic exception is used here to catch all exceptions.
-                except Exception as exception:  # noqa: BLE001
+                except Exception as exception:  # noqa: BLE001, PERF203
                     msg = f"Error occurred while computing benchmark on device {job}"
                     raise Exception(msg) from exception  # noqa: TRY002
     elif "cpu" in devices:

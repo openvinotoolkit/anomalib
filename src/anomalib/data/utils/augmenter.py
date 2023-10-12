@@ -10,9 +10,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-import glob
 import math
 import random
+from pathlib import Path
 
 import cv2
 import imgaug.augmenters as iaa
@@ -48,10 +48,10 @@ class Augmenter:
         self.p_anomalous = p_anomalous
         self.beta = beta
 
-        self.anomaly_source_paths = []
+        self.anomaly_source_paths: list[Path] = []
         if anomaly_source_path is not None:
             for img_ext in IMG_EXTENSIONS:
-                self.anomaly_source_paths.extend(glob.glob(anomaly_source_path + "/**/*" + img_ext, recursive=True))
+                self.anomaly_source_paths.extend(Path(anomaly_source_path).rglob("*" + img_ext))
 
         self.augmenters = [
             iaa.GammaContrast((0.5, 2.0), per_channel=True),
@@ -80,14 +80,14 @@ class Augmenter:
         self,
         height: int,
         width: int,
-        anomaly_source_path: str | None,
+        anomaly_source_path: Path | str | None = None,
     ) -> tuple[np.ndarray, np.ndarray]:
         """Generate an image containing a random anomalous perturbation using a source image.
 
         Args:
             height (int): height of the generated image.
             width: (int): width of the generated image.
-            anomaly_source_path (str | None): Path to an image file. If not provided, random noise will be used
+            anomaly_source_path (Path | str | None): Path to an image file. If not provided, random noise will be used
             instead.
 
         Returns:

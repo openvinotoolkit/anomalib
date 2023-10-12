@@ -108,10 +108,10 @@ class EfficientAd(AnomalyModule):
 
     def prepare_imagenette_data(self) -> None:
         self.data_transforms_imagenet = A.Compose(
-            [  # We obtain an image P ∈ R 3×256×256 from ImageNet by choosing a random image,
-                A.Resize(self.image_size[0] * 2, self.image_size[1] * 2),  # resizing it to 512 × 512,
+            [  # We obtain an image P ∈ R 3x256x256 from ImageNet by choosing a random image,
+                A.Resize(self.image_size[0] * 2, self.image_size[1] * 2),  # resizing it to 512 x 512,
                 A.ToGray(p=0.3),  # converting it to gray scale with a probability of 0.3
-                A.CenterCrop(self.image_size[0], self.image_size[1]),  # and cropping the center 256 × 256 pixels
+                A.CenterCrop(self.image_size[0], self.image_size[1]),  # and cropping the center 256 x 256 pixels
                 A.ToFloat(always_apply=False, p=1.0, max_value=255),
                 ToTensorV2(),
             ],

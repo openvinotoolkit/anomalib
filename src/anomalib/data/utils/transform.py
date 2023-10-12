@@ -86,7 +86,7 @@ def get_transforms(
             logger.info("Loading transforms from config File")
             transforms_list = []
 
-            if "Resize" not in config.keys() and image_size is not None:
+            if "Resize" not in config and image_size is not None:
                 resize_height, resize_width = get_image_height_and_width(image_size)
                 transforms_list.append(A.Resize(height=resize_height, width=resize_width, always_apply=True))
                 logger.info("Resize %s added!", (resize_height, resize_width))

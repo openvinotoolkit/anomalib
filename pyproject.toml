@@ -63,7 +63,7 @@ select = [
     "PERF", # Perflint (`PERF`)
     # "FURB", # refurb (`FURB`)
     # "LOG",  # flake8-logging (`LOG`)
-    # "RUF",  # Ruff-specific rules (`RUF`)
+    "RUF",  # Ruff-specific rules (`RUF`)
 ]
 
 ignore = [

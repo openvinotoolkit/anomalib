@@ -98,7 +98,7 @@ class TorchInferencer(Inferencer):
 
             # Torch model should ideally contain the metadata in the checkpoint.
             # Check if the metadata is present in the checkpoint.
-            if "metadata" not in checkpoint.keys():
+            if "metadata" not in checkpoint:
                 msg = (
                     "``metadata`` is not found in the checkpoint. Please ensure that you save the model as Torch model."
                 )
@@ -123,7 +123,7 @@ class TorchInferencer(Inferencer):
         """
 
         checkpoint = self._load_checkpoint(path)
-        if "model" not in checkpoint.keys():
+        if "model" not in checkpoint:
             msg = "``model`` is not found in the checkpoint. Please check the checkpoint file."
             raise KeyError(msg)
 

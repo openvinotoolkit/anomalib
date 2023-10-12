@@ -112,7 +112,7 @@ def get_experiment_logger(
             Path(comet_logdir).mkdir(parents=True, exist_ok=True)
             run_name = (
                 config.model.name
-                if "category" not in config.data.init_args.keys()
+                if "category" not in config.data.init_args
                 else f"{config.data.init_args.category} {config.model.class_path.split('.')[-1]}"
             )
             logger_list.append(

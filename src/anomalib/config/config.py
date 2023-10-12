@@ -153,7 +153,7 @@ def update_nncf_config(config: DictConfig | ListConfig) -> DictConfig | ListConf
         image_size = config.model.init_args.input_size
     sample_size = (image_size, image_size) if isinstance(image_size, int) else image_size
     if "optimization" in config and "nncf" in config.optimization:
-        if "input_info" not in config.optimization.nncf.keys():
+        if "input_info" not in config.optimization.nncf:
             config.optimization.nncf["input_info"] = {"sample_size": None}
         config.optimization.nncf.input_info.sample_size = [1, 3, *sample_size]
         if config.optimization.nncf.apply and "update_config" in config.optimization.nncf:

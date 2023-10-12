@@ -49,9 +49,9 @@ def get_callbacks(config: DictConfig | ListConfig | Namespace) -> list[Callback]
     callbacks: list[Callback] = []
 
     monitor_metric = (
-        None if "early_stopping" not in config.model.init_args.keys() else config.model.init_args.early_stopping.metric
+        None if "early_stopping" not in config.model.init_args else config.model.init_args.early_stopping.metric
     )
-    monitor_mode = "max" if "early_stopping" not in config.model.init_args.keys() else config.model.early_stopping.mode
+    monitor_mode = "max" if "early_stopping" not in config.model.init_args else config.model.early_stopping.mode
 
     checkpoint = ModelCheckpoint(
         dirpath=Path(config.trainer.default_root_dir) / "weights" / "lightning",

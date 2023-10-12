@@ -123,7 +123,7 @@ class CfaModel(DynamicBufferModule):
         # Scale is to get the largest feature map dimensions of different layers
         # of the feature extractor. In a typical feature extractor, the first
         # layer has the highest resolution.
-        resolution = list(feature_map_metadata.values())[0]["resolution"]
+        resolution = next(iter(feature_map_metadata.values()))["resolution"]
         if isinstance(resolution, int):
             self.scale = (resolution,) * 2
         elif isinstance(resolution, tuple):

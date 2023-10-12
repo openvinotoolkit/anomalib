@@ -5,7 +5,6 @@
 
 
 import string
-from glob import glob
 from pathlib import Path
 
 import numpy as np
@@ -106,7 +105,7 @@ def upload_to_wandb(
     project = f"benchmarking_{get_unique_key(2)}"
     tag_list = ["dataset.category", "model_name", "dataset.image_size", "model.backbone", "device"]
     search_path = "runs/*.csv" if folder is None else f"runs/{folder}/*.csv"
-    for csv_file in glob(search_path):
+    for csv_file in Path(search_path).glob("*csv"):
         table = pd.read_csv(csv_file)
         for index, row in table.iterrows():
             row = dict(row[1:])  # remove index column
@@ -135,7 +134,7 @@ def upload_to_comet(
     project = f"benchmarking_{get_unique_key(2)}"
     tag_list = ["dataset.category", "model_name", "dataset.image_size", "model.backbone", "device"]
     search_path = "runs/*.csv" if folder is None else f"runs/{folder}/*.csv"
-    for csv_file in glob(search_path):
+    for csv_file in Path(search_path).glob("*csv"):
         table = pd.read_csv(csv_file)
         for index, row in table.iterrows():
             row = dict(row[1:])  # remove index column
