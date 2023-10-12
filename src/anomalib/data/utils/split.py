@@ -12,14 +12,18 @@ These function are useful
 # SPDX-License-Identifier: Apache-2.0
 
 
+import logging
 import math
-import warnings
+from collections.abc import Sequence
 from enum import Enum
-from typing import Sequence
+from typing import TYPE_CHECKING
 
 import torch
 
-from anomalib import data
+if TYPE_CHECKING:
+    from anomalib import data
+
+logger = logging.getLogger(__name__)
 
 
 class Split(str, Enum):
@@ -83,13 +87,13 @@ def random_split(
     if isinstance(split_ratio, float):
         split_ratio = [1 - split_ratio, split_ratio]
 
-    assert (
+    assert (  # noqa: PT018
         math.isclose(sum(split_ratio), 1) and sum(split_ratio) <= 1
     ), f"split ratios must sum to 1, found {sum(split_ratio)}"
     assert all(0 < ratio < 1 for ratio in split_ratio), f"all split ratios must be between 0 and 1, found {split_ratio}"
 
     # create list of source data
-    if label_aware and "label_index" in dataset.samples.keys():
+    if label_aware and "label_index" in dataset.samples:
         indices_per_label = [group.index for _, group in dataset.samples.groupby("label_index")]
         per_label_datasets = [dataset.subsample(indices) for indices in indices_per_label]
     else:
@@ -105,21 +109,22 @@ def random_split(
             subset_idx = i % sum(subset_lengths)
             subset_lengths[subset_idx] += 1
         if 0 in subset_lengths:
-            warnings.warn(
+            msg = (
                 "Zero subset length encountered during splitting. This means one of your subsets might be"
-                " empty or devoid of either normal or anomalous images."
+                " empty or devoid of either normal or anomalous images.",
             )
+            logger.warn(msg)
 
         # perform random subsampling
         random_state = torch.Generator().manual_seed(seed) if seed else None
         indices = torch.randperm(len(label_dataset.samples), generator=random_state)
         subsets.append(
-            [label_dataset.subsample(subset_indices) for subset_indices in torch.split(indices, subset_lengths)]
+            [label_dataset.subsample(subset_indices) for subset_indices in torch.split(indices, subset_lengths)],
         )
 
     # invert outer/inner lists
     # outer list: subsets with the given ratio, inner list: per-label unique
-    subsets = list(map(list, zip(*subsets)))
+    subsets = list(map(list, zip(*subsets, strict=True)))
     return [concatenate_datasets(subset) for subset in subsets]
 
 

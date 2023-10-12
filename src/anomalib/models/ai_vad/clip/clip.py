@@ -12,7 +12,6 @@
 import hashlib
 import logging
 import os
-import warnings
 from typing import List, Union
 from urllib.parse import urlparse
 
@@ -35,8 +34,8 @@ except ImportError:
 
 
 if packaging.version.parse(torch.__version__) < packaging.version.parse("1.7.1"):
-    warnings.warn("PyTorch version 1.7.1 or higher is recommended")
-
+    msg = "PyTorch version 1.7.1 or higher is recommended"
+    logger.warn(msg)
 
 __all__ = ["available_models", "load"]
 
@@ -165,7 +164,8 @@ def load(
         except RuntimeError:
             # loading saved state dict
             if jit:
-                warnings.warn(f"File {model_path} is not a JIT archive. Loading as a state dict instead")
+                msg = f"File {model_path} is not a JIT archive. Loading as a state dict instead"
+                logger.warn(msg)
                 jit = False
             state_dict = torch.load(opened_file, map_location="cpu")
 

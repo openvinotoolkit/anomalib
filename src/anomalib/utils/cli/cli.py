@@ -4,8 +4,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable, Type
+from typing import Any
 
 from jsonargparse import ArgumentParser
 from lightning.pytorch import Trainer
@@ -18,16 +19,15 @@ from anomalib.models import AnomalyModule
 from anomalib.utils.benchmarking import distribute
 from anomalib.utils.callbacks import get_callbacks, get_visualization_callbacks
 from anomalib.utils.callbacks.normalization import get_normalization_callback
-from anomalib.utils.hpo import Sweep, get_hpo_parser
-from anomalib.utils.loggers import configure_logger
-from anomalib.utils.metrics.threshold import BaseThreshold
-
-from .subcommands import (
+from anomalib.utils.cli.subcommands import (
     add_onnx_export_arguments,
     add_openvino_export_arguments,
     add_torch_export_arguments,
     run_export,
 )
+from anomalib.utils.hpo import Sweep, get_hpo_parser
+from anomalib.utils.loggers import configure_logger
+from anomalib.utils.metrics.threshold import BaseThreshold
 
 logger = logging.getLogger("anomalib.cli")
 
@@ -39,13 +39,17 @@ class AnomalibCLI(LightningCLI):
     from both the CLI and a configuration file (.yaml or .json). It is even
     possible to use both the CLI and a configuration file simultaneously.
     For more details, the reader could refer to PyTorch Lightning CLI documentation.
+
+
+    ``save_config_kwargs`` is set to overwrite=True so that the SaveConfigCallback overwrites the config if it already
+    exists.
     """
 
     def __init__(
         self,
-        save_config_callback: Type[SaveConfigCallback] = SaveConfigCallback,
+        save_config_callback: type[SaveConfigCallback] = SaveConfigCallback,
         save_config_kwargs: dict[str, Any] | None = None,
-        trainer_class: Type[Trainer] | Callable[..., Trainer] = Trainer,
+        trainer_class: type[Trainer] | Callable[..., Trainer] = Trainer,
         trainer_defaults: dict[str, Any] | None = None,
         seed_everything_default: bool | int = True,
         parser_kwargs: dict[str, Any] | dict[str, dict[str, Any]] | None = None,
@@ -57,7 +61,7 @@ class AnomalibCLI(LightningCLI):
             AnomalyModule,
             AnomalibDataModule,
             save_config_callback,
-            save_config_kwargs,
+            {"overwrite": True} if save_config_kwargs is None else save_config_kwargs,
             trainer_class,
             trainer_defaults,
             seed_everything_default,
@@ -86,8 +90,10 @@ class AnomalibCLI(LightningCLI):
         # Add  export, benchmark and hpo
         for subcommand in self.anomalib_subcommands():
             sub_parser = ArgumentParser()
-            self.parser._subcommands_action.add_subcommand(
-                subcommand, sub_parser, help=self.anomalib_subcommands()[subcommand]["description"]
+            self.parser._subcommands_action.add_subcommand(  # noqa: SLF001
+                subcommand,
+                sub_parser,
+                help=self.anomalib_subcommands()[subcommand]["description"],
             )
             # add arguments to subcommand
             getattr(self, f"add_{subcommand}_arguments")(sub_parser)
@@ -109,7 +115,12 @@ class AnomalibCLI(LightningCLI):
         parser.add_argument("--logging.log_graph", type=bool, help="Log the model to the logger", default=False)
         parser.link_arguments("data.init_args.image_size", "model.init_args.input_size")
         parser.link_arguments("task", "data.init_args.task")
-        parser.add_argument("--results_dir.path", type=Path, help="Path to save the results.")
+        parser.add_argument(
+            "--results_dir.path",
+            type=Path,
+            help="Path to save the results.",
+            default=Path("./results"),
+        )
         parser.add_argument("--results_dir.unique", type=bool, help="Whether to create a unique folder.", default=True)
         parser.link_arguments("results_dir.path", "trainer.default_root_dir")
         # TODO tiling should also be a category of its own

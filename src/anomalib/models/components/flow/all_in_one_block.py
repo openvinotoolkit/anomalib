@@ -7,8 +7,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-import warnings
-from typing import Callable
+import logging
+from collections.abc import Callable
 
 import torch
 from FrEIA.modules import InvertibleModule
@@ -16,42 +16,44 @@ from scipy.stats import special_ortho_group
 from torch import Tensor, nn
 from torch.nn import functional as F  # noqa: N812
 
+logger = logging.getLogger(__name__)
 
-def _global_scale_sigmoid_activation(input: Tensor) -> Tensor:
+
+def _global_scale_sigmoid_activation(input_tensor: Tensor) -> Tensor:
     """Global scale sigmoid activation.
 
     Args:
-        input (Tensor): Input tensor
+        input_tensor (Tensor): Input tensor
 
     Returns:
         Tensor: Sigmoid activation
     """
-    return 10 * torch.sigmoid(input - 2.0)
+    return 10 * torch.sigmoid(input_tensor - 2.0)
 
 
-def _global_scale_softplus_activation(input: Tensor) -> Tensor:
+def _global_scale_softplus_activation(input_tensor: Tensor) -> Tensor:
     """Global scale softplus activation.
 
     Args:
-        input (Tensor): Input tensor
+        input_tensor (Tensor): Input tensor
 
     Returns:
         Tensor: Softplus activation
     """
     softplus = nn.Softplus(beta=0.5)
-    return 0.1 * softplus(input)
+    return 0.1 * softplus(input_tensor)
 
 
-def _global_scale_exp_activation(input: Tensor) -> Tensor:
+def _global_scale_exp_activation(input_tensor: Tensor) -> Tensor:
     """Global scale exponential activation.
 
     Args:
-        input (Tensor): Input tensor
+        input_tensor (Tensor): Input tensor
 
     Returns:
         Tensor: Exponential activation
     """
-    return torch.exp(input)
+    return torch.exp(input_tensor)
 
 
 class AllInOneBlock(InvertibleModule):
@@ -89,7 +91,7 @@ class AllInOneBlock(InvertibleModule):
     def __init__(
         self,
         dims_in,
-        dims_c=[],
+        dims_c: list | None = None,
         subnet_constructor: Callable | None = None,
         affine_clamping: float = 2.0,
         gin_block: bool = False,
@@ -98,7 +100,7 @@ class AllInOneBlock(InvertibleModule):
         permute_soft: bool = False,
         learned_householder_permutation: int = 0,
         reverse_permutation: bool = False,
-    ):
+    ) -> None:
         """
         Args:
           subnet_constructor:
@@ -127,7 +129,8 @@ class AllInOneBlock(InvertibleModule):
             Reverse the permutation before the block, as introduced by Putzky
             et al, 2019. Turns on the :math:`R^{-1} V^{-1}` pre-multiplication above.
         """
-
+        if dims_c is None:
+            dims_c = []
         super().__init__(dims_in, dims_c)
 
         channels = dims_in[0][0]
@@ -141,7 +144,7 @@ class AllInOneBlock(InvertibleModule):
             self.condition_channels = 0
         else:
             assert tuple(dims_c[0][1:]) == tuple(
-                dims_in[0][1:]
+                dims_in[0][1:],
             ), f"Dimensions of input and condition don't agree: {dims_c} vs {dims_in}."
             self.conditional = True
             self.condition_channels = sum(dc[0] for dc in dims_c)
@@ -153,7 +156,8 @@ class AllInOneBlock(InvertibleModule):
         try:
             self.permute_function = {0: F.linear, 1: F.conv1d, 2: F.conv2d, 3: F.conv3d}[self.input_rank]
         except KeyError:
-            raise ValueError(f"Data is {1 + self.input_rank}D. Must be 1D-4D.")
+            msg = f"Data is {1 + self.input_rank}D. Must be 1D-4D."
+            raise ValueError(msg) from None
 
         self.in_channels = channels
         self.clamp = affine_clamping
@@ -162,12 +166,11 @@ class AllInOneBlock(InvertibleModule):
         self.householder = learned_householder_permutation
 
         if permute_soft and channels > 512:
-            warnings.warn(
-                (
-                    "Soft permutation will take a very long time to initialize "
-                    f"with {channels} feature channels. Consider using hard permutation instead."
-                )
+            msg = (
+                "Soft permutation will take a very long time to initialize "
+                f"with {channels} feature channels. Consider using hard permutation instead."
             )
+            logger.warn(msg)
 
         # global_scale is used as the initial value for the global affine scale
         # (pre-activation). It is computed such that
@@ -184,7 +187,8 @@ class AllInOneBlock(InvertibleModule):
             global_scale = torch.log(torch.tensor(global_affine_init))
             self.global_scale_activation = _global_scale_exp_activation
         else:
-            raise ValueError('Global affine activation must be "SIGMOID", "SOFTPLUS" or "EXP"')
+            message = 'Global affine activation must be "SIGMOID", "SOFTPLUS" or "EXP"'
+            raise ValueError(message)
 
         self.global_scale = nn.Parameter(torch.ones(1, self.in_channels, *([1] * self.input_rank)) * global_scale)
         self.global_offset = nn.Parameter(torch.zeros(1, self.in_channels, *([1] * self.input_rank)))
@@ -206,14 +210,17 @@ class AllInOneBlock(InvertibleModule):
             self.w_0 = nn.Parameter(torch.FloatTensor(w), requires_grad=False)
         else:
             self.w_perm = nn.Parameter(
-                torch.FloatTensor(w).view(channels, channels, *([1] * self.input_rank)), requires_grad=False
+                torch.FloatTensor(w).view(channels, channels, *([1] * self.input_rank)),
+                requires_grad=False,
             )
             self.w_perm_inv = nn.Parameter(
-                torch.FloatTensor(w.T).view(channels, channels, *([1] * self.input_rank)), requires_grad=False
+                torch.FloatTensor(w.T).view(channels, channels, *([1] * self.input_rank)),
+                requires_grad=False,
             )
 
         if subnet_constructor is None:
-            raise ValueError("Please supply a callable subnet_constructor" "function or object (see docstring)")
+            message = "Please supply a callable subnet_constructor function or object (see docstring)"
+            raise ValueError(message)
         self.subnet = subnet_constructor(self.splits[0] + self.condition_channels, 2 * self.splits[1])
         self.last_jac = None
 
@@ -224,7 +231,7 @@ class AllInOneBlock(InvertibleModule):
         for vk in self.vk_householder:
             w = torch.mm(w, torch.eye(self.in_channels).to(w.device) - 2 * torch.ger(vk, vk) / torch.dot(vk, vk))
 
-        for i in range(self.input_rank):
+        for _ in range(self.input_rank):
             w = w.unsqueeze(-1)
         return w
 
@@ -240,16 +247,16 @@ class AllInOneBlock(InvertibleModule):
 
         if rev:
             return ((self.permute_function(x, self.w_perm_inv) - self.global_offset) / scale, perm_log_jac)
-        else:
-            return (self.permute_function(x * scale + self.global_offset, self.w_perm), perm_log_jac)
+
+        return (self.permute_function(x * scale + self.global_offset, self.w_perm), perm_log_jac)
 
     def _pre_permute(self, x, rev=False):
         """Permutes before the coupling block, only used if
         reverse_permutation is set"""
         if rev:
             return self.permute_function(x, self.w_perm)
-        else:
-            return self.permute_function(x, self.w_perm_inv)
+
+        return self.permute_function(x, self.w_perm_inv)
 
     def _affine(self, x, a, rev=False):
         """Given the passive half, and the pre-activation outputs of the
@@ -267,11 +274,16 @@ class AllInOneBlock(InvertibleModule):
 
         if not rev:
             return (x * torch.exp(sub_jac) + a[:, ch:], torch.sum(sub_jac, dim=self.sum_dims))
-        else:
-            return ((x - a[:, ch:]) * torch.exp(-sub_jac), -torch.sum(sub_jac, dim=self.sum_dims))
 
-    def forward(self, x, c=[], rev=False, jac=True):
+        return ((x - a[:, ch:]) * torch.exp(-sub_jac), -torch.sum(sub_jac, dim=self.sum_dims))
+
+    def forward(self, x, c: list | None = None, rev: bool = False, jac: bool = True):
         """See base class docstring"""
+        del jac  # Unused argument.
+
+        if c is None:
+            c = []
+
         if self.householder:
             self.w_perm = self._construct_householder_permutation()
             if rev or self.reverse_pre_permute:
@@ -285,10 +297,7 @@ class AllInOneBlock(InvertibleModule):
 
         x1, x2 = torch.split(x[0], self.splits, dim=1)
 
-        if self.conditional:
-            x1c = torch.cat([x1, *c], 1)
-        else:
-            x1c = x1
+        x1c = torch.cat([x1, *c], 1) if self.conditional else x1
 
         if not rev:
             a1 = self.subnet(x1c)

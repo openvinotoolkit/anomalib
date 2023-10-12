@@ -28,8 +28,9 @@ class _MinMaxNormalizationCallback(Callback):
         if not hasattr(pl_module, "normalization_metrics"):
             pl_module.normalization_metrics = MinMax().cpu()
         elif not isinstance(pl_module.normalization_metrics, MinMax):
+            msg = f"Expected normalization_metrics to be of type MinMax, got {type(pl_module.normalization_metrics)}"
             raise AttributeError(
-                f"Expected normalization_metrics to be of type MinMax, got {type(pl_module.normalization_metrics)}"
+                msg,
             )
 
     def on_test_start(self, trainer: Trainer, pl_module: AnomalyModule) -> None:
@@ -59,7 +60,8 @@ class _MinMaxNormalizationCallback(Callback):
         elif "pred_scores" in outputs:
             pl_module.normalization_metrics(outputs["pred_scores"])
         else:
-            raise ValueError("No values found for normalization, provide anomaly maps, bbox scores, or image scores")
+            msg = "No values found for normalization, provide anomaly maps, bbox scores, or image scores"
+            raise ValueError(msg)
 
     def on_test_batch_end(
         self,

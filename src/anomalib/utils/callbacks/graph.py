@@ -36,7 +36,7 @@ class GraphLogger(Callback):
         """
 
         for logger in trainer.loggers:
-            if isinstance(logger, (AnomalibCometLogger, AnomalibTensorBoardLogger)):
+            if isinstance(logger, AnomalibCometLogger | AnomalibTensorBoardLogger):
                 logger.log_graph(pl_module, input_array=torch.ones((1, 3, 256, 256)))
             elif isinstance(logger, AnomalibWandbLogger):
                 logger.experiment.unwatch(pl_module)  # type: ignore

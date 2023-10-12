@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-from typing import Sequence
+from collections.abc import Sequence
 
 import lightning.pytorch as pl
 from lightning.pytorch.callbacks import Callback
@@ -73,4 +73,5 @@ class TilerConfigurationCallback(Callback):
                     tile_count=self.tile_count,
                 )
             else:
-                raise ValueError("Model does not support tiling.")
+                msg = "Model does not support tiling."
+                raise ValueError(msg)

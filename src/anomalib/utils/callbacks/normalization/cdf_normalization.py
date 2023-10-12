@@ -5,16 +5,18 @@
 
 
 import logging
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from lightning.pytorch import Callback, Trainer
 from lightning.pytorch.utilities.types import STEP_OUTPUT
-from torch.distributions import LogNormal
 
 from anomalib import engine
 from anomalib.models.components import AnomalyModule
 from anomalib.post_processing.normalization.cdf import normalize, standardize
 from anomalib.utils.metrics import AnomalyScoreDistribution
+
+if TYPE_CHECKING:
+    from torch.distributions import LogNormal
 
 logger = logging.getLogger(__name__)
 
@@ -36,9 +38,12 @@ class _CdfNormalizationCallback(Callback):
         if not hasattr(pl_module, "normalization_metrics"):
             pl_module.normalization_metrics = AnomalyScoreDistribution().cpu()
         elif not isinstance(pl_module.normalization_metrics, AnomalyScoreDistribution):
+            msg = (
+                "Expected normalization_metrics to be of type AnomalyScoreDistribution, "
+                f"got {type(pl_module.normalization_metrics)}"
+            )
             raise AttributeError(
-                f"Expected normalization_metrics to be of type AnomalyScoreDistribution,"
-                f" got {type(pl_module.normalization_metrics)}"
+                msg,
             )
 
     def on_test_start(self, trainer: Trainer, pl_module: AnomalyModule) -> None:
@@ -117,14 +122,15 @@ class _CdfNormalizationCallback(Callback):
         # to engine here leads to circular import error
         _engine = engine.Engine(accelerator=trainer.accelerator, devices=trainer.num_devices, normalization="none")
         predictions = _engine.predict(
-            model=self._create_inference_model(pl_module), dataloaders=trainer.datamodule.train_dataloader()
+            model=self._create_inference_model(pl_module),
+            dataloaders=trainer.datamodule.train_dataloader(),
         )
         assert predictions, "engine.predict returned no predictions"
         pl_module.normalization_metrics.reset()
         for batch in predictions:
-            if "pred_scores" in batch.keys():
+            if "pred_scores" in batch:
                 pl_module.normalization_metrics.update(anomaly_scores=batch["pred_scores"])
-            if "anomaly_maps" in batch.keys():
+            if "anomaly_maps" in batch:
                 pl_module.normalization_metrics.update(anomaly_maps=batch["anomaly_maps"])
         pl_module.normalization_metrics.compute()
 
@@ -140,14 +146,17 @@ class _CdfNormalizationCallback(Callback):
     def _standardize_batch(outputs: STEP_OUTPUT, pl_module) -> None:
         stats = pl_module.normalization_metrics.to(outputs["pred_scores"].device)
         outputs["pred_scores"] = standardize(outputs["pred_scores"], stats.image_mean, stats.image_std)
-        if "anomaly_maps" in outputs.keys():
+        if "anomaly_maps" in outputs:
             outputs["anomaly_maps"] = standardize(
-                outputs["anomaly_maps"], stats.pixel_mean, stats.pixel_std, center_at=stats.image_mean
+                outputs["anomaly_maps"],
+                stats.pixel_mean,
+                stats.pixel_std,
+                center_at=stats.image_mean,
             )
 
     @staticmethod
     def _normalize_batch(outputs: STEP_OUTPUT, pl_module: AnomalyModule) -> None:
         outputs["pred_scores"] = normalize(outputs["pred_scores"], pl_module.image_threshold.value)
-        if "anomaly_maps" in outputs.keys():
+        if "anomaly_maps" in outputs:
             outputs["anomaly_maps"] = normalize(outputs["anomaly_maps"], pl_module.pixel_threshold.value)
             outputs["anomaly_maps"] = normalize(outputs["anomaly_maps"], pl_module.pixel_threshold.value)

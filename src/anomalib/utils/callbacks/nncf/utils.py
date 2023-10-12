@@ -6,7 +6,7 @@
 
 import logging
 from copy import copy
-from typing import Any, Iterator
+from typing import TYPE_CHECKING, Any
 
 from nncf import NNCFConfig
 from nncf.api.compression import CompressionAlgorithmController
@@ -16,13 +16,16 @@ from nncf.torch.nncf_network import NNCFNetwork
 from torch import nn
 from torch.utils.data.dataloader import DataLoader
 
+if TYPE_CHECKING:
+    from collections.abc import Iterator
+
 logger = logging.getLogger(name="NNCF compression")
 
 
 class InitLoader(PTInitializingDataLoader):
     """Initializing data loader for NNCF to be used with unsupervised training algorithms."""
 
-    def __init__(self, data_loader: DataLoader):
+    def __init__(self, data_loader: DataLoader) -> None:
         super().__init__(data_loader)
         self._data_loader_iter: Iterator
 
@@ -53,11 +56,14 @@ class InitLoader(PTInitializingDataLoader):
         Returns:
             None
         """
-        return None
+        return
 
 
 def wrap_nncf_model(
-    model: nn.Module, config: dict, dataloader: DataLoader, init_state_dict: dict
+    model: nn.Module,
+    config: dict,
+    dataloader: DataLoader,
+    init_state_dict: dict,
 ) -> tuple[CompressionAlgorithmController, NNCFNetwork]:
     """Wrap model by NNCF.
 
@@ -73,7 +79,7 @@ def wrap_nncf_model(
         logger.warning(
             "Either dataloader or NNCF pre-trained "
             "model checkpoint should be set. Without this, "
-            "quantizers will not be initialized"
+            "quantizers will not be initialized",
         )
 
     compression_state = None
@@ -87,7 +93,10 @@ def wrap_nncf_model(
         nncf_config = register_default_init_args(nncf_config, init_loader)
 
     nncf_ctrl, nncf_model = create_compressed_model(
-        model=model, config=nncf_config, dump_graphs=False, compression_state=compression_state
+        model=model,
+        config=nncf_config,
+        dump_graphs=False,
+        compression_state=compression_state,
     )
 
     if resuming_state_dict:
@@ -121,9 +130,9 @@ def compose_nncf_config(nncf_config: dict, enabled_options: list[str]) -> dict:
         assert isinstance(order_of_parts, list), 'The field "order_of_parts" in optimisation config should be a list'
 
         for part in enabled_options:
-            assert part in order_of_parts, (
-                f"The part {part} is selected, " "but it is absent in order_of_parts={order_of_parts}"
-            )
+            assert (
+                part in order_of_parts
+            ), f"The part {part} is selected, but it is absent in order_of_parts={order_of_parts}"
 
         optimisation_parts_to_choose = [part for part in order_of_parts if part in enabled_options]
 
@@ -165,34 +174,31 @@ def _merge_dicts_and_lists_b_into_a(a, b, cur_key=None):
     """
 
     def _err_str(_a, _b, _key):
-        if _key is None:
-            _key_str = "of whole structures"
-        else:
-            _key_str = f"during merging for key=`{_key}`"
+        _key_str = "of whole structures" if _key is None else f"during merging for key=`{_key}`"
         return (
             f"Error in merging parts of config: different types {_key_str},"
             f" type(a) = {type(_a)},"
             f" type(b) = {type(_b)}"
         )
 
-    assert isinstance(a, (dict, list)), f"Can merge only dicts and lists, whereas type(a)={type(a)}"
-    assert isinstance(b, (dict, list)), _err_str(a, b, cur_key)
+    assert isinstance(a, dict | list), f"Can merge only dicts and lists, whereas type(a)={type(a)}"
+    assert isinstance(b, dict | list), _err_str(a, b, cur_key)
     assert isinstance(a, list) == isinstance(b, list), _err_str(a, b, cur_key)
     if isinstance(a, list):
         # the main diff w.r.t. mmcf.Config -- merging of lists
         return a + b
 
     a = copy(a)
-    for k in b.keys():
+    for k in b:
         if k not in a:
             a[k] = copy(b[k])
             continue
         new_cur_key = cur_key + "." + k if cur_key else k
-        if isinstance(a[k], (dict, list)):
+        if isinstance(a[k], dict | list):
             a[k] = _merge_dicts_and_lists_b_into_a(a[k], b[k], new_cur_key)
             continue
 
-        assert not isinstance(b[k], (dict, list)), _err_str(a[k], b[k], new_cur_key)
+        assert not isinstance(b[k], dict | list), _err_str(a[k], b[k], new_cur_key)
 
         # suppose here that a[k] and b[k] are scalars, just overwrite
         a[k] = b[k]

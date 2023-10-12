@@ -7,16 +7,19 @@ import importlib
 import logging
 from abc import ABC, abstractproperty
 from collections import OrderedDict
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import lightning.pytorch as pl
-from lightning.pytorch.callbacks import Callback
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torch import Tensor, nn
-from torchmetrics import Metric
 
-from anomalib.utils.metrics import AnomalibMetricCollection
 from anomalib.utils.metrics.threshold import BaseThreshold
+
+if TYPE_CHECKING:
+    from lightning.pytorch.callbacks import Callback
+    from torchmetrics import Metric
+
+    from anomalib.utils.metrics import AnomalibMetricCollection
 
 logger = logging.getLogger(__name__)
 

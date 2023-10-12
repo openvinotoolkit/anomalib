@@ -4,7 +4,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 import torch
 from matplotlib.figure import Figure
@@ -81,18 +82,16 @@ class AUPRO(Metric):
 
         # check and prepare target for labeling via kornia
         if target.min() < 0 or target.max() > 1:
+            msg = (
+                "kornia.contrib.connected_components expects input to lie in the interval [0, 1], "
+                f"but found interval was [{target.min()}, {target.max()}]."
+            )
             raise ValueError(
-                f"kornia.contrib.connected_components expects input to lie in the interval [0, 1], but found "
-                f"interval was [{target.min()}, {target.max()}]."
+                msg,
             )
         target = target.unsqueeze(1)  # kornia expects N1HW format
         target = target.type(torch.float)  # kornia expects FloatTensor
-        if target.is_cuda:
-            cca = connected_components_gpu(target)
-        else:
-            cca = connected_components_cpu(target)
-
-        return cca
+        return connected_components_gpu(target) if target.is_cuda else connected_components_cpu(target)
 
     def compute_pro(self, cca: Tensor, target: Tensor, preds: Tensor) -> tuple[Tensor, Tensor]:
         """Compute the pro/fpr value-pairs until the fpr specified by self.fpr_limit.
@@ -110,7 +109,7 @@ class AUPRO(Metric):
             #  https://github.com/Lightning-AI/torchmetrics/issues/1526 is fixed and
             #  the roc curve is computed with deactivated formatting.
 
-            if torch.all((0 <= preds) * (preds <= 1)):
+            if torch.all((preds >= 0) * (preds <= 1)):
                 thresholds = thresholds_between_min_and_max(preds, self.num_thresholds, self.device)
             else:
                 thresholds = thresholds_between_0_and_1(self.num_thresholds, self.device)
@@ -213,9 +212,7 @@ class AUPRO(Metric):
         fpr, tpr = self._compute()
 
         aupro = auc(fpr, tpr, reorder=True)
-        aupro = aupro / fpr[-1]  # normalize the area
-
-        return aupro
+        return aupro / fpr[-1]  # normalize the area
 
     def generate_figure(self) -> tuple[Figure, str]:
         """Generate a figure containing the PRO curve and the AUPRO.
@@ -265,6 +262,4 @@ class AUPRO(Metric):
         idx = torch.clamp(idx, 0, old_x.size(0) - 2)
 
         # perform actual linear interpolation
-        y_new = old_y[idx] + slope[idx] * (new_x - old_x[idx])
-
-        return y_new
+        return old_y[idx] + slope[idx] * (new_x - old_x[idx])

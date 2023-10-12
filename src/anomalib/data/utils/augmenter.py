@@ -44,7 +44,7 @@ class Augmenter:
         anomaly_source_path: str | None = None,
         p_anomalous: float = 0.5,
         beta: float | tuple[float, float] = (0.2, 1.0),
-    ):
+    ) -> None:
         self.p_anomalous = p_anomalous
         self.beta = beta
 
@@ -74,11 +74,13 @@ class Augmenter:
             A selection of 3 transforms.
         """
         aug_ind = np.random.choice(np.arange(len(self.augmenters)), 3, replace=False)
-        aug = iaa.Sequential([self.augmenters[aug_ind[0]], self.augmenters[aug_ind[1]], self.augmenters[aug_ind[2]]])
-        return aug
+        return iaa.Sequential([self.augmenters[aug_ind[0]], self.augmenters[aug_ind[1]], self.augmenters[aug_ind[2]]])
 
     def generate_perturbation(
-        self, height: int, width: int, anomaly_source_path: str | None
+        self,
+        height: int,
+        width: int,
+        anomaly_source_path: str | None,
     ) -> tuple[np.ndarray, np.ndarray]:
         """Generate an image containing a random anomalous perturbation using a source image.
 
@@ -95,11 +97,12 @@ class Augmenter:
         perlin_scale = 6
         min_perlin_scale = 0
 
-        perlin_scalex = 2 ** random.randint(min_perlin_scale, perlin_scale)  # nosec: B311
-        perlin_scaley = 2 ** random.randint(min_perlin_scale, perlin_scale)  # nosec: B311
+        perlin_scalex = 2 ** np.random.default_rng().integers(min_perlin_scale, perlin_scale)
+        perlin_scaley = 2 ** np.random.default_rng().integers(min_perlin_scale, perlin_scale)
 
         perlin_noise = random_2d_perlin((nextpow2(height), nextpow2(width)), (perlin_scalex, perlin_scaley))[
-            :height, :width
+            :height,
+            :width,
         ]
         perlin_noise = self.rot(image=perlin_noise)
 
@@ -161,7 +164,8 @@ class Augmenter:
             beta = torch.rand(batch_size) * (self.beta[1] - self.beta[0]) + self.beta[0]
             beta = beta.view(batch_size, 1, 1, 1).expand_as(batch).to(batch.device)  # type: ignore
         else:
-            raise ValueError("Beta must be either float or tuple of floats")
+            msg = "Beta must be either float or tuple of floats"
+            raise ValueError(msg)
 
         augmented_batch = batch * (1 - masks) + (beta) * perturbations + (1 - beta) * batch * (masks)
 

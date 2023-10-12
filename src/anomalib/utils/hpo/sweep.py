@@ -22,7 +22,7 @@ class HPOBackend(str, Enum):
     COMET = "comet"
     WANDB = "wandb"
 
-    def __str__(self):
+    def __str__(self) -> str:
         """Return the string representation of the enum value."""
         return self.value
 
@@ -32,12 +32,20 @@ def get_hpo_parser(parser: ArgumentParser | LightningArgumentParser | None = Non
     if parser is None:
         parser = ArgumentParser()
     parser.add_argument(
-        "--model", type=str, default="padim", help="Name of the algorithm to train/test", required=False
+        "--model",
+        type=str,
+        default="padim",
+        help="Name of the algorithm to train/test",
+        required=False,
     )
     parser.add_argument("--model_config", type=Path, required=False, help="Path to a model config file")
     parser.add_argument("--sweep_config", type=Path, required=True, help="Path to sweep configuration")
     parser.add_argument(
-        "--backend", type=HPOBackend, default=HPOBackend.WANDB, help="HPO backend to use", required=False
+        "--backend",
+        type=HPOBackend,
+        default=HPOBackend.WANDB,
+        help="HPO backend to use",
+        required=False,
     )
     parser.add_argument(
         "--entity",
@@ -71,9 +79,10 @@ class Sweep:
         sweep_config: Path | str,
         backend: HPOBackend = HPOBackend.COMET,
         entity: str = "",
-    ):
+    ) -> None:
         if model is None and model_config is None:
-            raise ValueError("Either model or model_config must be provided.")
+            msg = "Either model or model_config must be provided."
+            raise ValueError(msg)
 
         self.model_config = get_configurable_parameters(model_name=model, config_path=model_config)
         self.sweep_config = OmegaConf.load(sweep_config)
@@ -89,7 +98,8 @@ class Sweep:
         elif backend == HPOBackend.WANDB:
             runner = WandbSweep(self.model_config, self.sweep_config, self.entity)
         else:
-            raise ValueError(f"Unknown backend {backend}")
+            msg = f"Unknown backend {backend}"
+            raise ValueError(msg)
         return runner
 
     def run(self):

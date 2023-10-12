@@ -6,7 +6,6 @@
 
 import logging
 import os
-import warnings
 from importlib import import_module
 
 import yaml
@@ -64,22 +63,22 @@ def get_callbacks(config: DictConfig | ListConfig | Namespace) -> list[Callback]
 
     callbacks.extend([checkpoint, TimerCallback()])
 
-    if "ckpt_path" in config.trainer.keys() and config.ckpt_path is not None:
+    if "ckpt_path" in config.trainer and config.ckpt_path is not None:
         load_model = LoadModelCallback(config.ckpt_path)
         callbacks.append(load_model)
 
-    if "optimization" in config.keys():
+    if "optimization" in config:
         if "nncf" in config.optimization and config.optimization.nncf.apply:
             # NNCF wraps torch's jit which conflicts with kornia's jit calls.
             # Hence, nncf is imported only when required
             nncf_module = import_module("anomalib.utils.callbacks.nncf.callback")
-            nncf_callback = getattr(nncf_module, "NNCFCallback")
+            nncf_callback = nncf_module.NNCFCallback
             nncf_config = yaml.safe_load(OmegaConf.to_yaml(config.optimization.nncf))
             callbacks.append(
                 nncf_callback(
                     config=nncf_config,
                     export_dir=os.path.join(config.trainer.default_root_dir, "compressed"),
-                )
+                ),
             )
         if config.optimization.export_mode is not None:
             from .export import ExportCallback  # pylint: disable=import-outside-toplevel
@@ -91,10 +90,11 @@ def get_callbacks(config: DictConfig | ListConfig | Namespace) -> list[Callback]
                     dirpath=config.trainer.default_root_dir,
                     filename="model",
                     export_mode=ExportMode(config.optimization.export_mode),
-                )
+                ),
             )
         else:
-            warnings.warn(f"Export option: {config.optimization.export_mode} not found. Defaulting to no model export")
+            msg = f"Export option: {config.optimization.export_mode} not found. Defaulting to no model export"
+            logger.warn(msg)
 
     # Add callback to log graph to loggers
     # TODO find a place for this key

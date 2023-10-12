@@ -36,7 +36,9 @@ from anomalib.data.utils import (
 logger = logging.getLogger(__name__)
 
 DOWNLOAD_INFO = DownloadInfo(
-    name="btech", url="https://avires.dimi.uniud.it/papers/btad/btad.zip", hash="c1fa4d56ac50dd50908ce04e81037a8e"
+    name="btech",
+    url="https://avires.dimi.uniud.it/papers/btad/btad.zip",
+    checksum="c1fa4d56ac50dd50908ce04e81037a8e",
 )
 
 CATEGORIES = ("01", "02", "03")
@@ -83,7 +85,8 @@ def make_btech_dataset(path: Path, split: str | Split | None = None) -> DataFram
         (str(path),) + filename.parts[-3:] for filename in path.glob("**/*") if filename.suffix in (".bmp", ".png")
     ]
     if not samples_list:
-        raise RuntimeError(f"Found 0 images in {path}")
+        msg = f"Found 0 images in {path}"
+        raise RuntimeError(msg)
 
     samples = pd.DataFrame(samples_list, columns=["path", "split", "label", "image_path"])
     samples = samples[samples.split != "ground_truth"]
@@ -286,10 +289,18 @@ class BTech(AnomalibDataModule):
         )
 
         self.train_data = BTechDataset(
-            task=task, transform=transform_train, split=Split.TRAIN, root=root, category=category
+            task=task,
+            transform=transform_train,
+            split=Split.TRAIN,
+            root=root,
+            category=category,
         )
         self.test_data = BTechDataset(
-            task=task, transform=transform_eval, split=Split.TEST, root=root, category=category
+            task=task,
+            transform=transform_eval,
+            split=Split.TEST,
+            root=root,
+            category=category,
         )
 
     def prepare_data(self) -> None:

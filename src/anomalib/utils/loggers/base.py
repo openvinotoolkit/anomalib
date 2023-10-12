@@ -17,4 +17,4 @@ class ImageLoggerBase:
     @abstractmethod
     def add_image(self, image: np.ndarray | Figure, name: str | None = None, **kwargs: Any) -> None:
         """Interface to log images in the respective loggers."""
-        raise NotImplementedError()
+        raise NotImplementedError
