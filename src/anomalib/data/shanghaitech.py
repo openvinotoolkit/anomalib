@@ -118,6 +118,7 @@ class ShanghaiTechTrainClipsIndexer(ClipsIndexer):
 
     def get_mask(self, idx: int) -> Tensor | None:
         """No masks available for training set."""
+        del idx  # Unused argument
         return None
 
 
@@ -138,8 +139,7 @@ class ShanghaiTechTestClipsIndexer(ClipsIndexer):
         frames = self.clips[video_idx][frames_idx]
 
         vid_masks = np.load(mask_file)
-        masks = np.take(vid_masks, frames, 0)
-        return masks
+        return np.take(vid_masks, frames, 0)
 
     def _compute_frame_pts(self) -> None:
         """Retrieve the number of frames in each video."""
@@ -329,7 +329,7 @@ class ShanghaiTech(AnomalibVideoDataModule):
         converted_vid_dir = training_root / "converted_videos"
         vid_count = len(list(vid_dir.glob("*")))
         converted_vid_count = len(list(converted_vid_dir.glob("*")))
-        if not vid_count == converted_vid_count:
+        if vid_count != converted_vid_count:
             self._convert_training_videos(vid_dir, converted_vid_dir)
 
     @staticmethod

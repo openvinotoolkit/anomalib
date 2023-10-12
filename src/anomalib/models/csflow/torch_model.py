@@ -253,6 +253,8 @@ class ParallelPermute(InvertibleModule):
         Returns:
             tuple[Tensor, Tensor]: output tensor and log determinant of the Jacobian
         """
+        del jac  # Unused argument.
+
         if not rev:
             return [input_tensor[i][:, self.perm[i]] for i in range(self.n_inputs)], 0.0
 
@@ -302,6 +304,8 @@ class ParallelGlowCouplingLayer(InvertibleModule):
 
     def forward(self, input_tensor: list[Tensor], rev=False, jac=True) -> tuple[list[Tensor], Tensor]:
         """Applies GLOW coupling for the three scales."""
+
+        del jac  # Unused argument.
 
         # Even channel split. The two splits are used by cross-scale convolution to compute scale and transform
         # parameters.
@@ -579,5 +583,4 @@ class CsFlowModel(nn.Module):
         # z_dist is a 3 length list of tensors with shape b x 304 x fx x fy
         flat_maps = [z_dist.reshape(z_dist.shape[0], -1) for z_dist in z_dists]
         flat_maps_tensor = torch.cat(flat_maps, dim=1)
-        anomaly_scores = torch.mean(flat_maps_tensor**2 / 2, dim=1)
-        return anomaly_scores
+        return torch.mean(flat_maps_tensor**2 / 2, dim=1)

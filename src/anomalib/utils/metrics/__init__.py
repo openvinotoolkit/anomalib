@@ -80,7 +80,7 @@ def _validate_metrics_dict(metrics: dict[str, dict[str, Any]]) -> None:
 
     """
     assert all(
-        isinstance(metric, str) for metric in metrics.keys()
+        isinstance(metric, str) for metric in metrics
     ), f"All keys (metric names) must be strings, found {sorted(metrics.keys())}"
     assert all(
         isinstance(metric, dict | DictConfig) for metric in metrics.values()
@@ -102,8 +102,7 @@ def _get_class_from_path(class_path: str) -> Any:
     module_name, class_name = class_path.rsplit(".", 1)
     module = importlib.import_module(module_name)
     assert hasattr(module, class_name), f"Class {class_name} not found in module {module_name}"
-    cls = getattr(module, class_name)
-    return cls
+    return getattr(module, class_name)
 
 
 def metric_collection_from_dicts(metrics: dict[str, dict[str, Any]], prefix: str | None) -> AnomalibMetricCollection:

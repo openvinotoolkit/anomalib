@@ -110,7 +110,7 @@ def upload_to_wandb(
         table = pd.read_csv(csv_file)
         for index, row in table.iterrows():
             row = dict(row[1:])  # remove index column
-            tags = [str(row[column]) for column in tag_list if column in row.keys()]
+            tags = [str(row[column]) for column in tag_list if column in row]
             wandb.init(
                 entity=team,
                 project=project,
@@ -139,7 +139,7 @@ def upload_to_comet(
         table = pd.read_csv(csv_file)
         for index, row in table.iterrows():
             row = dict(row[1:])  # remove index column
-            tags = [str(row[column]) for column in tag_list if column in row.keys()]
+            tags = [str(row[column]) for column in tag_list if column in row]
             experiment = Experiment(project_name=project)
             experiment.set_name(f"{row['model_name']}_{row['dataset.category']}_{index}")
             experiment.log_metrics(row, step=1, epoch=1)  # populates auto-generated charts on panel view

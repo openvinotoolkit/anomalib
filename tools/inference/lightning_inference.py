@@ -63,7 +63,7 @@ def infer(args: Namespace):
 
     # get the transforms
     transform_config = (
-        config.data.init_args.transform_config.eval if "transform_config" in config.data.init_args.keys() else None
+        config.data.init_args.transform_config.eval if "transform_config" in config.data.init_args else None
     )
     image_size = (config.data.init_args.image_size[0], config.data.init_args.image_size[1])
     center_crop = config.data.init_args.get("center_crop")

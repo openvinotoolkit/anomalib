@@ -5,6 +5,7 @@
 
 
 from random import sample
+from typing import TYPE_CHECKING
 
 import torch
 from torch import Tensor, nn
@@ -13,7 +14,9 @@ from torch.nn import functional as F  # noqa: N812
 from anomalib.models.components import FeatureExtractor, MultiVariateGaussian
 from anomalib.models.components.feature_extractors import dryrun_find_featuremap_dims
 from anomalib.models.padim.anomaly_map import AnomalyMapGenerator
-from anomalib.pre_processing import Tiler
+
+if TYPE_CHECKING:
+    from anomalib.pre_processing import Tiler
 
 # defaults from the paper
 _N_FEATURES_DEFAULTS = {
@@ -162,5 +165,4 @@ class PadimModel(nn.Module):
 
         # subsample embeddings
         idx = self.idx.to(embeddings.device)
-        embeddings = torch.index_select(embeddings, 1, idx)
-        return embeddings
+        return torch.index_select(embeddings, 1, idx)

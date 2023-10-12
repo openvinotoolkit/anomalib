@@ -186,8 +186,7 @@ class CfaModel(DynamicBufferModule):
         features = target_oriented_features.pow(2).sum(dim=2, keepdim=True)
         centers = self.memory_bank.pow(2).sum(dim=0, keepdim=True).to(features.device)
         f_c = 2 * torch.matmul(target_oriented_features, (self.memory_bank.to(features.device)))
-        distance = features + centers - f_c
-        return distance
+        return features + centers - f_c
 
     def forward(self, input_tensor: Tensor) -> Tensor:
         """Forward pass.
@@ -213,12 +212,7 @@ class CfaModel(DynamicBufferModule):
         target_features = self.descriptor(features)
         distance = self.compute_distance(target_features)
 
-        if self.training:
-            output = distance
-        else:
-            output = self.anomaly_map_generator(distance=distance, scale=self.scale)
-
-        return output
+        return distance if self.training else self.anomaly_map_generator(distance=distance, scale=self.scale)
 
 
 class Descriptor(nn.Module):
@@ -253,8 +247,7 @@ class Descriptor(nn.Module):
                 else torch.cat((patch_features, F.interpolate(i, patch_features.size(2), mode="bilinear")), dim=1)
             )
 
-        target_oriented_features = self.layer(patch_features)
-        return target_oriented_features
+        return self.layer(patch_features)
 
 
 class CoordConv2d(nn.Conv2d):
@@ -314,8 +307,7 @@ class CoordConv2d(nn.Conv2d):
             Tensor: Output tensor after applying the CoordConv layer.
         """
         out = self.add_coords(input_tensor)
-        out = self.conv2d(out)
-        return out
+        return self.conv2d(out)
 
 
 class AddCoords(nn.Module):

@@ -21,8 +21,7 @@ from torch import Tensor
 
 def lerp_np(x, y, w):
     """Helper function."""
-    fin_out = (y - x) * w + x
-    return fin_out
+    return (y - x) * w + x
 
 
 def rand_perlin_2d_octaves_np(shape, res, octaves=1, persistence=0.5):

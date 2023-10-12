@@ -39,7 +39,7 @@ def add_openvino_export_arguments(subcommand: _ActionSubCommands):
     group = parser.add_argument_group("OpenVINO Model Optimizer arguments (optional)")
     mo_parser = get_common_cli_parser()
     # remove redundant keys from mo keys
-    for arg in mo_parser._actions:
+    for arg in mo_parser._actions:  # noqa: SLF001
         if arg.dest in ("help", "input_model", "output_dir"):
             continue
         group.add_argument(f"--mo.{arg.dest}", type=arg.type, default=arg.default, help=arg.help)

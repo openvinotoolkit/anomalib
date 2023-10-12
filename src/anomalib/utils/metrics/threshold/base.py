@@ -24,7 +24,7 @@ class BaseThreshold(Metric, ABC):
         msg = "Subclass of BaseAnomalyScoreThreshold must implement the compute method"
         raise NotImplementedError(msg)
 
-    def update(self, *args, **kwargs) -> None:
+    def update(self, *args, **kwargs) -> None:  # noqa: ARG002
         """Update the metric state
 
         Args:

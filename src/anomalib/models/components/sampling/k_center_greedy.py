@@ -131,6 +131,4 @@ class KCenterGreedy:
         """
 
         idxs = self.select_coreset_idxs(selected_idxs)
-        coreset = self.embedding[idxs]
-
-        return coreset
+        return self.embedding[idxs]

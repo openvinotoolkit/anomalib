@@ -170,6 +170,8 @@ class Ganomaly(AnomalyModule):
         Returns:
             (STEP_OUTPUT): Output predictions.
         """
+        del args, kwargs  # Unused arguments.
+
         batch["pred_scores"] = self.model(batch["image"])
         self.max_scores = max(self.max_scores, torch.max(batch["pred_scores"]))
         self.min_scores = min(self.min_scores, torch.min(batch["pred_scores"]))
@@ -188,6 +190,8 @@ class Ganomaly(AnomalyModule):
 
     def test_step(self, batch: dict[str, str | Tensor], batch_idx: int, *args, **kwargs) -> STEP_OUTPUT:
         """Update min and max scores from the current step."""
+        del args, kwargs  # Unused arguments.
+
         super().test_step(batch, batch_idx)
         self.max_scores = max(self.max_scores, torch.max(batch["pred_scores"]))
         self.min_scores = min(self.min_scores, torch.min(batch["pred_scores"]))
@@ -208,10 +212,9 @@ class Ganomaly(AnomalyModule):
         Returns:
             Tensor: Normalized scores.
         """
-        scores = (scores - self.min_scores.to(scores.device)) / (
+        return (scores - self.min_scores.to(scores.device)) / (
             self.max_scores.to(scores.device) - self.min_scores.to(scores.device)
         )
-        return scores
 
     @property
     def trainer_arguments(self) -> dict[str, Any]:

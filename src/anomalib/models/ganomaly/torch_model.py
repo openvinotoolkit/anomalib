@@ -198,8 +198,7 @@ class Decoder(nn.Module):
         output = self.latent_input(input_tensor)
         output = self.inverse_pyramid(output)
         output = self.extra_layers(output)
-        output = self.final_layers(output)
-        return output
+        return self.final_layers(output)
 
 
 class Discriminator(nn.Module):

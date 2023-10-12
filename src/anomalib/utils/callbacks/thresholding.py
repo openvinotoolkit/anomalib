@@ -35,12 +35,14 @@ class _ThresholdCallback(Callback):
         self.pixel_threshold: BaseThreshold
 
     def setup(self, trainer: Trainer, pl_module: AnomalyModule, stage: str) -> None:
+        del trainer, stage  # Unused arguments.
         if not hasattr(pl_module, "image_threshold"):
             pl_module.image_threshold = self.image_threshold
         if not hasattr(pl_module, "pixel_threshold"):
             pl_module.pixel_threshold = self.pixel_threshold
 
     def on_validation_epoch_start(self, trainer: Trainer, pl_module: AnomalyModule) -> None:
+        del trainer  # Unused argument.
         self._reset(pl_module)
 
     def on_validation_batch_end(
@@ -52,11 +54,13 @@ class _ThresholdCallback(Callback):
         batch_idx: int,
         dataloader_idx: int = 0,
     ) -> None:
+        del trainer, batch, batch_idx, dataloader_idx  # Unused arguments.
         if outputs is not None:
             self._outputs_to_cpu(outputs)
             self._update(pl_module, outputs)
 
     def on_validation_epoch_end(self, trainer: Trainer, pl_module: AnomalyModule) -> None:
+        del trainer  # Unused argument.
         self._compute(pl_module)
 
     def _initialize_thresholds(
@@ -166,8 +170,7 @@ class _ThresholdCallback(Callback):
 
         module = importlib.import_module(module_path)
         class_ = getattr(module, class_path)
-        thresholder = class_(**init_args)
-        return thresholder
+        return class_(**init_args)
 
     def _reset(self, pl_module: AnomalyModule) -> None:
         pl_module.image_threshold.reset()
@@ -185,13 +188,13 @@ class _ThresholdCallback(Callback):
     def _update(self, pl_module: AnomalyModule, outputs: STEP_OUTPUT) -> None:
         pl_module.image_threshold.cpu()
         pl_module.image_threshold.update(outputs["pred_scores"], outputs["label"].int())
-        if "mask" in outputs.keys() and "anomaly_maps" in outputs.keys():
+        if "mask" in outputs and "anomaly_maps" in outputs:
             pl_module.pixel_threshold.cpu()
             pl_module.pixel_threshold.update(outputs["anomaly_maps"], outputs["mask"].int())
 
     def _compute(self, pl_module: AnomalyModule) -> None:
         pl_module.image_threshold.compute()
-        if pl_module.pixel_threshold._update_called:
+        if pl_module.pixel_threshold._update_called:  # noqa: SLF001
             pl_module.pixel_threshold.compute()
         else:
             pl_module.pixel_threshold.value = pl_module.image_threshold.value

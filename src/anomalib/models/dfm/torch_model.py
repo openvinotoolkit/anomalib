@@ -56,8 +56,7 @@ class SingleClassGaussian(DynamicBufferModule):
             nll (Tensor): Torch tensor of scores
         """
         features_transformed = torch.matmul(features - self.mean_vec, self.u_mat / self.sigma_mat)
-        nll = torch.sum(features_transformed * features_transformed, dim=1) + 2 * torch.sum(torch.log(self.sigma_mat))
-        return nll
+        return torch.sum(features_transformed * features_transformed, dim=1) + 2 * torch.sum(torch.log(self.sigma_mat))
 
     def forward(self, dataset: Tensor) -> None:
         """Provides the same functionality as `fit`.
@@ -147,12 +146,7 @@ class DFMModel(nn.Module):
             msg = f"unsupported score type: {self.score_type}"
             raise ValueError(msg)
 
-        if self.score_type == "nll":
-            output = score
-        else:
-            output = score_map, score
-
-        return output
+        return score if self.score_type == "nll" else (score_map, score)
 
     def get_features(self, batch: Tensor) -> Tensor:
         """Extract features from the pretrained network.
@@ -170,12 +164,7 @@ class DFMModel(nn.Module):
             features = F.avg_pool2d(input=features, kernel_size=self.pooling_kernel_size)
         feature_shapes = features.shape
         features = features.view(batch_size, -1).detach()
-        if self.training:
-            output = features
-        else:
-            output = (features, feature_shapes)
-
-        return output
+        return features if self.training else (features, feature_shapes)
 
     def forward(self, batch: Tensor) -> Tensor:
         """Computer score from input images.

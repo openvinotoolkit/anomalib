@@ -68,6 +68,4 @@ def get_openvino_throughput(model_path: str | Path, test_dataset: Dataset) -> fl
 
     # get throughput
     inference_time = time.time() - start_time
-    throughput = len(test_dataset) / inference_time
-
-    return throughput
+    return len(test_dataset) / inference_time

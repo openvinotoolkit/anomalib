@@ -6,16 +6,19 @@
 
 import logging
 from abc import ABC
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from lightning.pytorch import LightningDataModule
 from lightning.pytorch.utilities.types import EVAL_DATALOADERS, TRAIN_DATALOADERS
-from pandas import DataFrame
 from torch.utils.data.dataloader import DataLoader, default_collate
 
-from anomalib.data.base.dataset import AnomalibDataset
 from anomalib.data.synthetic import SyntheticAnomalyDataset
 from anomalib.data.utils import TestSplitMode, ValSplitMode, random_split, split_by_label
+
+if TYPE_CHECKING:
+    from pandas import DataFrame
+
+    from anomalib.data.base.dataset import AnomalibDataset
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +37,7 @@ def collate_fn(batch: list) -> dict[str, Any]:
     elem = batch[0]  # sample an element from the batch to check the type.
     out_dict = {}
     if isinstance(elem, dict):
-        if "boxes" in elem.keys():
+        if "boxes" in elem:
             # collate boxes as list
             out_dict["boxes"] = [item.pop("boxes") for item in batch]
         # collate other data normally
@@ -167,9 +170,8 @@ class AnomalibDataModule(LightningDataModule, ABC):
         """
         _is_setup: bool = False
         for data in ("train_data", "val_data", "test_data"):
-            if hasattr(self, data):
-                if getattr(self, data).is_setup:
-                    _is_setup = True
+            if hasattr(self, data) and getattr(self, data).is_setup:
+                _is_setup = True
 
         return _is_setup
 

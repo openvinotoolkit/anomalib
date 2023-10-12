@@ -9,15 +9,17 @@ import logging
 from enum import Enum
 from importlib.util import find_spec
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import torch
 from torch import Tensor
-from torch.types import Number
 
 from anomalib.data.task_type import TaskType
 from anomalib.models.components import AnomalyModule
+
+if TYPE_CHECKING:
+    from torch.types import Number
 
 logger = logging.getLogger("anomalib")
 

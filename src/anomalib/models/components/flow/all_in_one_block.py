@@ -219,7 +219,7 @@ class AllInOneBlock(InvertibleModule):
             )
 
         if subnet_constructor is None:
-            message = "Please supply a callable subnet_constructor" "function or object (see docstring)"
+            message = "Please supply a callable subnet_constructor function or object (see docstring)"
             raise ValueError(message)
         self.subnet = subnet_constructor(self.splits[0] + self.condition_channels, 2 * self.splits[1])
         self.last_jac = None
@@ -247,16 +247,16 @@ class AllInOneBlock(InvertibleModule):
 
         if rev:
             return ((self.permute_function(x, self.w_perm_inv) - self.global_offset) / scale, perm_log_jac)
-        else:
-            return (self.permute_function(x * scale + self.global_offset, self.w_perm), perm_log_jac)
+
+        return (self.permute_function(x * scale + self.global_offset, self.w_perm), perm_log_jac)
 
     def _pre_permute(self, x, rev=False):
         """Permutes before the coupling block, only used if
         reverse_permutation is set"""
         if rev:
             return self.permute_function(x, self.w_perm)
-        else:
-            return self.permute_function(x, self.w_perm_inv)
+
+        return self.permute_function(x, self.w_perm_inv)
 
     def _affine(self, x, a, rev=False):
         """Given the passive half, and the pre-activation outputs of the
@@ -274,11 +274,13 @@ class AllInOneBlock(InvertibleModule):
 
         if not rev:
             return (x * torch.exp(sub_jac) + a[:, ch:], torch.sum(sub_jac, dim=self.sum_dims))
-        else:
-            return ((x - a[:, ch:]) * torch.exp(-sub_jac), -torch.sum(sub_jac, dim=self.sum_dims))
+
+        return ((x - a[:, ch:]) * torch.exp(-sub_jac), -torch.sum(sub_jac, dim=self.sum_dims))
 
     def forward(self, x, c: list | None = None, rev: bool = False, jac: bool = True):
         """See base class docstring"""
+        del jac  # Unused argument.
+
         if c is None:
             c = []
 
@@ -295,10 +297,7 @@ class AllInOneBlock(InvertibleModule):
 
         x1, x2 = torch.split(x[0], self.splits, dim=1)
 
-        if self.conditional:
-            x1c = torch.cat([x1, *c], 1)
-        else:
-            x1c = x1
+        x1c = torch.cat([x1, *c], 1) if self.conditional else x1
 
         if not rev:
             a1 = self.subnet(x1c)

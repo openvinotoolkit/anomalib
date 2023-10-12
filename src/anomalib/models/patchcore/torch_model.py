@@ -3,13 +3,17 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from typing import TYPE_CHECKING
+
 import torch
 from torch import Tensor, nn
 from torch.nn import functional as F  # noqa: N812
 
 from anomalib.models.components import DynamicBufferModule, FeatureExtractor, KCenterGreedy
 from anomalib.models.patchcore.anomaly_map import AnomalyMapGenerator
-from anomalib.pre_processing import Tiler
+
+if TYPE_CHECKING:
+    from anomalib.pre_processing import Tiler
 
 
 class PatchcoreModel(DynamicBufferModule, nn.Module):
@@ -120,8 +124,7 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
             Tensor: Reshaped embedding tensor.
         """
         embedding_size = embedding.size(1)
-        embedding = embedding.permute(0, 2, 3, 1).reshape(-1, embedding_size)
-        return embedding
+        return embedding.permute(0, 2, 3, 1).reshape(-1, embedding_size)
 
     def subsample_embedding(self, embedding: Tensor, sampling_ratio: float) -> None:
         """Subsample embedding based on coreset sampling and store to memory.
@@ -155,8 +158,7 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
         y_norm = y.pow(2).sum(dim=-1, keepdim=True)  # |y|
         # row distance can be rewritten as sqrt(|x| - 2 * x @ y.T + |y|.T)
         res = x_norm - 2 * torch.matmul(x, y.transpose(-2, -1)) + y_norm.transpose(-2, -1)
-        res = res.clamp_min_(0).sqrt_()
-        return res
+        return res.clamp_min_(0).sqrt_()
 
     def nearest_neighbors(self, embedding: Tensor, n_neighbors: int) -> tuple[Tensor, Tensor]:
         """Nearest Neighbours using brute force method and euclidean norm.
@@ -212,5 +214,4 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
         # 5. Apply softmax to find the weights
         weights = (1 - F.softmax(distances.squeeze(1), 1))[..., 0]
         # 6. Apply the weight factor to the score
-        score = weights * score  # s in the paper
-        return score
+        return weights * score  # s in the paper

@@ -127,14 +127,10 @@ def generate_output_image_filename(input_path: str | Path, output_path: str | Pa
         msg = "input_path is expected to be a file to generate a proper output filename."
         raise ValueError(msg)
 
-    file_path: Path
-    if output_path.is_dir():
-        # If the output is a directory, then add parent directory name
-        # and filename to the path. This is to ensure we do not overwrite
-        # images and organize based on the categories.
-        file_path = output_path / input_path.parent.name / input_path.name
-    else:
-        file_path = output_path
+    # If the output is a directory, then add parent directory name
+    # and filename to the path. This is to ensure we do not overwrite
+    # images and organize based on the categories.
+    file_path = output_path / input_path.parent.name / input_path.name if output_path.is_dir() else output_path
 
     # This new ``file_path`` might contain a directory path yet to be created.
     # Create the parent directory to avoid such cases.
@@ -226,9 +222,7 @@ def read_depth_image(path: str | Path) -> np.ndarray:
         image as numpy array
     """
     path = path if isinstance(path, str) else str(path)
-    image = tiff.imread(path)
-
-    return image
+    return tiff.imread(path)
 
 
 def pad_nextpow2(batch: Tensor) -> Tensor:
@@ -247,5 +241,4 @@ def pad_nextpow2(batch: Tensor) -> Tensor:
     l_dim = 2 ** math.ceil(math.log(max(*batch.shape[-2:]), 2))
     padding_w = [math.ceil((l_dim - batch.shape[-2]) / 2), math.floor((l_dim - batch.shape[-2]) / 2)]
     padding_h = [math.ceil((l_dim - batch.shape[-1]) / 2), math.floor((l_dim - batch.shape[-1]) / 2)]
-    padded_batch = F.pad(batch, pad=[*padding_h, *padding_w])
-    return padded_batch
+    return F.pad(batch, pad=[*padding_h, *padding_w])

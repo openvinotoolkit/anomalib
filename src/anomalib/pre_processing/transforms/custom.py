@@ -55,8 +55,7 @@ class Denormalize:
         ]
         denormalized_tensor = torch.stack(denormalized_per_channel)
 
-        denormalized_array = (denormalized_tensor * 255).permute(1, 2, 0).cpu().numpy().astype(np.uint8)
-        return denormalized_array
+        return (denormalized_tensor * 255).permute(1, 2, 0).cpu().numpy().astype(np.uint8)
 
     def __repr__(self) -> str:
         """Representational string."""

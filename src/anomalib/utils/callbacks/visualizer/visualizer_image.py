@@ -81,9 +81,9 @@ class ImageVisualizerCallback(BaseVisualizerCallback):
         assert outputs is not None
 
         for i, image in enumerate(self.visualizer.visualize_batch(outputs)):
-            if "image_path" in outputs.keys():
+            if "image_path" in outputs:
                 filename = Path(outputs["image_path"][i])
-            elif "video_path" in outputs.keys():
+            elif "video_path" in outputs:
                 zero_fill = int(math.log10(outputs["last_frame"][i])) + 1
                 suffix = f"{str(outputs['frames'][i].int().item()).zfill(zero_fill)}.png"
                 filename = Path(outputs["video_path"][i]) / suffix

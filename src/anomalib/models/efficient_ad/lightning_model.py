@@ -46,6 +46,8 @@ class TransformsWrapper:
         self.transforms = t
 
     def __call__(self, img, *args, **kwargs):
+        del args, kwargs  # Unused arguments.
+
         return self.transforms(image=np.array(img))
 
 

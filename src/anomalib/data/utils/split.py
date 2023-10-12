@@ -16,10 +16,12 @@ import logging
 import math
 from collections.abc import Sequence
 from enum import Enum
+from typing import TYPE_CHECKING
 
 import torch
 
-from anomalib import data
+if TYPE_CHECKING:
+    from anomalib import data
 
 logger = logging.getLogger(__name__)
 
@@ -85,13 +87,13 @@ def random_split(
     if isinstance(split_ratio, float):
         split_ratio = [1 - split_ratio, split_ratio]
 
-    assert (
+    assert (  # noqa: PT018
         math.isclose(sum(split_ratio), 1) and sum(split_ratio) <= 1
     ), f"split ratios must sum to 1, found {sum(split_ratio)}"
     assert all(0 < ratio < 1 for ratio in split_ratio), f"all split ratios must be between 0 and 1, found {split_ratio}"
 
     # create list of source data
-    if label_aware and "label_index" in dataset.samples.keys():
+    if label_aware and "label_index" in dataset.samples:
         indices_per_label = [group.index for _, group in dataset.samples.groupby("label_index")]
         per_label_datasets = [dataset.subsample(indices) for indices in indices_per_label]
     else:

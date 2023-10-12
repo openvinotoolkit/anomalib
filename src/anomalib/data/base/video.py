@@ -2,8 +2,8 @@
 
 
 from abc import ABC
-from collections.abc import Callable
 from enum import Enum
+from typing import TYPE_CHECKING
 
 import albumentations as A  # noqa: N812
 import torch
@@ -15,6 +15,9 @@ from anomalib.data.base.dataset import AnomalibDataset
 from anomalib.data.task_type import TaskType
 from anomalib.data.utils import ValSplitMode, masks_to_boxes
 from anomalib.data.utils.video import ClipsIndexer
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 
 class VideoTargetFrame(str, Enum):

@@ -45,10 +45,7 @@ class AnomalibDepthDataset(AnomalibDataset, ABC):
         elif self.task in (TaskType.DETECTION, TaskType.SEGMENTATION):
             # Only Anomalous (1) images have masks in anomaly datasets
             # Therefore, create empty mask for Normal (0) images.
-            if label_index == 0:
-                mask = np.zeros(shape=image.shape[:2])
-            else:
-                mask = cv2.imread(mask_path, flags=0) / 255.0
+            mask = np.zeros(shape=image.shape[:2]) if label_index == 0 else cv2.imread(mask_path, flags=0) / 255.0
 
             transformed = self.transform(image=image, depth_image=depth_image, mask=mask)
 

@@ -6,15 +6,17 @@
 
 import subprocess
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import lightning.pytorch as pl
 from lightning.pytorch import Callback
 from nncf import NNCFConfig
-from nncf.api.compression import CompressionAlgorithmController
 from nncf.torch import register_default_init_args
 
 from anomalib.utils.callbacks.nncf.utils import InitLoader, wrap_nncf_model
+
+if TYPE_CHECKING:
+    from nncf.api.compression import CompressionAlgorithmController
 
 
 class NNCFCallback(Callback):

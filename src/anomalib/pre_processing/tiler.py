@@ -270,9 +270,7 @@ class Tiler:
 
         # rearrange the tiles in order [tile_count * batch, channels, tile_height, tile_width]
         tiles = tiles.permute(2, 0, 1, 3, 4, 5)
-        tiles = tiles.contiguous().view(-1, channels, self.tile_size_h, self.tile_size_w)
-
-        return tiles
+        return tiles.contiguous().view(-1, channels, self.tile_size_h, self.tile_size_w)
 
     def __fold(self, tiles: Tensor) -> Tensor:
         """Fold the tiles back into the original tensor.
@@ -392,11 +390,7 @@ class Tiler:
 
         image = upscale_image(image, size=(self.resized_h, self.resized_w), mode=self.mode)
 
-        if use_random_tiling:
-            image_tiles = self.__random_tile(image)
-        else:
-            image_tiles = self.__unfold(image)
-        return image_tiles
+        return self.__random_tile(image) if use_random_tiling else self.__unfold(image)
 
     def untile(self, tiles: Tensor) -> Tensor:
         """Untiles patches to reconstruct the original input image.
@@ -426,6 +420,4 @@ class Tiler:
             Output that is the reconstructed version of the input tensor.
         """
         image = self.__fold(tiles)
-        image = downscale_image(image=image, size=(self.input_h, self.input_w), mode=self.mode)
-
-        return image
+        return downscale_image(image=image, size=(self.input_h, self.input_w), mode=self.mode)

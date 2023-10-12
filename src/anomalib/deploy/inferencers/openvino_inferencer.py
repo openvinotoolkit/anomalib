@@ -221,5 +221,4 @@ class OpenVINOInferencer(Inferencer):
         for label in labels[labels != 0]:
             y_loc, x_loc = np.where(comps == label)
             boxes.append([np.min(x_loc), np.min(y_loc), np.max(x_loc), np.max(y_loc)])
-        boxes = np.stack(boxes) if boxes else np.empty((0, 4))
-        return boxes
+        return np.stack(boxes) if boxes else np.empty((0, 4))

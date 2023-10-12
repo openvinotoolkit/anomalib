@@ -83,7 +83,7 @@ class AiVad(AnomalyModule):
     @staticmethod
     def configure_optimizers() -> None:
         """AI-VAD training does not involve fine-tuning of NN weights, no optimizers needed."""
-        return None
+        return
 
     def training_step(self, batch: dict[str, str | Tensor]) -> None:
         """Training Step of AI-VAD.
@@ -116,6 +116,8 @@ class AiVad(AnomalyModule):
         Returns:
             Batch dictionary with added boxes and box scores.
         """
+        del args, kwargs  # Unused arguments.
+
         boxes, anomaly_scores, image_scores = self.model(batch["image"])
         batch["pred_boxes"] = [box.int() for box in boxes]
         batch["box_scores"] = [score.to(self.device) for score in anomaly_scores]

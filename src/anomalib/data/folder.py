@@ -81,13 +81,13 @@ def make_folder_dataset(
     dirs = {DirType.NORMAL: normal_dir}
 
     if abnormal_dir:
-        dirs = {**dirs, **{DirType.ABNORMAL: abnormal_dir}}
+        dirs[DirType.ABNORMAL] = abnormal_dir
 
     if normal_test_dir:
-        dirs = {**dirs, **{DirType.NORMAL_TEST: normal_test_dir}}
+        dirs[DirType.NORMAL_TEST] = normal_test_dir
 
     if mask_dir:
-        dirs = {**dirs, **{DirType.MASK: mask_dir}}
+        dirs[DirType.MASK] = mask_dir
 
     for dir_type, paths in dirs.items():
         for path in paths:

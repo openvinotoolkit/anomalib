@@ -107,6 +107,8 @@ class AnomalibWandbLogger(ImageLoggerBase, WandbLogger):
             image (np.ndarray | Figure): Image to log
             name (str | None): The tag of the image
         """
+        del kwargs  # Unused argument.
+
         image = wandb.Image(image, caption=name)
         self.image_list.append(image)
 
