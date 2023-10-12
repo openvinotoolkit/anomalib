@@ -53,7 +53,7 @@ select = [
     "PTH",  # flake8-use-pathlib (`PTH`)
     # "TD",   # flake8-todos (`TD`)
     # "FIX",  # flake8-fixme (`FIX`)
-    # "ERA",  # eradicate (`ERA`)
+    "ERA",  # eradicate (`ERA`)
     # "PD",   # pandas-vet (`PD`)
     # "PGH",  # pygrep-hooks (`PGH`)
     # "PL",   # pylint (`PL`)

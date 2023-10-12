@@ -99,6 +99,5 @@ def get_callbacks(config: DictConfig | ListConfig | Namespace) -> list[Callback]
     # Add callback to log graph to loggers
     # TODO find a place for this key
     # if config.logging.log_graph not in (None, False):
-    #     callbacks.append(GraphLogger())
 
     return callbacks
