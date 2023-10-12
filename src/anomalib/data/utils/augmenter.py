@@ -73,7 +73,7 @@ class Augmenter:
         Returns:
             A selection of 3 transforms.
         """
-        aug_ind = np.random.choice(np.arange(len(self.augmenters)), 3, replace=False)
+        aug_ind = np.random.default_rng().choice(np.arange(len(self.augmenters)), 3, replace=False)
         return iaa.Sequential([self.augmenters[aug_ind[0]], self.augmenters[aug_ind[1]], self.augmenters[aug_ind[2]]])
 
     def generate_perturbation(

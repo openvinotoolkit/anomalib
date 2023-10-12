@@ -59,7 +59,7 @@ select = [
     "PL",   # pylint (`PL`)
     "TRY",  # tryceratos (`TRY`)
     "FLY",  # flynt (`FLY`)
-    # "NPY",  # NumPy-specific rules (`NPY`)
+    "NPY",  # NumPy-specific rules (`NPY`)
     "PERF", # Perflint (`PERF`)
     # "FURB", # refurb (`FURB`)
     # "LOG",  # flake8-logging (`LOG`)
