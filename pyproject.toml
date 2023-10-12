@@ -62,8 +62,8 @@ select = [
     "NPY",  # NumPy-specific rules (`NPY`)
     "PERF", # Perflint (`PERF`)
     "RUF",  # Ruff-specific rules (`RUF`)
-    # "FURB", # refurb (`FURB`)
-    # "LOG",  # flake8-logging (`LOG`)
+    # "FURB", # refurb (`FURB`) - ERROR: Unknown rule selector: `FURB`
+    # "LOG",  # flake8-logging (`LOG`) - ERROR: Unknown rule selector: `LOG`
 ]
 
 ignore = [
@@ -87,9 +87,9 @@ ignore = [
     "PLR0915",  # Too many statements
 
     # flake8-annotations
-    # "ANN101",   # Missing-type-self
-    # "ANN002",   # Missing type annotation for *args
-    # "ANN003",   # Missing type annotation for **kwargs
+    "ANN101",   # Missing-type-self
+    "ANN002",   # Missing type annotation for *args
+    "ANN003",   # Missing type annotation for **kwargs
 
     # flake8-bandit (`S`)
     "S101", # Use of assert detected.
