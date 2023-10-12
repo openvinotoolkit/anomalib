@@ -107,7 +107,8 @@ class AnomalibCometLogger(ImageLoggerBase, CometLogger):
             kwargs: Accepts only `global_step` (int). The step at which to log the image.
         """
         if "global_step" not in kwargs:
-            raise ValueError("`global_step` is required for comet logger")
+            msg = "`global_step` is required for comet logger"
+            raise ValueError(msg)
 
         global_step = kwargs["global_step"]
         # Need to call different functions of `Experiment` for  Figure vs np.ndarray

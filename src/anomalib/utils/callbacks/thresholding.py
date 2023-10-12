@@ -12,7 +12,7 @@ from omegaconf import DictConfig, ListConfig
 from torch import Tensor
 
 from anomalib.models import AnomalyModule
-from anomalib.utils.metrics.threshold import BaseThreshold, F1AdaptiveThreshold
+from anomalib.utils.metrics.threshold import BaseThreshold
 
 
 class _ThresholdCallback(Callback):
@@ -27,7 +27,7 @@ class _ThresholdCallback(Callback):
         | tuple[BaseThreshold, BaseThreshold]
         | DictConfig
         | ListConfig
-        | str = F1AdaptiveThreshold(),
+        | str = "F1AdaptiveThreshold",
     ) -> None:
         super().__init__()
         self._initialize_thresholds(threshold)
@@ -94,10 +94,11 @@ class _ThresholdCallback(Callback):
             self.image_threshold = threshold[0]
             self.pixel_threshold = threshold[1]
         # When the passed threshold is not an instance of a Threshold class.
-        elif isinstance(threshold, (str, DictConfig, ListConfig)):
+        elif isinstance(threshold, str | DictConfig | ListConfig):
             self._load_from_config(threshold)
         else:
-            raise ValueError(f"Invalid threshold type {type(threshold)}")
+            msg = f"Invalid threshold type {type(threshold)}"
+            raise ValueError(msg)
 
     def _load_from_config(self, threshold: DictConfig | str | ListConfig) -> None:
         """Loads the thresholding class based on the config.
@@ -120,14 +121,15 @@ class _ThresholdCallback(Callback):
                         -
                 - class_path: F1AdaptiveThreshold
         """
-        if isinstance(threshold, (str, DictConfig)):
+        if isinstance(threshold, str | DictConfig):
             self.image_threshold = self._get_threshold_from_config(threshold)
             self.pixel_threshold = self.image_threshold.clone()
         elif isinstance(threshold, ListConfig):
             self.image_threshold = self._get_threshold_from_config(threshold[0])
             self.pixel_threshold = self._get_threshold_from_config(threshold[1])
         else:
-            raise ValueError(f"Invalid threshold config {threshold}")
+            msg = f"Invalid threshold config {threshold}"
+            raise ValueError(msg)
 
     def _get_threshold_from_config(self, threshold: DictConfig | str) -> BaseThreshold:
         """Return the instantiated threshold object.

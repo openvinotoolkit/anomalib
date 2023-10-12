@@ -65,7 +65,9 @@ class SparseRandomProjection:
                 # pylint: disable=not-callable
                 c_idx = torch.tensor(
                     sample_without_replacement(
-                        n_population=n_features, n_samples=nnz_idx, random_state=self.random_state
+                        n_population=n_features,
+                        n_samples=nnz_idx,
+                        random_state=self.random_state,
                     ),
                     dtype=torch.int64,
                 )
@@ -126,7 +128,8 @@ class SparseRandomProjection:
                 (n_samples, n_components) Projected array.
         """
         if self.sparse_random_matrix is None:
-            raise NotFittedError("`fit()` has not been called on SparseRandomProjection yet.")
+            msg = "`fit()` has not been called on SparseRandomProjection yet."
+            raise NotFittedError(msg)
 
         projected_embedding = embedding @ self.sparse_random_matrix.T.float()
         return projected_embedding

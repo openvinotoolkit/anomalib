@@ -95,7 +95,7 @@ class AiVad(AnomalyModule):
         """
         features_per_batch = self.model(batch["image"])
 
-        for features, video_path in zip(features_per_batch, batch["video_path"]):
+        for features, video_path in zip(features_per_batch, batch["video_path"], strict=True):
             self.model.density_estimator.update(features, video_path)
 
     def on_validation_start(self) -> None:

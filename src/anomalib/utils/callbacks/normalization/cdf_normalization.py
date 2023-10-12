@@ -36,9 +36,12 @@ class _CdfNormalizationCallback(Callback):
         if not hasattr(pl_module, "normalization_metrics"):
             pl_module.normalization_metrics = AnomalyScoreDistribution().cpu()
         elif not isinstance(pl_module.normalization_metrics, AnomalyScoreDistribution):
+            msg = (
+                "Expected normalization_metrics to be of type AnomalyScoreDistribution, "
+                f"got {type(pl_module.normalization_metrics)}"
+            )
             raise AttributeError(
-                f"Expected normalization_metrics to be of type AnomalyScoreDistribution,"
-                f" got {type(pl_module.normalization_metrics)}"
+                msg,
             )
 
     def on_test_start(self, trainer: Trainer, pl_module: AnomalyModule) -> None:
@@ -117,7 +120,8 @@ class _CdfNormalizationCallback(Callback):
         # to engine here leads to circular import error
         _engine = engine.Engine(accelerator=trainer.accelerator, devices=trainer.num_devices, normalization="none")
         predictions = _engine.predict(
-            model=self._create_inference_model(pl_module), dataloaders=trainer.datamodule.train_dataloader()
+            model=self._create_inference_model(pl_module),
+            dataloaders=trainer.datamodule.train_dataloader(),
         )
         assert predictions, "engine.predict returned no predictions"
         pl_module.normalization_metrics.reset()
@@ -142,7 +146,10 @@ class _CdfNormalizationCallback(Callback):
         outputs["pred_scores"] = standardize(outputs["pred_scores"], stats.image_mean, stats.image_std)
         if "anomaly_maps" in outputs.keys():
             outputs["anomaly_maps"] = standardize(
-                outputs["anomaly_maps"], stats.pixel_mean, stats.pixel_std, center_at=stats.image_mean
+                outputs["anomaly_maps"],
+                stats.pixel_mean,
+                stats.pixel_std,
+                center_at=stats.image_mean,
             )
 
     @staticmethod

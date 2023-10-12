@@ -25,7 +25,7 @@ def get_torch_throughput(model_path: str | Path, test_dataset: Dataset, device: 
         float: Inference throughput
     """
     model_path = Path(model_path)
-    torch.set_grad_enabled(False)
+    torch.set_grad_enabled(mode=False)
 
     if device == "gpu":
         device = "cuda"
@@ -42,7 +42,7 @@ def get_torch_throughput(model_path: str | Path, test_dataset: Dataset, device: 
     inference_time = time.time() - start_time
     throughput = len(test_dataset) / inference_time
 
-    torch.set_grad_enabled(True)
+    torch.set_grad_enabled(mode=True)
     return throughput
 
 

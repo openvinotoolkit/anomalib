@@ -5,7 +5,7 @@
 from tempfile import TemporaryDirectory
 from typing import Generator
 
-import albumentations as A
+import albumentations as A  # noqa: N812
 import cv2
 import numpy as np
 import pytest

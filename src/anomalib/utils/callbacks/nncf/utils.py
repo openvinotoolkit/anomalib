@@ -5,8 +5,9 @@
 
 
 import logging
+from collections.abc import Iterator
 from copy import copy
-from typing import Any, Iterator
+from typing import Any
 
 from nncf import NNCFConfig
 from nncf.api.compression import CompressionAlgorithmController
@@ -22,7 +23,7 @@ logger = logging.getLogger(name="NNCF compression")
 class InitLoader(PTInitializingDataLoader):
     """Initializing data loader for NNCF to be used with unsupervised training algorithms."""
 
-    def __init__(self, data_loader: DataLoader):
+    def __init__(self, data_loader: DataLoader) -> None:
         super().__init__(data_loader)
         self._data_loader_iter: Iterator
 
@@ -57,7 +58,10 @@ class InitLoader(PTInitializingDataLoader):
 
 
 def wrap_nncf_model(
-    model: nn.Module, config: dict, dataloader: DataLoader, init_state_dict: dict
+    model: nn.Module,
+    config: dict,
+    dataloader: DataLoader,
+    init_state_dict: dict,
 ) -> tuple[CompressionAlgorithmController, NNCFNetwork]:
     """Wrap model by NNCF.
 
@@ -73,7 +77,7 @@ def wrap_nncf_model(
         logger.warning(
             "Either dataloader or NNCF pre-trained "
             "model checkpoint should be set. Without this, "
-            "quantizers will not be initialized"
+            "quantizers will not be initialized",
         )
 
     compression_state = None
@@ -87,7 +91,10 @@ def wrap_nncf_model(
         nncf_config = register_default_init_args(nncf_config, init_loader)
 
     nncf_ctrl, nncf_model = create_compressed_model(
-        model=model, config=nncf_config, dump_graphs=False, compression_state=compression_state
+        model=model,
+        config=nncf_config,
+        dump_graphs=False,
+        compression_state=compression_state,
     )
 
     if resuming_state_dict:
@@ -175,8 +182,8 @@ def _merge_dicts_and_lists_b_into_a(a, b, cur_key=None):
             f" type(b) = {type(_b)}"
         )
 
-    assert isinstance(a, (dict, list)), f"Can merge only dicts and lists, whereas type(a)={type(a)}"
-    assert isinstance(b, (dict, list)), _err_str(a, b, cur_key)
+    assert isinstance(a, dict | list), f"Can merge only dicts and lists, whereas type(a)={type(a)}"
+    assert isinstance(b, dict | list), _err_str(a, b, cur_key)
     assert isinstance(a, list) == isinstance(b, list), _err_str(a, b, cur_key)
     if isinstance(a, list):
         # the main diff w.r.t. mmcf.Config -- merging of lists
@@ -188,11 +195,11 @@ def _merge_dicts_and_lists_b_into_a(a, b, cur_key=None):
             a[k] = copy(b[k])
             continue
         new_cur_key = cur_key + "." + k if cur_key else k
-        if isinstance(a[k], (dict, list)):
+        if isinstance(a[k], dict | list):
             a[k] = _merge_dicts_and_lists_b_into_a(a[k], b[k], new_cur_key)
             continue
 
-        assert not isinstance(b[k], (dict, list)), _err_str(a[k], b[k], new_cur_key)
+        assert not isinstance(b[k], dict | list), _err_str(a[k], b[k], new_cur_key)
 
         # suppose here that a[k] and b[k] are scalars, just overwrite
         a[k] = b[k]

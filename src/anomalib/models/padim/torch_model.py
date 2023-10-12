@@ -7,8 +7,8 @@
 from random import sample
 
 import torch
-import torch.nn.functional as F
 from torch import Tensor, nn
+from torch.nn import functional as F  # noqa: N812
 
 from anomalib.models.components import FeatureExtractor, MultiVariateGaussian
 from anomalib.models.components.feature_extractors import dryrun_find_featuremap_dims
@@ -23,7 +23,9 @@ _N_FEATURES_DEFAULTS = {
 
 
 def _deduce_dims(
-    feature_extractor: FeatureExtractor, input_size: tuple[int, int], layers: list[str]
+    feature_extractor: FeatureExtractor,
+    input_size: tuple[int, int],
+    layers: list[str],
 ) -> tuple[int, int]:
     """Run a dry run to deduce the dimensions of the extracted features.
 
@@ -76,10 +78,11 @@ class PadimModel(nn.Module):
         n_features = n_features or _N_FEATURES_DEFAULTS.get(self.backbone)
 
         if n_features is None:
-            raise ValueError(
+            msg = (
                 f"n_features must be specified for backbone {self.backbone}. "
                 f"Default values are available for: {sorted(_N_FEATURES_DEFAULTS.keys())}"
             )
+            raise ValueError(msg)
 
         assert (
             0 < n_features <= self.n_features_original
@@ -135,7 +138,9 @@ class PadimModel(nn.Module):
             output = embeddings
         else:
             output = self.anomaly_map_generator(
-                embedding=embeddings, mean=self.gaussian.mean, inv_covariance=self.gaussian.inv_covariance
+                embedding=embeddings,
+                mean=self.gaussian.mean,
+                inv_covariance=self.gaussian.inv_covariance,
             )
         return output
 

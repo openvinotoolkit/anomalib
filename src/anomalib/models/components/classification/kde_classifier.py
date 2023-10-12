@@ -72,7 +72,8 @@ class KDEClassifier(nn.Module):
         elif self.feature_scaling_method == FeatureScalingMethod.SCALE:
             feature_stack /= max_length
         else:
-            raise RuntimeError("Unknown pre-processing mode. Available modes are: Normalized and Scale.")
+            msg = "Unknown pre-processing mode. Available modes are: Normalized and Scale."
+            raise RuntimeError(msg)
         return feature_stack, max_length
 
     def fit(self, embeddings: Tensor) -> bool:

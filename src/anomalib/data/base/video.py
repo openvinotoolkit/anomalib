@@ -2,10 +2,10 @@
 
 
 from abc import ABC
+from collections.abc import Callable
 from enum import Enum
-from typing import Callable
 
-import albumentations as A
+import albumentations as A  # noqa: N812
 import torch
 from pandas import DataFrame
 from torch import Tensor
@@ -96,7 +96,8 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
         elif self.target_frame == VideoTargetFrame.MID:
             idx = int(self.clip_length_in_frames / 2)
         else:
-            raise ValueError(f"Unknown video target frame: {self.target_frame}")
+            msg = f"Unknown video target frame: {self.target_frame}"
+            raise ValueError(msg)
 
         if item.get("mask") is not None:
             item["mask"] = item["mask"][idx, ...]
@@ -121,7 +122,8 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
         # apply transforms
         if "mask" in item and item["mask"] is not None:
             processed_frames = [
-                self.transform(image=frame.numpy(), mask=mask) for frame, mask in zip(item["image"], item["mask"])
+                self.transform(image=frame.numpy(), mask=mask)
+                for frame, mask in zip(item["image"], item["mask"], strict=True)
             ]
             item["image"] = torch.stack([item["image"] for item in processed_frames]).squeeze(0)
             mask = torch.as_tensor(item["mask"])
@@ -132,7 +134,7 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
                 item["boxes"] = item["boxes"][0] if len(item["boxes"]) == 1 else item["boxes"]
         else:
             item["image"] = torch.stack(
-                [self.transform(image=frame.numpy())["image"] for frame in item["image"]]
+                [self.transform(image=frame.numpy())["image"] for frame in item["image"]],
             ).squeeze(0)
 
         # include only target frame in gt
@@ -162,6 +164,7 @@ class AnomalibVideoDataModule(AnomalibDataModule):
         self.test_data.setup()
 
         if self.val_split_mode == ValSplitMode.SYNTHETIC:
-            raise ValueError(f"Val split mode {self.test_split_mode} not supported for video datasets.")
+            msg = f"Val split mode {self.test_split_mode} not supported for video datasets."
+            raise ValueError(msg)
 
         self._create_val_split()

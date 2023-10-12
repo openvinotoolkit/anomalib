@@ -110,7 +110,10 @@ class Ganomaly(AnomalyModule):
         return [optimizer_d, optimizer_g]
 
     def training_step(
-        self, batch: dict[str, str | Tensor], batch_idx: int, optimizer_idx: int
+        self,
+        batch: dict[str, str | Tensor],
+        batch_idx: int,
+        optimizer_idx: int,
     ) -> STEP_OUTPUT:  # pylint: disable=arguments-differ
         """Training step.
 

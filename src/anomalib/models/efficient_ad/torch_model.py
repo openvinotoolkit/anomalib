@@ -5,12 +5,12 @@
 
 
 import logging
-import random
 from enum import Enum
 
+import numpy as np
 import torch
-import torch.nn.functional as F
 from torch import Tensor, nn
+from torch.nn import functional as F  # noqa: N812
 from torchvision import transforms
 
 logger = logging.getLogger(__name__)
@@ -53,7 +53,7 @@ class EfficientAdModelSize(str, Enum):
     S = "small"
 
 
-class PDN_S(nn.Module):
+class SmallPatchDescriptionNetwork(nn.Module):
     """Patch Description Network small
 
     Args:
@@ -81,7 +81,7 @@ class PDN_S(nn.Module):
         return x
 
 
-class PDN_M(nn.Module):
+class MediumPatchDescriptionNetwork(nn.Module):
     """Patch Description Network medium
 
     Args:
@@ -235,19 +235,20 @@ class EfficientAdModel(nn.Module):
         super().__init__()
 
         self.pad_maps = pad_maps
-        self.teacher: PDN_M | PDN_S
-        self.student: PDN_M | PDN_S
+        self.teacher: MediumPatchDescriptionNetwork | SmallPatchDescriptionNetwork
+        self.student: MediumPatchDescriptionNetwork | SmallPatchDescriptionNetwork
 
         if model_size == EfficientAdModelSize.M:
-            self.teacher = PDN_M(out_channels=teacher_out_channels, padding=padding).eval()
-            self.student = PDN_M(out_channels=teacher_out_channels * 2, padding=padding)
+            self.teacher = MediumPatchDescriptionNetwork(out_channels=teacher_out_channels, padding=padding).eval()
+            self.student = MediumPatchDescriptionNetwork(out_channels=teacher_out_channels * 2, padding=padding)
 
         elif model_size == EfficientAdModelSize.S:
-            self.teacher = PDN_S(out_channels=teacher_out_channels, padding=padding).eval()
-            self.student = PDN_S(out_channels=teacher_out_channels * 2, padding=padding)
+            self.teacher = SmallPatchDescriptionNetwork(out_channels=teacher_out_channels, padding=padding).eval()
+            self.student = SmallPatchDescriptionNetwork(out_channels=teacher_out_channels * 2, padding=padding)
 
         else:
-            raise ValueError(f"Unknown model size {model_size}")
+            msg = f"Unknown model size {model_size}"
+            raise ValueError(msg)
 
         self.ae: AutoEncoder = AutoEncoder(out_channels=teacher_out_channels, padding=padding, img_size=input_size)
         self.teacher_out_channels: int = teacher_out_channels
@@ -257,7 +258,7 @@ class EfficientAdModel(nn.Module):
             {
                 "mean": torch.zeros((1, self.teacher_out_channels, 1, 1)),
                 "std": torch.zeros((1, self.teacher_out_channels, 1, 1)),
-            }
+            },
         )
 
         self.quantiles: nn.ParameterDict = nn.ParameterDict(
@@ -266,7 +267,7 @@ class EfficientAdModel(nn.Module):
                 "qb_st": torch.tensor(0.0),
                 "qa_ae": torch.tensor(0.0),
                 "qb_ae": torch.tensor(0.0),
-            }
+            },
         )
 
     def is_set(self, p_dic: nn.ParameterDict) -> bool:
@@ -282,8 +283,8 @@ class EfficientAdModel(nn.Module):
             transforms.functional.adjust_saturation,
         ]
         # Sample an augmentation coefficient λ from the uniform distribution U(0.8, 1.2)
-        coefficient = random.uniform(0.8, 1.2)  # nosec: B311
-        transform_function = random.choice(transform_functions)  # nosec: B311
+        coefficient = np.random.default_rng().uniform(0.8, 1.2)
+        transform_function = np.random.default_rng().choice(transform_functions)
         return transform_function(image, coefficient)
 
     def forward(self, batch: Tensor, batch_imagenet: Tensor = None) -> Tensor | dict:
@@ -336,7 +337,9 @@ class EfficientAdModel(nn.Module):
 
             map_st = torch.mean(distance_st, dim=1, keepdim=True)
             map_stae = torch.mean(
-                (ae_output - student_output[:, self.teacher_out_channels :]) ** 2, dim=1, keepdim=True
+                (ae_output - student_output[:, self.teacher_out_channels :]) ** 2,
+                dim=1,
+                keepdim=True,
             )
 
             if self.pad_maps:
@@ -352,4 +355,5 @@ class EfficientAdModel(nn.Module):
                 )
 
             map_combined = 0.5 * map_st + 0.5 * map_stae
+            return {"anomaly_map": map_combined, "map_st": map_st, "map_ae": map_stae}
             return {"anomaly_map": map_combined, "map_st": map_st, "map_ae": map_stae}

@@ -9,10 +9,9 @@ to an input image before the forward-pass stage.
 
 
 import logging
-import warnings
 from typing import Any
 
-import albumentations as A
+import albumentations as A  # noqa: N812
 from albumentations.pytorch import ToTensorV2
 
 logger = logging.getLogger(__name__)
@@ -54,7 +53,8 @@ def get_image_height_and_width(image_size: int | tuple | None = None) -> tuple[i
     elif image_size is None:
         height_and_width = (None, None)
     else:
-        raise ValueError("``image_size`` could be either int or tuple[int, int]")
+        msg = "``image_size`` could be either int or tuple[int, int]"
+        raise ValueError(msg)
 
     return height_and_width
 
@@ -95,7 +95,7 @@ def get_transforms(
 
 
         Transforms could be read from albumentations Compose object.
-        >>> import albumentations as A
+        >>> import albumentations as A  # noqa: N812
         >>> from albumentations.pytorch import ToTensorV2
         >>> config = A.Compose([A.Resize(512, 512), ToTensorV2()])
         >>> transforms = get_transforms(config=config, to_tensor=False)
@@ -113,19 +113,19 @@ def get_transforms(
         >>> output["image"].shape
         torch.Size([3, 1024, 1024])
     """
-    warnings.warn(
-        DeprecationWarning(
-            "The function anomalib.pre_processing.pre_process.get_transforms is deprecated and will be removed in a "
-            "future release. Please use anomalib.data.utils.transform.get_transforms instead."
-        )
+    msg = (
+        "The function anomalib.pre_processing.pre_process.get_transforms is deprecated and will be removed in a "
+        "future release. Please use anomalib.data.utils.transform.get_transforms instead."
     )
+    logger.warning(msg)
 
     if config is None is image_size:
-        raise ValueError(
+        msg = (
             "Both config and image_size cannot be `None`. "
             "Provide either config file to de-serialize transforms "
             "or image_size to get the default transformations"
         )
+        raise ValueError(msg)
 
     transforms: A.Compose
 
@@ -138,7 +138,7 @@ def get_transforms(
                 A.Resize(height=height, width=width, always_apply=True),
                 A.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
                 ToTensorV2(),
-            ]
+            ],
         )
 
     if config is not None:
@@ -147,7 +147,8 @@ def get_transforms(
         elif isinstance(config, A.Compose):
             transforms = config
         else:
-            raise ValueError("config could be either ``str`` or ``A.Compose``")
+            msg = "config could be either ``str`` or ``A.Compose``"
+            raise ValueError(msg)
 
     if not to_tensor:
         if isinstance(transforms[-1], ToTensorV2):
@@ -193,7 +194,7 @@ class PreProcessor:
 
 
         Transforms could be read from albumentations Compose object.
-            >>> import albumentations as A
+            >>> import albumentations as A  # noqa: N812
             >>> from albumentations.pytorch import ToTensorV2
             >>> config = A.Compose([A.Resize(512, 512), ToTensorV2()])
             >>> pre_processor = PreProcessor(config=config, to_tensor=False)
@@ -218,12 +219,11 @@ class PreProcessor:
         image_size: int | tuple | None = None,
         to_tensor: bool = True,
     ) -> None:
-        warnings.warn(
-            DeprecationWarning(
-                "The PreProcessor class is deprecated and will be removed in a future release. You can now directly "
-                "pass the A.Compose object to your Anomalib datasets using the 'transform' keyword argument."
-            )
+        msg = (
+            "The PreProcessor class is deprecated and will be removed in a future release. You can now directly "
+            "pass the A.Compose object to your Anomalib datasets using the 'transform' keyword argument."
         )
+        logging.warn(msg)
         self.config = config
         self.image_size = image_size
         self.to_tensor = to_tensor

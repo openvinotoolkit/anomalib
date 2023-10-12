@@ -5,7 +5,7 @@
 
 
 import torch
-import torchvision.transforms.functional as F
+import torchvision.transforms.functional as F  # noqa: N812
 from torch import Tensor, nn
 from torchvision.models.optical_flow import Raft_Large_Weights, raft_large
 

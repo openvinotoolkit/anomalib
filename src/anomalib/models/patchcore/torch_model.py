@@ -4,8 +4,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import torch
-import torch.nn.functional as F
 from torch import Tensor, nn
+from torch.nn import functional as F  # noqa: N812
 
 from anomalib.models.components import DynamicBufferModule, FeatureExtractor, KCenterGreedy
 from anomalib.models.patchcore.anomaly_map import AnomalyMapGenerator
@@ -204,7 +204,8 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
         # indices of N_b(m^*) in the paper
         memory_bank_effective_size = self.memory_bank.shape[0]  # edge case when memory bank is too small
         _, support_samples = self.nearest_neighbors(
-            nn_sample, n_neighbors=min(self.num_neighbors, memory_bank_effective_size)
+            nn_sample,
+            n_neighbors=min(self.num_neighbors, memory_bank_effective_size),
         )
         # 4. Find the distance of the patch features to each of the support samples
         distances = self.euclidean_dist(max_patches_features.unsqueeze(1), self.memory_bank[support_samples])

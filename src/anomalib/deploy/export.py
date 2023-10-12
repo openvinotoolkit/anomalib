@@ -10,7 +10,6 @@ from enum import Enum
 from importlib.util import find_spec
 from pathlib import Path
 from typing import Any
-from warnings import warn
 
 import numpy as np
 import torch
@@ -125,7 +124,8 @@ def export(
             export_to_openvino(export_path=export_path, input_model=onnx_path, metadata=metadata, input_size=input_size)
 
     else:
-        raise ValueError(f"Unknown export mode {export_mode}")
+        msg = f"Unknown export mode {export_mode}"
+        raise ValueError(msg)
 
 
 def export_to_torch(model: AnomalyModule, metadata: dict[str, Any], export_path: Path) -> None:
@@ -167,7 +167,11 @@ def export_to_onnx(model: AnomalyModule, input_size: tuple[int, int], export_pat
 
 
 def export_to_openvino(
-    export_path: str | Path, input_model: Path, metadata: dict[str, Any], input_size: tuple[int, int], **kwargs
+    export_path: str | Path,
+    input_model: Path,
+    metadata: dict[str, Any],
+    input_size: tuple[int, int],
+    **kwargs,
 ) -> None:
     """Convert onnx model to OpenVINO IR.
 
@@ -220,7 +224,8 @@ def _add_metadata_to_ir(xml_file: str, metadata: dict[str, Any], input_size: tup
                 _metadata[("model_info", "orig_height")] = transform_dict["height"]
                 _metadata[("model_info", "orig_width")] = transform_dict["width"]
             else:
-                warn(f"Transform {transform} is not supported currently")
+                msg = f"Transform {transform} is not supported currently"
+                logger.warn(msg)
 
     # Since we only need the diff of max and min, we fuse the min and max into one op
     if "min" in metadata and "max" in metadata:

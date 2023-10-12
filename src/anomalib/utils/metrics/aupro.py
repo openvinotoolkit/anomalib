@@ -4,7 +4,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 import torch
 from matplotlib.figure import Figure
@@ -81,9 +82,12 @@ class AUPRO(Metric):
 
         # check and prepare target for labeling via kornia
         if target.min() < 0 or target.max() > 1:
+            msg = (
+                "kornia.contrib.connected_components expects input to lie in the interval [0, 1], "
+                f"but found interval was [{target.min()}, {target.max()}]."
+            )
             raise ValueError(
-                f"kornia.contrib.connected_components expects input to lie in the interval [0, 1], but found "
-                f"interval was [{target.min()}, {target.max()}]."
+                msg,
             )
         target = target.unsqueeze(1)  # kornia expects N1HW format
         target = target.type(torch.float)  # kornia expects FloatTensor

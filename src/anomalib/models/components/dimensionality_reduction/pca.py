@@ -18,7 +18,7 @@ class PCA(DynamicBufferModule):
           or a ratio between 0-1.
     """
 
-    def __init__(self, n_components: int | float):
+    def __init__(self, n_components: int | float) -> None:
         super().__init__()
         self.n_components = n_components
 

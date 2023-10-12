@@ -11,11 +11,11 @@ from typing import Any
 
 import einops
 import torch
-import torch.nn.functional as F
 from lightning.pytorch.callbacks import EarlyStopping
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 from omegaconf import DictConfig, ListConfig
 from torch import Tensor, optim
+from torch.nn import functional as F  # noqa: N812
 from torch.optim import Optimizer
 
 from anomalib.models.cflow.torch_model import CflowModel
@@ -135,7 +135,8 @@ class Cflow(AnomalyModule):
                 opt.zero_grad()
                 if batch_num < (fiber_batches - 1):
                     idx = torch.arange(
-                        batch_num * self.model.fiber_batch_size, (batch_num + 1) * self.model.fiber_batch_size
+                        batch_num * self.model.fiber_batch_size,
+                        (batch_num + 1) * self.model.fiber_batch_size,
                     )
                 else:  # When non-full batch is encountered batch_num * N will go out of bounds
                     idx = torch.arange(batch_num * self.model.fiber_batch_size, embedding_length)

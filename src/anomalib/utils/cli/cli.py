@@ -4,8 +4,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable, Type
+from typing import Any
 
 import lightning.pytorch as pl
 from jsonargparse import ActionConfigFile, ArgumentParser
@@ -45,9 +46,9 @@ class AnomalibCLI(LightningCLI):
 
     def __init__(
         self,
-        save_config_callback: Type[SaveConfigCallback] = SaveConfigCallback,
+        save_config_callback: type[SaveConfigCallback] = SaveConfigCallback,
         save_config_kwargs: dict[str, Any] | None = None,
-        trainer_class: Type[Trainer] | Callable[..., Trainer] = Trainer,
+        trainer_class: type[Trainer] | Callable[..., Trainer] = Trainer,
         trainer_defaults: dict[str, Any] | None = None,
         seed_everything_default: bool | int = True,
         parser_kwargs: dict[str, Any] | dict[str, dict[str, Any]] | None = None,
@@ -98,7 +99,9 @@ class AnomalibCLI(LightningCLI):
         for subcommand in self.anomalib_subcommands():
             sub_parser = ArgumentParser(formatter_class=CustomHelpFormatter)
             self.parser._subcommands_action.add_subcommand(
-                subcommand, sub_parser, help=self.anomalib_subcommands()[subcommand]["description"]
+                subcommand,
+                sub_parser,
+                help=self.anomalib_subcommands()[subcommand]["description"],
             )
             # add arguments to subcommand
             getattr(self, f"add_{subcommand}_arguments")(sub_parser)
