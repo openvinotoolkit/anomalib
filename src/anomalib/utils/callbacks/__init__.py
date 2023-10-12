@@ -94,7 +94,7 @@ def get_callbacks(config: DictConfig | ListConfig | Namespace) -> list[Callback]
             )
         else:
             msg = f"Export option: {config.optimization.export_mode} not found. Defaulting to no model export"
-            logger.warn(msg)
+            logger.warning(msg)
 
     # Add callback to log graph to loggers
     # TODO find a place for this key

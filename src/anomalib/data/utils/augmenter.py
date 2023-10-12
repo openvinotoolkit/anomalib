@@ -162,7 +162,7 @@ class Augmenter:
             beta = self.beta
         elif isinstance(self.beta, tuple):
             beta = torch.rand(batch_size) * (self.beta[1] - self.beta[0]) + self.beta[0]
-            beta = beta.view(batch_size, 1, 1, 1).expand_as(batch).to(batch.device)  # type: ignore
+            beta = beta.view(batch_size, 1, 1, 1).expand_as(batch).to(batch.device)  # type: ignore[attr-defined]
         else:
             msg = "Beta must be either float or tuple of floats"
             raise TypeError(msg)

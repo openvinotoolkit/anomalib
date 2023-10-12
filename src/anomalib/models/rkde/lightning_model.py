@@ -136,5 +136,5 @@ class RkdeLightning(Rkde):
             feature_scaling_method=FeatureScalingMethod(hparams.model.feature_scaling_method),
             max_training_points=hparams.model.max_training_points,
         )
-        self.hparams: DictConfig | ListConfig  # type: ignore
+        self.hparams: DictConfig | ListConfig
         self.save_hyperparameters(hparams)

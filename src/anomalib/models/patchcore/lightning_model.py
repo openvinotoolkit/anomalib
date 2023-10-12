@@ -142,5 +142,5 @@ class PatchcoreLightning(Patchcore):
             coreset_sampling_ratio=hparams.model.coreset_sampling_ratio,
             num_neighbors=hparams.model.num_neighbors,
         )
-        self.hparams: DictConfig | ListConfig  # type: ignore
+        self.hparams: DictConfig | ListConfig
         self.save_hyperparameters(hparams)

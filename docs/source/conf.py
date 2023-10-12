@@ -20,7 +20,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path.cwd().parent.parent))
 
 
-import anomalib  # noqa
+import anomalib  # noqa: E402
 
 # -- Project information -----------------------------------------------------
 

@@ -284,7 +284,7 @@ def sweep(
     for param in run_config:
         # grid search keys are always assumed to be strings
         param = cast(str, param)  # placate mypy
-        set_in_nested_config(model_config, param.split("."), run_config[param])  # type: ignore
+        set_in_nested_config(model_config, param.split("."), run_config[param])
 
     # convert image size to tuple in case it was updated by run config
     model_config = update_input_size_config(model_config)

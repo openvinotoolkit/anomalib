@@ -55,7 +55,7 @@ select = [
     # "FIX",  # flake8-fixme (`FIX`)
     "ERA",  # eradicate (`ERA`)
     # "PD",   # pandas-vet (`PD`)
-    # "PGH",  # pygrep-hooks (`PGH`)
+    "PGH",  # pygrep-hooks (`PGH`)
     "PL",   # pylint (`PL`)
     "TRY",  # tryceratos (`TRY`)
     "FLY",  # flynt (`FLY`)

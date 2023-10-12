@@ -241,7 +241,7 @@ class GanomalyLightning(Ganomaly):
             beta1=hparams.model.beta1,
             beta2=hparams.model.beta2,
         )
-        self.hparams: DictConfig | ListConfig  # type: ignore
+        self.hparams: DictConfig | ListConfig
         self.save_hyperparameters(hparams)
 
     def configure_callbacks(self) -> list[Callback]:

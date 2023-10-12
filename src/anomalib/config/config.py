@@ -178,7 +178,7 @@ def update_multi_gpu_training_config(config: DictConfig | ListConfig) -> DictCon
     # validate accelerator
     if config.trainer.accelerator is not None and config.trainer.accelerator.lower() != "ddp":
         if config.trainer.accelerator.lower() in ("dp", "ddp_spawn", "ddp2"):
-            logger.warn(
+            logger.warning(
                 f"Using accelerator {config.trainer.accelerator.lower()} is discouraged. "
                 f"Please use one of [null, ddp]. Setting accelerator to ddp",
             )
@@ -209,7 +209,7 @@ def show_warnings(config: DictConfig | ListConfig | Namespace) -> None:
     """
 
     if "clip_length_in_frames" in config.data and config.data.init_args.clip_length_in_frames > 1:
-        logger.warn(
+        logger.warning(
             "Anomalib's models and visualizer are currently not compatible with video datasets with a clip length > 1. "
             "Custom changes to these modules will be needed to prevent errors and/or unpredictable behaviour.",
         )
@@ -243,7 +243,7 @@ def get_configurable_parameters(
 
     if model_name == "efficientad":
         msg = "`efficientad` is deprecated as --model. Please use `efficient_ad` instead."
-        logger.warn(msg)
+        logger.warning(msg)
         model_name = "efficient_ad"
 
     if config_path is None:

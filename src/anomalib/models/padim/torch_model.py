@@ -45,7 +45,7 @@ def _deduce_dims(
     n_patches = torch.tensor(first_layer_resolution).prod().int().item()
 
     # the original embedding size is the sum of the channels of all layers
-    n_features_original = sum(dimensions_mapping[layer]["num_features"] for layer in layers)  # type: ignore
+    n_features_original = sum(dimensions_mapping[layer]["num_features"] for layer in layers)  # type: ignore[misc]
 
     return n_features_original, n_patches
 

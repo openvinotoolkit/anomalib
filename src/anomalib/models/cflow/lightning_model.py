@@ -200,7 +200,7 @@ class CflowLightning(Cflow):
             clamp_alpha=hparams.model.clamp_alpha,
             permute_soft=hparams.model.permute_soft,
         )
-        self.hparams: DictConfig | ListConfig  # type: ignore
+        self.hparams: DictConfig | ListConfig
         self.save_hyperparameters(hparams)
 
     def configure_callbacks(self) -> list[EarlyStopping]:

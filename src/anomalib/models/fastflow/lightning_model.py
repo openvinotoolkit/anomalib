@@ -103,7 +103,7 @@ class FastflowLightning(Fastflow):
             conv3x3_only=hparams.model.conv3x3_only,
             hidden_ratio=hparams.model.hidden_ratio,
         )
-        self.hparams: DictConfig | ListConfig  # type: ignore
+        self.hparams: DictConfig | ListConfig
         self.save_hyperparameters(hparams)
 
     def configure_callbacks(self) -> list[EarlyStopping]:

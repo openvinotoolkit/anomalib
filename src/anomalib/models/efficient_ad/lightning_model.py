@@ -291,5 +291,5 @@ class EfficientAdLightning(EfficientAd):
             image_size=hparams.dataset.image_size,
             batch_size=hparams.dataset.train_batch_size,
         )
-        self.hparams: DictConfig | ListConfig  # type: ignore
+        self.hparams: DictConfig | ListConfig
         self.save_hyperparameters(hparams)

@@ -50,7 +50,7 @@ class F1AdaptiveThreshold(PrecisionRecallCurve, BaseThreshold):
                 "to poor predictions. For a more reliable adaptive threshold computation, please add some anomalous "
                 "images to the validation set."
             )
-            logging.warn(msg)
+            logging.warning(msg)
 
         precision, recall, thresholds = super().compute()
         f1_score = (2 * precision * recall) / (precision + recall + 1e-10)

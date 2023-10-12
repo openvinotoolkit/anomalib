@@ -89,7 +89,7 @@ class TimmFeatureExtractor(nn.Module):
                 idx.append(list(dict(features.named_children()).keys()).index(i) - offset)
             except ValueError:  # noqa: PERF203
                 msg = f"Layer {i} not found in model {self.backbone}"
-                logger.warn(msg)
+                logger.warning(msg)
                 # Remove unfound key from layer dict
                 self.layers.remove(i)
 
