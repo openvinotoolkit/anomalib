@@ -218,7 +218,7 @@ class AllInOneBlock(InvertibleModule):
             )
 
         if subnet_constructor is None:
-            message = "Please supply a callable subnet_constructorfunction or object (see docstring)"
+            message = "Please supply a callable subnet_constructor function or object (see docstring)"
             raise ValueError(message)
         self.subnet = subnet_constructor(self.splits[0] + self.condition_channels, 2 * self.splits[1])
         self.last_jac = None
