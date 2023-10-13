@@ -159,7 +159,7 @@ class AnomalyModule(pl.LightningModule, ABC):
         self.image_threshold.reset()
         self.pixel_threshold.reset()
         self._collect_outputs(self.image_threshold, self.pixel_threshold, outputs)
-        self.image_threshold.compute()
+        self.image_threshold.value = self.image_threshold.compute()
         if "mask" in outputs[0].keys() and "anomaly_maps" in outputs[0].keys():
             self.pixel_threshold.compute()
         else:
