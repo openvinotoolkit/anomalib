@@ -128,9 +128,9 @@ class Visa(AnomalibDataModule):
 
     def __init__(
         self,
-        root: Path | str,
-        category: str,
-        image_size: int | tuple[int, int] | None = None,
+        root: Path | str = "./datasets/visa",
+        category: str = "capsules",
+        image_size: int | tuple[int, int] = (256, 256),
         center_crop: int | tuple[int, int] | None = None,
         normalization: str | InputNormalizationMethod = InputNormalizationMethod.IMAGENET,
         train_batch_size: int = 32,

@@ -28,7 +28,7 @@ class InferenceDataset(Dataset):
         self,
         path: str | Path,
         transform: A.Compose | None = None,
-        image_size: int | tuple[int, int] | None = None,
+        image_size: int | tuple[int, int] = (256, 256),
     ) -> None:
         super().__init__()
 

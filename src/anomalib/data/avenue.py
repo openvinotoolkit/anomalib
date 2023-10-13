@@ -137,10 +137,10 @@ class AvenueDataset(AnomalibVideoDataset):
 
     Args:
         task (TaskType): Task type, 'classification', 'detection' or 'segmentation'
-        root (Path | str): Path to the root of the dataset
-        gt_dir (Path | str): Path to the ground truth files
         transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
         split (Split): Split of the dataset, usually Split.TRAIN or Split.TEST
+        root (Path | str): Path to the root of the dataset
+        gt_dir (Path | str): Path to the ground truth files
         clip_length_in_frames (int, optional): Number of video frames in each clip.
         frames_between_clips (int, optional): Number of frames between each consecutive video clip.
         target_frame (VideoTargetFrame): Specifies the target frame in the video clip, used for ground truth retrieval
@@ -149,10 +149,10 @@ class AvenueDataset(AnomalibVideoDataset):
     def __init__(
         self,
         task: TaskType,
-        root: Path | str,
-        gt_dir: Path | str,
         transform: A.Compose,
         split: Split,
+        root: Path | str = "./datasets/avenue",
+        gt_dir: Path | str = "./datasets/avenue/ground_truth_demo",
         clip_length_in_frames: int = 1,
         frames_between_clips: int = 1,
         target_frame: VideoTargetFrame = VideoTargetFrame.LAST,
@@ -200,13 +200,13 @@ class Avenue(AnomalibVideoDataModule):
 
     def __init__(
         self,
-        root: Path | str,
-        gt_dir: Path | str,
+        root: Path | str = "./datasets/avenue",
+        gt_dir: Path | str = "./datasets/avenue/ground_truth_demo",
         clip_length_in_frames: int = 1,
         frames_between_clips: int = 1,
         target_frame: VideoTargetFrame = VideoTargetFrame.LAST,
         task: TaskType = TaskType.SEGMENTATION,
-        image_size: int | tuple[int, int] | None = None,
+        image_size: int | tuple[int, int] = (256, 256),
         center_crop: int | tuple[int, int] | None = None,
         normalization: str | InputNormalizationMethod = InputNormalizationMethod.IMAGENET,
         train_batch_size: int = 32,

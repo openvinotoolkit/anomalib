@@ -197,8 +197,8 @@ class MVTec3DDataset(AnomalibDepthDataset):
         self,
         task: TaskType,
         transform: A.Compose,
-        root: Path | str,
-        category: str,
+        root: Path | str = "./datasets/MVTec3D",
+        category: str = "bagel",
         split: str | Split | None = None,
     ) -> None:
         super().__init__(task=task, transform=transform)
@@ -240,9 +240,9 @@ class MVTec3D(AnomalibDataModule):
 
     def __init__(
         self,
-        root: Path | str,
-        category: str,
-        image_size: int | tuple[int, int] | None = None,
+        root: Path | str = "./datasets/MVTec3D",
+        category: str = "bagel",
+        image_size: int | tuple[int, int] = (256, 256),
         center_crop: int | tuple[int, int] | None = None,
         normalization: str | InputNormalizationMethod = InputNormalizationMethod.IMAGENET,
         train_batch_size: int = 32,
