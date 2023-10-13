@@ -313,7 +313,7 @@ class Folder3D(AnomalibDataModule):
         abnormal_depth_dir: str | Path | None = None,
         normal_test_depth_dir: str | Path | None = None,
         extensions: tuple[str] | None = None,
-        image_size: int | tuple[int, int] | None = None,
+        image_size: int | tuple[int, int] = (256, 256),
         center_crop: int | tuple[int, int] | None = None,
         normalization: str | InputNormalizationMethod = InputNormalizationMethod.IMAGENET,
         train_batch_size: int = 32,
