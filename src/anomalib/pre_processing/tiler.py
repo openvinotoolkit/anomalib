@@ -160,12 +160,10 @@ class Tiler:
         stride: int | Sequence | None = None,
         remove_border_count: int = 0,
         mode: ImageUpscaleMode = ImageUpscaleMode.PADDING,
-        use_random_tiling: bool = False,
-        random_tile_count: int = 4,
     ) -> None:
         self.tile_size_h, self.tile_size_w = self.__validate_size_type(tile_size)
-        self.use_random_tiling = use_random_tiling
-        self.random_tile_count = random_tile_count
+        self.use_random_tiling = False
+        self.random_tile_count = 4
 
         if stride is not None:
             self.stride_h, self.stride_w = self.__validate_size_type(stride)
