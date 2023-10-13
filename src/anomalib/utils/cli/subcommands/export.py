@@ -11,14 +11,20 @@ import torch
 from jsonargparse import ActionConfigFile, Namespace
 from jsonargparse._actions import _ActionSubCommands
 from lightning.pytorch.cli import LightningArgumentParser
-from openvino.tools.mo.utils.cli_parser import get_common_cli_parser
 
 from anomalib.config.config import get_configurable_parameters
 from anomalib.data.utils.transform import get_transforms
 from anomalib.deploy import export_to_onnx, export_to_openvino, export_to_torch, get_metadata
 from anomalib.models import get_model
+from anomalib.utils.exceptions import try_import
 
 logger = logging.getLogger(__name__)
+
+
+if try_import("openvino"):
+    from openvino.tools.mo.utils.cli_parser import get_common_cli_parser
+else:
+    get_common_cli_parser = None
 
 
 def add_torch_export_arguments(subcommand: _ActionSubCommands):
@@ -35,15 +41,18 @@ def add_onnx_export_arguments(subcommand: _ActionSubCommands):
 
 def add_openvino_export_arguments(subcommand: _ActionSubCommands):
     """Add OpenVINO parser to subcommand."""
-    parser = _get_export_parser("OpenVINO")
-    group = parser.add_argument_group("OpenVINO Model Optimizer arguments (optional)")
-    mo_parser = get_common_cli_parser()
-    # remove redundant keys from mo keys
-    for arg in mo_parser._actions:  # noqa: SLF001
-        if arg.dest in ("help", "input_model", "output_dir"):
-            continue
-        group.add_argument(f"--mo.{arg.dest}", type=arg.type, default=arg.default, help=arg.help)
-    subcommand.add_subcommand("openvino", parser)
+    if get_common_cli_parser is not None:
+        parser = _get_export_parser("OpenVINO")
+        group = parser.add_argument_group("OpenVINO Model Optimizer arguments (optional)")
+        mo_parser = get_common_cli_parser()
+        # remove redundant keys from mo keys
+        for arg in mo_parser._actions:  # noqa: SLF001
+            if arg.dest in ("help", "input_model", "output_dir"):
+                continue
+            group.add_argument(f"--mo.{arg.dest}", type=arg.type, default=arg.default, help=arg.help)
+        subcommand.add_subcommand("openvino", parser)
+    else:
+        logger.info("OpenVINO is possibly not installed in the environment. Skipping adding it to parser.")
 
 
 def _get_export_parser(subcommand: str):

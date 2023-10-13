@@ -85,7 +85,7 @@ class Stfpm(AnomalyModule):
 
     @property
     def trainer_arguments(self) -> dict[str, Any]:
-        return {"gradient_clip_val": 0, "max_epochs": 100, "num_sanity_val_steps": 0}
+        return {"gradient_clip_val": 0, "num_sanity_val_steps": 0}
 
 
 class StfpmLightning(Stfpm):
