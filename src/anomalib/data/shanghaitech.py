@@ -204,12 +204,12 @@ class ShanghaiTechDataset(AnomalibVideoDataset):
     ) -> None:
         super().__init__(task, transform, clip_length_in_frames, frames_between_clips, target_frame)
 
-        self.root = root
+        self.root = Path(root)
         self.scene = scene
         self.split = split
         self.indexer_cls = ShanghaiTechTrainClipsIndexer if self.split == Split.TRAIN else ShanghaiTechTestClipsIndexer
 
-    def _setup(self):
+    def _setup(self) -> None:
         """Create and assign samples."""
         self.samples = make_shanghaitech_dataset(self.root, self.scene, self.split)
 

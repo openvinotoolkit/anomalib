@@ -11,6 +11,7 @@ from typing import Any
 from jsonargparse import ArgumentParser
 from lightning.pytorch import Trainer
 from lightning.pytorch.cli import ArgsType, LightningArgumentParser, LightningCLI, SaveConfigCallback
+from lightning.pytorch.utilities.types import _EVALUATE_OUTPUT, _PREDICT_OUTPUT
 
 from anomalib.config.config import update_config
 from anomalib.data import AnomalibDataModule, TaskType
@@ -213,19 +214,19 @@ class AnomalibCLI(LightningCLI):
             getattr(self, f"{subcommand}")()
 
     @property
-    def fit(self):
+    def fit(self) -> Callable[..., None]:
         return self.engine.fit
 
     @property
-    def validate(self):
+    def validate(self) -> Callable[..., _EVALUATE_OUTPUT | None]:
         return self.engine.validate
 
     @property
-    def test(self):
+    def test(self) -> Callable[..., _EVALUATE_OUTPUT]:
         return self.engine.test
 
     @property
-    def predict(self):
+    def predict(self) -> Callable[..., _PREDICT_OUTPUT | None]:
         return self.engine.predict
 
     def hpo(self) -> None:

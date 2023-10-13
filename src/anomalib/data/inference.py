@@ -43,7 +43,7 @@ class InferenceDataset(Dataset):
         """Get the number of images in the given path."""
         return len(self.image_filenames)
 
-    def __getitem__(self, index: int) -> Any:
+    def __getitem__(self, index: int) -> dict[str, Any]:
         """Get the image based on the `index`."""
         image_filename = self.image_filenames[index]
         image = read_image(path=image_filename)

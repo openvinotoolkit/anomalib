@@ -9,6 +9,7 @@
 
 import logging
 from collections.abc import Callable
+from typing import Any
 
 import torch
 from FrEIA.modules import InvertibleModule
@@ -90,8 +91,8 @@ class AllInOneBlock(InvertibleModule):
 
     def __init__(
         self,
-        dims_in,
-        dims_c: list | None = None,
+        dims_in: list[tuple[int]],
+        dims_c: list[tuple[int]] | None = None,
         subnet_constructor: Callable | None = None,
         affine_clamping: float = 2.0,
         gin_block: bool = False,
@@ -223,7 +224,7 @@ class AllInOneBlock(InvertibleModule):
         self.subnet = subnet_constructor(self.splits[0] + self.condition_channels, 2 * self.splits[1])
         self.last_jac = None
 
-    def _construct_householder_permutation(self):
+    def _construct_householder_permutation(self) -> torch.Tensor:
         """Computes a permutation matrix from the reflection vectors that are
         learned internally as nn.Parameters."""
         w = self.w_0
@@ -234,7 +235,7 @@ class AllInOneBlock(InvertibleModule):
             w = w.unsqueeze(-1)
         return w
 
-    def _permute(self, x, rev=False):
+    def _permute(self, x: torch.Tensor, rev: bool = False) -> tuple[Any, float | Tensor]:
         """Performs the permutation and scaling after the coupling operation.
         Returns transformed outputs and the LogJacDet of the scaling operation."""
         if self.GIN:
@@ -249,7 +250,7 @@ class AllInOneBlock(InvertibleModule):
 
         return (self.permute_function(x * scale + self.global_offset, self.w_perm), perm_log_jac)
 
-    def _pre_permute(self, x, rev=False):
+    def _pre_permute(self, x: torch.Tensor, rev: bool = False) -> torch.Tensor:
         """Permutes before the coupling block, only used if
         reverse_permutation is set"""
         if rev:
@@ -257,7 +258,7 @@ class AllInOneBlock(InvertibleModule):
 
         return self.permute_function(x, self.w_perm_inv)
 
-    def _affine(self, x, a, rev=False):
+    def _affine(self, x: torch.Tensor, a: torch.Tensor, rev: bool = False) -> tuple[Any, torch.Tensor]:
         """Given the passive half, and the pre-activation outputs of the
         coupling subnetwork, perform the affine coupling operation.
         Returns both the transformed inputs and the LogJacDet."""
@@ -276,7 +277,13 @@ class AllInOneBlock(InvertibleModule):
 
         return ((x - a[:, ch:]) * torch.exp(-sub_jac), -torch.sum(sub_jac, dim=self.sum_dims))
 
-    def forward(self, x, c: list | None = None, rev: bool = False, jac: bool = True):
+    def forward(
+        self,
+        x: torch.Tensor,
+        c: list | None = None,
+        rev: bool = False,
+        jac: bool = True,
+    ) -> tuple[tuple[torch.Tensor], torch.Tensor]:
         """See base class docstring"""
         del jac  # Unused argument.
 
@@ -321,5 +328,5 @@ class AllInOneBlock(InvertibleModule):
 
         return (x_out,), log_jac_det
 
-    def output_dims(self, input_dims):
+    def output_dims(self, input_dims: list[tuple[int]]) -> list[tuple[int]]:
         return input_dims

@@ -50,7 +50,7 @@ class _ThresholdCallback(Callback):
         trainer: Trainer,
         pl_module: AnomalyModule,
         outputs: STEP_OUTPUT | None,
-        batch: Any,
+        batch: Any,  # noqa: ANN401
         batch_idx: int,
         dataloader_idx: int = 0,
     ) -> None:
@@ -177,7 +177,7 @@ class _ThresholdCallback(Callback):
         pl_module.image_threshold.reset()
         pl_module.pixel_threshold.reset()
 
-    def _outputs_to_cpu(self, output: STEP_OUTPUT):
+    def _outputs_to_cpu(self, output: STEP_OUTPUT) -> STEP_OUTPUT | dict[str, Any]:
         # TODO(ashwinvaidya17): This is duplicated in multiple trainer callbacks.
         # CVS-122664
         if isinstance(output, dict):

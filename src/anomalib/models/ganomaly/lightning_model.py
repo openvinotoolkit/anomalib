@@ -114,7 +114,7 @@ class Ganomaly(AnomalyModule):
         self,
         batch: dict[str, str | Tensor],
         batch_idx: int,
-    ) -> STEP_OUTPUT:  # pylint: disable=arguments-differ
+    ) -> STEP_OUTPUT:
         """Training step.
 
         Args:
@@ -177,7 +177,13 @@ class Ganomaly(AnomalyModule):
         self.min_scores = min(self.min_scores, torch.min(batch["pred_scores"]))
         return batch
 
-    def on_validation_batch_end(self, outputs, batch, batch_idx, dataloader_idx=0):
+    def on_validation_batch_end(
+        self,
+        outputs: STEP_OUTPUT,
+        batch: Any,  # noqa: ANN401
+        batch_idx: int,
+        dataloader_idx: int = 0,
+    ) -> None:
         """Normalize outputs based on min/max values."""
         outputs["pred_scores"] = self._normalize(outputs["pred_scores"])
         super().on_validation_batch_end(outputs, batch, batch_idx, dataloader_idx=dataloader_idx)
@@ -196,7 +202,13 @@ class Ganomaly(AnomalyModule):
         self.min_scores = min(self.min_scores, torch.min(batch["pred_scores"]))
         return batch
 
-    def on_test_batch_end(self, outputs, batch, batch_idx, dataloader_idx=0):
+    def on_test_batch_end(
+        self,
+        outputs: STEP_OUTPUT,
+        batch: Any,  # noqa: ANN401
+        batch_idx: int,
+        dataloader_idx: int = 0,
+    ) -> None:
         """Normalize outputs based on min/max values."""
         outputs["pred_scores"] = self._normalize(outputs["pred_scores"])
         super().on_test_batch_end(outputs, batch, batch_idx, dataloader_idx=dataloader_idx)

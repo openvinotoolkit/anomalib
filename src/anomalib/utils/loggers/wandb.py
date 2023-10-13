@@ -4,6 +4,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
+from typing import TYPE_CHECKING
+
 import numpy as np
 from lightning.pytorch.loggers.wandb import WandbLogger
 from lightning.pytorch.utilities import rank_zero_only
@@ -13,6 +15,10 @@ from anomalib.utils.exceptions import try_import
 
 if try_import("wandb"):
     import wandb
+
+    if TYPE_CHECKING:
+        from wandb.sdk.lib import RunDisabled
+        from wandb.wandb_run import Run
 
 from .base import ImageLoggerBase
 
@@ -78,7 +84,7 @@ class AnomalibWandbLogger(ImageLoggerBase, WandbLogger):
         version: str | None = None,
         project: str | None = None,
         log_model: str | bool = False,
-        experiment=None,
+        experiment: "Run" | "RunDisabled" | None = None,
         prefix: str | None = "",
         **kwargs,
     ) -> None:
@@ -98,7 +104,7 @@ class AnomalibWandbLogger(ImageLoggerBase, WandbLogger):
         self.image_list: list[wandb.Image] = []  # Cache images
 
     @rank_zero_only
-    def add_image(self, image: np.ndarray | Figure, name: str | None = None, **kwargs):
+    def add_image(self, image: np.ndarray | Figure, name: str | None = None, **kwargs) -> None:
         """Interface to add image to wandb logger.
 
         Args:
@@ -120,4 +126,5 @@ class AnomalibWandbLogger(ImageLoggerBase, WandbLogger):
         super().save()
         if len(self.image_list) > 1:
             wandb.log({"Predictions": self.image_list})
+            self.image_list = []
             self.image_list = []

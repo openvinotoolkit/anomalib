@@ -45,7 +45,7 @@ class TransformsWrapper:
     def __init__(self, t: A.Compose) -> None:
         self.transforms = t
 
-    def __call__(self, img, *args, **kwargs):
+    def __call__(self, img: np.ndarray, *args, **kwargs) -> dict[str, Any]:
         del args, kwargs  # Unused arguments.
 
         return self.transforms(image=np.array(img))

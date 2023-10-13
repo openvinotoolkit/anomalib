@@ -28,7 +28,7 @@ def to_yaml(config: Namespace | ListConfig | DictConfig) -> str:
     return OmegaConf.to_yaml(_config)
 
 
-def _convert_nested_path_to_str(config: Any) -> Any:
+def _convert_nested_path_to_str(config: Any) -> Any:  # noqa: ANN401
     """Goes over the dictionary and converts all path values to str."""
     if isinstance(config, dict):
         for key, value in config.items():

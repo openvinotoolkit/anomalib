@@ -62,7 +62,7 @@ class _TrainerArgumentsCache:
     def __init__(self, **kwargs) -> None:
         self._cached_args = {**kwargs}
 
-    def update(self, model: AnomalyModule):
+    def update(self, model: AnomalyModule) -> None:
         """Replace cached arguments with arguments retrieved from the model.
 
         Args:
@@ -126,13 +126,13 @@ class Engine:
         self._trainer: Trainer | None = None
 
     @property
-    def trainer(self):
+    def trainer(self) -> Trainer:
         if not self._trainer:
             msg = "``self.trainer`` is not assigned yet."
             raise UnassignedError(msg)
         return self._trainer
 
-    def _setup_trainer(self, model: AnomalyModule):
+    def _setup_trainer(self, model: AnomalyModule) -> None:
         """Instantiates the trainer based on the model parameters."""
         if self._cache.requires_update(model) or self._trainer is None:
             self._cache.update(model)
@@ -140,7 +140,7 @@ class Engine:
             # Callbacks need to be setup later as they depend on default_root_dir from the trainer
             self._setup_anomalib_callbacks()
 
-    def _setup_anomalib_callbacks(self):
+    def _setup_anomalib_callbacks(self) -> None:
         """Setup callbacks for the trainer."""
         _callbacks: list[Callback] = [_PostProcessorCallback()]
         normalization_callback = get_normalization_callback(self.normalization)

@@ -7,17 +7,15 @@ Paper https://arxiv.org/abs/2106.08265.
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
+from omegaconf import DictConfig, ListConfig
 from torch import Tensor
 
 from anomalib.models.components import AnomalyModule
 from anomalib.models.patchcore.torch_model import PatchcoreModel
-
-if TYPE_CHECKING:
-    from omegaconf import DictConfig, ListConfig
 
 logger = logging.getLogger(__name__)
 
@@ -133,7 +131,7 @@ class PatchcoreLightning(Patchcore):
         hparams (DictConfig | ListConfig): Model params
     """
 
-    def __init__(self, hparams) -> None:
+    def __init__(self, hparams: DictConfig | ListConfig) -> None:
         super().__init__(
             input_size=hparams.model.input_size,
             backbone=hparams.model.backbone,

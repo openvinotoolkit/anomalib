@@ -31,7 +31,7 @@ class ImageVisualizerCallback(BaseVisualizerCallback):
         trainer: pl.Trainer,
         pl_module: AnomalyModule,
         outputs: STEP_OUTPUT | None,
-        batch: Any,
+        batch: Any,  # noqa: ANN401
         batch_idx: int,
         dataloader_idx: int = 0,
     ) -> None:
@@ -62,7 +62,7 @@ class ImageVisualizerCallback(BaseVisualizerCallback):
         trainer: pl.Trainer,
         pl_module: AnomalyModule,
         outputs: STEP_OUTPUT | None,
-        batch: Any,
+        batch: Any,  # noqa: ANN401
         batch_idx: int,
         dataloader_idx: int = 0,
     ) -> None:

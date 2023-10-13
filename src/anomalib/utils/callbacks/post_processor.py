@@ -30,7 +30,7 @@ class _PostProcessorCallback(Callback):
         trainer: Trainer,
         pl_module: AnomalyModule,
         outputs: STEP_OUTPUT | None,
-        batch: Any,
+        batch: Any,  # noqa: ANN401
         batch_idx: int,
         dataloader_idx: int = 0,
     ) -> None:
@@ -44,7 +44,7 @@ class _PostProcessorCallback(Callback):
         trainer: Trainer,
         pl_module: AnomalyModule,
         outputs: STEP_OUTPUT | None,
-        batch: Any,
+        batch: Any,  # noqa: ANN401
         batch_idx: int,
         dataloader_idx: int = 0,
     ) -> None:
@@ -57,8 +57,8 @@ class _PostProcessorCallback(Callback):
         self,
         trainer: Trainer,
         pl_module: AnomalyModule,
-        outputs: Any,
-        batch: Any,
+        outputs: Any,  # noqa: ANN401
+        batch: Any,  # noqa: ANN401
         batch_idx: int,
         dataloader_idx: int = 0,
     ) -> None:
@@ -67,7 +67,7 @@ class _PostProcessorCallback(Callback):
         if outputs is not None:
             self.post_process(trainer, pl_module, outputs)
 
-    def post_process(self, trainer: Trainer, pl_module: AnomalyModule, outputs: STEP_OUTPUT):
+    def post_process(self, trainer: Trainer, pl_module: AnomalyModule, outputs: STEP_OUTPUT) -> None:
         if isinstance(outputs, dict):
             self._post_process(outputs)
             if trainer.predicting or trainer.testing:

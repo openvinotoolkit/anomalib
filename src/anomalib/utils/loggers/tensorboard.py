@@ -73,7 +73,7 @@ class AnomalibTensorBoardLogger(ImageLoggerBase, TensorBoardLogger):
         )
 
     @rank_zero_only
-    def add_image(self, image: np.ndarray | Figure, name: str | None = None, **kwargs):
+    def add_image(self, image: np.ndarray | Figure, name: str | None = None, **kwargs) -> None:
         """Interface to add image to tensorboard logger.
 
         Args:

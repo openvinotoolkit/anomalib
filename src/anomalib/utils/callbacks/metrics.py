@@ -109,7 +109,7 @@ class _MetricsCallback(Callback):
         trainer: Trainer,
         pl_module: AnomalyModule,
         outputs: STEP_OUTPUT | None,
-        batch: Any,
+        batch: Any,  # noqa: ANN401
         batch_idx: int,
         dataloader_idx: int = 0,
     ) -> None:
@@ -144,7 +144,7 @@ class _MetricsCallback(Callback):
         trainer: Trainer,
         pl_module: AnomalyModule,
         outputs: STEP_OUTPUT | None,
-        batch: Any,
+        batch: Any,  # noqa: ANN401
         batch_idx: int,
         dataloader_idx: int = 0,
     ) -> None:
@@ -179,7 +179,7 @@ class _MetricsCallback(Callback):
             pixel_metric.to(self.device)
             pixel_metric.update(torch.squeeze(output["anomaly_maps"]), torch.squeeze(output["mask"].int()))
 
-    def _outputs_to_device(self, output: STEP_OUTPUT):
+    def _outputs_to_device(self, output: STEP_OUTPUT) -> STEP_OUTPUT | dict[str, Any]:
         if isinstance(output, dict):
             for key, value in output.items():
                 output[key] = self._outputs_to_device(value)

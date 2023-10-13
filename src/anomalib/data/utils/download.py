@@ -188,7 +188,7 @@ class DownloadProgressBar(tqdm):
         )
         self.total: int | float | None
 
-    def update_to(self, chunk_number: int = 1, max_chunk_size: int = 1, total_size=None) -> None:
+    def update_to(self, chunk_number: int = 1, max_chunk_size: int = 1, total_size: int | None = None) -> None:
         """Progress bar hook for tqdm.
 
         Based on https://stackoverflow.com/a/53877507
@@ -198,7 +198,7 @@ class DownloadProgressBar(tqdm):
         Args:
             chunk_number (int, optional): The current chunk being processed. Defaults to 1.
             max_chunk_size (int, optional): Maximum size of each chunk. Defaults to 1.
-            total_size ([type], optional): Total download size. Defaults to None.
+            total_size (int, optional): Total download size. Defaults to None.
         """
         if total_size is not None:
             self.total = total_size
@@ -306,7 +306,7 @@ def download_and_extract(root: Path, info: DownloadInfo) -> None:
     extract(downloaded_file_path, root)
 
 
-def is_within_directory(directory: Path, target: Path):
+def is_within_directory(directory: Path, target: Path) -> bool:
     """Checks if a target path is located within a given directory.
 
     Args:

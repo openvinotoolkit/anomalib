@@ -61,7 +61,7 @@ class Draem(AnomalyModule):
                 name (str): Identifier for the retrieved activations.
             """
 
-            def hook(_, __, output: Tensor) -> None:
+            def hook(_, __, output: Tensor) -> None:  # noqa: ANN001
                 """Hook for retrieving the activations."""
                 self.sspcab_activations[name] = output
 

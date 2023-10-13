@@ -13,7 +13,7 @@ from torch import Tensor, nn
 class MultiVariateGaussian(nn.Module):
     """Multi Variate Gaussian Distribution."""
 
-    def __init__(self, n_features, n_patches) -> None:
+    def __init__(self, n_features: int, n_patches: int) -> None:
         super().__init__()
 
         self.register_buffer("mean", torch.zeros(n_features, n_patches))
@@ -28,7 +28,7 @@ class MultiVariateGaussian(nn.Module):
         rowvar: bool = False,
         bias: bool = False,
         ddof: int | None = None,
-        aweights: Tensor = None,
+        aweights: Tensor | None = None,
     ) -> Tensor:
         """Estimates covariance matrix like numpy.cov.
 
