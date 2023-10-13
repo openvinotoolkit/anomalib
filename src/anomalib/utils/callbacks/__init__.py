@@ -88,6 +88,19 @@ def get_callbacks(config: DictConfig | ListConfig) -> list[Callback]:
     )
     callbacks.append(post_processing_callback)
 
+    # Add the tiling configuration callback
+    if config.dataset.tiling.apply:
+        callbacks.append(
+            TilerConfigurationCallback(
+                enable=True,
+                tile_size=config.dataset.tiling.tile_size,
+                stride=config.dataset.tiling.stride,
+                remove_border_count=config.dataset.tiling.remove_border_count,
+                use_random_tiling=config.dataset.tiling.use_random_tiling,
+                random_tile_count=config.dataset.tiling.random_tile_count,
+            )
+        )
+
     # Add metric configuration to the model via MetricsConfigurationCallback
     metrics_callback = MetricsConfigurationCallback(
         config.dataset.task,
