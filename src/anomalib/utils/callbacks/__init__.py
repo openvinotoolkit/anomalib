@@ -89,7 +89,7 @@ def get_callbacks(config: DictConfig | ListConfig) -> list[Callback]:
     callbacks.append(post_processing_callback)
 
     # Add the tiling configuration callback
-    if config.dataset.tiling.apply:
+    if config.dataset.get("tiling") and config.dataset.tiling.apply:
         callbacks.append(
             TilerConfigurationCallback(
                 enable=True,
