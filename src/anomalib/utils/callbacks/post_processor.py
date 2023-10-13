@@ -81,7 +81,7 @@ class _PostProcessorCallback(Callback):
         outputs["pred_labels"] = outputs["pred_scores"] >= pl_module.image_threshold.value
         if "anomaly_maps" in outputs:
             outputs["pred_masks"] = outputs["anomaly_maps"] >= pl_module.pixel_threshold.value
-            if "pred_boxes" not in outputs.keys():
+            if "pred_boxes" not in outputs:
                 outputs["pred_boxes"], outputs["box_scores"] = masks_to_boxes(
                     outputs["pred_masks"],
                     outputs["anomaly_maps"],

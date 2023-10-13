@@ -66,8 +66,9 @@ def hide_output(func):
         sys.stdout = buf = io.StringIO()
         try:
             value = func(*args, **kwargs)
+        # NOTE: A generic exception is used here to catch all exceptions.
         except Exception as exception:  # noqa: BLE001
-            raise Exception(buf.getvalue()) from exception
+            raise Exception(buf.getvalue()) from exception  # noqa: TRY002
         sys.stdout = std_out
         return value
 
@@ -189,9 +190,7 @@ def compute_on_gpu(
             write_metrics(model_metrics, writers, folder)
         else:
             msg = f"Expecting `run_config` of type DictConfig or ListConfig. Got {type(run_config)} instead."
-            raise ValueError(
-                msg,
-            )
+            raise TypeError(msg)
 
 
 def distribute_over_gpus(sweep_config: DictConfig | ListConfig, folder: str | None = None):
@@ -219,9 +218,10 @@ def distribute_over_gpus(sweep_config: DictConfig | ListConfig, folder: str | No
         for job in jobs:
             try:
                 job.result()
-            except Exception as exception:  # noqa: BLE001
+            # NOTE: A generic exception is used here to catch all exceptions.
+            except Exception as exception:  # noqa: BLE001, PERF203
                 msg = f"Error occurred while computing benchmark on GPU {job}"
-                raise Exception(msg) from exception
+                raise Exception(msg) from exception  # noqa: TRY002
 
 
 def distribute(config_path: Path) -> None:
@@ -245,9 +245,10 @@ def distribute(config_path: Path) -> None:
             for job in as_completed(jobs):
                 try:
                     job.result()
-                except Exception as exception:  # noqa: BLE001
+                # NOTE: A generic exception is used here to catch all exceptions.
+                except Exception as exception:  # noqa: BLE001, PERF203
                     msg = f"Error occurred while computing benchmark on device {job}"
-                    raise Exception(msg) from exception
+                    raise Exception(msg) from exception  # noqa: TRY002
     elif "cpu" in devices:
         compute_on_cpu(config, folder=runs_folder)
     elif "gpu" in devices:

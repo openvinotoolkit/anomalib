@@ -179,7 +179,6 @@ class Ganomaly(AnomalyModule):
 
     def on_validation_batch_end(self, outputs, batch, batch_idx, dataloader_idx=0):
         """Normalize outputs based on min/max values."""
-        # logger.info("Normalizing validation outputs based on min/max values.")
         outputs["pred_scores"] = self._normalize(outputs["pred_scores"])
         super().on_validation_batch_end(outputs, batch, batch_idx, dataloader_idx=dataloader_idx)
 
@@ -199,7 +198,6 @@ class Ganomaly(AnomalyModule):
 
     def on_test_batch_end(self, outputs, batch, batch_idx, dataloader_idx=0):
         """Normalize outputs based on min/max values."""
-        # logger.info("Normalizing test outputs based on min/max values.")
         outputs["pred_scores"] = self._normalize(outputs["pred_scores"])
         super().on_test_batch_end(outputs, batch, batch_idx, dataloader_idx=dataloader_idx)
 

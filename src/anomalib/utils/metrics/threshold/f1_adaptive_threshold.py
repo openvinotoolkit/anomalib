@@ -27,8 +27,8 @@ class F1AdaptiveThreshold(PrecisionRecallCurve, BaseThreshold):
     def __init__(self, default_value: float = 0.5, **kwargs) -> None:
         super().__init__(num_classes=1, **kwargs)
 
-        self.add_state("value", default=torch.tensor(default_value), persistent=True)  # pylint: disable=not-callable
-        self.value = torch.tensor(default_value)  # pylint: disable=not-callable
+        self.add_state("value", default=torch.tensor(default_value), persistent=True)
+        self.value = torch.tensor(default_value)
 
     def compute(self) -> Tensor:
         """Compute the threshold that yields the optimal F1 score.

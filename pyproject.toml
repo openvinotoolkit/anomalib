@@ -50,20 +50,20 @@ select = [
     "TCH",  # flake8-type-checking (`TCH`)
     "INT",  # flake8-gettext (`INT`)
     "ARG",  # flake8-unsused-arguments (`ARG`)
-    # "PTH",  # flake8-use-pathlib (`PTH`)
+    "PTH",  # flake8-use-pathlib (`PTH`)
     # "TD",   # flake8-todos (`TD`)
     # "FIX",  # flake8-fixme (`FIX`)
-    # "ERA",  # eradicate (`ERA`)
+    "ERA",  # eradicate (`ERA`)
     # "PD",   # pandas-vet (`PD`)
     # "PGH",  # pygrep-hooks (`PGH`)
-    # "PL",   # pylint (`PL`)
-    # "TRY",  # tryceratos (`TRY`)
-    # "FLY",  # flynt (`FLY`)
-    # "NPY",  # NumPy-specific rules (`NPY`)
-    # "PERF", # Perflint (`PERF`)
+    "PL",   # pylint (`PL`)
+    "TRY",  # tryceratos (`TRY`)
+    "FLY",  # flynt (`FLY`)
+    "NPY",  # NumPy-specific rules (`NPY`)
+    "PERF", # Perflint (`PERF`)
     # "FURB", # refurb (`FURB`)
     # "LOG",  # flake8-logging (`LOG`)
-    # "RUF",  # Ruff-specific rules (`RUF`)
+    "RUF",  # Ruff-specific rules (`RUF`)
 ]
 
 ignore = [
@@ -79,12 +79,12 @@ ignore = [
     # "D413", # Missing blank line after last section
     # "D418", # Methods decorated with @overload shouldn't contain a docstring
 
-    # # pylint
-    # "PLR0913",  # Too many arguments to function call
-    # "PLR2004",  # consider replacing with a constant variable
-    # "PLW2901",  # `for` loop variable `row` overwritten by assignment target
-    # "PLR0912",  # Too many branches
-    # "PLR0915",  # Too many statements
+    # pylint
+    "PLR0913",  # Too many arguments to function call
+    "PLR2004",  # consider replacing with a constant variable
+    "PLW2901",  # `for` loop variable `row` overwritten by assignment target
+    "PLR0912",  # Too many branches
+    "PLR0915",  # Too many statements
 
     # flake8-annotations
     # "ANN101",   # Missing-type-self

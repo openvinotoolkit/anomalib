@@ -123,16 +123,14 @@ class CfaModel(DynamicBufferModule):
         # Scale is to get the largest feature map dimensions of different layers
         # of the feature extractor. In a typical feature extractor, the first
         # layer has the highest resolution.
-        resolution = list(feature_map_metadata.values())[0]["resolution"]
+        resolution = next(iter(feature_map_metadata.values()))["resolution"]
         if isinstance(resolution, int):
             self.scale = (resolution,) * 2
         elif isinstance(resolution, tuple):
             self.scale = resolution
         else:
             msg = f"Unknown type {type(resolution)} for `resolution`. Expected types are either int or tuple[int, int]."
-            raise ValueError(
-                msg,
-            )
+            raise TypeError(msg)
 
         self.descriptor = Descriptor(self.gamma_d, backbone)
         self.radius = torch.ones(1, requires_grad=True) * radius

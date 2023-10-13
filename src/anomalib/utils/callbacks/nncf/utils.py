@@ -156,7 +156,6 @@ def compose_nncf_config(nncf_config: dict, enabled_options: list[str]) -> dict:
     return nncf_config_part
 
 
-# pylint: disable=invalid-name
 def merge_dicts_and_lists_b_into_a(a, b):
     """The function to merge dict configs."""
     return _merge_dicts_and_lists_b_into_a(a, b, "")

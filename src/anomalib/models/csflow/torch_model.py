@@ -208,12 +208,12 @@ class ParallelPermute(InvertibleModule):
         seed (float | None=None): Seed for the random permutation.
     """
 
-    def __init__(self, dims_in: list[tuple[int]], seed: float | None = None) -> None:
+    def __init__(self, dims_in: list[tuple[int]], seed: int | None = None) -> None:
         super().__init__(dims_in)
         self.n_inputs: int = len(dims_in)
         self.in_channels = [dims_in[i][0] for i in range(self.n_inputs)]
+        self.seed = seed
 
-        np.random.seed(seed)
         perm, perm_inv = self.get_random_perm(0)
         self.perm = [perm]  # stores the random order of channels
         self.perm_inv = [perm_inv]  # stores the inverse mapping to recover the original order of channels
@@ -232,7 +232,7 @@ class ParallelPermute(InvertibleModule):
         Returns:
             tuple[Tensor, Tensor]: permutation and inverse permutation
         """
-        perm = np.random.permutation(self.in_channels[index])
+        perm = np.random.default_rng(self.seed).permutation(self.in_channels[index])
         perm_inv = np.zeros_like(perm)
         for idx, permutation in enumerate(perm):
             perm_inv[permutation] = idx

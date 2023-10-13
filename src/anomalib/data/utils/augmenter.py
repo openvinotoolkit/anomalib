@@ -10,9 +10,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-import glob
 import math
 import random
+from pathlib import Path
 
 import cv2
 import imgaug.augmenters as iaa
@@ -48,10 +48,10 @@ class Augmenter:
         self.p_anomalous = p_anomalous
         self.beta = beta
 
-        self.anomaly_source_paths = []
+        self.anomaly_source_paths: list[Path] = []
         if anomaly_source_path is not None:
             for img_ext in IMG_EXTENSIONS:
-                self.anomaly_source_paths.extend(glob.glob(anomaly_source_path + "/**/*" + img_ext, recursive=True))
+                self.anomaly_source_paths.extend(Path(anomaly_source_path).rglob("*" + img_ext))
 
         self.augmenters = [
             iaa.GammaContrast((0.5, 2.0), per_channel=True),
@@ -73,21 +73,21 @@ class Augmenter:
         Returns:
             A selection of 3 transforms.
         """
-        aug_ind = np.random.choice(np.arange(len(self.augmenters)), 3, replace=False)
+        aug_ind = np.random.default_rng().choice(np.arange(len(self.augmenters)), 3, replace=False)
         return iaa.Sequential([self.augmenters[aug_ind[0]], self.augmenters[aug_ind[1]], self.augmenters[aug_ind[2]]])
 
     def generate_perturbation(
         self,
         height: int,
         width: int,
-        anomaly_source_path: str | None,
+        anomaly_source_path: Path | str | None = None,
     ) -> tuple[np.ndarray, np.ndarray]:
         """Generate an image containing a random anomalous perturbation using a source image.
 
         Args:
             height (int): height of the generated image.
             width: (int): width of the generated image.
-            anomaly_source_path (str | None): Path to an image file. If not provided, random noise will be used
+            anomaly_source_path (Path | str | None): Path to an image file. If not provided, random noise will be used
             instead.
 
         Returns:
@@ -165,7 +165,7 @@ class Augmenter:
             beta = beta.view(batch_size, 1, 1, 1).expand_as(batch).to(batch.device)  # type: ignore
         else:
             msg = "Beta must be either float or tuple of floats"
-            raise ValueError(msg)
+            raise TypeError(msg)
 
         augmented_batch = batch * (1 - masks) + (beta) * perturbations + (1 - beta) * batch * (masks)
 

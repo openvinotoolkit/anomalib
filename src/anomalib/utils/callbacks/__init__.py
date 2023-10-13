@@ -5,8 +5,8 @@
 
 
 import logging
-import os
 from importlib import import_module
+from pathlib import Path
 
 import yaml
 from jsonargparse import Namespace
@@ -49,12 +49,12 @@ def get_callbacks(config: DictConfig | ListConfig | Namespace) -> list[Callback]
     callbacks: list[Callback] = []
 
     monitor_metric = (
-        None if "early_stopping" not in config.model.init_args.keys() else config.model.init_args.early_stopping.metric
+        None if "early_stopping" not in config.model.init_args else config.model.init_args.early_stopping.metric
     )
-    monitor_mode = "max" if "early_stopping" not in config.model.init_args.keys() else config.model.early_stopping.mode
+    monitor_mode = "max" if "early_stopping" not in config.model.init_args else config.model.early_stopping.mode
 
     checkpoint = ModelCheckpoint(
-        dirpath=os.path.join(config.trainer.default_root_dir, "weights", "lightning"),
+        dirpath=Path(config.trainer.default_root_dir) / "weights" / "lightning",
         filename="model",
         monitor=monitor_metric,
         mode=monitor_mode,
@@ -77,11 +77,11 @@ def get_callbacks(config: DictConfig | ListConfig | Namespace) -> list[Callback]
             callbacks.append(
                 nncf_callback(
                     config=nncf_config,
-                    export_dir=os.path.join(config.trainer.default_root_dir, "compressed"),
+                    export_dir=str(Path(config.project.path) / "compressed"),
                 ),
             )
         if config.optimization.export_mode is not None:
-            from .export import ExportCallback  # pylint: disable=import-outside-toplevel
+            from .export import ExportCallback
 
             logger.info("Setting model export to %s", config.optimization.export_mode)
             callbacks.append(
@@ -99,6 +99,5 @@ def get_callbacks(config: DictConfig | ListConfig | Namespace) -> list[Callback]
     # Add callback to log graph to loggers
     # TODO find a place for this key
     # if config.logging.log_graph not in (None, False):
-    #     callbacks.append(GraphLogger())
 
     return callbacks

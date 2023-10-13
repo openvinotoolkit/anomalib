@@ -46,7 +46,7 @@ def generate_perlin_noise_2d(shape, res):
     d = (shape[0] // res[0], shape[1] // res[1])
     grid = np.mgrid[0 : res[0] : delta[0], 0 : res[1] : delta[1]].transpose(1, 2, 0) % 1
     # Gradients
-    angles = 2 * np.pi * np.random.rand(res[0] + 1, res[1] + 1)
+    angles = 2 * np.pi * np.random.default_rng().random(res[0] + 1, res[1] + 1)
     gradients = np.dstack((np.cos(angles), np.sin(angles)))
     g00 = gradients[0:-1, 0:-1].repeat(d[0], 0).repeat(d[1], 1)
     g10 = gradients[1:, 0:-1].repeat(d[0], 0).repeat(d[1], 1)
@@ -96,7 +96,7 @@ def _rand_perlin_2d_np(shape, res, fade=lambda t: 6 * t**5 - 15 * t**4 + 10 * t*
     d = (shape[0] // res[0], shape[1] // res[1])
     grid = np.mgrid[0 : res[0] : delta[0], 0 : res[1] : delta[1]].transpose(1, 2, 0) % 1
 
-    angles = 2 * math.pi * np.random.rand(res[0] + 1, res[1] + 1)
+    angles = 2 * math.pi * np.random.default_rng().random((res[0] + 1, res[1] + 1))
     gradients = np.stack((np.cos(angles), np.sin(angles)), axis=-1)
 
     def tile_grads(slice1, slice2):

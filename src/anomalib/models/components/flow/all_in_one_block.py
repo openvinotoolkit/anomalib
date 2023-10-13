@@ -174,7 +174,6 @@ class AllInOneBlock(InvertibleModule):
 
         # global_scale is used as the initial value for the global affine scale
         # (pre-activation). It is computed such that
-        # global_scale_activation(global_scale) = global_affine_init
         # the 'magic numbers' (specifically for sigmoid) scale the activation to
         # a sensible range.
         if global_affine_type == "SIGMOID":

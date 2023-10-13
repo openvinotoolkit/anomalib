@@ -98,7 +98,7 @@ def update_input_size_config(config: DictConfig | ListConfig | Namespace) -> Dic
         assert len(image_size) == 2, "image_size must be a single integer or tuple of length 2 for width and height."
     else:
         msg = f"image_size must be either int or ListConfig, got {type(image_size)}"
-        raise ValueError(msg)
+        raise TypeError(msg)
 
     # Use input size from data to model input. If model input size is defined, warn and override.
     # If input_size is not part of the model parameters, remove it from the config. This is required due to argument
@@ -153,7 +153,7 @@ def update_nncf_config(config: DictConfig | ListConfig) -> DictConfig | ListConf
         image_size = config.model.init_args.input_size
     sample_size = (image_size, image_size) if isinstance(image_size, int) else image_size
     if "optimization" in config and "nncf" in config.optimization:
-        if "input_info" not in config.optimization.nncf.keys():
+        if "input_info" not in config.optimization.nncf:
             config.optimization.nncf["input_info"] = {"sample_size": None}
         config.optimization.nncf.input_info.sample_size = [1, 3, *sample_size]
         if config.optimization.nncf.apply and "update_config" in config.optimization.nncf:

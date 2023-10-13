@@ -5,7 +5,6 @@
 
 
 import logging
-import os
 from collections.abc import Iterable
 from pathlib import Path
 
@@ -89,16 +88,16 @@ def get_experiment_logger(
             logger_list.append(
                 AnomalibTensorBoardLogger(
                     name="Tensorboard Logs",
-                    save_dir=os.path.join(config.project.path, "logs"),
+                    save_dir=str(Path(config.project.path) / "logs"),
                     log_graph=False,  # TODO: find location for log_graph key
                 ),
             )
         elif experiment_logger == "wandb":
-            wandb_logdir = os.path.join(config.project.path, "logs")
+            wandb_logdir = str(Path(config.project.path) / "logs")
             Path(wandb_logdir).mkdir(parents=True, exist_ok=True)
             name = (
                 config.model.class_path.split(".")[-1]
-                if "category" not in config.data.init_args.keys()
+                if "category" not in config.data.init_args
                 else f"{config.data.init_args.category} {config.model.class_path.split('.')[-1]}"
             )
             logger_list.append(
@@ -109,11 +108,11 @@ def get_experiment_logger(
                 ),
             )
         elif experiment_logger == "comet":
-            comet_logdir = os.path.join(config.project.path, "logs")
+            comet_logdir = str(Path(config.project.path) / "logs")
             Path(comet_logdir).mkdir(parents=True, exist_ok=True)
             run_name = (
                 config.model.name
-                if "category" not in config.data.init_args.keys()
+                if "category" not in config.data.init_args
                 else f"{config.data.init_args.category} {config.model.class_path.split('.')[-1]}"
             )
             logger_list.append(
@@ -124,7 +123,7 @@ def get_experiment_logger(
                 ),
             )
         elif experiment_logger == "csv":
-            logger_list.append(CSVLogger(save_dir=os.path.join(config.project.path, "logs")))
+            logger_list.append(CSVLogger(save_dir=Path(config.project.path) / "logs"))
         else:
             msg = (
                 f"Unknown logger type: {config.trainer.logger}. Available loggers are: {AVAILABLE_LOGGERS}.\n"

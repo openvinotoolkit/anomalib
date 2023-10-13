@@ -1,4 +1,4 @@
-"""DRÆM – A discriminatively trained reconstruction embedding for surface anomaly detection.
+"""DRÆM - A discriminatively trained reconstruction embedding for surface anomaly detection.
 
 Paper https://arxiv.org/abs/2108.07610
 """

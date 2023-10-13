@@ -111,8 +111,8 @@ class CombinedDensityEstimator(BaseDensityEstimator):
             Tensor: Region-level anomaly scores for all regions withing the frame.
             Tensor: Frame-level anomaly score for the frame.
         """
-        n_regions = list(features.values())[0].shape[0]
-        device = list(features.values())[0].device
+        n_regions = next(iter(features.values())).shape[0]
+        device = next(iter(features.values())).device
         region_scores = torch.zeros(n_regions).to(device)
         image_score = 0
         if self.use_velocity_features:
