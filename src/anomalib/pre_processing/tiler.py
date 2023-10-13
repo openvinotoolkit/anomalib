@@ -162,7 +162,6 @@ class Tiler:
         mode: ImageUpscaleMode = ImageUpscaleMode.PADDING,
     ) -> None:
         self.tile_size_h, self.tile_size_w = self.__validate_size_type(tile_size)
-        self.use_random_tiling = False
         self.random_tile_count = 4
 
         if stride is not None:
@@ -339,7 +338,7 @@ class Tiler:
 
         return img
 
-    def tile(self, image: Tensor) -> Tensor:
+    def tile(self, image: Tensor, use_random_tiling: bool = False) -> Tensor:
         """Tiles an input image to either overlapping, non-overlapping or random patches.
 
         Args:
@@ -377,7 +376,7 @@ class Tiler:
 
         image = upscale_image(image, size=(self.resized_h, self.resized_w), mode=self.mode)
 
-        if self.use_random_tiling:
+        if use_random_tiling:
             image_tiles = self.__random_tile(image)
         else:
             image_tiles = self.__unfold(image)
