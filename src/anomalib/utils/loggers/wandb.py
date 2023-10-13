@@ -4,8 +4,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-from typing import Any
-
 import numpy as np
 from lightning.pytorch.loggers.wandb import WandbLogger
 from lightning.pytorch.utilities import rank_zero_only
@@ -100,7 +98,7 @@ class AnomalibWandbLogger(ImageLoggerBase, WandbLogger):
         self.image_list: list[wandb.Image] = []  # Cache images
 
     @rank_zero_only
-    def add_image(self, image: np.ndarray | Figure, name: str | None = None, **kwargs: Any):
+    def add_image(self, image: np.ndarray | Figure, name: str | None = None, **kwargs):
         """Interface to add image to wandb logger.
 
         Args:

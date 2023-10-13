@@ -83,7 +83,7 @@ class AnomalibCLI(LightningCLI):
             "hpo": {"description": "Run Hyperparameter Optimization"},
         }
 
-    def _add_subcommands(self, parser: LightningArgumentParser, **kwargs: Any) -> None:
+    def _add_subcommands(self, parser: LightningArgumentParser, **kwargs) -> None:
         """Setup base subcommands and add anomalib specific on top of it."""
         # Initializes fit, validate, test, predict and tune
         super()._add_subcommands(parser, **kwargs)

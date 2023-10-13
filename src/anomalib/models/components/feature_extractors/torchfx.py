@@ -181,7 +181,7 @@ class TorchFXFeatureExtractor(nn.Module):
                 *,
                 weights: torchvision.models.efficientnet.EfficientNet_B5_Weights | NoneType = None,
                 progress: bool = True,
-                **kwargs: Any
+                **kwargs
                 ) -> torchvision.models.efficientnet.EfficientNet>
 
             >>> TorchFXFeatureExtractor._get_backbone_class("path.to.CustomModel")

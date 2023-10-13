@@ -41,7 +41,7 @@ class AUPRO(Metric):
         self,
         compute_on_step: bool = True,
         dist_sync_on_step: bool = False,
-        process_group: Any | None = None,
+        process_group: Any | None = None,  # noqa: ANN401
         dist_sync_fn: Callable | None = None,
         fpr_limit: float = 0.3,
         num_thresholds: int | None = None,

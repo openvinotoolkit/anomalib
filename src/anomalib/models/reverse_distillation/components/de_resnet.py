@@ -11,7 +11,6 @@
 
 
 from collections.abc import Callable
-from typing import Any
 
 from torch import Tensor, nn
 from torchvision.models.resnet import conv1x1, conv3x3
@@ -277,7 +276,7 @@ class ResNet(nn.Module):
         return [feature_c, feature_b, feature_a]
 
 
-def _resnet(block: type[DecoderBasicBlock | DecoderBottleneck], layers: list[int], **kwargs: Any) -> ResNet:
+def _resnet(block: type[DecoderBasicBlock | DecoderBottleneck], layers: list[int], **kwargs) -> ResNet:
     return ResNet(block, layers, **kwargs)
 
 
