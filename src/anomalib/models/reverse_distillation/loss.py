@@ -28,12 +28,12 @@ class ReverseDistillationLoss(nn.Module):
         """
         cos_loss = torch.nn.CosineSimilarity()
         loss_sum = 0
-        for item in range(len(encoder_features)):
+        for encoder_feature, decoder_feature in zip(encoder_features, decoder_features):
             loss_sum += torch.mean(
                 1
                 - cos_loss(
-                    encoder_features[item].view(encoder_features[item].shape[0], -1),
-                    decoder_features[item].view(decoder_features[item].shape[0], -1),
+                    encoder_feature.view(encoder_feature.shape[0], -1),
+                    decoder_feature.view(decoder_feature.shape[0], -1),
                 )
             )
         return loss_sum
