@@ -5,7 +5,6 @@
 
 
 import logging
-from collections.abc import Iterable
 from pathlib import Path
 
 from lightning.pytorch.loggers import CSVLogger, Logger
@@ -62,7 +61,7 @@ def configure_logger(level: int | str = logging.INFO) -> None:
 
 def get_experiment_logger(
     config: DictConfig | ListConfig,
-) -> Logger | Iterable[Logger] | bool:
+) -> list[Logger] | bool:
     """Return a logger based on the choice of logger in the config file.
 
     Args:
@@ -72,7 +71,7 @@ def get_experiment_logger(
         ValueError: for any logger types apart from false and tensorboard
 
     Returns:
-        Logger | Iterable[Logger] | bool]: Logger
+        list[Logger] | bool: Logger
     """
     logger.info("Loading the experiment logger(s)")
 
