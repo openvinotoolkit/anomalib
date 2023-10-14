@@ -5,7 +5,6 @@
 
 
 import logging
-from collections.abc import Iterable
 from pathlib import Path
 
 from lightning.pytorch.loggers import CSVLogger, Logger
@@ -62,7 +61,7 @@ def configure_logger(level: int | str = logging.INFO) -> None:
 
 def get_experiment_logger(
     config: DictConfig | ListConfig,
-) -> Logger | Iterable[Logger] | bool:
+) -> list[Logger] | bool:
     """Return a logger based on the choice of logger in the config file.
 
     Args:
@@ -72,7 +71,7 @@ def get_experiment_logger(
         ValueError: for any logger types apart from false and tensorboard
 
     Returns:
-        Logger | Iterable[Logger] | bool]: Logger
+        list[Logger] | bool: Logger
     """
     logger.info("Loading the experiment logger(s)")
 
@@ -89,7 +88,9 @@ def get_experiment_logger(
                 AnomalibTensorBoardLogger(
                     name="Tensorboard Logs",
                     save_dir=str(Path(config.project.path) / "logs"),
-                    log_graph=False,  # TODO: find location for log_graph key
+                    # TODO(ashwinvaidya17): Find location for log_graph key
+                    # CVS-122658
+                    log_graph=False,
                 ),
             )
         elif experiment_logger == "wandb":
@@ -134,7 +135,8 @@ def get_experiment_logger(
                 msg,
             )
 
-    # TODO remove this method and set these values in ``update_config``
+    # TODO(ashwinvaidya17): Remove this method and set these values in ``update_config``
+    # CVS-122657
     del config.trainer.logger
 
     return logger_list

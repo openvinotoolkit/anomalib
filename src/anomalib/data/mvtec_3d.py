@@ -155,7 +155,7 @@ def make_mvtec_3d_dataset(
     samples.loc[((samples.split == "test") & (samples.type == "rgb")), "mask_path"] = (
         mask_samples.path + "/" + samples.split + "/" + samples.label + "/" + "gt/" + samples.file_name
     )
-    samples.dropna(subset=["image_path"], inplace=True)
+    samples = samples.dropna(subset=["image_path"])
     samples = samples.astype({"image_path": "str", "mask_path": "str", "depth_path": "str"})
 
     # assert that the right mask files are associated with the right test images

@@ -82,7 +82,7 @@ def infer(args: Namespace):
     dataset = InferenceDataset(
         args.input,
         image_size=image_size,
-        transform=transform,  # type: ignore
+        transform=transform,
     )
     dataloader = DataLoader(dataset)
 

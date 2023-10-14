@@ -49,14 +49,14 @@ class NNCFCallback(Callback):
 
         # Get validate subset to initialize quantization,
         # because train subset does not contain anomalous images.
-        init_loader = InitLoader(trainer.datamodule.val_dataloader())  # type: ignore
+        init_loader = InitLoader(trainer.datamodule.val_dataloader())
         config = register_default_init_args(self.config, init_loader)
 
         self.nncf_ctrl, pl_module.model = wrap_nncf_model(
             model=pl_module.model,
             config=config,
-            dataloader=trainer.datamodule.train_dataloader(),  # type: ignore
-            init_state_dict=None,  # type: ignore
+            dataloader=trainer.datamodule.train_dataloader(),
+            init_state_dict=None,  # type: ignore[arg-type]
         )
 
     def on_train_batch_start(
@@ -101,5 +101,6 @@ class NNCFCallback(Callback):
         self.nncf_ctrl.export_model(onnx_path)
 
         optimize_command = ["mo", "--input_model", onnx_path, "--output_dir", self.export_dir]
-        # TODO: Check if mo can be donw via python API
+        # TODO(samet-akcay): Check if mo can be donw via python API
+        # CVS-122665
         subprocess.run(optimize_command, check=True)  # noqa: S603

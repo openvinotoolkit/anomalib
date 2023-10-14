@@ -7,7 +7,7 @@ import pytest
 
 from anomalib.data import TaskType
 from anomalib.data.folder import FolderDataset
-from anomalib.data.utils import get_transforms, LabelName
+from anomalib.data.utils import LabelName, get_transforms
 from anomalib.data.utils.split import concatenate_datasets, random_split
 from tests.helpers.dataset import get_dataset_path
 
@@ -55,10 +55,8 @@ class TestAnomalibDataset:
         # check if reconstructed dataset is equal to original dataset
         assert folder_dataset.samples.equals(reconstructed_dataset.samples)
 
-        # check if warning raised when one of the subsets is empty
-        split_ratios = [1 - (1 / (len(folder_dataset) + 1)), 1 / (len(folder_dataset) + 1)]
-        with pytest.warns():
-            subsets = random_split(folder_dataset, split_ratios)
+        # TODO(djdameln): Add check for handling of empty subsets in case of small split ratio
+        # CVS-122709
 
         # label-aware subset splitting
         samples = folder_dataset.samples

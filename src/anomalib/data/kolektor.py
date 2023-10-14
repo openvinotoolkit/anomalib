@@ -125,7 +125,7 @@ def make_kolektor_dataset(
     masks = masks.sort_values(by="image_path", ignore_index=True)
 
     # Add mask paths for sample images
-    samples["mask_path"] = masks.image_path.values
+    samples["mask_path"] = masks.image_path.to_numpy()
 
     # Use is_good func to configure the label_index
     samples["label_index"] = samples["mask_path"].apply(is_mask_anomalous)

@@ -27,7 +27,7 @@ class OptimalF1(Metric):
             "Anomalib predictions can be obtained by computing the adaptive threshold with the "
             "AnomalyScoreThreshold metric and setting the computed threshold value in TorchMetrics F1Score metric."
         )
-        logger.warn(msg)
+        logger.warning(msg)
         super().__init__(**kwargs)
 
         self.precision_recall_curve = PrecisionRecallCurve(num_classes=num_classes)

@@ -154,5 +154,5 @@ class AiVadLightning(AiVad):
             n_neighbors_pose=hparams.model.n_neighbors_pose,
             n_neighbors_deep=hparams.model.n_neighbors_deep,
         )
-        self.hparams: DictConfig | ListConfig  # type: ignore
+        self.hparams: DictConfig | ListConfig
         self.save_hyperparameters(hparams)

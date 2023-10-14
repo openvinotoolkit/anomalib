@@ -57,8 +57,8 @@ class Cflow(AnomalyModule):
             permute_soft=permute_soft,
         )
         self.automatic_optimization = False
-        # TODO: LR should be part of optimizer in config.yaml! Since cflow has custom
-        #   optimizer this is to be addressed later.
+        # TODO(ashwinvaidya17): LR should be part of optimizer in config.yaml since  cflow has custom optimizer.
+        # CVS-122670
         self.learning_rate = lr
 
     def configure_optimizers(self) -> Optimizer:
@@ -200,7 +200,7 @@ class CflowLightning(Cflow):
             clamp_alpha=hparams.model.clamp_alpha,
             permute_soft=hparams.model.permute_soft,
         )
-        self.hparams: DictConfig | ListConfig  # type: ignore
+        self.hparams: DictConfig | ListConfig
         self.save_hyperparameters(hparams)
 
     def configure_callbacks(self) -> list[EarlyStopping]:

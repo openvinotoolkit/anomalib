@@ -40,7 +40,7 @@ class AnomalyMapGenerator(nn.Module):
             Tensor: Score value.
         """
         distance = torch.sqrt(distance)
-        distance = distance.topk(self.num_nearest_neighbors, largest=False).values
+        distance = distance.topk(self.num_nearest_neighbors, largest=False).values  # noqa: PD011
         distance = (F.softmin(distance, dim=-1)[:, :, 0]) * distance[:, :, 0]
         distance = distance.unsqueeze(-1)
 

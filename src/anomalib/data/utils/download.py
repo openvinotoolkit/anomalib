@@ -318,6 +318,7 @@ def is_within_directory(directory: Path, target: Path):
     abs_directory = directory.resolve()
     abs_target = target.resolve()
 
-    # TODO: replace with pathlib is_relative_to after switching to Python 3.10
+    # TODO(djdameln): Replace with pathlib is_relative_to after switching to Python 3.10
+    # CVS-122655
     prefix = os.path.commonprefix([abs_directory, abs_target])
     return prefix == str(abs_directory)

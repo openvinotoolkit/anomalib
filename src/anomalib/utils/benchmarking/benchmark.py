@@ -284,7 +284,7 @@ def sweep(
     for param in run_config:
         # grid search keys are always assumed to be strings
         param = cast(str, param)  # placate mypy
-        set_in_nested_config(model_config, param.split("."), run_config[param])  # type: ignore
+        set_in_nested_config(model_config, param.split("."), run_config[param])
 
     # convert image size to tuple in case it was updated by run config
     model_config = update_input_size_config(model_config)
@@ -303,7 +303,8 @@ def sweep(
 
     if run_config.model_name in ["patchcore", "cflow"]:
         convert_openvino = False  # `torch.cdist` is not supported by onnx version 11
-        # TODO Remove this line when issue #40 is fixed https://github.com/openvinotoolkit/anomalib/issues/40
+        # TODO(ashwinvaidya17): Remove this line when issue #40 is fixed
+        # https://github.com/openvinotoolkit/anomalib/issues/40
         if model_config.model.init_args.input_size != (224, 224):
             return {}  # go to next run
 

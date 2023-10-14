@@ -89,7 +89,7 @@ def wrap_nncf_model(
         compression_state = init_state_dict.get("compression_state")
 
     if dataloader:
-        init_loader = InitLoader(dataloader)  # type: ignore
+        init_loader = InitLoader(dataloader)
         nncf_config = register_default_init_args(nncf_config, init_loader)
 
     nncf_ctrl, nncf_model = create_compressed_model(

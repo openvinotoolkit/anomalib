@@ -28,7 +28,7 @@ class AUPR(PrecisionRecallCurve):
         prec, rec = self._compute()
         return auc(rec, prec, reorder=True)
 
-    def update(self, preds: Tensor, target: Tensor) -> None:  # type: ignore
+    def update(self, preds: Tensor, target: Tensor) -> None:
         """Update state with new values.
 
         Need to flatten new values as PrecicionRecallCurve expects them in this format for binary classification.

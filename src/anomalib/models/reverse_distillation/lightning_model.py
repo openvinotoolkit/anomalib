@@ -51,8 +51,8 @@ class ReverseDistillation(AnomalyModule):
             anomaly_map_mode=anomaly_map_mode,
         )
         self.loss = ReverseDistillationLoss()
-        # TODO: LR should be part of optimizer in config.yaml! Since reverse distillation has custom
-        #   optimizer this is to be addressed later.
+        # TODO(ashwinvaidya17): LR should be part of optimizer in config.yaml!
+        # CVS-122670
         self.learning_rate = lr
         self.beta1 = beta1
         self.beta2 = beta2
@@ -138,7 +138,7 @@ class ReverseDistillationLightning(ReverseDistillation):
             beta1=hparams.model.beta1,
             beta2=hparams.model.beta2,
         )
-        self.hparams: DictConfig | ListConfig  # type: ignore
+        self.hparams: DictConfig | ListConfig
         self.save_hyperparameters(hparams)
 
     def configure_callbacks(self) -> list[EarlyStopping]:

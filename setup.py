@@ -23,8 +23,8 @@ def load_module(name: str = "src/anomalib/__init__.py") -> ModuleType:
     """
     location = str(Path(__file__).parent / name)
     spec = spec_from_file_location(name=name, location=location)
-    module = module_from_spec(spec)  # type: ignore
-    spec.loader.exec_module(module)  # type: ignore
+    module = module_from_spec(spec)  # type: ignore[arg-type]
+    spec.loader.exec_module(module)  # type: ignore[union-attr]
     return module
 
 

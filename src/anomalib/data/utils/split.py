@@ -113,7 +113,7 @@ def random_split(
                 "Zero subset length encountered during splitting. This means one of your subsets might be"
                 " empty or devoid of either normal or anomalous images.",
             )
-            logger.warn(msg)
+            logger.warning(msg)
 
         # perform random subsampling
         random_state = torch.Generator().manual_seed(seed) if seed else None

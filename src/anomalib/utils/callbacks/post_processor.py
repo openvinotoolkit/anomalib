@@ -100,7 +100,10 @@ class _PostProcessorCallback(Callback):
             if "pred_scores" not in outputs and "anomaly_maps" in outputs:
                 # infer image scores from anomaly maps
                 outputs["pred_scores"] = (
-                    outputs["anomaly_maps"].reshape(outputs["anomaly_maps"].shape[0], -1).max(dim=1).values
+                    outputs["anomaly_maps"]  # noqa: PD011
+                    .reshape(outputs["anomaly_maps"].shape[0], -1)
+                    .max(dim=1)
+                    .values
                 )
             elif "pred_scores" not in outputs and "box_scores" in outputs:
                 # infer image score from bbox confidence scores

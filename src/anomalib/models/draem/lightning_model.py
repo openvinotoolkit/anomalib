@@ -134,7 +134,7 @@ class DraemLightning(Draem):
             sspcab_lambda=hparams.model.sspcab_lambda,
             anomaly_source_path=hparams.model.anomaly_source_path,
         )
-        self.hparams: DictConfig | ListConfig  # type: ignore
+        self.hparams: DictConfig | ListConfig
         self.save_hyperparameters(hparams)
 
     def configure_callbacks(self) -> list[EarlyStopping]:

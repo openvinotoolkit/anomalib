@@ -58,7 +58,7 @@ class AUPRO(Metric):
         self.register_buffer("fpr_limit", torch.tensor(fpr_limit))
         self.num_thresholds = num_thresholds
 
-    def update(self, preds: Tensor, target: Tensor) -> None:  # type: ignore
+    def update(self, preds: Tensor, target: Tensor) -> None:
         """Update state with new values.
 
         Args:

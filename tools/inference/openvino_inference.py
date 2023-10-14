@@ -83,7 +83,7 @@ def infer(args: Namespace) -> None:
 
         if args.output is None and args.show is False:
             msg = "Neither output path is provided nor show flag is set. Inferencer will run but return nothing."
-            logger.warn(msg)
+            logger.warning(msg)
 
         if args.output:
             file_path = generate_output_image_filename(input_path=filename, output_path=args.output)
