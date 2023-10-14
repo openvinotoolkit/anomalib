@@ -160,10 +160,9 @@ class Tiler:
         stride: int | Sequence | None = None,
         remove_border_count: int = 0,
         mode: ImageUpscaleMode = ImageUpscaleMode.PADDING,
-        tile_count: int = 4,
     ) -> None:
         self.tile_size_h, self.tile_size_w = self.__validate_size_type(tile_size)
-        self.tile_count = tile_count
+        self.random_tile_count = 4
 
         if stride is not None:
             self.stride_h, self.stride_w = self.__validate_size_type(stride)
@@ -218,7 +217,7 @@ class Tiler:
 
         Returns: Randomly cropped tiles from the image
         """
-        return torch.vstack([T.RandomCrop(self.tile_size_h)(image) for i in range(self.tile_count)])
+        return torch.vstack([T.RandomCrop(self.tile_size_h)(image) for i in range(self.random_tile_count)])
 
     def __unfold(self, tensor: Tensor) -> Tensor:
         """Unfolds tensor into tiles.
@@ -339,7 +338,7 @@ class Tiler:
 
         return img
 
-    def tile(self, image: Tensor, use_random_tiling: bool | None = False) -> Tensor:
+    def tile(self, image: Tensor, use_random_tiling: bool = False) -> Tensor:
         """Tiles an input image to either overlapping, non-overlapping or random patches.
 
         Args:
