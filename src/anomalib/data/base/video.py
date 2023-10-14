@@ -75,7 +75,7 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
     @samples.setter
     def samples(self, samples: DataFrame) -> None:
         """Overwrite samples and re-index subvideos."""
-        object.__setattr__(self, "samples", samples)
+        super(AnomalibVideoDataset, self.__class__).samples.fset(self, samples)  # type: ignore[attr-defined]
         self._setup_clips()
 
     def _setup_clips(self) -> None:
