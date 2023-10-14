@@ -48,4 +48,4 @@ All results gathered with seed `42`, train batch size `16`.
 
 ![Sample Result 2](https://raw.githubusercontent.com/openvinotoolkit/anomalib/main/docs/source/images/reverse_distillation/results/1.png "Sample Result 2")
 
-![Sample Result 3](../../../../docs/source/images/reverse_distillation/results/2.png "Sample Result 3")
+![Sample Result 3](https://raw.githubusercontent.com/openvinotoolkit/anomalib/main/docs/source/images/reverse_distillation/results/2.png "Sample Result 3")
