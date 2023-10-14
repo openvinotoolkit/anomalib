@@ -55,7 +55,7 @@ class TestAnomalibDataset:
         # check if reconstructed dataset is equal to original dataset
         assert folder_dataset.samples.equals(reconstructed_dataset.samples)
 
-        # TODO(djdameln): Check if warning raised when one of the subsets is empty
+        # TODO(djdameln): Add check for handling of empty subsets in case of small split ratio
         # CVS-122709
 
         # label-aware subset splitting
