@@ -113,6 +113,7 @@ where the currently available models are:
 - [PatchCore](src/anomalib/models/patchcore)
 - [Reverse Distillation](src/anomalib/models/reverse_distillation)
 - [STFPM](src/anomalib/models/stfpm)
+- [UFlow](src/anomalib/models/uflow)
 
 ## Feature extraction & (pre-trained) backbones
 
