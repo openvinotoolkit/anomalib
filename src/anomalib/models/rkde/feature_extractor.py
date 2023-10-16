@@ -56,7 +56,7 @@ class FeatureExtractor(nn.Module):
 
     @torch.no_grad()
     def forward(self, batch: Tensor, rois: Tensor) -> Tensor:
-        """Perform a forward-pass of the feature extractor.
+        """Perform a forward pass of the feature extractor.
 
         Args:
         ----
