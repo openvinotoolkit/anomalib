@@ -159,6 +159,7 @@ def get_bottleneck_layer(backbone: str, **kwargs) -> OCBE:
     Args:
     ----
         backbone (str): Name of the backbone.
+        kwargs: Additional keyword arguments.
 
     Returns:
     -------

@@ -69,11 +69,13 @@ class Rkde(AnomalyModule):
         return
 
     def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> None:
-        """Training Step of RKDE. For each batch, features are extracted from the CNN.
+        """Perform a training Step of RKDE. For each batch, features are extracted from the CNN.
 
         Args:
         ----
             batch (dict[str, str | Tensor]): Batch containing image filename, image, label and mask
+            args: Additional arguments.
+            kwargs: Additional keyword arguments.
 
         Returns:
         -------
@@ -92,13 +94,15 @@ class Rkde(AnomalyModule):
         self.model.fit(embeddings)
 
     def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
-        """Validation Step of RKde.
+        """Perform a validation Step of RKde.
 
         Similar to the training step, features are extracted from the CNN for each batch.
 
         Args:
         ----
             batch (dict[str, str | Tensor]): Batch containing image filename, image, label and mask
+            args: Additional arguments.
+            kwargs: Additional keyword arguments.
 
         Returns:
         -------
@@ -120,6 +124,12 @@ class Rkde(AnomalyModule):
 
     @property
     def trainer_arguments(self) -> dict[str, Any]:
+        """Return R-KDE trainer arguments.
+
+        Returns
+        -------
+            dict[str, Any]: Arguments for the trainer.
+        """
         return {"gradient_clip_val": 0, "max_epochs": 1, "num_sanity_val_steps": 0}
 
 

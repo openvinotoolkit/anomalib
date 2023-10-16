@@ -12,7 +12,7 @@ class ReverseDistillationLoss(nn.Module):
     """Loss function for Reverse Distillation."""
 
     def forward(self, encoder_features: list[Tensor], decoder_features: list[Tensor]) -> Tensor:
-        """Computes cosine similarity loss based on features from encoder and decoder.
+        """Compute cosine similarity loss based on features from encoder and decoder.
 
         Args:
         ----

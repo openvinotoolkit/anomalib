@@ -82,7 +82,7 @@ class RkdeModel(nn.Module):
 
         Args:
         ----
-            input (Tensor): Input images.
+            batch (Tensor): Input images.
 
         Returns:
         -------

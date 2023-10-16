@@ -53,7 +53,7 @@ def make_ucsd_dataset(path: Path, split: str | Split | None = None) -> DataFrame
 
     Args:
     ----
-        root (Path): Path to dataset
+        path (Path): Path to dataset
         split (str | Split | None, optional): Dataset split (ie., either train or test). Defaults to None.
 
     Example:
@@ -125,7 +125,7 @@ class UCSDpedClipsIndexer(ClipsIndexer):
         self.video_fps = [None] * len(self.video_paths)  # fps information cannot be inferred from folder structure
 
     def get_clip(self, idx: int) -> tuple[Tensor, Tensor, dict[str, Any], int]:
-        """Gets a subclip from a list of videos.
+        """Get a subclip from a list of videos.
 
         Args:
         ----

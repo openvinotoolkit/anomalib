@@ -7,14 +7,15 @@ import torch
 
 
 class KMeans:
-    def __init__(self, n_clusters: int, max_iter: int = 10) -> None:
-        """Initializes the KMeans object.
+    """Initialize the KMeans object.
 
-        Args:
-        ----
-            n_clusters (int): The number of clusters to create.
-            max_iter (int, optional)): The maximum number of iterations to run the algorithm. Defaults to 10.
-        """
+    Args:
+    ----
+        n_clusters (int): The number of clusters to create.
+        max_iter (int, optional)): The maximum number of iterations to run the algorithm. Defaults to 10.
+    """
+
+    def __init__(self, n_clusters: int, max_iter: int = 10) -> None:
         self.n_clusters = n_clusters
         self.max_iter = max_iter
 

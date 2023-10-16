@@ -48,13 +48,15 @@ class Stfpm(AnomalyModule):
         self.loss = STFPMLoss()
 
     def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
-        """Training Step of STFPM.
+        """Perform a training step of STFPM.
 
         For each batch, teacher and student and teacher features are extracted from the CNN.
 
         Args:
         ----
-          batch (dict[str, str | Tensor]): Input batch
+          batch (dict[str, str | Tensor]): Input batch.
+          args: Additional arguments.
+          kwargs: Additional keyword arguments.
 
         Returns:
         -------
@@ -69,7 +71,7 @@ class Stfpm(AnomalyModule):
         return {"loss": loss}
 
     def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
-        """Validation Step of STFPM.
+        """Perform a validation Step of STFPM.
 
         Similar to the training step, student/teacher features are extracted from the CNN for each batch, and
         anomaly map is computed.
@@ -77,6 +79,8 @@ class Stfpm(AnomalyModule):
         Args:
         ----
           batch (dict[str, str | Tensor]): Input batch
+          args: Additional arguments
+          kwargs: Additional keyword arguments
 
         Returns:
         -------
@@ -128,7 +132,7 @@ class StfpmLightning(Stfpm):
         return [early_stopping]
 
     def configure_optimizers(self) -> torch.optim.Optimizer:
-        """Configures optimizers.
+        """Configure optimizers.
 
         Note:
         ----

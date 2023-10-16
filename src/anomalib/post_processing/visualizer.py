@@ -90,7 +90,7 @@ class Visualizer:
         self.task = task
 
     def visualize_batch(self, batch: dict) -> Iterator[np.ndarray]:
-        """Generator that yields a visualization result for each item in the batch.
+        """Yield a visualization result for each item in the batch.
 
         Args:
         ----

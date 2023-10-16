@@ -25,7 +25,7 @@ from anomalib.data.utils.generators.perlin import random_2d_perlin
 
 
 def nextpow2(value: int) -> int:
-    """Returns the smallest power of 2 greater than or equal to the input value."""
+    """Return the smallest power of 2 greater than or equal to the input value."""
     return 2 ** (math.ceil(math.log(value, 2)))
 
 
@@ -69,7 +69,7 @@ class Augmenter:
         self.rot = iaa.Sequential([iaa.Affine(rotate=(-90, 90))])
 
     def rand_augmenter(self) -> iaa.Sequential:
-        """Selects 3 random transforms that will be applied to the anomaly source images.
+        """Select 3 random transforms that will be applied to the anomaly source images.
 
         Returns
         -------

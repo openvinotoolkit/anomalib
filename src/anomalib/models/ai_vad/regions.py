@@ -54,13 +54,15 @@ class RegionExtractor(nn.Module):
         self.backbone = maskrcnn_resnet50_fpn_v2(weights=weights, box_score_thresh=box_score_thresh, rpn_nms_thresh=0.3)
 
     def forward(self, first_frame: Tensor, last_frame: Tensor) -> list[dict]:
-        """Forward pass through region extractor.
+        """Perform forward-pass through region extractor.
 
         Args:
         ----
-            first_frame (Tensor): Batch of input images of shape (N, C, H, W) forming the first frames in the clip
-            last_frame (Tensor): Batch of input images of shape (N, C, H, W) forming the last frame in the clip
+            first_frame (Tensor): Batch of input images of shape (N, C, H, W) forming the first frames in the clip.
+            last_frame (Tensor): Batch of input images of shape (N, C, H, W) forming the last frame in the clip.
+
         Returns:
+        -------
             list[dict]: List of Mask RCNN predictions for each image in the batch.
         """
         with torch.no_grad():
@@ -213,6 +215,7 @@ class RegionExtractor(nn.Module):
         Args:
         ----
             regions (dict[str, Tensor]): Region detections for a single image in the batch.
+            threshold (float): Maximum allowed overlap between bounding boxes.
 
         Returns:
         -------
@@ -241,7 +244,7 @@ class RegionExtractor(nn.Module):
 
     @staticmethod
     def subsample_regions(regions: dict[str, Tensor], indices: Tensor) -> dict[str, Tensor]:
-        """Helper method that subsamples the items in a region dictionary based on a Tensor of indices.
+        """Subsample the items in a region dictionary based on a Tensor of indices.
 
         Args:
         ----

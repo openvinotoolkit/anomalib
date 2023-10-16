@@ -24,8 +24,9 @@ def get_visualization_callbacks(
 
     Args:
     ----
-        mode (VisualizationMode): The visualization mode.
+        task (TaskType): The task type.
         image_save_path (str): Path to save images.
+        mode (VisualizationMode): The visualization mode.
         inputs_are_normalized (bool): Whether the inputs are normalized.
         show_images (bool): Whether to show images.
         log_images (bool): Whether to log images.

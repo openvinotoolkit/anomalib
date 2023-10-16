@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 def get_logp(dim_feature_vector: int, p_u: Tensor, logdet_j: Tensor) -> Tensor:
-    """Returns the log likelihood estimation.
+    """Return the log likelihood estimation.
 
     Args:
     ----
@@ -35,7 +35,7 @@ def get_logp(dim_feature_vector: int, p_u: Tensor, logdet_j: Tensor) -> Tensor:
 
 
 def positional_encoding_2d(condition_vector: int, height: int, width: int) -> Tensor:
-    """Creates embedding to store relative position of the feature vector using sine and cosine functions.
+    """Create embedding to store relative position of the feature vector using sine and cosine functions.
 
     Args:
     ----

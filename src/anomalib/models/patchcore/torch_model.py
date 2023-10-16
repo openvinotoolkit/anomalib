@@ -146,7 +146,7 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
 
     @staticmethod
     def euclidean_dist(x: Tensor, y: Tensor) -> Tensor:
-        """Calculates pair-wise distance between row vectors in x and those in y.
+        """Calculate pair-wise distance between row vectors in x and those in y.
 
         Replaces torch cdist with p=2, as cdist is not properly exported to onnx and openvino format.
         Resulting matrix is indexed by x vectors in rows and y vectors in columns.
@@ -195,7 +195,9 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
             patch_scores (Tensor): Patch-level anomaly scores
             locations: Memory bank locations of the nearest neighbor for each patch location
             embedding: The feature embeddings that generated the patch scores
+
         Returns:
+        -------
             Tensor: Image-level anomaly scores
         """
         # Don't need to compute weights if num_neighbors is 1

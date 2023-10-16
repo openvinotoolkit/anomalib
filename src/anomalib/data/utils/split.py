@@ -131,7 +131,7 @@ def random_split(
 
 
 def split_by_label(dataset: "data.AnomalibDataset") -> tuple["data.AnomalibDataset", "data.AnomalibDataset"]:
-    """Splits the dataset into the normal and anomalous subsets."""
+    """Split the dataset into the normal and anomalous subsets."""
     samples = dataset.samples
     normal_indices = samples[samples.label_index == 0].index
     anomalous_indices = samples[samples.label_index == 1].index

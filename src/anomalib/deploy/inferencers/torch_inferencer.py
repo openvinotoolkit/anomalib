@@ -1,4 +1,4 @@
-"""This module contains Torch inference implementations."""
+"""Torch inference implementations."""
 
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0

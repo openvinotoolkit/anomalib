@@ -132,7 +132,7 @@ class Inferencer(ABC):
         metadata: dict | DictConfig,
         anomaly_maps: Tensor | np.ndarray | None = None,
     ) -> tuple[np.ndarray | Tensor | None, float]:
-        """Applies normalization and resizes the image.
+        """Apply normalization and resizes the image.
 
         Args:
         ----
@@ -180,7 +180,7 @@ class Inferencer(ABC):
         return anomaly_maps, float(pred_scores)
 
     def _load_metadata(self, path: str | Path | dict | None = None) -> dict | DictConfig:
-        """Loads the meta data from the given path.
+        """Load the meta data from the given path.
 
         Args:
         ----

@@ -32,7 +32,7 @@ class _CdfNormalizationCallback(Callback):
         self.pixel_dist: LogNormal | None = None
 
     def setup(self, trainer: Trainer, pl_module: AnomalyModule, stage: str | None = None) -> None:
-        """Adds training_distribution metrics to normalization metrics."""
+        """Add training_distribution metrics to normalization metrics."""
         del trainer, stage  # These variables are not used.
 
         if not hasattr(pl_module, "normalization_metrics"):
@@ -47,7 +47,7 @@ class _CdfNormalizationCallback(Callback):
             )
 
     def on_test_start(self, trainer: Trainer, pl_module: AnomalyModule) -> None:
-        """Called when the test begins."""
+        """Call when the test begins."""
         del trainer  # `trainer` variable is not used.
 
         if pl_module.image_metrics is not None:
@@ -56,7 +56,7 @@ class _CdfNormalizationCallback(Callback):
             pl_module.pixel_metrics.set_threshold(0.5)
 
     def on_validation_epoch_start(self, trainer: Trainer, pl_module: AnomalyModule) -> None:
-        """Called when the validation starts after training.
+        """Call when the validation starts after training.
 
         Use the current model to compute the anomaly score distributions
         of the normal training data. This is needed after every epoch, because the statistics must be
@@ -74,7 +74,7 @@ class _CdfNormalizationCallback(Callback):
         batch_idx: int,
         dataloader_idx: int = 0,
     ) -> None:
-        """Called when the validation batch ends, standardizes the predicted scores and anomaly maps."""
+        """Call when the validation batch ends, standardizes the predicted scores and anomaly maps."""
         del trainer, batch, batch_idx, dataloader_idx  # These variables are not used.
 
         self._standardize_batch(outputs, pl_module)
@@ -88,7 +88,7 @@ class _CdfNormalizationCallback(Callback):
         batch_idx: int,
         dataloader_idx: int = 0,
     ) -> None:
-        """Called when the test batch ends, normalizes the predicted scores and anomaly maps."""
+        """Call when the test batch ends, normalizes the predicted scores and anomaly maps."""
         del trainer, batch, batch_idx, dataloader_idx  # These variables are not used.
 
         self._standardize_batch(outputs, pl_module)
@@ -103,7 +103,7 @@ class _CdfNormalizationCallback(Callback):
         batch_idx: int,
         dataloader_idx: int = 0,
     ) -> None:
-        """Called when the predict batch ends, normalizes the predicted scores and anomaly maps."""
+        """Call when the predict batch ends, normalizes the predicted scores and anomaly maps."""
         del trainer, batch, batch_idx, dataloader_idx  # These variables are not used.
 
         self._standardize_batch(outputs, pl_module)

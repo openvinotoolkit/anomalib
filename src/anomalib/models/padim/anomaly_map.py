@@ -108,7 +108,7 @@ class AnomalyMapGenerator(nn.Module):
         return self.smooth_anomaly_map(up_sampled_score_map)
 
     def forward(self, **kwargs) -> Tensor:
-        """Returns anomaly_map.
+        """Return anomaly_map.
 
         Expects `embedding`, `mean` and `covariance` keywords to be passed explicitly.
 

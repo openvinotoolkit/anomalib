@@ -1,4 +1,5 @@
 """EfficientAd: Accurate Visual Anomaly Detection at Millisecond-Level Latencies.
+
 https://arxiv.org/pdf/2303.14535.pdf.
 """
 

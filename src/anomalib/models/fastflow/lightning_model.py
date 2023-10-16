@@ -52,12 +52,13 @@ class Fastflow(AnomalyModule):
         self.loss = FastflowLoss()
 
     def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
-        """Forward-pass input and return the loss.
+        """Perform the training step input and return the loss.
 
         Args:
         ----
             batch (batch: dict[str, str | Tensor]): Input batch
-            _batch_idx: Index of the batch.
+            args: Additional arguments.
+            kwargs: Additional keyword arguments.
 
         Returns:
         -------
@@ -71,11 +72,13 @@ class Fastflow(AnomalyModule):
         return {"loss": loss}
 
     def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
-        """Forward-pass the input and return the anomaly map.
+        """Perform the validation step and return the anomaly map.
 
         Args:
         ----
             batch (dict[str, str | Tensor]): Input batch
+            args: Additional arguments.
+            kwargs: Additional keyword arguments.
 
         Returns:
         -------
@@ -89,6 +92,7 @@ class Fastflow(AnomalyModule):
 
     @property
     def trainer_arguments(self) -> dict[str, Any]:
+        """Return FastFlow trainer arguments."""
         return {"gradient_clip_val": 0, "num_sanity_val_steps": 0}
 
 
@@ -130,7 +134,7 @@ class FastflowLightning(Fastflow):
         return [early_stopping]
 
     def configure_optimizers(self) -> torch.optim.Optimizer:
-        """Configures optimizers for each decoder.
+        """Configure optimizers for each decoder.
 
         Note:
         ----

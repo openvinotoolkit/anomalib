@@ -137,7 +137,7 @@ class KDEClassifier(nn.Module):
 
     @staticmethod
     def compute_probabilities(scores: Tensor) -> Tensor:
-        """Converts density scores to anomaly probabilities (see https://www.desmos.com/calculator/ifju7eesg7).
+        """Convert density scores to anomaly probabilities (see https://www.desmos.com/calculator/ifju7eesg7).
 
         Args:
         ----

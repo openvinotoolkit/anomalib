@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 
 def get_default_root_directory(config: DictConfig | ListConfig) -> Path:
-    """Sets the default root directory."""
+    """Set the default root directory."""
     root_dir = config.results_dir.path if config.results_dir.path else "./results"
     model_name = config.model.class_path.split(".")[-1].lower()
     data_name = config.data.class_path.split(".")[-1].lower()
@@ -168,7 +168,7 @@ def update_nncf_config(config: DictConfig | ListConfig) -> DictConfig | ListConf
 
 
 def update_multi_gpu_training_config(config: DictConfig | ListConfig) -> DictConfig | ListConfig:
-    """Updates the config to change learning rate based on number of gpus assigned.
+    """Update the config to change learning rate based on number of gpus assigned.
 
     Current behaviour is to ensure only ddp accelerator is used.
 

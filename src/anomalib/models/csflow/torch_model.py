@@ -157,7 +157,7 @@ class CrossConvolutions(nn.Module):
         self.leaky_relu = nn.LeakyReLU(self.leaky_slope)
 
     def forward(self, scale0: int, scale1: int, scale2: int) -> tuple[Tensor, Tensor, Tensor]:
-        """Applies the cross convolution to the three scales.
+        """Apply the cross convolution to the three scales.
 
         This block is represented in figure 4 of the paper.
 
@@ -227,11 +227,11 @@ class ParallelPermute(InvertibleModule):
             self.perm_inv.append(perm_inv)
 
     def get_random_perm(self, index: int) -> tuple[Tensor, Tensor]:
-        """Returns a random permutation of the channels for each input.
+        """Return a random permutation of the channels for each input.
 
         Args:
         ----
-            i: index of the input
+            index (int): index of the input
 
         Returns:
         -------
@@ -248,7 +248,7 @@ class ParallelPermute(InvertibleModule):
 
     # pylint: disable=unused-argument
     def forward(self, input_tensor: list[Tensor], rev: bool = False, jac: bool = True) -> tuple[list[Tensor], float]:
-        """Applies the permutation to the input.
+        """Apply the permutation to the input.
 
         Args:
         ----
@@ -268,7 +268,7 @@ class ParallelPermute(InvertibleModule):
         return [input_tensor[i][:, self.perm_inv[i]] for i in range(self.n_inputs)], 0.0
 
     def output_dims(self, input_dims: list[tuple[int]]) -> list[tuple[int]]:
-        """Returns the output dimensions of the module."""
+        """Return the output dimensions of the module."""
         return input_dims
 
 
@@ -305,13 +305,13 @@ class ParallelGlowCouplingLayer(InvertibleModule):
         return torch.exp(input_tensor)
 
     def log_e(self, input_tensor: Tensor) -> Tensor:
-        """Returns log of input. And optionally clamped to avoid numerical issues."""
+        """Return log of input. And optionally clamped to avoid numerical issues."""
         if self.clamp > 0:
             return self.clamp * 0.636 * torch.atan(input_tensor / self.clamp)
         return input_tensor
 
     def forward(self, input_tensor: list[Tensor], rev: bool = False, jac: bool = True) -> tuple[list[Tensor], Tensor]:
-        """Applies GLOW coupling for the three scales."""
+        """Apply GLOW coupling for the three scales."""
         del jac  # Unused argument.
 
         # Even channel split. The two splits are used by cross-scale convolution to compute scale and transform
@@ -506,7 +506,7 @@ class MultiScaleFeatureExtractor(nn.Module):
         )
 
     def forward(self, input_tensor: Tensor) -> list[Tensor]:
-        """Extracts features at three scales.
+        """Extract features at three scales.
 
         Args:
         ----
@@ -592,7 +592,7 @@ class CsFlowModel(nn.Module):
 
         Args:
         ----
-            z_dist (Tensor): Latent distribution.
+            z_dists (Tensor): Latent distribution.
 
         Returns:
         -------

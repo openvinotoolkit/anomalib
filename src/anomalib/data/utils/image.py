@@ -200,6 +200,9 @@ def read_image(path: str | Path, image_size: int | tuple[int, int] | None = None
     Args:
     ----
         path (str, Path): path to the image file
+        image_size (int | tuple[int, int] | None, optional):
+            Image size to resize the image.
+            Defaults to None.
 
     Example:
     -------

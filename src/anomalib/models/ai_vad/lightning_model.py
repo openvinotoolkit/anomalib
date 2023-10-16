@@ -108,13 +108,15 @@ class AiVad(AnomalyModule):
         self.model.density_estimator.fit()
 
     def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
-        """Validation Step of AI-VAD.
+        """Perform the validation step of AI-VAD.
 
         Extract boxes and box scores..
 
         Args:
         ----
             batch (dict[str, str | Tensor]): Input batch
+            *args: Arguments.
+            **kwargs: Keyword arguments.
 
         Returns:
         -------
@@ -131,6 +133,7 @@ class AiVad(AnomalyModule):
 
     @property
     def trainer_arguments(self) -> dict[str, Any]:
+        """AI-VAD specific trainer arguments."""
         return {"gradient_clip_val": 0, "max_epochs": 1, "num_sanity_val_steps": 0}
 
 

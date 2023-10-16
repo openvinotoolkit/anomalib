@@ -41,7 +41,7 @@ class ClipsIndexer(VideoClips, ABC):
         self.mask_paths = mask_paths
 
     def last_frame_idx(self, video_idx: int) -> int:
-        """Returns the index of the last frame for a given video."""
+        """Return the index of the last frame for a given video."""
         return self.clips[video_idx][-1][-1].item()
 
     @abstractmethod

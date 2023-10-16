@@ -48,11 +48,13 @@ class AnomalyModule(pl.LightningModule, ABC):
         self.pixel_metrics: AnomalibMetricCollection
 
     def forward(self, batch: dict[str, str | Tensor], *args, **kwargs) -> Any:  # noqa: ANN401
-        """Forward-pass input tensor to the module.
+        """Perform the forward-pass by passing input tensor to the module.
 
         Args:
         ----
             batch (dict[str, str | Tensor]): Input batch.
+            *args: Arguments.
+            **kwargs: Keyword arguments.
 
         Returns:
         -------
@@ -93,6 +95,8 @@ class AnomalyModule(pl.LightningModule, ABC):
         ----
           batch (dict[str, str | Tensor]): Input batch
           batch_idx (int): Batch index
+          args: Arguments.
+          kwargs: Keyword arguments.
 
         Returns:
         -------

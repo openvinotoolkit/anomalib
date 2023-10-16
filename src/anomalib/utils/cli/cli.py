@@ -77,7 +77,7 @@ class AnomalibCLI(LightningCLI):
 
     @staticmethod
     def anomalib_subcommands() -> dict[str, dict[str, Any]]:
-        """Returns a dictionary of subcommands and their description."""
+        """Return a dictionary of subcommands and their description."""
         return {
             "export": {"description": "Export the model to ONNX or OpenVINO format."},
             "benchmark": {"description": "Run benchmarking script"},
@@ -85,7 +85,7 @@ class AnomalibCLI(LightningCLI):
         }
 
     def _add_subcommands(self, parser: LightningArgumentParser, **kwargs) -> None:
-        """Setup base subcommands and add anomalib specific on top of it."""
+        """Initialize base subcommands and add anomalib specific on top of it."""
         # Initializes fit, validate, test, predict and tune
         super()._add_subcommands(parser, **kwargs)
         # Add  export, benchmark and hpo
@@ -129,7 +129,7 @@ class AnomalibCLI(LightningCLI):
         # CVS-122659
 
     def add_export_arguments(self, parser: LightningArgumentParser) -> None:
-        """Adds export arguments to the parser."""
+        """Add export arguments to the parser."""
         subcommand = parser.add_subcommands(dest="export_mode", help="Export mode.")
         # Add export mode sub parsers
         add_torch_export_arguments(subcommand)
@@ -141,7 +141,7 @@ class AnomalibCLI(LightningCLI):
         parser = get_hpo_parser(parser)
 
     def add_benchmark_arguments(self, parser: LightningArgumentParser) -> None:
-        """Adds benchmark arguments to the parser."""
+        """Add benchmark arguments to the parser."""
         parser.add_argument("--config", type=Path, help="Path to the benchmark config.", required=True)
 
     def before_instantiate_classes(self) -> None:
@@ -217,18 +217,22 @@ class AnomalibCLI(LightningCLI):
 
     @property
     def fit(self) -> Callable[..., None]:
+        """Fit the model using engine's fit method."""
         return self.engine.fit
 
     @property
     def validate(self) -> Callable[..., _EVALUATE_OUTPUT | None]:
+        """Validate the model using engine's validate method."""
         return self.engine.validate
 
     @property
     def test(self) -> Callable[..., _EVALUATE_OUTPUT]:
+        """Test the model using engine's test method."""
         return self.engine.test
 
     @property
     def predict(self) -> Callable[..., _PREDICT_OUTPUT | None]:
+        """Predict using engine's predict method."""
         return self.engine.predict
 
     def hpo(self) -> None:

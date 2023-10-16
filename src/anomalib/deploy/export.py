@@ -139,6 +139,7 @@ def export_to_torch(model: AnomalyModule, metadata: dict[str, Any], export_path:
     Args:
     ----
         model (AnomalyModule): Model to export.
+        metadata (dict[str, Any]): Metadata for the exported model.
         export_path (Path): Path to the folder storing the exported model.
     """
     torch.save(
@@ -201,12 +202,12 @@ def export_to_openvino(
 
 
 def _add_metadata_to_ir(xml_file: str, metadata: dict[str, Any], input_size: tuple[int, int]) -> None:
-    """Adds the metadata to the model IR.
+    """Add the metadata to the model IR.
 
     Adds the metadata to the model IR. So that it can be used with the new modelAPI.
     This is because the metadata.json is not used by the new modelAPI.
-    # TODO CVS-114640
-    # TODO: Remove this function when Anomalib is upgraded as the model graph will contain the required ops
+    # TODO(ashwinvaidya17) Remove this function when Anomalib is upgraded as the model graph will contain the ops
+    # CVS-114640
 
     Args:
     ----
@@ -257,7 +258,7 @@ def _add_metadata_to_ir(xml_file: str, metadata: dict[str, Any], input_size: tup
 
 
 def _serialize_list(arr: list[int] | list[float] | tuple[int, int]) -> str:
-    """Serializes the list to a string.
+    """Serialize the list to a string.
 
     Args:
     ----

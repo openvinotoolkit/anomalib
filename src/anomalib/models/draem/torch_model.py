@@ -29,7 +29,7 @@ class DraemModel(nn.Module):
 
         Args:
         ----
-            x (Tensor): batch of input images
+            batch (Tensor): batch of input images
 
         Returns:
         -------
@@ -293,7 +293,7 @@ class DecoderDiscriminative(nn.Module):
         self.fin_out = nn.Sequential(nn.Conv2d(base_width, out_channels, kernel_size=3, padding=1))
 
     def forward(self, act1: Tensor, act2: Tensor, act3: Tensor, act4: Tensor, act5: Tensor, act6: Tensor) -> Tensor:
-        """Computes predicted anomaly class scores from the intermediate outputs of the encoder sub network.
+        """Compute predicted anomaly class scores from the intermediate outputs of the encoder sub network.
 
         Args:
         ----

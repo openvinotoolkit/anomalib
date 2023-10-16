@@ -48,8 +48,17 @@ DOWNLOAD_INFO = DownloadInfo(
 )
 
 
-# Check if a mask shows defects
 def is_mask_anomalous(path: str) -> int:
+    """Check if a mask shows defects.
+
+    Args:
+    ----
+        path (str): Path to the mask file.
+
+    Returns:
+    -------
+        int: 1 if the mask shows defects, 0 otherwise.
+    """
     img_arr = imread(path)
     if np.all(img_arr == 0):
         return 0

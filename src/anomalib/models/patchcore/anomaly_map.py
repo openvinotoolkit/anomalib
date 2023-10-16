@@ -39,7 +39,7 @@ class AnomalyMapGenerator(nn.Module):
         return self.blur(anomaly_map)
 
     def forward(self, patch_scores: Tensor) -> Tensor:
-        """Returns anomaly_map and anomaly_score.
+        """Return anomaly_map and anomaly_score.
 
         Args:
         ----

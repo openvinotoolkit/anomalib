@@ -1,8 +1,7 @@
-"""This module comprises PatchCore Sampling Methods for the embedding.
+"""k-Center Greedy Method.
 
-- k Center Greedy Method
-    Returns points that minimizes the maximum distance of any point to a center.
-    . https://arxiv.org/abs/1708.00489
+Returns points that minimizes the maximum distance of any point to a center.
+- https://arxiv.org/abs/1708.00489
 """
 
 

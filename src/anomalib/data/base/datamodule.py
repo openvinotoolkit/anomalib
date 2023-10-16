@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 
 def collate_fn(batch: list) -> dict[str, Any]:
-    """Custom collate function that collates bounding boxes as lists.
+    """Collate bounding boxes as lists.
 
     Bounding boxes are collated as a list of tensors, while the default collate function is used for all other entries.
 
@@ -93,7 +93,7 @@ class AnomalibDataModule(LightningDataModule, ABC):
         self._samples: DataFrame | None = None
 
     def setup(self, stage: str | None = None) -> None:
-        """Setup train, validation and test data.
+        """Set up train, validation and test data.
 
         Args:
         ----

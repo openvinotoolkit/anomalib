@@ -59,7 +59,7 @@ class AnomalyMapGenerator(nn.Module):
         self.mode = mode
 
     def forward(self, student_features: list[Tensor], teacher_features: list[Tensor]) -> Tensor:
-        """Computes anomaly map given encoder and decoder features.
+        """Compute anomaly map given encoder and decoder features.
 
         Args:
         ----

@@ -1,4 +1,4 @@
-"""This module contains inference-related abstract class and its Torch and OpenVINO implementations."""
+"""OpenVINO Inferencer implementation."""
 
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -221,7 +221,7 @@ class OpenVINOInferencer(Inferencer):
 
         Args:
         ----
-            masks (np.ndarray): Input mask of shape (H, W)
+            mask (np.ndarray): Input mask of shape (H, W)
 
         Returns:
         -------

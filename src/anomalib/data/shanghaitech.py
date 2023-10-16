@@ -153,7 +153,7 @@ class ShanghaiTechTestClipsIndexer(ClipsIndexer):
         self.video_fps = [None] * len(self.video_paths)  # fps information cannot be inferred from folder structure
 
     def get_clip(self, idx: int) -> tuple[Tensor, Tensor, dict[str, Any], int]:
-        """Gets a subclip from a list of videos.
+        """Get a subclip from a list of videos.
 
         Args:
         ----

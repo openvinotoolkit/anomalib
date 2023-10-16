@@ -42,7 +42,7 @@ class DynamicBufferModule(ABC, nn.Module):
         ----
           state_dict (dict): State dictionary containing weights
           prefix (str): Prefix of the weight file.
-          *args:
+          *args: Variable length argument list.
         """
         persistent_buffers = {k: v for k, v in self._buffers.items() if k not in self._non_persistent_buffers_set}
         local_buffers = {k: v for k, v in persistent_buffers.items() if v is not None}

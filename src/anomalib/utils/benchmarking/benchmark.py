@@ -49,7 +49,7 @@ for logger_name in ["lightning.pytorch", "torchmetrics", "os"]:
 
 
 def hide_output(func: Callable[..., Any]) -> Callable[..., Any]:
-    """Decorator to hide output of the function.
+    """Hide output of the function.
 
     Args:
     ----
@@ -81,7 +81,7 @@ def hide_output(func: Callable[..., Any]) -> Callable[..., Any]:
 
 @hide_output
 def get_single_model_metrics(model_config: DictConfig | ListConfig, openvino_metrics: bool = False) -> dict:
-    """Collects metrics for `model_name` and returns a dict of results.
+    """Collect metrics for `model_name` and returns a dict of results.
 
     Args:
     ----
@@ -278,6 +278,7 @@ def sweep(
     ----
         run_config: (DictConfig | ListConfig, optional): Configuration for current run.
         device (int, optional): Name of the device on which the model is trained. Defaults to 0 "cpu".
+        seed (int, optional): Seed to be used for the run. Defaults to 42.
         convert_openvino (bool, optional): Whether to convert the model to openvino format. Defaults to False.
 
     Returns:

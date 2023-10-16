@@ -33,7 +33,7 @@ def connected_components_gpu(image: Tensor, num_iterations: int = 1000) -> Tenso
 
 
 def connected_components_cpu(image: Tensor) -> Tensor:
-    """Connected component labeling on CPU.
+    """Perform connected component labeling on CPU.
 
     Args:
     ----

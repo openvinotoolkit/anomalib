@@ -79,7 +79,7 @@ class PCA(DynamicBufferModule):
         return torch.matmul(dataset, self.singular_vectors)
 
     def transform(self, features: Tensor) -> Tensor:
-        """Transforms the features based on singular vectors calculated earlier.
+        """Transform the features based on singular vectors calculated earlier.
 
         Args:
         ----
@@ -104,7 +104,7 @@ class PCA(DynamicBufferModule):
         return torch.matmul(features, self.singular_vectors.transpose(-2, -1))
 
     def forward(self, features: Tensor) -> Tensor:
-        """Transforms the features.
+        """Transform the features.
 
         Args:
         ----

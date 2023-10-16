@@ -76,15 +76,9 @@ def make_mvtec_3d_dataset(
 
     Args:
     ----
-        path (Path): Path to dataset
+        root (Path): Path to dataset
         split (str | Split | None, optional): Dataset split (ie., either train or test). Defaults to None.
-        split_ratio (float, optional): Ratio to split normal training images and add to the
-            test set in case test set doesn't contain any normal images.
-            Defaults to 0.1.
-        seed (int, optional): Random seed to ensure reproducibility when splitting. Defaults to 0.
-        create_validation_set (bool, optional): Boolean to create a validation set from the test set.
-            MVTec AD dataset does not contain a validation set. Those wanting to create a validation set
-            could set this flag to ``True``.
+        extensions (Sequence[str] | None, optional): List of file extensions to be included in the dataset.
 
     Examples:
     --------

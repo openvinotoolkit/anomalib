@@ -314,7 +314,7 @@ class GMMEstimator(BaseDensityEstimator):
 
         Args:
         ----
-            distances (Tensor): Distance tensor produced by KNN search.
+            density (Tensor): Distance tensor produced by KNN search.
 
         Returns:
         -------

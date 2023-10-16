@@ -72,7 +72,7 @@ class RegionExtractor(nn.Module):
 
         Args:
         ----
-            input (Tensor): Batch of input images of shape [B, C, H, W].
+            batch (Tensor): Batch of input images of shape [B, C, H, W].
 
         Raises:
         ------

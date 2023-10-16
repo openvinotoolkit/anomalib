@@ -61,7 +61,7 @@ class SingleClassGaussian(DynamicBufferModule):
         return torch.sum(features_transformed * features_transformed, dim=1) + 2 * torch.sum(torch.log(self.sigma_mat))
 
     def forward(self, dataset: Tensor) -> None:
-        """Provides the same functionality as `fit`.
+        """Provide the same functionality as `fit`.
 
         Transforms the input dataset based on singular values calculated earlier.
 
@@ -175,7 +175,7 @@ class DFMModel(nn.Module):
         return features if self.training else (features, feature_shapes)
 
     def forward(self, batch: Tensor) -> Tensor:
-        """Computer score from input images.
+        """Compute score from input images.
 
         Args:
         ----

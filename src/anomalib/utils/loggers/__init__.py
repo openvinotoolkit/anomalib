@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 
 
 class UnknownLoggerError(Exception):
-    """This is raised when the logger option in `config.yaml` file is set incorrectly."""
+    """Raised when the logger option in `config.yaml` file is set incorrectly."""
 
 
 def configure_logger(level: int | str = logging.INFO) -> None:

@@ -62,7 +62,7 @@ class Cflow(AnomalyModule):
         self.learning_rate = lr
 
     def configure_optimizers(self) -> Optimizer:
-        """Configures optimizers for each decoder.
+        """Configure optimizers for each decoder.
 
         Note:
         ----
@@ -85,7 +85,7 @@ class Cflow(AnomalyModule):
         )
 
     def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
-        """Training Step of CFLOW.
+        """Perform the training step of CFLOW.
 
         For each batch, decoder layers are trained with a dynamic fiber batch size.
         Training step is performed manually as multiple training steps are involved
@@ -93,7 +93,9 @@ class Cflow(AnomalyModule):
 
         Args:
         ----
-          batch (dict[str, str | Tensor]): Input batch
+            batch (dict[str, str | Tensor]): Input batch
+            *args: Arguments.
+            **kwargs: Keyword arguments.
 
         Returns:
         -------
@@ -160,7 +162,7 @@ class Cflow(AnomalyModule):
         return {"loss": avg_loss}
 
     def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
-        """Validation Step of CFLOW.
+        """Perform the validation step of CFLOW.
 
             Similar to the training step, encoder features
             are extracted from the CNN for each batch, and anomaly
@@ -169,6 +171,8 @@ class Cflow(AnomalyModule):
         Args:
         ----
             batch (dict[str, str | Tensor]): Input batch
+            *args: Arguments.
+            **kwargs: Keyword arguments.
 
         Returns:
         -------
@@ -183,6 +187,7 @@ class Cflow(AnomalyModule):
 
     @property
     def trainer_arguments(self) -> dict[str, Any]:
+        """C-FLOW specific trainer arguments."""
         return {"gradient_clip_val": 0, "num_sanity_val_steps": 0}
 
 

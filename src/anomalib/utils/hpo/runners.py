@@ -64,7 +64,7 @@ class WandbSweep:
         wandb.agent(sweep_id, function=self.sweep, count=self.observation_budget)
 
     def sweep(self) -> None:
-        """Method to load the model, update config and call fit. The metrics are logged to ```wandb``` dashboard."""
+        """Load the model, update config and call fit. The metrics are logged to ```wandb``` dashboard."""
         wandb_logger = WandbLogger(config=flatten_sweep_params(self.sweep_config), log_model=False)
         sweep_config = wandb_logger.experiment.config
 

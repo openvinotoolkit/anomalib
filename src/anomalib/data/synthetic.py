@@ -67,7 +67,7 @@ def make_synthetic_dataset(
     transform = A.Compose([A.ToFloat(), ToTensorV2()])
 
     def augment(sample: Series) -> Series:
-        """Helper function to apply synthetic anomalous augmentation to a sample from a dataframe.
+        """Apply synthetic anomalous augmentation to a sample from a dataframe.
 
         Reads an image, applies the augmentations, writes the augmented image and corresponding mask to the file system,
         and returns a new Series object with the updates labels and file locations.
@@ -152,7 +152,7 @@ class SyntheticAnomalyDataset(AnomalibDataset):
         return cls(task=dataset.task, transform=dataset.transform, source_samples=dataset.samples)
 
     def __copy__(self) -> "SyntheticAnomalyDataset":
-        """Returns a shallow copy of the dataset object and prevents cleanup when original object is deleted."""
+        """Return a shallow copy of the dataset object and prevents cleanup when original object is deleted."""
         cls = self.__class__
         new = cls.__new__(cls)
         new.__dict__.update(self.__dict__)
@@ -160,7 +160,7 @@ class SyntheticAnomalyDataset(AnomalibDataset):
         return new
 
     def __deepcopy__(self, _memo: dict) -> "SyntheticAnomalyDataset":
-        """Returns a deep copy of the dataset object and prevents cleanup when original object is deleted."""
+        """Return a deep copy of the dataset object and prevents cleanup when original object is deleted."""
         cls = self.__class__
         new = cls.__new__(cls)
         for key, value in self.__dict__.items():

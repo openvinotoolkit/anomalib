@@ -19,7 +19,7 @@ def add_label(
     font_scale: float = 5e-3,
     thickness_scale: float = 1e-3,
 ) -> np.ndarray:
-    """Adds a label to an image.
+    """Add a label to an image.
 
     Args:
     ----
@@ -65,12 +65,12 @@ def add_label(
 
 
 def add_normal_label(image: np.ndarray, confidence: float | None = None) -> np.ndarray:
-    """Adds the normal label to the image."""
+    """Add the normal label to the image."""
     return add_label(image, "normal", (225, 252, 134), confidence)
 
 
 def add_anomalous_label(image: np.ndarray, confidence: float | None = None) -> np.ndarray:
-    """Adds the anomalous label to the image."""
+    """Add the anomalous label to the image."""
     return add_label(image, "anomalous", (255, 100, 100), confidence)
 
 

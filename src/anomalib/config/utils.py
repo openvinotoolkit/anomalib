@@ -13,7 +13,7 @@ from omegaconf import DictConfig, ListConfig, OmegaConf
 
 
 def to_yaml(config: Namespace | ListConfig | DictConfig) -> str:
-    """Converts the config to a yaml string.
+    """Convert the config to a yaml string.
 
     Args:
     ----
@@ -44,7 +44,7 @@ def _convert_nested_path_to_str(config: Any) -> Any:  # noqa: ANN401
 
 
 def to_tuple(input_size: int | ListConfig) -> tuple[int, int]:
-    """Converts int or list to a tuple.
+    """Convert int or list to a tuple.
 
     Example:
     -------

@@ -116,6 +116,7 @@ class AnomalibWandbLogger(ImageLoggerBase, WandbLogger):
         ----
             image (np.ndarray | Figure): Image to log
             name (str | None): The tag of the image
+            kwargs: Additional arguments to `wandb.Image`
         """
         del kwargs  # Unused argument.
 

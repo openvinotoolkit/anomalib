@@ -70,6 +70,8 @@ class Patchcore(AnomalyModule):
         Args:
         ----
             batch (dict[str, str | Tensor]): Batch containing image filename, image, label and mask
+            args: Additional arguments.
+            kwargs: Additional keyword arguments.
 
         Returns:
         -------
@@ -102,8 +104,9 @@ class Patchcore(AnomalyModule):
 
         Args:
         ----
-            batch (dict[str, str | Tensor]): Batch containing image filename,
-                image, label and mask
+            batch (dict[str, str | Tensor]): Batch containing image filename, image, label and mask
+            args: Additional arguments.
+            kwargs: Additional keyword arguments.
 
         Returns:
         -------
@@ -123,11 +126,8 @@ class Patchcore(AnomalyModule):
 
     @property
     def trainer_arguments(self) -> dict[str, Any]:
-        return {
-            "gradient_clip_val": 0,
-            "max_epochs": 1,
-            "num_sanity_val_steps": 0,
-        }
+        """Return Patchcore trainer arguments."""
+        return {"gradient_clip_val": 0, "max_epochs": 1, "num_sanity_val_steps": 0}
 
 
 class PatchcoreLightning(Patchcore):

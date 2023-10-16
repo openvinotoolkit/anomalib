@@ -62,9 +62,13 @@ class AnomalyMapGenerator(nn.Module):
         return anomaly_map
 
     def forward(self, **kwargs: dict[str, Tensor]) -> torch.Tensor:
-        """Returns anomaly map.
+        """Return anomaly map.
 
         Expects `teach_features` and `student_features` keywords to be passed explicitly.
+
+        Args:
+        ----
+            kwargs (dict[str, Tensor]): Keyword arguments
 
         Example:
         -------

@@ -1,4 +1,5 @@
 """EfficientAd: Accurate Visual Anomaly Detection at Millisecond-Level Latencies.
+
 https://arxiv.org/pdf/2303.14535.pdf.
 """
 
@@ -42,10 +43,29 @@ WEIGHTS_DOWNLOAD_INFO = DownloadInfo(
 
 
 class TransformsWrapper:
+    """Transforms wrapper.
+
+    Args:
+    ----
+        t (A.Compose): Albumentations transforms.
+    """
+
     def __init__(self, t: A.Compose) -> None:
         self.transforms = t
 
     def __call__(self, img: np.ndarray, *args, **kwargs) -> dict[str, Any]:
+        """Apply the transforms to the given image.
+
+        Args:
+        ----
+            img (np.ndarray): Input image.
+            args: Additional arguments.
+            kwargs: Additional keyword arguments.
+
+        Returns:
+        -------
+            dict[str, Any]: Output image.
+        """
         del args, kwargs  # Unused arguments.
 
         return self.transforms(image=np.array(img))
@@ -98,6 +118,7 @@ class EfficientAd(AnomalyModule):
         self.prepare_imagenette_data()
 
     def prepare_pretrained_model(self) -> None:
+        """Prepare the pretrained teacher model."""
         pretrained_models_dir = Path("./pre_trained/")
         if not pretrained_models_dir.is_dir():
             download_and_extract(pretrained_models_dir, WEIGHTS_DOWNLOAD_INFO)
@@ -108,6 +129,7 @@ class EfficientAd(AnomalyModule):
         self.model.teacher.load_state_dict(torch.load(teacher_path, map_location=torch.device(self.device)))
 
     def prepare_imagenette_data(self) -> None:
+        """Prepare ImageNette dataset transformations."""
         self.data_transforms_imagenet = A.Compose(
             [  # We obtain an image P ∈ R 3x256x256 from ImageNet by choosing a random image,
                 A.Resize(self.image_size[0] * 2, self.image_size[1] * 2),  # resizing it to 512 x 512,
@@ -206,6 +228,7 @@ class EfficientAd(AnomalyModule):
         return qa, qb
 
     def configure_optimizers(self) -> optim.Optimizer:
+        """Configure optimizers."""
         optimizer = optim.Adam(
             list(self.model.student.parameters()) + list(self.model.ae.parameters()),
             lr=self.lr,
@@ -225,11 +248,13 @@ class EfficientAd(AnomalyModule):
             self.model.mean_std.update(channel_mean_std)
 
     def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> dict[str, Tensor]:
-        """Training step for EfficientAd returns the student, autoencoder and combined loss.
+        """Perform the training step for EfficientAd returns the student, autoencoder and combined loss.
 
         Args:
         ----
             batch (batch: dict[str, str | Tensor]): Batch containing image filename, image, label and mask
+            args: Additional arguments.
+            kwargs: Additional keyword arguments.
 
         Returns:
         -------
@@ -260,11 +285,13 @@ class EfficientAd(AnomalyModule):
             self.model.quantiles.update(map_norm_quantiles)
 
     def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
-        """Validation Step of EfficientAd returns anomaly maps for the input image batch.
+        """Perform the validation step of EfficientAd returns anomaly maps for the input image batch.
 
         Args:
         ----
           batch (dict[str, str | Tensor]): Input batch
+          args: Additional arguments.
+          kwargs: Additional keyword arguments.
 
         Returns:
         -------
@@ -278,6 +305,7 @@ class EfficientAd(AnomalyModule):
 
     @property
     def trainer_arguments(self) -> dict[str, Any]:
+        """Return EfficientAD trainer arguments."""
         return {"gradient_clip_val": 0, "num_sanity_val_steps": 0}
 
 

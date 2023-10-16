@@ -62,12 +62,13 @@ class Padim(AnomalyModule):
         return
 
     def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> None:
-        """Training Step of PADIM. For each batch, hierarchical features are extracted from the CNN.
+        """Perform the training step of PADIM. For each batch, hierarchical features are extracted from the CNN.
 
         Args:
         ----
             batch (dict[str, str | Tensor]): Batch containing image filename, image, label and mask
-            _batch_idx: Index of the batch.
+            args: Additional arguments.
+            kwargs: Additional keyword arguments.
 
         Returns:
         -------
@@ -96,13 +97,15 @@ class Padim(AnomalyModule):
         self.stats = self.model.gaussian.fit(embeddings)
 
     def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
-        """Validation Step of PADIM.
+        """Perform a validation step of PADIM.
 
         Similar to the training step, hierarchical features are extracted from the CNN for each batch.
 
         Args:
         ----
             batch (dict[str, str | Tensor]): Input batch
+            args: Additional arguments.
+            kwargs: Additional keyword arguments.
 
         Returns:
         -------
@@ -116,6 +119,9 @@ class Padim(AnomalyModule):
 
     @property
     def trainer_arguments(self) -> dict[str, int | float]:
-        # Since the model does not require training, we limit the max_epochs to 1.
-        # Since we need to run training epoch before validation, we also set the sanity steps to 0
+        """Return PADIM trainer arguments.
+
+        Since the model does not require training, we limit the max_epochs to 1.
+        Since we need to run training epoch before validation, we also set the sanity steps to 0
+        """
         return {"max_epochs": 1, "val_check_interval": 1.0, "num_sanity_val_steps": 0}

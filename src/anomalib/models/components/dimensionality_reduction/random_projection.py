@@ -1,7 +1,6 @@
-"""This module comprises PatchCore Sampling Methods for the embedding.
+"""Random Sparse Projector.
 
-- Random Sparse Projector
-    Sparse Random Projection using PyTorch Operations
+Sparse Random Projection using PyTorch Operations
 """
 
 # Copyright (C) 2022 Intel Corporation
@@ -95,7 +94,7 @@ class SparseRandomProjection:
         return (4 * np.log(n_samples) / denominator).astype(np.int64)
 
     def fit(self, embedding: Tensor) -> "SparseRandomProjection":
-        """Generates sparse matrix from the embedding tensor.
+        """Generate sparse matrix from the embedding tensor.
 
         Args:
         ----

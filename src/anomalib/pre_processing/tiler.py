@@ -27,7 +27,7 @@ class StrideSizeError(Exception):
 
 
 def compute_new_image_size(image_size: tuple, tile_size: tuple, stride: tuple) -> tuple:
-    """This function checks if image size is divisible by tile size and stride.
+    """Check if image size is divisible by tile size and stride.
 
     If not divisible, it resizes the image size to make it divisible.
 
@@ -51,7 +51,7 @@ def compute_new_image_size(image_size: tuple, tile_size: tuple, stride: tuple) -
     """
 
     def __compute_new_edge_size(edge_size: int, tile_size: int, stride: int) -> int:
-        """This function makes the resizing within the edge level."""
+        """Resize within the edge level."""
         if (edge_size - tile_size) % stride != 0:
             edge_size = (ceil((edge_size - tile_size) / stride) * stride) + tile_size
 
@@ -368,6 +368,8 @@ class Tiler:
         Args:
         ----
             image: Input image to tile.
+            use_random_tiling: If True, randomly crops tiles from the image.
+                If False, tiles the image in a regular grid.
 
         Examples:
         --------

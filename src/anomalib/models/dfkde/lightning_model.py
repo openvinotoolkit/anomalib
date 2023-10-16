@@ -65,11 +65,13 @@ class Dfkde(AnomalyModule):
         return
 
     def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> None:
-        """Training Step of DFKDE. For each batch, features are extracted from the CNN.
+        """Perform the training step of DFKDE. For each batch, features are extracted from the CNN.
 
         Args:
         ----
             batch (batch: dict[str, str | Tensor]): Batch containing image filename, image, label and mask
+            args: Arguments.
+            kwargs: Keyword arguments.
 
         Returns:
         -------
@@ -96,17 +98,19 @@ class Dfkde(AnomalyModule):
         self.model.classifier.fit(embeddings)
 
     def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
-        """Validation Step of DFKDE.
+        """Perform the validation stepof DFKDE.
 
         Similar to the training step, features are extracted from the CNN for each batch.
 
         Args:
         ----
-          batch (dict[str, str | Tensor]): Input batch
+            batch (dict[str, str | Tensor]): Input batch
+            args: Arguments.
+            kwargs: Keyword arguments.
 
         Returns:
         -------
-          Dictionary containing probability, prediction and ground truth values.
+            Dictionary containing probability, prediction and ground truth values.
         """
         del args, kwargs  # These variables are not used.
 
@@ -115,6 +119,7 @@ class Dfkde(AnomalyModule):
 
     @property
     def trainer_arguments(self) -> dict[str, Any]:
+        """Return DFKDE-specific trainer arguments."""
         return {"gradient_clip_val": 0, "max_epochs": 1, "num_sanity_val_steps": 0}
 
 

@@ -78,7 +78,7 @@ def _prepare_files_labels(
 
 
 def _resolve_path(folder: str | Path, root: str | Path | None = None) -> Path:
-    """Combines root and folder and returns the absolute path.
+    """Combine root and folder and returns the absolute path.
 
     This allows users to pass either a root directory and relative paths, or absolute paths to each of the
     image sources. This function makes sure that the samples dataframe always contains absolute paths.

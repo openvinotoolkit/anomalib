@@ -67,7 +67,7 @@ class _ThresholdCallback(Callback):
         self,
         threshold: BaseThreshold | tuple[BaseThreshold, BaseThreshold] | DictConfig | ListConfig | str,
     ) -> None:
-        """Initializes ``self.image_threshold`` and ``self.pixel_threshold``.
+        """Initialize ``self.image_threshold`` and ``self.pixel_threshold``.
 
         Args:
         ----
@@ -109,7 +109,7 @@ class _ThresholdCallback(Callback):
             raise TypeError(msg)
 
     def _load_from_config(self, threshold: DictConfig | str | ListConfig) -> None:
-        """Loads the thresholding class based on the config.
+        """Load the thresholding class based on the config.
 
         Example:
         -------

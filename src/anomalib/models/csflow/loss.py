@@ -11,11 +11,11 @@ class CsFlowLoss(nn.Module):
     """Loss function for the CS-Flow Model Implementation."""
 
     def forward(self, z_dist: Tensor, jacobians: Tensor) -> Tensor:
-        """Loss function of CS-Flow.
+        """Compute the loss CS-Flow.
 
         Args:
         ----
-            z_distribution (Tensor): Latent space image mappings from NF.
+            z_dist (Tensor): Latent space image mappings from NF.
             jacobians (Tensor): Jacobians of the distribution
 
         Returns:

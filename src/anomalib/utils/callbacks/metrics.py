@@ -62,7 +62,7 @@ class _MetricsCallback(Callback):
         pl_module: AnomalyModule,
         stage: str | None = None,
     ) -> None:
-        """Setup image and pixel-level AnomalibMetricsCollection within Anomalib Model.
+        """Set image and pixel-level AnomalibMetricsCollection within Anomalib Model.
 
         Args:
         ----

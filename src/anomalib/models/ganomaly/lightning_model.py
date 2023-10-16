@@ -83,12 +83,12 @@ class Ganomaly(AnomalyModule):
         self.beta2 = beta2
 
     def _reset_min_max(self) -> None:
-        """Resets min_max scores."""
+        """Reset min_max scores."""
         self.min_scores = torch.tensor(float("inf"), dtype=torch.float32)  # pylint: disable=not-callable
         self.max_scores = torch.tensor(float("-inf"), dtype=torch.float32)  # pylint: disable=not-callable
 
     def configure_optimizers(self) -> list[optim.Optimizer]:
-        """Configures optimizers for each decoder.
+        """Configure optimizers for each decoder.
 
         Note:
         ----
@@ -118,7 +118,7 @@ class Ganomaly(AnomalyModule):
         batch: dict[str, str | Tensor],
         batch_idx: int,
     ) -> STEP_OUTPUT:
-        """Training step.
+        """Perform the training step.
 
         Args:
         ----
@@ -172,6 +172,8 @@ class Ganomaly(AnomalyModule):
         Args:
         ----
             batch (dict[str, str | Tensor]): Predicted difference between z and z_hat.
+            args: Additional arguments.
+            kwargs: Additional keyword arguments.
 
         Returns:
         -------
@@ -237,6 +239,7 @@ class Ganomaly(AnomalyModule):
 
     @property
     def trainer_arguments(self) -> dict[str, Any]:
+        """Return GANomaly trainer arguments."""
         return {"gradient_clip_val": 0, "num_sanity_val_steps": 0}
 
 

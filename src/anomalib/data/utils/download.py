@@ -316,13 +316,15 @@ def download_and_extract(root: Path, info: DownloadInfo) -> None:
 
 
 def is_within_directory(directory: Path, target: Path) -> bool:
-    """Checks if a target path is located within a given directory.
+    """Check if a target path is located within a given directory.
 
     Args:
     ----
         directory (Path): path of the parent directory
         target (Path): path of the target
+
     Returns:
+    -------
         (bool): True if the target is within the directory, False otherwise
     """
     abs_directory = directory.resolve()

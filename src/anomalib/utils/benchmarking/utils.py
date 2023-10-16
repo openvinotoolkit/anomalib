@@ -24,7 +24,7 @@ def write_metrics(
     writers: list[str],
     folder: str | None = None,
 ) -> None:
-    """Writes metrics to destination provided in the sweep config.
+    """Write metrics to destination provided in the sweep config.
 
     Args:
     ----
@@ -84,7 +84,7 @@ def write_to_tensorboard(
 
 
 def get_unique_key(str_len: int) -> str:
-    """Returns a random string of length str_len.
+    """Return a random string of length str_len.
 
     Args:
     ----

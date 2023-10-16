@@ -63,7 +63,7 @@ class AnomalyMapGenerator(nn.Module):
         return score_map.max() - score_map
 
     def forward(self, **kwargs: list[Tensor] | list[int] | list[list]) -> Tensor:
-        """Returns anomaly_map.
+        """Return anomaly_map.
 
         Expects `distribution`, `height` and 'width' keywords to be passed explicitly
 

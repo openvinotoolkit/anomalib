@@ -30,7 +30,7 @@ class HPOBackend(str, Enum):
 def get_hpo_parser(
     parser: ArgumentParser | LightningArgumentParser | None = None,
 ) -> ArgumentParser | LightningArgumentParser:
-    """Gets the HPO parser."""
+    """Get the HPO parser."""
     if parser is None:
         parser = ArgumentParser()
     parser.add_argument(
@@ -94,7 +94,7 @@ class Sweep:
         self.runner = self.get_runner(backend)
 
     def get_runner(self, backend: HPOBackend) -> CometSweep | WandbSweep:
-        """Gets the runner for the specified backend."""
+        """Get the runner for the specified backend."""
         runner: CometSweep | WandbSweep
         if backend == HPOBackend.COMET:
             runner = CometSweep(self.model_config, self.sweep_config, self.entity)
@@ -106,7 +106,7 @@ class Sweep:
         return runner
 
     def run(self) -> None:
-        """Runs the sweep."""
+        """Run the sweep."""
         if self.model_config.get("seed_everything") is not None:
             seed_everything(self.model_config.seed_everything)
 

@@ -57,12 +57,13 @@ class Csflow(AnomalyModule):
         self.loss = CsFlowLoss()
 
     def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
-        """Training Step of CS-Flow.
+        """Perform the training step of CS-Flow.
 
         Args:
         ----
             batch (dict[str, str | Tensor]): Input batch
-            _: Index of the batch.
+            args: Arguments.
+            kwargs: Keyword arguments.
 
         Returns:
         -------
@@ -77,11 +78,13 @@ class Csflow(AnomalyModule):
         return {"loss": loss}
 
     def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
-        """Validation step for CS Flow.
+        """Perform the validation step for CS Flow.
 
         Args:
         ----
             batch (Tensor): Input batch
+            args: Arguments.
+            kwargs: Keyword arguments.
 
         Returns:
         -------
@@ -96,6 +99,7 @@ class Csflow(AnomalyModule):
 
     @property
     def trainer_arguments(self) -> dict[str, Any]:
+        """CS-Flow-specific trainer arguments."""
         return {"gradient_clip_val": 1, "num_sanity_val_steps": 0}
 
 
@@ -136,7 +140,7 @@ class CsflowLightning(Csflow):
         return [early_stopping]
 
     def configure_optimizers(self) -> torch.optim.Optimizer:
-        """Configures optimizers.
+        """Configure optimizers.
 
         Note:
         ----

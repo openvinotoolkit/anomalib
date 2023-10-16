@@ -27,7 +27,7 @@ class TilerConfigurationCallback(Callback):
         mode: ImageUpscaleMode = ImageUpscaleMode.PADDING,
         tile_count: int = 4,
     ) -> None:
-        """Sets tiling configuration from the command line.
+        """Set tiling configuration from the command line.
 
         Args:
         ----
@@ -51,7 +51,7 @@ class TilerConfigurationCallback(Callback):
         self.tile_count = tile_count
 
     def setup(self, trainer: pl.Trainer, pl_module: pl.LightningModule, stage: str | None = None) -> None:
-        """Setup Tiler object within Anomalib Model.
+        """Set Tiler object within Anomalib Model.
 
         Args:
         ----
