@@ -11,7 +11,6 @@ from collections.abc import Callable
 from typing import Any
 
 import torch
-from lightning.pytorch.callbacks import EarlyStopping
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 from omegaconf import DictConfig, ListConfig
 from torch import Tensor, nn
@@ -120,6 +119,10 @@ class Draem(AnomalyModule):
     def trainer_arguments(self) -> dict[str, Any]:
         return {"gradient_clip_val": 0, "num_sanity_val_steps": 0}
 
+    def configure_optimizers(self) -> torch.optim.Optimizer:
+        """Configure the Adam optimizer."""
+        return torch.optim.Adam(params=self.model.parameters(), lr=0.0001)
+
 
 class DraemLightning(Draem):
     """DRÆM: A discriminatively trained reconstruction embedding for surface anomaly detection.
@@ -136,23 +139,3 @@ class DraemLightning(Draem):
         )
         self.hparams: DictConfig | ListConfig  # type: ignore
         self.save_hyperparameters(hparams)
-
-    def configure_callbacks(self) -> list[EarlyStopping]:
-        """Configure model-specific callbacks.
-
-        Note:
-            This method is used for the existing CLI.
-            When PL CLI is introduced, configure callback method will be
-                deprecated, and callbacks will be configured from either
-                config.yaml file or from CLI.
-        """
-        early_stopping = EarlyStopping(
-            monitor=self.hparams.model.early_stopping.metric,
-            patience=self.hparams.model.early_stopping.patience,
-            mode=self.hparams.model.early_stopping.mode,
-        )
-        return [early_stopping]
-
-    def configure_optimizers(self) -> torch.optim.Optimizer:
-        """Configure the Adam optimizer."""
-        return torch.optim.Adam(params=self.model.parameters(), lr=self.hparams.model.lr)

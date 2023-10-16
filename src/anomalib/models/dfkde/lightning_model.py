@@ -5,6 +5,7 @@
 
 
 import logging
+from collections.abc import Sequence
 from typing import Any
 
 import torch
@@ -38,8 +39,8 @@ class Dfkde(AnomalyModule):
 
     def __init__(
         self,
-        layers: list[str],
-        backbone: str,
+        layers: Sequence[str] = ("layer4"),
+        backbone: str = "resnet18",
         pre_trained: bool = True,
         n_pca_components: int = 16,
         feature_scaling_method: FeatureScalingMethod = FeatureScalingMethod.SCALE,

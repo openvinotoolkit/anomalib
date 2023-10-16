@@ -223,7 +223,7 @@ class Kolektor(AnomalibDataModule):
 
     def __init__(
         self,
-        root: Path | str,
+        root: Path | str = "./datasets/kolektor",
         image_size: int | tuple[int, int] | None = None,
         center_crop: int | tuple[int, int] | None = None,
         normalization: str | InputNormalizationMethod = InputNormalizationMethod.IMAGENET,

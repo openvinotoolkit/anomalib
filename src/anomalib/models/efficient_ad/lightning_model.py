@@ -55,9 +55,8 @@ class EfficientAd(AnomalyModule):
     """PL Lightning Module for the EfficientAd algorithm.
 
     Args:
-        teacher_file_name (str): path to the pre-trained teacher model
+        input_size (tuple): size of input images
         teacher_out_channels (int): number of convolution output channels
-        image_size (tuple): size of input images
         model_size (str): size of student and teacher model
         lr (float): learning rate
         weight_decay (float): optimizer weight decay
@@ -69,8 +68,8 @@ class EfficientAd(AnomalyModule):
 
     def __init__(
         self,
-        teacher_out_channels: int,
-        image_size: tuple[int, int],
+        input_size: tuple[int, int],
+        teacher_out_channels: int = 384,
         model_size: EfficientAdModelSize = EfficientAdModelSize.S,
         lr: float = 0.0001,
         weight_decay: float = 0.00001,
@@ -83,13 +82,13 @@ class EfficientAd(AnomalyModule):
         self.model_size = model_size
         self.model: EfficientAdModel = EfficientAdModel(
             teacher_out_channels=teacher_out_channels,
-            input_size=image_size,
+            input_size=input_size,
             model_size=model_size,
             padding=padding,
             pad_maps=pad_maps,
         )
         self.batch_size = batch_size
-        self.image_size = image_size
+        self.image_size = input_size
         self.lr = lr
         self.weight_decay = weight_decay
 
@@ -288,7 +287,7 @@ class EfficientAdLightning(EfficientAd):
             weight_decay=hparams.model.weight_decay,
             padding=hparams.model.padding,
             pad_maps=hparams.model.pad_maps,
-            image_size=hparams.dataset.image_size,
+            input_size=hparams.dataset.image_size,
             batch_size=hparams.dataset.train_batch_size,
         )
         self.hparams: DictConfig | ListConfig  # type: ignore

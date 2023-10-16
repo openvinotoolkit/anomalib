@@ -1,0 +1,23 @@
+model:
+  class_path: anomalib.models.ReverseDistillation
+  init_args:
+    backbone: wide_resnet50_2
+    layers:
+      - layer1
+      - layer2
+      - layer3
+    anomaly_map_mode: MULTIPLY
+    pre_trained: true
+
+metrics:
+  pixel:
+    - AUROC
+
+trainer:
+  max_epochs: 200
+  callbacks:
+    - class_path: lightning.pytorch.callbacks.EarlyStopping
+      init_args:
+        patience: 3
+        monitor: pixel_AUROC
+        mode: max

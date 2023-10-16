@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
+from collections.abc import Sequence
 from typing import Any
 
 import einops
@@ -22,7 +23,7 @@ class CflowModel(nn.Module):
         self,
         input_size: tuple[int, int],
         backbone: str,
-        layers: list[str],
+        layers: Sequence[str],
         pre_trained: bool = True,
         fiber_batch_size: int = 64,
         decoder: str = "freia-cflow",

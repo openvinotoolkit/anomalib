@@ -5,6 +5,7 @@
 
 
 import logging
+from collections.abc import Sequence
 
 import torch
 from torch import Tensor, nn
@@ -32,7 +33,7 @@ class DfkdeModel(nn.Module):
 
     def __init__(
         self,
-        layers: list[str],
+        layers: Sequence[str],
         backbone: str,
         pre_trained: bool = True,
         n_pca_components: int = 16,

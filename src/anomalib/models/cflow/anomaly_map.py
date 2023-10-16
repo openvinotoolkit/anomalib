@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
+from collections.abc import Sequence
 from typing import cast
 
 import torch
@@ -18,12 +19,12 @@ class AnomalyMapGenerator(nn.Module):
     def __init__(
         self,
         image_size: ListConfig | tuple,
-        pool_layers: list[str],
+        pool_layers: Sequence[str],
     ) -> None:
         super().__init__()
         self.distance = torch.nn.PairwiseDistance(p=2, keepdim=True)
         self.image_size = image_size if isinstance(image_size, tuple) else tuple(image_size)
-        self.pool_layers: list[str] = pool_layers
+        self.pool_layers: Sequence[str] = pool_layers
 
     def compute_anomaly_map(self, distribution: list[Tensor], height: list[int], width: list[int]) -> Tensor:
         """Compute the layer map based on likelihood estimation.
