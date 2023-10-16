@@ -1,4 +1,4 @@
-"""Custom Help Formatters for Anomalib CLI"""
+"""Custom Help Formatters for Anomalib CLI."""
 
 # Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -30,13 +30,14 @@ DOCSTRING_USAGE = {
 
 
 def pre_parse_arguments() -> dict:
-    """
-    Parses command line arguments and returns a dictionary of key-value pairs.
+    """Parse command line arguments and returns a dictionary of key-value pairs.
 
-    Returns:
+    Returns
+    -------
         A dictionary containing the parsed command line arguments.
 
-    Examples:
+    Examples
+    --------
         >>> import sys
         >>> sys.argv = ['anomalib', 'fit', '--arg1', 'value1', '-a', 'value2', '-h']
         >>> pre_parse_arguments()
@@ -66,27 +67,26 @@ def pre_parse_arguments() -> dict:
 
 
 def get_verbosity_subcommand() -> tuple:
-    """
-    Returns a tuple containing the verbosity level and the subcommand name.
+    """Return a tuple containing the verbosity level and the subcommand name.
 
     The verbosity level is determined by the command line arguments passed to the script.
     If the subcommand requires additional arguments, the verbosity level is only set if the
     help option is specified. The verbosity level can be set to 0 (no output), 1 (normal output),
     or 2 (verbose output).
 
-    Returns:
+    Returns
+    -------
         A tuple containing the verbosity level (int) and the subcommand name (str).
     """
     arguments = pre_parse_arguments()
     verbosity = 2
-    if arguments["subcommand"] in REQUIRED_ARGUMENTS:
-        if "h" in arguments or "help" in arguments:
-            if "v" in arguments:
-                verbosity = 1
-            elif "vv" in arguments:
-                verbosity = 2
-            else:
-                verbosity = 0
+    if arguments["subcommand"] in REQUIRED_ARGUMENTS and ("h" in arguments or "help" in arguments):
+        if "v" in arguments:
+            verbosity = 1
+        elif "vv" in arguments:
+            verbosity = 2
+        else:
+            verbosity = 0
     return verbosity, arguments["subcommand"]
 
 
@@ -95,7 +95,8 @@ def get_intro() -> Markdown:
 
     The introduction text includes a brief description of the guide and links to the Github repository and documentation
 
-    Returns:
+    Returns
+    -------
         A Markdown object containing the introduction text for Anomalib CLI Guide.
     """
     intro_markdown = (
@@ -103,7 +104,7 @@ def get_intro() -> Markdown:
         "Github Repository: [https://github.com/openvinotoolkit/anomalib](https://github.com/openvinotoolkit/anomalib)."
         "\n\n"
         "A better guide is provided by the [documentation](https://anomalib.readthedocs.io/en/latest/index.html)."
-    )  # noqa: E501
+    )
     return Markdown(intro_markdown)
 
 
@@ -111,9 +112,11 @@ def get_verbose_usage(subcommand: str = "train") -> str:
     """Return a string containing verbose usage information for the specified subcommand.
 
     Args:
+    ----
         subcommand (str): The name of the subcommand to get verbose usage information for. Defaults to "train".
 
     Returns:
+    -------
         str: A string containing verbose usage information for the specified subcommand.
     """
     return (
@@ -128,15 +131,18 @@ def get_verbose_usage(subcommand: str = "train") -> str:
 
 
 def get_cli_usage_docstring(component: object | None) -> str | None:
-    """Get the cli usage from the docstring.
+    r"""Get the cli usage from the docstring.
 
     Args:
+    ----
         component (Optional[object]): The component to get the docstring from
 
     Returns:
+    -------
         Optional[str]: The quick-start guide as Markdown format.
 
     Example:
+    -------
         component.__doc__ = '''
             <Prev Section>
 
@@ -165,9 +171,11 @@ def render_guide(subcommand: str | None = None) -> list:
     """Render a guide for the specified subcommand.
 
     Args:
+    ----
         subcommand (Optional[str]): The subcommand to render the guide for.
 
     Returns:
+    -------
         list: A list of contents to be displayed in the guide.
     """
     if subcommand is None or subcommand not in DOCSTRING_USAGE:
@@ -188,13 +196,15 @@ class CustomHelpFormatter(RichHelpFormatter, DefaultHelpFormatter):
     This formatter extends the RichHelpFormatter and DefaultHelpFormatter classes to provide
     a more detailed and customizable help output for Anomalib CLI.
 
-    Attributes:
+    Attributes
+    ----------
     verbose_level : int
         The level of verbosity for the help output.
     subcommand : str | None
         The subcommand to render the guide for.
 
-    Methods:
+    Methods
+    -------
     add_usage(usage, actions, *args, **kwargs)
         Add usage information to the help output.
     add_argument(action)
@@ -209,12 +219,14 @@ class CustomHelpFormatter(RichHelpFormatter, DefaultHelpFormatter):
         """Add usage information to the formatter.
 
         Args:
+        ----
             usage (str | None): A string describing the usage of the program.
             actions (list): An list of argparse.Action objects.
             *args (Any): Additional positional arguments to pass to the superclass method.
             **kwargs (Any): Additional keyword arguments to pass to the superclass method.
 
         Returns:
+        -------
             None
         """
         if self.subcommand in REQUIRED_ARGUMENTS:
@@ -232,6 +244,7 @@ class CustomHelpFormatter(RichHelpFormatter, DefaultHelpFormatter):
         If the verbose level is set to 1 and the argument is not in the non-skip list, the argument is not added.
 
         Args:
+        ----
             action (argparse.Action): The action to add to the help formatter.
         """
         if self.subcommand in REQUIRED_ARGUMENTS:
@@ -247,16 +260,16 @@ class CustomHelpFormatter(RichHelpFormatter, DefaultHelpFormatter):
         The help message includes information about the command's arguments and options,
         as well as any additional information provided by the command's help guide.
 
-        Returns:
+        Returns
+        -------
             str: A string containing the formatted help message.
         """
         with self.console.capture() as capture:
             section = self._root_section
-            if self.subcommand in REQUIRED_ARGUMENTS:
-                if self.verbose_level in (0, 1) and len(section.rich_items) > 1:
-                    contents = render_guide(self.subcommand)
-                    for content in contents:
-                        self.console.print(content)
+            if self.subcommand in REQUIRED_ARGUMENTS and self.verbose_level in (0, 1) and len(section.rich_items) > 1:
+                contents = render_guide(self.subcommand)
+                for content in contents:
+                    self.console.print(content)
             if self.verbose_level > 0:
                 if len(section.rich_items) > 1:
                     section = Panel(section, border_style="dim", title="Arguments", title_align="left")
