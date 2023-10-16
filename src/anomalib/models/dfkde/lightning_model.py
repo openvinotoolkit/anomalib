@@ -39,7 +39,7 @@ class Dfkde(AnomalyModule):
 
     def __init__(
         self,
-        layers: Sequence[str] = ("layer4"),
+        layers: Sequence[str] = ("layer4",),
         backbone: str = "resnet18",
         pre_trained: bool = True,
         n_pca_components: int = 16,
