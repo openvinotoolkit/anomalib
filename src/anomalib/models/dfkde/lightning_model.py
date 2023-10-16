@@ -98,7 +98,7 @@ class Dfkde(AnomalyModule):
         self.model.classifier.fit(embeddings)
 
     def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
-        """Perform the validation stepof DFKDE.
+        """Perform the validation step of DFKDE.
 
         Similar to the training step, features are extracted from the CNN for each batch.
 
