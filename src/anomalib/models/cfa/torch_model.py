@@ -254,12 +254,16 @@ class Descriptor(nn.Module):
             features = list(features.values())
 
         patch_features: Tensor | None = None
-        for i in features:
-            i = F.avg_pool2d(i, 3, 1, 1) / i.size(1) if self.backbone == "efficientnet_b5" else F.avg_pool2d(i, 3, 1, 1)
+        for feature in features:
+            pooled_features = (
+                F.avg_pool2d(feature, 3, 1, 1) / feature.size(1)
+                if self.backbone == "efficientnet_b5"
+                else F.avg_pool2d(feature, 3, 1, 1)
+            )
             patch_features = (
-                i
+                pooled_features
                 if patch_features is None
-                else torch.cat((patch_features, F.interpolate(i, patch_features.size(2), mode="bilinear")), dim=1)
+                else torch.cat((patch_features, F.interpolate(feature, patch_features.size(2), mode="bilinear")), dim=1)
             )
 
         return self.layer(patch_features)

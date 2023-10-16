@@ -117,8 +117,8 @@ def upload_to_wandb(
     search_path = "runs/*.csv" if folder is None else f"runs/{folder}/*.csv"
     for csv_file in Path(search_path).glob("*csv"):
         table = pd.read_csv(csv_file)
-        for index, row in table.iterrows():
-            row = dict(row[1:])  # remove index column
+        for index, row_with_index_column in table.iterrows():
+            row = dict(row_with_index_column[1:])  # remove index column
             tags = [str(row[column]) for column in tag_list if column in row]
             wandb.init(
                 entity=team,
@@ -147,8 +147,8 @@ def upload_to_comet(
     search_path = "runs/*.csv" if folder is None else f"runs/{folder}/*.csv"
     for csv_file in Path(search_path).glob("*csv"):
         table = pd.read_csv(csv_file)
-        for index, row in table.iterrows():
-            row = dict(row[1:])  # remove index column
+        for index, row_with_index_column in table.iterrows():
+            row = dict(row_with_index_column[1:])  # remove index column
             tags = [str(row[column]) for column in tag_list if column in row]
             experiment = Experiment(project_name=project)
             experiment.set_name(f"{row['model_name']}_{row['dataset.category']}_{index}")

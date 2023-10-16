@@ -167,12 +167,11 @@ class RegionExtractor(nn.Module):
             list[dict[str, Tensor]]: Filtered regions
         """
         filtered_regions = []
-        for im_regions in regions:
-            if self.persons_only:
-                im_regions = self._keep_only_persons(im_regions)
-            im_regions = self._filter_by_area(im_regions, self.min_bbox_area)
-            im_regions = self._delete_overlapping_boxes(im_regions, self.max_bbox_overlap)
-            filtered_regions.append(im_regions)
+        for region in regions:
+            filtered_region = self._keep_only_persons(region) if self.persons_only else region
+            filtered_region = self._filter_by_area(filtered_region, self.min_bbox_area)
+            filtered_region = self._delete_overlapping_boxes(filtered_region, self.max_bbox_overlap)
+            filtered_regions.append(filtered_region)
         return filtered_regions
 
     def _keep_only_persons(self, regions: dict[str, Tensor]) -> dict[str, Tensor]:
