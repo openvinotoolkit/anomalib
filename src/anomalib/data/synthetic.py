@@ -137,7 +137,7 @@ class SyntheticAnomalyDataset(AnomalibDataset):
         self.setup()
 
     @classmethod
-    def from_dataset(cls, dataset: AnomalibDataset) -> "SyntheticAnomalyDataset":
+    def from_dataset(cls: type["SyntheticAnomalyDataset"], dataset: AnomalibDataset) -> "SyntheticAnomalyDataset":
         """Create a synthetic anomaly dataset from an existing dataset of normal images.
 
         Args:

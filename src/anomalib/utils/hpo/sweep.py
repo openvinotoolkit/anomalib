@@ -27,7 +27,9 @@ class HPOBackend(str, Enum):
         return self.value
 
 
-def get_hpo_parser(parser: ArgumentParser | LightningArgumentParser | None = None):
+def get_hpo_parser(
+    parser: ArgumentParser | LightningArgumentParser | None = None,
+) -> ArgumentParser | LightningArgumentParser:
     """Gets the HPO parser."""
     if parser is None:
         parser = ArgumentParser()
@@ -102,7 +104,7 @@ class Sweep:
             raise ValueError(msg)
         return runner
 
-    def run(self):
+    def run(self) -> None:
         """Runs the sweep."""
         if self.model_config.get("seed_everything") is not None:
             seed_everything(self.model_config.seed_everything)

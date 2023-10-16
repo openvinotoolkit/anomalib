@@ -124,7 +124,7 @@ def get_run_config(params_dict: DictConfig) -> Generator[DictConfig, None, None]
         yield run_config
 
 
-def get_from_nested_config(config: DictConfig, keymap: list) -> Any:
+def get_from_nested_config(config: DictConfig, keymap: list) -> Any:  # noqa: ANN401
     """Retrieves an item from a nested config object using a list of keys.
 
     Args:
@@ -134,7 +134,7 @@ def get_from_nested_config(config: DictConfig, keymap: list) -> Any:
     return reduce(operator.getitem, keymap, config)
 
 
-def set_in_nested_config(config: DictConfig, keymap: list, value: Any) -> None:
+def set_in_nested_config(config: DictConfig, keymap: list, value: Any) -> None:  # noqa: ANN401
     """Set an item in a nested config object using a list of keys.
 
     Args:

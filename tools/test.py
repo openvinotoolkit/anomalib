@@ -28,7 +28,7 @@ def get_parser() -> ArgumentParser:
     return parser
 
 
-def test(args: Namespace):
+def test(args: Namespace) -> None:
     """Test an anomaly model.
 
     Args:

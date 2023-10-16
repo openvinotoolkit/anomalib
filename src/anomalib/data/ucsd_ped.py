@@ -99,7 +99,7 @@ def make_ucsd_dataset(path: Path, split: str | Split | None = None) -> DataFrame
 class UCSDpedClipsIndexer(ClipsIndexer):
     """Clips class for UCSDped dataset."""
 
-    def get_mask(self, idx) -> np.ndarray | None:
+    def get_mask(self, idx: int) -> np.ndarray | None:
         """Retrieve the masks from the file system."""
 
         video_idx, frames_idx = self.get_clip_location(idx)

@@ -17,7 +17,7 @@ class GeneratorLoss(nn.Module):
         wenc (int, optional): Latent vector encoder weight. Defaults to 1.
     """
 
-    def __init__(self, wadv=1, wcon=50, wenc=1) -> None:
+    def __init__(self, wadv: int = 1, wcon: int = 50, wenc: int = 1) -> None:
         super().__init__()
 
         self.loss_enc = nn.SmoothL1Loss()

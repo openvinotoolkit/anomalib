@@ -29,7 +29,7 @@ class Inferencer(ABC):
     """
 
     @abstractmethod
-    def load_model(self, path: str | Path) -> Any:
+    def load_model(self, path: str | Path) -> Any:  # noqa: ANN401
         """Load Model."""
         raise NotImplementedError
 

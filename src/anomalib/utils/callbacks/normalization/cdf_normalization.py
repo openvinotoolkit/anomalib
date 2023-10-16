@@ -70,7 +70,7 @@ class _CdfNormalizationCallback(Callback):
         trainer: Trainer,
         pl_module: AnomalyModule,
         outputs: STEP_OUTPUT | None,
-        batch: Any,
+        batch: Any,  # noqa: ANN401
         batch_idx: int,
         dataloader_idx: int = 0,
     ) -> None:
@@ -84,7 +84,7 @@ class _CdfNormalizationCallback(Callback):
         trainer: Trainer,
         pl_module: AnomalyModule,
         outputs: STEP_OUTPUT | None,
-        batch: Any,
+        batch: Any,  # noqa: ANN401
         batch_idx: int,
         dataloader_idx: int = 0,
     ) -> None:
@@ -99,7 +99,7 @@ class _CdfNormalizationCallback(Callback):
         trainer: Trainer,
         pl_module: AnomalyModule,
         outputs: dict,
-        batch: Any,
+        batch: Any,  # noqa: ANN401
         batch_idx: int,
         dataloader_idx: int = 0,
     ) -> None:
@@ -135,7 +135,7 @@ class _CdfNormalizationCallback(Callback):
         pl_module.normalization_metrics.compute()
 
     @staticmethod
-    def _create_inference_model(pl_module: AnomalyModule):
+    def _create_inference_model(pl_module: AnomalyModule) -> AnomalyModule:
         """Create a duplicate of the PL module that can be used to perform inference on the training set."""
         new_model = pl_module.__class__(**pl_module.hparams)
         new_model.normalization_metrics = AnomalyScoreDistribution().cpu()
@@ -143,7 +143,7 @@ class _CdfNormalizationCallback(Callback):
         return new_model
 
     @staticmethod
-    def _standardize_batch(outputs: STEP_OUTPUT, pl_module) -> None:
+    def _standardize_batch(outputs: STEP_OUTPUT, pl_module: AnomalyModule) -> None:
         stats = pl_module.normalization_metrics.to(outputs["pred_scores"].device)
         outputs["pred_scores"] = standardize(outputs["pred_scores"], stats.image_mean, stats.image_std)
         if "anomaly_maps" in outputs:

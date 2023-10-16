@@ -16,13 +16,13 @@ from torchvision import transforms
 logger = logging.getLogger(__name__)
 
 
-def imagenet_norm_batch(x):
+def imagenet_norm_batch(x: torch.Tensor) -> torch.Tensor:
     mean = torch.tensor([0.485, 0.456, 0.406])[None, :, None, None].to(x.device)
     std = torch.tensor([0.229, 0.224, 0.225])[None, :, None, None].to(x.device)
     return (x - mean) / std
 
 
-def reduce_tensor_elems(tensor: torch.Tensor, m=2**24) -> torch.Tensor:
+def reduce_tensor_elems(tensor: torch.Tensor, m: int = 2**24) -> torch.Tensor:
     """Flattens n-dimensional tensors,  selects m elements from it
     and returns the selected elements as tensor. It is used to select
     at most 2**24 for torch.quantile operation, as it is the maximum
@@ -69,7 +69,7 @@ class SmallPatchDescriptionNetwork(nn.Module):
         self.avgpool1 = nn.AvgPool2d(kernel_size=2, stride=2, padding=1 * pad_mult)
         self.avgpool2 = nn.AvgPool2d(kernel_size=2, stride=2, padding=1 * pad_mult)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = imagenet_norm_batch(x)
         x = F.relu(self.conv1(x))
         x = self.avgpool1(x)
@@ -98,7 +98,7 @@ class MediumPatchDescriptionNetwork(nn.Module):
         self.avgpool1 = nn.AvgPool2d(kernel_size=2, stride=2, padding=1 * pad_mult)
         self.avgpool2 = nn.AvgPool2d(kernel_size=2, stride=2, padding=1 * pad_mult)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = imagenet_norm_batch(x)
         x = F.relu(self.conv1(x))
         x = self.avgpool1(x)
@@ -122,7 +122,7 @@ class Encoder(nn.Module):
         self.enconv5 = nn.Conv2d(64, 64, kernel_size=4, stride=2, padding=1)
         self.enconv6 = nn.Conv2d(64, 64, kernel_size=8, stride=1, padding=0)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = F.relu(self.enconv1(x))
         x = F.relu(self.enconv2(x))
         x = F.relu(self.enconv3(x))
@@ -139,7 +139,7 @@ class Decoder(nn.Module):
         img_size (tuple): size of input images
     """
 
-    def __init__(self, out_channels, padding, img_size, *args, **kwargs) -> None:
+    def __init__(self, out_channels: int, padding: int, img_size: tuple[int, int], *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.img_size = img_size
         self.last_upsample = (
@@ -161,7 +161,7 @@ class Decoder(nn.Module):
         self.dropout5 = nn.Dropout(p=0.2)
         self.dropout6 = nn.Dropout(p=0.2)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = F.interpolate(x, size=(int(self.img_size[0] / 64) - 1, int(self.img_size[1] / 64) - 1), mode="bilinear")
         x = F.relu(self.deconv1(x))
         x = self.dropout1(x)
@@ -193,12 +193,12 @@ class AutoEncoder(nn.Module):
        img_size (tuple): size of input images
     """
 
-    def __init__(self, out_channels, padding, img_size, *args, **kwargs) -> None:
+    def __init__(self, out_channels: int, padding: int, img_size: tuple[int, int], *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.encoder = Encoder()
         self.decoder = Decoder(out_channels, padding, img_size)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = imagenet_norm_batch(x)
         x = self.encoder(x)
         return self.decoder(x)
@@ -223,8 +223,8 @@ class EfficientAdModel(nn.Module):
         teacher_out_channels: int,
         input_size: tuple[int, int],
         model_size: EfficientAdModelSize = EfficientAdModelSize.S,
-        padding=False,
-        pad_maps=True,
+        padding: bool = False,
+        pad_maps: bool = True,
     ) -> None:
         super().__init__()
 

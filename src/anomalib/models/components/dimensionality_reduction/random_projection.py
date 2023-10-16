@@ -34,7 +34,7 @@ class SparseRandomProjection:
         self.eps = eps
         self.random_state = random_state
 
-    def _sparse_random_matrix(self, n_features: int):
+    def _sparse_random_matrix(self, n_features: int) -> Tensor:
         """Random sparse matrix. Based on https://web.stanford.edu/~hastie/Papers/Ping/KDD06_rp.pdf.
 
         Args:
@@ -79,7 +79,7 @@ class SparseRandomProjection:
 
         return components
 
-    def johnson_lindenstrauss_min_dim(self, n_samples: int, eps: float = 0.1):
+    def johnson_lindenstrauss_min_dim(self, n_samples: int, eps: float = 0.1) -> int | np.integer:
         """Find a 'safe' number of components to randomly project to.
 
         Ref eqn 2.1 https://cseweb.ucsd.edu/~dasgupta/papers/jl.pdf

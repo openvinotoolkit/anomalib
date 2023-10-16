@@ -24,7 +24,7 @@ from torchvision.datasets.folder import IMG_EXTENSIONS
 from anomalib.data.utils.generators.perlin import random_2d_perlin
 
 
-def nextpow2(value):
+def nextpow2(value: int) -> int:
     """Returns the smallest power of 2 greater than or equal to the input value."""
     return 2 ** (math.ceil(math.log(value, 2)))
 

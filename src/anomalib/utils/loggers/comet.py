@@ -4,8 +4,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-from typing import Any
-
 import numpy as np
 from matplotlib.figure import Figure
 
@@ -98,7 +96,7 @@ class AnomalibCometLogger(ImageLoggerBase, CometLogger):
         self.experiment.log_other("Created from", "Anomalib")
 
     @rank_zero_only
-    def add_image(self, image: np.ndarray | Figure, name: str | None = None, **kwargs: Any) -> None:
+    def add_image(self, image: np.ndarray | Figure, name: str | None = None, **kwargs) -> None:
         """Interface to add image to comet logger.
 
         Args:

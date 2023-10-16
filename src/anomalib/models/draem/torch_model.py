@@ -51,7 +51,13 @@ class ReconstructiveSubNetwork(nn.Module):
         base_width (int): Base dimensionality of the layers of the autoencoder.
     """
 
-    def __init__(self, in_channels: int = 3, out_channels: int = 3, base_width=128, sspcab: bool = False) -> None:
+    def __init__(
+        self,
+        in_channels: int = 3,
+        out_channels: int = 3,
+        base_width: int = 128,
+        sspcab: bool = False,
+    ) -> None:
         super().__init__()
         self.encoder = EncoderReconstructive(in_channels, base_width, sspcab=sspcab)
         self.decoder = DecoderReconstructive(base_width, out_channels=out_channels)

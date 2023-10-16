@@ -7,7 +7,7 @@
 import logging
 from importlib.util import find_spec
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import albumentations as A  # noqa: N812
 import cv2
@@ -22,6 +22,9 @@ logger = logging.getLogger("anomalib")
 
 if find_spec("openvino") is not None:
     from openvino.runtime import Core
+
+    if TYPE_CHECKING:
+        from openvino.runtime import CompiledModel
 else:
     logger.warning("OpenVINO is not installed. Please install OpenVINO to use OpenVINOInferencer.")
 
@@ -53,7 +56,7 @@ class OpenVINOInferencer(Inferencer):
 
         self.task = TaskType(task) if task else TaskType(self.metadata["task"])
 
-    def load_model(self, path: str | Path | tuple[bytes, bytes]):
+    def load_model(self, path: str | Path | tuple[bytes, bytes]) -> tuple[Any, Any, "CompiledModel"]:
         """Load the OpenVINO model.
 
         Args:

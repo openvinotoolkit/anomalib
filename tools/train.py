@@ -39,7 +39,7 @@ def get_parser() -> ArgumentParser:
     return parser
 
 
-def train(args: Namespace):
+def train(args: Namespace) -> None:
     """Train an anomaly model.
 
     Args:

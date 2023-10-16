@@ -30,7 +30,7 @@ class DynamicBufferModule(ABC, nn.Module):
         msg = f"Attribute with name '{attribute_name}' is not a torch Tensor"
         raise ValueError(msg)
 
-    def _load_from_state_dict(self, state_dict: dict, prefix: str, *args):
+    def _load_from_state_dict(self, state_dict: dict, prefix: str, *args) -> None:
         """Resizes the local buffers to match those stored in the state dict.
 
         Overrides method from parent class.

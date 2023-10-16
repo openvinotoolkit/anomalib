@@ -179,11 +179,12 @@ class RegionExtractor(nn.Module):
         keep = torch.where(regions["labels"] == PERSON_LABEL)
         return self.subsample_regions(regions, keep)
 
-    def _filter_by_area(self, regions: dict[str, Tensor], min_area) -> dict[str, Tensor]:
+    def _filter_by_area(self, regions: dict[str, Tensor], min_area: int) -> dict[str, Tensor]:
         """Remove all regions with a surface area smaller than the specified value.
 
         Args:
             regions (dict[str, Tensor]): Region detections for a single image in the batch.
+            min_area (int): Minimum bounding box area. Regions with a surface area lower than this value are excluded.
 
         Returns:
             dict[str, Tensor]: Region detections from which small regions have been removed.

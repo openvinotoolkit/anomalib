@@ -27,19 +27,19 @@ else:
     get_common_cli_parser = None
 
 
-def add_torch_export_arguments(subcommand: _ActionSubCommands):
+def add_torch_export_arguments(subcommand: _ActionSubCommands) -> None:
     """Add torch parser to subcommand."""
     parser = _get_export_parser("torch")
     subcommand.add_subcommand("torch", parser)
 
 
-def add_onnx_export_arguments(subcommand: _ActionSubCommands):
+def add_onnx_export_arguments(subcommand: _ActionSubCommands) -> None:
     """Add onnx parser to subcommand."""
     parser = _get_export_parser("ONNX")
     subcommand.add_subcommand("onnx", parser)
 
 
-def add_openvino_export_arguments(subcommand: _ActionSubCommands):
+def add_openvino_export_arguments(subcommand: _ActionSubCommands) -> None:
     """Add OpenVINO parser to subcommand."""
     if get_common_cli_parser is not None:
         parser = _get_export_parser("OpenVINO")
@@ -55,7 +55,7 @@ def add_openvino_export_arguments(subcommand: _ActionSubCommands):
         logger.info("OpenVINO is possibly not installed in the environment. Skipping adding it to parser.")
 
 
-def _get_export_parser(subcommand: str):
+def _get_export_parser(subcommand: str) -> LightningArgumentParser:
     """Get the parser with common params for all the export subcommands."""
     parser = LightningArgumentParser(description=f"Export to {subcommand} format")
     parser.add_argument("--weights", type=Path, help="Path to the checkpoint file.", required=True)
@@ -70,7 +70,7 @@ def _get_export_parser(subcommand: str):
     return parser
 
 
-def run_export(config: Namespace):
+def run_export(config: Namespace) -> None:
     """Run the export method.
 
     Args:

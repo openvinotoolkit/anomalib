@@ -6,6 +6,7 @@
 
 import importlib
 import logging
+from collections.abc import Callable
 from typing import Any
 
 import torchmetrics
@@ -97,7 +98,7 @@ def _validate_metrics_dict(metrics: dict[str, dict[str, Any]]) -> None:
     )
 
 
-def _get_class_from_path(class_path: str) -> Any:
+def _get_class_from_path(class_path: str) -> Callable:
     """Get a class from a module assuming the string format is `package.subpackage.module.ClassName`."""
     module_name, class_name = class_path.rsplit(".", 1)
     module = importlib.import_module(module_name)

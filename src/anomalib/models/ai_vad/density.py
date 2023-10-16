@@ -19,21 +19,21 @@ class BaseDensityEstimator(nn.Module, ABC):
     """Base density estimator."""
 
     @abstractmethod
-    def update(self, features: dict[FeatureType, Tensor] | Tensor, group: Any = None):
+    def update(self, features: dict[FeatureType, Tensor] | Tensor, group: str | None = None) -> None:
         """Update the density model with a new set of features."""
         raise NotImplementedError
 
     @abstractmethod
-    def predict(self, features: dict[FeatureType, Tensor] | Tensor):
+    def predict(self, features: dict[FeatureType, Tensor] | Tensor) -> Tensor | tuple[Tensor, Tensor]:
         """Predict the density of a set of features."""
         raise NotImplementedError
 
     @abstractmethod
-    def fit(self):
+    def fit(self) -> None:
         """Compose model using collected features."""
         raise NotImplementedError
 
-    def forward(self, features: dict[FeatureType, Tensor] | Tensor):
+    def forward(self, features: dict[FeatureType, Tensor] | Tensor) -> Tensor | tuple[Tensor, Tensor] | None:
         """Update or predict depending on training status."""
         if self.training:
             self.update(features)
@@ -78,7 +78,7 @@ class CombinedDensityEstimator(BaseDensityEstimator):
             self.pose_estimator = GroupedKNNEstimator(n_neighbors=n_neighbors_pose)
         assert any((use_pose_features, use_deep_features, use_velocity_features))
 
-    def update(self, features: dict[FeatureType, Tensor], group: Any = None) -> None:
+    def update(self, features: dict[FeatureType, Tensor], group: str | None = None) -> None:
         """Update the density estimators for the different feature types.
 
         Args:
@@ -92,7 +92,7 @@ class CombinedDensityEstimator(BaseDensityEstimator):
         if self.use_pose_features:
             self.pose_estimator.update(features[FeatureType.POSE], group=group)
 
-    def fit(self):
+    def fit(self) -> None:
         """Fit the density estimation models on the collected features."""
         if self.use_velocity_features:
             self.velocity_estimator.fit()
@@ -146,12 +146,12 @@ class GroupedKNNEstimator(BaseDensityEstimator):
         self.memory_bank: dict[Any, list[Tensor] | Tensor] = {}
         self.normalization_statistics = MinMax()
 
-    def update(self, features: Tensor, group: Any = None) -> None:
+    def update(self, features: Tensor, group: str | None = None) -> None:
         """Update the internal feature bank while keeping track of the group.
 
         Args:
             features (Tensor): Feature vectors extracted from a video frame.
-            group (Any): Identifier of the group (video) from which the frame was sampled.
+            group (str): Identifier of the group (video) from which the frame was sampled.
         """
         group = group or "default"
 
@@ -165,12 +165,18 @@ class GroupedKNNEstimator(BaseDensityEstimator):
         self.memory_bank = {key: torch.vstack(value) for key, value in self.memory_bank.items()}
         self._compute_normalization_statistics()
 
-    def predict(self, features: Tensor, group: Any = None, n_neighbors: int = 1, normalize: bool = True) -> Tensor:
+    def predict(
+        self,
+        features: Tensor,
+        group: str | None = None,
+        n_neighbors: int = 1,
+        normalize: bool = True,
+    ) -> Tensor:
         """Predict the (normalized) density for a set of features.
 
         Args:
             features (Tensor): Input features that will be compared to the density model.
-            group (Any, optional): Group (video id) from which the features originate. If passed, all features of the
+            group (str, optional): Group (video id) from which the features originate. If passed, all features of the
                 same group in the memory bank will be excluded from the density estimation.
             n_neighbors (int): Number of neighbors used in the KNN search.
             normalize (bool): Flag indicating if the density should be normalized to min-max stats of the feature bank.
@@ -195,7 +201,7 @@ class GroupedKNNEstimator(BaseDensityEstimator):
         return distances.mean(axis=1)
 
     @staticmethod
-    def _nearest_neighbors(feature_bank: Tensor, features: Tensor, n_neighbors: int = 1):
+    def _nearest_neighbors(feature_bank: Tensor, features: Tensor, n_neighbors: int = 1) -> Tensor:
         """Perform the KNN search.
 
         Args:
@@ -213,7 +219,7 @@ class GroupedKNNEstimator(BaseDensityEstimator):
         distances, _ = distances.topk(k=n_neighbors, largest=False, dim=1)
         return distances
 
-    def _compute_normalization_statistics(self):
+    def _compute_normalization_statistics(self) -> None:
         """Compute min-max normalization statistics while taking the group into account."""
         for group, features in self.memory_bank.items():
             distances = self.predict(features, group, normalize=False)
@@ -221,7 +227,7 @@ class GroupedKNNEstimator(BaseDensityEstimator):
 
         self.normalization_statistics.compute()
 
-    def _normalize(self, distances: Tensor):
+    def _normalize(self, distances: Tensor) -> Tensor:
         """Normalize distance predictions.
 
         Args:
@@ -251,12 +257,13 @@ class GMMEstimator(BaseDensityEstimator):
 
         self.normalization_statistics = MinMax()
 
-    def update(self, features: Tensor, group: Any = None):
+    def update(self, features: Tensor, group: str | None = None) -> None:
         """Update the feature bank."""
         del group
-        self.memory_bank.append(features)
+        if isinstance(self.memory_bank, list):
+            self.memory_bank.append(features)
 
-    def fit(self):
+    def fit(self) -> None:
         """Fit the GMM and compute normalization statistics."""
         self.memory_bank = torch.vstack(self.memory_bank)
         self.gmm.fit(self.memory_bank.cpu())
@@ -277,13 +284,13 @@ class GMMEstimator(BaseDensityEstimator):
             density = self._normalize(density)
         return density
 
-    def _compute_normalization_statistics(self):
+    def _compute_normalization_statistics(self) -> None:
         """Compute min-max normalization statistics over the feature bank."""
         training_scores = self.predict(self.memory_bank, normalize=False)
         self.normalization_statistics.update(training_scores)
         self.normalization_statistics.compute()
 
-    def _normalize(self, density: Tensor):
+    def _normalize(self, density: Tensor) -> Tensor:
         """Normalize distance predictions.
 
         Args:

@@ -155,7 +155,7 @@ class CrossConvolutions(nn.Module):
 
         self.leaky_relu = nn.LeakyReLU(self.leaky_slope)
 
-    def forward(self, scale0, scale1, scale2) -> tuple[Tensor, Tensor, Tensor]:
+    def forward(self, scale0: int, scale1: int, scale2: int) -> tuple[Tensor, Tensor, Tensor]:
         """Applies the cross convolution to the three scales.
 
         This block is represented in figure 4 of the paper.
@@ -242,7 +242,7 @@ class ParallelPermute(InvertibleModule):
         return perm, perm_inv
 
     # pylint: disable=unused-argument
-    def forward(self, input_tensor: list[Tensor], rev=False, jac=True) -> tuple[list[Tensor], float]:
+    def forward(self, input_tensor: list[Tensor], rev: bool = False, jac: bool = True) -> tuple[list[Tensor], float]:
         """Applies the permutation to the input.
 
         Args:
@@ -302,7 +302,7 @@ class ParallelGlowCouplingLayer(InvertibleModule):
             return self.clamp * 0.636 * torch.atan(input_tensor / self.clamp)
         return input_tensor
 
-    def forward(self, input_tensor: list[Tensor], rev=False, jac=True) -> tuple[list[Tensor], Tensor]:
+    def forward(self, input_tensor: list[Tensor], rev: bool = False, jac: bool = True) -> tuple[list[Tensor], Tensor]:
         """Applies GLOW coupling for the three scales."""
 
         del jac  # Unused argument.

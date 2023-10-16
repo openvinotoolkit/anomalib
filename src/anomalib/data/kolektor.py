@@ -49,7 +49,7 @@ DOWNLOAD_INFO = DownloadInfo(
 
 
 # Check if a mask shows defects
-def is_mask_anomalous(path):
+def is_mask_anomalous(path: str) -> int:
     img_arr = imread(path)
     if np.all(img_arr == 0):
         return 0

@@ -63,7 +63,7 @@ class NNCFCallback(Callback):
         self,
         trainer: pl.Trainer,
         pl_module: pl.LightningModule,
-        batch: Any,
+        batch: Any,  # noqa: ANN401
         batch_idx: int,
         unused: int = 0,
     ) -> None:

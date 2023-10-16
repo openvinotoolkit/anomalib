@@ -23,7 +23,7 @@ def write_metrics(
     model_metrics: dict[str, str | float],
     writers: list[str],
     folder: str | None = None,
-):
+) -> None:
     """Writes metrics to destination provided in the sweep config.
 
     Args:
@@ -51,7 +51,7 @@ def write_metrics(
 
 def write_to_tensorboard(
     model_metrics: dict[str, str | float],
-):
+) -> None:
     """Write model_metrics to tensorboard.
 
     Args:
@@ -96,7 +96,7 @@ def get_unique_key(str_len: int) -> str:
 def upload_to_wandb(
     team: str = "anomalib",
     folder: str | None = None,
-):
+) -> None:
     """Upload the data in csv files to wandb.
 
     Creates a project named benchmarking_[two random characters]. This is so that the project names are unique.
@@ -127,7 +127,7 @@ def upload_to_wandb(
 
 def upload_to_comet(
     folder: str | None = None,
-):
+) -> None:
     """Upload the data in csv files to comet.
 
     Creates a project named benchmarking_[two random characters]. This is so that the project names are unique.

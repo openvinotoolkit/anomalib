@@ -46,7 +46,7 @@ class _MinMaxNormalizationCallback(Callback):
         trainer: Trainer,
         pl_module: AnomalyModule,
         outputs: STEP_OUTPUT,
-        batch: Any,
+        batch: Any,  # noqa: ANN401
         batch_idx: int,
         dataloader_idx: int = 0,
     ) -> None:
@@ -68,7 +68,7 @@ class _MinMaxNormalizationCallback(Callback):
         trainer: Trainer,
         pl_module: AnomalyModule,
         outputs: STEP_OUTPUT | None,
-        batch: Any,
+        batch: Any,  # noqa: ANN401
         batch_idx: int,
         dataloader_idx: int = 0,
     ) -> None:
@@ -81,8 +81,8 @@ class _MinMaxNormalizationCallback(Callback):
         self,
         trainer: Trainer,
         pl_module: AnomalyModule,
-        outputs: Any,
-        batch: Any,
+        outputs: Any,  # noqa: ANN401
+        batch: Any,  # noqa: ANN401
         batch_idx: int,
         dataloader_idx: int = 0,
     ) -> None:
@@ -92,7 +92,7 @@ class _MinMaxNormalizationCallback(Callback):
         self._normalize_batch(outputs, pl_module)
 
     @staticmethod
-    def _normalize_batch(outputs, pl_module) -> None:
+    def _normalize_batch(outputs: Any, pl_module: AnomalyModule) -> None:  # noqa: ANN401
         """Normalize a batch of predictions."""
         image_threshold = pl_module.image_threshold.value.cpu()
         pixel_threshold = pl_module.pixel_threshold.value.cpu()

@@ -48,7 +48,7 @@ def get_normalization_callback(
     return normalizer
 
 
-def _get_normalizer_from_method(normalization_method) -> Callback | None:
+def _get_normalizer_from_method(normalization_method: NormalizationMethod | str) -> Callback | None:
     if normalization_method == NormalizationMethod.NONE:
         normalizer = None
     elif normalization_method == NormalizationMethod.MIN_MAX:
