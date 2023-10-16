@@ -123,5 +123,5 @@ class ReverseDistillationLightning(ReverseDistillation):
             pre_trained=hparams.model.pre_trained,
             anomaly_map_mode=hparams.model.anomaly_map_mode,
         )
-        self.hparams: DictConfig | ListConfig  # type: ignore
+        self.hparams: DictConfig | ListConfig
         self.save_hyperparameters(hparams)

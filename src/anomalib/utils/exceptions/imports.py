@@ -20,10 +20,11 @@ def try_import(import_path: str) -> bool:
     """
     try:
         import_module(import_path)
-        return True
     except ImportError:
         import_package = import_path.split(".")[0]
-        logger.warn(
+        logger.warning(
             f"Could not find {import_package}. To use this feature, ensure that you have {import_package} installed.",
         )
-        return False
+    else:
+        return True
+    return False

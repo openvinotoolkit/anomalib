@@ -153,7 +153,7 @@ def make_mvtec_dataset(
     samples.loc[
         (samples.split == "test") & (samples.label_index == LabelName.ABNORMAL),
         "mask_path",
-    ] = mask_samples.image_path.values
+    ] = mask_samples.image_path.to_numpy()
 
     # assert that the right mask files are associated with the right test images
     if len(samples.loc[samples.label_index == LabelName.ABNORMAL]):
@@ -186,8 +186,8 @@ class MVTecDataset(AnomalibDataset):
         self,
         task: TaskType,
         transform: A.Compose,
-        root: Path | str,
-        category: str,
+        root: Path | str = "./datasets/MVTec",
+        category: str = "bottle",
         split: str | Split | None = None,
     ) -> None:
         super().__init__(task=task, transform=transform)
@@ -229,11 +229,11 @@ class MVTec(AnomalibDataModule):
 
     def __init__(
         self,
-        root: Path | str,
-        category: str,
-        image_size: int | tuple[int, int] | None = None,
+        root: Path | str = "./datasets/MVTec",
+        category: str = "bottle",
+        image_size: int | tuple[int, int] = (256, 256),
         center_crop: int | tuple[int, int] | None = None,
-        normalization: str | InputNormalizationMethod = InputNormalizationMethod.IMAGENET,
+        normalization: InputNormalizationMethod | str = InputNormalizationMethod.IMAGENET,
         train_batch_size: int = 32,
         eval_batch_size: int = 32,
         num_workers: int = 8,

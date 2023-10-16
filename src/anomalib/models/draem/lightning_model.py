@@ -1,4 +1,4 @@
-"""DRÆM – A discriminatively trained reconstruction embedding for surface anomaly detection.
+"""DRÆM - A discriminatively trained reconstruction embedding for surface anomaly detection.
 
 Paper https://arxiv.org/abs/2108.07610
 """
@@ -137,5 +137,5 @@ class DraemLightning(Draem):
             sspcab_lambda=hparams.model.sspcab_lambda,
             anomaly_source_path=hparams.model.anomaly_source_path,
         )
-        self.hparams: DictConfig | ListConfig  # type: ignore
+        self.hparams: DictConfig | ListConfig
         self.save_hyperparameters(hparams)

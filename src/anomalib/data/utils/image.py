@@ -178,7 +178,7 @@ def get_image_height_and_width(image_size: int | Sequence[int]) -> tuple[int, in
         height_and_width = int(image_size[0]), int(image_size[1])
     else:
         msg = "``image_size`` could be either int or tuple[int, int]"
-        raise ValueError(msg)
+        raise TypeError(msg)
 
     return height_and_width
 

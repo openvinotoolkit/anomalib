@@ -111,8 +111,8 @@ def make_folder_dataset(
     if len(mask_dir) > 0 and len(abnormal_dir) > 0:
         samples.loc[samples.label == DirType.ABNORMAL, "mask_path"] = samples.loc[
             samples.label == DirType.MASK
-        ].image_path.values
-        samples["mask_path"].fillna("", inplace=True)
+        ].image_path.to_numpy()
+        samples["mask_path"] = samples["mask_path"].fillna("")
         samples = samples.astype({"mask_path": "str"})
 
         # make sure all every rgb image has a corresponding mask image.
@@ -255,7 +255,7 @@ class Folder(AnomalibDataModule):
         mask_dir: str | Path | Sequence[str | Path] | None = None,
         normal_split_ratio: float = 0.2,
         extensions: tuple[str] | None = None,
-        image_size: int | tuple[int, int] | None = None,
+        image_size: int | tuple[int, int] = (256, 256),
         center_crop: int | tuple[int, int] | None = None,
         normalization: str | InputNormalizationMethod = InputNormalizationMethod.IMAGENET,
         train_batch_size: int = 32,

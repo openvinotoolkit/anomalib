@@ -33,18 +33,15 @@ def get_visualization_callbacks(
     Returns:
         List of visualization callbacks.
     """
-    callbacks = []
-    for callback in (ImageVisualizerCallback, MetricVisualizerCallback):
-        callbacks.append(
-            callback(
-                task=task,
-                mode=mode,
-                image_save_path=image_save_path,
-                inputs_are_normalized=inputs_are_normalized,
-                show_images=show_images,
-                log_images=log_images,
-                save_images=save_images,
-            ),
+    return [
+        callback(
+            task=task,
+            mode=mode,
+            image_save_path=image_save_path,
+            inputs_are_normalized=inputs_are_normalized,
+            show_images=show_images,
+            log_images=log_images,
+            save_images=save_images,
         )
-
-    return callbacks
+        for callback in (ImageVisualizerCallback, MetricVisualizerCallback)
+    ]

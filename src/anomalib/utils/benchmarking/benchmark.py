@@ -66,8 +66,9 @@ def hide_output(func):
         sys.stdout = buf = io.StringIO()
         try:
             value = func(*args, **kwargs)
+        # NOTE: A generic exception is used here to catch all exceptions.
         except Exception as exception:  # noqa: BLE001
-            raise Exception(buf.getvalue()) from exception
+            raise Exception(buf.getvalue()) from exception  # noqa: TRY002
         sys.stdout = std_out
         return value
 
@@ -189,9 +190,7 @@ def compute_on_gpu(
             write_metrics(model_metrics, writers, folder)
         else:
             msg = f"Expecting `run_config` of type DictConfig or ListConfig. Got {type(run_config)} instead."
-            raise ValueError(
-                msg,
-            )
+            raise TypeError(msg)
 
 
 def distribute_over_gpus(sweep_config: DictConfig | ListConfig, folder: str | None = None):
@@ -219,9 +218,10 @@ def distribute_over_gpus(sweep_config: DictConfig | ListConfig, folder: str | No
         for job in jobs:
             try:
                 job.result()
-            except Exception as exception:  # noqa: BLE001
+            # NOTE: A generic exception is used here to catch all exceptions.
+            except Exception as exception:  # noqa: BLE001, PERF203
                 msg = f"Error occurred while computing benchmark on GPU {job}"
-                raise Exception(msg) from exception
+                raise Exception(msg) from exception  # noqa: TRY002
 
 
 def distribute(config_path: Path) -> None:
@@ -245,9 +245,10 @@ def distribute(config_path: Path) -> None:
             for job in as_completed(jobs):
                 try:
                     job.result()
-                except Exception as exception:  # noqa: BLE001
+                # NOTE: A generic exception is used here to catch all exceptions.
+                except Exception as exception:  # noqa: BLE001, PERF203
                     msg = f"Error occurred while computing benchmark on device {job}"
-                    raise Exception(msg) from exception
+                    raise Exception(msg) from exception  # noqa: TRY002
     elif "cpu" in devices:
         compute_on_cpu(config, folder=runs_folder)
     elif "gpu" in devices:
@@ -283,7 +284,7 @@ def sweep(
     for param in run_config:
         # grid search keys are always assumed to be strings
         param = cast(str, param)  # placate mypy
-        set_in_nested_config(model_config, param.split("."), run_config[param])  # type: ignore
+        set_in_nested_config(model_config, param.split("."), run_config[param])
 
     # convert image size to tuple in case it was updated by run config
     model_config = update_input_size_config(model_config)
@@ -302,7 +303,8 @@ def sweep(
 
     if run_config.model_name in ["patchcore", "cflow"]:
         convert_openvino = False  # `torch.cdist` is not supported by onnx version 11
-        # TODO Remove this line when issue #40 is fixed https://github.com/openvinotoolkit/anomalib/issues/40
+        # TODO(ashwinvaidya17): Remove this line when issue #40 is fixed
+        # https://github.com/openvinotoolkit/anomalib/issues/40
         if model_config.model.init_args.input_size != (224, 224):
             return {}  # go to next run
 

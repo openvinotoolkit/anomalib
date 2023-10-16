@@ -3,7 +3,7 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from omegaconf import OmegaConf
@@ -37,6 +37,8 @@ else:
         get_experiment_logger,
     )
 
+from lightning.pytorch.loggers import CometLogger
+
 
 def test_get_experiment_logger():
     """Test whether the right logger is returned."""
@@ -47,12 +49,20 @@ def test_get_experiment_logger():
             "data": {"class_path": "dummy", "init_args": {"category": "cat1"}},
             "model": {"class_path": "DummyModel"},
             "trainer": {"logger": None, "default_root_dir": "/tmp"},
-        }
+        },
     )
-
-    with patch("anomalib.utils.loggers.wandb.AnomalibWandbLogger.experiment"), patch(
-        "lightning.pytorch.loggers.wandb.wandb"
-    ), patch("lightning.pytorch.loggers.comet.comet_ml"):
+    with (
+        # Patch Anomalib WandB logger
+        patch("anomalib.utils.loggers.wandb.AnomalibWandbLogger.experiment"),
+        # Patch WandB logger objects.
+        patch("wandb.Artifact", MagicMock()),
+        patch("wandb.sdk.lib.RunDisabled", MagicMock()),
+        patch("wandb.wandb_run.Run", MagicMock()),
+        # Patch Comet ML logger objects.
+        patch("comet_ml.ExistingExperiment", MagicMock()),
+        patch("comet_ml.Experiment", MagicMock()),
+        patch("comet_ml.OfflineExperiment", MagicMock()),
+    ):
         # get no logger
         logger = get_experiment_logger(config=config)
         assert isinstance(logger, bool)

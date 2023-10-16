@@ -37,7 +37,7 @@ def test_dimensions_can_be_int_or_tuple(image_size, center_crop):
 
 @pytest.mark.parametrize("image_size, center_crop", [(256.0, 224), (256, 224.0)])
 def test_dimensions_cannot_be_float(image_size, center_crop):
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError):
         get_transforms(config=None, image_size=image_size, center_crop=center_crop)
 
 
@@ -52,7 +52,7 @@ def test_center_crop_could_be_int_or_tuple():
 
     get_transforms(image_size=256)
     get_transforms(image_size=(256, 512))
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError):
         get_transforms(config=None, image_size=0.0)
 
 
@@ -82,7 +82,7 @@ def test_load_transforms_from_string():
     assert isinstance(transform, A.Compose)
 
     # Anything else should raise an error
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError):
         get_transforms(config=0)
 
 

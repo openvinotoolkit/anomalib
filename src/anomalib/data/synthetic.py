@@ -47,7 +47,7 @@ def make_synthetic_dataset(
         mask_dir (Path): Directory to which the ground truth anomaly masks will be written.
         anomalous_ratio (float): Fraction of source samples that will be converted into anomalous samples.
     """
-    assert 1 not in source_samples.label_index.values, "All source images must be normal."
+    assert 1 not in source_samples.label_index.to_numpy(), "All source images must be normal."
     assert image_dir.is_dir(), f"{image_dir} is not a folder."
     assert mask_dir.is_dir(), f"{mask_dir} is not a folder"
 

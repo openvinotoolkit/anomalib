@@ -170,11 +170,10 @@ class AllInOneBlock(InvertibleModule):
                 "Soft permutation will take a very long time to initialize "
                 f"with {channels} feature channels. Consider using hard permutation instead."
             )
-            logger.warn(msg)
+            logger.warning(msg)
 
         # global_scale is used as the initial value for the global affine scale
         # (pre-activation). It is computed such that
-        # global_scale_activation(global_scale) = global_affine_init
         # the 'magic numbers' (specifically for sigmoid) scale the activation to
         # a sensible range.
         if global_affine_type == "SIGMOID":

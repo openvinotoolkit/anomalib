@@ -85,7 +85,6 @@ def _resolve_path(folder: str | Path, root: str | Path | None = None) -> Path:
     """
     folder = Path(folder)
     if folder.is_absolute():
-        # path is absolute; return unmodified
         path = folder
     # path is relative.
     elif root is None:

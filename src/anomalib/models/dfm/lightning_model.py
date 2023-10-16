@@ -140,5 +140,5 @@ class DfmLightning(Dfm):
             pca_level=hparams.model.pca_level,
             score_type=hparams.model.score_type,
         )
-        self.hparams: DictConfig | ListConfig  # type: ignore
+        self.hparams: DictConfig | ListConfig
         self.save_hyperparameters(hparams)

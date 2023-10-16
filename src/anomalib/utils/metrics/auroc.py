@@ -27,7 +27,7 @@ class AUROC(ROC):
         fpr, tpr = self._compute()
         return auc(fpr, tpr, reorder=True)
 
-    def update(self, preds: Tensor, target: Tensor) -> None:  # type: ignore
+    def update(self, preds: Tensor, target: Tensor) -> None:
         """Update state with new values.
 
         Need to flatten new values as ROC expects them in this format for binary classification.

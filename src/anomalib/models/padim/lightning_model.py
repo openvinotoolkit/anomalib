@@ -35,9 +35,9 @@ class Padim(AnomalyModule):
 
     def __init__(
         self,
-        layers: list[str],
-        input_size: tuple[int, int],
-        backbone: str,
+        layers: list[str] = ["layer1", "layer2", "layer3"],  # noqa: B006
+        input_size: tuple[int, int] = (256, 256),
+        backbone: str = "resnet18",
         pre_trained: bool = True,
         n_features: int | None = None,
     ) -> None:
@@ -56,7 +56,7 @@ class Padim(AnomalyModule):
         self.embeddings: list[Tensor] = []
 
     @staticmethod
-    def configure_optimizers() -> None:  # pylint: disable=arguments-differ
+    def configure_optimizers() -> None:
         """PADIM doesn't require optimization, therefore returns no optimizers."""
         return
 

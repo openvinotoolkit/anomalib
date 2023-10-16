@@ -84,7 +84,8 @@ class _ThresholdCallback(Callback):
         Raises:
             ValueError: Unknown threshold class or incorrect configuration
         """
-        # TODO add tests for each case
+        # TODO(djdameln): Add tests for each case
+        # CVS-122661
         # When only a single threshold class is passed.
         # This initializes image and pixel thresholds with the same class
         # >>> _initialize_thresholds(F1AdaptiveThreshold())
@@ -102,7 +103,7 @@ class _ThresholdCallback(Callback):
             self._load_from_config(threshold)
         else:
             msg = f"Invalid threshold type {type(threshold)}"
-            raise ValueError(msg)
+            raise TypeError(msg)
 
     def _load_from_config(self, threshold: DictConfig | str | ListConfig) -> None:
         """Loads the thresholding class based on the config.
@@ -133,7 +134,7 @@ class _ThresholdCallback(Callback):
             self.pixel_threshold = self._get_threshold_from_config(threshold[1])
         else:
             msg = f"Invalid threshold config {threshold}"
-            raise ValueError(msg)
+            raise TypeError(msg)
 
     def _get_threshold_from_config(self, threshold: DictConfig | str) -> BaseThreshold:
         """Return the instantiated threshold object.
@@ -177,7 +178,8 @@ class _ThresholdCallback(Callback):
         pl_module.pixel_threshold.reset()
 
     def _outputs_to_cpu(self, output: STEP_OUTPUT):
-        # TODO this is duplicated in multiple trainer callbacks.
+        # TODO(ashwinvaidya17): This is duplicated in multiple trainer callbacks.
+        # CVS-122664
         if isinstance(output, dict):
             for key, value in output.items():
                 output[key] = self._outputs_to_cpu(value)

@@ -98,7 +98,7 @@ class TorchInferencer(Inferencer):
 
             # Torch model should ideally contain the metadata in the checkpoint.
             # Check if the metadata is present in the checkpoint.
-            if "metadata" not in checkpoint.keys():
+            if "metadata" not in checkpoint:
                 msg = (
                     "``metadata`` is not found in the checkpoint. Please ensure that you save the model as Torch model."
                 )
@@ -108,7 +108,7 @@ class TorchInferencer(Inferencer):
             metadata = checkpoint["metadata"]
         else:
             msg = f"Unknown ``path`` type {type(path)}"
-            raise ValueError(msg)
+            raise TypeError(msg)
 
         return metadata
 
@@ -123,7 +123,7 @@ class TorchInferencer(Inferencer):
         """
 
         checkpoint = self._load_checkpoint(path)
-        if "model" not in checkpoint.keys():
+        if "model" not in checkpoint:
             msg = "``model`` is not found in the checkpoint. Please check the checkpoint file."
             raise KeyError(msg)
 
@@ -178,7 +178,8 @@ class TorchInferencer(Inferencer):
             metadata = self.metadata
 
         # Some models return a Tensor while others return a list or dictionary. Handle both cases.
-        # TODO: This is a temporary fix. We will wrap this post-processing stage within the model's forward pass.
+        # TODO(ashwin-vaidya17): Wrap this post-processing stage within the model's forward pass.
+        # CVS-122674
 
         # Case I: Predictions could be a tensor.
         if isinstance(predictions, Tensor):
@@ -209,9 +210,7 @@ class TorchInferencer(Inferencer):
                 pred_score = pred_score.detach()
         else:
             msg = f"Unknown prediction type {type(predictions)}. Expected Tensor, List[Tensor] or dict[str, Tensor]."
-            raise ValueError(
-                msg,
-            )
+            raise TypeError(msg)
 
         # Common practice in anomaly detection is to assign anomalous
         # label to the prediction if the prediction score is greater

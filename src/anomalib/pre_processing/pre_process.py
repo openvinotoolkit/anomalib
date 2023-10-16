@@ -148,7 +148,7 @@ def get_transforms(
             transforms = config
         else:
             msg = "config could be either ``str`` or ``A.Compose``"
-            raise ValueError(msg)
+            raise TypeError(msg)
 
     if not to_tensor and isinstance(transforms[-1], ToTensorV2):
         transforms = A.Compose(transforms[:-1])
@@ -222,7 +222,7 @@ class PreProcessor:
             "The PreProcessor class is deprecated and will be removed in a future release. You can now directly "
             "pass the A.Compose object to your Anomalib datasets using the 'transform' keyword argument."
         )
-        logging.warn(msg)
+        logging.warning(msg)
         self.config = config
         self.image_size = image_size
         self.to_tensor = to_tensor

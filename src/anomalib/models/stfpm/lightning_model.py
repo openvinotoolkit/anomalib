@@ -117,5 +117,5 @@ class StfpmLightning(Stfpm):
             backbone=hparams.model.backbone,
             layers=hparams.model.layers,
         )
-        self.hparams: DictConfig | ListConfig  # type: ignore
+        self.hparams: DictConfig | ListConfig
         self.save_hyperparameters(hparams)

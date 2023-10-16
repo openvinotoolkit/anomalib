@@ -67,7 +67,7 @@ class Cfa(AnomalyModule):
 
     def on_train_start(self) -> None:
         """Initialize the centroid for the memory bank computation."""
-        self.model.initialize_centroid(data_loader=self.trainer.datamodule.train_dataloader())  # type: ignore
+        self.model.initialize_centroid(data_loader=self.trainer.datamodule.train_dataloader())
 
     def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
         """Training step for the CFA model.
@@ -106,7 +106,8 @@ class Cfa(AnomalyModule):
         """
         del args, kwargs  # These variables are not used.
 
-        # TODO: Investigate why retain_graph is needed.
+        # TODO(samet-akcay): Investigate why retain_graph is needed.
+        # CVS-122673
         loss.backward(retain_graph=True)
 
     @property
@@ -141,5 +142,5 @@ class CfaLightning(Cfa):
             gamma_c=hparams.model.gamma_c,
             gamma_d=hparams.model.gamma_d,
         )
-        self.hparams: DictConfig | ListConfig  # type: ignore
+        self.hparams: DictConfig | ListConfig
         self.save_hyperparameters(hparams)

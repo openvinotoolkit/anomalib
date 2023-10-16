@@ -225,7 +225,7 @@ def _add_metadata_to_ir(xml_file: str, metadata: dict[str, Any], input_size: tup
                 _metadata[("model_info", "orig_width")] = transform_dict["width"]
             else:
                 msg = f"Transform {transform} is not supported currently"
-                logger.warn(msg)
+                logger.warning(msg)
 
     # Since we only need the diff of max and min, we fuse the min and max into one op
     if "min" in metadata and "max" in metadata:

@@ -3,8 +3,8 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-# TODO: This would require a new design.
-# TODO: https://jira.devtools.intel.com/browse/IAAALD-149
+# TODO(ashwinvaidya17): This would require a new design.
+# https://jira.devtools.intel.com/browse/IAAALD-149
 
 
 import inspect
@@ -98,7 +98,7 @@ def update_input_size_config(config: DictConfig | ListConfig | Namespace) -> Dic
         assert len(image_size) == 2, "image_size must be a single integer or tuple of length 2 for width and height."
     else:
         msg = f"image_size must be either int or ListConfig, got {type(image_size)}"
-        raise ValueError(msg)
+        raise TypeError(msg)
 
     # Use input size from data to model input. If model input size is defined, warn and override.
     # If input_size is not part of the model parameters, remove it from the config. This is required due to argument
@@ -153,7 +153,7 @@ def update_nncf_config(config: DictConfig | ListConfig) -> DictConfig | ListConf
         image_size = config.model.init_args.input_size
     sample_size = (image_size, image_size) if isinstance(image_size, int) else image_size
     if "optimization" in config and "nncf" in config.optimization:
-        if "input_info" not in config.optimization.nncf.keys():
+        if "input_info" not in config.optimization.nncf:
             config.optimization.nncf["input_info"] = {"sample_size": None}
         config.optimization.nncf.input_info.sample_size = [1, 3, *sample_size]
         if config.optimization.nncf.apply and "update_config" in config.optimization.nncf:
@@ -169,7 +169,7 @@ def show_warnings(config: DictConfig | ListConfig | Namespace) -> None:
     """
 
     if "clip_length_in_frames" in config.data and config.data.init_args.clip_length_in_frames > 1:
-        logger.warn(
+        logger.warning(
             "Anomalib's models and visualizer are currently not compatible with video datasets with a clip length > 1. "
             "Custom changes to these modules will be needed to prevent errors and/or unpredictable behaviour.",
         )
@@ -178,7 +178,7 @@ def show_warnings(config: DictConfig | ListConfig | Namespace) -> None:
         and (config.trainer.devices is None or config.trainer.devices != 1)
         and config.trainer.accelerator != "cpu"
     ):
-        logger.warn("Anomalib currently does not support multi-gpu training. Setting devices to 1.")
+        logger.warning("Anomalib currently does not support multi-gpu training. Setting devices to 1.")
         config.trainer.devices = 1
 
 
@@ -210,7 +210,7 @@ def get_configurable_parameters(
 
     if model_name == "efficientad":
         msg = "`efficientad` is deprecated as --model. Please use `efficient_ad` instead."
-        logger.warn(msg)
+        logger.warning(msg)
         model_name = "efficient_ad"
 
     if config_path is None:

@@ -44,7 +44,7 @@ def get_normalization_callback(
         normalizer = _parse_normalizer_config(normalization_method)
     else:
         msg = f"Unknown normalizer type {normalization_method}"
-        raise ValueError(msg)
+        raise TypeError(msg)
     return normalizer
 
 

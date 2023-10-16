@@ -122,5 +122,5 @@ class CsflowLightning(Csflow):
             clamp=hparams.model.clamp,
             num_channels=3,
         )
-        self.hparams: DictConfig | ListConfig  # type: ignore
+        self.hparams: DictConfig | ListConfig
         self.save_hyperparameters(hparams)

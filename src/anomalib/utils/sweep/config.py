@@ -77,9 +77,9 @@ def flatten_sweep_params(params_dict: DictConfig) -> DictConfig:
         """
         for name, cfg in nested_params.items():
             if isinstance(cfg, DictConfig):
-                flatten_nested_dict(cfg, keys + [str(name)], flattened_params)
+                flatten_nested_dict(cfg, [*keys, str(name)], flattened_params)
             else:
-                key = ".".join(keys + [str(name)])
+                key = ".".join([*keys, str(name)])
                 flattened_params[key] = cfg
 
     flattened_params_dict = DictConfig({})

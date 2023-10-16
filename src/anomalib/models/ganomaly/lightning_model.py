@@ -74,8 +74,8 @@ class Ganomaly(AnomalyModule):
         self.discriminator_loss = DiscriminatorLoss()
         self.automatic_optimization = False
 
-        # TODO: LR should be part of optimizer in config.yaml! Since ganomaly has custom
-        #   optimizer this is to be addressed later.
+        # TODO(ashwinvaidya17): LR should be part of optimizer in config.yaml!
+        # CVS-122670
         self.learning_rate = lr
         self.beta1 = beta1
         self.beta2 = beta2
@@ -174,7 +174,6 @@ class Ganomaly(AnomalyModule):
 
     def on_validation_batch_end(self, outputs, batch, batch_idx, dataloader_idx=0):
         """Normalize outputs based on min/max values."""
-        # logger.info("Normalizing validation outputs based on min/max values.")
         outputs["pred_scores"] = self._normalize(outputs["pred_scores"])
         super().on_validation_batch_end(outputs, batch, batch_idx, dataloader_idx=dataloader_idx)
 
@@ -194,7 +193,6 @@ class Ganomaly(AnomalyModule):
 
     def on_test_batch_end(self, outputs, batch, batch_idx, dataloader_idx=0):
         """Normalize outputs based on min/max values."""
-        # logger.info("Normalizing test outputs based on min/max values.")
         outputs["pred_scores"] = self._normalize(outputs["pred_scores"])
         super().on_test_batch_end(outputs, batch, batch_idx, dataloader_idx=dataloader_idx)
 
@@ -238,5 +236,5 @@ class GanomalyLightning(Ganomaly):
             beta1=hparams.model.beta1,
             beta2=hparams.model.beta2,
         )
-        self.hparams: DictConfig | ListConfig  # type: ignore
+        self.hparams: DictConfig | ListConfig
         self.save_hyperparameters(hparams)

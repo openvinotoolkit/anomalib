@@ -35,7 +35,7 @@ class TimerCallback(Callback):
 
         self.start = time.time()
 
-    def on_fit_end(self, trainer: Trainer, pl_module: LightningModule) -> None:  # pylint: disable=W0613
+    def on_fit_end(self, trainer: Trainer, pl_module: LightningModule) -> None:
         """Call when fit ends.
 
         Prints the time taken for training.
@@ -50,7 +50,7 @@ class TimerCallback(Callback):
         del trainer, pl_module  # Unused arguments.
         logger.info("Training took %5.2f seconds", (time.time() - self.start))
 
-    def on_test_start(self, trainer: Trainer, pl_module: LightningModule) -> None:  # pylint: disable=W0613
+    def on_test_start(self, trainer: Trainer, pl_module: LightningModule) -> None:
         """Call when the test begins.
 
         Sets the start time to the time testing started.
@@ -75,7 +75,7 @@ class TimerCallback(Callback):
                 for dataloader in trainer.test_dataloaders:
                     self.num_images += len(dataloader.dataset)
 
-    def on_test_end(self, trainer: Trainer, pl_module: LightningModule) -> None:  # pylint: disable=W0613
+    def on_test_end(self, trainer: Trainer, pl_module: LightningModule) -> None:
         """Call when the test ends.
 
         Prints the time taken for testing and the throughput in frames per second.

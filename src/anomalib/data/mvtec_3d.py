@@ -155,7 +155,7 @@ def make_mvtec_3d_dataset(
     samples.loc[((samples.split == "test") & (samples.type == "rgb")), "mask_path"] = (
         mask_samples.path + "/" + samples.split + "/" + samples.label + "/" + "gt/" + samples.file_name
     )
-    samples.dropna(subset=["image_path"], inplace=True)
+    samples = samples.dropna(subset=["image_path"])
     samples = samples.astype({"image_path": "str", "mask_path": "str", "depth_path": "str"})
 
     # assert that the right mask files are associated with the right test images
@@ -197,8 +197,8 @@ class MVTec3DDataset(AnomalibDepthDataset):
         self,
         task: TaskType,
         transform: A.Compose,
-        root: Path | str,
-        category: str,
+        root: Path | str = "./datasets/MVTec3D",
+        category: str = "bagel",
         split: str | Split | None = None,
     ) -> None:
         super().__init__(task=task, transform=transform)
@@ -240,9 +240,9 @@ class MVTec3D(AnomalibDataModule):
 
     def __init__(
         self,
-        root: Path | str,
-        category: str,
-        image_size: int | tuple[int, int] | None = None,
+        root: Path | str = "./datasets/MVTec3D",
+        category: str = "bagel",
+        image_size: int | tuple[int, int] = (256, 256),
         center_crop: int | tuple[int, int] | None = None,
         normalization: str | InputNormalizationMethod = InputNormalizationMethod.IMAGENET,
         train_batch_size: int = 32,

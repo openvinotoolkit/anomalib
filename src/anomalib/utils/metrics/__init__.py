@@ -62,10 +62,10 @@ def metric_collection_from_names(metric_names: list[str], prefix: str | None) ->
                 metrics.add_metrics(metric_cls())
             except TypeError:
                 msg = f"Incorrect constructor arguments for {metric_name} metric from TorchMetrics package."
-                logger.warn(msg)
+                logger.warning(msg)
         else:
             msg = f"No metric with name {metric_name} found in Anomalib metrics or TorchMetrics."
-            logger.warn(msg)
+            logger.warning(msg)
     return metrics
 
 

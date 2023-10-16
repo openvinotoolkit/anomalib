@@ -123,7 +123,8 @@ class AnomalibCLI(LightningCLI):
         )
         parser.add_argument("--results_dir.unique", type=bool, help="Whether to create a unique folder.", default=True)
         parser.link_arguments("results_dir.path", "trainer.default_root_dir")
-        # TODO tiling should also be a category of its own
+        # TODO(ashwinvaidya17): Tiling should also be a category of its own
+        # CVS-122659
 
     def add_export_arguments(self, parser: LightningArgumentParser) -> None:
         """Adds export arguments to the parser."""

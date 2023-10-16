@@ -57,7 +57,8 @@ def get_return_nodes(backbone: str) -> list[str]:
     return return_nodes
 
 
-# TODO: Replace this with the new torchfx feature extractor.
+# TODO(samet-akcay): Replace this with the new torchfx feature extractor.
+# CVS-122673
 def get_feature_extractor(backbone: str, return_nodes: list[str]) -> GraphModule:
     """Get the feature extractor from the backbone CNN.
 
@@ -123,16 +124,14 @@ class CfaModel(DynamicBufferModule):
         # Scale is to get the largest feature map dimensions of different layers
         # of the feature extractor. In a typical feature extractor, the first
         # layer has the highest resolution.
-        resolution = list(feature_map_metadata.values())[0]["resolution"]
+        resolution = next(iter(feature_map_metadata.values()))["resolution"]
         if isinstance(resolution, int):
             self.scale = (resolution,) * 2
         elif isinstance(resolution, tuple):
             self.scale = resolution
         else:
             msg = f"Unknown type {type(resolution)} for `resolution`. Expected types are either int or tuple[int, int]."
-            raise ValueError(
-                msg,
-            )
+            raise TypeError(msg)
 
         self.descriptor = Descriptor(self.gamma_d, backbone)
         self.radius = torch.ones(1, requires_grad=True) * radius
@@ -163,7 +162,8 @@ class CfaModel(DynamicBufferModule):
         self.memory_bank = rearrange(self.memory_bank, "b c h w -> (b h w) c")
 
         if self.gamma_c > 1:
-            # TODO: Create PyTorch KMeans class.
+            # TODO(samet-akcay): Create PyTorch KMeans class.
+            # CVS-122673
             k_means = KMeans(n_clusters=(self.scale[0] * self.scale[1]) // self.gamma_c, max_iter=3000)
             cluster_centers = k_means.fit(self.memory_bank.cpu()).cluster_centers_
             self.memory_bank = torch.tensor(cluster_centers, requires_grad=False).to(device)
@@ -226,7 +226,8 @@ class Descriptor(nn.Module):
             msg = f"Supported backbones are {SUPPORTED_BACKBONES}. Got {self.backbone} instead."
             raise ValueError(msg)
 
-        # TODO: Automatically infer the number of dims
+        # TODO(samet-akcay): Automatically infer the number of dims
+        # CVS-122673
         backbone_dims = {"vgg19_bn": 1280, "resnet18": 448, "wide_resnet50_2": 1792, "efficientnet_b5": 568}
         dim = backbone_dims[backbone]
         out_channels = 2 * dim // gamma_d if backbone == "efficientnet_b5" else dim // gamma_d

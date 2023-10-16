@@ -254,17 +254,17 @@ class ResNet(nn.Module):
             block(self.inplanes, planes, stride, upsample, self.groups, self.base_width, previous_dilation, norm_layer),
         )
         self.inplanes = planes * block.expansion
-        for _ in range(1, blocks):
-            layers.append(
-                block(
-                    self.inplanes,
-                    planes,
-                    groups=self.groups,
-                    base_width=self.base_width,
-                    dilation=self.dilation,
-                    norm_layer=norm_layer,
-                ),
+        layers = [
+            block(
+                self.inplanes,
+                planes,
+                groups=self.groups,
+                base_width=self.base_width,
+                dilation=self.dilation,
+                norm_layer=norm_layer,
             )
+            for _ in range(1, blocks)
+        ]
 
         return nn.Sequential(*layers)
 

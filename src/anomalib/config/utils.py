@@ -67,5 +67,5 @@ def to_tuple(input_size: int | ListConfig) -> tuple[int, int]:
         ret_val = cast(tuple[int, int], tuple(input_size))
     else:
         msg = f"Expected either int or ListConfig, got {type(input_size)}"
-        raise ValueError(msg)
+        raise TypeError(msg)
     return ret_val

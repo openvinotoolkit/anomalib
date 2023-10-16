@@ -65,7 +65,7 @@ def boxes_to_masks(boxes: list[Tensor], image_size: tuple[int, int]) -> Tensor:
         Tensor: Tensor of shape (B, H, W) in which each slice is a binary mask showing the pixels contained by a
             bounding box.
     """
-    masks = torch.zeros((len(boxes),) + image_size).to(boxes[0].device)
+    masks = torch.zeros((len(boxes), *image_size)).to(boxes[0].device)
     for im_idx, im_boxes in enumerate(boxes):
         for box in im_boxes:
             x_1, y_1, x_2, y_2 = box.int()
@@ -87,9 +87,9 @@ def boxes_to_anomaly_maps(boxes: Tensor, scores: Tensor, image_size: tuple[int, 
         Tensor: Tensor of shape (B, H, W). The pixel locations within each bounding box are collectively assigned the
             anomaly score of the bounding box. In the case of overlapping bounding boxes, the highest score is used.
     """
-    anomaly_maps = torch.zeros((len(boxes),) + image_size).to(boxes[0].device)
+    anomaly_maps = torch.zeros((len(boxes), *image_size)).to(boxes[0].device)
     for im_idx, (im_boxes, im_scores) in enumerate(zip(boxes, scores, strict=False)):
-        im_map = torch.zeros((im_boxes.shape[0],) + image_size)
+        im_map = torch.zeros((im_boxes.shape[0], *image_size))
         for box_idx, (box, score) in enumerate(zip(im_boxes, im_scores, strict=True)):
             x_1, y_1, x_2, y_2 = box.int()
             im_map[box_idx, y_1 : y_2 + 1, x_1 : x_2 + 1] = score

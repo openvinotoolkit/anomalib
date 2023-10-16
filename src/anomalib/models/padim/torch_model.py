@@ -45,7 +45,7 @@ def _deduce_dims(
     n_patches = torch.tensor(first_layer_resolution).prod().int().item()
 
     # the original embedding size is the sum of the channels of all layers
-    n_features_original = sum(dimensions_mapping[layer]["num_features"] for layer in layers)  # type: ignore
+    n_features_original = sum(dimensions_mapping[layer]["num_features"] for layer in layers)  # type: ignore[misc]
 
     return n_features_original, n_patches
 
@@ -93,11 +93,10 @@ class PadimModel(nn.Module):
 
         self.n_features = n_features
 
-        # pylint: disable=not-callable
         # Since idx is randomly selected, save it with model to get same results
         self.register_buffer(
             "idx",
-            torch.tensor(sample(range(0, self.n_features_original), self.n_features)),
+            torch.tensor(sample(range(self.n_features_original), self.n_features)),
         )
         self.idx: Tensor
         self.loss = None
