@@ -20,7 +20,7 @@ class KMeans:
         self.max_iter = max_iter
 
     def fit(self, inputs: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-        """Fits the K-means algorithm to the input data.
+        """Fit the K-means algorithm to the input data.
 
         Args:
         ----
@@ -59,7 +59,7 @@ class KMeans:
         return self.labels_, self.cluster_centers_
 
     def predict(self, inputs: torch.Tensor) -> torch.Tensor:
-        """Predicts the labels of input data based on the fitted model.
+        """Predict the labels of input data based on the fitted model.
 
         Args:
         ----

@@ -158,7 +158,7 @@ class Engine:
             self._setup_anomalib_callbacks()
 
     def _setup_anomalib_callbacks(self) -> None:
-        """Set callbacks for the trainer."""
+        """Set up callbacks for the trainer."""
         _callbacks: list[Callback] = [_PostProcessorCallback()]
         normalization_callback = get_normalization_callback(self.normalization)
         if normalization_callback is not None:
