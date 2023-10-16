@@ -28,7 +28,6 @@ class PRO(Metric):
 
     def update(self, predictions: Tensor, targets: Tensor) -> None:
         """Compute the PRO score for the current batch."""
-
         self.target.append(targets)
         self.preds.append(predictions)
 
@@ -46,11 +45,13 @@ def pro_score(predictions: Tensor, comps: Tensor, threshold: float = 0.5) -> Ten
     """Calculate the PRO score for a batch of predictions.
 
     Args:
+    ----
         predictions (Tensor): Predicted anomaly masks (Bx1xHxW)
         comps: (Tensor): Labeled connected components (BxHxW). The components should be labeled from 0 to N
         threshold (float): When predictions are passed as float, the threshold is used to binarize the predictions.
 
     Returns:
+    -------
         Tensor: Scalar value representing the average PRO score for the input batch.
     """
     if predictions.dtype == torch.float:

@@ -75,6 +75,7 @@ def make_mvtec_3d_dataset(
     |---|---------------|-------|---------|---------------|---------------------------------------|-------------|
 
     Args:
+    ----
         path (Path): Path to dataset
         split (str | Split | None, optional): Dataset split (ie., either train or test). Defaults to None.
         split_ratio (float, optional): Ratio to split normal training images and add to the
@@ -86,6 +87,7 @@ def make_mvtec_3d_dataset(
             could set this flag to ``True``.
 
     Examples:
+    --------
         The following example shows how to get training samples from MVTec 3D-AD bagel category:
 
         >>> root = Path('./MVTec3D')
@@ -110,6 +112,7 @@ def make_mvtec_3d_dataset(
            MVTec3D/bagel/ground_truth/good/xyz/109.tiff 0
 
     Returns:
+    -------
         DataFrame: an output dataframe containing the samples of the dataset.
     """
     if extensions is None:
@@ -186,6 +189,7 @@ class MVTec3DDataset(AnomalibDepthDataset):
     """MVTec 3D dataset class.
 
     Args:
+    ----
         task (TaskType): Task type, ``classification``, ``detection`` or ``segmentation``
         transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
         split (str | Split | None): Split of the dataset, usually Split.TRAIN or Split.TEST
@@ -214,6 +218,7 @@ class MVTec3D(AnomalibDataModule):
     """MVTec Datamodule.
 
     Args:
+    ----
         root (Path | str): Path to the root of the dataset
         category (str): Category of the MVTec dataset (e.g. "bottle" or "cable").
         image_size (int | tuple[int, int] | None, optional): Size of the input image.

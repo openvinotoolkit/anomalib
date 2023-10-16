@@ -15,10 +15,12 @@ class ReverseDistillationLoss(nn.Module):
         """Computes cosine similarity loss based on features from encoder and decoder.
 
         Args:
+        ----
             encoder_features (list[Tensor]): List of features extracted from encoder
             decoder_features (list[Tensor]): List of features extracted from decoder
 
         Returns:
+        -------
             Tensor: Cosine similarity loss
         """
         cos_loss = torch.nn.CosineSimilarity()

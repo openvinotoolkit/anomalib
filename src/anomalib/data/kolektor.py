@@ -79,12 +79,14 @@ def make_kolektor_dataset(
     |---|--------------------|--------|-------|---------|---------------------|--------------------|-------------|
 
     Args:
+    ----
         root (Path): Path to dataset
         train_split_ratio (float, optional): Ratio to split good images into train/test
             Defaults to 0.8 for train.
         split (str | Split | None, optional): Dataset split (Either train or test). Defaults to None.
 
     Examples:
+    --------
         The following example shows how to get training samples from Kolektor Dataset:
 
         >>> root = Path('./KolektorSDD/')
@@ -99,9 +101,9 @@ def make_kolektor_dataset(
         4    KolektorSDD  kos01  train  Good  KolektorSDD/kos01/Part4.jpg  KolektorSDD/kos01/Part4_label.bmp      0
 
     Returns:
+    -------
         DataFrame: an output dataframe containing the samples of the dataset.
     """
-
     root = Path(root)
 
     # Get list of images and masks
@@ -170,6 +172,7 @@ class KolektorDataset(AnomalibDataset):
     """Kolektor dataset class.
 
     Args:
+    ----
         task (TaskType): Task type, ``classification``, ``detection`` or ``segmentation``
         transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
         root (Path | str): Path to the root of the dataset
@@ -196,6 +199,7 @@ class Kolektor(AnomalibDataModule):
     """Kolektor Datamodule.
 
     Args:
+    ----
         root (Path | str): Path to the root of the dataset
         image_size (int | tuple[int, int] | None, optional): Size of the input image.
             Defaults to None.

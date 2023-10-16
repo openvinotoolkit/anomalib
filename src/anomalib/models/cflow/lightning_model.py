@@ -65,12 +65,14 @@ class Cflow(AnomalyModule):
         """Configures optimizers for each decoder.
 
         Note:
+        ----
             This method is used for the existing CLI.
             When PL CLI is introduced, configure optimizers method will be
                 deprecated, and optimizers will be configured from either
                 config.yaml file or from CLI.
 
         Returns:
+        -------
             Optimizer: Adam optimizer for each decoder
         """
         decoders_parameters = []
@@ -90,9 +92,11 @@ class Cflow(AnomalyModule):
             per batch of input images
 
         Args:
+        ----
           batch (dict[str, str | Tensor]): Input batch
 
         Returns:
+        -------
           Loss value for the batch
 
         """
@@ -163,9 +167,11 @@ class Cflow(AnomalyModule):
             map is computed.
 
         Args:
+        ----
             batch (dict[str, str | Tensor]): Input batch
 
         Returns:
+        -------
             Dictionary containing images, anomaly maps, true labels and masks.
             These are required in `validation_epoch_end` for feature concatenation.
 
@@ -184,6 +190,7 @@ class CflowLightning(Cflow):
     """PL Lightning Module for the CFLOW algorithm.
 
     Args:
+    ----
         hparams (DictConfig | ListConfig): Model params
     """
 
@@ -207,6 +214,7 @@ class CflowLightning(Cflow):
         """Configure model-specific callbacks.
 
         Note:
+        ----
             This method is used for the existing CLI.
             When PL CLI is introduced, configure callback method will be
                 deprecated, and callbacks will be configured from either

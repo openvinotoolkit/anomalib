@@ -43,7 +43,8 @@ class InitLoader(PTInitializingDataLoader):
     def get_inputs(self, dataloader_output: dict[str, str | Tensor]) -> tuple[tuple, dict]:
         """Get input to model.
 
-        Returns:
+        Returns
+        -------
             (dataloader_output,), {}: tuple[tuple, dict]: The current model call to be made during
             the initialization process
         """
@@ -54,7 +55,8 @@ class InitLoader(PTInitializingDataLoader):
 
         This implementation does not do anything and is a placeholder.
 
-        Returns:
+        Returns
+        -------
             None
         """
         return

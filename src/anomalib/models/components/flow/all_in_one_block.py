@@ -24,9 +24,11 @@ def _global_scale_sigmoid_activation(input_tensor: Tensor) -> Tensor:
     """Global scale sigmoid activation.
 
     Args:
+    ----
         input_tensor (Tensor): Input tensor
 
     Returns:
+    -------
         Tensor: Sigmoid activation
     """
     return 10 * torch.sigmoid(input_tensor - 2.0)
@@ -36,9 +38,11 @@ def _global_scale_softplus_activation(input_tensor: Tensor) -> Tensor:
     """Global scale softplus activation.
 
     Args:
+    ----
         input_tensor (Tensor): Input tensor
 
     Returns:
+    -------
         Tensor: Softplus activation
     """
     softplus = nn.Softplus(beta=0.5)
@@ -49,9 +53,11 @@ def _global_scale_exp_activation(input_tensor: Tensor) -> Tensor:
     """Global scale exponential activation.
 
     Args:
+    ----
         input_tensor (Tensor): Input tensor
 
     Returns:
+    -------
         Tensor: Exponential activation
     """
     return torch.exp(input_tensor)
@@ -102,8 +108,8 @@ class AllInOneBlock(InvertibleModule):
         learned_householder_permutation: int = 0,
         reverse_permutation: bool = False,
     ) -> None:
-        """
-        Args:
+        """Args:
+        ----
           subnet_constructor:
             class or callable ``f``, called as ``f(channels_in, channels_out)`` and
             should return a torch.nn.Module. Predicts coupling coefficients :math:`s, t`.
@@ -226,7 +232,8 @@ class AllInOneBlock(InvertibleModule):
 
     def _construct_householder_permutation(self) -> torch.Tensor:
         """Computes a permutation matrix from the reflection vectors that are
-        learned internally as nn.Parameters."""
+        learned internally as nn.Parameters.
+        """
         w = self.w_0
         for vk in self.vk_householder:
             w = torch.mm(w, torch.eye(self.in_channels).to(w.device) - 2 * torch.ger(vk, vk) / torch.dot(vk, vk))
@@ -237,7 +244,8 @@ class AllInOneBlock(InvertibleModule):
 
     def _permute(self, x: torch.Tensor, rev: bool = False) -> tuple[Any, float | Tensor]:
         """Performs the permutation and scaling after the coupling operation.
-        Returns transformed outputs and the LogJacDet of the scaling operation."""
+        Returns transformed outputs and the LogJacDet of the scaling operation.
+        """
         if self.GIN:
             scale = 1.0
             perm_log_jac = 0.0
@@ -252,7 +260,8 @@ class AllInOneBlock(InvertibleModule):
 
     def _pre_permute(self, x: torch.Tensor, rev: bool = False) -> torch.Tensor:
         """Permutes before the coupling block, only used if
-        reverse_permutation is set"""
+        reverse_permutation is set.
+        """
         if rev:
             return self.permute_function(x, self.w_perm)
 
@@ -261,8 +270,8 @@ class AllInOneBlock(InvertibleModule):
     def _affine(self, x: torch.Tensor, a: torch.Tensor, rev: bool = False) -> tuple[Any, torch.Tensor]:
         """Given the passive half, and the pre-activation outputs of the
         coupling subnetwork, perform the affine coupling operation.
-        Returns both the transformed inputs and the LogJacDet."""
-
+        Returns both the transformed inputs and the LogJacDet.
+        """
         # the entire coupling coefficient tensor is scaled down by a
         # factor of ten for stability and easier initialization.
         a *= 0.1
@@ -284,7 +293,7 @@ class AllInOneBlock(InvertibleModule):
         rev: bool = False,
         jac: bool = True,
     ) -> tuple[tuple[torch.Tensor], torch.Tensor]:
-        """See base class docstring"""
+        """See base class docstring."""
         del jac  # Unused argument.
 
         if c is None:

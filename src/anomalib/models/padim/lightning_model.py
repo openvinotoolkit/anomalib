@@ -25,6 +25,7 @@ class Padim(AnomalyModule):
     """PaDiM: a Patch Distribution Modeling Framework for Anomaly Detection and Localization.
 
     Args:
+    ----
         layers (list[str]): Layers to extract features from the backbone CNN
         input_size (tuple[int, int]): Size of the model input.
         backbone (str): Backbone CNN network
@@ -64,10 +65,12 @@ class Padim(AnomalyModule):
         """Training Step of PADIM. For each batch, hierarchical features are extracted from the CNN.
 
         Args:
+        ----
             batch (dict[str, str | Tensor]): Batch containing image filename, image, label and mask
             _batch_idx: Index of the batch.
 
         Returns:
+        -------
             Hierarchical feature map
         """
         del args, kwargs  # These variables are not used.
@@ -98,9 +101,11 @@ class Padim(AnomalyModule):
         Similar to the training step, hierarchical features are extracted from the CNN for each batch.
 
         Args:
+        ----
             batch (dict[str, str | Tensor]): Input batch
 
         Returns:
+        -------
             Dictionary containing images, features, true labels and masks.
             These are required in `validation_epoch_end` for feature concatenation.
         """

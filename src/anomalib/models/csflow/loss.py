@@ -14,10 +14,12 @@ class CsFlowLoss(nn.Module):
         """Loss function of CS-Flow.
 
         Args:
+        ----
             z_distribution (Tensor): Latent space image mappings from NF.
             jacobians (Tensor): Jacobians of the distribution
 
         Returns:
+        -------
             Loss value
         """
         z_dist = torch.cat([z_dist[i].reshape(z_dist[i].shape[0], -1) for i in range(len(z_dist))], dim=1)

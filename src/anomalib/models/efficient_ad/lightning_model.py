@@ -1,5 +1,5 @@
 """EfficientAd: Accurate Visual Anomaly Detection at Millisecond-Level Latencies.
-https://arxiv.org/pdf/2303.14535.pdf
+https://arxiv.org/pdf/2303.14535.pdf.
 """
 
 # Copyright (C) 2023 Intel Corporation
@@ -55,6 +55,7 @@ class EfficientAd(AnomalyModule):
     """PL Lightning Module for the EfficientAd algorithm.
 
     Args:
+    ----
         teacher_file_name (str): path to the pre-trained teacher model
         teacher_out_channels (int): number of convolution output channels
         image_size (tuple): size of input images
@@ -129,9 +130,11 @@ class EfficientAd(AnomalyModule):
         """Calculate the mean and std of the teacher models activations.
 
         Args:
+        ----
             dataloader (DataLoader): Dataloader of the respective dataset.
 
         Returns:
+        -------
             dict[str, Tensor]: Dictionary of channel-wise mean and std
         """
         y_means = []
@@ -158,9 +161,11 @@ class EfficientAd(AnomalyModule):
         """Calculate 90% and 99.5% quantiles of the student(st) and autoencoder(ae).
 
         Args:
+        ----
             dataloader (DataLoader): Dataloader of the respective dataset.
 
         Returns:
+        -------
             dict[str, Tensor]: Dictionary of both the 90% and 99.5% quantiles
             of both the student and autoencoder feature maps.
         """
@@ -188,12 +193,13 @@ class EfficientAd(AnomalyModule):
         elements.
 
         Args:
+        ----
             maps (list[Tensor]): List of anomaly maps.
 
         Returns:
+        -------
             tuple[Tensor, Tensor]: Two scalars - the 90% and the 99.5% quantile.
         """
-
         maps_flat = reduce_tensor_elems(torch.cat(maps))
         qa = torch.quantile(maps_flat, q=0.9).to(self.device)
         qb = torch.quantile(maps_flat, q=0.995).to(self.device)
@@ -222,9 +228,11 @@ class EfficientAd(AnomalyModule):
         """Training step for EfficientAd returns the student, autoencoder and combined loss.
 
         Args:
+        ----
             batch (batch: dict[str, str | Tensor]): Batch containing image filename, image, label and mask
 
         Returns:
+        -------
           Loss.
         """
         del args, kwargs  # These variables are not used.
@@ -246,20 +254,20 @@ class EfficientAd(AnomalyModule):
         return {"loss": loss}
 
     def on_validation_start(self) -> None:
-        """
-        Calculate the feature map quantiles of the validation dataset and push to the model.
-        """
+        """Calculate the feature map quantiles of the validation dataset and push to the model."""
         if (self.current_epoch + 1) == self.trainer.max_epochs:
             map_norm_quantiles = self.map_norm_quantiles(self.trainer.datamodule.val_dataloader())
             self.model.quantiles.update(map_norm_quantiles)
 
     def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
-        """Validation Step of EfficientAd returns anomaly maps for the input image batch
+        """Validation Step of EfficientAd returns anomaly maps for the input image batch.
 
         Args:
+        ----
           batch (dict[str, str | Tensor]): Input batch
 
         Returns:
+        -------
           Dictionary containing anomaly maps.
         """
         del args, kwargs  # These variables are not used.
@@ -277,6 +285,7 @@ class EfficientAdLightning(EfficientAd):
     """PL Lightning Module for the EfficientAd Algorithm.
 
     Args:
+    ----
         hparams (DictConfig | ListConfig): Model params
     """
 

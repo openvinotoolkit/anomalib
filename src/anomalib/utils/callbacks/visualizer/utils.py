@@ -23,6 +23,7 @@ def get_visualization_callbacks(
     """Get visualization callbacks.
 
     Args:
+    ----
         mode (VisualizationMode): The visualization mode.
         image_save_path (str): Path to save images.
         inputs_are_normalized (bool): Whether the inputs are normalized.
@@ -31,6 +32,7 @@ def get_visualization_callbacks(
         save_images (bool): Whether to save images.
 
     Returns:
+    -------
         List of visualization callbacks.
     """
     return [

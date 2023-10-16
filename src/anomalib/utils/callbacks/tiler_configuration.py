@@ -30,6 +30,7 @@ class TilerConfigurationCallback(Callback):
         """Sets tiling configuration from the command line.
 
         Args:
+        ----
             enable (bool): Boolean to enable tiling operation.
                 Defaults to False.
             tile_size ([int | Sequence]): Tile size.
@@ -53,11 +54,13 @@ class TilerConfigurationCallback(Callback):
         """Setup Tiler object within Anomalib Model.
 
         Args:
+        ----
             trainer (pl.Trainer): PyTorch Lightning Trainer
             pl_module (pl.LightningModule): Anomalib Model that inherits pl LightningModule.
             stage (str | None, optional): fit, validate, test or predict. Defaults to None.
 
         Raises:
+        ------
             ValueError: When Anomalib Model doesn't contain ``Tiler`` object, it means the model
                 doesn not support tiling operation.
         """

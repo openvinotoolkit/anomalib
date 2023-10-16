@@ -29,10 +29,10 @@ class MetricVisualizerCallback(BaseVisualizerCallback):
         tuple[matplotlib.figure.Figure, str].
 
         Args:
+        ----
             trainer (pl.Trainer): pytorch lightning trainer.
             pl_module (AnomalyModule): pytorch lightning module.
         """
-
         if self.save_images or self.log_images:
             for metrics in (pl_module.image_metrics, pl_module.pixel_metrics):
                 for metric in metrics.values():

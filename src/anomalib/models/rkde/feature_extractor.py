@@ -59,12 +59,12 @@ class FeatureExtractor(nn.Module):
         """Forward pass of the feature extractor.
 
         Args:
+        ----
             batch (Tensor): Batch of input images of shape [B, C, H, W]
             rois (Tensor): Tensor of shape [N, 5] describing the regions-of-interest in the batch
         Returns:
             Tensor: Tensor containing a 4096-dimensional feature vector for every RoI location.
         """
-
         # Apply the feature extractor transforms
         transformed_batch = self.transform(batch)
 

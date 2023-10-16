@@ -23,6 +23,7 @@ class Dfm(AnomalyModule):
     """DFM: Deep Featured Kernel Density Estimation.
 
     Args:
+    ----
         backbone (str): Backbone CNN network
         layer (str): Layer to extract features from the backbone CNN
         input_size (tuple[int, int]): Input size for the model.
@@ -71,10 +72,12 @@ class Dfm(AnomalyModule):
         For each batch, features are extracted from the CNN.
 
         Args:
+        ----
           batch (dict[str, str | Tensor]): Input batch
           _: Index of the batch.
 
         Returns:
+        -------
           Deep CNN features.
         """
         del args, kwargs  # These variables are not used.
@@ -104,9 +107,11 @@ class Dfm(AnomalyModule):
         Similar to the training step, features are extracted from the CNN for each batch.
 
         Args:
+        ----
           batch (dict[str, str | Tensor]): Input batch
 
         Returns:
+        -------
           Dictionary containing FRE anomaly scores and anomaly maps.
         """
         del args, kwargs  # These variables are not used.
@@ -127,6 +132,7 @@ class DfmLightning(Dfm):
     """DFM: Deep Featured Kernel Density Estimation.
 
     Args:
+    ----
         hparams (DictConfig | ListConfig): Model params
     """
 

@@ -25,6 +25,7 @@ class Rkde(AnomalyModule):
     """Region Based Anomaly Detection With Real-Time Training and Analysis.
 
     Args:
+    ----
         roi_stage (RoiStage, optional): Processing stage from which rois are extracted.
         roi_score_threshold (float, optional): Mimumum confidence score for the region proposals.
         min_size (int, optional): Minimum size in pixels for the region proposals.
@@ -71,9 +72,11 @@ class Rkde(AnomalyModule):
         """Training Step of RKDE. For each batch, features are extracted from the CNN.
 
         Args:
+        ----
             batch (dict[str, str | Tensor]): Batch containing image filename, image, label and mask
 
         Returns:
+        -------
           Deep CNN features.
         """
         del args, kwargs  # These variables are not used.
@@ -94,9 +97,11 @@ class Rkde(AnomalyModule):
         Similar to the training step, features are extracted from the CNN for each batch.
 
         Args:
+        ----
             batch (dict[str, str | Tensor]): Batch containing image filename, image, label and mask
 
         Returns:
+        -------
           Dictionary containing probability, prediction and ground truth values.
         """
         del args, kwargs  # These variables are not used.
@@ -122,6 +127,7 @@ class RkdeLightning(Rkde):
     """Rkde: Deep Feature Kernel Density Estimation.
 
     Args:
+    ----
         hparams (DictConfig | ListConfig): Model params
     """
 

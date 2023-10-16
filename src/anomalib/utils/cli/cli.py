@@ -103,6 +103,7 @@ class AnomalibCLI(LightningCLI):
         """Extend trainer's arguments to add engine arguments.
 
         Note:
+        ----
             Since ``Engine`` parameters are manually added, any change to the ``Engine`` class should be reflected
             manually.
         """
@@ -168,6 +169,7 @@ class AnomalibCLI(LightningCLI):
         """Instantiate the engine.
 
         Note:
+        ----
             Most of the code in this method is taken from LightningCLI's ``instantiate_trainer`` method.
             Refer to that method for more details.
         """

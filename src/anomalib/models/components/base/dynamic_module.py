@@ -15,12 +15,15 @@ class DynamicBufferModule(ABC, nn.Module):
         """Get attribute of the tensor given the name.
 
         Args:
+        ----
             attribute_name (str): Name of the tensor
 
         Raises:
+        ------
             ValueError: `attribute_name` is not a torch Tensor
 
         Returns:
+        -------
             Tensor: Tensor attribute
         """
         attribute = getattr(self, attribute_name)
@@ -36,6 +39,7 @@ class DynamicBufferModule(ABC, nn.Module):
         Overrides method from parent class.
 
         Args:
+        ----
           state_dict (dict): State dictionary containing weights
           prefix (str): Prefix of the weight file.
           *args:

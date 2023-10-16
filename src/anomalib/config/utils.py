@@ -13,12 +13,14 @@ from omegaconf import DictConfig, ListConfig, OmegaConf
 
 
 def to_yaml(config: Namespace | ListConfig | DictConfig) -> str:
-    """Converts the config to a yaml string
+    """Converts the config to a yaml string.
 
     Args:
+    ----
         config (Namespace | ListConfig | DictConfig): Config
 
     Returns:
+    -------
         str: YAML string
     """
     _config = config.clone() if isinstance(config, Namespace) else config.copy()
@@ -45,18 +47,22 @@ def to_tuple(input_size: int | ListConfig) -> tuple[int, int]:
     """Converts int or list to a tuple.
 
     Example:
+    -------
         >>> to_tuple(256)
         (256, 256)
         >>> to_tuple([256, 256])
         (256, 256)
 
     Args:
+    ----
         input_size (int | ListConfig): input_size
 
     Raises:
+    ------
         ValueError: Unsupported value type.
 
     Returns:
+    -------
         tuple[int, int]: Tuple of input_size
     """
     ret_val: tuple[int, int]

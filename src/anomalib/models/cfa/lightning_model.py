@@ -33,6 +33,7 @@ class Cfa(AnomalyModule):
     """CFA: Coupled-hypersphere-based Feature Adaptation for Target-Oriented Anomaly Localization.
 
     Args:
+    ----
         input_size (tuple[int, int]): Size of the model input.
         backbone (str): Backbone CNN network
         gamma_c (int, optional): gamma_c value from the paper. Defaults to 1.
@@ -76,9 +77,11 @@ class Cfa(AnomalyModule):
         """Training step for the CFA model.
 
         Args:
+        ----
             batch (dict[str, str | Tensor]): Batch input.
 
         Returns:
+        -------
             STEP_OUTPUT: Loss value.
         """
         del args, kwargs  # These variables are not used.
@@ -91,9 +94,11 @@ class Cfa(AnomalyModule):
         """Validation step for the CFA model.
 
         Args:
+        ----
             batch (dict[str, str | Tensor]): Input batch.
 
         Returns:
+        -------
             dict: Anomaly map computed by the model.
         """
         del args, kwargs  # These variables are not used.
@@ -105,6 +110,7 @@ class Cfa(AnomalyModule):
         """Backward step for the CFA model.
 
         Args:
+        ----
             loss (Tensor): Loss value.
             optimizer (Optimizer | None): Optimizer.
             optimizer_idx (int | None): Optimizer index.
@@ -124,6 +130,7 @@ class CfaLightning(Cfa):
     """PL Lightning Module for the CFA model.
 
     Args:
+    ----
         hparams (DictConfig | ListConfig): Model params
     """
 
@@ -141,6 +148,7 @@ class CfaLightning(Cfa):
         """Configure model-specific callbacks.
 
         Note:
+        ----
             This method is used for the existing CLI.
             When PL CLI is introduced, configure callback method will be
                 deprecated, and callbacks will be configured from either
@@ -157,12 +165,14 @@ class CfaLightning(Cfa):
         """Configures optimizers for the CFA Model.
 
         Note:
+        ----
             This method is used for the existing CLI.
             When PL CLI is introduced, configure optimizers method will be
                 deprecated, and optimizers will be configured from either
                 config.yaml file or from CLI.
 
         Returns:
+        -------
             Optimizer: Adam optimizer for each decoder
         """
         return torch.optim.AdamW(

@@ -30,6 +30,7 @@ class Csflow(AnomalyModule):
     """Fully Convolutional Cross-Scale-Flows for Image-based Defect Detection.
 
     Args:
+    ----
         input_size (tuple[int, int]): Size of the model input.
         n_coupling_blocks (int): Number of coupling blocks in the model.
         cross_conv_hidden_channels (int): Number of hidden channels in the cross convolution.
@@ -59,10 +60,12 @@ class Csflow(AnomalyModule):
         """Training Step of CS-Flow.
 
         Args:
+        ----
             batch (dict[str, str | Tensor]): Input batch
             _: Index of the batch.
 
         Returns:
+        -------
             Loss value
         """
         del args, kwargs  # These variables are not used.
@@ -77,9 +80,11 @@ class Csflow(AnomalyModule):
         """Validation step for CS Flow.
 
         Args:
+        ----
             batch (Tensor): Input batch
 
         Returns:
+        -------
             dict[str, Tensor]: Dictionary containing the anomaly map, scores, etc.
         """
         del args, kwargs  # These variables are not used.
@@ -98,6 +103,7 @@ class CsflowLightning(Csflow):
     """Fully Convolutional Cross-Scale-Flows for Image-based Defect Detection.
 
     Args:
+    ----
         hprams (DictConfig | ListConfig): Model params
     """
 
@@ -116,6 +122,7 @@ class CsflowLightning(Csflow):
         """Configure model-specific callbacks.
 
         Note:
+        ----
             This method is used for the existing CLI.
             When PL CLI is introduced, configure callback method will be
                 deprecated, and callbacks will be configured from either
@@ -132,12 +139,14 @@ class CsflowLightning(Csflow):
         """Configures optimizers.
 
         Note:
+        ----
             This method is used for the existing CLI.
             When PL CLI is introduced, configure optimizers method will be
                 deprecated, and optimizers will be configured from either
                 config.yaml file or from CLI.
 
         Returns:
+        -------
             Optimizer: Adam optimizer
         """
         return torch.optim.Adam(

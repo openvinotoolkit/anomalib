@@ -52,6 +52,7 @@ def make_btech_dataset(path: Path, split: str | Split | None = None) -> DataFram
         path/to/dataset/ground_truth/category/mask_filename.png
 
     Args:
+    ----
         path (Path): Path to dataset
         split (str | Split | None, optional): Dataset split (ie., either train or test). Defaults to None.
         split_ratio (float, optional): Ratio to split normal training images and add to the
@@ -63,6 +64,7 @@ def make_btech_dataset(path: Path, split: str | Split | None = None) -> DataFram
             could set this flag to ``True``.
 
     Example:
+    -------
         The following example shows how to get training samples from BTech 01 category:
 
         >>> root = Path('./BTech')
@@ -79,6 +81,7 @@ def make_btech_dataset(path: Path, split: str | Split | None = None) -> DataFram
         ...
 
     Returns:
+    -------
         DataFrame: an output dataframe containing samples for the requested split (ie., train or test)
     """
     samples_list = [
@@ -125,6 +128,7 @@ class BTechDataset(AnomalibDataset):
     """Btech Dataset class.
 
     Args:
+    ----
         root: Path to the BTech dataset
         category: Name of the BTech category.
         transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
@@ -133,6 +137,7 @@ class BTechDataset(AnomalibDataset):
         create_validation_set: Create a validation subset in addition to the train and test subsets
 
     Examples:
+    --------
         >>> from anomalib.data.btech import BTechDataset
         >>> from anomalib.pre_processing import get_transforms
         >>> transform = get_transforms(image_size=256)
@@ -184,7 +189,7 @@ class BTech(AnomalibDataModule):
     """BTech Lightning Data Module.
 
     Args:
-
+    ----
         root (Path | str): Path to the BTech dataset.
         category (str): Name of the BTech category.
         image_size (int | tuple[int, int] | None, optional): Variable to which image is resized. Defaults to None.
@@ -216,6 +221,7 @@ class BTech(AnomalibDataModule):
         seed (int | None, optional): Seed which may be set to a fixed value for reproducibility. Defaults to None.
 
     Examples:
+    --------
         >>> from anomalib.data import BTech
         >>> datamodule = BTech(
         ...     root="./datasets/BTech",

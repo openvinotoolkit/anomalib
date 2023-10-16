@@ -36,9 +36,11 @@ class _TrainerArgumentsCache:
     before the trainer is instantiated.
 
     Args:
+    ----
         (**kwargs): Trainer arguments that are cached
 
     Example:
+    -------
         >>> conf = OmegaConf.load("config.yaml")
         >>> cache =  _TrainerArgumentsCache(**conf.trainer)
         >>> cache.args
@@ -66,6 +68,7 @@ class _TrainerArgumentsCache:
         """Replace cached arguments with arguments retrieved from the model.
 
         Args:
+        ----
             model (AnomalyModule): The model used for training
         """
         for key, value in model.trainer_arguments.items():
@@ -91,9 +94,11 @@ class Engine:
     """Anomalib Engine.
 
     Note:
+    ----
         Refer to PyTorch Lightning's Trainer for a list of parameters for details on other Trainer parameters.
 
     Args:
+    ----
         callbacks: Add a callback or list of callbacks.
     """
 

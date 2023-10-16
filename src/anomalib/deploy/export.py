@@ -40,9 +40,11 @@ def get_model_metadata(model: AnomalyModule) -> dict[str, Tensor]:
     """Get meta data related to normalization from model.
 
     Args:
+    ----
         model (AnomalyModule): Anomaly model which contains metadata related to normalization.
 
     Returns:
+    -------
         dict[str, Tensor]: Model metadata
     """
     metadata = {}
@@ -65,12 +67,14 @@ def get_metadata(task: TaskType, transform: dict[str, Any], model: AnomalyModule
     """Get metadata for the exported model.
 
     Args:
+    ----
         task (TaskType): Task type.
         transform (dict[str, Any]): Transform used for the model.
         model (AnomalyModule): Model to export.
         export_mode (ExportMode): Mode to export the model. Torch, ONNX or OpenVINO.
 
     Returns:
+    -------
         dict[str, Any]: Metadata for the exported model.
     """
     data_metadata = {"task": task, "transform": transform}
@@ -96,6 +100,7 @@ def export(
     """Export the model to onnx format and (optionally) convert to OpenVINO IR if export mode is set to OpenVINO.
 
     Args:
+    ----
         task (TaskType): Task type.
         transform (dict[str, Any]): Data transforms (augmentatiions) used for the model.
         input_size (tuple[int, int]): Input size of the model.
@@ -132,6 +137,7 @@ def export_to_torch(model: AnomalyModule, metadata: dict[str, Any], export_path:
     """Export AnomalibModel to torch.
 
     Args:
+    ----
         model (AnomalyModule): Model to export.
         export_path (Path): Path to the folder storing the exported model.
     """
@@ -145,11 +151,13 @@ def export_to_onnx(model: AnomalyModule, input_size: tuple[int, int], export_pat
     """Export model to onnx.
 
     Args:
+    ----
         model (AnomalyModule): Model to export.
         input_size (list[int] | tuple[int, int]): Image size used as the input for onnx converter.
         export_path (Path): Path to the root folder of the exported model.
 
     Returns:
+    -------
         Path: Path to the exported onnx model.
     """
     onnx_path = export_path / "model.onnx"
@@ -176,6 +184,7 @@ def export_to_openvino(
     """Convert onnx model to OpenVINO IR.
 
     Args:
+    ----
         export_path (Path): Path to the export folder.
         input_model (str | Path): Path to the model weights. Can be either Torch weights or ONNX model.
         metadata (dict[str, Any]): Metadata for the exported model.
@@ -200,6 +209,7 @@ def _add_metadata_to_ir(xml_file: str, metadata: dict[str, Any], input_size: tup
     # TODO: Remove this function when Anomalib is upgraded as the model graph will contain the required ops
 
     Args:
+    ----
         xml_file (str): Path to the xml file.
         metadata (dict[str, Any]): Metadata to add to the model.
         input_size (tuple[int, int]): Input size of the model.
@@ -250,9 +260,11 @@ def _serialize_list(arr: list[int] | list[float] | tuple[int, int]) -> str:
     """Serializes the list to a string.
 
     Args:
+    ----
         arr (list[int] | list[float] | tuple[int, int]): List to serialize.
 
     Returns:
+    -------
         str: Serialized list.
     """
     return " ".join(map(str, arr))

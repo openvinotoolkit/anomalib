@@ -38,9 +38,11 @@ def update_config(config: DictConfig | ListConfig | Namespace) -> DictConfig | L
     """Update config.
 
     Args:
+    ----
         config: Configurable parameters.
 
     Returns:
+    -------
         DictConfig | ListConfig | Namespace: Updated config.
     """
     show_warnings(config)
@@ -85,9 +87,11 @@ def update_input_size_config(config: DictConfig | ListConfig | Namespace) -> Dic
     and crop size, and set tiling stride if undefined.
 
     Args:
+    ----
         config (DictConfig | ListConfig | Namespace): Configurable parameters object
 
     Returns:
+    -------
         DictConfig | ListConfig: Configurable parameters with updated values
     """
     # Image size: Ensure value is in the form [height, width]
@@ -141,10 +145,12 @@ def update_input_size_config(config: DictConfig | ListConfig | Namespace) -> Dic
 def update_nncf_config(config: DictConfig | ListConfig) -> DictConfig | ListConfig:
     """Set the NNCF input size based on the value of the crop_size parameter in the configurable parameters object.
 
-    Args
+    Args:
+    ----
         config (DictConfig | ListConfig): Configurable parameters of the current run.
 
     Returns:
+    -------
         DictConfig | ListConfig: Updated configurable parameters in DictConfig object.
     """
     image_size = config.data.init_args.image_size
@@ -167,12 +173,15 @@ def update_multi_gpu_training_config(config: DictConfig | ListConfig) -> DictCon
     Current behaviour is to ensure only ddp accelerator is used.
 
     Args:
+    ----
         config (DictConfig | ListConfig): Configurable parameters for the current run
 
     Raises:
+    ------
         ValueError: If unsupported accelerator is passed
 
     Returns:
+    -------
         DictConfig | ListConfig: Updated config
     """
     # validate accelerator
@@ -202,12 +211,12 @@ def update_multi_gpu_training_config(config: DictConfig | ListConfig) -> DictCon
 
 
 def show_warnings(config: DictConfig | ListConfig | Namespace) -> None:
-    """Show warnings if any based on the configuration settings
+    """Show warnings if any based on the configuration settings.
 
     Args:
+    ----
         config (DictConfig | ListConfig | Namespace): Configurable parameters for the current run.
     """
-
     if "clip_length_in_frames" in config.data and config.data.init_args.clip_length_in_frames > 1:
         logger.warning(
             "Anomalib's models and visualizer are currently not compatible with video datasets with a clip length > 1. "
@@ -224,12 +233,14 @@ def get_configurable_parameters(
     """Get configurable parameters.
 
     Args:
+    ----
         model_name: str | None:  (Default value = None)
         config_path: Path | str | None:  (Default value = None)
         config_filename: str | None:  (Default value = "config")
         config_file_extension: str | None:  (Default value = "yaml")
 
     Returns:
+    -------
         DictConfig | ListConfig: Configurable parameters in DictConfig object.
     """
     if model_name is None and config_path is None:
