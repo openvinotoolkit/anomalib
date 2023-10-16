@@ -16,18 +16,20 @@ class BaseThreshold(Metric, ABC):
         super().__init__(**kwargs)
 
     def compute(self) -> torch.Tensor:
-        """Compute the threshold
+        """Compute the threshold.
 
-        Returns:
+        Returns
+        -------
             Value of the optimal threshold.
         """
         msg = "Subclass of BaseAnomalyScoreThreshold must implement the compute method"
         raise NotImplementedError(msg)
 
     def update(self, *args, **kwargs) -> None:  # noqa: ARG002
-        """Update the metric state
+        """Update the metric state.
 
         Args:
+        ----
             *args: Any positional arguments.
             **kwargs: Any keyword arguments.
         """

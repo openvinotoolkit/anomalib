@@ -14,12 +14,13 @@ from omegaconf import DictConfig
 
 
 def convert_to_tuple(values: ValuesView) -> list[tuple]:
-    """Converts a ValuesView object to a list of tuples.
+    """Convert a ValuesView object to a list of tuples.
 
     This is useful to get list of possible values for each parameter in the config and a tuple for values that are
     are to be patched. Ideally this is useful when used with product.
 
     Example:
+    -------
         >>> params = DictConfig({
                 "dataset.category": [
                     "bottle",
@@ -34,9 +35,11 @@ def convert_to_tuple(values: ValuesView) -> list[tuple]:
         [('bottle', 224, 'padim'), ('cable', 224, 'padim')]
 
     Args:
+    ----
         values: ValuesView: ValuesView object to be converted to a list of tuples.
 
     Returns:
+    -------
         list[Tuple]: List of tuples.
     """
     return_list = []
@@ -58,9 +61,11 @@ def flatten_sweep_params(params_dict: DictConfig) -> DictConfig:
     - Add the config to `wandb` sweep.
 
     Args:
+    ----
         params_dict: DictConfig: The dictionary containing the hpo parameters in the original, nested, structure.
 
     Returns:
+    -------
         flattened version of the parameter dictionary.
     """
 
@@ -71,6 +76,7 @@ def flatten_sweep_params(params_dict: DictConfig) -> DictConfig:
         dictionary.
 
         Args:
+        ----
             nested_params: DictConfig: config object containing the original parameters.
             keys: list[str]: list of keys leading to the current location in the config.
             flattened_params: DictConfig: Dictionary in which the flattened parameters are stored.
@@ -89,12 +95,14 @@ def flatten_sweep_params(params_dict: DictConfig) -> DictConfig:
 
 
 def get_run_config(params_dict: DictConfig) -> Generator[DictConfig, None, None]:
-    """Yields configuration for a single run.
+    """Yield configuration for a single run.
 
     Args:
+    ----
         params_dict (DictConfig): Configuration for grid search.
 
     Example:
+    -------
         >>> dummy_config = DictConfig({
             "parent1":{
                 "child1": ['a', 'b', 'c'],
@@ -111,6 +119,7 @@ def get_run_config(params_dict: DictConfig) -> Generator[DictConfig, None, None]
         ...
 
     Yields:
+    ------
         Generator[DictConfig]: Dictionary containing flattened keys
         and values for current run.
     """
@@ -125,9 +134,10 @@ def get_run_config(params_dict: DictConfig) -> Generator[DictConfig, None, None]
 
 
 def get_from_nested_config(config: DictConfig, keymap: list) -> Any:  # noqa: ANN401
-    """Retrieves an item from a nested config object using a list of keys.
+    """Retrieve an item from a nested config object using a list of keys.
 
     Args:
+    ----
         config: DictConfig: nested DictConfig object
         keymap: list[str]: list of keys corresponding to item that should be retrieved.
     """
@@ -138,11 +148,13 @@ def set_in_nested_config(config: DictConfig, keymap: list, value: Any) -> None: 
     """Set an item in a nested config object using a list of keys.
 
     Args:
+    ----
         config: DictConfig: nested DictConfig object
         keymap: list[str]: list of keys corresponding to item that should be set.
         value: Any: Value that should be assigned to the dictionary item at the specified location.
 
     Example:
+    -------
         >>> dummy_config = DictConfig({
             "parent1":{
                 "child1": ['a', 'b', 'c'],

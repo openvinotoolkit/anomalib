@@ -23,9 +23,11 @@ def get_image_filenames(path: str | Path) -> list[Path]:
     """Get image filenames.
 
     Args:
+    ----
         path (str | Path): Path to image or image-folder.
 
     Returns:
+    -------
         list[Path]: List of image filenames
 
     """
@@ -53,9 +55,11 @@ def duplicate_filename(path: str | Path) -> Path:
     This function checks the path and adds a suffix if it already exists on the file system.
 
     Args:
+    ----
         path (str | Path): Input Path
 
     Examples:
+    --------
         >>> path = Path("datasets/MVTec/bottle/test/broken_large/000.png")
         >>> path.exists()
         True
@@ -65,9 +69,9 @@ def duplicate_filename(path: str | Path) -> Path:
         PosixPath('datasets/MVTec/bottle/test/broken_large/000_1.png')
 
     Returns:
+    -------
         Path: Duplicated output path.
     """
-
     if isinstance(path, str):
         path = Path(path)
 
@@ -94,11 +98,13 @@ def generate_output_image_filename(input_path: str | Path, output_path: str | Pa
     filenames of ``input_path`` to ``output_path``.
 
     Args:
+    ----
         input_path (str | Path): Path to the input image to infer.
         output_path (str | Path): Path to output to save the predictions.
             Could be a filename or a directory.
 
     Examples:
+    --------
         >>> input_path = Path("datasets/MVTec/bottle/test/broken_large/000.png")
         >>> output_path = Path("datasets/MVTec/bottle/test/broken_large/000.png")
         >>> generate_output_image_filename(input_path, output_path)
@@ -110,12 +116,13 @@ def generate_output_image_filename(input_path: str | Path, output_path: str | Pa
         PosixPath('results/images/broken_large/000.png')
 
     Raises:
+    ------
         ValueError: When the ``input_path`` is not a file.
 
     Returns:
+    -------
         Path: The output filename to save the output predictions from the inferencer.
     """
-
     if isinstance(input_path, str):
         input_path = Path(input_path)
 
@@ -148,12 +155,15 @@ def get_image_height_and_width(image_size: int | Sequence[int]) -> tuple[int, in
     """Get image height and width from ``image_size`` variable.
 
     Args:
+    ----
         image_size (int | Sequence[int] | None, optional): Input image size.
 
     Raises:
+    ------
         ValueError: Image size not None, int or Sequence of values.
 
     Examples:
+    --------
         >>> get_image_height_and_width(image_size=256)
         (256, 256)
 
@@ -170,6 +180,7 @@ def get_image_height_and_width(image_size: int | Sequence[int]) -> tuple[int, in
         ValueError: ``image_size`` could be either int or tuple[int, int]
 
     Returns:
+    -------
         tuple[int | None, int | None]: A tuple containing image height and width values.
     """
     if isinstance(image_size, int):
@@ -187,12 +198,18 @@ def read_image(path: str | Path, image_size: int | tuple[int, int] | None = None
     """Read image from disk in RGB format.
 
     Args:
+    ----
         path (str, Path): path to the image file
+        image_size (int | tuple[int, int] | None, optional):
+            Image size to resize the image.
+            Defaults to None.
 
     Example:
+    -------
         >>> image = read_image("test_image.jpg")
 
     Returns:
+    -------
         image as numpy array
     """
     path = path if isinstance(path, str) else str(path)
@@ -213,12 +230,15 @@ def read_depth_image(path: str | Path) -> np.ndarray:
     """Read tiff depth image from disk.
 
     Args:
+    ----
         path (str, Path): path to the image file
 
     Example:
+    -------
         >>> image = read_depth_image("test_image.tiff")
 
     Returns:
+    -------
         image as numpy array
     """
     path = path if isinstance(path, str) else str(path)
@@ -232,9 +252,11 @@ def pad_nextpow2(batch: Tensor) -> Tensor:
     In case the image dimension is odd, it returns the image with an extra padding on one side.
 
     Args:
+    ----
         batch (Tensor): Input images
 
     Returns:
+    -------
         batch: Padded batch
     """
     # find the largest dimension

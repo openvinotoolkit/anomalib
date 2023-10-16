@@ -1,4 +1,5 @@
 """Custom Folder Dataset.
+
 This script creates a custom dataset from a folder.
 """
 
@@ -36,7 +37,9 @@ def make_folder_dataset(
     extensions: tuple[str, ...] | None = None,
 ) -> DataFrame:
     """Make Folder Dataset.
+
     Args:
+    ----
         normal_dir (str | Path | Sequence): Path to the directory containing normal images.
         root (str | Path | None): Path to the root directory of the dataset.
         abnormal_dir (str | Path | Sequence | None, optional): Path to the directory containing abnormal images.
@@ -49,20 +52,28 @@ def make_folder_dataset(
             Defaults to None.
         extensions (tuple[str, ...] | None, optional): Type of the image extensions to read from the
             directory.
+
     Returns:
-        DataFrame: an output dataframe containing samples for the requested split (ie., train or test)
+    -------
+        DataFrame: an output dataframe containing samples for the requested split (ie., train or test).
     """
 
     def _resolve_path_and_convert_to_list(path: str | Path | Sequence[str | Path] | None) -> list[Path]:
         """Convert path to list of paths.
+
         Args:
+        ----
             path (str | Path | Sequence | None): Path to replace with Sequence[str | Path].
+
         Examples:
+        --------
             >>> _resolve_path_and_convert_to_list("dir")
             [Path("path/to/dir")]
             >>> _resolve_path_and_convert_to_list(["dir1", "dir2"])
             [Path("path/to/dir1"), Path("path/to/dir2")]
+
         Returns:
+        -------
             list[Path]: The result of path replaced by Sequence[str | Path].
         """
         if isinstance(path, Sequence) and not isinstance(path, str):
@@ -151,7 +162,9 @@ def make_folder_dataset(
 
 class FolderDataset(AnomalibDataset):
     """Folder dataset.
+
     Args:
+    ----
         task (TaskType): Task type. (``classification``, ``detection`` or ``segmentation``).
         transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
         split (str | Split | None): Fixed subset split that follows from folder structure on file system.
@@ -166,7 +179,9 @@ class FolderDataset(AnomalibDataset):
         extensions (tuple[str, ...] | None, optional): Type of the image extensions to read from the
             directory.
         val_split_mode (ValSplitMode): Setting that determines how the validation subset is obtained.
+
     Raises:
+    ------
         ValueError: When task is set to classification and `mask_dir` is provided. When `mask_dir` is
             provided, `task` should be set to `segmentation`.
     """
@@ -208,7 +223,9 @@ class FolderDataset(AnomalibDataset):
 
 class Folder(AnomalibDataModule):
     """Folder DataModule.
+
     Args:
+    ----
         normal_dir (str | Path | Sequence): Name of the directory containing normal images.
             Defaults to "normal".
         root (str | Path | None): Path to the root folder containing normal and abnormal dirs.

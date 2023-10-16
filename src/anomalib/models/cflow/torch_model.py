@@ -62,13 +62,14 @@ class CflowModel(nn.Module):
         """Forward-pass images into the network to extract encoder features and compute probability.
 
         Args:
+        ----
           images: Batch of images.
 
         Returns:
+        -------
           Predicted anomaly maps.
 
         """
-
         self.encoder.eval()
         self.decoders.eval()
         with torch.no_grad():

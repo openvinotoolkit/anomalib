@@ -1,4 +1,4 @@
-"""Export utilities for Anomalib CLI"""
+"""Export utilities for Anomalib CLI."""
 
 # Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -74,6 +74,7 @@ def run_export(config: Namespace) -> None:
     """Run the export method.
 
     Args:
+    ----
         config (Namespace): Parsed namespace
     """
     export_mode = config.export.export_mode

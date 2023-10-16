@@ -25,7 +25,7 @@ from anomalib.data.utils.generators.perlin import random_2d_perlin
 
 
 def nextpow2(value: int) -> int:
-    """Returns the smallest power of 2 greater than or equal to the input value."""
+    """Return the smallest power of 2 greater than or equal to the input value."""
     return 2 ** (math.ceil(math.log(value, 2)))
 
 
@@ -33,6 +33,7 @@ class Augmenter:
     """Class that generates noisy augmentations of input images.
 
     Args:
+    ----
         anomaly_source_path (str | None): Path to a folder of images that will be used as source of the anomalous
         noise. If not specified, random noise will be used instead.
         p_anomalous (float): Probability that the anomalous perturbation will be applied to a given image.
@@ -68,9 +69,10 @@ class Augmenter:
         self.rot = iaa.Sequential([iaa.Affine(rotate=(-90, 90))])
 
     def rand_augmenter(self) -> iaa.Sequential:
-        """Selects 3 random transforms that will be applied to the anomaly source images.
+        """Select 3 random transforms that will be applied to the anomaly source images.
 
-        Returns:
+        Returns
+        -------
             A selection of 3 transforms.
         """
         aug_ind = np.random.default_rng().choice(np.arange(len(self.augmenters)), 3, replace=False)
@@ -85,12 +87,14 @@ class Augmenter:
         """Generate an image containing a random anomalous perturbation using a source image.
 
         Args:
+        ----
             height (int): height of the generated image.
             width: (int): width of the generated image.
             anomaly_source_path (Path | str | None): Path to an image file. If not provided, random noise will be used
             instead.
 
         Returns:
+        -------
             Image containing a random anomalous perturbation, and the corresponding ground truth anomaly mask.
         """
         # Generate random perlin noise
@@ -131,9 +135,11 @@ class Augmenter:
         """Generate anomalous augmentations for a batch of input images.
 
         Args:
+        ----
             batch (Tensor): Batch of input images
 
         Returns:
+        -------
             - Augmented image to which anomalous perturbations have been added.
             - Ground truth masks corresponding to the anomalous perturbations.
         """

@@ -31,10 +31,12 @@ def subnet_conv_func(kernel_size: int, hidden_ratio: float) -> Callable:
         Predicts coupling coefficients :math:`s, t`.
 
     Args:
+    ----
         kernel_size (int): Kernel Size
         hidden_ratio (float): Hidden ratio to compute number of hidden channels.
 
     Returns:
+    -------
         Callable: Sequential for the subnet constructor.
     """
 
@@ -68,6 +70,7 @@ def create_fast_flow_block(
     Figure 2 and Section 3.3 in the paper.
 
     Args:
+    ----
         input_dimensions (list[int]): Input dimensions (Channel, Height, Width)
         conv3x3_only (bool): Boolean whether to use conv3x3 only or conv3x3 and conv1x1.
         hidden_ratio (float): Ratio for the hidden layer channels.
@@ -75,6 +78,7 @@ def create_fast_flow_block(
         clamp (float, optional): Clamp. Defaults to 2.0.
 
     Returns:
+    -------
         SequenceINN: FastFlow Block.
     """
     nodes = SequenceINN(*input_dimensions)
@@ -95,6 +99,7 @@ class FastflowModel(nn.Module):
     Unsupervised Anomaly Detection and Localization via 2D Normalizing Flows.
 
     Args:
+    ----
         input_size (tuple[int, int]): Model input size.
         backbone (str): Backbone CNN network
         pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.
@@ -103,6 +108,7 @@ class FastflowModel(nn.Module):
         hidden_ratio (float, optional): Ratio to calculate hidden var channels. Defaults to 1.0.
 
     Raises:
+    ------
         ValueError: When the backbone is not supported.
     """
 
@@ -169,14 +175,15 @@ class FastflowModel(nn.Module):
         """Forward-Pass the input to the FastFlow Model.
 
         Args:
+        ----
             input_tensor (Tensor): Input tensor.
 
         Returns:
+        -------
             Tensor | list[Tensor] | tuple[list[Tensor]]: During training, return
                 (hidden_variables, log-of-the-jacobian-determinants).
                 During the validation/test, return the anomaly map.
         """
-
         return_val: Tensor | list[Tensor] | tuple[list[Tensor]]
 
         self.feature_extractor.eval()
@@ -208,9 +215,11 @@ class FastflowModel(nn.Module):
         """Get CNN-based features.
 
         Args:
+        ----
             input_tensor (Tensor): Input Tensor.
 
         Returns:
+        -------
             list[Tensor]: List of features.
         """
         features = self.feature_extractor(input_tensor)
@@ -220,9 +229,11 @@ class FastflowModel(nn.Module):
         """Get Class-Attention-Image-Transformers (CaiT) features.
 
         Args:
+        ----
             input_tensor (Tensor): Input Tensor.
 
         Returns:
+        -------
             list[Tensor]: List of features.
         """
         feature = self.feature_extractor.patch_embed(input_tensor)
@@ -240,9 +251,11 @@ class FastflowModel(nn.Module):
         """Get Vision Transformers (ViT) features.
 
         Args:
+        ----
             input_tensor (Tensor): Input Tensor.
 
         Returns:
+        -------
             list[Tensor]: List of features.
         """
         feature = self.feature_extractor.patch_embed(input_tensor)

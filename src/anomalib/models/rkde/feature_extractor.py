@@ -56,15 +56,17 @@ class FeatureExtractor(nn.Module):
 
     @torch.no_grad()
     def forward(self, batch: Tensor, rois: Tensor) -> Tensor:
-        """Forward pass of the feature extractor.
+        """Perform a forward pass of the feature extractor.
 
         Args:
-            batch (Tensor): Batch of input images of shape [B, C, H, W]
-            rois (Tensor): Tensor of shape [N, 5] describing the regions-of-interest in the batch
+        ----
+            batch (Tensor): Batch of input images of shape [B, C, H, W].
+            rois (Tensor): Tensor of shape [N, 5] describing the regions-of-interest in the batch.
+
         Returns:
+        -------
             Tensor: Tensor containing a 4096-dimensional feature vector for every RoI location.
         """
-
         # Apply the feature extractor transforms
         transformed_batch = self.transform(batch)
 

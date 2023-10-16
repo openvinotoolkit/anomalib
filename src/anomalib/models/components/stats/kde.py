@@ -16,6 +16,7 @@ class GaussianKDE(DynamicBufferModule):
     """Gaussian Kernel Density Estimation.
 
     Args:
+    ----
         dataset (Tensor | None, optional): Dataset on which to fit the KDE model. Defaults to None.
     """
 
@@ -37,6 +38,7 @@ class GaussianKDE(DynamicBufferModule):
         """Get the KDE estimates from the feature map.
 
         Args:
+        ----
           features (Tensor): Feature map extracted from the CNN
 
         Returns: KDE Estimates
@@ -55,9 +57,11 @@ class GaussianKDE(DynamicBufferModule):
         """Fit a KDE model to the input dataset.
 
         Args:
+        ----
           dataset (Tensor): Input dataset.
 
         Returns:
+        -------
             None
         """
         num_samples, dimension = dataset.shape
@@ -86,9 +90,11 @@ class GaussianKDE(DynamicBufferModule):
         """Calculate the unbiased covariance matrix.
 
         Args:
+        ----
             tensor (Tensor): Input tensor from which covariance matrix is computed.
 
         Returns:
+        -------
             Output covariance matrix.
         """
         mean = torch.mean(tensor, dim=1)

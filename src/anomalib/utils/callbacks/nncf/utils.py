@@ -43,7 +43,8 @@ class InitLoader(PTInitializingDataLoader):
     def get_inputs(self, dataloader_output: dict[str, str | Tensor]) -> tuple[tuple, dict]:
         """Get input to model.
 
-        Returns:
+        Returns
+        -------
             (dataloader_output,), {}: tuple[tuple, dict]: The current model call to be made during
             the initialization process
         """
@@ -54,7 +55,8 @@ class InitLoader(PTInitializingDataLoader):
 
         This implementation does not do anything and is a placeholder.
 
-        Returns:
+        Returns
+        -------
             None
         """
         return
@@ -107,7 +109,7 @@ def wrap_nncf_model(
 
 
 def is_state_nncf(state: dict) -> bool:
-    """The function to check if sate is the result of NNCF-compressed model."""
+    """Check if state is the result of NNCF-compressed model."""
     return bool(state.get("meta", {}).get("nncf_enable_compression", False))
 
 
@@ -161,7 +163,17 @@ def merge_dicts_and_lists_b_into_a(
     a: dict[Any, Any] | list[Any],
     b: dict[Any, Any] | list[Any],
 ) -> dict[Any, Any] | list[Any]:
-    """The function to merge dict configs."""
+    """Merge dict configs.
+
+    Args:
+    ----
+        a (dict[Any, Any] | list[Any]): First dict or list.
+        b (dict[Any, Any] | list[Any]): Second dict or list.
+
+    Returns:
+    -------
+        dict[Any, Any] | list[Any]: Merged dict or list.
+    """
     return _merge_dicts_and_lists_b_into_a(a, b, "")
 
 
@@ -170,14 +182,24 @@ def _merge_dicts_and_lists_b_into_a(
     b: dict[Any, Any] | list[Any],
     cur_key: int | str | None = None,
 ) -> dict[Any, Any] | list[Any]:
-    """The function is inspired by mmcf.Config._merge_a_into_b.
+    """Merge dict configs.
 
-    * works with usual dicts and lists and derived types
-    * supports merging of lists (by concatenating the lists)
-    * makes recursive merging for dict + dict case
-    * overwrites when merging scalar into scalar
-    Note that we merge b into a (whereas Config makes merge a into b),
-    since otherwise the order of list merging is counter-intuitive.
+        * works with usual dicts and lists and derived types
+        * supports merging of lists (by concatenating the lists)
+        * makes recursive merging for dict + dict case
+        * overwrites when merging scalar into scalar
+        Note that we merge b into a (whereas Config makes merge a into b),
+        since otherwise the order of list merging is counter-intuitive.
+
+    Args:
+    ----
+        a (dict[Any, Any] | list[Any]): First dict or list.
+        b (dict[Any, Any] | list[Any]): Second dict or list.
+        cur_key (int | str | None, optional): key for current level of recursion. Defaults to None.
+
+    Returns:
+    -------
+        dict[Any, Any] | list[Any]: Merged dict or list.
     """
 
     def _err_str(_a: dict | list, _b: dict | list, _key: int | str | None = None) -> str:

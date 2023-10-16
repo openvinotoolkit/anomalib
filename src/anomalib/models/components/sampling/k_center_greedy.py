@@ -1,8 +1,7 @@
-"""This module comprises PatchCore Sampling Methods for the embedding.
+"""k-Center Greedy Method.
 
-- k Center Greedy Method
-    Returns points that minimizes the maximum distance of any point to a center.
-    . https://arxiv.org/abs/1708.00489
+Returns points that minimizes the maximum distance of any point to a center.
+- https://arxiv.org/abs/1708.00489
 """
 
 
@@ -18,10 +17,12 @@ class KCenterGreedy:
     """Implements k-center-greedy method.
 
     Args:
+    ----
         embedding (Tensor): Embedding vector extracted from a CNN
         sampling_ratio (float): Ratio to choose coreset size from the embedding size.
 
     Example:
+    -------
         >>> embedding.shape
         torch.Size([219520, 1536])
         >>> sampler = KCenterGreedy(embedding=embedding)
@@ -48,9 +49,9 @@ class KCenterGreedy:
         """Update min distances given cluster centers.
 
         Args:
+        ----
             cluster_centers (list[int]): indices of cluster centers
         """
-
         if cluster_centers:
             centers = self.features[cluster_centers]
 
@@ -66,10 +67,10 @@ class KCenterGreedy:
 
         Based on minimum distance of the cluster
 
-        Returns:
+        Returns
+        -------
             int: Sample index
         """
-
         if isinstance(self.min_distances, Tensor):
             idx = int(torch.argmax(self.min_distances).item())
         else:
@@ -82,12 +83,13 @@ class KCenterGreedy:
         """Greedily form a coreset to minimize the maximum distance of a cluster.
 
         Args:
+        ----
             selected_idxs: index of samples already selected. Defaults to an empty set.
 
         Returns:
+        -------
           indices of samples selected to minimize distance to cluster centers
         """
-
         if selected_idxs is None:
             selected_idxs = []
 
@@ -116,12 +118,15 @@ class KCenterGreedy:
         """Select coreset from the embedding.
 
         Args:
+        ----
             selected_idxs: index of samples already selected. Defaults to an empty set.
 
         Returns:
+        -------
             Tensor: Output coreset
 
         Example:
+        -------
             >>> embedding.shape
             torch.Size([219520, 1536])
             >>> sampler = KCenterGreedy(...)
@@ -129,6 +134,5 @@ class KCenterGreedy:
             >>> coreset.shape
             torch.Size([219, 1536])
         """
-
         idxs = self.select_coreset_idxs(selected_idxs)
         return self.embedding[idxs]

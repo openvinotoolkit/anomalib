@@ -43,7 +43,7 @@ repos:
       - id: nbqa-ruff
         # Ignore unsorted imports. This is because jupyter notebooks can import
         # packages in a different order than the rest of the codebase.
-        args: ["--ignore=I001"]
+        args: ["--ignore=D100,D407,I001"]
 
   - repo: https://github.com/pre-commit/mirrors-prettier
     rev: v3.0.3

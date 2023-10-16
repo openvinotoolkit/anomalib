@@ -22,7 +22,7 @@ class _MinMaxNormalizationCallback(Callback):
     """
 
     def setup(self, trainer: Trainer, pl_module: AnomalyModule, stage: str | None = None) -> None:
-        """Adds min_max metrics to normalization metrics."""
+        """Add min_max metrics to normalization metrics."""
         del trainer, stage  # These variables are not used.
 
         if not hasattr(pl_module, "normalization_metrics"):
@@ -34,7 +34,7 @@ class _MinMaxNormalizationCallback(Callback):
             )
 
     def on_test_start(self, trainer: Trainer, pl_module: AnomalyModule) -> None:
-        """Called when the test begins."""
+        """Call when the test begins."""
         del trainer  # `trainer` variable is not used.
 
         for metric in (pl_module.image_metrics, pl_module.pixel_metrics):
@@ -50,7 +50,7 @@ class _MinMaxNormalizationCallback(Callback):
         batch_idx: int,
         dataloader_idx: int = 0,
     ) -> None:
-        """Called when the validation batch ends, update the min and max observed values."""
+        """Call when the validation batch ends, update the min and max observed values."""
         del trainer, batch, batch_idx, dataloader_idx  # These variables are not used.
 
         if "anomaly_maps" in outputs:
@@ -72,7 +72,7 @@ class _MinMaxNormalizationCallback(Callback):
         batch_idx: int,
         dataloader_idx: int = 0,
     ) -> None:
-        """Called when the test batch ends, normalizes the predicted scores and anomaly maps."""
+        """Call when the test batch ends, normalizes the predicted scores and anomaly maps."""
         del trainer, batch, batch_idx, dataloader_idx  # These variables are not used.
 
         self._normalize_batch(outputs, pl_module)
@@ -86,7 +86,7 @@ class _MinMaxNormalizationCallback(Callback):
         batch_idx: int,
         dataloader_idx: int = 0,
     ) -> None:
-        """Called when the predict batch ends, normalizes the predicted scores and anomaly maps."""
+        """Call when the predict batch ends, normalizes the predicted scores and anomaly maps."""
         del trainer, batch, batch_idx, dataloader_idx  # These variables are not used.
 
         self._normalize_batch(outputs, pl_module)

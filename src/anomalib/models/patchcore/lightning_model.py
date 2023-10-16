@@ -24,6 +24,7 @@ class Patchcore(AnomalyModule):
     """PatchcoreLightning Module to train PatchCore algorithm.
 
     Args:
+    ----
         input_size (tuple[int, int]): Size of the model input.
         backbone (str): Backbone CNN network
         layers (list[str]): Layers to extract features from the backbone CNN
@@ -57,7 +58,8 @@ class Patchcore(AnomalyModule):
     def configure_optimizers(self) -> None:
         """Configure optimizers.
 
-        Returns:
+        Returns
+        -------
             None: Do not set optimizers by returning None.
         """
         return
@@ -66,9 +68,13 @@ class Patchcore(AnomalyModule):
         """Generate feature embedding of the batch.
 
         Args:
+        ----
             batch (dict[str, str | Tensor]): Batch containing image filename, image, label and mask
+            args: Additional arguments.
+            kwargs: Additional keyword arguments.
 
         Returns:
+        -------
             dict[str, np.ndarray]: Embedding Vector
         """
         del args, kwargs  # These variables are not used.
@@ -97,10 +103,13 @@ class Patchcore(AnomalyModule):
         """Get batch of anomaly maps from input image batch.
 
         Args:
-            batch (dict[str, str | Tensor]): Batch containing image filename,
-                image, label and mask
+        ----
+            batch (dict[str, str | Tensor]): Batch containing image filename, image, label and mask
+            args: Additional arguments.
+            kwargs: Additional keyword arguments.
 
         Returns:
+        -------
             dict[str, Any]: Image filenames, test images, GT and predicted label/masks
         """
         # These variables are not used.
@@ -117,17 +126,15 @@ class Patchcore(AnomalyModule):
 
     @property
     def trainer_arguments(self) -> dict[str, Any]:
-        return {
-            "gradient_clip_val": 0,
-            "max_epochs": 1,
-            "num_sanity_val_steps": 0,
-        }
+        """Return Patchcore trainer arguments."""
+        return {"gradient_clip_val": 0, "max_epochs": 1, "num_sanity_val_steps": 0}
 
 
 class PatchcoreLightning(Patchcore):
     """PatchcoreLightning Module to train PatchCore algorithm.
 
     Args:
+    ----
         hparams (DictConfig | ListConfig): Model params
     """
 

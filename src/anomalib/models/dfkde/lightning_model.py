@@ -24,6 +24,7 @@ class Dfkde(AnomalyModule):
     """DFKDE: Deep Feature Kernel Density Estimation.
 
     Args:
+    ----
         backbone (str): Pre-trained model backbone.
         pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.
         max_training_points (int, optional): Number of training points to fit the KDE model.
@@ -64,12 +65,16 @@ class Dfkde(AnomalyModule):
         return
 
     def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> None:
-        """Training Step of DFKDE. For each batch, features are extracted from the CNN.
+        """Perform the training step of DFKDE. For each batch, features are extracted from the CNN.
 
         Args:
+        ----
             batch (batch: dict[str, str | Tensor]): Batch containing image filename, image, label and mask
+            args: Arguments.
+            kwargs: Keyword arguments.
 
         Returns:
+        -------
           Deep CNN features.
         """
         del args, kwargs  # These variables are not used.
@@ -93,15 +98,19 @@ class Dfkde(AnomalyModule):
         self.model.classifier.fit(embeddings)
 
     def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
-        """Validation Step of DFKDE.
+        """Perform the validation step of DFKDE.
 
         Similar to the training step, features are extracted from the CNN for each batch.
 
         Args:
-          batch (dict[str, str | Tensor]): Input batch
+        ----
+            batch (dict[str, str | Tensor]): Input batch
+            args: Arguments.
+            kwargs: Keyword arguments.
 
         Returns:
-          Dictionary containing probability, prediction and ground truth values.
+        -------
+            Dictionary containing probability, prediction and ground truth values.
         """
         del args, kwargs  # These variables are not used.
 
@@ -110,6 +119,7 @@ class Dfkde(AnomalyModule):
 
     @property
     def trainer_arguments(self) -> dict[str, Any]:
+        """Return DFKDE-specific trainer arguments."""
         return {"gradient_clip_val": 0, "max_epochs": 1, "num_sanity_val_steps": 0}
 
 
@@ -117,6 +127,7 @@ class DfkdeLightning(Dfkde):
     """DFKDE: Deep Feature Kernel Density Estimation.
 
     Args:
+    ----
         hparams (DictConfig | ListConfig): Model params
     """
 

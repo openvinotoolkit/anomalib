@@ -22,7 +22,7 @@ select = [
     "C90",  # mccabe (`C90`)
     "I",    # isort (`I`)
     "N",    # pep8-naming (`N`)
-    # "D",    # pydocstyle (`D`)
+    "D",    # pydocstyle (`D`)
     "UP",   # pyupgrade (`UP`)
     "YTT",  # flake8-2020 (`YTT`)
     "ANN",  # flake8-annotations (`ANN`)
@@ -68,7 +68,7 @@ select = [
 
 ignore = [
     # pydocstyle
-    # "D107", # Missing docstring in __init__
+    "D107", # Missing docstring in __init__
     # "D202", # No blank lines allowed after function docstring
     # "D203", # 1 blank line required before class docstring
     # "D213", # Multi-line docstring summary should start at the second line

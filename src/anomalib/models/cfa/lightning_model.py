@@ -33,6 +33,7 @@ class Cfa(AnomalyModule):
     """CFA: Coupled-hypersphere-based Feature Adaptation for Target-Oriented Anomaly Localization.
 
     Args:
+    ----
         input_size (tuple[int, int]): Size of the model input.
         backbone (str): Backbone CNN network
         gamma_c (int, optional): gamma_c value from the paper. Defaults to 1.
@@ -73,12 +74,16 @@ class Cfa(AnomalyModule):
         self.model.initialize_centroid(data_loader=self.trainer.datamodule.train_dataloader())
 
     def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
-        """Training step for the CFA model.
+        """Perform the training step for the CFA model.
 
         Args:
+        ----
             batch (dict[str, str | Tensor]): Batch input.
+            *args: Arguments.
+            **kwargs: Keyword arguments.
 
         Returns:
+        -------
             STEP_OUTPUT: Loss value.
         """
         del args, kwargs  # These variables are not used.
@@ -88,12 +93,16 @@ class Cfa(AnomalyModule):
         return {"loss": loss}
 
     def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
-        """Validation step for the CFA model.
+        """Perform the validation step for the CFA model.
 
         Args:
+        ----
             batch (dict[str, str | Tensor]): Input batch.
+            *args: Arguments.
+            **kwargs: Keyword arguments.
 
         Returns:
+        -------
             dict: Anomaly map computed by the model.
         """
         del args, kwargs  # These variables are not used.
@@ -102,12 +111,15 @@ class Cfa(AnomalyModule):
         return batch
 
     def backward(self, loss: Tensor, optimizer: Optimizer | None, optimizer_idx: int | None, *args, **kwargs) -> None:
-        """Backward step for the CFA model.
+        """Perform backward-pass for the CFA model.
 
         Args:
+        ----
             loss (Tensor): Loss value.
             optimizer (Optimizer | None): Optimizer.
             optimizer_idx (int | None): Optimizer index.
+            *args: Arguments.
+            **kwargs: Keyword arguments.
         """
         del optimizer, optimizer_idx, args, kwargs  # These variables are not used.
 
@@ -117,6 +129,7 @@ class Cfa(AnomalyModule):
 
     @property
     def trainer_arguments(self) -> dict[str, Any]:
+        """CFA specific trainer arguments."""
         return {"gradient_clip_val": 0, "num_sanity_val_steps": 0}
 
 
@@ -124,6 +137,7 @@ class CfaLightning(Cfa):
     """PL Lightning Module for the CFA model.
 
     Args:
+    ----
         hparams (DictConfig | ListConfig): Model params
     """
 
@@ -141,6 +155,7 @@ class CfaLightning(Cfa):
         """Configure model-specific callbacks.
 
         Note:
+        ----
             This method is used for the existing CLI.
             When PL CLI is introduced, configure callback method will be
                 deprecated, and callbacks will be configured from either
@@ -154,15 +169,17 @@ class CfaLightning(Cfa):
         return [early_stopping]
 
     def configure_optimizers(self) -> torch.optim.Optimizer:
-        """Configures optimizers for the CFA Model.
+        """Configure optimizers for the CFA Model.
 
         Note:
+        ----
             This method is used for the existing CLI.
             When PL CLI is introduced, configure optimizers method will be
                 deprecated, and optimizers will be configured from either
                 config.yaml file or from CLI.
 
         Returns:
+        -------
             Optimizer: Adam optimizer for each decoder
         """
         return torch.optim.AdamW(

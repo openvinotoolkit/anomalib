@@ -17,6 +17,7 @@ class InferenceDataset(Dataset):
     """Inference Dataset to perform prediction.
 
     Args:
+    ----
         path (str | Path): Path to an image or image-folder.
         transform (A.Compose | None, optional): Albumentations Compose object describing the transforms that are
             applied to the inputs.

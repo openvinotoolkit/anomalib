@@ -40,6 +40,7 @@ class OCBE(nn.Module):
     """One-Class Bottleneck Embedding module.
 
     Args:
+    ----
         block (Bottleneck): Expansion value is extracted from this block.
         layers (int): Numbers of OCE layers to create after multiscale feature fusion.
         groups (int, optional): Number of blocked connections from input channels to output channels.
@@ -136,9 +137,11 @@ class OCBE(nn.Module):
         """Forward-pass of Bottleneck layer.
 
         Args:
+        ----
             features (list[Tensor]): List of features extracted from the encoder.
 
         Returns:
+        -------
             Tensor: Output of the bottleneck layer
         """
         # Always assumes that features has length of 3
@@ -154,9 +157,12 @@ def get_bottleneck_layer(backbone: str, **kwargs) -> OCBE:
     """Get appropriate bottleneck layer based on the name of the backbone.
 
     Args:
+    ----
         backbone (str): Name of the backbone.
+        kwargs: Additional keyword arguments.
 
     Returns:
+    -------
         Bottleneck_layer: One-Class Bottleneck Embedding module.
     """
     return OCBE(BasicBlock, 2, **kwargs) if backbone in ("resnet18", "resnet34") else OCBE(Bottleneck, 3, **kwargs)
