@@ -12,6 +12,7 @@ import lightning.pytorch as pl
 from jsonargparse import ActionConfigFile, ArgumentParser
 from lightning.pytorch import Trainer
 from lightning.pytorch.cli import ArgsType, LightningArgumentParser, LightningCLI, SaveConfigCallback
+from lightning.pytorch.utilities.types import _EVALUATE_OUTPUT, _PREDICT_OUTPUT
 
 from anomalib.config.config import update_config
 from anomalib.data import AnomalibDataModule, TaskType
@@ -20,17 +21,16 @@ from anomalib.models import AnomalyModule
 from anomalib.utils.benchmarking import distribute
 from anomalib.utils.callbacks import get_callbacks, get_visualization_callbacks
 from anomalib.utils.callbacks.normalization import get_normalization_callback
-from anomalib.utils.hpo import Sweep, get_hpo_parser
-from anomalib.utils.loggers import configure_logger
-from anomalib.utils.metrics.threshold import BaseThreshold
-
-from .help_formatter import CustomHelpFormatter
-from .subcommands import (
+from anomalib.utils.cli.help_formatter import CustomHelpFormatter
+from anomalib.utils.cli.subcommands import (
     add_onnx_export_arguments,
     add_openvino_export_arguments,
     add_torch_export_arguments,
     run_export,
 )
+from anomalib.utils.hpo import Sweep, get_hpo_parser
+from anomalib.utils.loggers import configure_logger
+from anomalib.utils.metrics.threshold import BaseThreshold
 
 logger = logging.getLogger("anomalib.cli")
 
@@ -42,6 +42,10 @@ class AnomalibCLI(LightningCLI):
     from both the CLI and a configuration file (.yaml or .json). It is even
     possible to use both the CLI and a configuration file simultaneously.
     For more details, the reader could refer to PyTorch Lightning CLI documentation.
+
+
+    ``save_config_kwargs`` is set to overwrite=True so that the SaveConfigCallback overwrites the config if it already
+    exists.
     """
 
     def __init__(
@@ -60,7 +64,7 @@ class AnomalibCLI(LightningCLI):
             AnomalyModule,
             AnomalibDataModule,
             save_config_callback,
-            save_config_kwargs,
+            {"overwrite": True} if save_config_kwargs is None else save_config_kwargs,
             trainer_class,
             trainer_defaults,
             seed_everything_default,
@@ -87,21 +91,21 @@ class AnomalibCLI(LightningCLI):
 
     @staticmethod
     def anomalib_subcommands() -> dict[str, dict[str, Any]]:
-        """Returns a dictionary of subcommands and their description."""
+        """Return a dictionary of subcommands and their description."""
         return {
             "export": {"description": "Export the model to ONNX or OpenVINO format."},
             "benchmark": {"description": "Run benchmarking script"},
             "hpo": {"description": "Run Hyperparameter Optimization"},
         }
 
-    def _add_subcommands(self, parser: LightningArgumentParser, **kwargs: Any) -> None:
-        """Setup base subcommands and add anomalib specific on top of it."""
+    def _add_subcommands(self, parser: LightningArgumentParser, **kwargs) -> None:
+        """Initialize base subcommands and add anomalib specific on top of it."""
         # Initializes fit, validate, test, predict and tune
         super()._add_subcommands(parser, **kwargs)
         # Add  export, benchmark and hpo
         for subcommand in self.anomalib_subcommands():
             sub_parser = ArgumentParser(formatter_class=CustomHelpFormatter)
-            self.parser._subcommands_action.add_subcommand(
+            self.parser._subcommands_action.add_subcommand(  # noqa: SLF001
                 subcommand,
                 sub_parser,
                 help=self.anomalib_subcommands()[subcommand]["description"],
@@ -113,6 +117,7 @@ class AnomalibCLI(LightningCLI):
         """Extend trainer's arguments to add engine arguments.
 
         Note:
+        ----
             Since ``Engine`` parameters are manually added, any change to the ``Engine`` class should be reflected
             manually.
         """
@@ -126,13 +131,19 @@ class AnomalibCLI(LightningCLI):
         parser.add_argument("--logging.log_graph", type=bool, help="Log the model to the logger", default=False)
         parser.link_arguments("data.init_args.image_size", "model.init_args.input_size")
         parser.link_arguments("task", "data.init_args.task")
-        parser.add_argument("--results_dir.path", type=Path, help="Path to save the results.")
+        parser.add_argument(
+            "--results_dir.path",
+            type=Path,
+            help="Path to save the results.",
+            default=Path("./results"),
+        )
         parser.add_argument("--results_dir.unique", type=bool, help="Whether to create a unique folder.", default=True)
         parser.link_arguments("results_dir.path", "trainer.default_root_dir")
-        # TODO tiling should also be a category of its own
+        # TODO(ashwinvaidya17): Tiling should also be a category of its own
+        # CVS-122659
 
     def add_export_arguments(self, parser: LightningArgumentParser) -> None:
-        """Adds export arguments to the parser."""
+        """Add export arguments to the parser."""
         subcommand = parser.add_subcommands(dest="export_mode", help="Export mode.")
         # Add export mode sub parsers
         add_torch_export_arguments(subcommand)
@@ -144,7 +155,7 @@ class AnomalibCLI(LightningCLI):
         parser = get_hpo_parser(parser)
 
     def add_benchmark_arguments(self, parser: LightningArgumentParser) -> None:
-        """Adds benchmark arguments to the parser."""
+        """Add benchmark arguments to the parser."""
         parser.add_argument("--config", type=Path, help="Path to the benchmark config.", required=True)
 
     def before_instantiate_classes(self) -> None:
@@ -172,6 +183,7 @@ class AnomalibCLI(LightningCLI):
         """Instantiate the engine.
 
         Note:
+        ----
             Most of the code in this method is taken from LightningCLI's ``instantiate_trainer`` method.
             Refer to that method for more details.
         """
@@ -218,19 +230,23 @@ class AnomalibCLI(LightningCLI):
             getattr(self, f"{subcommand}")()
 
     @property
-    def fit(self):
+    def fit(self) -> Callable[..., None]:
+        """Fit the model using engine's fit method."""
         return self.engine.fit
 
     @property
-    def validate(self):
+    def validate(self) -> Callable[..., _EVALUATE_OUTPUT | None]:
+        """Validate the model using engine's validate method."""
         return self.engine.validate
 
     @property
-    def test(self):
+    def test(self) -> Callable[..., _EVALUATE_OUTPUT]:
+        """Test the model using engine's test method."""
         return self.engine.test
 
     @property
-    def predict(self):
+    def predict(self) -> Callable[..., _PREDICT_OUTPUT | None]:
+        """Predict using engine's predict method."""
         return self.engine.predict
 
     def hpo(self) -> None:

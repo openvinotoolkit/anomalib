@@ -1,3 +1,8 @@
+"""Normalization callback utils."""
+
+# Copyright (C) 2022 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
 import importlib
 
 from lightning.pytorch import Callback
@@ -27,6 +32,7 @@ def get_normalization_callback(
                 -
 
     Example:
+    -------
         >>> normalizer = get_normalization_callback(NormalizationMethod.MIN_MAX)
         or
         >>> normalizer = get_normalization_callback("min_max")
@@ -44,11 +50,11 @@ def get_normalization_callback(
         normalizer = _parse_normalizer_config(normalization_method)
     else:
         msg = f"Unknown normalizer type {normalization_method}"
-        raise ValueError(msg)
+        raise TypeError(msg)
     return normalizer
 
 
-def _get_normalizer_from_method(normalization_method) -> Callback | None:
+def _get_normalizer_from_method(normalization_method: NormalizationMethod | str) -> Callback | None:
     if normalization_method == NormalizationMethod.NONE:
         normalizer = None
     elif normalization_method == NormalizationMethod.MIN_MAX:
@@ -72,5 +78,4 @@ def _parse_normalizer_config(normalization_method: DictConfig) -> Callback:
         class_path = class_path.split(".")[-1]
     module = importlib.import_module(module_path)
     class_ = getattr(module, class_path)
-    normalizer = class_(**init_args)
-    return normalizer
+    return class_(**init_args)

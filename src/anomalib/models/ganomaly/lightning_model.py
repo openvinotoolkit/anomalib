@@ -28,6 +28,7 @@ class Ganomaly(AnomalyModule):
     """PL Lightning Module for the GANomaly Algorithm.
 
     Args:
+    ----
         batch_size (int): Batch size.
         input_size (tuple[int, int]): Input dimension.
         n_features (int): Number of features layers in the CNNs.
@@ -73,28 +74,31 @@ class Ganomaly(AnomalyModule):
 
         self.generator_loss = GeneratorLoss(wadv, wcon, wenc)
         self.discriminator_loss = DiscriminatorLoss()
+        self.automatic_optimization = False
 
-        # TODO: LR should be part of optimizer in config.yaml! Since ganomaly has custom
-        #   optimizer this is to be addressed later.
+        # TODO(ashwinvaidya17): LR should be part of optimizer in config.yaml!
+        # CVS-122670
         self.learning_rate = lr
         self.beta1 = beta1
         self.beta2 = beta2
 
     def _reset_min_max(self) -> None:
-        """Resets min_max scores."""
+        """Reset min_max scores."""
         self.min_scores = torch.tensor(float("inf"), dtype=torch.float32)  # pylint: disable=not-callable
         self.max_scores = torch.tensor(float("-inf"), dtype=torch.float32)  # pylint: disable=not-callable
 
     def configure_optimizers(self) -> list[optim.Optimizer]:
-        """Configures optimizers for each decoder.
+        """Configure optimizers for each decoder.
 
         Note:
+        ----
             This method is used for the existing CLI.
             When PL CLI is introduced, configure optimizers method will be
                 deprecated, and optimizers will be configured from either
                 config.yaml file or from CLI.
 
         Returns:
+        -------
             Optimizer: Adam optimizer for each decoder
         """
         optimizer_d = optim.Adam(
@@ -113,33 +117,49 @@ class Ganomaly(AnomalyModule):
         self,
         batch: dict[str, str | Tensor],
         batch_idx: int,
-        optimizer_idx: int,
-    ) -> STEP_OUTPUT:  # pylint: disable=arguments-differ
-        """Training step.
+    ) -> STEP_OUTPUT:
+        """Perform the training step.
 
         Args:
+        ----
             batch (dict[str, str | Tensor]): Input batch containing images.
             batch_idx (int): Batch index.
             optimizer_idx (int): Optimizer which is being called for current training step.
 
         Returns:
+        -------
             STEP_OUTPUT: Loss
         """
         del batch_idx  # `batch_idx` variables is not used.
+        d_opt, g_opt = self.optimizers()
 
         # forward pass
         padded, fake, latent_i, latent_o = self.model(batch["image"])
         pred_real, _ = self.model.discriminator(padded)
 
-        if optimizer_idx == 0:  # Discriminator
-            pred_fake, _ = self.model.discriminator(fake.detach())
-            loss = self.discriminator_loss(pred_real, pred_fake)
-        else:  # Generator
-            pred_fake, _ = self.model.discriminator(fake)
-            loss = self.generator_loss(latent_i, latent_o, padded, fake, pred_real, pred_fake)
+        # generator update
+        pred_fake, _ = self.model.discriminator(fake)
+        g_loss = self.generator_loss(latent_i, latent_o, padded, fake, pred_real, pred_fake)
 
-        self.log("train_loss", loss.item(), on_epoch=True, prog_bar=True, logger=True)
-        return {"loss": loss}
+        g_opt.zero_grad()
+        self.manual_backward(g_loss, retain_graph=True)
+        g_opt.step()
+
+        # discrimator update
+        pred_fake, _ = self.model.discriminator(fake.detach())
+        d_loss = self.discriminator_loss(pred_real, pred_fake)
+
+        d_opt.zero_grad()
+        self.manual_backward(d_loss)
+        d_opt.step()
+
+        self.log_dict(
+            {"generator_loss": g_loss.item(), "discriminator_loss": d_loss.item()},
+            on_epoch=True,
+            prog_bar=True,
+            logger=True,
+        )
+        return {"generator_loss": g_loss, "discriminator_loss": d_loss}
 
     def on_validation_start(self) -> None:
         """Reset min and max values for current validation epoch."""
@@ -150,19 +170,30 @@ class Ganomaly(AnomalyModule):
         """Update min and max scores from the current step.
 
         Args:
+        ----
             batch (dict[str, str | Tensor]): Predicted difference between z and z_hat.
+            args: Additional arguments.
+            kwargs: Additional keyword arguments.
 
         Returns:
+        -------
             (STEP_OUTPUT): Output predictions.
         """
+        del args, kwargs  # Unused arguments.
+
         batch["pred_scores"] = self.model(batch["image"])
         self.max_scores = max(self.max_scores, torch.max(batch["pred_scores"]))
         self.min_scores = min(self.min_scores, torch.min(batch["pred_scores"]))
         return batch
 
-    def on_validation_batch_end(self, outputs, batch, batch_idx, dataloader_idx=0):
+    def on_validation_batch_end(
+        self,
+        outputs: STEP_OUTPUT,
+        batch: Any,  # noqa: ANN401
+        batch_idx: int,
+        dataloader_idx: int = 0,
+    ) -> None:
         """Normalize outputs based on min/max values."""
-        # logger.info("Normalizing validation outputs based on min/max values.")
         outputs["pred_scores"] = self._normalize(outputs["pred_scores"])
         super().on_validation_batch_end(outputs, batch, batch_idx, dataloader_idx=dataloader_idx)
 
@@ -173,14 +204,21 @@ class Ganomaly(AnomalyModule):
 
     def test_step(self, batch: dict[str, str | Tensor], batch_idx: int, *args, **kwargs) -> STEP_OUTPUT:
         """Update min and max scores from the current step."""
+        del args, kwargs  # Unused arguments.
+
         super().test_step(batch, batch_idx)
         self.max_scores = max(self.max_scores, torch.max(batch["pred_scores"]))
         self.min_scores = min(self.min_scores, torch.min(batch["pred_scores"]))
         return batch
 
-    def on_test_batch_end(self, outputs, batch, batch_idx, dataloader_idx=0):
+    def on_test_batch_end(
+        self,
+        outputs: STEP_OUTPUT,
+        batch: Any,  # noqa: ANN401
+        batch_idx: int,
+        dataloader_idx: int = 0,
+    ) -> None:
         """Normalize outputs based on min/max values."""
-        # logger.info("Normalizing test outputs based on min/max values.")
         outputs["pred_scores"] = self._normalize(outputs["pred_scores"])
         super().on_test_batch_end(outputs, batch, batch_idx, dataloader_idx=dataloader_idx)
 
@@ -188,25 +226,28 @@ class Ganomaly(AnomalyModule):
         """Normalize the scores based on min/max of entire dataset.
 
         Args:
+        ----
             scores (Tensor): Un-normalized scores.
 
         Returns:
+        -------
             Tensor: Normalized scores.
         """
-        scores = (scores - self.min_scores.to(scores.device)) / (
+        return (scores - self.min_scores.to(scores.device)) / (
             self.max_scores.to(scores.device) - self.min_scores.to(scores.device)
         )
-        return scores
 
     @property
     def trainer_arguments(self) -> dict[str, Any]:
-        return {"gradient_clip_val": 0, "max_epochs": 100, "num_sanity_val_steps": 0}
+        """Return GANomaly trainer arguments."""
+        return {"gradient_clip_val": 0, "num_sanity_val_steps": 0}
 
 
 class GanomalyLightning(Ganomaly):
     """PL Lightning Module for the GANomaly Algorithm.
 
     Args:
+    ----
         hparams (DictConfig | ListConfig): Model params
     """
 
@@ -225,13 +266,14 @@ class GanomalyLightning(Ganomaly):
             beta1=hparams.model.beta1,
             beta2=hparams.model.beta2,
         )
-        self.hparams: DictConfig | ListConfig  # type: ignore
+        self.hparams: DictConfig | ListConfig
         self.save_hyperparameters(hparams)
 
     def configure_callbacks(self) -> list[Callback]:
         """Configure model-specific callbacks.
 
         Note:
+        ----
             This method is used for the existing CLI.
             When PL CLI is introduced, configure callback method will be
                 deprecated, and callbacks will be configured from either

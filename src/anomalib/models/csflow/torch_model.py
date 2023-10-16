@@ -30,6 +30,7 @@ class CrossConvolutions(nn.Module):
     """Cross convolution for the three scales.
 
     Args:
+    ----
         in_channels (int): Number of input channels.
         channels (int): Number of output channels in the hidden convolution and the upscaling layers.
         channels_hidden (int, optional): Number of input channels in the hidden convolution layers. Defaults to 512.
@@ -155,12 +156,13 @@ class CrossConvolutions(nn.Module):
 
         self.leaky_relu = nn.LeakyReLU(self.leaky_slope)
 
-    def forward(self, scale0, scale1, scale2) -> tuple[Tensor, Tensor, Tensor]:
-        """Applies the cross convolution to the three scales.
+    def forward(self, scale0: int, scale1: int, scale2: int) -> tuple[Tensor, Tensor, Tensor]:
+        """Apply the cross convolution to the three scales.
 
         This block is represented in figure 4 of the paper.
 
-        Returns:
+        Returns
+        -------
             tuple[Tensor, Tensor, Tensor]: Tensors indicating scale and transform parameters as a single tensor for
             each scale. The scale parameters are the first part across channel dimension and the transform parameters
             are the second.
@@ -204,16 +206,17 @@ class ParallelPermute(InvertibleModule):
     """Permutes input vector in a random but fixed way.
 
     Args:
+    ----
         dim (list[tuple[int]]): Dimension of the input vector.
         seed (float | None=None): Seed for the random permutation.
     """
 
-    def __init__(self, dims_in: list[tuple[int]], seed: float | None = None) -> None:
+    def __init__(self, dims_in: list[tuple[int]], seed: int | None = None) -> None:
         super().__init__(dims_in)
         self.n_inputs: int = len(dims_in)
         self.in_channels = [dims_in[i][0] for i in range(self.n_inputs)]
+        self.seed = seed
 
-        np.random.seed(seed)
         perm, perm_inv = self.get_random_perm(0)
         self.perm = [perm]  # stores the random order of channels
         self.perm_inv = [perm_inv]  # stores the inverse mapping to recover the original order of channels
@@ -224,15 +227,17 @@ class ParallelPermute(InvertibleModule):
             self.perm_inv.append(perm_inv)
 
     def get_random_perm(self, index: int) -> tuple[Tensor, Tensor]:
-        """Returns a random permutation of the channels for each input.
+        """Return a random permutation of the channels for each input.
 
         Args:
-            i: index of the input
+        ----
+            index (int): index of the input
 
         Returns:
+        -------
             tuple[Tensor, Tensor]: permutation and inverse permutation
         """
-        perm = np.random.permutation(self.in_channels[index])
+        perm = np.random.default_rng(self.seed).permutation(self.in_channels[index])
         perm_inv = np.zeros_like(perm)
         for idx, permutation in enumerate(perm):
             perm_inv[permutation] = idx
@@ -242,24 +247,28 @@ class ParallelPermute(InvertibleModule):
         return perm, perm_inv
 
     # pylint: disable=unused-argument
-    def forward(self, input_tensor: list[Tensor], rev=False, jac=True) -> tuple[list[Tensor], float]:
-        """Applies the permutation to the input.
+    def forward(self, input_tensor: list[Tensor], rev: bool = False, jac: bool = True) -> tuple[list[Tensor], float]:
+        """Apply the permutation to the input.
 
         Args:
+        ----
             input_tensor: list of input tensors
             rev: if True, applies the inverse permutation
             jac: (unused) if True, computes the log determinant of the Jacobian
 
         Returns:
+        -------
             tuple[Tensor, Tensor]: output tensor and log determinant of the Jacobian
         """
+        del jac  # Unused argument.
+
         if not rev:
             return [input_tensor[i][:, self.perm[i]] for i in range(self.n_inputs)], 0.0
 
         return [input_tensor[i][:, self.perm_inv[i]] for i in range(self.n_inputs)], 0.0
 
     def output_dims(self, input_dims: list[tuple[int]]) -> list[tuple[int]]:
-        """Returns the output dimensions of the module."""
+        """Return the output dimensions of the module."""
         return input_dims
 
 
@@ -267,6 +276,7 @@ class ParallelGlowCouplingLayer(InvertibleModule):
     """Coupling block that follows the GLOW design but is applied to all the scales in parallel.
 
     Args:
+    ----
         dims_in (list[tuple[int]]): list of dimensions of the input tensors
         subnet_args (dict): arguments of the subnet
         clamp (float): clamp value for the output of the subnet
@@ -295,13 +305,14 @@ class ParallelGlowCouplingLayer(InvertibleModule):
         return torch.exp(input_tensor)
 
     def log_e(self, input_tensor: Tensor) -> Tensor:
-        """Returns log of input. And optionally clamped to avoid numerical issues."""
+        """Return log of input. And optionally clamped to avoid numerical issues."""
         if self.clamp > 0:
             return self.clamp * 0.636 * torch.atan(input_tensor / self.clamp)
         return input_tensor
 
-    def forward(self, input_tensor: list[Tensor], rev=False, jac=True) -> tuple[list[Tensor], Tensor]:
-        """Applies GLOW coupling for the three scales."""
+    def forward(self, input_tensor: list[Tensor], rev: bool = False, jac: bool = True) -> tuple[list[Tensor], Tensor]:
+        """Apply GLOW coupling for the three scales."""
+        del jac  # Unused argument.
 
         # Even channel split. The two splits are used by cross-scale convolution to compute scale and transform
         # parameters.
@@ -391,6 +402,7 @@ class CrossScaleFlow(nn.Module):
     """Cross scale coupling layer.
 
     Args:
+    ----
         input_dims (tuple[int, int, int]): Input dimensions of the module.
         n_coupling_blocks (int): Number of coupling blocks.
         clamp (float): Clamp value for the inputs.
@@ -461,9 +473,11 @@ class CrossScaleFlow(nn.Module):
         """Forward pass.
 
         Args:
+        ----
             inputs (Tensor): Input tensor.
 
         Returns:
+        -------
             tuple[Tensor, Tensor]: Output tensor and log determinant of Jacobian.
         """
         return self.graph(inputs)
@@ -475,6 +489,7 @@ class MultiScaleFeatureExtractor(nn.Module):
     Uses 36th layer of EfficientNet-B5 to extract features.
 
     Args:
+    ----
         n_scales (int): Number of scales for input image.
         input_size (tuple[int, int]): Size of input image.
     """
@@ -491,12 +506,14 @@ class MultiScaleFeatureExtractor(nn.Module):
         )
 
     def forward(self, input_tensor: Tensor) -> list[Tensor]:
-        """Extracts features at three scales.
+        """Extract features at three scales.
 
         Args:
+        ----
             input_tensor (Tensor): Input images.
 
         Returns:
+        -------
             list[Tensor]: List of tensors containing features at three scales.
         """
         output = []
@@ -519,6 +536,7 @@ class CsFlowModel(nn.Module):
     """CS Flow Module.
 
     Args:
+    ----
         input_size (tuple[int, int]): Input image size.
         cross_conv_hidden_channels (int): Number of hidden channels in the cross convolution.
         n_coupling_blocks (int): Number of coupling blocks.
@@ -551,9 +569,11 @@ class CsFlowModel(nn.Module):
         """Forward method of the model.
 
         Args:
+        ----
             images (Tensor): Input images.
 
         Returns:
+        -------
             tuple[Tensor, Tensor]: During training: tuple containing the z_distribution for three scales and the sum
                 of log determinant of the Jacobian. During evaluation: tuple containing anomaly maps and anomaly scores
         """
@@ -571,13 +591,14 @@ class CsFlowModel(nn.Module):
         """Get anomaly scores from the latent distribution.
 
         Args:
-            z_dist (Tensor): Latent distribution.
+        ----
+            z_dists (Tensor): Latent distribution.
 
         Returns:
+        -------
             Tensor: Anomaly scores.
         """
         # z_dist is a 3 length list of tensors with shape b x 304 x fx x fy
         flat_maps = [z_dist.reshape(z_dist.shape[0], -1) for z_dist in z_dists]
         flat_maps_tensor = torch.cat(flat_maps, dim=1)
-        anomaly_scores = torch.mean(flat_maps_tensor**2 / 2, dim=1)
-        return anomaly_scores
+        return torch.mean(flat_maps_tensor**2 / 2, dim=1)

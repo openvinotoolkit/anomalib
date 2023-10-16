@@ -35,12 +35,14 @@ class _ThresholdCallback(Callback):
         self.pixel_threshold: BaseThreshold
 
     def setup(self, trainer: Trainer, pl_module: AnomalyModule, stage: str) -> None:
+        del trainer, stage  # Unused arguments.
         if not hasattr(pl_module, "image_threshold"):
             pl_module.image_threshold = self.image_threshold
         if not hasattr(pl_module, "pixel_threshold"):
             pl_module.pixel_threshold = self.pixel_threshold
 
     def on_validation_epoch_start(self, trainer: Trainer, pl_module: AnomalyModule) -> None:
+        del trainer  # Unused argument.
         self._reset(pl_module)
 
     def on_validation_batch_end(
@@ -48,28 +50,32 @@ class _ThresholdCallback(Callback):
         trainer: Trainer,
         pl_module: AnomalyModule,
         outputs: STEP_OUTPUT | None,
-        batch: Any,
+        batch: Any,  # noqa: ANN401
         batch_idx: int,
         dataloader_idx: int = 0,
     ) -> None:
+        del trainer, batch, batch_idx, dataloader_idx  # Unused arguments.
         if outputs is not None:
             self._outputs_to_cpu(outputs)
             self._update(pl_module, outputs)
 
     def on_validation_epoch_end(self, trainer: Trainer, pl_module: AnomalyModule) -> None:
+        del trainer  # Unused argument.
         self._compute(pl_module)
 
     def _initialize_thresholds(
         self,
         threshold: BaseThreshold | tuple[BaseThreshold, BaseThreshold] | DictConfig | ListConfig | str,
     ) -> None:
-        """Initializes ``self.image_threshold`` and ``self.pixel_threshold``.
+        """Initialize ``self.image_threshold`` and ``self.pixel_threshold``.
 
         Args:
+        ----
             threshold (BaseThreshold | tuple[BaseThreshold, BaseThreshold] | DictConfig | ListConfig | str):
                 Threshold configuration
 
         Example:
+        -------
             >>> _initialize_thresholds(F1AdaptiveThreshold())
             or
             >>> _initialize_thresholds((ManualThreshold(0.5), ManualThreshold(0.5)))
@@ -78,9 +84,11 @@ class _ThresholdCallback(Callback):
         For more details on configuration see :fun:`_load_from_config`
 
         Raises:
+        ------
             ValueError: Unknown threshold class or incorrect configuration
         """
-        # TODO add tests for each case
+        # TODO(djdameln): Add tests for each case
+        # CVS-122661
         # When only a single threshold class is passed.
         # This initializes image and pixel thresholds with the same class
         # >>> _initialize_thresholds(F1AdaptiveThreshold())
@@ -98,12 +106,13 @@ class _ThresholdCallback(Callback):
             self._load_from_config(threshold)
         else:
             msg = f"Invalid threshold type {type(threshold)}"
-            raise ValueError(msg)
+            raise TypeError(msg)
 
     def _load_from_config(self, threshold: DictConfig | str | ListConfig) -> None:
-        """Loads the thresholding class based on the config.
+        """Load the thresholding class based on the config.
 
         Example:
+        -------
             threshold: F1AdaptiveThreshold
             or
             threshold:
@@ -129,12 +138,13 @@ class _ThresholdCallback(Callback):
             self.pixel_threshold = self._get_threshold_from_config(threshold[1])
         else:
             msg = f"Invalid threshold config {threshold}"
-            raise ValueError(msg)
+            raise TypeError(msg)
 
     def _get_threshold_from_config(self, threshold: DictConfig | str) -> BaseThreshold:
         """Return the instantiated threshold object.
 
         Example:
+        -------
             >>> _get_threshold_from_config(F1AdaptiveThreshold)
             or
             >>> config = DictConfig({
@@ -149,6 +159,7 @@ class _ThresholdCallback(Callback):
             >>> __get_threshold_from_config(config)
 
         Returns:
+        -------
             (BaseThreshold): Instance of threshold object.
         """
         if isinstance(threshold, str):
@@ -166,15 +177,15 @@ class _ThresholdCallback(Callback):
 
         module = importlib.import_module(module_path)
         class_ = getattr(module, class_path)
-        thresholder = class_(**init_args)
-        return thresholder
+        return class_(**init_args)
 
     def _reset(self, pl_module: AnomalyModule) -> None:
         pl_module.image_threshold.reset()
         pl_module.pixel_threshold.reset()
 
-    def _outputs_to_cpu(self, output: STEP_OUTPUT):
-        # TODO this is duplicated in multiple trainer callbacks.
+    def _outputs_to_cpu(self, output: STEP_OUTPUT) -> STEP_OUTPUT | dict[str, Any]:
+        # TODO(ashwinvaidya17): This is duplicated in multiple trainer callbacks.
+        # CVS-122664
         if isinstance(output, dict):
             for key, value in output.items():
                 output[key] = self._outputs_to_cpu(value)
@@ -185,13 +196,13 @@ class _ThresholdCallback(Callback):
     def _update(self, pl_module: AnomalyModule, outputs: STEP_OUTPUT) -> None:
         pl_module.image_threshold.cpu()
         pl_module.image_threshold.update(outputs["pred_scores"], outputs["label"].int())
-        if "mask" in outputs.keys() and "anomaly_maps" in outputs.keys():
+        if "mask" in outputs and "anomaly_maps" in outputs:
             pl_module.pixel_threshold.cpu()
             pl_module.pixel_threshold.update(outputs["anomaly_maps"], outputs["mask"].int())
 
     def _compute(self, pl_module: AnomalyModule) -> None:
         pl_module.image_threshold.compute()
-        if pl_module.pixel_threshold._update_called:
+        if pl_module.pixel_threshold._update_called:  # noqa: SLF001
             pl_module.pixel_threshold.compute()
         else:
             pl_module.pixel_threshold.value = pl_module.image_threshold.value

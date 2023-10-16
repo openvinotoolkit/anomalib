@@ -31,16 +31,18 @@ class AnomalyMapGenerator(nn.Module):
         """Compute score based on the distance.
 
         Args:
+        ----
             distance (Tensor): Distance tensor computed using target oriented
                 features.
             scale (tuple[int, int]): Height and width of the largest feature
                 map.
 
         Returns:
+        -------
             Tensor: Score value.
         """
         distance = torch.sqrt(distance)
-        distance = distance.topk(self.num_nearest_neighbors, largest=False).values
+        distance = distance.topk(self.num_nearest_neighbors, largest=False).values  # noqa: PD011
         distance = (F.softmin(distance, dim=-1)[:, :, 0]) * distance[:, :, 0]
         distance = distance.unsqueeze(-1)
 
@@ -51,25 +53,28 @@ class AnomalyMapGenerator(nn.Module):
         """Compute anomaly map based on the score.
 
         Args:
+        ----
             score (Tensor): Score tensor.
 
         Returns:
+        -------
             Tensor: Anomaly map.
         """
         anomaly_map = score.mean(dim=1, keepdim=True)
         anomaly_map = F.interpolate(anomaly_map, size=self.image_size, mode="bilinear", align_corners=False)
 
         gaussian_blur = GaussianBlur2d(sigma=self.sigma).to(score.device)
-        anomaly_map = gaussian_blur(anomaly_map)  # pylint: disable=not-callable
-        return anomaly_map
+        return gaussian_blur(anomaly_map)  # pylint: disable=not-callable
 
     def forward(self, **kwargs) -> Tensor:
         """Return anomaly map.
 
-        Raises:
+        Raises
+        ------
             ``distance`` and ``scale`` keys are not found.
 
-        Returns:
+        Returns
+        -------
             Tensor: Anomaly heatmap.
         """
         if not ("distance" in kwargs and "scale" in kwargs):
@@ -80,6 +85,4 @@ class AnomalyMapGenerator(nn.Module):
         scale: tuple[int, int] = kwargs["scale"]
 
         score = self.compute_score(distance=distance, scale=scale)
-        anomaly_map = self.compute_anomaly_map(score)
-
-        return anomaly_map
+        return self.compute_anomaly_map(score)

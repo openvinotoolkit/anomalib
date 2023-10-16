@@ -13,7 +13,7 @@ from .visualizer_metric import MetricVisualizerCallback
 
 def get_visualization_callbacks(
     task: TaskType,
-    image_save_path: str,
+    image_save_path: str = "./results",
     mode: VisualizationMode = VisualizationMode.FULL,
     inputs_are_normalized: bool = True,
     show_images: bool = False,
@@ -23,28 +23,28 @@ def get_visualization_callbacks(
     """Get visualization callbacks.
 
     Args:
-        mode (VisualizationMode): The visualization mode.
+    ----
+        task (TaskType): The task type.
         image_save_path (str): Path to save images.
+        mode (VisualizationMode): The visualization mode.
         inputs_are_normalized (bool): Whether the inputs are normalized.
         show_images (bool): Whether to show images.
         log_images (bool): Whether to log images.
         save_images (bool): Whether to save images.
 
     Returns:
+    -------
         List of visualization callbacks.
     """
-    callbacks = []
-    for callback in (ImageVisualizerCallback, MetricVisualizerCallback):
-        callbacks.append(
-            callback(
-                task=task,
-                mode=mode,
-                image_save_path=image_save_path,
-                inputs_are_normalized=inputs_are_normalized,
-                show_images=show_images,
-                log_images=log_images,
-                save_images=save_images,
-            ),
+    return [
+        callback(
+            task=task,
+            mode=mode,
+            image_save_path=image_save_path,
+            inputs_are_normalized=inputs_are_normalized,
+            show_images=show_images,
+            log_images=log_images,
+            save_images=save_images,
         )
-
-    return callbacks
+        for callback in (ImageVisualizerCallback, MetricVisualizerCallback)
+    ]

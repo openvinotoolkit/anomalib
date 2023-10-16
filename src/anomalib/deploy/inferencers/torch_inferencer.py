@@ -1,4 +1,4 @@
-"""This module contains Torch inference implementations."""
+"""Torch inference implementations."""
 
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -25,6 +25,7 @@ class TorchInferencer(Inferencer):
     """PyTorch implementation for the inference.
 
     Args:
+    ----
         path (str | Path): Path to Torch model weights.
         device (str): Device to use for inference. Options are auto, cpu, cuda. Defaults to "auto".
     """
@@ -47,9 +48,11 @@ class TorchInferencer(Inferencer):
         """Get the device to use for inference.
 
         Args:
+        ----
             device (str): Device to use for inference. Options are auto, cpu, cuda.
 
         Returns:
+        -------
             torch.device: Device to use for inference.
         """
         if device not in ("auto", "cpu", "cuda", "gpu"):
@@ -66,9 +69,11 @@ class TorchInferencer(Inferencer):
         """Load the checkpoint.
 
         Args:
+        ----
             path (str | Path): Path to the torch ckpt file.
 
         Returns:
+        -------
             dict: Dictionary containing the model and metadata.
         """
         if isinstance(path, str):
@@ -78,16 +83,17 @@ class TorchInferencer(Inferencer):
             msg = f"Unknown torch checkpoint file format {path.suffix}. Make sure you save the Torch model."
             raise ValueError(msg)
 
-        checkpoint = torch.load(path, map_location=self.device)
-        return checkpoint
+        return torch.load(path, map_location=self.device)
 
     def _load_metadata(self, path: str | Path | dict | None = None) -> dict | DictConfig:
         """Load metadata from file.
 
         Args:
+        ----
             path (str | Path | dict): Path to the model pt file.
 
         Returns:
+        -------
             dict: Dictionary containing the metadata.
         """
         metadata: dict | DictConfig
@@ -99,7 +105,7 @@ class TorchInferencer(Inferencer):
 
             # Torch model should ideally contain the metadata in the checkpoint.
             # Check if the metadata is present in the checkpoint.
-            if "metadata" not in checkpoint.keys():
+            if "metadata" not in checkpoint:
                 msg = (
                     "``metadata`` is not found in the checkpoint. Please ensure that you save the model as Torch model."
                 )
@@ -109,7 +115,7 @@ class TorchInferencer(Inferencer):
             metadata = checkpoint["metadata"]
         else:
             msg = f"Unknown ``path`` type {type(path)}"
-            raise ValueError(msg)
+            raise TypeError(msg)
 
         return metadata
 
@@ -117,14 +123,15 @@ class TorchInferencer(Inferencer):
         """Load the PyTorch model.
 
         Args:
+        ----
             path (str | Path): Path to the Torch model.
 
         Returns:
+        -------
             (nn.Module): Torch model.
         """
-
         checkpoint = self._load_checkpoint(path)
-        if "model" not in checkpoint.keys():
+        if "model" not in checkpoint:
             msg = "``model`` is not found in the checkpoint. Please check the checkpoint file."
             raise KeyError(msg)
 
@@ -136,9 +143,11 @@ class TorchInferencer(Inferencer):
         """Pre process the input image by applying transformations.
 
         Args:
+        ----
             image (np.ndarray): Input image
 
         Returns:
+        -------
             Tensor: pre-processed image.
         """
         processed_image = self.transform(image=image)["image"]
@@ -152,9 +161,11 @@ class TorchInferencer(Inferencer):
         """Forward-Pass input tensor to the model.
 
         Args:
+        ----
             image (Tensor): Input tensor.
 
         Returns:
+        -------
             Tensor: Output predictions.
         """
         return self.model(image)
@@ -167,19 +178,22 @@ class TorchInferencer(Inferencer):
         """Post process the output predictions.
 
         Args:
+        ----
             predictions (Tensor | list[Tensor] | dict[str, Tensor]): Raw output predicted by the model.
             metadata (dict, optional): Meta data. Post-processing step sometimes requires
                 additional meta data such as image shape. This variable comprises such info.
                 Defaults to None.
 
         Returns:
+        -------
             dict[str, str | float | np.ndarray]: Post processed prediction results.
         """
         if metadata is None:
             metadata = self.metadata
 
         # Some models return a Tensor while others return a list or dictionary. Handle both cases.
-        # TODO: This is a temporary fix. We will wrap this post-processing stage within the model's forward pass.
+        # TODO(ashwin-vaidya17): Wrap this post-processing stage within the model's forward pass.
+        # CVS-122674
 
         # Case I: Predictions could be a tensor.
         if isinstance(predictions, Tensor):
@@ -210,9 +224,7 @@ class TorchInferencer(Inferencer):
                 pred_score = pred_score.detach()
         else:
             msg = f"Unknown prediction type {type(predictions)}. Expected Tensor, List[Tensor] or dict[str, Tensor]."
-            raise ValueError(
-                msg,
-            )
+            raise TypeError(msg)
 
         # Common practice in anomaly detection is to assign anomalous
         # label to the prediction if the prediction score is greater

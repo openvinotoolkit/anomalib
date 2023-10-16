@@ -18,33 +18,37 @@ logger = logging.getLogger(__name__)
 
 
 def get_logp(dim_feature_vector: int, p_u: Tensor, logdet_j: Tensor) -> Tensor:
-    """Returns the log likelihood estimation.
+    """Return the log likelihood estimation.
 
     Args:
+    ----
         dim_feature_vector (int): Dimensions of the condition vector
         p_u (Tensor): Random variable u
         logdet_j (Tensor): log of determinant of jacobian returned from the invertable decoder
 
     Returns:
+    -------
         Tensor: Log probability
     """
     ln_sqrt_2pi = -np.log(np.sqrt(2 * np.pi))  # ln(sqrt(2*pi))
-    logp = dim_feature_vector * ln_sqrt_2pi - 0.5 * torch.sum(p_u**2, 1) + logdet_j
-    return logp
+    return dim_feature_vector * ln_sqrt_2pi - 0.5 * torch.sum(p_u**2, 1) + logdet_j
 
 
 def positional_encoding_2d(condition_vector: int, height: int, width: int) -> Tensor:
-    """Creates embedding to store relative position of the feature vector using sine and cosine functions.
+    """Create embedding to store relative position of the feature vector using sine and cosine functions.
 
     Args:
+    ----
         condition_vector (int): Length of the condition vector
         height (int): H of the positions
         width (int): W of the positions
 
     Raises:
+    ------
         ValueError: Cannot generate encoding with conditional vector length not as multiple of 4
 
     Returns:
+    -------
         Tensor: condition_vector x HEIGHT x WIDTH position matrix
     """
     if condition_vector % 4 != 0:
@@ -75,10 +79,12 @@ def subnet_fc(dims_in: int, dims_out: int) -> nn.Sequential:
     """Subnetwork which predicts the affine coefficients.
 
     Args:
+    ----
         dims_in (int): input dimensions
         dims_out (int): output dimensions
 
     Returns:
+    -------
         nn.Sequential: Feed-forward subnetwork
     """
     return nn.Sequential(nn.Linear(dims_in, 2 * dims_in), nn.ReLU(), nn.Linear(2 * dims_in, dims_out))
@@ -94,6 +100,7 @@ def cflow_head(
     """Create invertible decoder network.
 
     Args:
+    ----
         condition_vector (int): length of the condition vector
         coupling_blocks (int): number of coupling blocks to build the decoder
         clamp_alpha (float): clamping value to avoid exploding values
@@ -103,6 +110,7 @@ def cflow_head(
             when working with >512 dimensions.
 
     Returns:
+    -------
         SequenceINN: decoder network block
     """
     coder = SequenceINN(n_features)

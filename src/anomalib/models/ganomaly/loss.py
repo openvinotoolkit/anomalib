@@ -12,12 +12,13 @@ class GeneratorLoss(nn.Module):
     """Generator loss for the GANomaly model.
 
     Args:
+    ----
         wadv (int, optional): Weight for adversarial loss. Defaults to 1.
         wcon (int, optional): Image regeneration weight. Defaults to 50.
         wenc (int, optional): Latent vector encoder weight. Defaults to 1.
     """
 
-    def __init__(self, wadv=1, wcon=50, wenc=1) -> None:
+    def __init__(self, wadv: int = 1, wcon: int = 50, wenc: int = 1) -> None:
         super().__init__()
 
         self.loss_enc = nn.SmoothL1Loss()
@@ -40,6 +41,7 @@ class GeneratorLoss(nn.Module):
         """Compute the loss for a batch.
 
         Args:
+        ----
             latent_i (Tensor): Latent features of the first encoder.
             latent_o (Tensor): Latent features of the second encoder.
             images (Tensor): Real image that served as input of the generator.
@@ -48,14 +50,14 @@ class GeneratorLoss(nn.Module):
             pred_fake (Tensor): Discriminator predictions for the fake image.
 
         Returns:
+        -------
             Tensor: The computed generator loss.
         """
         error_enc = self.loss_enc(latent_i, latent_o)
         error_con = self.loss_con(images, fake)
         error_adv = self.loss_adv(pred_real, pred_fake)
 
-        loss = error_adv * self.wadv + error_con * self.wcon + error_enc * self.wenc
-        return loss
+        return error_adv * self.wadv + error_con * self.wcon + error_enc * self.wenc
 
 
 class DiscriminatorLoss(nn.Module):
@@ -70,10 +72,12 @@ class DiscriminatorLoss(nn.Module):
         """Compute the loss for a predicted batch.
 
         Args:
+        ----
             pred_real (Tensor): Discriminator predictions for the real image.
             pred_fake (Tensor): Discriminator predictions for the fake image.
 
         Returns:
+        -------
             Tensor: The computed discriminator loss.
         """
         error_discriminator_real = self.loss_bce(
@@ -84,5 +88,4 @@ class DiscriminatorLoss(nn.Module):
             pred_fake,
             torch.zeros(size=pred_fake.shape, dtype=torch.float32, device=pred_fake.device),
         )
-        loss_discriminator = (error_discriminator_fake + error_discriminator_real) * 0.5
-        return loss_discriminator
+        return (error_discriminator_fake + error_discriminator_real) * 0.5

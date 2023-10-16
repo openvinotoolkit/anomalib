@@ -5,10 +5,9 @@
 
 
 import logging
-from collections.abc import Callable
 from pathlib import Path
 from shutil import move
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import albumentations as A  # noqa: N812
 import cv2
@@ -31,6 +30,9 @@ from anomalib.data.utils import (
 )
 from anomalib.data.utils.video import ClipsIndexer
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
 logger = logging.getLogger(__name__)
 
 DOWNLOAD_INFO = DownloadInfo(
@@ -50,10 +52,12 @@ def make_ucsd_dataset(path: Path, split: str | Split | None = None) -> DataFrame
         path/to/dataset/category/split/video_id_gt/mask_filename.bmp
 
     Args:
-        root (Path): Path to dataset
+    ----
+        path (Path): Path to dataset
         split (str | Split | None, optional): Dataset split (ie., either train or test). Defaults to None.
 
     Example:
+    -------
         The following example shows how to get testing samples from UCSDped2 category:
 
         >>> root = Path('./UCSDped')
@@ -70,6 +74,7 @@ def make_ucsd_dataset(path: Path, split: str | Split | None = None) -> DataFrame
         ...
 
     Returns:
+    -------
         DataFrame: an output dataframe containing samples for the requested split (ie., train or test)
     """
     folders = [filename for filename in sorted(path.glob("*/*")) if filename.is_dir()]
@@ -97,9 +102,8 @@ def make_ucsd_dataset(path: Path, split: str | Split | None = None) -> DataFrame
 class UCSDpedClipsIndexer(ClipsIndexer):
     """Clips class for UCSDped dataset."""
 
-    def get_mask(self, idx) -> np.ndarray | None:
+    def get_mask(self, idx: int) -> np.ndarray | None:
         """Retrieve the masks from the file system."""
-
         video_idx, frames_idx = self.get_clip_location(idx)
         mask_folder = self.mask_paths[video_idx]
         if mask_folder == "":  # no gt masks available for this clip
@@ -109,8 +113,7 @@ class UCSDpedClipsIndexer(ClipsIndexer):
         mask_frames = sorted(Path(mask_folder).glob("*.bmp"))
         mask_paths = [mask_frames[idx] for idx in frames.int()]
 
-        masks = np.stack([cv2.imread(str(mask_path), flags=0) / 255.0 for mask_path in mask_paths])
-        return masks
+        return np.stack([cv2.imread(str(mask_path), flags=0) / 255.0 for mask_path in mask_paths])
 
     def _compute_frame_pts(self) -> None:
         """Retrieve the number of frames in each video."""
@@ -122,12 +125,14 @@ class UCSDpedClipsIndexer(ClipsIndexer):
         self.video_fps = [None] * len(self.video_paths)  # fps information cannot be inferred from folder structure
 
     def get_clip(self, idx: int) -> tuple[Tensor, Tensor, dict[str, Any], int]:
-        """Gets a subclip from a list of videos.
+        """Get a subclip from a list of videos.
 
         Args:
+        ----
             idx (int): index of the subclip. Must be between 0 and num_clips().
 
         Returns:
+        -------
             video (Tensor)
             audio (Tensor)
             info (dict)
@@ -152,6 +157,7 @@ class UCSDpedDataset(AnomalibVideoDataset):
     """UCSDped Dataset class.
 
     Args:
+    ----
         task (TaskType): Task type, 'classification', 'detection' or 'segmentation'
         root (Path | str): Path to the root of the dataset
         category (str): Sub-category of the dataset, e.g. "UCSDped1" or "UCSDped2"
@@ -188,6 +194,7 @@ class UCSDped(AnomalibVideoDataModule):
     """UCSDped DataModule class.
 
     Args:
+    ----
         root (Path | str): Path to the root of the dataset
         category (str): Sub-category of the dataset, e.g. "UCSDped1" or "UCSDped2"
         clip_length_in_frames (int, optional): Number of video frames in each clip.
@@ -218,13 +225,13 @@ class UCSDped(AnomalibVideoDataModule):
 
     def __init__(
         self,
-        root: Path | str,
-        category: str,
+        root: Path | str = "./datasets/uscd",
+        category: str = "UCSDped2",
         clip_length_in_frames: int = 1,
         frames_between_clips: int = 1,
         target_frame: VideoTargetFrame = VideoTargetFrame.LAST,
         task: TaskType = TaskType.SEGMENTATION,
-        image_size: int | tuple[int, int] | None = None,
+        image_size: int | tuple[int, int] = (256, 256),
         center_crop: int | tuple[int, int] | None = None,
         normalization: str | InputNormalizationMethod = InputNormalizationMethod.IMAGENET,
         train_batch_size: int = 32,

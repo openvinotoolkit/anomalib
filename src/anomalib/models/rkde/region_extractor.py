@@ -28,6 +28,7 @@ class RegionExtractor(nn.Module):
     """Extracts regions from the image.
 
     Args:
+    ----
         stage (RoiStage, optional): Processing stage from which rois are extracted.
         score_threshold (float, optional): Mimumum confidence score for the region proposals.
         min_size (int, optional): Minimum size in pixels for the region proposals.
@@ -70,12 +71,15 @@ class RegionExtractor(nn.Module):
         """Forward pass of the model.
 
         Args:
-            input (Tensor): Batch of input images of shape [B, C, H, W].
+        ----
+            batch (Tensor): Batch of input images of shape [B, C, H, W].
 
         Raises:
+        ------
             ValueError: When ``stage`` is not one of ``rcnn`` or ``rpn``.
 
         Returns:
+        -------
             Tensor: Predicted regions, tensor of shape [N, 5] where N is the number of predicted regions in the batch,
                  and where each row describes the index of the image in the batch and the 4 bounding box coordinates.
         """
@@ -105,8 +109,7 @@ class RegionExtractor(nn.Module):
 
         # convert from list of [N, 4] tensors to single [N, 5] tensor where each row is [index-in-batch, x1, y1, x2, y2]
         indices = torch.repeat_interleave(torch.arange(len(regions)), Tensor([rois.shape[0] for rois in regions]).int())
-        regions = torch.cat([indices.unsqueeze(1).to(batch.device), torch.cat(regions)], dim=1)
-        return regions
+        return torch.cat([indices.unsqueeze(1).to(batch.device), torch.cat(regions)], dim=1)
 
     def post_process_box_predictions(self, pred_boxes: Tensor, pred_scores: Tensor) -> list[Tensor]:
         """Post-processes the box predictions.
@@ -115,13 +118,14 @@ class RegionExtractor(nn.Module):
         keeping only the k boxes with the highest confidence score.
 
         Args:
+        ----
             pred_boxes (Tensor): Box predictions of shape (N, 4).
             pred_scores (Tensor): Tensor of shape () with a confidence score for each box prediction.
 
         Returns:
+        -------
             list[Tensor]: Post-processed box predictions of shape (N, 4).
         """
-
         processed_boxes: list[Tensor] = []
         for boxes, scores in zip(pred_boxes, pred_scores, strict=True):
             # remove small boxes

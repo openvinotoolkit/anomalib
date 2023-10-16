@@ -20,6 +20,7 @@ class DfkdeModel(nn.Module):
     """Normality Model for the DFKDE algorithm.
 
     Args:
+    ----
         backbone (str): Pre-trained model backbone.
         pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.
         n_comps (int, optional): Number of PCA components. Defaults to 16.
@@ -53,9 +54,11 @@ class DfkdeModel(nn.Module):
         """Extract features from the pretrained network.
 
         Args:
+        ----
             batch (Tensor): Image batch.
 
         Returns:
+        -------
             Tensor: Tensor containing extracted features.
         """
         self.feature_extractor.eval()
@@ -64,24 +67,23 @@ class DfkdeModel(nn.Module):
             batch_size = len(layer_outputs[layer])
             layer_outputs[layer] = F.adaptive_avg_pool2d(input=layer_outputs[layer], output_size=(1, 1))
             layer_outputs[layer] = layer_outputs[layer].view(batch_size, -1)
-        layer_outputs = torch.cat(list(layer_outputs.values())).detach()
-        return layer_outputs
+        return torch.cat(list(layer_outputs.values())).detach()
 
     def forward(self, batch: Tensor) -> Tensor:
         """Prediction by normality model.
 
         Args:
+        ----
             batch (Tensor): Input images.
 
         Returns:
+        -------
             Tensor: Predictions
         """
-
         # 1. apply feature extraction
         features = self.get_features(batch)
         if self.training:
             return features
 
         # 2. apply density estimation
-        scores = self.classifier(features)
-        return scores
+        return self.classifier(features)

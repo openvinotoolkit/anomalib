@@ -25,43 +25,52 @@ class TimerCallback(Callback):
         Sets the start time to the time training started.
 
         Args:
+        ----
             trainer (Trainer): PyTorch Lightning trainer.
             pl_module (LightningModule): Current training module.
 
         Returns:
+        -------
             None
         """
         del trainer, pl_module  # These variables are not used.
 
         self.start = time.time()
 
-    def on_fit_end(self, trainer: Trainer, pl_module: LightningModule) -> None:  # pylint: disable=W0613
+    def on_fit_end(self, trainer: Trainer, pl_module: LightningModule) -> None:
         """Call when fit ends.
 
         Prints the time taken for training.
 
         Args:
+        ----
             trainer (Trainer): PyTorch Lightning trainer.
             pl_module (LightningModule): Current training module.
 
         Returns:
+        -------
             None
         """
+        del trainer, pl_module  # Unused arguments.
         logger.info("Training took %5.2f seconds", (time.time() - self.start))
 
-    def on_test_start(self, trainer: Trainer, pl_module: LightningModule) -> None:  # pylint: disable=W0613
+    def on_test_start(self, trainer: Trainer, pl_module: LightningModule) -> None:
         """Call when the test begins.
 
         Sets the start time to the time testing started.
         Goes over all the test dataloaders and adds the number of images in each.
 
         Args:
+        ----
             trainer (Trainer): PyTorch Lightning trainer.
             pl_module (LightningModule): Current training module.
 
         Returns:
+        -------
             None
         """
+        del pl_module  # Unused argument.
+
         self.start = time.time()
         self.num_images = 0
 
@@ -72,18 +81,22 @@ class TimerCallback(Callback):
                 for dataloader in trainer.test_dataloaders:
                     self.num_images += len(dataloader.dataset)
 
-    def on_test_end(self, trainer: Trainer, pl_module: LightningModule) -> None:  # pylint: disable=W0613
+    def on_test_end(self, trainer: Trainer, pl_module: LightningModule) -> None:
         """Call when the test ends.
 
         Prints the time taken for testing and the throughput in frames per second.
 
         Args:
+        ----
             trainer (Trainer): PyTorch Lightning trainer.
             pl_module (LightningModule): Current training module.
 
         Returns:
+        -------
             None
         """
+        del pl_module  # Unused argument.
+
         testing_time = time.time() - self.start
         output = f"Testing took {testing_time} seconds\nThroughput "
         if trainer.test_dataloaders is not None:

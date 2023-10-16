@@ -7,25 +7,25 @@
 import json
 import logging
 from enum import Enum
-from importlib.util import find_spec
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import torch
 from torch import Tensor
-from torch.types import Number
 
 from anomalib.data.task_type import TaskType
 from anomalib.models.components import AnomalyModule
+from anomalib.utils.exceptions import try_import
+
+if TYPE_CHECKING:
+    from torch.types import Number
 
 logger = logging.getLogger("anomalib")
 
-if find_spec("openvino") is not None:
+if try_import("openvino"):
     from openvino.runtime import Core, serialize
     from openvino.tools.mo.convert import convert_model
-else:
-    logger.warning("OpenVINO is not installed. Please install OpenVINO to use OpenVINOInferencer.")
 
 
 class ExportMode(str, Enum):
@@ -40,9 +40,11 @@ def get_model_metadata(model: AnomalyModule) -> dict[str, Tensor]:
     """Get meta data related to normalization from model.
 
     Args:
+    ----
         model (AnomalyModule): Anomaly model which contains metadata related to normalization.
 
     Returns:
+    -------
         dict[str, Tensor]: Model metadata
     """
     metadata = {}
@@ -65,12 +67,14 @@ def get_metadata(task: TaskType, transform: dict[str, Any], model: AnomalyModule
     """Get metadata for the exported model.
 
     Args:
+    ----
         task (TaskType): Task type.
         transform (dict[str, Any]): Transform used for the model.
         model (AnomalyModule): Model to export.
         export_mode (ExportMode): Mode to export the model. Torch, ONNX or OpenVINO.
 
     Returns:
+    -------
         dict[str, Any]: Metadata for the exported model.
     """
     data_metadata = {"task": task, "transform": transform}
@@ -96,6 +100,7 @@ def export(
     """Export the model to onnx format and (optionally) convert to OpenVINO IR if export mode is set to OpenVINO.
 
     Args:
+    ----
         task (TaskType): Task type.
         transform (dict[str, Any]): Data transforms (augmentatiions) used for the model.
         input_size (tuple[int, int]): Input size of the model.
@@ -132,7 +137,9 @@ def export_to_torch(model: AnomalyModule, metadata: dict[str, Any], export_path:
     """Export AnomalibModel to torch.
 
     Args:
+    ----
         model (AnomalyModule): Model to export.
+        metadata (dict[str, Any]): Metadata for the exported model.
         export_path (Path): Path to the folder storing the exported model.
     """
     torch.save(
@@ -145,11 +152,13 @@ def export_to_onnx(model: AnomalyModule, input_size: tuple[int, int], export_pat
     """Export model to onnx.
 
     Args:
+    ----
         model (AnomalyModule): Model to export.
         input_size (list[int] | tuple[int, int]): Image size used as the input for onnx converter.
         export_path (Path): Path to the root folder of the exported model.
 
     Returns:
+    -------
         Path: Path to the exported onnx model.
     """
     onnx_path = export_path / "model.onnx"
@@ -176,6 +185,7 @@ def export_to_openvino(
     """Convert onnx model to OpenVINO IR.
 
     Args:
+    ----
         export_path (Path): Path to the export folder.
         input_model (str | Path): Path to the model weights. Can be either Torch weights or ONNX model.
         metadata (dict[str, Any]): Metadata for the exported model.
@@ -192,14 +202,15 @@ def export_to_openvino(
 
 
 def _add_metadata_to_ir(xml_file: str, metadata: dict[str, Any], input_size: tuple[int, int]) -> None:
-    """Adds the metadata to the model IR.
+    """Add the metadata to the model IR.
 
     Adds the metadata to the model IR. So that it can be used with the new modelAPI.
     This is because the metadata.json is not used by the new modelAPI.
-    # TODO CVS-114640
-    # TODO: Remove this function when Anomalib is upgraded as the model graph will contain the required ops
+    # TODO(ashwinvaidya17) Remove this function when Anomalib is upgraded as the model graph will contain the ops
+    # CVS-114640
 
     Args:
+    ----
         xml_file (str): Path to the xml file.
         metadata (dict[str, Any]): Metadata to add to the model.
         input_size (tuple[int, int]): Input size of the model.
@@ -225,7 +236,7 @@ def _add_metadata_to_ir(xml_file: str, metadata: dict[str, Any], input_size: tup
                 _metadata[("model_info", "orig_width")] = transform_dict["width"]
             else:
                 msg = f"Transform {transform} is not supported currently"
-                logger.warn(msg)
+                logger.warning(msg)
 
     # Since we only need the diff of max and min, we fuse the min and max into one op
     if "min" in metadata and "max" in metadata:
@@ -247,12 +258,14 @@ def _add_metadata_to_ir(xml_file: str, metadata: dict[str, Any], input_size: tup
 
 
 def _serialize_list(arr: list[int] | list[float] | tuple[int, int]) -> str:
-    """Serializes the list to a string.
+    """Serialize the list to a string.
 
     Args:
+    ----
         arr (list[int] | list[float] | tuple[int, int]): List to serialize.
 
     Returns:
+    -------
         str: Serialized list.
     """
     return " ".join(map(str, arr))

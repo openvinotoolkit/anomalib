@@ -48,8 +48,17 @@ DOWNLOAD_INFO = DownloadInfo(
 )
 
 
-# Check if a mask shows defects
-def is_mask_anomalous(path):
+def is_mask_anomalous(path: str) -> int:
+    """Check if a mask shows defects.
+
+    Args:
+    ----
+        path (str): Path to the mask file.
+
+    Returns:
+    -------
+        int: 1 if the mask shows defects, 0 otherwise.
+    """
     img_arr = imread(path)
     if np.all(img_arr == 0):
         return 0
@@ -79,12 +88,14 @@ def make_kolektor_dataset(
     |---|--------------------|--------|-------|---------|---------------------|--------------------|-------------|
 
     Args:
+    ----
         root (Path): Path to dataset
         train_split_ratio (float, optional): Ratio to split good images into train/test
             Defaults to 0.8 for train.
         split (str | Split | None, optional): Dataset split (Either train or test). Defaults to None.
 
     Examples:
+    --------
         The following example shows how to get training samples from Kolektor Dataset:
 
         >>> root = Path('./KolektorSDD/')
@@ -99,9 +110,9 @@ def make_kolektor_dataset(
         4    KolektorSDD  kos01  train  Good  KolektorSDD/kos01/Part4.jpg  KolektorSDD/kos01/Part4_label.bmp      0
 
     Returns:
+    -------
         DataFrame: an output dataframe containing the samples of the dataset.
     """
-
     root = Path(root)
 
     # Get list of images and masks
@@ -125,7 +136,7 @@ def make_kolektor_dataset(
     masks = masks.sort_values(by="image_path", ignore_index=True)
 
     # Add mask paths for sample images
-    samples["mask_path"] = masks.image_path.values
+    samples["mask_path"] = masks.image_path.to_numpy()
 
     # Use is_good func to configure the label_index
     samples["label_index"] = samples["mask_path"].apply(is_mask_anomalous)
@@ -170,6 +181,7 @@ class KolektorDataset(AnomalibDataset):
     """Kolektor dataset class.
 
     Args:
+    ----
         task (TaskType): Task type, ``classification``, ``detection`` or ``segmentation``
         transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
         root (Path | str): Path to the root of the dataset
@@ -180,7 +192,7 @@ class KolektorDataset(AnomalibDataset):
         self,
         task: TaskType,
         transform: A.Compose,
-        root: Path | str,
+        root: Path | str = "./datasets/kolektor",
         split: str | Split | None = None,
     ) -> None:
         super().__init__(task=task, transform=transform)
@@ -196,6 +208,7 @@ class Kolektor(AnomalibDataModule):
     """Kolektor Datamodule.
 
     Args:
+    ----
         root (Path | str): Path to the root of the dataset
         image_size (int | tuple[int, int] | None, optional): Size of the input image.
             Defaults to None.
@@ -223,8 +236,8 @@ class Kolektor(AnomalibDataModule):
 
     def __init__(
         self,
-        root: Path | str,
-        image_size: int | tuple[int, int] | None = None,
+        root: Path | str = "./datasets/kolektor",
+        image_size: int | tuple[int, int] = (256, 256),
         center_crop: int | tuple[int, int] | None = None,
         normalization: str | InputNormalizationMethod = InputNormalizationMethod.IMAGENET,
         train_batch_size: int = 32,

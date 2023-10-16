@@ -33,19 +33,34 @@ def get_transforms(
     """Get transforms from config or image size.
 
     Args:
-        config (str | A.Compose | None, optional): Albumentations transforms.
+    ----
+        config (str | A.Compose | None, optional):
+            Albumentations transforms.
             Either config or albumentations ``Compose`` object. Defaults to None.
-        image_size (int | tuple | None, optional): Image size to transform. Defaults to None.
-        to_tensor (bool, optional): Boolean to convert the final transforms into Torch tensor. Defaults to True.
+        image_size (int | tuple | None, optional):
+            Image size to transform.
+            Defaults to None.
+        center_crop (int | tuple | None, optional):
+            Center crop size.
+            Defaults to None.
+        normalization (InputNormalizationMethod, optional):
+            Normalization method for the input images.
+            Defaults to InputNormalizationMethod.IMAGENET.
+        to_tensor (bool, optional):
+            Boolean to convert the final transforms into Torch tensor.
+            Defaults to True.
 
     Raises:
+    ------
         ValueError: When both ``config`` and ``image_size`` is ``None``.
         ValueError: When ``config`` is not a ``str`` or `A.Compose`` object.
 
     Returns:
+    -------
         A.Compose: Albumentation ``Compose`` object containing the image transforms.
 
     Examples:
+    --------
         >>> import skimage
         >>> image = skimage.data.astronaut()
 
@@ -86,7 +101,7 @@ def get_transforms(
             logger.info("Loading transforms from config File")
             transforms_list = []
 
-            if "Resize" not in config.keys() and image_size is not None:
+            if "Resize" not in config and image_size is not None:
                 resize_height, resize_width = get_image_height_and_width(image_size)
                 transforms_list.append(A.Resize(height=resize_height, width=resize_width, always_apply=True))
                 logger.info("Resize %s added!", (resize_height, resize_width))
@@ -112,7 +127,7 @@ def get_transforms(
             transforms = config
         else:
             msg = "config could be either ``str`` or ``A.Compose``"
-            raise ValueError(msg)
+            raise TypeError(msg)
     else:
         logger.info("No config file has been provided. Using default transforms.")
         transforms_list = []
@@ -123,9 +138,7 @@ def get_transforms(
                 "Both config and image_size cannot be `None`. "
                 "Provide either config file to de-serialize transforms or image_size to get the default transformations"
             )
-            raise ValueError(
-                msg,
-            )
+            raise ValueError(msg)
         resize_height, resize_width = get_image_height_and_width(image_size)
         transforms_list.append(A.Resize(height=resize_height, width=resize_width, always_apply=True))
 

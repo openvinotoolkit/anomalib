@@ -1,4 +1,4 @@
-"""Export utilities for Anomalib CLI"""
+"""Export utilities for Anomalib CLI."""
 
 # Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -11,42 +11,51 @@ import torch
 from jsonargparse import ActionConfigFile, Namespace
 from jsonargparse._actions import _ActionSubCommands
 from lightning.pytorch.cli import LightningArgumentParser
-from openvino.tools.mo.utils.cli_parser import get_common_cli_parser
 
 from anomalib.config.config import get_configurable_parameters
 from anomalib.data.utils.transform import get_transforms
 from anomalib.deploy import export_to_onnx, export_to_openvino, export_to_torch, get_metadata
 from anomalib.models import get_model
+from anomalib.utils.exceptions import try_import
 
 logger = logging.getLogger(__name__)
 
 
-def add_torch_export_arguments(subcommand: _ActionSubCommands):
+if try_import("openvino"):
+    from openvino.tools.mo.utils.cli_parser import get_common_cli_parser
+else:
+    get_common_cli_parser = None
+
+
+def add_torch_export_arguments(subcommand: _ActionSubCommands) -> None:
     """Add torch parser to subcommand."""
     parser = _get_export_parser("torch")
     subcommand.add_subcommand("torch", parser)
 
 
-def add_onnx_export_arguments(subcommand: _ActionSubCommands):
+def add_onnx_export_arguments(subcommand: _ActionSubCommands) -> None:
     """Add onnx parser to subcommand."""
     parser = _get_export_parser("ONNX")
     subcommand.add_subcommand("onnx", parser)
 
 
-def add_openvino_export_arguments(subcommand: _ActionSubCommands):
+def add_openvino_export_arguments(subcommand: _ActionSubCommands) -> None:
     """Add OpenVINO parser to subcommand."""
-    parser = _get_export_parser("OpenVINO")
-    group = parser.add_argument_group("OpenVINO Model Optimizer arguments (optional)")
-    mo_parser = get_common_cli_parser()
-    # remove redundant keys from mo keys
-    for arg in mo_parser._actions:
-        if arg.dest in ("help", "input_model", "output_dir"):
-            continue
-        group.add_argument(f"--mo.{arg.dest}", type=arg.type, default=arg.default, help=arg.help)
-    subcommand.add_subcommand("openvino", parser)
+    if get_common_cli_parser is not None:
+        parser = _get_export_parser("OpenVINO")
+        group = parser.add_argument_group("OpenVINO Model Optimizer arguments (optional)")
+        mo_parser = get_common_cli_parser()
+        # remove redundant keys from mo keys
+        for arg in mo_parser._actions:  # noqa: SLF001
+            if arg.dest in ("help", "input_model", "output_dir"):
+                continue
+            group.add_argument(f"--mo.{arg.dest}", type=arg.type, default=arg.default, help=arg.help)
+        subcommand.add_subcommand("openvino", parser)
+    else:
+        logger.info("OpenVINO is possibly not installed in the environment. Skipping adding it to parser.")
 
 
-def _get_export_parser(subcommand: str):
+def _get_export_parser(subcommand: str) -> LightningArgumentParser:
     """Get the parser with common params for all the export subcommands."""
     parser = LightningArgumentParser(description=f"Export to {subcommand} format")
     parser.add_argument("--weights", type=Path, help="Path to the checkpoint file.", required=True)
@@ -61,10 +70,11 @@ def _get_export_parser(subcommand: str):
     return parser
 
 
-def run_export(config: Namespace):
+def run_export(config: Namespace) -> None:
     """Run the export method.
 
     Args:
+    ----
         config (Namespace): Parsed namespace
     """
     export_mode = config.export.export_mode

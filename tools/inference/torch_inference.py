@@ -23,7 +23,8 @@ logger = logging.getLogger(__name__)
 def get_parser() -> ArgumentParser:
     """Get parser.
 
-    Returns:
+    Returns
+    -------
         ArgumentParser: The parser object.
     """
     parser = ArgumentParser()
@@ -70,9 +71,9 @@ def infer(args: Namespace) -> None:
     Show/save the output if path is to an image. If the path is a directory, go over each image in the directory.
 
     Args:
+    ----
         args (Namespace): The arguments from the command line.
     """
-
     torch.set_grad_enabled(mode=False)
 
     # Create the inferencer and visualizer.
@@ -87,7 +88,7 @@ def infer(args: Namespace) -> None:
 
         if args.output is None and args.show is False:
             msg = "Neither output path is provided nor show flag is set. Inferencer will run but return nothing."
-            logger.warn(msg)
+            logger.warning(msg)
 
         if args.output:
             file_path = generate_output_image_filename(input_path=filename, output_path=args.output)

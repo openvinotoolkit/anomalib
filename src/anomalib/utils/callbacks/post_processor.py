@@ -30,10 +30,12 @@ class _PostProcessorCallback(Callback):
         trainer: Trainer,
         pl_module: AnomalyModule,
         outputs: STEP_OUTPUT | None,
-        batch: Any,
+        batch: Any,  # noqa: ANN401
         batch_idx: int,
         dataloader_idx: int = 0,
     ) -> None:
+        del batch, batch_idx, dataloader_idx  # Unused arguments.
+
         if outputs is not None:
             self.post_process(trainer, pl_module, outputs)
 
@@ -42,10 +44,12 @@ class _PostProcessorCallback(Callback):
         trainer: Trainer,
         pl_module: AnomalyModule,
         outputs: STEP_OUTPUT | None,
-        batch: Any,
+        batch: Any,  # noqa: ANN401
         batch_idx: int,
         dataloader_idx: int = 0,
     ) -> None:
+        del batch, batch_idx, dataloader_idx  # Unused arguments.
+
         if outputs is not None:
             self.post_process(trainer, pl_module, outputs)
 
@@ -53,15 +57,17 @@ class _PostProcessorCallback(Callback):
         self,
         trainer: Trainer,
         pl_module: AnomalyModule,
-        outputs: Any,
-        batch: Any,
+        outputs: Any,  # noqa: ANN401
+        batch: Any,  # noqa: ANN401
         batch_idx: int,
         dataloader_idx: int = 0,
     ) -> None:
+        del batch, batch_idx, dataloader_idx  # Unused arguments.
+
         if outputs is not None:
             self.post_process(trainer, pl_module, outputs)
 
-    def post_process(self, trainer: Trainer, pl_module: AnomalyModule, outputs: STEP_OUTPUT):
+    def post_process(self, trainer: Trainer, pl_module: AnomalyModule, outputs: STEP_OUTPUT) -> None:
         if isinstance(outputs, dict):
             self._post_process(outputs)
             if trainer.predicting or trainer.testing:
@@ -73,9 +79,9 @@ class _PostProcessorCallback(Callback):
         outputs: dict[str, Any],
     ) -> None:
         outputs["pred_labels"] = outputs["pred_scores"] >= pl_module.image_threshold.value
-        if "anomaly_maps" in outputs.keys():
+        if "anomaly_maps" in outputs:
             outputs["pred_masks"] = outputs["anomaly_maps"] >= pl_module.pixel_threshold.value
-            if "pred_boxes" not in outputs.keys():
+            if "pred_boxes" not in outputs:
                 outputs["pred_boxes"], outputs["box_scores"] = masks_to_boxes(
                     outputs["pred_masks"],
                     outputs["anomaly_maps"],
@@ -94,7 +100,10 @@ class _PostProcessorCallback(Callback):
             if "pred_scores" not in outputs and "anomaly_maps" in outputs:
                 # infer image scores from anomaly maps
                 outputs["pred_scores"] = (
-                    outputs["anomaly_maps"].reshape(outputs["anomaly_maps"].shape[0], -1).max(dim=1).values
+                    outputs["anomaly_maps"]  # noqa: PD011
+                    .reshape(outputs["anomaly_maps"].shape[0], -1)
+                    .max(dim=1)
+                    .values
                 )
             elif "pred_scores" not in outputs and "box_scores" in outputs:
                 # infer image score from bbox confidence scores

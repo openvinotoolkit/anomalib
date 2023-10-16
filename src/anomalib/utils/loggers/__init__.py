@@ -5,8 +5,6 @@
 
 
 import logging
-import os
-from collections.abc import Iterable
 from pathlib import Path
 
 from lightning.pytorch.loggers import CSVLogger, Logger
@@ -34,19 +32,20 @@ logger = logging.getLogger(__name__)
 
 
 class UnknownLoggerError(Exception):
-    """This is raised when the logger option in `config.yaml` file is set incorrectly."""
+    """Raised when the logger option in `config.yaml` file is set incorrectly."""
 
 
 def configure_logger(level: int | str = logging.INFO) -> None:
     """Get console logger by name.
 
     Args:
+    ----
         level (int | str, optional): Logger Level. Defaults to logging.INFO.
 
     Returns:
+    -------
         Logger: The expected logger.
     """
-
     if isinstance(level, str):
         level = logging.getLevelName(level)
 
@@ -63,17 +62,20 @@ def configure_logger(level: int | str = logging.INFO) -> None:
 
 def get_experiment_logger(
     config: DictConfig | ListConfig,
-) -> Logger | Iterable[Logger] | bool:
+) -> list[Logger] | bool:
     """Return a logger based on the choice of logger in the config file.
 
     Args:
+    ----
         config (DictConfig): config.yaml file for the corresponding anomalib model.
 
     Raises:
+    ------
         ValueError: for any logger types apart from false and tensorboard
 
     Returns:
-        Logger | Iterable[Logger] | bool]: Logger
+    -------
+        list[Logger] | bool: Logger
     """
     logger.info("Loading the experiment logger(s)")
 
@@ -89,16 +91,18 @@ def get_experiment_logger(
             logger_list.append(
                 AnomalibTensorBoardLogger(
                     name="Tensorboard Logs",
-                    save_dir=os.path.join(config.project.path, "logs"),
-                    log_graph=False,  # TODO: find location for log_graph key
+                    save_dir=str(Path(config.project.path) / "logs"),
+                    # TODO(ashwinvaidya17): Find location for log_graph key
+                    # CVS-122658
+                    log_graph=False,
                 ),
             )
         elif experiment_logger == "wandb":
-            wandb_logdir = os.path.join(config.project.path, "logs")
+            wandb_logdir = str(Path(config.project.path) / "logs")
             Path(wandb_logdir).mkdir(parents=True, exist_ok=True)
             name = (
                 config.model.class_path.split(".")[-1]
-                if "category" not in config.data.init_args.keys()
+                if "category" not in config.data.init_args
                 else f"{config.data.init_args.category} {config.model.class_path.split('.')[-1]}"
             )
             logger_list.append(
@@ -109,11 +113,11 @@ def get_experiment_logger(
                 ),
             )
         elif experiment_logger == "comet":
-            comet_logdir = os.path.join(config.project.path, "logs")
+            comet_logdir = str(Path(config.project.path) / "logs")
             Path(comet_logdir).mkdir(parents=True, exist_ok=True)
             run_name = (
                 config.model.name
-                if "category" not in config.data.init_args.keys()
+                if "category" not in config.data.init_args
                 else f"{config.data.init_args.category} {config.model.class_path.split('.')[-1]}"
             )
             logger_list.append(
@@ -124,7 +128,7 @@ def get_experiment_logger(
                 ),
             )
         elif experiment_logger == "csv":
-            logger_list.append(CSVLogger(save_dir=os.path.join(config.project.path, "logs")))
+            logger_list.append(CSVLogger(save_dir=Path(config.project.path) / "logs"))
         else:
             msg = (
                 f"Unknown logger type: {config.trainer.logger}. Available loggers are: {AVAILABLE_LOGGERS}.\n"
@@ -135,7 +139,8 @@ def get_experiment_logger(
                 msg,
             )
 
-    # TODO remove this method and set these values in ``update_config``
+    # TODO(ashwinvaidya17): Remove this method and set these values in ``update_config``
+    # CVS-122657
     del config.trainer.logger
 
     return logger_list

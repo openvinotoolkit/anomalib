@@ -40,6 +40,7 @@ class OCBE(nn.Module):
     """One-Class Bottleneck Embedding module.
 
     Args:
+    ----
         block (Bottleneck): Expansion value is extracted from this block.
         layers (int): Numbers of OCE layers to create after multiscale feature fusion.
         groups (int, optional): Number of blocked connections from input channels to output channels.
@@ -76,8 +77,6 @@ class OCBE(nn.Module):
 
         # This is present in the paper but not in the original code. With some initial experiments, removing this leads
         # to better results
-        # self.conv4 = conv1x1(256 * block.expansion * 3, 256 * block.expansion * 3, 1)  # x3 as we concatenate 3 layers
-        # self.bn4 = norm_layer(256 * block.expansion * 3)
 
         for module in self.modules():
             if isinstance(module, nn.Conv2d):
@@ -120,17 +119,17 @@ class OCBE(nn.Module):
             ),
         )
         self.inplanes = planes * block.expansion
-        for _ in range(1, blocks):
-            layers.append(
-                block(
-                    self.inplanes,
-                    planes,
-                    groups=self.groups,
-                    base_width=self.base_width,
-                    dilation=self.dilation,
-                    norm_layer=norm_layer,
-                ),
+        layers = [
+            block(
+                self.inplanes,
+                planes,
+                groups=self.groups,
+                base_width=self.base_width,
+                dilation=self.dilation,
+                norm_layer=norm_layer,
             )
+            for _ in range(1, blocks)
+        ]
 
         return nn.Sequential(*layers)
 
@@ -138,9 +137,11 @@ class OCBE(nn.Module):
         """Forward-pass of Bottleneck layer.
 
         Args:
+        ----
             features (list[Tensor]): List of features extracted from the encoder.
 
         Returns:
+        -------
             Tensor: Output of the bottleneck layer
         """
         # Always assumes that features has length of 3
@@ -148,7 +149,6 @@ class OCBE(nn.Module):
         feature1 = self.relu(self.bn3(self.conv3(features[1])))
         feature_cat = torch.cat([feature0, feature1, features[2]], 1)
         output = self.bn_layer(feature_cat)
-        # output = self.bn_layer(self.bn4(self.conv4(feature_cat)))
 
         return output.contiguous()
 
@@ -157,14 +157,12 @@ def get_bottleneck_layer(backbone: str, **kwargs) -> OCBE:
     """Get appropriate bottleneck layer based on the name of the backbone.
 
     Args:
+    ----
         backbone (str): Name of the backbone.
+        kwargs: Additional keyword arguments.
 
     Returns:
+    -------
         Bottleneck_layer: One-Class Bottleneck Embedding module.
     """
-    if backbone in ("resnet18", "resnet34"):
-        ocbe = OCBE(BasicBlock, 2, **kwargs)
-    else:
-        ocbe = OCBE(Bottleneck, 3, **kwargs)
-
-    return ocbe
+    return OCBE(BasicBlock, 2, **kwargs) if backbone in ("resnet18", "resnet34") else OCBE(Bottleneck, 3, **kwargs)

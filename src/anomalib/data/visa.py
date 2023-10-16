@@ -74,6 +74,7 @@ class VisaDataset(AnomalibDataset):
     """VisA dataset class.
 
     Args:
+    ----
         task (TaskType): Task type, ``classification``, ``detection`` or ``segmentation``
         transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
         split (str | Split | None): Split of the dataset, usually Split.TRAIN or Split.TEST
@@ -102,6 +103,7 @@ class Visa(AnomalibDataModule):
     """VisA Datamodule.
 
     Args:
+    ----
         root (Path | str): Path to the root of the dataset
         category (str): Category of the MVTec dataset (e.g. "bottle" or "cable").
         image_size (int | tuple[int, int] | None, optional): Size of the input image.
@@ -128,9 +130,9 @@ class Visa(AnomalibDataModule):
 
     def __init__(
         self,
-        root: Path | str,
-        category: str,
-        image_size: int | tuple[int, int] | None = None,
+        root: Path | str = "./datasets/visa",
+        category: str = "capsules",
+        image_size: int | tuple[int, int] = (256, 256),
         center_crop: int | tuple[int, int] | None = None,
         normalization: str | InputNormalizationMethod = InputNormalizationMethod.IMAGENET,
         train_batch_size: int = 32,
@@ -246,10 +248,7 @@ class Visa(AnomalibDataModule):
             next(csvreader)
             for row in csvreader:
                 category, split, label, image_path, mask_path = row
-                if label == "normal":
-                    label = "good"
-                else:
-                    label = "bad"
+                label = "good" if label == "normal" else "bad"
                 image_name = image_path.split("/")[-1]
                 mask_name = mask_path.split("/")[-1]
 

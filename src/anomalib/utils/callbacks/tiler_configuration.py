@@ -27,9 +27,10 @@ class TilerConfigurationCallback(Callback):
         mode: ImageUpscaleMode = ImageUpscaleMode.PADDING,
         tile_count: int = 4,
     ) -> None:
-        """Sets tiling configuration from the command line.
+        """Set tiling configuration from the command line.
 
         Args:
+        ----
             enable (bool): Boolean to enable tiling operation.
                 Defaults to False.
             tile_size ([int | Sequence]): Tile size.
@@ -50,14 +51,16 @@ class TilerConfigurationCallback(Callback):
         self.tile_count = tile_count
 
     def setup(self, trainer: pl.Trainer, pl_module: pl.LightningModule, stage: str | None = None) -> None:
-        """Setup Tiler object within Anomalib Model.
+        """Set Tiler object within Anomalib Model.
 
         Args:
+        ----
             trainer (pl.Trainer): PyTorch Lightning Trainer
             pl_module (pl.LightningModule): Anomalib Model that inherits pl LightningModule.
             stage (str | None, optional): fit, validate, test or predict. Defaults to None.
 
         Raises:
+        ------
             ValueError: When Anomalib Model doesn't contain ``Tiler`` object, it means the model
                 doesn not support tiling operation.
         """

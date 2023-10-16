@@ -5,6 +5,7 @@
 
 
 from random import sample
+from typing import TYPE_CHECKING
 
 import torch
 from torch import Tensor, nn
@@ -13,7 +14,9 @@ from torch.nn import functional as F  # noqa: N812
 from anomalib.models.components import FeatureExtractor, MultiVariateGaussian
 from anomalib.models.components.feature_extractors import dryrun_find_featuremap_dims
 from anomalib.models.padim.anomaly_map import AnomalyMapGenerator
-from anomalib.pre_processing import Tiler
+
+if TYPE_CHECKING:
+    from anomalib.pre_processing import Tiler
 
 # defaults from the paper
 _N_FEATURES_DEFAULTS = {
@@ -32,7 +35,8 @@ def _deduce_dims(
     Important: `layers` is assumed to be ordered and the first (layers[0])
                 is assumed to be the layer with largest resolution.
 
-    Returns:
+    Returns
+    -------
         tuple[int, int]: Dimensions of the extracted features: (n_dims_original, n_patches)
     """
     dimensions_mapping = dryrun_find_featuremap_dims(feature_extractor, input_size, layers)
@@ -42,7 +46,7 @@ def _deduce_dims(
     n_patches = torch.tensor(first_layer_resolution).prod().int().item()
 
     # the original embedding size is the sum of the channels of all layers
-    n_features_original = sum(dimensions_mapping[layer]["num_features"] for layer in layers)  # type: ignore
+    n_features_original = sum(dimensions_mapping[layer]["num_features"] for layer in layers)  # type: ignore[misc]
 
     return n_features_original, n_patches
 
@@ -51,6 +55,7 @@ class PadimModel(nn.Module):
     """Padim Module.
 
     Args:
+    ----
         input_size (tuple[int, int]): Input size for the model.
         layers (list[str]): Layers used for feature extraction
         backbone (str, optional): Pre-trained model backbone. Defaults to "resnet18".
@@ -90,11 +95,10 @@ class PadimModel(nn.Module):
 
         self.n_features = n_features
 
-        # pylint: disable=not-callable
         # Since idx is randomly selected, save it with model to get same results
         self.register_buffer(
             "idx",
-            torch.tensor(sample(range(0, self.n_features_original), self.n_features)),
+            torch.tensor(sample(range(self.n_features_original), self.n_features)),
         )
         self.idx: Tensor
         self.loss = None
@@ -106,13 +110,16 @@ class PadimModel(nn.Module):
         """Forward-pass image-batch (N, C, H, W) into model to extract features.
 
         Args:
+        ----
             input_tensor: Image-batch (N, C, H, W)
             input_tensor: Tensor:
 
         Returns:
+        -------
             Features from single/multiple layers.
 
         Example:
+        -------
             >>> x = torch.randn(32, 3, 224, 224)
             >>> features = self.extract_features(input_tensor)
             >>> features.keys()
@@ -123,7 +130,6 @@ class PadimModel(nn.Module):
             torch.Size([32, 128, 28, 28]),
             torch.Size([32, 256, 14, 14])]
         """
-
         if self.tiler:
             input_tensor = self.tiler.tile(input_tensor)
 
@@ -148,12 +154,13 @@ class PadimModel(nn.Module):
         """Generate embedding from hierarchical feature map.
 
         Args:
+        ----
             features (dict[str, Tensor]): Hierarchical feature map from a CNN (ResNet18 or WideResnet)
 
         Returns:
+        -------
             Embedding vector
         """
-
         embeddings = features[self.layers[0]]
         for layer in self.layers[1:]:
             layer_embedding = features[layer]
@@ -162,5 +169,4 @@ class PadimModel(nn.Module):
 
         # subsample embeddings
         idx = self.idx.to(embeddings.device)
-        embeddings = torch.index_select(embeddings, 1, idx)
-        return embeddings
+        return torch.index_select(embeddings, 1, idx)

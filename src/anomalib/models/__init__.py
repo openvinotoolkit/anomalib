@@ -5,9 +5,9 @@
 
 
 import logging
-import os
 import re
 from importlib import import_module
+from pathlib import Path
 
 from omegaconf import DictConfig, ListConfig
 from torch import load
@@ -54,54 +54,59 @@ def convert_snake_to_pascal_case(snake_case: str) -> str:
     """Convert snake_case to PascalCase.
 
     Args:
+    ----
         snake_case (str): Input string in snake_case
 
     Returns:
+    -------
         str: Output string in PascalCase
 
     Examples:
+    --------
         >>> convert_snake_to_pascal_case("efficient_ad")
         EfficientAd
 
         >>> convert_snake_to_pascal_case("patchcore")
         Patchcore
     """
-    pascal_case = "".join(word.capitalize() for word in snake_case.split("_"))
-    return pascal_case
+    return "".join(word.capitalize() for word in snake_case.split("_"))
 
 
 def convert_pascal_to_snake_case(pascal_case: str) -> str:
     """Convert PascalCase to snake_case.
 
     Args:
+    ----
         pascal_case (str): Input string in PascalCase
 
     Returns:
+    -------
         str: Output string in snake_case
 
     Examples:
+    --------
         >>> convert_pascal_to_snake_case("EfficientAd")
         efficient_ad
 
         >>> convert_pascal_to_snake_case("Patchcore")
         patchcore
     """
-    snake_case = re.sub(r"(?<!^)(?=[A-Z])", "_", pascal_case).lower()
-    return snake_case
+    return re.sub(r"(?<!^)(?=[A-Z])", "_", pascal_case).lower()
 
 
 def get_available_models() -> list[str]:
     """Get list of available models.
 
     Returns:
+    -------
         list[str]: List of available models.
 
     Example:
+    -------
         >>> get_available_models()
         ['ai_vad', 'cfa', 'cflow', 'csflow', 'dfkde', 'dfm', 'draem', 'efficient_ad', 'fastflow', ...]
     """
-    available_models = [convert_pascal_to_snake_case(cls.__name__) for cls in AnomalyModule.__subclasses__()]
-    return available_models
+    return [convert_pascal_to_snake_case(cls.__name__) for cls in AnomalyModule.__subclasses__()]
 
 
 def get_model(config: DictConfig | ListConfig) -> AnomalyModule:
@@ -114,12 +119,15 @@ def get_model(config: DictConfig | ListConfig) -> AnomalyModule:
     `anomalib.models.stfpm.lightning_model.StfpmLightning`
 
     Args:
+    ----
         config (DictConfig | ListConfig): Config.yaml loaded using OmegaConf
 
     Raises:
+    ------
         ValueError: If unsupported model is passed
 
     Returns:
+    -------
         AnomalyModule: Anomaly Model
     """
     logger.info("Loading the model.")
@@ -129,11 +137,11 @@ def get_model(config: DictConfig | ListConfig) -> AnomalyModule:
         module = import_module(".".join(config.model.class_path.split(".")[:-1]))
         model = getattr(module, config.model.class_path.split(".")[-1])
         model = model(**config.model.init_args)
-    except ModuleNotFoundError as exception:
-        logger.error("Could not find the model class: %s", config.model.class_path)
-        raise exception
+    except ModuleNotFoundError:
+        logger.exception("Could not find the model class: %s", config.model.class_path)
+        raise
 
-    if "init_weights" in config.keys() and config.init_weights:
-        model.load_state_dict(load(os.path.join(config.project.path, config.init_weights))["state_dict"], strict=False)
+    if "init_weights" in config and config.init_weights:
+        model.load_state_dict(load(str(Path(config.project.path) / config.init_weights))["state_dict"], strict=False)
 
     return model

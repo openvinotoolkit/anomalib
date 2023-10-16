@@ -17,6 +17,7 @@ class InferenceDataset(Dataset):
     """Inference Dataset to perform prediction.
 
     Args:
+    ----
         path (str | Path): Path to an image or image-folder.
         transform (A.Compose | None, optional): Albumentations Compose object describing the transforms that are
             applied to the inputs.
@@ -28,7 +29,7 @@ class InferenceDataset(Dataset):
         self,
         path: str | Path,
         transform: A.Compose | None = None,
-        image_size: int | tuple[int, int] | None = None,
+        image_size: int | tuple[int, int] = (256, 256),
     ) -> None:
         super().__init__()
 
@@ -43,7 +44,7 @@ class InferenceDataset(Dataset):
         """Get the number of images in the given path."""
         return len(self.image_filenames)
 
-    def __getitem__(self, index: int) -> Any:
+    def __getitem__(self, index: int) -> dict[str, Any]:
         """Get the image based on the `index`."""
         image_filename = self.image_filenames[index]
         image = read_image(path=image_filename)

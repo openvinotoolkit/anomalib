@@ -4,8 +4,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-from typing import Any
-
 import numpy as np
 from matplotlib.figure import Figure
 
@@ -22,7 +20,9 @@ class AnomalibCometLogger(ImageLoggerBase, CometLogger):
     """Logger for comet.
 
     Adds interface for `add_image` in the logger rather than calling the experiment object.
+
     Note:
+    ----
         Same as the CometLogger provided by PyTorch Lightning and the doc string is reproduced below.
 
     Track your parameters, metrics, source code and more using
@@ -37,6 +37,7 @@ class AnomalibCometLogger(ImageLoggerBase, CometLogger):
     Comet requires either an API Key (online mode) or a local directory path (offline mode).
 
     Args:
+    ----
         api_key: Required in online mode. API key, found on Comet.ml. If not given, this
             will be loaded from the environment variable COMET_API_KEY or ~/.comet.config
             if either exists.
@@ -58,17 +59,21 @@ class AnomalibCometLogger(ImageLoggerBase, CometLogger):
             :class:`CometExperiment` can be passed as keyword arguments in this logger.
 
     Raises:
+    ------
         ModuleNotFoundError:
             If required Comet package is not installed on the device.
         MisconfigurationException:
             If neither ``api_key`` nor ``save_dir`` are passed as arguments.
+
     Example:
+    -------
         >>> from anomalib.utils.loggers import AnomalibCometLogger
         >>> from anomalib.engine import Engine
         >>> comet_logger = AnomalibCometLogger()
         >>> engine =  Engine(logger=comet_logger)
 
     See Also:
+    --------
         - `Comet Documentation <https://www.comet.com/docs/v2/integrations/ml-frameworks/pytorch-lightning/>`__
     """
 
@@ -98,10 +103,11 @@ class AnomalibCometLogger(ImageLoggerBase, CometLogger):
         self.experiment.log_other("Created from", "Anomalib")
 
     @rank_zero_only
-    def add_image(self, image: np.ndarray | Figure, name: str | None = None, **kwargs: Any) -> None:
+    def add_image(self, image: np.ndarray | Figure, name: str | None = None, **kwargs) -> None:
         """Interface to add image to comet logger.
 
         Args:
+        ----
             image (np.ndarray | Figure): Image to log
             name (str | None): The tag of the image
             kwargs: Accepts only `global_step` (int). The step at which to log the image.

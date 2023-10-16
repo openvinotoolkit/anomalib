@@ -5,17 +5,20 @@
 
 
 import logging
-from collections.abc import Iterator
 from copy import copy
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from nncf import NNCFConfig
 from nncf.api.compression import CompressionAlgorithmController
 from nncf.torch import create_compressed_model, load_state, register_default_init_args
 from nncf.torch.initialization import PTInitializingDataLoader
 from nncf.torch.nncf_network import NNCFNetwork
-from torch import nn
+from torch import Tensor, nn
 from torch.utils.data.dataloader import DataLoader
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
+
 
 logger = logging.getLogger(name="NNCF compression")
 
@@ -27,34 +30,36 @@ class InitLoader(PTInitializingDataLoader):
         super().__init__(data_loader)
         self._data_loader_iter: Iterator
 
-    def __iter__(self):
+    def __iter__(self) -> "InitLoader":
         """Create iterator for dataloader."""
         self._data_loader_iter = iter(self._data_loader)
         return self
 
-    def __next__(self) -> Any:
+    def __next__(self) -> Tensor:
         """Return next item from dataloader iterator."""
         loaded_item = next(self._data_loader_iter)
         return loaded_item["image"]
 
-    def get_inputs(self, dataloader_output) -> tuple[tuple, dict]:
+    def get_inputs(self, dataloader_output: dict[str, str | Tensor]) -> tuple[tuple, dict]:
         """Get input to model.
 
-        Returns:
+        Returns
+        -------
             (dataloader_output,), {}: tuple[tuple, dict]: The current model call to be made during
             the initialization process
         """
         return (dataloader_output,), {}
 
-    def get_target(self, _):
+    def get_target(self, _):  # noqa: ANN001, ANN201
         """Return structure for ground truth in loss criterion based on dataloader output.
 
         This implementation does not do anything and is a placeholder.
 
-        Returns:
+        Returns
+        -------
             None
         """
-        return None
+        return
 
 
 def wrap_nncf_model(
@@ -87,7 +92,7 @@ def wrap_nncf_model(
         compression_state = init_state_dict.get("compression_state")
 
     if dataloader:
-        init_loader = InitLoader(dataloader)  # type: ignore
+        init_loader = InitLoader(dataloader)
         nncf_config = register_default_init_args(nncf_config, init_loader)
 
     nncf_ctrl, nncf_model = create_compressed_model(
@@ -104,7 +109,7 @@ def wrap_nncf_model(
 
 
 def is_state_nncf(state: dict) -> bool:
-    """The function to check if sate is the result of NNCF-compressed model."""
+    """Check if state is the result of NNCF-compressed model."""
     return bool(state.get("meta", {}).get("nncf_enable_compression", False))
 
 
@@ -128,9 +133,9 @@ def compose_nncf_config(nncf_config: dict, enabled_options: list[str]) -> dict:
         assert isinstance(order_of_parts, list), 'The field "order_of_parts" in optimisation config should be a list'
 
         for part in enabled_options:
-            assert part in order_of_parts, (
-                f"The part {part} is selected, " "but it is absent in order_of_parts={order_of_parts}"
-            )
+            assert (
+                part in order_of_parts
+            ), f"The part {part} is selected, but it is absent in order_of_parts={order_of_parts}"
 
         optimisation_parts_to_choose = [part for part in order_of_parts if part in enabled_options]
 
@@ -154,28 +159,51 @@ def compose_nncf_config(nncf_config: dict, enabled_options: list[str]) -> dict:
     return nncf_config_part
 
 
-# pylint: disable=invalid-name
-def merge_dicts_and_lists_b_into_a(a, b):
-    """The function to merge dict configs."""
+def merge_dicts_and_lists_b_into_a(
+    a: dict[Any, Any] | list[Any],
+    b: dict[Any, Any] | list[Any],
+) -> dict[Any, Any] | list[Any]:
+    """Merge dict configs.
+
+    Args:
+    ----
+        a (dict[Any, Any] | list[Any]): First dict or list.
+        b (dict[Any, Any] | list[Any]): Second dict or list.
+
+    Returns:
+    -------
+        dict[Any, Any] | list[Any]: Merged dict or list.
+    """
     return _merge_dicts_and_lists_b_into_a(a, b, "")
 
 
-def _merge_dicts_and_lists_b_into_a(a, b, cur_key=None):
-    """The function is inspired by mmcf.Config._merge_a_into_b.
+def _merge_dicts_and_lists_b_into_a(
+    a: dict[Any, Any] | list[Any],
+    b: dict[Any, Any] | list[Any],
+    cur_key: int | str | None = None,
+) -> dict[Any, Any] | list[Any]:
+    """Merge dict configs.
 
-    * works with usual dicts and lists and derived types
-    * supports merging of lists (by concatenating the lists)
-    * makes recursive merging for dict + dict case
-    * overwrites when merging scalar into scalar
-    Note that we merge b into a (whereas Config makes merge a into b),
-    since otherwise the order of list merging is counter-intuitive.
+        * works with usual dicts and lists and derived types
+        * supports merging of lists (by concatenating the lists)
+        * makes recursive merging for dict + dict case
+        * overwrites when merging scalar into scalar
+        Note that we merge b into a (whereas Config makes merge a into b),
+        since otherwise the order of list merging is counter-intuitive.
+
+    Args:
+    ----
+        a (dict[Any, Any] | list[Any]): First dict or list.
+        b (dict[Any, Any] | list[Any]): Second dict or list.
+        cur_key (int | str | None, optional): key for current level of recursion. Defaults to None.
+
+    Returns:
+    -------
+        dict[Any, Any] | list[Any]: Merged dict or list.
     """
 
-    def _err_str(_a, _b, _key):
-        if _key is None:
-            _key_str = "of whole structures"
-        else:
-            _key_str = f"during merging for key=`{_key}`"
+    def _err_str(_a: dict | list, _b: dict | list, _key: int | str | None = None) -> str:
+        _key_str = "of whole structures" if _key is None else f"during merging for key=`{_key}`"
         return (
             f"Error in merging parts of config: different types {_key_str},"
             f" type(a) = {type(_a)},"
@@ -185,16 +213,16 @@ def _merge_dicts_and_lists_b_into_a(a, b, cur_key=None):
     assert isinstance(a, dict | list), f"Can merge only dicts and lists, whereas type(a)={type(a)}"
     assert isinstance(b, dict | list), _err_str(a, b, cur_key)
     assert isinstance(a, list) == isinstance(b, list), _err_str(a, b, cur_key)
-    if isinstance(a, list):
+    if isinstance(a, list) and isinstance(b, list):
         # the main diff w.r.t. mmcf.Config -- merging of lists
         return a + b
 
     a = copy(a)
-    for k in b.keys():
+    for k in b:
         if k not in a:
             a[k] = copy(b[k])
             continue
-        new_cur_key = cur_key + "." + k if cur_key else k
+        new_cur_key = str(cur_key) + "." + k if cur_key else k
         if isinstance(a[k], dict | list):
             a[k] = _merge_dicts_and_lists_b_into_a(a[k], b[k], new_cur_key)
             continue

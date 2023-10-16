@@ -32,14 +32,17 @@ def get_return_nodes(backbone: str) -> list[str]:
     """Get the return nodes for a given backbone.
 
     Args:
+    ----
         backbone (str): The name of the backbone. Must be one of
             {"resnet18", "wide_resnet50_2", "vgg19_bn", "efficientnet_b5"}.
 
     Raises:
+    ------
         NotImplementedError: If the backbone is "efficientnet_b5".
         ValueError: If the backbone is not one of the supported backbones.
 
     Returns:
+    -------
         list[str]: A list of return nodes for the given backbone.
     """
     if backbone == "efficientnet_b5":
@@ -57,19 +60,23 @@ def get_return_nodes(backbone: str) -> list[str]:
     return return_nodes
 
 
-# TODO: Replace this with the new torchfx feature extractor.
+# TODO(samet-akcay): Replace this with the new torchfx feature extractor.
+# CVS-122673
 def get_feature_extractor(backbone: str, return_nodes: list[str]) -> GraphModule:
     """Get the feature extractor from the backbone CNN.
 
     Args:
+    ----
         backbone (str): Backbone CNN network
         return_nodes (list[str]): A list of return nodes for the given backbone.
 
     Raises:
+    ------
         NotImplementedError: When the backbone is efficientnet_b5
         ValueError: When the backbone is not supported
 
     Returns:
+    -------
         GraphModule: Feature extractor.
     """
     model = getattr(torchvision.models, backbone)(pretrained=True)
@@ -83,6 +90,7 @@ class CfaModel(DynamicBufferModule):
     """Torch implementation of the CFA Model.
 
     Args:
+    ----
         input_size: (tuple[int, int]): Input size of the image tensor.
         backbone (str): Backbone CNN network.
         gamma_c (int): gamma_c parameter from the paper.
@@ -123,16 +131,14 @@ class CfaModel(DynamicBufferModule):
         # Scale is to get the largest feature map dimensions of different layers
         # of the feature extractor. In a typical feature extractor, the first
         # layer has the highest resolution.
-        resolution = list(feature_map_metadata.values())[0]["resolution"]
+        resolution = next(iter(feature_map_metadata.values()))["resolution"]
         if isinstance(resolution, int):
             self.scale = (resolution,) * 2
         elif isinstance(resolution, tuple):
             self.scale = resolution
         else:
             msg = f"Unknown type {type(resolution)} for `resolution`. Expected types are either int or tuple[int, int]."
-            raise ValueError(
-                msg,
-            )
+            raise TypeError(msg)
 
         self.descriptor = Descriptor(self.gamma_d, backbone)
         self.radius = torch.ones(1, requires_grad=True) * radius
@@ -146,9 +152,11 @@ class CfaModel(DynamicBufferModule):
         """Initialize the Centroid of the Memory Bank.
 
         Args:
+        ----
             data_loader (DataLoader):  Train Dataloader.
 
         Returns:
+        -------
             Tensor: Memory Bank.
         """
         device = next(self.feature_extractor.parameters()).device
@@ -163,7 +171,8 @@ class CfaModel(DynamicBufferModule):
         self.memory_bank = rearrange(self.memory_bank, "b c h w -> (b h w) c")
 
         if self.gamma_c > 1:
-            # TODO: Create PyTorch KMeans class.
+            # TODO(samet-akcay): Create PyTorch KMeans class.
+            # CVS-122673
             k_means = KMeans(n_clusters=(self.scale[0] * self.scale[1]) // self.gamma_c, max_iter=3000)
             cluster_centers = k_means.fit(self.memory_bank.cpu()).cluster_centers_
             self.memory_bank = torch.tensor(cluster_centers, requires_grad=False).to(device)
@@ -174,10 +183,12 @@ class CfaModel(DynamicBufferModule):
         """Compute distance using target oriented features.
 
         Args:
+        ----
             target_oriented_features (Tensor): Target oriented features computed
                 using the descriptor.
 
         Returns:
+        -------
             Tensor: Distance tensor.
         """
         if target_oriented_features.ndim == 4:
@@ -186,19 +197,21 @@ class CfaModel(DynamicBufferModule):
         features = target_oriented_features.pow(2).sum(dim=2, keepdim=True)
         centers = self.memory_bank.pow(2).sum(dim=0, keepdim=True).to(features.device)
         f_c = 2 * torch.matmul(target_oriented_features, (self.memory_bank.to(features.device)))
-        distance = features + centers - f_c
-        return distance
+        return features + centers - f_c
 
     def forward(self, input_tensor: Tensor) -> Tensor:
         """Forward pass.
 
         Args:
+        ----
             input_tensor (Tensor): Input tensor.
 
         Raises:
+        ------
             ValueError: When the memory bank is not initialized.
 
         Returns:
+        -------
             Tensor: Loss or anomaly map depending on the train/eval mode.
         """
         if self.memory_bank.ndim == 0:
@@ -213,12 +226,7 @@ class CfaModel(DynamicBufferModule):
         target_features = self.descriptor(features)
         distance = self.compute_distance(target_features)
 
-        if self.training:
-            output = distance
-        else:
-            output = self.anomaly_map_generator(distance=distance, scale=self.scale)
-
-        return output
+        return distance if self.training else self.anomaly_map_generator(distance=distance, scale=self.scale)
 
 
 class Descriptor(nn.Module):
@@ -232,7 +240,8 @@ class Descriptor(nn.Module):
             msg = f"Supported backbones are {SUPPORTED_BACKBONES}. Got {self.backbone} instead."
             raise ValueError(msg)
 
-        # TODO: Automatically infer the number of dims
+        # TODO(samet-akcay): Automatically infer the number of dims
+        # CVS-122673
         backbone_dims = {"vgg19_bn": 1280, "resnet18": 448, "wide_resnet50_2": 1792, "efficientnet_b5": 568}
         dim = backbone_dims[backbone]
         out_channels = 2 * dim // gamma_d if backbone == "efficientnet_b5" else dim // gamma_d
@@ -253,8 +262,7 @@ class Descriptor(nn.Module):
                 else torch.cat((patch_features, F.interpolate(i, patch_features.size(2), mode="bilinear")), dim=1)
             )
 
-        target_oriented_features = self.layer(patch_features)
-        return target_oriented_features
+        return self.layer(patch_features)
 
 
 class CoordConv2d(nn.Conv2d):
@@ -308,14 +316,15 @@ class CoordConv2d(nn.Conv2d):
         """Forward pass.
 
         Args:
+        ----
             input_tensor (Tensor): Input tensor.
 
         Returns:
+        -------
             Tensor: Output tensor after applying the CoordConv layer.
         """
         out = self.add_coords(input_tensor)
-        out = self.conv2d(out)
-        return out
+        return self.conv2d(out)
 
 
 class AddCoords(nn.Module):
@@ -336,9 +345,11 @@ class AddCoords(nn.Module):
         """Forward pass.
 
         Args:
+        ----
             input_tensor (Tensor): Input tensor
 
         Returns:
+        -------
             Tensor: Output tensor with added coordinates.
         """
         # NOTE: This is a modified version of the original implementation,

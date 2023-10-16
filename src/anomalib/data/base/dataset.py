@@ -22,7 +22,7 @@ from anomalib.data.task_type import TaskType
 from anomalib.data.utils import masks_to_boxes, read_image
 
 _EXPECTED_COLUMNS_CLASSIFICATION = ["image_path", "split"]
-_EXPECTED_COLUMNS_SEGMENTATION = _EXPECTED_COLUMNS_CLASSIFICATION + ["mask_path"]
+_EXPECTED_COLUMNS_SEGMENTATION = [*_EXPECTED_COLUMNS_CLASSIFICATION, "mask_path"]
 _EXPECTED_COLUMNS_PERTASK = {
     "classification": _EXPECTED_COLUMNS_CLASSIFICATION,
     "segmentation": _EXPECTED_COLUMNS_SEGMENTATION,
@@ -36,6 +36,7 @@ class AnomalibDataset(Dataset, ABC):
     """Anomalib dataset.
 
     Args:
+    ----
         task (str): Task type, either 'classification' or 'segmentation'
         transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
     """
@@ -54,6 +55,7 @@ class AnomalibDataset(Dataset, ABC):
         """Subsamples the dataset at the provided indices.
 
         Args:
+        ----
             indices (Sequence[int]): Indices at which the dataset is to be subsampled.
             inplace (bool): When true, the subsampling will be performed on the instance itself.
         """
@@ -80,6 +82,7 @@ class AnomalibDataset(Dataset, ABC):
         """Overwrite the samples with a new dataframe.
 
         Args:
+        ----
             samples (DataFrame): DataFrame with new samples.
         """
         # validate the passed samples by checking the
@@ -106,13 +109,14 @@ class AnomalibDataset(Dataset, ABC):
         """Get dataset item for the index ``index``.
 
         Args:
+        ----
             index (int): Index to get the item.
 
         Returns:
+        -------
             Union[dict[str, Tensor], dict[str, str | Tensor]]: Dict of image tensor during training.
                 Otherwise, Dict containing image path, target path, image tensor, label and transformed bounding box.
         """
-
         image_path = self._samples.iloc[index].image_path
         mask_path = self._samples.iloc[index].mask_path
         label_index = self._samples.iloc[index].label_index
@@ -127,10 +131,7 @@ class AnomalibDataset(Dataset, ABC):
             # Only Anomalous (1) images have masks in anomaly datasets
             # Therefore, create empty mask for Normal (0) images.
 
-            if label_index == 0:
-                mask = np.zeros(shape=image.shape[:2])
-            else:
-                mask = cv2.imread(mask_path, flags=0) / 255.0
+            mask = np.zeros(shape=image.shape[:2]) if label_index == 0 else cv2.imread(mask_path, flags=0) / 255.0
 
             transformed = self.transform(image=image, mask=mask)
 
@@ -176,6 +177,7 @@ class AnomalibDataset(Dataset, ABC):
             mask_path (if task == "segmentation"): path to the ground truth masks (for the anomalous images only).
 
         Example:
+        -------
         |---|-------------------|-----------|-------------|------------------|-------|
         |   | image_path        | label     | label_index | mask_path        | split |
         |---|-------------------|-----------|-------------|------------------|-------|

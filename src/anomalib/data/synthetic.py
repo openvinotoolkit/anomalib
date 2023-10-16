@@ -42,12 +42,13 @@ def make_synthetic_dataset(
     For the synthetic anomalous images, the masks will be saved under <root>/ground_truth.
 
     Args:
+    ----
         source_samples (DataFrame): Normal images that will be used as source for the synthetic anomalous images.
         image_dir (Path): Directory to which the synthetic anomalous image files will be written.
         mask_dir (Path): Directory to which the ground truth anomaly masks will be written.
         anomalous_ratio (float): Fraction of source samples that will be converted into anomalous samples.
     """
-    assert 1 not in source_samples.label_index.values, "All source images must be normal."
+    assert 1 not in source_samples.label_index.to_numpy(), "All source images must be normal."
     assert image_dir.is_dir(), f"{image_dir} is not a folder."
     assert mask_dir.is_dir(), f"{mask_dir} is not a folder"
 
@@ -66,15 +67,17 @@ def make_synthetic_dataset(
     transform = A.Compose([A.ToFloat(), ToTensorV2()])
 
     def augment(sample: Series) -> Series:
-        """Helper function to apply synthetic anomalous augmentation to a sample from a dataframe.
+        """Apply synthetic anomalous augmentation to a sample from a dataframe.
 
         Reads an image, applies the augmentations, writes the augmented image and corresponding mask to the file system,
         and returns a new Series object with the updates labels and file locations.
 
         Args:
+        ----
             sample (Series): DataFrame row containing info about the image that will be augmented.
 
         Returns:
+        -------
             Series: DataFrame row with updated information about the augmented image.
         """
         # read and transform image
@@ -104,15 +107,14 @@ def make_synthetic_dataset(
 
     anomalous_samples = anomalous_samples.apply(augment, axis=1)
 
-    samples = pd.concat([normal_samples, anomalous_samples], ignore_index=True)
-
-    return samples
+    return pd.concat([normal_samples, anomalous_samples], ignore_index=True)
 
 
 class SyntheticAnomalyDataset(AnomalibDataset):
     """Dataset which reads synthetically generated anomalous images from a temporary folder.
 
     Args:
+    ----
         task (str): Task type, either "classification" or "segmentation".
         transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
         source_samples (DataFrame): Normal samples to which the anomalous augmentations will be applied.
@@ -139,17 +141,18 @@ class SyntheticAnomalyDataset(AnomalibDataset):
         self.setup()
 
     @classmethod
-    def from_dataset(cls, dataset: AnomalibDataset) -> "SyntheticAnomalyDataset":
+    def from_dataset(cls: type["SyntheticAnomalyDataset"], dataset: AnomalibDataset) -> "SyntheticAnomalyDataset":
         """Create a synthetic anomaly dataset from an existing dataset of normal images.
 
         Args:
+        ----
             dataset (AnomalibDataset): Dataset consisting of only normal images that will be converrted to a synthetic
                 anomalous dataset with a 50/50 normal anomalous split.
         """
         return cls(task=dataset.task, transform=dataset.transform, source_samples=dataset.samples)
 
     def __copy__(self) -> "SyntheticAnomalyDataset":
-        """Returns a shallow copy of the dataset object and prevents cleanup when original object is deleted."""
+        """Return a shallow copy of the dataset object and prevents cleanup when original object is deleted."""
         cls = self.__class__
         new = cls.__new__(cls)
         new.__dict__.update(self.__dict__)
@@ -157,7 +160,7 @@ class SyntheticAnomalyDataset(AnomalibDataset):
         return new
 
     def __deepcopy__(self, _memo: dict) -> "SyntheticAnomalyDataset":
-        """Returns a deep copy of the dataset object and prevents cleanup when original object is deleted."""
+        """Return a deep copy of the dataset object and prevents cleanup when original object is deleted."""
         cls = self.__class__
         new = cls.__new__(cls)
         for key, value in self.__dict__.items():

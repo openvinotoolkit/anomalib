@@ -14,7 +14,7 @@ class AnomalibMetricCollection(MetricCollection):
         self._update_called = False
         self._threshold = 0.5
 
-    def set_threshold(self, threshold_value) -> None:
+    def set_threshold(self, threshold_value: float) -> None:
         """Update the threshold value for all metrics that have the threshold attribute."""
         self._threshold = threshold_value
         for metric in self.values():

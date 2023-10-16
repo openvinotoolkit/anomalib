@@ -21,12 +21,15 @@ def get_image_height_and_width(image_size: int | tuple | None = None) -> tuple[i
     """Get image height and width from ``image_size`` variable.
 
     Args:
+    ----
         image_size (int | tuple | None, optional): Input image size.
 
     Raises:
+    ------
         ValueError: Image size not None, int or tuple.
 
     Examples:
+    --------
         >>> get_image_height_and_width(image_size=256)
         (256, 256)
 
@@ -43,6 +46,7 @@ def get_image_height_and_width(image_size: int | tuple | None = None) -> tuple[i
         ValueError: ``image_size`` could be either int or tuple[int, int]
 
     Returns:
+    -------
         tuple[int | None, int | None]: A tuple containing image height and width values.
     """
     height_and_width: tuple[int | None, int | None]
@@ -67,19 +71,23 @@ def get_transforms(
     """Get transforms from config or image size.
 
     Args:
+    ----
         config (str | A.Compose | None, optional): Albumentations transforms.
             Either config or albumentations ``Compose`` object. Defaults to None.
         image_size (int | tuple | None, optional): Image size to transform. Defaults to None.
         to_tensor (bool, optional): Boolean to convert the final transforms into Torch tensor. Defaults to True.
 
     Raises:
+    ------
         ValueError: When both ``config`` and ``image_size`` is ``None``.
         ValueError: When ``config`` is not a ``str`` or `A.Compose`` object.
 
     Returns:
+    -------
         A.Compose: Albumentation ``Compose`` object containing the image transforms.
 
     Examples:
+    --------
         >>> import skimage
         >>> image = skimage.data.astronaut()
 
@@ -148,11 +156,10 @@ def get_transforms(
             transforms = config
         else:
             msg = "config could be either ``str`` or ``A.Compose``"
-            raise ValueError(msg)
+            raise TypeError(msg)
 
-    if not to_tensor:
-        if isinstance(transforms[-1], ToTensorV2):
-            transforms = A.Compose(transforms[:-1])
+    if not to_tensor and isinstance(transforms[-1], ToTensorV2):
+        transforms = A.Compose(transforms[:-1])
 
     # always resize to specified image size
     if not any(isinstance(transform, A.Resize) for transform in transforms) and image_size is not None:
@@ -170,6 +177,7 @@ class PreProcessor:
     For the inference it returns a numpy array.
 
     Args:
+    ----
         config (str | A.Compose | None, optional): Transformation configurations.
             When it is ``None``, ``PreProcessor`` only applies resizing. When it is ``str``
             it loads the config via ``albumentations`` deserialisation methos . Defaults to None.
@@ -179,6 +187,7 @@ class PreProcessor:
             into a tensor or not. Defaults to True.
 
     Examples:
+    --------
         >>> import skimage
         >>> image = skimage.data.astronaut()
 
@@ -223,7 +232,7 @@ class PreProcessor:
             "The PreProcessor class is deprecated and will be removed in a future release. You can now directly "
             "pass the A.Compose object to your Anomalib datasets using the 'transform' keyword argument."
         )
-        logging.warn(msg)
+        logging.warning(msg)
         self.config = config
         self.image_size = image_size
         self.to_tensor = to_tensor

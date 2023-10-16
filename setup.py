@@ -15,16 +15,18 @@ def load_module(name: str = "src/anomalib/__init__.py") -> ModuleType:
     """Load Python Module.
 
     Args:
+    ----
         name (str, optional): Name of the module to load.
             Defaults to "anomalib/__init__.py".
 
     Returns:
+    -------
         _type_: _description_
     """
     location = str(Path(__file__).parent / name)
     spec = spec_from_file_location(name=name, location=location)
-    module = module_from_spec(spec)  # type: ignore
-    spec.loader.exec_module(module)  # type: ignore
+    module = module_from_spec(spec)  # type: ignore[arg-type]
+    spec.loader.exec_module(module)  # type: ignore[union-attr]
     return module
 
 
@@ -37,16 +39,17 @@ def get_version() -> str:
     the value assigned to it.
 
     Example:
+    -------
         >>> # Assume that __version__ = "0.2.6"
         >>> get_version()
         "0.2.6"
 
     Returns:
+    -------
         str: `anomalib` version.
     """
     anomalib = load_module(name="src/anomalib/__init__.py")
-    version = anomalib.__version__
-    return version
+    return anomalib.__version__
 
 
 def get_required_packages(requirement_files: list[str]) -> list[str]:
@@ -55,21 +58,23 @@ def get_required_packages(requirement_files: list[str]) -> list[str]:
     This function returns list of required packages from requirement files.
 
     Args:
+    ----
         requirement_files (list[str]): txt files that contains list of required
             packages.
 
     Example:
+    -------
         >>> get_required_packages(requirement_files=["openvino"])
         ['onnx>=1.8.1', 'networkx~=2.5', 'openvino-dev==2021.4.1', ...]
 
     Returns:
+    -------
         list[str]: List of required packages
     """
-
     required_packages: list[str] = []
 
     for requirement_file in requirement_files:
-        with open(f"requirements/{requirement_file}.txt", encoding="utf8") as file:
+        with Path(f"requirements/{requirement_file}.txt").open(encoding="utf8") as file:
             for line in file:
                 package = line.strip()
                 if package and not package.startswith(("#", "-f")):

@@ -26,6 +26,7 @@ class AiVad(AnomalyModule):
     """AI-VAD: Attribute-based Representations for Accurate and Interpretable Video Anomaly Detection.
 
     Args:
+    ----
         box_score_thresh (float): Confidence threshold for bounding box predictions.
         persons_only (bool): When enabled, only regions labeled as person are included.
         min_bbox_area (int): Minimum bounding box area. Regions with a surface area lower than this value are excluded.
@@ -83,7 +84,7 @@ class AiVad(AnomalyModule):
     @staticmethod
     def configure_optimizers() -> None:
         """AI-VAD training does not involve fine-tuning of NN weights, no optimizers needed."""
-        return None
+        return
 
     def training_step(self, batch: dict[str, str | Tensor]) -> None:
         """Training Step of AI-VAD.
@@ -91,6 +92,7 @@ class AiVad(AnomalyModule):
         Extract features from the batch of clips and update the density estimators.
 
         Args:
+        ----
             batch (dict[str, str | Tensor]): Batch containing image filename, image, label and mask
         """
         features_per_batch = self.model(batch["image"])
@@ -106,16 +108,22 @@ class AiVad(AnomalyModule):
         self.model.density_estimator.fit()
 
     def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
-        """Validation Step of AI-VAD.
+        """Perform the validation step of AI-VAD.
 
         Extract boxes and box scores..
 
         Args:
+        ----
             batch (dict[str, str | Tensor]): Input batch
+            *args: Arguments.
+            **kwargs: Keyword arguments.
 
         Returns:
+        -------
             Batch dictionary with added boxes and box scores.
         """
+        del args, kwargs  # Unused arguments.
+
         boxes, anomaly_scores, image_scores = self.model(batch["image"])
         batch["pred_boxes"] = [box.int() for box in boxes]
         batch["box_scores"] = [score.to(self.device) for score in anomaly_scores]
@@ -125,6 +133,7 @@ class AiVad(AnomalyModule):
 
     @property
     def trainer_arguments(self) -> dict[str, Any]:
+        """AI-VAD specific trainer arguments."""
         return {"gradient_clip_val": 0, "max_epochs": 1, "num_sanity_val_steps": 0}
 
 
@@ -132,6 +141,7 @@ class AiVadLightning(AiVad):
     """AI-VAD: Attribute-based Representations for Accurate and Interpretable Video Anomaly Detection.
 
     Args:
+    ----
         hparams (DictConfig | ListConfig): Model params
     """
 
@@ -152,5 +162,5 @@ class AiVadLightning(AiVad):
             n_neighbors_pose=hparams.model.n_neighbors_pose,
             n_neighbors_deep=hparams.model.n_neighbors_deep,
         )
-        self.hparams: DictConfig | ListConfig  # type: ignore
+        self.hparams: DictConfig | ListConfig
         self.save_hyperparameters(hparams)

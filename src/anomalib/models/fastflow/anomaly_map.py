@@ -26,9 +26,11 @@ class AnomalyMapGenerator(nn.Module):
         map.
 
         Args:
+        ----
             hidden_variables (list[Tensor]): List of hidden variables from each NF FastFlow block.
 
         Returns:
+        -------
             Tensor: Anomaly Map.
         """
         flow_maps: list[Tensor] = []
@@ -43,6 +45,4 @@ class AnomalyMapGenerator(nn.Module):
             )
             flow_maps.append(flow_map)
         flow_maps = torch.stack(flow_maps, dim=-1)
-        anomaly_map = torch.mean(flow_maps, dim=-1)
-
-        return anomaly_map
+        return torch.mean(flow_maps, dim=-1)

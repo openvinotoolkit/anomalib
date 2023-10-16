@@ -3,8 +3,8 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-# TODO: This would require a new design.
-# TODO: https://jira.devtools.intel.com/browse/IAAALD-149
+# TODO(ashwinvaidya17): This would require a new design.
+# https://jira.devtools.intel.com/browse/IAAALD-149
 
 
 import inspect
@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 
 def get_default_root_directory(config: DictConfig | ListConfig) -> Path:
-    """Sets the default root directory."""
+    """Set the default root directory."""
     root_dir = config.results_dir.path if config.results_dir.path else "./results"
     model_name = config.model.class_path.split(".")[-1].lower()
     data_name = config.data.class_path.split(".")[-1].lower()
@@ -31,18 +31,18 @@ def get_default_root_directory(config: DictConfig | ListConfig) -> Path:
     # add datetime folder to the path as well so that runs with same configuration are not overwritten
     time_stamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S") if config.results_dir.unique else ""
     # loggers should write to results/model/dataset/category/ folder
-    default_root_dir = Path(root_dir, model_name, data_name, category, time_stamp)
-
-    return default_root_dir
+    return Path(root_dir, model_name, data_name, category, time_stamp)
 
 
 def update_config(config: DictConfig | ListConfig | Namespace) -> DictConfig | ListConfig | Namespace:
     """Update config.
 
     Args:
+    ----
         config: Configurable parameters.
 
     Returns:
+    -------
         DictConfig | ListConfig | Namespace: Updated config.
     """
     show_warnings(config)
@@ -87,9 +87,11 @@ def update_input_size_config(config: DictConfig | ListConfig | Namespace) -> Dic
     and crop size, and set tiling stride if undefined.
 
     Args:
+    ----
         config (DictConfig | ListConfig | Namespace): Configurable parameters object
 
     Returns:
+    -------
         DictConfig | ListConfig: Configurable parameters with updated values
     """
     # Image size: Ensure value is in the form [height, width]
@@ -100,7 +102,7 @@ def update_input_size_config(config: DictConfig | ListConfig | Namespace) -> Dic
         assert len(image_size) == 2, "image_size must be a single integer or tuple of length 2 for width and height."
     else:
         msg = f"image_size must be either int or ListConfig, got {type(image_size)}"
-        raise ValueError(msg)
+        raise TypeError(msg)
 
     # Use input size from data to model input. If model input size is defined, warn and override.
     # If input_size is not part of the model parameters, remove it from the config. This is required due to argument
@@ -131,7 +133,7 @@ def update_input_size_config(config: DictConfig | ListConfig | Namespace) -> Dic
         # argument linking adds model input size even if it is not present for that model
         del config.model.init_args.input_size
 
-    if "tiling" in config.keys() and config.tiling.apply:
+    if "tiling" in config and config.tiling.apply:
         if isinstance(config.tiling.tile_size, int):
             config.tiling.tile_size = (config.tiling.tile_size,) * 2
         if config.tiling.stride is None:
@@ -143,10 +145,12 @@ def update_input_size_config(config: DictConfig | ListConfig | Namespace) -> Dic
 def update_nncf_config(config: DictConfig | ListConfig) -> DictConfig | ListConfig:
     """Set the NNCF input size based on the value of the crop_size parameter in the configurable parameters object.
 
-    Args
+    Args:
+    ----
         config (DictConfig | ListConfig): Configurable parameters of the current run.
 
     Returns:
+    -------
         DictConfig | ListConfig: Updated configurable parameters in DictConfig object.
     """
     image_size = config.data.init_args.image_size
@@ -154,45 +158,45 @@ def update_nncf_config(config: DictConfig | ListConfig) -> DictConfig | ListConf
     if "input_size" in config.model.init_args:
         image_size = config.model.init_args.input_size
     sample_size = (image_size, image_size) if isinstance(image_size, int) else image_size
-    if "optimization" in config.keys():
-        if "nncf" in config.optimization.keys():
-            if "input_info" not in config.optimization.nncf.keys():
-                config.optimization.nncf["input_info"] = {"sample_size": None}
-            config.optimization.nncf.input_info.sample_size = [1, 3, *sample_size]
-            if config.optimization.nncf.apply:
-                if "update_config" in config.optimization.nncf:
-                    return OmegaConf.merge(config, config.optimization.nncf.update_config)
+    if "optimization" in config and "nncf" in config.optimization:
+        if "input_info" not in config.optimization.nncf:
+            config.optimization.nncf["input_info"] = {"sample_size": None}
+        config.optimization.nncf.input_info.sample_size = [1, 3, *sample_size]
+        if config.optimization.nncf.apply and "update_config" in config.optimization.nncf:
+            return OmegaConf.merge(config, config.optimization.nncf.update_config)
     return config
 
 
 def update_multi_gpu_training_config(config: DictConfig | ListConfig) -> DictConfig | ListConfig:
-    """Updates the config to change learning rate based on number of gpus assigned.
+    """Update the config to change learning rate based on number of gpus assigned.
 
     Current behaviour is to ensure only ddp accelerator is used.
 
     Args:
+    ----
         config (DictConfig | ListConfig): Configurable parameters for the current run
 
     Raises:
+    ------
         ValueError: If unsupported accelerator is passed
 
     Returns:
+    -------
         DictConfig | ListConfig: Updated config
     """
     # validate accelerator
-    if config.trainer.accelerator is not None:
-        if config.trainer.accelerator.lower() != "ddp":
-            if config.trainer.accelerator.lower() in ("dp", "ddp_spawn", "ddp2"):
-                logger.warn(
-                    f"Using accelerator {config.trainer.accelerator.lower()} is discouraged. "
-                    f"Please use one of [null, ddp]. Setting accelerator to ddp",
-                )
-                config.trainer.accelerator = "ddp"
-            else:
-                msg = f"Unsupported accelerator found: {config.trainer.accelerator}. Should be one of [null, ddp]"
-                raise ValueError(
-                    msg,
-                )
+    if config.trainer.accelerator is not None and config.trainer.accelerator.lower() != "ddp":
+        if config.trainer.accelerator.lower() in ("dp", "ddp_spawn", "ddp2"):
+            logger.warning(
+                f"Using accelerator {config.trainer.accelerator.lower()} is discouraged. "
+                f"Please use one of [null, ddp]. Setting accelerator to ddp",
+            )
+            config.trainer.accelerator = "ddp"
+        else:
+            msg = f"Unsupported accelerator found: {config.trainer.accelerator}. Should be one of [null, ddp]"
+            raise ValueError(
+                msg,
+            )
     # Increase learning rate
     # since pytorch averages the gradient over devices, the idea is to
     # increase the learning rate by the number of devices
@@ -207,14 +211,14 @@ def update_multi_gpu_training_config(config: DictConfig | ListConfig) -> DictCon
 
 
 def show_warnings(config: DictConfig | ListConfig | Namespace) -> None:
-    """Show warnings if any based on the configuration settings
+    """Show warnings if any based on the configuration settings.
 
     Args:
+    ----
         config (DictConfig | ListConfig | Namespace): Configurable parameters for the current run.
     """
-
-    if "clip_length_in_frames" in config.data.keys() and config.data.init_args.clip_length_in_frames > 1:
-        logger.warn(
+    if "clip_length_in_frames" in config.data and config.data.init_args.clip_length_in_frames > 1:
+        logger.warning(
             "Anomalib's models and visualizer are currently not compatible with video datasets with a clip length > 1. "
             "Custom changes to these modules will be needed to prevent errors and/or unpredictable behaviour.",
         )
@@ -229,12 +233,14 @@ def get_configurable_parameters(
     """Get configurable parameters.
 
     Args:
+    ----
         model_name: str | None:  (Default value = None)
         config_path: Path | str | None:  (Default value = None)
         config_filename: str | None:  (Default value = "config")
         config_file_extension: str | None:  (Default value = "yaml")
 
     Returns:
+    -------
         DictConfig | ListConfig: Configurable parameters in DictConfig object.
     """
     if model_name is None and config_path is None:
@@ -248,7 +254,7 @@ def get_configurable_parameters(
 
     if model_name == "efficientad":
         msg = "`efficientad` is deprecated as --model. Please use `efficient_ad` instead."
-        logger.warn(msg)
+        logger.warning(msg)
         model_name = "efficient_ad"
 
     if config_path is None:
@@ -256,6 +262,4 @@ def get_configurable_parameters(
 
     config = OmegaConf.load(config_path)
 
-    config = update_config(config)
-
-    return config
+    return update_config(config)

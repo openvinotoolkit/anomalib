@@ -38,6 +38,7 @@ class DownloadProgressBar(tqdm):
     For information about the parameters in constructor, refer to `tqdm`'s documentation.
 
     Args:
+    ----
         iterable (Iterable | None): Iterable to decorate with a progressbar.
                             Leave blank to manually manage the updates.
         desc (str | None): Prefix for the progressbar.
@@ -123,6 +124,7 @@ class DownloadProgressBar(tqdm):
 
 
     Example:
+    -------
         >>> with DownloadProgressBar(unit='B', unit_scale=True, miniters=1, desc=url.split('/')[-1]) as p_bar:
         >>>         urllib.request.urlretrieve(url, filename=output_path, reporthook=p_bar.update_to)
     """
@@ -188,7 +190,7 @@ class DownloadProgressBar(tqdm):
         )
         self.total: int | float | None
 
-    def update_to(self, chunk_number: int = 1, max_chunk_size: int = 1, total_size=None) -> None:
+    def update_to(self, chunk_number: int = 1, max_chunk_size: int = 1, total_size: int | None = None) -> None:
         """Progress bar hook for tqdm.
 
         Based on https://stackoverflow.com/a/53877507
@@ -196,9 +198,10 @@ class DownloadProgressBar(tqdm):
         However the context needs a few parameters. Refer to the example.
 
         Args:
+        ----
             chunk_number (int, optional): The current chunk being processed. Defaults to 1.
             max_chunk_size (int, optional): Maximum size of each chunk. Defaults to 1.
-            total_size ([type], optional): Total download size. Defaults to None.
+            total_size (int, optional): Total download size. Defaults to None.
         """
         if total_size is not None:
             self.total = total_size
@@ -209,24 +212,24 @@ def is_file_potentially_dangerous(file_name: str) -> bool:
     """Check if a file is potentially dangerous.
 
     Args:
+    ----
         file_name (str): Filename.
 
     Returns:
+    -------
         bool: True if the member is potentially dangerous, False otherwise.
 
     """
     # Some example criteria. We could expand this.
     unsafe_patterns = ["/etc/", "/root/"]
-    for pattern in unsafe_patterns:
-        if re.search(pattern, file_name):
-            return True
-    return False
+    return any(re.search(pattern, file_name) for pattern in unsafe_patterns)
 
 
 def safe_extract(tar_file: TarFile, root: Path, members: list[TarInfo]) -> None:
     """Extract safe members from a tar archive.
 
     Args:
+    ----
         tar_file (TarFile): TarFile object.
         root (Path): Root directory where the dataset will be stored.
         members (List[TarInfo]): List of safe members to be extracted.
@@ -240,6 +243,7 @@ def hash_check(file_path: Path, expected_hash: str) -> None:
     """Raise assert error if hash does not match the calculated hash of the file.
 
     Args:
+    ----
         file_path (Path): Path to file.
         expected_hash (str): Expected hash of the file.
     """
@@ -250,9 +254,10 @@ def hash_check(file_path: Path, expected_hash: str) -> None:
 
 
 def extract(file_name: Path, root: Path) -> None:
-    """Extract a dataset
+    """Extract a dataset.
 
     Args:
+    ----
         file_name (Path): Path of the file to be extracted.
         root (Path): Root directory where the dataset will be stored.
 
@@ -285,16 +290,14 @@ def download_and_extract(root: Path, info: DownloadInfo) -> None:
     """Download and extract a dataset.
 
     Args:
+    ----
         root (Path): Root directory where the dataset will be stored.
         info (DownloadInfo): Info needed to download the dataset.
     """
     root.mkdir(parents=True, exist_ok=True)
 
     # save the compressed file in the specified root directory, using the same file name as on the server
-    if info.filename:
-        downloaded_file_path = root / info.filename
-    else:
-        downloaded_file_path = root / info.url.split("/")[-1]
+    downloaded_file_path = root / info.filename if info.filename else root / info.url.split("/")[-1]
 
     if downloaded_file_path.exists():
         logger.info("Existing dataset archive found. Skipping download stage.")
@@ -312,18 +315,22 @@ def download_and_extract(root: Path, info: DownloadInfo) -> None:
     extract(downloaded_file_path, root)
 
 
-def is_within_directory(directory: Path, target: Path):
-    """Checks if a target path is located within a given directory.
+def is_within_directory(directory: Path, target: Path) -> bool:
+    """Check if a target path is located within a given directory.
 
     Args:
+    ----
         directory (Path): path of the parent directory
         target (Path): path of the target
+
     Returns:
+    -------
         (bool): True if the target is within the directory, False otherwise
     """
     abs_directory = directory.resolve()
     abs_target = target.resolve()
 
-    # TODO: replace with pathlib is_relative_to after switching to Python 3.10
+    # TODO(djdameln): Replace with pathlib is_relative_to after switching to Python 3.10
+    # CVS-122655
     prefix = os.path.commonprefix([abs_directory, abs_target])
     return prefix == str(abs_directory)

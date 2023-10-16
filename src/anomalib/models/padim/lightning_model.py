@@ -25,6 +25,7 @@ class Padim(AnomalyModule):
     """PaDiM: a Patch Distribution Modeling Framework for Anomaly Detection and Localization.
 
     Args:
+    ----
         layers (list[str]): Layers to extract features from the backbone CNN
         input_size (tuple[int, int]): Size of the model input.
         backbone (str): Backbone CNN network
@@ -35,9 +36,9 @@ class Padim(AnomalyModule):
 
     def __init__(
         self,
-        layers: list[str],
-        input_size: tuple[int, int],
-        backbone: str,
+        layers: list[str] = ["layer1", "layer2", "layer3"],  # noqa: B006
+        input_size: tuple[int, int] = (256, 256),
+        backbone: str = "resnet18",
         pre_trained: bool = True,
         n_features: int | None = None,
     ) -> None:
@@ -56,18 +57,21 @@ class Padim(AnomalyModule):
         self.embeddings: list[Tensor] = []
 
     @staticmethod
-    def configure_optimizers() -> None:  # pylint: disable=arguments-differ
+    def configure_optimizers() -> None:
         """PADIM doesn't require optimization, therefore returns no optimizers."""
-        return None
+        return
 
     def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> None:
-        """Training Step of PADIM. For each batch, hierarchical features are extracted from the CNN.
+        """Perform the training step of PADIM. For each batch, hierarchical features are extracted from the CNN.
 
         Args:
+        ----
             batch (dict[str, str | Tensor]): Batch containing image filename, image, label and mask
-            _batch_idx: Index of the batch.
+            args: Additional arguments.
+            kwargs: Additional keyword arguments.
 
         Returns:
+        -------
             Hierarchical feature map
         """
         del args, kwargs  # These variables are not used.
@@ -93,14 +97,18 @@ class Padim(AnomalyModule):
         self.stats = self.model.gaussian.fit(embeddings)
 
     def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
-        """Validation Step of PADIM.
+        """Perform a validation step of PADIM.
 
         Similar to the training step, hierarchical features are extracted from the CNN for each batch.
 
         Args:
+        ----
             batch (dict[str, str | Tensor]): Input batch
+            args: Additional arguments.
+            kwargs: Additional keyword arguments.
 
         Returns:
+        -------
             Dictionary containing images, features, true labels and masks.
             These are required in `validation_epoch_end` for feature concatenation.
         """
@@ -111,6 +119,9 @@ class Padim(AnomalyModule):
 
     @property
     def trainer_arguments(self) -> dict[str, int | float]:
-        # Since the model does not require training, we limit the max_epochs to 1.
-        # Since we need to run training epoch before validation, we also set the sanity steps to 0
+        """Return PADIM trainer arguments.
+
+        Since the model does not require training, we limit the max_epochs to 1.
+        Since we need to run training epoch before validation, we also set the sanity steps to 0
+        """
         return {"max_epochs": 1, "val_check_interval": 1.0, "num_sanity_val_steps": 0}

@@ -15,6 +15,7 @@ class AttentionModule(nn.Module):
     """Squeeze and excitation block that acts as the attention module in SSPCAB.
 
     Args:
+    ----
         channels (int): Number of input channels.
         reduction_ratio (int): Reduction ratio of the attention module.
     """
@@ -38,15 +39,14 @@ class AttentionModule(nn.Module):
         act = F.sigmoid(act)
 
         # multiply with input
-        se_out = inputs * act.view(act.shape[0], act.shape[1], 1, 1)
-
-        return se_out
+        return inputs * act.view(act.shape[0], act.shape[1], 1, 1)
 
 
 class SSPCAB(nn.Module):
     """SSPCAB block.
 
     Args:
+    ----
         in_channels (int): Number of input channels.
         kernel_size (int): Size of the receptive fields of the masked convolution kernel.
         dilation (int): Dilation factor of the masked convolution kernel.
@@ -77,5 +77,4 @@ class SSPCAB(nn.Module):
         masked_out += self.masked_conv4(padded[..., self.crop :, self.crop :])
 
         # apply channel attention module
-        sspcab_out = self.attention_module(masked_out)
-        return sspcab_out
+        return self.attention_module(masked_out)

@@ -27,8 +27,8 @@ class F1AdaptiveThreshold(PrecisionRecallCurve, BaseThreshold):
     def __init__(self, default_value: float = 0.5, **kwargs) -> None:
         super().__init__(num_classes=1, **kwargs)
 
-        self.add_state("value", default=torch.tensor(default_value), persistent=True)  # pylint: disable=not-callable
-        self.value = torch.tensor(default_value)  # pylint: disable=not-callable
+        self.add_state("value", default=torch.tensor(default_value), persistent=True)
+        self.value = torch.tensor(default_value)
 
     def compute(self) -> Tensor:
         """Compute the threshold that yields the optimal F1 score.
@@ -36,7 +36,8 @@ class F1AdaptiveThreshold(PrecisionRecallCurve, BaseThreshold):
         Compute the F1 scores while varying the threshold. Store the optimal
         threshold as attribute and return the maximum value of the F1 score.
 
-        Returns:
+        Returns
+        -------
             Value of the F1 score at the optimal threshold.
         """
         precision: Tensor
@@ -50,7 +51,7 @@ class F1AdaptiveThreshold(PrecisionRecallCurve, BaseThreshold):
                 "to poor predictions. For a more reliable adaptive threshold computation, please add some anomalous "
                 "images to the validation set."
             )
-            logging.warn(msg)
+            logging.warning(msg)
 
         precision, recall, thresholds = super().compute()
         f1_score = (2 * precision * recall) / (precision + recall + 1e-10)

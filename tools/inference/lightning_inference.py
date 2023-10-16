@@ -19,7 +19,8 @@ from anomalib.utils.callbacks import get_callbacks
 def get_parser() -> ArgumentParser:
     """Get parser.
 
-    Returns:
+    Returns
+    -------
         ArgumentParser: The parser object.
     """
     parser = ArgumentParser()
@@ -45,7 +46,7 @@ def get_parser() -> ArgumentParser:
     return parser
 
 
-def infer(args: Namespace):
+def infer(args: Namespace) -> None:
     """Run inference."""
     config = get_configurable_parameters(config_path=args.config)
     config.visualization.show_images = args.show
@@ -63,7 +64,7 @@ def infer(args: Namespace):
 
     # get the transforms
     transform_config = (
-        config.data.init_args.transform_config.eval if "transform_config" in config.data.init_args.keys() else None
+        config.data.init_args.transform_config.eval if "transform_config" in config.data.init_args else None
     )
     image_size = (config.data.init_args.image_size[0], config.data.init_args.image_size[1])
     center_crop = config.data.init_args.get("center_crop")
@@ -82,7 +83,7 @@ def infer(args: Namespace):
     dataset = InferenceDataset(
         args.input,
         image_size=image_size,
-        transform=transform,  # type: ignore
+        transform=transform,
     )
     dataloader = DataLoader(dataset)
 

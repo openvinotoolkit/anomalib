@@ -41,6 +41,7 @@ def make_folder3d_dataset(
     """Make Folder Dataset.
 
     Args:
+    ----
         normal_dir (str | Path): Path to the directory containing normal images.
         root (str | Path | None): Path to the root directory of the dataset.
         abnormal_dir (str | Path | None, optional): Path to the directory containing abnormal images.
@@ -62,6 +63,7 @@ def make_folder3d_dataset(
             directory.
 
     Returns:
+    -------
         DataFrame: an output dataframe containing samples for the requested split (ie., train or test)
     """
     normal_dir = _resolve_path(normal_dir, root)
@@ -79,22 +81,22 @@ def make_folder3d_dataset(
     dirs = {DirType.NORMAL: normal_dir}
 
     if abnormal_dir:
-        dirs = {**dirs, **{DirType.ABNORMAL: abnormal_dir}}
+        dirs[DirType.ABNORMAL] = abnormal_dir
 
     if normal_test_dir:
-        dirs = {**dirs, **{DirType.NORMAL_TEST: normal_test_dir}}
+        dirs[DirType.NORMAL_TEST] = normal_test_dir
 
     if normal_depth_dir:
-        dirs = {**dirs, **{DirType.NORMAL_DEPTH: normal_depth_dir}}
+        dirs[DirType.NORMAL_DEPTH] = normal_depth_dir
 
     if abnormal_depth_dir:
-        dirs = {**dirs, **{DirType.ABNORMAL_DEPTH: abnormal_depth_dir}}
+        dirs[DirType.ABNORMAL_DEPTH] = abnormal_depth_dir
 
     if normal_test_depth_dir:
-        dirs = {**dirs, **{DirType.NORMAL_TEST_DEPTH: normal_test_depth_dir}}
+        dirs[DirType.NORMAL_TEST_DEPTH] = normal_test_depth_dir
 
     if mask_dir:
-        dirs = {**dirs, **{DirType.MASK: mask_dir}}
+        dirs[DirType.MASK] = mask_dir
 
     for dir_type, path in dirs.items():
         filename, label = _prepare_files_labels(path, dir_type, extensions)
@@ -116,15 +118,15 @@ def make_folder3d_dataset(
     if normal_depth_dir is not None:
         samples.loc[samples.label == DirType.NORMAL, "depth_path"] = samples.loc[
             samples.label == DirType.NORMAL_DEPTH
-        ].image_path.values
+        ].image_path.to_numpy()
         samples.loc[samples.label == DirType.ABNORMAL, "depth_path"] = samples.loc[
             samples.label == DirType.ABNORMAL_DEPTH
-        ].image_path.values
+        ].image_path.to_numpy()
 
         if normal_test_dir is not None:
             samples.loc[samples.label == DirType.NORMAL_TEST, "depth_path"] = samples.loc[
                 samples.label == DirType.NORMAL_TEST_DEPTH
-            ].image_path.values
+            ].image_path.to_numpy()
 
         # make sure every rgb image has a corresponding depth image and that the file exists
         assert (
@@ -145,8 +147,8 @@ def make_folder3d_dataset(
     if mask_dir is not None and abnormal_dir is not None:
         samples.loc[samples.label == DirType.ABNORMAL, "mask_path"] = samples.loc[
             samples.label == DirType.MASK
-        ].image_path.values
-        samples["mask_path"].fillna("", inplace=True)
+        ].image_path.to_numpy()
+        samples["mask_path"] = samples["mask_path"].fillna("")
         samples = samples.astype({"mask_path": "str"})
 
         # make sure all the files exist
@@ -183,6 +185,7 @@ class Folder3DDataset(AnomalibDepthDataset):
     """Folder dataset.
 
     Args:
+    ----
         task (TaskType): Task type. (``classification``, ``detection`` or ``segmentation``).
         transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
         split (str | Split | None): Fixed subset split that follows from folder structure on file system.
@@ -206,6 +209,7 @@ class Folder3DDataset(AnomalibDepthDataset):
         val_split_mode (ValSplitMode): Setting that determines how the validation subset is obtained.
 
     Raises:
+    ------
         ValueError: When task is set to classification and `mask_dir` is provided. When `mask_dir` is
             provided, `task` should be set to `segmentation`.
     """
@@ -258,6 +262,7 @@ class Folder3D(AnomalibDataModule):
     """Folder DataModule.
 
     Args:
+    ----
         normal_dir (str | Path): Name of the directory containing normal images.
             Defaults to "normal".
         root (str | Path | None): Path to the root folder containing normal and abnormal dirs.
@@ -313,7 +318,7 @@ class Folder3D(AnomalibDataModule):
         abnormal_depth_dir: str | Path | None = None,
         normal_test_depth_dir: str | Path | None = None,
         extensions: tuple[str] | None = None,
-        image_size: int | tuple[int, int] | None = None,
+        image_size: int | tuple[int, int] = (256, 256),
         center_crop: int | tuple[int, int] | None = None,
         normalization: str | InputNormalizationMethod = InputNormalizationMethod.IMAGENET,
         train_batch_size: int = 32,

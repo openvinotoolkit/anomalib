@@ -6,35 +6,40 @@
 
 import logging
 from abc import ABC
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from lightning.pytorch import LightningDataModule
 from lightning.pytorch.utilities.types import EVAL_DATALOADERS, TRAIN_DATALOADERS
-from pandas import DataFrame
 from torch.utils.data.dataloader import DataLoader, default_collate
 
-from anomalib.data.base.dataset import AnomalibDataset
 from anomalib.data.synthetic import SyntheticAnomalyDataset
 from anomalib.data.utils import TestSplitMode, ValSplitMode, random_split, split_by_label
+
+if TYPE_CHECKING:
+    from pandas import DataFrame
+
+    from anomalib.data.base.dataset import AnomalibDataset
 
 logger = logging.getLogger(__name__)
 
 
 def collate_fn(batch: list) -> dict[str, Any]:
-    """Custom collate function that collates bounding boxes as lists.
+    """Collate bounding boxes as lists.
 
     Bounding boxes are collated as a list of tensors, while the default collate function is used for all other entries.
 
     Args:
+    ----
         batch (List): list of items in the batch where len(batch) is equal to the batch size.
 
     Returns:
+    -------
         dict[str, Any]: Dictionary containing the collated batch information.
     """
     elem = batch[0]  # sample an element from the batch to check the type.
     out_dict = {}
     if isinstance(elem, dict):
-        if "boxes" in elem.keys():
+        if "boxes" in elem:
             # collate boxes as list
             out_dict["boxes"] = [item.pop("boxes") for item in batch]
         # collate other data normally
@@ -47,6 +52,7 @@ class AnomalibDataModule(LightningDataModule, ABC):
     """Base Anomalib data module.
 
     Args:
+    ----
         train_batch_size (int): Batch size used by the train dataloader.
         test_batch_size (int): Batch size used by the val and test dataloaders.
         num_workers (int): Number of workers used by the train, val and test dataloaders.
@@ -87,9 +93,10 @@ class AnomalibDataModule(LightningDataModule, ABC):
         self._samples: DataFrame | None = None
 
     def setup(self, stage: str | None = None) -> None:
-        """Setup train, validation and test data.
+        """Set up train, validation and test data.
 
         Args:
+        ----
           stage: str | None:  Train/Val/Test stages. (Default value = None)
         """
         if not self.is_setup:
@@ -167,9 +174,8 @@ class AnomalibDataModule(LightningDataModule, ABC):
         """
         _is_setup: bool = False
         for data in ("train_data", "val_data", "test_data"):
-            if hasattr(self, data):
-                if getattr(self, data).is_setup:
-                    _is_setup = True
+            if hasattr(self, data) and getattr(self, data).is_setup:
+                _is_setup = True
 
         return _is_setup
 

@@ -1,4 +1,4 @@
-"""Feature extraction module for AI-VAD model implementation"""
+"""Feature extraction module for AI-VAD model implementation."""
 
 # Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -28,6 +28,7 @@ class FeatureExtractor(nn.Module):
     """Feature extractor for AI-VAD.
 
     Args:
+    ----
         n_velocity_bins (int): Number of discrete bins used for velocity histogram features.
         use_velocity_features (bool): Flag indicating if velocity features should be used.
         use_pose_features (bool): Flag indicating if pose features should be used.
@@ -65,10 +66,13 @@ class FeatureExtractor(nn.Module):
         Extract any combination of velocity, pose and deep features depending on configuration.
 
         Args:
+        ----
             rgb_batch (Tensor): Batch of RGB images of shape (N, 3, H, W)
             flow_batch (Tensor): Batch of optical flow images of shape (N, 2, H, W)
             regions (list[dict]): Region information per image in batch.
+
         Returns:
+        -------
             list[dict]: Feature dictionary per image in batch.
         """
         batch_size = rgb_batch.shape[0]
@@ -94,11 +98,7 @@ class FeatureExtractor(nn.Module):
             feature_dict[FeatureType.DEEP] = [deep_features[indices == i] for i in range(batch_size)]
 
         # dict of lists to list of dicts
-        feature_collection = [
-            dict(zip(feature_dict, item, strict=True)) for item in zip(*feature_dict.values(), strict=True)
-        ]
-
-        return feature_collection
+        return [dict(zip(feature_dict, item, strict=True)) for item in zip(*feature_dict.values(), strict=True)]
 
 
 class DeepExtractor(nn.Module):
@@ -117,21 +117,20 @@ class DeepExtractor(nn.Module):
         """Extract deep features using CLIP encoder.
 
         Args:
+        ----
             batch (Tensor): Batch of RGB input images of shape (N, 3, H, W)
             boxes (Tensor): Bounding box coordinates of shaspe (M, 5). First column indicates batch index of the bbox.
             batch_size (int): Number of images in the batch.
 
         Returns:
+        -------
             Tensor: Deep feature tensor of shape (M, 512)
         """
         rgb_regions = roi_align(batch, boxes, output_size=[224, 224])
 
-        features = []
         batched_regions = torch.split(rgb_regions, batch_size)
         with torch.no_grad():
-            features = torch.vstack([self.encoder.encode_image(self.transform(batch)) for batch in batched_regions])
-
-        return features
+            return torch.vstack([self.encoder.encode_image(self.transform(batch)) for batch in batched_regions])
 
 
 class VelocityExtractor(nn.Module):
@@ -140,6 +139,7 @@ class VelocityExtractor(nn.Module):
     Extracts histograms of optical flow magnitude and direction.
 
     Args:
+    ----
         n_bins (int): Number of direction bins used for the feature histograms.
     """
 
@@ -152,10 +152,12 @@ class VelocityExtractor(nn.Module):
         """Extract velocioty features by filling a histogram.
 
         Args:
+        ----
             flows (Tensor): Batch of optical flow images of shape (N, 2, H, W)
             boxes (Tensor): Bounding box coordinates of shaspe (M, 5). First column indicates batch index of the bbox.
 
         Returns:
+        -------
             Tensor: Velocity feature tensor of shape (M, n_bins)
         """
         flow_regions = roi_align(flows, boxes, output_size=[224, 224])
@@ -205,9 +207,11 @@ class PoseExtractor(nn.Module):
         Post-processing consists of flattening and normalizing to bbox coordinates.
 
         Args:
+        ----
             keypoint_detections (list[dict]): Outputs of the keypoint extractor
 
         Returns:
+        -------
             list[Tensor]: List of pose feature tensors for each image
         """
         poses = []
@@ -222,10 +226,12 @@ class PoseExtractor(nn.Module):
         """Extract pose features using a human keypoint estimation model.
 
         Args:
+        ----
             batch (Tensor): Batch of RGB input images of shape (N, 3, H, W)
             boxes (Tensor): Bounding box coordinates of shaspe (M, 5). First column indicates batch index of the bbox.
 
         Returns:
+        -------
             list[Tensor]: list of pose feature tensors for each image.
         """
         images, _ = self.transform(batch)

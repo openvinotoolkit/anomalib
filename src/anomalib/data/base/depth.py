@@ -17,6 +17,7 @@ class AnomalibDepthDataset(AnomalibDataset, ABC):
     """Base depth anomalib dataset class.
 
     Args:
+    ----
         task (str): Task type, either 'classification' or 'segmentation'
         transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
     """
@@ -28,7 +29,6 @@ class AnomalibDepthDataset(AnomalibDataset, ABC):
 
     def __getitem__(self, index: int) -> dict[str, str | Tensor]:
         """Return rgb image, depth image and mask."""
-
         image_path = self._samples.iloc[index].image_path
         mask_path = self._samples.iloc[index].mask_path
         label_index = self._samples.iloc[index].label_index
@@ -45,10 +45,7 @@ class AnomalibDepthDataset(AnomalibDataset, ABC):
         elif self.task in (TaskType.DETECTION, TaskType.SEGMENTATION):
             # Only Anomalous (1) images have masks in anomaly datasets
             # Therefore, create empty mask for Normal (0) images.
-            if label_index == 0:
-                mask = np.zeros(shape=image.shape[:2])
-            else:
-                mask = cv2.imread(mask_path, flags=0) / 255.0
+            mask = np.zeros(shape=image.shape[:2]) if label_index == 0 else cv2.imread(mask_path, flags=0) / 255.0
 
             transformed = self.transform(image=image, depth_image=depth_image, mask=mask)
 

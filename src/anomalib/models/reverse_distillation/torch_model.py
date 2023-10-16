@@ -4,20 +4,25 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
+from typing import TYPE_CHECKING
+
 from torch import Tensor, nn
 
 from anomalib.models.components import FeatureExtractor
 from anomalib.models.reverse_distillation.anomaly_map import AnomalyMapGenerator
 from anomalib.models.reverse_distillation.components import get_bottleneck_layer, get_decoder
-from anomalib.pre_processing import Tiler
 
 from .anomaly_map import AnomalyMapGenerationMode
+
+if TYPE_CHECKING:
+    from anomalib.pre_processing import Tiler
 
 
 class ReverseDistillationModel(nn.Module):
     """Reverse Distillation Model.
 
     Args:
+    ----
         backbone (str): Name of the backbone used for encoder and decoder
         input_size (tuple[int, int]): Size of input image
         layers (list[str]): Name of layers from which the features are extracted.
@@ -50,9 +55,11 @@ class ReverseDistillationModel(nn.Module):
         During evaluation mode, it returns the predicted anomaly map.
 
         Args:
+        ----
             images (Tensor): Batch of images
 
         Returns:
+        -------
             Tensor | list[Tensor] | tuple[list[Tensor]]: Encoder and decoder features in training mode,
                 else anomaly maps.
         """

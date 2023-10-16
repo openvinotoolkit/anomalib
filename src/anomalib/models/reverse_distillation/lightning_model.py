@@ -25,6 +25,7 @@ class ReverseDistillation(AnomalyModule):
     """PL Lightning Module for Reverse Distillation Algorithm.
 
     Args:
+    ----
         input_size (tuple[int, int]): Size of model input
         backbone (str): Backbone of CNN network
         layers (list[str]): Layers to extract features from the backbone CNN
@@ -51,22 +52,24 @@ class ReverseDistillation(AnomalyModule):
             anomaly_map_mode=anomaly_map_mode,
         )
         self.loss = ReverseDistillationLoss()
-        # TODO: LR should be part of optimizer in config.yaml! Since reverse distillation has custom
-        #   optimizer this is to be addressed later.
+        # TODO(ashwinvaidya17): LR should be part of optimizer in config.yaml!
+        # CVS-122670
         self.learning_rate = lr
         self.beta1 = beta1
         self.beta2 = beta2
 
     def configure_optimizers(self) -> optim.Adam:
-        """Configures optimizers for decoder and bottleneck.
+        """Configure optimizers for decoder and bottleneck.
 
         Note:
+        ----
             This method is used for the existing CLI.
             When PL CLI is introduced, configure optimizers method will be
                 deprecated, and optimizers will be configured from either
                 config.yaml file or from CLI.
 
         Returns:
+        -------
             Optimizer: Adam optimizer for each decoder
         """
         return optim.Adam(
@@ -76,16 +79,20 @@ class ReverseDistillation(AnomalyModule):
         )
 
     def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
-        """Training Step of Reverse Distillation Model.
+        """Perform a training step of Reverse Distillation Model.
 
         Features are extracted from three layers of the Encoder model. These are passed to the bottleneck layer
         that are passed to the decoder network. The loss is then calculated based on the cosine similarity between the
         encoder and decoder features.
 
         Args:
+        ----
           batch (batch: dict[str, str | Tensor]): Input batch
+          args: Additional arguments.
+          kwargs: Additional keyword arguments.
 
         Returns:
+        -------
           Feature Map
         """
         del args, kwargs  # These variables are not used.
@@ -95,15 +102,19 @@ class ReverseDistillation(AnomalyModule):
         return {"loss": loss}
 
     def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
-        """Validation Step of Reverse Distillation Model.
+        """Perform a validation step of Reverse Distillation Model.
 
         Similar to the training step, encoder/decoder features are extracted from the CNN for each batch, and
         anomaly map is computed.
 
         Args:
+        ----
           batch (dict[str, str | Tensor]): Input batch
+          args: Additional arguments.
+          kwargs: Additional keyword arguments.
 
         Returns:
+        -------
           Dictionary containing images, anomaly maps, true labels and masks.
           These are required in `validation_epoch_end` for feature concatenation.
         """
@@ -114,17 +125,15 @@ class ReverseDistillation(AnomalyModule):
 
     @property
     def trainer_arguments(self) -> dict[str, Any]:
-        return {
-            "gradient_clip_val": 0,
-            "max_epochs": 200,
-            "num_sanity_val_steps": 0,
-        }
+        """Return Reverse Distillation trainer arguments."""
+        return {"gradient_clip_val": 0, "num_sanity_val_steps": 0}
 
 
 class ReverseDistillationLightning(ReverseDistillation):
     """PL Lightning Module for Reverse Distillation Algorithm.
 
     Args:
+    ----
         hparams(DictConfig | ListConfig): Model parameters
     """
 
@@ -139,13 +148,14 @@ class ReverseDistillationLightning(ReverseDistillation):
             beta1=hparams.model.beta1,
             beta2=hparams.model.beta2,
         )
-        self.hparams: DictConfig | ListConfig  # type: ignore
+        self.hparams: DictConfig | ListConfig
         self.save_hyperparameters(hparams)
 
     def configure_callbacks(self) -> list[EarlyStopping]:
         """Configure model-specific callbacks.
 
         Note:
+        ----
             This method is used for the existing CLI.
             When PL CLI is introduced, configure callback method will be
                 deprecated, and callbacks will be configured from either

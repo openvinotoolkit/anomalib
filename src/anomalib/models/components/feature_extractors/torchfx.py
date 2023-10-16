@@ -27,6 +27,7 @@ class TorchFXFeatureExtractor(nn.Module):
     """Extract features from a CNN.
 
     Args:
+    ----
         backbone (str | BackboneParams | dict | nn.Module): The backbone to which the feature extraction hooks are
             attached. If the name is provided, the model is loaded from torchvision. Otherwise, the model class can be
             provided and it will try to load the weights from the provided weights file. Last, an instance of nn.Module
@@ -43,6 +44,7 @@ class TorchFXFeatureExtractor(nn.Module):
             modules, by passing a list of `leaf_modules` as one of the `tracer_kwargs`.
 
     Example:
+    -------
         With torchvision models:
 
             >>> import torch
@@ -102,9 +104,7 @@ class TorchFXFeatureExtractor(nn.Module):
             backbone = BackboneParams(class_path=backbone)
         elif not isinstance(backbone, nn.Module | BackboneParams):
             msg = f"backbone needs to be of type str | BackboneParams | dict | nn.Module, but was type {type(backbone)}"
-            raise ValueError(
-                msg,
-            )
+            raise TypeError(msg)
 
         self.feature_extractor = self.initialize_feature_extractor(
             backbone,
@@ -125,6 +125,7 @@ class TorchFXFeatureExtractor(nn.Module):
         """Extract features from a CNN.
 
         Args:
+        ----
             backbone (BackboneParams | nn.Module): The backbone to which the feature extraction hooks are attached.
                 If the name is provided for BackboneParams, the model is loaded from torchvision. Otherwise, the model
                 class can be provided and it will try to load the weights from the provided weights file. Last, an
@@ -141,26 +142,26 @@ class TorchFXFeatureExtractor(nn.Module):
                 modules, by passing a list of `leaf_modules` as one of the `tracer_kwargs`.
 
         Returns:
+        -------
             Feature Extractor based on TorchFX.
         """
         if isinstance(backbone, nn.Module):
             backbone_model = backbone
+        elif isinstance(backbone.class_path, str):
+            backbone_class = self._get_backbone_class(backbone.class_path)
+            backbone_model = backbone_class(weights=weights, **backbone.init_args)
         else:
-            if isinstance(backbone.class_path, str):
-                backbone_class = self._get_backbone_class(backbone.class_path)
-                backbone_model = backbone_class(weights=weights, **backbone.init_args)
-            else:
-                backbone_class = backbone.class_path
-                backbone_model = backbone_class(**backbone.init_args)
-            if isinstance(weights, WeightsEnum):  # torchvision models
-                feature_extractor = create_feature_extractor(model=backbone_model, return_nodes=return_nodes)
-            else:
-                if weights is not None:
-                    assert isinstance(weights, str), "Weights should point to a path"
-                    model_weights = torch.load(weights)
-                    if "state_dict" in model_weights:
-                        model_weights = model_weights["state_dict"]
-                    backbone_model.load_state_dict(model_weights)
+            backbone_class = backbone.class_path
+            backbone_model = backbone_class(**backbone.init_args)
+
+        if isinstance(weights, WeightsEnum):  # torchvision models
+            feature_extractor = create_feature_extractor(model=backbone_model, return_nodes=return_nodes)
+        elif weights is not None:
+            assert isinstance(weights, str), "Weights should point to a path"
+            model_weights = torch.load(weights)
+            if "state_dict" in model_weights:
+                model_weights = model_weights["state_dict"]
+            backbone_model.load_state_dict(model_weights)
 
         feature_extractor = create_feature_extractor(backbone_model, return_nodes, tracer_kwargs=tracer_kwargs)
 
@@ -178,22 +179,25 @@ class TorchFXFeatureExtractor(nn.Module):
         If only the model name is provided, it will try to load the model from torchvision.
 
         Example:
+        -------
             >>> from anomalib.models.components.feature_extractors import TorchFXFeatureExtractor
             >>> TorchFXFeatureExtractor._get_backbone_class("efficientnet_b5")
             <function torchvision.models.efficientnet.efficientnet_b5(
                 *,
                 weights: torchvision.models.efficientnet.EfficientNet_B5_Weights | NoneType = None,
                 progress: bool = True,
-                **kwargs: Any
+                **kwargs
                 ) -> torchvision.models.efficientnet.EfficientNet>
 
             >>> TorchFXFeatureExtractor._get_backbone_class("path.to.CustomModel")
             <class 'path.to.CustomModel'>
 
         Args:
+        ----
             backbone (str): Path to the backbone class.
 
         Returns:
+        -------
             Backbone class.
         """
         try:

@@ -4,11 +4,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-from typing import Any
-
 import einops
 import torch
-from torch import nn
+from torch import Tensor, nn
 
 from anomalib.models.cflow.anomaly_map import AnomalyMapGenerator
 from anomalib.models.cflow.utils import cflow_head, get_logp, positional_encoding_2d
@@ -60,17 +58,18 @@ class CflowModel(nn.Module):
 
         self.anomaly_map_generator = AnomalyMapGenerator(image_size=input_size, pool_layers=self.pool_layers)
 
-    def forward(self, images) -> Any:
+    def forward(self, images: Tensor) -> Tensor:
         """Forward-pass images into the network to extract encoder features and compute probability.
 
         Args:
+        ----
           images: Batch of images.
 
         Returns:
+        -------
           Predicted anomaly maps.
 
         """
-
         self.encoder.eval()
         self.decoders.eval()
         with torch.no_grad():

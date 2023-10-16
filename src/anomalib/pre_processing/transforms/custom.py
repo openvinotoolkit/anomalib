@@ -18,6 +18,7 @@ class Denormalize:
         """Denormalize Torch Tensor into np image format.
 
         Args:
+        ----
             mean: Mean
             std: Standard deviation.
         """
@@ -38,9 +39,11 @@ class Denormalize:
         """Denormalize the input.
 
         Args:
+        ----
             tensor (Tensor): Input tensor image (C, H, W)
 
         Returns:
+        -------
             Denormalized numpy array (H, W, C).
         """
         if tensor.dim() == 4:
@@ -55,8 +58,7 @@ class Denormalize:
         ]
         denormalized_tensor = torch.stack(denormalized_per_channel)
 
-        denormalized_array = (denormalized_tensor * 255).permute(1, 2, 0).cpu().numpy().astype(np.uint8)
-        return denormalized_array
+        return (denormalized_tensor * 255).permute(1, 2, 0).cpu().numpy().astype(np.uint8)
 
     def __repr__(self) -> str:
         """Representational string."""
@@ -70,11 +72,13 @@ class ToNumpy:
         """Convert Tensor into Numpy Array.
 
         Args:
+        ----
            tensor (Tensor): Tensor to convert. Input tensor in range 0-1.
            dims (tuple[int, ...] | None, optional): Convert dimensions from torch to numpy format.
                 Tuple corresponding to axis permutation from torch tensor to numpy array. Defaults to None.
 
         Returns:
+        -------
             Converted numpy ndarray.
         """
         # Default support is (C, H, W) or (N, C, H, W)

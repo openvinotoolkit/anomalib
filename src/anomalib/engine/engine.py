@@ -26,6 +26,8 @@ log = logging.getLogger(__name__)
 
 
 class UnassignedError(Exception):
+    """Unassigned error."""
+
     ...
 
 
@@ -36,9 +38,11 @@ class _TrainerArgumentsCache:
     before the trainer is instantiated.
 
     Args:
+    ----
         (**kwargs): Trainer arguments that are cached
 
     Example:
+    -------
         >>> conf = OmegaConf.load("config.yaml")
         >>> cache =  _TrainerArgumentsCache(**conf.trainer)
         >>> cache.args
@@ -62,10 +66,11 @@ class _TrainerArgumentsCache:
     def __init__(self, **kwargs) -> None:
         self._cached_args = {**kwargs}
 
-    def update(self, model: AnomalyModule):
+    def update(self, model: AnomalyModule) -> None:
         """Replace cached arguments with arguments retrieved from the model.
 
         Args:
+        ----
             model (AnomalyModule): The model used for training
         """
         for key, value in model.trainer_arguments.items():
@@ -91,9 +96,11 @@ class Engine:
     """Anomalib Engine.
 
     Note:
+    ----
         Refer to PyTorch Lightning's Trainer for a list of parameters for details on other Trainer parameters.
 
     Args:
+    ----
         callbacks: Add a callback or list of callbacks.
     """
 
@@ -126,22 +133,32 @@ class Engine:
         self._trainer: Trainer | None = None
 
     @property
-    def trainer(self):
+    def trainer(self) -> Trainer:
+        """Property to get the trainer.
+
+        Raises
+        ------
+            UnassignedError: When the trainer is not assigned yet.
+
+        Returns
+        -------
+            Trainer: Lightning Trainer.
+        """
         if not self._trainer:
             msg = "``self.trainer`` is not assigned yet."
             raise UnassignedError(msg)
         return self._trainer
 
-    def _setup_trainer(self, model: AnomalyModule):
-        """Instantiates the trainer based on the model parameters."""
+    def _setup_trainer(self, model: AnomalyModule) -> None:
+        """Instantiate the trainer based on the model parameters."""
         if self._cache.requires_update(model) or self._trainer is None:
             self._cache.update(model)
             self._trainer = Trainer(**self._cache.args)
             # Callbacks need to be setup later as they depend on default_root_dir from the trainer
             self._setup_anomalib_callbacks()
 
-    def _setup_anomalib_callbacks(self):
-        """Setup callbacks for the trainer."""
+    def _setup_anomalib_callbacks(self) -> None:
+        """Set up callbacks for the trainer."""
         _callbacks: list[Callback] = [_PostProcessorCallback()]
         normalization_callback = get_normalization_callback(self.normalization)
         if normalization_callback is not None:
@@ -160,7 +177,9 @@ class Engine:
                 **self.visualization,
             )
 
-        self.trainer.callbacks = _CallbackConnector._reorder_callbacks(self.trainer.callbacks + _callbacks)
+        self.trainer.callbacks = _CallbackConnector._reorder_callbacks(  # noqa: SLF001
+            self.trainer.callbacks + _callbacks,
+        )
 
     def fit(
         self,
@@ -170,17 +189,20 @@ class Engine:
         datamodule: LightningDataModule | None = None,
         ckpt_path: str | None = None,
     ) -> None:
-        """
-        Trains the given `model` using the provided training and validation dataloaders.
+        """Fit the model using the trainer.
 
         Args:
-            model (AnomalyModule): The model to train.
-            train_dataloaders (TRAIN_DATALOADERS | LightningDataModule | None, optional): The training dataloaders.
+        ----
+            model (AnomalyModule): Model to be trained.
+            train_dataloaders (TRAIN_DATALOADERS | LightningDataModule | None, optional): Train dataloaders.
                 Defaults to None.
-            val_dataloaders (EVAL_DATALOADERS | None, optional): The validation dataloaders. Defaults to None.
-            datamodule (LightningDataModule | None, optional): The LightningDataModule to use for training.
+            val_dataloaders (EVAL_DATALOADERS | None, optional): Validation dataloaders.
                 Defaults to None.
-            ckpt_path (str | None, optional): The path to a checkpoint to load before training. Defaults to None.
+            datamodule (LightningDataModule | None, optional): Lightning datamodule.
+                If provided, dataloaders will be instantiated from this.
+                Defaults to None.
+            ckpt_path (str | None, optional): Checkpoint path. If provided, the model will be loaded from this path.
+                Defaults to None.
 
         CLI Usage:
             1. you can pick a model, and you can run through the MVTec dataset.
@@ -207,23 +229,27 @@ class Engine:
         verbose: bool = True,
         datamodule: LightningDataModule | None = None,
     ) -> _EVALUATE_OUTPUT | None:
-        """
-        Validates the given anomaly model on the specified dataloaders.
+        """Validate the model using the trainer.
 
         Args:
-            model: AnomalyModule, optional
-                The anomaly model to validate. If not provided, the previously set model will be used.
-            dataloaders: EVAL_DATALOADERS | LightningDataModule, optional
-                The dataloaders to use for validation. If not provided, the previously set dataloaders will be used.
-            ckpt_path: str, optional
-                The path to the checkpoint to use for validation. If not provided, the best checkpoint will be used.
-            verbose: bool, optional
-                Whether to print validation progress to the console. Defaults to True.
-            datamodule: LightningDataModule, optional
-                The datamodule to use for validation. If not provided, the previously set datamodule will be used.
+        ----
+            model (AnomalyModule | None, optional): Model to be validated.
+                Defaults to None.
+            dataloaders (EVAL_DATALOADERS | LightningDataModule | None, optional): Dataloaders to be used for
+                validation.
+                Defaults to None.
+            ckpt_path (str | None, optional): Checkpoint path. If provided, the model will be loaded from this path.
+                Defaults to None.
+            verbose (bool, optional): Boolean to print the validation results.
+                Defaults to True.
+            datamodule (LightningDataModule | None, optional): A :class:`~lightning.pytorch.core.datamodule
+                LightningDataModule` that defines the
+                :class:`~lightning.pytorch.core.hooks.DataHooks.val_dataloader` hook.
+                Defaults to None.
 
         Returns:
-            The output of the validation step, or None if validation failed.
+        -------
+            _EVALUATE_OUTPUT | None: Validation results.
 
         CLI Usage:
             1. you can pick a model.
@@ -251,18 +277,33 @@ class Engine:
         verbose: bool = True,
         datamodule: LightningDataModule | None = None,
     ) -> _EVALUATE_OUTPUT:
-        """
-        Test the given anomaly model on the specified dataloaders.
+        """Test the model using the trainer.
 
         Args:
-            model: Anomaly model to test. If None, the previously set model will be used.
-            dataloaders: Dataloaders to use for testing. If None, the previously set dataloaders will be used.
-            ckpt_path: Path to a checkpoint to use for testing. If None, the latest checkpoint will be used.
-            verbose: Whether to print detailed information during testing.
-            datamodule: LightningDataModule to use for testing. If None, the previously set datamodule will be used.
+        ----
+            model (AnomalyModule | None, optional):
+                The model to be tested.
+                Defaults to None.
+            dataloaders (EVAL_DATALOADERS | LightningDataModule | None, optional):
+                An iterable or collection of iterables specifying test samples.
+                Defaults to None.
+            ckpt_path (str | None, optional):
+                Either ``"best"``, ``"last"``, ``"hpc"`` or path to the checkpoint you wish to test.
+                If ``None`` and the model instance was passed, use the current weights.
+                Otherwise, the best model checkpoint from the previous ``trainer.fit`` call will be loaded
+                if a checkpoint callback is configured.
+                Defaults to None.
+            verbose (bool, optional):
+                If True, prints the test results.
+                Defaults to True.
+            datamodule (LightningDataModule | None, optional):
+                A :class:`~lightning.pytorch.core.datamodule.LightningDataModule` that defines
+                the :class:`~lightning.pytorch.core.hooks.DataHooks.test_dataloader` hook.
+                Defaults to None.
 
         Returns:
-            The evaluation results as a dictionary.
+        -------
+            _EVALUATE_OUTPUT: A List of dictionaries containing the test results. 1 dict per dataloader.
 
         CLI Usage:
             1. you can pick a model.
@@ -290,19 +331,34 @@ class Engine:
         return_predictions: bool | None = None,
         ckpt_path: str | None = None,
     ) -> _PREDICT_OUTPUT | None:
-        """
-        Generates predictions for the given model and data.
+        """Predict using the model using the trainer.
 
         Args:
-            model: The anomaly model to use for prediction. If None, the previously set model will be used.
-            dataloaders: The data loaders to use for prediction. If None, the previously set data loaders will be used.
-            datamodule: The data module to use for prediction. If None, the previously set data module will be used.
-            return_predictions: Whether to return the predictions or not. If None, the default value is used.
-            ckpt_path: The path to the checkpoint to use for prediction.
-                If None, the previously set checkpoint will be used.
+        ----
+            model (AnomalyModule | None, optional):
+                Model to be used for prediction.
+                Defaults to None.
+            dataloaders (EVAL_DATALOADERS | LightningDataModule | None, optional):
+                An iterable or collection of iterables specifying predict samples.
+                Defaults to None.
+            datamodule (LightningDataModule | None, optional):
+                A :class:`~lightning.pytorch.core.datamodule.LightningDataModule` that defines
+                the :class:`~lightning.pytorch.core.hooks.DataHooks.predict_dataloader` hook.
+                Defaults to None.
+            return_predictions (bool | None, optional):
+                Whether to return predictions.
+                ``True`` by default except when an accelerator that spawns processes is used (not supported).
+                Defaults to None.
+            ckpt_path (str | None, optional):
+                Either ``"best"``, ``"last"``, ``"hpc"`` or path to the checkpoint you wish to predict.
+                If ``None`` and the model instance was passed, use the current weights.
+                Otherwise, the best model checkpoint from the previous ``trainer.fit`` call will be loaded
+                if a checkpoint callback is configured.
+                Defaults to None.
 
         Returns:
-            The predictions generated by the model, or None if `return_predictions` is False.
+        -------
+            _PREDICT_OUTPUT | None: Predictions.
 
         CLI Usage:
             1. you can pick a model.

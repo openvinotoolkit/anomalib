@@ -57,11 +57,13 @@ def make_shanghaitech_dataset(root: Path, scene: int, split: Split | str | None 
         path/to/ground_truth/mask_filename.mat
 
     Args:
+    ----
         root (Path): Path to dataset
         scene (int): Index of the dataset scene (category) in range [1, 13]
         split (Split | str | None, optional): Dataset split (ie., either train or test). Defaults to None.
 
     Example:
+    -------
         The following example shows how to get testing samples from ShanghaiTech dataset:
 
         >>> root = Path('./shanghaiTech')
@@ -74,6 +76,7 @@ def make_shanghaitech_dataset(root: Path, scene: int, split: Split | str | None 
         ...
 
     Returns:
+    -------
         DataFrame: an output dataframe containing samples for the requested split (ie., train or test)
     """
     scene_prefix = str(scene).zfill(2)
@@ -118,6 +121,7 @@ class ShanghaiTechTrainClipsIndexer(ClipsIndexer):
 
     def get_mask(self, idx: int) -> Tensor | None:
         """No masks available for training set."""
+        del idx  # Unused argument
         return None
 
 
@@ -130,7 +134,6 @@ class ShanghaiTechTestClipsIndexer(ClipsIndexer):
 
     def get_mask(self, idx: int) -> Tensor | None:
         """Retrieve the masks from the file system."""
-
         video_idx, frames_idx = self.get_clip_location(idx)
         mask_file = self.mask_paths[video_idx]
         if mask_file == "":  # no gt masks available for this clip
@@ -138,8 +141,7 @@ class ShanghaiTechTestClipsIndexer(ClipsIndexer):
         frames = self.clips[video_idx][frames_idx]
 
         vid_masks = np.load(mask_file)
-        masks = np.take(vid_masks, frames, 0)
-        return masks
+        return np.take(vid_masks, frames, 0)
 
     def _compute_frame_pts(self) -> None:
         """Retrieve the number of frames in each video."""
@@ -151,12 +153,14 @@ class ShanghaiTechTestClipsIndexer(ClipsIndexer):
         self.video_fps = [None] * len(self.video_paths)  # fps information cannot be inferred from folder structure
 
     def get_clip(self, idx: int) -> tuple[Tensor, Tensor, dict[str, Any], int]:
-        """Gets a subclip from a list of videos.
+        """Get a subclip from a list of videos.
 
         Args:
+        ----
             idx (int): index of the subclip. Must be between 0 and num_clips().
 
         Returns:
+        -------
             video (Tensor)
             audio (Tensor)
             info (Dict)
@@ -181,11 +185,12 @@ class ShanghaiTechDataset(AnomalibVideoDataset):
     """ShanghaiTech Dataset class.
 
     Args:
+    ----
         task (TaskType): Task type, 'classification', 'detection' or 'segmentation'
-        root (Path | str): Path to the root of the dataset
-        scene (int): Index of the dataset scene (category) in range [1, 13]
         transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
         split (Split): Split of the dataset, usually Split.TRAIN or Split.TEST
+        root (Path | str): Path to the root of the dataset
+        scene (int): Index of the dataset scene (category) in range [1, 13]
         clip_length_in_frames (int, optional): Number of video frames in each clip.
         frames_between_clips (int, optional): Number of frames between each consecutive video clip.
         target_frame (VideoTargetFrame): Specifies the target frame in the video clip, used for ground truth retrieval
@@ -194,22 +199,22 @@ class ShanghaiTechDataset(AnomalibVideoDataset):
     def __init__(
         self,
         task: TaskType,
-        root: Path | str,
-        scene: int,
         transform: A.Compose,
         split: Split,
+        root: Path | str = "./datasets/shanghaitech",
+        scene: int = 1,
         clip_length_in_frames: int = 1,
         frames_between_clips: int = 1,
         target_frame: VideoTargetFrame = VideoTargetFrame.LAST,
     ) -> None:
         super().__init__(task, transform, clip_length_in_frames, frames_between_clips, target_frame)
 
-        self.root = root
+        self.root = Path(root)
         self.scene = scene
         self.split = split
         self.indexer_cls = ShanghaiTechTrainClipsIndexer if self.split == Split.TRAIN else ShanghaiTechTestClipsIndexer
 
-    def _setup(self):
+    def _setup(self) -> None:
         """Create and assign samples."""
         self.samples = make_shanghaitech_dataset(self.root, self.scene, self.split)
 
@@ -218,6 +223,7 @@ class ShanghaiTech(AnomalibVideoDataModule):
     """ShanghaiTech DataModule class.
 
     Args:
+    ----
         root (Path | str): Path to the root of the dataset
         scene (int): Index of the dataset scene (category) in range [1, 13]
         clip_length_in_frames (int, optional): Number of video frames in each clip.
@@ -245,13 +251,13 @@ class ShanghaiTech(AnomalibVideoDataModule):
 
     def __init__(
         self,
-        root: Path | str,
-        scene: int,
+        root: Path | str = "./datasets/shanghaitech",
+        scene: int = 1,
         clip_length_in_frames: int = 1,
         frames_between_clips: int = 1,
         target_frame: VideoTargetFrame = VideoTargetFrame.LAST,
         task: TaskType = TaskType.SEGMENTATION,
-        image_size: int | tuple[int, int] | None = None,
+        image_size: int | tuple[int, int] = (256, 256),
         center_crop: int | tuple[int, int] | None = None,
         normalization: InputNormalizationMethod | str = InputNormalizationMethod.IMAGENET,
         train_batch_size: int = 32,
@@ -329,7 +335,7 @@ class ShanghaiTech(AnomalibVideoDataModule):
         converted_vid_dir = training_root / "converted_videos"
         vid_count = len(list(vid_dir.glob("*")))
         converted_vid_count = len(list(converted_vid_dir.glob("*")))
-        if not vid_count == converted_vid_count:
+        if vid_count != converted_vid_count:
             self._convert_training_videos(vid_dir, converted_vid_dir)
 
     @staticmethod
@@ -341,6 +347,7 @@ class ShanghaiTech(AnomalibVideoDataModule):
         and write them to a new video file that can be parsed correctly with pyav.
 
         Args:
+        ----
             video_folder (Path): Path to the folder of training videos.
             target_folder (Path): File system location where the converted videos will be stored.
         """

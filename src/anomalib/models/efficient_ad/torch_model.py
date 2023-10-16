@@ -1,4 +1,4 @@
-"""Torch model for student, teacher and autoencoder model in EfficientAd"""
+"""Torch model for student, teacher and autoencoder model in EfficientAd."""
 
 # Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -16,25 +16,38 @@ from torchvision import transforms
 logger = logging.getLogger(__name__)
 
 
-def imagenet_norm_batch(x):
+def imagenet_norm_batch(x: torch.Tensor) -> torch.Tensor:
+    """Normalize batch of images with ImageNet mean and std.
+
+    Args:
+    ----
+        x (torch.Tensor): Input batch.
+
+    Returns:
+    -------
+        torch.Tensor: Normalized batch using the ImageNet mean and std.
+    """
     mean = torch.tensor([0.485, 0.456, 0.406])[None, :, None, None].to(x.device)
     std = torch.tensor([0.229, 0.224, 0.225])[None, :, None, None].to(x.device)
-    x_norm = (x - mean) / std
-    return x_norm
+    return (x - mean) / std
 
 
-def reduce_tensor_elems(tensor: torch.Tensor, m=2**24) -> torch.Tensor:
-    """Flattens n-dimensional tensors,  selects m elements from it
+def reduce_tensor_elems(tensor: torch.Tensor, m: int = 2**24) -> torch.Tensor:
+    """Reduce tensor elements.
+
+    This function flatten n-dimensional tensors,  selects m elements from it
     and returns the selected elements as tensor. It is used to select
     at most 2**24 for torch.quantile operation, as it is the maximum
     supported number of elements.
-    https://github.com/pytorch/pytorch/blob/b9f81a483a7879cd3709fd26bcec5f1ee33577e6/aten/src/ATen/native/Sorting.cpp#L291
+    https://github.com/pytorch/pytorch/blob/b9f81a483a7879cd3709fd26bcec5f1ee33577e6/aten/src/ATen/native/Sorting.cpp#L291.
 
     Args:
+    ----
         tensor (torch.Tensor): input tensor from which elements are selected
         m (int): number of maximum tensor elements. Default: 2**24
 
     Returns:
+    -------
             Tensor: reduced tensor
     """
     tensor = torch.flatten(tensor)
@@ -47,16 +60,17 @@ def reduce_tensor_elems(tensor: torch.Tensor, m=2**24) -> torch.Tensor:
 
 
 class EfficientAdModelSize(str, Enum):
-    """Supported EfficientAd model sizes"""
+    """Supported EfficientAd model sizes."""
 
     M = "medium"
     S = "small"
 
 
 class SmallPatchDescriptionNetwork(nn.Module):
-    """Patch Description Network small
+    """Patch Description Network small.
 
     Args:
+    ----
         out_channels (int): number of convolution output channels
     """
 
@@ -70,21 +84,31 @@ class SmallPatchDescriptionNetwork(nn.Module):
         self.avgpool1 = nn.AvgPool2d(kernel_size=2, stride=2, padding=1 * pad_mult)
         self.avgpool2 = nn.AvgPool2d(kernel_size=2, stride=2, padding=1 * pad_mult)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Perform a forward pass through the network.
+
+        Args:
+        ----
+            x (torch.Tensor): Input batch.
+
+        Returns:
+        -------
+            torch.Tensor: Output from the network.
+        """
         x = imagenet_norm_batch(x)
         x = F.relu(self.conv1(x))
         x = self.avgpool1(x)
         x = F.relu(self.conv2(x))
         x = self.avgpool2(x)
         x = F.relu(self.conv3(x))
-        x = self.conv4(x)
-        return x
+        return self.conv4(x)
 
 
 class MediumPatchDescriptionNetwork(nn.Module):
-    """Patch Description Network medium
+    """Patch Description Network medium.
 
     Args:
+    ----
         out_channels (int): number of convolution output channels
     """
 
@@ -100,7 +124,17 @@ class MediumPatchDescriptionNetwork(nn.Module):
         self.avgpool1 = nn.AvgPool2d(kernel_size=2, stride=2, padding=1 * pad_mult)
         self.avgpool2 = nn.AvgPool2d(kernel_size=2, stride=2, padding=1 * pad_mult)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Perform a forward pass through the network.
+
+        Args:
+        ----
+            x (torch.Tensor): Input batch.
+
+        Returns:
+        -------
+            torch.Tensor: Output from the network.
+        """
         x = imagenet_norm_batch(x)
         x = F.relu(self.conv1(x))
         x = self.avgpool1(x)
@@ -109,8 +143,7 @@ class MediumPatchDescriptionNetwork(nn.Module):
         x = F.relu(self.conv3(x))
         x = F.relu(self.conv4(x))
         x = F.relu(self.conv5(x))
-        x = self.conv6(x)
-        return x
+        return self.conv6(x)
 
 
 class Encoder(nn.Module):
@@ -125,25 +158,35 @@ class Encoder(nn.Module):
         self.enconv5 = nn.Conv2d(64, 64, kernel_size=4, stride=2, padding=1)
         self.enconv6 = nn.Conv2d(64, 64, kernel_size=8, stride=1, padding=0)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Perform the forward pass through the network.
+
+        Args:
+        ----
+            x (torch.Tensor): Input batch.
+
+        Returns:
+        -------
+            torch.Tensor: Output from the network.
+        """
         x = F.relu(self.enconv1(x))
         x = F.relu(self.enconv2(x))
         x = F.relu(self.enconv3(x))
         x = F.relu(self.enconv4(x))
         x = F.relu(self.enconv5(x))
-        x = self.enconv6(x)
-        return x
+        return self.enconv6(x)
 
 
 class Decoder(nn.Module):
     """Autoencoder Decoder model.
 
     Args:
+    ----
         out_channels (int): number of convolution output channels
         img_size (tuple): size of input images
     """
 
-    def __init__(self, out_channels, padding, img_size, *args, **kwargs) -> None:
+    def __init__(self, out_channels: int, padding: int, img_size: tuple[int, int], *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.img_size = img_size
         self.last_upsample = (
@@ -165,7 +208,17 @@ class Decoder(nn.Module):
         self.dropout5 = nn.Dropout(p=0.2)
         self.dropout6 = nn.Dropout(p=0.2)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Perform a forward pass through the network.
+
+        Args:
+        ----
+            x (torch.Tensor): Input batch.
+
+        Returns:
+        -------
+            torch.Tensor: Output from the network.
+        """
         x = F.interpolate(x, size=(int(self.img_size[0] / 64) - 1, int(self.img_size[1] / 64) - 1), mode="bilinear")
         x = F.relu(self.deconv1(x))
         x = self.dropout1(x)
@@ -186,34 +239,44 @@ class Decoder(nn.Module):
         x = self.dropout6(x)
         x = F.interpolate(x, size=self.last_upsample, mode="bilinear")
         x = F.relu(self.deconv7(x))
-        x = self.deconv8(x)
-        return x
+        return self.deconv8(x)
 
 
 class AutoEncoder(nn.Module):
     """EfficientAd Autoencoder.
 
     Args:
+    ----
        out_channels (int): number of convolution output channels
        img_size (tuple): size of input images
     """
 
-    def __init__(self, out_channels, padding, img_size, *args, **kwargs) -> None:
+    def __init__(self, out_channels: int, padding: int, img_size: tuple[int, int], *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.encoder = Encoder()
         self.decoder = Decoder(out_channels, padding, img_size)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Perform the forward pass through the network.
+
+        Args:
+        ----
+            x (torch.Tensor): Input batch.
+
+        Returns:
+        -------
+            torch.Tensor: Output from the network.
+        """
         x = imagenet_norm_batch(x)
         x = self.encoder(x)
-        x = self.decoder(x)
-        return x
+        return self.decoder(x)
 
 
 class EfficientAdModel(nn.Module):
     """EfficientAd model.
 
     Args:
+    ----
         teacher_out_channels (int): number of convolution output channels of the pre-trained teacher model
         pretrained_models_dir (str): path to the pretrained model weights
         input_size (tuple): size of input images
@@ -229,8 +292,8 @@ class EfficientAdModel(nn.Module):
         teacher_out_channels: int,
         input_size: tuple[int, int],
         model_size: EfficientAdModelSize = EfficientAdModelSize.S,
-        padding=False,
-        pad_maps=True,
+        padding: bool = False,
+        pad_maps: bool = True,
     ) -> None:
         super().__init__()
 
@@ -271,12 +334,29 @@ class EfficientAdModel(nn.Module):
         )
 
     def is_set(self, p_dic: nn.ParameterDict) -> bool:
-        for _, value in p_dic.items():
-            if value.sum() != 0:
-                return True
-        return False
+        """Check if any of the parameters in the parameter dictionary is set.
+
+        Args:
+        ----
+            p_dic (nn.ParameterDict): Parameter dictionary.
+
+        Returns:
+        -------
+            bool: Boolean indicating whether any of the parameters in the parameter dictionary is set.
+        """
+        return any(value.sum() != 0 for _, value in p_dic.items())
 
     def choose_random_aug_image(self, image: Tensor) -> Tensor:
+        """Choose a random augmentation function and apply it to the input image.
+
+        Args:
+        ----
+            image (Tensor): Input image.
+
+        Returns:
+        -------
+            Tensor: Augmented image.
+        """
         transform_functions = [
             transforms.functional.adjust_brightness,
             transforms.functional.adjust_contrast,
@@ -287,13 +367,16 @@ class EfficientAdModel(nn.Module):
         transform_function = np.random.default_rng().choice(transform_functions)
         return transform_function(image, coefficient)
 
-    def forward(self, batch: Tensor, batch_imagenet: Tensor = None) -> Tensor | dict:
-        """Prediction by EfficientAd models.
+    def forward(self, batch: Tensor, batch_imagenet: Tensor | None = None) -> Tensor | dict:
+        """Perform the forward-pass of the EfficientAd models.
 
         Args:
+        ----
             batch (Tensor): Input images.
+            batch_imagenet (Tensor): ImageNet batch. Defaults to None.
 
         Returns:
+        -------
             Tensor: Predictions
         """
         with torch.no_grad():
@@ -331,9 +414,9 @@ class EfficientAdModel(nn.Module):
             loss_stae = torch.mean(distance_stae)
             return (loss_st, loss_ae, loss_stae)
 
-        else:
-            with torch.no_grad():
-                ae_output = self.ae(batch)
+        # Eval mode.
+        with torch.no_grad():
+            ae_output = self.ae(batch)
 
             map_st = torch.mean(distance_st, dim=1, keepdim=True)
             map_stae = torch.mean(
@@ -342,18 +425,15 @@ class EfficientAdModel(nn.Module):
                 keepdim=True,
             )
 
-            if self.pad_maps:
-                map_st = F.pad(map_st, (4, 4, 4, 4))
-                map_stae = F.pad(map_stae, (4, 4, 4, 4))
-            map_st = F.interpolate(map_st, size=(self.input_size[0], self.input_size[1]), mode="bilinear")
-            map_stae = F.interpolate(map_stae, size=(self.input_size[0], self.input_size[1]), mode="bilinear")
+        if self.pad_maps:
+            map_st = F.pad(map_st, (4, 4, 4, 4))
+            map_stae = F.pad(map_stae, (4, 4, 4, 4))
+        map_st = F.interpolate(map_st, size=(self.input_size[0], self.input_size[1]), mode="bilinear")
+        map_stae = F.interpolate(map_stae, size=(self.input_size[0], self.input_size[1]), mode="bilinear")
 
-            if self.is_set(self.quantiles):
-                map_st = 0.1 * (map_st - self.quantiles["qa_st"]) / (self.quantiles["qb_st"] - self.quantiles["qa_st"])
-                map_stae = (
-                    0.1 * (map_stae - self.quantiles["qa_ae"]) / (self.quantiles["qb_ae"] - self.quantiles["qa_ae"])
-                )
+        if self.is_set(self.quantiles):
+            map_st = 0.1 * (map_st - self.quantiles["qa_st"]) / (self.quantiles["qb_st"] - self.quantiles["qa_st"])
+            map_stae = 0.1 * (map_stae - self.quantiles["qa_ae"]) / (self.quantiles["qb_ae"] - self.quantiles["qa_ae"])
 
-            map_combined = 0.5 * map_st + 0.5 * map_stae
-            return {"anomaly_map": map_combined, "map_st": map_st, "map_ae": map_stae}
-            return {"anomaly_map": map_combined, "map_st": map_st, "map_ae": map_stae}
+        map_combined = 0.5 * map_st + 0.5 * map_stae
+        return {"anomaly_map": map_combined, "map_st": map_st, "map_ae": map_stae}

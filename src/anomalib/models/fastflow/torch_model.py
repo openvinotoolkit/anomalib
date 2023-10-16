@@ -31,17 +31,20 @@ def subnet_conv_func(kernel_size: int, hidden_ratio: float) -> Callable:
         Predicts coupling coefficients :math:`s, t`.
 
     Args:
+    ----
         kernel_size (int): Kernel Size
         hidden_ratio (float): Hidden ratio to compute number of hidden channels.
 
     Returns:
+    -------
         Callable: Sequential for the subnet constructor.
     """
 
     def subnet_conv(in_channels: int, out_channels: int) -> nn.Sequential:
         hidden_channels = int(in_channels * hidden_ratio)
         # NOTE: setting padding="same" in nn.Conv2d breaks the onnx export so manual padding required.
-        # TODO: Use padding="same" in nn.Conv2d once PyTorch v2.1 is released
+        # TODO(ashwinvaidya17): Use padding="same" in nn.Conv2d once PyTorch v2.1 is released
+        # CVS-122671
         padding = 2 * (kernel_size // 2 - ((1 + kernel_size) % 2), kernel_size // 2)
         return nn.Sequential(
             nn.ZeroPad2d(padding),
@@ -67,6 +70,7 @@ def create_fast_flow_block(
     Figure 2 and Section 3.3 in the paper.
 
     Args:
+    ----
         input_dimensions (list[int]): Input dimensions (Channel, Height, Width)
         conv3x3_only (bool): Boolean whether to use conv3x3 only or conv3x3 and conv1x1.
         hidden_ratio (float): Ratio for the hidden layer channels.
@@ -74,14 +78,12 @@ def create_fast_flow_block(
         clamp (float, optional): Clamp. Defaults to 2.0.
 
     Returns:
+    -------
         SequenceINN: FastFlow Block.
     """
     nodes = SequenceINN(*input_dimensions)
     for i in range(flow_steps):
-        if i % 2 == 1 and not conv3x3_only:
-            kernel_size = 1
-        else:
-            kernel_size = 3
+        kernel_size = 1 if i % 2 == 1 and not conv3x3_only else 3
         nodes.append(
             AllInOneBlock,
             subnet_constructor=subnet_conv_func(kernel_size, hidden_ratio),
@@ -97,6 +99,7 @@ class FastflowModel(nn.Module):
     Unsupervised Anomaly Detection and Localization via 2D Normalizing Flows.
 
     Args:
+    ----
         input_size (tuple[int, int]): Model input size.
         backbone (str): Backbone CNN network
         pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.
@@ -105,6 +108,7 @@ class FastflowModel(nn.Module):
         hidden_ratio (float, optional): Ratio to calculate hidden var channels. Defaults to 1.0.
 
     Raises:
+    ------
         ValueError: When the backbone is not supported.
     """
 
@@ -171,14 +175,15 @@ class FastflowModel(nn.Module):
         """Forward-Pass the input to the FastFlow Model.
 
         Args:
+        ----
             input_tensor (Tensor): Input tensor.
 
         Returns:
+        -------
             Tensor | list[Tensor] | tuple[list[Tensor]]: During training, return
                 (hidden_variables, log-of-the-jacobian-determinants).
                 During the validation/test, return the anomaly map.
         """
-
         return_val: Tensor | list[Tensor] | tuple[list[Tensor]]
 
         self.feature_extractor.eval()
@@ -210,22 +215,25 @@ class FastflowModel(nn.Module):
         """Get CNN-based features.
 
         Args:
+        ----
             input_tensor (Tensor): Input Tensor.
 
         Returns:
+        -------
             list[Tensor]: List of features.
         """
         features = self.feature_extractor(input_tensor)
-        features = [self.norms[i](feature) for i, feature in enumerate(features)]
-        return features
+        return [self.norms[i](feature) for i, feature in enumerate(features)]
 
     def _get_cait_features(self, input_tensor: Tensor) -> list[Tensor]:
         """Get Class-Attention-Image-Transformers (CaiT) features.
 
         Args:
+        ----
             input_tensor (Tensor): Input Tensor.
 
         Returns:
+        -------
             list[Tensor]: List of features.
         """
         feature = self.feature_extractor.patch_embed(input_tensor)
@@ -237,16 +245,17 @@ class FastflowModel(nn.Module):
         feature = self.feature_extractor.norm(feature)
         feature = feature.permute(0, 2, 1)
         feature = feature.reshape(batch_size, num_channels, self.input_size[0] // 16, self.input_size[1] // 16)
-        features = [feature]
-        return features
+        return [feature]
 
     def _get_vit_features(self, input_tensor: Tensor) -> list[Tensor]:
         """Get Vision Transformers (ViT) features.
 
         Args:
+        ----
             input_tensor (Tensor): Input Tensor.
 
         Returns:
+        -------
             list[Tensor]: List of features.
         """
         feature = self.feature_extractor.patch_embed(input_tensor)
@@ -270,5 +279,4 @@ class FastflowModel(nn.Module):
         batch_size, _, num_channels = feature.shape
         feature = feature.permute(0, 2, 1)
         feature = feature.reshape(batch_size, num_channels, self.input_size[0] // 16, self.input_size[1] // 16)
-        features = [feature]
-        return features
+        return [feature]

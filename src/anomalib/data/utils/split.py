@@ -16,10 +16,12 @@ import logging
 import math
 from collections.abc import Sequence
 from enum import Enum
+from typing import TYPE_CHECKING
 
 import torch
 
-from anomalib import data
+if TYPE_CHECKING:
+    from anomalib import data
 
 logger = logging.getLogger(__name__)
 
@@ -53,9 +55,11 @@ def concatenate_datasets(datasets: Sequence["data.AnomalibDataset"]) -> "data.An
     """Concatenate multiple datasets into a single dataset object.
 
     Args:
+    ----
         datasets (Sequence[AnomalibDataset]): Sequence of at least two datasets.
 
     Returns:
+    -------
         AnomalibDataset: Dataset that contains the combined samples of all input datasets.
     """
     concat_dataset = datasets[0]
@@ -73,6 +77,7 @@ def random_split(
     """Perform a random split of a dataset.
 
     Args:
+    ----
         dataset (AnomalibDataset): Source dataset
         split_ratio (Union[float, Sequence[float]]): Fractions of the splits that will be produced. The values in the
             sequence must sum to 1. If a single value is passed, the ratio will be converted to
@@ -81,17 +86,16 @@ def random_split(
             be maintained in each of the subsets.
         seed (int | None, optional): Seed that can be passed if results need to be reproducible
     """
-
     if isinstance(split_ratio, float):
         split_ratio = [1 - split_ratio, split_ratio]
 
-    assert (
+    assert (  # noqa: PT018
         math.isclose(sum(split_ratio), 1) and sum(split_ratio) <= 1
     ), f"split ratios must sum to 1, found {sum(split_ratio)}"
     assert all(0 < ratio < 1 for ratio in split_ratio), f"all split ratios must be between 0 and 1, found {split_ratio}"
 
     # create list of source data
-    if label_aware and "label_index" in dataset.samples.keys():
+    if label_aware and "label_index" in dataset.samples:
         indices_per_label = [group.index for _, group in dataset.samples.groupby("label_index")]
         per_label_datasets = [dataset.subsample(indices) for indices in indices_per_label]
     else:
@@ -111,7 +115,7 @@ def random_split(
                 "Zero subset length encountered during splitting. This means one of your subsets might be"
                 " empty or devoid of either normal or anomalous images.",
             )
-            logger.warn(msg)
+            logger.warning(msg)
 
         # perform random subsampling
         random_state = torch.Generator().manual_seed(seed) if seed else None
@@ -127,7 +131,7 @@ def random_split(
 
 
 def split_by_label(dataset: "data.AnomalibDataset") -> tuple["data.AnomalibDataset", "data.AnomalibDataset"]:
-    """Splits the dataset into the normal and anomalous subsets."""
+    """Split the dataset into the normal and anomalous subsets."""
     samples = dataset.samples
     normal_indices = samples[samples.label_index == 0].index
     anomalous_indices = samples[samples.label_index == 1].index

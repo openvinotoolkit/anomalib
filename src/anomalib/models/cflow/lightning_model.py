@@ -57,43 +57,48 @@ class Cflow(AnomalyModule):
             permute_soft=permute_soft,
         )
         self.automatic_optimization = False
-        # TODO: LR should be part of optimizer in config.yaml! Since cflow has custom
-        #   optimizer this is to be addressed later.
+        # TODO(ashwinvaidya17): LR should be part of optimizer in config.yaml since  cflow has custom optimizer.
+        # CVS-122670
         self.learning_rate = lr
 
     def configure_optimizers(self) -> Optimizer:
-        """Configures optimizers for each decoder.
+        """Configure optimizers for each decoder.
 
         Note:
+        ----
             This method is used for the existing CLI.
             When PL CLI is introduced, configure optimizers method will be
                 deprecated, and optimizers will be configured from either
                 config.yaml file or from CLI.
 
         Returns:
+        -------
             Optimizer: Adam optimizer for each decoder
         """
         decoders_parameters = []
         for decoder_idx in range(len(self.model.pool_layers)):
             decoders_parameters.extend(list(self.model.decoders[decoder_idx].parameters()))
 
-        optimizer = optim.Adam(
+        return optim.Adam(
             params=decoders_parameters,
             lr=self.learning_rate,
         )
-        return optimizer
 
     def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
-        """Training Step of CFLOW.
+        """Perform the training step of CFLOW.
 
         For each batch, decoder layers are trained with a dynamic fiber batch size.
         Training step is performed manually as multiple training steps are involved
             per batch of input images
 
         Args:
-          batch (dict[str, str | Tensor]): Input batch
+        ----
+            batch (dict[str, str | Tensor]): Input batch
+            *args: Arguments.
+            **kwargs: Keyword arguments.
 
         Returns:
+        -------
           Loss value for the batch
 
         """
@@ -157,16 +162,20 @@ class Cflow(AnomalyModule):
         return {"loss": avg_loss}
 
     def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
-        """Validation Step of CFLOW.
+        """Perform the validation step of CFLOW.
 
             Similar to the training step, encoder features
             are extracted from the CNN for each batch, and anomaly
             map is computed.
 
         Args:
+        ----
             batch (dict[str, str | Tensor]): Input batch
+            *args: Arguments.
+            **kwargs: Keyword arguments.
 
         Returns:
+        -------
             Dictionary containing images, anomaly maps, true labels and masks.
             These are required in `validation_epoch_end` for feature concatenation.
 
@@ -178,13 +187,15 @@ class Cflow(AnomalyModule):
 
     @property
     def trainer_arguments(self) -> dict[str, Any]:
-        return {"gradient_clip_val": 0, "max_epochs": 50, "num_sanity_val_steps": 0}
+        """C-FLOW specific trainer arguments."""
+        return {"gradient_clip_val": 0, "num_sanity_val_steps": 0}
 
 
 class CflowLightning(Cflow):
     """PL Lightning Module for the CFLOW algorithm.
 
     Args:
+    ----
         hparams (DictConfig | ListConfig): Model params
     """
 
@@ -201,13 +212,14 @@ class CflowLightning(Cflow):
             clamp_alpha=hparams.model.clamp_alpha,
             permute_soft=hparams.model.permute_soft,
         )
-        self.hparams: DictConfig | ListConfig  # type: ignore
+        self.hparams: DictConfig | ListConfig
         self.save_hyperparameters(hparams)
 
     def configure_callbacks(self) -> list[EarlyStopping]:
         """Configure model-specific callbacks.
 
         Note:
+        ----
             This method is used for the existing CLI.
             When PL CLI is introduced, configure callback method will be
                 deprecated, and callbacks will be configured from either

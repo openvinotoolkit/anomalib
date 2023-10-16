@@ -24,7 +24,7 @@ def standardize(
         targets = torch.log(targets)
     else:
         msg = f"Targets must be either Tensor or Numpy array. Received {type(targets)}"
-        raise ValueError(msg)
+        raise TypeError(msg)
     standardized = (targets - mean) / std
     if center_at:
         standardized -= (center_at - mean) / std
@@ -38,7 +38,7 @@ def normalize(targets: np.ndarray | Tensor, threshold: float | np.ndarray | Tens
     if isinstance(targets, np.ndarray):
         return normalize_numpy(targets, threshold)
     msg = f"Targets must be either Tensor or Numpy array. Received {type(targets)}"
-    raise ValueError(msg)
+    raise TypeError(msg)
 
 
 def normalize_torch(targets: Tensor, threshold: Tensor) -> Tensor:
@@ -47,8 +47,7 @@ def normalize_torch(targets: Tensor, threshold: Tensor) -> Tensor:
     image_threshold = threshold.cpu()
 
     dist = Normal(torch.Tensor([0]), torch.Tensor([1]))
-    normalized = dist.cdf(targets.cpu() - image_threshold).to(device)
-    return normalized
+    return dist.cdf(targets.cpu() - image_threshold).to(device)
 
 
 def normalize_numpy(targets: np.ndarray, threshold: float | np.ndarray) -> np.ndarray:

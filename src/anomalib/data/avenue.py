@@ -16,9 +16,9 @@ Reference:
 
 import logging
 import math
-from collections.abc import Callable
 from pathlib import Path
 from shutil import move
+from typing import TYPE_CHECKING
 
 import albumentations as A  # noqa: N812
 import cv2
@@ -38,6 +38,9 @@ from anomalib.data.utils import (
     get_transforms,
 )
 from anomalib.data.utils.video import ClipsIndexer
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 logger = logging.getLogger(__name__)
 
@@ -61,11 +64,13 @@ def make_avenue_dataset(root: Path, gt_dir: Path, split: Split | str | None = No
         path/to/ground_truth/mask_filename.mat
 
     Args:
+    ----
         root (Path): Path to dataset
         gt_dir (Path): Path to the ground truth
         split (Split | str | None = None, optional): Dataset split (ie., either train or test). Defaults to None.
 
     Example:
+    -------
         The following example shows how to get testing samples from Avenue dataset:
 
         >>> root = Path('./avenue')
@@ -78,9 +83,9 @@ def make_avenue_dataset(root: Path, gt_dir: Path, split: Split | str | None = No
         ...
 
     Returns:
+    -------
         DataFrame: an output dataframe containing samples for the requested split (ie., train or test)
     """
-
     samples_list = [(str(root),) + filename.parts[-2:] for filename in Path(root).glob("**/*.avi")]
     samples = DataFrame(samples_list, columns=["root", "folder", "image_path"])
 
@@ -107,9 +112,8 @@ def make_avenue_dataset(root: Path, gt_dir: Path, split: Split | str | None = No
 class AvenueClipsIndexer(ClipsIndexer):
     """Clips class for Avenue dataset."""
 
-    def get_mask(self, idx) -> np.ndarray | None:
+    def get_mask(self, idx: int) -> np.ndarray | None:
         """Retrieve the masks from the file system."""
-
         video_idx, frames_idx = self.get_clip_location(idx)
         matfile = self.mask_paths[video_idx]
         if matfile == "":  # no gt masks available for this clip
@@ -133,11 +137,12 @@ class AvenueDataset(AnomalibVideoDataset):
     """Avenue Dataset class.
 
     Args:
+    ----
         task (TaskType): Task type, 'classification', 'detection' or 'segmentation'
-        root (Path | str): Path to the root of the dataset
-        gt_dir (Path | str): Path to the ground truth files
         transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
         split (Split): Split of the dataset, usually Split.TRAIN or Split.TEST
+        root (Path | str): Path to the root of the dataset
+        gt_dir (Path | str): Path to the ground truth files
         clip_length_in_frames (int, optional): Number of video frames in each clip.
         frames_between_clips (int, optional): Number of frames between each consecutive video clip.
         target_frame (VideoTargetFrame): Specifies the target frame in the video clip, used for ground truth retrieval
@@ -146,10 +151,10 @@ class AvenueDataset(AnomalibVideoDataset):
     def __init__(
         self,
         task: TaskType,
-        root: Path | str,
-        gt_dir: Path | str,
         transform: A.Compose,
         split: Split,
+        root: Path | str = "./datasets/avenue",
+        gt_dir: Path | str = "./datasets/avenue/ground_truth_demo",
         clip_length_in_frames: int = 1,
         frames_between_clips: int = 1,
         target_frame: VideoTargetFrame = VideoTargetFrame.LAST,
@@ -170,6 +175,7 @@ class Avenue(AnomalibVideoDataModule):
     """Avenue DataModule class.
 
     Args:
+    ----
         root (Path | str): Path to the root of the dataset
         gt_dir (Path | str): Path to the ground truth files
         clip_length_in_frames (int, optional): Number of video frames in each clip.
@@ -197,13 +203,13 @@ class Avenue(AnomalibVideoDataModule):
 
     def __init__(
         self,
-        root: Path | str,
-        gt_dir: Path | str,
+        root: Path | str = "./datasets/avenue",
+        gt_dir: Path | str = "./datasets/avenue/ground_truth_demo",
         clip_length_in_frames: int = 1,
         frames_between_clips: int = 1,
         target_frame: VideoTargetFrame = VideoTargetFrame.LAST,
         task: TaskType = TaskType.SEGMENTATION,
-        image_size: int | tuple[int, int] | None = None,
+        image_size: int | tuple[int, int] = (256, 256),
         center_crop: int | tuple[int, int] | None = None,
         normalization: str | InputNormalizationMethod = InputNormalizationMethod.IMAGENET,
         train_batch_size: int = 32,
@@ -289,6 +295,7 @@ class Avenue(AnomalibVideoDataModule):
         masks into a sepaarte .png file for every video frame in the dataset.
 
         Args:
+        ----
             gt_dir (Path): Ground truth folder of the dataset.
         """
         # convert masks to numpy

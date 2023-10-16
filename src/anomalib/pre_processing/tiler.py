@@ -27,16 +27,18 @@ class StrideSizeError(Exception):
 
 
 def compute_new_image_size(image_size: tuple, tile_size: tuple, stride: tuple) -> tuple:
-    """This function checks if image size is divisible by tile size and stride.
+    """Check if image size is divisible by tile size and stride.
 
     If not divisible, it resizes the image size to make it divisible.
 
     Args:
+    ----
         image_size (tuple): Original image size
         tile_size (tuple): Tile size
         stride (tuple): Stride
 
     Examples:
+    --------
         >>> compute_new_image_size(image_size=(512, 512), tile_size=(256, 256), stride=(128, 128))
         (512, 512)
 
@@ -44,11 +46,12 @@ def compute_new_image_size(image_size: tuple, tile_size: tuple, stride: tuple) -
         (555, 555)
 
     Returns:
+    -------
         tuple: Updated image size that is divisible by tile size and stride.
     """
 
     def __compute_new_edge_size(edge_size: int, tile_size: int, stride: int) -> int:
-        """This function makes the resizing within the edge level."""
+        """Resize within the edge level."""
         if (edge_size - tile_size) % stride != 0:
             edge_size = (ceil((edge_size - tile_size) / stride) * stride) + tile_size
 
@@ -64,11 +67,13 @@ def upscale_image(image: Tensor, size: tuple, mode: ImageUpscaleMode = ImageUpsc
     """Upscale image to the desired size via either padding or interpolation.
 
     Args:
+    ----
         image (Tensor): Image
         size (tuple): tuple to which image is upscaled.
         mode (str, optional): Upscaling mode. Defaults to "padding".
 
     Examples:
+    --------
         >>> image = torch.rand(1, 3, 512, 512)
         >>> image = upscale_image(image, size=(555, 555), mode="padding")
         >>> image.shape
@@ -80,9 +85,9 @@ def upscale_image(image: Tensor, size: tuple, mode: ImageUpscaleMode = ImageUpsc
         torch.Size([1, 3, 555, 555])
 
     Returns:
+    -------
         Tensor: Upscaled image.
     """
-
     image_h, image_w = image.shape[2:]
     resize_h, resize_w = size
 
@@ -104,11 +109,13 @@ def downscale_image(image: Tensor, size: tuple, mode: ImageUpscaleMode = ImageUp
     """Opposite of upscaling. This image downscales image to a desired size.
 
     Args:
+    ----
         image (Tensor): Input image
         size (tuple): Size to which image is down scaled.
         mode (str, optional): Downscaling mode. Defaults to "padding".
 
     Examples:
+    --------
         >>> x = torch.rand(1, 3, 512, 512)
         >>> y = upscale_image(image, upscale_size=(555, 555), mode="padding")
         >>> y = downscale_image(y, size=(512, 512), mode='padding')
@@ -116,6 +123,7 @@ def downscale_image(image: Tensor, size: tuple, mode: ImageUpscaleMode = ImageUp
         True
 
     Returns:
+    -------
         Tensor: Downscaled image
     """
     input_h, input_w = size
@@ -131,12 +139,14 @@ class Tiler:
     """Tile Image into (non)overlapping Patches. Images are tiled in order to efficiently process large images.
 
     Args:
+    ----
         tile_size: Tile dimension for each patch
         stride: Stride length between patches
         remove_border_count: Number of border pixels to be removed from tile before untiling
         mode: Upscaling mode for image resize.Supported formats: padding, interpolation
 
     Examples:
+    --------
         >>> import torch
         >>> from torchvision import transforms
         >>> from skimage.data import camera
@@ -208,7 +218,7 @@ class Tiler:
             output = (parameter[0], parameter[1])
         else:
             msg = f"Unknown type {type(parameter)} for tile or stride size. Could be int or Sequence type."
-            raise ValueError(msg)
+            raise TypeError(msg)
 
         if len(output) != 2:
             msg = f"Length of the size type must be 2 for height and width. Got {len(output)} instead."
@@ -220,6 +230,7 @@ class Tiler:
         """Randomly crop tiles from the given image.
 
         Args:
+        ----
             image: input image to be cropped
 
         Returns: Randomly cropped tiles from the image
@@ -232,11 +243,11 @@ class Tiler:
         This is the core function to perform tiling operation.
 
         Args:
+        ----
             tensor: Input tensor from which tiles are generated.
 
         Returns: Generated tiles
         """
-
         # identify device type based on input tensor
         device = tensor.device
 
@@ -270,9 +281,7 @@ class Tiler:
 
         # rearrange the tiles in order [tile_count * batch, channels, tile_height, tile_width]
         tiles = tiles.permute(2, 0, 1, 3, 4, 5)
-        tiles = tiles.contiguous().view(-1, channels, self.tile_size_h, self.tile_size_w)
-
-        return tiles
+        return tiles.contiguous().view(-1, channels, self.tile_size_h, self.tile_size_w)
 
     def __fold(self, tiles: Tensor) -> Tensor:
         """Fold the tiles back into the original tensor.
@@ -280,9 +289,11 @@ class Tiler:
         This is the core method to reconstruct the original image from its tiled version.
 
         Args:
+        ----
             tiles: Tiles from the input image, generated via __unfold method.
 
         Returns:
+        -------
             Output that is the reconstructed version of the input tensor.
         """
         # number of channels differs between image and anomaly map, so infer from input tiles.
@@ -347,7 +358,7 @@ class Tiler:
         # divide the reconstucted image by the lookup to average out the values
         img = torch.divide(img, lookup)
         # alternative way of removing nan values (isnan not supported by openvino)
-        img[img != img] = 0  # pylint: disable=comparison-with-itself
+        img[img != img] = 0  # noqa: PLR0124
 
         return img
 
@@ -355,9 +366,13 @@ class Tiler:
         """Tiles an input image to either overlapping, non-overlapping or random patches.
 
         Args:
+        ----
             image: Input image to tile.
+            use_random_tiling: If True, randomly crops tiles from the image.
+                If False, tiles the image in a regular grid.
 
         Examples:
+        --------
             >>> from anomalib.pre_processing import Tiler
             >>> tiler = Tiler(tile_size=512,stride=256)
             >>> image = torch.rand(size=(2, 3, 1024, 1024))
@@ -368,6 +383,7 @@ class Tiler:
             torch.Size([18, 3, 512, 512])
 
         Returns:
+        -------
             Tiles generated from the image.
         """
         if image.dim() == 3:
@@ -392,11 +408,7 @@ class Tiler:
 
         image = upscale_image(image, size=(self.resized_h, self.resized_w), mode=self.mode)
 
-        if use_random_tiling:
-            image_tiles = self.__random_tile(image)
-        else:
-            image_tiles = self.__unfold(image)
-        return image_tiles
+        return self.__random_tile(image) if use_random_tiling else self.__unfold(image)
 
     def untile(self, tiles: Tensor) -> Tensor:
         """Untiles patches to reconstruct the original input image.
@@ -405,9 +417,11 @@ class Tiler:
         and return the reconstructed image.
 
         Args:
+        ----
             tiles: Tiles from the input image, generated via tile()..
 
         Examples:
+        --------
             >>> from anomalib.pre_processing import Tiler
             >>> tiler = Tiler(tile_size=512,stride=256)
             >>> image = torch.rand(size=(2, 3, 1024, 1024))
@@ -423,9 +437,8 @@ class Tiler:
             True
 
         Returns:
+        -------
             Output that is the reconstructed version of the input tensor.
         """
         image = self.__fold(tiles)
-        image = downscale_image(image=image, size=(self.input_h, self.input_w), mode=self.mode)
-
-        return image
+        return downscale_image(image=image, size=(self.input_h, self.input_w), mode=self.mode)

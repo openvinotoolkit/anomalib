@@ -1,4 +1,4 @@
-"""This module contains inference-related abstract class and its Torch and OpenVINO implementations."""
+"""OpenVINO Inferencer implementation."""
 
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -7,7 +7,7 @@
 import logging
 from importlib.util import find_spec
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import albumentations as A  # noqa: N812
 import cv2
@@ -22,6 +22,9 @@ logger = logging.getLogger("anomalib")
 
 if find_spec("openvino") is not None:
     from openvino.runtime import Core
+
+    if TYPE_CHECKING:
+        from openvino.runtime import CompiledModel
 else:
     logger.warning("OpenVINO is not installed. Please install OpenVINO to use OpenVINOInferencer.")
 
@@ -30,6 +33,7 @@ class OpenVINOInferencer(Inferencer):
     """OpenVINO implementation for the inference.
 
     Args:
+    ----
         path (str | Path): Path to the openvino onnx, xml or bin file.
         metadata (str | Path | dict, optional): Path to metadata file or a dict object defining the
             metadata. Defaults to None.
@@ -53,14 +57,16 @@ class OpenVINOInferencer(Inferencer):
 
         self.task = TaskType(task) if task else TaskType(self.metadata["task"])
 
-    def load_model(self, path: str | Path | tuple[bytes, bytes]):
+    def load_model(self, path: str | Path | tuple[bytes, bytes]) -> tuple[Any, Any, "CompiledModel"]:
         """Load the OpenVINO model.
 
         Args:
+        ----
             path (str | Path | tuple[bytes, bytes]): Path to the onnx or xml and bin files
                                                         or tuple of .xml and .bin data as bytes.
 
         Returns:
+        -------
             [tuple[str, str, ExecutableNetwork]]: Input and Output blob names
                 together with the Executable network.
         """
@@ -98,9 +104,11 @@ class OpenVINOInferencer(Inferencer):
         """Pre process the input image by applying transformations.
 
         Args:
+        ----
             image (np.ndarray): Input image.
 
         Returns:
+        -------
             np.ndarray: pre-processed image.
         """
         transform = A.from_dict(self.metadata["transform"])
@@ -118,9 +126,11 @@ class OpenVINOInferencer(Inferencer):
         """Forward-Pass input tensor to the model.
 
         Args:
+        ----
             image (np.ndarray): Input tensor.
 
         Returns:
+        -------
             np.ndarray: Output predictions.
         """
         return self.model(image)
@@ -129,12 +139,14 @@ class OpenVINOInferencer(Inferencer):
         """Post process the output predictions.
 
         Args:
+        ----
             predictions (np.ndarray): Raw output predicted by the model.
             metadata (Dict, optional): Meta data. Post-processing step sometimes requires
                 additional meta data such as image shape. This variable comprises such info.
                 Defaults to None.
 
         Returns:
+        -------
             dict[str, Any]: Post processed prediction results.
         """
         if metadata is None:
@@ -208,9 +220,11 @@ class OpenVINOInferencer(Inferencer):
         """Get bounding boxes from masks.
 
         Args:
-            masks (np.ndarray): Input mask of shape (H, W)
+        ----
+            mask (np.ndarray): Input mask of shape (H, W)
 
         Returns:
+        -------
             np.ndarray: array of shape (N, 4) containing the bounding box coordinates of the objects in the masks
             in xyxy format.
         """
@@ -221,5 +235,4 @@ class OpenVINOInferencer(Inferencer):
         for label in labels[labels != 0]:
             y_loc, x_loc = np.where(comps == label)
             boxes.append([np.min(x_loc), np.min(y_loc), np.max(x_loc), np.max(y_loc)])
-        boxes = np.stack(boxes) if boxes else np.empty((0, 4))
-        return boxes
+        return np.stack(boxes) if boxes else np.empty((0, 4))
