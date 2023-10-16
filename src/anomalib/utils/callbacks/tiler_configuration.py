@@ -25,7 +25,6 @@ class TilerConfigurationCallback(Callback):
         stride: int | Sequence | None = None,
         remove_border_count: int = 0,
         mode: ImageUpscaleMode = ImageUpscaleMode.PADDING,
-        tile_count: int = 4,
     ) -> None:
         """Sets tiling configuration from the command line.
 
@@ -47,7 +46,6 @@ class TilerConfigurationCallback(Callback):
         self.stride = stride
         self.remove_border_count = remove_border_count
         self.mode = mode
-        self.tile_count = tile_count
 
     def setup(self, trainer: pl.Trainer, pl_module: pl.LightningModule, stage: str | None = None) -> None:
         """Setup Tiler object within Anomalib Model.
@@ -70,7 +68,6 @@ class TilerConfigurationCallback(Callback):
                     stride=self.stride,
                     remove_border_count=self.remove_border_count,
                     mode=self.mode,
-                    tile_count=self.tile_count,
                 )
             else:
                 msg = "Model does not support tiling."
