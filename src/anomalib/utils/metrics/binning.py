@@ -22,7 +22,9 @@ def thresholds_between_min_and_max(
 
     Returns:
     -------
-        Tensor: _description_
+        Tensor:
+            Array of size ``num_thresholds`` that contains evenly spaced values
+            between ``preds.min()`` and ``preds.max()`` on ``device``.
     """
     return linspace(start=preds.min(), end=preds.max(), steps=num_thresholds, device=device)
 
