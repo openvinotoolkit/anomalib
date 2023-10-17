@@ -62,7 +62,6 @@ def make_shanghaitech_dataset(root: Path, scene: int, split: Split | str | None 
         split (Split | str | None, optional): Dataset split (ie., either train or test). Defaults to None.
 
     Example:
-    -------
         The following example shows how to get testing samples from ShanghaiTech dataset:
 
         >>> root = Path('./shanghaiTech')

@@ -21,7 +21,6 @@ class KCenterGreedy:
         sampling_ratio (float): Ratio to choose coreset size from the embedding size.
 
     Example:
-    -------
         >>> embedding.shape
         torch.Size([219520, 1536])
         >>> sampler = KCenterGreedy(embedding=embedding)

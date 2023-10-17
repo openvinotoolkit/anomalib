@@ -37,7 +37,6 @@ class AnomalyMapGenerator(nn.Module):
         Defaults to "AnomalyMapGenerationMode.MULTIPLY".
 
     Raises:
-    ------
         ValueError: In case modes other than multiply and add are passed.
     """
 

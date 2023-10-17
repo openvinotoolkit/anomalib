@@ -55,7 +55,6 @@ def hide_output(func: Callable[..., Any]) -> Callable[..., Any]:
         func (function): Hides output of this function.
 
     Raises:
-    ------
         Exception: In case the execution of function fails, it raises an exception.
 
     Returns:

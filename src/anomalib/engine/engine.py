@@ -41,7 +41,6 @@ class _TrainerArgumentsCache:
         (**kwargs): Trainer arguments that are cached
 
     Example:
-    -------
         >>> conf = OmegaConf.load("config.yaml")
         >>> cache =  _TrainerArgumentsCache(**conf.trainer)
         >>> cache.args

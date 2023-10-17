@@ -103,7 +103,6 @@ class FastflowModel(nn.Module):
         hidden_ratio (float, optional): Ratio to calculate hidden var channels. Defaults to 1.0.
 
     Raises:
-    ------
         ValueError: When the backbone is not supported.
     """
 

@@ -37,7 +37,6 @@ def get_version() -> str:
     the value assigned to it.
 
     Example:
-    -------
         >>> # Assume that __version__ = "0.2.6"
         >>> get_version()
         "0.2.6"
@@ -59,7 +58,6 @@ def get_required_packages(requirement_files: list[str]) -> list[str]:
             packages.
 
     Example:
-    -------
         >>> get_required_packages(requirement_files=["openvino"])
         ['onnx>=1.8.1', 'networkx~=2.5', 'openvino-dev==2021.4.1', ...]
 

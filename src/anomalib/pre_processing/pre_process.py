@@ -24,11 +24,9 @@ def get_image_height_and_width(image_size: int | tuple | None = None) -> tuple[i
         image_size (int | tuple | None, optional): Input image size.
 
     Raises:
-    ------
         ValueError: Image size not None, int or tuple.
 
     Examples:
-    --------
         >>> get_image_height_and_width(image_size=256)
         (256, 256)
 
@@ -75,7 +73,6 @@ def get_transforms(
         to_tensor (bool, optional): Boolean to convert the final transforms into Torch tensor. Defaults to True.
 
     Raises:
-    ------
         ValueError: When both ``config`` and ``image_size`` is ``None``.
         ValueError: When ``config`` is not a ``str`` or `A.Compose`` object.
 
@@ -83,7 +80,6 @@ def get_transforms(
         A.Compose: Albumentation ``Compose`` object containing the image transforms.
 
     Examples:
-    --------
         >>> import skimage
         >>> image = skimage.data.astronaut()
 
@@ -182,7 +178,6 @@ class PreProcessor:
             into a tensor or not. Defaults to True.
 
     Examples:
-    --------
         >>> import skimage
         >>> image = skimage.data.astronaut()
 

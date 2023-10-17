@@ -36,7 +36,6 @@ def get_return_nodes(backbone: str) -> list[str]:
             {"resnet18", "wide_resnet50_2", "vgg19_bn", "efficientnet_b5"}.
 
     Raises:
-    ------
         NotImplementedError: If the backbone is "efficientnet_b5".
         ValueError: If the backbone is not one of the supported backbones.
 
@@ -68,7 +67,6 @@ def get_feature_extractor(backbone: str, return_nodes: list[str]) -> GraphModule
         return_nodes (list[str]): A list of return nodes for the given backbone.
 
     Raises:
-    ------
         NotImplementedError: When the backbone is efficientnet_b5
         ValueError: When the backbone is not supported
 

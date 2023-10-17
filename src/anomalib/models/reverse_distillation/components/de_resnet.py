@@ -31,7 +31,6 @@ class DecoderBasicBlock(nn.Module):
         norm_layer (Callable[..., nn.Module] | None, optional): Batch norm layer to use.Defaults to None.
 
     Raises:
-    ------
         ValueError: If groups are not equal to 1 and base width is not 64.
         NotImplementedError: If dilation is greater than 1.
     """

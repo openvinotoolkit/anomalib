@@ -28,7 +28,6 @@ class TimmFeatureExtractor(nn.Module):
             computation is required.
 
     Example:
-    -------
         >>> import torch
         >>> from anomalib.models.components.feature_extractors import TimmFeatureExtractor
 

@@ -23,7 +23,6 @@ def get_parser() -> ArgumentParser:
     """Get command line arguments.
 
     Example:
-    -------
         Example for Torch Inference.
         >>> python tools/inference/gradio_inference.py  \
         ...     --weights ./results/padim/mvtec/bottle/weights/torch/model.pt
@@ -47,7 +46,6 @@ def get_inferencer(weight_path: Path, metadata: Path | None = None) -> Inference
         metadata (Path | None, optional): Metadata is required for OpenVINO models. Defaults to None.
 
     Raises:
-    ------
         ValueError: If unsupported model weight is passed.
 
     Returns:

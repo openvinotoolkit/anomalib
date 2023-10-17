@@ -60,7 +60,6 @@ def convert_snake_to_pascal_case(snake_case: str) -> str:
         str: Output string in PascalCase
 
     Examples:
-    --------
         >>> convert_snake_to_pascal_case("efficient_ad")
         EfficientAd
 
@@ -80,7 +79,6 @@ def convert_pascal_to_snake_case(pascal_case: str) -> str:
         str: Output string in snake_case
 
     Examples:
-    --------
         >>> convert_pascal_to_snake_case("EfficientAd")
         efficient_ad
 
@@ -97,7 +95,6 @@ def get_available_models() -> list[str]:
         list[str]: List of available models.
 
     Example:
-    -------
         >>> get_available_models()
         ['ai_vad', 'cfa', 'cflow', 'csflow', 'dfkde', 'dfm', 'draem', 'efficient_ad', 'fastflow', ...]
     """
@@ -117,7 +114,6 @@ def get_model(config: DictConfig | ListConfig) -> AnomalyModule:
         config (DictConfig | ListConfig): Config.yaml loaded using OmegaConf
 
     Raises:
-    ------
         ValueError: If unsupported model is passed
 
     Returns:

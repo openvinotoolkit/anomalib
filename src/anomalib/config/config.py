@@ -170,7 +170,6 @@ def update_multi_gpu_training_config(config: DictConfig | ListConfig) -> DictCon
         config (DictConfig | ListConfig): Configurable parameters for the current run
 
     Raises:
-    ------
         ValueError: If unsupported accelerator is passed
 
     Returns:

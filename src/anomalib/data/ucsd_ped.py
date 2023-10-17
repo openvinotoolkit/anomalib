@@ -56,7 +56,6 @@ def make_ucsd_dataset(path: Path, split: str | Split | None = None) -> DataFrame
         split (str | Split | None, optional): Dataset split (ie., either train or test). Defaults to None.
 
     Example:
-    -------
         The following example shows how to get testing samples from UCSDped2 category:
 
         >>> root = Path('./UCSDped')

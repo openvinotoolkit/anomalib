@@ -37,7 +37,6 @@ def compute_new_image_size(image_size: tuple, tile_size: tuple, stride: tuple) -
         stride (tuple): Stride
 
     Examples:
-    --------
         >>> compute_new_image_size(image_size=(512, 512), tile_size=(256, 256), stride=(128, 128))
         (512, 512)
 
@@ -70,7 +69,6 @@ def upscale_image(image: Tensor, size: tuple, mode: ImageUpscaleMode = ImageUpsc
         mode (str, optional): Upscaling mode. Defaults to "padding".
 
     Examples:
-    --------
         >>> image = torch.rand(1, 3, 512, 512)
         >>> image = upscale_image(image, size=(555, 555), mode="padding")
         >>> image.shape
@@ -110,7 +108,6 @@ def downscale_image(image: Tensor, size: tuple, mode: ImageUpscaleMode = ImageUp
         mode (str, optional): Downscaling mode. Defaults to "padding".
 
     Examples:
-    --------
         >>> x = torch.rand(1, 3, 512, 512)
         >>> y = upscale_image(image, upscale_size=(555, 555), mode="padding")
         >>> y = downscale_image(y, size=(512, 512), mode='padding')
@@ -139,7 +136,6 @@ class Tiler:
         mode: Upscaling mode for image resize.Supported formats: padding, interpolation
 
     Examples:
-    --------
         >>> import torch
         >>> from torchvision import transforms
         >>> from skimage.data import camera

@@ -43,7 +43,6 @@ class TorchFXFeatureExtractor(nn.Module):
             modules, by passing a list of `leaf_modules` as one of the `tracer_kwargs`.
 
     Example:
-    -------
         With torchvision models:
 
             >>> import torch

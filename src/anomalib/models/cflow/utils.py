@@ -41,7 +41,6 @@ def positional_encoding_2d(condition_vector: int, height: int, width: int) -> Te
         width (int): W of the positions
 
     Raises:
-    ------
         ValueError: Cannot generate encoding with conditional vector length not as multiple of 4
 
     Returns:

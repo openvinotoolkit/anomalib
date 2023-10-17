@@ -99,7 +99,6 @@ def make_mvtec_dataset(
         extensions (Sequence[str] | None, optional): List of file extensions to be included in the dataset.
 
     Examples:
-    --------
         The following example shows how to get training samples from MVTec AD bottle category:
 
         >>> root = Path('./MVTec')

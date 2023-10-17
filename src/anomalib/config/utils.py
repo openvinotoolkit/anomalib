@@ -45,7 +45,6 @@ def to_tuple(input_size: int | ListConfig) -> tuple[int, int]:
     """Convert int or list to a tuple.
 
     Example:
-    -------
         >>> to_tuple(256)
         (256, 256)
         >>> to_tuple([256, 256])
@@ -55,7 +54,6 @@ def to_tuple(input_size: int | ListConfig) -> tuple[int, int]:
         input_size (int | ListConfig): input_size
 
     Raises:
-    ------
         ValueError: Unsupported value type.
 
     Returns:

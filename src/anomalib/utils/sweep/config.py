@@ -20,7 +20,6 @@ def convert_to_tuple(values: ValuesView) -> list[tuple]:
     are to be patched. Ideally this is useful when used with product.
 
     Example:
-    -------
         >>> params = DictConfig({
                 "dataset.category": [
                     "bottle",
@@ -97,7 +96,6 @@ def get_run_config(params_dict: DictConfig) -> Generator[DictConfig, None, None]
         params_dict (DictConfig): Configuration for grid search.
 
     Example:
-    -------
         >>> dummy_config = DictConfig({
             "parent1":{
                 "child1": ['a', 'b', 'c'],
@@ -147,7 +145,6 @@ def set_in_nested_config(config: DictConfig, keymap: list, value: Any) -> None: 
         value: Any: Value that should be assigned to the dictionary item at the specified location.
 
     Example:
-    -------
         >>> dummy_config = DictConfig({
             "parent1":{
                 "child1": ['a', 'b', 'c'],

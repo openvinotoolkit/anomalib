@@ -58,14 +58,12 @@ class AnomalibCometLogger(ImageLoggerBase, CometLogger):
             :class:`CometExperiment` can be passed as keyword arguments in this logger.
 
     Raises:
-    ------
         ModuleNotFoundError:
             If required Comet package is not installed on the device.
         MisconfigurationException:
             If neither ``api_key`` nor ``save_dir`` are passed as arguments.
 
     Example:
-    -------
         >>> from anomalib.utils.loggers import AnomalibCometLogger
         >>> from anomalib.engine import Engine
         >>> comet_logger = AnomalibCometLogger()

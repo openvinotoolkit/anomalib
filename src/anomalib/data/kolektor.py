@@ -92,7 +92,6 @@ def make_kolektor_dataset(
         split (str | Split | None, optional): Dataset split (Either train or test). Defaults to None.
 
     Examples:
-    --------
         The following example shows how to get training samples from Kolektor Dataset:
 
         >>> root = Path('./KolektorSDD/')

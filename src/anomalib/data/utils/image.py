@@ -56,7 +56,6 @@ def duplicate_filename(path: str | Path) -> Path:
         path (str | Path): Input Path
 
     Examples:
-    --------
         >>> path = Path("datasets/MVTec/bottle/test/broken_large/000.png")
         >>> path.exists()
         True
@@ -99,7 +98,6 @@ def generate_output_image_filename(input_path: str | Path, output_path: str | Pa
             Could be a filename or a directory.
 
     Examples:
-    --------
         >>> input_path = Path("datasets/MVTec/bottle/test/broken_large/000.png")
         >>> output_path = Path("datasets/MVTec/bottle/test/broken_large/000.png")
         >>> generate_output_image_filename(input_path, output_path)
@@ -111,7 +109,6 @@ def generate_output_image_filename(input_path: str | Path, output_path: str | Pa
         PosixPath('results/images/broken_large/000.png')
 
     Raises:
-    ------
         ValueError: When the ``input_path`` is not a file.
 
     Returns:
@@ -152,11 +149,9 @@ def get_image_height_and_width(image_size: int | Sequence[int]) -> tuple[int, in
         image_size (int | Sequence[int] | None, optional): Input image size.
 
     Raises:
-    ------
         ValueError: Image size not None, int or Sequence of values.
 
     Examples:
-    --------
         >>> get_image_height_and_width(image_size=256)
         (256, 256)
 
@@ -196,7 +191,6 @@ def read_image(path: str | Path, image_size: int | tuple[int, int] | None = None
             Defaults to None.
 
     Example:
-    -------
         >>> image = read_image("test_image.jpg")
 
     Returns:
@@ -223,7 +217,6 @@ def read_depth_image(path: str | Path) -> np.ndarray:
         path (str, Path): path to the image file
 
     Example:
-    -------
         >>> image = read_depth_image("test_image.tiff")
 
     Returns:

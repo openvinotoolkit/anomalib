@@ -67,7 +67,6 @@ def get_experiment_logger(
         config (DictConfig): config.yaml file for the corresponding anomalib model.
 
     Raises:
-    ------
         ValueError: for any logger types apart from false and tensorboard
 
     Returns:

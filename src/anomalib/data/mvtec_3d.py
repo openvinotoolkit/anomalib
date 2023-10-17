@@ -80,7 +80,6 @@ def make_mvtec_3d_dataset(
         extensions (Sequence[str] | None, optional): List of file extensions to be included in the dataset.
 
     Examples:
-    --------
         The following example shows how to get training samples from MVTec 3D-AD bagel category:
 
         >>> root = Path('./MVTec3D')

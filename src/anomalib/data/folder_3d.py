@@ -206,7 +206,6 @@ class Folder3DDataset(AnomalibDepthDataset):
         val_split_mode (ValSplitMode): Setting that determines how the validation subset is obtained.
 
     Raises:
-    ------
         ValueError: When task is set to classification and `mask_dir` is provided. When `mask_dir` is
             provided, `task` should be set to `segmentation`.
     """

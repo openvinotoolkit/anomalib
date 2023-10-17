@@ -50,7 +50,6 @@ def get_transforms(
             Defaults to True.
 
     Raises:
-    ------
         ValueError: When both ``config`` and ``image_size`` is ``None``.
         ValueError: When ``config`` is not a ``str`` or `A.Compose`` object.
 
@@ -58,7 +57,6 @@ def get_transforms(
         A.Compose: Albumentation ``Compose`` object containing the image transforms.
 
     Examples:
-    --------
         >>> import skimage
         >>> image = skimage.data.astronaut()
 

@@ -69,7 +69,6 @@ def make_avenue_dataset(root: Path, gt_dir: Path, split: Split | str | None = No
         split (Split | str | None = None, optional): Dataset split (ie., either train or test). Defaults to None.
 
     Example:
-    -------
         The following example shows how to get testing samples from Avenue dataset:
 
         >>> root = Path('./avenue')

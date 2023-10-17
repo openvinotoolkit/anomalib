@@ -123,7 +123,6 @@ class DownloadProgressBar(tqdm):
 
 
     Example:
-    -------
         >>> with DownloadProgressBar(unit='B', unit_scale=True, miniters=1, desc=url.split('/')[-1]) as p_bar:
         >>>         urllib.request.urlretrieve(url, filename=output_path, reporthook=p_bar.update_to)
     """

@@ -110,7 +110,6 @@ def metric_collection_from_dicts(metrics: dict[str, dict[str, Any]], prefix: str
     """Create a metric collection from a dict of "metric name" -> "metric specifications".
 
     Example:
-    -------
         metrics = {
             "PixelWiseF1Score": {
                 "class_path": "torchmetrics.F1Score",
