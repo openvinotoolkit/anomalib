@@ -27,15 +27,15 @@ class Ganomaly(AnomalyModule):
     """PL Lightning Module for the GANomaly Algorithm.
 
     Args:
-            input_size (tuple[int, int]): Input dimension.
-            batch_size (int): Batch size.
-            n_features (int): Number of features layers in the CNNs.
-            latent_vec_size (int): Size of autoencoder latent vector.
-            extra_layers (int, optional): Number of extra layers for encoder/decoder. Defaults to 0.
-            add_final_conv_layer (bool, optional): Add convolution layer at the end. Defaults to True.
-            wadv (int, optional): Weight for adversarial loss. Defaults to 1.
-            wcon (int, optional): Image regeneration weight. Defaults to 50.
-            wenc (int, optional): Latent vector encoder weight. Defaults to 1.
+        input_size (tuple[int, int]): Input dimension.
+        batch_size (int): Batch size.
+        n_features (int): Number of features layers in the CNNs.
+        latent_vec_size (int): Size of autoencoder latent vector.
+        extra_layers (int, optional): Number of extra layers for encoder/decoder. Defaults to 0.
+        add_final_conv_layer (bool, optional): Add convolution layer at the end. Defaults to True.
+        wadv (int, optional): Weight for adversarial loss. Defaults to 1.
+        wcon (int, optional): Image regeneration weight. Defaults to 50.
+        wenc (int, optional): Latent vector encoder weight. Defaults to 1.
     """
 
     def __init__(
