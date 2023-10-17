@@ -4,7 +4,7 @@ dataset:
   path: ./datasets/MVTec
   category: bottle
   task: segmentation
-  train_batch_size: 32
+  train_batch_size: 16
   eval_batch_size: 32
   inference_batch_size: 32
   num_workers: 8
@@ -35,21 +35,16 @@ model:
     - layer1
     - layer2
     - layer3
-  early_stopping:
-    patience: 3
-    metric: pixel_AUROC
-    mode: max
   beta1: 0.5
-  beta2: 0.99
+  beta2: 0.999
   normalization_method: min_max # options: [null, min_max, cdf]
-  anomaly_map_mode: multiply
+  anomaly_map_mode: add # options: [add, multiply]
 
 metrics:
   image:
     - F1Score
     - AUROC
   pixel:
-    - F1Score
     - AUROC
   threshold:
     method: adaptive #options: [adaptive, manual]
@@ -85,7 +80,7 @@ trainer:
   enable_progress_bar: true
   overfit_batches: 0.0
   track_grad_norm: -1
-  check_val_every_n_epoch: 2 # Don't validate before extracting features.
+  check_val_every_n_epoch: 200 # Don't validate before extracting features.
   fast_dev_run: false
   accumulate_grad_batches: 1
   max_epochs: 200

@@ -8,7 +8,7 @@ from __future__ import annotations
 from typing import List
 
 import numpy as np
-import scipy.integrate as integrate
+from scipy import integrate
 import scipy.stats as st
 import torch
 import torch.nn.functional as F
@@ -109,7 +109,7 @@ class AnomalyMapGenerator(nn.Module):
         return anomaly_mask
 
     @staticmethod
-    def binomial_test(z: torch.Tensor, win, probability_thr: float, high_precision: bool = False):
+    def binomial_test(z: torch.Tensor, win, probability_thr: float, high_precision: bool = False) -> torch.Tensor:
         """
         The binomial test applied to validate or reject the null hypothesis that the pixel is normal. The null
         hypothesis is that the pixel is normal, and the alternative hypothesis is that the pixel is anomalous. The
