@@ -1,3 +1,5 @@
+# NOTE: To get correct results, set the image size to (240, 360) and normalization to none in the dataset
+
 model:
   class_path: anomalib.models.AiVad
   init_args:
