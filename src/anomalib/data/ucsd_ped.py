@@ -74,7 +74,6 @@ def make_ucsd_dataset(path: Path, split: str | Split | None = None) -> DataFrame
         ...
 
     Returns:
-    -------
         DataFrame: an output dataframe containing samples for the requested split (ie., train or test)
     """
     folders = [filename for filename in sorted(path.glob("*/*")) if filename.is_dir()]

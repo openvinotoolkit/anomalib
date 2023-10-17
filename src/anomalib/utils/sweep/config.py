@@ -39,7 +39,6 @@ def convert_to_tuple(values: ValuesView) -> list[tuple]:
         values: ValuesView: ValuesView object to be converted to a list of tuples.
 
     Returns:
-    -------
         list[Tuple]: List of tuples.
     """
     return_list = []
@@ -65,7 +64,6 @@ def flatten_sweep_params(params_dict: DictConfig) -> DictConfig:
         params_dict: DictConfig: The dictionary containing the hpo parameters in the original, nested, structure.
 
     Returns:
-    -------
         flattened version of the parameter dictionary.
     """
 

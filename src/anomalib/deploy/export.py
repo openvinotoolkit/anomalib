@@ -44,7 +44,6 @@ def get_model_metadata(model: AnomalyModule) -> dict[str, Tensor]:
         model (AnomalyModule): Anomaly model which contains metadata related to normalization.
 
     Returns:
-    -------
         dict[str, Tensor]: Model metadata
     """
     metadata = {}
@@ -74,7 +73,6 @@ def get_metadata(task: TaskType, transform: dict[str, Any], model: AnomalyModule
         export_mode (ExportMode): Mode to export the model. Torch, ONNX or OpenVINO.
 
     Returns:
-    -------
         dict[str, Any]: Metadata for the exported model.
     """
     data_metadata = {"task": task, "transform": transform}
@@ -158,7 +156,6 @@ def export_to_onnx(model: AnomalyModule, input_size: tuple[int, int], export_pat
         export_path (Path): Path to the root folder of the exported model.
 
     Returns:
-    -------
         Path: Path to the exported onnx model.
     """
     onnx_path = export_path / "model.onnx"
@@ -265,7 +262,6 @@ def _serialize_list(arr: list[int] | list[float] | tuple[int, int]) -> str:
         arr (list[int] | list[float] | tuple[int, int]): List to serialize.
 
     Returns:
-    -------
         str: Serialized list.
     """
     return " ".join(map(str, arr))

@@ -216,7 +216,6 @@ def is_file_potentially_dangerous(file_name: str) -> bool:
         file_name (str): Filename.
 
     Returns:
-    -------
         bool: True if the member is potentially dangerous, False otherwise.
 
     """
@@ -324,7 +323,6 @@ def is_within_directory(directory: Path, target: Path) -> bool:
         target (Path): path of the target
 
     Returns:
-    -------
         (bool): True if the target is within the directory, False otherwise
     """
     abs_directory = directory.resolve()

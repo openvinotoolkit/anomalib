@@ -56,7 +56,6 @@ def is_mask_anomalous(path: str) -> int:
         path (str): Path to the mask file.
 
     Returns:
-    -------
         int: 1 if the mask shows defects, 0 otherwise.
     """
     img_arr = imread(path)
@@ -110,7 +109,6 @@ def make_kolektor_dataset(
         4    KolektorSDD  kos01  train  Good  KolektorSDD/kos01/Part4.jpg  KolektorSDD/kos01/Part4_label.bmp      0
 
     Returns:
-    -------
         DataFrame: an output dataframe containing the samples of the dataset.
     """
     root = Path(root)

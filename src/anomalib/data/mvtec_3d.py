@@ -106,7 +106,6 @@ def make_mvtec_3d_dataset(
            MVTec3D/bagel/ground_truth/good/xyz/109.tiff 0
 
     Returns:
-    -------
         DataFrame: an output dataframe containing the samples of the dataset.
     """
     if extensions is None:

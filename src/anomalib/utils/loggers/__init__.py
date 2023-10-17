@@ -43,7 +43,6 @@ def configure_logger(level: int | str = logging.INFO) -> None:
         level (int | str, optional): Logger Level. Defaults to logging.INFO.
 
     Returns:
-    -------
         Logger: The expected logger.
     """
     if isinstance(level, str):
@@ -74,7 +73,6 @@ def get_experiment_logger(
         ValueError: for any logger types apart from false and tensorboard
 
     Returns:
-    -------
         list[Logger] | bool: Logger
     """
     logger.info("Loading the experiment logger(s)")

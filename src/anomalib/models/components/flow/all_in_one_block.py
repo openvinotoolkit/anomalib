@@ -28,7 +28,6 @@ def _global_scale_sigmoid_activation(input_tensor: Tensor) -> Tensor:
         input_tensor (Tensor): Input tensor
 
     Returns:
-    -------
         Tensor: Sigmoid activation
     """
     return 10 * torch.sigmoid(input_tensor - 2.0)
@@ -42,7 +41,6 @@ def _global_scale_softplus_activation(input_tensor: Tensor) -> Tensor:
         input_tensor (Tensor): Input tensor
 
     Returns:
-    -------
         Tensor: Softplus activation
     """
     softplus = nn.Softplus(beta=0.5)
@@ -57,7 +55,6 @@ def _global_scale_exp_activation(input_tensor: Tensor) -> Tensor:
         input_tensor (Tensor): Input tensor
 
     Returns:
-    -------
         Tensor: Exponential activation
     """
     return torch.exp(input_tensor)

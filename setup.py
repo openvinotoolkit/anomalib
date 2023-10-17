@@ -20,7 +20,6 @@ def load_module(name: str = "src/anomalib/__init__.py") -> ModuleType:
             Defaults to "anomalib/__init__.py".
 
     Returns:
-    -------
         _type_: _description_
     """
     location = str(Path(__file__).parent / name)
@@ -45,7 +44,6 @@ def get_version() -> str:
         "0.2.6"
 
     Returns:
-    -------
         str: `anomalib` version.
     """
     anomalib = load_module(name="src/anomalib/__init__.py")
@@ -68,7 +66,6 @@ def get_required_packages(requirement_files: list[str]) -> list[str]:
         ['onnx>=1.8.1', 'networkx~=2.5', 'openvino-dev==2021.4.1', ...]
 
     Returns:
-    -------
         list[str]: List of required packages
     """
     required_packages: list[str] = []

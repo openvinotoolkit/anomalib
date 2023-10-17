@@ -337,7 +337,6 @@ def get_decoder(name: str) -> ResNet:
         name (str): Name of the backbone.
 
     Returns:
-    -------
         ResNet: Decoder ResNet architecture.
     """
     if name in (

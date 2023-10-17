@@ -51,7 +51,6 @@ def pro_score(predictions: Tensor, comps: Tensor, threshold: float = 0.5) -> Ten
         threshold (float): When predictions are passed as float, the threshold is used to binarize the predictions.
 
     Returns:
-    -------
         Tensor: Scalar value representing the average PRO score for the input batch.
     """
     if predictions.dtype == torch.float:

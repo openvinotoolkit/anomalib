@@ -56,7 +56,6 @@ def get_transforms(
         ValueError: When ``config`` is not a ``str`` or `A.Compose`` object.
 
     Returns:
-    -------
         A.Compose: Albumentation ``Compose`` object containing the image transforms.
 
     Examples:

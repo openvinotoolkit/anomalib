@@ -81,7 +81,6 @@ def make_btech_dataset(path: Path, split: str | Split | None = None) -> DataFram
         ...
 
     Returns:
-    -------
         DataFrame: an output dataframe containing samples for the requested split (ie., train or test)
     """
     samples_list = [

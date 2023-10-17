@@ -171,7 +171,6 @@ def merge_dicts_and_lists_b_into_a(
         b (dict[Any, Any] | list[Any]): Second dict or list.
 
     Returns:
-    -------
         dict[Any, Any] | list[Any]: Merged dict or list.
     """
     return _merge_dicts_and_lists_b_into_a(a, b, "")
@@ -198,7 +197,6 @@ def _merge_dicts_and_lists_b_into_a(
         cur_key (int | str | None, optional): key for current level of recursion. Defaults to None.
 
     Returns:
-    -------
         dict[Any, Any] | list[Any]: Merged dict or list.
     """
 

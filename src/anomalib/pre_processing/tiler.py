@@ -46,7 +46,6 @@ def compute_new_image_size(image_size: tuple, tile_size: tuple, stride: tuple) -
         (555, 555)
 
     Returns:
-    -------
         tuple: Updated image size that is divisible by tile size and stride.
     """
 
@@ -85,7 +84,6 @@ def upscale_image(image: Tensor, size: tuple, mode: ImageUpscaleMode = ImageUpsc
         torch.Size([1, 3, 555, 555])
 
     Returns:
-    -------
         Tensor: Upscaled image.
     """
     image_h, image_w = image.shape[2:]
@@ -123,7 +121,6 @@ def downscale_image(image: Tensor, size: tuple, mode: ImageUpscaleMode = ImageUp
         True
 
     Returns:
-    -------
         Tensor: Downscaled image
     """
     input_h, input_w = size

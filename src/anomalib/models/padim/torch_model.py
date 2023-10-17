@@ -36,7 +36,6 @@ def _deduce_dims(
                 is assumed to be the layer with largest resolution.
 
     Returns:
-    -------
         tuple[int, int]: Dimensions of the extracted features: (n_dims_original, n_patches)
     """
     dimensions_mapping = dryrun_find_featuremap_dims(feature_extractor, input_size, layers)

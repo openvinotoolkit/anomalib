@@ -119,7 +119,6 @@ def make_mvtec_dataset(
         4  MVTec/bottle train good MVTec/bottle/train/good/109.png MVTec/bottle/ground_truth/good/109_mask.png 0
 
     Returns:
-    -------
         DataFrame: an output dataframe containing the samples of the dataset.
     """
     if extensions is None:

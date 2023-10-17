@@ -63,7 +63,6 @@ def make_folder3d_dataset(
             directory.
 
     Returns:
-    -------
         DataFrame: an output dataframe containing samples for the requested split (ie., train or test)
     """
     normal_dir = _resolve_path(normal_dir, root)

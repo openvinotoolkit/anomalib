@@ -76,7 +76,6 @@ def make_shanghaitech_dataset(root: Path, scene: int, split: Split | str | None 
         ...
 
     Returns:
-    -------
         DataFrame: an output dataframe containing samples for the requested split (ie., train or test)
     """
     scene_prefix = str(scene).zfill(2)

@@ -33,7 +33,6 @@ def collate_fn(batch: list) -> dict[str, Any]:
         batch (List): list of items in the batch where len(batch) is equal to the batch size.
 
     Returns:
-    -------
         dict[str, Any]: Dictionary containing the collated batch information.
     """
     elem = batch[0]  # sample an element from the batch to check the type.

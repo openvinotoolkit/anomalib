@@ -27,7 +27,6 @@ def get_image_filenames(path: str | Path) -> list[Path]:
         path (str | Path): Path to image or image-folder.
 
     Returns:
-    -------
         list[Path]: List of image filenames
 
     """
@@ -69,7 +68,6 @@ def duplicate_filename(path: str | Path) -> Path:
         PosixPath('datasets/MVTec/bottle/test/broken_large/000_1.png')
 
     Returns:
-    -------
         Path: Duplicated output path.
     """
     if isinstance(path, str):
@@ -120,7 +118,6 @@ def generate_output_image_filename(input_path: str | Path, output_path: str | Pa
         ValueError: When the ``input_path`` is not a file.
 
     Returns:
-    -------
         Path: The output filename to save the output predictions from the inferencer.
     """
     if isinstance(input_path, str):
@@ -180,7 +177,6 @@ def get_image_height_and_width(image_size: int | Sequence[int]) -> tuple[int, in
         ValueError: ``image_size`` could be either int or tuple[int, int]
 
     Returns:
-    -------
         tuple[int | None, int | None]: A tuple containing image height and width values.
     """
     if isinstance(image_size, int):
@@ -209,7 +205,6 @@ def read_image(path: str | Path, image_size: int | tuple[int, int] | None = None
         >>> image = read_image("test_image.jpg")
 
     Returns:
-    -------
         image as numpy array
     """
     path = path if isinstance(path, str) else str(path)
@@ -238,7 +233,6 @@ def read_depth_image(path: str | Path) -> np.ndarray:
         >>> image = read_depth_image("test_image.tiff")
 
     Returns:
-    -------
         image as numpy array
     """
     path = path if isinstance(path, str) else str(path)
@@ -256,7 +250,6 @@ def pad_nextpow2(batch: Tensor) -> Tensor:
         batch (Tensor): Input images
 
     Returns:
-    -------
         batch: Padded batch
     """
     # find the largest dimension

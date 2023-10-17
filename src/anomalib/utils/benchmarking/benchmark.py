@@ -60,7 +60,6 @@ def hide_output(func: Callable[..., Any]) -> Callable[..., Any]:
         Exception: In case the execution of function fails, it raises an exception.
 
     Returns:
-    -------
         object of the called function
     """
 
@@ -89,7 +88,6 @@ def get_single_model_metrics(model_config: DictConfig | ListConfig, openvino_met
         openvino_metrics (bool): If True, converts the model to OpenVINO format and gathers inference metrics.
 
     Returns:
-    -------
         dict: Collection of all the metrics such as time taken, throughput and performance scores.
     """
     with TemporaryDirectory() as project_path:
@@ -282,7 +280,6 @@ def sweep(
         convert_openvino (bool, optional): Whether to convert the model to openvino format. Defaults to False.
 
     Returns:
-    -------
         dict[str, str | float]: Dictionary containing the metrics gathered from the sweep.
     """
     seed_everything(seed, workers=True)

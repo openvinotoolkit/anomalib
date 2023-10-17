@@ -91,7 +91,6 @@ def get_unique_key(str_len: int) -> str:
         str_len (int): Length of string.
 
     Returns:
-    -------
         str: Random string
     """
     return "".join([np.random.default_rng().choice(string.ascii_lowercase) for _ in range(str_len)])

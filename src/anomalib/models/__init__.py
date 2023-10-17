@@ -58,7 +58,6 @@ def convert_snake_to_pascal_case(snake_case: str) -> str:
         snake_case (str): Input string in snake_case
 
     Returns:
-    -------
         str: Output string in PascalCase
 
     Examples:
@@ -80,7 +79,6 @@ def convert_pascal_to_snake_case(pascal_case: str) -> str:
         pascal_case (str): Input string in PascalCase
 
     Returns:
-    -------
         str: Output string in snake_case
 
     Examples:
@@ -98,7 +96,6 @@ def get_available_models() -> list[str]:
     """Get list of available models.
 
     Returns:
-    -------
         list[str]: List of available models.
 
     Example:
@@ -127,7 +124,6 @@ def get_model(config: DictConfig | ListConfig) -> AnomalyModule:
         ValueError: If unsupported model is passed
 
     Returns:
-    -------
         AnomalyModule: Anomaly Model
     """
     logger.info("Loading the model.")

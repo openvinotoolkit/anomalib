@@ -23,7 +23,6 @@ def get_torch_throughput(model_path: str | Path, test_dataset: Dataset, device: 
         device (str): Device to use for inference. Options are auto, cpu, gpu, cuda.
 
     Returns:
-    -------
         float: Inference throughput
     """
     model_path = Path(model_path)
@@ -57,7 +56,6 @@ def get_openvino_throughput(model_path: str | Path, test_dataset: Dataset) -> fl
         test_dataset (Dataset): The test dataset used as a reference for the mock dataset.
 
     Returns:
-    -------
         float: Inference throughput
     """
     model_path = Path(model_path)

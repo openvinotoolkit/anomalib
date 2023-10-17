@@ -24,7 +24,6 @@ def imagenet_norm_batch(x: torch.Tensor) -> torch.Tensor:
         x (torch.Tensor): Input batch.
 
     Returns:
-    -------
         torch.Tensor: Normalized batch using the ImageNet mean and std.
     """
     mean = torch.tensor([0.485, 0.456, 0.406])[None, :, None, None].to(x.device)
@@ -47,7 +46,6 @@ def reduce_tensor_elems(tensor: torch.Tensor, m: int = 2**24) -> torch.Tensor:
         m (int): number of maximum tensor elements. Default: 2**24
 
     Returns:
-    -------
             Tensor: reduced tensor
     """
     tensor = torch.flatten(tensor)

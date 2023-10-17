@@ -29,7 +29,6 @@ def get_parser() -> ArgumentParser:
         ...     --weights ./results/padim/mvtec/bottle/weights/torch/model.pt
 
     Returns:
-    -------
         ArgumentParser: Argument parser for gradio inference.
     """
     parser = ArgumentParser()
@@ -53,7 +52,6 @@ def get_inferencer(weight_path: Path, metadata: Path | None = None) -> Inference
         ValueError: If unsupported model weight is passed.
 
     Returns:
-    -------
         Inferencer: Torch or OpenVINO inferencer.
     """
     # Get the inferencer. We use .ckpt extension for Torch models and (onnx, bin)
@@ -95,7 +93,6 @@ def infer(image: np.ndarray, inferencer: Inferencer) -> tuple[np.ndarray, np.nda
         inferencer (Inferencer): model inferencer
 
     Returns:
-    -------
         tuple[np.ndarray, float, np.ndarray, np.ndarray, np.ndarray]:
         heat_map, pred_mask, segmentation result.
     """

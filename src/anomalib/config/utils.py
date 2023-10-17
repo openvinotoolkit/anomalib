@@ -20,7 +20,6 @@ def to_yaml(config: Namespace | ListConfig | DictConfig) -> str:
         config (Namespace | ListConfig | DictConfig): Config
 
     Returns:
-    -------
         str: YAML string
     """
     _config = config.clone() if isinstance(config, Namespace) else config.copy()
@@ -62,7 +61,6 @@ def to_tuple(input_size: int | ListConfig) -> tuple[int, int]:
         ValueError: Unsupported value type.
 
     Returns:
-    -------
         tuple[int, int]: Tuple of input_size
     """
     ret_val: tuple[int, int]

@@ -46,7 +46,6 @@ def get_image_height_and_width(image_size: int | tuple | None = None) -> tuple[i
         ValueError: ``image_size`` could be either int or tuple[int, int]
 
     Returns:
-    -------
         tuple[int | None, int | None]: A tuple containing image height and width values.
     """
     height_and_width: tuple[int | None, int | None]
@@ -83,7 +82,6 @@ def get_transforms(
         ValueError: When ``config`` is not a ``str`` or `A.Compose`` object.
 
     Returns:
-    -------
         A.Compose: Albumentation ``Compose`` object containing the image transforms.
 
     Examples:

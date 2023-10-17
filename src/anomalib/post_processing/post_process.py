@@ -31,7 +31,6 @@ def add_label(
         thickness_scale (float): scale of the font thickness. Increase for thicker font.
 
     Returns:
-    -------
         np.ndarray: Image with label.
     """
     image = image.copy()
@@ -84,7 +83,6 @@ def anomaly_map_to_color_map(anomaly_map: np.ndarray, normalize: bool = True) ->
             the color map. Defaults to True.
 
     Returns:
-    -------
         np.ndarray: [description]
     """
     if normalize:
@@ -120,7 +118,6 @@ def superimpose_anomaly_map(
 
 
     Returns:
-    -------
         np.ndarray: Image with anomaly map superimposed on top of it.
     """
     anomaly_map = anomaly_map_to_color_map(anomaly_map.squeeze(), normalize=normalize)
@@ -137,7 +134,6 @@ def compute_mask(anomaly_map: np.ndarray, threshold: float, kernel_size: int = 4
         kernel_size (int): Value to apply morphological operations to the predicted mask. Defaults to 4.
 
     Returns:
-    -------
         Predicted anomaly mask
     """
     anomaly_map = anomaly_map.squeeze()
@@ -162,7 +158,6 @@ def draw_boxes(image: np.ndarray, boxes: np.ndarray, color: tuple[int, int, int]
         color (tuple[int, int, int]): Color of the drawn boxes in RGB format.
 
     Returns:
-    -------
         np.ndarray: Image showing the bounding boxes drawn on top of the source image.
     """
     for box in boxes:

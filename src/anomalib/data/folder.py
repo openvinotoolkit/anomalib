@@ -54,7 +54,6 @@ def make_folder_dataset(
             directory.
 
     Returns:
-    -------
         DataFrame: an output dataframe containing samples for the requested split (ie., train or test).
     """
 

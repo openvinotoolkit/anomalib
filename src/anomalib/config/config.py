@@ -42,7 +42,6 @@ def update_config(config: DictConfig | ListConfig | Namespace) -> DictConfig | L
         config: Configurable parameters.
 
     Returns:
-    -------
         DictConfig | ListConfig | Namespace: Updated config.
     """
     show_warnings(config)
@@ -91,7 +90,6 @@ def update_input_size_config(config: DictConfig | ListConfig | Namespace) -> Dic
         config (DictConfig | ListConfig | Namespace): Configurable parameters object
 
     Returns:
-    -------
         DictConfig | ListConfig: Configurable parameters with updated values
     """
     # Image size: Ensure value is in the form [height, width]
@@ -150,7 +148,6 @@ def update_nncf_config(config: DictConfig | ListConfig) -> DictConfig | ListConf
         config (DictConfig | ListConfig): Configurable parameters of the current run.
 
     Returns:
-    -------
         DictConfig | ListConfig: Updated configurable parameters in DictConfig object.
     """
     image_size = config.data.init_args.image_size
@@ -181,7 +178,6 @@ def update_multi_gpu_training_config(config: DictConfig | ListConfig) -> DictCon
         ValueError: If unsupported accelerator is passed
 
     Returns:
-    -------
         DictConfig | ListConfig: Updated config
     """
     # validate accelerator
@@ -240,7 +236,6 @@ def get_configurable_parameters(
         config_file_extension: str | None:  (Default value = "yaml")
 
     Returns:
-    -------
         DictConfig | ListConfig: Configurable parameters in DictConfig object.
     """
     if model_name is None and config_path is None:

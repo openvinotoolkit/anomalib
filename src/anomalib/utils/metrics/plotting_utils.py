@@ -43,7 +43,6 @@ def plot_figure(
         sample_points (int): number of sampling points to subsample x_vals/y_vals with
 
     Returns:
-    -------
         tuple[Figure, Axis]: Figure and the contained Axis
     """
     fig, axis = plt.subplots()

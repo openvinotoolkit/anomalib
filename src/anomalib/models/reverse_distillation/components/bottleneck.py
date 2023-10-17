@@ -162,7 +162,6 @@ def get_bottleneck_layer(backbone: str, **kwargs) -> OCBE:
         kwargs: Additional keyword arguments.
 
     Returns:
-    -------
         Bottleneck_layer: One-Class Bottleneck Embedding module.
     """
     return OCBE(BasicBlock, 2, **kwargs) if backbone in ("resnet18", "resnet34") else OCBE(Bottleneck, 3, **kwargs)

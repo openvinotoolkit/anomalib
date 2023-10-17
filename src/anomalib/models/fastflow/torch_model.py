@@ -36,7 +36,6 @@ def subnet_conv_func(kernel_size: int, hidden_ratio: float) -> Callable:
         hidden_ratio (float): Hidden ratio to compute number of hidden channels.
 
     Returns:
-    -------
         Callable: Sequential for the subnet constructor.
     """
 
@@ -78,7 +77,6 @@ def create_fast_flow_block(
         clamp (float, optional): Clamp. Defaults to 2.0.
 
     Returns:
-    -------
         SequenceINN: FastFlow Block.
     """
     nodes = SequenceINN(*input_dimensions)

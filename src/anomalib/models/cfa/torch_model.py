@@ -42,7 +42,6 @@ def get_return_nodes(backbone: str) -> list[str]:
         ValueError: If the backbone is not one of the supported backbones.
 
     Returns:
-    -------
         list[str]: A list of return nodes for the given backbone.
     """
     if backbone == "efficientnet_b5":
@@ -76,7 +75,6 @@ def get_feature_extractor(backbone: str, return_nodes: list[str]) -> GraphModule
         ValueError: When the backbone is not supported
 
     Returns:
-    -------
         GraphModule: Feature extractor.
     """
     model = getattr(torchvision.models, backbone)(pretrained=True)

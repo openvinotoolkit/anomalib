@@ -83,7 +83,6 @@ def make_avenue_dataset(root: Path, gt_dir: Path, split: Split | str | None = No
         ...
 
     Returns:
-    -------
         DataFrame: an output dataframe containing samples for the requested split (ie., train or test)
     """
     samples_list = [(str(root),) + filename.parts[-2:] for filename in Path(root).glob("**/*.avi")]

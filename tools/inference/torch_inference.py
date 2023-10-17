@@ -24,7 +24,6 @@ def get_parser() -> ArgumentParser:
     """Get parser.
 
     Returns:
-    -------
         ArgumentParser: The parser object.
     """
     parser = ArgumentParser()

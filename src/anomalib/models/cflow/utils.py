@@ -27,7 +27,6 @@ def get_logp(dim_feature_vector: int, p_u: Tensor, logdet_j: Tensor) -> Tensor:
         logdet_j (Tensor): log of determinant of jacobian returned from the invertable decoder
 
     Returns:
-    -------
         Tensor: Log probability
     """
     ln_sqrt_2pi = -np.log(np.sqrt(2 * np.pi))  # ln(sqrt(2*pi))
@@ -48,7 +47,6 @@ def positional_encoding_2d(condition_vector: int, height: int, width: int) -> Te
         ValueError: Cannot generate encoding with conditional vector length not as multiple of 4
 
     Returns:
-    -------
         Tensor: condition_vector x HEIGHT x WIDTH position matrix
     """
     if condition_vector % 4 != 0:
@@ -84,7 +82,6 @@ def subnet_fc(dims_in: int, dims_out: int) -> nn.Sequential:
         dims_out (int): output dimensions
 
     Returns:
-    -------
         nn.Sequential: Feed-forward subnetwork
     """
     return nn.Sequential(nn.Linear(dims_in, 2 * dims_in), nn.ReLU(), nn.Linear(2 * dims_in, dims_out))
@@ -110,7 +107,6 @@ def cflow_head(
             when working with >512 dimensions.
 
     Returns:
-    -------
         SequenceINN: decoder network block
     """
     coder = SequenceINN(n_features)

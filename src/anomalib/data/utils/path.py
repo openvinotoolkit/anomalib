@@ -30,7 +30,6 @@ def _check_and_convert_path(path: str | Path) -> Path:
         path (str | Path): Input path.
 
     Returns:
-    -------
         Path: Output path converted to pathlib object.
     """
     if not isinstance(path, Path):
@@ -53,7 +52,6 @@ def _prepare_files_labels(
             directory.
 
     Returns:
-    -------
         List, List: Filenames of the images provided in the paths, labels of the images provided in the paths
     """
     path = _check_and_convert_path(path)

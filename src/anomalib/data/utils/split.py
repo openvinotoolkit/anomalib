@@ -59,7 +59,6 @@ def concatenate_datasets(datasets: Sequence["data.AnomalibDataset"]) -> "data.An
         datasets (Sequence[AnomalibDataset]): Sequence of at least two datasets.
 
     Returns:
-    -------
         AnomalibDataset: Dataset that contains the combined samples of all input datasets.
     """
     concat_dataset = datasets[0]
