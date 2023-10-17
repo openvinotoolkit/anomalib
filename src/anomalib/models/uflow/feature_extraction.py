@@ -1,7 +1,7 @@
 import pytorch_lightning as pl
 import timm
 import torch
-import torch.nn as nn
+from torch import nn
 import torch.nn.functional as F
 
 AVAILABLE_EXTRACTORS = ['mcait', 'resnet18', 'wide_resnet50_2']
