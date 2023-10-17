@@ -18,7 +18,7 @@ class BaseThreshold(Metric, ABC):
     def compute(self) -> torch.Tensor:
         """Compute the threshold.
 
-        Returns
+        Returns:
         -------
             Value of the optimal threshold.
         """

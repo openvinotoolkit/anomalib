@@ -17,7 +17,7 @@ from anomalib.utils.callbacks import get_callbacks
 def get_parser() -> ArgumentParser:
     """Get parser.
 
-    Returns
+    Returns:
     -------
         ArgumentParser: The parser object.
     """

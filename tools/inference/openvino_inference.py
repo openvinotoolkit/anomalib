@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 def get_parser() -> ArgumentParser:
     """Get parser.
 
-    Returns
+    Returns:
     -------
         ArgumentParser: The parser object.
     """

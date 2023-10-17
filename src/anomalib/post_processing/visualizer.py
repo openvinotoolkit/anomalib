@@ -287,7 +287,7 @@ class ImageGrid:
     def generate(self) -> np.ndarray:
         """Generate the image.
 
-        Returns
+        Returns:
         -------
             Image consisting of a grid of added images and their title.
         """

@@ -161,7 +161,7 @@ class CrossConvolutions(nn.Module):
 
         This block is represented in figure 4 of the paper.
 
-        Returns
+        Returns:
         -------
             tuple[Tensor, Tensor, Tensor]: Tensors indicating scale and transform parameters as a single tensor for
             each scale. The scale parameters are the first part across channel dimension and the transform parameters

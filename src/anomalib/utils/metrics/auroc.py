@@ -18,7 +18,7 @@ class AUROC(ROC):
     def compute(self) -> Tensor:
         """First compute ROC curve, then compute area under the curve.
 
-        Returns
+        Returns:
         -------
             Tensor: Value of the AUROC metric
         """
@@ -43,7 +43,7 @@ class AUROC(ROC):
     def _compute(self) -> tuple[Tensor, Tensor]:
         """Compute fpr/tpr value pairs.
 
-        Returns
+        Returns:
         -------
             Tuple containing Tensors for fpr and tpr
         """
@@ -55,7 +55,7 @@ class AUROC(ROC):
     def generate_figure(self) -> tuple[Figure, str]:
         """Generate a figure containing the ROC curve, the baseline and the AUROC.
 
-        Returns
+        Returns:
         -------
             tuple[Figure, str]: Tuple containing both the figure and the figure title to be used for logging
         """

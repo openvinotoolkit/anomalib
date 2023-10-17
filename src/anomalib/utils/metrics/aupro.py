@@ -72,12 +72,12 @@ class AUPRO(Metric):
     def perform_cca(self) -> Tensor:
         """Perform the Connected Component Analysis on the self.target tensor.
 
-        Raises
+        Raises:
         ------
             ValueError: ValueError is raised if self.target doesn't conform with requirements imposed by kornia for
                         connected component analysis.
 
-        Returns
+        Returns:
         -------
             Tensor: Components labeled from 0 to N.
         """
@@ -102,7 +102,7 @@ class AUPRO(Metric):
         It leverages the fact that the overlap corresponds to the tpr, and thus computes the overall
         PRO curve by aggregating per-region tpr/fpr values produced by ROC-construction.
 
-        Returns
+        Returns:
         -------
             tuple[Tensor, Tensor]: tuple containing final fpr and tpr values.
         """
@@ -197,7 +197,7 @@ class AUPRO(Metric):
 
         Perform the Connected Component Analysis first then compute the PRO curve.
 
-        Returns
+        Returns:
         -------
             tuple[Tensor, Tensor]: tuple containing final fpr and tpr values.
         """
@@ -210,7 +210,7 @@ class AUPRO(Metric):
     def compute(self) -> Tensor:
         """Fist compute PRO curve, then compute and scale area under the curve.
 
-        Returns
+        Returns:
         -------
             Tensor: Value of the AUPRO metric
         """
@@ -222,7 +222,7 @@ class AUPRO(Metric):
     def generate_figure(self) -> tuple[Figure, str]:
         """Generate a figure containing the PRO curve and the AUPRO.
 
-        Returns
+        Returns:
         -------
             tuple[Figure, str]: Tuple containing both the figure and the figure title to be used for logging
         """

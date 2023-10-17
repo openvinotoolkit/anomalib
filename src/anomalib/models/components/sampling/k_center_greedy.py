@@ -67,7 +67,7 @@ class KCenterGreedy:
 
         Based on minimum distance of the cluster
 
-        Returns
+        Returns:
         -------
             int: Sample index
         """

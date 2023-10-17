@@ -126,7 +126,7 @@ class Rkde(AnomalyModule):
     def trainer_arguments(self) -> dict[str, Any]:
         """Return R-KDE trainer arguments.
 
-        Returns
+        Returns:
         -------
             dict[str, Any]: Arguments for the trainer.
         """

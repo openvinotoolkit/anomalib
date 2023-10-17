@@ -71,7 +71,7 @@ class Augmenter:
     def rand_augmenter(self) -> iaa.Sequential:
         """Select 3 random transforms that will be applied to the anomaly source images.
 
-        Returns
+        Returns:
         -------
             A selection of 3 transforms.
         """

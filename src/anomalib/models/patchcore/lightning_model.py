@@ -58,7 +58,7 @@ class Patchcore(AnomalyModule):
     def configure_optimizers(self) -> None:
         """Configure optimizers.
 
-        Returns
+        Returns:
         -------
             None: Do not set optimizers by returning None.
         """

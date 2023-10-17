@@ -136,11 +136,11 @@ class Engine:
     def trainer(self) -> Trainer:
         """Property to get the trainer.
 
-        Raises
+        Raises:
         ------
             UnassignedError: When the trainer is not assigned yet.
 
-        Returns
+        Returns:
         -------
             Trainer: Lightning Trainer.
         """

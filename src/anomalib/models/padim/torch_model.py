@@ -35,7 +35,7 @@ def _deduce_dims(
     Important: `layers` is assumed to be ordered and the first (layers[0])
                 is assumed to be the layer with largest resolution.
 
-    Returns
+    Returns:
     -------
         tuple[int, int]: Dimensions of the extracted features: (n_dims_original, n_patches)
     """

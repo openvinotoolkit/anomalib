@@ -28,7 +28,7 @@ logger = logging.getLogger("anomalib")
 def get_parser() -> ArgumentParser:
     """Get parser.
 
-    Returns
+    Returns:
     -------
         ArgumentParser: The parser object.
     """

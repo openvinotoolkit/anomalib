@@ -69,11 +69,11 @@ class AnomalyMapGenerator(nn.Module):
     def forward(self, **kwargs) -> Tensor:
         """Return anomaly map.
 
-        Raises
+        Raises:
         ------
             ``distance`` and ``scale`` keys are not found.
 
-        Returns
+        Returns:
         -------
             Tensor: Anomaly heatmap.
         """
