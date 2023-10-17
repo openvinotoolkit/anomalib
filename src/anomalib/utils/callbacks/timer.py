@@ -25,12 +25,10 @@ class TimerCallback(Callback):
         Sets the start time to the time training started.
 
         Args:
-        ----
             trainer (Trainer): PyTorch Lightning trainer.
             pl_module (LightningModule): Current training module.
 
         Returns:
-        -------
             None
         """
         del trainer, pl_module  # These variables are not used.
@@ -43,12 +41,10 @@ class TimerCallback(Callback):
         Prints the time taken for training.
 
         Args:
-        ----
             trainer (Trainer): PyTorch Lightning trainer.
             pl_module (LightningModule): Current training module.
 
         Returns:
-        -------
             None
         """
         del trainer, pl_module  # Unused arguments.
@@ -61,12 +57,10 @@ class TimerCallback(Callback):
         Goes over all the test dataloaders and adds the number of images in each.
 
         Args:
-        ----
             trainer (Trainer): PyTorch Lightning trainer.
             pl_module (LightningModule): Current training module.
 
         Returns:
-        -------
             None
         """
         del pl_module  # Unused argument.
@@ -87,12 +81,10 @@ class TimerCallback(Callback):
         Prints the time taken for testing and the throughput in frames per second.
 
         Args:
-        ----
             trainer (Trainer): PyTorch Lightning trainer.
             pl_module (LightningModule): Current training module.
 
         Returns:
-        -------
             None
         """
         del pl_module  # Unused argument.

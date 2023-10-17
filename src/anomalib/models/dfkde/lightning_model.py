@@ -24,7 +24,6 @@ class Dfkde(AnomalyModule):
     """DFKDE: Deep Feature Kernel Density Estimation.
 
     Args:
-    ----
         backbone (str): Pre-trained model backbone.
         pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.
         max_training_points (int, optional): Number of training points to fit the KDE model.
@@ -68,13 +67,11 @@ class Dfkde(AnomalyModule):
         """Perform the training step of DFKDE. For each batch, features are extracted from the CNN.
 
         Args:
-        ----
             batch (batch: dict[str, str | Tensor]): Batch containing image filename, image, label and mask
             args: Arguments.
             kwargs: Keyword arguments.
 
         Returns:
-        -------
           Deep CNN features.
         """
         del args, kwargs  # These variables are not used.
@@ -103,13 +100,11 @@ class Dfkde(AnomalyModule):
         Similar to the training step, features are extracted from the CNN for each batch.
 
         Args:
-        ----
             batch (dict[str, str | Tensor]): Input batch
             args: Arguments.
             kwargs: Keyword arguments.
 
         Returns:
-        -------
             Dictionary containing probability, prediction and ground truth values.
         """
         del args, kwargs  # These variables are not used.
@@ -127,7 +122,6 @@ class DfkdeLightning(Dfkde):
     """DFKDE: Deep Feature Kernel Density Estimation.
 
     Args:
-    ----
         hparams (DictConfig | ListConfig): Model params
     """
 

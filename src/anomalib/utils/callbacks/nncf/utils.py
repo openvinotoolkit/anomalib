@@ -43,8 +43,7 @@ class InitLoader(PTInitializingDataLoader):
     def get_inputs(self, dataloader_output: dict[str, str | Tensor]) -> tuple[tuple, dict]:
         """Get input to model.
 
-        Returns
-        -------
+        Returns:
             (dataloader_output,), {}: tuple[tuple, dict]: The current model call to be made during
             the initialization process
         """
@@ -55,8 +54,7 @@ class InitLoader(PTInitializingDataLoader):
 
         This implementation does not do anything and is a placeholder.
 
-        Returns
-        -------
+        Returns:
             None
         """
         return
@@ -166,12 +164,10 @@ def merge_dicts_and_lists_b_into_a(
     """Merge dict configs.
 
     Args:
-    ----
         a (dict[Any, Any] | list[Any]): First dict or list.
         b (dict[Any, Any] | list[Any]): Second dict or list.
 
     Returns:
-    -------
         dict[Any, Any] | list[Any]: Merged dict or list.
     """
     return _merge_dicts_and_lists_b_into_a(a, b, "")
@@ -192,13 +188,11 @@ def _merge_dicts_and_lists_b_into_a(
         since otherwise the order of list merging is counter-intuitive.
 
     Args:
-    ----
         a (dict[Any, Any] | list[Any]): First dict or list.
         b (dict[Any, Any] | list[Any]): Second dict or list.
         cur_key (int | str | None, optional): key for current level of recursion. Defaults to None.
 
     Returns:
-    -------
         dict[Any, Any] | list[Any]: Merged dict or list.
     """
 

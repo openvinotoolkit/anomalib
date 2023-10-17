@@ -46,7 +46,6 @@ class TransformsWrapper:
     """Transforms wrapper.
 
     Args:
-    ----
         t (A.Compose): Albumentations transforms.
     """
 
@@ -57,13 +56,11 @@ class TransformsWrapper:
         """Apply the transforms to the given image.
 
         Args:
-        ----
             img (np.ndarray): Input image.
             args: Additional arguments.
             kwargs: Additional keyword arguments.
 
         Returns:
-        -------
             dict[str, Any]: Output image.
         """
         del args, kwargs  # Unused arguments.
@@ -75,7 +72,6 @@ class EfficientAd(AnomalyModule):
     """PL Lightning Module for the EfficientAd algorithm.
 
     Args:
-    ----
         teacher_file_name (str): path to the pre-trained teacher model
         teacher_out_channels (int): number of convolution output channels
         image_size (tuple): size of input images
@@ -152,11 +148,9 @@ class EfficientAd(AnomalyModule):
         """Calculate the mean and std of the teacher models activations.
 
         Args:
-        ----
             dataloader (DataLoader): Dataloader of the respective dataset.
 
         Returns:
-        -------
             dict[str, Tensor]: Dictionary of channel-wise mean and std
         """
         y_means = []
@@ -183,11 +177,9 @@ class EfficientAd(AnomalyModule):
         """Calculate 90% and 99.5% quantiles of the student(st) and autoencoder(ae).
 
         Args:
-        ----
             dataloader (DataLoader): Dataloader of the respective dataset.
 
         Returns:
-        -------
             dict[str, Tensor]: Dictionary of both the 90% and 99.5% quantiles
             of both the student and autoencoder feature maps.
         """
@@ -215,11 +207,9 @@ class EfficientAd(AnomalyModule):
         elements.
 
         Args:
-        ----
             maps (list[Tensor]): List of anomaly maps.
 
         Returns:
-        -------
             tuple[Tensor, Tensor]: Two scalars - the 90% and the 99.5% quantile.
         """
         maps_flat = reduce_tensor_elems(torch.cat(maps))
@@ -251,13 +241,11 @@ class EfficientAd(AnomalyModule):
         """Perform the training step for EfficientAd returns the student, autoencoder and combined loss.
 
         Args:
-        ----
             batch (batch: dict[str, str | Tensor]): Batch containing image filename, image, label and mask
             args: Additional arguments.
             kwargs: Additional keyword arguments.
 
         Returns:
-        -------
           Loss.
         """
         del args, kwargs  # These variables are not used.
@@ -288,13 +276,11 @@ class EfficientAd(AnomalyModule):
         """Perform the validation step of EfficientAd returns anomaly maps for the input image batch.
 
         Args:
-        ----
           batch (dict[str, str | Tensor]): Input batch
           args: Additional arguments.
           kwargs: Additional keyword arguments.
 
         Returns:
-        -------
           Dictionary containing anomaly maps.
         """
         del args, kwargs  # These variables are not used.
@@ -313,7 +299,6 @@ class EfficientAdLightning(EfficientAd):
     """PL Lightning Module for the EfficientAd Algorithm.
 
     Args:
-    ----
         hparams (DictConfig | ListConfig): Model params
     """
 

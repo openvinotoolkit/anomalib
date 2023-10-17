@@ -20,7 +20,6 @@ class AiVadModel(nn.Module):
     """AI-VAD model.
 
     Args:
-    ----
         box_score_thresh (float): Confidence threshold for region extraction stage.
         persons_only (bool): When enabled, only regions labeled as person are included.
         min_bbox_area (int): Minimum bounding box area. Regions with a surface area lower than this value are excluded.
@@ -97,11 +96,9 @@ class AiVadModel(nn.Module):
         """Forward pass through AI-VAD model.
 
         Args:
-        ----
             batch (Tensor): Input image of shape (N, L, C, H, W)
 
         Returns:
-        -------
             list[Tensor]: List of bbox locations for each image.
             list[Tensor]: List of per-bbox anomaly scores for each image.
             list[Tensor]: List of per-image anomaly scores.

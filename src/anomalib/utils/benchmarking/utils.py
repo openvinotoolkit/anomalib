@@ -27,7 +27,6 @@ def write_metrics(
     """Write metrics to destination provided in the sweep config.
 
     Args:
-    ----
         model_metrics (dict): Dictionary to be written
         writers (list[str]): List of destinations.
         folder (optional, str): Sub-directory to which runs are written to. Defaults to None. If none writes to root.
@@ -56,7 +55,6 @@ def write_to_tensorboard(
     """Write model_metrics to tensorboard.
 
     Args:
-    ----
         model_metrics (dict[str, str | float]): Dictionary containing collected results.
     """
     scalar_metrics = {}
@@ -87,11 +85,9 @@ def get_unique_key(str_len: int) -> str:
     """Return a random string of length str_len.
 
     Args:
-    ----
         str_len (int): Length of string.
 
     Returns:
-    -------
         str: Random string
     """
     return "".join([np.random.default_rng().choice(string.ascii_lowercase) for _ in range(str_len)])
@@ -107,7 +103,6 @@ def upload_to_wandb(
     One issue is that it does not check for collision
 
     Args:
-    ----
         team (str, optional): Name of the team on wandb. This can also be the id of your personal account.
         Defaults to "anomalib".
         folder (optional, str): Sub-directory from which runs are picked up. Defaults to None. If none picks from runs.
@@ -117,8 +112,8 @@ def upload_to_wandb(
     search_path = "runs/*.csv" if folder is None else f"runs/{folder}/*.csv"
     for csv_file in Path(search_path).glob("*csv"):
         table = pd.read_csv(csv_file)
-        for index, row in table.iterrows():
-            row = dict(row[1:])  # remove index column
+        for index, row_with_index_column in table.iterrows():
+            row = dict(row_with_index_column[1:])  # remove index column
             tags = [str(row[column]) for column in tag_list if column in row]
             wandb.init(
                 entity=team,
@@ -139,7 +134,6 @@ def upload_to_comet(
     One issue is that it does not check for collision
 
     Args:
-    ----
         folder (optional, str): Sub-directory from which runs are picked up. Defaults to None. If none picks from runs.
     """
     project = f"benchmarking_{get_unique_key(2)}"
@@ -147,8 +141,8 @@ def upload_to_comet(
     search_path = "runs/*.csv" if folder is None else f"runs/{folder}/*.csv"
     for csv_file in Path(search_path).glob("*csv"):
         table = pd.read_csv(csv_file)
-        for index, row in table.iterrows():
-            row = dict(row[1:])  # remove index column
+        for index, row_with_index_column in table.iterrows():
+            row = dict(row_with_index_column[1:])  # remove index column
             tags = [str(row[column]) for column in tag_list if column in row]
             experiment = Experiment(project_name=project)
             experiment.set_name(f"{row['model_name']}_{row['dataset.category']}_{index}")

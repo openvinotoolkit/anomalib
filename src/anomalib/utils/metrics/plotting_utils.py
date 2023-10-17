@@ -29,7 +29,6 @@ def plot_figure(
     every single plot which takes very long, especially for high-resolution segmentations.
 
     Args:
-    ----
         x_vals (Tensor): x values to plot
         y_vals (Tensor): y values to plot
         auc (Tensor): normalized area under the curve spanned by x_vals, y_vals
@@ -43,7 +42,6 @@ def plot_figure(
         sample_points (int): number of sampling points to subsample x_vals/y_vals with
 
     Returns:
-    -------
         tuple[Figure, Axis]: Figure and the contained Axis
     """
     fig, axis = plt.subplots()

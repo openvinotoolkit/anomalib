@@ -17,7 +17,6 @@ class AnomalibDepthDataset(AnomalibDataset, ABC):
     """Base depth anomalib dataset class.
 
     Args:
-    ----
         task (str): Task type, either 'classification' or 'segmentation'
         transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
     """

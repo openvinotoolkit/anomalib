@@ -29,13 +29,11 @@ class AnomalyMapGenerator(nn.Module):
         """Compute the layer map based on likelihood estimation.
 
         Args:
-        ----
           distribution: Probability distribution for each decoder block
           height: blocks height
           width: blocks width
 
         Returns:
-        -------
           Final Anomaly Map
 
         """
@@ -74,11 +72,9 @@ class AnomalyMapGenerator(nn.Module):
         >>> output = self.anomaly_map_generator(distribution=dist, height=height, width=width)
 
         Raises:
-        ------
             ValueError: `distribution`, `height` and 'width' keys are not found
 
         Returns:
-        -------
             torch.Tensor: anomaly map
         """
         if not ("distribution" in kwargs and "height" in kwargs and "width" in kwargs):

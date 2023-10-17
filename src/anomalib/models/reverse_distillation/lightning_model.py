@@ -25,7 +25,6 @@ class ReverseDistillation(AnomalyModule):
     """PL Lightning Module for Reverse Distillation Algorithm.
 
     Args:
-    ----
         input_size (tuple[int, int]): Size of model input
         backbone (str): Backbone of CNN network
         layers (list[str]): Layers to extract features from the backbone CNN
@@ -69,7 +68,6 @@ class ReverseDistillation(AnomalyModule):
                 config.yaml file or from CLI.
 
         Returns:
-        -------
             Optimizer: Adam optimizer for each decoder
         """
         return optim.Adam(
@@ -86,13 +84,11 @@ class ReverseDistillation(AnomalyModule):
         encoder and decoder features.
 
         Args:
-        ----
           batch (batch: dict[str, str | Tensor]): Input batch
           args: Additional arguments.
           kwargs: Additional keyword arguments.
 
         Returns:
-        -------
           Feature Map
         """
         del args, kwargs  # These variables are not used.
@@ -108,13 +104,11 @@ class ReverseDistillation(AnomalyModule):
         anomaly map is computed.
 
         Args:
-        ----
           batch (dict[str, str | Tensor]): Input batch
           args: Additional arguments.
           kwargs: Additional keyword arguments.
 
         Returns:
-        -------
           Dictionary containing images, anomaly maps, true labels and masks.
           These are required in `validation_epoch_end` for feature concatenation.
         """
@@ -133,7 +127,6 @@ class ReverseDistillationLightning(ReverseDistillation):
     """PL Lightning Module for Reverse Distillation Algorithm.
 
     Args:
-    ----
         hparams(DictConfig | ListConfig): Model parameters
     """
 

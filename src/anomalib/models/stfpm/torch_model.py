@@ -19,7 +19,6 @@ class STFPMModel(nn.Module):
     """STFPM: Student-Teacher Feature Pyramid Matching for Unsupervised Anomaly Detection.
 
     Args:
-    ----
         layers (list[str]): Layers used for feature extraction
         input_size (tuple[int, int]): Input size for the model.
         backbone (str, optional): Pre-trained model backbone. Defaults to "resnet18".
@@ -56,11 +55,9 @@ class STFPMModel(nn.Module):
         During the evaluation mode, it returns the predicted anomaly map.
 
         Args:
-        ----
           images (Tensor): Batch of images.
 
         Returns:
-        -------
           Teacher and student features when in training mode, otherwise the predicted anomaly maps.
         """
         if self.tiler:

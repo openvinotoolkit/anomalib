@@ -15,13 +15,11 @@ def thresholds_between_min_and_max(
     """Threshold values between min and max of the predictions.
 
     Args:
-    ----
         preds (Tensor): Predictions.
         num_thresholds (int, optional): Number of thresholds to generate. Defaults to 100.
         device (torch_device | None, optional): Device to use for computation. Defaults to None.
 
     Returns:
-    -------
         Tensor:
             Array of size ``num_thresholds`` that contains evenly spaced values
             between ``preds.min()`` and ``preds.max()`` on ``device``.
@@ -33,12 +31,10 @@ def thresholds_between_0_and_1(num_thresholds: int = 100, device: torch.device |
     """Threshold values between 0 and 1.
 
     Args:
-    ----
         num_thresholds (int, optional): Number of thresholds to generate. Defaults to 100.
         device (torch_device | None, optional): Device to use for computation. Defaults to None.
 
     Returns:
-    -------
         Tensor: Threshold values between 0 and 1.
     """
     return linspace(start=0, end=1, steps=num_thresholds, device=device)

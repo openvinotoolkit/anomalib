@@ -25,7 +25,6 @@ class TorchInferencer(Inferencer):
     """PyTorch implementation for the inference.
 
     Args:
-    ----
         path (str | Path): Path to Torch model weights.
         device (str): Device to use for inference. Options are auto, cpu, cuda. Defaults to "auto".
     """
@@ -48,11 +47,9 @@ class TorchInferencer(Inferencer):
         """Get the device to use for inference.
 
         Args:
-        ----
             device (str): Device to use for inference. Options are auto, cpu, cuda.
 
         Returns:
-        -------
             torch.device: Device to use for inference.
         """
         if device not in ("auto", "cpu", "cuda", "gpu"):
@@ -69,11 +66,9 @@ class TorchInferencer(Inferencer):
         """Load the checkpoint.
 
         Args:
-        ----
             path (str | Path): Path to the torch ckpt file.
 
         Returns:
-        -------
             dict: Dictionary containing the model and metadata.
         """
         if isinstance(path, str):
@@ -89,11 +84,9 @@ class TorchInferencer(Inferencer):
         """Load metadata from file.
 
         Args:
-        ----
             path (str | Path | dict): Path to the model pt file.
 
         Returns:
-        -------
             dict: Dictionary containing the metadata.
         """
         metadata: dict | DictConfig
@@ -123,11 +116,9 @@ class TorchInferencer(Inferencer):
         """Load the PyTorch model.
 
         Args:
-        ----
             path (str | Path): Path to the Torch model.
 
         Returns:
-        -------
             (nn.Module): Torch model.
         """
         checkpoint = self._load_checkpoint(path)
@@ -143,11 +134,9 @@ class TorchInferencer(Inferencer):
         """Pre process the input image by applying transformations.
 
         Args:
-        ----
             image (np.ndarray): Input image
 
         Returns:
-        -------
             Tensor: pre-processed image.
         """
         processed_image = self.transform(image=image)["image"]
@@ -161,11 +150,9 @@ class TorchInferencer(Inferencer):
         """Forward-Pass input tensor to the model.
 
         Args:
-        ----
             image (Tensor): Input tensor.
 
         Returns:
-        -------
             Tensor: Output predictions.
         """
         return self.model(image)
@@ -178,14 +165,12 @@ class TorchInferencer(Inferencer):
         """Post process the output predictions.
 
         Args:
-        ----
             predictions (Tensor | list[Tensor] | dict[str, Tensor]): Raw output predicted by the model.
             metadata (dict, optional): Meta data. Post-processing step sometimes requires
                 additional meta data such as image shape. This variable comprises such info.
                 Defaults to None.
 
         Returns:
-        -------
             dict[str, str | float | np.ndarray]: Post processed prediction results.
         """
         if metadata is None:

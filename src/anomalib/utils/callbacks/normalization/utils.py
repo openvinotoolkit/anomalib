@@ -32,7 +32,6 @@ def get_normalization_callback(
                 -
 
     Example:
-    -------
         >>> normalizer = get_normalization_callback(NormalizationMethod.MIN_MAX)
         or
         >>> normalizer = get_normalization_callback("min_max")
