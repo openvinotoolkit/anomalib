@@ -60,7 +60,6 @@ def make_folder_dataset(
         """Convert path to list of paths.
 
         Args:
-        ----
             path (str | Path | Sequence | None): Path to replace with Sequence[str | Path].
 
         Examples:
@@ -71,7 +70,6 @@ def make_folder_dataset(
             [Path("path/to/dir1"), Path("path/to/dir2")]
 
         Returns:
-        -------
             list[Path]: The result of path replaced by Sequence[str | Path].
         """
         if isinstance(path, Sequence) and not isinstance(path, str):

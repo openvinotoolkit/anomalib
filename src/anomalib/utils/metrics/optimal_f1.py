@@ -47,7 +47,6 @@ class OptimalF1(Metric):
         threshold as attribute and return the maximum value of the F1 score.
 
         Returns:
-        -------
             Value of the F1 score at the optimal threshold.
         """
         precision: Tensor

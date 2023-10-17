@@ -71,7 +71,6 @@ def flatten_sweep_params(params_dict: DictConfig) -> DictConfig:
         dictionary.
 
         Args:
-        ----
             nested_params: DictConfig: config object containing the original parameters.
             keys: list[str]: list of keys leading to the current location in the config.
             flattened_params: DictConfig: Dictionary in which the flattened parameters are stored.

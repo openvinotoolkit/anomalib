@@ -153,11 +153,9 @@ class ShanghaiTechTestClipsIndexer(ClipsIndexer):
         """Get a subclip from a list of videos.
 
         Args:
-        ----
             idx (int): index of the subclip. Must be between 0 and num_clips().
 
         Returns:
-        -------
             video (Tensor)
             audio (Tensor)
             info (Dict)
@@ -342,7 +340,6 @@ class ShanghaiTech(AnomalibVideoDataModule):
         and write them to a new video file that can be parsed correctly with pyav.
 
         Args:
-        ----
             video_folder (Path): Path to the folder of training videos.
             target_folder (Path): File system location where the converted videos will be stored.
         """

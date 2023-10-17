@@ -54,11 +54,9 @@ class ReverseDistillationModel(nn.Module):
         During evaluation mode, it returns the predicted anomaly map.
 
         Args:
-        ----
             images (Tensor): Batch of images
 
         Returns:
-        -------
             Tensor | list[Tensor] | tuple[list[Tensor]]: Encoder and decoder features in training mode,
                 else anomaly maps.
         """

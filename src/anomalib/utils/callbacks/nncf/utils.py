@@ -44,7 +44,6 @@ class InitLoader(PTInitializingDataLoader):
         """Get input to model.
 
         Returns:
-        -------
             (dataloader_output,), {}: tuple[tuple, dict]: The current model call to be made during
             the initialization process
         """
@@ -56,7 +55,6 @@ class InitLoader(PTInitializingDataLoader):
         This implementation does not do anything and is a placeholder.
 
         Returns:
-        -------
             None
         """
         return

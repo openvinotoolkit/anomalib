@@ -219,7 +219,6 @@ class Tiler:
         """Randomly crop tiles from the given image.
 
         Args:
-        ----
             image: input image to be cropped
 
         Returns: Randomly cropped tiles from the image
@@ -232,7 +231,6 @@ class Tiler:
         This is the core function to perform tiling operation.
 
         Args:
-        ----
             tensor: Input tensor from which tiles are generated.
 
         Returns: Generated tiles
@@ -278,11 +276,9 @@ class Tiler:
         This is the core method to reconstruct the original image from its tiled version.
 
         Args:
-        ----
             tiles: Tiles from the input image, generated via __unfold method.
 
         Returns:
-        -------
             Output that is the reconstructed version of the input tensor.
         """
         # number of channels differs between image and anomaly map, so infer from input tiles.
@@ -355,7 +351,6 @@ class Tiler:
         """Tiles an input image to either overlapping, non-overlapping or random patches.
 
         Args:
-        ----
             image: Input image to tile.
             use_random_tiling: If True, randomly crops tiles from the image.
                 If False, tiles the image in a regular grid.
@@ -372,7 +367,6 @@ class Tiler:
             torch.Size([18, 3, 512, 512])
 
         Returns:
-        -------
             Tiles generated from the image.
         """
         if image.dim() == 3:
@@ -406,7 +400,6 @@ class Tiler:
         and return the reconstructed image.
 
         Args:
-        ----
             tiles: Tiles from the input image, generated via tile()..
 
         Examples:
@@ -426,7 +419,6 @@ class Tiler:
             True
 
         Returns:
-        -------
             Output that is the reconstructed version of the input tensor.
         """
         image = self.__fold(tiles)

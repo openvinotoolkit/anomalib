@@ -93,7 +93,6 @@ class AnomalibDataModule(LightningDataModule, ABC):
         """Set up train, validation and test data.
 
         Args:
-        ----
           stage: str | None:  Train/Val/Test stages. (Default value = None)
         """
         if not self.is_setup:

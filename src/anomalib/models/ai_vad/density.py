@@ -82,7 +82,6 @@ class CombinedDensityEstimator(BaseDensityEstimator):
         """Update the density estimators for the different feature types.
 
         Args:
-        ----
             features (dict[FeatureType, Tensor]): Dictionary containing extracted features for a single frame.
             group (str): Identifier of the video from which the frame was sampled. Used for grouped density estimation.
         """
@@ -106,11 +105,9 @@ class CombinedDensityEstimator(BaseDensityEstimator):
         """Predict the region- and image-level anomaly scores for an image based on a set of features.
 
         Args:
-        ----
             features (dict[Tensor]): Dictionary containing extracted features for a single frame.
 
         Returns:
-        -------
             Tensor: Region-level anomaly scores for all regions withing the frame.
             Tensor: Frame-level anomaly score for the frame.
         """
@@ -153,7 +150,6 @@ class GroupedKNNEstimator(BaseDensityEstimator):
         """Update the internal feature bank while keeping track of the group.
 
         Args:
-        ----
             features (Tensor): Feature vectors extracted from a video frame.
             group (str): Identifier of the group (video) from which the frame was sampled.
         """
@@ -179,7 +175,6 @@ class GroupedKNNEstimator(BaseDensityEstimator):
         """Predict the (normalized) density for a set of features.
 
         Args:
-        ----
             features (Tensor): Input features that will be compared to the density model.
             group (str, optional): Group (video id) from which the features originate. If passed, all features of the
                 same group in the memory bank will be excluded from the density estimation.
@@ -187,7 +182,6 @@ class GroupedKNNEstimator(BaseDensityEstimator):
             normalize (bool): Flag indicating if the density should be normalized to min-max stats of the feature bank.
 
         Returns:
-        -------
             Tensor: Mean (normalized) distances of input feature vectors to k nearest neighbors in feature bank.
         """
         n_neighbors = n_neighbors or self.n_neighbors
@@ -212,13 +206,11 @@ class GroupedKNNEstimator(BaseDensityEstimator):
         """Perform the KNN search.
 
         Args:
-        ----
             feature_bank (Tensor): Feature bank used for KNN search.
             features (Ternsor): Input features.
             n_neighbors (int): Number of neighbors used in KNN search.
 
         Returns:
-        -------
             Tensor: Distances between the input features and their K nearest neighbors in the feature bank.
         """
         distances = torch.cdist(features, feature_bank, p=2.0)  # euclidean norm
@@ -241,11 +233,9 @@ class GroupedKNNEstimator(BaseDensityEstimator):
         """Normalize distance predictions.
 
         Args:
-        ----
             distances (Tensor): Distance tensor produced by KNN search.
 
         Returns:
-        -------
             Tensor: Normalized distances.
         """
         return (distances - self.normalization_statistics.min) / (
@@ -286,12 +276,10 @@ class GMMEstimator(BaseDensityEstimator):
         """Predict the density of a set of feature vectors.
 
         Args:
-        ----
             features (Tensor): Input feature vectors.
             normalize (bool): Flag indicating if the density should be normalized to min-max stats of the feature bank.
 
         Returns:
-        -------
             Tensor: Density scores of the input feature vectors.
         """
         density = -self.gmm.score_samples(features.cpu())
@@ -310,11 +298,9 @@ class GMMEstimator(BaseDensityEstimator):
         """Normalize distance predictions.
 
         Args:
-        ----
             density (Tensor): Distance tensor produced by KNN search.
 
         Returns:
-        -------
             Tensor: Normalized distances.
         """
         return (density - self.normalization_statistics.min) / (

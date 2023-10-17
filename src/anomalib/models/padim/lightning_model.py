@@ -64,13 +64,11 @@ class Padim(AnomalyModule):
         """Perform the training step of PADIM. For each batch, hierarchical features are extracted from the CNN.
 
         Args:
-        ----
             batch (dict[str, str | Tensor]): Batch containing image filename, image, label and mask
             args: Additional arguments.
             kwargs: Additional keyword arguments.
 
         Returns:
-        -------
             Hierarchical feature map
         """
         del args, kwargs  # These variables are not used.
@@ -101,13 +99,11 @@ class Padim(AnomalyModule):
         Similar to the training step, hierarchical features are extracted from the CNN for each batch.
 
         Args:
-        ----
             batch (dict[str, str | Tensor]): Input batch
             args: Additional arguments.
             kwargs: Additional keyword arguments.
 
         Returns:
-        -------
             Dictionary containing images, features, true labels and masks.
             These are required in `validation_epoch_end` for feature concatenation.
         """

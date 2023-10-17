@@ -334,7 +334,6 @@ class GanomalyModel(nn.Module):
         """Initialize DCGAN weights.
 
         Args:
-        ----
             module (nn.Module): [description]
         """
         classname = module.__class__.__name__
@@ -348,11 +347,9 @@ class GanomalyModel(nn.Module):
         """Get scores for batch.
 
         Args:
-        ----
             batch (Tensor): Images
 
         Returns:
-        -------
             Tensor: Regeneration scores.
         """
         padded_batch = pad_nextpow2(batch)

@@ -108,12 +108,10 @@ class PadimModel(nn.Module):
         """Forward-pass image-batch (N, C, H, W) into model to extract features.
 
         Args:
-        ----
             input_tensor: Image-batch (N, C, H, W)
             input_tensor: Tensor:
 
         Returns:
-        -------
             Features from single/multiple layers.
 
         Example:
@@ -152,11 +150,9 @@ class PadimModel(nn.Module):
         """Generate embedding from hierarchical feature map.
 
         Args:
-        ----
             features (dict[str, Tensor]): Hierarchical feature map from a CNN (ResNet18 or WideResnet)
 
         Returns:
-        -------
             Embedding vector
         """
         embeddings = features[self.layers[0]]

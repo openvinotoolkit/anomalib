@@ -52,13 +52,11 @@ class Stfpm(AnomalyModule):
         For each batch, teacher and student and teacher features are extracted from the CNN.
 
         Args:
-        ----
           batch (dict[str, str | Tensor]): Input batch.
           args: Additional arguments.
           kwargs: Additional keyword arguments.
 
         Returns:
-        -------
           Loss value
         """
         del args, kwargs  # These variables are not used.
@@ -76,13 +74,11 @@ class Stfpm(AnomalyModule):
         anomaly map is computed.
 
         Args:
-        ----
           batch (dict[str, str | Tensor]): Input batch
           args: Additional arguments
           kwargs: Additional keyword arguments
 
         Returns:
-        -------
           Dictionary containing images, anomaly maps, true labels and masks.
           These are required in `validation_epoch_end` for feature concatenation.
         """
@@ -140,7 +136,6 @@ class StfpmLightning(Stfpm):
                 config.yaml file or from CLI.
 
         Returns:
-        -------
             Optimizer: SGD optimizer
         """
         return optim.SGD(

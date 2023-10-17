@@ -125,11 +125,9 @@ class UCSDpedClipsIndexer(ClipsIndexer):
         """Get a subclip from a list of videos.
 
         Args:
-        ----
             idx (int): index of the subclip. Must be between 0 and num_clips().
 
         Returns:
-        -------
             video (Tensor)
             audio (Tensor)
             info (dict)

@@ -290,7 +290,6 @@ class Avenue(AnomalibVideoDataModule):
         masks into a sepaarte .png file for every video frame in the dataset.
 
         Args:
-        ----
             gt_dir (Path): Ground truth folder of the dataset.
         """
         # convert masks to numpy

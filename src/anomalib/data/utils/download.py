@@ -196,7 +196,6 @@ class DownloadProgressBar(tqdm):
         However the context needs a few parameters. Refer to the example.
 
         Args:
-        ----
             chunk_number (int, optional): The current chunk being processed. Defaults to 1.
             max_chunk_size (int, optional): Maximum size of each chunk. Defaults to 1.
             total_size (int, optional): Total download size. Defaults to None.

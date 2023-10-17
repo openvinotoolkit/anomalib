@@ -231,12 +231,10 @@ class AllInOneBlock(InvertibleModule):
         Returns transformed outputs and the LogJacDet of the scaling operation.
 
         Args:
-        ----
             x (torch.Tensor): Input tensor
             rev (bool, optional): Reverse the permutation. Defaults to False.
 
         Returns:
-        -------
             tuple[Any, float | Tensor]: Transformed outputs and the LogJacDet of the scaling operation.
         """
         if self.GIN:
@@ -337,11 +335,9 @@ class AllInOneBlock(InvertibleModule):
         """Output dimensions of the layer.
 
         Args:
-        ----
             input_dims (list[tuple[int]]): Input dimensions.
 
         Returns:
-        -------
             list[tuple[int]]: Output dimensions.
         """
         return input_dims

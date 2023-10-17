@@ -47,7 +47,6 @@ class KCenterGreedy:
         """Update min distances given cluster centers.
 
         Args:
-        ----
             cluster_centers (list[int]): indices of cluster centers
         """
         if cluster_centers:
@@ -66,7 +65,6 @@ class KCenterGreedy:
         Based on minimum distance of the cluster
 
         Returns:
-        -------
             int: Sample index
         """
         if isinstance(self.min_distances, Tensor):
@@ -81,11 +79,9 @@ class KCenterGreedy:
         """Greedily form a coreset to minimize the maximum distance of a cluster.
 
         Args:
-        ----
             selected_idxs: index of samples already selected. Defaults to an empty set.
 
         Returns:
-        -------
           indices of samples selected to minimize distance to cluster centers
         """
         if selected_idxs is None:
@@ -116,11 +112,9 @@ class KCenterGreedy:
         """Select coreset from the embedding.
 
         Args:
-        ----
             selected_idxs: index of samples already selected. Defaults to an empty set.
 
         Returns:
-        -------
             Tensor: Output coreset
 
         Example:

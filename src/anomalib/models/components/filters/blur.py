@@ -40,7 +40,6 @@ class GaussianBlur2d(nn.Module):
         """Initialize model, setup kernel etc..
 
         Args:
-        ----
             sigma (float | tuple[float, float]): standard deviation to use for constructing the Gaussian kernel.
             channels (int): channels of the input. Defaults to 1.
             kernel_size (int | tuple[int, int] | None): size of the Gaussian kernel to use. Defaults to None.
@@ -73,11 +72,9 @@ class GaussianBlur2d(nn.Module):
         """Blur the input with the computed Gaussian.
 
         Args:
-        ----
             input_tensor (Tensor): Input tensor to be blurred.
 
         Returns:
-        -------
             Tensor: Blurred output tensor.
         """
         batch, channel, height, width = input_tensor.size()

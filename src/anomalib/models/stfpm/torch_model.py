@@ -55,11 +55,9 @@ class STFPMModel(nn.Module):
         During the evaluation mode, it returns the predicted anomaly map.
 
         Args:
-        ----
           images (Tensor): Batch of images.
 
         Returns:
-        -------
           Teacher and student features when in training mode, otherwise the predicted anomaly maps.
         """
         if self.tiler:

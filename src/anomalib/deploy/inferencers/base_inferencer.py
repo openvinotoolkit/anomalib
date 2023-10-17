@@ -58,14 +58,12 @@ class Inferencer(ABC):
         The main workflow is (i) pre-processing, (ii) forward-pass, (iii) post-process.
 
         Args:
-        ----
             image (Union[str, np.ndarray]): Input image whose output is to be predicted.
                 It could be either a path to image or numpy array itself.
 
             metadata: Metadata information such as shape, threshold.
 
         Returns:
-        -------
             ImageResult: Prediction results to be visualized.
         """
         if metadata is None:
@@ -95,13 +93,11 @@ class Inferencer(ABC):
         """Superimpose segmentation mask on top of image.
 
         Args:
-        ----
             metadata (dict): Metadata of the image which contains the image size.
             anomaly_map (np.ndarray): Anomaly map which is used to extract segmentation mask.
             image (np.ndarray): Image on which segmentation mask is to be superimposed.
 
         Returns:
-        -------
             np.ndarray: Image with segmentation mask superimposed.
         """
         pred_mask = compute_mask(anomaly_map, 0.5)  # assumes predictions are normalized.
@@ -117,11 +113,9 @@ class Inferencer(ABC):
         """Call predict on the Image.
 
         Args:
-        ----
             image (np.ndarray): Input Image
 
         Returns:
-        -------
             ImageResult: Prediction results to be visualized.
         """
         return self.predict(image)
@@ -135,14 +129,12 @@ class Inferencer(ABC):
         """Apply normalization and resizes the image.
 
         Args:
-        ----
             pred_scores (Tensor | np.float32): Predicted anomaly score
             metadata (dict | DictConfig): Meta data. Post-processing step sometimes requires
                 additional meta data such as image shape. This variable comprises such info.
             anomaly_maps (Tensor | np.ndarray | None): Predicted raw anomaly map.
 
         Returns:
-        -------
             tuple[np.ndarray | Tensor | None, float]: Post processed predictions that are ready to be
                 visualized and predicted scores.
         """
@@ -183,12 +175,10 @@ class Inferencer(ABC):
         """Load the meta data from the given path.
 
         Args:
-        ----
             path (str | Path | dict | None, optional): Path to JSON file containing the metadata.
                 If no path is provided, it returns an empty dict. Defaults to None.
 
         Returns:
-        -------
             dict | DictConfig: Dictionary containing the metadata.
         """
         metadata: dict[str, float | np.ndarray | Tensor] | DictConfig = {}

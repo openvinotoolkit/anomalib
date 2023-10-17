@@ -64,7 +64,6 @@ class _MetricsCallback(Callback):
         """Set image and pixel-level AnomalibMetricsCollection within Anomalib Model.
 
         Args:
-        ----
             trainer (pl.Trainer): PyTorch Lightning Trainer
             pl_module (AnomalyModule): Anomalib Model that inherits pl LightningModule.
             stage (str | None, optional): fit, validate, test or predict. Defaults to None.

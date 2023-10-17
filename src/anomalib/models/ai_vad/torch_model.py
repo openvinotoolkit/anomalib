@@ -96,11 +96,9 @@ class AiVadModel(nn.Module):
         """Forward pass through AI-VAD model.
 
         Args:
-        ----
             batch (Tensor): Input image of shape (N, L, C, H, W)
 
         Returns:
-        -------
             list[Tensor]: List of bbox locations for each image.
             list[Tensor]: List of per-bbox anomaly scores for each image.
             list[Tensor]: List of per-image anomaly scores.

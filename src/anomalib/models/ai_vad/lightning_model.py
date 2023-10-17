@@ -91,7 +91,6 @@ class AiVad(AnomalyModule):
         Extract features from the batch of clips and update the density estimators.
 
         Args:
-        ----
             batch (dict[str, str | Tensor]): Batch containing image filename, image, label and mask
         """
         features_per_batch = self.model(batch["image"])
@@ -112,13 +111,11 @@ class AiVad(AnomalyModule):
         Extract boxes and box scores..
 
         Args:
-        ----
             batch (dict[str, str | Tensor]): Input batch
             *args: Arguments.
             **kwargs: Keyword arguments.
 
         Returns:
-        -------
             Batch dictionary with added boxes and box scores.
         """
         del args, kwargs  # Unused arguments.

@@ -83,11 +83,9 @@ class SmallPatchDescriptionNetwork(nn.Module):
         """Perform a forward pass through the network.
 
         Args:
-        ----
             x (torch.Tensor): Input batch.
 
         Returns:
-        -------
             torch.Tensor: Output from the network.
         """
         x = imagenet_norm_batch(x)
@@ -122,11 +120,9 @@ class MediumPatchDescriptionNetwork(nn.Module):
         """Perform a forward pass through the network.
 
         Args:
-        ----
             x (torch.Tensor): Input batch.
 
         Returns:
-        -------
             torch.Tensor: Output from the network.
         """
         x = imagenet_norm_batch(x)
@@ -156,11 +152,9 @@ class Encoder(nn.Module):
         """Perform the forward pass through the network.
 
         Args:
-        ----
             x (torch.Tensor): Input batch.
 
         Returns:
-        -------
             torch.Tensor: Output from the network.
         """
         x = F.relu(self.enconv1(x))
@@ -205,11 +199,9 @@ class Decoder(nn.Module):
         """Perform a forward pass through the network.
 
         Args:
-        ----
             x (torch.Tensor): Input batch.
 
         Returns:
-        -------
             torch.Tensor: Output from the network.
         """
         x = F.interpolate(x, size=(int(self.img_size[0] / 64) - 1, int(self.img_size[1] / 64) - 1), mode="bilinear")
@@ -252,11 +244,9 @@ class AutoEncoder(nn.Module):
         """Perform the forward pass through the network.
 
         Args:
-        ----
             x (torch.Tensor): Input batch.
 
         Returns:
-        -------
             torch.Tensor: Output from the network.
         """
         x = imagenet_norm_batch(x)
@@ -328,11 +318,9 @@ class EfficientAdModel(nn.Module):
         """Check if any of the parameters in the parameter dictionary is set.
 
         Args:
-        ----
             p_dic (nn.ParameterDict): Parameter dictionary.
 
         Returns:
-        -------
             bool: Boolean indicating whether any of the parameters in the parameter dictionary is set.
         """
         return any(value.sum() != 0 for _, value in p_dic.items())
@@ -341,11 +329,9 @@ class EfficientAdModel(nn.Module):
         """Choose a random augmentation function and apply it to the input image.
 
         Args:
-        ----
             image (Tensor): Input image.
 
         Returns:
-        -------
             Tensor: Augmented image.
         """
         transform_functions = [
@@ -362,12 +348,10 @@ class EfficientAdModel(nn.Module):
         """Perform the forward-pass of the EfficientAd models.
 
         Args:
-        ----
             batch (Tensor): Input images.
             batch_imagenet (Tensor): ImageNet batch. Defaults to None.
 
         Returns:
-        -------
             Tensor: Predictions
         """
         with torch.no_grad():

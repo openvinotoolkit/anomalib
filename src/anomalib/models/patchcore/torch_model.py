@@ -51,11 +51,9 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
         3. Compute anomaly map in test mode.
 
         Args:
-        ----
             input_tensor (Tensor): Input tensor
 
         Returns:
-        -------
             Tensor | dict[str, Tensor]: Embedding for training,
                 anomaly map and anomaly score for testing.
         """
@@ -97,12 +95,10 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
         """Generate embedding from hierarchical feature map.
 
         Args:
-        ----
             features: Hierarchical feature map from a CNN (ResNet18 or WideResnet)
             features: dict[str:Tensor]:
 
         Returns:
-        -------
             Embedding vector
         """
         embeddings = features[self.layers[0]]
@@ -121,11 +117,9 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
         [Batch, Embedding, Patch, Patch] to [Batch*Patch*Patch, Embedding]
 
         Args:
-        ----
             embedding (Tensor): Embedding tensor extracted from CNN features.
 
         Returns:
-        -------
             Tensor: Reshaped embedding tensor.
         """
         embedding_size = embedding.size(1)
@@ -135,7 +129,6 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
         """Subsample embedding based on coreset sampling and store to memory.
 
         Args:
-        ----
             embedding (np.ndarray): Embedding tensor from the CNN
             sampling_ratio (float): Coreset sampling ratio
         """
@@ -152,12 +145,10 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
         Resulting matrix is indexed by x vectors in rows and y vectors in columns.
 
         Args:
-        ----
             x: input tensor 1
             y: input tensor 2
 
         Returns:
-        -------
             Matrix of distances between row vectors in x and y.
         """
         x_norm = x.pow(2).sum(dim=-1, keepdim=True)  # |x|
@@ -170,12 +161,10 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
         """Nearest Neighbours using brute force method and euclidean norm.
 
         Args:
-        ----
             embedding (Tensor): Features to compare the distance with the memory bank.
             n_neighbors (int): Number of neighbors to look at
 
         Returns:
-        -------
             Tensor: Patch scores.
             Tensor: Locations of the nearest neighbor(s).
         """
@@ -191,13 +180,11 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
         """Compute Image-Level Anomaly Score.
 
         Args:
-        ----
             patch_scores (Tensor): Patch-level anomaly scores
             locations: Memory bank locations of the nearest neighbor for each patch location
             embedding: The feature embeddings that generated the patch scores
 
         Returns:
-        -------
             Tensor: Image-level anomaly scores
         """
         # Don't need to compute weights if num_neighbors is 1

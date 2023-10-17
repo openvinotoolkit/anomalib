@@ -28,7 +28,6 @@ class ManualThreshold(BaseThreshold):
         In case of manual thresholding, the threshold is already set and does not need to be computed.
 
         Returns:
-        -------
             torch.Tensor: Value of the optimal threshold.
         """
         return self.value
@@ -37,7 +36,6 @@ class ManualThreshold(BaseThreshold):
         """Do nothing.
 
         Args:
-        ----
             *args: Any positional arguments.
             **kwargs: Any keyword arguments.
         """

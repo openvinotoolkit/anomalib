@@ -37,11 +37,9 @@ class SparseRandomProjection:
         """Random sparse matrix. Based on https://web.stanford.edu/~hastie/Papers/Ping/KDD06_rp.pdf.
 
         Args:
-        ----
             n_features (int): Dimentionality of the original source space
 
         Returns:
-        -------
             Tensor: Sparse matrix of shape (n_components, n_features).
                 The generated Gaussian random matrix is in CSR (compressed sparse row)
                 format.
@@ -85,7 +83,6 @@ class SparseRandomProjection:
         Ref eqn 2.1 https://cseweb.ucsd.edu/~dasgupta/papers/jl.pdf
 
         Args:
-        ----
             n_samples (int): Number of samples used to compute safe components
             eps (float, optional): Minimum distortion rate. Defaults to 0.1.
         """
@@ -96,11 +93,9 @@ class SparseRandomProjection:
         """Generate sparse matrix from the embedding tensor.
 
         Args:
-        ----
             embedding (Tensor): embedding tensor for generating embedding
 
         Returns:
-        -------
             (SparseRandomProjection): Return self to be used as
             >>> generator = SparseRandomProjection()
             >>> generator = generator.fit()
@@ -122,12 +117,10 @@ class SparseRandomProjection:
         """Project the data by using matrix product with the random matrix.
 
         Args:
-        ----
             embedding (Tensor): Embedding of shape (n_samples, n_features)
                 The input data to project into a smaller dimensional space
 
         Returns:
-        -------
             projected_embedding (Tensor): Sparse matrix of shape
                 (n_samples, n_components) Projected array.
         """

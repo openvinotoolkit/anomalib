@@ -85,13 +85,11 @@ class Draem(AnomalyModule):
         image through the network and computes the training loss.
 
         Args:
-        ----
             batch (dict[str, str | Tensor]): Batch containing image filename, image, label and mask
             args: Arguments.
             kwargs: Keyword arguments.
 
         Returns:
-        -------
             Loss dictionary
         """
         del args, kwargs  # These variables are not used.
@@ -117,13 +115,11 @@ class Draem(AnomalyModule):
         """Perform the validation step of DRAEM. The Softmax predictions of the anomalous class are used as anomaly map.
 
         Args:
-        ----
             batch (dict[str, str | Tensor]): Batch of input images
             args: Arguments.
             kwargs: Keyword arguments.
 
         Returns:
-        -------
             Dictionary to which predicted anomaly maps have been added.
         """
         del args, kwargs  # These variables are not used.

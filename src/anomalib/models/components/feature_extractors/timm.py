@@ -72,13 +72,11 @@ class TimmFeatureExtractor(nn.Module):
         """Map set of layer names to indices of model.
 
         Args:
-        ----
             offset (int, optional): `timm` ignores the first few layers when indexing.
                 Please update offset based on need.
                 Defaults to 3.
 
         Returns:
-        -------
             list[int]: Feature map extracted from the CNN.
         """
         idx = []
@@ -103,11 +101,9 @@ class TimmFeatureExtractor(nn.Module):
         """Forward-pass input tensor into the CNN.
 
         Args:
-        ----
             inputs (Tensor): Input tensor
 
         Returns:
-        -------
             Feature map extracted from the CNN
         """
         if self.requires_grad:

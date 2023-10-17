@@ -60,12 +60,10 @@ class AnomalyMapGenerator(nn.Module):
         """Compute anomaly map given encoder and decoder features.
 
         Args:
-        ----
             student_features (list[Tensor]): List of encoder features
             teacher_features (list[Tensor]): List of decoder features
 
         Returns:
-        -------
             Tensor: Anomaly maps of length batch.
         """
         if self.mode == AnomalyMapGenerationMode.MULTIPLY:

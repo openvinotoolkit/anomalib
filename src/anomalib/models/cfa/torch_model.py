@@ -145,11 +145,9 @@ class CfaModel(DynamicBufferModule):
         """Initialize the Centroid of the Memory Bank.
 
         Args:
-        ----
             data_loader (DataLoader):  Train Dataloader.
 
         Returns:
-        -------
             Tensor: Memory Bank.
         """
         device = next(self.feature_extractor.parameters()).device
@@ -176,12 +174,10 @@ class CfaModel(DynamicBufferModule):
         """Compute distance using target oriented features.
 
         Args:
-        ----
             target_oriented_features (Tensor): Target oriented features computed
                 using the descriptor.
 
         Returns:
-        -------
             Tensor: Distance tensor.
         """
         if target_oriented_features.ndim == 4:
@@ -196,15 +192,12 @@ class CfaModel(DynamicBufferModule):
         """Forward pass.
 
         Args:
-        ----
             input_tensor (Tensor): Input tensor.
 
         Raises:
-        ------
             ValueError: When the memory bank is not initialized.
 
         Returns:
-        -------
             Tensor: Loss or anomaly map depending on the train/eval mode.
         """
         if self.memory_bank.ndim == 0:
@@ -313,11 +306,9 @@ class CoordConv2d(nn.Conv2d):
         """Forward pass.
 
         Args:
-        ----
             input_tensor (Tensor): Input tensor.
 
         Returns:
-        -------
             Tensor: Output tensor after applying the CoordConv layer.
         """
         out = self.add_coords(input_tensor)
@@ -342,11 +333,9 @@ class AddCoords(nn.Module):
         """Forward pass.
 
         Args:
-        ----
             input_tensor (Tensor): Input tensor
 
         Returns:
-        -------
             Tensor: Output tensor with added coordinates.
         """
         # NOTE: This is a modified version of the original implementation,

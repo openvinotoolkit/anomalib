@@ -71,7 +71,6 @@ class Augmenter:
         """Select 3 random transforms that will be applied to the anomaly source images.
 
         Returns:
-        -------
             A selection of 3 transforms.
         """
         aug_ind = np.random.default_rng().choice(np.arange(len(self.augmenters)), 3, replace=False)
@@ -86,14 +85,12 @@ class Augmenter:
         """Generate an image containing a random anomalous perturbation using a source image.
 
         Args:
-        ----
             height (int): height of the generated image.
             width: (int): width of the generated image.
             anomaly_source_path (Path | str | None): Path to an image file. If not provided, random noise will be used
             instead.
 
         Returns:
-        -------
             Image containing a random anomalous perturbation, and the corresponding ground truth anomaly mask.
         """
         # Generate random perlin noise
@@ -134,11 +131,9 @@ class Augmenter:
         """Generate anomalous augmentations for a batch of input images.
 
         Args:
-        ----
             batch (Tensor): Batch of input images
 
         Returns:
-        -------
             - Augmented image to which anomalous perturbations have been added.
             - Ground truth masks corresponding to the anomalous perturbations.
         """

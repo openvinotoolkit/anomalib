@@ -169,11 +169,9 @@ class FastflowModel(nn.Module):
         """Forward-Pass the input to the FastFlow Model.
 
         Args:
-        ----
             input_tensor (Tensor): Input tensor.
 
         Returns:
-        -------
             Tensor | list[Tensor] | tuple[list[Tensor]]: During training, return
                 (hidden_variables, log-of-the-jacobian-determinants).
                 During the validation/test, return the anomaly map.
@@ -209,11 +207,9 @@ class FastflowModel(nn.Module):
         """Get CNN-based features.
 
         Args:
-        ----
             input_tensor (Tensor): Input Tensor.
 
         Returns:
-        -------
             list[Tensor]: List of features.
         """
         features = self.feature_extractor(input_tensor)
@@ -223,11 +219,9 @@ class FastflowModel(nn.Module):
         """Get Class-Attention-Image-Transformers (CaiT) features.
 
         Args:
-        ----
             input_tensor (Tensor): Input Tensor.
 
         Returns:
-        -------
             list[Tensor]: List of features.
         """
         feature = self.feature_extractor.patch_embed(input_tensor)
@@ -245,11 +239,9 @@ class FastflowModel(nn.Module):
         """Get Vision Transformers (ViT) features.
 
         Args:
-        ----
             input_tensor (Tensor): Input Tensor.
 
         Returns:
-        -------
             list[Tensor]: List of features.
         """
         feature = self.feature_extractor.patch_embed(input_tensor)

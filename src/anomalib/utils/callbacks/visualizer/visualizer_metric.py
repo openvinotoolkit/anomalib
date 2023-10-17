@@ -29,7 +29,6 @@ class MetricVisualizerCallback(BaseVisualizerCallback):
         tuple[matplotlib.figure.Figure, str].
 
         Args:
-        ----
             trainer (pl.Trainer): pytorch lightning trainer.
             pl_module (AnomalyModule): pytorch lightning module.
         """

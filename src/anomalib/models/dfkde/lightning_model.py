@@ -67,13 +67,11 @@ class Dfkde(AnomalyModule):
         """Perform the training step of DFKDE. For each batch, features are extracted from the CNN.
 
         Args:
-        ----
             batch (batch: dict[str, str | Tensor]): Batch containing image filename, image, label and mask
             args: Arguments.
             kwargs: Keyword arguments.
 
         Returns:
-        -------
           Deep CNN features.
         """
         del args, kwargs  # These variables are not used.
@@ -102,13 +100,11 @@ class Dfkde(AnomalyModule):
         Similar to the training step, features are extracted from the CNN for each batch.
 
         Args:
-        ----
             batch (dict[str, str | Tensor]): Input batch
             args: Arguments.
             kwargs: Keyword arguments.
 
         Returns:
-        -------
             Dictionary containing probability, prediction and ground truth values.
         """
         del args, kwargs  # These variables are not used.

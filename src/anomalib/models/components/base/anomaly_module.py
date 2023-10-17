@@ -51,13 +51,11 @@ class AnomalyModule(pl.LightningModule, ABC):
         """Perform the forward-pass by passing input tensor to the module.
 
         Args:
-        ----
             batch (dict[str, str | Tensor]): Input batch.
             *args: Arguments.
             **kwargs: Keyword arguments.
 
         Returns:
-        -------
             Tensor: Output tensor from the model.
         """
         del args, kwargs  # These variables are not used.
@@ -75,7 +73,6 @@ class AnomalyModule(pl.LightningModule, ABC):
         Override to add any processing logic.
 
         Args:
-        ----
             batch (Any): Current batch
             batch_idx (int): Index of current batch
             dataloader_idx (int): Index of the current dataloader
@@ -92,14 +89,12 @@ class AnomalyModule(pl.LightningModule, ABC):
         """Calls validation_step for anomaly map/score calculation.
 
         Args:
-        ----
           batch (dict[str, str | Tensor]): Input batch
           batch_idx (int): Batch index
           args: Arguments.
           kwargs: Keyword arguments.
 
         Returns:
-        -------
           Dictionary containing images, features, true labels and masks.
           These are required in `validation_epoch_end` for feature concatenation.
         """

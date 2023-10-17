@@ -78,7 +78,6 @@ class AnomalibTensorBoardLogger(ImageLoggerBase, TensorBoardLogger):
         """Interface to add image to tensorboard logger.
 
         Args:
-        ----
             image (np.ndarray | Figure): Image to log
             name (str | None): The tag of the image
             kwargs: Accepts only `global_step` (int). The step at which to log the image.

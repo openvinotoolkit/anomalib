@@ -58,7 +58,6 @@ class Patchcore(AnomalyModule):
         """Configure optimizers.
 
         Returns:
-        -------
             None: Do not set optimizers by returning None.
         """
         return
@@ -67,13 +66,11 @@ class Patchcore(AnomalyModule):
         """Generate feature embedding of the batch.
 
         Args:
-        ----
             batch (dict[str, str | Tensor]): Batch containing image filename, image, label and mask
             args: Additional arguments.
             kwargs: Additional keyword arguments.
 
         Returns:
-        -------
             dict[str, np.ndarray]: Embedding Vector
         """
         del args, kwargs  # These variables are not used.
@@ -102,13 +99,11 @@ class Patchcore(AnomalyModule):
         """Get batch of anomaly maps from input image batch.
 
         Args:
-        ----
             batch (dict[str, str | Tensor]): Batch containing image filename, image, label and mask
             args: Additional arguments.
             kwargs: Additional keyword arguments.
 
         Returns:
-        -------
             dict[str, Any]: Image filenames, test images, GT and predicted label/masks
         """
         # These variables are not used.

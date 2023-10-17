@@ -72,11 +72,9 @@ def make_synthetic_dataset(
         and returns a new Series object with the updates labels and file locations.
 
         Args:
-        ----
             sample (Series): DataFrame row containing info about the image that will be augmented.
 
         Returns:
-        -------
             Series: DataFrame row with updated information about the augmented image.
         """
         # read and transform image
@@ -143,7 +141,6 @@ class SyntheticAnomalyDataset(AnomalibDataset):
         """Create a synthetic anomaly dataset from an existing dataset of normal images.
 
         Args:
-        ----
             dataset (AnomalibDataset): Dataset consisting of only normal images that will be converrted to a synthetic
                 anomalous dataset with a 50/50 normal anomalous split.
         """

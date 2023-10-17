@@ -19,7 +19,6 @@ class BaseThreshold(Metric, ABC):
         """Compute the threshold.
 
         Returns:
-        -------
             Value of the optimal threshold.
         """
         msg = "Subclass of BaseAnomalyScoreThreshold must implement the compute method"
@@ -29,7 +28,6 @@ class BaseThreshold(Metric, ABC):
         """Update the metric state.
 
         Args:
-        ----
             *args: Any positional arguments.
             **kwargs: Any keyword arguments.
         """

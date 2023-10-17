@@ -20,7 +20,6 @@ class AUPR(PrecisionRecallCurve):
         """First compute PR curve, then compute area under the curve.
 
         Returns:
-        -------
             Value of the AUPR metric
         """
         prec: Tensor
@@ -35,7 +34,6 @@ class AUPR(PrecisionRecallCurve):
         Need to flatten new values as PrecicionRecallCurve expects them in this format for binary classification.
 
         Args:
-        ----
             preds (Tensor): predictions of the model
             target (Tensor): ground truth targets
         """
@@ -45,7 +43,6 @@ class AUPR(PrecisionRecallCurve):
         """Compute prec/rec value pairs.
 
         Returns:
-        -------
             Tuple containing Tensors for rec and prec
         """
         prec: Tensor
@@ -57,7 +54,6 @@ class AUPR(PrecisionRecallCurve):
         """Generate a figure containing the PR curve as well as the random baseline and the AUC.
 
         Returns:
-        -------
             tuple[Figure, str]: Tuple containing both the PR curve and the figure title to be used for logging
         """
         prec, rec = self._compute()

@@ -19,7 +19,6 @@ class AUROC(ROC):
         """First compute ROC curve, then compute area under the curve.
 
         Returns:
-        -------
             Tensor: Value of the AUROC metric
         """
         tpr: Tensor
@@ -34,7 +33,6 @@ class AUROC(ROC):
         Need to flatten new values as ROC expects them in this format for binary classification.
 
         Args:
-        ----
             preds (Tensor): predictions of the model
             target (Tensor): ground truth targets
         """
@@ -44,7 +42,6 @@ class AUROC(ROC):
         """Compute fpr/tpr value pairs.
 
         Returns:
-        -------
             Tuple containing Tensors for fpr and tpr
         """
         tpr: Tensor
@@ -56,7 +53,6 @@ class AUROC(ROC):
         """Generate a figure containing the ROC curve, the baseline and the AUROC.
 
         Returns:
-        -------
             tuple[Figure, str]: Tuple containing both the figure and the figure title to be used for logging
         """
         fpr, tpr = self._compute()

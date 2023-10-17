@@ -31,14 +31,12 @@ class AnomalyMapGenerator(nn.Module):
         """Compute score based on the distance.
 
         Args:
-        ----
             distance (Tensor): Distance tensor computed using target oriented
                 features.
             scale (tuple[int, int]): Height and width of the largest feature
                 map.
 
         Returns:
-        -------
             Tensor: Score value.
         """
         distance = torch.sqrt(distance)
@@ -53,11 +51,9 @@ class AnomalyMapGenerator(nn.Module):
         """Compute anomaly map based on the score.
 
         Args:
-        ----
             score (Tensor): Score tensor.
 
         Returns:
-        -------
             Tensor: Anomaly map.
         """
         anomaly_map = score.mean(dim=1, keepdim=True)
@@ -70,11 +66,9 @@ class AnomalyMapGenerator(nn.Module):
         """Return anomaly map.
 
         Raises:
-        ------
             ``distance`` and ``scale`` keys are not found.
 
         Returns:
-        -------
             Tensor: Anomaly heatmap.
         """
         if not ("distance" in kwargs and "scale" in kwargs):

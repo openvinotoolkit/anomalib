@@ -76,13 +76,11 @@ class Cfa(AnomalyModule):
         """Perform the training step for the CFA model.
 
         Args:
-        ----
             batch (dict[str, str | Tensor]): Batch input.
             *args: Arguments.
             **kwargs: Keyword arguments.
 
         Returns:
-        -------
             STEP_OUTPUT: Loss value.
         """
         del args, kwargs  # These variables are not used.
@@ -95,13 +93,11 @@ class Cfa(AnomalyModule):
         """Perform the validation step for the CFA model.
 
         Args:
-        ----
             batch (dict[str, str | Tensor]): Input batch.
             *args: Arguments.
             **kwargs: Keyword arguments.
 
         Returns:
-        -------
             dict: Anomaly map computed by the model.
         """
         del args, kwargs  # These variables are not used.
@@ -113,7 +109,6 @@ class Cfa(AnomalyModule):
         """Perform backward-pass for the CFA model.
 
         Args:
-        ----
             loss (Tensor): Loss value.
             optimizer (Optimizer | None): Optimizer.
             optimizer_idx (int | None): Optimizer index.
@@ -177,7 +172,6 @@ class CfaLightning(Cfa):
                 config.yaml file or from CLI.
 
         Returns:
-        -------
             Optimizer: Adam optimizer for each decoder
         """
         return torch.optim.AdamW(

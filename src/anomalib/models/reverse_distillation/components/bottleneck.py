@@ -136,11 +136,9 @@ class OCBE(nn.Module):
         """Forward-pass of Bottleneck layer.
 
         Args:
-        ----
             features (list[Tensor]): List of features extracted from the encoder.
 
         Returns:
-        -------
             Tensor: Output of the bottleneck layer
         """
         # Always assumes that features has length of 3

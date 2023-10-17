@@ -59,13 +59,11 @@ class Csflow(AnomalyModule):
         """Perform the training step of CS-Flow.
 
         Args:
-        ----
             batch (dict[str, str | Tensor]): Input batch
             args: Arguments.
             kwargs: Keyword arguments.
 
         Returns:
-        -------
             Loss value
         """
         del args, kwargs  # These variables are not used.
@@ -80,13 +78,11 @@ class Csflow(AnomalyModule):
         """Perform the validation step for CS Flow.
 
         Args:
-        ----
             batch (Tensor): Input batch
             args: Arguments.
             kwargs: Keyword arguments.
 
         Returns:
-        -------
             dict[str, Tensor]: Dictionary containing the anomaly map, scores, etc.
         """
         del args, kwargs  # These variables are not used.
@@ -148,7 +144,6 @@ class CsflowLightning(Csflow):
                 config.yaml file or from CLI.
 
         Returns:
-        -------
             Optimizer: Adam optimizer
         """
         return torch.optim.Adam(

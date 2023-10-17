@@ -70,7 +70,6 @@ class _ThresholdCallback(Callback):
         """Initialize ``self.image_threshold`` and ``self.pixel_threshold``.
 
         Args:
-        ----
             threshold (BaseThreshold | tuple[BaseThreshold, BaseThreshold] | DictConfig | ListConfig | str):
                 Threshold configuration
 
@@ -84,7 +83,6 @@ class _ThresholdCallback(Callback):
         For more details on configuration see :fun:`_load_from_config`
 
         Raises:
-        ------
             ValueError: Unknown threshold class or incorrect configuration
         """
         # TODO(djdameln): Add tests for each case
@@ -159,7 +157,6 @@ class _ThresholdCallback(Callback):
             >>> __get_threshold_from_config(config)
 
         Returns:
-        -------
             (BaseThreshold): Instance of threshold object.
         """
         if isinstance(threshold, str):

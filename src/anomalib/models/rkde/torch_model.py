@@ -67,11 +67,9 @@ class RkdeModel(nn.Module):
         """Fit the model using a set of collected embeddings.
 
         Args:
-        ----
             embeddings (Tensor): Input embeddings to fit the model.
 
         Returns:
-        -------
             Boolean confirming whether the training is successful.
         """
         return self.classifier.fit(embeddings)
@@ -80,11 +78,9 @@ class RkdeModel(nn.Module):
         """Prediction by normality model.
 
         Args:
-        ----
             batch (Tensor): Input images.
 
         Returns:
-        -------
             Tensor | tuple[Tensor, Tensor]: The extracted features (when in training mode), or the predicted rois
                 and corresponding anomaly scores.
         """

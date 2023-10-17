@@ -110,7 +110,6 @@ class AnomalibWandbLogger(ImageLoggerBase, WandbLogger):
         """Interface to add image to wandb logger.
 
         Args:
-        ----
             image (np.ndarray | Figure): Image to log
             name (str | None): The tag of the image
             kwargs: Additional arguments to `wandb.Image`

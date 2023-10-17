@@ -53,11 +53,9 @@ class DfkdeModel(nn.Module):
         """Extract features from the pretrained network.
 
         Args:
-        ----
             batch (Tensor): Image batch.
 
         Returns:
-        -------
             Tensor: Tensor containing extracted features.
         """
         self.feature_extractor.eval()
@@ -72,11 +70,9 @@ class DfkdeModel(nn.Module):
         """Prediction by normality model.
 
         Args:
-        ----
             batch (Tensor): Input images.
 
         Returns:
-        -------
             Tensor: Predictions
         """
         # 1. apply feature extraction
