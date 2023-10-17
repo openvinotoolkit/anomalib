@@ -126,19 +126,19 @@ class RegionExtractor(nn.Module):
         -------
             list[Tensor]: Post-processed box predictions of shape (N, 4).
         """
-        processed_boxes: list[Tensor] = []
+        processed_boxes_list: list[Tensor] = []
         for boxes, scores in zip(pred_boxes, pred_scores, strict=True):
             # remove small boxes
             keep = box_ops.remove_small_boxes(boxes, min_size=self.min_size)
-            boxes, scores = boxes[keep], scores[keep]
+            processed_boxes, processed_scores = boxes[keep], scores[keep]
 
             # non-maximum suppression, all boxes together
-            keep = box_ops.nms(boxes, scores, self.iou_threshold)
+            keep = box_ops.nms(processed_boxes, processed_scores, self.iou_threshold)
 
             # keep only top-k scoring predictions
             keep = keep[: self.max_detections_per_image]
-            boxes = boxes[keep]
+            processed_boxes = processed_boxes[keep]
 
-            processed_boxes.append(boxes)
+            processed_boxes_list.append(processed_boxes)
 
-        return processed_boxes
+        return processed_boxes_list
