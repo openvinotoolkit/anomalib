@@ -15,12 +15,10 @@ class FastflowLoss(nn.Module):
         """Calculate the Fastflow loss.
 
         Args:
-        ----
             hidden_variables (list[Tensor]): Hidden variables from the fastflow model. f: X -> Z
             jacobians (list[Tensor]): Log of the jacobian determinants from the fastflow model.
 
         Returns:
-        -------
             Tensor: Fastflow loss computed based on the hidden variables and the log of the Jacobians.
         """
         loss = torch.tensor(0.0, device=hidden_variables[0].device)  # pylint: disable=not-callable

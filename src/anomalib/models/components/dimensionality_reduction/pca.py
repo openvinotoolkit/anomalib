@@ -14,7 +14,6 @@ class PCA(DynamicBufferModule):
     """Principle Component Analysis (PCA).
 
     Args:
-    ----
         n_components (float): Number of components. Can be either integer number of components
           or a ratio between 0-1.
     """
@@ -36,7 +35,6 @@ class PCA(DynamicBufferModule):
         """Fits the PCA model to the dataset.
 
         Args:
-        ----
           dataset (Tensor): Input dataset to fit the model.
         """
         mean = dataset.mean(dim=0)
@@ -60,11 +58,9 @@ class PCA(DynamicBufferModule):
         """Fit and transform PCA to dataset.
 
         Args:
-        ----
           dataset (Tensor): Dataset to which the PCA if fit and transformed
 
         Returns:
-        -------
           Transformed dataset
         """
         mean = dataset.mean(dim=0)
@@ -82,11 +78,9 @@ class PCA(DynamicBufferModule):
         """Transform the features based on singular vectors calculated earlier.
 
         Args:
-        ----
           features (Tensor): Input features
 
         Returns:
-        -------
           Transformed features
         """
         features -= self.mean
@@ -96,7 +90,6 @@ class PCA(DynamicBufferModule):
         """Inverses the transformed features.
 
         Args:
-        ----
           features (Tensor): Transformed features
 
         Returns: Inverse features
@@ -107,11 +100,9 @@ class PCA(DynamicBufferModule):
         """Transform the features.
 
         Args:
-        ----
           features (Tensor): Input features
 
         Returns:
-        -------
           Transformed features
         """
         return self.transform(features)

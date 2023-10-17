@@ -33,7 +33,6 @@ class WandbSweep:
     """wandb sweep.
 
     Args:
-    ----
         config (DictConfig): Original model configuration.
         sweep_config (DictConfig): Sweep configuration.
         entity (str, optional): Username or workspace to send the project to. Defaults to None.
@@ -91,7 +90,6 @@ class CometSweep:
     """comet sweep.
 
     Args:
-    ----
         config (DictConfig): Original model configuration.
         sweep_config (DictConfig): Sweep configuration.
         entity (str, optional): Username or workspace to send the project to. Defaults to None.

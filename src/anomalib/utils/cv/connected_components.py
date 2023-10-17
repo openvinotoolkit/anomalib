@@ -14,12 +14,10 @@ def connected_components_gpu(image: Tensor, num_iterations: int = 1000) -> Tenso
     """Perform connected component labeling on GPU and remap the labels from 0 to N.
 
     Args:
-    ----
         image (Tensor): Binary input image from which we want to extract connected components (Bx1xHxW)
         num_iterations (int): Number of iterations used in the connected component computation.
 
     Returns:
-    -------
         Tensor: Components labeled from 0 to N.
     """
     components = connected_components(image, num_iterations=num_iterations)
@@ -36,17 +34,15 @@ def connected_components_cpu(image: Tensor) -> Tensor:
     """Perform connected component labeling on CPU.
 
     Args:
-    ----
         image (Tensor): Binary input data from which we want to extract connected components (Bx1xHxW)
 
     Returns:
-    -------
         Tensor: Components labeled from 0 to N.
     """
     components = torch.zeros_like(image)
     label_idx = 1
-    for i, mask in enumerate(image):
-        mask = mask.squeeze().numpy().astype(np.uint8)
+    for i, msk in enumerate(image):
+        mask = msk.squeeze().numpy().astype(np.uint8)
         _, comps = cv2.connectedComponents(mask)
         # remap component values to make sure every component has a unique value when outputs are concatenated
         for label in np.unique(comps)[1:]:

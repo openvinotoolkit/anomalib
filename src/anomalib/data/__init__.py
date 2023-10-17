@@ -46,11 +46,9 @@ def get_datamodule(config: DictConfig | ListConfig) -> AnomalibDataModule:
     """Get Anomaly Datamodule.
 
     Args:
-    ----
         config (DictConfig | ListConfig): Configuration of the anomaly model.
 
     Returns:
-    -------
         PyTorch Lightning DataModule
     """
     logger.info("Loading the datamodule")

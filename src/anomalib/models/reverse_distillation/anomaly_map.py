@@ -30,7 +30,6 @@ class AnomalyMapGenerator(nn.Module):
     """Generate Anomaly Heatmap.
 
     Args:
-    ----
         image_size (ListConfig, tuple): Size of original image used for upscaling the anomaly map.
         sigma (int): Standard deviation of the gaussian kernel used to smooth anomaly map.
         mode (AnomalyMapGenerationMode, optional): Operation used to generate anomaly map.
@@ -38,7 +37,6 @@ class AnomalyMapGenerator(nn.Module):
         Defaults to "AnomalyMapGenerationMode.MULTIPLY".
 
     Raises:
-    ------
         ValueError: In case modes other than multiply and add are passed.
     """
 
@@ -62,12 +60,10 @@ class AnomalyMapGenerator(nn.Module):
         """Compute anomaly map given encoder and decoder features.
 
         Args:
-        ----
             student_features (list[Tensor]): List of encoder features
             teacher_features (list[Tensor]): List of decoder features
 
         Returns:
-        -------
             Tensor: Anomaly maps of length batch.
         """
         if self.mode == AnomalyMapGenerationMode.MULTIPLY:

@@ -52,15 +52,12 @@ def hide_output(func: Callable[..., Any]) -> Callable[..., Any]:
     """Hide output of the function.
 
     Args:
-    ----
         func (function): Hides output of this function.
 
     Raises:
-    ------
         Exception: In case the execution of function fails, it raises an exception.
 
     Returns:
-    -------
         object of the called function
     """
 
@@ -84,12 +81,10 @@ def get_single_model_metrics(model_config: DictConfig | ListConfig, openvino_met
     """Collect metrics for `model_name` and returns a dict of results.
 
     Args:
-    ----
         model_config (DictConfig, ListConfig): Configuration for run
         openvino_metrics (bool): If True, converts the model to OpenVINO format and gathers inference metrics.
 
     Returns:
-    -------
         dict: Collection of all the metrics such as time taken, throughput and performance scores.
     """
     with TemporaryDirectory() as project_path:
@@ -182,7 +177,6 @@ def compute_on_gpu(
     """Go over each run config and collect the result.
 
     Args:
-    ----
         run_configs (DictConfig | ListConfig): List of run configurations.
         device (int): The GPU id used for running the sweep.
         seed (int): Fix a seed.
@@ -234,7 +228,6 @@ def distribute(config_path: Path) -> None:
     """Run all cpu experiments on a single process. Distribute gpu experiments over all available gpus.
 
     Args:
-    ----
         config_path: (Path): Config path.
     """
     config = OmegaConf.load(config_path)
@@ -275,14 +268,12 @@ def sweep(
     """Go over all the values mentioned in `grid_search` parameter of the benchmarking config.
 
     Args:
-    ----
         run_config: (DictConfig | ListConfig, optional): Configuration for current run.
         device (int, optional): Name of the device on which the model is trained. Defaults to 0 "cpu".
         seed (int, optional): Seed to be used for the run. Defaults to 42.
         convert_openvino (bool, optional): Whether to convert the model to openvino format. Defaults to False.
 
     Returns:
-    -------
         dict[str, str | float]: Dictionary containing the metrics gathered from the sweep.
     """
     seed_everything(seed, workers=True)

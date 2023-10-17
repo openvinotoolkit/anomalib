@@ -33,7 +33,6 @@ def get_transforms(
     """Get transforms from config or image size.
 
     Args:
-    ----
         config (str | A.Compose | None, optional):
             Albumentations transforms.
             Either config or albumentations ``Compose`` object. Defaults to None.
@@ -51,16 +50,13 @@ def get_transforms(
             Defaults to True.
 
     Raises:
-    ------
         ValueError: When both ``config`` and ``image_size`` is ``None``.
         ValueError: When ``config`` is not a ``str`` or `A.Compose`` object.
 
     Returns:
-    -------
         A.Compose: Albumentation ``Compose`` object containing the image transforms.
 
     Examples:
-    --------
         >>> import skimage
         >>> image = skimage.data.astronaut()
 

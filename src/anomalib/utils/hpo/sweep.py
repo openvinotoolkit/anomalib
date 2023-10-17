@@ -63,7 +63,6 @@ class Sweep:
     """HPO class to run hyperparameter optimization.
 
     Args:
-    ----
         model (str | None): Name of the algorithm to train/test. If not provided, the model name is read from the model
          config.
         model_config (Path | str | None): Path to a model config file. If not provided, the model is loaded

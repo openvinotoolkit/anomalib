@@ -12,7 +12,6 @@ class CfaLoss(nn.Module):
     """Cfa Loss.
 
     Args:
-    ----
         num_nearest_neighbors (int): Number of nearest neighbors.
         num_hard_negative_features (int): Number of hard negative features.
         radius (float): Radius of the hypersphere to search the soft boundary.
@@ -28,11 +27,9 @@ class CfaLoss(nn.Module):
         """Compute the CFA loss.
 
         Args:
-        ----
             distance (Tensor): Distance computed using target oriented features.
 
         Returns:
-        -------
             Tensor: CFA loss.
         """
         num_neighbors = self.num_nearest_neighbors + self.num_hard_negative_features

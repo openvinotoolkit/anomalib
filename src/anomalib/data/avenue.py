@@ -64,13 +64,11 @@ def make_avenue_dataset(root: Path, gt_dir: Path, split: Split | str | None = No
         path/to/ground_truth/mask_filename.mat
 
     Args:
-    ----
         root (Path): Path to dataset
         gt_dir (Path): Path to the ground truth
         split (Split | str | None = None, optional): Dataset split (ie., either train or test). Defaults to None.
 
     Example:
-    -------
         The following example shows how to get testing samples from Avenue dataset:
 
         >>> root = Path('./avenue')
@@ -83,7 +81,6 @@ def make_avenue_dataset(root: Path, gt_dir: Path, split: Split | str | None = No
         ...
 
     Returns:
-    -------
         DataFrame: an output dataframe containing samples for the requested split (ie., train or test)
     """
     samples_list = [(str(root),) + filename.parts[-2:] for filename in Path(root).glob("**/*.avi")]
@@ -137,7 +134,6 @@ class AvenueDataset(AnomalibVideoDataset):
     """Avenue Dataset class.
 
     Args:
-    ----
         task (TaskType): Task type, 'classification', 'detection' or 'segmentation'
         transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
         split (Split): Split of the dataset, usually Split.TRAIN or Split.TEST
@@ -175,7 +171,6 @@ class Avenue(AnomalibVideoDataModule):
     """Avenue DataModule class.
 
     Args:
-    ----
         root (Path | str): Path to the root of the dataset
         gt_dir (Path | str): Path to the ground truth files
         clip_length_in_frames (int, optional): Number of video frames in each clip.
@@ -295,7 +290,6 @@ class Avenue(AnomalibVideoDataModule):
         masks into a sepaarte .png file for every video frame in the dataset.
 
         Args:
-        ----
             gt_dir (Path): Ground truth folder of the dataset.
         """
         # convert masks to numpy

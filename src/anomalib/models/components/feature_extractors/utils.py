@@ -14,8 +14,7 @@ def dryrun_find_featuremap_dims(
 ) -> dict[str, dict[str, int | tuple[int, int]]]:
     """Dry run an empty image of `input_size` size to get the featuremap tensors' dimensions (num_features, resolution).
 
-    Returns
-    -------
+    Returns:
         tuple[int, int]: maping of `layer -> dimensions dict`
             Each `dimension dict` has two keys: `num_features` (int) and `resolution`(tuple[int, int]).
     """

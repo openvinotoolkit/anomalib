@@ -22,12 +22,10 @@ class AnomalyMapGenerator(nn.Module):
         """Compute the layer map based on cosine similarity.
 
         Args:
-        ----
           teacher_features (Tensor): Teacher features
           student_features (Tensor): Student features
 
         Returns:
-        -------
           Anomaly score based on cosine similarity.
         """
         norm_teacher_features = F.normalize(teacher_features)
@@ -44,12 +42,10 @@ class AnomalyMapGenerator(nn.Module):
         """Compute the overall anomaly map via element-wise production the interpolated anomaly maps.
 
         Args:
-        ----
           teacher_features (dict[str, Tensor]): Teacher features
           student_features (dict[str, Tensor]): Student features
 
         Returns:
-        -------
           Final anomaly map
         """
         batch_size = next(iter(teacher_features.values())).shape[0]
@@ -67,7 +63,6 @@ class AnomalyMapGenerator(nn.Module):
         Expects `teach_features` and `student_features` keywords to be passed explicitly.
 
         Args:
-        ----
             kwargs (dict[str, Tensor]): Keyword arguments
 
         Example:
@@ -79,11 +74,9 @@ class AnomalyMapGenerator(nn.Module):
                 )
 
         Raises:
-        ------
             ValueError: `teach_features` and `student_features` keys are not found
 
         Returns:
-        -------
             torch.Tensor: anomaly map
         """
         if not ("teacher_features" in kwargs and "student_features" in kwargs):

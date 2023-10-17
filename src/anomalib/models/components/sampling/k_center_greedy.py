@@ -17,12 +17,10 @@ class KCenterGreedy:
     """Implements k-center-greedy method.
 
     Args:
-    ----
         embedding (Tensor): Embedding vector extracted from a CNN
         sampling_ratio (float): Ratio to choose coreset size from the embedding size.
 
     Example:
-    -------
         >>> embedding.shape
         torch.Size([219520, 1536])
         >>> sampler = KCenterGreedy(embedding=embedding)
@@ -49,7 +47,6 @@ class KCenterGreedy:
         """Update min distances given cluster centers.
 
         Args:
-        ----
             cluster_centers (list[int]): indices of cluster centers
         """
         if cluster_centers:
@@ -67,8 +64,7 @@ class KCenterGreedy:
 
         Based on minimum distance of the cluster
 
-        Returns
-        -------
+        Returns:
             int: Sample index
         """
         if isinstance(self.min_distances, Tensor):
@@ -83,11 +79,9 @@ class KCenterGreedy:
         """Greedily form a coreset to minimize the maximum distance of a cluster.
 
         Args:
-        ----
             selected_idxs: index of samples already selected. Defaults to an empty set.
 
         Returns:
-        -------
           indices of samples selected to minimize distance to cluster centers
         """
         if selected_idxs is None:
@@ -118,11 +112,9 @@ class KCenterGreedy:
         """Select coreset from the embedding.
 
         Args:
-        ----
             selected_idxs: index of samples already selected. Defaults to an empty set.
 
         Returns:
-        -------
             Tensor: Output coreset
 
         Example:

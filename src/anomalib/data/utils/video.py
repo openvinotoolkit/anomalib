@@ -21,7 +21,6 @@ class ClipsIndexer(VideoClips, ABC):
     of folders with single-frame images), the subclass should implement at least get_clip and _compute_frame_pts.
 
     Args:
-    ----
         video_paths (list[str]): List of video paths that make up the dataset.
         mask_paths (list[str]): List of paths to the masks for each video in the dataset.
     """
@@ -73,7 +72,6 @@ def convert_video(input_path: Path, output_path: Path, codec: str = "MP4V") -> N
     """Convert video file to a different codec.
 
     Args:
-    ----
         input_path (Path): Path to the input video.
         output_path (Path): Path to the target output video.
         codec (str): fourcc code of the codec that will be used for compression of the output file.

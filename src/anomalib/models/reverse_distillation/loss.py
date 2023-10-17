@@ -19,12 +19,10 @@ class ReverseDistillationLoss(nn.Module):
         Calculates loss from flattened arrays of features, see https://github.com/hq-deng/RD4AD/issues/22
 
         Args:
-        ----
             encoder_features (list[Tensor]): List of features extracted from encoder
             decoder_features (list[Tensor]): List of features extracted from decoder
 
         Returns:
-        -------
             Tensor: Cosine similarity loss
         """
         cos_loss = torch.nn.CosineSimilarity()
