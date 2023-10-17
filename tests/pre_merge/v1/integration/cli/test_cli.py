@@ -4,48 +4,22 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-from pathlib import Path
-from tempfile import TemporaryDirectory
-
-import pytest
-
 from anomalib.utils.cli import AnomalibCLI
-from tests.helpers.dataset import GeneratedDummyDataset
-
-
-def get_model_configs() -> list[str]:
-    """Return list of strings so that pytest can show the entire path of the yaml in the test log.
-
-    Path object is not serializable by pytest.
-    """
-    return [str(path) for path in Path("src/configs/model").glob("*.yaml")]
 
 
 class TestCLI:
     """Do sanity check on all models."""
 
-    @pytest.fixture(scope="class")
-    def dataset(self):
-        """Generate a dummy dataset."""
-        with GeneratedDummyDataset(num_train=20, num_test=10) as dataset_path:
-            yield dataset_path
-
-    @pytest.fixture(scope="class")
-    def project_path(self):
-        with TemporaryDirectory() as project_path:
-            yield project_path
-
-    @pytest.mark.parametrize("model_config", get_model_configs())
-    def test_fit(self, model_config: str, dataset: str, project_path: str):
+    def test_fit(self, model_name: str, dataset_root: str, project_path: str):
         AnomalibCLI(
             args=[
                 "fit",
                 "-c",
-                str(model_config),
+                f"src/configs/model/{model_name}.yaml",
                 "--data",
                 "anomalib.data.MVTec",
                 "--data.root",
-                dataset,
+                dataset_root,
                 "--data.category",
                 "shapes",
                 "--trainer.max_epochs",
@@ -57,17 +31,16 @@ class TestCLI:
             ]
         )
 
-    @pytest.mark.parametrize("model_config", get_model_configs())
-    def test_test(self, model_config: str, dataset: str, project_path: str):
+    def test_test(self, model_name: str, dataset_root: str, project_path: str):
         AnomalibCLI(
             args=[
                 "test",
                 "-c",
-                str(model_config),
+                f"src/configs/model/{model_name}.yaml",
                 "--data",
                 "anomalib.data.MVTec",
                 "--data.root",
-                dataset,
+                dataset_root,
                 "--data.category",
                 "shapes",
                 "--results_dir.path",
@@ -75,17 +48,16 @@ class TestCLI:
                 "--results_dir.unique",
                 "false",
                 "--ckpt_path",
-                f"{project_path}/{model_config.rstrip('.yaml')}/mvtec/shapes/weights/lightning/model.ckpt",
+                f"{project_path}/{model_name}/mvtec/shapes/weights/lightning/model.ckpt",
             ]
         )
 
-    @pytest.mark.parametrize("model_config", get_model_configs())
-    def test_validate(self, model_config: str, dataset: str, project_path: str):
+    def test_validate(self, model_name: str, dataset: str, project_path: str):
         AnomalibCLI(
             args=[
                 "validate",
                 "-c",
-                str(model_config),
+                f"src/configs/model/{model_name}.yaml",
                 "--data",
                 "anomalib.data.MVTec",
                 "--data.root",
@@ -97,7 +69,7 @@ class TestCLI:
                 "--results_dir.unique",
                 "false",
                 "--ckpt_path",
-                f"{project_path}/{model_config.rstrip('.yaml')}/mvtec/shapes/weights/lightning/model.ckpt",
+                f"{project_path}/{model_name}/mvtec/shapes/weights/lightning/model.ckpt",
             ]
         )
 
