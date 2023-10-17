@@ -129,6 +129,8 @@ class AnomalibDataset(Dataset, ABC):
 
             if label_index == 0:
                 mask = np.zeros(shape=image.shape[:2])
+            elif mask_path.endswith('.npy'):
+                mask = np.load(mask_path)
             else:
                 mask = cv2.imread(mask_path, flags=0) / 255.0
 

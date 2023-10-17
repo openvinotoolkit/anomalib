@@ -22,6 +22,7 @@ from .shanghaitech import ShanghaiTech
 from .task_type import TaskType
 from .ucsd_ped import UCSDped
 from .visa import Visa
+from .unitx_data import UnitXPerDefect
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +39,7 @@ class DataFormat(str, Enum):
     AVENUE = "avenue"
     VISA = "visa"
     SHANGHAITECH = "shanghaitech"
+    UNITX = "unitx"
 
 
 def get_datamodule(config: DictConfig | ListConfig) -> AnomalibDataModule:
@@ -234,6 +236,25 @@ def get_datamodule(config: DictConfig | ListConfig) -> AnomalibDataModule:
             val_split_mode=config.dataset.val_split_mode,
             val_split_ratio=config.dataset.val_split_ratio,
         )
+    if config.dataset.format.lower() == DataFormat.UNITX:
+        datamodule = UnitXPerDefect(
+            root=config.dataset.path,
+            exclude_labels=config.dataset.exclude_labels,
+            exclude_asset_ids=config.dataset.exclude_asset_ids,
+            image_size=(config.dataset.image_size[0], config.dataset.image_size[1]),
+            center_crop=center_crop,
+            normalization=config.dataset.normalization,
+            train_batch_size=config.dataset.train_batch_size,
+            eval_batch_size=config.dataset.eval_batch_size,
+            num_workers=config.dataset.num_workers,
+            task=config.dataset.task,
+            transform_config_train=config.dataset.transform_config.train,
+            transform_config_eval=config.dataset.transform_config.eval,
+            test_split_mode=config.dataset.test_split_mode,
+            test_split_ratio=config.dataset.test_split_ratio,
+            val_split_mode=config.dataset.val_split_mode,
+            val_split_ratio=config.dataset.val_split_ratio,
+        )
     else:
         raise ValueError(
             "Unknown dataset! \n"
@@ -258,4 +279,5 @@ __all__ = [
     "UCSDped",
     "TaskType",
     "ShanghaiTech",
+    "UnitXPerDefect",
 ]
