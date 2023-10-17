@@ -8,7 +8,8 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-from jsonargparse import ArgumentParser
+import lightning.pytorch as pl
+from jsonargparse import ActionConfigFile, ArgumentParser
 from lightning.pytorch import Trainer
 from lightning.pytorch.cli import ArgsType, LightningArgumentParser, LightningCLI, SaveConfigCallback
 from lightning.pytorch.utilities.types import _EVALUATE_OUTPUT, _PREDICT_OUTPUT
@@ -20,6 +21,7 @@ from anomalib.models import AnomalyModule
 from anomalib.utils.benchmarking import distribute
 from anomalib.utils.callbacks import get_callbacks, get_visualization_callbacks
 from anomalib.utils.callbacks.normalization import get_normalization_callback
+from anomalib.utils.cli.help_formatter import CustomHelpFormatter
 from anomalib.utils.cli.subcommands import (
     add_onnx_export_arguments,
     add_openvino_export_arguments,
@@ -75,6 +77,18 @@ class AnomalibCLI(LightningCLI):
         )
         self.engine: Engine
 
+    def init_parser(self, **kwargs: Any) -> LightningArgumentParser:
+        """Method that instantiates the argument parser."""
+        kwargs.setdefault("dump_header", [f"lightning.pytorch=={pl.__version__}"])
+        parser = LightningArgumentParser(formatter_class=CustomHelpFormatter, **kwargs)
+        parser.add_argument(
+            "-c",
+            "--config",
+            action=ActionConfigFile,
+            help="Path to a configuration file in json or yaml format.",
+        )
+        return parser
+
     @staticmethod
     def anomalib_subcommands() -> dict[str, dict[str, Any]]:
         """Return a dictionary of subcommands and their description."""
@@ -90,7 +104,7 @@ class AnomalibCLI(LightningCLI):
         super()._add_subcommands(parser, **kwargs)
         # Add  export, benchmark and hpo
         for subcommand in self.anomalib_subcommands():
-            sub_parser = ArgumentParser()
+            sub_parser = ArgumentParser(formatter_class=CustomHelpFormatter)
             self.parser._subcommands_action.add_subcommand(  # noqa: SLF001
                 subcommand,
                 sub_parser,

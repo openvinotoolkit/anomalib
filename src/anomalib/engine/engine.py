@@ -196,6 +196,20 @@ class Engine:
                 Defaults to None.
             ckpt_path (str | None, optional): Checkpoint path. If provided, the model will be loaded from this path.
                 Defaults to None.
+
+        CLI Usage:
+            1. you can pick a model, and you can run through the MVTec dataset.
+                ```python
+                anomalib fit --model anomalib.models.Padim
+                ```
+            2. Of course, you can override the various values with commands.
+                ```python
+                anomalib fit --model anomalib.models.Padim --data <CONFIG | CLASS_PATH_OR_NAME> --trainer.max_epochs 3
+                ```
+            4. If you have a ready configuration file, run it like this.
+                ```python
+                anomalib fit --config <config_file_path>
+                ```
         """
         self._setup_trainer(model)
         self.trainer.fit(model, train_dataloaders, val_dataloaders, datamodule, ckpt_path)
@@ -227,6 +241,20 @@ class Engine:
 
         Returns:
             _EVALUATE_OUTPUT | None: Validation results.
+
+        CLI Usage:
+            1. you can pick a model.
+                ```python
+                anomalib validate --model anomalib.models.Padim
+                ```
+            2. Of course, you can override the various values with commands.
+                ```python
+                anomalib validate --model anomalib.models.Padim --data <CONFIG | CLASS_PATH_OR_NAME>
+                ```
+            4. If you have a ready configuration file, run it like this.
+                ```python
+                anomalib validate --config <config_file_path>
+                ```
         """
         if model:
             self._setup_trainer(model)
@@ -265,6 +293,20 @@ class Engine:
 
         Returns:
             _EVALUATE_OUTPUT: A List of dictionaries containing the test results. 1 dict per dataloader.
+
+        CLI Usage:
+            1. you can pick a model.
+                ```python
+                anomalib test --model anomalib.models.Padim
+                ```
+            2. Of course, you can override the various values with commands.
+                ```python
+                anomalib test --model anomalib.models.Padim --data <CONFIG | CLASS_PATH_OR_NAME>
+                ```
+            4. If you have a ready configuration file, run it like this.
+                ```python
+                anomalib test --config <config_file_path>
+                ```
         """
         if model:
             self._setup_trainer(model)
@@ -304,6 +346,20 @@ class Engine:
 
         Returns:
             _PREDICT_OUTPUT | None: Predictions.
+
+        CLI Usage:
+            1. you can pick a model.
+                ```python
+                anomalib predict --model anomalib.models.Padim
+                ```
+            2. Of course, you can override the various values with commands.
+                ```python
+                anomalib predict --model anomalib.models.Padim --data <CONFIG | CLASS_PATH_OR_NAME>
+                ```
+            4. If you have a ready configuration file, run it like this.
+                ```python
+                anomalib predict --config <config_file_path> --return_predictions
+                ```
         """
         if model:
             self._setup_trainer(model)
