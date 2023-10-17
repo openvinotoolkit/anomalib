@@ -13,8 +13,12 @@ from anomalib.utils.cli import AnomalibCLI
 from tests.helpers.dataset import GeneratedDummyDataset
 
 
-def get_model_configs() -> list[Path]:
-    return [path for path in Path("src/configs/model").glob("*.yaml")]
+def get_model_configs() -> list[str]:
+    """Return list of strings so that pytest can show the entire path of the yaml in the test log.
+
+    Path object is not serializable by pytest.
+    """
+    return [str(path) for path in Path("src/configs/model").glob("*.yaml")]
 
 
 class TestCLI:
@@ -32,7 +36,7 @@ class TestCLI:
             yield project_path
 
     @pytest.mark.parametrize("model_config", get_model_configs())
-    def test_fit(self, model_config: Path, dataset: str, project_path: str):
+    def test_fit(self, model_config: str, dataset: str, project_path: str):
         AnomalibCLI(
             args=[
                 "fit",
@@ -54,7 +58,7 @@ class TestCLI:
         )
 
     @pytest.mark.parametrize("model_config", get_model_configs())
-    def test_test(self, model_config: Path, dataset: str, project_path: str):
+    def test_test(self, model_config: str, dataset: str, project_path: str):
         AnomalibCLI(
             args=[
                 "test",
@@ -71,13 +75,13 @@ class TestCLI:
                 "--results_dir.unique",
                 "false",
                 "--ckpt_path",
-                f"{project_path}/{model_config.stem}/mvtec/shapes/weights/lightning/model.ckpt",
+                f"{project_path}/{model_config.rstrip('.yaml')}/mvtec/shapes/weights/lightning/model.ckpt",
             ]
         )
 
     # TODO Validate
     # @pytest.mark.parametrize("model_config", get_model_configs())
-    # def test_validate(self, model_config:Path, dataset:str, project_path:str):
+    # def test_validate(self, model_config:str, dataset:str, project_path:str):
     #     AnomalibCLI(
     #         args=[
     #             "validate",
@@ -94,7 +98,7 @@ class TestCLI:
     #             "--results_dir.unique",
     #             "false",
     #             "--ckpt_path",
-    #             f"{project_path}/{model_config.stem}/mvtec/shapes/weights/lightning/model.ckpt",
+    #             f"{project_path}/{model_config.rstrip(".yaml")}/mvtec/shapes/weights/lightning/model.ckpt",
     #         ]
     #     )
 
