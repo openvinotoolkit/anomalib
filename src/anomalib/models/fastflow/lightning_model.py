@@ -21,7 +21,6 @@ class Fastflow(AnomalyModule):
     """PL Lightning Module for the FastFlow algorithm.
 
     Args:
-    ----
         input_size (tuple[int, int]): Model input size.
         backbone (str): Backbone CNN network
         pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.
@@ -55,13 +54,11 @@ class Fastflow(AnomalyModule):
         """Perform the training step input and return the loss.
 
         Args:
-        ----
             batch (batch: dict[str, str | Tensor]): Input batch
             args: Additional arguments.
             kwargs: Additional keyword arguments.
 
         Returns:
-        -------
             STEP_OUTPUT: Dictionary containing the loss value.
         """
         del args, kwargs  # These variables are not used.
@@ -75,13 +72,11 @@ class Fastflow(AnomalyModule):
         """Perform the validation step and return the anomaly map.
 
         Args:
-        ----
             batch (dict[str, str | Tensor]): Input batch
             args: Additional arguments.
             kwargs: Additional keyword arguments.
 
         Returns:
-        -------
             STEP_OUTPUT | None: batch dictionary containing anomaly-maps.
         """
         del args, kwargs  # These variables are not used.
@@ -100,7 +95,6 @@ class FastflowLightning(Fastflow):
     """PL Lightning Module for the FastFlow algorithm.
 
     Args:
-    ----
         hparams (DictConfig | ListConfig): Model params
     """
 
@@ -144,7 +138,6 @@ class FastflowLightning(Fastflow):
                 config.yaml file or from CLI.
 
         Returns:
-        -------
             Optimizer: Adam optimizer for each decoder
         """
         return optim.Adam(

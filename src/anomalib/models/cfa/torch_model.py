@@ -32,17 +32,14 @@ def get_return_nodes(backbone: str) -> list[str]:
     """Get the return nodes for a given backbone.
 
     Args:
-    ----
         backbone (str): The name of the backbone. Must be one of
             {"resnet18", "wide_resnet50_2", "vgg19_bn", "efficientnet_b5"}.
 
     Raises:
-    ------
         NotImplementedError: If the backbone is "efficientnet_b5".
         ValueError: If the backbone is not one of the supported backbones.
 
     Returns:
-    -------
         list[str]: A list of return nodes for the given backbone.
     """
     if backbone == "efficientnet_b5":
@@ -66,17 +63,14 @@ def get_feature_extractor(backbone: str, return_nodes: list[str]) -> GraphModule
     """Get the feature extractor from the backbone CNN.
 
     Args:
-    ----
         backbone (str): Backbone CNN network
         return_nodes (list[str]): A list of return nodes for the given backbone.
 
     Raises:
-    ------
         NotImplementedError: When the backbone is efficientnet_b5
         ValueError: When the backbone is not supported
 
     Returns:
-    -------
         GraphModule: Feature extractor.
     """
     model = getattr(torchvision.models, backbone)(pretrained=True)
@@ -90,7 +84,6 @@ class CfaModel(DynamicBufferModule):
     """Torch implementation of the CFA Model.
 
     Args:
-    ----
         input_size: (tuple[int, int]): Input size of the image tensor.
         backbone (str): Backbone CNN network.
         gamma_c (int): gamma_c parameter from the paper.
@@ -152,11 +145,9 @@ class CfaModel(DynamicBufferModule):
         """Initialize the Centroid of the Memory Bank.
 
         Args:
-        ----
             data_loader (DataLoader):  Train Dataloader.
 
         Returns:
-        -------
             Tensor: Memory Bank.
         """
         device = next(self.feature_extractor.parameters()).device
@@ -183,12 +174,10 @@ class CfaModel(DynamicBufferModule):
         """Compute distance using target oriented features.
 
         Args:
-        ----
             target_oriented_features (Tensor): Target oriented features computed
                 using the descriptor.
 
         Returns:
-        -------
             Tensor: Distance tensor.
         """
         if target_oriented_features.ndim == 4:
@@ -203,15 +192,12 @@ class CfaModel(DynamicBufferModule):
         """Forward pass.
 
         Args:
-        ----
             input_tensor (Tensor): Input tensor.
 
         Raises:
-        ------
             ValueError: When the memory bank is not initialized.
 
         Returns:
-        -------
             Tensor: Loss or anomaly map depending on the train/eval mode.
         """
         if self.memory_bank.ndim == 0:
@@ -320,11 +306,9 @@ class CoordConv2d(nn.Conv2d):
         """Forward pass.
 
         Args:
-        ----
             input_tensor (Tensor): Input tensor.
 
         Returns:
-        -------
             Tensor: Output tensor after applying the CoordConv layer.
         """
         out = self.add_coords(input_tensor)
@@ -349,11 +333,9 @@ class AddCoords(nn.Module):
         """Forward pass.
 
         Args:
-        ----
             input_tensor (Tensor): Input tensor
 
         Returns:
-        -------
             Tensor: Output tensor with added coordinates.
         """
         # NOTE: This is a modified version of the original implementation,

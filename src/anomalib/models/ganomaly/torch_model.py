@@ -22,7 +22,6 @@ class Encoder(nn.Module):
     """Encoder Network.
 
     Args:
-    ----
         input_size (tuple[int, int]): Size of input image
         latent_vec_size (int): Size of latent vector z
         num_input_channels (int): Number of input channels in the image
@@ -101,7 +100,6 @@ class Decoder(nn.Module):
     """Decoder Network.
 
     Args:
-    ----
         input_size (tuple[int, int]): Size of input image
         latent_vec_size (int): Size of latent vector z
         num_input_channels (int): Number of input channels in the image
@@ -208,7 +206,6 @@ class Discriminator(nn.Module):
         Made of only one encoder layer which takes x and x_hat to produce a score.
 
     Args:
-    ----
         input_size (tuple[int, int]): Input image size.
         num_input_channels (int): Number of image channels.
         n_features (int): Number of feature maps in each convolution layer.
@@ -249,7 +246,6 @@ class Generator(nn.Module):
     Made of an encoder-decoder-encoder architecture.
 
     Args:
-    ----
         input_size (tuple[int, int]): Size of input data.
         latent_vec_size (int): Dimension of latent vector produced between the first encoder-decoder.
         num_input_channels (int): Number of channels in input image.
@@ -298,7 +294,6 @@ class GanomalyModel(nn.Module):
     """Ganomaly Model.
 
     Args:
-    ----
         input_size (tuple[int, int]): Input dimension.
         num_input_channels (int): Number of input channels.
         n_features (int): Number of features layers in the CNNs.
@@ -339,7 +334,6 @@ class GanomalyModel(nn.Module):
         """Initialize DCGAN weights.
 
         Args:
-        ----
             module (nn.Module): [description]
         """
         classname = module.__class__.__name__
@@ -353,11 +347,9 @@ class GanomalyModel(nn.Module):
         """Get scores for batch.
 
         Args:
-        ----
             batch (Tensor): Images
 
         Returns:
-        -------
             Tensor: Regeneration scores.
         """
         padded_batch = pad_nextpow2(batch)

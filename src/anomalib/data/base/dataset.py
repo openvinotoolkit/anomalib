@@ -36,7 +36,6 @@ class AnomalibDataset(Dataset, ABC):
     """Anomalib dataset.
 
     Args:
-    ----
         task (str): Task type, either 'classification' or 'segmentation'
         transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
     """
@@ -55,7 +54,6 @@ class AnomalibDataset(Dataset, ABC):
         """Subsamples the dataset at the provided indices.
 
         Args:
-        ----
             indices (Sequence[int]): Indices at which the dataset is to be subsampled.
             inplace (bool): When true, the subsampling will be performed on the instance itself.
         """
@@ -82,7 +80,6 @@ class AnomalibDataset(Dataset, ABC):
         """Overwrite the samples with a new dataframe.
 
         Args:
-        ----
             samples (DataFrame): DataFrame with new samples.
         """
         # validate the passed samples by checking the
@@ -109,11 +106,9 @@ class AnomalibDataset(Dataset, ABC):
         """Get dataset item for the index ``index``.
 
         Args:
-        ----
             index (int): Index to get the item.
 
         Returns:
-        -------
             Union[dict[str, Tensor], dict[str, str | Tensor]]: Dict of image tensor during training.
                 Otherwise, Dict containing image path, target path, image tensor, label and transformed bounding box.
         """

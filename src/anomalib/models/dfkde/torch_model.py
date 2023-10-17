@@ -20,7 +20,6 @@ class DfkdeModel(nn.Module):
     """Normality Model for the DFKDE algorithm.
 
     Args:
-    ----
         backbone (str): Pre-trained model backbone.
         pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.
         n_comps (int, optional): Number of PCA components. Defaults to 16.
@@ -54,11 +53,9 @@ class DfkdeModel(nn.Module):
         """Extract features from the pretrained network.
 
         Args:
-        ----
             batch (Tensor): Image batch.
 
         Returns:
-        -------
             Tensor: Tensor containing extracted features.
         """
         self.feature_extractor.eval()
@@ -73,11 +70,9 @@ class DfkdeModel(nn.Module):
         """Prediction by normality model.
 
         Args:
-        ----
             batch (Tensor): Input images.
 
         Returns:
-        -------
             Tensor: Predictions
         """
         # 1. apply feature extraction

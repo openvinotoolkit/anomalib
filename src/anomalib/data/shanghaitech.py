@@ -57,13 +57,11 @@ def make_shanghaitech_dataset(root: Path, scene: int, split: Split | str | None 
         path/to/ground_truth/mask_filename.mat
 
     Args:
-    ----
         root (Path): Path to dataset
         scene (int): Index of the dataset scene (category) in range [1, 13]
         split (Split | str | None, optional): Dataset split (ie., either train or test). Defaults to None.
 
     Example:
-    -------
         The following example shows how to get testing samples from ShanghaiTech dataset:
 
         >>> root = Path('./shanghaiTech')
@@ -76,7 +74,6 @@ def make_shanghaitech_dataset(root: Path, scene: int, split: Split | str | None 
         ...
 
     Returns:
-    -------
         DataFrame: an output dataframe containing samples for the requested split (ie., train or test)
     """
     scene_prefix = str(scene).zfill(2)
@@ -156,11 +153,9 @@ class ShanghaiTechTestClipsIndexer(ClipsIndexer):
         """Get a subclip from a list of videos.
 
         Args:
-        ----
             idx (int): index of the subclip. Must be between 0 and num_clips().
 
         Returns:
-        -------
             video (Tensor)
             audio (Tensor)
             info (Dict)
@@ -185,7 +180,6 @@ class ShanghaiTechDataset(AnomalibVideoDataset):
     """ShanghaiTech Dataset class.
 
     Args:
-    ----
         task (TaskType): Task type, 'classification', 'detection' or 'segmentation'
         transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
         split (Split): Split of the dataset, usually Split.TRAIN or Split.TEST
@@ -223,7 +217,6 @@ class ShanghaiTech(AnomalibVideoDataModule):
     """ShanghaiTech DataModule class.
 
     Args:
-    ----
         root (Path | str): Path to the root of the dataset
         scene (int): Index of the dataset scene (category) in range [1, 13]
         clip_length_in_frames (int, optional): Number of video frames in each clip.
@@ -347,7 +340,6 @@ class ShanghaiTech(AnomalibVideoDataModule):
         and write them to a new video file that can be parsed correctly with pyav.
 
         Args:
-        ----
             video_folder (Path): Path to the folder of training videos.
             target_folder (Path): File system location where the converted videos will be stored.
         """

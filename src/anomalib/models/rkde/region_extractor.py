@@ -28,7 +28,6 @@ class RegionExtractor(nn.Module):
     """Extracts regions from the image.
 
     Args:
-    ----
         stage (RoiStage, optional): Processing stage from which rois are extracted.
         score_threshold (float, optional): Mimumum confidence score for the region proposals.
         min_size (int, optional): Minimum size in pixels for the region proposals.
@@ -71,15 +70,12 @@ class RegionExtractor(nn.Module):
         """Forward pass of the model.
 
         Args:
-        ----
             batch (Tensor): Batch of input images of shape [B, C, H, W].
 
         Raises:
-        ------
             ValueError: When ``stage`` is not one of ``rcnn`` or ``rpn``.
 
         Returns:
-        -------
             Tensor: Predicted regions, tensor of shape [N, 5] where N is the number of predicted regions in the batch,
                  and where each row describes the index of the image in the batch and the 4 bounding box coordinates.
         """
@@ -118,12 +114,10 @@ class RegionExtractor(nn.Module):
         keeping only the k boxes with the highest confidence score.
 
         Args:
-        ----
             pred_boxes (Tensor): Box predictions of shape (N, 4).
             pred_scores (Tensor): Tensor of shape () with a confidence score for each box prediction.
 
         Returns:
-        -------
             list[Tensor]: Post-processed box predictions of shape (N, 4).
         """
         processed_boxes_list: list[Tensor] = []

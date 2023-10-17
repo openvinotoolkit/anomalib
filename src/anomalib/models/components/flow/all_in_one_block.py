@@ -24,11 +24,9 @@ def _global_scale_sigmoid_activation(input_tensor: Tensor) -> Tensor:
     """Global scale sigmoid activation.
 
     Args:
-    ----
         input_tensor (Tensor): Input tensor
 
     Returns:
-    -------
         Tensor: Sigmoid activation
     """
     return 10 * torch.sigmoid(input_tensor - 2.0)
@@ -38,11 +36,9 @@ def _global_scale_softplus_activation(input_tensor: Tensor) -> Tensor:
     """Global scale softplus activation.
 
     Args:
-    ----
         input_tensor (Tensor): Input tensor
 
     Returns:
-    -------
         Tensor: Softplus activation
     """
     softplus = nn.Softplus(beta=0.5)
@@ -53,11 +49,9 @@ def _global_scale_exp_activation(input_tensor: Tensor) -> Tensor:
     """Global scale exponential activation.
 
     Args:
-    ----
         input_tensor (Tensor): Input tensor
 
     Returns:
-    -------
         Tensor: Exponential activation
     """
     return torch.exp(input_tensor)
@@ -94,7 +88,6 @@ class AllInOneBlock(InvertibleModule):
       exploding values in the exponential. The hyperparameter :math:`\\alpha` can be adjusted.
 
     Args:
-    ----
         subnet_constructor: class or callable ``f``, called as ``f(channels_in, channels_out)`` and
             should return a torch.nn.Module. Predicts coupling coefficients :math:`s, t`.
         affine_clamping: clamp the output of the multiplicative coefficients before
@@ -238,12 +231,10 @@ class AllInOneBlock(InvertibleModule):
         Returns transformed outputs and the LogJacDet of the scaling operation.
 
         Args:
-        ----
             x (torch.Tensor): Input tensor
             rev (bool, optional): Reverse the permutation. Defaults to False.
 
         Returns:
-        -------
             tuple[Any, float | Tensor]: Transformed outputs and the LogJacDet of the scaling operation.
         """
         if self.GIN:
@@ -344,11 +335,9 @@ class AllInOneBlock(InvertibleModule):
         """Output dimensions of the layer.
 
         Args:
-        ----
             input_dims (list[tuple[int]]): Input dimensions.
 
         Returns:
-        -------
             list[tuple[int]]: Output dimensions.
         """
         return input_dims

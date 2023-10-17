@@ -35,8 +35,7 @@ def _deduce_dims(
     Important: `layers` is assumed to be ordered and the first (layers[0])
                 is assumed to be the layer with largest resolution.
 
-    Returns
-    -------
+    Returns:
         tuple[int, int]: Dimensions of the extracted features: (n_dims_original, n_patches)
     """
     dimensions_mapping = dryrun_find_featuremap_dims(feature_extractor, input_size, layers)
@@ -55,7 +54,6 @@ class PadimModel(nn.Module):
     """Padim Module.
 
     Args:
-    ----
         input_size (tuple[int, int]): Input size for the model.
         layers (list[str]): Layers used for feature extraction
         backbone (str, optional): Pre-trained model backbone. Defaults to "resnet18".
@@ -110,12 +108,10 @@ class PadimModel(nn.Module):
         """Forward-pass image-batch (N, C, H, W) into model to extract features.
 
         Args:
-        ----
             input_tensor: Image-batch (N, C, H, W)
             input_tensor: Tensor:
 
         Returns:
-        -------
             Features from single/multiple layers.
 
         Example:
@@ -154,11 +150,9 @@ class PadimModel(nn.Module):
         """Generate embedding from hierarchical feature map.
 
         Args:
-        ----
             features (dict[str, Tensor]): Hierarchical feature map from a CNN (ResNet18 or WideResnet)
 
         Returns:
-        -------
             Embedding vector
         """
         embeddings = features[self.layers[0]]

@@ -25,7 +25,6 @@ class Rkde(AnomalyModule):
     """Region Based Anomaly Detection With Real-Time Training and Analysis.
 
     Args:
-    ----
         roi_stage (RoiStage, optional): Processing stage from which rois are extracted.
         roi_score_threshold (float, optional): Mimumum confidence score for the region proposals.
         min_size (int, optional): Minimum size in pixels for the region proposals.
@@ -72,13 +71,11 @@ class Rkde(AnomalyModule):
         """Perform a training Step of RKDE. For each batch, features are extracted from the CNN.
 
         Args:
-        ----
             batch (dict[str, str | Tensor]): Batch containing image filename, image, label and mask
             args: Additional arguments.
             kwargs: Additional keyword arguments.
 
         Returns:
-        -------
           Deep CNN features.
         """
         del args, kwargs  # These variables are not used.
@@ -99,13 +96,11 @@ class Rkde(AnomalyModule):
         Similar to the training step, features are extracted from the CNN for each batch.
 
         Args:
-        ----
             batch (dict[str, str | Tensor]): Batch containing image filename, image, label and mask
             args: Additional arguments.
             kwargs: Additional keyword arguments.
 
         Returns:
-        -------
           Dictionary containing probability, prediction and ground truth values.
         """
         del args, kwargs  # These variables are not used.
@@ -126,8 +121,7 @@ class Rkde(AnomalyModule):
     def trainer_arguments(self) -> dict[str, Any]:
         """Return R-KDE trainer arguments.
 
-        Returns
-        -------
+        Returns:
             dict[str, Any]: Arguments for the trainer.
         """
         return {"gradient_clip_val": 0, "max_epochs": 1, "num_sanity_val_steps": 0}
@@ -137,7 +131,6 @@ class RkdeLightning(Rkde):
     """Rkde: Deep Feature Kernel Density Estimation.
 
     Args:
-    ----
         hparams (DictConfig | ListConfig): Model params
     """
 

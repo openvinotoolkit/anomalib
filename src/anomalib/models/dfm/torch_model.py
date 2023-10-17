@@ -38,7 +38,6 @@ class SingleClassGaussian(DynamicBufferModule):
         This simplifies the calculation of the log-likelihood without requiring full matrix inversion.
 
         Args:
-        ----
             dataset (Tensor): Input dataset to fit the model.
         """
         num_samples = dataset.shape[1]
@@ -50,11 +49,9 @@ class SingleClassGaussian(DynamicBufferModule):
         """Compute the NLL (negative log likelihood) scores.
 
         Args:
-        ----
             features (Tensor): semantic features on which density modeling is performed.
 
         Returns:
-        -------
             nll (Tensor): Torch tensor of scores
         """
         features_transformed = torch.matmul(features - self.mean_vec, self.u_mat / self.sigma_mat)
@@ -66,7 +63,6 @@ class SingleClassGaussian(DynamicBufferModule):
         Transforms the input dataset based on singular values calculated earlier.
 
         Args:
-        ----
             dataset (Tensor): Input dataset
         """
         self.fit(dataset)
@@ -76,7 +72,6 @@ class DFMModel(nn.Module):
     """Model for the DFM algorithm.
 
     Args:
-    ----
         backbone (str): Pre-trained model backbone.
         layer (str): Layer from which to extract features.
         input_size (tuple[int, int]): Input size for the model.
@@ -116,7 +111,6 @@ class DFMModel(nn.Module):
         """Fit a pca transformation and a Gaussian model to dataset.
 
         Args:
-        ----
             dataset (Tensor): Input dataset to fit the model.
         """
         self.pca_model.fit(dataset)
@@ -131,12 +125,10 @@ class DFMModel(nn.Module):
         the Gaussian density-based NLL scores
 
         Args:
-        ----
             features (torch.Tensor): semantic features on which PCA and density modeling is performed.
             feature_shapes  (tuple): shape of `features` tensor. Used to generate anomaly map of correct shape.
 
         Returns:
-        -------
             score (Tensor): numpy array of scores
         """
         feats_projected = self.pca_model.transform(features)
@@ -158,11 +150,9 @@ class DFMModel(nn.Module):
         """Extract features from the pretrained network.
 
         Args:
-        ----
             batch (Tensor): Image batch.
 
         Returns:
-        -------
             Tensor: Tensor containing extracted features.
         """
         self.feature_extractor.eval()
@@ -178,11 +168,9 @@ class DFMModel(nn.Module):
         """Compute score from input images.
 
         Args:
-        ----
             batch (Tensor): Input images
 
         Returns:
-        -------
             Tensor: Scores
         """
         feature_vector, feature_shapes = self.get_features(batch)

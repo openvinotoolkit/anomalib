@@ -30,7 +30,6 @@ class CrossConvolutions(nn.Module):
     """Cross convolution for the three scales.
 
     Args:
-    ----
         in_channels (int): Number of input channels.
         channels (int): Number of output channels in the hidden convolution and the upscaling layers.
         channels_hidden (int, optional): Number of input channels in the hidden convolution layers. Defaults to 512.
@@ -161,8 +160,7 @@ class CrossConvolutions(nn.Module):
 
         This block is represented in figure 4 of the paper.
 
-        Returns
-        -------
+        Returns:
             tuple[Tensor, Tensor, Tensor]: Tensors indicating scale and transform parameters as a single tensor for
             each scale. The scale parameters are the first part across channel dimension and the transform parameters
             are the second.
@@ -206,7 +204,6 @@ class ParallelPermute(InvertibleModule):
     """Permutes input vector in a random but fixed way.
 
     Args:
-    ----
         dim (list[tuple[int]]): Dimension of the input vector.
         seed (float | None=None): Seed for the random permutation.
     """
@@ -230,11 +227,9 @@ class ParallelPermute(InvertibleModule):
         """Return a random permutation of the channels for each input.
 
         Args:
-        ----
             index (int): index of the input
 
         Returns:
-        -------
             tuple[Tensor, Tensor]: permutation and inverse permutation
         """
         perm = np.random.default_rng(self.seed).permutation(self.in_channels[index])
@@ -251,13 +246,11 @@ class ParallelPermute(InvertibleModule):
         """Apply the permutation to the input.
 
         Args:
-        ----
             input_tensor: list of input tensors
             rev: if True, applies the inverse permutation
             jac: (unused) if True, computes the log determinant of the Jacobian
 
         Returns:
-        -------
             tuple[Tensor, Tensor]: output tensor and log determinant of the Jacobian
         """
         del jac  # Unused argument.
@@ -276,7 +269,6 @@ class ParallelGlowCouplingLayer(InvertibleModule):
     """Coupling block that follows the GLOW design but is applied to all the scales in parallel.
 
     Args:
-    ----
         dims_in (list[tuple[int]]): list of dimensions of the input tensors
         subnet_args (dict): arguments of the subnet
         clamp (float): clamp value for the output of the subnet
@@ -402,7 +394,6 @@ class CrossScaleFlow(nn.Module):
     """Cross scale coupling layer.
 
     Args:
-    ----
         input_dims (tuple[int, int, int]): Input dimensions of the module.
         n_coupling_blocks (int): Number of coupling blocks.
         clamp (float): Clamp value for the inputs.
@@ -473,11 +464,9 @@ class CrossScaleFlow(nn.Module):
         """Forward pass.
 
         Args:
-        ----
             inputs (Tensor): Input tensor.
 
         Returns:
-        -------
             tuple[Tensor, Tensor]: Output tensor and log determinant of Jacobian.
         """
         return self.graph(inputs)
@@ -489,7 +478,6 @@ class MultiScaleFeatureExtractor(nn.Module):
     Uses 36th layer of EfficientNet-B5 to extract features.
 
     Args:
-    ----
         n_scales (int): Number of scales for input image.
         input_size (tuple[int, int]): Size of input image.
     """
@@ -509,11 +497,9 @@ class MultiScaleFeatureExtractor(nn.Module):
         """Extract features at three scales.
 
         Args:
-        ----
             input_tensor (Tensor): Input images.
 
         Returns:
-        -------
             list[Tensor]: List of tensors containing features at three scales.
         """
         output = []
@@ -536,7 +522,6 @@ class CsFlowModel(nn.Module):
     """CS Flow Module.
 
     Args:
-    ----
         input_size (tuple[int, int]): Input image size.
         cross_conv_hidden_channels (int): Number of hidden channels in the cross convolution.
         n_coupling_blocks (int): Number of coupling blocks.
@@ -569,11 +554,9 @@ class CsFlowModel(nn.Module):
         """Forward method of the model.
 
         Args:
-        ----
             images (Tensor): Input images.
 
         Returns:
-        -------
             tuple[Tensor, Tensor]: During training: tuple containing the z_distribution for three scales and the sum
                 of log determinant of the Jacobian. During evaluation: tuple containing anomaly maps and anomaly scores
         """
@@ -591,11 +574,9 @@ class CsFlowModel(nn.Module):
         """Get anomaly scores from the latent distribution.
 
         Args:
-        ----
             z_dists (Tensor): Latent distribution.
 
         Returns:
-        -------
             Tensor: Anomaly scores.
         """
         # z_dist is a 3 length list of tensors with shape b x 304 x fx x fy

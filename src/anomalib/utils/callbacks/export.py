@@ -22,7 +22,6 @@ class ExportCallback(Callback):
     Model is first exported to ``.onnx`` format, and then converted to OpenVINO IR.
 
     Args:
-    ----
         input_size (tuple[int, int]): Tuple of image height, width
         dirpath (str): Path for model output
         filename (str): Name of output model

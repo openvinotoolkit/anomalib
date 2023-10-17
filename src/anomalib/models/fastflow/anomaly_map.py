@@ -26,11 +26,9 @@ class AnomalyMapGenerator(nn.Module):
         map.
 
         Args:
-        ----
             hidden_variables (list[Tensor]): List of hidden variables from each NF FastFlow block.
 
         Returns:
-        -------
             Tensor: Anomaly Map.
         """
         flow_maps: list[Tensor] = []

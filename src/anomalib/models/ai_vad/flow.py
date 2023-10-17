@@ -27,12 +27,10 @@ class FlowExtractor(nn.Module):
         """Resize inputs to dimensions required by backbone.
 
         Args:
-        ----
             first_frame (Tensor): Starting frame of optical flow computation.
             last_frame (Tensor): Last frame of optical flow computation.
 
         Returns:
-        -------
             tuple[Tensor, Tensor]: Preprocessed first and last frame.
         """
         first_frame = F.resize(first_frame, size=[520, 960], antialias=False)
@@ -43,12 +41,10 @@ class FlowExtractor(nn.Module):
         """Forward pass through the flow extractor.
 
         Args:
-        ----
             first_frame (Tensor): Batch of starting frames of shape (N, 3, H, W).
             last_frame (Tensor): Batch of last frames of shape (N, 3, H, W).
 
         Returns:
-        -------
             Tensor: Estimated optical flow map of shape (N, 2, H, W).
         """
         height, width = first_frame.shape[-2:]
