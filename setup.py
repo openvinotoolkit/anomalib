@@ -90,6 +90,7 @@ EXTRAS_REQUIRE = {
 }
 
 
+# test
 setup(
     name="anomalib",
     version=get_version(),
