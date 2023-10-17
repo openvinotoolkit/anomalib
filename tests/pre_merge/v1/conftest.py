@@ -43,5 +43,5 @@ def model_name(request):
 
 
 @pytest.fixture(scope="session", params=_dataset_names())
-def dataset_config(request):
+def dataset_name(request):
     return request.param
