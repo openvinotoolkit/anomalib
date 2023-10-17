@@ -65,7 +65,7 @@ class Cflow(AnomalyModule):
         """Configure optimizers for each decoder.
 
         Returns:
-    Optimizer: Adam optimizer for each decoder
+            Optimizer: Adam optimizer for each decoder
         """
         decoders_parameters = []
         for decoder_idx in range(len(self.model.pool_layers)):
