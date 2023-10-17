@@ -21,7 +21,6 @@ class Fastflow(AnomalyModule):
     """PL Lightning Module for the FastFlow algorithm.
 
     Args:
-    ----
         input_size (tuple[int, int]): Model input size.
         backbone (str): Backbone CNN network
         pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.
@@ -100,7 +99,6 @@ class FastflowLightning(Fastflow):
     """PL Lightning Module for the FastFlow algorithm.
 
     Args:
-    ----
         hparams (DictConfig | ListConfig): Model params
     """
 

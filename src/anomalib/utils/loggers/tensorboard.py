@@ -37,7 +37,6 @@ class AnomalibTensorBoardLogger(ImageLoggerBase, TensorBoardLogger):
         >>> engine =  Engine(logger=logger)
 
     Args:
-    ----
         save_dir (str): Save directory
         name (Optional, str): Experiment name. Defaults to ``'default'``. If it is the empty string then no
             per-experiment subdirectory is used.

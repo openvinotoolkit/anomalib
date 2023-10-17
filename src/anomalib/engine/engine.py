@@ -38,7 +38,6 @@ class _TrainerArgumentsCache:
     before the trainer is instantiated.
 
     Args:
-    ----
         (**kwargs): Trainer arguments that are cached
 
     Example:
@@ -100,7 +99,6 @@ class Engine:
         Refer to PyTorch Lightning's Trainer for a list of parameters for details on other Trainer parameters.
 
     Args:
-    ----
         callbacks: Add a callback or list of callbacks.
     """
 

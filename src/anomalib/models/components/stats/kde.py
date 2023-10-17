@@ -16,7 +16,6 @@ class GaussianKDE(DynamicBufferModule):
     """Gaussian Kernel Density Estimation.
 
     Args:
-    ----
         dataset (Tensor | None, optional): Dataset on which to fit the KDE model. Defaults to None.
     """
 

@@ -24,7 +24,6 @@ class Patchcore(AnomalyModule):
     """PatchcoreLightning Module to train PatchCore algorithm.
 
     Args:
-    ----
         input_size (tuple[int, int]): Size of the model input.
         backbone (str): Backbone CNN network
         layers (list[str]): Layers to extract features from the backbone CNN
@@ -134,7 +133,6 @@ class PatchcoreLightning(Patchcore):
     """PatchcoreLightning Module to train PatchCore algorithm.
 
     Args:
-    ----
         hparams (DictConfig | ListConfig): Model params
     """
 

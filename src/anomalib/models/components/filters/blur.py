@@ -12,7 +12,6 @@ def compute_kernel_size(sigma_val: float) -> int:
     """Compute kernel size from sigma value.
 
     Args:
-    ----
         sigma_val (float): Sigma value.
 
     Returns:

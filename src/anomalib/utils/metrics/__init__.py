@@ -45,7 +45,6 @@ def metric_collection_from_names(metric_names: list[str], prefix: str | None) ->
     then in TorchMetrics package.
 
     Args:
-    ----
         metric_names (list[str]): List of metric names to be included in the collection.
         prefix (str | None): prefix to assign to the metrics in the collection.
 
@@ -140,7 +139,6 @@ def metric_collection_from_dicts(metrics: dict[str, dict[str, Any]], prefix: str
         ```
 
     Args:
-    ----
         metrics (dict[str, dict[str, Any]]): keys are metric names, values are dictionaries.
             Internal dict[str, Any] keys are "class_path" (value is string) and "init_args" (value is dict),
             following the convention in Pytorch Lightning CLI.
@@ -175,7 +173,6 @@ def create_metric_collection(
     then in TorchMetrics package.
 
     Args:
-    ----
         metrics (list[str] | dict[str, dict[str, Any]]): List of metrics or dictionaries to create metric collection.
         prefix (str | None): Prefix to assign to the metrics in the collection.
 

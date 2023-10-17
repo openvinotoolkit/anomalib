@@ -38,7 +38,6 @@ class DownloadProgressBar(tqdm):
     For information about the parameters in constructor, refer to `tqdm`'s documentation.
 
     Args:
-    ----
         iterable (Iterable | None): Iterable to decorate with a progressbar.
                             Leave blank to manually manage the updates.
         desc (str | None): Prefix for the progressbar.
@@ -212,7 +211,6 @@ def is_file_potentially_dangerous(file_name: str) -> bool:
     """Check if a file is potentially dangerous.
 
     Args:
-    ----
         file_name (str): Filename.
 
     Returns:
@@ -228,7 +226,6 @@ def safe_extract(tar_file: TarFile, root: Path, members: list[TarInfo]) -> None:
     """Extract safe members from a tar archive.
 
     Args:
-    ----
         tar_file (TarFile): TarFile object.
         root (Path): Root directory where the dataset will be stored.
         members (List[TarInfo]): List of safe members to be extracted.
@@ -242,7 +239,6 @@ def hash_check(file_path: Path, expected_hash: str) -> None:
     """Raise assert error if hash does not match the calculated hash of the file.
 
     Args:
-    ----
         file_path (Path): Path to file.
         expected_hash (str): Expected hash of the file.
     """
@@ -256,7 +252,6 @@ def extract(file_name: Path, root: Path) -> None:
     """Extract a dataset.
 
     Args:
-    ----
         file_name (Path): Path of the file to be extracted.
         root (Path): Root directory where the dataset will be stored.
 
@@ -289,7 +284,6 @@ def download_and_extract(root: Path, info: DownloadInfo) -> None:
     """Download and extract a dataset.
 
     Args:
-    ----
         root (Path): Root directory where the dataset will be stored.
         info (DownloadInfo): Info needed to download the dataset.
     """
@@ -318,7 +312,6 @@ def is_within_directory(directory: Path, target: Path) -> bool:
     """Check if a target path is located within a given directory.
 
     Args:
-    ----
         directory (Path): path of the parent directory
         target (Path): path of the target
 

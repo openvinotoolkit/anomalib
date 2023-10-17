@@ -39,7 +39,6 @@ def make_folder_dataset(
     """Make Folder Dataset.
 
     Args:
-    ----
         normal_dir (str | Path | Sequence): Path to the directory containing normal images.
         root (str | Path | None): Path to the root directory of the dataset.
         abnormal_dir (str | Path | Sequence | None, optional): Path to the directory containing abnormal images.
@@ -163,7 +162,6 @@ class FolderDataset(AnomalibDataset):
     """Folder dataset.
 
     Args:
-    ----
         task (TaskType): Task type. (``classification``, ``detection`` or ``segmentation``).
         transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
         split (str | Split | None): Fixed subset split that follows from folder structure on file system.
@@ -224,7 +222,6 @@ class Folder(AnomalibDataModule):
     """Folder DataModule.
 
     Args:
-    ----
         normal_dir (str | Path | Sequence): Name of the directory containing normal images.
             Defaults to "normal".
         root (str | Path | None): Path to the root folder containing normal and abnormal dirs.

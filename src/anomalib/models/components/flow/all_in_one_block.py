@@ -24,7 +24,6 @@ def _global_scale_sigmoid_activation(input_tensor: Tensor) -> Tensor:
     """Global scale sigmoid activation.
 
     Args:
-    ----
         input_tensor (Tensor): Input tensor
 
     Returns:
@@ -37,7 +36,6 @@ def _global_scale_softplus_activation(input_tensor: Tensor) -> Tensor:
     """Global scale softplus activation.
 
     Args:
-    ----
         input_tensor (Tensor): Input tensor
 
     Returns:
@@ -51,7 +49,6 @@ def _global_scale_exp_activation(input_tensor: Tensor) -> Tensor:
     """Global scale exponential activation.
 
     Args:
-    ----
         input_tensor (Tensor): Input tensor
 
     Returns:
@@ -91,7 +88,6 @@ class AllInOneBlock(InvertibleModule):
       exploding values in the exponential. The hyperparameter :math:`\\alpha` can be adjusted.
 
     Args:
-    ----
         subnet_constructor: class or callable ``f``, called as ``f(channels_in, channels_out)`` and
             should return a torch.nn.Module. Predicts coupling coefficients :math:`s, t`.
         affine_clamping: clamp the output of the multiplicative coefficients before

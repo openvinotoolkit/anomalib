@@ -25,7 +25,6 @@ class TorchInferencer(Inferencer):
     """PyTorch implementation for the inference.
 
     Args:
-    ----
         path (str | Path): Path to Torch model weights.
         device (str): Device to use for inference. Options are auto, cpu, cuda. Defaults to "auto".
     """

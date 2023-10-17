@@ -23,7 +23,6 @@ class Dfm(AnomalyModule):
     """DFM: Deep Featured Kernel Density Estimation.
 
     Args:
-    ----
         backbone (str): Backbone CNN network
         layer (str): Layer to extract features from the backbone CNN
         input_size (tuple[int, int]): Input size for the model.
@@ -136,7 +135,6 @@ class DfmLightning(Dfm):
     """DFM: Deep Featured Kernel Density Estimation.
 
     Args:
-    ----
         hparams (DictConfig | ListConfig): Model params
     """
 

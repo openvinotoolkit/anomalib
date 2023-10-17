@@ -43,7 +43,6 @@ def get_inferencer(weight_path: Path, metadata: Path | None = None) -> Inference
     """Parse args and open inferencer.
 
     Args:
-    ----
         weight_path (Path): Path to model weights.
         metadata (Path | None, optional): Metadata is required for OpenVINO models. Defaults to None.
 
@@ -88,7 +87,6 @@ def infer(image: np.ndarray, inferencer: Inferencer) -> tuple[np.ndarray, np.nda
     """Inference function, return anomaly map, score, heat map, prediction mask ans visualisation.
 
     Args:
-    ----
         image (np.ndarray): image to compute
         inferencer (Inferencer): model inferencer
 

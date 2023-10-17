@@ -39,7 +39,6 @@ def configure_logger(level: int | str = logging.INFO) -> None:
     """Get console logger by name.
 
     Args:
-    ----
         level (int | str, optional): Logger Level. Defaults to logging.INFO.
 
     Returns:
@@ -65,7 +64,6 @@ def get_experiment_logger(
     """Return a logger based on the choice of logger in the config file.
 
     Args:
-    ----
         config (DictConfig): config.yaml file for the corresponding anomalib model.
 
     Raises:

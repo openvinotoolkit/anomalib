@@ -27,7 +27,6 @@ class TorchFXFeatureExtractor(nn.Module):
     """Extract features from a CNN.
 
     Args:
-    ----
         backbone (str | BackboneParams | dict | nn.Module): The backbone to which the feature extraction hooks are
             attached. If the name is provided, the model is loaded from torchvision. Otherwise, the model class can be
             provided and it will try to load the weights from the provided weights file. Last, an instance of nn.Module

@@ -45,7 +45,6 @@ def pro_score(predictions: Tensor, comps: Tensor, threshold: float = 0.5) -> Ten
     """Calculate the PRO score for a batch of predictions.
 
     Args:
-    ----
         predictions (Tensor): Predicted anomaly masks (Bx1xHxW)
         comps: (Tensor): Labeled connected components (BxHxW). The components should be labeled from 0 to N
         threshold (float): When predictions are passed as float, the threshold is used to binarize the predictions.

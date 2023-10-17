@@ -37,7 +37,6 @@ class AnomalibCometLogger(ImageLoggerBase, CometLogger):
     Comet requires either an API Key (online mode) or a local directory path (offline mode).
 
     Args:
-    ----
         api_key: Required in online mode. API key, found on Comet.ml. If not given, this
             will be loaded from the environment variable COMET_API_KEY or ~/.comet.config
             if either exists.

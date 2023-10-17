@@ -22,7 +22,6 @@ class ReverseDistillationModel(nn.Module):
     """Reverse Distillation Model.
 
     Args:
-    ----
         backbone (str): Name of the backbone used for encoder and decoder
         input_size (tuple[int, int]): Size of input image
         layers (list[str]): Name of layers from which the features are extracted.

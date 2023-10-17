@@ -57,7 +57,6 @@ def make_shanghaitech_dataset(root: Path, scene: int, split: Split | str | None 
         path/to/ground_truth/mask_filename.mat
 
     Args:
-    ----
         root (Path): Path to dataset
         scene (int): Index of the dataset scene (category) in range [1, 13]
         split (Split | str | None, optional): Dataset split (ie., either train or test). Defaults to None.
@@ -184,7 +183,6 @@ class ShanghaiTechDataset(AnomalibVideoDataset):
     """ShanghaiTech Dataset class.
 
     Args:
-    ----
         task (TaskType): Task type, 'classification', 'detection' or 'segmentation'
         transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
         split (Split): Split of the dataset, usually Split.TRAIN or Split.TEST
@@ -222,7 +220,6 @@ class ShanghaiTech(AnomalibVideoDataModule):
     """ShanghaiTech DataModule class.
 
     Args:
-    ----
         root (Path | str): Path to the root of the dataset
         scene (int): Index of the dataset scene (category) in range [1, 13]
         clip_length_in_frames (int, optional): Number of video frames in each clip.

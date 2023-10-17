@@ -30,7 +30,6 @@ class AnomalyMapGenerator(nn.Module):
     """Generate Anomaly Heatmap.
 
     Args:
-    ----
         image_size (ListConfig, tuple): Size of original image used for upscaling the anomaly map.
         sigma (int): Standard deviation of the gaussian kernel used to smooth anomaly map.
         mode (AnomalyMapGenerationMode, optional): Operation used to generate anomaly map.

@@ -30,7 +30,6 @@ class CrossConvolutions(nn.Module):
     """Cross convolution for the three scales.
 
     Args:
-    ----
         in_channels (int): Number of input channels.
         channels (int): Number of output channels in the hidden convolution and the upscaling layers.
         channels_hidden (int, optional): Number of input channels in the hidden convolution layers. Defaults to 512.
@@ -206,7 +205,6 @@ class ParallelPermute(InvertibleModule):
     """Permutes input vector in a random but fixed way.
 
     Args:
-    ----
         dim (list[tuple[int]]): Dimension of the input vector.
         seed (float | None=None): Seed for the random permutation.
     """
@@ -276,7 +274,6 @@ class ParallelGlowCouplingLayer(InvertibleModule):
     """Coupling block that follows the GLOW design but is applied to all the scales in parallel.
 
     Args:
-    ----
         dims_in (list[tuple[int]]): list of dimensions of the input tensors
         subnet_args (dict): arguments of the subnet
         clamp (float): clamp value for the output of the subnet
@@ -402,7 +399,6 @@ class CrossScaleFlow(nn.Module):
     """Cross scale coupling layer.
 
     Args:
-    ----
         input_dims (tuple[int, int, int]): Input dimensions of the module.
         n_coupling_blocks (int): Number of coupling blocks.
         clamp (float): Clamp value for the inputs.
@@ -489,7 +485,6 @@ class MultiScaleFeatureExtractor(nn.Module):
     Uses 36th layer of EfficientNet-B5 to extract features.
 
     Args:
-    ----
         n_scales (int): Number of scales for input image.
         input_size (tuple[int, int]): Size of input image.
     """
@@ -536,7 +531,6 @@ class CsFlowModel(nn.Module):
     """CS Flow Module.
 
     Args:
-    ----
         input_size (tuple[int, int]): Input image size.
         cross_conv_hidden_channels (int): Number of hidden channels in the cross convolution.
         n_coupling_blocks (int): Number of coupling blocks.

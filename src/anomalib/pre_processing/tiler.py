@@ -32,7 +32,6 @@ def compute_new_image_size(image_size: tuple, tile_size: tuple, stride: tuple) -
     If not divisible, it resizes the image size to make it divisible.
 
     Args:
-    ----
         image_size (tuple): Original image size
         tile_size (tuple): Tile size
         stride (tuple): Stride
@@ -66,7 +65,6 @@ def upscale_image(image: Tensor, size: tuple, mode: ImageUpscaleMode = ImageUpsc
     """Upscale image to the desired size via either padding or interpolation.
 
     Args:
-    ----
         image (Tensor): Image
         size (tuple): tuple to which image is upscaled.
         mode (str, optional): Upscaling mode. Defaults to "padding".
@@ -107,7 +105,6 @@ def downscale_image(image: Tensor, size: tuple, mode: ImageUpscaleMode = ImageUp
     """Opposite of upscaling. This image downscales image to a desired size.
 
     Args:
-    ----
         image (Tensor): Input image
         size (tuple): Size to which image is down scaled.
         mode (str, optional): Downscaling mode. Defaults to "padding".
@@ -136,7 +133,6 @@ class Tiler:
     """Tile Image into (non)overlapping Patches. Images are tiled in order to efficiently process large images.
 
     Args:
-    ----
         tile_size: Tile dimension for each patch
         stride: Stride length between patches
         remove_border_count: Number of border pixels to be removed from tile before untiling

@@ -25,7 +25,6 @@ class ReverseDistillation(AnomalyModule):
     """PL Lightning Module for Reverse Distillation Algorithm.
 
     Args:
-    ----
         input_size (tuple[int, int]): Size of model input
         backbone (str): Backbone of CNN network
         layers (list[str]): Layers to extract features from the backbone CNN
@@ -133,7 +132,6 @@ class ReverseDistillationLightning(ReverseDistillation):
     """PL Lightning Module for Reverse Distillation Algorithm.
 
     Args:
-    ----
         hparams(DictConfig | ListConfig): Model parameters
     """
 

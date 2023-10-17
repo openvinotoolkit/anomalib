@@ -74,7 +74,6 @@ def run_export(config: Namespace) -> None:
     """Run the export method.
 
     Args:
-    ----
         config (Namespace): Parsed namespace
     """
     export_mode = config.export.export_mode

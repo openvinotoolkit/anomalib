@@ -21,7 +21,6 @@ def get_image_height_and_width(image_size: int | tuple | None = None) -> tuple[i
     """Get image height and width from ``image_size`` variable.
 
     Args:
-    ----
         image_size (int | tuple | None, optional): Input image size.
 
     Raises:
@@ -70,7 +69,6 @@ def get_transforms(
     """Get transforms from config or image size.
 
     Args:
-    ----
         config (str | A.Compose | None, optional): Albumentations transforms.
             Either config or albumentations ``Compose`` object. Defaults to None.
         image_size (int | tuple | None, optional): Image size to transform. Defaults to None.
@@ -175,7 +173,6 @@ class PreProcessor:
     For the inference it returns a numpy array.
 
     Args:
-    ----
         config (str | A.Compose | None, optional): Transformation configurations.
             When it is ``None``, ``PreProcessor`` only applies resizing. When it is ``str``
             it loads the config via ``albumentations`` deserialisation methos . Defaults to None.

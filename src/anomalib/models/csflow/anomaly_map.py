@@ -22,7 +22,6 @@ class AnomalyMapGenerator(nn.Module):
     """Anomaly Map Generator for CS-Flow model.
 
     Args:
-    ----
         input_dims (tuple[int, int, int]): Input dimensions.
         mode (AnomalyMapMode): Anomaly map mode. Defaults to AnomalyMapMode.ALL.
     """

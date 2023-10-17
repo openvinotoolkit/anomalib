@@ -20,7 +20,6 @@ class RkdeModel(nn.Module):
     """Torch Model for the Region-based Anomaly Detection Model.
 
     Args:
-    ----
         roi_stage (RoiStage, optional): Processing stage from which rois are extracted.
         roi_score_threshold (float, optional): Mimumum confidence score for the region proposals.
         min_size (int, optional): Minimum size in pixels for the region proposals.

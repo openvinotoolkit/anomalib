@@ -20,7 +20,6 @@ def imagenet_norm_batch(x: torch.Tensor) -> torch.Tensor:
     """Normalize batch of images with ImageNet mean and std.
 
     Args:
-    ----
         x (torch.Tensor): Input batch.
 
     Returns:
@@ -41,7 +40,6 @@ def reduce_tensor_elems(tensor: torch.Tensor, m: int = 2**24) -> torch.Tensor:
     https://github.com/pytorch/pytorch/blob/b9f81a483a7879cd3709fd26bcec5f1ee33577e6/aten/src/ATen/native/Sorting.cpp#L291.
 
     Args:
-    ----
         tensor (torch.Tensor): input tensor from which elements are selected
         m (int): number of maximum tensor elements. Default: 2**24
 
@@ -68,7 +66,6 @@ class SmallPatchDescriptionNetwork(nn.Module):
     """Patch Description Network small.
 
     Args:
-    ----
         out_channels (int): number of convolution output channels
     """
 
@@ -106,7 +103,6 @@ class MediumPatchDescriptionNetwork(nn.Module):
     """Patch Description Network medium.
 
     Args:
-    ----
         out_channels (int): number of convolution output channels
     """
 
@@ -179,7 +175,6 @@ class Decoder(nn.Module):
     """Autoencoder Decoder model.
 
     Args:
-    ----
         out_channels (int): number of convolution output channels
         img_size (tuple): size of input images
     """
@@ -244,7 +239,6 @@ class AutoEncoder(nn.Module):
     """EfficientAd Autoencoder.
 
     Args:
-    ----
        out_channels (int): number of convolution output channels
        img_size (tuple): size of input images
     """
@@ -274,7 +268,6 @@ class EfficientAdModel(nn.Module):
     """EfficientAd model.
 
     Args:
-    ----
         teacher_out_channels (int): number of convolution output channels of the pre-trained teacher model
         pretrained_models_dir (str): path to the pretrained model weights
         input_size (tuple): size of input images

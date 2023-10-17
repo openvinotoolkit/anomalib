@@ -10,7 +10,6 @@ class KMeans:
     """Initialize the KMeans object.
 
     Args:
-    ----
         n_clusters (int): The number of clusters to create.
         max_iter (int, optional)): The maximum number of iterations to run the algorithm. Defaults to 10.
     """

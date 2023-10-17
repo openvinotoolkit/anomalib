@@ -14,7 +14,6 @@ def get_sweep_callbacks(config: DictConfig | ListConfig) -> list[Callback]:
     """Get callbacks relevant to sweep.
 
     Args:
-    ----
         config (DictConfig | ListConfig): Model config loaded from anomalib
 
     Returns:

@@ -48,7 +48,6 @@ class ReconstructiveSubNetwork(nn.Module):
     """Autoencoder model that encodes and reconstructs the input image.
 
     Args:
-    ----
         in_channels (int): Number of input channels.
         out_channels (int): Number of output channels.
         base_width (int): Base dimensionality of the layers of the autoencoder.
@@ -84,7 +83,6 @@ class DiscriminativeSubNetwork(nn.Module):
     """Discriminative model that predicts the anomaly mask from the original image and its reconstruction.
 
     Args:
-    ----
         in_channels (int): Number of input channels.
         out_channels (int): Number of output channels.
         base_width (int): Base dimensionality of the layers of the autoencoder.
@@ -115,7 +113,6 @@ class EncoderDiscriminative(nn.Module):
     """Encoder part of the discriminator network.
 
     Args:
-    ----
         in_channels (int): Number of input channels.
         base_width (int): Base dimensionality of the layers of the autoencoder.
     """
@@ -207,7 +204,6 @@ class DecoderDiscriminative(nn.Module):
     """Decoder part of the discriminator network.
 
     Args:
-    ----
         base_width (int): Base dimensionality of the layers of the autoencoder.
         out_channels (int): Number of output channels.
     """
@@ -335,7 +331,6 @@ class EncoderReconstructive(nn.Module):
     """Encoder part of the reconstructive network.
 
     Args:
-    ----
         in_channels (int): Number of input channels.
         base_width (int): Base dimensionality of the layers of the autoencoder.
     """
@@ -416,7 +411,6 @@ class DecoderReconstructive(nn.Module):
     """Decoder part of the reconstructive network.
 
     Args:
-    ----
         base_width (int): Base dimensionality of the layers of the autoencoder.
         out_channels (int): Number of output channels.
     """

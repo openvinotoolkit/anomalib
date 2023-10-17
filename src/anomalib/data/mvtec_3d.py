@@ -75,7 +75,6 @@ def make_mvtec_3d_dataset(
     |---|---------------|-------|---------|---------------|---------------------------------------|-------------|
 
     Args:
-    ----
         root (Path): Path to dataset
         split (str | Split | None, optional): Dataset split (ie., either train or test). Defaults to None.
         extensions (Sequence[str] | None, optional): List of file extensions to be included in the dataset.
@@ -182,7 +181,6 @@ class MVTec3DDataset(AnomalibDepthDataset):
     """MVTec 3D dataset class.
 
     Args:
-    ----
         task (TaskType): Task type, ``classification``, ``detection`` or ``segmentation``
         transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
         split (str | Split | None): Split of the dataset, usually Split.TRAIN or Split.TEST
@@ -211,7 +209,6 @@ class MVTec3D(AnomalibDataModule):
     """MVTec Datamodule.
 
     Args:
-    ----
         root (Path | str): Path to the root of the dataset
         category (str): Category of the MVTec dataset (e.g. "bottle" or "cable").
         image_size (int | tuple[int, int] | None, optional): Size of the input image.

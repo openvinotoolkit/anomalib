@@ -28,7 +28,6 @@ class RegionExtractor(nn.Module):
     """Extracts regions from the image.
 
     Args:
-    ----
         stage (RoiStage, optional): Processing stage from which rois are extracted.
         score_threshold (float, optional): Mimumum confidence score for the region proposals.
         min_size (int, optional): Minimum size in pixels for the region proposals.

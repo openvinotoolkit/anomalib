@@ -12,7 +12,6 @@ class GeneratorLoss(nn.Module):
     """Generator loss for the GANomaly model.
 
     Args:
-    ----
         wadv (int, optional): Weight for adversarial loss. Defaults to 1.
         wcon (int, optional): Image regeneration weight. Defaults to 50.
         wenc (int, optional): Latent vector encoder weight. Defaults to 1.

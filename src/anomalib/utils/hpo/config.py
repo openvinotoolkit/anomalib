@@ -11,7 +11,6 @@ def flatten_hpo_params(params_dict: DictConfig) -> DictConfig:
     """Flatten the nested hpo parameter section of the config object.
 
     Args:
-    ----
         params_dict: DictConfig: The dictionary containing the hpo parameters in the original, nested, structure.
 
     Returns:

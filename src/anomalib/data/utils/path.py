@@ -26,7 +26,6 @@ def _check_and_convert_path(path: str | Path) -> Path:
     """Check an input path, and convert to Pathlib object.
 
     Args:
-    ----
         path (str | Path): Input path.
 
     Returns:
@@ -45,7 +44,6 @@ def _prepare_files_labels(
     """Return a list of filenames and list corresponding labels.
 
     Args:
-    ----
         path (str | Path): Path to the directory containing images.
         path_type (str): Type of images in the provided path ("normal", "abnormal", "normal_test")
         extensions (tuple[str, ...] | None, optional): Type of the image extensions to read from the
@@ -82,7 +80,6 @@ def _resolve_path(folder: str | Path, root: str | Path | None = None) -> Path:
     image sources. This function makes sure that the samples dataframe always contains absolute paths.
 
     Args:
-    ----
         folder (str | Path | None): Folder location containing image or mask data.
         root (str | Path | None): Root directory for the dataset.
     """

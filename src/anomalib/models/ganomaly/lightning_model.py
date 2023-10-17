@@ -28,7 +28,6 @@ class Ganomaly(AnomalyModule):
     """PL Lightning Module for the GANomaly Algorithm.
 
     Args:
-    ----
         batch_size (int): Batch size.
         input_size (tuple[int, int]): Input dimension.
         n_features (int): Number of features layers in the CNNs.
@@ -247,7 +246,6 @@ class GanomalyLightning(Ganomaly):
     """PL Lightning Module for the GANomaly Algorithm.
 
     Args:
-    ----
         hparams (DictConfig | ListConfig): Model params
     """
 

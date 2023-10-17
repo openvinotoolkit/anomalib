@@ -55,7 +55,6 @@ def concatenate_datasets(datasets: Sequence["data.AnomalibDataset"]) -> "data.An
     """Concatenate multiple datasets into a single dataset object.
 
     Args:
-    ----
         datasets (Sequence[AnomalibDataset]): Sequence of at least two datasets.
 
     Returns:
@@ -76,7 +75,6 @@ def random_split(
     """Perform a random split of a dataset.
 
     Args:
-    ----
         dataset (AnomalibDataset): Source dataset
         split_ratio (Union[float, Sequence[float]]): Fractions of the splits that will be produced. The values in the
             sequence must sum to 1. If a single value is passed, the ratio will be converted to

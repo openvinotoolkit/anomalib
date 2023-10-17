@@ -33,7 +33,6 @@ class Augmenter:
     """Class that generates noisy augmentations of input images.
 
     Args:
-    ----
         anomaly_source_path (str | None): Path to a folder of images that will be used as source of the anomalous
         noise. If not specified, random noise will be used instead.
         p_anomalous (float): Probability that the anomalous perturbation will be applied to a given image.

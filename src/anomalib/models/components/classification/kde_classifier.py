@@ -27,7 +27,6 @@ class KDEClassifier(nn.Module):
     """Classification module for KDE-based anomaly detection.
 
     Args:
-    ----
         n_pca_components (int, optional): Number of PCA components. Defaults to 16.
         feature_scaling_method (FeatureScalingMethod, optional): Scaling method applied to features before passing to
             KDE. Options are `norm` (normalize to unit vector length) and `scale` (scale to max length observed in

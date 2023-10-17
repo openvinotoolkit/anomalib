@@ -30,7 +30,6 @@ class Csflow(AnomalyModule):
     """Fully Convolutional Cross-Scale-Flows for Image-based Defect Detection.
 
     Args:
-    ----
         input_size (tuple[int, int]): Size of the model input.
         n_coupling_blocks (int): Number of coupling blocks in the model.
         cross_conv_hidden_channels (int): Number of hidden channels in the cross convolution.
@@ -107,7 +106,6 @@ class CsflowLightning(Csflow):
     """Fully Convolutional Cross-Scale-Flows for Image-based Defect Detection.
 
     Args:
-    ----
         hprams (DictConfig | ListConfig): Model params
     """
 

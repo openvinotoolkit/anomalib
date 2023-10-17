@@ -52,7 +52,6 @@ def make_ucsd_dataset(path: Path, split: str | Split | None = None) -> DataFrame
         path/to/dataset/category/split/video_id_gt/mask_filename.bmp
 
     Args:
-    ----
         path (Path): Path to dataset
         split (str | Split | None, optional): Dataset split (ie., either train or test). Defaults to None.
 
@@ -156,7 +155,6 @@ class UCSDpedDataset(AnomalibVideoDataset):
     """UCSDped Dataset class.
 
     Args:
-    ----
         task (TaskType): Task type, 'classification', 'detection' or 'segmentation'
         root (Path | str): Path to the root of the dataset
         category (str): Sub-category of the dataset, e.g. "UCSDped1" or "UCSDped2"
@@ -193,7 +191,6 @@ class UCSDped(AnomalibVideoDataModule):
     """UCSDped DataModule class.
 
     Args:
-    ----
         root (Path | str): Path to the root of the dataset
         category (str): Sub-category of the dataset, e.g. "UCSDped1" or "UCSDped2"
         clip_length_in_frames (int, optional): Number of video frames in each clip.

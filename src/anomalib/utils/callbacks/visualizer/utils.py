@@ -23,7 +23,6 @@ def get_visualization_callbacks(
     """Get visualization callbacks.
 
     Args:
-    ----
         task (TaskType): The task type.
         image_save_path (str): Path to save images.
         mode (VisualizationMode): The visualization mode.

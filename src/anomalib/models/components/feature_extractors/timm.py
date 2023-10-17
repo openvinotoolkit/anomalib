@@ -20,7 +20,6 @@ class TimmFeatureExtractor(nn.Module):
     """Extract features from a CNN.
 
     Args:
-    ----
         backbone (nn.Module): The backbone to which the feature extraction hooks are attached.
         layers (Iterable[str]): List of layer names of the backbone to which the hooks are attached.
         pre_trained (bool): Whether to use a pre-trained backbone. Defaults to True.

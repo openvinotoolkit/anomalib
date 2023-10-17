@@ -24,7 +24,6 @@ class Dfkde(AnomalyModule):
     """DFKDE: Deep Feature Kernel Density Estimation.
 
     Args:
-    ----
         backbone (str): Pre-trained model backbone.
         pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.
         max_training_points (int, optional): Number of training points to fit the KDE model.
@@ -127,7 +126,6 @@ class DfkdeLightning(Dfkde):
     """DFKDE: Deep Feature Kernel Density Estimation.
 
     Args:
-    ----
         hparams (DictConfig | ListConfig): Model params
     """
 

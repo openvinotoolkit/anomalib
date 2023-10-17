@@ -25,7 +25,6 @@ class Rkde(AnomalyModule):
     """Region Based Anomaly Detection With Real-Time Training and Analysis.
 
     Args:
-    ----
         roi_stage (RoiStage, optional): Processing stage from which rois are extracted.
         roi_score_threshold (float, optional): Mimumum confidence score for the region proposals.
         min_size (int, optional): Minimum size in pixels for the region proposals.
@@ -137,7 +136,6 @@ class RkdeLightning(Rkde):
     """Rkde: Deep Feature Kernel Density Estimation.
 
     Args:
-    ----
         hparams (DictConfig | ListConfig): Model params
     """
 

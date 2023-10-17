@@ -20,7 +20,6 @@ class AiVadModel(nn.Module):
     """AI-VAD model.
 
     Args:
-    ----
         box_score_thresh (float): Confidence threshold for region extraction stage.
         persons_only (bool): When enabled, only regions labeled as person are included.
         min_bbox_area (int): Minimum bounding box area. Regions with a surface area lower than this value are excluded.

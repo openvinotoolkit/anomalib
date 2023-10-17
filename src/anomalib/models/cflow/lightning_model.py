@@ -195,7 +195,6 @@ class CflowLightning(Cflow):
     """PL Lightning Module for the CFLOW algorithm.
 
     Args:
-    ----
         hparams (DictConfig | ListConfig): Model params
     """
 

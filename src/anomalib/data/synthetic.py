@@ -42,7 +42,6 @@ def make_synthetic_dataset(
     For the synthetic anomalous images, the masks will be saved under <root>/ground_truth.
 
     Args:
-    ----
         source_samples (DataFrame): Normal images that will be used as source for the synthetic anomalous images.
         image_dir (Path): Directory to which the synthetic anomalous image files will be written.
         mask_dir (Path): Directory to which the ground truth anomaly masks will be written.
@@ -114,7 +113,6 @@ class SyntheticAnomalyDataset(AnomalibDataset):
     """Dataset which reads synthetically generated anomalous images from a temporary folder.
 
     Args:
-    ----
         task (str): Task type, either "classification" or "segmentation".
         transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
         source_samples (DataFrame): Normal samples to which the anomalous augmentations will be applied.

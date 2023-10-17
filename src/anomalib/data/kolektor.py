@@ -52,7 +52,6 @@ def is_mask_anomalous(path: str) -> int:
     """Check if a mask shows defects.
 
     Args:
-    ----
         path (str): Path to the mask file.
 
     Returns:
@@ -87,7 +86,6 @@ def make_kolektor_dataset(
     |---|--------------------|--------|-------|---------|---------------------|--------------------|-------------|
 
     Args:
-    ----
         root (Path): Path to dataset
         train_split_ratio (float, optional): Ratio to split good images into train/test
             Defaults to 0.8 for train.
@@ -179,7 +177,6 @@ class KolektorDataset(AnomalibDataset):
     """Kolektor dataset class.
 
     Args:
-    ----
         task (TaskType): Task type, ``classification``, ``detection`` or ``segmentation``
         transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
         root (Path | str): Path to the root of the dataset
@@ -206,7 +203,6 @@ class Kolektor(AnomalibDataModule):
     """Kolektor Datamodule.
 
     Args:
-    ----
         root (Path | str): Path to the root of the dataset
         image_size (int | tuple[int, int] | None, optional): Size of the input image.
             Defaults to None.

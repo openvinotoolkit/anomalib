@@ -72,7 +72,6 @@ class Visualizer:
     """Class that handles the logic of composing the visualizations.
 
     Args:
-    ----
         mode (VisualizationMode): visualization mode, either "full" or "simple"
         task (TaskType): task type "segmentation", "detection" or "classification"
     """

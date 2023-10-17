@@ -28,7 +28,6 @@ class FeatureExtractor(nn.Module):
     """Feature extractor for AI-VAD.
 
     Args:
-    ----
         n_velocity_bins (int): Number of discrete bins used for velocity histogram features.
         use_velocity_features (bool): Flag indicating if velocity features should be used.
         use_pose_features (bool): Flag indicating if pose features should be used.
@@ -139,7 +138,6 @@ class VelocityExtractor(nn.Module):
     Extracts histograms of optical flow magnitude and direction.
 
     Args:
-    ----
         n_bins (int): Number of direction bins used for the feature histograms.
     """
 

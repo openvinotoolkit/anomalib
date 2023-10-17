@@ -14,7 +14,6 @@ class PCA(DynamicBufferModule):
     """Principle Component Analysis (PCA).
 
     Args:
-    ----
         n_components (float): Number of components. Can be either integer number of components
           or a ratio between 0-1.
     """

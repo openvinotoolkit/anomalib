@@ -21,7 +21,6 @@ class SparseRandomProjection:
     """Sparse Random Projection using PyTorch operations.
 
     Args:
-    ----
         eps (float, optional): Minimum distortion rate parameter for calculating
             Johnson-Lindenstrauss minimum dimensions. Defaults to 0.1.
         random_state (int | None, optional): Uses the seed to set the random

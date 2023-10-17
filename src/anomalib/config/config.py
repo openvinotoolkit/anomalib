@@ -38,7 +38,6 @@ def update_config(config: DictConfig | ListConfig | Namespace) -> DictConfig | L
     """Update config.
 
     Args:
-    ----
         config: Configurable parameters.
 
     Returns:
@@ -86,7 +85,6 @@ def update_input_size_config(config: DictConfig | ListConfig | Namespace) -> Dic
     and crop size, and set tiling stride if undefined.
 
     Args:
-    ----
         config (DictConfig | ListConfig | Namespace): Configurable parameters object
 
     Returns:
@@ -144,7 +142,6 @@ def update_nncf_config(config: DictConfig | ListConfig) -> DictConfig | ListConf
     """Set the NNCF input size based on the value of the crop_size parameter in the configurable parameters object.
 
     Args:
-    ----
         config (DictConfig | ListConfig): Configurable parameters of the current run.
 
     Returns:
@@ -170,7 +167,6 @@ def update_multi_gpu_training_config(config: DictConfig | ListConfig) -> DictCon
     Current behaviour is to ensure only ddp accelerator is used.
 
     Args:
-    ----
         config (DictConfig | ListConfig): Configurable parameters for the current run
 
     Raises:
@@ -210,7 +206,6 @@ def show_warnings(config: DictConfig | ListConfig | Namespace) -> None:
     """Show warnings if any based on the configuration settings.
 
     Args:
-    ----
         config (DictConfig | ListConfig | Namespace): Configurable parameters for the current run.
     """
     if "clip_length_in_frames" in config.data and config.data.init_args.clip_length_in_frames > 1:
@@ -229,7 +224,6 @@ def get_configurable_parameters(
     """Get configurable parameters.
 
     Args:
-    ----
         model_name: str | None:  (Default value = None)
         config_path: Path | str | None:  (Default value = None)
         config_filename: str | None:  (Default value = "config")

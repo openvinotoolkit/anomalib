@@ -33,7 +33,6 @@ def get_transforms(
     """Get transforms from config or image size.
 
     Args:
-    ----
         config (str | A.Compose | None, optional):
             Albumentations transforms.
             Either config or albumentations ``Compose`` object. Defaults to None.

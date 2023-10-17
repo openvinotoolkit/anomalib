@@ -36,7 +36,6 @@ class _MetricsCallback(Callback):
     these to the lightning module.
 
     Args:
-    ----
         task (TaskType): Task type of the current run.
         image_metrics (list[str] | str | None): List of image-level metrics.
         pixel_metrics (list[str] | str | None): List of pixel-level metrics.

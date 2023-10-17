@@ -46,7 +46,6 @@ class TransformsWrapper:
     """Transforms wrapper.
 
     Args:
-    ----
         t (A.Compose): Albumentations transforms.
     """
 
@@ -75,7 +74,6 @@ class EfficientAd(AnomalyModule):
     """PL Lightning Module for the EfficientAd algorithm.
 
     Args:
-    ----
         teacher_file_name (str): path to the pre-trained teacher model
         teacher_out_channels (int): number of convolution output channels
         image_size (tuple): size of input images
@@ -313,7 +311,6 @@ class EfficientAdLightning(EfficientAd):
     """PL Lightning Module for the EfficientAd Algorithm.
 
     Args:
-    ----
         hparams (DictConfig | ListConfig): Model params
     """
 

@@ -13,7 +13,6 @@ class ManualThreshold(BaseThreshold):
     """Initialize Manual Threshold.
 
     Args:
-    ----
         default_value (float, optional): Default threshold value. Defaults to 0.5.
         kwargs: Any keyword arguments.
     """

@@ -17,7 +17,6 @@ class KCenterGreedy:
     """Implements k-center-greedy method.
 
     Args:
-    ----
         embedding (Tensor): Embedding vector extracted from a CNN
         sampling_ratio (float): Ratio to choose coreset size from the embedding size.
 

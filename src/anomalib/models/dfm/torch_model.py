@@ -76,7 +76,6 @@ class DFMModel(nn.Module):
     """Model for the DFM algorithm.
 
     Args:
-    ----
         backbone (str): Pre-trained model backbone.
         layer (str): Layer from which to extract features.
         input_size (tuple[int, int]): Input size for the model.

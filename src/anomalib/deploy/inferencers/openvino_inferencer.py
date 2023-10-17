@@ -33,7 +33,6 @@ class OpenVINOInferencer(Inferencer):
     """OpenVINO implementation for the inference.
 
     Args:
-    ----
         path (str | Path): Path to the openvino onnx, xml or bin file.
         metadata (str | Path | dict, optional): Path to metadata file or a dict object defining the
             metadata. Defaults to None.

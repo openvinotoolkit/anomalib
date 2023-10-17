@@ -25,7 +25,6 @@ class Padim(AnomalyModule):
     """PaDiM: a Patch Distribution Modeling Framework for Anomaly Detection and Localization.
 
     Args:
-    ----
         layers (list[str]): Layers to extract features from the backbone CNN
         input_size (tuple[int, int]): Size of the model input.
         backbone (str): Backbone CNN network

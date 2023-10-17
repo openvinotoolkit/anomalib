@@ -36,7 +36,6 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
     """Base video anomalib dataset class.
 
     Args:
-    ----
         task (str): Task type, either 'classification' or 'segmentation'
         transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
         clip_length_in_frames (int): Number of video frames in each clip.

@@ -54,7 +54,6 @@ def convert_snake_to_pascal_case(snake_case: str) -> str:
     """Convert snake_case to PascalCase.
 
     Args:
-    ----
         snake_case (str): Input string in snake_case
 
     Returns:
@@ -75,7 +74,6 @@ def convert_pascal_to_snake_case(pascal_case: str) -> str:
     """Convert PascalCase to snake_case.
 
     Args:
-    ----
         pascal_case (str): Input string in PascalCase
 
     Returns:
@@ -116,7 +114,6 @@ def get_model(config: DictConfig | ListConfig) -> AnomalyModule:
     `anomalib.models.stfpm.lightning_model.StfpmLightning`
 
     Args:
-    ----
         config (DictConfig | ListConfig): Config.yaml loaded using OmegaConf
 
     Raises:

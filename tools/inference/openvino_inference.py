@@ -69,7 +69,6 @@ def infer(args: Namespace) -> None:
     Show/save the output if path is to an image. If the path is a directory, go over each image in the directory.
 
     Args:
-    ----
         args (Namespace): The arguments from the command line.
     """
     # Get the inferencer.

@@ -31,7 +31,6 @@ def subnet_conv_func(kernel_size: int, hidden_ratio: float) -> Callable:
         Predicts coupling coefficients :math:`s, t`.
 
     Args:
-    ----
         kernel_size (int): Kernel Size
         hidden_ratio (float): Hidden ratio to compute number of hidden channels.
 
@@ -69,7 +68,6 @@ def create_fast_flow_block(
     Figure 2 and Section 3.3 in the paper.
 
     Args:
-    ----
         input_dimensions (list[int]): Input dimensions (Channel, Height, Width)
         conv3x3_only (bool): Boolean whether to use conv3x3 only or conv3x3 and conv1x1.
         hidden_ratio (float): Ratio for the hidden layer channels.
@@ -97,7 +95,6 @@ class FastflowModel(nn.Module):
     Unsupervised Anomaly Detection and Localization via 2D Normalizing Flows.
 
     Args:
-    ----
         input_size (tuple[int, int]): Model input size.
         backbone (str): Backbone CNN network
         pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.

@@ -21,7 +21,6 @@ def get_logp(dim_feature_vector: int, p_u: Tensor, logdet_j: Tensor) -> Tensor:
     """Return the log likelihood estimation.
 
     Args:
-    ----
         dim_feature_vector (int): Dimensions of the condition vector
         p_u (Tensor): Random variable u
         logdet_j (Tensor): log of determinant of jacobian returned from the invertable decoder
@@ -37,7 +36,6 @@ def positional_encoding_2d(condition_vector: int, height: int, width: int) -> Te
     """Create embedding to store relative position of the feature vector using sine and cosine functions.
 
     Args:
-    ----
         condition_vector (int): Length of the condition vector
         height (int): H of the positions
         width (int): W of the positions
@@ -77,7 +75,6 @@ def subnet_fc(dims_in: int, dims_out: int) -> nn.Sequential:
     """Subnetwork which predicts the affine coefficients.
 
     Args:
-    ----
         dims_in (int): input dimensions
         dims_out (int): output dimensions
 
@@ -97,7 +94,6 @@ def cflow_head(
     """Create invertible decoder network.
 
     Args:
-    ----
         condition_vector (int): length of the condition vector
         coupling_blocks (int): number of coupling blocks to build the decoder
         clamp_alpha (float): clamping value to avoid exploding values

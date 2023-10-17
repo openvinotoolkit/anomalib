@@ -19,7 +19,6 @@ class RegionExtractor(nn.Module):
     """Region extractor for AI-VAD.
 
     Args:
-    ----
         box_score_thresh (float): Confidence threshold for bounding box predictions.
         persons_only (bool): When enabled, only regions labeled as person are included.
         min_bbox_area (int): Minimum bounding box area. Regions with a surface area lower than this value are excluded.

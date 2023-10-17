@@ -166,7 +166,6 @@ def merge_dicts_and_lists_b_into_a(
     """Merge dict configs.
 
     Args:
-    ----
         a (dict[Any, Any] | list[Any]): First dict or list.
         b (dict[Any, Any] | list[Any]): Second dict or list.
 
@@ -191,7 +190,6 @@ def _merge_dicts_and_lists_b_into_a(
         since otherwise the order of list merging is counter-intuitive.
 
     Args:
-    ----
         a (dict[Any, Any] | list[Any]): First dict or list.
         b (dict[Any, Any] | list[Any]): Second dict or list.
         cur_key (int | str | None, optional): key for current level of recursion. Defaults to None.

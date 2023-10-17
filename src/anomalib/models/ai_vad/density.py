@@ -47,7 +47,6 @@ class CombinedDensityEstimator(BaseDensityEstimator):
     Combines density estimators for the different feature types included in the model.
 
     Args:
-    ----
         use_velocity_features (bool): Flag indicating if velocity features should be used.
         use_pose_features (bool): Flag indicating if pose features should be used.
         use_deep_features (bool): Flag indicating if deep features should be used.
@@ -140,7 +139,6 @@ class GroupedKNNEstimator(BaseDensityEstimator):
     Keeps track of the group (e.g. video id) from which the features were sampled for normalization purposes.
 
     Args:
-    ----
         n_neighbors (int): Number of neighbors used in KNN search.
     """
 
@@ -259,7 +257,6 @@ class GMMEstimator(BaseDensityEstimator):
     """Density estimation based on Gaussian Mixture Model.
 
     Args:
-    ----
         n_components (int): Number of components used in the GMM.
     """
 

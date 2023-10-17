@@ -26,7 +26,6 @@ class Stfpm(AnomalyModule):
     """PL Lightning Module for the STFPM algorithm.
 
     Args:
-    ----
         input_size (tuple[int, int]): Size of the model input.
         backbone (str): Backbone CNN network
         layers (list[str]): Layers to extract features from the backbone CNN
@@ -101,7 +100,6 @@ class StfpmLightning(Stfpm):
     """PL Lightning Module for the STFPM algorithm.
 
     Args:
-    ----
         hparams (DictConfig | ListConfig): Model params
     """
 

@@ -32,7 +32,6 @@ def test(args: Namespace) -> None:
     """Test an anomaly model.
 
     Args:
-    ----
         args (Namespace): The arguments from the command line.
     """
     config = get_configurable_parameters(

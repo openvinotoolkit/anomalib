@@ -43,7 +43,6 @@ def train(args: Namespace) -> None:
     """Train an anomaly model.
 
     Args:
-    ----
         args (Namespace): The arguments from the command line.
     """
     configure_logger(level=args.log_level)

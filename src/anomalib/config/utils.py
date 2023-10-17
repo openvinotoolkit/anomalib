@@ -16,7 +16,6 @@ def to_yaml(config: Namespace | ListConfig | DictConfig) -> str:
     """Convert the config to a yaml string.
 
     Args:
-    ----
         config (Namespace | ListConfig | DictConfig): Config
 
     Returns:
@@ -53,7 +52,6 @@ def to_tuple(input_size: int | ListConfig) -> tuple[int, int]:
         (256, 256)
 
     Args:
-    ----
         input_size (int | ListConfig): input_size
 
     Raises:

@@ -33,7 +33,6 @@ class Cfa(AnomalyModule):
     """CFA: Coupled-hypersphere-based Feature Adaptation for Target-Oriented Anomaly Localization.
 
     Args:
-    ----
         input_size (tuple[int, int]): Size of the model input.
         backbone (str): Backbone CNN network
         gamma_c (int, optional): gamma_c value from the paper. Defaults to 1.
@@ -137,7 +136,6 @@ class CfaLightning(Cfa):
     """PL Lightning Module for the CFA model.
 
     Args:
-    ----
         hparams (DictConfig | ListConfig): Model params
     """
 

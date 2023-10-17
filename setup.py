@@ -15,7 +15,6 @@ def load_module(name: str = "src/anomalib/__init__.py") -> ModuleType:
     """Load Python Module.
 
     Args:
-    ----
         name (str, optional): Name of the module to load.
             Defaults to "anomalib/__init__.py".
 
@@ -56,7 +55,6 @@ def get_required_packages(requirement_files: list[str]) -> list[str]:
     This function returns list of required packages from requirement files.
 
     Args:
-    ----
         requirement_files (list[str]): txt files that contains list of required
             packages.
 

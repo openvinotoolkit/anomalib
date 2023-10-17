@@ -41,7 +41,6 @@ class AnomalibWandbLogger(ImageLoggerBase, WandbLogger):
         $ pip install wandb
 
     Args:
-    ----
         name: Display name for the run.
         save_dir: Path where data is saved (wandb dir by default).
         offline: Run offline (data can be streamed later to wandb servers).

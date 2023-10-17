@@ -23,7 +23,6 @@ def get_image_filenames(path: str | Path) -> list[Path]:
     """Get image filenames.
 
     Args:
-    ----
         path (str | Path): Path to image or image-folder.
 
     Returns:
@@ -54,7 +53,6 @@ def duplicate_filename(path: str | Path) -> Path:
     This function checks the path and adds a suffix if it already exists on the file system.
 
     Args:
-    ----
         path (str | Path): Input Path
 
     Examples:
@@ -96,7 +94,6 @@ def generate_output_image_filename(input_path: str | Path, output_path: str | Pa
     filenames of ``input_path`` to ``output_path``.
 
     Args:
-    ----
         input_path (str | Path): Path to the input image to infer.
         output_path (str | Path): Path to output to save the predictions.
             Could be a filename or a directory.
@@ -152,7 +149,6 @@ def get_image_height_and_width(image_size: int | Sequence[int]) -> tuple[int, in
     """Get image height and width from ``image_size`` variable.
 
     Args:
-    ----
         image_size (int | Sequence[int] | None, optional): Input image size.
 
     Raises:
@@ -194,7 +190,6 @@ def read_image(path: str | Path, image_size: int | tuple[int, int] | None = None
     """Read image from disk in RGB format.
 
     Args:
-    ----
         path (str, Path): path to the image file
         image_size (int | tuple[int, int] | None, optional):
             Image size to resize the image.
@@ -225,7 +220,6 @@ def read_depth_image(path: str | Path) -> np.ndarray:
     """Read tiff depth image from disk.
 
     Args:
-    ----
         path (str, Path): path to the image file
 
     Example:
@@ -246,7 +240,6 @@ def pad_nextpow2(batch: Tensor) -> Tensor:
     In case the image dimension is odd, it returns the image with an extra padding on one side.
 
     Args:
-    ----
         batch (Tensor): Input images
 
     Returns:

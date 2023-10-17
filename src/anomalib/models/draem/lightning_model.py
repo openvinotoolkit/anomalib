@@ -28,7 +28,6 @@ class Draem(AnomalyModule):
     """DRÆM: A discriminatively trained reconstruction embedding for surface anomaly detection.
 
     Args:
-    ----
         anomaly_source_path (str | None): Path to folder that contains the anomaly source images. Random noise will
             be used if left empty.
     """
@@ -143,7 +142,6 @@ class DraemLightning(Draem):
     """DRÆM: A discriminatively trained reconstruction embedding for surface anomaly detection.
 
     Args:
-    ----
         hparams (DictConfig | ListConfig): Model parameters
     """
 

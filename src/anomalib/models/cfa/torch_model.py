@@ -32,7 +32,6 @@ def get_return_nodes(backbone: str) -> list[str]:
     """Get the return nodes for a given backbone.
 
     Args:
-    ----
         backbone (str): The name of the backbone. Must be one of
             {"resnet18", "wide_resnet50_2", "vgg19_bn", "efficientnet_b5"}.
 
@@ -65,7 +64,6 @@ def get_feature_extractor(backbone: str, return_nodes: list[str]) -> GraphModule
     """Get the feature extractor from the backbone CNN.
 
     Args:
-    ----
         backbone (str): Backbone CNN network
         return_nodes (list[str]): A list of return nodes for the given backbone.
 
@@ -88,7 +86,6 @@ class CfaModel(DynamicBufferModule):
     """Torch implementation of the CFA Model.
 
     Args:
-    ----
         input_size: (tuple[int, int]): Input size of the image tensor.
         backbone (str): Backbone CNN network.
         gamma_c (int): gamma_c parameter from the paper.
