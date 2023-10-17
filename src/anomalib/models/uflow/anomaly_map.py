@@ -8,7 +8,7 @@ from __future__ import annotations
 from typing import List
 
 import numpy as np
-import scipy.integrate as integrate
+from scipy import integrate
 import scipy.stats as st
 import torch
 import torch.nn.functional as F
