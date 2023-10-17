@@ -79,27 +79,27 @@ class TestCLI:
             ]
         )
 
-    # @pytest.mark.parametrize("model_config", get_model_configs())
-    # def test_validate(self, model_config:str, dataset:str, project_path:str):
-    #     AnomalibCLI(
-    #         args=[
-    #             "validate",
-    #             "-c",
-    #             str(model_config),
-    #             "--data",
-    #             "anomalib.data.MVTec",
-    #             "--data.root",
-    #             dataset,
-    #             "--data.category",
-    #             "shapes",
-    #             "--results_dir.path",
-    #             project_path,
-    #             "--results_dir.unique",
-    #             "false",
-    #             "--ckpt_path",
-    #             f"{project_path}/{model_config.rstrip(".yaml")}/mvtec/shapes/weights/lightning/model.ckpt",
-    #         ]
-    #     )
+    @pytest.mark.parametrize("model_config", get_model_configs())
+    def test_validate(self, model_config: str, dataset: str, project_path: str):
+        AnomalibCLI(
+            args=[
+                "validate",
+                "-c",
+                str(model_config),
+                "--data",
+                "anomalib.data.MVTec",
+                "--data.root",
+                dataset,
+                "--data.category",
+                "shapes",
+                "--results_dir.path",
+                project_path,
+                "--results_dir.unique",
+                "false",
+                "--ckpt_path",
+                f"{project_path}/{model_config.rstrip('.yaml')}/mvtec/shapes/weights/lightning/model.ckpt",
+            ]
+        )
 
     # TODO(ashwinva) Predict
 
