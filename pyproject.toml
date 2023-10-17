@@ -91,9 +91,6 @@ ignore = [
     # flake8-datatimez (`DTZ`)
     "DTZ005",    # The use of `datetime.datetime.now()` without `tz` argument is not allowed
 
-    # flake8-type-checking
-    # "TCH001",   # typing-only-first-party-import, Sometimes this causes an incorrect error.
-
     # flake8-fixme (`FIX`)
     "FIX002",    # Line contains TODO, consider resolving the issue
 ]
