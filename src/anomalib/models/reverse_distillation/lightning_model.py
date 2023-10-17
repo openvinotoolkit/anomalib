@@ -152,7 +152,7 @@ class ReverseDistillationLightning(ReverseDistillation):
         self.save_hyperparameters(hparams)
 
     def configure_callbacks(self) -> list[EarlyStopping]:
-        """Configure model-specific callbacks.
+        """Configure model-specific non-mandatory callbacks.
 
         Note:
         ----
@@ -161,9 +161,12 @@ class ReverseDistillationLightning(ReverseDistillation):
                 deprecated, and callbacks will be configured from either
                 config.yaml file or from CLI.
         """
-        early_stopping = EarlyStopping(
-            monitor=self.hparams.model.early_stopping.metric,
-            patience=self.hparams.model.early_stopping.patience,
-            mode=self.hparams.model.early_stopping.mode,
-        )
-        return [early_stopping]
+        callbacks = []
+        if "early_stopping" in self.hparams.model:
+            early_stopping = EarlyStopping(
+                monitor=self.hparams.model.early_stopping.metric,
+                patience=self.hparams.model.early_stopping.patience,
+                mode=self.hparams.model.early_stopping.mode,
+            )
+            callbacks.append(early_stopping)
+        return callbacks
