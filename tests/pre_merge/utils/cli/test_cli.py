@@ -79,7 +79,6 @@ class TestCLI:
             ]
         )
 
-    # TODO Validate
     # @pytest.mark.parametrize("model_config", get_model_configs())
     # def test_validate(self, model_config:str, dataset:str, project_path:str):
     #     AnomalibCLI(
@@ -102,6 +101,6 @@ class TestCLI:
     #         ]
     #     )
 
-    # TODO Predict
+    # TODO(ashwinva) Predict
 
-    # TODO export
+    # TODO(ashwinva) export
