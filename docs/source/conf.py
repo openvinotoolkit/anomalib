@@ -1,15 +1,12 @@
-# Configuration file for the Sphinx documentation builder.
-#
-# This file only contains a selection of the most common options. For a full
-# list see the documentation:
-# https://www.sphinx-doc.org/en/master/usage/configuration.html
+"""Configuration file for the Sphinx documentation builder.
 
-# -- Path setup --------------------------------------------------------------
+This file contains the configuration options for the Sphinx documentation builder.
+It sets up the paths for the documentation, defines the project information, and
+configures the extensions used by Sphinx.
 
-# If extensions (or modules to document with autodoc) are in another directory,
-# add these directories to sys.path here. If the directory is relative to the
-# documentation root, use os.path.abspath to make it absolute, like shown here.
-#
+For a full list of configuration options, see the Sphinx documentation:
+https://www.sphinx-doc.org/en/master/usage/configuration.html
+"""
 
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0

@@ -1,4 +1,4 @@
-"""Torch model for student, teacher and autoencoder model in EfficientAd"""
+"""Torch model for student, teacher and autoencoder model in EfficientAd."""
 
 # Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -17,23 +17,37 @@ logger = logging.getLogger(__name__)
 
 
 def imagenet_norm_batch(x: torch.Tensor) -> torch.Tensor:
+    """Normalize batch of images with ImageNet mean and std.
+
+    Args:
+    ----
+        x (torch.Tensor): Input batch.
+
+    Returns:
+    -------
+        torch.Tensor: Normalized batch using the ImageNet mean and std.
+    """
     mean = torch.tensor([0.485, 0.456, 0.406])[None, :, None, None].to(x.device)
     std = torch.tensor([0.229, 0.224, 0.225])[None, :, None, None].to(x.device)
     return (x - mean) / std
 
 
 def reduce_tensor_elems(tensor: torch.Tensor, m: int = 2**24) -> torch.Tensor:
-    """Flattens n-dimensional tensors,  selects m elements from it
+    """Reduce tensor elements.
+
+    This function flatten n-dimensional tensors,  selects m elements from it
     and returns the selected elements as tensor. It is used to select
     at most 2**24 for torch.quantile operation, as it is the maximum
     supported number of elements.
-    https://github.com/pytorch/pytorch/blob/b9f81a483a7879cd3709fd26bcec5f1ee33577e6/aten/src/ATen/native/Sorting.cpp#L291
+    https://github.com/pytorch/pytorch/blob/b9f81a483a7879cd3709fd26bcec5f1ee33577e6/aten/src/ATen/native/Sorting.cpp#L291.
 
     Args:
+    ----
         tensor (torch.Tensor): input tensor from which elements are selected
         m (int): number of maximum tensor elements. Default: 2**24
 
     Returns:
+    -------
             Tensor: reduced tensor
     """
     tensor = torch.flatten(tensor)
@@ -46,16 +60,17 @@ def reduce_tensor_elems(tensor: torch.Tensor, m: int = 2**24) -> torch.Tensor:
 
 
 class EfficientAdModelSize(str, Enum):
-    """Supported EfficientAd model sizes"""
+    """Supported EfficientAd model sizes."""
 
     M = "medium"
     S = "small"
 
 
 class SmallPatchDescriptionNetwork(nn.Module):
-    """Patch Description Network small
+    """Patch Description Network small.
 
     Args:
+    ----
         out_channels (int): number of convolution output channels
     """
 
@@ -70,6 +85,16 @@ class SmallPatchDescriptionNetwork(nn.Module):
         self.avgpool2 = nn.AvgPool2d(kernel_size=2, stride=2, padding=1 * pad_mult)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Perform a forward pass through the network.
+
+        Args:
+        ----
+            x (torch.Tensor): Input batch.
+
+        Returns:
+        -------
+            torch.Tensor: Output from the network.
+        """
         x = imagenet_norm_batch(x)
         x = F.relu(self.conv1(x))
         x = self.avgpool1(x)
@@ -80,9 +105,10 @@ class SmallPatchDescriptionNetwork(nn.Module):
 
 
 class MediumPatchDescriptionNetwork(nn.Module):
-    """Patch Description Network medium
+    """Patch Description Network medium.
 
     Args:
+    ----
         out_channels (int): number of convolution output channels
     """
 
@@ -99,6 +125,16 @@ class MediumPatchDescriptionNetwork(nn.Module):
         self.avgpool2 = nn.AvgPool2d(kernel_size=2, stride=2, padding=1 * pad_mult)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Perform a forward pass through the network.
+
+        Args:
+        ----
+            x (torch.Tensor): Input batch.
+
+        Returns:
+        -------
+            torch.Tensor: Output from the network.
+        """
         x = imagenet_norm_batch(x)
         x = F.relu(self.conv1(x))
         x = self.avgpool1(x)
@@ -123,6 +159,16 @@ class Encoder(nn.Module):
         self.enconv6 = nn.Conv2d(64, 64, kernel_size=8, stride=1, padding=0)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Perform the forward pass through the network.
+
+        Args:
+        ----
+            x (torch.Tensor): Input batch.
+
+        Returns:
+        -------
+            torch.Tensor: Output from the network.
+        """
         x = F.relu(self.enconv1(x))
         x = F.relu(self.enconv2(x))
         x = F.relu(self.enconv3(x))
@@ -135,6 +181,7 @@ class Decoder(nn.Module):
     """Autoencoder Decoder model.
 
     Args:
+    ----
         out_channels (int): number of convolution output channels
         img_size (tuple): size of input images
     """
@@ -162,6 +209,16 @@ class Decoder(nn.Module):
         self.dropout6 = nn.Dropout(p=0.2)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Perform a forward pass through the network.
+
+        Args:
+        ----
+            x (torch.Tensor): Input batch.
+
+        Returns:
+        -------
+            torch.Tensor: Output from the network.
+        """
         x = F.interpolate(x, size=(int(self.img_size[0] / 64) - 1, int(self.img_size[1] / 64) - 1), mode="bilinear")
         x = F.relu(self.deconv1(x))
         x = self.dropout1(x)
@@ -189,6 +246,7 @@ class AutoEncoder(nn.Module):
     """EfficientAd Autoencoder.
 
     Args:
+    ----
        out_channels (int): number of convolution output channels
        img_size (tuple): size of input images
     """
@@ -199,6 +257,16 @@ class AutoEncoder(nn.Module):
         self.decoder = Decoder(out_channels, padding, img_size)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Perform the forward pass through the network.
+
+        Args:
+        ----
+            x (torch.Tensor): Input batch.
+
+        Returns:
+        -------
+            torch.Tensor: Output from the network.
+        """
         x = imagenet_norm_batch(x)
         x = self.encoder(x)
         return self.decoder(x)
@@ -208,6 +276,7 @@ class EfficientAdModel(nn.Module):
     """EfficientAd model.
 
     Args:
+    ----
         teacher_out_channels (int): number of convolution output channels of the pre-trained teacher model
         pretrained_models_dir (str): path to the pretrained model weights
         input_size (tuple): size of input images
@@ -265,9 +334,29 @@ class EfficientAdModel(nn.Module):
         )
 
     def is_set(self, p_dic: nn.ParameterDict) -> bool:
+        """Check if any of the parameters in the parameter dictionary is set.
+
+        Args:
+        ----
+            p_dic (nn.ParameterDict): Parameter dictionary.
+
+        Returns:
+        -------
+            bool: Boolean indicating whether any of the parameters in the parameter dictionary is set.
+        """
         return any(value.sum() != 0 for _, value in p_dic.items())
 
     def choose_random_aug_image(self, image: Tensor) -> Tensor:
+        """Choose a random augmentation function and apply it to the input image.
+
+        Args:
+        ----
+            image (Tensor): Input image.
+
+        Returns:
+        -------
+            Tensor: Augmented image.
+        """
         transform_functions = [
             transforms.functional.adjust_brightness,
             transforms.functional.adjust_contrast,
@@ -278,13 +367,16 @@ class EfficientAdModel(nn.Module):
         transform_function = np.random.default_rng().choice(transform_functions)
         return transform_function(image, coefficient)
 
-    def forward(self, batch: Tensor, batch_imagenet: Tensor = None) -> Tensor | dict:
-        """Prediction by EfficientAd models.
+    def forward(self, batch: Tensor, batch_imagenet: Tensor | None = None) -> Tensor | dict:
+        """Perform the forward-pass of the EfficientAd models.
 
         Args:
+        ----
             batch (Tensor): Input images.
+            batch_imagenet (Tensor): ImageNet batch. Defaults to None.
 
         Returns:
+        -------
             Tensor: Predictions
         """
         with torch.no_grad():

@@ -16,6 +16,7 @@ class AnomalyMapGenerator(nn.Module):
     """Generate Anomaly Heatmap.
 
     Args:
+    ----
         image_size (ListConfig, tuple): Size of the input image. The anomaly map is upsampled to this dimension.
         sigma (int, optional): Standard deviation for Gaussian Kernel. Defaults to 4.
     """
@@ -33,13 +34,14 @@ class AnomalyMapGenerator(nn.Module):
         Ref: Equation (2), Section III-C of the paper.
 
         Args:
+        ----
             embedding (Tensor): Embedding Vector
             stats (list[Tensor]): Mean and Covariance Matrix of the multivariate Gaussian distribution
 
         Returns:
+        -------
             Anomaly score of a test image via mahalanobis distance.
         """
-
         batch, channel, height, width = embedding.shape
         embedding = embedding.reshape(batch, channel, height * width)
 
@@ -55,12 +57,13 @@ class AnomalyMapGenerator(nn.Module):
         """Up sample anomaly score to match the input image size.
 
         Args:
+        ----
             distance (Tensor): Anomaly score computed via the mahalanobis distance.
 
         Returns:
+        -------
             Resized distance matrix matching the input image size
         """
-
         return F.interpolate(
             distance,
             size=self.image_size,
@@ -72,12 +75,13 @@ class AnomalyMapGenerator(nn.Module):
         """Apply gaussian smoothing to the anomaly map.
 
         Args:
+        ----
             anomaly_map (Tensor): Anomaly score for the test image(s).
 
         Returns:
+        -------
             Filtered anomaly scores
         """
-
         return self.blur(anomaly_map)
 
     def compute_anomaly_map(self, embedding: Tensor, mean: Tensor, inv_covariance: Tensor) -> Tensor:
@@ -87,14 +91,15 @@ class AnomalyMapGenerator(nn.Module):
         distribution.
 
         Args:
+        ----
             embedding (Tensor): Embedding vector extracted from the test set.
             mean (Tensor): Mean of the multivariate gaussian distribution
             inv_covariance (Tensor): Inverse Covariance matrix of the multivariate gaussian distribution.
 
         Returns:
+        -------
             Output anomaly score.
         """
-
         score_map = self.compute_distance(
             embedding=embedding,
             stats=[mean.to(embedding.device), inv_covariance.to(embedding.device)],
@@ -103,21 +108,23 @@ class AnomalyMapGenerator(nn.Module):
         return self.smooth_anomaly_map(up_sampled_score_map)
 
     def forward(self, **kwargs) -> Tensor:
-        """Returns anomaly_map.
+        """Return anomaly_map.
 
         Expects `embedding`, `mean` and `covariance` keywords to be passed explicitly.
 
         Example:
+        -------
         >>> anomaly_map_generator = AnomalyMapGenerator(image_size=input_size)
         >>> output = anomaly_map_generator(embedding=embedding, mean=mean, covariance=covariance)
 
         Raises:
+        ------
             ValueError: `embedding`. `mean` or `covariance` keys are not found
 
         Returns:
+        -------
             torch.Tensor: anomaly map
         """
-
         if not ("embedding" in kwargs and "mean" in kwargs and "inv_covariance" in kwargs):
             msg = f"Expected keys `embedding`, `mean` and `covariance`. Found {kwargs.keys()}"
             raise ValueError(msg)

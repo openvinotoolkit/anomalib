@@ -26,6 +26,7 @@ class Stfpm(AnomalyModule):
     """PL Lightning Module for the STFPM algorithm.
 
     Args:
+    ----
         input_size (tuple[int, int]): Size of the model input.
         backbone (str): Backbone CNN network
         layers (list[str]): Layers to extract features from the backbone CNN
@@ -47,14 +48,18 @@ class Stfpm(AnomalyModule):
         self.loss = STFPMLoss()
 
     def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
-        """Training Step of STFPM.
+        """Perform a training step of STFPM.
 
         For each batch, teacher and student and teacher features are extracted from the CNN.
 
         Args:
-          batch (dict[str, str | Tensor]): Input batch
+        ----
+          batch (dict[str, str | Tensor]): Input batch.
+          args: Additional arguments.
+          kwargs: Additional keyword arguments.
 
         Returns:
+        -------
           Loss value
         """
         del args, kwargs  # These variables are not used.
@@ -66,15 +71,19 @@ class Stfpm(AnomalyModule):
         return {"loss": loss}
 
     def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
-        """Validation Step of STFPM.
+        """Perform a validation Step of STFPM.
 
         Similar to the training step, student/teacher features are extracted from the CNN for each batch, and
         anomaly map is computed.
 
         Args:
+        ----
           batch (dict[str, str | Tensor]): Input batch
+          args: Additional arguments
+          kwargs: Additional keyword arguments
 
         Returns:
+        -------
           Dictionary containing images, anomaly maps, true labels and masks.
           These are required in `validation_epoch_end` for feature concatenation.
         """
@@ -92,6 +101,7 @@ class StfpmLightning(Stfpm):
     """PL Lightning Module for the STFPM algorithm.
 
     Args:
+    ----
         hparams (DictConfig | ListConfig): Model params
     """
 
@@ -108,6 +118,7 @@ class StfpmLightning(Stfpm):
         """Configure model-specific callbacks.
 
         Note:
+        ----
             This method is used for the existing CLI.
             When PL CLI is introduced, configure callback method will be
                 deprecated, and callbacks will be configured from either
@@ -121,15 +132,17 @@ class StfpmLightning(Stfpm):
         return [early_stopping]
 
     def configure_optimizers(self) -> torch.optim.Optimizer:
-        """Configures optimizers.
+        """Configure optimizers.
 
         Note:
+        ----
             This method is used for the existing CLI.
             When PL CLI is introduced, configure optimizers method will be
                 deprecated, and optimizers will be configured from either
                 config.yaml file or from CLI.
 
         Returns:
+        -------
             Optimizer: SGD optimizer
         """
         return optim.SGD(

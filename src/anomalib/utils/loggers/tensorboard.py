@@ -22,6 +22,7 @@ class AnomalibTensorBoardLogger(ImageLoggerBase, TensorBoardLogger):
     Adds interface for `add_image` in the logger rather than calling the experiment object.
 
     Note:
+    ----
         Same as the Tensorboard Logger provided by PyTorch Lightning and the doc string is reproduced below.
 
     Logs are saved to
@@ -29,12 +30,14 @@ class AnomalibTensorBoardLogger(ImageLoggerBase, TensorBoardLogger):
     preinstalled.
 
     Example:
+    -------
         >>> from anomalib.engine import Engine
         >>> from anomalib.utils.loggers import AnomalibTensorBoardLogger
         >>> logger = AnomalibTensorBoardLogger("tb_logs", name="my_model")
         >>> engine =  Engine(logger=logger)
 
     Args:
+    ----
         save_dir (str): Save directory
         name (Optional, str): Experiment name. Defaults to ``'default'``. If it is the empty string then no
             per-experiment subdirectory is used.
@@ -77,6 +80,7 @@ class AnomalibTensorBoardLogger(ImageLoggerBase, TensorBoardLogger):
         """Interface to add image to tensorboard logger.
 
         Args:
+        ----
             image (np.ndarray | Figure): Image to log
             name (str | None): The tag of the image
             kwargs: Accepts only `global_step` (int). The step at which to log the image.

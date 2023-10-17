@@ -21,6 +21,7 @@ class Fastflow(AnomalyModule):
     """PL Lightning Module for the FastFlow algorithm.
 
     Args:
+    ----
         input_size (tuple[int, int]): Model input size.
         backbone (str): Backbone CNN network
         pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.
@@ -51,13 +52,16 @@ class Fastflow(AnomalyModule):
         self.loss = FastflowLoss()
 
     def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
-        """Forward-pass input and return the loss.
+        """Perform the training step input and return the loss.
 
         Args:
+        ----
             batch (batch: dict[str, str | Tensor]): Input batch
-            _batch_idx: Index of the batch.
+            args: Additional arguments.
+            kwargs: Additional keyword arguments.
 
         Returns:
+        -------
             STEP_OUTPUT: Dictionary containing the loss value.
         """
         del args, kwargs  # These variables are not used.
@@ -68,12 +72,16 @@ class Fastflow(AnomalyModule):
         return {"loss": loss}
 
     def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
-        """Forward-pass the input and return the anomaly map.
+        """Perform the validation step and return the anomaly map.
 
         Args:
+        ----
             batch (dict[str, str | Tensor]): Input batch
+            args: Additional arguments.
+            kwargs: Additional keyword arguments.
 
         Returns:
+        -------
             STEP_OUTPUT | None: batch dictionary containing anomaly-maps.
         """
         del args, kwargs  # These variables are not used.
@@ -84,6 +92,7 @@ class Fastflow(AnomalyModule):
 
     @property
     def trainer_arguments(self) -> dict[str, Any]:
+        """Return FastFlow trainer arguments."""
         return {"gradient_clip_val": 0, "num_sanity_val_steps": 0}
 
 
@@ -91,6 +100,7 @@ class FastflowLightning(Fastflow):
     """PL Lightning Module for the FastFlow algorithm.
 
     Args:
+    ----
         hparams (DictConfig | ListConfig): Model params
     """
 
@@ -110,6 +120,7 @@ class FastflowLightning(Fastflow):
         """Configure model-specific callbacks.
 
         Note:
+        ----
             This method is used for the existing CLI.
             When PL CLI is introduced, configure callback method will be
                 deprecated, and callbacks will be configured from either
@@ -123,15 +134,17 @@ class FastflowLightning(Fastflow):
         return [early_stopping]
 
     def configure_optimizers(self) -> torch.optim.Optimizer:
-        """Configures optimizers for each decoder.
+        """Configure optimizers for each decoder.
 
         Note:
+        ----
             This method is used for the existing CLI.
             When PL CLI is introduced, configure optimizers method will be
                 deprecated, and optimizers will be configured from either
                 config.yaml file or from CLI.
 
         Returns:
+        -------
             Optimizer: Adam optimizer for each decoder
         """
         return optim.Adam(

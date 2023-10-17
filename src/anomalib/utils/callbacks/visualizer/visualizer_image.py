@@ -38,6 +38,7 @@ class ImageVisualizerCallback(BaseVisualizerCallback):
         """Show images at the end of every batch.
 
         Args:
+        ----
             trainer (Trainer): Pytorch lightning trainer object (unused).
             pl_module (AnomalyModule): Lightning modules derived from BaseAnomalyLightning object as
             currently only they support logging images.
@@ -69,6 +70,7 @@ class ImageVisualizerCallback(BaseVisualizerCallback):
         """Log images at the end of every batch.
 
         Args:
+        ----
             trainer (Trainer): Pytorch lightning trainer object (unused).
             pl_module (AnomalyModule): Lightning modules derived from BaseAnomalyLightning object as
                 currently only they support logging images.

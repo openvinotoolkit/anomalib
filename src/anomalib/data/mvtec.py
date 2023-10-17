@@ -94,17 +94,13 @@ def make_mvtec_dataset(
     |---|---------------|-------|---------|---------------|---------------------------------------|-------------|
 
     Args:
-        path (Path): Path to dataset
+    ----
+        root (Path): Path to dataset
         split (str | Split | None, optional): Dataset split (ie., either train or test). Defaults to None.
-        split_ratio (float, optional): Ratio to split normal training images and add to the
-            test set in case test set doesn't contain any normal images.
-            Defaults to 0.1.
-        seed (int, optional): Random seed to ensure reproducibility when splitting. Defaults to 0.
-        create_validation_set (bool, optional): Boolean to create a validation set from the test set.
-            MVTec AD dataset does not contain a validation set. Those wanting to create a validation set
-            could set this flag to ``True``.
+        extensions (Sequence[str] | None, optional): List of file extensions to be included in the dataset.
 
     Examples:
+    --------
         The following example shows how to get training samples from MVTec AD bottle category:
 
         >>> root = Path('./MVTec')
@@ -123,6 +119,7 @@ def make_mvtec_dataset(
         4  MVTec/bottle train good MVTec/bottle/train/good/109.png MVTec/bottle/ground_truth/good/109_mask.png 0
 
     Returns:
+    -------
         DataFrame: an output dataframe containing the samples of the dataset.
     """
     if extensions is None:
@@ -175,6 +172,7 @@ class MVTecDataset(AnomalibDataset):
     """MVTec dataset class.
 
     Args:
+    ----
         task (TaskType): Task type, ``classification``, ``detection`` or ``segmentation``
         transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
         split (str | Split | None): Split of the dataset, usually Split.TRAIN or Split.TEST
@@ -203,6 +201,7 @@ class MVTec(AnomalibDataModule):
     """MVTec Datamodule.
 
     Args:
+    ----
         root (Path | str): Path to the root of the dataset
         category (str): Category of the MVTec dataset (e.g. "bottle" or "cable").
         image_size (int | tuple[int, int] | None, optional): Size of the input image.

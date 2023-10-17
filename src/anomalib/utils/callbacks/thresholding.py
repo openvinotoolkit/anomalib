@@ -67,13 +67,15 @@ class _ThresholdCallback(Callback):
         self,
         threshold: BaseThreshold | tuple[BaseThreshold, BaseThreshold] | DictConfig | ListConfig | str,
     ) -> None:
-        """Initializes ``self.image_threshold`` and ``self.pixel_threshold``.
+        """Initialize ``self.image_threshold`` and ``self.pixel_threshold``.
 
         Args:
+        ----
             threshold (BaseThreshold | tuple[BaseThreshold, BaseThreshold] | DictConfig | ListConfig | str):
                 Threshold configuration
 
         Example:
+        -------
             >>> _initialize_thresholds(F1AdaptiveThreshold())
             or
             >>> _initialize_thresholds((ManualThreshold(0.5), ManualThreshold(0.5)))
@@ -82,6 +84,7 @@ class _ThresholdCallback(Callback):
         For more details on configuration see :fun:`_load_from_config`
 
         Raises:
+        ------
             ValueError: Unknown threshold class or incorrect configuration
         """
         # TODO(djdameln): Add tests for each case
@@ -106,9 +109,10 @@ class _ThresholdCallback(Callback):
             raise TypeError(msg)
 
     def _load_from_config(self, threshold: DictConfig | str | ListConfig) -> None:
-        """Loads the thresholding class based on the config.
+        """Load the thresholding class based on the config.
 
         Example:
+        -------
             threshold: F1AdaptiveThreshold
             or
             threshold:
@@ -140,6 +144,7 @@ class _ThresholdCallback(Callback):
         """Return the instantiated threshold object.
 
         Example:
+        -------
             >>> _get_threshold_from_config(F1AdaptiveThreshold)
             or
             >>> config = DictConfig({
@@ -154,6 +159,7 @@ class _ThresholdCallback(Callback):
             >>> __get_threshold_from_config(config)
 
         Returns:
+        -------
             (BaseThreshold): Instance of threshold object.
         """
         if isinstance(threshold, str):

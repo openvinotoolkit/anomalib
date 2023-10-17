@@ -20,6 +20,7 @@ class TimmFeatureExtractor(nn.Module):
     """Extract features from a CNN.
 
     Args:
+    ----
         backbone (nn.Module): The backbone to which the feature extraction hooks are attached.
         layers (Iterable[str]): List of layer names of the backbone to which the hooks are attached.
         pre_trained (bool): Whether to use a pre-trained backbone. Defaults to True.
@@ -28,6 +29,7 @@ class TimmFeatureExtractor(nn.Module):
             computation is required.
 
     Example:
+    -------
         >>> import torch
         >>> from anomalib.models.components.feature_extractors import TimmFeatureExtractor
 
@@ -69,13 +71,17 @@ class TimmFeatureExtractor(nn.Module):
         self._features = {layer: torch.empty(0) for layer in self.layers}
 
     def _map_layer_to_idx(self, offset: int = 3) -> list[int]:
-        """Maps set of layer names to indices of model.
+        """Map set of layer names to indices of model.
 
         Args:
-            offset (int) `timm` ignores the first few layers when indexing please update offset based on need
+        ----
+            offset (int, optional): `timm` ignores the first few layers when indexing.
+                Please update offset based on need.
+                Defaults to 3.
 
         Returns:
-            Feature map extracted from the CNN
+        -------
+            list[int]: Feature map extracted from the CNN.
         """
         idx = []
         features = timm.create_model(
@@ -99,9 +105,11 @@ class TimmFeatureExtractor(nn.Module):
         """Forward-pass input tensor into the CNN.
 
         Args:
+        ----
             inputs (Tensor): Input tensor
 
         Returns:
+        -------
             Feature map extracted from the CNN
         """
         if self.requires_grad:

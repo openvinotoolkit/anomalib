@@ -1,3 +1,8 @@
+"""Normalization callback utils."""
+
+# Copyright (C) 2022 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
 import importlib
 
 from lightning.pytorch import Callback
@@ -27,6 +32,7 @@ def get_normalization_callback(
                 -
 
     Example:
+    -------
         >>> normalizer = get_normalization_callback(NormalizationMethod.MIN_MAX)
         or
         >>> normalizer = get_normalization_callback("min_max")

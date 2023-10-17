@@ -28,6 +28,7 @@ class Ganomaly(AnomalyModule):
     """PL Lightning Module for the GANomaly Algorithm.
 
     Args:
+    ----
         batch_size (int): Batch size.
         input_size (tuple[int, int]): Input dimension.
         n_features (int): Number of features layers in the CNNs.
@@ -82,20 +83,22 @@ class Ganomaly(AnomalyModule):
         self.beta2 = beta2
 
     def _reset_min_max(self) -> None:
-        """Resets min_max scores."""
+        """Reset min_max scores."""
         self.min_scores = torch.tensor(float("inf"), dtype=torch.float32)  # pylint: disable=not-callable
         self.max_scores = torch.tensor(float("-inf"), dtype=torch.float32)  # pylint: disable=not-callable
 
     def configure_optimizers(self) -> list[optim.Optimizer]:
-        """Configures optimizers for each decoder.
+        """Configure optimizers for each decoder.
 
         Note:
+        ----
             This method is used for the existing CLI.
             When PL CLI is introduced, configure optimizers method will be
                 deprecated, and optimizers will be configured from either
                 config.yaml file or from CLI.
 
         Returns:
+        -------
             Optimizer: Adam optimizer for each decoder
         """
         optimizer_d = optim.Adam(
@@ -115,14 +118,16 @@ class Ganomaly(AnomalyModule):
         batch: dict[str, str | Tensor],
         batch_idx: int,
     ) -> STEP_OUTPUT:
-        """Training step.
+        """Perform the training step.
 
         Args:
+        ----
             batch (dict[str, str | Tensor]): Input batch containing images.
             batch_idx (int): Batch index.
             optimizer_idx (int): Optimizer which is being called for current training step.
 
         Returns:
+        -------
             STEP_OUTPUT: Loss
         """
         del batch_idx  # `batch_idx` variables is not used.
@@ -165,9 +170,13 @@ class Ganomaly(AnomalyModule):
         """Update min and max scores from the current step.
 
         Args:
+        ----
             batch (dict[str, str | Tensor]): Predicted difference between z and z_hat.
+            args: Additional arguments.
+            kwargs: Additional keyword arguments.
 
         Returns:
+        -------
             (STEP_OUTPUT): Output predictions.
         """
         del args, kwargs  # Unused arguments.
@@ -217,9 +226,11 @@ class Ganomaly(AnomalyModule):
         """Normalize the scores based on min/max of entire dataset.
 
         Args:
+        ----
             scores (Tensor): Un-normalized scores.
 
         Returns:
+        -------
             Tensor: Normalized scores.
         """
         return (scores - self.min_scores.to(scores.device)) / (
@@ -228,6 +239,7 @@ class Ganomaly(AnomalyModule):
 
     @property
     def trainer_arguments(self) -> dict[str, Any]:
+        """Return GANomaly trainer arguments."""
         return {"gradient_clip_val": 0, "num_sanity_val_steps": 0}
 
 
@@ -235,6 +247,7 @@ class GanomalyLightning(Ganomaly):
     """PL Lightning Module for the GANomaly Algorithm.
 
     Args:
+    ----
         hparams (DictConfig | ListConfig): Model params
     """
 
@@ -260,6 +273,7 @@ class GanomalyLightning(Ganomaly):
         """Configure model-specific callbacks.
 
         Note:
+        ----
             This method is used for the existing CLI.
             When PL CLI is introduced, configure callback method will be
                 deprecated, and callbacks will be configured from either

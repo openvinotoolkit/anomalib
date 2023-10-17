@@ -26,6 +26,7 @@ class NNCFCallback(Callback):
     the PyTorch module that must be compressed.
 
     Args:
+    ----
         config (dict): NNCF Configuration
         export_dir (Str): Path where the export `onnx` and the OpenVINO `xml` and `bin` IR are saved.
                           If None model will not be exported.

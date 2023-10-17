@@ -64,6 +64,7 @@ class BaseVisualizerCallback(Callback):
         """Log image from a visualizer to each of the available loggers in the project.
 
         Args:
+        ----
             image (np.ndarray): Image that should be added to the loggers.
             module (AnomalyModule): Anomaly module.
             trainer (Trainer): Pytorch Lightning trainer which holds reference to `logger`
@@ -97,6 +98,7 @@ class BaseVisualizerCallback(Callback):
         This is because logging as a single batch ensures that all images appear as part of the same step.
 
         Args:
+        ----
             trainer (pl.Trainer): Pytorch Lightning trainer
             pl_module (AnomalyModule): Anomaly module (unused)
         """

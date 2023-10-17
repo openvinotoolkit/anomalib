@@ -33,6 +33,7 @@ class MultiVariateGaussian(nn.Module):
         """Estimates covariance matrix like numpy.cov.
 
         Args:
+        ----
             observations (Tensor): A 1-D or 2-D array containing multiple variables and observations.
                  Each row of `m` represents a variable, and each column a single
                  observation of all those variables. Also see `rowvar` below.
@@ -56,6 +57,7 @@ class MultiVariateGaussian(nn.Module):
 
 
         Returns:
+        -------
           The covariance matrix of the variables.
         """
         # ensure at least 2D
@@ -103,9 +105,11 @@ class MultiVariateGaussian(nn.Module):
         """Calculate multivariate Gaussian distribution.
 
         Args:
+        ----
           embedding (Tensor): CNN features whose dimensionality is reduced via either random sampling or PCA.
 
         Returns:
+        -------
           mean and inverse covariance of the multi-variate gaussian distribution that fits the features.
         """
         device = embedding.device
@@ -127,9 +131,11 @@ class MultiVariateGaussian(nn.Module):
         """Fit multi-variate gaussian distribution to the input embedding.
 
         Args:
+        ----
             embedding (Tensor): Embedding vector extracted from CNN.
 
         Returns:
+        -------
             Mean and the covariance of the embedding.
         """
         return self.forward(embedding)

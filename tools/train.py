@@ -28,7 +28,8 @@ logger = logging.getLogger("anomalib")
 def get_parser() -> ArgumentParser:
     """Get parser.
 
-    Returns:
+    Returns
+    -------
         ArgumentParser: The parser object.
     """
     parser = ArgumentParser()
@@ -43,9 +44,9 @@ def train(args: Namespace) -> None:
     """Train an anomaly model.
 
     Args:
+    ----
         args (Namespace): The arguments from the command line.
     """
-
     configure_logger(level=args.log_level)
 
     if args.log_level == "ERROR":

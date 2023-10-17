@@ -33,19 +33,34 @@ def get_transforms(
     """Get transforms from config or image size.
 
     Args:
-        config (str | A.Compose | None, optional): Albumentations transforms.
+    ----
+        config (str | A.Compose | None, optional):
+            Albumentations transforms.
             Either config or albumentations ``Compose`` object. Defaults to None.
-        image_size (int | tuple | None, optional): Image size to transform. Defaults to None.
-        to_tensor (bool, optional): Boolean to convert the final transforms into Torch tensor. Defaults to True.
+        image_size (int | tuple | None, optional):
+            Image size to transform.
+            Defaults to None.
+        center_crop (int | tuple | None, optional):
+            Center crop size.
+            Defaults to None.
+        normalization (InputNormalizationMethod, optional):
+            Normalization method for the input images.
+            Defaults to InputNormalizationMethod.IMAGENET.
+        to_tensor (bool, optional):
+            Boolean to convert the final transforms into Torch tensor.
+            Defaults to True.
 
     Raises:
+    ------
         ValueError: When both ``config`` and ``image_size`` is ``None``.
         ValueError: When ``config`` is not a ``str`` or `A.Compose`` object.
 
     Returns:
+    -------
         A.Compose: Albumentation ``Compose`` object containing the image transforms.
 
     Examples:
+    --------
         >>> import skimage
         >>> image = skimage.data.astronaut()
 

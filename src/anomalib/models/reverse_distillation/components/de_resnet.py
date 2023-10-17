@@ -20,6 +20,7 @@ class DecoderBasicBlock(nn.Module):
     """Basic block for decoder ResNet architecture.
 
     Args:
+    ----
         inplanes (int): Number of input channels.
         planes (int): Number of output channels.
         stride (int, optional): Stride for convolution and de-convolution layers. Defaults to 1.
@@ -31,6 +32,7 @@ class DecoderBasicBlock(nn.Module):
         norm_layer (Callable[..., nn.Module] | None, optional): Batch norm layer to use.Defaults to None.
 
     Raises:
+    ------
         ValueError: If groups are not equal to 1 and base width is not 64.
         NotImplementedError: If dilation is greater than 1.
     """
@@ -99,6 +101,7 @@ class DecoderBottleneck(nn.Module):
     """Bottleneck for Decoder.
 
     Args:
+    ----
         inplanes (int): Number of input channels.
         planes (int): Number of output channels.
         stride (int, optional): Stride for convolution and de-convolution layers. Defaults to 1.
@@ -175,6 +178,7 @@ class ResNet(nn.Module):
     """ResNet model for decoder.
 
     Args:
+    ----
         block (Type[DecoderBasicBlock | DecoderBottleneck]): Type of block to use in a layer.
         layers (list[int]): List to specify number for blocks per layer.
         zero_init_residual (bool, optional): If true, initializes the last batch norm in each layer to zero.
@@ -329,9 +333,11 @@ def get_decoder(name: str) -> ResNet:
     """Get decoder model based on the name of the backbone.
 
     Args:
+    ----
         name (str): Name of the backbone.
 
     Returns:
+    -------
         ResNet: Decoder ResNet architecture.
     """
     if name in (

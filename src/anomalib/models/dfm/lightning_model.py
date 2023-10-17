@@ -23,6 +23,7 @@ class Dfm(AnomalyModule):
     """DFM: Deep Featured Kernel Density Estimation.
 
     Args:
+    ----
         backbone (str): Backbone CNN network
         layer (str): Layer to extract features from the backbone CNN
         input_size (tuple[int, int]): Input size for the model.
@@ -66,15 +67,18 @@ class Dfm(AnomalyModule):
         return
 
     def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> None:
-        """Training Step of DFM.
+        """Perform the training step of DFM.
 
         For each batch, features are extracted from the CNN.
 
         Args:
-          batch (dict[str, str | Tensor]): Input batch
-          _: Index of the batch.
+        ----
+            batch (dict[str, str | Tensor]): Input batch
+            args: Arguments.
+            kwargs: Keyword arguments.
 
         Returns:
+        -------
           Deep CNN features.
         """
         del args, kwargs  # These variables are not used.
@@ -99,14 +103,18 @@ class Dfm(AnomalyModule):
         self.model.fit(embeddings)
 
     def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
-        """Validation Step of DFM.
+        """Perform the validation step of DFM.
 
         Similar to the training step, features are extracted from the CNN for each batch.
 
         Args:
+        ----
           batch (dict[str, str | Tensor]): Input batch
+          args: Arguments.
+          kwargs: Keyword arguments.
 
         Returns:
+        -------
           Dictionary containing FRE anomaly scores and anomaly maps.
         """
         del args, kwargs  # These variables are not used.
@@ -120,6 +128,7 @@ class Dfm(AnomalyModule):
 
     @property
     def trainer_arguments(self) -> dict[str, Any]:
+        """Return DFM-specific trainer arguments."""
         return {"gradient_clip_val": 0, "max_epochs": 1, "num_sanity_val_steps": 0}
 
 
@@ -127,6 +136,7 @@ class DfmLightning(Dfm):
     """DFM: Deep Featured Kernel Density Estimation.
 
     Args:
+    ----
         hparams (DictConfig | ListConfig): Model params
     """
 

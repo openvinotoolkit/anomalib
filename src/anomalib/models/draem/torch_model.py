@@ -28,9 +28,11 @@ class DraemModel(nn.Module):
         """Compute the reconstruction and anomaly mask from an input image.
 
         Args:
-            x (Tensor): batch of input images
+        ----
+            batch (Tensor): batch of input images
 
         Returns:
+        -------
             Predicted confidence values of the anomaly mask. During training the reconstructed input images are
             returned as well.
         """
@@ -46,6 +48,7 @@ class ReconstructiveSubNetwork(nn.Module):
     """Autoencoder model that encodes and reconstructs the input image.
 
     Args:
+    ----
         in_channels (int): Number of input channels.
         out_channels (int): Number of output channels.
         base_width (int): Base dimensionality of the layers of the autoencoder.
@@ -66,9 +69,11 @@ class ReconstructiveSubNetwork(nn.Module):
         """Encode and reconstruct the input images.
 
         Args:
+        ----
             batch (Tensor): Batch of input images
 
         Returns:
+        -------
             Batch of reconstructed images.
         """
         encoded = self.encoder(batch)
@@ -79,6 +84,7 @@ class DiscriminativeSubNetwork(nn.Module):
     """Discriminative model that predicts the anomaly mask from the original image and its reconstruction.
 
     Args:
+    ----
         in_channels (int): Number of input channels.
         out_channels (int): Number of output channels.
         base_width (int): Base dimensionality of the layers of the autoencoder.
@@ -93,10 +99,12 @@ class DiscriminativeSubNetwork(nn.Module):
         """Generate the predicted anomaly masks for a batch of input images.
 
         Args:
+        ----
             batch (Tensor): Batch of inputs consisting of the concatenation of the original images
              and their reconstructions.
 
         Returns:
+        -------
             Activations of the output layer corresponding to the normal and anomalous class scores on the pixel level.
         """
         act1, act2, act3, act4, act5, act6 = self.encoder_segment(batch)
@@ -107,6 +115,7 @@ class EncoderDiscriminative(nn.Module):
     """Encoder part of the discriminator network.
 
     Args:
+    ----
         in_channels (int): Number of input channels.
         base_width (int): Base dimensionality of the layers of the autoencoder.
     """
@@ -172,10 +181,12 @@ class EncoderDiscriminative(nn.Module):
         """Convert the inputs to the salient space by running them through the encoder network.
 
         Args:
+        ----
             batch (Tensor): Batch of inputs consisting of the concatenation of the original images
              and their reconstructions.
 
         Returns:
+        -------
             Computed feature maps for each of the layers in the encoder sub network.
         """
         act1 = self.block1(batch)
@@ -196,6 +207,7 @@ class DecoderDiscriminative(nn.Module):
     """Decoder part of the discriminator network.
 
     Args:
+    ----
         base_width (int): Base dimensionality of the layers of the autoencoder.
         out_channels (int): Number of output channels.
     """
@@ -281,9 +293,10 @@ class DecoderDiscriminative(nn.Module):
         self.fin_out = nn.Sequential(nn.Conv2d(base_width, out_channels, kernel_size=3, padding=1))
 
     def forward(self, act1: Tensor, act2: Tensor, act3: Tensor, act4: Tensor, act5: Tensor, act6: Tensor) -> Tensor:
-        """Computes predicted anomaly class scores from the intermediate outputs of the encoder sub network.
+        """Compute predicted anomaly class scores from the intermediate outputs of the encoder sub network.
 
         Args:
+        ----
             act1 (Tensor): Encoder activations of the first block of convolutional layers.
             act2 (Tensor): Encoder activations of the second block of convolutional layers.
             act3 (Tensor): Encoder activations of the third block of convolutional layers.
@@ -292,6 +305,7 @@ class DecoderDiscriminative(nn.Module):
             act6 (Tensor): Encoder activations of the sixth block of convolutional layers.
 
         Returns:
+        -------
             Predicted anomaly class scores per pixel.
         """
         up_b = self.up_b(act6)
@@ -321,6 +335,7 @@ class EncoderReconstructive(nn.Module):
     """Encoder part of the reconstructive network.
 
     Args:
+    ----
         in_channels (int): Number of input channels.
         base_width (int): Base dimensionality of the layers of the autoencoder.
     """
@@ -379,9 +394,11 @@ class EncoderReconstructive(nn.Module):
         """Encode a batch of input images to the salient space.
 
         Args:
+        ----
             batch (Tensor): Batch of input images.
 
         Returns:
+        -------
             Feature maps extracted from the bottleneck layer.
         """
         act1 = self.block1(batch)
@@ -399,6 +416,7 @@ class DecoderReconstructive(nn.Module):
     """Decoder part of the reconstructive network.
 
     Args:
+    ----
         base_width (int): Base dimensionality of the layers of the autoencoder.
         out_channels (int): Number of output channels.
     """
@@ -473,9 +491,11 @@ class DecoderReconstructive(nn.Module):
         """Reconstruct the image from the activations of the bottleneck layer.
 
         Args:
+        ----
             act5 (Tensor): Activations of the bottleneck layer.
 
         Returns:
+        -------
             Batch of reconstructed images.
         """
         up1 = self.up1(act5)

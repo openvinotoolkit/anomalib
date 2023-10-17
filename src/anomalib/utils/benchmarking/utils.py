@@ -24,9 +24,10 @@ def write_metrics(
     writers: list[str],
     folder: str | None = None,
 ) -> None:
-    """Writes metrics to destination provided in the sweep config.
+    """Write metrics to destination provided in the sweep config.
 
     Args:
+    ----
         model_metrics (dict): Dictionary to be written
         writers (list[str]): List of destinations.
         folder (optional, str): Sub-directory to which runs are written to. Defaults to None. If none writes to root.
@@ -55,6 +56,7 @@ def write_to_tensorboard(
     """Write model_metrics to tensorboard.
 
     Args:
+    ----
         model_metrics (dict[str, str | float]): Dictionary containing collected results.
     """
     scalar_metrics = {}
@@ -82,12 +84,14 @@ def write_to_tensorboard(
 
 
 def get_unique_key(str_len: int) -> str:
-    """Returns a random string of length str_len.
+    """Return a random string of length str_len.
 
     Args:
+    ----
         str_len (int): Length of string.
 
     Returns:
+    -------
         str: Random string
     """
     return "".join([np.random.default_rng().choice(string.ascii_lowercase) for _ in range(str_len)])
@@ -103,6 +107,7 @@ def upload_to_wandb(
     One issue is that it does not check for collision
 
     Args:
+    ----
         team (str, optional): Name of the team on wandb. This can also be the id of your personal account.
         Defaults to "anomalib".
         folder (optional, str): Sub-directory from which runs are picked up. Defaults to None. If none picks from runs.
@@ -134,6 +139,7 @@ def upload_to_comet(
     One issue is that it does not check for collision
 
     Args:
+    ----
         folder (optional, str): Sub-directory from which runs are picked up. Defaults to None. If none picks from runs.
     """
     project = f"benchmarking_{get_unique_key(2)}"

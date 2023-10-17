@@ -1,7 +1,6 @@
-"""This module comprises PatchCore Sampling Methods for the embedding.
+"""Random Sparse Projector.
 
-- Random Sparse Projector
-    Sparse Random Projection using PyTorch Operations
+Sparse Random Projection using PyTorch Operations
 """
 
 # Copyright (C) 2022 Intel Corporation
@@ -22,6 +21,7 @@ class SparseRandomProjection:
     """Sparse Random Projection using PyTorch operations.
 
     Args:
+    ----
         eps (float, optional): Minimum distortion rate parameter for calculating
             Johnson-Lindenstrauss minimum dimensions. Defaults to 0.1.
         random_state (int | None, optional): Uses the seed to set the random
@@ -38,14 +38,15 @@ class SparseRandomProjection:
         """Random sparse matrix. Based on https://web.stanford.edu/~hastie/Papers/Ping/KDD06_rp.pdf.
 
         Args:
+        ----
             n_features (int): Dimentionality of the original source space
 
         Returns:
+        -------
             Tensor: Sparse matrix of shape (n_components, n_features).
                 The generated Gaussian random matrix is in CSR (compressed sparse row)
                 format.
         """
-
         # Density 'auto'. Factorize density
         density = 1 / np.sqrt(n_features)
 
@@ -85,20 +86,22 @@ class SparseRandomProjection:
         Ref eqn 2.1 https://cseweb.ucsd.edu/~dasgupta/papers/jl.pdf
 
         Args:
+        ----
             n_samples (int): Number of samples used to compute safe components
             eps (float, optional): Minimum distortion rate. Defaults to 0.1.
         """
-
         denominator = (eps**2 / 2) - (eps**3 / 3)
         return (4 * np.log(n_samples) / denominator).astype(np.int64)
 
     def fit(self, embedding: Tensor) -> "SparseRandomProjection":
-        """Generates sparse matrix from the embedding tensor.
+        """Generate sparse matrix from the embedding tensor.
 
         Args:
+        ----
             embedding (Tensor): embedding tensor for generating embedding
 
         Returns:
+        -------
             (SparseRandomProjection): Return self to be used as
             >>> generator = SparseRandomProjection()
             >>> generator = generator.fit()
@@ -120,10 +123,12 @@ class SparseRandomProjection:
         """Project the data by using matrix product with the random matrix.
 
         Args:
+        ----
             embedding (Tensor): Embedding of shape (n_samples, n_features)
                 The input data to project into a smaller dimensional space
 
         Returns:
+        -------
             projected_embedding (Tensor): Sparse matrix of shape
                 (n_samples, n_components) Projected array.
         """

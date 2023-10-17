@@ -36,6 +36,7 @@ class _MetricsCallback(Callback):
     these to the lightning module.
 
     Args:
+    ----
         task (TaskType): Task type of the current run.
         image_metrics (list[str] | str | None): List of image-level metrics.
         pixel_metrics (list[str] | str | None): List of pixel-level metrics.
@@ -61,9 +62,10 @@ class _MetricsCallback(Callback):
         pl_module: AnomalyModule,
         stage: str | None = None,
     ) -> None:
-        """Setup image and pixel-level AnomalibMetricsCollection within Anomalib Model.
+        """Set image and pixel-level AnomalibMetricsCollection within Anomalib Model.
 
         Args:
+        ----
             trainer (pl.Trainer): PyTorch Lightning Trainer
             pl_module (AnomalyModule): Anomalib Model that inherits pl LightningModule.
             stage (str | None, optional): fit, validate, test or predict. Defaults to None.
