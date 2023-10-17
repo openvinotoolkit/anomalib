@@ -15,12 +15,15 @@ class DynamicBufferModule(ABC, nn.Module):
         """Get attribute of the tensor given the name.
 
         Args:
+        ----
             attribute_name (str): Name of the tensor
 
         Raises:
+        ------
             ValueError: `attribute_name` is not a torch Tensor
 
         Returns:
+        -------
             Tensor: Tensor attribute
         """
         attribute = getattr(self, attribute_name)
@@ -30,15 +33,16 @@ class DynamicBufferModule(ABC, nn.Module):
         msg = f"Attribute with name '{attribute_name}' is not a torch Tensor"
         raise ValueError(msg)
 
-    def _load_from_state_dict(self, state_dict: dict, prefix: str, *args):
+    def _load_from_state_dict(self, state_dict: dict, prefix: str, *args) -> None:
         """Resizes the local buffers to match those stored in the state dict.
 
         Overrides method from parent class.
 
         Args:
+        ----
           state_dict (dict): State dictionary containing weights
           prefix (str): Prefix of the weight file.
-          *args:
+          *args: Variable length argument list.
         """
         persistent_buffers = {k: v for k, v in self._buffers.items() if k not in self._non_persistent_buffers_set}
         local_buffers = {k: v for k, v in persistent_buffers.items() if v is not None}

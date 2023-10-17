@@ -1,5 +1,6 @@
 """EfficientAd: Accurate Visual Anomaly Detection at Millisecond-Level Latencies.
-https://arxiv.org/pdf/2303.14535.pdf
+
+https://arxiv.org/pdf/2303.14535.pdf.
 """
 
 # Copyright (C) 2023 Intel Corporation

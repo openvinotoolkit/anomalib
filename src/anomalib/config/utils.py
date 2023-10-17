@@ -13,12 +13,14 @@ from omegaconf import DictConfig, ListConfig, OmegaConf
 
 
 def to_yaml(config: Namespace | ListConfig | DictConfig) -> str:
-    """Converts the config to a yaml string
+    """Convert the config to a yaml string.
 
     Args:
+    ----
         config (Namespace | ListConfig | DictConfig): Config
 
     Returns:
+    -------
         str: YAML string
     """
     _config = config.clone() if isinstance(config, Namespace) else config.copy()
@@ -28,7 +30,7 @@ def to_yaml(config: Namespace | ListConfig | DictConfig) -> str:
     return OmegaConf.to_yaml(_config)
 
 
-def _convert_nested_path_to_str(config: Any) -> Any:
+def _convert_nested_path_to_str(config: Any) -> Any:  # noqa: ANN401
     """Goes over the dictionary and converts all path values to str."""
     if isinstance(config, dict):
         for key, value in config.items():
@@ -42,21 +44,25 @@ def _convert_nested_path_to_str(config: Any) -> Any:
 
 
 def to_tuple(input_size: int | ListConfig) -> tuple[int, int]:
-    """Converts int or list to a tuple.
+    """Convert int or list to a tuple.
 
     Example:
+    -------
         >>> to_tuple(256)
         (256, 256)
         >>> to_tuple([256, 256])
         (256, 256)
 
     Args:
+    ----
         input_size (int | ListConfig): input_size
 
     Raises:
+    ------
         ValueError: Unsupported value type.
 
     Returns:
+    -------
         tuple[int, int]: Tuple of input_size
     """
     ret_val: tuple[int, int]

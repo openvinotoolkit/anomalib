@@ -17,6 +17,7 @@ class AnomalibDepthDataset(AnomalibDataset, ABC):
     """Base depth anomalib dataset class.
 
     Args:
+    ----
         task (str): Task type, either 'classification' or 'segmentation'
         transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
     """
@@ -28,7 +29,6 @@ class AnomalibDepthDataset(AnomalibDataset, ABC):
 
     def __getitem__(self, index: int) -> dict[str, str | Tensor]:
         """Return rgb image, depth image and mask."""
-
         image_path = self._samples.iloc[index].image_path
         mask_path = self._samples.iloc[index].mask_path
         label_index = self._samples.iloc[index].label_index

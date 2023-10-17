@@ -55,9 +55,11 @@ def concatenate_datasets(datasets: Sequence["data.AnomalibDataset"]) -> "data.An
     """Concatenate multiple datasets into a single dataset object.
 
     Args:
+    ----
         datasets (Sequence[AnomalibDataset]): Sequence of at least two datasets.
 
     Returns:
+    -------
         AnomalibDataset: Dataset that contains the combined samples of all input datasets.
     """
     concat_dataset = datasets[0]
@@ -75,6 +77,7 @@ def random_split(
     """Perform a random split of a dataset.
 
     Args:
+    ----
         dataset (AnomalibDataset): Source dataset
         split_ratio (Union[float, Sequence[float]]): Fractions of the splits that will be produced. The values in the
             sequence must sum to 1. If a single value is passed, the ratio will be converted to
@@ -83,7 +86,6 @@ def random_split(
             be maintained in each of the subsets.
         seed (int | None, optional): Seed that can be passed if results need to be reproducible
     """
-
     if isinstance(split_ratio, float):
         split_ratio = [1 - split_ratio, split_ratio]
 
@@ -129,7 +131,7 @@ def random_split(
 
 
 def split_by_label(dataset: "data.AnomalibDataset") -> tuple["data.AnomalibDataset", "data.AnomalibDataset"]:
-    """Splits the dataset into the normal and anomalous subsets."""
+    """Split the dataset into the normal and anomalous subsets."""
     samples = dataset.samples
     normal_indices = samples[samples.label_index == 0].index
     anomalous_indices = samples[samples.label_index == 1].index

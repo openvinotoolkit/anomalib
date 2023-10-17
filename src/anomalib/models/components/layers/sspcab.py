@@ -15,6 +15,7 @@ class AttentionModule(nn.Module):
     """Squeeze and excitation block that acts as the attention module in SSPCAB.
 
     Args:
+    ----
         channels (int): Number of input channels.
         reduction_ratio (int): Reduction ratio of the attention module.
     """
@@ -45,6 +46,7 @@ class SSPCAB(nn.Module):
     """SSPCAB block.
 
     Args:
+    ----
         in_channels (int): Number of input channels.
         kernel_size (int): Size of the receptive fields of the masked convolution kernel.
         dilation (int): Dilation factor of the masked convolution kernel.

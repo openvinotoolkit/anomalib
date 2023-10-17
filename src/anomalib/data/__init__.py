@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 
 
 class DataFormat(str, Enum):
-    """Supported Dataset Types"""
+    """Supported Dataset Types."""
 
     MVTEC = "mvtec"
     MVTEC_3D = "mvtec_3d"
@@ -46,9 +46,11 @@ def get_datamodule(config: DictConfig | ListConfig) -> AnomalibDataModule:
     """Get Anomaly Datamodule.
 
     Args:
+    ----
         config (DictConfig | ListConfig): Configuration of the anomaly model.
 
     Returns:
+    -------
         PyTorch Lightning DataModule
     """
     logger.info("Loading the datamodule")

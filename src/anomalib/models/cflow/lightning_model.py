@@ -62,10 +62,11 @@ class Cflow(AnomalyModule):
         self.learning_rate = lr
 
     def configure_optimizers(self) -> Optimizer:
-        """Configures optimizers for each decoder.
+        """Configure optimizers for each decoder.
 
-        Returns:
-            Optimizer: Adam optimizer for each decoder
+        Returns
+        -------
+                    Optimizer: Adam optimizer for each decoder
         """
         decoders_parameters = []
         for decoder_idx in range(len(self.model.pool_layers)):
@@ -77,16 +78,20 @@ class Cflow(AnomalyModule):
         )
 
     def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
-        """Training Step of CFLOW.
+        """Perform the training step of CFLOW.
 
         For each batch, decoder layers are trained with a dynamic fiber batch size.
         Training step is performed manually as multiple training steps are involved
             per batch of input images
 
         Args:
-          batch (dict[str, str | Tensor]): Input batch
+        ----
+            batch (dict[str, str | Tensor]): Input batch
+            *args: Arguments.
+            **kwargs: Keyword arguments.
 
         Returns:
+        -------
           Loss value for the batch
 
         """
@@ -150,16 +155,20 @@ class Cflow(AnomalyModule):
         return {"loss": avg_loss}
 
     def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
-        """Validation Step of CFLOW.
+        """Perform the validation step of CFLOW.
 
             Similar to the training step, encoder features
             are extracted from the CNN for each batch, and anomaly
             map is computed.
 
         Args:
+        ----
             batch (dict[str, str | Tensor]): Input batch
+            *args: Arguments.
+            **kwargs: Keyword arguments.
 
         Returns:
+        -------
             Dictionary containing images, anomaly maps, true labels and masks.
             These are required in `validation_epoch_end` for feature concatenation.
 
@@ -171,6 +180,7 @@ class Cflow(AnomalyModule):
 
     @property
     def trainer_arguments(self) -> dict[str, Any]:
+        """C-FLOW specific trainer arguments."""
         return {"gradient_clip_val": 0, "num_sanity_val_steps": 0}
 
 
@@ -178,6 +188,7 @@ class CflowLightning(Cflow):
     """PL Lightning Module for the CFLOW algorithm.
 
     Args:
+    ----
         hparams (DictConfig | ListConfig): Model params
     """
 

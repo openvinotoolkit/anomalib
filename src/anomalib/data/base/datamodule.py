@@ -24,14 +24,16 @@ logger = logging.getLogger(__name__)
 
 
 def collate_fn(batch: list) -> dict[str, Any]:
-    """Custom collate function that collates bounding boxes as lists.
+    """Collate bounding boxes as lists.
 
     Bounding boxes are collated as a list of tensors, while the default collate function is used for all other entries.
 
     Args:
+    ----
         batch (List): list of items in the batch where len(batch) is equal to the batch size.
 
     Returns:
+    -------
         dict[str, Any]: Dictionary containing the collated batch information.
     """
     elem = batch[0]  # sample an element from the batch to check the type.
@@ -50,6 +52,7 @@ class AnomalibDataModule(LightningDataModule, ABC):
     """Base Anomalib data module.
 
     Args:
+    ----
         train_batch_size (int): Batch size used by the train dataloader.
         test_batch_size (int): Batch size used by the val and test dataloaders.
         num_workers (int): Number of workers used by the train, val and test dataloaders.
@@ -90,9 +93,10 @@ class AnomalibDataModule(LightningDataModule, ABC):
         self._samples: DataFrame | None = None
 
     def setup(self, stage: str | None = None) -> None:
-        """Setup train, validation and test data.
+        """Set up train, validation and test data.
 
         Args:
+        ----
           stage: str | None:  Train/Val/Test stages. (Default value = None)
         """
         if not self.is_setup:

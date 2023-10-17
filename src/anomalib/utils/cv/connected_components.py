@@ -14,10 +14,12 @@ def connected_components_gpu(image: Tensor, num_iterations: int = 1000) -> Tenso
     """Perform connected component labeling on GPU and remap the labels from 0 to N.
 
     Args:
+    ----
         image (Tensor): Binary input image from which we want to extract connected components (Bx1xHxW)
         num_iterations (int): Number of iterations used in the connected component computation.
 
     Returns:
+    -------
         Tensor: Components labeled from 0 to N.
     """
     components = connected_components(image, num_iterations=num_iterations)
@@ -31,12 +33,14 @@ def connected_components_gpu(image: Tensor, num_iterations: int = 1000) -> Tenso
 
 
 def connected_components_cpu(image: Tensor) -> Tensor:
-    """Connected component labeling on CPU.
+    """Perform connected component labeling on CPU.
 
     Args:
+    ----
         image (Tensor): Binary input data from which we want to extract connected components (Bx1xHxW)
 
     Returns:
+    -------
         Tensor: Components labeled from 0 to N.
     """
     components = torch.zeros_like(image)

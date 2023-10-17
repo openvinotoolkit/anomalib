@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 class LoadModelCallback(Callback):
     """Callback that loads the model weights from the state dict."""
 
-    def __init__(self, weights_path) -> None:
+    def __init__(self, weights_path: str) -> None:
         self.weights_path = weights_path
 
     def setup(self, trainer: Trainer, pl_module: AnomalyModule, stage: str | None = None) -> None:
