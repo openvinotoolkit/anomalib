@@ -15,7 +15,7 @@ class UflowModel(nn.Module):
             affine_subnet_channels_ratio=1.0,
             permute_soft=False
     ):
-        super(UflowModel, self).__init__()
+        super().__init__()
 
         self.input_size = input_size
         self.affine_clamp = affine_clamp
