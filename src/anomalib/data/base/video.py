@@ -3,7 +3,7 @@
 
 from abc import ABC
 from enum import Enum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import albumentations as A  # noqa: N812
 import torch
@@ -36,6 +36,7 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
     """Base video anomalib dataset class.
 
     Args:
+    ----
         task (str): Task type, either 'classification' or 'segmentation'
         transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
         clip_length_in_frames (int): Number of video frames in each clip.
@@ -49,7 +50,7 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
         transform: A.Compose,
         clip_length_in_frames: int,
         frames_between_clips: int,
-        target_frame=VideoTargetFrame.LAST,
+        target_frame: VideoTargetFrame = VideoTargetFrame.LAST,
     ) -> None:
         super().__init__(task, transform)
 
@@ -73,9 +74,9 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
         return super().samples
 
     @samples.setter
-    def samples(self, samples):
+    def samples(self, samples: DataFrame) -> None:
         """Overwrite samples and re-index subvideos."""
-        super(AnomalibVideoDataset, self.__class__).samples.fset(self, samples)
+        super(AnomalibVideoDataset, self.__class__).samples.fset(self, samples)  # type: ignore[attr-defined]
         self._setup_clips()
 
     def _setup_clips(self) -> None:
@@ -91,7 +92,7 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
             frames_between_clips=self.frames_between_clips,
         )
 
-    def _select_targets(self, item):
+    def _select_targets(self, item: dict[str, Any]) -> dict[str, Any]:
         if self.target_frame == VideoTargetFrame.FIRST:
             idx = 0
         elif self.target_frame == VideoTargetFrame.LAST:

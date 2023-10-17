@@ -13,9 +13,11 @@ def try_import(import_path: str) -> bool:
     """Try to import a module.
 
     Args:
+    ----
         import_path (str): The import path of the module.
 
     Returns:
+    -------
         bool: True if import succeeds, False otherwise.
     """
     try:

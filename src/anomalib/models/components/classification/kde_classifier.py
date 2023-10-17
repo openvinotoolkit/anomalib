@@ -27,6 +27,7 @@ class KDEClassifier(nn.Module):
     """Classification module for KDE-based anomaly detection.
 
     Args:
+    ----
         n_pca_components (int, optional): Number of PCA components. Defaults to 16.
         feature_scaling_method (FeatureScalingMethod, optional): Scaling method applied to features before passing to
             KDE. Options are `norm` (normalize to unit vector length) and `scale` (scale to max length observed in
@@ -56,14 +57,15 @@ class KDEClassifier(nn.Module):
         """Pre-process the CNN features.
 
         Args:
+        ----
           feature_stack (Tensor): Features extracted from CNN
           max_length (Tensor | None): Used to unit normalize the feature_stack vector. If ``max_len`` is not
             provided, the length is calculated from the ``feature_stack``. Defaults to None.
 
         Returns:
+        -------
             (Tuple): Stacked features and length
         """
-
         if max_length is None:
             max_length = torch.max(torch.linalg.norm(feature_stack, ord=2, dim=1))
 
@@ -80,12 +82,13 @@ class KDEClassifier(nn.Module):
         """Fit a kde model to embeddings.
 
         Args:
+        ----
             embeddings (Tensor): Input embeddings to fit the model.
 
         Returns:
+        -------
             Boolean confirming whether the training is successful.
         """
-
         if embeddings.shape[0] < self.n_pca_components:
             logger.info("Not enough features to commit. Not making a model.")
             return False
@@ -111,13 +114,14 @@ class KDEClassifier(nn.Module):
             the log of the scores are calculated.
 
         Args:
+        ----
             features (Tensor): Features to which the PCA model is fit.
             as_log_likelihood (bool | None, optional): If true, gets log likelihood scores. Defaults to False.
 
         Returns:
+        -------
             (Tensor): Score
         """
-
         features = self.pca_model.transform(features)
         features, _ = self.pre_process(features, self.max_length)
         # Scores are always assumed to be passed as a density
@@ -133,12 +137,14 @@ class KDEClassifier(nn.Module):
 
     @staticmethod
     def compute_probabilities(scores: Tensor) -> Tensor:
-        """Converts density scores to anomaly probabilities (see https://www.desmos.com/calculator/ifju7eesg7).
+        """Convert density scores to anomaly probabilities (see https://www.desmos.com/calculator/ifju7eesg7).
 
         Args:
+        ----
           scores (Tensor): density of an image.
 
         Returns:
+        -------
           probability that image with {density} is anomalous
         """
         return 1 / (1 + torch.exp(0.05 * (scores - 12)))
@@ -147,12 +153,13 @@ class KDEClassifier(nn.Module):
         """Predicts the probability that the features belong to the anomalous class.
 
         Args:
+        ----
           features (Tensor): Feature from which the output probabilities are detected.
 
         Returns:
+        -------
           Detection probabilities
         """
-
         scores = self.compute_kde_scores(features, as_log_likelihood=True)
         return self.compute_probabilities(scores)
 

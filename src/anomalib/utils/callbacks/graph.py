@@ -16,10 +16,10 @@ class GraphLogger(Callback):
         """Log model graph to respective logger.
 
         Args:
+        ----
             trainer: Trainer object which contans reference to loggers.
             pl_module: LightningModule object which is logged.
         """
-
         for logger in trainer.loggers:
             if isinstance(logger, AnomalibWandbLogger):
                 # NOTE: log graph gets populated only after one backward pass. This won't work for models which do not
@@ -31,10 +31,10 @@ class GraphLogger(Callback):
         """Unwatch model if configured for wandb and log it model graph in Tensorboard if specified.
 
         Args:
+        ----
             trainer: Trainer object which contans reference to loggers.
             pl_module: LightningModule object which is logged.
         """
-
         for logger in trainer.loggers:
             if isinstance(logger, AnomalibCometLogger | AnomalibTensorBoardLogger):
                 logger.log_graph(pl_module, input_array=torch.ones((1, 3, 256, 256)))

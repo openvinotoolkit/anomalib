@@ -32,19 +32,20 @@ logger = logging.getLogger(__name__)
 
 
 class UnknownLoggerError(Exception):
-    """This is raised when the logger option in `config.yaml` file is set incorrectly."""
+    """Raised when the logger option in `config.yaml` file is set incorrectly."""
 
 
 def configure_logger(level: int | str = logging.INFO) -> None:
     """Get console logger by name.
 
     Args:
+    ----
         level (int | str, optional): Logger Level. Defaults to logging.INFO.
 
     Returns:
+    -------
         Logger: The expected logger.
     """
-
     if isinstance(level, str):
         level = logging.getLevelName(level)
 
@@ -65,12 +66,15 @@ def get_experiment_logger(
     """Return a logger based on the choice of logger in the config file.
 
     Args:
+    ----
         config (DictConfig): config.yaml file for the corresponding anomalib model.
 
     Raises:
+    ------
         ValueError: for any logger types apart from false and tensorboard
 
     Returns:
+    -------
         list[Logger] | bool: Logger
     """
     logger.info("Loading the experiment logger(s)")

@@ -29,6 +29,7 @@ class Csflow(AnomalyModule):
     """Fully Convolutional Cross-Scale-Flows for Image-based Defect Detection.
 
     Args:
+    ----
         input_size (tuple[int, int]): Size of the model input.
         n_coupling_blocks (int): Number of coupling blocks in the model.
         cross_conv_hidden_channels (int): Number of hidden channels in the cross convolution.
@@ -55,13 +56,16 @@ class Csflow(AnomalyModule):
         self.loss = CsFlowLoss()
 
     def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
-        """Training Step of CS-Flow.
+        """Perform the training step of CS-Flow.
 
         Args:
+        ----
             batch (dict[str, str | Tensor]): Input batch
-            _: Index of the batch.
+            args: Arguments.
+            kwargs: Keyword arguments.
 
         Returns:
+        -------
             Loss value
         """
         del args, kwargs  # These variables are not used.
@@ -73,12 +77,16 @@ class Csflow(AnomalyModule):
         return {"loss": loss}
 
     def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
-        """Validation step for CS Flow.
+        """Perform the validation step for CS Flow.
 
         Args:
+        ----
             batch (Tensor): Input batch
+            args: Arguments.
+            kwargs: Keyword arguments.
 
         Returns:
+        -------
             dict[str, Tensor]: Dictionary containing the anomaly map, scores, etc.
         """
         del args, kwargs  # These variables are not used.
@@ -90,12 +98,14 @@ class Csflow(AnomalyModule):
 
     @property
     def trainer_arguments(self) -> dict[str, Any]:
+        """CS-Flow-specific trainer arguments."""
         return {"gradient_clip_val": 1, "num_sanity_val_steps": 0}
 
     def configure_optimizers(self) -> torch.optim.Optimizer:
-        """Configures optimizers.
+        """Configure optimizers.
 
-        Returns:
+        Returns
+        -------
             Optimizer: Adam optimizer
         """
         return torch.optim.Adam(
@@ -111,6 +121,7 @@ class CsflowLightning(Csflow):
     """Fully Convolutional Cross-Scale-Flows for Image-based Defect Detection.
 
     Args:
+    ----
         hprams (DictConfig | ListConfig): Model params
     """
 

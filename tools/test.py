@@ -17,7 +17,8 @@ from anomalib.utils.callbacks import get_callbacks
 def get_parser() -> ArgumentParser:
     """Get parser.
 
-    Returns:
+    Returns
+    -------
         ArgumentParser: The parser object.
     """
     parser = ArgumentParser()
@@ -28,10 +29,11 @@ def get_parser() -> ArgumentParser:
     return parser
 
 
-def test(args: Namespace):
+def test(args: Namespace) -> None:
     """Test an anomaly model.
 
     Args:
+    ----
         args (Namespace): The arguments from the command line.
     """
     config = get_configurable_parameters(

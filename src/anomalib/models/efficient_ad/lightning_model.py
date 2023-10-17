@@ -1,5 +1,6 @@
 """EfficientAd: Accurate Visual Anomaly Detection at Millisecond-Level Latencies.
-https://arxiv.org/pdf/2303.14535.pdf
+
+https://arxiv.org/pdf/2303.14535.pdf.
 """
 
 # Copyright (C) 2023 Intel Corporation
@@ -42,10 +43,29 @@ WEIGHTS_DOWNLOAD_INFO = DownloadInfo(
 
 
 class TransformsWrapper:
+    """Transforms wrapper.
+
+    Args:
+    ----
+        t (A.Compose): Albumentations transforms.
+    """
+
     def __init__(self, t: A.Compose) -> None:
         self.transforms = t
 
-    def __call__(self, img, *args, **kwargs):
+    def __call__(self, img: np.ndarray, *args, **kwargs) -> dict[str, Any]:
+        """Apply the transforms to the given image.
+
+        Args:
+        ----
+            img (np.ndarray): Input image.
+            args: Additional arguments.
+            kwargs: Additional keyword arguments.
+
+        Returns:
+        -------
+            dict[str, Any]: Output image.
+        """
         del args, kwargs  # Unused arguments.
 
         return self.transforms(image=np.array(img))
@@ -55,6 +75,7 @@ class EfficientAd(AnomalyModule):
     """PL Lightning Module for the EfficientAd algorithm.
 
     Args:
+    ----
         input_size (tuple): size of input images
         teacher_out_channels (int): number of convolution output channels
         model_size (str): size of student and teacher model
@@ -96,6 +117,7 @@ class EfficientAd(AnomalyModule):
         self.prepare_imagenette_data()
 
     def prepare_pretrained_model(self) -> None:
+        """Prepare the pretrained teacher model."""
         pretrained_models_dir = Path("./pre_trained/")
         if not pretrained_models_dir.is_dir():
             download_and_extract(pretrained_models_dir, WEIGHTS_DOWNLOAD_INFO)
@@ -106,6 +128,7 @@ class EfficientAd(AnomalyModule):
         self.model.teacher.load_state_dict(torch.load(teacher_path, map_location=torch.device(self.device)))
 
     def prepare_imagenette_data(self) -> None:
+        """Prepare ImageNette dataset transformations."""
         self.data_transforms_imagenet = A.Compose(
             [  # We obtain an image P ∈ R 3x256x256 from ImageNet by choosing a random image,
                 A.Resize(self.image_size[0] * 2, self.image_size[1] * 2),  # resizing it to 512 x 512,
@@ -128,9 +151,11 @@ class EfficientAd(AnomalyModule):
         """Calculate the mean and std of the teacher models activations.
 
         Args:
+        ----
             dataloader (DataLoader): Dataloader of the respective dataset.
 
         Returns:
+        -------
             dict[str, Tensor]: Dictionary of channel-wise mean and std
         """
         y_means = []
@@ -157,9 +182,11 @@ class EfficientAd(AnomalyModule):
         """Calculate 90% and 99.5% quantiles of the student(st) and autoencoder(ae).
 
         Args:
+        ----
             dataloader (DataLoader): Dataloader of the respective dataset.
 
         Returns:
+        -------
             dict[str, Tensor]: Dictionary of both the 90% and 99.5% quantiles
             of both the student and autoencoder feature maps.
         """
@@ -187,18 +214,20 @@ class EfficientAd(AnomalyModule):
         elements.
 
         Args:
+        ----
             maps (list[Tensor]): List of anomaly maps.
 
         Returns:
+        -------
             tuple[Tensor, Tensor]: Two scalars - the 90% and the 99.5% quantile.
         """
-
         maps_flat = reduce_tensor_elems(torch.cat(maps))
         qa = torch.quantile(maps_flat, q=0.9).to(self.device)
         qb = torch.quantile(maps_flat, q=0.995).to(self.device)
         return qa, qb
 
     def configure_optimizers(self) -> optim.Optimizer:
+        """Configure optimizers."""
         optimizer = optim.Adam(
             list(self.model.student.parameters()) + list(self.model.ae.parameters()),
             lr=self.lr,
@@ -218,12 +247,16 @@ class EfficientAd(AnomalyModule):
             self.model.mean_std.update(channel_mean_std)
 
     def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> dict[str, Tensor]:
-        """Training step for EfficientAd returns the student, autoencoder and combined loss.
+        """Perform the training step for EfficientAd returns the student, autoencoder and combined loss.
 
         Args:
+        ----
             batch (batch: dict[str, str | Tensor]): Batch containing image filename, image, label and mask
+            args: Additional arguments.
+            kwargs: Additional keyword arguments.
 
         Returns:
+        -------
           Loss.
         """
         del args, kwargs  # These variables are not used.
@@ -245,20 +278,22 @@ class EfficientAd(AnomalyModule):
         return {"loss": loss}
 
     def on_validation_start(self) -> None:
-        """
-        Calculate the feature map quantiles of the validation dataset and push to the model.
-        """
+        """Calculate the feature map quantiles of the validation dataset and push to the model."""
         if (self.current_epoch + 1) == self.trainer.max_epochs:
             map_norm_quantiles = self.map_norm_quantiles(self.trainer.datamodule.val_dataloader())
             self.model.quantiles.update(map_norm_quantiles)
 
     def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
-        """Validation Step of EfficientAd returns anomaly maps for the input image batch
+        """Perform the validation step of EfficientAd returns anomaly maps for the input image batch.
 
         Args:
+        ----
           batch (dict[str, str | Tensor]): Input batch
+          args: Additional arguments.
+          kwargs: Additional keyword arguments.
 
         Returns:
+        -------
           Dictionary containing anomaly maps.
         """
         del args, kwargs  # These variables are not used.
@@ -269,6 +304,7 @@ class EfficientAd(AnomalyModule):
 
     @property
     def trainer_arguments(self) -> dict[str, Any]:
+        """Return EfficientAD trainer arguments."""
         return {"gradient_clip_val": 0, "num_sanity_val_steps": 0}
 
 
@@ -276,6 +312,7 @@ class EfficientAdLightning(EfficientAd):
     """PL Lightning Module for the EfficientAd Algorithm.
 
     Args:
+    ----
         hparams (DictConfig | ListConfig): Model params
     """
 

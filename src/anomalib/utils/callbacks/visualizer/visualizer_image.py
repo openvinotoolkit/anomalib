@@ -31,13 +31,14 @@ class ImageVisualizerCallback(BaseVisualizerCallback):
         trainer: pl.Trainer,
         pl_module: AnomalyModule,
         outputs: STEP_OUTPUT | None,
-        batch: Any,
+        batch: Any,  # noqa: ANN401
         batch_idx: int,
         dataloader_idx: int = 0,
     ) -> None:
         """Show images at the end of every batch.
 
         Args:
+        ----
             trainer (Trainer): Pytorch lightning trainer object (unused).
             pl_module (AnomalyModule): Lightning modules derived from BaseAnomalyLightning object as
             currently only they support logging images.
@@ -62,13 +63,14 @@ class ImageVisualizerCallback(BaseVisualizerCallback):
         trainer: pl.Trainer,
         pl_module: AnomalyModule,
         outputs: STEP_OUTPUT | None,
-        batch: Any,
+        batch: Any,  # noqa: ANN401
         batch_idx: int,
         dataloader_idx: int = 0,
     ) -> None:
         """Log images at the end of every batch.
 
         Args:
+        ----
             trainer (Trainer): Pytorch lightning trainer object (unused).
             pl_module (AnomalyModule): Lightning modules derived from BaseAnomalyLightning object as
                 currently only they support logging images.

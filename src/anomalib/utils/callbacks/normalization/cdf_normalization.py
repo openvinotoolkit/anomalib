@@ -32,7 +32,7 @@ class _CdfNormalizationCallback(Callback):
         self.pixel_dist: LogNormal | None = None
 
     def setup(self, trainer: Trainer, pl_module: AnomalyModule, stage: str | None = None) -> None:
-        """Adds training_distribution metrics to normalization metrics."""
+        """Add training_distribution metrics to normalization metrics."""
         del trainer, stage  # These variables are not used.
 
         if not hasattr(pl_module, "normalization_metrics"):
@@ -47,7 +47,7 @@ class _CdfNormalizationCallback(Callback):
             )
 
     def on_test_start(self, trainer: Trainer, pl_module: AnomalyModule) -> None:
-        """Called when the test begins."""
+        """Call when the test begins."""
         del trainer  # `trainer` variable is not used.
 
         if pl_module.image_metrics is not None:
@@ -56,7 +56,7 @@ class _CdfNormalizationCallback(Callback):
             pl_module.pixel_metrics.set_threshold(0.5)
 
     def on_validation_epoch_start(self, trainer: Trainer, pl_module: AnomalyModule) -> None:
-        """Called when the validation starts after training.
+        """Call when the validation starts after training.
 
         Use the current model to compute the anomaly score distributions
         of the normal training data. This is needed after every epoch, because the statistics must be
@@ -70,11 +70,11 @@ class _CdfNormalizationCallback(Callback):
         trainer: Trainer,
         pl_module: AnomalyModule,
         outputs: STEP_OUTPUT | None,
-        batch: Any,
+        batch: Any,  # noqa: ANN401
         batch_idx: int,
         dataloader_idx: int = 0,
     ) -> None:
-        """Called when the validation batch ends, standardizes the predicted scores and anomaly maps."""
+        """Call when the validation batch ends, standardizes the predicted scores and anomaly maps."""
         del trainer, batch, batch_idx, dataloader_idx  # These variables are not used.
 
         self._standardize_batch(outputs, pl_module)
@@ -84,11 +84,11 @@ class _CdfNormalizationCallback(Callback):
         trainer: Trainer,
         pl_module: AnomalyModule,
         outputs: STEP_OUTPUT | None,
-        batch: Any,
+        batch: Any,  # noqa: ANN401
         batch_idx: int,
         dataloader_idx: int = 0,
     ) -> None:
-        """Called when the test batch ends, normalizes the predicted scores and anomaly maps."""
+        """Call when the test batch ends, normalizes the predicted scores and anomaly maps."""
         del trainer, batch, batch_idx, dataloader_idx  # These variables are not used.
 
         self._standardize_batch(outputs, pl_module)
@@ -99,11 +99,11 @@ class _CdfNormalizationCallback(Callback):
         trainer: Trainer,
         pl_module: AnomalyModule,
         outputs: dict,
-        batch: Any,
+        batch: Any,  # noqa: ANN401
         batch_idx: int,
         dataloader_idx: int = 0,
     ) -> None:
-        """Called when the predict batch ends, normalizes the predicted scores and anomaly maps."""
+        """Call when the predict batch ends, normalizes the predicted scores and anomaly maps."""
         del trainer, batch, batch_idx, dataloader_idx  # These variables are not used.
 
         self._standardize_batch(outputs, pl_module)
@@ -117,7 +117,6 @@ class _CdfNormalizationCallback(Callback):
          estimate the distribution of anomaly scores for normal data at the image and pixel level by computing
          the mean and standard deviations. A dictionary containing the computed statistics is stored in self.stats.
         """
-
         # Since CDF callback is imported in `get_normalizers` which in-turn is imported by Engine, directly referring
         # to engine here leads to circular import error
         _engine = engine.Engine(accelerator=trainer.accelerator, devices=trainer.num_devices, normalization="none")
@@ -135,7 +134,7 @@ class _CdfNormalizationCallback(Callback):
         pl_module.normalization_metrics.compute()
 
     @staticmethod
-    def _create_inference_model(pl_module: AnomalyModule):
+    def _create_inference_model(pl_module: AnomalyModule) -> AnomalyModule:
         """Create a duplicate of the PL module that can be used to perform inference on the training set."""
         new_model = pl_module.__class__(**pl_module.hparams)
         new_model.normalization_metrics = AnomalyScoreDistribution().cpu()
@@ -143,7 +142,7 @@ class _CdfNormalizationCallback(Callback):
         return new_model
 
     @staticmethod
-    def _standardize_batch(outputs: STEP_OUTPUT, pl_module) -> None:
+    def _standardize_batch(outputs: STEP_OUTPUT, pl_module: AnomalyModule) -> None:
         stats = pl_module.normalization_metrics.to(outputs["pred_scores"].device)
         outputs["pred_scores"] = standardize(outputs["pred_scores"], stats.image_mean, stats.image_std)
         if "anomaly_maps" in outputs:

@@ -19,7 +19,8 @@ from anomalib.utils.callbacks import get_callbacks
 def get_parser() -> ArgumentParser:
     """Get parser.
 
-    Returns:
+    Returns
+    -------
         ArgumentParser: The parser object.
     """
     parser = ArgumentParser()
@@ -45,7 +46,7 @@ def get_parser() -> ArgumentParser:
     return parser
 
 
-def infer(args: Namespace):
+def infer(args: Namespace) -> None:
     """Run inference."""
     config = get_configurable_parameters(config_path=args.config)
     config.visualization.show_images = args.show

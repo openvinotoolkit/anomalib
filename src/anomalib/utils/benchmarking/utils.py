@@ -23,10 +23,11 @@ def write_metrics(
     model_metrics: dict[str, str | float],
     writers: list[str],
     folder: str | None = None,
-):
-    """Writes metrics to destination provided in the sweep config.
+) -> None:
+    """Write metrics to destination provided in the sweep config.
 
     Args:
+    ----
         model_metrics (dict): Dictionary to be written
         writers (list[str]): List of destinations.
         folder (optional, str): Sub-directory to which runs are written to. Defaults to None. If none writes to root.
@@ -51,10 +52,11 @@ def write_metrics(
 
 def write_to_tensorboard(
     model_metrics: dict[str, str | float],
-):
+) -> None:
     """Write model_metrics to tensorboard.
 
     Args:
+    ----
         model_metrics (dict[str, str | float]): Dictionary containing collected results.
     """
     scalar_metrics = {}
@@ -82,12 +84,14 @@ def write_to_tensorboard(
 
 
 def get_unique_key(str_len: int) -> str:
-    """Returns a random string of length str_len.
+    """Return a random string of length str_len.
 
     Args:
+    ----
         str_len (int): Length of string.
 
     Returns:
+    -------
         str: Random string
     """
     return "".join([np.random.default_rng().choice(string.ascii_lowercase) for _ in range(str_len)])
@@ -96,13 +100,14 @@ def get_unique_key(str_len: int) -> str:
 def upload_to_wandb(
     team: str = "anomalib",
     folder: str | None = None,
-):
+) -> None:
     """Upload the data in csv files to wandb.
 
     Creates a project named benchmarking_[two random characters]. This is so that the project names are unique.
     One issue is that it does not check for collision
 
     Args:
+    ----
         team (str, optional): Name of the team on wandb. This can also be the id of your personal account.
         Defaults to "anomalib".
         folder (optional, str): Sub-directory from which runs are picked up. Defaults to None. If none picks from runs.
@@ -127,13 +132,14 @@ def upload_to_wandb(
 
 def upload_to_comet(
     folder: str | None = None,
-):
+) -> None:
     """Upload the data in csv files to comet.
 
     Creates a project named benchmarking_[two random characters]. This is so that the project names are unique.
     One issue is that it does not check for collision
 
     Args:
+    ----
         folder (optional, str): Sub-directory from which runs are picked up. Defaults to None. If none picks from runs.
     """
     project = f"benchmarking_{get_unique_key(2)}"

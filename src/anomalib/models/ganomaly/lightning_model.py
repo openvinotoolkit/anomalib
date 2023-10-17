@@ -27,6 +27,7 @@ class Ganomaly(AnomalyModule):
     """PL Lightning Module for the GANomaly Algorithm.
 
     Args:
+    ----
         input_size (tuple[int, int]): Input dimension.
         batch_size (int): Batch size.
         n_features (int): Number of features layers in the CNNs.
@@ -81,16 +82,15 @@ class Ganomaly(AnomalyModule):
         self.beta2 = beta2
 
     def _reset_min_max(self) -> None:
-        """Resets min_max scores."""
+        """Reset min_max scores."""
         self.min_scores = torch.tensor(float("inf"), dtype=torch.float32)  # pylint: disable=not-callable
         self.max_scores = torch.tensor(float("-inf"), dtype=torch.float32)  # pylint: disable=not-callable
 
     def configure_optimizers(self) -> list[optim.Optimizer]:
-        """Configures optimizers for each decoder.
+        """Configure optimizers for each decoder.
 
-
-
-        Returns:
+        Returns
+        -------
             Optimizer: Adam optimizer for each decoder
         """
         optimizer_d = optim.Adam(
@@ -109,15 +109,17 @@ class Ganomaly(AnomalyModule):
         self,
         batch: dict[str, str | Tensor],
         batch_idx: int,
-    ) -> STEP_OUTPUT:  # pylint: disable=arguments-differ
-        """Training step.
+    ) -> STEP_OUTPUT:
+        """Perform the training step.
 
         Args:
+        ----
             batch (dict[str, str | Tensor]): Input batch containing images.
             batch_idx (int): Batch index.
             optimizer_idx (int): Optimizer which is being called for current training step.
 
         Returns:
+        -------
             STEP_OUTPUT: Loss
         """
         del batch_idx  # `batch_idx` variables is not used.
@@ -160,9 +162,13 @@ class Ganomaly(AnomalyModule):
         """Update min and max scores from the current step.
 
         Args:
+        ----
             batch (dict[str, str | Tensor]): Predicted difference between z and z_hat.
+            args: Additional arguments.
+            kwargs: Additional keyword arguments.
 
         Returns:
+        -------
             (STEP_OUTPUT): Output predictions.
         """
         del args, kwargs  # Unused arguments.
@@ -172,7 +178,13 @@ class Ganomaly(AnomalyModule):
         self.min_scores = min(self.min_scores, torch.min(batch["pred_scores"]))
         return batch
 
-    def on_validation_batch_end(self, outputs, batch, batch_idx, dataloader_idx=0):
+    def on_validation_batch_end(
+        self,
+        outputs: STEP_OUTPUT,
+        batch: Any,  # noqa: ANN401
+        batch_idx: int,
+        dataloader_idx: int = 0,
+    ) -> None:
         """Normalize outputs based on min/max values."""
         outputs["pred_scores"] = self._normalize(outputs["pred_scores"])
         super().on_validation_batch_end(outputs, batch, batch_idx, dataloader_idx=dataloader_idx)
@@ -191,7 +203,13 @@ class Ganomaly(AnomalyModule):
         self.min_scores = min(self.min_scores, torch.min(batch["pred_scores"]))
         return batch
 
-    def on_test_batch_end(self, outputs, batch, batch_idx, dataloader_idx=0):
+    def on_test_batch_end(
+        self,
+        outputs: STEP_OUTPUT,
+        batch: Any,  # noqa: ANN401
+        batch_idx: int,
+        dataloader_idx: int = 0,
+    ) -> None:
         """Normalize outputs based on min/max values."""
         outputs["pred_scores"] = self._normalize(outputs["pred_scores"])
         super().on_test_batch_end(outputs, batch, batch_idx, dataloader_idx=dataloader_idx)
@@ -200,9 +218,11 @@ class Ganomaly(AnomalyModule):
         """Normalize the scores based on min/max of entire dataset.
 
         Args:
+        ----
             scores (Tensor): Un-normalized scores.
 
         Returns:
+        -------
             Tensor: Normalized scores.
         """
         return (scores - self.min_scores.to(scores.device)) / (
@@ -211,6 +231,7 @@ class Ganomaly(AnomalyModule):
 
     @property
     def trainer_arguments(self) -> dict[str, Any]:
+        """Return GANomaly trainer arguments."""
         return {"gradient_clip_val": 0, "num_sanity_val_steps": 0}
 
 
@@ -218,6 +239,7 @@ class GanomalyLightning(Ganomaly):
     """PL Lightning Module for the GANomaly Algorithm.
 
     Args:
+    ----
         hparams (DictConfig | ListConfig): Model params
     """
 

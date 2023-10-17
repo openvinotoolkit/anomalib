@@ -36,6 +36,7 @@ class _MetricsCallback(Callback):
     these to the lightning module.
 
     Args:
+    ----
         task (TaskType): Task type of the current run.
         image_metrics (list[str] | str | None): List of image-level metrics.
         pixel_metrics (list[str] | str | None): List of pixel-level metrics.
@@ -61,9 +62,10 @@ class _MetricsCallback(Callback):
         pl_module: AnomalyModule,
         stage: str | None = None,
     ) -> None:
-        """Setup image and pixel-level AnomalibMetricsCollection within Anomalib Model.
+        """Set image and pixel-level AnomalibMetricsCollection within Anomalib Model.
 
         Args:
+        ----
             trainer (pl.Trainer): PyTorch Lightning Trainer
             pl_module (AnomalyModule): Anomalib Model that inherits pl LightningModule.
             stage (str | None, optional): fit, validate, test or predict. Defaults to None.
@@ -109,7 +111,7 @@ class _MetricsCallback(Callback):
         trainer: Trainer,
         pl_module: AnomalyModule,
         outputs: STEP_OUTPUT | None,
-        batch: Any,
+        batch: Any,  # noqa: ANN401
         batch_idx: int,
         dataloader_idx: int = 0,
     ) -> None:
@@ -144,7 +146,7 @@ class _MetricsCallback(Callback):
         trainer: Trainer,
         pl_module: AnomalyModule,
         outputs: STEP_OUTPUT | None,
-        batch: Any,
+        batch: Any,  # noqa: ANN401
         batch_idx: int,
         dataloader_idx: int = 0,
     ) -> None:
@@ -179,7 +181,7 @@ class _MetricsCallback(Callback):
             pixel_metric.to(self.device)
             pixel_metric.update(torch.squeeze(output["anomaly_maps"]), torch.squeeze(output["mask"].int()))
 
-    def _outputs_to_device(self, output: STEP_OUTPUT):
+    def _outputs_to_device(self, output: STEP_OUTPUT) -> STEP_OUTPUT | dict[str, Any]:
         if isinstance(output, dict):
             for key, value in output.items():
                 output[key] = self._outputs_to_device(value)

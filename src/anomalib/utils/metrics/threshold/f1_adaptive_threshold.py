@@ -36,7 +36,8 @@ class F1AdaptiveThreshold(PrecisionRecallCurve, BaseThreshold):
         Compute the F1 scores while varying the threshold. Store the optimal
         threshold as attribute and return the maximum value of the F1 score.
 
-        Returns:
+        Returns
+        -------
             Value of the F1 score at the optimal threshold.
         """
         precision: Tensor
