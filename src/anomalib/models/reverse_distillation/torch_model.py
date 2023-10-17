@@ -21,6 +21,9 @@ if TYPE_CHECKING:
 class ReverseDistillationModel(nn.Module):
     """Reverse Distillation Model.
 
+    To reproduce results in the paper, use torchvision model for the encoder:
+        self.encoder = torchvision.models.wide_resnet50_2(pretrained=True)
+
     Args:
     ----
         backbone (str): Name of the backbone used for encoder and decoder

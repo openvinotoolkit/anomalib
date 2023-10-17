@@ -75,8 +75,10 @@ class OCBE(nn.Module):
         self.conv3 = conv3x3(128 * block.expansion, 256 * block.expansion, 2)
         self.bn3 = norm_layer(256 * block.expansion)
 
-        # This is present in the paper but not in the original code. With some initial experiments, removing this leads
-        # to better results
+        # self.conv4 and self.bn4 are from the original code:
+        # https://github.com/hq-deng/RD4AD/blob/6554076872c65f8784f6ece8cfb39ce77e1aee12/resnet.py#L412
+        self.conv4 = conv1x1(1024 * block.expansion, 512 * block.expansion, 1)
+        self.bn4 = norm_layer(512 * block.expansion)
 
         for module in self.modules():
             if isinstance(module, nn.Conv2d):
