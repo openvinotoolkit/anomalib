@@ -158,7 +158,8 @@ class Augmenter:
 
         # Apply perturbations batch wise
         if isinstance(self.beta, float):
-            beta = self.beta
+            beta = torch.rand(batch_size) * self.beta
+            beta = beta.view(batch_size, 1, 1, 1).expand_as(batch).to(batch.device)  # type: ignore
         elif isinstance(self.beta, tuple):
             beta = torch.rand(batch_size) * (self.beta[1] - self.beta[0]) + self.beta[0]
             beta = beta.view(batch_size, 1, 1, 1).expand_as(batch).to(batch.device)  # type: ignore
