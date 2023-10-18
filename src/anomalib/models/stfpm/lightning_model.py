@@ -7,10 +7,10 @@ https://arxiv.org/abs/2103.04257
 # SPDX-License-Identifier: Apache-2.0
 
 
+from collections.abc import Sequence
 from typing import Any
 
 import torch
-from lightning.pytorch.callbacks import EarlyStopping
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 from omegaconf import DictConfig, ListConfig
 from torch import Tensor, optim
@@ -34,8 +34,8 @@ class Stfpm(AnomalyModule):
     def __init__(
         self,
         input_size: tuple[int, int],
-        backbone: str,
-        layers: list[str],
+        backbone: str = "resnet18",
+        layers: Sequence[str] = ("layer1", "layer2", "layer3"),
     ) -> None:
         super().__init__()
 
@@ -91,6 +91,20 @@ class Stfpm(AnomalyModule):
     def trainer_arguments(self) -> dict[str, Any]:
         return {"gradient_clip_val": 0, "num_sanity_val_steps": 0}
 
+    def configure_optimizers(self) -> torch.optim.Optimizer:
+        """Configure optimizers.
+
+        Returns:
+            Optimizer: SGD optimizer
+        """
+        return optim.SGD(
+            params=self.model.student_model.parameters(),
+            lr=0.4,
+            momentum=0.9,
+            dampening=0.0,
+            weight_decay=0.001,
+        )
+
 
 class StfpmLightning(Stfpm):
     """PL Lightning Module for the STFPM algorithm.
@@ -107,40 +121,3 @@ class StfpmLightning(Stfpm):
         )
         self.hparams: DictConfig | ListConfig
         self.save_hyperparameters(hparams)
-
-    def configure_callbacks(self) -> list[EarlyStopping]:
-        """Configure model-specific callbacks.
-
-        Note:
-        ----
-            This method is used for the existing CLI.
-            When PL CLI is introduced, configure callback method will be
-                deprecated, and callbacks will be configured from either
-                config.yaml file or from CLI.
-        """
-        early_stopping = EarlyStopping(
-            monitor=self.hparams.model.early_stopping.metric,
-            patience=self.hparams.model.early_stopping.patience,
-            mode=self.hparams.model.early_stopping.mode,
-        )
-        return [early_stopping]
-
-    def configure_optimizers(self) -> torch.optim.Optimizer:
-        """Configure optimizers.
-
-        Note:
-        ----
-            This method is used for the existing CLI.
-            When PL CLI is introduced, configure optimizers method will be
-                deprecated, and optimizers will be configured from either
-                config.yaml file or from CLI.
-
-        Returns:
-            Optimizer: SGD optimizer
-        """
-        return optim.SGD(
-            params=self.model.student_model.parameters(),
-            lr=self.hparams.model.lr,
-            momentum=self.hparams.model.momentum,
-            weight_decay=self.hparams.model.weight_decay,
-        )

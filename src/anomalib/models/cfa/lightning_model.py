@@ -13,12 +13,9 @@ import logging
 from typing import Any
 
 import torch
-from lightning.pytorch import Callback
-from lightning.pytorch.callbacks import EarlyStopping
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 from omegaconf import DictConfig, ListConfig
 from torch import Tensor
-from torch.optim.optimizer import Optimizer
 
 from anomalib.models.cfa.loss import CfaLoss
 from anomalib.models.cfa.torch_model import CfaModel
@@ -45,7 +42,7 @@ class Cfa(AnomalyModule):
     def __init__(
         self,
         input_size: tuple[int, int],
-        backbone: str,
+        backbone: str = "wide_resnet50_2",
         gamma_c: int = 1,
         gamma_d: int = 1,
         num_nearest_neighbors: int = 3,
@@ -105,17 +102,15 @@ class Cfa(AnomalyModule):
         batch["anomaly_maps"] = self.model(batch["image"])
         return batch
 
-    def backward(self, loss: Tensor, optimizer: Optimizer | None, optimizer_idx: int | None, *args, **kwargs) -> None:
+    def backward(self, loss: Tensor, *args, **kwargs) -> None:
         """Perform backward-pass for the CFA model.
 
         Args:
             loss (Tensor): Loss value.
-            optimizer (Optimizer | None): Optimizer.
-            optimizer_idx (int | None): Optimizer index.
             *args: Arguments.
             **kwargs: Keyword arguments.
         """
-        del optimizer, optimizer_idx, args, kwargs  # These variables are not used.
+        del args, kwargs  # These variables are not used.
 
         # TODO(samet-akcay): Investigate why retain_graph is needed.
         # CVS-122673
@@ -125,6 +120,19 @@ class Cfa(AnomalyModule):
     def trainer_arguments(self) -> dict[str, Any]:
         """CFA specific trainer arguments."""
         return {"gradient_clip_val": 0, "num_sanity_val_steps": 0}
+
+    def configure_optimizers(self) -> torch.optim.Optimizer:
+        """Configure optimizers for the CFA Model.
+
+        Returns:
+            Optimizer: Adam optimizer for each decoder
+        """
+        return torch.optim.AdamW(
+            params=self.model.parameters(),
+            lr=1e-3,
+            weight_decay=5e-4,
+            amsgrad=True,
+        )
 
 
 class CfaLightning(Cfa):
@@ -143,40 +151,3 @@ class CfaLightning(Cfa):
         )
         self.hparams: DictConfig | ListConfig
         self.save_hyperparameters(hparams)
-
-    def configure_callbacks(self) -> list[Callback]:
-        """Configure model-specific callbacks.
-
-        Note:
-        ----
-            This method is used for the existing CLI.
-            When PL CLI is introduced, configure callback method will be
-                deprecated, and callbacks will be configured from either
-                config.yaml file or from CLI.
-        """
-        early_stopping = EarlyStopping(
-            monitor=self.hparams.model.early_stopping.metric,
-            patience=self.hparams.model.early_stopping.patience,
-            mode=self.hparams.model.early_stopping.mode,
-        )
-        return [early_stopping]
-
-    def configure_optimizers(self) -> torch.optim.Optimizer:
-        """Configure optimizers for the CFA Model.
-
-        Note:
-        ----
-            This method is used for the existing CLI.
-            When PL CLI is introduced, configure optimizers method will be
-                deprecated, and optimizers will be configured from either
-                config.yaml file or from CLI.
-
-        Returns:
-            Optimizer: Adam optimizer for each decoder
-        """
-        return torch.optim.AdamW(
-            params=self.model.parameters(),
-            lr=self.hparams.model.lr,
-            weight_decay=self.hparams.model.weight_decay,
-            amsgrad=self.hparams.model.amsgrad,
-        )

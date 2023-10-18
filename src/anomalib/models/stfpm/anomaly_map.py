@@ -66,7 +66,6 @@ class AnomalyMapGenerator(nn.Module):
             kwargs (dict[str, Tensor]): Keyword arguments
 
         Example:
-        -------
             >>> anomaly_map_generator = AnomalyMapGenerator(image_size=tuple(hparams.model.input_size))
             >>> output = self.anomaly_map_generator(
                     teacher_features=teacher_features,

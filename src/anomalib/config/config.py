@@ -161,46 +161,6 @@ def update_nncf_config(config: DictConfig | ListConfig) -> DictConfig | ListConf
     return config
 
 
-def update_multi_gpu_training_config(config: DictConfig | ListConfig) -> DictConfig | ListConfig:
-    """Update the config to change learning rate based on number of gpus assigned.
-
-    Current behaviour is to ensure only ddp accelerator is used.
-
-    Args:
-        config (DictConfig | ListConfig): Configurable parameters for the current run
-
-    Raises:
-        ValueError: If unsupported accelerator is passed
-
-    Returns:
-        DictConfig | ListConfig: Updated config
-    """
-    # validate accelerator
-    if config.trainer.accelerator is not None and config.trainer.accelerator.lower() != "ddp":
-        if config.trainer.accelerator.lower() in ("dp", "ddp_spawn", "ddp2"):
-            logger.warning(
-                f"Using accelerator {config.trainer.accelerator.lower()} is discouraged. "
-                f"Please use one of [null, ddp]. Setting accelerator to ddp",
-            )
-            config.trainer.accelerator = "ddp"
-        else:
-            msg = f"Unsupported accelerator found: {config.trainer.accelerator}. Should be one of [null, ddp]"
-            raise ValueError(
-                msg,
-            )
-    # Increase learning rate
-    # since pytorch averages the gradient over devices, the idea is to
-    # increase the learning rate by the number of devices
-    if "lr" in config.model:
-        # Number of GPUs can either be passed as gpus: 2 or gpus: [0,1]
-        n_gpus: int | list = 1
-        if "trainer" in config and "gpus" in config.trainer:
-            n_gpus = config.trainer.gpus
-        lr_scaler = n_gpus if isinstance(n_gpus, int) else len(n_gpus)
-        config.model.lr = config.model.lr * lr_scaler
-    return config
-
-
 def show_warnings(config: DictConfig | ListConfig | Namespace) -> None:
     """Show warnings if any based on the configuration settings.
 
@@ -212,6 +172,13 @@ def show_warnings(config: DictConfig | ListConfig | Namespace) -> None:
             "Anomalib's models and visualizer are currently not compatible with video datasets with a clip length > 1. "
             "Custom changes to these modules will be needed to prevent errors and/or unpredictable behaviour.",
         )
+    if (
+        "devices" in config.trainer
+        and (config.trainer.devices is None or config.trainer.devices != 1)
+        and config.trainer.accelerator != "cpu"
+    ):
+        logger.warning("Anomalib currently does not support multi-gpu training. Setting devices to 1.")
+        config.trainer.devices = 1
 
 
 def get_configurable_parameters(

@@ -104,9 +104,8 @@ class AnomalyMapGenerator(nn.Module):
         Expects `embedding`, `mean` and `covariance` keywords to be passed explicitly.
 
         Example:
-        -------
-        >>> anomaly_map_generator = AnomalyMapGenerator(image_size=input_size)
-        >>> output = anomaly_map_generator(embedding=embedding, mean=mean, covariance=covariance)
+            >>> anomaly_map_generator = AnomalyMapGenerator(image_size=input_size)
+            >>> output = anomaly_map_generator(embedding=embedding, mean=mean, covariance=covariance)
 
         Raises:
             ValueError: `embedding`. `mean` or `covariance` keys are not found

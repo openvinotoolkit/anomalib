@@ -7,11 +7,11 @@ https://arxiv.org/pdf/2107.12571v1.pdf
 # SPDX-License-Identifier: Apache-2.0
 
 
+from collections.abc import Sequence
 from typing import Any
 
 import einops
 import torch
-from lightning.pytorch.callbacks import EarlyStopping
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 from omegaconf import DictConfig, ListConfig
 from torch import Tensor, optim
@@ -31,8 +31,8 @@ class Cflow(AnomalyModule):
     def __init__(
         self,
         input_size: tuple[int, int],
-        backbone: str,
-        layers: list[str],
+        backbone: str = "wide_resnet50_2",
+        layers: Sequence[str] = ("layer2", "layer3", "layer4"),
         pre_trained: bool = True,
         fiber_batch_size: int = 64,
         decoder: str = "freia-cflow",
@@ -63,13 +63,6 @@ class Cflow(AnomalyModule):
 
     def configure_optimizers(self) -> Optimizer:
         """Configure optimizers for each decoder.
-
-        Note:
-        ----
-            This method is used for the existing CLI.
-            When PL CLI is introduced, configure optimizers method will be
-                deprecated, and optimizers will be configured from either
-                config.yaml file or from CLI.
 
         Returns:
             Optimizer: Adam optimizer for each decoder
@@ -208,20 +201,3 @@ class CflowLightning(Cflow):
         )
         self.hparams: DictConfig | ListConfig
         self.save_hyperparameters(hparams)
-
-    def configure_callbacks(self) -> list[EarlyStopping]:
-        """Configure model-specific callbacks.
-
-        Note:
-        ----
-            This method is used for the existing CLI.
-            When PL CLI is introduced, configure callback method will be
-                deprecated, and callbacks will be configured from either
-                config.yaml file or from CLI.
-        """
-        early_stopping = EarlyStopping(
-            monitor=self.hparams.model.early_stopping.metric,
-            patience=self.hparams.model.early_stopping.patience,
-            mode=self.hparams.model.early_stopping.mode,
-        )
-        return [early_stopping]

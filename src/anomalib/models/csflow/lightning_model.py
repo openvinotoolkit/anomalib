@@ -11,7 +11,6 @@ import logging
 from typing import Any
 
 import torch
-from lightning.pytorch.callbacks import Callback, EarlyStopping
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 from omegaconf import DictConfig, ListConfig
 from torch import Tensor
@@ -40,10 +39,10 @@ class Csflow(AnomalyModule):
     def __init__(
         self,
         input_size: tuple[int, int],
-        cross_conv_hidden_channels: int,
-        n_coupling_blocks: int,
-        clamp: int,
-        num_channels: int,
+        cross_conv_hidden_channels: int = 1024,
+        n_coupling_blocks: int = 4,
+        clamp: int = 3,
+        num_channels: int = 3,
     ) -> None:
         super().__init__()
         self.model: CsFlowModel = CsFlowModel(
@@ -97,6 +96,20 @@ class Csflow(AnomalyModule):
         """CS-Flow-specific trainer arguments."""
         return {"gradient_clip_val": 1, "num_sanity_val_steps": 0}
 
+    def configure_optimizers(self) -> torch.optim.Optimizer:
+        """Configure optimizers.
+
+        Returns:
+            Optimizer: Adam optimizer
+        """
+        return torch.optim.Adam(
+            self.parameters(),
+            lr=2e-4,
+            eps=1e-04,
+            weight_decay=1e-5,
+            betas=(0.5, 0.9),
+        )
+
 
 class CsflowLightning(Csflow):
     """Fully Convolutional Cross-Scale-Flows for Image-based Defect Detection.
@@ -115,41 +128,3 @@ class CsflowLightning(Csflow):
         )
         self.hparams: DictConfig | ListConfig
         self.save_hyperparameters(hparams)
-
-    def configure_callbacks(self) -> list[Callback]:
-        """Configure model-specific callbacks.
-
-        Note:
-        ----
-            This method is used for the existing CLI.
-            When PL CLI is introduced, configure callback method will be
-                deprecated, and callbacks will be configured from either
-                config.yaml file or from CLI.
-        """
-        early_stopping = EarlyStopping(
-            monitor=self.hparams.model.early_stopping.metric,
-            patience=self.hparams.model.early_stopping.patience,
-            mode=self.hparams.model.early_stopping.mode,
-        )
-        return [early_stopping]
-
-    def configure_optimizers(self) -> torch.optim.Optimizer:
-        """Configure optimizers.
-
-        Note:
-        ----
-            This method is used for the existing CLI.
-            When PL CLI is introduced, configure optimizers method will be
-                deprecated, and optimizers will be configured from either
-                config.yaml file or from CLI.
-
-        Returns:
-            Optimizer: Adam optimizer
-        """
-        return torch.optim.Adam(
-            self.parameters(),
-            lr=self.hparams.model.lr,
-            eps=self.hparams.model.eps,
-            weight_decay=self.hparams.model.weight_decay,
-            betas=(0.5, 0.9),
-        )

@@ -32,12 +32,10 @@ DOCSTRING_USAGE = {
 def pre_parse_arguments() -> dict:
     """Parse command line arguments and returns a dictionary of key-value pairs.
 
-    Returns
-    -------
+    Returns:
         A dictionary containing the parsed command line arguments.
 
-    Examples
-    --------
+    Examples:
         >>> import sys
         >>> sys.argv = ['anomalib', 'fit', '--arg1', 'value1', '-a', 'value2', '-h']
         >>> pre_parse_arguments()
@@ -74,8 +72,7 @@ def get_verbosity_subcommand() -> tuple:
     help option is specified. The verbosity level can be set to 0 (no output), 1 (normal output),
     or 2 (verbose output).
 
-    Returns
-    -------
+    Returns:
         A tuple containing the verbosity level (int) and the subcommand name (str).
     """
     arguments = pre_parse_arguments()
@@ -95,8 +92,7 @@ def get_intro() -> Markdown:
 
     The introduction text includes a brief description of the guide and links to the Github repository and documentation
 
-    Returns
-    -------
+    Returns:
         A Markdown object containing the introduction text for Anomalib CLI Guide.
     """
     intro_markdown = (
@@ -196,15 +192,13 @@ class CustomHelpFormatter(RichHelpFormatter, DefaultHelpFormatter):
     This formatter extends the RichHelpFormatter and DefaultHelpFormatter classes to provide
     a more detailed and customizable help output for Anomalib CLI.
 
-    Attributes
-    ----------
+    Attributes:
     verbose_level : int
         The level of verbosity for the help output.
     subcommand : str | None
         The subcommand to render the guide for.
 
-    Methods
-    -------
+    Methods:
     add_usage(usage, actions, *args, **kwargs)
         Add usage information to the help output.
     add_argument(action)
@@ -260,8 +254,7 @@ class CustomHelpFormatter(RichHelpFormatter, DefaultHelpFormatter):
         The help message includes information about the command's arguments and options,
         as well as any additional information provided by the command's help guide.
 
-        Returns
-        -------
+        Returns:
             str: A string containing the formatted help message.
         """
         with self.console.capture() as capture:

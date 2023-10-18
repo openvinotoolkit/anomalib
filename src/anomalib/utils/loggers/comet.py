@@ -70,7 +70,6 @@ class AnomalibCometLogger(ImageLoggerBase, CometLogger):
         >>> engine =  Engine(logger=comet_logger)
 
     See Also:
-    --------
         - `Comet Documentation <https://www.comet.com/docs/v2/integrations/ml-frameworks/pytorch-lightning/>`__
     """
 

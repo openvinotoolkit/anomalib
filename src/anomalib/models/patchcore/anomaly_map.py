@@ -43,9 +43,8 @@ class AnomalyMapGenerator(nn.Module):
             patch_scores (Tensor): Patch-level anomaly scores
 
         Example:
-        -------
-        >>> anomaly_map_generator = AnomalyMapGenerator(input_size=input_size)
-        >>> map = anomaly_map_generator(patch_scores=patch_scores)
+            >>> anomaly_map_generator = AnomalyMapGenerator(input_size=input_size)
+            >>> map = anomaly_map_generator(patch_scores=patch_scores)
 
         Returns:
             Tensor: anomaly_map

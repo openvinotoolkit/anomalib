@@ -7,6 +7,7 @@ Paper https://arxiv.org/abs/2106.08265.
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
+from collections.abc import Sequence
 from typing import Any
 
 import torch
@@ -36,8 +37,8 @@ class Patchcore(AnomalyModule):
     def __init__(
         self,
         input_size: tuple[int, int],
-        backbone: str,
-        layers: list[str],
+        backbone: str = "wide_resnet50_2",
+        layers: Sequence[str] = ("layer2", "layer3"),
         pre_trained: bool = True,
         coreset_sampling_ratio: float = 0.1,
         num_neighbors: int = 9,

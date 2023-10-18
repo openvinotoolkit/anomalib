@@ -11,7 +11,6 @@ import logging
 from typing import Any
 
 import torch
-from lightning.pytorch.callbacks import Callback, EarlyStopping
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 from omegaconf import DictConfig, ListConfig
 from torch import Tensor, optim
@@ -28,8 +27,8 @@ class Ganomaly(AnomalyModule):
     """PL Lightning Module for the GANomaly Algorithm.
 
     Args:
-        batch_size (int): Batch size.
         input_size (tuple[int, int]): Input dimension.
+        batch_size (int): Batch size.
         n_features (int): Number of features layers in the CNNs.
         latent_vec_size (int): Size of autoencoder latent vector.
         extra_layers (int, optional): Number of extra layers for encoder/decoder. Defaults to 0.
@@ -41,10 +40,10 @@ class Ganomaly(AnomalyModule):
 
     def __init__(
         self,
-        batch_size: int,
         input_size: tuple[int, int],
-        n_features: int,
-        latent_vec_size: int,
+        batch_size: int = 32,
+        n_features: int = 64,
+        latent_vec_size: int = 100,
         extra_layers: int = 0,
         add_final_conv_layer: bool = True,
         wadv: int = 1,
@@ -88,13 +87,6 @@ class Ganomaly(AnomalyModule):
 
     def configure_optimizers(self) -> list[optim.Optimizer]:
         """Configure optimizers for each decoder.
-
-        Note:
-        ----
-            This method is used for the existing CLI.
-            When PL CLI is introduced, configure optimizers method will be
-                deprecated, and optimizers will be configured from either
-                config.yaml file or from CLI.
 
         Returns:
             Optimizer: Adam optimizer for each decoder
@@ -259,20 +251,3 @@ class GanomalyLightning(Ganomaly):
         )
         self.hparams: DictConfig | ListConfig
         self.save_hyperparameters(hparams)
-
-    def configure_callbacks(self) -> list[Callback]:
-        """Configure model-specific callbacks.
-
-        Note:
-        ----
-            This method is used for the existing CLI.
-            When PL CLI is introduced, configure callback method will be
-                deprecated, and callbacks will be configured from either
-                config.yaml file or from CLI.
-        """
-        early_stopping = EarlyStopping(
-            monitor=self.hparams.model.early_stopping.metric,
-            patience=self.hparams.model.early_stopping.patience,
-            mode=self.hparams.model.early_stopping.mode,
-        )
-        return [early_stopping]

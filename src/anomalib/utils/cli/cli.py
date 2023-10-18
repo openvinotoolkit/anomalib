@@ -77,7 +77,7 @@ class AnomalibCLI(LightningCLI):
         )
         self.engine: Engine
 
-    def init_parser(self, **kwargs: Any) -> LightningArgumentParser:
+    def init_parser(self, **kwargs) -> LightningArgumentParser:
         """Method that instantiates the argument parser."""
         kwargs.setdefault("dump_header", [f"lightning.pytorch=={pl.__version__}"])
         parser = LightningArgumentParser(formatter_class=CustomHelpFormatter, **kwargs)
@@ -90,7 +90,7 @@ class AnomalibCLI(LightningCLI):
         return parser
 
     @staticmethod
-    def anomalib_subcommands() -> dict[str, dict[str, Any]]:
+    def anomalib_subcommands() -> dict[str, dict[str, str]]:
         """Return a dictionary of subcommands and their description."""
         return {
             "export": {"description": "Export the model to ONNX or OpenVINO format."},
@@ -124,10 +124,10 @@ class AnomalibCLI(LightningCLI):
         parser.add_function_arguments(get_normalization_callback, "normalization")
         # visualization takes task from the project
         parser.add_function_arguments(get_visualization_callbacks, "visualization", skip={"task"})
-        parser.add_argument("task", type=TaskType, default=TaskType.SEGMENTATION)
-        parser.add_argument("metrics.image", type=list[str] | str | None, default=["F1Score", "AUROC"])
-        parser.add_argument("metrics.pixel", type=list[str] | str | None, default=["F1Score", "AUROC"])
-        parser.add_argument("metrics.threshold", type=BaseThreshold, default="F1AdaptiveThreshold")
+        parser.add_argument("--task", type=TaskType, default=TaskType.SEGMENTATION)
+        parser.add_argument("--metrics.image", type=list[str] | str | None, default=["F1Score", "AUROC"])
+        parser.add_argument("--metrics.pixel", type=list[str] | str | None, default=None, required=False)
+        parser.add_argument("--metrics.threshold", type=BaseThreshold, default="F1AdaptiveThreshold")
         parser.add_argument("--logging.log_graph", type=bool, help="Log the model to the logger", default=False)
         parser.link_arguments("data.init_args.image_size", "model.init_args.input_size")
         parser.link_arguments("task", "data.init_args.task")

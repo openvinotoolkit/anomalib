@@ -15,7 +15,7 @@ from .min_max_normalization import _MinMaxNormalizationCallback
 
 
 def get_normalization_callback(
-    normalization_method: NormalizationMethod | DictConfig | Callback | str = NormalizationMethod.NONE,
+    normalization_method: NormalizationMethod | DictConfig | Callback | str = NormalizationMethod.MIN_MAX,
 ) -> Callback | None:
     """Return normalization object.
 

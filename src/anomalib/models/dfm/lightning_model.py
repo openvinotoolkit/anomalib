@@ -23,9 +23,9 @@ class Dfm(AnomalyModule):
     """DFM: Deep Featured Kernel Density Estimation.
 
     Args:
+        input_size (tuple[int, int]): Input size for the model.
         backbone (str): Backbone CNN network
         layer (str): Layer to extract features from the backbone CNN
-        input_size (tuple[int, int]): Input size for the model.
         pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.
         pooling_kernel_size (int, optional): Kernel size to pool features extracted from the CNN.
             Defaults to 4.
@@ -38,9 +38,9 @@ class Dfm(AnomalyModule):
 
     def __init__(
         self,
-        backbone: str,
-        layer: str,
         input_size: tuple[int, int],
+        backbone: str = "resnet50",
+        layer: str = "layer3",
         pre_trained: bool = True,
         pooling_kernel_size: int = 4,
         pca_level: float = 0.97,
