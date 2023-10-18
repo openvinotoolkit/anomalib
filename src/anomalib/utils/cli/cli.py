@@ -76,7 +76,7 @@ class AnomalibCLI(LightningCLI):
         self.engine: Engine
 
     @staticmethod
-    def anomalib_subcommands() -> dict[str, dict[str, Any]]:
+    def anomalib_subcommands() -> dict[str, dict[str, str]]:
         """Return a dictionary of subcommands and their description."""
         return {
             "export": {"description": "Export the model to ONNX or OpenVINO format."},
