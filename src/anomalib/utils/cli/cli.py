@@ -77,7 +77,7 @@ class AnomalibCLI(LightningCLI):
         )
         self.engine: Engine
 
-    def init_parser(self, **kwargs: Any) -> LightningArgumentParser:
+    def init_parser(self, **kwargs) -> LightningArgumentParser:
         """Method that instantiates the argument parser."""
         kwargs.setdefault("dump_header", [f"lightning.pytorch=={pl.__version__}"])
         parser = LightningArgumentParser(formatter_class=CustomHelpFormatter, **kwargs)
