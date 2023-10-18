@@ -94,13 +94,11 @@ def make_mvtec_dataset(
     |---|---------------|-------|---------|---------------|---------------------------------------|-------------|
 
     Args:
-    ----
         root (Path): Path to dataset
         split (str | Split | None, optional): Dataset split (ie., either train or test). Defaults to None.
         extensions (Sequence[str] | None, optional): List of file extensions to be included in the dataset.
 
     Examples:
-    --------
         The following example shows how to get training samples from MVTec AD bottle category:
 
         >>> root = Path('./MVTec')
@@ -119,7 +117,6 @@ def make_mvtec_dataset(
         4  MVTec/bottle train good MVTec/bottle/train/good/109.png MVTec/bottle/ground_truth/good/109_mask.png 0
 
     Returns:
-    -------
         DataFrame: an output dataframe containing the samples of the dataset.
     """
     if extensions is None:
@@ -172,7 +169,6 @@ class MVTecDataset(AnomalibDataset):
     """MVTec dataset class.
 
     Args:
-    ----
         task (TaskType): Task type, ``classification``, ``detection`` or ``segmentation``
         transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
         split (str | Split | None): Split of the dataset, usually Split.TRAIN or Split.TEST
@@ -201,7 +197,6 @@ class MVTec(AnomalibDataModule):
     """MVTec Datamodule.
 
     Args:
-    ----
         root (Path | str): Path to the root of the dataset
         category (str): Category of the MVTec dataset (e.g. "bottle" or "cable").
         image_size (int | tuple[int, int] | None, optional): Size of the input image.

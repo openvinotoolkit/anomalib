@@ -64,9 +64,8 @@ class Cflow(AnomalyModule):
     def configure_optimizers(self) -> Optimizer:
         """Configure optimizers for each decoder.
 
-        Returns
-        -------
-                    Optimizer: Adam optimizer for each decoder
+        Returns:
+            Optimizer: Adam optimizer for each decoder
         """
         decoders_parameters = []
         for decoder_idx in range(len(self.model.pool_layers)):
@@ -85,13 +84,11 @@ class Cflow(AnomalyModule):
             per batch of input images
 
         Args:
-        ----
             batch (dict[str, str | Tensor]): Input batch
             *args: Arguments.
             **kwargs: Keyword arguments.
 
         Returns:
-        -------
           Loss value for the batch
 
         """
@@ -162,13 +159,11 @@ class Cflow(AnomalyModule):
             map is computed.
 
         Args:
-        ----
             batch (dict[str, str | Tensor]): Input batch
             *args: Arguments.
             **kwargs: Keyword arguments.
 
         Returns:
-        -------
             Dictionary containing images, anomaly maps, true labels and masks.
             These are required in `validation_epoch_end` for feature concatenation.
 
@@ -188,7 +183,6 @@ class CflowLightning(Cflow):
     """PL Lightning Module for the CFLOW algorithm.
 
     Args:
-    ----
         hparams (DictConfig | ListConfig): Model params
     """
 

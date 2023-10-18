@@ -62,7 +62,6 @@ class AUPRO(Metric):
         """Update state with new values.
 
         Args:
-        ----
             preds (Tensor): predictions of the model
             target (Tensor): ground truth targets
         """
@@ -72,13 +71,11 @@ class AUPRO(Metric):
     def perform_cca(self) -> Tensor:
         """Perform the Connected Component Analysis on the self.target tensor.
 
-        Raises
-        ------
+        Raises:
             ValueError: ValueError is raised if self.target doesn't conform with requirements imposed by kornia for
                         connected component analysis.
 
-        Returns
-        -------
+        Returns:
             Tensor: Components labeled from 0 to N.
         """
         target = dim_zero_cat(self.target)
@@ -102,8 +99,7 @@ class AUPRO(Metric):
         It leverages the fact that the overlap corresponds to the tpr, and thus computes the overall
         PRO curve by aggregating per-region tpr/fpr values produced by ROC-construction.
 
-        Returns
-        -------
+        Returns:
             tuple[Tensor, Tensor]: tuple containing final fpr and tpr values.
         """
         if self.num_thresholds is not None:
@@ -197,8 +193,7 @@ class AUPRO(Metric):
 
         Perform the Connected Component Analysis first then compute the PRO curve.
 
-        Returns
-        -------
+        Returns:
             tuple[Tensor, Tensor]: tuple containing final fpr and tpr values.
         """
         cca = self.perform_cca().flatten()
@@ -210,8 +205,7 @@ class AUPRO(Metric):
     def compute(self) -> Tensor:
         """Fist compute PRO curve, then compute and scale area under the curve.
 
-        Returns
-        -------
+        Returns:
             Tensor: Value of the AUPRO metric
         """
         fpr, tpr = self._compute()
@@ -222,8 +216,7 @@ class AUPRO(Metric):
     def generate_figure(self) -> tuple[Figure, str]:
         """Generate a figure containing the PRO curve and the AUPRO.
 
-        Returns
-        -------
+        Returns:
             tuple[Figure, str]: Tuple containing both the figure and the figure title to be used for logging
         """
         fpr, tpr = self._compute()
@@ -245,13 +238,11 @@ class AUPRO(Metric):
         """Interpolate a 1D signal linearly to new sampling points.
 
         Args:
-        ----
             old_x (Tensor): original 1-D x values (same size as y)
             old_y (Tensor): original 1-D y values (same size as x)
             new_x (Tensor): x-values where y should be interpolated at
 
         Returns:
-        -------
             Tensor: y-values at corresponding new_x values.
         """
         # Compute slope

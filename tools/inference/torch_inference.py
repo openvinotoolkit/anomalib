@@ -23,8 +23,7 @@ logger = logging.getLogger(__name__)
 def get_parser() -> ArgumentParser:
     """Get parser.
 
-    Returns
-    -------
+    Returns:
         ArgumentParser: The parser object.
     """
     parser = ArgumentParser()
@@ -71,7 +70,6 @@ def infer(args: Namespace) -> None:
     Show/save the output if path is to an image. If the path is a directory, go over each image in the directory.
 
     Args:
-    ----
         args (Namespace): The arguments from the command line.
     """
     torch.set_grad_enabled(mode=False)

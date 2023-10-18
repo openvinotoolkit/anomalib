@@ -27,7 +27,6 @@ class Draem(AnomalyModule):
     """DRÆM: A discriminatively trained reconstruction embedding for surface anomaly detection.
 
     Args:
-    ----
         anomaly_source_path (str | None): Path to folder that contains the anomaly source images. Random noise will
             be used if left empty.
     """
@@ -85,13 +84,11 @@ class Draem(AnomalyModule):
         image through the network and computes the training loss.
 
         Args:
-        ----
             batch (dict[str, str | Tensor]): Batch containing image filename, image, label and mask
             args: Arguments.
             kwargs: Keyword arguments.
 
         Returns:
-        -------
             Loss dictionary
         """
         del args, kwargs  # These variables are not used.
@@ -117,13 +114,11 @@ class Draem(AnomalyModule):
         """Perform the validation step of DRAEM. The Softmax predictions of the anomalous class are used as anomaly map.
 
         Args:
-        ----
             batch (dict[str, str | Tensor]): Batch of input images
             args: Arguments.
             kwargs: Keyword arguments.
 
         Returns:
-        -------
             Dictionary to which predicted anomaly maps have been added.
         """
         del args, kwargs  # These variables are not used.
@@ -146,7 +141,6 @@ class DraemLightning(Draem):
     """DRÆM: A discriminatively trained reconstruction embedding for surface anomaly detection.
 
     Args:
-    ----
         hparams (DictConfig | ListConfig): Model parameters
     """
 

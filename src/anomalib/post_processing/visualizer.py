@@ -72,7 +72,6 @@ class Visualizer:
     """Class that handles the logic of composing the visualizations.
 
     Args:
-    ----
         mode (VisualizationMode): visualization mode, either "full" or "simple"
         task (TaskType): task type "segmentation", "detection" or "classification"
     """
@@ -93,11 +92,9 @@ class Visualizer:
         """Yield a visualization result for each item in the batch.
 
         Args:
-        ----
             batch (dict): Dictionary containing the ground truth and predictions of a batch of images.
 
         Returns:
-        -------
             Generator that yields a display-ready visualization for each image.
         """
         batch_size = batch["image"].shape[0]
@@ -130,11 +127,9 @@ class Visualizer:
         """Generate the visualization for an image.
 
         Args:
-        ----
             image_result (ImageResult): GT and Prediction data for a single image.
 
         Returns:
-        -------
             The full or simple visualization for the image, depending on the specified mode.
         """
         if self.mode == VisualizationMode.FULL:
@@ -152,11 +147,9 @@ class Visualizer:
         segmentations (if available).
 
         Args:
-        ----
             image_result (ImageResult): GT and Prediction data for a single image.
 
         Returns:
-        -------
             An image showing the full set of visualizations for the input image.
         """
         visualization = ImageGrid()
@@ -197,11 +190,9 @@ class Visualizer:
         The simple visualization mode only shows the model's predictions in a single image.
 
         Args:
-        ----
             image_result (ImageResult): GT and Prediction data for a single image.
 
         Returns:
-        -------
             An image showing the simple visualization for the input image.
         """
         if self.task == TaskType.DETECTION:
@@ -236,7 +227,6 @@ class Visualizer:
         """Show an image on the screen.
 
         Args:
-        ----
             title (str): Title that will be given to the window showing the image.
             image (np.ndarray): Image that will be shown in the window.
             delay (int): Delay in milliseconds to wait for keystroke. 0 for infinite.
@@ -251,7 +241,6 @@ class Visualizer:
         """Save an image to the file system.
 
         Args:
-        ----
             file_path (Path): Path to which the image will be saved.
             image (np.ndarray): Image that will be saved to the file system.
         """
@@ -276,7 +265,6 @@ class ImageGrid:
         """Add an image to the grid.
 
         Args:
-        ----
           image (np.ndarray): Image which should be added to the figure.
           title (str): Image title shown on the plot.
           color_map (str | None): Name of matplotlib color map used to map scalar data to colours. Defaults to None.
@@ -287,8 +275,7 @@ class ImageGrid:
     def generate(self) -> np.ndarray:
         """Generate the image.
 
-        Returns
-        -------
+        Returns:
             Image consisting of a grid of added images and their title.
         """
         num_cols = len(self.images)

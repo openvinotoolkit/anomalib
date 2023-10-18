@@ -20,11 +20,9 @@ def imagenet_norm_batch(x: torch.Tensor) -> torch.Tensor:
     """Normalize batch of images with ImageNet mean and std.
 
     Args:
-    ----
         x (torch.Tensor): Input batch.
 
     Returns:
-    -------
         torch.Tensor: Normalized batch using the ImageNet mean and std.
     """
     mean = torch.tensor([0.485, 0.456, 0.406])[None, :, None, None].to(x.device)
@@ -42,12 +40,10 @@ def reduce_tensor_elems(tensor: torch.Tensor, m: int = 2**24) -> torch.Tensor:
     https://github.com/pytorch/pytorch/blob/b9f81a483a7879cd3709fd26bcec5f1ee33577e6/aten/src/ATen/native/Sorting.cpp#L291.
 
     Args:
-    ----
         tensor (torch.Tensor): input tensor from which elements are selected
         m (int): number of maximum tensor elements. Default: 2**24
 
     Returns:
-    -------
             Tensor: reduced tensor
     """
     tensor = torch.flatten(tensor)
@@ -70,7 +66,6 @@ class SmallPatchDescriptionNetwork(nn.Module):
     """Patch Description Network small.
 
     Args:
-    ----
         out_channels (int): number of convolution output channels
     """
 
@@ -88,11 +83,9 @@ class SmallPatchDescriptionNetwork(nn.Module):
         """Perform a forward pass through the network.
 
         Args:
-        ----
             x (torch.Tensor): Input batch.
 
         Returns:
-        -------
             torch.Tensor: Output from the network.
         """
         x = imagenet_norm_batch(x)
@@ -108,7 +101,6 @@ class MediumPatchDescriptionNetwork(nn.Module):
     """Patch Description Network medium.
 
     Args:
-    ----
         out_channels (int): number of convolution output channels
     """
 
@@ -128,11 +120,9 @@ class MediumPatchDescriptionNetwork(nn.Module):
         """Perform a forward pass through the network.
 
         Args:
-        ----
             x (torch.Tensor): Input batch.
 
         Returns:
-        -------
             torch.Tensor: Output from the network.
         """
         x = imagenet_norm_batch(x)
@@ -162,11 +152,9 @@ class Encoder(nn.Module):
         """Perform the forward pass through the network.
 
         Args:
-        ----
             x (torch.Tensor): Input batch.
 
         Returns:
-        -------
             torch.Tensor: Output from the network.
         """
         x = F.relu(self.enconv1(x))
@@ -181,7 +169,6 @@ class Decoder(nn.Module):
     """Autoencoder Decoder model.
 
     Args:
-    ----
         out_channels (int): number of convolution output channels
         img_size (tuple): size of input images
     """
@@ -212,11 +199,9 @@ class Decoder(nn.Module):
         """Perform a forward pass through the network.
 
         Args:
-        ----
             x (torch.Tensor): Input batch.
 
         Returns:
-        -------
             torch.Tensor: Output from the network.
         """
         x = F.interpolate(x, size=(int(self.img_size[0] / 64) - 1, int(self.img_size[1] / 64) - 1), mode="bilinear")
@@ -246,7 +231,6 @@ class AutoEncoder(nn.Module):
     """EfficientAd Autoencoder.
 
     Args:
-    ----
        out_channels (int): number of convolution output channels
        img_size (tuple): size of input images
     """
@@ -260,11 +244,9 @@ class AutoEncoder(nn.Module):
         """Perform the forward pass through the network.
 
         Args:
-        ----
             x (torch.Tensor): Input batch.
 
         Returns:
-        -------
             torch.Tensor: Output from the network.
         """
         x = imagenet_norm_batch(x)
@@ -276,7 +258,6 @@ class EfficientAdModel(nn.Module):
     """EfficientAd model.
 
     Args:
-    ----
         teacher_out_channels (int): number of convolution output channels of the pre-trained teacher model
         pretrained_models_dir (str): path to the pretrained model weights
         input_size (tuple): size of input images
@@ -337,11 +318,9 @@ class EfficientAdModel(nn.Module):
         """Check if any of the parameters in the parameter dictionary is set.
 
         Args:
-        ----
             p_dic (nn.ParameterDict): Parameter dictionary.
 
         Returns:
-        -------
             bool: Boolean indicating whether any of the parameters in the parameter dictionary is set.
         """
         return any(value.sum() != 0 for _, value in p_dic.items())
@@ -350,11 +329,9 @@ class EfficientAdModel(nn.Module):
         """Choose a random augmentation function and apply it to the input image.
 
         Args:
-        ----
             image (Tensor): Input image.
 
         Returns:
-        -------
             Tensor: Augmented image.
         """
         transform_functions = [
@@ -371,12 +348,10 @@ class EfficientAdModel(nn.Module):
         """Perform the forward-pass of the EfficientAd models.
 
         Args:
-        ----
             batch (Tensor): Input images.
             batch_imagenet (Tensor): ImageNet batch. Defaults to None.
 
         Returns:
-        -------
             Tensor: Predictions
         """
         with torch.no_grad():

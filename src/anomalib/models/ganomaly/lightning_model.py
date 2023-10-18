@@ -27,7 +27,6 @@ class Ganomaly(AnomalyModule):
     """PL Lightning Module for the GANomaly Algorithm.
 
     Args:
-    ----
         input_size (tuple[int, int]): Input dimension.
         batch_size (int): Batch size.
         n_features (int): Number of features layers in the CNNs.
@@ -89,8 +88,7 @@ class Ganomaly(AnomalyModule):
     def configure_optimizers(self) -> list[optim.Optimizer]:
         """Configure optimizers for each decoder.
 
-        Returns
-        -------
+        Returns:
             Optimizer: Adam optimizer for each decoder
         """
         optimizer_d = optim.Adam(
@@ -113,13 +111,11 @@ class Ganomaly(AnomalyModule):
         """Perform the training step.
 
         Args:
-        ----
             batch (dict[str, str | Tensor]): Input batch containing images.
             batch_idx (int): Batch index.
             optimizer_idx (int): Optimizer which is being called for current training step.
 
         Returns:
-        -------
             STEP_OUTPUT: Loss
         """
         del batch_idx  # `batch_idx` variables is not used.
@@ -162,13 +158,11 @@ class Ganomaly(AnomalyModule):
         """Update min and max scores from the current step.
 
         Args:
-        ----
             batch (dict[str, str | Tensor]): Predicted difference between z and z_hat.
             args: Additional arguments.
             kwargs: Additional keyword arguments.
 
         Returns:
-        -------
             (STEP_OUTPUT): Output predictions.
         """
         del args, kwargs  # Unused arguments.
@@ -218,11 +212,9 @@ class Ganomaly(AnomalyModule):
         """Normalize the scores based on min/max of entire dataset.
 
         Args:
-        ----
             scores (Tensor): Un-normalized scores.
 
         Returns:
-        -------
             Tensor: Normalized scores.
         """
         return (scores - self.min_scores.to(scores.device)) / (
@@ -239,7 +231,6 @@ class GanomalyLightning(Ganomaly):
     """PL Lightning Module for the GANomaly Algorithm.
 
     Args:
-    ----
         hparams (DictConfig | ListConfig): Model params
     """
 

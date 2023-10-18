@@ -41,7 +41,6 @@ class AnomalibWandbLogger(ImageLoggerBase, WandbLogger):
         $ pip install wandb
 
     Args:
-    ----
         name: Display name for the run.
         save_dir: Path where data is saved (wandb dir by default).
         offline: Run offline (data can be streamed later to wandb servers).
@@ -55,14 +54,12 @@ class AnomalibWandbLogger(ImageLoggerBase, WandbLogger):
         **kwargs: Arguments passed to :func:`wandb.init` like `entity`, `group`, `tags`, etc.
 
     Raises:
-    ------
         ImportError:
             If required WandB package is not installed on the device.
         MisconfigurationException:
             If both ``log_model`` and ``offline``is set to ``True``.
 
     Example:
-    -------
         >>> from anomalib.utils.loggers import AnomalibWandbLogger
         >>> from anomalib.engine import Engine
         >>> wandb_logger = AnomalibWandbLogger()
@@ -72,7 +69,6 @@ class AnomalibWandbLogger(ImageLoggerBase, WandbLogger):
     make sure to use `commit=False` so the logging step does not increase.
 
     See Also:
-    --------
         - `Tutorial <https://colab.research.google.com/drive/16d1uctGaw2y9KhGBlINNTsWpmlXdJwRW?usp=sharing>`__
           on how to use W&B with PyTorch Lightning
         - `W&B Documentation <https://docs.wandb.ai/integrations/lightning>`__
@@ -113,7 +109,6 @@ class AnomalibWandbLogger(ImageLoggerBase, WandbLogger):
         """Interface to add image to wandb logger.
 
         Args:
-        ----
             image (np.ndarray | Figure): Image to log
             name (str | None): The tag of the image
             kwargs: Additional arguments to `wandb.Image`

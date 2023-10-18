@@ -22,7 +22,6 @@ def add_label(
     """Add a label to an image.
 
     Args:
-    ----
         image (np.ndarray): Input image.
         label_name (str): Name of the label that will be displayed on the image.
         color (tuple[int, int, int]): RGB values for background color of label.
@@ -31,7 +30,6 @@ def add_label(
         thickness_scale (float): scale of the font thickness. Increase for thicker font.
 
     Returns:
-    -------
         np.ndarray: Image with label.
     """
     image = image.copy()
@@ -78,13 +76,11 @@ def anomaly_map_to_color_map(anomaly_map: np.ndarray, normalize: bool = True) ->
     """Compute anomaly color heatmap.
 
     Args:
-    ----
         anomaly_map (np.ndarray): Final anomaly map computed by the distance metric.
         normalize (bool, optional): Bool to normalize the anomaly map prior to applying
             the color map. Defaults to True.
 
     Returns:
-    -------
         np.ndarray: [description]
     """
     if normalize:
@@ -106,7 +102,6 @@ def superimpose_anomaly_map(
     """Superimpose anomaly map on top of in the input image.
 
     Args:
-    ----
         anomaly_map (np.ndarray): Anomaly map
         image (np.ndarray): Input image
         alpha (float, optional): Weight to overlay anomaly map
@@ -120,7 +115,6 @@ def superimpose_anomaly_map(
 
 
     Returns:
-    -------
         np.ndarray: Image with anomaly map superimposed on top of it.
     """
     anomaly_map = anomaly_map_to_color_map(anomaly_map.squeeze(), normalize=normalize)
@@ -131,13 +125,11 @@ def compute_mask(anomaly_map: np.ndarray, threshold: float, kernel_size: int = 4
     """Compute anomaly mask via thresholding the predicted anomaly map.
 
     Args:
-    ----
         anomaly_map (np.ndarray): Anomaly map predicted via the model
         threshold (float): Value to threshold anomaly scores into 0-1 range.
         kernel_size (int): Value to apply morphological operations to the predicted mask. Defaults to 4.
 
     Returns:
-    -------
         Predicted anomaly mask
     """
     anomaly_map = anomaly_map.squeeze()
@@ -156,13 +148,11 @@ def draw_boxes(image: np.ndarray, boxes: np.ndarray, color: tuple[int, int, int]
     """Draw bounding boxes on an image.
 
     Args:
-    ----
         image (np.ndarray): Source image.
         boxes (np.nparray): 2D array of shape (N, 4) where each row contains the xyxy coordinates of a bounding box.
         color (tuple[int, int, int]): Color of the drawn boxes in RGB format.
 
     Returns:
-    -------
         np.ndarray: Image showing the bounding boxes drawn on top of the source image.
     """
     for box in boxes:

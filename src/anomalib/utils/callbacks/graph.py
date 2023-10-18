@@ -16,7 +16,6 @@ class GraphLogger(Callback):
         """Log model graph to respective logger.
 
         Args:
-        ----
             trainer: Trainer object which contans reference to loggers.
             pl_module: LightningModule object which is logged.
         """
@@ -31,7 +30,6 @@ class GraphLogger(Callback):
         """Unwatch model if configured for wandb and log it model graph in Tensorboard if specified.
 
         Args:
-        ----
             trainer: Trainer object which contans reference to loggers.
             pl_module: LightningModule object which is logged.
         """

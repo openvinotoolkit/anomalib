@@ -17,13 +17,11 @@ def get_torch_throughput(model_path: str | Path, test_dataset: Dataset, device: 
     """Test the model on dummy data. Images are passed sequentially to make the comparision with OpenVINO model fair.
 
     Args:
-    ----
         model_path (str, Path): Path to folder containing the Torch models.
         test_dataset (Dataset): The test dataset used as a reference for the mock dataset.
         device (str): Device to use for inference. Options are auto, cpu, gpu, cuda.
 
     Returns:
-    -------
         float: Inference throughput
     """
     model_path = Path(model_path)
@@ -52,12 +50,10 @@ def get_openvino_throughput(model_path: str | Path, test_dataset: Dataset) -> fl
     """Run the generated OpenVINO model on a dummy dataset to get throughput.
 
     Args:
-    ----
         model_path (str, Path): Path to folder containing the OpenVINO models. It then searches `model.xml` in folder.
         test_dataset (Dataset): The test dataset used as a reference for the mock dataset.
 
     Returns:
-    -------
         float: Inference throughput
     """
     model_path = Path(model_path)

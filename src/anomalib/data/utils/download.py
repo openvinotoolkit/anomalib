@@ -38,7 +38,6 @@ class DownloadProgressBar(tqdm):
     For information about the parameters in constructor, refer to `tqdm`'s documentation.
 
     Args:
-    ----
         iterable (Iterable | None): Iterable to decorate with a progressbar.
                             Leave blank to manually manage the updates.
         desc (str | None): Prefix for the progressbar.
@@ -124,7 +123,6 @@ class DownloadProgressBar(tqdm):
 
 
     Example:
-    -------
         >>> with DownloadProgressBar(unit='B', unit_scale=True, miniters=1, desc=url.split('/')[-1]) as p_bar:
         >>>         urllib.request.urlretrieve(url, filename=output_path, reporthook=p_bar.update_to)
     """
@@ -198,7 +196,6 @@ class DownloadProgressBar(tqdm):
         However the context needs a few parameters. Refer to the example.
 
         Args:
-        ----
             chunk_number (int, optional): The current chunk being processed. Defaults to 1.
             max_chunk_size (int, optional): Maximum size of each chunk. Defaults to 1.
             total_size (int, optional): Total download size. Defaults to None.
@@ -212,11 +209,9 @@ def is_file_potentially_dangerous(file_name: str) -> bool:
     """Check if a file is potentially dangerous.
 
     Args:
-    ----
         file_name (str): Filename.
 
     Returns:
-    -------
         bool: True if the member is potentially dangerous, False otherwise.
 
     """
@@ -229,7 +224,6 @@ def safe_extract(tar_file: TarFile, root: Path, members: list[TarInfo]) -> None:
     """Extract safe members from a tar archive.
 
     Args:
-    ----
         tar_file (TarFile): TarFile object.
         root (Path): Root directory where the dataset will be stored.
         members (List[TarInfo]): List of safe members to be extracted.
@@ -243,7 +237,6 @@ def hash_check(file_path: Path, expected_hash: str) -> None:
     """Raise assert error if hash does not match the calculated hash of the file.
 
     Args:
-    ----
         file_path (Path): Path to file.
         expected_hash (str): Expected hash of the file.
     """
@@ -257,7 +250,6 @@ def extract(file_name: Path, root: Path) -> None:
     """Extract a dataset.
 
     Args:
-    ----
         file_name (Path): Path of the file to be extracted.
         root (Path): Root directory where the dataset will be stored.
 
@@ -290,7 +282,6 @@ def download_and_extract(root: Path, info: DownloadInfo) -> None:
     """Download and extract a dataset.
 
     Args:
-    ----
         root (Path): Root directory where the dataset will be stored.
         info (DownloadInfo): Info needed to download the dataset.
     """
@@ -319,12 +310,10 @@ def is_within_directory(directory: Path, target: Path) -> bool:
     """Check if a target path is located within a given directory.
 
     Args:
-    ----
         directory (Path): path of the parent directory
         target (Path): path of the target
 
     Returns:
-    -------
         (bool): True if the target is within the directory, False otherwise
     """
     abs_directory = directory.resolve()

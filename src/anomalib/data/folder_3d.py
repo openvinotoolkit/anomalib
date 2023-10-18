@@ -41,7 +41,6 @@ def make_folder3d_dataset(
     """Make Folder Dataset.
 
     Args:
-    ----
         normal_dir (str | Path): Path to the directory containing normal images.
         root (str | Path | None): Path to the root directory of the dataset.
         abnormal_dir (str | Path | None, optional): Path to the directory containing abnormal images.
@@ -63,7 +62,6 @@ def make_folder3d_dataset(
             directory.
 
     Returns:
-    -------
         DataFrame: an output dataframe containing samples for the requested split (ie., train or test)
     """
     normal_dir = _resolve_path(normal_dir, root)
@@ -185,7 +183,6 @@ class Folder3DDataset(AnomalibDepthDataset):
     """Folder dataset.
 
     Args:
-    ----
         task (TaskType): Task type. (``classification``, ``detection`` or ``segmentation``).
         transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
         split (str | Split | None): Fixed subset split that follows from folder structure on file system.
@@ -209,7 +206,6 @@ class Folder3DDataset(AnomalibDepthDataset):
         val_split_mode (ValSplitMode): Setting that determines how the validation subset is obtained.
 
     Raises:
-    ------
         ValueError: When task is set to classification and `mask_dir` is provided. When `mask_dir` is
             provided, `task` should be set to `segmentation`.
     """
@@ -262,7 +258,6 @@ class Folder3D(AnomalibDataModule):
     """Folder DataModule.
 
     Args:
-    ----
         normal_dir (str | Path): Name of the directory containing normal images.
             Defaults to "normal".
         root (str | Path | None): Path to the root folder containing normal and abnormal dirs.

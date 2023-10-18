@@ -28,11 +28,9 @@ class AnomalyMapGenerator(nn.Module):
         """Pixel Level Anomaly Heatmap.
 
         Args:
-        ----
             patch_scores (Tensor): Patch-level anomaly scores
 
         Returns:
-        -------
             Tensor: Map of the pixel-level anomaly scores
         """
         anomaly_map = F.interpolate(patch_scores, size=(self.input_size[0], self.input_size[1]))
@@ -42,16 +40,13 @@ class AnomalyMapGenerator(nn.Module):
         """Return anomaly_map and anomaly_score.
 
         Args:
-        ----
             patch_scores (Tensor): Patch-level anomaly scores
 
         Example:
-        -------
-        >>> anomaly_map_generator = AnomalyMapGenerator(input_size=input_size)
-        >>> map = anomaly_map_generator(patch_scores=patch_scores)
+            >>> anomaly_map_generator = AnomalyMapGenerator(input_size=input_size)
+            >>> map = anomaly_map_generator(patch_scores=patch_scores)
 
         Returns:
-        -------
             Tensor: anomaly_map
         """
         return self.compute_anomaly_map(patch_scores)

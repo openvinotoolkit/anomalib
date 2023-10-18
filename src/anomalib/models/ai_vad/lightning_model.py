@@ -26,7 +26,6 @@ class AiVad(AnomalyModule):
     """AI-VAD: Attribute-based Representations for Accurate and Interpretable Video Anomaly Detection.
 
     Args:
-    ----
         box_score_thresh (float): Confidence threshold for bounding box predictions.
         persons_only (bool): When enabled, only regions labeled as person are included.
         min_bbox_area (int): Minimum bounding box area. Regions with a surface area lower than this value are excluded.
@@ -92,7 +91,6 @@ class AiVad(AnomalyModule):
         Extract features from the batch of clips and update the density estimators.
 
         Args:
-        ----
             batch (dict[str, str | Tensor]): Batch containing image filename, image, label and mask
         """
         features_per_batch = self.model(batch["image"])
@@ -113,13 +111,11 @@ class AiVad(AnomalyModule):
         Extract boxes and box scores..
 
         Args:
-        ----
             batch (dict[str, str | Tensor]): Input batch
             *args: Arguments.
             **kwargs: Keyword arguments.
 
         Returns:
-        -------
             Batch dictionary with added boxes and box scores.
         """
         del args, kwargs  # Unused arguments.
@@ -141,7 +137,6 @@ class AiVadLightning(AiVad):
     """AI-VAD: Attribute-based Representations for Accurate and Interpretable Video Anomaly Detection.
 
     Args:
-    ----
         hparams (DictConfig | ListConfig): Model params
     """
 

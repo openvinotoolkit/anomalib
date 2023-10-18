@@ -23,13 +23,11 @@ def get_parser() -> ArgumentParser:
     """Get command line arguments.
 
     Example:
-    -------
         Example for Torch Inference.
         >>> python tools/inference/gradio_inference.py  \
         ...     --weights ./results/padim/mvtec/bottle/weights/torch/model.pt
 
     Returns:
-    -------
         ArgumentParser: Argument parser for gradio inference.
     """
     parser = ArgumentParser()
@@ -44,16 +42,13 @@ def get_inferencer(weight_path: Path, metadata: Path | None = None) -> Inference
     """Parse args and open inferencer.
 
     Args:
-    ----
         weight_path (Path): Path to model weights.
         metadata (Path | None, optional): Metadata is required for OpenVINO models. Defaults to None.
 
     Raises:
-    ------
         ValueError: If unsupported model weight is passed.
 
     Returns:
-    -------
         Inferencer: Torch or OpenVINO inferencer.
     """
     # Get the inferencer. We use .ckpt extension for Torch models and (onnx, bin)
@@ -90,12 +85,10 @@ def infer(image: np.ndarray, inferencer: Inferencer) -> tuple[np.ndarray, np.nda
     """Inference function, return anomaly map, score, heat map, prediction mask ans visualisation.
 
     Args:
-    ----
         image (np.ndarray): image to compute
         inferencer (Inferencer): model inferencer
 
     Returns:
-    -------
         tuple[np.ndarray, float, np.ndarray, np.ndarray, np.ndarray]:
         heat_map, pred_mask, segmentation result.
     """

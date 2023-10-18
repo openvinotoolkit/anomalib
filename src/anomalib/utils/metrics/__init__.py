@@ -45,12 +45,10 @@ def metric_collection_from_names(metric_names: list[str], prefix: str | None) ->
     then in TorchMetrics package.
 
     Args:
-    ----
         metric_names (list[str]): List of metric names to be included in the collection.
         prefix (str | None): prefix to assign to the metrics in the collection.
 
     Returns:
-    -------
         AnomalibMetricCollection: Collection of metrics.
     """
     metrics_module = importlib.import_module("anomalib.utils.metrics")
@@ -112,7 +110,6 @@ def metric_collection_from_dicts(metrics: dict[str, dict[str, Any]], prefix: str
     """Create a metric collection from a dict of "metric name" -> "metric specifications".
 
     Example:
-    -------
         metrics = {
             "PixelWiseF1Score": {
                 "class_path": "torchmetrics.F1Score",
@@ -141,7 +138,6 @@ def metric_collection_from_dicts(metrics: dict[str, dict[str, Any]], prefix: str
         ```
 
     Args:
-    ----
         metrics (dict[str, dict[str, Any]]): keys are metric names, values are dictionaries.
             Internal dict[str, Any] keys are "class_path" (value is string) and "init_args" (value is dict),
             following the convention in Pytorch Lightning CLI.
@@ -149,7 +145,6 @@ def metric_collection_from_dicts(metrics: dict[str, dict[str, Any]], prefix: str
         prefix (str | None): prefix to assign to the metrics in the collection.
 
     Returns:
-    -------
         AnomalibMetricCollection: Collection of metrics.
     """
     _validate_metrics_dict(metrics)
@@ -177,12 +172,10 @@ def create_metric_collection(
     then in TorchMetrics package.
 
     Args:
-    ----
         metrics (list[str] | dict[str, dict[str, Any]]): List of metrics or dictionaries to create metric collection.
         prefix (str | None): Prefix to assign to the metrics in the collection.
 
     Returns:
-    -------
         AnomalibMetricCollection: Collection of metrics.
     """
     # fallback is using the names

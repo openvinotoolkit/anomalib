@@ -39,11 +39,9 @@ def get_callbacks(config: DictConfig | ListConfig | Namespace) -> list[Callback]
     """Return base callbacks for all the lightning models.
 
     Args:
-    ----
         config (DictConfig | ListConfig | Namespace): Model config
 
     Return:
-    ------
         (list[Callback]): List of callbacks.
     """
     logger.info("Loading the callbacks")

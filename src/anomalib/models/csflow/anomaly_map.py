@@ -22,7 +22,6 @@ class AnomalyMapGenerator(nn.Module):
     """Anomaly Map Generator for CS-Flow model.
 
     Args:
-    ----
         input_dims (tuple[int, int, int]): Input dimensions.
         mode (AnomalyMapMode): Anomaly map mode. Defaults to AnomalyMapMode.ALL.
     """
@@ -39,12 +38,10 @@ class AnomalyMapGenerator(nn.Module):
         Use ``AnomalyMapMode.MAX`` for the largest scale as mentioned in the paper.
 
         Args:
-        ----
             inputs (Tensor): z-distributions for the three scales.
             mode (AnomalyMapMode): Anomaly map mode.
 
         Returns:
-        -------
             Tensor: Anomaly maps.
         """
         anomaly_map: Tensor

@@ -38,11 +38,9 @@ class _TrainerArgumentsCache:
     before the trainer is instantiated.
 
     Args:
-    ----
         (**kwargs): Trainer arguments that are cached
 
     Example:
-    -------
         >>> conf = OmegaConf.load("config.yaml")
         >>> cache =  _TrainerArgumentsCache(**conf.trainer)
         >>> cache.args
@@ -70,7 +68,6 @@ class _TrainerArgumentsCache:
         """Replace cached arguments with arguments retrieved from the model.
 
         Args:
-        ----
             model (AnomalyModule): The model used for training
         """
         for key, value in model.trainer_arguments.items():
@@ -100,7 +97,6 @@ class Engine:
         Refer to PyTorch Lightning's Trainer for a list of parameters for details on other Trainer parameters.
 
     Args:
-    ----
         callbacks: Add a callback or list of callbacks.
     """
 
@@ -136,12 +132,10 @@ class Engine:
     def trainer(self) -> Trainer:
         """Property to get the trainer.
 
-        Raises
-        ------
+        Raises:
             UnassignedError: When the trainer is not assigned yet.
 
-        Returns
-        -------
+        Returns:
             Trainer: Lightning Trainer.
         """
         if not self._trainer:
@@ -192,7 +186,6 @@ class Engine:
         """Fit the model using the trainer.
 
         Args:
-        ----
             model (AnomalyModule): Model to be trained.
             train_dataloaders (TRAIN_DATALOADERS | LightningDataModule | None, optional): Train dataloaders.
                 Defaults to None.
@@ -203,6 +196,20 @@ class Engine:
                 Defaults to None.
             ckpt_path (str | None, optional): Checkpoint path. If provided, the model will be loaded from this path.
                 Defaults to None.
+
+        CLI Usage:
+            1. you can pick a model, and you can run through the MVTec dataset.
+                ```python
+                anomalib fit --model anomalib.models.Padim
+                ```
+            2. Of course, you can override the various values with commands.
+                ```python
+                anomalib fit --model anomalib.models.Padim --data <CONFIG | CLASS_PATH_OR_NAME> --trainer.max_epochs 3
+                ```
+            4. If you have a ready configuration file, run it like this.
+                ```python
+                anomalib fit --config <config_file_path>
+                ```
         """
         self._setup_trainer(model)
         self.trainer.fit(model, train_dataloaders, val_dataloaders, datamodule, ckpt_path)
@@ -218,7 +225,6 @@ class Engine:
         """Validate the model using the trainer.
 
         Args:
-        ----
             model (AnomalyModule | None, optional): Model to be validated.
                 Defaults to None.
             dataloaders (EVAL_DATALOADERS | LightningDataModule | None, optional): Dataloaders to be used for
@@ -234,8 +240,21 @@ class Engine:
                 Defaults to None.
 
         Returns:
-        -------
             _EVALUATE_OUTPUT | None: Validation results.
+
+        CLI Usage:
+            1. you can pick a model.
+                ```python
+                anomalib validate --model anomalib.models.Padim
+                ```
+            2. Of course, you can override the various values with commands.
+                ```python
+                anomalib validate --model anomalib.models.Padim --data <CONFIG | CLASS_PATH_OR_NAME>
+                ```
+            4. If you have a ready configuration file, run it like this.
+                ```python
+                anomalib validate --config <config_file_path>
+                ```
         """
         if model:
             self._setup_trainer(model)
@@ -252,7 +271,6 @@ class Engine:
         """Test the model using the trainer.
 
         Args:
-        ----
             model (AnomalyModule | None, optional):
                 The model to be tested.
                 Defaults to None.
@@ -274,8 +292,21 @@ class Engine:
                 Defaults to None.
 
         Returns:
-        -------
             _EVALUATE_OUTPUT: A List of dictionaries containing the test results. 1 dict per dataloader.
+
+        CLI Usage:
+            1. you can pick a model.
+                ```python
+                anomalib test --model anomalib.models.Padim
+                ```
+            2. Of course, you can override the various values with commands.
+                ```python
+                anomalib test --model anomalib.models.Padim --data <CONFIG | CLASS_PATH_OR_NAME>
+                ```
+            4. If you have a ready configuration file, run it like this.
+                ```python
+                anomalib test --config <config_file_path>
+                ```
         """
         if model:
             self._setup_trainer(model)
@@ -292,7 +323,6 @@ class Engine:
         """Predict using the model using the trainer.
 
         Args:
-        ----
             model (AnomalyModule | None, optional):
                 Model to be used for prediction.
                 Defaults to None.
@@ -315,8 +345,21 @@ class Engine:
                 Defaults to None.
 
         Returns:
-        -------
             _PREDICT_OUTPUT | None: Predictions.
+
+        CLI Usage:
+            1. you can pick a model.
+                ```python
+                anomalib predict --model anomalib.models.Padim
+                ```
+            2. Of course, you can override the various values with commands.
+                ```python
+                anomalib predict --model anomalib.models.Padim --data <CONFIG | CLASS_PATH_OR_NAME>
+                ```
+            4. If you have a ready configuration file, run it like this.
+                ```python
+                anomalib predict --config <config_file_path> --return_predictions
+                ```
         """
         if model:
             self._setup_trainer(model)

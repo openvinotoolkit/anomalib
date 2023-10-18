@@ -26,7 +26,6 @@ class Stfpm(AnomalyModule):
     """PL Lightning Module for the STFPM algorithm.
 
     Args:
-    ----
         input_size (tuple[int, int]): Size of the model input.
         backbone (str): Backbone CNN network
         layers (list[str]): Layers to extract features from the backbone CNN
@@ -53,13 +52,11 @@ class Stfpm(AnomalyModule):
         For each batch, teacher and student and teacher features are extracted from the CNN.
 
         Args:
-        ----
           batch (dict[str, str | Tensor]): Input batch.
           args: Additional arguments.
           kwargs: Additional keyword arguments.
 
         Returns:
-        -------
           Loss value
         """
         del args, kwargs  # These variables are not used.
@@ -77,13 +74,11 @@ class Stfpm(AnomalyModule):
         anomaly map is computed.
 
         Args:
-        ----
           batch (dict[str, str | Tensor]): Input batch
           args: Additional arguments
           kwargs: Additional keyword arguments
 
         Returns:
-        -------
           Dictionary containing images, anomaly maps, true labels and masks.
           These are required in `validation_epoch_end` for feature concatenation.
         """
@@ -99,8 +94,7 @@ class Stfpm(AnomalyModule):
     def configure_optimizers(self) -> torch.optim.Optimizer:
         """Configure optimizers.
 
-        Returns
-        -------
+        Returns:
             Optimizer: SGD optimizer
         """
         return optim.SGD(
@@ -116,7 +110,6 @@ class StfpmLightning(Stfpm):
     """PL Lightning Module for the STFPM algorithm.
 
     Args:
-    ----
         hparams (DictConfig | ListConfig): Model params
     """
 

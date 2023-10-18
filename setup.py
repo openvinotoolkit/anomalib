@@ -15,12 +15,10 @@ def load_module(name: str = "src/anomalib/__init__.py") -> ModuleType:
     """Load Python Module.
 
     Args:
-    ----
         name (str, optional): Name of the module to load.
             Defaults to "anomalib/__init__.py".
 
     Returns:
-    -------
         _type_: _description_
     """
     location = str(Path(__file__).parent / name)
@@ -39,13 +37,11 @@ def get_version() -> str:
     the value assigned to it.
 
     Example:
-    -------
         >>> # Assume that __version__ = "0.2.6"
         >>> get_version()
         "0.2.6"
 
     Returns:
-    -------
         str: `anomalib` version.
     """
     anomalib = load_module(name="src/anomalib/__init__.py")
@@ -58,17 +54,14 @@ def get_required_packages(requirement_files: list[str]) -> list[str]:
     This function returns list of required packages from requirement files.
 
     Args:
-    ----
         requirement_files (list[str]): txt files that contains list of required
             packages.
 
     Example:
-    -------
         >>> get_required_packages(requirement_files=["openvino"])
         ['onnx>=1.8.1', 'networkx~=2.5', 'openvino-dev==2021.4.1', ...]
 
     Returns:
-    -------
         list[str]: List of required packages
     """
     required_packages: list[str] = []
