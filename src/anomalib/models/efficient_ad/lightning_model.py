@@ -206,7 +206,8 @@ class EfficientAd(AnomalyModule):
         num_steps = min(
             self.trainer.max_steps, self.trainer.max_epochs * len(self.trainer.datamodule.train_dataloader())
         )
-        scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=int(0.95 * num_steps), gamma=0.1)
+        step_size = max(int(0.95 * num_steps), 1)  # allow fast_and_dev
+        scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=step_size, gamma=0.1)
         return {"optimizer": optimizer, "lr_scheduler": scheduler}
 
     def on_train_start(self) -> None:
