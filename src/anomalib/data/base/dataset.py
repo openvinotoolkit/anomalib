@@ -172,11 +172,10 @@ class AnomalibDataset(Dataset, ABC):
             mask_path (if task == "segmentation"): path to the ground truth masks (for the anomalous images only).
 
         Example:
-        -------
-        |---|-------------------|-----------|-------------|------------------|-------|
-        |   | image_path        | label     | label_index | mask_path        | split |
-        |---|-------------------|-----------|-------------|------------------|-------|
-        | 0 | path/to/image.png | anomalous | 1           | path/to/mask.png | train |
-        |---|-------------------|-----------|-------------|------------------|-------|
+            |---|-------------------|-----------|-------------|------------------|-------|
+            |   | image_path        | label     | label_index | mask_path        | split |
+            |---|-------------------|-----------|-------------|------------------|-------|
+            | 0 | path/to/image.png | anomalous | 1           | path/to/mask.png | train |
+            |---|-------------------|-----------|-------------|------------------|-------|
         """
         raise NotImplementedError

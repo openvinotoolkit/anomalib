@@ -63,7 +63,6 @@ def make_folder_dataset(
             path (str | Path | Sequence | None): Path to replace with Sequence[str | Path].
 
         Examples:
-        --------
             >>> _resolve_path_and_convert_to_list("dir")
             [Path("path/to/dir")]
             >>> _resolve_path_and_convert_to_list(["dir1", "dir2"])

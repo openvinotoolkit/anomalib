@@ -111,7 +111,6 @@ def get_run_config(params_dict: DictConfig) -> Generator[DictConfig, None, None]
         ...
 
     Yields:
-    ------
         Generator[DictConfig]: Dictionary containing flattened keys
         and values for current run.
     """

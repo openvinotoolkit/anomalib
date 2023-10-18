@@ -67,10 +67,9 @@ class AnomalyMapGenerator(nn.Module):
         Expects `distribution`, `height` and 'width' keywords to be passed explicitly
 
         Example:
-        -------
-        >>> anomaly_map_generator = AnomalyMapGenerator(image_size=tuple(hparams.model.input_size),
-        >>>        pool_layers=pool_layers)
-        >>> output = self.anomaly_map_generator(distribution=dist, height=height, width=width)
+            >>> anomaly_map_generator = AnomalyMapGenerator(image_size=tuple(hparams.model.input_size),
+            >>>        pool_layers=pool_layers)
+            >>> output = self.anomaly_map_generator(distribution=dist, height=height, width=width)
 
         Raises:
             ValueError: `distribution`, `height` and 'width' keys are not found

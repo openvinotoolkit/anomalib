@@ -118,7 +118,6 @@ class KCenterGreedy:
             Tensor: Output coreset
 
         Example:
-        -------
             >>> embedding.shape
             torch.Size([219520, 1536])
             >>> sampler = KCenterGreedy(...)
