@@ -147,4 +147,7 @@ class DraemLightning(Draem):
 
     def configure_optimizers(self) -> torch.optim.Optimizer:
         """Configure the Adam optimizer."""
-        return torch.optim.Adam(params=self.model.parameters(), lr=self.hparams.model.lr)
+        optimizer = torch.optim.Adam(params=self.model.parameters(), lr=self.hparams.model.lr)
+        scheduler1 = torch.optim.lr_scheduler.StepLR(optimizer, step_size=400, gamma=0.1)
+        scheduler2 = torch.optim.lr_scheduler.StepLR(optimizer, step_size=600, gamma=0.1)
+        return optimizer, [scheduler1, scheduler2]
