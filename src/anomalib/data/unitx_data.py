@@ -121,7 +121,10 @@ def make_unitx_dataset(
 
     # separate masks from samples
     mask_samples = samples[samples.is_images_or_masks == "masks"].sort_values(by="asset_id", ignore_index=True)
+    mask_samples['asset_id'] = mask_samples['asset_id'].apply(lambda x: x.strip(".npy"))
     samples = samples[samples.is_images_or_masks == "images"].sort_values(by="asset_id", ignore_index=True)
+    assert(len(mask_samples) == len(samples))
+
     samples = samples[~samples.label.isin(exclude_labels)]
     samples = samples[~samples.asset_id.isin(exclude_asset_ids)]
 
@@ -141,6 +144,7 @@ def make_unitx_dataset(
         + "/"
         + mask_samples.asset_id
     )
+    samples["mask_path"] = samples["mask_path"].apply(lambda x: x + ".npy") # add back the suffix
 
     samples = samples.drop(columns=["is_images_or_masks", "asset_id"])
 
@@ -148,6 +152,11 @@ def make_unitx_dataset(
     samples.loc[(samples.label == "good"), "label_index"] = LabelName.NORMAL
     samples.loc[(samples.label != "good"), "label_index"] = LabelName.ABNORMAL
     samples.label_index = samples.label_index.astype(int)
+
+
+    # Validation of the DataFrame
+    assert all(samples.image_path.notnull()), "Some image paths are null."
+    assert all(samples.mask_path.notnull()), "Some mask paths are null."
 
     # assert that the right mask files are associated with the right test images
     if len(samples.loc[samples.label_index == LabelName.ABNORMAL]):
@@ -278,7 +287,7 @@ class UnitXPerDefect(AnomalibDataModule):
         )
 
         self.train_data = UnitXPerDefectDataset(
-            task=task, transform=transform_train, split=Split.TRAIN, root=root, 
+            task=task, transform=transform_train, split=Split.TRAIN, root=root,
             exclude_labels=exclude_labels,
             exclude_asset_ids=exclude_asset_ids,
             )
