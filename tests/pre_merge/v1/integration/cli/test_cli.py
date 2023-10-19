@@ -5,25 +5,34 @@
 
 
 from anomalib.utils.cli import AnomalibCLI
+from tests.helpers.dataset import get_dataset_path
 
 
 class TestCLI:
     """Do sanity check on all models."""
 
     def test_fit(self, model_name: str, dataset_root: str, project_path: str):
+        data_class = "anomalib.data.MVTec"
+        category = "shapes"
+        if model_name == "ai_vad":
+            # TODO(ashwinva)
+            # fix this when the dummy dataset supports all the data formats
+            # aivad expects UCSD dataset
+            data_class = "anomalib.data.UCSDped"
+            dataset_root = get_dataset_path(dataset="ucsd")
+            category = "UCSDped2"
+
         AnomalibCLI(
             args=[
                 "fit",
                 "-c",
                 f"src/configs/model/{model_name}.yaml",
                 "--data",
-                "anomalib.data.MVTec",
+                data_class,
                 "--data.root",
                 dataset_root,
                 "--data.category",
-                "shapes",
-                "--trainer.max_epochs",
-                "1",
+                category,
                 "--results_dir.path",
                 project_path,
                 "--results_dir.unique",
@@ -32,17 +41,27 @@ class TestCLI:
         )
 
     def test_test(self, model_name: str, dataset_root: str, project_path: str):
+        data_class = "anomalib.data.MVTec"
+        category = "shapes"
+        if model_name == "ai_vad":
+            # TODO(ashwinva)
+            # fix this when the dummy dataset supports all the data formats
+            # aivad expects UCSD dataset
+            data_class = "anomalib.data.UCSDped"
+            dataset_root = get_dataset_path(dataset="ucsd")
+            category = "UCSDped2"
+
         AnomalibCLI(
             args=[
                 "test",
                 "-c",
                 f"src/configs/model/{model_name}.yaml",
                 "--data",
-                "anomalib.data.MVTec",
+                data_class,
                 "--data.root",
                 dataset_root,
                 "--data.category",
-                "shapes",
+                category,
                 "--results_dir.path",
                 project_path,
                 "--results_dir.unique",
@@ -52,18 +71,28 @@ class TestCLI:
             ]
         )
 
-    def test_validate(self, model_name: str, dataset: str, project_path: str):
+    def test_validate(self, model_name: str, dataset_root: str, project_path: str):
+        data_class = "anomalib.data.MVTec"
+        category = "shapes"
+        if model_name == "ai_vad":
+            # TODO(ashwinva)
+            # fix this when the dummy dataset supports all the data formats
+            # aivad expects UCSD dataset
+            data_class = "anomalib.data.UCSDped"
+            dataset_root = get_dataset_path(dataset="ucsd")
+            category = "UCSDped2"
+
         AnomalibCLI(
             args=[
                 "validate",
                 "-c",
                 f"src/configs/model/{model_name}.yaml",
                 "--data",
-                "anomalib.data.MVTec",
+                data_class,
                 "--data.root",
-                dataset,
+                dataset_root,
                 "--data.category",
-                "shapes",
+                category,
                 "--results_dir.path",
                 project_path,
                 "--results_dir.unique",
