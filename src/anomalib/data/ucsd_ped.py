@@ -218,7 +218,7 @@ class UCSDped(AnomalibVideoDataModule):
 
     def __init__(
         self,
-        root: Path | str = "./datasets/uscd",
+        root: Path | str = "./datasets/ucsd",
         category: str = "UCSDped2",
         clip_length_in_frames: int = 2,
         frames_between_clips: int = 10,
@@ -226,7 +226,7 @@ class UCSDped(AnomalibVideoDataModule):
         task: TaskType = TaskType.SEGMENTATION,
         image_size: int | tuple[int, int] = (256, 256),
         center_crop: int | tuple[int, int] | None = None,
-        normalization: str | InputNormalizationMethod = InputNormalizationMethod.IMAGENET,
+        normalization: InputNormalizationMethod | str = InputNormalizationMethod.IMAGENET,
         train_batch_size: int = 8,
         eval_batch_size: int = 32,
         num_workers: int = 8,
