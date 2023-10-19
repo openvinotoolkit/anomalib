@@ -145,9 +145,8 @@ class DraemLightning(Draem):
         )
         return [early_stopping]
 
-    def configure_optimizers(self) -> torch.optim.Optimizer:
+    def configure_optimizers(self) -> tuple[list[torch.optim.Optimizer], list[torch.optim.lr_scheduler.LRScheduler]]:
         """Configure the Adam optimizer."""
         optimizer = torch.optim.Adam(params=self.model.parameters(), lr=self.hparams.model.lr)
-        scheduler1 = torch.optim.lr_scheduler.StepLR(optimizer, step_size=400, gamma=0.1)
-        scheduler2 = torch.optim.lr_scheduler.StepLR(optimizer, step_size=600, gamma=0.1)
-        return optimizer, [scheduler1, scheduler2]
+        scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[400, 600], gamma=0.1)
+        return [optimizer], [scheduler]
