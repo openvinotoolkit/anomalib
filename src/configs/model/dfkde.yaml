@@ -8,3 +8,5 @@ model:
     n_pca_components: 16
     feature_scaling_method: SCALE
     max_training_points: 40000
+
+task: CLASSIFICATION
