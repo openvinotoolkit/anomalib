@@ -26,7 +26,23 @@ class UflowModel(nn.Module):
         self.flow = self.build_flow(flow_steps)
         self.anomaly_map_generator = AnomalyMapGenerator(input_size)
 
-    def build_flow(self, flow_steps):
+    def build_flow(self, flow_steps: int) -> ff.GraphINN:
+        """
+        Build the flow model.
+        First we start with the input nodes, which have to match the feature extractor output.
+        Then, we build the U-Shaped flow. Starting from the bottom (the coarsest scale), the flow is built as follows:
+            1. Pass the input through a Flow Stage (`get_flow_stage`).
+            2. Split the output of the flow stage into two parts, one that goes directly to the output,
+            3. and the other is up-sampled, and will be concatenated with the output of the next flow stage (next scale)
+            4. Repeat steps 1-3 for the next scale.
+        Finally, we build the Flow graph using the input nodes, the flow stages, and the output nodes.
+
+        Args:
+            flow_steps (int): Number of flow steps.
+
+        Returns:
+            ff.GraphINN: Flow model.
+        """
         input_nodes = []
         for channel, s_factor in zip(self.feature_extractor.channels, self.feature_extractor.scale_factors):
             input_nodes.append(
@@ -58,8 +74,19 @@ class UflowModel(nn.Module):
 
         return ff.GraphINN(input_nodes + nodes + output_nodes[::-1])
 
-    def get_flow_stage(self, in_node, flow_steps, condition_node=None):
+    def get_flow_stage(self, in_node: ff.Node, flow_steps: int, condition_node: ff.Node = None) -> list[ff.Node]:
+        """
+        Build a flow stage, which is a sequence of flow steps.
+        Each flow stage is essentially a sequence of `flow_steps` Glow blocks (`AllInOneBlock`).
 
+        Args:
+            in_node (ff.Node): Input node.
+            flow_steps (int): Number of flow steps.
+            condition_node (ff.Node): Condition node.
+
+        Returns:
+            List[ff.Node]: List of flow steps.
+        """
         def get_affine_coupling_subnet(kernel_size, subnet_channels_ratio):
             def affine_coupling_subnet(in_channels, out_channels):
                 mid_channels = int(in_channels * subnet_channels_ratio)
