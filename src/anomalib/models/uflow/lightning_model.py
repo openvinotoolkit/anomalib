@@ -44,15 +44,11 @@ class Uflow(AnomalyModule):
         )
         self.loss = UFlowLoss()
 
-    def step(self, batch):
+    def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
         z, ljd = self.model(batch['image'])
         loss = self.loss(z, ljd)
+        self.log_dict({"loss": loss}, on_step=True, on_epoch=False, prog_bar=False, logger=True)
         return {"loss": loss}
-
-    def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
-        losses = self.step(batch)
-        self.log_dict({"loss": losses['loss']}, on_step=True, on_epoch=False, prog_bar=False, logger=True)
-        return losses
 
     def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
         anomaly_maps = self.model(batch["image"])
