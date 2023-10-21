@@ -1,18 +1,21 @@
-import pytorch_lightning as pl
+from typing import List
+
 import timm
 import torch
-from torch import nn
 import torch.nn.functional as F
+from torch import nn
+
+from anomalib.models.components.feature_extractors import TimmFeatureExtractor
 
 AVAILABLE_EXTRACTORS = ['mcait', 'resnet18', 'wide_resnet50_2']
 
 
-def get_feature_extractor(backbone, input_size=256, **kwargs):
+def get_feature_extractor(backbone, input_size: List[int] = (256, 256), **kwargs):
     """
     Get feature extractor. Currently, is restricted to AVAILABLE_EXTRACTORS.
     Args:
         backbone (str): Backbone name.
-        input_size (int): Input size.
+        input_size (tuple[int, int]): Input size.
         **kwargs: Additional arguments.
 
     Returns:
@@ -20,50 +23,31 @@ def get_feature_extractor(backbone, input_size=256, **kwargs):
     """
     assert backbone in AVAILABLE_EXTRACTORS, f"Feature extractor must be one of {AVAILABLE_EXTRACTORS}."
     if backbone in ["resnet18", "wide_resnet50_2"]:
-        return ResNetFeatureExtractor(backbone, input_size, **kwargs)
+        return FeatureExtractor(backbone, input_size, layers=["layer1", "layer2", "layer3"], **kwargs)
     elif backbone == "mcait":
         return MCaitFeatureExtractor(**kwargs)
-    raise ValueError("`backbone` must be one of `[mcait, resnet18, wide_resnet50_2]`")
+    raise ValueError(
+        "`backbone` must be one of `[mcait, resnet18, wide_resnet50_2]`. These are the only feature extractors tested. "
+        "It does not mean that other feature extractors will not work."
+    )
 
 
-class FeatureExtractorInterface(pl.LightningModule):
-
-    def __init__(self):
-        super(FeatureExtractorInterface, self).__init__()
-
-    def forward(self, img, **kwargs):
-        raise NotImplementedError
-
-    def extract_features(self, img, **kwargs):
-        raise NotImplementedError
-
-    def normalize_features(self, x, **kwargs):
-        raise NotImplementedError
-
-
-class ResNetFeatureExtractor(FeatureExtractorInterface):
-    """Feature extractor based on ResNet backbone."""
-    def __init__(self, backbone, input_size, max_downsampling_factor=32, **kwargs):
-        super(ResNetFeatureExtractor, self).__init__()
-        self.extractor = timm.create_model(
-            backbone,
-            pretrained=True,
-            features_only=True,
-            out_indices=[1, 2, 3],
-            output_stride=max_downsampling_factor
-        )
-        self.channels = self.extractor.feature_info.channels()
-        self.scale_factors = self.extractor.feature_info.reduction()
+class FeatureExtractor(TimmFeatureExtractor):
+    """Feature extractor based on ResNet (or others) backbones."""
+    def __init__(self, backbone, input_size, layers=("layer1", "layer2", "layer3"), **kwargs):
+        super(FeatureExtractor, self).__init__(backbone, layers, pre_trained=True, requires_grad=False)
+        self.channels = self.feature_extractor.feature_info.channels()
+        self.scale_factors = self.feature_extractor.feature_info.reduction()
         self.scales = range(len(self.scale_factors))
 
         self.feature_normalizations = nn.ModuleList()
         for in_channels, scale in zip(self.channels, self.scale_factors):
             self.feature_normalizations.append(nn.LayerNorm(
-                [in_channels, int(input_size / scale), int(input_size / scale)],
+                [in_channels, int(input_size[0] / scale), int(input_size[1] / scale)],
                 elementwise_affine=True
             ))
 
-        for param in self.extractor.parameters():
+        for param in self.feature_extractor.parameters():
             param.requires_grad = False
 
     def forward(self, img, **kwargs):
@@ -72,14 +56,14 @@ class ResNetFeatureExtractor(FeatureExtractorInterface):
         return normalized_features
 
     def extract_features(self, img, **kwargs):
-        self.extractor.eval()
-        return self.extractor(img)
+        self.feature_extractor.eval()
+        return self.feature_extractor(img)
 
     def normalize_features(self, features, **kwargs):
         return [self.feature_normalizations[i](feature) for i, feature in enumerate(features)]
 
 
-class MCaitFeatureExtractor(FeatureExtractorInterface):
+class MCaitFeatureExtractor(nn.Module):
     """
     Feature extractor based on MCait backbone. This is the proposed feature extractor in the paper. It uses two
     independently trained Cait models, at different scales, with input sizes 448 and 224, respectively.
