@@ -15,11 +15,11 @@ _In this work we propose a one-class self-supervised method for anomaly segmenta
 ## Localization results
 ### Pixel AUROC over MVTec-AD Dataset
 
-![Pixel-AUROC results](https://raw.githubusercontent.com/openvinotoolkit/anomalib/main/docs/source/images/uflow/results/pixel-auroc.png "Pixel-AUROC results")
+![Pixel-AUROC results](https://raw.githubusercontent.com/openvinotoolkit/anomalib/main/docs/source/images/uflow/pixel-auroc.png "Pixel-AUROC results")
 
 ### Pixel AUPRO over MVTec-AD Dataset
 
-![Pixel-AUPRO results](https://raw.githubusercontent.com/openvinotoolkit/anomalib/main/docs/source/images/uflow/results/pixel-aupro.png "Pixel-AUPRO results")
+![Pixel-AUPRO results](https://raw.githubusercontent.com/openvinotoolkit/anomalib/main/docs/source/images/uflow/pixel-aupro.png "Pixel-AUPRO results")
 
 ## Segmentation results (IoU) with threshold log(NFA)=0
 
@@ -27,15 +27,25 @@ This paper also proposes a method to automatically compute the threshold using t
 In the default code here, for the sake of comparison with all the other methods of the library, the segmentation is done computing the threshold over the anomaly map at train time. 
 Nevertheless, the code for computing the segmentation mask with the NFA criterion is included in the `src/anomalib/models/uflow/anomaly_map.py`.
 
-![IoU results](https://raw.githubusercontent.com/openvinotoolkit/anomalib/main/docs/source/images/uflow/results/iou.png "IoU results")
+![IoU results](https://raw.githubusercontent.com/openvinotoolkit/anomalib/main/docs/source/images/uflow/iou.png "IoU results")
 
  ## Results over other datasets
 
-![Results over other datasets](https://raw.githubusercontent.com/openvinotoolkit/anomalib/main/docs/source/images/uflow/results/more-results.png "Results over other datasets")
+![Results over other datasets](https://raw.githubusercontent.com/openvinotoolkit/anomalib/main/docs/source/images/uflow/more-results.png "Results over other datasets")
 
 ## Benchmarking
 
 Note that the proposed method uses the MCait Feature Extractor, which has an input size of 448x448. In the benchmarking, a size of 256x256 is used for all methods, and therefore the results may differ from those reported. In order to exactly reproduce all results, the reader can refer to the original code (see [here](https://www.github.com/mtailanian/uflow), where the configs used and even the trained checkpoints can be downloaded.
+
+## Reproducing paper's results
+
+Using the default parameters of the config file (`src/anomalib/models/uflow/config.yaml`), the results obtained are very close to the ones reported in the paper:
+
+bottle: 97.98, cable: 98.17, capsule: 98.95, carpet: 99.45, grid: 98.19, hazelnut: 99.01, leather: 99.41, metal_nut: 98.19, pill: 99.15, screw: 99.25, tile: 96.93, toothbrush: 98.97, transistor: 96.70, wood: 96.87, zipper: 97.92
+
+In order to obtain the same exact results, although the architecture parameters stays always the same, the following values for the learning rate and batch size should be used:
+
+bottle: batch 23, lr 0.0001128999, cable: batch 14, lr 0.0016160391, capsule: batch 14, lr 0.0012118892, carpet: batch 13, lr 0.0012118892, grid: batch 12, lr 0.0000362248, hazelnut: batch 21, lr 0.0013268899, leather: batch 15, lr 0.0006124724, metal_nut: batch 11, lr 0.0008148858, pill: batch 11, lr 0.0010756100, screw: batch 11, lr 0.0004155987, tile: batch 30, lr 0.0060457548, toothbrush: batch 21, lr 0.0001287313, transistor: batch 20, lr 0.0011212904, wood: batch 22, lr 0.0002466546, zipper: batch 24, lr 0.0000455247
 
 ## Usage
 
@@ -92,18 +102,18 @@ Normalizing Flow outputs
 ### Anomalies
 #### MVTec
 
-![MVTec results - anomalies](https://raw.githubusercontent.com/openvinotoolkit/anomalib/main/docs/source/images/uflow/results/results-mvtec-anomalies.jpg "MVTec results - anomalies")
+![MVTec results - anomalies](https://raw.githubusercontent.com/openvinotoolkit/anomalib/main/docs/source/images/uflow/results-mvtec-anomalies.jpg "MVTec results - anomalies")
 
 #### BeanTech, LGG MRI, STC
 
-![BeanTech, LGG MRI, STC results - anomalies](https://raw.githubusercontent.com/openvinotoolkit/anomalib/main/docs/source/images/uflow/results/results-others-anomalies.jpg "BeanTech, LGG MRI, STC results - anomalies")
+![BeanTech, LGG MRI, STC results - anomalies](https://raw.githubusercontent.com/openvinotoolkit/anomalib/main/docs/source/images/uflow/results-others-anomalies.jpg "BeanTech, LGG MRI, STC results - anomalies")
 
 ### Normal images
 
 #### MVTec
 
-![MVTec results - normal](https://raw.githubusercontent.com/openvinotoolkit/anomalib/main/docs/source/images/uflow/results/results-mvtec-good.jpg "MVTec results - normal")
+![MVTec results - normal](https://raw.githubusercontent.com/openvinotoolkit/anomalib/main/docs/source/images/uflow/results-mvtec-good.jpg "MVTec results - normal")
 
 #### BeanTech, LGG MRI, STC
 
-![BeanTech, LGG MRI, STC results - normal](https://raw.githubusercontent.com/openvinotoolkit/anomalib/main/docs/source/images/uflow/results/results-others-good.jpg "BeanTech, LGG MRI, STC results - normal")
+![BeanTech, LGG MRI, STC results - normal](https://raw.githubusercontent.com/openvinotoolkit/anomalib/main/docs/source/images/uflow/results-others-good.jpg "BeanTech, LGG MRI, STC results - normal")
