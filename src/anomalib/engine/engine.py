@@ -71,12 +71,11 @@ class _TrainerArgumentsCache:
             model (AnomalyModule): The model used for training
         """
         for key, value in model.trainer_arguments.items():
-            if key in self._cached_args:
-                if self._cached_args[key] != value:
-                    log.info(
-                        f"Overriding {key} from {self._cached_args[key]} with {value} for {model.__class__.__name__}",
-                    )
-                self._cached_args[key] = value
+            if key in self._cached_args and self._cached_args[key] != value:
+                log.info(
+                    f"Overriding {key} from {self._cached_args[key]} with {value} for {model.__class__.__name__}",
+                )
+            self._cached_args[key] = value
 
     def requires_update(self, model: AnomalyModule) -> bool:
         for key, value in model.trainer_arguments.items():
@@ -93,11 +92,21 @@ class Engine:
     """Anomalib Engine.
 
     Note:
-    ----
         Refer to PyTorch Lightning's Trainer for a list of parameters for details on other Trainer parameters.
 
     Args:
-        callbacks: Add a callback or list of callbacks.
+        callbacks (list[Callback]): Add a callback or list of callbacks.
+        normalization (NormalizationMethod | DictConfig | Callback | str, optional): Normalization method.
+            Defaults to NormalizationMethod.MIN_MAX.
+        threshold (BaseThreshold | tuple[BaseThreshold, BaseThreshold] | DictConfig | ListConfig | str, optional):
+            Thresholding method. Defaults to "F1AdaptiveThreshold".
+        task (TaskType, optional): Task type. Defaults to TaskType.SEGMENTATION.
+        image_metrics (str | list[str] | None, optional): Image metrics to be used for evaluation.
+            Defaults to None.
+        pixel_metrics (str | list[str] | None, optional): Pixel metrics to be used for evaluation.
+            Defaults to None.
+        visualization (DictConfig | None, optional): Visualization parameters. Defaults to None.
+        **kwargs: PyTorch Lightning Trainer arguments.
     """
 
     def __init__(

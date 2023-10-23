@@ -8,8 +8,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 import pytest
-
-from tests.helpers.dataset import GeneratedDummyDataset
+from helpers.dataset import GeneratedDummyDataset
 
 
 def _model_names() -> list[str]:
