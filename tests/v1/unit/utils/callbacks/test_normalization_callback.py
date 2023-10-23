@@ -4,12 +4,12 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-from helpers.dataset import TestDataset, get_dataset_path
 from lightning.pytorch import seed_everything
 
 from anomalib.data import MVTec
 from anomalib.engine import Engine
 from anomalib.models import Padim
+from tests.helpers.dataset import TestDataset, get_dataset_path
 
 
 def run_train_test(normalization_method: str, root: str, category: str):

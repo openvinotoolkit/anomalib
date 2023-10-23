@@ -5,9 +5,9 @@
 
 
 import torch
-from helpers.dataset import get_dataset_path
 
 from anomalib.utils.cli import AnomalibCLI
+from tests.helpers.dataset import get_dataset_path
 
 
 class TestCLI:
