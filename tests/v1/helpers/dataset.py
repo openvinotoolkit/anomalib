@@ -78,12 +78,20 @@ class DummyDatasetGenerator(ContextDecorator):
 
     def _generate_dummy_mvtec_dataset(self) -> None:
         """Generates dummy MVTecAD dataset in a temporary directory using the same convention as MVTec AD."""
+        # Create directory names
         train_path = self.root / "shapes" / "train" / "good"
         test_path = self.root / "shapes" / "test"
+        normal_test_path = test_path / "good"
+        abnormal_test_path = test_path / self.test_shape
         mask_path = self.root / "shapes" / "ground_truth" / self.test_shape
 
-        # Create normal training images.
+        # Create directories.
         train_path.mkdir(parents=True, exist_ok=True)
+        normal_test_path.mkdir(parents=True, exist_ok=True)
+        abnormal_test_path.mkdir(parents=True, exist_ok=True)
+        mask_path.mkdir(parents=True, exist_ok=True)
+
+        # Create normal training images.
         for i in range(self.num_train):
             image, _ = random_shapes(
                 image_shape=self.image_shape,
@@ -96,8 +104,6 @@ class DummyDatasetGenerator(ContextDecorator):
             imsave(train_path / f"{i:03}.png", image)
 
         # Create normal test images.
-        normal_test_path = test_path / "good"
-        normal_test_path.mkdir(parents=True, exist_ok=True)
         for i in range(self.num_test):
             image, _ = random_shapes(
                 image_shape=self.image_shape,
@@ -110,9 +116,6 @@ class DummyDatasetGenerator(ContextDecorator):
             imsave(normal_test_path / f"{i:03}.png", image)
 
         # Create abnormal test images.
-        abnormal_test_path = test_path / self.test_shape
-        abnormal_test_path.mkdir(parents=True, exist_ok=True)
-        mask_path.mkdir(parents=True, exist_ok=True)
         for i in range(self.num_test):
             image, _ = random_shapes(
                 image_shape=self.image_shape,
@@ -129,6 +132,63 @@ class DummyDatasetGenerator(ContextDecorator):
             # Save both the image and the mask.
             imsave(abnormal_test_path / f"{i:03}.png", image, check_contrast=False)
             imsave(mask_path / f"{i:03}_mask.png", img_as_ubyte(mask), check_contrast=False)
+
+    def _generate_dummy_btech_dataset(self) -> None:
+        """Generates dummy MVTecAD dataset in a temporary directory using the same convention as MVTec AD."""
+        # Create directory names
+        train_path = self.root / "shapes" / "train" / "ok"
+        test_path = self.root / "shapes" / "test"
+        normal_test_path = test_path / "ok"
+        abnormal_test_path = test_path / "ko"
+        mask_path = self.root / "shapes" / "ground_truth" / "ko"
+
+        # Create directories.
+        train_path.mkdir(parents=True, exist_ok=True)
+        normal_test_path.mkdir(parents=True, exist_ok=True)
+        abnormal_test_path.mkdir(parents=True, exist_ok=True)
+        mask_path.mkdir(parents=True, exist_ok=True)
+
+        # Create normal training images.
+        for i in range(self.num_train):
+            image, _ = random_shapes(
+                image_shape=self.image_shape,
+                max_shapes=1,
+                min_size=self.min_size,
+                num_channels=self.num_channels,
+                shape=self.train_shape,
+                rng=self.rng,
+            )
+            imsave(train_path / f"{i:03}.png", image)
+
+        # Create normal test images.
+        for i in range(self.num_test):
+            image, _ = random_shapes(
+                image_shape=self.image_shape,
+                max_shapes=1,
+                min_size=self.min_size,
+                num_channels=self.num_channels,
+                shape=self.train_shape,
+                rng=self.rng,
+            )
+            imsave(normal_test_path / f"{i:03}.png", image)
+
+        # Create abnormal test images.
+        for i in range(self.num_test):
+            image, _ = random_shapes(
+                image_shape=self.image_shape,
+                max_shapes=1,
+                min_size=self.min_size,
+                num_channels=self.num_channels,
+                shape=self.test_shape,
+                rng=self.rng,
+            )
+
+            # Background of ``image`` is white, so mask can be created by thresholding.
+            mask = image[..., 0] < 255
+
+            # Save both the image and the mask.
+            imsave(abnormal_test_path / f"{i:03}.png", image, check_contrast=False)
+            imsave(mask_path / f"{i:03}.png", img_as_ubyte(mask), check_contrast=False)
 
     def generate_dataset(self) -> None:
         """Generate dataset."""
