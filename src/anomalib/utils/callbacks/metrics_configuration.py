@@ -77,7 +77,13 @@ class MetricsConfigurationCallback(Callback):
 
         if isinstance(pl_module, AnomalyModule):
             pl_module.image_metrics = create_metric_collection(image_metric_names, "image_")
-            pl_module.pixel_metrics = create_metric_collection(pixel_metric_names, "pixel_")
+            if hasattr(pl_module, "pixel_metrics"):
+                new_metrics = create_metric_collection(pixel_metric_names, "pixel_")
+                for name in new_metrics.keys():
+                    if name not in pl_module.pixel_metrics.keys():
+                        pl_module.pixel_metrics.add_metrics(new_metrics[name.split("_")[1]])
+            else:
+                pl_module.pixel_metrics = create_metric_collection(pixel_metric_names, "pixel_")
 
             pl_module.image_metrics.set_threshold(pl_module.image_threshold.value)
             pl_module.pixel_metrics.set_threshold(pl_module.pixel_threshold.value)
