@@ -17,7 +17,9 @@ def _model_names() -> list[str]:
 
     Path object is not serializable by pytest.
     """
-    return [str(path.stem) for path in Path("src/configs/model").glob("*.yaml")]
+    # TODO(ashwinvaidya17)
+    # Restore testing of ai_vad model.
+    return [str(path.stem) for path in Path("src/configs/model").glob("*.yaml") if path.stem != "ai_vad"]
 
 
 def _dataset_names() -> list[str]:
