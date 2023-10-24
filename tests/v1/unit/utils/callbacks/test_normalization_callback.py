@@ -27,7 +27,7 @@ def run_train_test(normalization_method: str, root: str, category: str):
     return results
 
 
-@TestDataset(num_train=200, num_test=30, path=get_dataset_path(), seed=42)
+@TestDataset(num_train=300, num_test=50, path=get_dataset_path(), seed=42)
 def test_normalizer(path=get_dataset_path(), category="shapes"):
     # run without normalization
     seed_everything(42)
