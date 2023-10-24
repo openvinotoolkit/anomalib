@@ -9,11 +9,7 @@ import torch
 import torch.nn.functional as F
 from torch import Tensor, nn
 
-from anomalib.models.components import (
-    DynamicBufferModule,
-    FeatureExtractor,
-    KCenterGreedy,
-)
+from anomalib.models.components import DynamicBufferModule, FeatureExtractor, KCenterGreedy
 from anomalib.models.patchcore.anomaly_map import AnomalyMapGenerator
 from anomalib.pre_processing import Tiler
 
@@ -44,7 +40,7 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
         self.register_buffer("memory_bank", Tensor())
         self.memory_bank: Tensor
 
-    def forward(self, input_tensor: Tensor) -> Tensor | tuple[Tensor, Tensor]:
+    def forward(self, input_tensor: Tensor) -> Tensor | dict[str, Tensor]:
         """Return Embedding during training, or a tuple of anomaly map and anomaly score during testing.
 
         Steps performed:
@@ -56,7 +52,7 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
             input_tensor (Tensor): Input tensor
 
         Returns:
-            Tensor | tuple[Tensor, Tensor]: Embedding for training,
+            Tensor | dict[str, Tensor]: Embedding for training,
                 anomaly map and anomaly score for testing.
         """
         if self.tiler:
@@ -83,13 +79,13 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
             patch_scores = patch_scores.reshape((batch_size, -1))
             locations = locations.reshape((batch_size, -1))
             # compute anomaly score
-            anomaly_score = self.compute_anomaly_score(patch_scores, locations, embedding)
+            pred_score = self.compute_anomaly_score(patch_scores, locations, embedding)
             # reshape to w, h
             patch_scores = patch_scores.reshape((batch_size, 1, width, height))
             # get anomaly map
             anomaly_map = self.anomaly_map_generator(patch_scores)
 
-            output = (anomaly_map, anomaly_score)
+            output = {"anomaly_map": anomaly_map, "pred_score": pred_score}
 
         return output
 
@@ -107,7 +103,7 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
         embeddings = features[self.layers[0]]
         for layer in self.layers[1:]:
             layer_embedding = features[layer]
-            layer_embedding = F.interpolate(layer_embedding, size=embeddings.shape[-2:], mode="nearest")
+            layer_embedding = F.interpolate(layer_embedding, size=embeddings.shape[-2:], mode="bilinear")
             embeddings = torch.cat((embeddings, layer_embedding), 1)
 
         return embeddings
@@ -142,6 +138,28 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
         coreset = sampler.sample_coreset()
         self.memory_bank = coreset
 
+    @staticmethod
+    def euclidean_dist(x: Tensor, y: Tensor) -> Tensor:
+        """
+        Calculates pair-wise distance between row vectors in x and those in y.
+
+        Replaces torch cdist with p=2, as cdist is not properly exported to onnx and openvino format.
+        Resulting matrix is indexed by x vectors in rows and y vectors in columns.
+
+        Args:
+            x: input tensor 1
+            y: input tensor 2
+
+        Returns:
+            Matrix of distances between row vectors in x and y.
+        """
+        x_norm = x.pow(2).sum(dim=-1, keepdim=True)  # |x|
+        y_norm = y.pow(2).sum(dim=-1, keepdim=True)  # |y|
+        # row distance can be rewritten as sqrt(|x| - 2 * x @ y.T + |y|.T)
+        res = x_norm - 2 * torch.matmul(x, y.transpose(-2, -1)) + y_norm.transpose(-2, -1)
+        res = res.clamp_min_(0).sqrt_()
+        return res
+
     def nearest_neighbors(self, embedding: Tensor, n_neighbors: int) -> tuple[Tensor, Tensor]:
         """Nearest Neighbours using brute force method and euclidean norm.
 
@@ -153,7 +171,7 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
             Tensor: Patch scores.
             Tensor: Locations of the nearest neighbor(s).
         """
-        distances = torch.cdist(embedding, self.memory_bank, p=2.0)  # euclidean norm
+        distances = self.euclidean_dist(embedding, self.memory_bank)
         if n_neighbors == 1:
             # when n_neighbors is 1, speed up computation by using min instead of topk
             patch_scores, locations = distances.min(1)
@@ -186,9 +204,12 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
         # 3. Find the support samples of the nearest neighbor in the membank
         nn_sample = self.memory_bank[nn_index, :]  # m^* in the paper
         # indices of N_b(m^*) in the paper
-        _, support_samples = self.nearest_neighbors(nn_sample, n_neighbors=self.num_neighbors)
+        memory_bank_effective_size = self.memory_bank.shape[0]  # edge case when memory bank is too small
+        _, support_samples = self.nearest_neighbors(
+            nn_sample, n_neighbors=min(self.num_neighbors, memory_bank_effective_size)
+        )
         # 4. Find the distance of the patch features to each of the support samples
-        distances = torch.cdist(max_patches_features.unsqueeze(1), self.memory_bank[support_samples], p=2.0)
+        distances = self.euclidean_dist(max_patches_features.unsqueeze(1), self.memory_bank[support_samples])
         # 5. Apply softmax to find the weights
         weights = (1 - F.softmax(distances.squeeze(1), 1))[..., 0]
         # 6. Apply the weight factor to the score

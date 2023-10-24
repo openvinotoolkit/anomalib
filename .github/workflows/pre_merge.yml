@@ -18,7 +18,7 @@ concurrency:
 
 jobs:
   Code-Quality-Checks:
-    runs-on: [self-hosted, linux, x64]
+    runs-on: [self-hosted, linux, x64, anomalib]
     steps:
       - name: CHECKOUT REPOSITORY
         uses: actions/checkout@v2
@@ -31,7 +31,7 @@ jobs:
       - name: Code quality checks
         run: tox -e pre-commit
   Pre-Merge-Checks:
-    runs-on: [self-hosted, linux, x64]
+    runs-on: [self-hosted, linux, x64, anomalib]
     needs: Code-Quality-Checks
     if: github.event.pull_request.draft == false
     strategy:

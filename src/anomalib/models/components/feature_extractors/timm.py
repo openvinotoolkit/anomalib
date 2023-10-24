@@ -45,6 +45,16 @@ class TimmFeatureExtractor(nn.Module):
 
     def __init__(self, backbone: str, layers: list[str], pre_trained: bool = True, requires_grad: bool = False):
         super().__init__()
+
+        # Extract backbone-name and weight-URI from the backbone string.
+        if "__AT__" in backbone:
+            backbone, uri = backbone.split("__AT__")
+            pretrained_cfg = timm.models.registry.get_pretrained_cfg(backbone)
+            # Override pretrained_cfg["url"] to use different pretrained weights.
+            pretrained_cfg["url"] = uri
+        else:
+            pretrained_cfg = None
+
         self.backbone = backbone
         self.layers = layers
         self.idx = self._map_layer_to_idx()
@@ -52,6 +62,7 @@ class TimmFeatureExtractor(nn.Module):
         self.feature_extractor = timm.create_model(
             backbone,
             pretrained=pre_trained,
+            pretrained_cfg=pretrained_cfg,
             features_only=True,
             exportable=True,
             out_indices=self.idx,

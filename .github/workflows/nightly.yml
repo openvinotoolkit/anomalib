@@ -7,7 +7,7 @@ on:
 
 jobs:
   Tox:
-    runs-on: [self-hosted, linux, x64]
+    runs-on: [self-hosted, linux, x64, anomalib]
     strategy:
       max-parallel: 1
     if: github.ref == 'refs/heads/main'
