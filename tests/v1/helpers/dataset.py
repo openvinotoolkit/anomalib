@@ -80,7 +80,9 @@ class DummyDatasetGenerator(ContextDecorator):
         self,
         normal_dir: str = "good",
         abnormal_dir: str | None = None,
+        image_extension: str = ".png",
         mask_suffix: str = "_mask",
+        mask_extension: str = ".png",
     ) -> None:
         """Generates dummy MVTecAD dataset in a temporary directory using the same convention as MVTec AD."""
         # Create normal images.
@@ -91,7 +93,7 @@ class DummyDatasetGenerator(ContextDecorator):
             num_images = self.num_train if split == "train" else self.num_test
             for i in range(num_images):
                 image, _ = random_shapes(image_shape=self.image_shape, max_shapes=1, shape=self.train_shape)
-                imsave(path / f"{i:03}.png", image, check_contrast=False)
+                imsave(path / f"{i:03}{image_extension}", image, check_contrast=False)
 
         # Create abnormal test images and masks.
         abnormal_dir = abnormal_dir or self.test_shape
@@ -107,8 +109,8 @@ class DummyDatasetGenerator(ContextDecorator):
             mask = image[..., 0] < 255
 
             # Save both the image and the mask.
-            imsave(path / f"{i:03}.png", image, check_contrast=False)
-            imsave(mask_path / f"{i:03}{mask_suffix}.png", img_as_ubyte(mask), check_contrast=False)
+            imsave(path / f"{i:03}{image_extension}", image, check_contrast=False)
+            imsave(mask_path / f"{i:03}{mask_suffix}{mask_extension}", img_as_ubyte(mask), check_contrast=False)
 
     def _generate_dummy_btech_dataset(self) -> None:
         """Generate dummy BeanTech dataset in directory using the same convention as BeanTech AD."""
@@ -143,6 +145,13 @@ class DummyDatasetGenerator(ContextDecorator):
                     # Save rgb, xyz, and gt images.
                     extension = ".tiff" if directory == "xyz" else ".png"
                     imsave(test_path / category / directory / f"{i:03}{extension}", image, check_contrast=False)
+
+    def _generate_dummy_visa_dataset(self) -> None:
+        """Generate dummy Visa dataset in directory using the same convention as Visa AD."""
+        # Visa dataset on anomalib follows the same convention as MVTec AD.
+        # The only difference is that the root directory has a subdirectory called "visa_pytorch".
+        self.root = self.root / "visa_pytorch"
+        self._generate_dummy_mvtec_dataset(normal_dir="good", abnormal_dir="bad", image_extension=".JPG")
 
     def generate_dataset(self) -> None:
         """Generate dataset."""
