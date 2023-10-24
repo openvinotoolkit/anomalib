@@ -9,3 +9,6 @@ model:
     backbone: resnet18
     pre_trained: true
     n_features: null
+
+metrics:
+  pixel: AUROC

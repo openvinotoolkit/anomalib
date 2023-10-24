@@ -13,6 +13,8 @@ model:
     beta1: 0.5
     beta2: 0.999
 
+task: CLASSIFICATION
+
 trainer:
   max_epochs: 100
   callbacks:

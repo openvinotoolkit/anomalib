@@ -137,7 +137,7 @@ class AnomalibCLI(LightningCLI):
             help="Path to save the results.",
             default=Path("./results"),
         )
-        parser.add_argument("--results_dir.unique", type=bool, help="Whether to create a unique folder.", default=True)
+        parser.add_argument("--results_dir.unique", type=bool, help="Whether to create a unique folder.", default=False)
         parser.link_arguments("results_dir.path", "trainer.default_root_dir")
         # TODO(ashwinvaidya17): Tiling should also be a category of its own
         # CVS-122659
