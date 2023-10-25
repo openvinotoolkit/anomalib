@@ -31,11 +31,11 @@ model:
   lr: 0.0001
   enable_sspcab: false
   sspcab_lambda: 0.1
-# uncomment the following settings to enable early stopping
-#  early_stopping:
-#    patience: 20
-#    metric: pixel_AUROC
-#    mode: max
+  # uncomment the following settings to enable early stopping
+  #  early_stopping:
+  #    patience: 20
+  #    metric: pixel_AUROC
+  #    mode: max
   normalization_method: min_max # options: [none, min_max, cdf]
 
 metrics:
