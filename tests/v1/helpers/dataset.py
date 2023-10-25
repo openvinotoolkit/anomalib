@@ -16,6 +16,88 @@ from skimage.draw import random_shapes
 from skimage.io import imsave
 
 from anomalib.data import DataFormat
+from anomalib.data.utils import Augmenter, LabelName
+
+
+class DummyImageGenerator:
+    """Dummy image generator.
+
+    Args:
+        image_shape (tuple[int, int], optional): Image shape. Defaults to (256, 256).
+    """
+
+    def __init__(self, image_shape: tuple[int, int] = (256, 256)) -> None:
+        self.image_shape = image_shape
+        self.augmenter = Augmenter()
+
+    def generate_normal_image(self) -> tuple[np.ndarray, np.ndarray]:
+        """Generate a normal image."""
+        image = random_shapes(image_shape=self.image_shape, min_size=256, max_shapes=1, shape="rectangle")[0]
+        mask = np.zeros_like(image).astype(np.uint8)
+
+        return image, mask
+
+    def generate_abnormal_image(self, beta: float = 0.2) -> tuple[np.ndarray, np.ndarray]:
+        """Generate an abnormal image.
+
+        Args:
+            beta (float, optional): beta value for superimposing perturbation on image. Defaults to 0.2.
+
+        Returns:
+            tuple[np.ndarray, np.ndarray]: Abnormal image and mask.
+        """
+        # Generate a random image.
+        image, _ = self.generate_normal_image()
+
+        # Generate perturbation.
+        perturbation, mask = self.augmenter.generate_perturbation(height=self.image_shape[0], width=self.image_shape[1])
+
+        # Superimpose perturbation on image ``img``.
+        abnormal_image = (image * (1 - mask) + (beta) * perturbation + (1 - beta) * image * (mask)).astype(np.uint8)
+
+        return abnormal_image, mask.squeeze()
+
+    def generate_image(
+        self,
+        label: LabelName = LabelName.NORMAL,
+        image_filename: Path | str | None = None,
+        mask_filename: Path | str | None = None,
+    ) -> tuple[np.ndarray, np.ndarray]:
+        """Generate a random image.
+
+        Args:
+            label (LabelName, optional): Image label (NORMAL - 0 or ABNORMAL - 1). Defaults to 0.
+            image_filename (Path | str | None, optional): Image filename to save to filesytem. Defaults to None.
+            mask_filename (Path | str | None, optional): Mask filename to save to filesystem. Defaults to None.
+
+        Returns:
+            tuple[np.ndarray, np.ndarray]: Image and mask.
+        """
+        func = self.generate_normal_image if label == LabelName.NORMAL else self.generate_abnormal_image
+        image, mask = func()
+
+        if image_filename:
+            self.save_image(filename=image_filename, image=image)
+
+        if mask_filename:
+            self.save_image(filename=mask_filename, image=img_as_ubyte(mask))
+
+        return image, mask
+
+    def save_image(self, filename: Path | str, image: np.ndarray, check_contrast: bool = False) -> None:
+        """Save image to filesystem.
+
+        Args:
+            filename (Path | str): Filename to save image to.
+            image (np.ndarray): Image to save.
+            check_contrast (bool, optional): Check for low contrast and print warning. Defaults to False.
+        """
+        filename = Path(filename)
+
+        # Check if the directory exists.
+        filename.parent.mkdir(parents=True, exist_ok=True)
+        # Save image.
+        imsave(fname=filename, arr=image, check_contrast=check_contrast)
 
 
 class DummyDatasetGenerator(ContextDecorator):
