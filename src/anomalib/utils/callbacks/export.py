@@ -51,28 +51,27 @@ class ExportCallback(Callback):
         logger.info("Exporting the model")
         self.dirpath.mkdir(parents=True, exist_ok=True)
 
-        match self.export_mode:
-            case ExportMode.TORCH:
-                export_to_torch(
-                    model=pl_module,
-                    export_path=self.dirpath,
-                    transform=trainer.datamodule.test_data.transform,
-                    task=trainer.datamodule.test_data.task,
-                )
-            case ExportMode.ONNX:
-                export_to_onnx(
-                    model=pl_module,
-                    input_size=self.input_size,
-                    export_path=self.dirpath,
-                    transform=trainer.datamodule.test_data.transform,
-                    task=trainer.datamodule.test_data.task,
-                )
-            case ExportMode.OPENVINO:
-                export_to_openvino(
-                    export_path=self.dirpath,
-                    model=pl_module,
-                    input_size=self.input_size,
-                    transform=trainer.datamodule.test_data.transform,
-                    mo_args={},
-                    task=trainer.datamodule.test_data.task,
-                )
+        if self.export_mode == ExportMode.TORCH:
+            export_to_torch(
+                model=pl_module,
+                export_path=self.dirpath,
+                transform=trainer.datamodule.test_data.transform,
+                task=trainer.datamodule.test_data.task,
+            )
+        elif self.export_mode == ExportMode.ONNX:
+            export_to_onnx(
+                model=pl_module,
+                input_size=self.input_size,
+                export_path=self.dirpath,
+                transform=trainer.datamodule.test_data.transform,
+                task=trainer.datamodule.test_data.task,
+            )
+        else:
+            export_to_openvino(
+                export_path=self.dirpath,
+                model=pl_module,
+                input_size=self.input_size,
+                transform=trainer.datamodule.test_data.transform,
+                mo_args={},
+                task=trainer.datamodule.test_data.task,
+            )

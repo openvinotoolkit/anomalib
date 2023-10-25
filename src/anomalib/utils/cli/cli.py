@@ -274,34 +274,33 @@ class AnomalibCLI(LightningCLI):
         """Run export."""
         export_mode = self.config.export.export_mode
         config = self.config.export[export_mode]
-        match export_mode:
-            case "torch":
-                export_to_torch(
-                    export_path=config.export_path,
-                    model=config.model,
-                    transform=config.transform,
-                    task=config.task,
-                )
-            case "onnx":
-                export_to_onnx(
-                    model=config.model,
-                    input_size=config.input_size,
-                    export_path=config.export_path,
-                    transform=config.transform,
-                    task=config.task,
-                )
-            case "openvino":
-                export_to_openvino(
-                    export_path=config.export_path,
-                    model=config.model,
-                    input_size=config.input_size,
-                    transform=config.transform,
-                    task=config.task,
-                    mo_args={**config.mo_args},
-                )
-            case _:
-                logger.error(f"Unsupported export mode: {export_mode}")
-                raise NotImplementedError
+        if export_mode == "torch":
+            export_to_torch(
+                export_path=config.export_path,
+                model=config.model,
+                transform=config.transform,
+                task=config.task,
+            )
+        elif export_mode == "onnx":
+            export_to_onnx(
+                model=config.model,
+                input_size=config.input_size,
+                export_path=config.export_path,
+                transform=config.transform,
+                task=config.task,
+            )
+        elif export_mode == "openvino":
+            export_to_openvino(
+                export_path=config.export_path,
+                model=config.model,
+                input_size=config.input_size,
+                transform=config.transform,
+                task=config.task,
+                mo_args={**config.mo_args},
+            )
+        else:
+            logger.error(f"Unsupported export mode: {export_mode}")
+            raise NotImplementedError
 
 
 def main() -> None:
