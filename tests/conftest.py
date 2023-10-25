@@ -9,7 +9,7 @@ from tempfile import TemporaryDirectory
 
 import pytest
 
-from tests.helpers.dataset import GeneratedDummyDataset
+from tests.legacy.helpers.dataset import GeneratedDummyDataset
 
 
 def _model_names() -> list[str]:
