@@ -139,8 +139,8 @@ class DummyDatasetGenerator(ContextDecorator):
         image_shape: tuple[int, int] = (256, 256),
         num_channels: int = 3,
         min_size: int = 64,
-        train_shape: str = "rectangle",
-        test_shape: str = "circle",
+        normal_category: str = "good",
+        abnormal_category: str = "bad",
         seed: int | None = None,
     ) -> None:
         if data_format not in list(DataFormat):
@@ -151,8 +151,8 @@ class DummyDatasetGenerator(ContextDecorator):
         self.root = Path(mkdtemp() if root is None else root)
         self.num_train = num_train
         self.num_test = num_test
-        self.train_shape = train_shape
-        self.test_shape = test_shape
+        self.normal_category = normal_category
+        self.abnormal_category = abnormal_category
         self.image_shape = image_shape
         self.num_channels = num_channels
         self.min_size = min_size
@@ -176,7 +176,7 @@ class DummyDatasetGenerator(ContextDecorator):
                 self.image_generator.generate_image(LabelName.NORMAL, path / f"{i:03}{image_extension}")
 
         # Create abnormal test images and masks.
-        abnormal_dir = abnormal_dir or self.test_shape
+        abnormal_dir = abnormal_dir or self.abnormal_category
         path = self.root / "shapes" / "test" / abnormal_dir
         mask_path = self.root / "shapes" / "ground_truth" / abnormal_dir
 
@@ -200,13 +200,13 @@ class DummyDatasetGenerator(ContextDecorator):
                 (split_path / directory).mkdir(parents=True, exist_ok=True)
                 extension = ".tiff" if directory == "xyz" else ".png"
                 for i in range(self.num_train):
-                    image, _ = random_shapes(image_shape=self.image_shape, max_shapes=1, shape=self.train_shape)
+                    image, _ = random_shapes(image_shape=self.image_shape, max_shapes=1, shape=self.normal_category)
                     imsave(split_path / directory / f"{i:03}{extension}", image, check_contrast=False)
 
         ## Create test images.
         test_path = self.root / "shapes" / "test"
         for category in ("good", "crack"):
-            shape = self.train_shape if category == "good" else self.test_shape
+            shape = self.normal_category if category == "good" else self.abnormal_category
             for i in range(self.num_test):
                 image, _ = random_shapes(image_shape=self.image_shape, max_shapes=1, shape=shape)
                 for directory in ("rgb", "xyz", "gt"):
