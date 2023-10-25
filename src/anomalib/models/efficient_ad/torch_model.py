@@ -141,12 +141,16 @@ class Decoder(nn.Module):
 
     Args:
         out_channels (int): number of convolution output channels
+        img_size (tuple): size of input images
     """
 
     def __init__(self, out_channels, padding, img_size, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.img_size = img_size
-        self.last_upsample = int(img_size / 4) if padding else int(img_size / 4) - 8
+        self.last_upsample = (
+            int(img_size[0] / 4) if padding else int(img_size[0] / 4) - 8,
+            int(img_size[1] / 4) if padding else int(img_size[1] / 4) - 8,
+        )
         self.deconv1 = nn.Conv2d(64, 64, kernel_size=4, stride=1, padding=2)
         self.deconv2 = nn.Conv2d(64, 64, kernel_size=4, stride=1, padding=2)
         self.deconv3 = nn.Conv2d(64, 64, kernel_size=4, stride=1, padding=2)
@@ -163,22 +167,22 @@ class Decoder(nn.Module):
         self.dropout6 = nn.Dropout(p=0.2)
 
     def forward(self, x):
-        x = F.interpolate(x, size=int(self.img_size / 64) - 1, mode="bilinear")
+        x = F.interpolate(x, size=(int(self.img_size[0] / 64) - 1, int(self.img_size[1] / 64) - 1), mode="bilinear")
         x = F.relu(self.deconv1(x))
         x = self.dropout1(x)
-        x = F.interpolate(x, size=int(self.img_size / 32), mode="bilinear")
+        x = F.interpolate(x, size=(int(self.img_size[0] / 32), int(self.img_size[1] / 32)), mode="bilinear")
         x = F.relu(self.deconv2(x))
         x = self.dropout2(x)
-        x = F.interpolate(x, size=int(self.img_size / 16) - 1, mode="bilinear")
+        x = F.interpolate(x, size=(int(self.img_size[0] / 16) - 1, int(self.img_size[1] / 16) - 1), mode="bilinear")
         x = F.relu(self.deconv3(x))
         x = self.dropout3(x)
-        x = F.interpolate(x, size=int(self.img_size / 8), mode="bilinear")
+        x = F.interpolate(x, size=(int(self.img_size[0] / 8), int(self.img_size[1] / 8)), mode="bilinear")
         x = F.relu(self.deconv4(x))
         x = self.dropout4(x)
-        x = F.interpolate(x, size=int(self.img_size / 4) - 1, mode="bilinear")
+        x = F.interpolate(x, size=(int(self.img_size[0] / 4) - 1, int(self.img_size[1] / 4) - 1), mode="bilinear")
         x = F.relu(self.deconv5(x))
         x = self.dropout5(x)
-        x = F.interpolate(x, size=int(self.img_size / 2) - 1, mode="bilinear")
+        x = F.interpolate(x, size=(int(self.img_size[0] / 2) - 1, int(self.img_size[1] / 2) - 1), mode="bilinear")
         x = F.relu(self.deconv6(x))
         x = self.dropout6(x)
         x = F.interpolate(x, size=self.last_upsample, mode="bilinear")
@@ -192,6 +196,7 @@ class AutoEncoder(nn.Module):
 
     Args:
        out_channels (int): number of convolution output channels
+       img_size (tuple): size of input images
     """
 
     def __init__(self, out_channels, padding, img_size, *args, **kwargs) -> None:
@@ -245,7 +250,7 @@ class EfficientAdModel(nn.Module):
         else:
             raise ValueError(f"Unknown model size {model_size}")
 
-        self.ae: AutoEncoder = AutoEncoder(out_channels=teacher_out_channels, padding=padding, img_size=input_size[0])
+        self.ae: AutoEncoder = AutoEncoder(out_channels=teacher_out_channels, padding=padding, img_size=input_size)
         self.teacher_out_channels: int = teacher_out_channels
         self.input_size: tuple[int, int] = input_size
 
@@ -349,4 +354,4 @@ class EfficientAdModel(nn.Module):
                 )
 
             map_combined = 0.5 * map_st + 0.5 * map_stae
-            return {"anomaly_map_combined": map_combined, "map_st": map_st, "map_ae": map_stae}
+            return {"anomaly_map": map_combined, "map_st": map_st, "map_ae": map_stae}

@@ -96,7 +96,7 @@ class EfficientAd(AnomalyModule):
 
     def prepare_pretrained_model(self) -> None:
         pretrained_models_dir = Path("./pre_trained/")
-        if not pretrained_models_dir.is_dir():
+        if not (pretrained_models_dir / "efficientad_pretrained_weights").is_dir():
             download_and_extract(pretrained_models_dir, WEIGHTS_DOWNLOAD_INFO)
         teacher_path = (
             pretrained_models_dir / "efficientad_pretrained_weights" / f"pretrained_teacher_{self.model_size}.pth"
@@ -204,7 +204,7 @@ class EfficientAd(AnomalyModule):
             weight_decay=self.weight_decay,
         )
         num_steps = min(
-            self.trainer.max_steps, self.trainer.max_epochs * len(self.trainer.datamodule.train_dataloader())
+            self.trainer.max_steps // len(self.trainer.datamodule.train_dataloader()), self.trainer.max_epochs
         )
         scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=int(0.95 * num_steps), gamma=0.1)
         return {"optimizer": optimizer, "lr_scheduler": scheduler}
@@ -260,7 +260,7 @@ class EfficientAd(AnomalyModule):
         """
         del args, kwargs  # These variables are not used.
 
-        batch["anomaly_maps"] = self.model(batch["image"])["anomaly_map_combined"]
+        batch["anomaly_maps"] = self.model(batch["image"])["anomaly_map"]
 
         return batch
 
