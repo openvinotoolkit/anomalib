@@ -71,12 +71,11 @@ class _TrainerArgumentsCache:
             model (AnomalyModule): The model used for training
         """
         for key, value in model.trainer_arguments.items():
-            if key in self._cached_args:
-                if self._cached_args[key] != value:
-                    log.info(
-                        f"Overriding {key} from {self._cached_args[key]} with {value} for {model.__class__.__name__}",
-                    )
-                self._cached_args[key] = value
+            if key in self._cached_args and self._cached_args[key] != value:
+                log.info(
+                    f"Overriding {key} from {self._cached_args[key]} with {value} for {model.__class__.__name__}",
+                )
+            self._cached_args[key] = value
 
     def requires_update(self, model: AnomalyModule) -> bool:
         for key, value in model.trainer_arguments.items():
@@ -93,11 +92,21 @@ class Engine:
     """Anomalib Engine.
 
     Note:
-    ----
         Refer to PyTorch Lightning's Trainer for a list of parameters for details on other Trainer parameters.
 
     Args:
-        callbacks: Add a callback or list of callbacks.
+        callbacks (list[Callback]): Add a callback or list of callbacks.
+        normalization (NormalizationMethod | DictConfig | Callback | str, optional): Normalization method.
+            Defaults to NormalizationMethod.MIN_MAX.
+        threshold (BaseThreshold | tuple[BaseThreshold, BaseThreshold] | DictConfig | ListConfig | str, optional):
+            Thresholding method. Defaults to "F1AdaptiveThreshold".
+        task (TaskType, optional): Task type. Defaults to TaskType.SEGMENTATION.
+        image_metrics (str | list[str] | None, optional): Image metrics to be used for evaluation.
+            Defaults to None.
+        pixel_metrics (str | list[str] | None, optional): Pixel metrics to be used for evaluation.
+            Defaults to None.
+        visualization (DictConfig | None, optional): Visualization parameters. Defaults to None.
+        **kwargs: PyTorch Lightning Trainer arguments.
     """
 
     def __init__(
@@ -196,6 +205,20 @@ class Engine:
                 Defaults to None.
             ckpt_path (str | None, optional): Checkpoint path. If provided, the model will be loaded from this path.
                 Defaults to None.
+
+        CLI Usage:
+            1. you can pick a model, and you can run through the MVTec dataset.
+                ```python
+                anomalib fit --model anomalib.models.Padim
+                ```
+            2. Of course, you can override the various values with commands.
+                ```python
+                anomalib fit --model anomalib.models.Padim --data <CONFIG | CLASS_PATH_OR_NAME> --trainer.max_epochs 3
+                ```
+            4. If you have a ready configuration file, run it like this.
+                ```python
+                anomalib fit --config <config_file_path>
+                ```
         """
         self._setup_trainer(model)
         self.trainer.fit(model, train_dataloaders, val_dataloaders, datamodule, ckpt_path)
@@ -227,6 +250,20 @@ class Engine:
 
         Returns:
             _EVALUATE_OUTPUT | None: Validation results.
+
+        CLI Usage:
+            1. you can pick a model.
+                ```python
+                anomalib validate --model anomalib.models.Padim
+                ```
+            2. Of course, you can override the various values with commands.
+                ```python
+                anomalib validate --model anomalib.models.Padim --data <CONFIG | CLASS_PATH_OR_NAME>
+                ```
+            4. If you have a ready configuration file, run it like this.
+                ```python
+                anomalib validate --config <config_file_path>
+                ```
         """
         if model:
             self._setup_trainer(model)
@@ -265,6 +302,20 @@ class Engine:
 
         Returns:
             _EVALUATE_OUTPUT: A List of dictionaries containing the test results. 1 dict per dataloader.
+
+        CLI Usage:
+            1. you can pick a model.
+                ```python
+                anomalib test --model anomalib.models.Padim
+                ```
+            2. Of course, you can override the various values with commands.
+                ```python
+                anomalib test --model anomalib.models.Padim --data <CONFIG | CLASS_PATH_OR_NAME>
+                ```
+            4. If you have a ready configuration file, run it like this.
+                ```python
+                anomalib test --config <config_file_path>
+                ```
         """
         if model:
             self._setup_trainer(model)
@@ -304,6 +355,20 @@ class Engine:
 
         Returns:
             _PREDICT_OUTPUT | None: Predictions.
+
+        CLI Usage:
+            1. you can pick a model.
+                ```python
+                anomalib predict --model anomalib.models.Padim
+                ```
+            2. Of course, you can override the various values with commands.
+                ```python
+                anomalib predict --model anomalib.models.Padim --data <CONFIG | CLASS_PATH_OR_NAME>
+                ```
+            4. If you have a ready configuration file, run it like this.
+                ```python
+                anomalib predict --config <config_file_path> --return_predictions
+                ```
         """
         if model:
             self._setup_trainer(model)

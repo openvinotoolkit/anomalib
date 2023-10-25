@@ -50,10 +50,9 @@ class _CdfNormalizationCallback(Callback):
         """Call when the test begins."""
         del trainer  # `trainer` variable is not used.
 
-        if pl_module.image_metrics is not None:
-            pl_module.image_metrics.set_threshold(0.5)
-        if pl_module.pixel_metrics is not None:
-            pl_module.pixel_metrics.set_threshold(0.5)
+        for metric in (pl_module.image_metrics, pl_module.pixel_metrics):
+            if metric is not None:
+                metric.set_threshold(0.5)
 
     def on_validation_epoch_start(self, trainer: Trainer, pl_module: AnomalyModule) -> None:
         """Call when the validation starts after training.

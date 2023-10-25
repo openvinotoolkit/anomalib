@@ -74,7 +74,6 @@ class _ThresholdCallback(Callback):
                 Threshold configuration
 
         Example:
-        -------
             >>> _initialize_thresholds(F1AdaptiveThreshold())
             or
             >>> _initialize_thresholds((ManualThreshold(0.5), ManualThreshold(0.5)))
@@ -110,7 +109,6 @@ class _ThresholdCallback(Callback):
         """Load the thresholding class based on the config.
 
         Example:
-        -------
             threshold: F1AdaptiveThreshold
             or
             threshold:
@@ -142,7 +140,6 @@ class _ThresholdCallback(Callback):
         """Return the instantiated threshold object.
 
         Example:
-        -------
             >>> _get_threshold_from_config(F1AdaptiveThreshold)
             or
             >>> config = DictConfig({

@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
+from collections.abc import Sequence
 from typing import cast
 
 import torch
@@ -18,12 +19,12 @@ class AnomalyMapGenerator(nn.Module):
     def __init__(
         self,
         image_size: ListConfig | tuple,
-        pool_layers: list[str],
+        pool_layers: Sequence[str],
     ) -> None:
         super().__init__()
         self.distance = torch.nn.PairwiseDistance(p=2, keepdim=True)
         self.image_size = image_size if isinstance(image_size, tuple) else tuple(image_size)
-        self.pool_layers: list[str] = pool_layers
+        self.pool_layers: Sequence[str] = pool_layers
 
     def compute_anomaly_map(self, distribution: list[Tensor], height: list[int], width: list[int]) -> Tensor:
         """Compute the layer map based on likelihood estimation.
@@ -66,10 +67,9 @@ class AnomalyMapGenerator(nn.Module):
         Expects `distribution`, `height` and 'width' keywords to be passed explicitly
 
         Example:
-        -------
-        >>> anomaly_map_generator = AnomalyMapGenerator(image_size=tuple(hparams.model.input_size),
-        >>>        pool_layers=pool_layers)
-        >>> output = self.anomaly_map_generator(distribution=dist, height=height, width=width)
+            >>> anomaly_map_generator = AnomalyMapGenerator(image_size=tuple(hparams.model.input_size),
+            >>>        pool_layers=pool_layers)
+            >>> output = self.anomaly_map_generator(distribution=dist, height=height, width=width)
 
         Raises:
             ValueError: `distribution`, `height` and 'width' keys are not found

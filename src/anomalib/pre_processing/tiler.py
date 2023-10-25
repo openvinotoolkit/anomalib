@@ -355,7 +355,6 @@ class Tiler:
                 If False, tiles the image in a regular grid.
 
         Examples:
-        --------
             >>> from anomalib.pre_processing import Tiler
             >>> tiler = Tiler(tile_size=512,stride=256)
             >>> image = torch.rand(size=(2, 3, 1024, 1024))
@@ -402,7 +401,6 @@ class Tiler:
             tiles: Tiles from the input image, generated via tile()..
 
         Examples:
-        --------
             >>> from anomalib.pre_processing import Tiler
             >>> tiler = Tiler(tile_size=512,stride=256)
             >>> image = torch.rand(size=(2, 3, 1024, 1024))

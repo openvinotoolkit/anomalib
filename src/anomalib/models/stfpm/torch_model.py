@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
+from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
 from torch import Tensor, nn
@@ -26,7 +27,7 @@ class STFPMModel(nn.Module):
 
     def __init__(
         self,
-        layers: list[str],
+        layers: Sequence[str],
         input_size: tuple[int, int],
         backbone: str = "resnet18",
     ) -> None:

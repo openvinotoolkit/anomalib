@@ -175,7 +175,6 @@ class TorchFXFeatureExtractor(nn.Module):
         If only the model name is provided, it will try to load the model from torchvision.
 
         Example:
-        -------
             >>> from anomalib.models.components.feature_extractors import TorchFXFeatureExtractor
             >>> TorchFXFeatureExtractor._get_backbone_class("efficientnet_b5")
             <function torchvision.models.efficientnet.efficientnet_b5(

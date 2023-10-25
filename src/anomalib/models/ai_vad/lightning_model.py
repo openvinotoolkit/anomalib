@@ -46,18 +46,18 @@ class AiVad(AnomalyModule):
 
     def __init__(
         self,
-        box_score_thresh: float = 0.8,
+        box_score_thresh: float = 0.7,
         persons_only: bool = False,
         min_bbox_area: int = 100,
         max_bbox_overlap: float = 0.65,
         enable_foreground_detections: bool = True,
         foreground_kernel_size: int = 3,
         foreground_binary_threshold: int = 18,
-        n_velocity_bins: int = 8,
+        n_velocity_bins: int = 1,
         use_velocity_features: bool = True,
         use_pose_features: bool = True,
         use_deep_features: bool = True,
-        n_components_velocity: int = 5,
+        n_components_velocity: int = 2,
         n_neighbors_pose: int = 1,
         n_neighbors_deep: int = 1,
     ) -> None:

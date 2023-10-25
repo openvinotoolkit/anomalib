@@ -69,7 +69,6 @@ class AnomalibWandbLogger(ImageLoggerBase, WandbLogger):
     make sure to use `commit=False` so the logging step does not increase.
 
     See Also:
-    --------
         - `Tutorial <https://colab.research.google.com/drive/16d1uctGaw2y9KhGBlINNTsWpmlXdJwRW?usp=sharing>`__
           on how to use W&B with PyTorch Lightning
         - `W&B Documentation <https://docs.wandb.ai/integrations/lightning>`__

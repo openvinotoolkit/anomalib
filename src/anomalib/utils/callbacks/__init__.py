@@ -42,7 +42,6 @@ def get_callbacks(config: DictConfig | ListConfig | Namespace) -> list[Callback]
         config (DictConfig | ListConfig | Namespace): Model config
 
     Return:
-    ------
         (list[Callback]): List of callbacks.
     """
     logger.info("Loading the callbacks")

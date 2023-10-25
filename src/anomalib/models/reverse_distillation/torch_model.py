@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
+from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
 from torch import Tensor, nn
@@ -36,7 +37,7 @@ class ReverseDistillationModel(nn.Module):
         self,
         backbone: str,
         input_size: tuple[int, int],
-        layers: list[str],
+        layers: Sequence[str],
         anomaly_map_mode: AnomalyMapGenerationMode,
         pre_trained: bool = True,
     ) -> None:

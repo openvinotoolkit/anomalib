@@ -115,7 +115,6 @@ class PadimModel(nn.Module):
             Features from single/multiple layers.
 
         Example:
-        -------
             >>> x = torch.randn(32, 3, 224, 224)
             >>> features = self.extract_features(input_tensor)
             >>> features.keys()

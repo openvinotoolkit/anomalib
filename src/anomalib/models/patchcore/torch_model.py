@@ -3,6 +3,7 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
 import torch
@@ -22,7 +23,7 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
     def __init__(
         self,
         input_size: tuple[int, int],
-        layers: list[str],
+        layers: Sequence[str],
         backbone: str = "wide_resnet50_2",
         pre_trained: bool = True,
         num_neighbors: int = 9,

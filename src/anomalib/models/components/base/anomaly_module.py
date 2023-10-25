@@ -78,7 +78,6 @@ class AnomalyModule(pl.LightningModule, ABC):
             dataloader_idx (int): Index of the current dataloader
 
         Return:
-        ------
             Predicted output
         """
         del batch_idx, dataloader_idx  # These variables are not used.
