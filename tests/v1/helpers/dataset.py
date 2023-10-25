@@ -93,10 +93,7 @@ class DummyImageGenerator:
             check_contrast (bool, optional): Check for low contrast and print warning. Defaults to False.
         """
         filename = Path(filename)
-
-        # Check if the directory exists.
         filename.parent.mkdir(parents=True, exist_ok=True)
-        # Save image.
         imsave(fname=filename, arr=image, check_contrast=check_contrast)
 
 
@@ -139,6 +136,7 @@ class DummyDatasetGenerator(ContextDecorator):
         image_shape: tuple[int, int] = (256, 256),
         num_channels: int = 3,
         min_size: int = 64,
+        dataset_name: str = "shapes",
         normal_category: str = "good",
         abnormal_category: str = "bad",
         seed: int | None = None,
@@ -151,6 +149,7 @@ class DummyDatasetGenerator(ContextDecorator):
         self.root = Path(mkdtemp() if root is None else root)
         self.num_train = num_train
         self.num_test = num_test
+        self.dataset_name = dataset_name
         self.normal_category = normal_category
         self.abnormal_category = abnormal_category
         self.image_shape = image_shape
@@ -170,15 +169,17 @@ class DummyDatasetGenerator(ContextDecorator):
         """Generates dummy MVTecAD dataset in a temporary directory using the same convention as MVTec AD."""
         # Create normal images.
         for split in ("train", "test"):
-            path = self.root / "shapes" / split / normal_dir
+            path = self.root / self.dataset_name / split / normal_dir
             num_images = self.num_train if split == "train" else self.num_test
             for i in range(num_images):
-                self.image_generator.generate_image(LabelName.NORMAL, path / f"{i:03}{image_extension}")
+                label = LabelName.NORMAL
+                image_filename = path / f"{i:03}{image_extension}"
+                self.image_generator.generate_image(label=label, image_filename=image_filename)
 
         # Create abnormal test images and masks.
         abnormal_dir = abnormal_dir or self.abnormal_category
-        path = self.root / "shapes" / "test" / abnormal_dir
-        mask_path = self.root / "shapes" / "ground_truth" / abnormal_dir
+        path = self.root / self.dataset_name / "test" / abnormal_dir
+        mask_path = self.root / self.dataset_name / "ground_truth" / abnormal_dir
 
         for i in range(self.num_test):
             label = LabelName.ABNORMAL
@@ -195,30 +196,31 @@ class DummyDatasetGenerator(ContextDecorator):
         """Generate dummy MVTec 3D AD dataset in a temporary directory using the same convention as MVTec AD."""
         # Create training and validation images.
         for split in ("train", "validation"):
-            split_path = self.root / "shapes" / split / "good"
+            split_path = self.root / self.dataset_name / split / self.normal_category
             for directory in ("rgb", "xyz"):
-                (split_path / directory).mkdir(parents=True, exist_ok=True)
                 extension = ".tiff" if directory == "xyz" else ".png"
                 for i in range(self.num_train):
-                    image, _ = random_shapes(image_shape=self.image_shape, max_shapes=1, shape=self.normal_category)
-                    imsave(split_path / directory / f"{i:03}{extension}", image, check_contrast=False)
+                    label = LabelName.NORMAL
+                    image_filename = split_path / directory / f"{i:03}{extension}"
+                    self.image_generator.generate_image(label=label, image_filename=image_filename)
 
         ## Create test images.
-        test_path = self.root / "shapes" / "test"
-        for category in ("good", "crack"):
-            shape = self.normal_category if category == "good" else self.abnormal_category
+        test_path = self.root / self.dataset_name / "test"
+        for category in (self.normal_category, self.abnormal_category):
+            label = LabelName.NORMAL if category == "good" else LabelName.ABNORMAL
             for i in range(self.num_test):
-                image, _ = random_shapes(image_shape=self.image_shape, max_shapes=1, shape=shape)
-                for directory in ("rgb", "xyz", "gt"):
-                    (test_path / category / directory).mkdir(parents=True, exist_ok=True)
+                # Generate image and mask.
+                image, mask = self.image_generator.generate_image(label=label)
 
-                    # Background of ``image`` is white, so mask can be created by thresholding.
-                    # Assign mask to ``image`` if ``directory`` is "gt", and save.
-                    image = img_as_ubyte(image[..., 0] < 255) if directory == "gt" else image
+                # Create rgb, xyz, and gt filenames.
+                rgb_filename = test_path / category / "rgb" / f"{i:03}.png"
+                xyz_filename = test_path / category / "xyz" / f"{i:03}.tiff"
+                gt_filename = test_path / category / "gt" / f"{i:03}.png"
 
-                    # Save rgb, xyz, and gt images.
-                    extension = ".tiff" if directory == "xyz" else ".png"
-                    imsave(test_path / category / directory / f"{i:03}{extension}", image, check_contrast=False)
+                # Save rgb, xyz, and gt images.
+                self.image_generator.save_image(filename=rgb_filename, image=image)
+                self.image_generator.save_image(filename=xyz_filename, image=image)
+                self.image_generator.save_image(filename=gt_filename, image=img_as_ubyte(mask))
 
     def _generate_dummy_visa_dataset(self) -> None:
         """Generate dummy Visa dataset in directory using the same convention as Visa AD."""
