@@ -10,8 +10,8 @@ from importlib.util import find_spec
 import pytest
 
 from anomalib.data import TaskType
-from anomalib.deploy import ExportMode, OpenVINOInferencer, TorchInferencer, export
-from anomalib.models import get_model
+from anomalib.deploy import OpenVINOInferencer, TorchInferencer, export_to_openvino, export_to_torch
+from anomalib.models import Padim
 from anomalib.utils.metrics.threshold import F1AdaptiveThreshold
 
 sys.path.append("tools/inference")
@@ -33,22 +33,15 @@ class TestGradioInferenceEntrypoint:
             raise Exception("Unable to import gradio_inference.py for testing")
         return get_parser, get_inferencer
 
-    def test_torch_inference(self, get_functions, project_path, get_config, transforms_config):
+    def test_torch_inference(self, get_functions, project_path, transforms_config):
         """Test gradio_inference.py"""
         parser, inferencer = get_functions
-        model = get_model(get_config("padim"))
+        model = Padim(input_size=(100, 100))
         model.image_threshold = F1AdaptiveThreshold()
         model.pixel_threshold = F1AdaptiveThreshold()
 
         # export torch model
-        export(
-            task=TaskType.SEGMENTATION,
-            transform=transforms_config,
-            input_size=(100, 100),
-            model=model,
-            export_mode=ExportMode.TORCH,
-            export_root=project_path,
-        )
+        export_to_torch(model=model, export_path=project_path, transform=transforms_config, task=TaskType.SEGMENTATION)
 
         arguments = parser().parse_args(
             [
@@ -58,21 +51,21 @@ class TestGradioInferenceEntrypoint:
         )
         assert isinstance(inferencer(arguments.weights, arguments.metadata), TorchInferencer)
 
-    def test_openvino_inference(self, get_functions, project_path, get_config, transforms_config):
+    def test_openvino_inference(self, get_functions, project_path, transforms_config):
         """Test gradio_inference.py"""
         parser, inferencer = get_functions
-        model = get_model(get_config("padim"))
+        model = Padim(input_size=(100, 100))
         model.image_threshold = F1AdaptiveThreshold()
         model.pixel_threshold = F1AdaptiveThreshold()
 
         # export OpenVINO model
-        export(
-            task=TaskType.SEGMENTATION,
-            transform=transforms_config,
-            input_size=(100, 100),
+        export_to_openvino(
+            export_path=project_path,
             model=model,
-            export_mode=ExportMode.OPENVINO,
-            export_root=project_path,
+            input_size=(100, 100),
+            transform=transforms_config,
+            mo_args={},
+            task=TaskType.SEGMENTATION,
         )
 
         arguments = parser().parse_args(
