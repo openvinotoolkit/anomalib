@@ -138,12 +138,16 @@ class DraemLightning(Draem):
                 deprecated, and callbacks will be configured from either
                 config.yaml file or from CLI.
         """
-        early_stopping = EarlyStopping(
-            monitor=self.hparams.model.early_stopping.metric,
-            patience=self.hparams.model.early_stopping.patience,
-            mode=self.hparams.model.early_stopping.mode,
-        )
-        return [early_stopping]
+        callbacks = []
+        if "early_stopping" in self.hparams.model:
+            early_stopping = EarlyStopping(
+                monitor=self.hparams.model.early_stopping.metric,
+                patience=self.hparams.model.early_stopping.patience,
+                mode=self.hparams.model.early_stopping.mode,
+            )
+            callbacks.append(early_stopping)
+
+        return callbacks
 
     def configure_optimizers(self) -> tuple[list[torch.optim.Optimizer], list[torch.optim.lr_scheduler.LRScheduler]]:
         """Configure the Adam optimizer."""
