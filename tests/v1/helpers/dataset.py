@@ -157,6 +157,7 @@ class DummyDatasetGenerator(ContextDecorator):
         self.num_channels = num_channels
         self.min_size = min_size
         self.rng = np.random.default_rng(seed) if seed else None
+        self.image_generator = DummyImageGenerator(image_shape=image_shape)
 
     def _generate_dummy_mvtec_dataset(
         self,
@@ -170,29 +171,20 @@ class DummyDatasetGenerator(ContextDecorator):
         # Create normal images.
         for split in ("train", "test"):
             path = self.root / "shapes" / split / normal_dir
-            path.mkdir(parents=True, exist_ok=True)
-
             num_images = self.num_train if split == "train" else self.num_test
             for i in range(num_images):
-                image, _ = random_shapes(image_shape=self.image_shape, max_shapes=1, shape=self.train_shape)
-                imsave(path / f"{i:03}{image_extension}", image, check_contrast=False)
+                self.image_generator.generate_image(LabelName.NORMAL, path / f"{i:03}{image_extension}")
 
         # Create abnormal test images and masks.
         abnormal_dir = abnormal_dir or self.test_shape
         path = self.root / "shapes" / "test" / abnormal_dir
         mask_path = self.root / "shapes" / "ground_truth" / abnormal_dir
 
-        path.mkdir(parents=True, exist_ok=True)
-        mask_path.mkdir(parents=True, exist_ok=True)
         for i in range(self.num_test):
-            image, _ = random_shapes(image_shape=self.image_shape, max_shapes=1, shape=self.test_shape)
-
-            # Background of ``image`` is white, so mask can be created by thresholding.
-            mask = image[..., 0] < 255
-
-            # Save both the image and the mask.
-            imsave(path / f"{i:03}{image_extension}", image, check_contrast=False)
-            imsave(mask_path / f"{i:03}{mask_suffix}{mask_extension}", img_as_ubyte(mask), check_contrast=False)
+            label = LabelName.ABNORMAL
+            image_filename = path / f"{i:03}{image_extension}"
+            mask_filename = mask_path / f"{i:03}{mask_suffix}{mask_extension}"
+            self.image_generator.generate_image(label, image_filename, mask_filename)
 
     def _generate_dummy_btech_dataset(self) -> None:
         """Generate dummy BeanTech dataset in directory using the same convention as BeanTech AD."""
