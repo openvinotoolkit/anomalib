@@ -40,7 +40,7 @@ def test_export_model_callback(dummy_datamodule: MVTec, export_mode):
 
     with patch("anomalib.config.config.update_input_size_config", side_effect=lambda config: config):
         config = get_test_configurable_parameters(
-            config_path="tests/pre_merge/utils/callbacks/export_callback/dummy_config.yml"
+            config_path="tests/legacy/pre_merge/utils/callbacks/export_callback/dummy_config.yml",
         )
 
     with tempfile.TemporaryDirectory() as tmp_dir:
