@@ -168,7 +168,7 @@ class EfficientAd(AnomalyModule):
         for batch in tqdm.tqdm(dataloader, desc="Calculate Validation Dataset Quantiles", position=0, leave=True):
             for img, label in zip(batch["image"], batch["label"]):
                 if label == 0:  # only use good images of validation set!
-                    output = self.model(img.to(self.device))
+                    output = self.model(img.to(self.device), normalize=False)
                     map_st = output["map_st"]
                     map_ae = output["map_ae"]
                     maps_st.append(map_st)
@@ -176,6 +176,7 @@ class EfficientAd(AnomalyModule):
 
         qa_st, qb_st = self._get_quantiles_of_maps(maps_st)
         qa_ae, qb_ae = self._get_quantiles_of_maps(maps_ae)
+        print({"qa_st": qa_st, "qa_ae": qa_ae, "qb_st": qb_st, "qb_ae": qb_ae})
         return {"qa_st": qa_st, "qa_ae": qa_ae, "qb_st": qb_st, "qb_ae": qb_ae}
 
     def _get_quantiles_of_maps(self, maps: list[Tensor]) -> tuple[Tensor, Tensor]:
@@ -246,9 +247,8 @@ class EfficientAd(AnomalyModule):
         """
         Calculate the feature map quantiles of the validation dataset and push to the model.
         """
-        if (self.current_epoch + 1) == self.trainer.max_epochs:
-            map_norm_quantiles = self.map_norm_quantiles(self.trainer.datamodule.val_dataloader())
-            self.model.quantiles.update(map_norm_quantiles)
+        map_norm_quantiles = self.map_norm_quantiles(self.trainer.datamodule.val_dataloader())
+        self.model.quantiles.update(map_norm_quantiles)
 
     def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
         """Validation Step of EfficientAd returns anomaly maps for the input image batch
