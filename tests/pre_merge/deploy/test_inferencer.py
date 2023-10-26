@@ -81,6 +81,7 @@ def generate_results_dir():
         ("dfm", "segmentation"),
         ("dfkde", "segmentation"),
         ("draem", "segmentation"),
+        ("dsr", "segmentation"),
         ("fastflow", "segmentation"),
         ("ganomaly", "segmentation"),
         ("padim", "segmentation"),
