@@ -13,15 +13,9 @@ repos:
       - id: debug-statements
       - id: detect-private-key
 
-  # python code formatting
-  - repo: https://github.com/psf/black
-    rev: 23.9.1
-    hooks:
-      - id: black
-
   # Ruff version.
   - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: "v0.0.292"
+    rev: "v0.1.2"
     hooks:
       - id: ruff
         exclude: "tests"
@@ -29,7 +23,7 @@ repos:
 
   # python static type checking
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: "v1.6.0"
+    rev: "v1.6.1"
     hooks:
       - id: mypy
         additional_dependencies: [types-PyYAML]
@@ -39,7 +33,6 @@ repos:
   - repo: https://github.com/nbQA-dev/nbQA
     rev: 1.7.0
     hooks:
-      - id: nbqa-black
       - id: nbqa-ruff
         # Ignore unsorted imports. This is because jupyter notebooks can import
         # packages in a different order than the rest of the codebase.
