@@ -96,6 +96,24 @@ class DummyImageGenerator:
         filename.parent.mkdir(parents=True, exist_ok=True)
         imsave(fname=filename, arr=image, check_contrast=check_contrast)
 
+    def generate_video(
+            self,
+            length: int = 32,
+            first_label: LabelName = LabelName.NORMAL,
+            p_state_switch: float = 0.2
+            ):
+        """generate video clip with a random sequence of anomalous frames."""
+        frames = []
+        masks = []
+        state = 1 if first_label == LabelName.NORMAL else -1
+        for _ in range(length):
+            state = state * -1 if np.random.random() < p_state_switch else state
+            label = LabelName.NORMAL if state == 1 else LabelName.ABNORMAL
+            frame, mask = self.generate_image(label=label)
+            frames.append(frame)
+            masks.append(mask)
+        return frames, masks
+
 
 class DummyDatasetGenerator(ContextDecorator):
     r"""Context for generating dummy shapes dataset.
@@ -157,6 +175,36 @@ class DummyDatasetGenerator(ContextDecorator):
         self.min_size = min_size
         self.rng = np.random.default_rng(seed) if seed else None
         self.image_generator = DummyImageGenerator(image_shape=image_shape)
+
+    def _generate_dummy_ucsd_dataset(
+            self,
+            train_dir: str = "Train",
+            test_dir: str = "Test",
+    ):
+        """Generate dummy UCSD dataset."""
+        # generate training images
+        # train data
+        path = self.root / self.dataset_name / train_dir
+        num_clips = self.num_train
+        for clip_idx in range(num_clips):
+            clip_name = path / f"Train{clip_idx:03}"
+            frames, _ = self.image_generator.generate_video(length=32, first_label=LabelName.NORMAL, p_state_switch=0)
+            for frame_idx, frame in enumerate(frames):
+                filename = clip_name / f"{frame_idx:03}.tif"
+                self.image_generator.save_image(filename, frame)
+
+        # test data
+        path = self.root / self.dataset_name / test_dir
+        for clip_idx in range(self.num_test):
+            clip_path = path / f"Test{clip_idx:03}"
+            mask_path = path / f"Test{clip_idx:03}_gt"
+            frames, masks = self.image_generator.generate_video(length=32, p_state_switch=0.8)
+            for frame_idx, (frame, mask) in enumerate(zip(frames, masks)):
+                filename_frame = clip_path / f"{frame_idx:03}.tif"
+                filename_mask = mask_path / f"{frame_idx:03}.bmp"
+                self.image_generator.save_image(filename_frame, frame)
+                self.image_generator.save_image(filename_mask, (mask * 255).astype(np.uint8))
+
 
     def _generate_dummy_mvtec_dataset(
         self,
