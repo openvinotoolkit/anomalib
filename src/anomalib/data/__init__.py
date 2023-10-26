@@ -34,6 +34,7 @@ class DataFormat(str, Enum):
     MVTEC = "mvtec"
     MVTEC_3D = "mvtec_3d"
     BTECH = "btech"
+    KOLEKTOR = "kolektor"
     FOLDER = "folder"
     FOLDER_3D = "folder_3d"
     UCSDPED = "ucsdped"

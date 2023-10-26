@@ -222,6 +222,17 @@ class DummyDatasetGenerator(ContextDecorator):
                 self.image_generator.save_image(filename=xyz_filename, image=image)
                 self.image_generator.save_image(filename=gt_filename, image=img_as_ubyte(mask))
 
+    def _generate_dummy_kolektor_dataset(self) -> None:
+        """Generate dummy Kolektor dataset in directory using the same convention as Kolektor AD."""
+        # Emulating the first two categories of Kolektor dataset.
+        for category in ("kos01", "kos02"):
+            for i in range(self.num_train):
+                # Half of the images are normal, while the rest are abnormal.
+                label = LabelName.NORMAL if i > self.num_train // 2 else LabelName.ABNORMAL
+                image_filename = self.root / category / f"Part{i}.jpg"
+                mask_filename = self.root / category / f"Part{i}_label.bmp"
+                self.image_generator.generate_image(label, image_filename, mask_filename)
+
     def _generate_dummy_visa_dataset(self) -> None:
         """Generate dummy Visa dataset in directory using the same convention as Visa AD."""
         # Visa dataset on anomalib follows the same convention as MVTec AD.
@@ -232,9 +243,14 @@ class DummyDatasetGenerator(ContextDecorator):
     def generate_dataset(self) -> None:
         """Generate dataset."""
         # get dataset specific ``generate_dataset`` function based on string.
-        method_name = f"_generate_dummy_{self.data_format}_dataset"
-        method = getattr(self, method_name)
-        method()
+
+        if hasattr(self, f"_generate_dummy_{self.data_format}_dataset"):
+            method_name = f"_generate_dummy_{self.data_format}_dataset"
+            method = getattr(self, method_name)
+            method()
+        else:
+            message = f"``generate_dummy_{self.data_format}_dataset`` not implemented."
+            raise NotImplementedError(message)
 
     def __enter__(self) -> Path:
         """Creates the dataset in temp folder."""
