@@ -252,10 +252,10 @@ class DummyDatasetGenerator(ContextDecorator):
             message = f"``generate_dummy_{self.data_format}_dataset`` not implemented."
             raise NotImplementedError(message)
 
-    def __enter__(self) -> Path:
+    def __enter__(self) -> str:
         """Creates the dataset in temp folder."""
         self.generate_dataset()
-        return self.root
+        return str(self.root)
 
     def __exit__(self, _exc_type, _exc_value, _exc_traceback) -> None:  # noqa: ANN001
         """Cleanup the directory."""

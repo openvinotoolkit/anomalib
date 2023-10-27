@@ -33,15 +33,17 @@ def _dataset_names() -> list[str]:
 
 
 @pytest.fixture(scope="session")
-def project_path(tmp_path_factory: pytest.TempPathFactory) -> Path:
+def project_path(tmp_path_factory: pytest.TempPathFactory) -> str:
     """Fixture that returns a temporary project path."""
-    return tmp_path_factory.mktemp("project")
+    # TODO (samet-akcay): Check if this could be Path object instead of str.
+    return str(tmp_path_factory.mktemp("project"))
 
 
 @pytest.fixture(scope="session")
-def dataset_root() -> Generator[Path, Any, None]:
+def dataset_root() -> Generator[str, Any, None]:
     """Generate a dummy dataset."""
     # TODO (samet-akcay): Pass ``data_format`` as a parameter to the fixture.
+    # TODO (samet-akcay): Check if this could be Path object instead of str.
     with DummyDatasetGenerator(data_format="mvtec", num_train=10, num_test=5) as data_path:
         yield data_path
 
