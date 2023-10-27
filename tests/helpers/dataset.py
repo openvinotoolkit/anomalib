@@ -18,6 +18,8 @@ from skimage.io import imsave
 from anomalib.data import DataFormat
 from anomalib.data.utils import Augmenter, LabelName
 
+import cv2
+
 
 class DummyImageGenerator:
     """Dummy image generator.
@@ -198,13 +200,50 @@ class DummyDatasetGenerator(ContextDecorator):
         for clip_idx in range(self.num_test):
             clip_path = path / f"Test{clip_idx:03}"
             mask_path = path / f"Test{clip_idx:03}_gt"
-            frames, masks = self.image_generator.generate_video(length=32, p_state_switch=0.8)
+            frames, masks = self.image_generator.generate_video(length=32, p_state_switch=0.2)
             for frame_idx, (frame, mask) in enumerate(zip(frames, masks)):
                 filename_frame = clip_path / f"{frame_idx:03}.tif"
                 filename_mask = mask_path / f"{frame_idx:03}.bmp"
                 self.image_generator.save_image(filename_frame, frame)
                 self.image_generator.save_image(filename_mask, (mask * 255).astype(np.uint8))
 
+    def _generate_dummy_avenue_dataset(
+            self,
+            train_dir: str = "training_videos",
+            test_dir: str = "testing_videos",
+            ground_truth_dir: str = "ground_truth_demo",
+    ):
+        """Generate dummy Avenue dataset."""
+        # generate training images
+        # train data
+        path = self.root / self.dataset_name / train_dir
+        path.mkdir(exist_ok=True, parents=True)
+        num_clips = self.num_train
+        for clip_idx in range(num_clips):
+            clip_path = path / f"{clip_idx:02}.avi"
+            frames, _ = self.image_generator.generate_video(length=32, first_label=LabelName.NORMAL, p_state_switch=0)
+            fourcc = cv2.VideoWriter_fourcc('F', 'M', 'P', '4')
+            writer = cv2.VideoWriter(str(clip_path), fourcc, 30, self.image_shape)
+            for _, frame in enumerate(frames):
+                writer.write(frame)
+            writer.release()
+
+        # test data
+        path = self.root / self.dataset_name / test_dir
+        path.mkdir(exist_ok=True, parents=True)
+        gt_path = self.root / self.dataset_name / ground_truth_dir / "testing_label_mask"
+
+        for clip_idx in range(self.num_test):
+            clip_path = path / f"{clip_idx:02}.avi"
+            mask_path = gt_path / f"{clip_idx}_label"
+            mask_path.mkdir(exist_ok=True, parents=True)
+            frames, masks = self.image_generator.generate_video(length=32, p_state_switch=0.2)
+            fourcc = cv2.VideoWriter_fourcc('F', 'M', 'P', '4')
+            writer = cv2.VideoWriter(str(clip_path), fourcc, 30, self.image_shape)
+            for frame_idx, (frame, mask) in enumerate(zip(frames, masks)):
+                writer.write(frame)
+                mask_filename = mask_path / f"{frame_idx:04}.png"
+                self.image_generator.save_image(mask_filename, (mask*255).astype(np.uint8))
 
     def _generate_dummy_mvtec_dataset(
         self,
