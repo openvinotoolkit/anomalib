@@ -15,6 +15,8 @@ from skimage import img_as_ubyte
 from skimage.draw import random_shapes
 from skimage.io import imsave
 
+from scipy.io import savemat
+
 from anomalib.data import DataFormat
 from anomalib.data.utils import Augmenter, LabelName
 
@@ -103,8 +105,17 @@ class DummyImageGenerator:
             length: int = 32,
             first_label: LabelName = LabelName.NORMAL,
             p_state_switch: float = 0.2
-            ):
-        """generate video clip with a random sequence of anomalous frames."""
+            ) -> tuple[list[np.ndarray], list[np.ndarray]]:
+        """Generate video clip with a random sequence of anomalous frames.
+        
+        Args:
+            length (int): Length of the video sequence in number of frames.
+            first_label (LabelName): Label of the first frame (normal or abnormal).
+            p_state_switch (float): probability of transitioning between normal and anomalous in consecutive frames.
+
+        Returns:
+            tuple[list[np.ndarray], list[np.ndarray]]: List of frames and list of masks.
+        """
         frames = []
         masks = []
         state = 1 if first_label == LabelName.NORMAL else -1
@@ -155,6 +166,7 @@ class DummyDatasetGenerator(ContextDecorator):
         num_test: int = 5,
         image_shape: tuple[int, int] = (256, 256),
         num_channels: int = 3,
+        video_length: int = 32,
         min_size: int = 64,
         dataset_name: str = "shapes",
         normal_category: str = "good",
@@ -174,6 +186,7 @@ class DummyDatasetGenerator(ContextDecorator):
         self.abnormal_category = abnormal_category
         self.image_shape = image_shape
         self.num_channels = num_channels
+        self.video_length = video_length
         self.min_size = min_size
         self.rng = np.random.default_rng(seed) if seed else None
         self.image_generator = DummyImageGenerator(image_shape=image_shape)
@@ -184,23 +197,22 @@ class DummyDatasetGenerator(ContextDecorator):
             test_dir: str = "Test",
     ):
         """Generate dummy UCSD dataset."""
-        # generate training images
-        # train data
-        path = self.root / self.dataset_name / train_dir
-        num_clips = self.num_train
-        for clip_idx in range(num_clips):
-            clip_name = path / f"Train{clip_idx:03}"
-            frames, _ = self.image_generator.generate_video(length=32, first_label=LabelName.NORMAL, p_state_switch=0)
+
+        # generate training data
+        train_path = self.root / self.dataset_name / train_dir
+        for clip_idx in range(self.num_train):
+            clip_name = train_path / f"Train{clip_idx:03}"
+            frames, _ = self.image_generator.generate_video(length=self.video_length, first_label=LabelName.NORMAL, p_state_switch=0)
             for frame_idx, frame in enumerate(frames):
                 filename = clip_name / f"{frame_idx:03}.tif"
                 self.image_generator.save_image(filename, frame)
 
-        # test data
-        path = self.root / self.dataset_name / test_dir
+        # generate test data
+        test_path = self.root / self.dataset_name / test_dir
         for clip_idx in range(self.num_test):
-            clip_path = path / f"Test{clip_idx:03}"
-            mask_path = path / f"Test{clip_idx:03}_gt"
-            frames, masks = self.image_generator.generate_video(length=32, p_state_switch=0.2)
+            clip_path = test_path / f"Test{clip_idx:03}"
+            mask_path = test_path / f"Test{clip_idx:03}_gt"
+            frames, masks = self.image_generator.generate_video(length=self.video_length, p_state_switch=0.2)
             for frame_idx, (frame, mask) in enumerate(zip(frames, masks)):
                 filename_frame = clip_path / f"{frame_idx:03}.tif"
                 filename_mask = mask_path / f"{frame_idx:03}.bmp"
@@ -214,13 +226,12 @@ class DummyDatasetGenerator(ContextDecorator):
             ground_truth_dir: str = "ground_truth_demo",
     ):
         """Generate dummy Avenue dataset."""
-        # generate training images
-        # train data
-        path = self.root / self.dataset_name / train_dir
-        path.mkdir(exist_ok=True, parents=True)
-        num_clips = self.num_train
-        for clip_idx in range(num_clips):
-            clip_path = path / f"{clip_idx:02}.avi"
+
+        # generate training data
+        train_path = self.root / self.dataset_name / train_dir
+        train_path.mkdir(exist_ok=True, parents=True)
+        for clip_idx in range(self.num_train):
+            clip_path = train_path / f"{clip_idx:02}.avi"
             frames, _ = self.image_generator.generate_video(length=32, first_label=LabelName.NORMAL, p_state_switch=0)
             fourcc = cv2.VideoWriter_fourcc('F', 'M', 'P', '4')
             writer = cv2.VideoWriter(str(clip_path), fourcc, 30, self.image_shape)
@@ -228,13 +239,13 @@ class DummyDatasetGenerator(ContextDecorator):
                 writer.write(frame)
             writer.release()
 
-        # test data
-        path = self.root / self.dataset_name / test_dir
-        path.mkdir(exist_ok=True, parents=True)
+        # generate test data
+        test_path = self.root / self.dataset_name / test_dir
+        test_path.mkdir(exist_ok=True, parents=True)
         gt_path = self.root / self.dataset_name / ground_truth_dir / "testing_label_mask"
 
         for clip_idx in range(self.num_test):
-            clip_path = path / f"{clip_idx:02}.avi"
+            clip_path = test_path / f"{clip_idx:02}.avi"
             mask_path = gt_path / f"{clip_idx}_label"
             mask_path.mkdir(exist_ok=True, parents=True)
             frames, masks = self.image_generator.generate_video(length=32, p_state_switch=0.2)
@@ -243,7 +254,11 @@ class DummyDatasetGenerator(ContextDecorator):
             for frame_idx, (frame, mask) in enumerate(zip(frames, masks)):
                 writer.write(frame)
                 mask_filename = mask_path / f"{frame_idx:04}.png"
-                self.image_generator.save_image(mask_filename, (mask*255).astype(np.uint8))
+                self.image_generator.save_image(mask_filename, (mask).astype(np.uint8))
+            masks_array = np.stack(masks)
+            mat_filename = mask_path.with_suffix(".mat")
+            savemat(mat_filename, {"data": masks_array})
+
 
     def _generate_dummy_shanghaitech_dataset(
         self,
@@ -251,8 +266,7 @@ class DummyDatasetGenerator(ContextDecorator):
         test_dir: str = "testing",
     ):
         """Generate dummy ShanghaiTech dataset."""
-        # generate training images
-        # train data
+        # generate training data
         path = self.root / self.dataset_name / train_dir / "converted_videos"
         path.mkdir(exist_ok=True, parents=True)
         num_clips = self.num_train
@@ -265,7 +279,7 @@ class DummyDatasetGenerator(ContextDecorator):
                 writer.write(frame)
             writer.release()
 
-        # test data
+        # generate test data
         test_path = self.root / self.dataset_name / test_dir / "frames"
         test_path.mkdir(exist_ok=True, parents=True)
         gt_path = self.root / self.dataset_name / test_dir / "test_pixel_mask"
@@ -276,7 +290,7 @@ class DummyDatasetGenerator(ContextDecorator):
             clip_path.mkdir(exist_ok=True, parents=True)
             mask_path = gt_path / f"01_{clip_idx:04}.npy"
             frames, masks = self.image_generator.generate_video(length=32, p_state_switch=0.2)
-            for frame_idx, (frame, mask) in enumerate(zip(frames, masks)):
+            for frame_idx, frame in enumerate(frames):
                 image_filename = clip_path / f"{frame_idx:03}.jpg"
                 self.image_generator.save_image(image_filename, frame)
             masks_array = np.stack(masks)
