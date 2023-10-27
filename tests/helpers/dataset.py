@@ -35,7 +35,7 @@ class DummyImageGenerator:
     def generate_normal_image(self) -> tuple[np.ndarray, np.ndarray]:
         """Generate a normal image."""
         image = random_shapes(image_shape=self.image_shape, min_size=256, max_shapes=1, shape="rectangle")[0]
-        mask = np.zeros_like(image).astype(np.uint8)
+        mask = np.zeros(self.image_shape).astype(np.uint8)
 
         return image, mask
 
@@ -244,6 +244,43 @@ class DummyDatasetGenerator(ContextDecorator):
                 writer.write(frame)
                 mask_filename = mask_path / f"{frame_idx:04}.png"
                 self.image_generator.save_image(mask_filename, (mask*255).astype(np.uint8))
+
+    def _generate_dummy_shanghaitech_dataset(
+        self,
+        train_dir: str = "training",
+        test_dir: str = "testing",
+    ):
+        """Generate dummy ShanghaiTech dataset."""
+        # generate training images
+        # train data
+        path = self.root / self.dataset_name / train_dir / "converted_videos"
+        path.mkdir(exist_ok=True, parents=True)
+        num_clips = self.num_train
+        for clip_idx in range(num_clips):
+            clip_path = path / f"01_{clip_idx:03}.avi"
+            frames, _ = self.image_generator.generate_video(length=32, first_label=LabelName.NORMAL, p_state_switch=0)
+            fourcc = cv2.VideoWriter_fourcc('F', 'M', 'P', '4')
+            writer = cv2.VideoWriter(str(clip_path), fourcc, 30, self.image_shape)
+            for _, frame in enumerate(frames):
+                writer.write(frame)
+            writer.release()
+
+        # test data
+        test_path = self.root / self.dataset_name / test_dir / "frames"
+        test_path.mkdir(exist_ok=True, parents=True)
+        gt_path = self.root / self.dataset_name / test_dir / "test_pixel_mask"
+        gt_path.mkdir(exist_ok=True, parents=True)
+
+        for clip_idx in range(self.num_test):
+            clip_path = test_path / f"01_{clip_idx:04}"
+            clip_path.mkdir(exist_ok=True, parents=True)
+            mask_path = gt_path / f"01_{clip_idx:04}.npy"
+            frames, masks = self.image_generator.generate_video(length=32, p_state_switch=0.2)
+            for frame_idx, (frame, mask) in enumerate(zip(frames, masks)):
+                image_filename = clip_path / f"{frame_idx:03}.jpg"
+                self.image_generator.save_image(image_filename, frame)
+            masks_array = np.stack(masks)
+            np.save(mask_path, masks_array)
 
     def _generate_dummy_mvtec_dataset(
         self,
