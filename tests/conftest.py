@@ -7,11 +7,12 @@
 from __future__ import annotations
 
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING, Any
 
 import pytest
 
-from tests.helpers.dataset import DummyDatasetGenerator
+from tests.legacy.helpers.dataset import GeneratedDummyDataset
 
 if TYPE_CHECKING:
     from collections.abc import Generator
@@ -33,19 +34,17 @@ def _dataset_names() -> list[str]:
 
 
 @pytest.fixture(scope="session")
-def project_path(tmp_path_factory: pytest.TempPathFactory) -> str:
+def project_path() -> Generator[str, Any, None]:
     """Fixture that returns a temporary project path."""
-    # TODO (samet-akcay): Check if this could be Path object instead of str.
-    return str(tmp_path_factory.mktemp("project"))
+    with TemporaryDirectory() as project_path:
+        yield project_path
 
 
 @pytest.fixture(scope="session")
 def dataset_root() -> Generator[str, Any, None]:
     """Generate a dummy dataset."""
-    # TODO (samet-akcay): Pass ``data_format`` as a parameter to the fixture.
-    # TODO (samet-akcay): Check if this could be Path object instead of str.
-    with DummyDatasetGenerator(data_format="mvtec", num_train=10, num_test=5) as data_path:
-        yield data_path
+    with GeneratedDummyDataset(num_train=20, num_test=10) as data_root:
+        yield data_root
 
 
 @pytest.fixture(scope="session", params=_model_names())
