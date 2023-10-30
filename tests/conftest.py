@@ -9,6 +9,7 @@ from tempfile import TemporaryDirectory
 
 import pytest
 
+from anomalib.data import TaskType
 from tests.legacy.helpers.dataset import GeneratedDummyDataset
 
 
@@ -37,6 +38,12 @@ def dataset_root():
     """Generate a dummy dataset."""
     with GeneratedDummyDataset(num_train=20, num_test=10) as data_root:
         yield data_root
+
+
+@pytest.fixture(params=[TaskType.CLASSIFICATION, TaskType.DETECTION, TaskType.SEGMENTATION])
+def task_type(request: type[pytest.FixtureRequest]) -> str:
+    """Create and return a task type."""
+    return request.param
 
 
 @pytest.fixture(scope="session", params=_model_names())
