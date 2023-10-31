@@ -10,8 +10,8 @@ from importlib.util import find_spec
 import pytest
 
 from anomalib.data import TaskType
-from anomalib.deploy import ExportMode, export
-from anomalib.models import get_model
+from anomalib.deploy import export_to_openvino
+from anomalib.models import Padim, get_model
 from anomalib.utils.metrics.threshold import F1AdaptiveThreshold
 
 sys.path.append("tools/inference")
@@ -30,24 +30,22 @@ class TestOpenVINOInferenceEntrypoint:
             raise Exception("Unable to import openvino_inference.py for testing")
         return get_parser, infer
 
-    def test_openvino_inference(
-        self, get_functions, get_config, project_path, get_dummy_inference_image, transforms_config
-    ):
+    def test_openvino_inference(self, get_functions, project_path, get_dummy_inference_image, transforms_config):
         """Test openvino_inference.py"""
         get_parser, infer = get_functions
 
-        model = get_model(get_config("padim"))
+        model = Padim(input_size=(100, 100))
         model.image_threshold = F1AdaptiveThreshold()
         model.pixel_threshold = F1AdaptiveThreshold()
 
         # export OpenVINO model
-        export(
-            task=TaskType.SEGMENTATION,
-            transform=transforms_config,
-            input_size=(100, 100),
+        export_to_openvino(
+            export_path=project_path,
             model=model,
-            export_mode=ExportMode.OPENVINO,
-            export_root=project_path,
+            input_size=(100, 100),
+            transform=transforms_config,
+            mo_args={},
+            task=TaskType.SEGMENTATION,
         )
 
         arguments = get_parser().parse_args(

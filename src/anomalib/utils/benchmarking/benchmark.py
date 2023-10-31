@@ -24,8 +24,7 @@ from omegaconf import DictConfig, ListConfig, OmegaConf
 
 from anomalib.config import get_configurable_parameters, update_input_size_config
 from anomalib.data import get_datamodule
-from anomalib.deploy import export
-from anomalib.deploy.export import ExportMode
+from anomalib.deploy.export import export_to_openvino, export_to_torch
 from anomalib.engine import Engine
 from anomalib.models import get_model
 from anomalib.utils.loggers import configure_logger
@@ -111,14 +110,11 @@ def get_single_model_metrics(model_config: DictConfig | ListConfig, openvino_met
         # get testing time
         testing_time = time.time() - start_time
 
-        # Create dirs for torch export (as default only lighting model is produced)
-        export(
-            task=model_config.dataset.task,
-            transform=engine.trainer.datamodule.test_data.transform.to_dict(),
-            input_size=model_config.model.init_args.input_size,
+        export_to_torch(
             model=model,
-            export_mode=ExportMode.TORCH,
-            export_root=project_path,
+            export_path=Path(project_path),
+            transform=engine.trainer.datamodule.test_data.transform,
+            task=engine.trainer.datamodule.test_data.task,
         )
 
         throughput = get_torch_throughput(
@@ -130,14 +126,17 @@ def get_single_model_metrics(model_config: DictConfig | ListConfig, openvino_met
         # Get OpenVINO metrics
         openvino_throughput = float("nan")
         if openvino_metrics:
-            # Create dirs for openvino model export
-            export(
-                task=model_config.dataset.task,
-                transform=engine.trainer.datamodule.test_data.transform.to_dict(),
-                input_size=model_config.model.init_args.input_size,
+            if "input_size" in model_config.model.init_args:
+                input_size = model_config.model.init_args.input_size
+            else:
+                input_size = model_config.data.init_args.image_size
+            export_to_openvino(
+                export_path=Path(project_path),
                 model=model,
-                export_mode=ExportMode.OPENVINO,
-                export_root=project_path,
+                input_size=input_size,
+                transform=engine.trainer.datamodule.test_data.transform,
+                mo_args={},
+                task=engine.trainer.datamodule.test_data.task,
             )
             openvino_throughput = get_openvino_throughput(model_path=project_path, test_dataset=datamodule.test_data)
 

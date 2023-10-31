@@ -27,7 +27,7 @@ class TestLightningInferenceEntrypoint:
         return get_parser, infer
 
     def test_lightning_inference(self, get_functions, get_config, project_path, get_dummy_inference_image):
-        """Test lightning_inferenc.py"""
+        """Test lightning_inference.py"""
         get_parser, infer = get_functions
         with patch("tools.inference.lightning_inference.get_configurable_parameters", side_effect=get_config):
             arguments = get_parser().parse_args(
