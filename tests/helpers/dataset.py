@@ -18,7 +18,6 @@ from skimage.draw import random_shapes
 from skimage.io import imsave
 
 from anomalib.data import DataFormat
-from anomalib.data.base import dataset
 from anomalib.data.utils import Augmenter, LabelName
 
 
@@ -27,6 +26,23 @@ class DummyImageGenerator:
 
     Args:
         image_shape (tuple[int, int], optional): Image shape. Defaults to (256, 256).
+
+    Examples:
+        To generate a normal image, use the ``generate_normal_image`` method.
+        >>> generator = DummyImageGenerator()
+        >>> image, mask = generator.generate_normal_image()
+
+        To generate an abnormal image, use the ``generate_abnormal_image`` method.
+        >>> generator = DummyImageGenerator()
+        >>> image, mask = generator.generate_abnormal_image()
+
+        To generate an image with a specific label, use the ``generate_image`` method.
+        >>> generator = DummyImageGenerator()
+        >>> image, mask = generator.generate_image(label=LabelName.ABNORMAL)
+
+        or,
+        >>> generator = DummyImageGenerator()
+        >>> image, mask = generator.generate_image(label=LabelName.NORMAL)
     """
 
     def __init__(self, image_shape: tuple[int, int] = (256, 256)) -> None:
@@ -106,6 +122,23 @@ class DummyVideoGenerator(DummyImageGenerator):
     Args:
         num_frames (int, optional): Length of the video. Defaults to 32.
         frame_shape (tuple[int, int], optional): Shape of the video frames. Defaults to (256, 256).
+
+    Examples:
+        To generate a video with a random sequence of normal and abnormal frames, use the ``generate_video`` method.
+        >>> generator = DummyVideoGenerator()
+        >>> frames, masks = generator.generate_video()
+
+        It is possible to specify the length of the video
+        >>> generator = DummyVideoGenerator()
+        >>> frames, masks = generator.generate_video(length=64)
+
+        It is possible to specify the first frame label (normal or abnormal)
+        >>> generator = DummyVideoGenerator()
+        >>> frames, masks = generator.generate_video(first_label=LabelName.ABNORMAL)
+
+        It is possible to specify the probability of switching between normal and abnormal frames
+        >>> generator = DummyVideoGenerator()
+        >>> frames, masks = generator.generate_video(p_state_switch=0.5)
     """
 
     def __init__(self, num_frames: int = 32, frame_shape: tuple[int, int] = (256, 256)) -> None:
@@ -123,7 +156,7 @@ class DummyVideoGenerator(DummyImageGenerator):
         Args:
             length (int): Length of the video sequence in number of frames.
             first_label (LabelName): Label of the first frame (normal or abnormal).
-            p_state_switch (float): probability of transitioning between normal and anomalous in consecutive frames.
+            p_state_switch (float): Probability of transitioning between normal and anomalous in consecutive frames.
 
         Returns:
             tuple[list[np.ndarray], list[np.ndarray]]: List of frames and list of masks.
@@ -159,6 +192,21 @@ class DummyDatasetGenerator(ContextDecorator):
         dataset_name (str, optional): Name of the dataset. Defaults to None.
         num_train (int, optional): Number of training images to generate. Defaults to 5.
         num_test (int, optional): Number of testing images to generate per category. Defaults to 5.
+
+    Examples:
+        >>> with DummyDatasetGenerator(num_train=10, num_test=10) as dataset_path:
+        >>>     some_function()
+
+        Alternatively, you can use it as a standalone class.
+        This will create a temporary directory with the dataset.
+
+        >>> generator = DummyDatasetGenerator(num_train=10, num_test=10)
+        >>> generator.generate_dataset()
+
+        If you want to use a specific directory, you can pass it as an argument.
+
+        >>> generator = DummyDatasetGenerator(root="./datasets/dummy")
+        >>> generator.generate_dataset()
     """
 
     def __init__(
@@ -225,19 +273,24 @@ class DummyImageDatasetGenerator(DummyDatasetGenerator):
         seed (int, optional): Fixes seed if any number greater than 0 is provided. 0 means no seed. Defaults to 0.
 
     Examples:
-        >>> with DummyDatasetGenerator(num_train=10, num_test=10) as dataset_path:
+        To create an MVTec dataset with 10 training images and 10 testing images per category, use the following code.
+        >>> dataset_generator = DummyImageDatasetGenerator(data_format="mvtec", num_train=10, num_test=10)
+        >>> dataset_generator.generate_dataset()
+
+        In order to provide a specific directory to save the dataset, use the ``root`` argument.
+        >>> dataset_generator = DummyImageDatasetGenerator(data_format="mvtec", root="./datasets/dummy")
+        >>> dataset_generator.generate_dataset()
+
+        It is also possible to use the generator as a context manager.
+        >>> with DummyImageDatasetGenerator(data_format="mvtec", num_train=10, num_test=10) as dataset_path:
         >>>     some_function()
 
-        Alternatively, you can use it as a standalone class.
-        This will create a temporary directory with the dataset.
+        To get the list of available datasets, use the ``DataFormat`` enum.
+        >>> from anomalib.data import DataFormat
+        >>> print(list(DataFormat))
 
-        >>> generator = DummyDatasetGenerator(num_train=10, num_test=10)
-        >>> generator.generate_dataset()
-
-        If you want to use a specific directory, you can pass it as an argument.
-
-        >>> generator = DummyDatasetGenerator(root="./datasets/dummy")
-        >>> generator.generate_dataset()
+        Then you can use the ``DataFormat`` enum to generate the dataset.
+        >>> dataset_generator = DummyImageDatasetGenerator(data_format="beantech", num_train=10, num_test=10)
     """
 
     def __init__(
@@ -364,6 +417,27 @@ class DummyVideoDatasetGenerator(DummyDatasetGenerator):
         frame_shape (tuple[int, int], optional): Shape of individual frames. Defaults to (256, 256).
         num_train (int, optional): Number of training images to generate. Defaults to 5.
         num_test (int, optional): Number of testing images to generate per category. Defaults to 5.
+
+    Examples:
+        To create a UCSDped1 dataset with 10 training videos and 10 testing videos, use the following code.
+        >>> dataset_generator = DummyVideoDatasetGenerator(data_format="ucsdped", num_train=10, num_test=10)
+        >>> dataset_generator.generate_dataset()
+
+        In order to provide a specific directory to save the dataset, use the ``root`` argument.
+        >>> dataset_generator = DummyVideoDatasetGenerator(data_format="ucsdped", root="./datasets/dummy")
+        >>> dataset_generator.generate_dataset()
+
+        It is also possible to use the generator as a context manager.
+        >>> with DummyVideoDatasetGenerator(data_format="ucsdped", num_train=10, num_test=10) as dataset_path:
+        >>>     some_function()
+
+        To get the list of available datasets, use the ``VideoDataFormat`` enum.
+        >>> from anomalib.data import VideoDataFormat
+        >>> print(list(VideoDataFormat))
+
+        Based on the enum, you can generate the dataset.
+        >>> dataset_generator = DummyVideoDatasetGenerator(data_format="avenue", num_train=10, num_test=10)
+        >>> dataset_generator.generate_dataset()
     """
 
     def __init__(
