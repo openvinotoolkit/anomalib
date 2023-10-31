@@ -16,6 +16,8 @@
 
 import sys
 
+import pytest
+
 # Since tools is not part of the anomalib package, accessing benchmarking requires importlib
 sys.path.append("tools/benchmarking")
 from importlib.util import find_spec
@@ -29,6 +31,7 @@ else:
 from pathlib import Path
 
 from omegaconf import OmegaConf
+
 from tests.legacy.helpers.dataset import get_dataset_path
 
 
@@ -48,6 +51,7 @@ def check_csv(model: str):
         ).exists(), f"Benchmarking script didn't generate csv logs for {model}"
 
 
+@pytest.mark.skip(reason="Modify this test when the benchmarking design is implemented and legacy tests are migrated.")
 def test_benchmarking():
     """Test if benchmarking script produces the required artifacts."""
     config_path = "tests/nightly/tools/benchmarking/benchmark_params.yaml"

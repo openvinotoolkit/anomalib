@@ -11,34 +11,6 @@ import numpy as np
 import pytest
 from albumentations.pytorch import ToTensorV2
 
-from anomalib.config import get_configurable_parameters
-
-
-@pytest.fixture(scope="package")
-def project_path() -> Generator[str, None, None]:
-    with TemporaryDirectory() as project_dir:
-        yield project_dir
-
-
-@pytest.fixture(scope="package")
-def get_config(project_path):
-    def get_config(
-        model_name: str | None = None,
-        config_path: str | None = None,
-    ):
-        """Gets config for testing."""
-        config = get_configurable_parameters(model_name, config_path)
-        config.data.init_args.image_size = (100, 100)
-        config.model.init_args.input_size = (100, 100)
-        config.trainer.default_root_dir = project_path
-        config.trainer.max_epochs = 1
-        config.trainer.check_val_every_n_epoch = 1
-        config.trainer.limit_train_batches = 1
-        config.trainer.limit_predict_batches = 1
-        return config
-
-    yield get_config
-
 
 @pytest.fixture(scope="package")
 def get_dummy_inference_image(project_path) -> Generator[str, None, None]:

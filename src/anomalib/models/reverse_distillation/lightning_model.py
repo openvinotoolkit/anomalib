@@ -11,7 +11,6 @@ from collections.abc import Sequence
 from typing import Any
 
 from lightning.pytorch.utilities.types import STEP_OUTPUT
-from omegaconf import DictConfig, ListConfig
 from torch import Tensor, optim
 
 from anomalib.models.components import AnomalyModule
@@ -106,22 +105,3 @@ class ReverseDistillation(AnomalyModule):
     def trainer_arguments(self) -> dict[str, Any]:
         """Return Reverse Distillation trainer arguments."""
         return {"gradient_clip_val": 0, "num_sanity_val_steps": 0}
-
-
-class ReverseDistillationLightning(ReverseDistillation):
-    """PL Lightning Module for Reverse Distillation Algorithm.
-
-    Args:
-        hparams(DictConfig | ListConfig): Model parameters
-    """
-
-    def __init__(self, hparams: DictConfig | ListConfig) -> None:
-        super().__init__(
-            input_size=hparams.model.input_size,
-            backbone=hparams.model.backbone,
-            layers=hparams.model.layers,
-            pre_trained=hparams.model.pre_trained,
-            anomaly_map_mode=hparams.model.anomaly_map_mode,
-        )
-        self.hparams: DictConfig | ListConfig
-        self.save_hyperparameters(hparams)

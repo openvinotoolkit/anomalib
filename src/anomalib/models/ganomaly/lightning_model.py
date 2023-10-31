@@ -12,7 +12,6 @@ from typing import Any
 
 import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
-from omegaconf import DictConfig, ListConfig
 from torch import Tensor, optim
 
 from anomalib.models.components import AnomalyModule
@@ -225,29 +224,3 @@ class Ganomaly(AnomalyModule):
     def trainer_arguments(self) -> dict[str, Any]:
         """Return GANomaly trainer arguments."""
         return {"gradient_clip_val": 0, "num_sanity_val_steps": 0}
-
-
-class GanomalyLightning(Ganomaly):
-    """PL Lightning Module for the GANomaly Algorithm.
-
-    Args:
-        hparams (DictConfig | ListConfig): Model params
-    """
-
-    def __init__(self, hparams: DictConfig | ListConfig) -> None:
-        super().__init__(
-            batch_size=hparams.dataset.train_batch_size,
-            input_size=hparams.model.input_size,
-            n_features=hparams.model.n_features,
-            latent_vec_size=hparams.model.latent_vec_size,
-            extra_layers=hparams.model.extra_layers,
-            add_final_conv_layer=hparams.model.add_final_conv,
-            wadv=hparams.model.wadv,
-            wcon=hparams.model.wcon,
-            wenc=hparams.model.wenc,
-            lr=hparams.model.lr,
-            beta1=hparams.model.beta1,
-            beta2=hparams.model.beta2,
-        )
-        self.hparams: DictConfig | ListConfig
-        self.save_hyperparameters(hparams)

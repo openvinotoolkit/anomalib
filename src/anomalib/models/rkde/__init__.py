@@ -4,6 +4,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-from .lightning_model import Rkde, RkdeLightning
+from .lightning_model import Rkde
 
-__all__ = ["Rkde", "RkdeLightning"]
+__all__ = ["Rkde"]

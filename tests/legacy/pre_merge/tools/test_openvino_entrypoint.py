@@ -11,13 +11,12 @@ import pytest
 
 from anomalib.data import TaskType
 from anomalib.deploy import export_to_openvino
-from anomalib.models import Padim, get_model
+from anomalib.models import Padim
 from anomalib.utils.metrics.threshold import F1AdaptiveThreshold
 
 sys.path.append("tools/inference")
 
 
-@pytest.mark.order(4)
 class TestOpenVINOInferenceEntrypoint:
     """This tests whether the entrypoints run without errors without quantitative measure of the outputs."""
 

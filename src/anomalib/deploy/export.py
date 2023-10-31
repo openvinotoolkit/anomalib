@@ -39,7 +39,7 @@ class ExportMode(str, Enum):
 
 def export_to_torch(
     model: AnomalyModule,
-    export_path: Path,
+    export_path: Path | str,
     transform: dict[str, Any] | AnomalibDataset | AnomalibDataModule | A.Compose,
     task: TaskType | None = None,
 ) -> None:
@@ -64,7 +64,7 @@ def export_to_torch(
 def export_to_onnx(
     model: AnomalyModule,
     input_size: tuple[int, int],
-    export_path: Path,
+    export_path: Path | str,
     transform: dict[str, Any] | AnomalibDataset | AnomalibDataModule | A.Compose,
     task: TaskType | None = None,
     export_mode: ExportMode = ExportMode.ONNX,
@@ -103,11 +103,11 @@ def export_to_onnx(
 
 
 def export_to_openvino(
-    export_path: Path,
+    export_path: Path | str,
     model: AnomalyModule,
     input_size: tuple[int, int],
     transform: dict[str, Any] | AnomalibDataset | AnomalibDataModule | A.Compose,
-    mo_args: dict[str, Any],
+    mo_args: dict[str, Any] | None = None,
     task: TaskType | None = None,
 ) -> None:
     """Convert onnx model to OpenVINO IR.

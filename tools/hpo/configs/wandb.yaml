@@ -4,10 +4,14 @@ metric:
   name: pixel_AUROC
   goal: maximize
 parameters:
-  dataset:
-    category: capsule
-    image_size:
-      values: [128, 256]
+  data:
+    class_path: anomalib.data.MVTec
+    init_args:
+      category: capsule
+      image_size:
+        values: [128, 256]
   model:
-    backbone:
-      values: [resnet18, wide_resnet50_2]
+    class_path: anomalib.models.Padim
+    init_args:
+      backbone:
+        values: [resnet18, wide_resnet50_2]

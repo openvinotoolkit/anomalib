@@ -12,7 +12,6 @@ from typing import Any
 
 import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
-from omegaconf import DictConfig, ListConfig
 from torch import Tensor
 
 from anomalib.models.components import AnomalyModule
@@ -36,7 +35,7 @@ class Patchcore(AnomalyModule):
 
     def __init__(
         self,
-        input_size: tuple[int, int],
+        input_size: tuple[int, int] = (224, 224),
         backbone: str = "wide_resnet50_2",
         layers: Sequence[str] = ("layer2", "layer3"),
         pre_trained: bool = True,
@@ -123,23 +122,3 @@ class Patchcore(AnomalyModule):
     def trainer_arguments(self) -> dict[str, Any]:
         """Return Patchcore trainer arguments."""
         return {"gradient_clip_val": 0, "max_epochs": 1, "num_sanity_val_steps": 0}
-
-
-class PatchcoreLightning(Patchcore):
-    """PatchcoreLightning Module to train PatchCore algorithm.
-
-    Args:
-        hparams (DictConfig | ListConfig): Model params
-    """
-
-    def __init__(self, hparams: DictConfig | ListConfig) -> None:
-        super().__init__(
-            input_size=hparams.model.input_size,
-            backbone=hparams.model.backbone,
-            layers=hparams.model.layers,
-            pre_trained=hparams.model.pre_trained,
-            coreset_sampling_ratio=hparams.model.coreset_sampling_ratio,
-            num_neighbors=hparams.model.num_neighbors,
-        )
-        self.hparams: DictConfig | ListConfig
-        self.save_hyperparameters(hparams)

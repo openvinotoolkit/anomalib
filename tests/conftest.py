@@ -28,7 +28,7 @@ def _dataset_names() -> list[str]:
 
 @pytest.fixture(scope="session")
 def project_path():
-    with TemporaryDirectory() as project_path:
+    with TemporaryDirectory(prefix="anomalib_tests") as project_path:
         yield project_path
 
 

@@ -9,7 +9,6 @@ from typing import Any
 
 import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
-from omegaconf import DictConfig, ListConfig
 from torch import Tensor
 
 from anomalib.models.components import AnomalyModule
@@ -125,24 +124,3 @@ class Dfm(AnomalyModule):
     def trainer_arguments(self) -> dict[str, Any]:
         """Return DFM-specific trainer arguments."""
         return {"gradient_clip_val": 0, "max_epochs": 1, "num_sanity_val_steps": 0}
-
-
-class DfmLightning(Dfm):
-    """DFM: Deep Featured Kernel Density Estimation.
-
-    Args:
-        hparams (DictConfig | ListConfig): Model params
-    """
-
-    def __init__(self, hparams: DictConfig | ListConfig) -> None:
-        super().__init__(
-            input_size=hparams.model.input_size,
-            backbone=hparams.model.backbone,
-            layer=hparams.model.layer,
-            pre_trained=hparams.model.pre_trained,
-            pooling_kernel_size=hparams.model.pooling_kernel_size,
-            pca_level=hparams.model.pca_level,
-            score_type=hparams.model.score_type,
-        )
-        self.hparams: DictConfig | ListConfig
-        self.save_hyperparameters(hparams)

@@ -13,7 +13,6 @@ sys.path.append("tools/inference")
 from unittest.mock import patch
 
 
-@pytest.mark.order(3)
 class TestLightningInferenceEntrypoint:
     """This tests whether the entrypoints run without errors without quantitative measure of the outputs."""
 
@@ -26,20 +25,23 @@ class TestLightningInferenceEntrypoint:
             raise Exception("Unable to import lightning_inference.py for testing")
         return get_parser, infer
 
-    def test_lightning_inference(self, get_functions, get_config, project_path, get_dummy_inference_image):
+    def test_lightning_inference(self, get_functions, project_path, get_dummy_inference_image):
         """Test lightning_inference.py"""
         get_parser, infer = get_functions
-        with patch("tools.inference.lightning_inference.get_configurable_parameters", side_effect=get_config):
-            arguments = get_parser().parse_args(
-                [
-                    "--config",
-                    "src/anomalib/models/padim/config.yaml",
-                    "--weights",
-                    project_path + "/weights/lightning/model.ckpt",
-                    "--input",
-                    get_dummy_inference_image,
-                    "--output",
-                    project_path + "/output",
-                ]
-            )
-            infer(arguments)
+        arguments = get_parser().parse_args(
+            [
+                "--model",
+                "anomalib.models.Padim",
+                "--model.input_size",
+                "[100, 100]",
+                "--data.image_size",
+                "[100, 100]",
+                "--ckpt_path",
+                project_path + "/weights/model.ckpt",
+                "--data.path",
+                get_dummy_inference_image,
+                "--output",
+                project_path + "/output",
+            ]
+        )
+        infer(arguments)

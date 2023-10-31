@@ -11,7 +11,6 @@ import logging
 from typing import Any
 
 from lightning.pytorch.utilities.types import STEP_OUTPUT
-from omegaconf import DictConfig, ListConfig
 from torch import Tensor
 
 from anomalib.models.ai_vad.torch_model import AiVadModel
@@ -19,7 +18,7 @@ from anomalib.models.components import AnomalyModule
 
 logger = logging.getLogger(__name__)
 
-__all__ = ["AiVad", "AiVadLightning"]
+__all__ = ["AiVad"]
 
 
 class AiVad(AnomalyModule):
@@ -131,31 +130,3 @@ class AiVad(AnomalyModule):
     def trainer_arguments(self) -> dict[str, Any]:
         """AI-VAD specific trainer arguments."""
         return {"gradient_clip_val": 0, "max_epochs": 1, "num_sanity_val_steps": 0}
-
-
-class AiVadLightning(AiVad):
-    """AI-VAD: Attribute-based Representations for Accurate and Interpretable Video Anomaly Detection.
-
-    Args:
-        hparams (DictConfig | ListConfig): Model params
-    """
-
-    def __init__(self, hparams: DictConfig | ListConfig) -> None:
-        super().__init__(
-            box_score_thresh=hparams.model.box_score_thresh,
-            persons_only=hparams.model.persons_only,
-            min_bbox_area=hparams.model.min_bbox_area,
-            max_bbox_overlap=hparams.model.max_bbox_overlap,
-            enable_foreground_detections=hparams.model.enable_foreground_detections,
-            foreground_kernel_size=hparams.model.foreground_kernel_size,
-            foreground_binary_threshold=hparams.model.foreground_binary_threshold,
-            n_velocity_bins=hparams.model.n_velocity_bins,
-            use_velocity_features=hparams.model.use_velocity_features,
-            use_pose_features=hparams.model.use_pose_features,
-            use_deep_features=hparams.model.use_deep_features,
-            n_components_velocity=hparams.model.n_components_velocity,
-            n_neighbors_pose=hparams.model.n_neighbors_pose,
-            n_neighbors_deep=hparams.model.n_neighbors_deep,
-        )
-        self.hparams: DictConfig | ListConfig
-        self.save_hyperparameters(hparams)

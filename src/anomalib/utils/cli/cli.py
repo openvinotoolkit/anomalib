@@ -187,7 +187,6 @@ class AnomalibCLI(LightningCLI):
         """Instantiate the engine.
 
         Note:
-        ----
             Most of the code in this method is taken from LightningCLI's ``instantiate_trainer`` method.
             Refer to that method for more details.
         """
@@ -258,10 +257,10 @@ class AnomalibCLI(LightningCLI):
         """Run hpo subcommand."""
         config = self.config["hpo"]
         sweep = Sweep(
-            model=config.model,
-            model_config=config.model_config,
+            project=config.project,
             sweep_config=config.sweep_config,
             backend=config.backend,
+            entity=config.entity,
         )
         sweep.run()
 

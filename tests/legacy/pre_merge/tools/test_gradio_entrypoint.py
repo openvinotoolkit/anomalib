@@ -17,7 +17,6 @@ from anomalib.utils.metrics.threshold import F1AdaptiveThreshold
 sys.path.append("tools/inference")
 
 
-@pytest.mark.order(5)
 class TestGradioInferenceEntrypoint:
     """This tests whether the entrypoints run without errors without quantitative measure of the outputs.
 

@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import functools
+import inspect
 import io
 import logging
 import math
@@ -16,25 +17,21 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 from datetime import datetime
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Any, cast
+from typing import Any
 
 import torch
 from lightning.pytorch import seed_everything
 from omegaconf import DictConfig, ListConfig, OmegaConf
 
-from anomalib.config import get_configurable_parameters, update_input_size_config
+from anomalib.config import update_input_size_config
 from anomalib.data import get_datamodule
 from anomalib.deploy.export import export_to_openvino, export_to_torch
 from anomalib.engine import Engine
 from anomalib.models import get_model
+from anomalib.utils.callbacks.timer import TimerCallback
 from anomalib.utils.loggers import configure_logger
-from anomalib.utils.sweep import (
-    get_openvino_throughput,
-    get_run_config,
-    get_sweep_callbacks,
-    get_torch_throughput,
-    set_in_nested_config,
-)
+from anomalib.utils.sweep import get_openvino_throughput, get_run_config, get_torch_throughput
+from anomalib.utils.sweep.config import flattened_config_to_nested
 
 from .utils import upload_to_comet, upload_to_wandb, write_metrics
 
@@ -76,10 +73,18 @@ def hide_output(func: Callable[..., Any]) -> Callable[..., Any]:
 
 
 @hide_output
-def get_single_model_metrics(model_config: DictConfig | ListConfig, openvino_metrics: bool = False) -> dict:
+def get_single_model_metrics(
+    accelerator: str,
+    devices: int | list[int],
+    model_config: DictConfig | ListConfig,
+    openvino_metrics: bool = False,
+) -> dict:
     """Collect metrics for `model_name` and returns a dict of results.
 
     Args:
+        accelerator (str): The device on which the model is trained. "cpu" or "gpu".
+        devices (int | list[int]): The GPU id used for running the sweep. This is used to select a particular GPU on
+            a multi-gpu system.
         model_config (DictConfig, ListConfig): Configuration for run
         openvino_metrics (bool): If True, converts the model to OpenVINO format and gathers inference metrics.
 
@@ -87,13 +92,16 @@ def get_single_model_metrics(model_config: DictConfig | ListConfig, openvino_met
         dict: Collection of all the metrics such as time taken, throughput and performance scores.
     """
     with TemporaryDirectory() as project_path:
-        model_config.results_dir.path = project_path
         datamodule = get_datamodule(model_config)
-        model = get_model(model_config)
+        model = get_model(model_config.model)
 
-        callbacks = get_sweep_callbacks(model_config)
-
-        engine = Engine(**model_config.trainer, logger=None, callbacks=callbacks)
+        engine = Engine(
+            accelerator=accelerator,
+            devices=devices,
+            logger=None,
+            callbacks=[TimerCallback()],
+            default_root_dir=project_path,
+        )
 
         start_time = time.time()
 
@@ -120,7 +128,7 @@ def get_single_model_metrics(model_config: DictConfig | ListConfig, openvino_met
         throughput = get_torch_throughput(
             model_path=project_path,
             test_dataset=datamodule.test_dataloader().dataset,
-            device=model_config.trainer.accelerator,
+            device=accelerator,
         )
 
         # Get OpenVINO metrics
@@ -144,7 +152,7 @@ def get_single_model_metrics(model_config: DictConfig | ListConfig, openvino_met
         data = {
             "Training Time (s)": training_time,
             "Testing Time (s)": testing_time,
-            f"Inference Throughput {model_config.trainer.accelerator} (fps)": throughput,
+            f"Inference Throughput {accelerator} (fps)": throughput,
             "OpenVINO Inference Throughput (fps)": openvino_throughput,
         }
         for key, val in test_results[0].items():
@@ -276,42 +284,50 @@ def sweep(
         dict[str, str | float]: Dictionary containing the metrics gathered from the sweep.
     """
     seed_everything(seed, workers=True)
-    # This assumes that `model_name` is always present in the sweep config.
-    model_config = get_configurable_parameters(model_name=run_config.model_name)
-    model_config.seed_everything = seed
 
-    model_config = cast(DictConfig, model_config)  # placate mypy
-    for param in run_config:
-        # grid search keys are always assumed to be strings
-        param = cast(str, param)  # placate mypy
-        set_in_nested_config(model_config, param.split("."), run_config[param])
-
-    # convert image size to tuple in case it was updated by run config
+    model_config = flattened_config_to_nested(run_config)
+    # Add model key if it does not exist
+    # Model config needs to be created so that input size of the model can be updated based on the
+    # data configuration.
+    if "model" not in model_config:
+        model_class = get_model(model_config.model_name).__class__
+        model_config["model"] = model_config.get(
+            "model",
+            OmegaConf.create(
+                {
+                    "class_path": model_class.__module__ + "." + model_class.__name__,
+                    "init_args": {
+                        key: value.default
+                        for key, value in inspect.signature(model_class).parameters.items()
+                        if key != "self"
+                    },
+                },
+            ),
+        )
     model_config = update_input_size_config(model_config)
 
     # Set device in config. 0 - cpu, [0], [1].. - gpu id
+    devices: list[int] | int
     if device != 0:
-        model_config.trainer.devices = [device - 1]
-        model_config.trainer.accelerator = "gpu"
+        devices = [device - 1]
+        accelerator = "gpu"
     else:
-        model_config.trainer.accelerator = "cpu"
-
-    # Remove legacy flags
-    for legacy_device in ["num_processes", "gpus", "ipus", "tpu_cores"]:
-        if legacy_device in model_config.trainer:
-            model_config.trainer[legacy_device] = None
-
-    if run_config.model_name in ["patchcore", "cflow"]:
-        convert_openvino = False  # `torch.cdist` is not supported by onnx version 11
-        # TODO(ashwinvaidya17): Remove this line when issue #40 is fixed
-        # https://github.com/openvinotoolkit/anomalib/issues/40
-        if model_config.model.init_args.input_size != (224, 224):
-            return {}  # go to next run
+        accelerator = "cpu"
+        devices = device
 
     # Run benchmarking for current config
-    model_metrics = get_single_model_metrics(model_config=model_config, openvino_metrics=convert_openvino)
-    output = f"One sweep run complete for model {model_config.model.name}"
-    output += f" On category {model_config.dataset.category}" if model_config.dataset.category is not None else ""
+    model_metrics = get_single_model_metrics(
+        accelerator=accelerator,
+        devices=devices,
+        model_config=model_config,
+        openvino_metrics=convert_openvino,
+    )
+    output = f"One sweep run complete for model {model_config.model_name}"
+    output += (
+        f" On category {model_config.data.init_args.category}"
+        if ("init_args" in model_config.data and "category" in model_config.data.init_args)
+        else ""
+    )
     output += str(model_metrics)
     logger.info(output)
 

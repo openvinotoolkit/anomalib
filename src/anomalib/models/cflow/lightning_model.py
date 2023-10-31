@@ -13,7 +13,6 @@ from typing import Any
 import einops
 import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
-from omegaconf import DictConfig, ListConfig
 from torch import Tensor, optim
 from torch.nn import functional as F  # noqa: N812
 from torch.optim import Optimizer
@@ -22,7 +21,7 @@ from anomalib.models.cflow.torch_model import CflowModel
 from anomalib.models.cflow.utils import get_logp, positional_encoding_2d
 from anomalib.models.components import AnomalyModule
 
-__all__ = ["Cflow", "CflowLightning"]
+__all__ = ["Cflow"]
 
 
 class Cflow(AnomalyModule):
@@ -177,27 +176,3 @@ class Cflow(AnomalyModule):
     def trainer_arguments(self) -> dict[str, Any]:
         """C-FLOW specific trainer arguments."""
         return {"gradient_clip_val": 0, "num_sanity_val_steps": 0}
-
-
-class CflowLightning(Cflow):
-    """PL Lightning Module for the CFLOW algorithm.
-
-    Args:
-        hparams (DictConfig | ListConfig): Model params
-    """
-
-    def __init__(self, hparams: DictConfig | ListConfig) -> None:
-        super().__init__(
-            input_size=hparams.model.input_size,
-            backbone=hparams.model.backbone,
-            layers=hparams.model.layers,
-            pre_trained=hparams.model.pre_trained,
-            fiber_batch_size=hparams.model.fiber_batch_size,
-            decoder=hparams.model.decoder,
-            condition_vector=hparams.model.condition_vector,
-            coupling_blocks=hparams.model.coupling_blocks,
-            clamp_alpha=hparams.model.clamp_alpha,
-            permute_soft=hparams.model.permute_soft,
-        )
-        self.hparams: DictConfig | ListConfig
-        self.save_hyperparameters(hparams)

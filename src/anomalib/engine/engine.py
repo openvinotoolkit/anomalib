@@ -4,15 +4,18 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
+from pathlib import Path
 from typing import Any
 
-from lightning import Callback
-from lightning.pytorch import LightningDataModule, Trainer
+import albumentations as A  # noqa: N812
+from lightning.pytorch.callbacks import Callback
+from lightning.pytorch.trainer import Trainer
 from lightning.pytorch.trainer.connectors.callback_connector import _CallbackConnector
 from lightning.pytorch.utilities.types import _EVALUATE_OUTPUT, _PREDICT_OUTPUT, EVAL_DATALOADERS, TRAIN_DATALOADERS
 from omegaconf import DictConfig, ListConfig
 
-from anomalib.data import TaskType
+from anomalib.data import AnomalibDataModule, AnomalibDataset, TaskType
+from anomalib.deploy.export import ExportMode, export_to_onnx, export_to_openvino, export_to_torch
 from anomalib.models import AnomalyModule
 from anomalib.post_processing import NormalizationMethod
 from anomalib.utils.callbacks import get_visualization_callbacks
@@ -22,7 +25,7 @@ from anomalib.utils.callbacks.post_processor import _PostProcessorCallback
 from anomalib.utils.callbacks.thresholding import _ThresholdCallback
 from anomalib.utils.metrics.threshold import BaseThreshold
 
-log = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class UnassignedError(Exception):
@@ -72,7 +75,7 @@ class _TrainerArgumentsCache:
         """
         for key, value in model.trainer_arguments.items():
             if key in self._cached_args and self._cached_args[key] != value:
-                log.info(
+                logger.info(
                     f"Overriding {key} from {self._cached_args[key]} with {value} for {model.__class__.__name__}",
                 )
             self._cached_args[key] = value
@@ -117,11 +120,12 @@ class Engine:
         | tuple[BaseThreshold, BaseThreshold]
         | DictConfig
         | ListConfig
+        | list[dict[str, str | float]]
         | str = "F1AdaptiveThreshold",
         task: TaskType = TaskType.SEGMENTATION,
         image_metrics: str | list[str] | None = None,
         pixel_metrics: str | list[str] | None = None,
-        visualization: DictConfig | None = None,
+        visualization: DictConfig | dict[str, Any] | None = None,
         **kwargs,
     ) -> None:
         if callbacks is None:
@@ -187,20 +191,20 @@ class Engine:
     def fit(
         self,
         model: AnomalyModule,
-        train_dataloaders: TRAIN_DATALOADERS | LightningDataModule | None = None,
+        train_dataloaders: TRAIN_DATALOADERS | AnomalibDataModule | None = None,
         val_dataloaders: EVAL_DATALOADERS | None = None,
-        datamodule: LightningDataModule | None = None,
+        datamodule: AnomalibDataModule | None = None,
         ckpt_path: str | None = None,
     ) -> None:
         """Fit the model using the trainer.
 
         Args:
             model (AnomalyModule): Model to be trained.
-            train_dataloaders (TRAIN_DATALOADERS | LightningDataModule | None, optional): Train dataloaders.
+            train_dataloaders (TRAIN_DATALOADERS | AnomalibDataModule | None, optional): Train dataloaders.
                 Defaults to None.
             val_dataloaders (EVAL_DATALOADERS | None, optional): Validation dataloaders.
                 Defaults to None.
-            datamodule (LightningDataModule | None, optional): Lightning datamodule.
+            datamodule (AnomalibDataModule | None, optional): Lightning datamodule.
                 If provided, dataloaders will be instantiated from this.
                 Defaults to None.
             ckpt_path (str | None, optional): Checkpoint path. If provided, the model will be loaded from this path.
@@ -226,25 +230,25 @@ class Engine:
     def validate(
         self,
         model: AnomalyModule | None = None,
-        dataloaders: EVAL_DATALOADERS | LightningDataModule | None = None,
+        dataloaders: EVAL_DATALOADERS | AnomalibDataModule | None = None,
         ckpt_path: str | None = None,
         verbose: bool = True,
-        datamodule: LightningDataModule | None = None,
+        datamodule: AnomalibDataModule | None = None,
     ) -> _EVALUATE_OUTPUT | None:
         """Validate the model using the trainer.
 
         Args:
             model (AnomalyModule | None, optional): Model to be validated.
                 Defaults to None.
-            dataloaders (EVAL_DATALOADERS | LightningDataModule | None, optional): Dataloaders to be used for
+            dataloaders (EVAL_DATALOADERS | AnomalibDataModule | None, optional): Dataloaders to be used for
                 validation.
                 Defaults to None.
             ckpt_path (str | None, optional): Checkpoint path. If provided, the model will be loaded from this path.
                 Defaults to None.
             verbose (bool, optional): Boolean to print the validation results.
                 Defaults to True.
-            datamodule (LightningDataModule | None, optional): A :class:`~lightning.pytorch.core.datamodule
-                LightningDataModule` that defines the
+            datamodule (AnomalibDataModule | None, optional): A :class:`~lightning.pytorch.core.datamodule
+                AnomalibDataModule` that defines the
                 :class:`~lightning.pytorch.core.hooks.DataHooks.val_dataloader` hook.
                 Defaults to None.
 
@@ -272,10 +276,10 @@ class Engine:
     def test(
         self,
         model: AnomalyModule | None = None,
-        dataloaders: EVAL_DATALOADERS | LightningDataModule | None = None,
+        dataloaders: EVAL_DATALOADERS | AnomalibDataModule | None = None,
         ckpt_path: str | None = None,
         verbose: bool = True,
-        datamodule: LightningDataModule | None = None,
+        datamodule: AnomalibDataModule | None = None,
     ) -> _EVALUATE_OUTPUT:
         """Test the model using the trainer.
 
@@ -283,7 +287,7 @@ class Engine:
             model (AnomalyModule | None, optional):
                 The model to be tested.
                 Defaults to None.
-            dataloaders (EVAL_DATALOADERS | LightningDataModule | None, optional):
+            dataloaders (EVAL_DATALOADERS | AnomalibDataModule | None, optional):
                 An iterable or collection of iterables specifying test samples.
                 Defaults to None.
             ckpt_path (str | None, optional):
@@ -295,8 +299,8 @@ class Engine:
             verbose (bool, optional):
                 If True, prints the test results.
                 Defaults to True.
-            datamodule (LightningDataModule | None, optional):
-                A :class:`~lightning.pytorch.core.datamodule.LightningDataModule` that defines
+            datamodule (AnomalibDataModule | None, optional):
+                A :class:`~lightning.pytorch.core.datamodule.AnomalibDataModule` that defines
                 the :class:`~lightning.pytorch.core.hooks.DataHooks.test_dataloader` hook.
                 Defaults to None.
 
@@ -324,8 +328,8 @@ class Engine:
     def predict(
         self,
         model: AnomalyModule | None = None,
-        dataloaders: EVAL_DATALOADERS | LightningDataModule | None = None,
-        datamodule: LightningDataModule | None = None,
+        dataloaders: EVAL_DATALOADERS | AnomalibDataModule | None = None,
+        datamodule: AnomalibDataModule | None = None,
         return_predictions: bool | None = None,
         ckpt_path: str | None = None,
     ) -> _PREDICT_OUTPUT | None:
@@ -335,11 +339,11 @@ class Engine:
             model (AnomalyModule | None, optional):
                 Model to be used for prediction.
                 Defaults to None.
-            dataloaders (EVAL_DATALOADERS | LightningDataModule | None, optional):
+            dataloaders (EVAL_DATALOADERS | AnomalibDataModule | None, optional):
                 An iterable or collection of iterables specifying predict samples.
                 Defaults to None.
-            datamodule (LightningDataModule | None, optional):
-                A :class:`~lightning.pytorch.core.datamodule.LightningDataModule` that defines
+            datamodule (AnomalibDataModule | None, optional):
+                A :class:`~lightning.pytorch.core.datamodule.AnomalibDataModule` that defines
                 the :class:`~lightning.pytorch.core.hooks.DataHooks.predict_dataloader` hook.
                 Defaults to None.
             return_predictions (bool | None, optional):
@@ -373,3 +377,82 @@ class Engine:
         if model:
             self._setup_trainer(model)
         return self.trainer.predict(model, dataloaders, datamodule, return_predictions, ckpt_path)
+
+    def export(
+        self,
+        model: AnomalyModule,
+        export_mode: ExportMode,
+        task: TaskType,
+        export_path: str | Path | None = None,
+        transform: dict[str, Any] | A.Compose | str | Path | None = None,
+        datamodule: AnomalibDataModule | None = None,
+        dataset: AnomalibDataset | None = None,
+        input_size: tuple[int, int] | None = None,
+        mo_args: dict[str, Any] | None = None,
+        ckpt_path: str | None = None,
+    ) -> None:
+        """Export the model in the specified format.
+
+        Args:
+            model (AnomalyModule): Trained model.
+            export_mode (ExportMode): Export mode.
+            task (TaskType): Task type.
+            export_path (str | Path | None, optional): Path to the output directory. If it is not set, the model is
+                exported to trainer.default_root_dir. Defaults to None.
+            transform (dict[str, Any] | A.Compose | str | Path | None, optional): Transform config. Can either be a
+                path to a file containing the transform config or can be an object. The file or object should follow
+                Albumentation's format. If not provided, it takes the transform from datamodule or dataset. Datamodule
+                or Dataset should be provided if transforms is not set. Defaults to None.
+            datamodule (AnomalibDataModule | None, optional): Datamodule from which transforms is loaded.
+                This optional. Defaults to None.
+            dataset (AnomalibDataset | None, optional): Dataset from which the transforms is loaded.
+                 is optional. Defaults to None.
+            input_size (tuple[int, int] | None, optional): This is required only if the model is exported to ONNX and
+                OpenVINO format. Defaults to None.
+            mo_args (dict[str, Any] | None, optional): This is optional and used only for OpenVINO's model optimizer.
+                Defaults to None.
+            ckpt_path (str | None): Checkpoint path. If provided, the model will be loaded from this path.
+
+        Raises:
+            ValueError: If Dataset, Datamodule, and transform are not provided.
+            TypeError: If path to the transform file is not a string or Path.
+
+        CLI Usage:
+            TODO(ashwinvaidya17)
+        """
+        if ckpt_path:
+            model = model.load_from_checkpoint(ckpt_path)
+
+        if transform is None:
+            if datamodule:
+                transform = datamodule.test_data.transform
+            elif dataset:
+                transform = dataset.transform
+            else:
+                logger.exception("Either datamodule or dataset must be provided if transform is None.")
+                raise ValueError
+        elif isinstance(transform, str | Path):
+            transform = A.load(filepath=transform, data_format="yaml")
+        else:
+            logger.exception(f"Unknown type {type(transform)} for transform.")
+            raise TypeError
+
+        if export_mode in (ExportMode.OPENVINO, ExportMode.ONNX):
+            assert input_size is not None, "input_size must be provided for OpenVINO and ONNX export modes."
+        if export_path is None:
+            export_path = Path(self.trainer.default_root_dir)
+        if export_mode == ExportMode.TORCH:
+            export_to_torch(model=model, export_path=export_path, transform=transform, task=task)
+        elif export_mode == ExportMode.ONNX:
+            assert input_size is not None, "input_size must be provided for ONNX export mode."
+            export_to_onnx(model=model, input_size=input_size, export_path=export_path, transform=transform, task=task)
+        else:
+            assert input_size is not None, "input_size must be provided for OpenVINO export mode."
+            export_to_openvino(
+                model=model,
+                input_size=input_size,
+                export_path=export_path,
+                transform=transform,
+                task=task,
+                mo_args=mo_args,
+            )

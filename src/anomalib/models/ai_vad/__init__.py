@@ -8,6 +8,6 @@ Paper https://arxiv.org/pdf/2212.00789.pdf
 # Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from .lightning_model import AiVad, AiVadLightning
+from .lightning_model import AiVad
 
-__all__ = ["AiVad", "AiVadLightning"]
+__all__ = ["AiVad"]

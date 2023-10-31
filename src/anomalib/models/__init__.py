@@ -4,13 +4,13 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
+import inspect
 import logging
 import re
 from importlib import import_module
-from pathlib import Path
 
+from jsonargparse import Namespace
 from omegaconf import DictConfig, ListConfig
-from torch import load
 
 from anomalib.models.ai_vad import AiVad
 from anomalib.models.cfa import Cfa
@@ -28,6 +28,11 @@ from anomalib.models.patchcore import Patchcore
 from anomalib.models.reverse_distillation import ReverseDistillation
 from anomalib.models.rkde import Rkde
 from anomalib.models.stfpm import Stfpm
+
+
+class UnknownModelError(ModuleNotFoundError):
+    ...
+
 
 __all__ = [
     "Cfa",
@@ -50,26 +55,7 @@ __all__ = [
 logger = logging.getLogger(__name__)
 
 
-def convert_snake_to_pascal_case(snake_case: str) -> str:
-    """Convert snake_case to PascalCase.
-
-    Args:
-        snake_case (str): Input string in snake_case
-
-    Returns:
-        str: Output string in PascalCase
-
-    Examples:
-        >>> convert_snake_to_pascal_case("efficient_ad")
-        EfficientAd
-
-        >>> convert_snake_to_pascal_case("patchcore")
-        Patchcore
-    """
-    return "".join(word.capitalize() for word in snake_case.split("_"))
-
-
-def convert_pascal_to_snake_case(pascal_case: str) -> str:
+def _convert_pascal_to_snake_case(pascal_case: str) -> str:
     """Convert PascalCase to snake_case.
 
     Args:
@@ -79,10 +65,10 @@ def convert_pascal_to_snake_case(pascal_case: str) -> str:
         str: Output string in snake_case
 
     Examples:
-        >>> convert_pascal_to_snake_case("EfficientAd")
+        >>> _convert_pascal_to_snake_case("EfficientAd")
         efficient_ad
 
-        >>> convert_pascal_to_snake_case("Patchcore")
+        >>> _convert_pascal_to_snake_case("Patchcore")
         patchcore
     """
     return re.sub(r"(?<!^)(?=[A-Z])", "_", pascal_case).lower()
@@ -98,39 +84,71 @@ def get_available_models() -> list[str]:
         >>> get_available_models()
         ['ai_vad', 'cfa', 'cflow', 'csflow', 'dfkde', 'dfm', 'draem', 'efficient_ad', 'fastflow', ...]
     """
-    return [convert_pascal_to_snake_case(cls.__name__) for cls in AnomalyModule.__subclasses__()]
+    return [_convert_pascal_to_snake_case(cls.__name__) for cls in AnomalyModule.__subclasses__()]
 
 
-def get_model(config: DictConfig | ListConfig) -> AnomalyModule:
-    """Load model from the configuration file.
-
-    Works only when the convention for model naming is followed.
-
-    The convention for writing model classes is
-    `anomalib.models.<model_name>.lightning_model.<ModelName>Lightning`
-    `anomalib.models.stfpm.lightning_model.StfpmLightning`
+def _get_model_by_name(name: str) -> AnomalyModule:
+    """Get's the model by name.
 
     Args:
-        config (DictConfig | ListConfig): Config.yaml loaded using OmegaConf
+        name (str): Name of the model. The name is case insensitive.
 
     Raises:
-        ValueError: If unsupported model is passed
+        ModuleNotFoundError: If unsupported model is passed
 
     Returns:
         AnomalyModule: Anomaly Model
     """
     logger.info("Loading the model.")
+    model: AnomalyModule | None = None
+
+    # search for model by name in available models.
+    for model_name in get_available_models():
+        if name.lower() in model_name:
+            module = import_module(f"anomalib.models.{model_name}")
+            for class_name in dir(module):
+                if class_name.lower() in class_name.lower():
+                    model_class = getattr(module, class_name, None)
+                    if inspect.isclass(model_class):
+                        model = model_class()
+                        break
+            break
+    if model is None:
+        logger.exception(f"Could not find the model {name}. Available models are {get_available_models()}")
+        raise UnknownModelError
+
+    return model
+
+
+def get_model(config: DictConfig | ListConfig | str | Namespace) -> AnomalyModule:
+    """Get Anomaly Model.
+
+    Args:
+        config (DictConfig | ListConfig | str): Can either be a configuration or a string.
+
+    Example:
+        >>> get_model("Padim")
+        >>> get_model({"class_path": "Padim"})
+        >>> get_model({"class_path": "Padim", "init_args": {"input_size": (100, 100)}})
+        >>> get_model({"class_path": "anomalib.models.Padim", "init_args": {"input_size": (100, 100)}}})
+
+    Raises:
+        TypeError: If unsupported type is passed.
+
+    Returns:
+        AnomalyModule: Anomaly Model
+    """
     model: AnomalyModule
-
-    try:
-        module = import_module(".".join(config.model.class_path.split(".")[:-1]))
-        model = getattr(module, config.model.class_path.split(".")[-1])
-        model = model(**config.model.init_args)
-    except ModuleNotFoundError:
-        logger.exception("Could not find the model class: %s", config.model.class_path)
-        raise
-
-    if "init_weights" in config and config.init_weights:
-        model.load_state_dict(load(str(Path(config.project.path) / config.init_weights))["state_dict"], strict=False)
-
+    if isinstance(config, str):
+        model = _get_model_by_name(config)
+    elif isinstance(config, DictConfig | ListConfig | Namespace):
+        if len(config.class_path.split(".")) > 1:
+            module = import_module(".".join(config.class_path.split(".")[:-1]))
+        else:
+            module = import_module(f"anomalib.models.{config.class_path}")
+        model_class = getattr(module, config.class_path.split(".")[-1])
+        model = model_class(**config.get("init_args", {}))
+    else:
+        logger.error(f"Unsupported type {type(config)} for model configuration.")
+        raise TypeError
     return model
