@@ -4,12 +4,15 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
+from collections.abc import Generator
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from typing import Any
 
 import pytest
 
-from anomalib.data import TaskType
+from anomalib.data import ImageDataFormat, TaskType, VideoDataFormat
+from tests.helpers.data import DummyImageDatasetGenerator, DummyVideoDatasetGenerator
 from tests.legacy.helpers.dataset import GeneratedDummyDataset
 
 
@@ -34,8 +37,10 @@ def project_path():
 
 
 @pytest.fixture(scope="session")
-def dataset_root():
-    """Generate a dummy dataset."""
+def dataset_root(project_path: str) -> Generator[str, Any, None]:
+    """Generate a dummy dataset and return the data root."""
+    # Create a dataset root.
+
     with GeneratedDummyDataset(num_train=20, num_test=10) as data_root:
         yield data_root
 
@@ -52,5 +57,8 @@ def model_name(request):
 
 
 @pytest.fixture(scope="session", params=_dataset_names())
-def dataset_name(request):
+def dataset_name(request: type[pytest.FixtureRequest]) -> str:
+    """Return a dataset name from the available datasets."""
+    return request.param
+    return request.param
     return request.param
