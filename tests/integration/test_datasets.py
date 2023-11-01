@@ -9,7 +9,7 @@ from tests.helpers.data import DummyImageDatasetGenerator, DummyVideoDatasetGene
 from anomalib.data import ImageDataFormat, VideoDataFormat
 
 
-@pytest.mark.run(order=1)
+@pytest.mark.order(1)
 def test_if_dummy_datasets_are_generated(dataset_path: str) -> None:
     """Tests dummy datasets are properly generated.
 
