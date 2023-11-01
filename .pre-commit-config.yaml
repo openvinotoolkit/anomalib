@@ -18,7 +18,7 @@ repos:
     rev: "v0.1.2"
     hooks:
       - id: ruff
-        exclude: "tests"
+        exclude: "tests/legacy"
         args: ["--fix"]
 
   # python static type checking
