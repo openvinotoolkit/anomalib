@@ -215,7 +215,6 @@ class DummyDatasetGenerator(ContextDecorator):
         self,
         data_format: DataFormat | str,
         root: str | None = None,
-        dataset_name: str | None = None,
         num_train: int = 5,
         num_test: int = 5,
         seed: int | None = None,
@@ -229,14 +228,7 @@ class DummyDatasetGenerator(ContextDecorator):
 
         self.data_format = data_format
         self.root = Path(mkdtemp() if root is None else root)
-
-        if dataset_name is None:
-            self.dataset_name = self.data_format.value
-        else:
-            self.dataset_name = dataset_name
-
-        self.dataset_root = self.root / self.dataset_name
-
+        self.dataset_root = self.root / self.data_format.value
         self.num_train = num_train
         self.num_test = num_test
         self.rng = np.random.default_rng(seed)
@@ -253,10 +245,10 @@ class DummyDatasetGenerator(ContextDecorator):
             message = f"``generate_dummy_{self.data_format.value}_dataset`` not implemented."
             raise NotImplementedError(message)
 
-    def __enter__(self) -> str:
+    def __enter__(self) -> Path:
         """Creates the dataset in temp folder."""
         self.generate_dataset()
-        return str(self.dataset_root)
+        return self.dataset_root
 
     def __exit__(self, _exc_type, _exc_value, _exc_traceback) -> None:  # noqa: ANN001
         """Cleanup the directory."""
@@ -303,7 +295,6 @@ class DummyImageDatasetGenerator(DummyDatasetGenerator):
         self,
         data_format: DataFormat | str = "mvtec",
         root: str | None = None,
-        dataset_name: str | None = None,
         normal_category: str = "good",
         abnormal_category: str = "bad",
         num_train: int = 5,
@@ -316,7 +307,6 @@ class DummyImageDatasetGenerator(DummyDatasetGenerator):
         super().__init__(
             data_format=data_format,
             root=root,
-            dataset_name=dataset_name,
             num_train=num_train,
             num_test=num_test,
             seed=seed,
@@ -337,9 +327,12 @@ class DummyImageDatasetGenerator(DummyDatasetGenerator):
         mask_extension: str = ".png",
     ) -> None:
         """Generates dummy MVTecAD dataset in a temporary directory using the same convention as MVTec AD."""
+        # MVTec has multiple subcategories within the dataset.
+        dataset_category = "dummy"
+
         # Create normal images.
         for split in ("train", "test"):
-            path = self.dataset_root / split / normal_dir
+            path = self.dataset_root / dataset_category / split / normal_dir
             num_images = self.num_train if split == "train" else self.num_test
             for i in range(num_images):
                 label = LabelName.NORMAL
@@ -348,8 +341,8 @@ class DummyImageDatasetGenerator(DummyDatasetGenerator):
 
         # Create abnormal test images and masks.
         abnormal_dir = abnormal_dir or self.abnormal_category
-        path = self.dataset_root / "test" / abnormal_dir
-        mask_path = self.dataset_root / "ground_truth" / abnormal_dir
+        path = self.dataset_root / dataset_category / "test" / abnormal_dir
+        mask_path = self.dataset_root / dataset_category / "ground_truth" / abnormal_dir
 
         for i in range(self.num_test):
             label = LabelName.ABNORMAL
@@ -364,9 +357,12 @@ class DummyImageDatasetGenerator(DummyDatasetGenerator):
 
     def _generate_dummy_mvtec_3d_dataset(self) -> None:
         """Generate dummy MVTec 3D AD dataset in a temporary directory using the same convention as MVTec AD."""
+        # MVTec 3D AD has multiple subcategories within the dataset.
+        dataset_category = "dummy"
+
         # Create training and validation images.
         for split in ("train", "validation"):
-            split_path = self.dataset_root / split / self.normal_category
+            split_path = self.dataset_root / dataset_category / split / self.normal_category
             for directory in ("rgb", "xyz"):
                 extension = ".tiff" if directory == "xyz" else ".png"
                 for i in range(self.num_train):
@@ -375,7 +371,7 @@ class DummyImageDatasetGenerator(DummyDatasetGenerator):
                     self.image_generator.generate_image(label=label, image_filename=image_filename)
 
         ## Create test images.
-        test_path = self.dataset_root / "test"
+        test_path = self.dataset_root / dataset_category / "test"
         for category in (self.normal_category, self.abnormal_category):
             label = LabelName.NORMAL if category == "good" else LabelName.ABNORMAL
             for i in range(self.num_test):
@@ -451,7 +447,6 @@ class DummyVideoDatasetGenerator(DummyDatasetGenerator):
         self,
         data_format: DataFormat,
         root: str | None = None,
-        dataset_name: str | None = None,
         num_frames: int = 32,
         frame_shape: tuple[int, int] = (256, 256),
         num_train: int = 5,
@@ -461,7 +456,6 @@ class DummyVideoDatasetGenerator(DummyDatasetGenerator):
         super().__init__(
             data_format=data_format,
             root=root,
-            dataset_name=dataset_name,
             num_train=num_train,
             num_test=num_test,
             seed=seed,
