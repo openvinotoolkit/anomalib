@@ -3,14 +3,18 @@
 # Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
+import pytest
 from tests.helpers.data import DummyImageDatasetGenerator, DummyVideoDatasetGenerator
 
 from anomalib.data import ImageDataFormat, VideoDataFormat
 
 
+@pytest.mark.run(order=1)
 def test_if_dummy_datasets_are_generated(dataset_path: str) -> None:
     """Tests dummy datasets are properly generated.
+
+    This test is run first to ensure that the dummy datasets are generated before any other tests are run.
+    Overall, the test does the following:
 
     1. Generate the image dataset.
     2. Generate the video dataset.
