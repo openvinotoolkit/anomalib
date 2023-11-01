@@ -4,6 +4,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
+from pathlib import Path
+
 import pytest
 import torch
 from tests.legacy.helpers.dataset import get_dataset_path
@@ -14,7 +16,7 @@ from anomalib.utils.cli import AnomalibCLI
 class TestCLI:
     """Do sanity check on all models."""
 
-    def test_fit(self, model_name: str, dataset_root: str, project_path: str) -> None:
+    def test_fit(self, model_name: str, dataset_root: Path, project_path: Path) -> None:
         """Test fit CLI.
 
         Args:
@@ -41,13 +43,13 @@ class TestCLI:
                 "--data",
                 data_class,
                 "--data.root",
-                dataset_root,
+                str(dataset_root),
                 "--data.category",
                 category,
                 "--data.train_batch_size",
                 "8",
                 "--results_dir.path",
-                project_path,
+                str(project_path),
                 "--results_dir.unique",
                 "false",
                 "--trainer.max_epochs",
@@ -69,7 +71,7 @@ class TestCLI:
         )
         torch.cuda.empty_cache()
 
-    def test_test(self, model_name: str, dataset_root: str, project_path: str) -> None:
+    def test_test(self, model_name: str, dataset_root: Path, project_path: Path) -> None:
         """Test the test method of the CLI.
 
         Args:
@@ -79,6 +81,8 @@ class TestCLI:
         """
         data_class = "anomalib.data.MVTec"
         category = "shapes"
+        dataset_root = str(dataset_root)
+        project_path = str(project_path)
         if model_name == "ai_vad":
             # TODO(ashwinva): use dummy dataset path when it supports all the data formats
             # CVS-109972
@@ -95,11 +99,11 @@ class TestCLI:
                 "--data",
                 data_class,
                 "--data.root",
-                dataset_root,
+                str(dataset_root),
                 "--data.category",
                 category,
                 "--results_dir.path",
-                project_path,
+                str(project_path),
                 "--results_dir.unique",
                 "false",
                 "--ckpt_path",
@@ -109,7 +113,7 @@ class TestCLI:
         torch.cuda.empty_cache()
 
     @pytest.mark.skip(reason="validation is not implemented in Anomalib Engine")
-    def test_validate(self, model_name: str, dataset_root: str, project_path: str) -> None:
+    def test_validate(self, model_name: str, dataset_root: Path, project_path: Path) -> None:
         """Test the validate method of the CLI.
 
         Args:
@@ -135,11 +139,11 @@ class TestCLI:
                 "--data",
                 data_class,
                 "--data.root",
-                dataset_root,
+                str(dataset_root),
                 "--data.category",
                 category,
                 "--results_dir.path",
-                project_path,
+                str(project_path),
                 "--results_dir.unique",
                 "false",
                 "--ckpt_path",
