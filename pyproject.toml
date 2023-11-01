@@ -6,12 +6,6 @@ build-backend = "setuptools.build_meta"
 
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-# BLACK CONFIGURATION                                                         #
-[tool.black]
-line-length = 120
-
-
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # RUFF CONFIGURATION                                                          #
 [tool.ruff]
 # Enable rules

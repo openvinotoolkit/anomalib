@@ -177,7 +177,7 @@ class TorchInferencer(Inferencer):
             metadata = self.metadata
 
         # Some models return a Tensor while others return a list or dictionary. Handle both cases.
-        # TODO(ashwin-vaidya17): Wrap this post-processing stage within the model's forward pass.
+        # TODO(ashwinvaidya17): Wrap this post-processing stage within the model's forward pass.
         # CVS-122674
 
         # Case I: Predictions could be a tensor.
