@@ -35,7 +35,7 @@ Nevertheless, the code for computing the segmentation mask with the NFA criterio
 
 ## Benchmarking
 
-Note that the proposed method uses the MCait Feature Extractor, which has an input size of 448x448. In the benchmarking, a size of 256x256 is used for all methods, and therefore the results may differ from those reported. In order to exactly reproduce all results, the reader can refer to the original code (see [here](https://www.github.com/mtailanian/uflow), where the configs used and even the trained checkpoints can be downloaded.
+Note that the proposed method uses the MCait Feature Extractor, which has an input size of 448x448. In the benchmarking, a size of 256x256 is used for all methods, and therefore the results may differ from those reported. In order to exactly reproduce all results, the reader can refer to the original code (see [here](https://www.github.com/mtailanian/uflow), where the configs used and even the trained checkpoints can be downloaded from [this release](https://github.com/mtailanian/uflow/releases/tag/trained-mvtec-models).
 
 ## Reproducing paper's results
 
@@ -43,9 +43,7 @@ Using the default parameters of the config file (`src/anomalib/models/uflow/conf
 
 bottle: 97.98, cable: 98.17, capsule: 98.95, carpet: 99.45, grid: 98.19, hazelnut: 99.01, leather: 99.41, metal_nut: 98.19, pill: 99.15, screw: 99.25, tile: 96.93, toothbrush: 98.97, transistor: 96.70, wood: 96.87, zipper: 97.92
 
-In order to obtain the same exact results, although the architecture parameters stays always the same, the following values for the learning rate and batch size should be used (please refer to the [original code](https://www.github.com/mtailanian/uflow) for more details, where the used configs and trained checkpoints are available):
-
-bottle: batch 23, lr 0.0001128999, cable: batch 14, lr 0.0016160391, capsule: batch 14, lr 0.0012118892, carpet: batch 13, lr 0.0012118892, grid: batch 12, lr 0.0000362248, hazelnut: batch 21, lr 0.0013268899, leather: batch 15, lr 0.0006124724, metal_nut: batch 11, lr 0.0008148858, pill: batch 11, lr 0.0010756100, screw: batch 11, lr 0.0004155987, tile: batch 30, lr 0.0060457548, toothbrush: batch 21, lr 0.0001287313, transistor: batch 20, lr 0.0011212904, wood: batch 22, lr 0.0002466546, zipper: batch 24, lr 0.0000455247
+In order to obtain the same exact results, although the architecture parameters stays always the same, the following values for the learning rate and batch size should be used (please refer to the [original code](https://www.github.com/mtailanian/uflow) for more details, where the used configs are available in the source code ([here](https://github.com/mtailanian/uflow/tree/main/configs)), and trained checkpoints are available in [this release](https://github.com/mtailanian/uflow/releases/tag/trained-mvtec-models)):
 
 ## Usage
 
@@ -71,7 +69,7 @@ https://svip-lab.github.io/dataset/campus_dataset.html
 
 ## [Optional] Download pre-trained models
 
-Pre-trained models can be found in [here](https://drive.google.com/drive/folders/1W1rE0mu4Lv3uWHA5GZigmvVNlBVHqTv_?usp=sharing)
+Pre-trained models can be found in [this release](https://github.com/mtailanian/uflow/tree/main/configs), or can be downloaded from [Google Drive](https://drive.google.com/drive/folders/1W1rE0mu4Lv3uWHA5GZigmvVNlBVHqTv_?usp=sharing)
 
 For an easier way of downloading them, please refer to the `README.md` from the [original code](https://www.github.com/mtailanian/uflow)
 
