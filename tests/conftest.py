@@ -28,17 +28,17 @@ def _dataset_names() -> list[str]:
 
 
 @pytest.fixture(scope="session")
-def project_path() -> Generator[str, None, None]:
+def project_path() -> Generator[Path, None, None]:
     """Return a temporary directory path that is used as the project directory for the entire test."""
     with TemporaryDirectory() as project_path:
-        yield project_path
+        yield Path(project_path)
 
 
 @pytest.fixture(scope="session")
-def dataset_root() -> Generator[str, None, None]:
+def dataset_root() -> Generator[Path, None, None]:
     """Generate a dummy dataset."""
     with GeneratedDummyDataset(num_train=20, num_test=10) as data_root:
-        yield data_root
+        yield Path(data_root)
 
 
 @pytest.fixture(scope="session", params=_model_names())
