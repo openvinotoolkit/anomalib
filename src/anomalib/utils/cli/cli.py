@@ -13,9 +13,11 @@ from jsonargparse import ActionConfigFile, ArgumentParser
 from lightning.pytorch import Trainer
 from lightning.pytorch.cli import ArgsType, LightningArgumentParser, LightningCLI, SaveConfigCallback
 from lightning.pytorch.utilities.types import _EVALUATE_OUTPUT, _PREDICT_OUTPUT
+from rich import traceback
 
 from anomalib.config.config import update_config
 from anomalib.data import AnomalibDataModule, TaskType
+from anomalib.deploy import export_to_onnx, export_to_openvino, export_to_torch
 from anomalib.engine import Engine
 from anomalib.models import AnomalyModule
 from anomalib.utils.benchmarking import distribute
@@ -26,12 +28,12 @@ from anomalib.utils.cli.subcommands import (
     add_onnx_export_arguments,
     add_openvino_export_arguments,
     add_torch_export_arguments,
-    run_export,
 )
 from anomalib.utils.hpo import Sweep, get_hpo_parser
 from anomalib.utils.loggers import configure_logger
 from anomalib.utils.metrics.threshold import BaseThreshold
 
+traceback.install()
 logger = logging.getLogger("anomalib.cli")
 
 
@@ -178,6 +180,8 @@ class AnomalibCLI(LightningCLI):
             self.model = self._get(self.config_init, "model")
             self._add_configure_optimizers_method_to_model(self.subcommand)
             self.engine = self.instantiate_engine()
+        else:
+            self.config_init = self.parser.instantiate_classes(self.config)
 
     def instantiate_engine(self) -> Engine:
         """Instantiate the engine.
@@ -227,6 +231,7 @@ class AnomalibCLI(LightningCLI):
             fn_kwargs = self._prepare_subcommand_kwargs(subcommand)
             fn(**fn_kwargs)
         else:
+            self.config_init = self.parser.instantiate_classes(self.config)
             getattr(self, f"{subcommand}")()
 
     @property
@@ -267,7 +272,35 @@ class AnomalibCLI(LightningCLI):
 
     def export(self) -> None:
         """Run export."""
-        run_export(self.config)
+        export_mode = self.config.export.export_mode
+        config = self.config.export[export_mode]
+        if export_mode == "torch":
+            export_to_torch(
+                export_path=config.export_path,
+                model=config.model,
+                transform=config.transform,
+                task=config.task,
+            )
+        elif export_mode == "onnx":
+            export_to_onnx(
+                model=config.model,
+                input_size=config.input_size,
+                export_path=config.export_path,
+                transform=config.transform,
+                task=config.task,
+            )
+        elif export_mode == "openvino":
+            export_to_openvino(
+                export_path=config.export_path,
+                model=config.model,
+                input_size=config.input_size,
+                transform=config.transform,
+                task=config.task,
+                mo_args={**config.mo_args},
+            )
+        else:
+            logger.error(f"Unsupported export mode: {export_mode}")
+            raise NotImplementedError
 
 
 def main() -> None:

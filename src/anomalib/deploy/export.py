@@ -10,11 +10,12 @@ from enum import Enum
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+import albumentations as A  # noqa: N812
 import numpy as np
 import torch
 from torch import Tensor
 
-from anomalib.data.task_type import TaskType
+from anomalib.data import AnomalibDataModule, AnomalibDataset, TaskType
 from anomalib.models.components import AnomalyModule
 from anomalib.utils.exceptions import try_import
 
@@ -24,7 +25,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger("anomalib")
 
 if try_import("openvino"):
-    from openvino.runtime import Core, serialize
+    from openvino.runtime import serialize
     from openvino.tools.mo.convert import convert_model
 
 
@@ -36,7 +37,138 @@ class ExportMode(str, Enum):
     TORCH = "torch"
 
 
-def get_model_metadata(model: AnomalyModule) -> dict[str, Tensor]:
+def export_to_torch(
+    model: AnomalyModule,
+    export_path: Path,
+    transform: dict[str, Any] | AnomalibDataset | AnomalibDataModule | A.Compose,
+    task: TaskType | None = None,
+) -> None:
+    """Export AnomalibModel to torch.
+
+    Args:
+    model (AnomalyModule): Model to export.
+    export_path (Path): Path to the output folder.
+    transform (dict[str, Any] | AnomalibDataset | AnomalibDataModule | A.Compose): Data transforms (augmentations) used
+        for the model. When using dict, ensure that the transform dict is in the format required by Albumentations.
+    task (TaskType | None): Task type should be provided if transforms is of type dict or A.Compose object.
+        Defaults to None.
+    """
+    export_path = _create_export_path(export_path, ExportMode.TORCH)
+    metadata = get_metadata(task=task, transform=transform, model=model)
+    torch.save(
+        obj={"model": model.model, "metadata": metadata},
+        f=export_path / "model.pt",
+    )
+
+
+def export_to_onnx(
+    model: AnomalyModule,
+    input_size: tuple[int, int],
+    export_path: Path,
+    transform: dict[str, Any] | AnomalibDataset | AnomalibDataModule | A.Compose,
+    task: TaskType | None = None,
+    export_mode: ExportMode = ExportMode.ONNX,
+) -> Path:
+    """Export model to onnx.
+
+    Args:
+        model (AnomalyModule): Model to export.
+        input_size (list[int] | tuple[int, int]): Image size used as the input for onnx converter.
+        export_path (Path): Path to the root folder of the exported model.
+        transform (dict[str, Any] | AnomalibDataset | AnomalibDataModule | A.Compose): Data transforms (augmentations)
+            used for the model. When using dict, ensure that the transform dict is in the format required by
+            Albumentations.
+        task (TaskType | None): Task type should be provided if transforms is of type dict or A.Compose object.
+            Defaults to None.
+        export_mode (ExportMode): Mode to export the model. Since this method is used by OpenVINO export as well, we
+            need to pass the export mode so that the right export path is created. Defaults to ExportMode.ONNX.
+
+    Returns:
+        Path: Path to the exported onnx model.
+    """
+    export_path = _create_export_path(export_path, export_mode)
+    _write_metadata_to_json(export_path, transform, model, task)
+    onnx_path = export_path / "model.onnx"
+    torch.onnx.export(
+        model.model,
+        torch.zeros((1, 3, *input_size)).to(model.device),
+        str(onnx_path),
+        opset_version=11,
+        dynamic_axes={"input": {0: "batch_size"}, "output": {0: "batch_size"}},
+        input_names=["input"],
+        output_names=["output"],
+    )
+
+    return onnx_path
+
+
+def export_to_openvino(
+    export_path: Path,
+    model: AnomalyModule,
+    input_size: tuple[int, int],
+    transform: dict[str, Any] | AnomalibDataset | AnomalibDataModule | A.Compose,
+    mo_args: dict[str, Any],
+    task: TaskType | None = None,
+) -> None:
+    """Convert onnx model to OpenVINO IR.
+
+    Args:
+        export_path (Path): Path to the export folder.
+        model (AnomalyModule): AnomalyModule to export.
+        input_size (tuple[int, int]): Input size of the model. Used for adding metadata to the IR.
+        transform (dict[str, Any] | AnomalibDataset | AnomalibDataModule | A.Compose): Data transforms (augmentations)
+            used for the model. When using dict, ensure that the transform dict is in the format required by
+            Albumentations.
+        mo_args: Model optimizer arguments for OpenVINO model conversion.
+        task (TaskType | None): Task type should be provided if transforms is of type dict or A.Compose object.
+
+    Raises:
+        ModuleNotFoundError: If OpenVINO is not installed.
+    """
+    model_path = export_to_onnx(model, input_size, export_path, transform, task, ExportMode.OPENVINO)
+    mo_args = {} if mo_args is None else mo_args
+    if convert_model is not None and serialize is not None:
+        model = convert_model(input_model=str(model_path), output_dir=str(model_path.parent), **mo_args)
+        serialize(model, model_path.with_suffix(".xml"))
+    else:
+        logger.exception("Could not find OpenVINO methods. Please check OpenVINO installation.")
+        raise ModuleNotFoundError
+
+
+def get_metadata(
+    model: AnomalyModule,
+    transform: dict[str, Any] | AnomalibDataset | AnomalibDataModule | A.Compose,
+    task: TaskType | None = None,
+) -> dict[str, Any]:
+    """Get metadata for the exported model.
+
+    Args:
+        model (AnomalyModule): Anomaly model which contains metadata related to normalization.
+        transform (dict[str, Any] | AnomalibDataset | AnomalibDataModule | A.Compose): Data transforms (augmentations
+             for the model. When using dict, ensure that the transform dict is in the format required by
+             Albumentations.
+        task (TaskType | None): Task type should be provided if transforms is of type dict or A.Compose object.
+            Defaults to None.
+
+    Returns:
+        dict[str, Any]: Metadata for the exported model.
+    """
+    transform = _get_transform_dict(transform)
+    task = _get_task(task=task, transform=transform)
+
+    data_metadata = {"task": task, "transform": transform}
+    model_metadata = _get_model_metadata(model)
+    metadata = {**data_metadata, **model_metadata}
+
+    # Convert torch tensors to python lists or values for json serialization.
+    for key, value in metadata.items():
+        if isinstance(value, Tensor):
+            metadata[key] = value.numpy().tolist()
+
+    return metadata
+
+
+def _get_model_metadata(model: AnomalyModule) -> dict[str, Tensor]:
     """Get meta data related to normalization from model.
 
     Args:
@@ -61,199 +193,107 @@ def get_model_metadata(model: AnomalyModule) -> dict[str, Tensor]:
     return metadata
 
 
-def get_metadata(task: TaskType, transform: dict[str, Any], model: AnomalyModule) -> dict[str, Any]:
-    """Get metadata for the exported model.
+def _get_task(
+    transform: dict[str, Any] | AnomalibDataset | AnomalibDataModule | A.Compose,
+    task: TaskType | None = None,
+) -> TaskType:
+    """Get task from transform or task.
 
     Args:
-        task (TaskType): Task type.
-        transform (dict[str, Any]): Transform used for the model.
-        model (AnomalyModule): Model to export.
+        transform (dict[str, Any] | AnomalibDataset | AnomalibDataModule | A.Compose): If task is None, task is taken
+            from transform.
+        task (TaskType | None): Task type. Defaults to None.
+
+    Raises:
+        ValueError: If task is None and transform is not of type AnomalibDataset or AnomalibDataModule.
+
+    Returns:
+        TaskType: Task type.
+    """
+    _task = task
+    if _task is None:
+        if isinstance(transform, AnomalibDataset):
+            _task = transform.task
+        elif isinstance(transform, AnomalibDataModule):
+            _task = transform.test_data.task
+        else:
+            logging.error(f"Task should be provided when passing transform of type {type(transform)}")
+            raise ValueError
+    return _task
+
+
+def _get_transform_dict(
+    transform_container: dict[str, Any] | AnomalibDataModule | AnomalibDataset | A.Compose,
+) -> dict[str, Any]:
+    """Get transform dict from transform_container.
+
+    Args:
+        transform_container (dict[str, Any] | AnomalibDataModule | AnomalibDataset | A.Compose): Transform dict
+            or AnomalibDataModule or AnomalibDataset or A.Compose object. Transform is taken from container. When using
+            AnomalibDataModule or AnomalibDataset, the task is also taken from the container. When passing
+            transform_container as dict, ensure that the transform dict is in the format required by Albumentations.
+
+    Raises:
+        KeyError: If transform_container is dict and does not contain the required keys.
+        TypeError: If transform_container is not dict, AnomalibDataModule or AnomalibDataset or A.Compose object.
+
+    Returns:
+        dict[str, Any]: Transform dict.
+    """
+    if isinstance(transform_container, dict):
+        try:
+            A.from_dict(transform_container)
+            transform = transform_container
+        except KeyError as exception:
+            logging.exception(
+                f"Unsupported transform: {transform_container}."
+                " Ensure that the transform dict is in the format required by Albumentations.",
+            )
+            raise KeyError from exception
+    elif isinstance(transform_container, A.Compose):
+        transform = transform_container.to_dict()
+    elif isinstance(transform_container, AnomalibDataset):
+        transform = transform_container.transform.to_dict()
+    elif isinstance(transform_container, AnomalibDataModule):
+        transform = transform_container.test_data.transform.to_dict()
+    else:
+        logging.error(f"Unsupported type for transform_container: {type(transform_container)}")
+        raise TypeError
+
+    return transform
+
+
+def _create_export_path(export_root: str | Path, export_mode: ExportMode) -> Path:
+    """Create export directory.
+
+    Args:
+        export_root (str | Path): Path to the root folder of the exported model.
         export_mode (ExportMode): Mode to export the model. Torch, ONNX or OpenVINO.
 
     Returns:
-        dict[str, Any]: Metadata for the exported model.
+        Path: Path to the export directory.
     """
-    data_metadata = {"task": task, "transform": transform}
-    model_metadata = get_model_metadata(model)
-    metadata = {**data_metadata, **model_metadata}
-
-    # Convert torch tensors to python lists or values for json serialization.
-    for key, value in metadata.items():
-        if isinstance(value, Tensor):
-            metadata[key] = value.numpy().tolist()
-
-    return metadata
-
-
-def export(
-    task: TaskType,
-    transform: dict[str, Any],
-    input_size: tuple[int, int],
-    model: AnomalyModule,
-    export_mode: ExportMode,
-    export_root: str | Path,
-) -> None:
-    """Export the model to onnx format and (optionally) convert to OpenVINO IR if export mode is set to OpenVINO.
-
-    Args:
-        task (TaskType): Task type.
-        transform (dict[str, Any]): Data transforms (augmentatiions) used for the model.
-        input_size (tuple[int, int]): Input size of the model.
-        model (AnomalyModule): Anomaly model to export.
-        export_mode (ExportMode): Mode to export the model. Torch, ONNX or OpenVINO.
-        export_root (str | Path): Path to exported Torch, ONNX or OpenVINO IR.
-    """
-    # Create export directory.
     export_path = Path(export_root) / "weights" / export_mode.value
     export_path.mkdir(parents=True, exist_ok=True)
-
-    # Get metadata.
-    metadata = get_metadata(task, transform, model)
-
-    if export_mode == ExportMode.TORCH:
-        export_to_torch(model, metadata, export_path)
-
-    elif export_mode in (ExportMode.ONNX, ExportMode.OPENVINO):
-        # Write metadata to json file. The file is written in the same directory as the target model.
-        with (Path(export_path) / "metadata.json").open("w", encoding="utf-8") as metadata_file:
-            json.dump(metadata, metadata_file, ensure_ascii=False, indent=4)
-
-        # Export model to onnx and convert to OpenVINO IR if export mode is set to OpenVINO.
-        onnx_path = export_to_onnx(model=model, input_size=input_size, export_path=export_path)
-        if export_mode == ExportMode.OPENVINO:
-            export_to_openvino(export_path=export_path, input_model=onnx_path, metadata=metadata, input_size=input_size)
-
-    else:
-        msg = f"Unknown export mode {export_mode}"
-        raise ValueError(msg)
+    return export_path
 
 
-def export_to_torch(model: AnomalyModule, metadata: dict[str, Any], export_path: Path) -> None:
-    """Export AnomalibModel to torch.
-
-    Args:
-        model (AnomalyModule): Model to export.
-        metadata (dict[str, Any]): Metadata for the exported model.
-        export_path (Path): Path to the folder storing the exported model.
-    """
-    torch.save(
-        obj={"model": model.model, "metadata": metadata},
-        f=export_path / "model.pt",
-    )
-
-
-def export_to_onnx(model: AnomalyModule, input_size: tuple[int, int], export_path: Path) -> Path:
-    """Export model to onnx.
-
-    Args:
-        model (AnomalyModule): Model to export.
-        input_size (list[int] | tuple[int, int]): Image size used as the input for onnx converter.
-        export_path (Path): Path to the root folder of the exported model.
-
-    Returns:
-        Path: Path to the exported onnx model.
-    """
-    onnx_path = export_path / "model.onnx"
-    torch.onnx.export(
-        model.model,
-        torch.zeros((1, 3, *input_size)).to(model.device),
-        str(onnx_path),
-        opset_version=11,
-        dynamic_axes={"input": {0: "batch_size"}, "output": {0: "batch_size"}},
-        input_names=["input"],
-        output_names=["output"],
-    )
-
-    return onnx_path
-
-
-def export_to_openvino(
-    export_path: str | Path,
-    input_model: Path,
-    metadata: dict[str, Any],
-    input_size: tuple[int, int],
-    **kwargs,
+def _write_metadata_to_json(
+    export_path: Path,
+    transform: dict[str, Any] | AnomalibDataset | AnomalibDataModule | A.Compose,
+    model: AnomalyModule,
+    task: TaskType | None = None,
 ) -> None:
-    """Convert onnx model to OpenVINO IR.
+    """Write metadata to json file.
 
     Args:
-        export_path (Path): Path to the export folder.
-        input_model (str | Path): Path to the model weights. Can be either Torch weights or ONNX model.
-        metadata (dict[str, Any]): Metadata for the exported model.
-        input_size (tuple[int, int]): Input size of the model. Used for adding metadata to the IR.
-        **kwargs: Other arguments for OpenVINO model conversion.
+        export_path (Path): Path to the exported model.
+        transform (dict[str, Any] | AnomalibDataset | AnomalibDataModule | A.Compose): Data transforms (augmentations)
+            used for the model.
+        model (AnomalyModule): AnomalyModule to export.
+        task (TaskType | None): Task type should be provided if transforms is of type dict or A.Compose object.
+            Defaults to None.
     """
-    if convert_model is not None and serialize is not None:
-        model = convert_model(input_model=input_model, output_dir=str(export_path), **kwargs)
-        serialize(model, input_model.with_suffix(".xml"))
-        _add_metadata_to_ir(str(export_path) + f"/{input_model.with_suffix('.xml').name}", metadata, input_size)
-    else:
-        logger.exception("Could not find OpenVINO methods. Please check OpenVINO installation.")
-        raise ModuleNotFoundError
-
-
-def _add_metadata_to_ir(xml_file: str, metadata: dict[str, Any], input_size: tuple[int, int]) -> None:
-    """Add the metadata to the model IR.
-
-    Adds the metadata to the model IR. So that it can be used with the new modelAPI.
-    This is because the metadata.json is not used by the new modelAPI.
-    # TODO(ashwinvaidya17) Remove this function when Anomalib is upgraded as the model graph will contain the ops
-    # CVS-114640
-
-    Args:
-        xml_file (str): Path to the xml file.
-        metadata (dict[str, Any]): Metadata to add to the model.
-        input_size (tuple[int, int]): Input size of the model.
-    """
-    core = Core()
-    model = core.read_model(xml_file)
-
-    _metadata = {}
-    for key, value in metadata.items():
-        if key in ("transform", "min", "max"):
-            continue
-        _metadata[("model_info", key)] = value
-
-    # Add transforms
-    if "transform" in metadata:
-        for transform_dict in metadata["transform"]["transform"]["transforms"]:
-            transform = transform_dict["__class_fullname__"]
-            if transform == "Normalize":
-                _metadata[("model_info", "mean_values")] = _serialize_list([x * 255.0 for x in transform_dict["mean"]])
-                _metadata[("model_info", "scale_values")] = _serialize_list([x * 255.0 for x in transform_dict["std"]])
-            elif transform == "Resize":
-                _metadata[("model_info", "orig_height")] = transform_dict["height"]
-                _metadata[("model_info", "orig_width")] = transform_dict["width"]
-            else:
-                msg = f"Transform {transform} is not supported currently"
-                logger.warning(msg)
-
-    # Since we only need the diff of max and min, we fuse the min and max into one op
-    if "min" in metadata and "max" in metadata:
-        _metadata[("model_info", "normalization_scale")] = metadata["max"] - metadata["min"]
-
-    _metadata[("model_info", "reverse_input_channels")] = True
-    _metadata[("model_info", "model_type")] = "AnomalyDetection"
-    _metadata[("model_info", "labels")] = ["Normal", "Anomaly"]
-    _metadata[("model_info", "image_shape")] = _serialize_list(input_size)
-
-    for k, data in _metadata.items():
-        model.set_rt_info(data, list(k))
-
-    tmp_xml_path = Path(xml_file).parent / "tmp.xml"
-    serialize(model, str(tmp_xml_path))
-    tmp_xml_path.rename(xml_file)
-    # since we create new openvino IR files, we don't need the bin file. So we delete it.
-    tmp_xml_path.with_suffix(".bin").unlink()
-
-
-def _serialize_list(arr: list[int] | list[float] | tuple[int, int]) -> str:
-    """Serialize the list to a string.
-
-    Args:
-        arr (list[int] | list[float] | tuple[int, int]): List to serialize.
-
-    Returns:
-        str: Serialized list.
-    """
-    return " ".join(map(str, arr))
+    metadata = get_metadata(task=task, transform=transform, model=model)
+    with (export_path / "metadata.json").open("w", encoding="utf-8") as metadata_file:
+        json.dump(metadata, metadata_file, ensure_ascii=False, indent=4)

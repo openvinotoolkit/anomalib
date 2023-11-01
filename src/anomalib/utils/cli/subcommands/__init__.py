@@ -4,6 +4,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-from .export import add_onnx_export_arguments, add_openvino_export_arguments, add_torch_export_arguments, run_export
+from .export import add_onnx_export_arguments, add_openvino_export_arguments, add_torch_export_arguments
 
-__all__ = ["add_onnx_export_arguments", "add_torch_export_arguments", "add_openvino_export_arguments", "run_export"]
+__all__ = ["add_onnx_export_arguments", "add_torch_export_arguments", "add_openvino_export_arguments"]
