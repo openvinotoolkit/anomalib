@@ -33,6 +33,15 @@ class Uflow(AnomalyModule):
         affine_subnet_channels_ratio: float = 1.0,
         permute_soft: bool = False
     ) -> None:
+        """
+        Args:
+            input_size (tuple[int, int]): Input image size.
+            backbone (str): Backbone name.
+            flow_steps (int): Number of flow steps.
+            affine_clamp (float): Affine clamp.
+            affine_subnet_channels_ratio (float): Affine subnet channels ratio.
+            permute_soft (bool): Whether to use soft permutation.
+        """
         super().__init__()
         self.model: UflowModel = UflowModel(
             input_size=input_size,

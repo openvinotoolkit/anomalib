@@ -8,13 +8,22 @@ from .anomaly_map import AnomalyMapGenerator
 class UflowModel(nn.Module):
     def __init__(
             self,
-            input_size=(448, 448),
-            flow_steps=4,
-            backbone="mcait",
-            affine_clamp=2.0,
-            affine_subnet_channels_ratio=1.0,
-            permute_soft=False
-    ):
+            input_size: tuple[int, int] = (448, 448),
+            flow_steps: int = 4,
+            backbone: str = "mcait",
+            affine_clamp: float = 2.0,
+            affine_subnet_channels_ratio: float = 1.0,
+            permute_soft: bool = False
+    ) -> None:
+        """
+        Args:
+            input_size (tuple[int, int]): Input image size.
+            flow_steps (int): Number of flow steps.
+            backbone (str): Backbone name.
+            affine_clamp (float): Affine clamp.
+            affine_subnet_channels_ratio (float): Affine subnet channels ratio.
+            permute_soft (bool): Whether to use soft permutation.
+        """
         super().__init__()
 
         self.input_size = input_size
@@ -31,7 +40,7 @@ class UflowModel(nn.Module):
         Build the flow model.
         First we start with the input nodes, which have to match the feature extractor output.
         Then, we build the U-Shaped flow. Starting from the bottom (the coarsest scale), the flow is built as follows:
-            1. Pass the input through a Flow Stage (`get_flow_stage`).
+            1. Pass the input through a Flow Stage (`build_flow_stage`).
             2. Split the output of the flow stage into two parts, one that goes directly to the output,
             3. and the other is up-sampled, and will be concatenated with the output of the next flow stage (next scale)
             4. Repeat steps 1-3 for the next scale.
@@ -52,7 +61,7 @@ class UflowModel(nn.Module):
         nodes, output_nodes = [], []
         last_node = input_nodes[-1]
         for i in reversed(range(1, len(input_nodes))):
-            flows = self.get_flow_stage(last_node, flow_steps)
+            flows = self.build_flow_stage(last_node, flow_steps)
             volume_size = flows[-1].output_dims[0][0]
             split = ff.Node(
                 flows[-1], fm.Split,
@@ -66,7 +75,7 @@ class UflowModel(nn.Module):
             output_nodes.append(output)
             nodes.extend([*flows, split, up, last_node])
 
-        flows = self.get_flow_stage(last_node, flow_steps)
+        flows = self.build_flow_stage(last_node, flow_steps)
         output = ff.OutputNode(flows[-1], name='output_scale_1')
 
         output_nodes.append(output)
@@ -74,7 +83,7 @@ class UflowModel(nn.Module):
 
         return ff.GraphINN(input_nodes + nodes + output_nodes[::-1])
 
-    def get_flow_stage(self, in_node: ff.Node, flow_steps: int, condition_node: ff.Node = None) -> list[ff.Node]:
+    def build_flow_stage(self, in_node: ff.Node, flow_steps: int, condition_node: ff.Node = None) -> list[ff.Node]:
         """
         Build a flow stage, which is a sequence of flow steps.
         Each flow stage is essentially a sequence of `flow_steps` Glow blocks (`AllInOneBlock`).
