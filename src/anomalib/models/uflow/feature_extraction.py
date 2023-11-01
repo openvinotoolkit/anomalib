@@ -10,22 +10,21 @@ from anomalib.models.components.feature_extractors import TimmFeatureExtractor
 AVAILABLE_EXTRACTORS = ['mcait', 'resnet18', 'wide_resnet50_2']
 
 
-def get_feature_extractor(backbone, input_size: List[int] = (256, 256), **kwargs):
+def get_feature_extractor(backbone, input_size: List[int] = (256, 256)):
     """
     Get feature extractor. Currently, is restricted to AVAILABLE_EXTRACTORS.
     Args:
         backbone (str): Backbone name.
         input_size (tuple[int, int]): Input size.
-        **kwargs: Additional arguments.
 
     Returns:
         FeatureExtractorInterface: Feature extractor.
     """
     assert backbone in AVAILABLE_EXTRACTORS, f"Feature extractor must be one of {AVAILABLE_EXTRACTORS}."
     if backbone in ["resnet18", "wide_resnet50_2"]:
-        return FeatureExtractor(backbone, input_size, layers=["layer1", "layer2", "layer3"], **kwargs)
+        return FeatureExtractor(backbone, input_size, layers=["layer1", "layer2", "layer3"])
     elif backbone == "mcait":
-        return MCaitFeatureExtractor(**kwargs)
+        return MCaitFeatureExtractor()
     raise ValueError(
         "`backbone` must be one of `[mcait, resnet18, wide_resnet50_2]`. These are the only feature extractors tested. "
         "It does not mean that other feature extractors will not work."
@@ -69,7 +68,7 @@ class MCaitFeatureExtractor(nn.Module):
     independently trained Cait models, at different scales, with input sizes 448 and 224, respectively.
     It also includes a normalization layer for each scale.
     """
-    def __init__(self, **kwargs):
+    def __init__(self):
         super(MCaitFeatureExtractor, self).__init__()
         self.input_size = 448
         self.extractor1 = timm.create_model("cait_m48_448", pretrained=True)
