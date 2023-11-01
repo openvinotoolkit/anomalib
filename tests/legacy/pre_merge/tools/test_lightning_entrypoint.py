@@ -37,11 +37,11 @@ class TestLightningInferenceEntrypoint:
                 "--data.image_size",
                 "[100, 100]",
                 "--ckpt_path",
-                project_path + "/weights/model.ckpt",
+                str(project_path) + "/weights/model.ckpt",
                 "--data.path",
                 get_dummy_inference_image,
                 "--output",
-                project_path + "/output",
+                str(project_path) + "/output",
             ]
         )
         infer(arguments)
