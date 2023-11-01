@@ -189,7 +189,7 @@ class DummyDatasetGenerator(ContextDecorator):
 
     Args:
         data_format (DataFormat): Data format of the dataset.
-        root (str | None, optional): Root directory to save the dataset. Defaults to None.
+        root (Path | str | None, optional): Root directory to save the dataset. Defaults to None.
         dataset_name (str, optional): Name of the dataset. Defaults to None.
         num_train (int, optional): Number of training images to generate. Defaults to 5.
         num_test (int, optional): Number of testing images to generate per category. Defaults to 5.
@@ -214,7 +214,7 @@ class DummyDatasetGenerator(ContextDecorator):
     def __init__(
         self,
         data_format: DataFormat | str,
-        root: str | None = None,
+        root: Path | str | None = None,
         num_train: int = 5,
         num_test: int = 5,
         seed: int | None = None,
@@ -252,7 +252,7 @@ class DummyDatasetGenerator(ContextDecorator):
 
     def __exit__(self, _exc_type, _exc_value, _exc_traceback) -> None:  # noqa: ANN001
         """Cleanup the directory."""
-        shutil.rmtree(self.root)
+        shutil.rmtree(self.dataset_root)
 
 
 class DummyImageDatasetGenerator(DummyDatasetGenerator):
@@ -260,7 +260,7 @@ class DummyImageDatasetGenerator(DummyDatasetGenerator):
 
     Args:
         data_format (DataFormat): Data format of the dataset.
-        root (str, optional): Path to the root directory. Defaults to None.
+        root (Path | str, optional): Path to the root directory. Defaults to None.
         num_train (int, optional): Number of training images to generate. Defaults to 1000.
         num_test (int, optional): Number of testing images to generate per category. Defaults to 100.
         img_height (int, optional): Height of the image. Defaults to 128.
@@ -294,7 +294,7 @@ class DummyImageDatasetGenerator(DummyDatasetGenerator):
     def __init__(
         self,
         data_format: DataFormat | str = "mvtec",
-        root: str | None = None,
+        root: Path | str | None = None,
         normal_category: str = "good",
         abnormal_category: str = "bad",
         num_train: int = 5,
@@ -404,7 +404,7 @@ class DummyImageDatasetGenerator(DummyDatasetGenerator):
         """Generate dummy Visa dataset in directory using the same convention as Visa AD."""
         # Visa dataset on anomalib follows the same convention as MVTec AD.
         # The only difference is that the root directory has a subdirectory called "visa_pytorch".
-        self.root = self.root / "visa_pytorch"
+        self.dataset_root = self.dataset_root.parent / "visa_pytorch"
         self._generate_dummy_mvtec_dataset(normal_dir="good", abnormal_dir="bad", image_extension=".JPG")
 
 
@@ -413,7 +413,7 @@ class DummyVideoDatasetGenerator(DummyDatasetGenerator):
 
     Args:
         data_format (DataFormat): Data format of the dataset.
-        root (str | None, optional): Root directory to save the dataset. Defaults to None.
+        root (Path | str | None, optional): Root directory to save the dataset. Defaults to None.
         dataset_name (str, optional): Name of the dataset. Defaults to "ucsdped1".
         num_frames (int, optional): Number of frames to generate the video. Defaults to 32.
         frame_shape (tuple[int, int], optional): Shape of individual frames. Defaults to (256, 256).
@@ -446,7 +446,7 @@ class DummyVideoDatasetGenerator(DummyDatasetGenerator):
     def __init__(
         self,
         data_format: DataFormat,
-        root: str | None = None,
+        root: Path | str | None = None,
         num_frames: int = 32,
         frame_shape: tuple[int, int] = (256, 256),
         num_train: int = 5,

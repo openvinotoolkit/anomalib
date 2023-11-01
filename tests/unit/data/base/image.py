@@ -16,7 +16,6 @@ class _TestAnomalibImageDatamodule(_TestAnomalibDataModule):
     @pytest.mark.parametrize("subset", ["train", "val", "test"])
     def test_get_item_returns_correct_keys_and_shapes(self, datamodule: AnomalibDataModule, subset: str) -> None:
         """Test that the datamodule __getitem__ returns image, mask, label and boxes."""
-
         # Get the dataloader.
         dataloader = getattr(datamodule, f"{subset}_dataloader")()
 

@@ -7,7 +7,7 @@ import pytest
 
 from anomalib.data import AnomalibDataModule
 
-from .test_base_datamodule import _TestAnomalibDataModule
+from .base import _TestAnomalibDataModule
 
 
 class _TestAnomalibDepthDatamodule(_TestAnomalibDataModule):
