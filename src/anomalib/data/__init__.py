@@ -7,6 +7,7 @@
 import importlib
 import logging
 from enum import Enum
+from itertools import chain
 
 from omegaconf import DictConfig, ListConfig
 
@@ -28,18 +29,30 @@ from .visa import Visa
 logger = logging.getLogger(__name__)
 
 
-class DataFormat(str, Enum):
-    """Supported Dataset Types."""
+class ImageDataFormat(str, Enum):
+    """Supported Image Dataset Types."""
 
     MVTEC = "mvtec"
     MVTEC_3D = "mvtec_3d"
     BTECH = "btech"
+    KOLEKTOR = "kolektor"
     FOLDER = "folder"
     FOLDER_3D = "folder_3d"
+    VISA = "visa"
+
+
+class VideoDataFormat(str, Enum):
+    """Supported Video Dataset Types."""
+
     UCSDPED = "ucsdped"
     AVENUE = "avenue"
-    VISA = "visa"
     SHANGHAITECH = "shanghaitech"
+
+
+DataFormat = Enum(  # type: ignore[misc]
+    "DataFormat",
+    {i.name: i.value for i in chain(ImageDataFormat, VideoDataFormat)},
+)
 
 
 def get_datamodule(config: DictConfig | ListConfig) -> AnomalibDataModule:
