@@ -38,9 +38,5 @@ class _TestAnomalibDepthDatamodule(_TestAnomalibDataModule):
         assert batch["depth_image"].shape == (4, 3, 256, 256)
         assert batch["label"].shape == (4,)
 
-        # TODO: Detection task should return bounding boxes.
-        # if dataloader.dataset.task == "detection":
-        #     assert batch["boxes"].shape == (4, 4)
-
         if dataloader.dataset.task in ("detection", "segmentation"):
             assert batch["mask"].shape == (4, 256, 256)

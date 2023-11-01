@@ -28,11 +28,8 @@ class _TestAnomalibVideoDatamodule(_TestAnomalibDataModule):
 
         if subset == "train":
             expected_keys = expected_train_keys
-        else:
-            if dataloader.dataset.task == "detection":
-                expected_keys = expected_eval_detection_keys
-            else:
-                expected_keys = expected_eval_keys
+
+        expected_keys = expected_eval_detection_keys if dataloader.dataset.task == "detection" else expected_eval_keys
 
         assert batch.keys() == expected_keys
 
