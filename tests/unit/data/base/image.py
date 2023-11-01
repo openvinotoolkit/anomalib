@@ -39,16 +39,16 @@ class _TestAnomalibImageDatamodule(_TestAnomalibDataModule):
             assert (
                 len(
                     set(datamodule.test_data.samples["image_path"].values).intersection(
-                        set(datamodule.train_data.samples["image_path"].values)
-                    )
+                        set(datamodule.train_data.samples["image_path"].values),
+                    ),
                 )
                 == 0
             ), "Found train and test split contamination"
             assert (
                 len(
                     set(datamodule.val_data.samples["image_path"].values).intersection(
-                        set(datamodule.test_data.samples["image_path"].values)
-                    )
+                        set(datamodule.test_data.samples["image_path"].values),
+                    ),
                 )
                 == 0
             ), "Found train and test split contamination"
@@ -57,5 +57,5 @@ class _TestAnomalibImageDatamodule(_TestAnomalibDataModule):
         """This test ensures that val and test split are equal when split mode == same_as_test."""
         if datamodule.val_split_mode == "same_as_test":
             assert all(
-                datamodule.val_data.samples["image_path"].values == datamodule.test_data.samples["image_path"].values
+                datamodule.val_data.samples["image_path"].values == datamodule.test_data.samples["image_path"].values,
             )
