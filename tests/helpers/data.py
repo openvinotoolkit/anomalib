@@ -528,7 +528,7 @@ class DummyVideoDatasetGenerator(DummyDatasetGenerator):
             frames, masks = self.video_generator.generate_video(length=32, p_state_switch=0.2)
             fourcc = cv2.VideoWriter_fourcc("F", "M", "P", "4")
             writer = cv2.VideoWriter(str(clip_path), fourcc, 30, self.frame_shape)
-            for frame_idx, (frame, mask) in enumerate(zip(frames, masks)):
+            for frame_idx, (frame, mask) in enumerate(zip(frames, masks, strict=True)):
                 writer.write(frame)
                 mask_filename = mask_path / f"{frame_idx:04}.png"
                 self.video_generator.save_image(mask_filename, (mask).astype(np.uint8))
