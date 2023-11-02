@@ -27,6 +27,7 @@ Two variants of AUCs are implemented:
 from __future__ import annotations
 
 import json
+import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import ClassVar
@@ -582,10 +583,10 @@ class AUPImO(PImO):
 
         # limit the curves to the integration range [0, ubound]
         # `shared_fpr` and `tprs` are in descending order; `flip()` reverts to ascending order
-        tprs_auc: Tensor = tprs[:, ubound_idx:].flip(dims=(1,))
-        shared_fpr_auc: Tensor = shared_fpr[ubound_idx:].flip(dims=(0,))
+        tprs_tocompute_auc: Tensor = tprs[:, ubound_idx:].flip(dims=(1,))
+        shared_fpr_tocompute_auc: Tensor = shared_fpr[ubound_idx:].flip(dims=(0,))
 
-        aucs: Tensor = torch.trapezoid(tprs_auc, x=shared_fpr_auc, dim=1)
+        aucs: Tensor = torch.trapezoid(tprs_tocompute_auc, x=shared_fpr_tocompute_auc, dim=1)
 
         # normalize the size of `aucs` by dividing by the x-range size
         # clip(0, 1) makes sure that the values are in [0, 1] (in case of numerical errors)
@@ -899,12 +900,47 @@ class AULogPImO(PImO):
 
         # limit the curves to the integration range [lbound, ubound]
         # `shared_fpr` and `tprs` are in descending order; `flip()` reverts to ascending order
-        tprs_auc: Tensor = tprs[:, ubound_th_idx : (lbound_th_idx + 1)].flip(dims=(1,))
-        shared_fpr_auc: Tensor = shared_fpr[ubound_th_idx : (lbound_th_idx + 1)].flip(dims=(0,))
-        # as described in the class's docstring:
-        shared_fpr_auc = shared_fpr_auc.log()
+        tprs_tocompute_auc: Tensor = tprs[:, ubound_th_idx : (lbound_th_idx + 1)].flip(dims=(1,))
+        shared_fpr_tocompute_auc: Tensor = shared_fpr[ubound_th_idx : (lbound_th_idx + 1)].flip(dims=(0,))
 
-        aucs: Tensor = torch.trapezoid(tprs_auc, x=shared_fpr_auc, dim=1)
+        # as described in the class's docstring:
+        shared_fpr_tocompute_auc = shared_fpr_tocompute_auc.log()
+
+        # deal with an edge case
+        shared_fpr_is_invalid = ~shared_fpr_tocompute_auc.isfinite()
+
+        if shared_fpr_is_invalid.all():
+            raise RuntimeError(
+                "Cannot compute AULogPImO because the shared fpr integration range is empty. "
+                "Try increasing the number of thresholds."
+            )
+        elif shared_fpr_is_invalid.any():
+            # raise a warning
+            warnings.warn(
+                "Some values in the shared fpr integration range are nan. "
+                "The AULogPImO will be computed without these values."
+            )
+
+            # get rid of nan values by removing them from the integration range
+            shared_fpr_tocompute_auc = shared_fpr_tocompute_auc[~shared_fpr_is_invalid]
+            tprs_tocompute_auc = tprs_tocompute_auc[:, ~shared_fpr_is_invalid]
+
+        num_points_in_integration_range = shared_fpr_tocompute_auc.size(0)
+
+        LOW_NUMBER_POINTS_INTEGRATION = 100  # TODO move me to a btter place
+        if num_points_in_integration_range <= 30:
+            raise RuntimeError(
+                "Cannot compute AULogPImO because the shared fpr integration range doesnt have enough points. "
+                "Try increasing the number of thresholds."
+            )
+
+        elif num_points_in_integration_range < LOW_NUMBER_POINTS_INTEGRATION:
+            warnings.warn(
+                f"Number of points in the shared fpr integration range is low ({num_points_in_integration_range}). "
+                "Try increasing the number of thresholds."
+            )
+
+        aucs: Tensor = torch.trapezoid(tprs_tocompute_auc, x=shared_fpr_tocompute_auc, dim=1)
 
         # normalize, then clip(0, 1) makes sure that the values are in [0, 1] in case of numerical errors
         aucs = (aucs / self.max_primitive_auc).clip(0, 1)
