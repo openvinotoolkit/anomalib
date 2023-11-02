@@ -393,7 +393,7 @@ class DummyImageDatasetGenerator(DummyDatasetGenerator):
         """Generate dummy Kolektor dataset in directory using the same convention as Kolektor AD."""
         # Emulating the first two categories of Kolektor dataset.
         for category in ("kos01", "kos02"):
-            for i in range(self.num_train):
+            for i in range(self.num_train * 2):
                 # Half of the images are normal, while the rest are abnormal.
                 label = LabelName.NORMAL if i > self.num_train // 2 else LabelName.ABNORMAL
                 image_filename = self.dataset_root / category / f"Part{i}.jpg"
