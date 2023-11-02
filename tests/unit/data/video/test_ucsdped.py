@@ -18,8 +18,8 @@ class TestUCSDped(_TestAnomalibVideoDatamodule):
     def datamodule(self, dataset_path: Path, task_type: TaskType) -> UCSDped:
         """Create and return a UCSDped datamodule."""
         _datamodule = UCSDped(
-            root=dataset_path / "ucsd",
-            category="UCSDped2",
+            root=dataset_path / "ucsdped",
+            category="dummy",
             clip_length_in_frames=1,
             frames_between_clips=1,
             task=task_type,

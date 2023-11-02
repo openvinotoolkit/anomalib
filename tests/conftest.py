@@ -35,9 +35,6 @@ def project_path() -> Generator[Path, None, None]:
     with TemporaryDirectory() as project_path:
         yield Path(project_path)
 
-    # Remove the temporary directory after the test is complete.
-    Path(project_path).rmdir()
-
 
 @pytest.fixture(scope="session")
 def dataset_path(project_path: Path) -> Path:

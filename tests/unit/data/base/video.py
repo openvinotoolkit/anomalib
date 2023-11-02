@@ -24,12 +24,13 @@ class _TestAnomalibVideoDatamodule(_TestAnomalibDataModule):
         # Check that the batch has the correct keys.
         expected_train_keys = {"image", "video_path", "frames", "last_frame", "original_image"}
         expected_eval_keys = expected_train_keys | {"label", "mask"}
-        expected_eval_detection_keys = expected_eval_keys | {"boxes"}
 
         if subset == "train":
             expected_keys = expected_train_keys
-
-        expected_keys = expected_eval_detection_keys if dataloader.dataset.task == "detection" else expected_eval_keys
+        else:
+            expected_keys = (
+                expected_eval_keys | {"boxes"} if dataloader.dataset.task == "detection" else expected_eval_keys
+            )
 
         assert batch.keys() == expected_keys
 
