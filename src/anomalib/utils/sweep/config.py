@@ -177,7 +177,7 @@ def flattened_config_to_nested(config: dict[str, Any]) -> DictConfig:
     Args:
         config: dict[str, Any]: Flattened config dictionary.
 
-    Example:
+    Examples:
         >>> flattened_config = {
             "parent1.child1": 'a',
             "parent1.child2": 1,
