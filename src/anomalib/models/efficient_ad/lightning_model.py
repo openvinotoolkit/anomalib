@@ -125,6 +125,7 @@ class EfficientAd(AnomalyModule):
     @torch.no_grad()
     def teacher_channel_mean_std(self, dataloader: DataLoader) -> dict[str, Tensor]:
         """Calculate the mean and std of the teacher models activations.
+        Adapted from https://math.stackexchange.com/a/2148949
 
         Args:
             dataloader (DataLoader): Dataloader of the respective dataset.
@@ -132,23 +133,32 @@ class EfficientAd(AnomalyModule):
         Returns:
             dict[str, Tensor]: Dictionary of channel-wise mean and std
         """
-        y_means = []
-        means_distance = []
 
-        logger.info("Calculate teacher channel mean and std")
-        for batch in tqdm.tqdm(dataloader, desc="Calculate teacher channel mean", position=0, leave=True):
+        arrays_defined = False
+        n: torch.Tensor | None = None
+        chanel_sum: torch.Tensor | None = None
+        chanel_sum_sqr: torch.Tensor | None = None
+
+        for batch in tqdm.tqdm(dataloader, desc="Calculate teacher channel mean & std", position=0, leave=True):
             y = self.model.teacher(batch["image"].to(self.device))
-            y_means.append(torch.mean(y, dim=[0, 2, 3]))
+            if not arrays_defined:
+                _, num_channels, _, _ = y.shape
+                n = torch.zeros((num_channels,), dtype=torch.int64, device=y.device)
+                chanel_sum = torch.zeros((num_channels,), dtype=torch.float64, device=y.device)
+                chanel_sum_sqr = torch.zeros((num_channels,), dtype=torch.float64, device=y.device)
+                arrays_defined = True
 
-        channel_mean = torch.mean(torch.stack(y_means), dim=0)[None, :, None, None]
+            n += y[:, 0].numel()
+            chanel_sum += torch.sum(y, dim=[0, 2, 3])
+            chanel_sum_sqr += torch.sum(y**2, dim=[0, 2, 3])
 
-        for batch in tqdm.tqdm(dataloader, desc="Calculate teacher channel std", position=0, leave=True):
-            y = self.model.teacher(batch["image"].to(self.device))
-            distance = (y - channel_mean) ** 2
-            means_distance.append(torch.mean(distance, dim=[0, 2, 3]))
+        assert n is not None
 
-        channel_var = torch.mean(torch.stack(means_distance), dim=0)[None, :, None, None]
-        channel_std = torch.sqrt(channel_var)
+        channel_mean = chanel_sum / n
+
+        channel_std = (torch.sqrt((chanel_sum_sqr / n) - (channel_mean**2))).float()[None, :, None, None]
+        channel_mean = channel_mean.float()[None, :, None, None]
+
         return {"mean": channel_mean, "std": channel_std}
 
     @torch.no_grad()
