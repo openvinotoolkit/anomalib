@@ -89,6 +89,21 @@ EXTRAS_REQUIRE = {
     "full": get_required_packages(requirement_files=["loggers", "notebooks", "openvino"]),
 }
 
+try:
+    # OpenCV installed via conda.
+    import cv2  # NOQA: F401
+
+    major, minor, *rest = cv2.__version__.split(".")
+    opencv_base = next((req for req in INSTALL_REQUIRES if req.startswith("opencv-python")), None)
+    if opencv_base is not None:
+        opencv_base_version = opencv_base.split(">=")[-1]
+        req_major, req_minor, *req_rest = opencv_base_version.split(".")
+        if int(major) < int(req_major) and int(minor) < int(req_minor):
+            raise RuntimeError(f"OpenCV >={req_major}.{req_minor} is required but {cv2.__version__} is installed")
+        print("Removing OpenCV requirement since it was found")
+        INSTALL_REQUIRES.remove(opencv_base)
+except ImportError:
+    print("Installing OpenCV since no installation was found")
 
 setup(
     name="anomalib",

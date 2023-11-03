@@ -232,6 +232,8 @@ def _add_metadata_to_ir(xml_file: str, metadata: dict[str, Any], input_size: tup
 
     tmp_xml_path = Path(xml_file).parent / "tmp.xml"
     serialize(model, str(tmp_xml_path))
+    # we delete the file if it already exists, to prevent WinError 183 error on Windows
+    Path(xml_file).unlink(missing_ok=True)
     tmp_xml_path.rename(xml_file)
     # since we create new openvino IR files, we don't need the bin file. So we delete it.
     tmp_xml_path.with_suffix(".bin").unlink()
