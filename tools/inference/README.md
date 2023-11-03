@@ -19,7 +19,7 @@ You can also use a config file with the entrypoint
 Here is a simple YAML file for Padim Model.
 
 ```yaml
-ckpt_path: results/padim/mvtec/bottle/weights/lightning/model-v9.ckpt
+ckpt_path: results/padim/mvtec/bottle/weights/lightning/model.ckpt
 data:
   path: datasets/MVTec/bottle/test/broken_large
   transform: null
