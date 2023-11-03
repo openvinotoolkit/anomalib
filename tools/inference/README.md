@@ -11,7 +11,7 @@ The `lightning_inference.py` provides an example on how to use the trained `ckpt
 Example:
 
 ```bash
-python tools/inference/lightning_inference.py  --model anomalib.models.Padim --ckpt_path results/padim/mvtec/bottle/weights/lightning/model-v9.ckpt --data.path datasets/MVTec/bottle/test/broken_large --output ./outputs
+python tools/inference/lightning_inference.py  --model anomalib.models.Padim --ckpt_path results/padim/mvtec/bottle/weights/lightning/model.ckpt --data.path datasets/MVTec/bottle/test/broken_large --output ./outputs
 ```
 
 You can also use a config file with the entrypoint
