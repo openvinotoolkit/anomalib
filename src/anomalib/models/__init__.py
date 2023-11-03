@@ -126,7 +126,7 @@ def get_model(config: DictConfig | ListConfig | str | Namespace) -> AnomalyModul
     Args:
         config (DictConfig | ListConfig | str): Can either be a configuration or a string.
 
-    Example:
+    Examples:
         >>> get_model("Padim")
         >>> get_model({"class_path": "Padim"})
         >>> get_model({"class_path": "Padim", "init_args": {"input_size": (100, 100)}})
