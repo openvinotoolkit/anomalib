@@ -11,6 +11,7 @@ Algorithms
    dfkde
    dfm
    draem
+   dsr
    fastflow
    ganomaly
    padim
