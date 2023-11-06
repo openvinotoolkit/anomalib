@@ -1,19 +1,20 @@
 import torch.nn as nn
-from FrEIA import framework as ff, modules as fm
+from FrEIA import framework as ff
+from FrEIA import modules as fm
 
-from .feature_extraction import get_feature_extractor
 from .anomaly_map import AnomalyMapGenerator
+from .feature_extraction import get_feature_extractor
 
 
 class UflowModel(nn.Module):
     def __init__(
-            self,
-            input_size: tuple[int, int] = (448, 448),
-            flow_steps: int = 4,
-            backbone: str = "mcait",
-            affine_clamp: float = 2.0,
-            affine_subnet_channels_ratio: float = 1.0,
-            permute_soft: bool = False
+        self,
+        input_size: tuple[int, int] = (448, 448),
+        flow_steps: int = 4,
+        backbone: str = "mcait",
+        affine_clamp: float = 2.0,
+        affine_subnet_channels_ratio: float = 1.0,
+        permute_soft: bool = False,
     ) -> None:
         """
         Args:
@@ -55,7 +56,9 @@ class UflowModel(nn.Module):
         input_nodes = []
         for channel, s_factor in zip(self.feature_extractor.channels, self.feature_extractor.scale_factors):
             input_nodes.append(
-                ff.InputNode(channel, self.input_size[0] // s_factor, self.input_size[1] // s_factor, name=f"cond_{channel}")
+                ff.InputNode(
+                    channel, self.input_size[0] // s_factor, self.input_size[1] // s_factor, name=f"cond_{channel}"
+                )
             )
 
         nodes, output_nodes = [], []
@@ -64,19 +67,20 @@ class UflowModel(nn.Module):
             flows = self.build_flow_stage(last_node, flow_steps)
             volume_size = flows[-1].output_dims[0][0]
             split = ff.Node(
-                flows[-1], fm.Split,
-                {'section_sizes': (volume_size // 8 * 4, volume_size - volume_size // 8 * 4), 'dim': 0},
-                name=f'split_{i + 1}'
+                flows[-1],
+                fm.Split,
+                {"section_sizes": (volume_size // 8 * 4, volume_size - volume_size // 8 * 4), "dim": 0},
+                name=f"split_{i + 1}",
             )
-            output = ff.OutputNode(split.out1, name=f'output_scale_{i + 1}')
-            up = ff.Node(split.out0, fm.IRevNetUpsampling, {}, name=f'up_{i + 1}')
-            last_node = ff.Node([input_nodes[i - 1].out0, up.out0], fm.Concat, {'dim': 0}, name=f'cat_{i}')
+            output = ff.OutputNode(split.out1, name=f"output_scale_{i + 1}")
+            up = ff.Node(split.out0, fm.IRevNetUpsampling, {}, name=f"up_{i + 1}")
+            last_node = ff.Node([input_nodes[i - 1].out0, up.out0], fm.Concat, {"dim": 0}, name=f"cat_{i}")
 
             output_nodes.append(output)
             nodes.extend([*flows, split, up, last_node])
 
         flows = self.build_flow_stage(last_node, flow_steps)
-        output = ff.OutputNode(flows[-1], name='output_scale_1')
+        output = ff.OutputNode(flows[-1], name="output_scale_1")
 
         output_nodes.append(output)
         nodes.extend(flows)
@@ -96,6 +100,7 @@ class UflowModel(nn.Module):
         Returns:
             List[ff.Node]: List of flow steps.
         """
+
         def get_affine_coupling_subnet(kernel_size, subnet_channels_ratio):
             def affine_coupling_subnet(in_channels, out_channels):
                 mid_channels = int(in_channels * subnet_channels_ratio)
@@ -109,21 +114,23 @@ class UflowModel(nn.Module):
 
         def glow_params(k):
             return {
-                'subnet_constructor': get_affine_coupling_subnet(k, self.affine_subnet_channels_ratio),
-                'affine_clamping': self.affine_clamp,
-                'permute_soft': self.permute_soft
+                "subnet_constructor": get_affine_coupling_subnet(k, self.affine_subnet_channels_ratio),
+                "affine_clamping": self.affine_clamp,
+                "permute_soft": self.permute_soft,
             }
 
         flow_size = in_node.output_dims[0][-1]
         nodes = []
         for step in range(flow_steps):
-            nodes.append(ff.Node(
-                in_node,
-                fm.AllInOneBlock,
-                glow_params(3 if step % 2 == 0 else 1),
-                conditions=condition_node,
-                name=f"flow{flow_size}_step{step}"
-            ))
+            nodes.append(
+                ff.Node(
+                    in_node,
+                    fm.AllInOneBlock,
+                    glow_params(3 if step % 2 == 0 else 1),
+                    conditions=condition_node,
+                    name=f"flow{flow_size}_step{step}",
+                )
+            )
             in_node = nodes[-1]
         return nodes
 

@@ -8,12 +8,12 @@ from __future__ import annotations
 from typing import List
 
 import numpy as np
-from scipy import integrate
 import scipy.stats as st
 import torch
 import torch.nn.functional as F
-from mpmath import mp, binomial
+from mpmath import binomial, mp
 from omegaconf import ListConfig
+from scipy import integrate
 from torch import Tensor, nn
 
 mp.dps = 15  # Set precision for NFA computation (in case of high_precision=True)
@@ -46,23 +46,25 @@ class AnomalyMapGenerator(nn.Module):
         for z in latent_variables:
             # Mean prob by scale. Likelihood is actually with sum instead of mean. Using mean to avoid numerical issues.
             # Also, this way all scales have the same weight, and it does not depend on the number of channels
-            log_prob_i = -torch.mean(z ** 2, dim=1, keepdim=True) * 0.5
+            log_prob_i = -torch.mean(z**2, dim=1, keepdim=True) * 0.5
             prob_i = torch.exp(log_prob_i)
-            likelihoods.append(F.interpolate(
-                prob_i,
-                size=self.input_size,
-                mode="bilinear",
-                align_corners=False,
-            ))
+            likelihoods.append(
+                F.interpolate(
+                    prob_i,
+                    size=self.input_size,
+                    mode="bilinear",
+                    align_corners=False,
+                )
+            )
         anomaly_map = 1 - torch.mean(torch.stack(likelihoods, dim=-1), dim=-1)
         return anomaly_map
 
     def compute_anomaly_mask(
-            self,
-            z: List[torch.Tensor],
-            win_size: int = 7,
-            binomial_probability_thr: float = 0.5,
-            high_precision: bool = False
+        self,
+        z: List[torch.Tensor],
+        win_size: int = 7,
+        binomial_probability_thr: float = 0.5,
+        high_precision: bool = False,
     ):
         """
         This method is not used in the basic functionality of training and testing. It is a bit slow, so we decided to
@@ -90,13 +92,13 @@ class AnomalyMapGenerator(nn.Module):
             width of the input image, respectively.
         """
         log_prob_l = [
-            self.binomial_test(zi, win_size / (2 ** scale), binomial_probability_thr, high_precision)
+            self.binomial_test(zi, win_size / (2**scale), binomial_probability_thr, high_precision)
             for scale, zi in enumerate(z)
         ]
 
-        log_prob_l_up = torch.cat([
-            F.interpolate(lpl, size=self.input_size, mode='bicubic', align_corners=True) for lpl in log_prob_l
-        ], dim=1)
+        log_prob_l_up = torch.cat(
+            [F.interpolate(lpl, size=self.input_size, mode="bicubic", align_corners=True) for lpl in log_prob_l], dim=1
+        )
 
         log_prob = torch.sum(log_prob_l_up, dim=1, keepdim=True)
 
@@ -132,7 +134,7 @@ class AnomalyMapGenerator(nn.Module):
         n_chann = z.shape[1]
 
         # Candidates
-        z2 = F.pad(z ** 2, tuple(4 * [half_win]), 'reflect').detach().cpu()
+        z2 = F.pad(z**2, tuple(4 * [half_win]), "reflect").detach().cpu()
         z2_unfold_h = z2.unfold(-2, 2 * half_win + 1, 1)
         z2_unfold_hw = z2_unfold_h.unfold(-2, 2 * half_win + 1, 1).numpy()
         observed_candidates_k = np.sum(z2_unfold_hw >= tau, axis=(-2, -1))
@@ -150,9 +152,13 @@ class AnomalyMapGenerator(nn.Module):
             to_mp = np.frompyfunc(mp.mpf, 1, 1)
             mpn = mp.mpf(n)
             mpp = probability_thr
-            binomial_density = lambda k: binomial(mpn, to_mp(k)) * ((1 - mpp) ** k) * (mpp ** (mpn - k))
 
-            integral = lambda xx: integrate.quad(binomial_density, xx, n)[0]
+            def binomial_density(k):
+                return binomial(mpn, to_mp(k)) * (1 - mpp) ** k * mpp ** (mpn - k)
+
+            def integral(xx):
+                return integrate.quad(binomial_density, xx, n)[0]
+
             integral_array = np.vectorize(integral)
             prob = integral_array(x)
             log_prob = torch.tensor(np.log10(prob))

@@ -22,6 +22,6 @@ class UFlowLoss(nn.Module):
         Returns:
             Tensor: UFlow loss computed based on the hidden variables and the log of the Jacobians.
         """
-        lpz = torch.sum(torch.stack([0.5 * torch.sum(z_i ** 2, dim=(1, 2, 3)) for z_i in hidden_variables], dim=0))
+        lpz = torch.sum(torch.stack([0.5 * torch.sum(z_i**2, dim=(1, 2, 3)) for z_i in hidden_variables], dim=0))
         flow_loss = torch.mean(lpz - jacobians)
         return flow_loss

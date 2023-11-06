@@ -1,18 +1,23 @@
-# U-Flow: A U-shaped Normalizing Flow for Anomaly Detection with Unsupervised Threshold.
+# U-Flow: A U-shaped Normalizing Flow for Anomaly Detection with Unsupervised Threshold
 
-[//]: # (This is the implementation of the [U-Flow]&#40;https://arxiv.org/abs/2211.12353&#41; paper, based on the [original code]&#40;https://www.github.com/mtailanian/uflow&#41;)
+[//]: # "This is the implementation of the [U-Flow](https://arxiv.org/abs/2211.12353) paper, based on the [original code](https://www.github.com/mtailanian/uflow)"
 
 This is the implementation of the [U-Flow](https://www.researchsquare.com/article/rs-3367286/latest) paper, based on the [original code](https://www.github.com/mtailanian/uflow)
 
 ![U-Flow Architecture](https://raw.githubusercontent.com/openvinotoolkit/anomalib/main/docs/source/images/uflow/diagram.png "U-Flow Architecture")
 
-## Abstract   
+## Abstract
 
-_In this work we propose a one-class self-supervised method for anomaly segmentation in images, that benefits both from a modern machine learning approach and a more classic statistical detection theory. The method consists of three phases. First, features are extracted using a multi-scale image Transformer architecture. Then, these features are fed into a U-shaped Normalizing Flow that lays the theoretical foundations for the last phase, which computes a pixel-level anomaly map and performs a segmentation based on the a contrario framework. This multiple-hypothesis testing strategy permits the derivation of robust automatic detection thresholds, which are crucial in real-world applications where an operational point is needed. The segmentation results are evaluated using the Intersection over Union (IoU) metric, and for assessing the generated anomaly maps we report the area under the Receiver Operating Characteristic curve (AUROC), and the area under the per-region-overlap curve (AUPRO). Extensive experimentation in various datasets shows that the proposed approach produces state-of-the-art results for all metrics and all datasets, ranking first in most MvTec-AD categories, with a mean pixel-level AUROC of 98.74%._
+_In this work we propose a one-class self-supervised method for anomaly segmentation in images, that benefits both from a modern machine learning approach and a more classic statistical detection theory.
+The method consists of three phases. First, features are extracted using a multi-scale image Transformer architecture. Then, these features are fed into a U-shaped Normalizing Flow that lays the theoretical foundations for the last phase, which computes a pixel-level anomaly map and performs a segmentation based on the a contrario framework.
+This multiple-hypothesis testing strategy permits the derivation of robust automatic detection thresholds, which are crucial in real-world applications where an operational point is needed.
+The segmentation results are evaluated using the Intersection over Union (IoU) metric, and for assessing the generated anomaly maps we report the area under the Receiver Operating Characteristic curve (AUROC), and the area under the per-region-overlap curve (AUPRO).
+Extensive experimentation in various datasets shows that the proposed approach produces state-of-the-art results for all metrics and all datasets, ranking first in most MvTec-AD categories, with a mean pixel-level AUROC of 98.74%._
 
 ![Teaser image](https://raw.githubusercontent.com/openvinotoolkit/anomalib/main/docs/source/images/uflow/teaser.png)
 
 ## Localization results
+
 ### Pixel AUROC over MVTec-AD Dataset
 
 ![Pixel-AUROC results](https://raw.githubusercontent.com/openvinotoolkit/anomalib/main/docs/source/images/uflow/pixel-auroc.png "Pixel-AUROC results")
@@ -24,12 +29,12 @@ _In this work we propose a one-class self-supervised method for anomaly segmenta
 ## Segmentation results (IoU) with threshold log(NFA)=0
 
 This paper also proposes a method to automatically compute the threshold using the a contrario framework. All results below are obtained with the threshold log(NFA)=0.
-In the default code here, for the sake of comparison with all the other methods of the library, the segmentation is done computing the threshold over the anomaly map at train time. 
+In the default code here, for the sake of comparison with all the other methods of the library, the segmentation is done computing the threshold over the anomaly map at train time.
 Nevertheless, the code for computing the segmentation mask with the NFA criterion is included in the `src/anomalib/models/uflow/anomaly_map.py`.
 
 ![IoU results](https://raw.githubusercontent.com/openvinotoolkit/anomalib/main/docs/source/images/uflow/iou.png "IoU results")
 
- ## Results over other datasets
+## Results over other datasets
 
 ![Results over other datasets](https://raw.githubusercontent.com/openvinotoolkit/anomalib/main/docs/source/images/uflow/more-results.png "Results over other datasets")
 
@@ -78,17 +83,22 @@ For reproducing the exact results from the paper, different learning rates and b
 ## A note on sizes at different points
 
 Input
-```
+
+```text
 - Scale 1: [3, 448, 448]
 - Scale 2: [3, 224, 224]
 ```
+
 MS-Cait outputs
-```
+
+```text
 - Scale 1: [768, 28, 28]
 - Scale 2: [384, 14, 14]
 ```
+
 Normalizing Flow outputs
-```
+
+```text
 - Scale 1: [816, 28, 28] --> 816 = 768 + 384 / 2 / 4
 - Scale 2: [192, 14, 14] --> 192 = 384 / 2
 ```
@@ -98,6 +108,7 @@ Normalizing Flow outputs
 ## Example results
 
 ### Anomalies
+
 #### MVTec
 
 ![MVTec results - anomalies](https://raw.githubusercontent.com/openvinotoolkit/anomalib/main/docs/source/images/uflow/results-mvtec-anomalies.jpg "MVTec results - anomalies")

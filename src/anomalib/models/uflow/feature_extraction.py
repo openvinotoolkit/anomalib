@@ -1,4 +1,4 @@
-from typing import List
+from typing import Tuple
 
 import timm
 import torch
@@ -7,10 +7,10 @@ from torch import nn
 
 from anomalib.models.components.feature_extractors import TimmFeatureExtractor
 
-AVAILABLE_EXTRACTORS = ['mcait', 'resnet18', 'wide_resnet50_2']
+AVAILABLE_EXTRACTORS = ["mcait", "resnet18", "wide_resnet50_2"]
 
 
-def get_feature_extractor(backbone, input_size: List[int] = (256, 256)):
+def get_feature_extractor(backbone, input_size: Tuple[int, int] = (256, 256)):
     """
     Get feature extractor. Currently, is restricted to AVAILABLE_EXTRACTORS.
     Args:
@@ -33,6 +33,7 @@ def get_feature_extractor(backbone, input_size: List[int] = (256, 256)):
 
 class FeatureExtractor(TimmFeatureExtractor):
     """Feature extractor based on ResNet (or others) backbones."""
+
     def __init__(self, backbone, input_size, layers=("layer1", "layer2", "layer3"), **kwargs):
         super(FeatureExtractor, self).__init__(backbone, layers, pre_trained=True, requires_grad=False)
         self.channels = self.feature_extractor.feature_info.channels()
@@ -41,10 +42,11 @@ class FeatureExtractor(TimmFeatureExtractor):
 
         self.feature_normalizations = nn.ModuleList()
         for in_channels, scale in zip(self.channels, self.scale_factors):
-            self.feature_normalizations.append(nn.LayerNorm(
-                [in_channels, int(input_size[0] / scale), int(input_size[1] / scale)],
-                elementwise_affine=True
-            ))
+            self.feature_normalizations.append(
+                nn.LayerNorm(
+                    [in_channels, int(input_size[0] / scale), int(input_size[1] / scale)], elementwise_affine=True
+                )
+            )
 
         for param in self.feature_extractor.parameters():
             param.requires_grad = False
@@ -68,6 +70,7 @@ class MCaitFeatureExtractor(nn.Module):
     independently trained Cait models, at different scales, with input sizes 448 and 224, respectively.
     It also includes a normalization layer for each scale.
     """
+
     def __init__(self):
         super(MCaitFeatureExtractor, self).__init__()
         self.input_size = 448
@@ -99,7 +102,7 @@ class MCaitFeatureExtractor(nn.Module):
             x1 = self.extractor1.blocks[i](x1)
 
         # Scale 2 --> Extractor 2
-        img_sub = F.interpolate(torch.Tensor(img), size=(224, 224), mode='bicubic', align_corners=True)
+        img_sub = F.interpolate(torch.Tensor(img), size=(224, 224), mode="bicubic", align_corners=True)
         x2 = self.extractor2.patch_embed(img_sub)
         x2 = x2 + self.extractor2.pos_embed
         x2 = self.extractor2.pos_drop(x2)
@@ -110,7 +113,6 @@ class MCaitFeatureExtractor(nn.Module):
         return features
 
     def normalize_features(self, features, **kwargs):
-
         normalized_features = []
         for i, extractor in enumerate([self.extractor1, self.extractor2]):
             batch, _, channels = features[i].shape
