@@ -148,6 +148,19 @@ def _validate_anomaly_map(anomaly_map: np.ndarray) -> None:
         raise ValueError(f"Expected a floating point array, but got {anomaly_map.dtype} array")
 
 
+def _validate_mask(mask) -> None:
+    """TODO move to where? or use another existing one?"""
+
+    if not isinstance(mask, np.ndarray):
+        raise ValueError(f"Expected a numpy array, but got {type(mask).__name__}")
+
+    if mask.ndim != 2:
+        raise ValueError(f"Expected a 2D array, but got {mask.ndim}D array")
+
+    if mask.dtype != np.bool:
+        raise ValueError(f"Expected a bool array, but got {mask.dtype} array")
+
+
 def _validate_normalization_bounds(bounds: tuple[float, float]) -> None:
     """TODO move to where? or use another existing one?"""
 
@@ -303,6 +316,46 @@ def superimpose_anomaly_map(
     superimposed_map[under_mask] = image[under_mask]
 
     return superimposed_map
+
+
+def get_contour_from_mask(mask, type="inner", square_size=3):
+    """get a mask with the inner|outter contour of class 1 (anomalous)"""
+    assert mask.dtype == bool, f"{mask.dtype=}"
+    if type == "inner":
+        return morphology.binary_dilation(~mask, morphology.square(square_size)) * mask
+    elif type == "outter":
+        return morphology.binary_dilation(mask, morphology.square(square_size)) * (~mask)
+    raise ValueError(f"{type=}")
+
+
+def superimpose_mask_contour(
+    mask: np.ndarray,
+    image: np.ndarray,
+    alpha: float = 1.0,
+    contour_type="outter",
+    contour_square_size=3,
+) -> np.ndarray:
+    _validate_image(image)
+    _validate_mask(mask)
+
+    if mask.shape != image.shape[:2]:
+        raise ValueError(f"Mask and image must have the same shape, but found {mask.shape} and {image.shape}")
+
+    contour_mask = get_contour_from_mask(mask, type=contour_type, square_size=contour_square_size)
+
+    # there was a `anomaly_map.squeeze()` before --> do something about it? now it is validated to be squeezed
+    color_mask = anomaly_map_to_color_map(
+        contour_mask.astype(float),
+        saturation_colors=((0, 0, 0), (255, 255, 255)),  # black/white
+        normalize=(0.25, 0.75),  # 0 is black, 1 is white
+    )
+    superposed = cv2.addWeighted(color_mask, alpha, image, (1 - alpha), 0)
+
+    # make 0 transparent
+    # repaint the image over the pixels with 0 (as if the mask was transparent)
+    superposed[~contour_mask] = image[~contour_mask]
+
+    return superposed
 
 
 def compute_mask(anomaly_map: np.ndarray, threshold: float, kernel_size: int = 4) -> np.ndarray:
