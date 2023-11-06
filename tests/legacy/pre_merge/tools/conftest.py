@@ -2,6 +2,7 @@
 
 # Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
+from pathlib import Path
 from typing import Generator
 
 import albumentations as A  # noqa: N812
@@ -12,10 +13,10 @@ from albumentations.pytorch import ToTensorV2
 
 
 @pytest.fixture(scope="package")
-def get_dummy_inference_image(project_path) -> Generator[str, None, None]:
+def get_dummy_inference_image(project_path: Path) -> str:
     image = np.zeros((100, 100, 3), dtype=np.uint8)
-    cv2.imwrite(project_path + "/dummy_image.png", image)
-    yield project_path + "/dummy_image.png"
+    cv2.imwrite(str(project_path) + "/dummy_image.png", image)
+    return str(project_path) + "/dummy_image.png"
 
 
 @pytest.fixture(scope="package")
