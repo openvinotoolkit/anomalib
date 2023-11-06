@@ -6,11 +6,11 @@
 
 import sys
 from importlib.util import find_spec
+from pathlib import Path
 
 import pytest
 
 sys.path.append("tools/inference")
-from unittest.mock import patch
 
 
 class TestLightningInferenceEntrypoint:
@@ -25,8 +25,8 @@ class TestLightningInferenceEntrypoint:
             raise Exception("Unable to import lightning_inference.py for testing")
         return get_parser, infer
 
-    def test_lightning_inference(self, get_functions, project_path, get_dummy_inference_image):
-        """Test lightning_inference.py"""
+    def test_lightning_inference(self, get_functions, project_path: Path, get_dummy_inference_image):
+        """Test lightning_inference.py."""
         get_parser, infer = get_functions
         arguments = get_parser().parse_args(
             [

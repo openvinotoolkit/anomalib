@@ -88,7 +88,7 @@ def get_available_models() -> list[str]:
 
 
 def _get_model_by_name(name: str) -> AnomalyModule:
-    """Get's the model by name.
+    """Gets the model by name.
 
     Args:
         name (str): Name of the model. The name is case insensitive.
