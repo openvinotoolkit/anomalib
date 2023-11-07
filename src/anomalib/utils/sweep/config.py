@@ -178,11 +178,11 @@ def flattened_config_to_nested(config: dict[str, Any]) -> DictConfig:
         config: dict[str, Any]: Flattened config dictionary.
 
     Examples:
-        >>> flattened_config = {
-                "parent1.child1": 'a',
-                "parent1.child2": 1,
-                "parent2": 'model1',
-            }
+    >>> flattened_config = {
+    ...     "parent1.child1": 'a',
+    ...     "parent1.child2": 1,
+    ...     "parent2": 'model1',
+    ... }
         >>> flattened_config_to_nested(flattened_config)
         {'parent1': {'child1': 'a', 'child2': 1}, 'parent2': 'model1'}
 
