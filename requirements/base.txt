@@ -3,7 +3,7 @@ einops==0.6.*
 kornia==0.6.5
 omegaconf==2.3.*
 opencv-python-headless==4.7.0.*
-pandas==1.1.*
+pandas<2.0.0
 pytorch-lightning==1.9.*
 # torchvision==0.13.* Installed using aigord
 timm==0.6.12
