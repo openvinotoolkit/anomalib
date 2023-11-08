@@ -38,10 +38,6 @@ class TestLightningInferenceEntrypoint:
             [
                 "--model",
                 "anomalib.models.Padim",
-                "--model.input_size",
-                "[100, 100]",
-                "--data.image_size",
-                "[100, 100]",
                 "--ckpt_path",
                 str(project_path) + "/padim/mvtec/shapes/weights/last.ckpt",
                 "--data.path",
