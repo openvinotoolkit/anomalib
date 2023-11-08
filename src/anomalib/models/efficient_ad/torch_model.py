@@ -9,6 +9,7 @@ import logging
 import random
 from enum import Enum
 from typing import Literal
+from typing import List, Union
 
 import torch
 import torch.nn.functional as F
@@ -242,7 +243,7 @@ def get_pdn_medium(out_channels=384, padding=False):
     )
 
 
-def get_autoencoder(out_channels=384):
+def get_autoencoder(out_channels: int = 384):
     return nn.Sequential(
         # encoder
         nn.Conv2d(in_channels=3, out_channels=32, kernel_size=4, stride=2, padding=1),
@@ -257,31 +258,31 @@ def get_autoencoder(out_channels=384):
         nn.ReLU(inplace=True),
         nn.Conv2d(in_channels=64, out_channels=64, kernel_size=8),
         # decoder
-        nn.Upsample(size=3, mode="bilinear"),
+        nn.Upsample(size=3),
         nn.Conv2d(in_channels=64, out_channels=64, kernel_size=4, stride=1, padding=2),
         nn.ReLU(inplace=True),
         nn.Dropout(0.2),
-        nn.Upsample(size=8, mode="bilinear"),
+        nn.Upsample(size=8),
         nn.Conv2d(in_channels=64, out_channels=64, kernel_size=4, stride=1, padding=2),
         nn.ReLU(inplace=True),
         nn.Dropout(0.2),
-        nn.Upsample(size=15, mode="bilinear"),
+        nn.Upsample(size=15),
         nn.Conv2d(in_channels=64, out_channels=64, kernel_size=4, stride=1, padding=2),
         nn.ReLU(inplace=True),
         nn.Dropout(0.2),
-        nn.Upsample(size=32, mode="bilinear"),
+        nn.Upsample(size=32),
         nn.Conv2d(in_channels=64, out_channels=64, kernel_size=4, stride=1, padding=2),
         nn.ReLU(inplace=True),
         nn.Dropout(0.2),
-        nn.Upsample(size=63, mode="bilinear"),
+        nn.Upsample(size=63),
         nn.Conv2d(in_channels=64, out_channels=64, kernel_size=4, stride=1, padding=2),
         nn.ReLU(inplace=True),
         nn.Dropout(0.2),
-        nn.Upsample(size=127, mode="bilinear"),
+        nn.Upsample(size=127),
         nn.Conv2d(in_channels=64, out_channels=64, kernel_size=4, stride=1, padding=2),
         nn.ReLU(inplace=True),
         nn.Dropout(0.2),
-        nn.Upsample(size=56, mode="bilinear"),
+        nn.Upsample(size=56),
         nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1, padding=1),
         nn.ReLU(inplace=True),
         nn.Conv2d(in_channels=64, out_channels=out_channels, kernel_size=3, stride=1, padding=1),
@@ -427,14 +428,12 @@ class EfficientAdModel(nn.Module):
             student_output_ae_aug = self.student(aug_img)[:, self.teacher_out_channels :, :, :]
 
             if teacher_output_aug.shape != ae_output_aug.shape:
-                teacher_output_aug = F.interpolate(teacher_output_aug, size=ae_output_aug.shape[2:], mode="bilinear")
+                teacher_output_aug = F.interpolate(teacher_output_aug, size=ae_output_aug.shape[2:])
 
             distance_ae = torch.pow(teacher_output_aug - ae_output_aug, 2)
 
             if student_output_ae_aug.shape != ae_output_aug.shape:
-                student_output_ae_aug = F.interpolate(
-                    student_output_ae_aug, size=ae_output_aug.shape[2:], mode="bilinear"
-                )
+                student_output_ae_aug = F.interpolate(student_output_ae_aug, size=ae_output_aug.shape[2:])
 
             distance_stae = torch.pow(ae_output_aug - student_output_ae_aug, 2)
 
@@ -447,9 +446,10 @@ class EfficientAdModel(nn.Module):
                 ae_output = self.ae(batch)
 
             map_st = torch.mean(distance_st, dim=1, keepdim=True)
+            current_device = map_st.get_device()
 
             if student_output.shape != ae_output.shape:
-                student_output = F.interpolate(student_output, size=ae_output.shape[2:], mode="bilinear")
+                student_output = F.interpolate(student_output, size=ae_output.shape[2:])
 
             map_stae = torch.mean(
                 (ae_output - student_output[:, self.teacher_out_channels :]) ** 2, dim=1, keepdim=True
@@ -459,19 +459,27 @@ class EfficientAdModel(nn.Module):
                 map_st = F.pad(map_st, (4, 4, 4, 4))
                 map_stae = F.pad(map_stae, (4, 4, 4, 4))
 
-            map_st = F.interpolate(map_st, size=(self.input_size[0], self.input_size[1]), mode="bilinear")
-            map_stae = F.interpolate(map_stae, size=(self.input_size[0], self.input_size[1]), mode="bilinear")
+            # To obtain smooth maps we need to use "bilinear".
+            # Given the non-determinism of this strategy we have to compute it on cpu
+            map_st = F.interpolate(map_st.cpu(), size=(self.input_size[0], self.input_size[1]), mode="bilinear")
+            map_stae = F.interpolate(map_stae.cpu(), size=(self.input_size[0], self.input_size[1]), mode="bilinear")
 
             if self.is_set(self.quantiles):
-                map_st = 0.1 * (map_st - self.quantiles["qa_st"]) / (self.quantiles["qb_st"] - self.quantiles["qa_st"])
+                map_st = (
+                    0.1
+                    * (map_st.to(current_device) - self.quantiles["qa_st"])
+                    / (self.quantiles["qb_st"] - self.quantiles["qa_st"])
+                )
                 map_stae = (
-                    0.1 * (map_stae - self.quantiles["qa_ae"]) / (self.quantiles["qb_ae"] - self.quantiles["qa_ae"])
+                    0.1
+                    * (map_stae.to(current_device) - self.quantiles["qa_ae"])
+                    / (self.quantiles["qb_ae"] - self.quantiles["qa_ae"])
                 )
             # We interpolate after combining the maps, as it returns better results w/ the padding
             map_combined = 0.5 * map_st + 0.5 * map_stae
 
             # map_combined = torch.nn.functional.pad(map_combined, (4, 4, 4, 4))
-            # output = F.interpolate(map_combined, size=(self.input_size[0], self.input_size[1]), mode="bilinear")
+            # output = F.interpolate(map_combined.cpu(), size=(self.input_size[0], self.input_size[1]), mode="bilinear")
 
             anomaly_score = map_combined.reshape((map_combined.shape[0], -1)).max(1)[0]
 
