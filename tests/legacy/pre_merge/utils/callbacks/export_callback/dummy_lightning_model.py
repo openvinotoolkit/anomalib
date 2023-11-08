@@ -4,7 +4,6 @@ from unittest.mock import MagicMock
 import lightning.pytorch as pl
 import torch
 from omegaconf import DictConfig, ListConfig
-from tests.legacy.helpers.dummy import DummyModel
 from torch import nn, optim
 from torch.utils.data import DataLoader
 from torchvision import transforms
@@ -13,6 +12,7 @@ from torchvision.datasets import FakeData
 from anomalib.utils.callbacks import ImageVisualizerCallback
 from anomalib.utils.metrics import AnomalyScoreDistribution, F1AdaptiveThreshold, MinMax
 from anomalib.utils.metrics.collection import AnomalibMetricCollection
+from tests.legacy.helpers.dummy import DummyModel
 
 
 class FakeDataModule(pl.LightningDataModule):
@@ -47,13 +47,12 @@ class FakeDataModule(pl.LightningDataModule):
 class DummyLightningModule(pl.LightningModule):
     """A dummy model which fits the torchvision FakeData dataset."""
 
-    def __init__(self, hparams: Union[DictConfig, ListConfig]):
+    def __init__(self):
         super().__init__()
-        self.save_hyperparameters(hparams)
         self.loss_fn = nn.NLLLoss()
 
-        self.image_threshold = F1AdaptiveThreshold(hparams.model.init_args.threshold.image_default).cpu()
-        self.pixel_threshold = F1AdaptiveThreshold(hparams.model.init_args.threshold.pixel_default).cpu()
+        self.image_threshold = F1AdaptiveThreshold().cpu()
+        self.pixel_threshold = F1AdaptiveThreshold().cpu()
 
         self.training_distribution = AnomalyScoreDistribution().cpu()
         self.min_max = MinMax().cpu()
@@ -77,9 +76,9 @@ class DummyLightningModule(pl.LightningModule):
     def configure_optimizers(self):
         return optim.SGD(
             self.parameters(),
-            lr=self.hparams.model.init_args.lr,
-            momentum=self.hparams.model.init_args.momentum,
-            weight_decay=self.hparams.model.init_args.weight_decay,
+            lr=1e-3,
+            momentum=0.9,
+            weight_decay=1e-4,
         )
 
     @property

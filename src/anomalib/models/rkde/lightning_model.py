@@ -9,7 +9,6 @@ from typing import Any
 
 import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
-from omegaconf import DictConfig, ListConfig
 from torch import Tensor
 
 from anomalib.models.components import AnomalyModule
@@ -125,25 +124,3 @@ class Rkde(AnomalyModule):
             dict[str, Any]: Arguments for the trainer.
         """
         return {"gradient_clip_val": 0, "max_epochs": 1, "num_sanity_val_steps": 0}
-
-
-class RkdeLightning(Rkde):
-    """Rkde: Deep Feature Kernel Density Estimation.
-
-    Args:
-        hparams (DictConfig | ListConfig): Model params
-    """
-
-    def __init__(self, hparams: DictConfig | ListConfig) -> None:
-        super().__init__(
-            roi_stage=RoiStage(hparams.model.roi_stage),
-            roi_score_threshold=hparams.model.roi_score_threshold,
-            min_box_size=hparams.model.min_box_size,
-            iou_threshold=hparams.model.iou_threshold,
-            max_detections_per_image=hparams.model.max_detections_per_image,
-            n_pca_components=hparams.model.n_pca_components,
-            feature_scaling_method=FeatureScalingMethod(hparams.model.feature_scaling_method),
-            max_training_points=hparams.model.max_training_points,
-        )
-        self.hparams: DictConfig | ListConfig
-        self.save_hyperparameters(hparams)

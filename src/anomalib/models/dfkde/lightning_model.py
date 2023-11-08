@@ -10,7 +10,6 @@ from typing import Any
 
 import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
-from omegaconf import DictConfig, ListConfig
 from torch import Tensor
 
 from anomalib.models.components import AnomalyModule
@@ -117,23 +116,3 @@ class Dfkde(AnomalyModule):
     def trainer_arguments(self) -> dict[str, Any]:
         """Return DFKDE-specific trainer arguments."""
         return {"gradient_clip_val": 0, "max_epochs": 1, "num_sanity_val_steps": 0}
-
-
-class DfkdeLightning(Dfkde):
-    """DFKDE: Deep Feature Kernel Density Estimation.
-
-    Args:
-        hparams (DictConfig | ListConfig): Model params
-    """
-
-    def __init__(self, hparams: DictConfig | ListConfig) -> None:
-        super().__init__(
-            layers=hparams.model.layers,
-            backbone=hparams.model.backbone,
-            pre_trained=hparams.model.pre_trained,
-            n_pca_components=hparams.model.n_pca_components,
-            feature_scaling_method=FeatureScalingMethod(hparams.model.feature_scaling_method),
-            max_training_points=hparams.model.max_training_points,
-        )
-        self.hparams: DictConfig | ListConfig
-        self.save_hyperparameters(hparams)

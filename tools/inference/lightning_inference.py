@@ -3,29 +3,27 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from argparse import ArgumentParser, Namespace
-from pathlib import Path
-
+from jsonargparse import ActionConfigFile, Namespace
+from lightning.pytorch.callbacks import Callback
+from lightning.pytorch.cli import LightningArgumentParser
 from torch.utils.data import DataLoader
 
-from anomalib.config import get_configurable_parameters
 from anomalib.data.inference import InferenceDataset
-from anomalib.data.utils import InputNormalizationMethod, get_transforms
 from anomalib.engine import Engine
-from anomalib.models import get_model
-from anomalib.utils.callbacks import get_callbacks
+from anomalib.models import AnomalyModule, get_model
 
 
-def get_parser() -> ArgumentParser:
+def get_parser() -> LightningArgumentParser:
     """Get parser.
 
     Returns:
-        ArgumentParser: The parser object.
+        LightningArgumentParser: The parser object.
     """
-    parser = ArgumentParser()
-    parser.add_argument("--config", type=Path, required=True, help="Path to a config file")
-    parser.add_argument("--weights", type=Path, required=True, help="Path to model weights")
-    parser.add_argument("--input", type=Path, required=True, help="Path to image(s) to infer.")
+    parser = LightningArgumentParser(description="Inference on Anomaly models in Lightning format.")
+    parser.add_lightning_class_args(AnomalyModule, "model", subclass_mode=True)
+    parser.add_lightning_class_args(Callback, "--callbacks", subclass_mode=True, required=False)
+    parser.add_argument("--ckpt_path", type=str, required=True, help="Path to model weights")
+    parser.add_class_arguments(InferenceDataset, "--data", instantiate=False)
     parser.add_argument("--output", type=str, required=False, help="Path to save the output image(s).")
     parser.add_argument(
         "--visualization_mode",
@@ -41,55 +39,37 @@ def get_parser() -> ArgumentParser:
         required=False,
         help="Show the visualized predictions on the screen.",
     )
+    parser.add_argument(
+        "-c",
+        "--config",
+        action=ActionConfigFile,
+        help="Path to a configuration file in json or yaml format.",
+    )
 
     return parser
 
 
 def infer(args: Namespace) -> None:
     """Run inference."""
-    config = get_configurable_parameters(config_path=args.config)
-    config.visualization.show_images = args.show
-    config.visualization.mode = args.visualization_mode
+    visualization = {"show_images": args.show, "mode": args.visualization_mode, "save_images": False}
     if args.output:  # overwrite save path
-        config.visualization.save_images = True
-        config.visualization.image_save_path = args.output
-    else:
-        config.visualization.save_images = False
+        visualization["save_images"] = True
+        visualization["image_save_path"] = args.output
 
-    # create model and trainer
-    model = get_model(config)
-    callbacks = get_callbacks(config)
-    engine = Engine(callbacks=callbacks, **config.trainer)
-
-    # get the transforms
-    transform_config = (
-        config.data.init_args.transform_config.eval if "transform_config" in config.data.init_args else None
-    )
-    image_size = (config.data.init_args.image_size[0], config.data.init_args.image_size[1])
-    center_crop = config.data.init_args.get("center_crop")
-    if center_crop is not None:
-        center_crop = tuple(center_crop)
-    normalization = InputNormalizationMethod(config.data.init_args.normalization)
-    transform = get_transforms(
-        config=transform_config,
-        image_size=image_size,
-        center_crop=center_crop,
-        normalization=normalization,
-    )
+    callbacks = None if not hasattr(args, "callbacks") else args.callbacks
+    engine = Engine(callbacks=callbacks, visualization=visualization)
 
     # create the dataset
-    image_size = (int(config.data.init_args.image_size[0]), int(config.data.init_args.image_size[1]))
-    dataset = InferenceDataset(
-        args.input,
-        image_size=image_size,
-        transform=transform,
-    )
+    dataset = InferenceDataset(**args.data)
     dataloader = DataLoader(dataset)
 
     # generate predictions
-    engine.predict(model=model, dataloaders=[dataloader], ckpt_path=str(args.weights))
+    model = get_model(args.model)
+    engine.predict(model=model, dataloaders=[dataloader], ckpt_path=args.ckpt_path)
 
 
 if __name__ == "__main__":
-    args = get_parser().parse_args()
+    parser = get_parser()
+    config = parser.parse_args()
+    args = parser.instantiate_classes(config)
     infer(args)

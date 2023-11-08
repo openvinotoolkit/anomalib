@@ -14,7 +14,6 @@ from typing import Any
 
 import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
-from omegaconf import DictConfig, ListConfig
 from torch import Tensor
 
 from anomalib.models.cfa.loss import CfaLoss
@@ -23,7 +22,7 @@ from anomalib.models.components import AnomalyModule
 
 logger = logging.getLogger(__name__)
 
-__all__ = ["Cfa", "CfaLightning"]
+__all__ = ["Cfa"]
 
 
 class Cfa(AnomalyModule):
@@ -133,21 +132,3 @@ class Cfa(AnomalyModule):
             weight_decay=5e-4,
             amsgrad=True,
         )
-
-
-class CfaLightning(Cfa):
-    """PL Lightning Module for the CFA model.
-
-    Args:
-        hparams (DictConfig | ListConfig): Model params
-    """
-
-    def __init__(self, hparams: DictConfig | ListConfig) -> None:
-        super().__init__(
-            input_size=hparams.model.input_size,
-            backbone=hparams.model.backbone,
-            gamma_c=hparams.model.gamma_c,
-            gamma_d=hparams.model.gamma_d,
-        )
-        self.hparams: DictConfig | ListConfig
-        self.save_hyperparameters(hparams)

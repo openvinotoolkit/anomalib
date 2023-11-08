@@ -27,6 +27,7 @@ class _ThresholdCallback(Callback):
         | tuple[BaseThreshold, BaseThreshold]
         | DictConfig
         | ListConfig
+        | list[dict[str, str | float]]
         | str = "F1AdaptiveThreshold",
     ) -> None:
         super().__init__()
@@ -65,7 +66,12 @@ class _ThresholdCallback(Callback):
 
     def _initialize_thresholds(
         self,
-        threshold: BaseThreshold | tuple[BaseThreshold, BaseThreshold] | DictConfig | ListConfig | str,
+        threshold: BaseThreshold
+        | tuple[BaseThreshold, BaseThreshold]
+        | DictConfig
+        | ListConfig
+        | str
+        | list[dict[str, str | float]],
     ) -> None:
         """Initialize ``self.image_threshold`` and ``self.pixel_threshold``.
 
@@ -99,13 +105,13 @@ class _ThresholdCallback(Callback):
             self.image_threshold = threshold[0]
             self.pixel_threshold = threshold[1]
         # When the passed threshold is not an instance of a Threshold class.
-        elif isinstance(threshold, str | DictConfig | ListConfig):
+        elif isinstance(threshold, str | DictConfig | ListConfig | list):
             self._load_from_config(threshold)
         else:
             msg = f"Invalid threshold type {type(threshold)}"
             raise TypeError(msg)
 
-    def _load_from_config(self, threshold: DictConfig | str | ListConfig) -> None:
+    def _load_from_config(self, threshold: DictConfig | str | ListConfig | list[dict[str, str | float]]) -> None:
         """Load the thresholding class based on the config.
 
         Example:
@@ -129,14 +135,14 @@ class _ThresholdCallback(Callback):
         if isinstance(threshold, str | DictConfig):
             self.image_threshold = self._get_threshold_from_config(threshold)
             self.pixel_threshold = self.image_threshold.clone()
-        elif isinstance(threshold, ListConfig):
+        elif isinstance(threshold, ListConfig | list):
             self.image_threshold = self._get_threshold_from_config(threshold[0])
             self.pixel_threshold = self._get_threshold_from_config(threshold[1])
         else:
             msg = f"Invalid threshold config {threshold}"
             raise TypeError(msg)
 
-    def _get_threshold_from_config(self, threshold: DictConfig | str) -> BaseThreshold:
+    def _get_threshold_from_config(self, threshold: DictConfig | str | dict[str, str | float]) -> BaseThreshold:
         """Return the instantiated threshold object.
 
         Example:
@@ -159,8 +165,8 @@ class _ThresholdCallback(Callback):
         if isinstance(threshold, str):
             threshold = DictConfig({"class_path": threshold})
 
-        class_path = threshold.class_path
-        init_args = threshold.init_args if "init_args" in threshold else {}
+        class_path = threshold["class_path"]
+        init_args = threshold["init_args"] if "init_args" in threshold else {}
 
         if len(class_path.split(".")) == 1:
             module_path = "anomalib.utils.metrics.threshold"

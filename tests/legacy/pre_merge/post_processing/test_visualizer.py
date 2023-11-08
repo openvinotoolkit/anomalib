@@ -9,10 +9,11 @@ import numpy as np
 import pytest
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 
-from anomalib.data import TaskType
+from anomalib.data import MVTec, TaskType
+from anomalib.engine import Engine
+from anomalib.models import get_model
 from anomalib.post_processing.visualizer import ImageGrid
 from tests.legacy.helpers.dataset import TestDataset
-from tests.legacy.helpers.model import setup_model_train
 
 
 def test_visualize_fully_defected_masks():
@@ -48,14 +49,8 @@ class TestVisualizer:
         """Test combination of model/visualizer/mode on only 1 epoch as a sanity check before merge."""
         with tempfile.TemporaryDirectory() as project_path:
             # Train test
-            datamodule, model, engine = setup_model_train(
-                model_name,
-                dataset_path=path,
-                project_path=project_path,
-                nncf=nncf,
-                category=category,
-                fast_run=True,
-                dataset_task=task,
-                visualizer_mode=mode,
-            )[1:]
+            model = get_model(model_name)
+            engine = Engine(default_root_dir=project_path, fast_dev_run=True, visualization={"mode": mode}, devices=1)
+            datamodule = MVTec(root=path, category=category, task=task)
+            engine.fit(model=model, datamodule=datamodule)
             engine.test(model=model, datamodule=datamodule)
