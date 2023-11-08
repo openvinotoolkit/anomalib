@@ -6,7 +6,6 @@ Paper https://arxiv.org/pdf/2212.00789.pdf
 # Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
 import torch
 from torch import Tensor, nn
@@ -58,10 +57,11 @@ class AiVadModel(nn.Module):
         n_components_velocity: int = 5,
         n_neighbors_pose: int = 1,
         n_neighbors_deep: int = 1,
-    ):
+    ) -> None:
         super().__init__()
         if not any((use_velocity_features, use_pose_features, use_deep_features)):
-            raise ValueError("Select at least one feature type.")
+            msg = "Select at least one feature type."
+            raise ValueError(msg)
 
         # initialize flow extractor
         self.flow_extractor = FlowExtractor()
@@ -97,6 +97,7 @@ class AiVadModel(nn.Module):
 
         Args:
             batch (Tensor): Input image of shape (N, L, C, H, W)
+
         Returns:
             list[Tensor]: List of bbox locations for each image.
             list[Tensor]: List of per-bbox anomaly scores for each image.

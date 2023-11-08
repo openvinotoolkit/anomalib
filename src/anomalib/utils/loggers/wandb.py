@@ -3,21 +3,24 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
-
-from typing import Any
 
 import numpy as np
+from lightning.pytorch.loggers.wandb import WandbLogger
+from lightning.pytorch.utilities import rank_zero_only
 from matplotlib.figure import Figure
-from pytorch_lightning.loggers.wandb import WandbLogger
-from pytorch_lightning.utilities import rank_zero_only
 
-try:
+from anomalib.utils.exceptions import try_import
+
+if try_import("wandb"):
     import wandb
-except ModuleNotFoundError:
-    print("To use wandb logger install it using `pip install wandb`")
+
+from typing import TYPE_CHECKING
 
 from .base import ImageLoggerBase
+
+if TYPE_CHECKING:
+    from wandb.sdk.lib import RunDisabled
+    from wandb.wandb_run import Run
 
 
 class AnomalibWandbLogger(ImageLoggerBase, WandbLogger):
@@ -26,6 +29,7 @@ class AnomalibWandbLogger(ImageLoggerBase, WandbLogger):
     Adds interface for `add_image` in the logger rather than calling the experiment object.
 
     Note:
+    ----
         Same as the wandb Logger provided by PyTorch Lightning and the doc string is reproduced below.
 
     Log using `Weights and Biases <https://www.wandb.com/>`_.
@@ -57,9 +61,9 @@ class AnomalibWandbLogger(ImageLoggerBase, WandbLogger):
 
     Example:
         >>> from anomalib.utils.loggers import AnomalibWandbLogger
-        >>> from pytorch_lightning import Trainer
+        >>> from anomalib.engine import Engine
         >>> wandb_logger = AnomalibWandbLogger()
-        >>> trainer = Trainer(logger=wandb_logger)
+        >>> engine =  Engine(logger=wandb_logger)
 
     Note: When logging manually through `wandb.log` or `trainer.logger.experiment.log`,
     make sure to use `commit=False` so the logging step does not increase.
@@ -76,12 +80,12 @@ class AnomalibWandbLogger(ImageLoggerBase, WandbLogger):
         name: str | None = None,
         save_dir: str | None = None,
         offline: bool | None = False,
-        id: str | None = None,  # kept to match wandb init pylint: disable=redefined-builtin
+        id: str | None = None,  # kept to match wandb init # noqa: A002
         anonymous: bool | None = None,
         version: str | None = None,
         project: str | None = None,
         log_model: str | bool = False,
-        experiment=None,
+        experiment: type["Run"] | type["RunDisabled"] | None = None,
         prefix: str | None = "",
         **kwargs,
     ) -> None:
@@ -101,13 +105,16 @@ class AnomalibWandbLogger(ImageLoggerBase, WandbLogger):
         self.image_list: list[wandb.Image] = []  # Cache images
 
     @rank_zero_only
-    def add_image(self, image: np.ndarray | Figure, name: str | None = None, **kwargs: Any):
+    def add_image(self, image: np.ndarray | Figure, name: str | None = None, **kwargs) -> None:
         """Interface to add image to wandb logger.
 
         Args:
             image (np.ndarray | Figure): Image to log
             name (str | None): The tag of the image
+            kwargs: Additional arguments to `wandb.Image`
         """
+        del kwargs  # Unused argument.
+
         image = wandb.Image(image, caption=name)
         self.image_list.append(image)
 
@@ -116,9 +123,11 @@ class AnomalibWandbLogger(ImageLoggerBase, WandbLogger):
         """Upload images to wandb server.
 
         Note:
+        ----
             There is a limit on the number of images that can be logged together to the `wandb` server.
         """
         super().save()
         if len(self.image_list) > 1:
             wandb.log({"Predictions": self.image_list})
+            self.image_list = []
             self.image_list = []

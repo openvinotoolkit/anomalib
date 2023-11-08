@@ -6,14 +6,13 @@ https://arxiv.org/pdf/2110.02855.pdf
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
 import logging
+from typing import Any
 
 import torch
+from lightning.pytorch.utilities.types import STEP_OUTPUT
 from omegaconf import DictConfig, ListConfig
-from pytorch_lightning.callbacks import Callback, EarlyStopping
-from pytorch_lightning.utilities.types import STEP_OUTPUT
 from torch import Tensor
 
 from anomalib.models.components import AnomalyModule
@@ -40,10 +39,10 @@ class Csflow(AnomalyModule):
     def __init__(
         self,
         input_size: tuple[int, int],
-        cross_conv_hidden_channels: int,
-        n_coupling_blocks: int,
-        clamp: int,
-        num_channels: int,
+        cross_conv_hidden_channels: int = 1024,
+        n_coupling_blocks: int = 4,
+        clamp: int = 3,
+        num_channels: int = 3,
     ) -> None:
         super().__init__()
         self.model: CsFlowModel = CsFlowModel(
@@ -56,11 +55,12 @@ class Csflow(AnomalyModule):
         self.loss = CsFlowLoss()
 
     def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
-        """Training Step of CS-Flow.
+        """Perform the training step of CS-Flow.
 
         Args:
             batch (dict[str, str | Tensor]): Input batch
-            _: Index of the batch.
+            args: Arguments.
+            kwargs: Keyword arguments.
 
         Returns:
             Loss value
@@ -74,10 +74,12 @@ class Csflow(AnomalyModule):
         return {"loss": loss}
 
     def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
-        """Validation step for CS Flow.
+        """Perform the validation step for CS Flow.
 
         Args:
             batch (Tensor): Input batch
+            args: Arguments.
+            kwargs: Keyword arguments.
 
         Returns:
             dict[str, Tensor]: Dictionary containing the anomaly map, scores, etc.
@@ -88,6 +90,25 @@ class Csflow(AnomalyModule):
         batch["anomaly_maps"] = anomaly_maps
         batch["pred_scores"] = anomaly_scores
         return batch
+
+    @property
+    def trainer_arguments(self) -> dict[str, Any]:
+        """CS-Flow-specific trainer arguments."""
+        return {"gradient_clip_val": 1, "num_sanity_val_steps": 0}
+
+    def configure_optimizers(self) -> torch.optim.Optimizer:
+        """Configure optimizers.
+
+        Returns:
+            Optimizer: Adam optimizer
+        """
+        return torch.optim.Adam(
+            self.parameters(),
+            lr=2e-4,
+            eps=1e-04,
+            weight_decay=1e-5,
+            betas=(0.5, 0.9),
+        )
 
 
 class CsflowLightning(Csflow):
@@ -105,41 +126,5 @@ class CsflowLightning(Csflow):
             clamp=hparams.model.clamp,
             num_channels=3,
         )
-        self.hparams: DictConfig | ListConfig  # type: ignore
+        self.hparams: DictConfig | ListConfig
         self.save_hyperparameters(hparams)
-
-    def configure_callbacks(self) -> list[Callback]:
-        """Configure model-specific callbacks.
-
-        Note:
-            This method is used for the existing CLI.
-            When PL CLI is introduced, configure callback method will be
-                deprecated, and callbacks will be configured from either
-                config.yaml file or from CLI.
-        """
-        early_stopping = EarlyStopping(
-            monitor=self.hparams.model.early_stopping.metric,
-            patience=self.hparams.model.early_stopping.patience,
-            mode=self.hparams.model.early_stopping.mode,
-        )
-        return [early_stopping]
-
-    def configure_optimizers(self) -> torch.optim.Optimizer:
-        """Configures optimizers.
-
-        Note:
-            This method is used for the existing CLI.
-            When PL CLI is introduced, configure optimizers method will be
-                deprecated, and optimizers will be configured from either
-                config.yaml file or from CLI.
-
-        Returns:
-            Optimizer: Adam optimizer
-        """
-        return torch.optim.Adam(
-            self.parameters(),
-            lr=self.hparams.model.lr,
-            eps=self.hparams.model.eps,
-            weight_decay=self.hparams.model.weight_decay,
-            betas=(0.5, 0.9),
-        )

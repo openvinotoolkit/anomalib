@@ -3,14 +3,13 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
 import math
 from pathlib import Path
 from typing import Any
 
-import pytorch_lightning as pl
-from pytorch_lightning.utilities.types import STEP_OUTPUT
+import lightning.pytorch as pl
+from lightning.pytorch.utilities.types import STEP_OUTPUT
 
 from anomalib.models.components import AnomalyModule
 
@@ -32,9 +31,9 @@ class ImageVisualizerCallback(BaseVisualizerCallback):
         trainer: pl.Trainer,
         pl_module: AnomalyModule,
         outputs: STEP_OUTPUT | None,
-        batch: Any,
+        batch: Any,  # noqa: ANN401
         batch_idx: int,
-        dataloader_idx: int,
+        dataloader_idx: int = 0,
     ) -> None:
         """Show images at the end of every batch.
 
@@ -63,9 +62,9 @@ class ImageVisualizerCallback(BaseVisualizerCallback):
         trainer: pl.Trainer,
         pl_module: AnomalyModule,
         outputs: STEP_OUTPUT | None,
-        batch: Any,
+        batch: Any,  # noqa: ANN401
         batch_idx: int,
-        dataloader_idx: int,
+        dataloader_idx: int = 0,
     ) -> None:
         """Log images at the end of every batch.
 
@@ -82,14 +81,15 @@ class ImageVisualizerCallback(BaseVisualizerCallback):
         assert outputs is not None
 
         for i, image in enumerate(self.visualizer.visualize_batch(outputs)):
-            if "image_path" in outputs.keys():
+            if "image_path" in outputs:
                 filename = Path(outputs["image_path"][i])
-            elif "video_path" in outputs.keys():
+            elif "video_path" in outputs:
                 zero_fill = int(math.log10(outputs["last_frame"][i])) + 1
                 suffix = f"{str(outputs['frames'][i].int().item()).zfill(zero_fill)}.png"
                 filename = Path(outputs["video_path"][i]) / suffix
             else:
-                raise KeyError("Batch must have either 'image_path' or 'video_path' defined.")
+                msg = "Batch must have either 'image_path' or 'video_path' defined."
+                raise KeyError(msg)
 
             if self.save_images:
                 file_path = self.image_save_path / filename.parent.name / filename.name

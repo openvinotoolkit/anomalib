@@ -3,7 +3,6 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
 import torch
 from torch import Tensor
@@ -19,7 +18,7 @@ class PCA(DynamicBufferModule):
           or a ratio between 0-1.
     """
 
-    def __init__(self, n_components: int | float):
+    def __init__(self, n_components: int | float) -> None:
         super().__init__()
         self.n_components = n_components
 
@@ -76,7 +75,7 @@ class PCA(DynamicBufferModule):
         return torch.matmul(dataset, self.singular_vectors)
 
     def transform(self, features: Tensor) -> Tensor:
-        """Transforms the features based on singular vectors calculated earlier.
+        """Transform the features based on singular vectors calculated earlier.
 
         Args:
           features (Tensor): Input features
@@ -84,7 +83,6 @@ class PCA(DynamicBufferModule):
         Returns:
           Transformed features
         """
-
         features -= self.mean
         return torch.matmul(features, self.singular_vectors)
 
@@ -96,11 +94,10 @@ class PCA(DynamicBufferModule):
 
         Returns: Inverse features
         """
-        inv_features = torch.matmul(features, self.singular_vectors.transpose(-2, -1))
-        return inv_features
+        return torch.matmul(features, self.singular_vectors.transpose(-2, -1))
 
     def forward(self, features: Tensor) -> Tensor:
-        """Transforms the features.
+        """Transform the features.
 
         Args:
           features (Tensor): Input features

@@ -3,12 +3,11 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
 import logging
 from enum import Enum
 
-import albumentations as A
+import albumentations as A  # noqa: N812
 from albumentations.pytorch import ToTensorV2
 from omegaconf import DictConfig
 
@@ -34,10 +33,21 @@ def get_transforms(
     """Get transforms from config or image size.
 
     Args:
-        config (str | A.Compose | None, optional): Albumentations transforms.
+        config (str | A.Compose | None, optional):
+            Albumentations transforms.
             Either config or albumentations ``Compose`` object. Defaults to None.
-        image_size (int | tuple | None, optional): Image size to transform. Defaults to None.
-        to_tensor (bool, optional): Boolean to convert the final transforms into Torch tensor. Defaults to True.
+        image_size (int | tuple | None, optional):
+            Image size to transform.
+            Defaults to None.
+        center_crop (int | tuple | None, optional):
+            Center crop size.
+            Defaults to None.
+        normalization (InputNormalizationMethod, optional):
+            Normalization method for the input images.
+            Defaults to InputNormalizationMethod.IMAGENET.
+        to_tensor (bool, optional):
+            Boolean to convert the final transforms into Torch tensor.
+            Defaults to True.
 
     Raises:
         ValueError: When both ``config`` and ``image_size`` is ``None``.
@@ -62,7 +72,7 @@ def get_transforms(
 
 
         Transforms could be read from albumentations Compose object.
-        >>> import albumentations as A
+        >>> import albumentations as A  # noqa: N812
         >>> from albumentations.pytorch import ToTensorV2
         >>> config = A.Compose([A.Resize(512, 512), ToTensorV2()])
         >>> transforms = get_transforms(config=config, to_tensor=False)
@@ -87,7 +97,7 @@ def get_transforms(
             logger.info("Loading transforms from config File")
             transforms_list = []
 
-            if "Resize" not in config.keys() and image_size is not None:
+            if "Resize" not in config and image_size is not None:
                 resize_height, resize_width = get_image_height_and_width(image_size)
                 transforms_list.append(A.Resize(height=resize_height, width=resize_width, always_apply=True))
                 logger.info("Resize %s added!", (resize_height, resize_width))
@@ -98,7 +108,8 @@ def get_transforms(
                     logger.info("Transform %s added!", transform)
                     transforms_list.append(transform)
                 else:
-                    raise ValueError(f"Transformation {key} is not part of albumentations")
+                    msg = f"Transformation {key} is not part of albumentations"
+                    raise ValueError(msg)
 
             transforms_list.append(ToTensorV2())
             transforms = A.Compose(transforms_list, additional_targets={"image": "image", "depth_image": "image"})
@@ -111,18 +122,19 @@ def get_transforms(
             logger.info("Transforms loaded from Albumentations Compose object")
             transforms = config
         else:
-            raise ValueError("config could be either ``str`` or ``A.Compose``")
+            msg = "config could be either ``str`` or ``A.Compose``"
+            raise TypeError(msg)
     else:
         logger.info("No config file has been provided. Using default transforms.")
         transforms_list = []
 
         # add resize transform
         if image_size is None:
-            raise ValueError(
+            msg = (
                 "Both config and image_size cannot be `None`. "
-                "Provide either config file to de-serialize transforms "
-                "or image_size to get the default transformations"
+                "Provide either config file to de-serialize transforms or image_size to get the default transformations"
             )
+            raise ValueError(msg)
         resize_height, resize_width = get_image_height_and_width(image_size)
         transforms_list.append(A.Resize(height=resize_height, width=resize_width, always_apply=True))
 
@@ -130,7 +142,8 @@ def get_transforms(
         if center_crop is not None:
             crop_height, crop_width = get_image_height_and_width(center_crop)
             if crop_height > resize_height or crop_width > resize_width:
-                raise ValueError(f"Crop size may not be larger than image size. Found {image_size} and {center_crop}")
+                msg = f"Crop size may not be larger than image size. Found {image_size} and {center_crop}"
+                raise ValueError(msg)
             transforms_list.append(A.CenterCrop(height=crop_height, width=crop_width, always_apply=True))
 
         # add normalize transform
@@ -139,7 +152,8 @@ def get_transforms(
         elif normalization == InputNormalizationMethod.NONE:
             transforms_list.append(A.ToFloat(max_value=255))
         else:
-            raise ValueError(f"Unknown normalization method: {normalization}")
+            msg = f"Unknown normalization method: {normalization}"
+            raise ValueError(msg)
 
         # add tensor conversion
         if to_tensor:

@@ -3,19 +3,20 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
-import os
+import subprocess
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-import pytorch_lightning as pl
+import lightning.pytorch as pl
+from lightning.pytorch import Callback
 from nncf import NNCFConfig
-from nncf.api.compression import CompressionAlgorithmController
 from nncf.torch import register_default_init_args
-from pytorch_lightning import Callback
 
 from anomalib.utils.callbacks.nncf.utils import InitLoader, wrap_nncf_model
+
+if TYPE_CHECKING:
+    from nncf.api.compression import CompressionAlgorithmController
 
 
 class NNCFCallback(Callback):
@@ -48,18 +49,23 @@ class NNCFCallback(Callback):
 
         # Get validate subset to initialize quantization,
         # because train subset does not contain anomalous images.
-        init_loader = InitLoader(trainer.datamodule.val_dataloader())  # type: ignore
+        init_loader = InitLoader(trainer.datamodule.val_dataloader())
         config = register_default_init_args(self.config, init_loader)
 
         self.nncf_ctrl, pl_module.model = wrap_nncf_model(
             model=pl_module.model,
             config=config,
-            dataloader=trainer.datamodule.train_dataloader(),  # type: ignore
-            init_state_dict=None,  # type: ignore
+            dataloader=trainer.datamodule.train_dataloader(),
+            init_state_dict=None,  # type: ignore[arg-type]
         )
 
     def on_train_batch_start(
-        self, trainer: pl.Trainer, pl_module: pl.LightningModule, batch: Any, batch_idx: int, unused: int = 0
+        self,
+        trainer: pl.Trainer,
+        pl_module: pl.LightningModule,
+        batch: Any,  # noqa: ANN401
+        batch_idx: int,
+        unused: int = 0,
     ) -> None:
         """Call when the train batch begins.
 
@@ -91,7 +97,10 @@ class NNCFCallback(Callback):
             return
 
         Path(self.export_dir).mkdir(parents=True, exist_ok=True)
-        onnx_path = os.path.join(self.export_dir, "model_nncf.onnx")
+        onnx_path = str(Path(self.export_dir) / "model_nncf.onnx")
         self.nncf_ctrl.export_model(onnx_path)
-        optimize_command = "mo --input_model " + onnx_path + " --output_dir " + self.export_dir
-        os.system(optimize_command)
+
+        optimize_command = ["mo", "--input_model", onnx_path, "--output_dir", self.export_dir]
+        # TODO(samet-akcay): Check if mo can be donw via python API
+        # CVS-122665
+        subprocess.run(optimize_command, check=True)  # noqa: S603

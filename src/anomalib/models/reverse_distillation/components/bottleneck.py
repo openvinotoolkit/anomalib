@@ -10,9 +10,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-from __future__ import annotations
-
-from typing import Callable
+from collections.abc import Callable
 
 import torch
 from torch import Tensor, nn
@@ -76,15 +74,15 @@ class OCBE(nn.Module):
         self.conv3 = conv3x3(128 * block.expansion, 256 * block.expansion, 2)
         self.bn3 = norm_layer(256 * block.expansion)
 
-        # This is present in the paper but not in the original code. With some initial experiments, removing this leads
-        # to better results
-        # self.conv4 = conv1x1(256 * block.expansion * 3, 256 * block.expansion * 3, 1)  # x3 as we concatenate 3 layers
-        # self.bn4 = norm_layer(256 * block.expansion * 3)
+        # self.conv4 and self.bn4 are from the original code:
+        # https://github.com/hq-deng/RD4AD/blob/6554076872c65f8784f6ece8cfb39ce77e1aee12/resnet.py#L412
+        self.conv4 = conv1x1(1024 * block.expansion, 512 * block.expansion, 1)
+        self.bn4 = norm_layer(512 * block.expansion)
 
         for module in self.modules():
             if isinstance(module, nn.Conv2d):
                 nn.init.kaiming_normal_(module.weight, mode="fan_out", nonlinearity="relu")
-            elif isinstance(module, (nn.BatchNorm2d, nn.GroupNorm)):
+            elif isinstance(module, nn.BatchNorm2d | nn.GroupNorm):
                 nn.init.constant_(module.weight, 1)
                 nn.init.constant_(module.bias, 0)
 
@@ -119,11 +117,11 @@ class OCBE(nn.Module):
                 self.base_width,
                 previous_dilation,
                 norm_layer,
-            )
+            ),
         )
         self.inplanes = planes * block.expansion
-        for _ in range(1, blocks):
-            layers.append(
+        layers.extend(
+            [
                 block(
                     self.inplanes,
                     planes,
@@ -132,7 +130,9 @@ class OCBE(nn.Module):
                     dilation=self.dilation,
                     norm_layer=norm_layer,
                 )
-            )
+                for _ in range(1, blocks)
+            ],
+        )
 
         return nn.Sequential(*layers)
 
@@ -150,7 +150,6 @@ class OCBE(nn.Module):
         feature1 = self.relu(self.bn3(self.conv3(features[1])))
         feature_cat = torch.cat([feature0, feature1, features[2]], 1)
         output = self.bn_layer(feature_cat)
-        # output = self.bn_layer(self.bn4(self.conv4(feature_cat)))
 
         return output.contiguous()
 
@@ -160,13 +159,9 @@ def get_bottleneck_layer(backbone: str, **kwargs) -> OCBE:
 
     Args:
         backbone (str): Name of the backbone.
+        kwargs: Additional keyword arguments.
 
     Returns:
         Bottleneck_layer: One-Class Bottleneck Embedding module.
     """
-    if backbone in ("resnet18", "resnet34"):
-        ocbe = OCBE(BasicBlock, 2, **kwargs)
-    else:
-        ocbe = OCBE(Bottleneck, 3, **kwargs)
-
-    return ocbe
+    return OCBE(BasicBlock, 2, **kwargs) if backbone in ("resnet18", "resnet34") else OCBE(Bottleneck, 3, **kwargs)

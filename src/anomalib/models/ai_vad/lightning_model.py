@@ -6,12 +6,12 @@ Paper https://arxiv.org/pdf/2212.00789.pdf
 # Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
 import logging
+from typing import Any
 
+from lightning.pytorch.utilities.types import STEP_OUTPUT
 from omegaconf import DictConfig, ListConfig
-from pytorch_lightning.utilities.types import STEP_OUTPUT
 from torch import Tensor
 
 from anomalib.models.ai_vad.torch_model import AiVadModel
@@ -46,18 +46,18 @@ class AiVad(AnomalyModule):
 
     def __init__(
         self,
-        box_score_thresh: float = 0.8,
+        box_score_thresh: float = 0.7,
         persons_only: bool = False,
         min_bbox_area: int = 100,
         max_bbox_overlap: float = 0.65,
         enable_foreground_detections: bool = True,
         foreground_kernel_size: int = 3,
         foreground_binary_threshold: int = 18,
-        n_velocity_bins: int = 8,
+        n_velocity_bins: int = 1,
         use_velocity_features: bool = True,
         use_pose_features: bool = True,
         use_deep_features: bool = True,
-        n_components_velocity: int = 5,
+        n_components_velocity: int = 2,
         n_neighbors_pose: int = 1,
         n_neighbors_deep: int = 1,
     ) -> None:
@@ -83,7 +83,7 @@ class AiVad(AnomalyModule):
     @staticmethod
     def configure_optimizers() -> None:
         """AI-VAD training does not involve fine-tuning of NN weights, no optimizers needed."""
-        return None
+        return
 
     def training_step(self, batch: dict[str, str | Tensor]) -> None:
         """Training Step of AI-VAD.
@@ -95,7 +95,7 @@ class AiVad(AnomalyModule):
         """
         features_per_batch = self.model(batch["image"])
 
-        for features, video_path in zip(features_per_batch, batch["video_path"]):
+        for features, video_path in zip(features_per_batch, batch["video_path"], strict=True):
             self.model.density_estimator.update(features, video_path)
 
     def on_validation_start(self) -> None:
@@ -106,22 +106,31 @@ class AiVad(AnomalyModule):
         self.model.density_estimator.fit()
 
     def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
-        """Validation Step of AI-VAD.
+        """Perform the validation step of AI-VAD.
 
         Extract boxes and box scores..
 
         Args:
             batch (dict[str, str | Tensor]): Input batch
+            *args: Arguments.
+            **kwargs: Keyword arguments.
 
         Returns:
             Batch dictionary with added boxes and box scores.
         """
+        del args, kwargs  # Unused arguments.
+
         boxes, anomaly_scores, image_scores = self.model(batch["image"])
         batch["pred_boxes"] = [box.int() for box in boxes]
         batch["box_scores"] = [score.to(self.device) for score in anomaly_scores]
         batch["pred_scores"] = Tensor(image_scores).to(self.device)
 
         return batch
+
+    @property
+    def trainer_arguments(self) -> dict[str, Any]:
+        """AI-VAD specific trainer arguments."""
+        return {"gradient_clip_val": 0, "max_epochs": 1, "num_sanity_val_steps": 0}
 
 
 class AiVadLightning(AiVad):
@@ -148,5 +157,5 @@ class AiVadLightning(AiVad):
             n_neighbors_pose=hparams.model.n_neighbors_pose,
             n_neighbors_deep=hparams.model.n_neighbors_deep,
         )
-        self.hparams: DictConfig | ListConfig  # type: ignore
+        self.hparams: DictConfig | ListConfig
         self.save_hyperparameters(hparams)

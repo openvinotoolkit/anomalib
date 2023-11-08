@@ -4,8 +4,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-from __future__ import annotations
-
 from omegaconf import DictConfig
 
 
@@ -36,7 +34,7 @@ def flatten_hpo_params(params_dict: DictConfig) -> DictConfig:
         else:
             for name, cfg in nested_params.items():
                 if isinstance(cfg, DictConfig):
-                    process_params(cfg, keys + [str(name)], flattened_params)
+                    process_params(cfg, [*keys, str(name)], flattened_params)
 
     flattened_params_dict = DictConfig({})
     process_params(params_dict, [], flattened_params_dict)

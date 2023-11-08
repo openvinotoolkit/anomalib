@@ -1,16 +1,16 @@
 """Custom Folder Dataset.
+
 This script creates a custom dataset from a folder.
 """
 
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Sequence
 
-import albumentations as A
+import albumentations as A  # noqa: N812
 from pandas import DataFrame
 
 from anomalib.data.base import AnomalibDataModule, AnomalibDataset
@@ -37,6 +37,7 @@ def make_folder_dataset(
     extensions: tuple[str, ...] | None = None,
 ) -> DataFrame:
     """Make Folder Dataset.
+
     Args:
         normal_dir (str | Path | Sequence): Path to the directory containing normal images.
         root (str | Path | None): Path to the root directory of the dataset.
@@ -50,19 +51,23 @@ def make_folder_dataset(
             Defaults to None.
         extensions (tuple[str, ...] | None, optional): Type of the image extensions to read from the
             directory.
+
     Returns:
-        DataFrame: an output dataframe containing samples for the requested split (ie., train or test)
+        DataFrame: an output dataframe containing samples for the requested split (ie., train or test).
     """
 
     def _resolve_path_and_convert_to_list(path: str | Path | Sequence[str | Path] | None) -> list[Path]:
         """Convert path to list of paths.
+
         Args:
             path (str | Path | Sequence | None): Path to replace with Sequence[str | Path].
+
         Examples:
             >>> _resolve_path_and_convert_to_list("dir")
             [Path("path/to/dir")]
             >>> _resolve_path_and_convert_to_list(["dir1", "dir2"])
             [Path("path/to/dir1"), Path("path/to/dir2")]
+
         Returns:
             list[Path]: The result of path replaced by Sequence[str | Path].
         """
@@ -82,13 +87,13 @@ def make_folder_dataset(
     dirs = {DirType.NORMAL: normal_dir}
 
     if abnormal_dir:
-        dirs = {**dirs, **{DirType.ABNORMAL: abnormal_dir}}
+        dirs[DirType.ABNORMAL] = abnormal_dir
 
     if normal_test_dir:
-        dirs = {**dirs, **{DirType.NORMAL_TEST: normal_test_dir}}
+        dirs[DirType.NORMAL_TEST] = normal_test_dir
 
     if mask_dir:
-        dirs = {**dirs, **{DirType.MASK: mask_dir}}
+        dirs[DirType.MASK] = mask_dir
 
     for dir_type, paths in dirs.items():
         for path in paths:
@@ -101,7 +106,8 @@ def make_folder_dataset(
 
     # Create label index for normal (0) and abnormal (1) images.
     samples.loc[
-        (samples.label == DirType.NORMAL) | (samples.label == DirType.NORMAL_TEST), "label_index"
+        (samples.label == DirType.NORMAL) | (samples.label == DirType.NORMAL_TEST),
+        "label_index",
     ] = LabelName.NORMAL
     samples.loc[(samples.label == DirType.ABNORMAL), "label_index"] = LabelName.ABNORMAL
     samples.label_index = samples.label_index.astype("Int64")
@@ -111,8 +117,8 @@ def make_folder_dataset(
     if len(mask_dir) > 0 and len(abnormal_dir) > 0:
         samples.loc[samples.label == DirType.ABNORMAL, "mask_path"] = samples.loc[
             samples.label == DirType.MASK
-        ].image_path.values
-        samples["mask_path"].fillna("", inplace=True)
+        ].image_path.to_numpy()
+        samples["mask_path"] = samples["mask_path"].fillna("")
         samples = samples.astype({"mask_path": "str"})
 
         # make sure all every rgb image has a corresponding mask image.
@@ -151,6 +157,7 @@ def make_folder_dataset(
 
 class FolderDataset(AnomalibDataset):
     """Folder dataset.
+
     Args:
         task (TaskType): Task type. (``classification``, ``detection`` or ``segmentation``).
         transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
@@ -166,6 +173,7 @@ class FolderDataset(AnomalibDataset):
         extensions (tuple[str, ...] | None, optional): Type of the image extensions to read from the
             directory.
         val_split_mode (ValSplitMode): Setting that determines how the validation subset is obtained.
+
     Raises:
         ValueError: When task is set to classification and `mask_dir` is provided. When `mask_dir` is
             provided, `task` should be set to `segmentation`.
@@ -208,6 +216,7 @@ class FolderDataset(AnomalibDataset):
 
 class Folder(AnomalibDataModule):
     """Folder DataModule.
+
     Args:
         normal_dir (str | Path | Sequence): Name of the directory containing normal images.
             Defaults to "normal".
@@ -255,7 +264,7 @@ class Folder(AnomalibDataModule):
         mask_dir: str | Path | Sequence[str | Path] | None = None,
         normal_split_ratio: float = 0.2,
         extensions: tuple[str] | None = None,
-        image_size: int | tuple[int, int] | None = None,
+        image_size: int | tuple[int, int] = (256, 256),
         center_crop: int | tuple[int, int] | None = None,
         normalization: str | InputNormalizationMethod = InputNormalizationMethod.IMAGENET,
         train_batch_size: int = 32,
@@ -282,9 +291,12 @@ class Folder(AnomalibDataModule):
         )
 
         if task == TaskType.SEGMENTATION and test_split_mode == TestSplitMode.FROM_DIR and mask_dir is None:
-            raise ValueError(
+            msg = (
                 f"Segmentation task requires mask directory if test_split_mode is {test_split_mode}. "
-                f"You could set test_split_mode to {TestSplitMode.NONE} or provide a mask directory."
+                "You could set test_split_mode to {TestSplitMode.NONE} or provide a mask directory."
+            )
+            raise ValueError(
+                msg,
             )
 
         self.normal_split_ratio = normal_split_ratio

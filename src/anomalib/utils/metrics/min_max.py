@@ -3,7 +3,6 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
 import torch
 from torch import Tensor
@@ -17,11 +16,11 @@ class MinMax(Metric):
 
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
-        self.add_state("min", torch.tensor(float("inf")), persistent=True)  # pylint: disable=not-callable
-        self.add_state("max", torch.tensor(float("-inf")), persistent=True)  # pylint: disable=not-callable
+        self.add_state("min", torch.tensor(float("inf")), persistent=True)
+        self.add_state("max", torch.tensor(float("-inf")), persistent=True)
 
-        self.min = torch.tensor(float("inf"))  # pylint: disable=not-callable
-        self.max = torch.tensor(float("-inf"))  # pylint: disable=not-callable
+        self.min = torch.tensor(float("inf"))
+        self.max = torch.tensor(float("-inf"))
 
     def update(self, predictions: Tensor, *args, **kwargs) -> None:
         """Update the min and max values."""

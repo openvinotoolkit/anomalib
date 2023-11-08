@@ -7,8 +7,8 @@ Paper https://arxiv.org/abs/2111.09099
 # SPDX-License-Identifier: Apache-2.0
 
 import torch
-import torch.nn.functional as F
 from torch import Tensor, nn
+from torch.nn import functional as F  # noqa: N812
 
 
 class AttentionModule(nn.Module):
@@ -19,7 +19,7 @@ class AttentionModule(nn.Module):
         reduction_ratio (int): Reduction ratio of the attention module.
     """
 
-    def __init__(self, in_channels: int, reduction_ratio: int = 8):
+    def __init__(self, in_channels: int, reduction_ratio: int = 8) -> None:
         super().__init__()
 
         out_channels = in_channels // reduction_ratio
@@ -38,9 +38,7 @@ class AttentionModule(nn.Module):
         act = F.sigmoid(act)
 
         # multiply with input
-        se_out = inputs * act.view(act.shape[0], act.shape[1], 1, 1)
-
-        return se_out
+        return inputs * act.view(act.shape[0], act.shape[1], 1, 1)
 
 
 class SSPCAB(nn.Module):
@@ -53,7 +51,7 @@ class SSPCAB(nn.Module):
         reduction_ratio (int): Reduction ratio of the attention module.
     """
 
-    def __init__(self, in_channels: int, kernel_size: int = 1, dilation: int = 1, reduction_ratio: int = 8):
+    def __init__(self, in_channels: int, kernel_size: int = 1, dilation: int = 1, reduction_ratio: int = 8) -> None:
         super().__init__()
 
         self.pad = kernel_size + dilation
@@ -77,5 +75,4 @@ class SSPCAB(nn.Module):
         masked_out += self.masked_conv4(padded[..., self.crop :, self.crop :])
 
         # apply channel attention module
-        sspcab_out = self.attention_module(masked_out)
-        return sspcab_out
+        return self.attention_module(masked_out)

@@ -6,7 +6,8 @@
 import logging
 import time
 
-from pytorch_lightning import Callback, LightningModule, Trainer
+import torch
+from lightning.pytorch import Callback, LightningModule, Trainer
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +35,7 @@ class TimerCallback(Callback):
 
         self.start = time.time()
 
-    def on_fit_end(self, trainer: Trainer, pl_module: LightningModule) -> None:  # pylint: disable=W0613
+    def on_fit_end(self, trainer: Trainer, pl_module: LightningModule) -> None:
         """Call when fit ends.
 
         Prints the time taken for training.
@@ -46,9 +47,10 @@ class TimerCallback(Callback):
         Returns:
             None
         """
+        del trainer, pl_module  # Unused arguments.
         logger.info("Training took %5.2f seconds", (time.time() - self.start))
 
-    def on_test_start(self, trainer: Trainer, pl_module: LightningModule) -> None:  # pylint: disable=W0613
+    def on_test_start(self, trainer: Trainer, pl_module: LightningModule) -> None:
         """Call when the test begins.
 
         Sets the start time to the time testing started.
@@ -61,14 +63,19 @@ class TimerCallback(Callback):
         Returns:
             None
         """
+        del pl_module  # Unused argument.
+
         self.start = time.time()
         self.num_images = 0
 
         if trainer.test_dataloaders is not None:  # Check to placate Mypy.
-            for dataloader in trainer.test_dataloaders:
-                self.num_images += len(dataloader.dataset)
+            if isinstance(trainer.test_dataloaders, torch.utils.data.dataloader.DataLoader):
+                self.num_images += len(trainer.test_dataloaders.dataset)
+            else:
+                for dataloader in trainer.test_dataloaders:
+                    self.num_images += len(dataloader.dataset)
 
-    def on_test_end(self, trainer: Trainer, pl_module: LightningModule) -> None:  # pylint: disable=W0613
+    def on_test_end(self, trainer: Trainer, pl_module: LightningModule) -> None:
         """Call when the test ends.
 
         Prints the time taken for testing and the throughput in frames per second.
@@ -80,9 +87,15 @@ class TimerCallback(Callback):
         Returns:
             None
         """
+        del pl_module  # Unused argument.
+
         testing_time = time.time() - self.start
         output = f"Testing took {testing_time} seconds\nThroughput "
         if trainer.test_dataloaders is not None:
-            output += f"(batch_size={trainer.test_dataloaders[0].batch_size})"
+            if isinstance(trainer.test_dataloaders, torch.utils.data.dataloader.DataLoader):
+                test_data_loader = trainer.test_dataloaders
+            else:
+                test_data_loader = trainer.test_dataloaders[0]
+            output += f"(batch_size={test_data_loader.batch_size})"
         output += f" : {self.num_images/testing_time} FPS"
         logger.info(output)

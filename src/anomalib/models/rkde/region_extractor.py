@@ -6,7 +6,6 @@ Region Extractor.
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
 from enum import Enum
 
@@ -71,7 +70,7 @@ class RegionExtractor(nn.Module):
         """Forward pass of the model.
 
         Args:
-            input (Tensor): Batch of input images of shape [B, C, H, W].
+            batch (Tensor): Batch of input images of shape [B, C, H, W].
 
         Raises:
             ValueError: When ``stage`` is not one of ``rcnn`` or ``rpn``.
@@ -81,7 +80,8 @@ class RegionExtractor(nn.Module):
                  and where each row describes the index of the image in the batch and the 4 bounding box coordinates.
         """
         if self.training:
-            raise ValueError("Should not be in training mode")
+            msg = "Should not be in training mode"
+            raise ValueError(msg)
 
         if self.stage == RoiStage.RCNN:
             # get rois from rcnn output
@@ -98,14 +98,14 @@ class RegionExtractor(nn.Module):
             all_regions = [scale_boxes(boxes, images.tensors.shape[-2:], batch.shape[-2:]) for boxes in all_regions]
             all_scores = [torch.ones(boxes.shape[0]).to(boxes.device) for boxes in all_regions]
         else:
-            raise ValueError(f"Unknown region extractor stage: {self.stage}")
+            msg = f"Unknown region extractor stage: {self.stage}"
+            raise ValueError(msg)
 
         regions = self.post_process_box_predictions(all_regions, all_scores)
 
         # convert from list of [N, 4] tensors to single [N, 5] tensor where each row is [index-in-batch, x1, y1, x2, y2]
         indices = torch.repeat_interleave(torch.arange(len(regions)), Tensor([rois.shape[0] for rois in regions]).int())
-        regions = torch.cat([indices.unsqueeze(1).to(batch.device), torch.cat(regions)], dim=1)
-        return regions
+        return torch.cat([indices.unsqueeze(1).to(batch.device), torch.cat(regions)], dim=1)
 
     def post_process_box_predictions(self, pred_boxes: Tensor, pred_scores: Tensor) -> list[Tensor]:
         """Post-processes the box predictions.
@@ -120,20 +120,19 @@ class RegionExtractor(nn.Module):
         Returns:
             list[Tensor]: Post-processed box predictions of shape (N, 4).
         """
-
-        processed_boxes: list[Tensor] = []
-        for boxes, scores in zip(pred_boxes, pred_scores):
+        processed_boxes_list: list[Tensor] = []
+        for boxes, scores in zip(pred_boxes, pred_scores, strict=True):
             # remove small boxes
             keep = box_ops.remove_small_boxes(boxes, min_size=self.min_size)
-            boxes, scores = boxes[keep], scores[keep]
+            processed_boxes, processed_scores = boxes[keep], scores[keep]
 
             # non-maximum suppression, all boxes together
-            keep = box_ops.nms(boxes, scores, self.iou_threshold)
+            keep = box_ops.nms(processed_boxes, processed_scores, self.iou_threshold)
 
             # keep only top-k scoring predictions
             keep = keep[: self.max_detections_per_image]
-            boxes = boxes[keep]
+            processed_boxes = processed_boxes[keep]
 
-            processed_boxes.append(boxes)
+            processed_boxes_list.append(processed_boxes)
 
-        return processed_boxes
+        return processed_boxes_list

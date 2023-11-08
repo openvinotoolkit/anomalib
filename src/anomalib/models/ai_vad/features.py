@@ -1,9 +1,8 @@
-"""Feature extraction module for AI-VAD model implementation"""
+"""Feature extraction module for AI-VAD model implementation."""
 
 # Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
 from enum import Enum
 
@@ -69,6 +68,7 @@ class FeatureExtractor(nn.Module):
             rgb_batch (Tensor): Batch of RGB images of shape (N, 3, H, W)
             flow_batch (Tensor): Batch of optical flow images of shape (N, 2, H, W)
             regions (list[dict]): Region information per image in batch.
+
         Returns:
             list[dict]: Feature dictionary per image in batch.
         """
@@ -77,7 +77,8 @@ class FeatureExtractor(nn.Module):
         # convert from list of [N, 4] tensors to single [N, 5] tensor where each row is [index-in-batch, x1, y1, x2, y2]
         boxes_list = [batch_item["boxes"] for batch_item in regions]
         indices = torch.repeat_interleave(
-            torch.arange(len(regions)), Tensor([boxes.shape[0] for boxes in boxes_list]).int()
+            torch.arange(len(regions)),
+            Tensor([boxes.shape[0] for boxes in boxes_list]).int(),
         )
         boxes = torch.cat([indices.unsqueeze(1).to(rgb_batch.device), torch.cat(boxes_list)], dim=1)
 
@@ -94,9 +95,7 @@ class FeatureExtractor(nn.Module):
             feature_dict[FeatureType.DEEP] = [deep_features[indices == i] for i in range(batch_size)]
 
         # dict of lists to list of dicts
-        feature_collection = [dict(zip(feature_dict, item)) for item in zip(*feature_dict.values())]
-
-        return feature_collection
+        return [dict(zip(feature_dict, item, strict=True)) for item in zip(*feature_dict.values(), strict=True)]
 
 
 class DeepExtractor(nn.Module):
@@ -124,12 +123,9 @@ class DeepExtractor(nn.Module):
         """
         rgb_regions = roi_align(batch, boxes, output_size=[224, 224])
 
-        features = []
         batched_regions = torch.split(rgb_regions, batch_size)
         with torch.no_grad():
-            features = torch.vstack([self.encoder.encode_image(self.transform(batch)) for batch in batched_regions])
-
-        return features
+            return torch.vstack([self.encoder.encode_image(self.transform(batch)) for batch in batched_regions])
 
 
 class VelocityExtractor(nn.Module):
@@ -164,9 +160,12 @@ class VelocityExtractor(nn.Module):
 
         # compute velocity histogram
         velocity_histograms = []
-        for mag, theta in zip(mag_batch, theta_batch):
+        for mag, theta in zip(mag_batch, theta_batch, strict=True):
             histogram_mag = torch.histogram(
-                input=theta.cpu(), bins=self.n_bins, range=(-torch.pi, torch.pi), weight=mag.cpu()
+                input=theta.cpu(),
+                bins=self.n_bins,
+                range=(-torch.pi, torch.pi),
+                weight=mag.cpu(),
             ).hist
             histogram_counts = torch.histogram(input=theta.cpu(), bins=self.n_bins, range=(-torch.pi, torch.pi)).hist
             final_histogram = torch.zeros_like(histogram_mag)
@@ -227,9 +226,11 @@ class PoseExtractor(nn.Module):
         features = self.backbone(images.tensors)
 
         image_sizes = [b.shape[-2:] for b in batch]
-        scales = [Tensor(new) / Tensor([orig[0], orig[1]]) for orig, new in zip(image_sizes, images.image_sizes)]
+        scales = [
+            Tensor(new) / Tensor([orig[0], orig[1]]) for orig, new in zip(image_sizes, images.image_sizes, strict=True)
+        ]
 
-        boxes = [box * scale.repeat(2).to(box.device) for box, scale in zip(boxes, scales)]
+        boxes = [box * scale.repeat(2).to(box.device) for box, scale in zip(boxes, scales, strict=True)]
 
         keypoint_features = self.roi_heads.keypoint_roi_pool(features, boxes, images.image_sizes)
         keypoint_features = self.roi_heads.keypoint_head(keypoint_features)
@@ -237,7 +238,7 @@ class PoseExtractor(nn.Module):
         keypoints_probs, _ = keypointrcnn_inference(keypoint_logits, boxes)
 
         keypoint_detections = self.transform.postprocess(
-            [{"keypoints": keypoints, "boxes": box} for keypoints, box in zip(keypoints_probs, boxes)],
+            [{"keypoints": keypoints, "boxes": box} for keypoints, box in zip(keypoints_probs, boxes, strict=True)],
             images.image_sizes,
             image_sizes,
         )

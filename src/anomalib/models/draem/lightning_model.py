@@ -1,4 +1,4 @@
-"""DRÆM – A discriminatively trained reconstruction embedding for surface anomaly detection.
+"""DRÆM - A discriminatively trained reconstruction embedding for surface anomaly detection.
 
 Paper https://arxiv.org/abs/2108.07610
 """
@@ -6,14 +6,13 @@ Paper https://arxiv.org/abs/2108.07610
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
-from typing import Callable
+from collections.abc import Callable
+from typing import Any
 
 import torch
+from lightning.pytorch.utilities.types import STEP_OUTPUT
 from omegaconf import DictConfig, ListConfig
-from pytorch_lightning.callbacks import EarlyStopping
-from pytorch_lightning.utilities.types import STEP_OUTPUT
 from torch import Tensor, nn
 
 from anomalib.data.utils import Augmenter
@@ -33,7 +32,10 @@ class Draem(AnomalyModule):
     """
 
     def __init__(
-        self, enable_sspcab: bool = False, sspcab_lambda: float = 0.1, anomaly_source_path: str | None = None
+        self,
+        enable_sspcab: bool = False,
+        sspcab_lambda: float = 0.1,
+        anomaly_source_path: str | None = None,
     ) -> None:
         super().__init__()
 
@@ -52,14 +54,22 @@ class Draem(AnomalyModule):
         """Prepare the model for the SSPCAB training step by adding forward hooks for the SSPCAB layer activations."""
 
         def get_activation(name: str) -> Callable:
-            """Retrieves the activations.
+            """Retrieve the activations.
 
             Args:
+            ----
                 name (str): Identifier for the retrieved activations.
             """
 
-            def hook(_, __, output: Tensor) -> None:
-                """Hook for retrieving the activations."""
+            def hook(_, __, output: Tensor) -> None:  # noqa: ANN001
+                """Create hook for retrieving the activations.
+
+                Args:
+                ----
+                    _: Placeholder for the module input.
+                    __: Placeholder for the module output.
+                    output (Tensor): The output tensor of the module.
+                """
                 self.sspcab_activations[name] = output
 
             return hook
@@ -68,13 +78,15 @@ class Draem(AnomalyModule):
         self.model.reconstructive_subnetwork.encoder.block5.register_forward_hook(get_activation("output"))
 
     def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
-        """Training Step of DRAEM.
+        """Perform the training step of DRAEM.
 
         Feeds the original image and the simulated anomaly
         image through the network and computes the training loss.
 
         Args:
             batch (dict[str, str | Tensor]): Batch containing image filename, image, label and mask
+            args: Arguments.
+            kwargs: Keyword arguments.
 
         Returns:
             Loss dictionary
@@ -91,17 +103,20 @@ class Draem(AnomalyModule):
 
         if self.sspcab:
             loss += self.sspcab_lambda * self.sspcab_loss(
-                self.sspcab_activations["input"], self.sspcab_activations["output"]
+                self.sspcab_activations["input"],
+                self.sspcab_activations["output"],
             )
 
         self.log("train_loss", loss.item(), on_epoch=True, prog_bar=True, logger=True)
         return {"loss": loss}
 
     def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
-        """Validation step of DRAEM. The Softmax predictions of the anomalous class are used as anomaly map.
+        """Perform the validation step of DRAEM. The Softmax predictions of the anomalous class are used as anomaly map.
 
         Args:
             batch (dict[str, str | Tensor]): Batch of input images
+            args: Arguments.
+            kwargs: Keyword arguments.
 
         Returns:
             Dictionary to which predicted anomaly maps have been added.
@@ -111,6 +126,15 @@ class Draem(AnomalyModule):
         prediction = self.model(batch["image"])
         batch["anomaly_maps"] = prediction
         return batch
+
+    @property
+    def trainer_arguments(self) -> dict[str, Any]:
+        """Return DRÆM-specific trainer arguments."""
+        return {"gradient_clip_val": 0, "num_sanity_val_steps": 0}
+
+    def configure_optimizers(self) -> torch.optim.Optimizer:
+        """Configure the Adam optimizer."""
+        return torch.optim.Adam(params=self.model.parameters(), lr=0.0001)
 
 
 class DraemLightning(Draem):
@@ -126,25 +150,5 @@ class DraemLightning(Draem):
             sspcab_lambda=hparams.model.sspcab_lambda,
             anomaly_source_path=hparams.model.anomaly_source_path,
         )
-        self.hparams: DictConfig | ListConfig  # type: ignore
+        self.hparams: DictConfig | ListConfig
         self.save_hyperparameters(hparams)
-
-    def configure_callbacks(self) -> list[EarlyStopping]:
-        """Configure model-specific callbacks.
-
-        Note:
-            This method is used for the existing CLI.
-            When PL CLI is introduced, configure callback method will be
-                deprecated, and callbacks will be configured from either
-                config.yaml file or from CLI.
-        """
-        early_stopping = EarlyStopping(
-            monitor=self.hparams.model.early_stopping.metric,
-            patience=self.hparams.model.early_stopping.patience,
-            mode=self.hparams.model.early_stopping.mode,
-        )
-        return [early_stopping]
-
-    def configure_optimizers(self) -> torch.optim.Optimizer:
-        """Configure the Adam optimizer."""
-        return torch.optim.Adam(params=self.model.parameters(), lr=self.hparams.model.lr)

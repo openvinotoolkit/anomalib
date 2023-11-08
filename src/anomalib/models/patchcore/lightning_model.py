@@ -6,12 +6,12 @@ Paper https://arxiv.org/abs/2106.08265.
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
-
 import logging
+from collections.abc import Sequence
+from typing import Any
 
+from lightning.pytorch.utilities.types import STEP_OUTPUT
 from omegaconf import DictConfig, ListConfig
-from pytorch_lightning.utilities.types import STEP_OUTPUT
 from torch import Tensor
 
 from anomalib.models.components import AnomalyModule
@@ -36,8 +36,8 @@ class Patchcore(AnomalyModule):
     def __init__(
         self,
         input_size: tuple[int, int],
-        backbone: str,
-        layers: list[str],
+        backbone: str = "wide_resnet50_2",
+        layers: Sequence[str] = ("layer2", "layer3"),
         pre_trained: bool = True,
         coreset_sampling_ratio: float = 0.1,
         num_neighbors: int = 9,
@@ -60,13 +60,15 @@ class Patchcore(AnomalyModule):
         Returns:
             None: Do not set optimizers by returning None.
         """
-        return None
+        return
 
     def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> None:
         """Generate feature embedding of the batch.
 
         Args:
             batch (dict[str, str | Tensor]): Batch containing image filename, image, label and mask
+            args: Additional arguments.
+            kwargs: Additional keyword arguments.
 
         Returns:
             dict[str, np.ndarray]: Embedding Vector
@@ -81,6 +83,7 @@ class Patchcore(AnomalyModule):
         self.embeddings.append(embedding)
 
     def on_validation_start(self) -> None:
+        """Fit the model on the embeddings."""
         if not self.model.is_fitted:
             self.model.fit(self.embeddings, self.coreset_sampling_ratio)
 
@@ -88,19 +91,29 @@ class Patchcore(AnomalyModule):
         """Get batch of anomaly maps from input image batch.
 
         Args:
-            batch (dict[str, str | Tensor]): Batch containing image filename,
-                image, label and mask
+            batch (dict[str, str | Tensor]): Batch containing image filename, image, label and mask
+            args: Additional arguments.
+            kwargs: Additional keyword arguments.
 
         Returns:
             dict[str, Any]: Image filenames, test images, GT and predicted label/masks
         """
-        del args, kwargs  # These variables are not used.
+        # These variables are not used.
+        del args, kwargs
 
-        anomaly_maps, anomaly_score = self.model(batch["image"])
-        batch["anomaly_maps"] = anomaly_maps
-        batch["pred_scores"] = anomaly_score
+        # Get anomaly maps and predicted scores from the model.
+        output = self.model(batch["image"])
+
+        # Add anomaly maps and predicted scores to the batch.
+        batch["anomaly_maps"] = output["anomaly_map"]
+        batch["pred_scores"] = output["pred_score"]
 
         return batch
+
+    @property
+    def trainer_arguments(self) -> dict[str, Any]:
+        """Return Patchcore trainer arguments."""
+        return {"gradient_clip_val": 0, "max_epochs": 1, "num_sanity_val_steps": 0}
 
 
 class PatchcoreLightning(Patchcore):
@@ -110,7 +123,7 @@ class PatchcoreLightning(Patchcore):
         hparams (DictConfig | ListConfig): Model params
     """
 
-    def __init__(self, hparams) -> None:
+    def __init__(self, hparams: DictConfig | ListConfig) -> None:
         super().__init__(
             input_size=hparams.model.input_size,
             backbone=hparams.model.backbone,
@@ -119,5 +132,5 @@ class PatchcoreLightning(Patchcore):
             coreset_sampling_ratio=hparams.model.coreset_sampling_ratio,
             num_neighbors=hparams.model.num_neighbors,
         )
-        self.hparams: DictConfig | ListConfig  # type: ignore
+        self.hparams: DictConfig | ListConfig
         self.save_hyperparameters(hparams)

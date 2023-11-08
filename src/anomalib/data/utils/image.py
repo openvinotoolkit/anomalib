@@ -3,18 +3,20 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
+import logging
 import math
-import warnings
+from collections.abc import Sequence
 from pathlib import Path
 
 import cv2
 import numpy as np
 import tifffile as tiff
-import torch.nn.functional as F
 from torch import Tensor
+from torch.nn import functional as F  # noqa: N812
 from torchvision.datasets.folder import IMG_EXTENSIONS
+
+logger = logging.getLogger(__name__)
 
 
 def get_image_filenames(path: str | Path) -> list[Path]:
@@ -39,7 +41,8 @@ def get_image_filenames(path: str | Path) -> list[Path]:
         image_filenames = [p for p in path.glob("**/*") if p.suffix in IMG_EXTENSIONS]
 
     if not image_filenames:
-        raise ValueError(f"Found 0 images in {path}")
+        msg = f"Found 0 images in {path}"
+        raise ValueError(msg)
 
     return image_filenames
 
@@ -64,7 +67,6 @@ def duplicate_filename(path: str | Path) -> Path:
     Returns:
         Path: Duplicated output path.
     """
-
     if isinstance(path, str):
         path = Path(path)
 
@@ -112,7 +114,6 @@ def generate_output_image_filename(input_path: str | Path, output_path: str | Pa
     Returns:
         Path: The output filename to save the output predictions from the inferencer.
     """
-
     if isinstance(input_path, str):
         input_path = Path(input_path)
 
@@ -121,36 +122,34 @@ def generate_output_image_filename(input_path: str | Path, output_path: str | Pa
 
     # This function expects an ``input_path`` that is a file. This is to check if output_path
     if input_path.is_file() is False:
-        raise ValueError("input_path is expected to be a file to generate a proper output filename.")
+        msg = "input_path is expected to be a file to generate a proper output filename."
+        raise ValueError(msg)
 
-    file_path: Path
-    if output_path.is_dir():
-        # If the output is a directory, then add parent directory name
-        # and filename to the path. This is to ensure we do not overwrite
-        # images and organize based on the categories.
-        file_path = output_path / input_path.parent.name / input_path.name
-    else:
-        file_path = output_path
+    # If the output is a directory, then add parent directory name
+    # and filename to the path. This is to ensure we do not overwrite
+    # images and organize based on the categories.
+    file_path = output_path / input_path.parent.name / input_path.name if output_path.is_dir() else output_path
 
     # This new ``file_path`` might contain a directory path yet to be created.
     # Create the parent directory to avoid such cases.
     file_path.parent.mkdir(parents=True, exist_ok=True)
 
     if file_path.is_file():
-        warnings.warn(f"{output_path} already exists. Renaming the file to avoid overwriting.")
+        msg = f"{output_path} already exists. Renaming the file to avoid overwriting."
+        logger.warning(msg)
         file_path = duplicate_filename(file_path)
 
     return file_path
 
 
-def get_image_height_and_width(image_size: int | tuple[int, int]) -> tuple[int, int]:
+def get_image_height_and_width(image_size: int | Sequence[int]) -> tuple[int, int]:
     """Get image height and width from ``image_size`` variable.
 
     Args:
-        image_size (int | tuple[int, int] | None, optional): Input image size.
+        image_size (int | Sequence[int] | None, optional): Input image size.
 
     Raises:
-        ValueError: Image size not None, int or tuple.
+        ValueError: Image size not None, int or Sequence of values.
 
     Examples:
         >>> get_image_height_and_width(image_size=256)
@@ -173,10 +172,11 @@ def get_image_height_and_width(image_size: int | tuple[int, int]) -> tuple[int, 
     """
     if isinstance(image_size, int):
         height_and_width = (image_size, image_size)
-    elif isinstance(image_size, tuple):
+    elif isinstance(image_size, Sequence):
         height_and_width = int(image_size[0]), int(image_size[1])
     else:
-        raise ValueError("``image_size`` could be either int or tuple[int, int]")
+        msg = "``image_size`` could be either int or tuple[int, int]"
+        raise TypeError(msg)
 
     return height_and_width
 
@@ -186,6 +186,9 @@ def read_image(path: str | Path, image_size: int | tuple[int, int] | None = None
 
     Args:
         path (str, Path): path to the image file
+        image_size (int | tuple[int, int] | None, optional):
+            Image size to resize the image.
+            Defaults to None.
 
     Example:
         >>> image = read_image("test_image.jpg")
@@ -220,9 +223,7 @@ def read_depth_image(path: str | Path) -> np.ndarray:
         image as numpy array
     """
     path = path if isinstance(path, str) else str(path)
-    image = tiff.imread(path)
-
-    return image
+    return tiff.imread(path)
 
 
 def pad_nextpow2(batch: Tensor) -> Tensor:
@@ -241,5 +242,4 @@ def pad_nextpow2(batch: Tensor) -> Tensor:
     l_dim = 2 ** math.ceil(math.log(max(*batch.shape[-2:]), 2))
     padding_w = [math.ceil((l_dim - batch.shape[-2]) / 2), math.floor((l_dim - batch.shape[-2]) / 2)]
     padding_h = [math.ceil((l_dim - batch.shape[-1]) / 2), math.floor((l_dim - batch.shape[-1]) / 2)]
-    padded_batch = F.pad(batch, pad=[*padding_h, *padding_w])
-    return padded_batch
+    return F.pad(batch, pad=[*padding_h, *padding_w])

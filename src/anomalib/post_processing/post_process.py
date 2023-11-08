@@ -4,21 +4,11 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-from __future__ import annotations
-
 import math
-from enum import Enum
 
 import cv2
 import numpy as np
 from skimage import morphology
-
-
-class ThresholdMethod(str, Enum):
-    """Threshold method to apply post-processing to the output predictions."""
-
-    ADAPTIVE = "adaptive"
-    MANUAL = "manual"
 
 
 def add_label(
@@ -27,9 +17,9 @@ def add_label(
     color: tuple[int, int, int],
     confidence: float | None = None,
     font_scale: float = 5e-3,
-    thickness_scale=1e-3,
+    thickness_scale: float = 1e-3,
 ) -> np.ndarray:
-    """Adds a label to an image.
+    """Add a label to an image.
 
     Args:
         image (np.ndarray): Input image.
@@ -73,12 +63,12 @@ def add_label(
 
 
 def add_normal_label(image: np.ndarray, confidence: float | None = None) -> np.ndarray:
-    """Adds the normal label to the image."""
+    """Add the normal label to the image."""
     return add_label(image, "normal", (225, 252, 134), confidence)
 
 
 def add_anomalous_label(image: np.ndarray, confidence: float | None = None) -> np.ndarray:
-    """Adds the anomalous label to the image."""
+    """Add the anomalous label to the image."""
     return add_label(image, "anomalous", (255, 100, 100), confidence)
 
 
@@ -99,12 +89,15 @@ def anomaly_map_to_color_map(anomaly_map: np.ndarray, normalize: bool = True) ->
     anomaly_map = anomaly_map.astype(np.uint8)
 
     anomaly_map = cv2.applyColorMap(anomaly_map, cv2.COLORMAP_JET)
-    anomaly_map = cv2.cvtColor(anomaly_map, cv2.COLOR_BGR2RGB)
-    return anomaly_map
+    return cv2.cvtColor(anomaly_map, cv2.COLOR_BGR2RGB)
 
 
 def superimpose_anomaly_map(
-    anomaly_map: np.ndarray, image: np.ndarray, alpha: float = 0.4, gamma: int = 0, normalize: bool = False
+    anomaly_map: np.ndarray,
+    image: np.ndarray,
+    alpha: float = 0.4,
+    gamma: int = 0,
+    normalize: bool = False,
 ) -> np.ndarray:
     """Superimpose anomaly map on top of in the input image.
 
@@ -124,10 +117,8 @@ def superimpose_anomaly_map(
     Returns:
         np.ndarray: Image with anomaly map superimposed on top of it.
     """
-
     anomaly_map = anomaly_map_to_color_map(anomaly_map.squeeze(), normalize=normalize)
-    superimposed_map = cv2.addWeighted(anomaly_map, alpha, image, (1 - alpha), gamma)
-    return superimposed_map
+    return cv2.addWeighted(anomaly_map, alpha, image, (1 - alpha), gamma)
 
 
 def compute_mask(anomaly_map: np.ndarray, threshold: float, kernel_size: int = 4) -> np.ndarray:
@@ -141,7 +132,6 @@ def compute_mask(anomaly_map: np.ndarray, threshold: float, kernel_size: int = 4
     Returns:
         Predicted anomaly mask
     """
-
     anomaly_map = anomaly_map.squeeze()
     mask: np.ndarray = np.zeros_like(anomaly_map).astype(np.uint8)
     mask[anomaly_map > threshold] = 1

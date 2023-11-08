@@ -3,7 +3,6 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
 import logging
 import random
@@ -64,7 +63,6 @@ class KDEClassifier(nn.Module):
         Returns:
             (Tuple): Stacked features and length
         """
-
         if max_length is None:
             max_length = torch.max(torch.linalg.norm(feature_stack, ord=2, dim=1))
 
@@ -73,7 +71,8 @@ class KDEClassifier(nn.Module):
         elif self.feature_scaling_method == FeatureScalingMethod.SCALE:
             feature_stack /= max_length
         else:
-            raise RuntimeError("Unknown pre-processing mode. Available modes are: Normalized and Scale.")
+            msg = "Unknown pre-processing mode. Available modes are: Normalized and Scale."
+            raise RuntimeError(msg)
         return feature_stack, max_length
 
     def fit(self, embeddings: Tensor) -> bool:
@@ -85,7 +84,6 @@ class KDEClassifier(nn.Module):
         Returns:
             Boolean confirming whether the training is successful.
         """
-
         if embeddings.shape[0] < self.n_pca_components:
             logger.info("Not enough features to commit. Not making a model.")
             return False
@@ -117,7 +115,6 @@ class KDEClassifier(nn.Module):
         Returns:
             (Tensor): Score
         """
-
         features = self.pca_model.transform(features)
         features, _ = self.pre_process(features, self.max_length)
         # Scores are always assumed to be passed as a density
@@ -133,7 +130,7 @@ class KDEClassifier(nn.Module):
 
     @staticmethod
     def compute_probabilities(scores: Tensor) -> Tensor:
-        """Converts density scores to anomaly probabilities (see https://www.desmos.com/calculator/ifju7eesg7).
+        """Convert density scores to anomaly probabilities (see https://www.desmos.com/calculator/ifju7eesg7).
 
         Args:
           scores (Tensor): density of an image.
@@ -152,11 +149,8 @@ class KDEClassifier(nn.Module):
         Returns:
           Detection probabilities
         """
-
         scores = self.compute_kde_scores(features, as_log_likelihood=True)
-        probabilities = self.compute_probabilities(scores)
-
-        return probabilities
+        return self.compute_probabilities(scores)
 
     def forward(self, features: Tensor) -> Tensor:
         """Make predictions on extracted features."""

@@ -6,7 +6,6 @@ This dataset can be used when there is a lack of real anomalous data.
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
 import logging
 import math
@@ -15,7 +14,7 @@ from copy import deepcopy
 from pathlib import Path
 from tempfile import mkdtemp
 
-import albumentations as A
+import albumentations as A  # noqa: N812
 import cv2
 import pandas as pd
 from albumentations.pytorch import ToTensorV2
@@ -32,7 +31,10 @@ ROOT = "./.tmp/synthetic_anomaly"
 
 
 def make_synthetic_dataset(
-    source_samples: DataFrame, image_dir: Path, mask_dir: Path, anomalous_ratio: float = 0.5
+    source_samples: DataFrame,
+    image_dir: Path,
+    mask_dir: Path,
+    anomalous_ratio: float = 0.5,
 ) -> DataFrame:
     """Convert a set of normal samples into a mixed set of normal and synthetic anomalous samples.
 
@@ -45,7 +47,7 @@ def make_synthetic_dataset(
         mask_dir (Path): Directory to which the ground truth anomaly masks will be written.
         anomalous_ratio (float): Fraction of source samples that will be converted into anomalous samples.
     """
-    assert 1 not in source_samples.label_index.values, "All source images must be normal."
+    assert 1 not in source_samples.label_index.to_numpy(), "All source images must be normal."
     assert image_dir.is_dir(), f"{image_dir} is not a folder."
     assert mask_dir.is_dir(), f"{mask_dir} is not a folder"
 
@@ -64,7 +66,7 @@ def make_synthetic_dataset(
     transform = A.Compose([A.ToFloat(), ToTensorV2()])
 
     def augment(sample: Series) -> Series:
-        """Helper function to apply synthetic anomalous augmentation to a sample from a dataframe.
+        """Apply synthetic anomalous augmentation to a sample from a dataframe.
 
         Reads an image, applies the augmentations, writes the augmented image and corresponding mask to the file system,
         and returns a new Series object with the updates labels and file locations.
@@ -91,14 +93,18 @@ def make_synthetic_dataset(
         mask = (mask.squeeze() * 255).numpy()
         mask_path = mask_dir / file_name
         cv2.imwrite(str(mask_path), mask)
-        out = dict(image_path=str(im_path), label="abnormal", label_index=1, mask_path=str(mask_path), split=Split.VAL)
+        out = {
+            "image_path": str(im_path),
+            "label": "abnormal",
+            "label_index": 1,
+            "mask_path": str(mask_path),
+            "split": Split.VAL,
+        }
         return Series(out)
 
     anomalous_samples = anomalous_samples.apply(augment, axis=1)
 
-    samples = pd.concat([normal_samples, anomalous_samples], ignore_index=True)
-
-    return samples
+    return pd.concat([normal_samples, anomalous_samples], ignore_index=True)
 
 
 class SyntheticAnomalyDataset(AnomalibDataset):
@@ -131,7 +137,7 @@ class SyntheticAnomalyDataset(AnomalibDataset):
         self.setup()
 
     @classmethod
-    def from_dataset(cls, dataset: AnomalibDataset) -> SyntheticAnomalyDataset:
+    def from_dataset(cls: type["SyntheticAnomalyDataset"], dataset: AnomalibDataset) -> "SyntheticAnomalyDataset":
         """Create a synthetic anomaly dataset from an existing dataset of normal images.
 
         Args:
@@ -140,16 +146,16 @@ class SyntheticAnomalyDataset(AnomalibDataset):
         """
         return cls(task=dataset.task, transform=dataset.transform, source_samples=dataset.samples)
 
-    def __copy__(self) -> SyntheticAnomalyDataset:
-        """Returns a shallow copy of the dataset object and prevents cleanup when original object is deleted."""
+    def __copy__(self) -> "SyntheticAnomalyDataset":
+        """Return a shallow copy of the dataset object and prevents cleanup when original object is deleted."""
         cls = self.__class__
         new = cls.__new__(cls)
         new.__dict__.update(self.__dict__)
         self._cleanup = False
         return new
 
-    def __deepcopy__(self, _memo: dict) -> SyntheticAnomalyDataset:
-        """Returns a deep copy of the dataset object and prevents cleanup when original object is deleted."""
+    def __deepcopy__(self, _memo: dict) -> "SyntheticAnomalyDataset":
+        """Return a deep copy of the dataset object and prevents cleanup when original object is deleted."""
         cls = self.__class__
         new = cls.__new__(cls)
         for key, value in self.__dict__.items():

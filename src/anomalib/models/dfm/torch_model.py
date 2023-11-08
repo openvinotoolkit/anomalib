@@ -3,13 +3,12 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
 import math
 
 import torch
-import torch.nn.functional as F
 from torch import Tensor, nn
+from torch.nn import functional as F  # noqa: N812
 
 from anomalib.models.components import PCA, DynamicBufferModule, FeatureExtractor
 
@@ -17,7 +16,7 @@ from anomalib.models.components import PCA, DynamicBufferModule, FeatureExtracto
 class SingleClassGaussian(DynamicBufferModule):
     """Model Gaussian distribution over a set of points."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.register_buffer("mean_vec", Tensor())
         self.register_buffer("u_mat", Tensor())
@@ -41,7 +40,6 @@ class SingleClassGaussian(DynamicBufferModule):
         Args:
             dataset (Tensor): Input dataset to fit the model.
         """
-
         num_samples = dataset.shape[1]
         self.mean_vec = torch.mean(dataset, dim=1)
         data_centered = (dataset - self.mean_vec.reshape(-1, 1)) / math.sqrt(num_samples)
@@ -57,11 +55,10 @@ class SingleClassGaussian(DynamicBufferModule):
             nll (Tensor): Torch tensor of scores
         """
         features_transformed = torch.matmul(features - self.mean_vec, self.u_mat / self.sigma_mat)
-        nll = torch.sum(features_transformed * features_transformed, dim=1) + 2 * torch.sum(torch.log(self.sigma_mat))
-        return nll
+        return torch.sum(features_transformed * features_transformed, dim=1) + 2 * torch.sum(torch.log(self.sigma_mat))
 
     def forward(self, dataset: Tensor) -> None:
-        """Provides the same functionality as `fit`.
+        """Provide the same functionality as `fit`.
 
         Transforms the input dataset based on singular values calculated earlier.
 
@@ -94,7 +91,7 @@ class DFMModel(nn.Module):
         pooling_kernel_size: int = 4,
         n_comps: float = 0.97,
         score_type: str = "fre",
-    ):
+    ) -> None:
         super().__init__()
         self.backbone = backbone
         self.pooling_kernel_size = pooling_kernel_size
@@ -105,7 +102,9 @@ class DFMModel(nn.Module):
         self.layer = layer
         self.input_size = input_size if isinstance(input_size, tuple) else tuple(input_size)
         self.feature_extractor = FeatureExtractor(
-            backbone=self.backbone, pre_trained=pre_trained, layers=[layer]
+            backbone=self.backbone,
+            pre_trained=pre_trained,
+            layers=[layer],
         ).eval()
 
     def fit(self, dataset: Tensor) -> None:
@@ -114,7 +113,6 @@ class DFMModel(nn.Module):
         Args:
             dataset (Tensor): Input dataset to fit the model.
         """
-
         self.pca_model.fit(dataset)
         if self.score_type == "nll":
             features_reduced = self.pca_model.transform(dataset)
@@ -143,14 +141,10 @@ class DFMModel(nn.Module):
             score_map = F.interpolate(fre_map, size=self.input_size, mode="bilinear", align_corners=False)
             score = torch.sum(torch.square(features - feats_reconstructed), dim=1)
         else:
-            raise ValueError(f"unsupported score type: {self.score_type}")
+            msg = f"unsupported score type: {self.score_type}"
+            raise ValueError(msg)
 
-        if self.score_type == "nll":
-            output = score
-        else:
-            output = score_map, score
-
-        return output
+        return score if self.score_type == "nll" else (score_map, score)
 
     def get_features(self, batch: Tensor) -> Tensor:
         """Extract features from the pretrained network.
@@ -168,15 +162,10 @@ class DFMModel(nn.Module):
             features = F.avg_pool2d(input=features, kernel_size=self.pooling_kernel_size)
         feature_shapes = features.shape
         features = features.view(batch_size, -1).detach()
-        if self.training:
-            output = features
-        else:
-            output = (features, feature_shapes)
-
-        return output
+        return features if self.training else (features, feature_shapes)
 
     def forward(self, batch: Tensor) -> Tensor:
-        """Computer score from input images.
+        """Compute score from input images.
 
         Args:
             batch (Tensor): Input images

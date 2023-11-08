@@ -6,12 +6,10 @@ Paper https://arxiv.org/abs/2011.08785
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
 import logging
 
-from omegaconf import DictConfig, ListConfig
-from pytorch_lightning.utilities.types import STEP_OUTPUT
+from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torch import Tensor
 
 from anomalib.models.components import AnomalyModule
@@ -19,7 +17,7 @@ from anomalib.models.padim.torch_model import PadimModel
 
 logger = logging.getLogger(__name__)
 
-__all__ = ["Padim", "PadimLightning"]
+__all__ = ["Padim"]
 
 
 class Padim(AnomalyModule):
@@ -36,9 +34,9 @@ class Padim(AnomalyModule):
 
     def __init__(
         self,
-        layers: list[str],
-        input_size: tuple[int, int],
-        backbone: str,
+        layers: list[str] = ["layer1", "layer2", "layer3"],  # noqa: B006
+        input_size: tuple[int, int] = (256, 256),
+        backbone: str = "resnet18",
         pre_trained: bool = True,
         n_features: int | None = None,
     ) -> None:
@@ -56,16 +54,17 @@ class Padim(AnomalyModule):
         self.embeddings: list[Tensor] = []
 
     @staticmethod
-    def configure_optimizers() -> None:  # pylint: disable=arguments-differ
+    def configure_optimizers() -> None:
         """PADIM doesn't require optimization, therefore returns no optimizers."""
-        return None
+        return
 
     def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> None:
-        """Training Step of PADIM. For each batch, hierarchical features are extracted from the CNN.
+        """Perform the training step of PADIM. For each batch, hierarchical features are extracted from the CNN.
 
         Args:
             batch (dict[str, str | Tensor]): Batch containing image filename, image, label and mask
-            _batch_idx: Index of the batch.
+            args: Additional arguments.
+            kwargs: Additional keyword arguments.
 
         Returns:
             Hierarchical feature map
@@ -82,16 +81,19 @@ class Padim(AnomalyModule):
         self.embeddings.append(embedding.cpu())
 
     def on_validation_start(self) -> None:
+        """Fit the model on validation start."""
         if not self.model.is_fitted:
             self.model.fit(self.embeddings)
 
     def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
-        """Validation Step of PADIM.
+        """Perform a validation step of PADIM.
 
         Similar to the training step, hierarchical features are extracted from the CNN for each batch.
 
         Args:
             batch (dict[str, str | Tensor]): Input batch
+            args: Additional arguments.
+            kwargs: Additional keyword arguments.
 
         Returns:
             Dictionary containing images, features, true labels and masks.
@@ -102,21 +104,11 @@ class Padim(AnomalyModule):
         batch["anomaly_maps"] = self.model(batch["image"])
         return batch
 
+    @property
+    def trainer_arguments(self) -> dict[str, int | float]:
+        """Return PADIM trainer arguments.
 
-class PadimLightning(Padim):
-    """PaDiM: a Patch Distribution Modeling Framework for Anomaly Detection and Localization.
-
-    Args:
-        hparams (DictConfig | ListConfig): Model params
-    """
-
-    def __init__(self, hparams: DictConfig | ListConfig) -> None:
-        super().__init__(
-            input_size=hparams.model.input_size,
-            layers=hparams.model.layers,
-            backbone=hparams.model.backbone,
-            pre_trained=hparams.model.pre_trained,
-            n_features=hparams.model.n_features if "n_features" in hparams.model else None,
-        )
-        self.hparams: DictConfig | ListConfig  # type: ignore
-        self.save_hyperparameters(hparams)
+        Since the model does not require training, we limit the max_epochs to 1.
+        Since we need to run training epoch before validation, we also set the sanity steps to 0
+        """
+        return {"max_epochs": 1, "val_check_interval": 1.0, "num_sanity_val_steps": 0}

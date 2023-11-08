@@ -1,34 +1,39 @@
 """Anomalib CLI."""
 
-# Copyright (C) 2022 Intel Corporation
+# Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
-
 import logging
-import os
-import warnings
-from datetime import datetime
-from importlib import import_module
+from collections.abc import Callable
 from pathlib import Path
+from typing import Any
 
-from omegaconf.omegaconf import OmegaConf
-from pytorch_lightning.cli import LightningArgumentParser, LightningCLI
+import lightning.pytorch as pl
+from jsonargparse import ActionConfigFile, ArgumentParser
+from lightning.pytorch import Trainer
+from lightning.pytorch.cli import ArgsType, LightningArgumentParser, LightningCLI, SaveConfigCallback
+from lightning.pytorch.utilities.types import _EVALUATE_OUTPUT, _PREDICT_OUTPUT
+from rich import traceback
 
-from anomalib.utils.callbacks import (
-    CdfNormalizationCallback,
-    ImageVisualizerCallback,
-    LoadModelCallback,
-    MetricsConfigurationCallback,
-    MinMaxNormalizationCallback,
-    ModelCheckpoint,
-    PostProcessingConfigurationCallback,
-    TilerConfigurationCallback,
-    TimerCallback,
-    add_visualizer_callback,
+from anomalib.config.config import update_config
+from anomalib.data import AnomalibDataModule, TaskType
+from anomalib.deploy import export_to_onnx, export_to_openvino, export_to_torch
+from anomalib.engine import Engine
+from anomalib.models import AnomalyModule
+from anomalib.utils.benchmarking import distribute
+from anomalib.utils.callbacks import get_callbacks, get_visualization_callbacks
+from anomalib.utils.callbacks.normalization import get_normalization_callback
+from anomalib.utils.cli.help_formatter import CustomHelpFormatter
+from anomalib.utils.cli.subcommands import (
+    add_onnx_export_arguments,
+    add_openvino_export_arguments,
+    add_torch_export_arguments,
 )
+from anomalib.utils.hpo import Sweep, get_hpo_parser
 from anomalib.utils.loggers import configure_logger
+from anomalib.utils.metrics.threshold import BaseThreshold
 
+traceback.install()
 logger = logging.getLogger("anomalib.cli")
 
 
@@ -39,184 +44,263 @@ class AnomalibCLI(LightningCLI):
     from both the CLI and a configuration file (.yaml or .json). It is even
     possible to use both the CLI and a configuration file simultaneously.
     For more details, the reader could refer to PyTorch Lightning CLI documentation.
+
+
+    ``save_config_kwargs`` is set to overwrite=True so that the SaveConfigCallback overwrites the config if it already
+    exists.
     """
 
-    def add_arguments_to_parser(self, parser: LightningArgumentParser) -> None:
-        """Add default arguments.
+    def __init__(
+        self,
+        save_config_callback: type[SaveConfigCallback] = SaveConfigCallback,
+        save_config_kwargs: dict[str, Any] | None = None,
+        trainer_class: type[Trainer] | Callable[..., Trainer] = Trainer,
+        trainer_defaults: dict[str, Any] | None = None,
+        seed_everything_default: bool | int = True,
+        parser_kwargs: dict[str, Any] | dict[str, dict[str, Any]] | None = None,
+        args: ArgsType = None,
+        run: bool = True,
+        auto_configure_optimizers: bool = True,
+    ) -> None:
+        super().__init__(
+            AnomalyModule,
+            AnomalibDataModule,
+            save_config_callback,
+            {"overwrite": True} if save_config_kwargs is None else save_config_kwargs,
+            trainer_class,
+            trainer_defaults,
+            seed_everything_default,
+            parser_kwargs,
+            subclass_mode_model=True,
+            subclass_mode_data=True,
+            args=args,
+            run=run,
+            auto_configure_optimizers=auto_configure_optimizers,
+        )
+        self.engine: Engine
 
-        Args:
-            parser (LightningArgumentParser): Lightning Argument Parser.
-        """
-        # TODO: https://github.com/openvinotoolkit/anomalib/issues/20
+    def init_parser(self, **kwargs) -> LightningArgumentParser:
+        """Method that instantiates the argument parser."""
+        kwargs.setdefault("dump_header", [f"lightning.pytorch=={pl.__version__}"])
+        parser = LightningArgumentParser(formatter_class=CustomHelpFormatter, **kwargs)
         parser.add_argument(
-            "--export_mode", type=str, default="", help="Select export mode to ONNX or OpenVINO IR format."
+            "-c",
+            "--config",
+            action=ActionConfigFile,
+            help="Path to a configuration file in json or yaml format.",
         )
-        parser.add_argument("--nncf", type=str, help="Path to NNCF config to enable quantized training.")
+        return parser
 
-        # ADD CUSTOM CALLBACKS TO CONFIG
-        # NOTE: MyPy gives the following error:
-        # Argument 1 to "add_lightning_class_args" of "LightningArgumentParser"
-        # has incompatible type "Type[TilerCallback]"; expected "Union[Type[Trainer],
-        # Type[LightningModule], Type[LightningDataModule]]"  [arg-type]
-        parser.add_lightning_class_args(TilerConfigurationCallback, "tiling")  # type: ignore
-        parser.set_defaults({"tiling.enable": False})
+    @staticmethod
+    def anomalib_subcommands() -> dict[str, dict[str, str]]:
+        """Return a dictionary of subcommands and their description."""
+        return {
+            "export": {"description": "Export the model to ONNX or OpenVINO format."},
+            "benchmark": {"description": "Run benchmarking script"},
+            "hpo": {"description": "Run Hyperparameter Optimization"},
+        }
 
-        parser.add_lightning_class_args(PostProcessingConfigurationCallback, "post_processing")  # type: ignore
-        parser.set_defaults(
-            {
-                "post_processing.normalization_method": "min_max",
-                "post_processing.threshold_method": "adaptive",
-                "post_processing.manual_image_threshold": None,
-                "post_processing.manual_pixel_threshold": None,
-            }
-        )
-
-        # TODO: Assign these default values within the MetricsConfigurationCallback
-        #   - https://github.com/openvinotoolkit/anomalib/issues/384
-        parser.add_lightning_class_args(MetricsConfigurationCallback, "metrics")  # type: ignore
-        parser.set_defaults(
-            {
-                "metrics.task": "segmentation",
-                "metrics.image_metrics": ["F1Score", "AUROC"],
-                "metrics.pixel_metrics": ["F1Score", "AUROC"],
-            }
-        )
-
-        parser.add_lightning_class_args(ImageVisualizerCallback, "visualization")  # type: ignore
-        parser.set_defaults(
-            {
-                "visualization.mode": "full",
-                "visualization.task": "segmentation",
-                "visualization.image_save_path": "",
-                "visualization.save_images": False,
-                "visualization.show_images": False,
-                "visualization.log_images": False,
-            }
-        )
-
-    def __set_default_root_dir(self) -> None:
-        """Sets the default root directory depending on the subcommand type. <train, fit, predict, tune.>."""
-        # Get configs.
-        subcommand = self.config["subcommand"]
-        config = self.config[subcommand]
-
-        # If `resume_from_checkpoint` is not specified, it means that the project has not been created before.
-        # Therefore, we need to create the project directory first.
-        if config.trainer.resume_from_checkpoint is None:
-            root_dir = config.trainer.default_root_dir or "./results"
-            model_name = config.model.class_path.split(".")[-1].lower()
-            data_name = config.data.class_path.split(".")[-1].lower()
-            category = config.data.init_args.category if "category" in config.data.init_args else ""
-            time_stamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-            default_root_dir = os.path.join(root_dir, model_name, data_name, category, time_stamp)
-
-        # Otherwise, the assumption is that the project directory has alrady been created.
-        else:
-            # By default, train subcommand saves the weights to
-            #   ./results/<model>/<data>/time_stamp/weights/model.ckpt.
-            # For this reason, we set the project directory to the parent directory
-            #   that is two-level up.
-            default_root_dir = str(Path(config.trainer.resume_from_checkpoint).parent.parent)
-
-        if config.visualization.image_save_path == "":
-            self.config[subcommand].visualization.image_save_path = default_root_dir + "/images"
-        self.config[subcommand].trainer.default_root_dir = default_root_dir
-
-    def __set_callbacks(self) -> None:
-        """Sets the default callbacks used within the pipeline."""
-        subcommand = self.config["subcommand"]
-        config = self.config[subcommand]
-
-        callbacks = []
-
-        # Model Checkpoint.
-        monitor = None
-        mode = "max"
-        if config.trainer.callbacks is not None:
-            # If trainer has callbacks defined from the config file, they have the
-            # following format:
-            # [{'class_path': 'pytorch_lightning.ca...lyStopping', 'init_args': {...}}]
-            callbacks = config.trainer.callbacks
-
-            # Convert to the following format to get `monitor` and `mode` variables
-            # {'EarlyStopping': {'monitor': 'pixel_AUROC', 'mode': 'max', ...}}
-            callback_args = {c["class_path"].split(".")[-1]: c["init_args"] for c in callbacks}
-            if "EarlyStopping" in callback_args:
-                monitor = callback_args["EarlyStopping"]["monitor"]
-                mode = callback_args["EarlyStopping"]["mode"]
-
-        checkpoint = ModelCheckpoint(
-            dirpath=os.path.join(config.trainer.default_root_dir, "weights"),
-            filename="model",
-            monitor=monitor,
-            mode=mode,
-            auto_insert_metric_name=False,
-        )
-        callbacks.append(checkpoint)
-
-        # LoadModel from Checkpoint.
-        if config.trainer.resume_from_checkpoint:
-            load_model = LoadModelCallback(config.trainer.resume_from_checkpoint)
-            callbacks.append(load_model)
-
-        # Add timing to the pipeline.
-        callbacks.append(TimerCallback())
-
-        #  TODO: This could be set in PostProcessingConfiguration callback
-        #   - https://github.com/openvinotoolkit/anomalib/issues/384
-        # Normalization.
-        normalization = config.post_processing.normalization_method
-        if normalization:
-            if normalization == "min_max":
-                callbacks.append(MinMaxNormalizationCallback())
-            elif normalization == "cdf":
-                callbacks.append(CdfNormalizationCallback())
-            else:
-                raise ValueError(
-                    f"Unknown normalization type {normalization}. \n" "Available types are either None, min_max or cdf"
-                )
-
-        add_visualizer_callback(callbacks, config)
-        self.config[subcommand].visualization = config.visualization
-
-        # Export to OpenVINO
-        if config.export_mode is not None:
-            from anomalib.utils.callbacks.export import (  # pylint: disable=import-outside-toplevel
-                ExportCallback,
+    def _add_subcommands(self, parser: LightningArgumentParser, **kwargs) -> None:
+        """Initialize base subcommands and add anomalib specific on top of it."""
+        # Initializes fit, validate, test, predict and tune
+        super()._add_subcommands(parser, **kwargs)
+        # Add  export, benchmark and hpo
+        for subcommand in self.anomalib_subcommands():
+            sub_parser = ArgumentParser(formatter_class=CustomHelpFormatter)
+            self.parser._subcommands_action.add_subcommand(  # noqa: SLF001
+                subcommand,
+                sub_parser,
+                help=self.anomalib_subcommands()[subcommand]["description"],
             )
+            # add arguments to subcommand
+            getattr(self, f"add_{subcommand}_arguments")(sub_parser)
 
-            logger.info("Setting model export to %s", config.export_mode)
-            callbacks.append(
-                ExportCallback(
-                    input_size=config.data.init_args.image_size,
-                    dirpath=os.path.join(config.trainer.default_root_dir, "compressed"),
-                    filename="model",
-                    export_mode=config.export_mode,
-                )
-            )
-        else:
-            warnings.warn(f"Export option: {config.export_mode} not found. Defaulting to no model export")
-        if config.nncf:
-            if os.path.isfile(config.nncf) and config.nncf.endswith(".yaml"):
-                nncf_module = import_module("anomalib.core.callbacks.nncf_callback")
-                nncf_callback = getattr(nncf_module, "NNCFCallback")
-                callbacks.append(
-                    nncf_callback(
-                        config=OmegaConf.load(config.nncf),
-                        dirpath=os.path.join(config.trainer.default_root_dir, "compressed"),
-                        filename="model",
-                    )
-                )
-            else:
-                raise ValueError(f"--nncf expects a path to nncf config which is a yaml file, but got {config.nncf}")
+    def add_arguments_to_parser(self, parser: LightningArgumentParser) -> None:
+        """Extend trainer's arguments to add engine arguments.
 
-        self.config[subcommand].trainer.callbacks = callbacks
+        Note:
+        ----
+            Since ``Engine`` parameters are manually added, any change to the ``Engine`` class should be reflected
+            manually.
+        """
+        parser.add_function_arguments(get_normalization_callback, "normalization")
+        # visualization takes task from the project
+        parser.add_function_arguments(get_visualization_callbacks, "visualization", skip={"task"})
+        parser.add_argument("--task", type=TaskType, default=TaskType.SEGMENTATION)
+        parser.add_argument("--metrics.image", type=list[str] | str | None, default=["F1Score", "AUROC"])
+        parser.add_argument("--metrics.pixel", type=list[str] | str | None, default=None, required=False)
+        parser.add_argument("--metrics.threshold", type=BaseThreshold, default="F1AdaptiveThreshold")
+        parser.add_argument("--logging.log_graph", type=bool, help="Log the model to the logger", default=False)
+        parser.link_arguments("data.init_args.image_size", "model.init_args.input_size")
+        parser.link_arguments("task", "data.init_args.task")
+        parser.add_argument(
+            "--results_dir.path",
+            type=Path,
+            help="Path to save the results.",
+            default=Path("./results"),
+        )
+        parser.add_argument("--results_dir.unique", type=bool, help="Whether to create a unique folder.", default=False)
+        parser.link_arguments("results_dir.path", "trainer.default_root_dir")
+        # TODO(ashwinvaidya17): Tiling should also be a category of its own
+        # CVS-122659
+
+    def add_export_arguments(self, parser: LightningArgumentParser) -> None:
+        """Add export arguments to the parser."""
+        subcommand = parser.add_subcommands(dest="export_mode", help="Export mode.")
+        # Add export mode sub parsers
+        add_torch_export_arguments(subcommand)
+        add_onnx_export_arguments(subcommand)
+        add_openvino_export_arguments(subcommand)
+
+    def add_hpo_arguments(self, parser: LightningArgumentParser) -> None:
+        """Add hyperparameter optimization arguments."""
+        parser = get_hpo_parser(parser)
+
+    def add_benchmark_arguments(self, parser: LightningArgumentParser) -> None:
+        """Add benchmark arguments to the parser."""
+        parser.add_argument("--config", type=Path, help="Path to the benchmark config.", required=True)
 
     def before_instantiate_classes(self) -> None:
-        """Modify the configuration to properly instantiate classes."""
-        self.__set_default_root_dir()
-        self.__set_callbacks()
-        print("done.")
+        """Modify the configuration to properly instantiate classes and sets up tiler."""
+        subcommand = self.config["subcommand"]
+        if subcommand not in self.anomalib_subcommands():
+            self.config[subcommand] = update_config(self.config[subcommand])
+
+    def instantiate_classes(self) -> None:
+        """Instantiate classes depending on the subcommand.
+
+        For trainer related commands it instantiates all the model, datamodule and trainer classes.
+        But for subcommands we do not want to instantiate any trainer specific classes such as datamodule, model, etc
+        This is because the subcommand is responsible for instantiating and executing code based on the passed config
+        """
+        if self.config["subcommand"] not in self.anomalib_subcommands():
+            # since all classes are instantiated, the LightningCLI also creates an unused ``Trainer`` object.
+            self.config_init = self.parser.instantiate_classes(self.config)
+            self.datamodule = self._get(self.config_init, "data")
+            self.model = self._get(self.config_init, "model")
+            self._add_configure_optimizers_method_to_model(self.subcommand)
+            self.engine = self.instantiate_engine()
+        else:
+            self.config_init = self.parser.instantiate_classes(self.config)
+
+    def instantiate_engine(self) -> Engine:
+        """Instantiate the engine.
+
+        Note:
+        ----
+            Most of the code in this method is taken from LightningCLI's ``instantiate_trainer`` method.
+            Refer to that method for more details.
+        """
+        extra_callbacks = [self._get(self.config_init, c) for c in self._parser(self.subcommand).callback_keys]
+        engine_args = {
+            "normalization": self._get(self.config_init, "normalization.normalization_method"),
+            "threshold": self._get(self.config_init, "metrics.threshold"),
+            "task": self._get(self.config_init, "task"),
+            "image_metrics": self._get(self.config_init, "metrics.image"),
+            "pixel_metrics": self._get(self.config_init, "metrics.pixel"),
+            "visualization": self._get(self.config_init, "visualization"),
+        }
+        trainer_config = {**self._get(self.config_init, "trainer", default={}), **engine_args}
+        key = "callbacks"
+        if key in trainer_config:
+            if trainer_config[key] is None:
+                trainer_config[key] = []
+            elif not isinstance(trainer_config[key], list):
+                trainer_config[key] = [trainer_config[key]]
+            trainer_config[key].extend(extra_callbacks)
+            if key in self.trainer_defaults:
+                value = self.trainer_defaults[key]
+                trainer_config[key] += value if isinstance(value, list) else [value]
+            if self.save_config_callback and not trainer_config.get("fast_dev_run", False):
+                config_callback = self.save_config_callback(
+                    self._parser(self.subcommand),
+                    self.config.get(str(self.subcommand), self.config),
+                    **self.save_config_kwargs,
+                )
+                trainer_config[key].append(config_callback)
+        trainer_config[key].extend(get_callbacks(self.config[self.subcommand]))
+        return Engine(**trainer_config)
+
+    def _run_subcommand(self, subcommand: str) -> None:
+        """Run subcommand depending on the subcommand.
+
+        This overrides the original ``_run_subcommand`` to run the ``Engine`` method rather than the ``Train`` method
+        """
+        if self.config["subcommand"] not in self.anomalib_subcommands():
+            fn = getattr(self.engine, subcommand)
+            fn_kwargs = self._prepare_subcommand_kwargs(subcommand)
+            fn(**fn_kwargs)
+        else:
+            self.config_init = self.parser.instantiate_classes(self.config)
+            getattr(self, f"{subcommand}")()
+
+    @property
+    def fit(self) -> Callable[..., None]:
+        """Fit the model using engine's fit method."""
+        return self.engine.fit
+
+    @property
+    def validate(self) -> Callable[..., _EVALUATE_OUTPUT | None]:
+        """Validate the model using engine's validate method."""
+        return self.engine.validate
+
+    @property
+    def test(self) -> Callable[..., _EVALUATE_OUTPUT]:
+        """Test the model using engine's test method."""
+        return self.engine.test
+
+    @property
+    def predict(self) -> Callable[..., _PREDICT_OUTPUT | None]:
+        """Predict using engine's predict method."""
+        return self.engine.predict
+
+    def hpo(self) -> None:
+        """Run hpo subcommand."""
+        config = self.config["hpo"]
+        sweep = Sweep(
+            model=config.model,
+            model_config=config.model_config,
+            sweep_config=config.sweep_config,
+            backend=config.backend,
+        )
+        sweep.run()
+
+    def benchmark(self) -> None:
+        """Run benchmark subcommand."""
+        config = self.config["benchmark"]
+        distribute(config.config)
+
+    def export(self) -> None:
+        """Run export."""
+        export_mode = self.config.export.export_mode
+        config = self.config.export[export_mode]
+        if export_mode == "torch":
+            export_to_torch(
+                export_path=config.export_path,
+                model=config.model,
+                transform=config.transform,
+                task=config.task,
+            )
+        elif export_mode == "onnx":
+            export_to_onnx(
+                model=config.model,
+                input_size=config.input_size,
+                export_path=config.export_path,
+                transform=config.transform,
+                task=config.task,
+            )
+        elif export_mode == "openvino":
+            export_to_openvino(
+                export_path=config.export_path,
+                model=config.model,
+                input_size=config.input_size,
+                transform=config.transform,
+                task=config.task,
+                mo_args={**config.mo_args},
+            )
+        else:
+            logger.error(f"Unsupported export mode: {export_mode}")
+            raise NotImplementedError
 
 
 def main() -> None:

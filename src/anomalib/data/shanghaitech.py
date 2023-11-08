@@ -13,14 +13,13 @@ Reference:
 # Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
 import logging
 from pathlib import Path
 from shutil import move
 from typing import Any
 
-import albumentations as A
+import albumentations as A  # noqa: N812
 import numpy as np
 import pandas as pd
 import torch
@@ -46,7 +45,7 @@ logger = logging.getLogger(__name__)
 DATASET_DOWNLOAD_INFO = DownloadInfo(
     name="ShanghaiTech Dataset",
     url="http://101.32.75.151:8181/dataset/shanghaitech.tar.gz",
-    hash="08494decd30fb0fa213b519a9c555040",
+    checksum="08494decd30fb0fa213b519a9c555040",
 )
 
 
@@ -119,6 +118,7 @@ class ShanghaiTechTrainClipsIndexer(ClipsIndexer):
 
     def get_mask(self, idx: int) -> Tensor | None:
         """No masks available for training set."""
+        del idx  # Unused argument
         return None
 
 
@@ -131,7 +131,6 @@ class ShanghaiTechTestClipsIndexer(ClipsIndexer):
 
     def get_mask(self, idx: int) -> Tensor | None:
         """Retrieve the masks from the file system."""
-
         video_idx, frames_idx = self.get_clip_location(idx)
         mask_file = self.mask_paths[video_idx]
         if mask_file == "":  # no gt masks available for this clip
@@ -139,8 +138,7 @@ class ShanghaiTechTestClipsIndexer(ClipsIndexer):
         frames = self.clips[video_idx][frames_idx]
 
         vid_masks = np.load(mask_file)
-        masks = np.take(vid_masks, frames, 0)
-        return masks
+        return np.take(vid_masks, frames, 0)
 
     def _compute_frame_pts(self) -> None:
         """Retrieve the number of frames in each video."""
@@ -152,7 +150,7 @@ class ShanghaiTechTestClipsIndexer(ClipsIndexer):
         self.video_fps = [None] * len(self.video_paths)  # fps information cannot be inferred from folder structure
 
     def get_clip(self, idx: int) -> tuple[Tensor, Tensor, dict[str, Any], int]:
-        """Gets a subclip from a list of videos.
+        """Get a subclip from a list of videos.
 
         Args:
             idx (int): index of the subclip. Must be between 0 and num_clips().
@@ -164,7 +162,8 @@ class ShanghaiTechTestClipsIndexer(ClipsIndexer):
             video_idx (int): index of the video in `video_paths`
         """
         if idx >= self.num_clips():
-            raise IndexError(f"Index {idx} out of range ({self.num_clips()} number of clips)")
+            msg = f"Index {idx} out of range ({self.num_clips()} number of clips)"
+            raise IndexError(msg)
         video_idx, clip_idx = self.get_clip_location(idx)
         video_path = self.video_paths[video_idx]
         clip_pts = self.clips[video_idx][clip_idx]
@@ -182,10 +181,10 @@ class ShanghaiTechDataset(AnomalibVideoDataset):
 
     Args:
         task (TaskType): Task type, 'classification', 'detection' or 'segmentation'
-        root (Path | str): Path to the root of the dataset
-        scene (int): Index of the dataset scene (category) in range [1, 13]
         transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
         split (Split): Split of the dataset, usually Split.TRAIN or Split.TEST
+        root (Path | str): Path to the root of the dataset
+        scene (int): Index of the dataset scene (category) in range [1, 13]
         clip_length_in_frames (int, optional): Number of video frames in each clip.
         frames_between_clips (int, optional): Number of frames between each consecutive video clip.
         target_frame (VideoTargetFrame): Specifies the target frame in the video clip, used for ground truth retrieval
@@ -194,22 +193,22 @@ class ShanghaiTechDataset(AnomalibVideoDataset):
     def __init__(
         self,
         task: TaskType,
-        root: Path | str,
-        scene: int,
         transform: A.Compose,
         split: Split,
+        root: Path | str = "./datasets/shanghaitech",
+        scene: int = 1,
         clip_length_in_frames: int = 1,
         frames_between_clips: int = 1,
         target_frame: VideoTargetFrame = VideoTargetFrame.LAST,
-    ):
+    ) -> None:
         super().__init__(task, transform, clip_length_in_frames, frames_between_clips, target_frame)
 
-        self.root = root
+        self.root = Path(root)
         self.scene = scene
         self.split = split
         self.indexer_cls = ShanghaiTechTrainClipsIndexer if self.split == Split.TRAIN else ShanghaiTechTestClipsIndexer
 
-    def _setup(self):
+    def _setup(self) -> None:
         """Create and assign samples."""
         self.samples = make_shanghaitech_dataset(self.root, self.scene, self.split)
 
@@ -245,13 +244,13 @@ class ShanghaiTech(AnomalibVideoDataModule):
 
     def __init__(
         self,
-        root: Path | str,
-        scene: int,
+        root: Path | str = "./datasets/shanghaitech",
+        scene: int = 1,
         clip_length_in_frames: int = 1,
         frames_between_clips: int = 1,
         target_frame: VideoTargetFrame = VideoTargetFrame.LAST,
         task: TaskType = TaskType.SEGMENTATION,
-        image_size: int | tuple[int, int] | None = None,
+        image_size: int | tuple[int, int] = (256, 256),
         center_crop: int | tuple[int, int] | None = None,
         normalization: InputNormalizationMethod | str = InputNormalizationMethod.IMAGENET,
         train_batch_size: int = 32,
@@ -262,7 +261,7 @@ class ShanghaiTech(AnomalibVideoDataModule):
         val_split_mode: ValSplitMode = ValSplitMode.FROM_TEST,
         val_split_ratio: float = 0.5,
         seed: int | None = None,
-    ):
+    ) -> None:
         super().__init__(
             train_batch_size=train_batch_size,
             eval_batch_size=eval_batch_size,
@@ -329,7 +328,7 @@ class ShanghaiTech(AnomalibVideoDataModule):
         converted_vid_dir = training_root / "converted_videos"
         vid_count = len(list(vid_dir.glob("*")))
         converted_vid_count = len(list(converted_vid_dir.glob("*")))
-        if not vid_count == converted_vid_count:
+        if vid_count != converted_vid_count:
             self._convert_training_videos(vid_dir, converted_vid_dir)
 
     @staticmethod
@@ -344,7 +343,7 @@ class ShanghaiTech(AnomalibVideoDataModule):
             video_folder (Path): Path to the folder of training videos.
             target_folder (Path): File system location where the converted videos will be stored.
         """
-        training_videos = sorted(list(video_folder.glob("*")))
+        training_videos = sorted(video_folder.glob("*"))
         for video_idx, video_path in enumerate(training_videos):
             logger.info("Converting training video %s (%i/%i)...", video_path.name, video_idx + 1, len(training_videos))
             file_name = video_path.name

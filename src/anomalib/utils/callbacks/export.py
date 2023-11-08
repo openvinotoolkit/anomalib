@@ -3,18 +3,20 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
 import logging
 from pathlib import Path
 
-import pytorch_lightning as pl
-from pytorch_lightning import Callback
+import lightning.pytorch as pl
+from lightning.pytorch import Callback
 
-from anomalib.deploy import ExportMode, export
+from anomalib.deploy.export import ExportMode, export_to_onnx, export_to_openvino, export_to_torch
 from anomalib.models.components import AnomalyModule
 
 logger = logging.getLogger(__name__)
+
+# TODO(ashwinvaidya17): Drop this callback when migration to API is complete. Users should use engine.export
+# CVS-123591
 
 
 class ExportCallback(Callback):
@@ -28,9 +30,15 @@ class ExportCallback(Callback):
         filename (str): Name of output model
     """
 
-    def __init__(self, input_size: tuple[int, int], dirpath: str, filename: str, export_mode: ExportMode) -> None:
+    def __init__(
+        self,
+        input_size: tuple[int, int],
+        dirpath: str | Path,
+        filename: str,
+        export_mode: ExportMode,
+    ) -> None:
         self.input_size = input_size
-        self.dirpath = dirpath
+        self.dirpath = Path(dirpath) if isinstance(dirpath, str) else dirpath
         self.filename = filename
         self.export_mode = export_mode
 
@@ -41,13 +49,29 @@ class ExportCallback(Callback):
         ``.xml`` and ``.bin`` IR files.
         """
         logger.info("Exporting the model")
-        Path(self.dirpath).mkdir(parents=True, exist_ok=True)
+        self.dirpath.mkdir(parents=True, exist_ok=True)
 
-        export(
-            task=trainer.datamodule.test_data.task,
-            input_size=self.input_size,
-            transform=trainer.datamodule.test_data.transform.to_dict(),
-            model=pl_module,
-            export_root=self.dirpath,
-            export_mode=self.export_mode,
-        )
+        if self.export_mode == ExportMode.TORCH:
+            export_to_torch(
+                model=pl_module,
+                export_path=self.dirpath,
+                transform=trainer.datamodule.test_data.transform,
+                task=trainer.datamodule.test_data.task,
+            )
+        elif self.export_mode == ExportMode.ONNX:
+            export_to_onnx(
+                model=pl_module,
+                input_size=self.input_size,
+                export_path=self.dirpath,
+                transform=trainer.datamodule.test_data.transform,
+                task=trainer.datamodule.test_data.task,
+            )
+        else:
+            export_to_openvino(
+                export_path=self.dirpath,
+                model=pl_module,
+                input_size=self.input_size,
+                transform=trainer.datamodule.test_data.transform,
+                mo_args={},
+                task=trainer.datamodule.test_data.task,
+            )

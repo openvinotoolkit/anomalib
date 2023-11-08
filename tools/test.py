@@ -5,10 +5,11 @@
 
 from argparse import ArgumentParser, Namespace
 
-from pytorch_lightning import Trainer, seed_everything
+from lightning.pytorch import seed_everything
 
 from anomalib.config import get_configurable_parameters
 from anomalib.data import get_datamodule
+from anomalib.engine import Engine
 from anomalib.models import get_model
 from anomalib.utils.callbacks import get_callbacks
 
@@ -27,7 +28,7 @@ def get_parser() -> ArgumentParser:
     return parser
 
 
-def test(args: Namespace):
+def test(args: Namespace) -> None:
     """Test an anomaly model.
 
     Args:
@@ -36,19 +37,18 @@ def test(args: Namespace):
     config = get_configurable_parameters(
         model_name=args.model,
         config_path=args.config,
-        weight_file=args.weight_file,
     )
 
-    if config.project.seed:
-        seed_everything(config.project.seed)
+    if config.get("seed_everything", None) is not None:
+        seed_everything(config.seed_everything)
 
     datamodule = get_datamodule(config)
     model = get_model(config)
 
     callbacks = get_callbacks(config)
 
-    trainer = Trainer(callbacks=callbacks, **config.trainer)
-    trainer.test(model=model, datamodule=datamodule)
+    engine = Engine(callbacks=callbacks, **config.trainer)
+    engine.test(model=model, datamodule=datamodule, ckpt_path=args.weight_file)
 
 
 if __name__ == "__main__":

@@ -3,7 +3,6 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
 import numpy as np
 import torch
@@ -24,7 +23,8 @@ def standardize(
     elif isinstance(targets, Tensor):
         targets = torch.log(targets)
     else:
-        raise ValueError(f"Targets must be either Tensor or Numpy array. Received {type(targets)}")
+        msg = f"Targets must be either Tensor or Numpy array. Received {type(targets)}"
+        raise TypeError(msg)
     standardized = (targets - mean) / std
     if center_at:
         standardized -= (center_at - mean) / std
@@ -37,7 +37,8 @@ def normalize(targets: np.ndarray | Tensor, threshold: float | np.ndarray | Tens
         return normalize_torch(targets, threshold)
     if isinstance(targets, np.ndarray):
         return normalize_numpy(targets, threshold)
-    raise ValueError(f"Targets must be either Tensor or Numpy array. Received {type(targets)}")
+    msg = f"Targets must be either Tensor or Numpy array. Received {type(targets)}"
+    raise TypeError(msg)
 
 
 def normalize_torch(targets: Tensor, threshold: Tensor) -> Tensor:
@@ -46,8 +47,7 @@ def normalize_torch(targets: Tensor, threshold: Tensor) -> Tensor:
     image_threshold = threshold.cpu()
 
     dist = Normal(torch.Tensor([0]), torch.Tensor([1]))
-    normalized = dist.cdf(targets.cpu() - image_threshold).to(device)
-    return normalized
+    return dist.cdf(targets.cpu() - image_threshold).to(device)
 
 
 def normalize_numpy(targets: np.ndarray, threshold: float | np.ndarray) -> np.ndarray:

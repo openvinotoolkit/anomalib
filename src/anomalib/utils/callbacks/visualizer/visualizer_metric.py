@@ -3,12 +3,11 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
 from pathlib import Path
 
+import lightning.pytorch as pl
 import numpy as np
-import pytorch_lightning as pl
 from matplotlib import pyplot as plt
 
 from anomalib.models.components import AnomalyModule
@@ -33,7 +32,6 @@ class MetricVisualizerCallback(BaseVisualizerCallback):
             trainer (pl.Trainer): pytorch lightning trainer.
             pl_module (AnomalyModule): pytorch lightning module.
         """
-
         if self.save_images or self.log_images:
             for metrics in (pl_module.image_metrics, pl_module.pixel_metrics):
                 for metric in metrics.values():

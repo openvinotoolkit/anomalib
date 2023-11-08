@@ -9,9 +9,8 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
-from typing import Callable
+from collections.abc import Callable
 
 import timm
 import torch
@@ -42,7 +41,8 @@ def subnet_conv_func(kernel_size: int, hidden_ratio: float) -> Callable:
     def subnet_conv(in_channels: int, out_channels: int) -> nn.Sequential:
         hidden_channels = int(in_channels * hidden_ratio)
         # NOTE: setting padding="same" in nn.Conv2d breaks the onnx export so manual padding required.
-        # TODO: Use padding="same" in nn.Conv2d once PyTorch v2.1 is released
+        # TODO(ashwinvaidya17): Use padding="same" in nn.Conv2d once PyTorch v2.1 is released
+        # CVS-122671
         padding = 2 * (kernel_size // 2 - ((1 + kernel_size) % 2), kernel_size // 2)
         return nn.Sequential(
             nn.ZeroPad2d(padding),
@@ -79,10 +79,7 @@ def create_fast_flow_block(
     """
     nodes = SequenceINN(*input_dimensions)
     for i in range(flow_steps):
-        if i % 2 == 1 and not conv3x3_only:
-            kernel_size = 1
-        else:
-            kernel_size = 3
+        kernel_size = 1 if i % 2 == 1 and not conv3x3_only else 3
         nodes.append(
             AllInOneBlock,
             subnet_constructor=subnet_conv_func(kernel_size, hidden_ratio),
@@ -139,31 +136,32 @@ class FastflowModel(nn.Module):
             # for transformers, use their pretrained norm w/o grad
             # for resnets, self.norms are trainable LayerNorm
             self.norms = nn.ModuleList()
-            for channel, scale in zip(channels, scales):
+            for channel, scale in zip(channels, scales, strict=True):
                 self.norms.append(
                     nn.LayerNorm(
                         [channel, int(input_size[0] / scale), int(input_size[1] / scale)],
                         elementwise_affine=True,
-                    )
+                    ),
                 )
         else:
-            raise ValueError(
+            msg = (
                 f"Backbone {backbone} is not supported. List of available backbones are "
                 "[cait_m48_448, deit_base_distilled_patch16_384, resnet18, wide_resnet50_2]."
             )
+            raise ValueError(msg)
 
         for parameter in self.feature_extractor.parameters():
             parameter.requires_grad = False
 
         self.fast_flow_blocks = nn.ModuleList()
-        for channel, scale in zip(channels, scales):
+        for channel, scale in zip(channels, scales, strict=True):
             self.fast_flow_blocks.append(
                 create_fast_flow_block(
                     input_dimensions=[channel, int(input_size[0] / scale), int(input_size[1] / scale)],
                     conv3x3_only=conv3x3_only,
                     hidden_ratio=hidden_ratio,
                     flow_steps=flow_steps,
-                )
+                ),
             )
         self.anomaly_map_generator = AnomalyMapGenerator(input_size=input_size)
 
@@ -178,7 +176,6 @@ class FastflowModel(nn.Module):
                 (hidden_variables, log-of-the-jacobian-determinants).
                 During the validation/test, return the anomaly map.
         """
-
         return_val: Tensor | list[Tensor] | tuple[list[Tensor]]
 
         self.feature_extractor.eval()
@@ -194,7 +191,7 @@ class FastflowModel(nn.Module):
         # NOTE: output variable has z, and jacobian tuple for each fast-flow blocks.
         hidden_variables: list[Tensor] = []
         log_jacobians: list[Tensor] = []
-        for fast_flow_block, feature in zip(self.fast_flow_blocks, features):
+        for fast_flow_block, feature in zip(self.fast_flow_blocks, features, strict=True):
             hidden_variable, log_jacobian = fast_flow_block(feature)
             hidden_variables.append(hidden_variable)
             log_jacobians.append(log_jacobian)
@@ -216,8 +213,7 @@ class FastflowModel(nn.Module):
             list[Tensor]: List of features.
         """
         features = self.feature_extractor(input_tensor)
-        features = [self.norms[i](feature) for i, feature in enumerate(features)]
-        return features
+        return [self.norms[i](feature) for i, feature in enumerate(features)]
 
     def _get_cait_features(self, input_tensor: Tensor) -> list[Tensor]:
         """Get Class-Attention-Image-Transformers (CaiT) features.
@@ -237,8 +233,7 @@ class FastflowModel(nn.Module):
         feature = self.feature_extractor.norm(feature)
         feature = feature.permute(0, 2, 1)
         feature = feature.reshape(batch_size, num_channels, self.input_size[0] // 16, self.input_size[1] // 16)
-        features = [feature]
-        return features
+        return [feature]
 
     def _get_vit_features(self, input_tensor: Tensor) -> list[Tensor]:
         """Get Vision Transformers (ViT) features.
@@ -270,5 +265,4 @@ class FastflowModel(nn.Module):
         batch_size, _, num_channels = feature.shape
         feature = feature.permute(0, 2, 1)
         feature = feature.reshape(batch_size, num_channels, self.input_size[0] // 16, self.input_size[1] // 16)
-        features = [feature]
-        return features
+        return [feature]

@@ -3,8 +3,6 @@
 # Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
-
 import warnings
 from abc import ABC, abstractmethod
 from pathlib import Path
@@ -42,7 +40,7 @@ class ClipsIndexer(VideoClips, ABC):
         self.mask_paths = mask_paths
 
     def last_frame_idx(self, video_idx: int) -> int:
-        """Returns the index of the last frame for a given video."""
+        """Return the index of the last frame for a given video."""
         return self.clips[video_idx][-1][-1].item()
 
     @abstractmethod
@@ -61,15 +59,13 @@ class ClipsIndexer(VideoClips, ABC):
         video_path = self.video_paths[video_idx]
         clip_pts = self.clips[video_idx][clip_idx]
 
-        item = dict(
-            image=clip,
-            mask=self.get_mask(idx),
-            video_path=video_path,
-            frames=clip_pts,
-            last_frame=self.last_frame_idx(video_idx),
-        )
-
-        return item
+        return {
+            "image": clip,
+            "mask": self.get_mask(idx),
+            "video_path": video_path,
+            "frames": clip_pts,
+            "last_frame": self.last_frame_idx(video_idx),
+        }
 
 
 def convert_video(input_path: Path, output_path: Path, codec: str = "MP4V") -> None:

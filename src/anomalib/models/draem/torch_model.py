@@ -9,7 +9,6 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
 import torch
 from torch import Tensor, nn
@@ -29,7 +28,7 @@ class DraemModel(nn.Module):
         """Compute the reconstruction and anomaly mask from an input image.
 
         Args:
-            x (Tensor): batch of input images
+            batch (Tensor): batch of input images
 
         Returns:
             Predicted confidence values of the anomaly mask. During training the reconstructed input images are
@@ -52,7 +51,13 @@ class ReconstructiveSubNetwork(nn.Module):
         base_width (int): Base dimensionality of the layers of the autoencoder.
     """
 
-    def __init__(self, in_channels: int = 3, out_channels: int = 3, base_width=128, sspcab: bool = False) -> None:
+    def __init__(
+        self,
+        in_channels: int = 3,
+        out_channels: int = 3,
+        base_width: int = 128,
+        sspcab: bool = False,
+    ) -> None:
         super().__init__()
         self.encoder = EncoderReconstructive(in_channels, base_width, sspcab=sspcab)
         self.decoder = DecoderReconstructive(base_width, out_channels=out_channels)
@@ -67,8 +72,7 @@ class ReconstructiveSubNetwork(nn.Module):
             Batch of reconstructed images.
         """
         encoded = self.encoder(batch)
-        decoded = self.decoder(encoded)
-        return decoded
+        return self.decoder(encoded)
 
 
 class DiscriminativeSubNetwork(nn.Module):
@@ -96,8 +100,7 @@ class DiscriminativeSubNetwork(nn.Module):
             Activations of the output layer corresponding to the normal and anomalous class scores on the pixel level.
         """
         act1, act2, act3, act4, act5, act6 = self.encoder_segment(batch)
-        segmentation = self.decoder_segment(act1, act2, act3, act4, act5, act6)
-        return segmentation
+        return self.decoder_segment(act1, act2, act3, act4, act5, act6)
 
 
 class EncoderDiscriminative(nn.Module):
@@ -278,7 +281,7 @@ class DecoderDiscriminative(nn.Module):
         self.fin_out = nn.Sequential(nn.Conv2d(base_width, out_channels, kernel_size=3, padding=1))
 
     def forward(self, act1: Tensor, act2: Tensor, act3: Tensor, act4: Tensor, act5: Tensor, act6: Tensor) -> Tensor:
-        """Computes predicted anomaly class scores from the intermediate outputs of the encoder sub network.
+        """Compute predicted anomaly class scores from the intermediate outputs of the encoder sub network.
 
         Args:
             act1 (Tensor): Encoder activations of the first block of convolutional layers.
@@ -311,8 +314,7 @@ class DecoderDiscriminative(nn.Module):
         cat4 = torch.cat((up4, act1), dim=1)
         db4 = self.db4(cat4)
 
-        out = self.fin_out(db4)
-        return out
+        return self.fin_out(db4)
 
 
 class EncoderReconstructive(nn.Module):
@@ -390,8 +392,7 @@ class EncoderReconstructive(nn.Module):
         mp3 = self.mp3(act3)
         act4 = self.block4(mp3)
         mp4 = self.mp4(act4)
-        act5 = self.block5(mp4)
-        return act5
+        return self.block5(mp4)
 
 
 class DecoderReconstructive(nn.Module):
@@ -489,5 +490,4 @@ class DecoderReconstructive(nn.Module):
         up4 = self.up4(db3)
         db4 = self.db4(up4)
 
-        out = self.fin_out(db4)
-        return out
+        return self.fin_out(db4)

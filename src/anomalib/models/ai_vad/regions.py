@@ -3,7 +3,6 @@
 # Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
 import torch
 from torch import Tensor, nn
@@ -54,11 +53,12 @@ class RegionExtractor(nn.Module):
         self.backbone = maskrcnn_resnet50_fpn_v2(weights=weights, box_score_thresh=box_score_thresh, rpn_nms_thresh=0.3)
 
     def forward(self, first_frame: Tensor, last_frame: Tensor) -> list[dict]:
-        """Forward pass through region extractor.
+        """Perform forward-pass through region extractor.
 
         Args:
-            first_frame (Tensor): Batch of input images of shape (N, C, H, W) forming the first frames in the clip
-            last_frame (Tensor): Batch of input images of shape (N, C, H, W) forming the last frame in the clip
+            first_frame (Tensor): Batch of input images of shape (N, C, H, W) forming the first frames in the clip.
+            last_frame (Tensor): Batch of input images of shape (N, C, H, W) forming the last frame in the clip.
+
         Returns:
             list[dict]: List of Mask RCNN predictions for each image in the batch.
         """
@@ -67,12 +67,14 @@ class RegionExtractor(nn.Module):
 
         if self.enable_foreground_detections:
             regions = self.add_foreground_boxes(
-                regions, first_frame, last_frame, self.foreground_kernel_size, self.foreground_binary_threshold
+                regions,
+                first_frame,
+                last_frame,
+                self.foreground_kernel_size,
+                self.foreground_binary_threshold,
             )
 
-        regions = self.post_process_bbox_detections(regions)
-
-        return regions
+        return self.post_process_bbox_detections(regions)
 
     def add_foreground_boxes(
         self,
@@ -124,17 +126,17 @@ class RegionExtractor(nn.Module):
         batch_boxes, _ = masks_to_boxes(foreground_map)
 
         # append foreground detections to region extractor detections
-        for im_regions, boxes, pixel_mask in zip(regions, batch_boxes, foreground_map):
+        for im_regions, boxes, pixel_mask in zip(regions, batch_boxes, foreground_map, strict=True):
             if boxes.shape[0] == 0:
                 continue
 
             # append boxes, labels and scores
             im_regions["boxes"] = torch.cat([im_regions["boxes"], boxes])
             im_regions["labels"] = torch.cat(
-                [im_regions["labels"], torch.zeros(boxes.shape[0], device=boxes.device)]
+                [im_regions["labels"], torch.zeros(boxes.shape[0], device=boxes.device)],
             )  # set label as background, in accordance with region extractor predictions
             im_regions["scores"] = torch.cat(
-                [im_regions["scores"], torch.ones(boxes.shape[0], device=boxes.device) * 0.5]
+                [im_regions["scores"], torch.ones(boxes.shape[0], device=boxes.device) * 0.5],
             )  # set confidence to 0.5
 
             # append masks
@@ -157,14 +159,13 @@ class RegionExtractor(nn.Module):
         Returns:
             list[dict[str, Tensor]]: Filtered regions
         """
-        filtered_regions = []
-        for im_regions in regions:
-            if self.persons_only:
-                im_regions = self._keep_only_persons(im_regions)
-            im_regions = self._filter_by_area(im_regions, self.min_bbox_area)
-            im_regions = self._delete_overlapping_boxes(im_regions, self.max_bbox_overlap)
-            filtered_regions.append(im_regions)
-        return filtered_regions
+        filtered_regions_list = []
+        for img_regions in regions:
+            filtered_regions = self._keep_only_persons(img_regions) if self.persons_only else img_regions
+            filtered_regions = self._filter_by_area(filtered_regions, self.min_bbox_area)
+            filtered_regions = self._delete_overlapping_boxes(filtered_regions, self.max_bbox_overlap)
+            filtered_regions_list.append(filtered_regions)
+        return filtered_regions_list
 
     def _keep_only_persons(self, regions: dict[str, Tensor]) -> dict[str, Tensor]:
         """Remove all region detections that are not labeled as a person by the region extractor.
@@ -178,11 +179,12 @@ class RegionExtractor(nn.Module):
         keep = torch.where(regions["labels"] == PERSON_LABEL)
         return self.subsample_regions(regions, keep)
 
-    def _filter_by_area(self, regions: dict[str, Tensor], min_area) -> dict[str, Tensor]:
+    def _filter_by_area(self, regions: dict[str, Tensor], min_area: int) -> dict[str, Tensor]:
         """Remove all regions with a surface area smaller than the specified value.
 
         Args:
             regions (dict[str, Tensor]): Region detections for a single image in the batch.
+            min_area (int): Minimum bounding box area. Regions with a surface area lower than this value are excluded.
 
         Returns:
             dict[str, Tensor]: Region detections from which small regions have been removed.
@@ -200,11 +202,11 @@ class RegionExtractor(nn.Module):
 
         Args:
             regions (dict[str, Tensor]): Region detections for a single image in the batch.
+            threshold (float): Maximum allowed overlap between bounding boxes.
 
         Returns:
             dict[str, Tensor]: Region detections from which overlapping regions have been removed.
         """
-
         # sort boxes by area
         areas = box_area(regions["boxes"])
         indices = areas.argsort()
@@ -215,7 +217,7 @@ class RegionExtractor(nn.Module):
                 [
                     torch.max(regions["boxes"][indices[idx], :2], regions["boxes"][indices[idx + 1 :], :2]),  # x1, y1
                     torch.min(regions["boxes"][indices[idx], 2:], regions["boxes"][indices[idx + 1 :], 2:]),  # x2, y2
-                ]
+                ],
             )
             mask = torch.all(overlap_coords[:, :2] < overlap_coords[:, 2:], dim=1)  # filter non-overlapping
             overlap = box_area(overlap_coords) * mask.int()
@@ -228,7 +230,7 @@ class RegionExtractor(nn.Module):
 
     @staticmethod
     def subsample_regions(regions: dict[str, Tensor], indices: Tensor) -> dict[str, Tensor]:
-        """Helper method that subsamples the items in a region dictionary based on a Tensor of indices.
+        """Subsample the items in a region dictionary based on a Tensor of indices.
 
         Args:
             regions (dict[str, Tensor]): Region detections for a single image in the batch.

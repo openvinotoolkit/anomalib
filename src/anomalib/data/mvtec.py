@@ -23,13 +23,12 @@ Reference:
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
 import logging
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Sequence
 
-import albumentations as A
+import albumentations as A  # noqa: N812
 from pandas import DataFrame
 
 from anomalib.data.base import AnomalibDataModule, AnomalibDataset
@@ -54,7 +53,7 @@ DOWNLOAD_INFO = DownloadInfo(
     name="mvtec",
     url="https://www.mydrive.ch/shares/38536/3830184030e49fe74747669442f0f282/download/420938113-1629952094"
     "/mvtec_anomaly_detection.tar.xz",
-    hash="eefca59f2cede9c3fc5b6befbfec275e",
+    checksum="eefca59f2cede9c3fc5b6befbfec275e",
 )
 
 CATEGORIES = (
@@ -77,7 +76,9 @@ CATEGORIES = (
 
 
 def make_mvtec_dataset(
-    root: str | Path, split: str | Split | None = None, extensions: Sequence[str] | None = None
+    root: str | Path,
+    split: str | Split | None = None,
+    extensions: Sequence[str] | None = None,
 ) -> DataFrame:
     """Create MVTec AD samples by parsing the MVTec AD data file structure.
 
@@ -93,15 +94,9 @@ def make_mvtec_dataset(
     |---|---------------|-------|---------|---------------|---------------------------------------|-------------|
 
     Args:
-        path (Path): Path to dataset
+        root (Path): Path to dataset
         split (str | Split | None, optional): Dataset split (ie., either train or test). Defaults to None.
-        split_ratio (float, optional): Ratio to split normal training images and add to the
-            test set in case test set doesn't contain any normal images.
-            Defaults to 0.1.
-        seed (int, optional): Random seed to ensure reproducibility when splitting. Defaults to 0.
-        create_validation_set (bool, optional): Boolean to create a validation set from the test set.
-            MVTec AD dataset does not contain a validation set. Those wanting to create a validation set
-            could set this flag to ``True``.
+        extensions (Sequence[str] | None, optional): List of file extensions to be included in the dataset.
 
     Examples:
         The following example shows how to get training samples from MVTec AD bottle category:
@@ -130,7 +125,8 @@ def make_mvtec_dataset(
     root = Path(root)
     samples_list = [(str(root),) + f.parts[-3:] for f in root.glob(r"**/*") if f.suffix in extensions]
     if not samples_list:
-        raise RuntimeError(f"Found 0 images in {root}")
+        msg = f"Found 0 images in {root}"
+        raise RuntimeError(msg)
 
     samples = DataFrame(samples_list, columns=["path", "split", "label", "image_path"])
 
@@ -149,8 +145,9 @@ def make_mvtec_dataset(
     # assign mask paths to anomalous test images
     samples["mask_path"] = ""
     samples.loc[
-        (samples.split == "test") & (samples.label_index == LabelName.ABNORMAL), "mask_path"
-    ] = mask_samples.image_path.values
+        (samples.split == "test") & (samples.label_index == LabelName.ABNORMAL),
+        "mask_path",
+    ] = mask_samples.image_path.to_numpy()
 
     # assert that the right mask files are associated with the right test images
     if len(samples.loc[samples.label_index == LabelName.ABNORMAL]):
@@ -183,8 +180,8 @@ class MVTecDataset(AnomalibDataset):
         self,
         task: TaskType,
         transform: A.Compose,
-        root: Path | str,
-        category: str,
+        root: Path | str = "./datasets/MVTec",
+        category: str = "bottle",
         split: str | Split | None = None,
     ) -> None:
         super().__init__(task=task, transform=transform)
@@ -226,11 +223,11 @@ class MVTec(AnomalibDataModule):
 
     def __init__(
         self,
-        root: Path | str,
-        category: str,
-        image_size: int | tuple[int, int] | None = None,
+        root: Path | str = "./datasets/MVTec",
+        category: str = "bottle",
+        image_size: int | tuple[int, int] = (256, 256),
         center_crop: int | tuple[int, int] | None = None,
-        normalization: str | InputNormalizationMethod = InputNormalizationMethod.IMAGENET,
+        normalization: InputNormalizationMethod | str = InputNormalizationMethod.IMAGENET,
         train_batch_size: int = 32,
         eval_batch_size: int = 32,
         num_workers: int = 8,
@@ -271,10 +268,18 @@ class MVTec(AnomalibDataModule):
         )
 
         self.train_data = MVTecDataset(
-            task=task, transform=transform_train, split=Split.TRAIN, root=root, category=category
+            task=task,
+            transform=transform_train,
+            split=Split.TRAIN,
+            root=root,
+            category=category,
         )
         self.test_data = MVTecDataset(
-            task=task, transform=transform_eval, split=Split.TEST, root=root, category=category
+            task=task,
+            transform=transform_eval,
+            split=Split.TEST,
+            root=root,
+            category=category,
         )
 
     def prepare_data(self) -> None:

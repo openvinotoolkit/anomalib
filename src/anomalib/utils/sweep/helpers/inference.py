@@ -3,7 +3,6 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
 import time
 from pathlib import Path
@@ -15,7 +14,7 @@ from anomalib.deploy import OpenVINOInferencer, TorchInferencer
 
 
 def get_torch_throughput(model_path: str | Path, test_dataset: Dataset, device: str) -> float:
-    """Tests the model on dummy data. Images are passed sequentially to make the comparision with OpenVINO model fair.
+    """Test the model on dummy data. Images are passed sequentially to make the comparision with OpenVINO model fair.
 
     Args:
         model_path (str, Path): Path to folder containing the Torch models.
@@ -26,7 +25,7 @@ def get_torch_throughput(model_path: str | Path, test_dataset: Dataset, device: 
         float: Inference throughput
     """
     model_path = Path(model_path)
-    torch.set_grad_enabled(False)
+    torch.set_grad_enabled(mode=False)
 
     if device == "gpu":
         device = "cuda"
@@ -43,12 +42,12 @@ def get_torch_throughput(model_path: str | Path, test_dataset: Dataset, device: 
     inference_time = time.time() - start_time
     throughput = len(test_dataset) / inference_time
 
-    torch.set_grad_enabled(True)
+    torch.set_grad_enabled(mode=True)
     return throughput
 
 
 def get_openvino_throughput(model_path: str | Path, test_dataset: Dataset) -> float:
-    """Runs the generated OpenVINO model on a dummy dataset to get throughput.
+    """Run the generated OpenVINO model on a dummy dataset to get throughput.
 
     Args:
         model_path (str, Path): Path to folder containing the OpenVINO models. It then searches `model.xml` in folder.
@@ -69,6 +68,4 @@ def get_openvino_throughput(model_path: str | Path, test_dataset: Dataset) -> fl
 
     # get throughput
     inference_time = time.time() - start_time
-    throughput = len(test_dataset) / inference_time
-
-    return throughput
+    return len(test_dataset) / inference_time

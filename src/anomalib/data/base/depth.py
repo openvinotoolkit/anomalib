@@ -1,10 +1,9 @@
 """Base Depth Dataset."""
 
-from __future__ import annotations
 
 from abc import ABC
 
-import albumentations as A
+import albumentations as A  # noqa: N812
 import cv2
 import numpy as np
 from torch import Tensor
@@ -29,7 +28,6 @@ class AnomalibDepthDataset(AnomalibDataset, ABC):
 
     def __getitem__(self, index: int) -> dict[str, str | Tensor]:
         """Return rgb image, depth image and mask."""
-
         image_path = self._samples.iloc[index].image_path
         mask_path = self._samples.iloc[index].mask_path
         label_index = self._samples.iloc[index].label_index
@@ -37,7 +35,7 @@ class AnomalibDepthDataset(AnomalibDataset, ABC):
 
         image = read_image(image_path)
         depth_image = read_depth_image(depth_path)
-        item = dict(image_path=image_path, depth_path=depth_path, label=label_index)
+        item = {"image_path": image_path, "depth_path": depth_path, "label": label_index}
 
         if self.task == TaskType.CLASSIFICATION:
             transformed = self.transform(image=image, depth_image=depth_image)
@@ -46,10 +44,7 @@ class AnomalibDepthDataset(AnomalibDataset, ABC):
         elif self.task in (TaskType.DETECTION, TaskType.SEGMENTATION):
             # Only Anomalous (1) images have masks in anomaly datasets
             # Therefore, create empty mask for Normal (0) images.
-            if label_index == 0:
-                mask = np.zeros(shape=image.shape[:2])
-            else:
-                mask = cv2.imread(mask_path, flags=0) / 255.0
+            mask = np.zeros(shape=image.shape[:2]) if label_index == 0 else cv2.imread(mask_path, flags=0) / 255.0
 
             transformed = self.transform(image=image, depth_image=depth_image, mask=mask)
 
@@ -63,6 +58,7 @@ class AnomalibDepthDataset(AnomalibDataset, ABC):
                 boxes, _ = masks_to_boxes(item["mask"])
                 item["boxes"] = boxes[0]
         else:
-            raise ValueError(f"Unknown task type: {self.task}")
+            msg = f"Unknown task type: {self.task}"
+            raise ValueError(msg)
 
         return item

@@ -3,18 +3,15 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
-
-from typing import Any
 
 import numpy as np
 from matplotlib.figure import Figure
 
 try:
-    from pytorch_lightning.loggers.comet import CometLogger
+    from lightning.pytorch.loggers.comet import CometLogger
 except ModuleNotFoundError:
     print("To use comet logger install it using `pip install comet-ml`")
-from pytorch_lightning.utilities import rank_zero_only
+from lightning.pytorch.utilities import rank_zero_only
 
 from .base import ImageLoggerBase
 
@@ -23,7 +20,9 @@ class AnomalibCometLogger(ImageLoggerBase, CometLogger):
     """Logger for comet.
 
     Adds interface for `add_image` in the logger rather than calling the experiment object.
+
     Note:
+    ----
         Same as the CometLogger provided by PyTorch Lightning and the doc string is reproduced below.
 
     Track your parameters, metrics, source code and more using
@@ -63,11 +62,12 @@ class AnomalibCometLogger(ImageLoggerBase, CometLogger):
             If required Comet package is not installed on the device.
         MisconfigurationException:
             If neither ``api_key`` nor ``save_dir`` are passed as arguments.
+
     Example:
         >>> from anomalib.utils.loggers import AnomalibCometLogger
-        >>> from pytorch_lightning import Trainer
+        >>> from anomalib.engine import Engine
         >>> comet_logger = AnomalibCometLogger()
-        >>> trainer = Trainer(logger=comet_logger)
+        >>> engine =  Engine(logger=comet_logger)
 
     See Also:
         - `Comet Documentation <https://www.comet.com/docs/v2/integrations/ml-frameworks/pytorch-lightning/>`__
@@ -99,7 +99,7 @@ class AnomalibCometLogger(ImageLoggerBase, CometLogger):
         self.experiment.log_other("Created from", "Anomalib")
 
     @rank_zero_only
-    def add_image(self, image: np.ndarray | Figure, name: str | None = None, **kwargs: Any) -> None:
+    def add_image(self, image: np.ndarray | Figure, name: str | None = None, **kwargs) -> None:
         """Interface to add image to comet logger.
 
         Args:
@@ -108,7 +108,8 @@ class AnomalibCometLogger(ImageLoggerBase, CometLogger):
             kwargs: Accepts only `global_step` (int). The step at which to log the image.
         """
         if "global_step" not in kwargs:
-            raise ValueError("`global_step` is required for comet logger")
+            msg = "`global_step` is required for comet logger"
+            raise ValueError(msg)
 
         global_step = kwargs["global_step"]
         # Need to call different functions of `Experiment` for  Figure vs np.ndarray

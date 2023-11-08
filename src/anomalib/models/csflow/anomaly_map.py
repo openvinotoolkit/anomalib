@@ -3,13 +3,12 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
 from enum import Enum
 
 import torch
-import torch.nn.functional as F
 from torch import Tensor, nn
+from torch.nn import functional as F  # noqa: N812
 
 
 class AnomalyMapMode(str, Enum):

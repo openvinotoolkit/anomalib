@@ -3,17 +3,13 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
 import logging
 
 import torch
 from torch import Tensor, nn
 
-from anomalib.models.components.classification import (
-    FeatureScalingMethod,
-    KDEClassifier,
-)
+from anomalib.models.components.classification import FeatureScalingMethod, KDEClassifier
 from anomalib.models.rkde.feature_extractor import FeatureExtractor
 from anomalib.models.rkde.region_extractor import RegionExtractor, RoiStage
 
@@ -82,7 +78,7 @@ class RkdeModel(nn.Module):
         """Prediction by normality model.
 
         Args:
-            input (Tensor): Input images.
+            batch (Tensor): Input images.
 
         Returns:
             Tensor | tuple[Tensor, Tensor]: The extracted features (when in training mode), or the predicted rois

@@ -3,13 +3,13 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
 import logging
+from typing import Any
 
 import torch
+from lightning.pytorch.utilities.types import STEP_OUTPUT
 from omegaconf import DictConfig, ListConfig
-from pytorch_lightning.utilities.types import STEP_OUTPUT
 from torch import Tensor
 
 from anomalib.models.components import AnomalyModule
@@ -65,13 +65,15 @@ class Rkde(AnomalyModule):
     @staticmethod
     def configure_optimizers() -> None:
         """RKDE doesn't require optimization, therefore returns no optimizers."""
-        return None
+        return
 
     def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> None:
-        """Training Step of RKDE. For each batch, features are extracted from the CNN.
+        """Perform a training Step of RKDE. For each batch, features are extracted from the CNN.
 
         Args:
             batch (dict[str, str | Tensor]): Batch containing image filename, image, label and mask
+            args: Additional arguments.
+            kwargs: Additional keyword arguments.
 
         Returns:
           Deep CNN features.
@@ -89,12 +91,14 @@ class Rkde(AnomalyModule):
         self.model.fit(embeddings)
 
     def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
-        """Validation Step of RKde.
+        """Perform a validation Step of RKde.
 
         Similar to the training step, features are extracted from the CNN for each batch.
 
         Args:
             batch (dict[str, str | Tensor]): Batch containing image filename, image, label and mask
+            args: Additional arguments.
+            kwargs: Additional keyword arguments.
 
         Returns:
           Dictionary containing probability, prediction and ground truth values.
@@ -112,6 +116,15 @@ class Rkde(AnomalyModule):
         batch["box_scores"] = [scores[indices == i] for i in range(batch_size)]
 
         return batch
+
+    @property
+    def trainer_arguments(self) -> dict[str, Any]:
+        """Return R-KDE trainer arguments.
+
+        Returns:
+            dict[str, Any]: Arguments for the trainer.
+        """
+        return {"gradient_clip_val": 0, "max_epochs": 1, "num_sanity_val_steps": 0}
 
 
 class RkdeLightning(Rkde):
@@ -132,5 +145,5 @@ class RkdeLightning(Rkde):
             feature_scaling_method=FeatureScalingMethod(hparams.model.feature_scaling_method),
             max_training_points=hparams.model.max_training_points,
         )
-        self.hparams: DictConfig | ListConfig  # type: ignore
+        self.hparams: DictConfig | ListConfig
         self.save_hyperparameters(hparams)

@@ -3,14 +3,13 @@
 # Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
 import logging
 from pathlib import Path
 from shutil import move
-from typing import Any, Callable
+from typing import TYPE_CHECKING, Any
 
-import albumentations as A
+import albumentations as A  # noqa: N812
 import cv2
 import numpy as np
 import torch
@@ -31,12 +30,15 @@ from anomalib.data.utils import (
 )
 from anomalib.data.utils.video import ClipsIndexer
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
 logger = logging.getLogger(__name__)
 
 DOWNLOAD_INFO = DownloadInfo(
     name="UCSD Pedestrian",
     url="http://www.svcl.ucsd.edu/projects/anomaly/UCSD_Anomaly_Dataset.tar.gz",
-    hash="5006421b89885f45a6f93b041145f2eb",
+    checksum="5006421b89885f45a6f93b041145f2eb",
 )
 
 CATEGORIES = ("UCSDped1", "UCSDped2")
@@ -50,7 +52,7 @@ def make_ucsd_dataset(path: Path, split: str | Split | None = None) -> DataFrame
         path/to/dataset/category/split/video_id_gt/mask_filename.bmp
 
     Args:
-        root (Path): Path to dataset
+        path (Path): Path to dataset
         split (str | Split | None, optional): Dataset split (ie., either train or test). Defaults to None.
 
     Example:
@@ -97,9 +99,8 @@ def make_ucsd_dataset(path: Path, split: str | Split | None = None) -> DataFrame
 class UCSDpedClipsIndexer(ClipsIndexer):
     """Clips class for UCSDped dataset."""
 
-    def get_mask(self, idx) -> np.ndarray | None:
+    def get_mask(self, idx: int) -> np.ndarray | None:
         """Retrieve the masks from the file system."""
-
         video_idx, frames_idx = self.get_clip_location(idx)
         mask_folder = self.mask_paths[video_idx]
         if mask_folder == "":  # no gt masks available for this clip
@@ -109,8 +110,7 @@ class UCSDpedClipsIndexer(ClipsIndexer):
         mask_frames = sorted(Path(mask_folder).glob("*.bmp"))
         mask_paths = [mask_frames[idx] for idx in frames.int()]
 
-        masks = np.stack([cv2.imread(str(mask_path), flags=0) / 255.0 for mask_path in mask_paths])
-        return masks
+        return np.stack([cv2.imread(str(mask_path), flags=0) / 255.0 for mask_path in mask_paths])
 
     def _compute_frame_pts(self) -> None:
         """Retrieve the number of frames in each video."""
@@ -122,7 +122,7 @@ class UCSDpedClipsIndexer(ClipsIndexer):
         self.video_fps = [None] * len(self.video_paths)  # fps information cannot be inferred from folder structure
 
     def get_clip(self, idx: int) -> tuple[Tensor, Tensor, dict[str, Any], int]:
-        """Gets a subclip from a list of videos.
+        """Get a subclip from a list of videos.
 
         Args:
             idx (int): index of the subclip. Must be between 0 and num_clips().
@@ -134,7 +134,8 @@ class UCSDpedClipsIndexer(ClipsIndexer):
             video_idx (int): index of the video in `video_paths`
         """
         if idx >= self.num_clips():
-            raise IndexError(f"Index {idx} out of range ({self.num_clips()} number of clips)")
+            msg = f"Index {idx} out of range ({self.num_clips()} number of clips)"
+            raise IndexError(msg)
         video_idx, clip_idx = self.get_clip_location(idx)
         video_path = self.video_paths[video_idx]
         clip_pts = self.clips[video_idx][clip_idx]
@@ -168,8 +169,8 @@ class UCSDpedDataset(AnomalibVideoDataset):
         category: str,
         transform: A.Compose,
         split: Split,
-        clip_length_in_frames: int = 1,
-        frames_between_clips: int = 1,
+        clip_length_in_frames: int = 2,
+        frames_between_clips: int = 10,
         target_frame: VideoTargetFrame = VideoTargetFrame.LAST,
     ) -> None:
         super().__init__(task, transform, clip_length_in_frames, frames_between_clips, target_frame)
@@ -217,16 +218,16 @@ class UCSDped(AnomalibVideoDataModule):
 
     def __init__(
         self,
-        root: Path | str,
-        category: str,
-        clip_length_in_frames: int = 1,
-        frames_between_clips: int = 1,
+        root: Path | str = "./datasets/ucsd",
+        category: str = "UCSDped2",
+        clip_length_in_frames: int = 2,
+        frames_between_clips: int = 10,
         target_frame: VideoTargetFrame = VideoTargetFrame.LAST,
         task: TaskType = TaskType.SEGMENTATION,
-        image_size: int | tuple[int, int] | None = None,
+        image_size: int | tuple[int, int] = (256, 256),
         center_crop: int | tuple[int, int] | None = None,
-        normalization: str | InputNormalizationMethod = InputNormalizationMethod.IMAGENET,
-        train_batch_size: int = 32,
+        normalization: InputNormalizationMethod | str = InputNormalizationMethod.IMAGENET,
+        train_batch_size: int = 8,
         eval_batch_size: int = 32,
         num_workers: int = 8,
         transform_config_train: str | A.Compose | None = None,

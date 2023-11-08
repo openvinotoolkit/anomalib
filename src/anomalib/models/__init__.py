@@ -3,12 +3,11 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
 import logging
-import os
 import re
 from importlib import import_module
+from pathlib import Path
 
 from omegaconf import DictConfig, ListConfig
 from torch import load
@@ -67,8 +66,7 @@ def convert_snake_to_pascal_case(snake_case: str) -> str:
         >>> convert_snake_to_pascal_case("patchcore")
         Patchcore
     """
-    pascal_case = "".join(word.capitalize() for word in snake_case.split("_"))
-    return pascal_case
+    return "".join(word.capitalize() for word in snake_case.split("_"))
 
 
 def convert_pascal_to_snake_case(pascal_case: str) -> str:
@@ -87,8 +85,7 @@ def convert_pascal_to_snake_case(pascal_case: str) -> str:
         >>> convert_pascal_to_snake_case("Patchcore")
         patchcore
     """
-    snake_case = re.sub(r"(?<!^)(?=[A-Z])", "_", pascal_case).lower()
-    return snake_case
+    return re.sub(r"(?<!^)(?=[A-Z])", "_", pascal_case).lower()
 
 
 def get_available_models() -> list[str]:
@@ -101,8 +98,7 @@ def get_available_models() -> list[str]:
         >>> get_available_models()
         ['ai_vad', 'cfa', 'cflow', 'csflow', 'dfkde', 'dfm', 'draem', 'efficient_ad', 'fastflow', ...]
     """
-    available_models = [convert_pascal_to_snake_case(cls.__name__) for cls in AnomalyModule.__subclasses__()]
-    return available_models
+    return [convert_pascal_to_snake_case(cls.__name__) for cls in AnomalyModule.__subclasses__()]
 
 
 def get_model(config: DictConfig | ListConfig) -> AnomalyModule:
@@ -124,17 +120,17 @@ def get_model(config: DictConfig | ListConfig) -> AnomalyModule:
         AnomalyModule: Anomaly Model
     """
     logger.info("Loading the model.")
-
     model: AnomalyModule
 
-    if config.model.name in get_available_models():
-        module = import_module(f"anomalib.models.{config.model.name}")
-        model = getattr(module, f"{convert_snake_to_pascal_case(config.model.name)}Lightning")(config)
+    try:
+        module = import_module(".".join(config.model.class_path.split(".")[:-1]))
+        model = getattr(module, config.model.class_path.split(".")[-1])
+        model = model(**config.model.init_args)
+    except ModuleNotFoundError:
+        logger.exception("Could not find the model class: %s", config.model.class_path)
+        raise
 
-    else:
-        raise ValueError(f"Unknown model {config.model.name}!")
-
-    if "init_weights" in config.keys() and config.init_weights:
-        model.load_state_dict(load(os.path.join(config.project.path, config.init_weights))["state_dict"], strict=False)
+    if "init_weights" in config and config.init_weights:
+        model.load_state_dict(load(str(Path(config.project.path) / config.init_weights))["state_dict"], strict=False)
 
     return model

@@ -3,19 +3,18 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
 import itertools
 import operator
-from collections.abc import Iterable, ValuesView
+from collections.abc import Generator, Iterable, ValuesView
 from functools import reduce
-from typing import Any, Generator
+from typing import Any
 
 from omegaconf import DictConfig
 
 
 def convert_to_tuple(values: ValuesView) -> list[tuple]:
-    """Converts a ValuesView object to a list of tuples.
+    """Convert a ValuesView object to a list of tuples.
 
     This is useful to get list of possible values for each parameter in the config and a tuple for values that are
     are to be patched. Ideally this is useful when used with product.
@@ -78,9 +77,9 @@ def flatten_sweep_params(params_dict: DictConfig) -> DictConfig:
         """
         for name, cfg in nested_params.items():
             if isinstance(cfg, DictConfig):
-                flatten_nested_dict(cfg, keys + [str(name)], flattened_params)
+                flatten_nested_dict(cfg, [*keys, str(name)], flattened_params)
             else:
-                key = ".".join(keys + [str(name)])
+                key = ".".join([*keys, str(name)])
                 flattened_params[key] = cfg
 
     flattened_params_dict = DictConfig({})
@@ -90,7 +89,7 @@ def flatten_sweep_params(params_dict: DictConfig) -> DictConfig:
 
 
 def get_run_config(params_dict: DictConfig) -> Generator[DictConfig, None, None]:
-    """Yields configuration for a single run.
+    """Yield configuration for a single run.
 
     Args:
         params_dict (DictConfig): Configuration for grid search.
@@ -120,13 +119,13 @@ def get_run_config(params_dict: DictConfig) -> Generator[DictConfig, None, None]
     keys = params.keys()
     for combination in combinations:
         run_config = DictConfig({})
-        for key, val in zip(keys, combination):
+        for key, val in zip(keys, combination, strict=True):
             run_config[key] = val
         yield run_config
 
 
-def get_from_nested_config(config: DictConfig, keymap: list) -> Any:
-    """Retrieves an item from a nested config object using a list of keys.
+def get_from_nested_config(config: DictConfig, keymap: list) -> Any:  # noqa: ANN401
+    """Retrieve an item from a nested config object using a list of keys.
 
     Args:
         config: DictConfig: nested DictConfig object
@@ -135,7 +134,7 @@ def get_from_nested_config(config: DictConfig, keymap: list) -> Any:
     return reduce(operator.getitem, keymap, config)
 
 
-def set_in_nested_config(config: DictConfig, keymap: list, value: Any) -> None:
+def set_in_nested_config(config: DictConfig, keymap: list, value: Any) -> None:  # noqa: ANN401
     """Set an item in a nested config object using a list of keys.
 
     Args:

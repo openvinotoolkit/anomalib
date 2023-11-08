@@ -3,17 +3,16 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
 import importlib
-import warnings
+import logging
+from collections.abc import Callable
 from typing import Any
 
 import torchmetrics
 from omegaconf import DictConfig, ListConfig
 
 from .anomaly_score_distribution import AnomalyScoreDistribution
-from .anomaly_score_threshold import AnomalyScoreThreshold
 from .aupr import AUPR
 from .aupro import AUPRO
 from .auroc import AUROC
@@ -21,8 +20,22 @@ from .collection import AnomalibMetricCollection
 from .min_max import MinMax
 from .optimal_f1 import OptimalF1
 from .pro import PRO
+from .threshold import BaseThreshold, F1AdaptiveThreshold, ManualThreshold
 
-__all__ = ["AUROC", "AUPR", "AUPRO", "OptimalF1", "AnomalyScoreThreshold", "AnomalyScoreDistribution", "MinMax", "PRO"]
+__all__ = [
+    "AUROC",
+    "AUPR",
+    "AUPRO",
+    "OptimalF1",
+    "BaseThreshold",
+    "AnomalyScoreDistribution",
+    "F1AdaptiveThreshold",
+    "ManualThreshold",
+    "MinMax",
+    "PRO",
+]
+
+logger = logging.getLogger(__name__)
 
 
 def metric_collection_from_names(metric_names: list[str], prefix: str | None) -> AnomalibMetricCollection:
@@ -49,9 +62,11 @@ def metric_collection_from_names(metric_names: list[str], prefix: str | None) ->
                 metric_cls = getattr(torchmetrics, metric_name)
                 metrics.add_metrics(metric_cls())
             except TypeError:
-                warnings.warn(f"Incorrect constructor arguments for {metric_name} metric from TorchMetrics package.")
+                msg = f"Incorrect constructor arguments for {metric_name} metric from TorchMetrics package."
+                logger.warning(msg)
         else:
-            warnings.warn(f"No metric with name {metric_name} found in Anomalib metrics or TorchMetrics.")
+            msg = f"No metric with name {metric_name} found in Anomalib metrics or TorchMetrics."
+            logger.warning(msg)
     return metrics
 
 
@@ -66,37 +81,35 @@ def _validate_metrics_dict(metrics: dict[str, dict[str, Any]]) -> None:
 
     """
     assert all(
-        isinstance(metric, str) for metric in metrics.keys()
+        isinstance(metric, str) for metric in metrics
     ), f"All keys (metric names) must be strings, found {sorted(metrics.keys())}"
     assert all(
-        isinstance(metric, (dict, DictConfig)) for metric in metrics.values()
+        isinstance(metric, dict | DictConfig) for metric in metrics.values()
     ), f"All values must be dictionaries, found {list(metrics.values())}"
     assert all("class_path" in metric and isinstance(metric["class_path"], str) for metric in metrics.values()), (
         "All internal dictionaries must have a 'class_path' key whose value is of type str, "
         f"found {list(metrics.values())}"
     )
     assert all(
-        "init_args" in metric and isinstance(metric["init_args"], (dict, DictConfig)) for metric in metrics.values()
+        "init_args" in metric and isinstance(metric["init_args"], dict | DictConfig) for metric in metrics.values()
     ), (
         "All internal dictionaries must have a 'init_args' key whose value is of type dict, "
         f"found {list(metrics.values())}"
     )
 
 
-def _get_class_from_path(class_path: str) -> Any:
+def _get_class_from_path(class_path: str) -> Callable:
     """Get a class from a module assuming the string format is `package.subpackage.module.ClassName`."""
     module_name, class_name = class_path.rsplit(".", 1)
     module = importlib.import_module(module_name)
     assert hasattr(module, class_name), f"Class {class_name} not found in module {module_name}"
-    cls = getattr(module, class_name)
-    return cls
+    return getattr(module, class_name)
 
 
 def metric_collection_from_dicts(metrics: dict[str, dict[str, Any]], prefix: str | None) -> AnomalibMetricCollection:
     """Create a metric collection from a dict of "metric name" -> "metric specifications".
 
     Example:
-
         metrics = {
             "PixelWiseF1Score": {
                 "class_path": "torchmetrics.F1Score",
@@ -145,7 +158,8 @@ def metric_collection_from_dicts(metrics: dict[str, dict[str, Any]], prefix: str
 
 
 def create_metric_collection(
-    metrics: list[str] | dict[str, dict[str, Any]], prefix: str | None
+    metrics: list[str] | dict[str, dict[str, Any]],
+    prefix: str | None,
 ) -> AnomalibMetricCollection:
     """Create a metric collection from a list of metric names or dictionaries.
 
@@ -158,20 +172,21 @@ def create_metric_collection(
     then in TorchMetrics package.
 
     Args:
-        metrics (list[str] | dict[str, dict[str, Any]]).
-        prefix (str | None): prefix to assign to the metrics in the collection.
+        metrics (list[str] | dict[str, dict[str, Any]]): List of metrics or dictionaries to create metric collection.
+        prefix (str | None): Prefix to assign to the metrics in the collection.
 
     Returns:
         AnomalibMetricCollection: Collection of metrics.
     """
     # fallback is using the names
 
-    if isinstance(metrics, (ListConfig, list)):
+    if isinstance(metrics, ListConfig | list):
         assert all(isinstance(metric, str) for metric in metrics), f"All metrics must be strings, found {metrics}"
         return metric_collection_from_names(metrics, prefix)
 
-    if isinstance(metrics, (DictConfig, dict)):
+    if isinstance(metrics, DictConfig | dict):
         _validate_metrics_dict(metrics)
         return metric_collection_from_dicts(metrics, prefix)
 
-    raise ValueError(f"metrics must be a list or a dict, found {type(metrics)}")
+    msg = f"metrics must be a list or a dict, found {type(metrics)}"
+    raise ValueError(msg)

@@ -3,27 +3,30 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
 import gc
+import logging
 
-import pytorch_lightning as pl
 import torch
-import wandb
-from comet_ml import Optimizer
+from lightning.pytorch.loggers import CometLogger, WandbLogger
 from omegaconf import DictConfig, ListConfig, OmegaConf
-from pytorch_lightning.loggers import CometLogger, WandbLogger
 
 from anomalib.config import update_input_size_config
 from anomalib.data import get_datamodule
+from anomalib.engine import Engine
 from anomalib.models import get_model
-from anomalib.utils.sweep import (
-    flatten_sweep_params,
-    get_sweep_callbacks,
-    set_in_nested_config,
-)
+from anomalib.utils.exceptions import try_import
+from anomalib.utils.sweep import flatten_sweep_params, get_sweep_callbacks, set_in_nested_config
 
 from .config import flatten_hpo_params
+
+logger = logging.getLogger(__name__)
+
+
+if try_import("wandb"):
+    import wandb
+if try_import("comet_ml"):
+    from comet_ml import Optimizer
 
 
 class WandbSweep:
@@ -45,10 +48,8 @@ class WandbSweep:
         self.sweep_config = sweep_config
         self.observation_budget = sweep_config.observation_budget
         self.entity = entity
-        if "observation_budget" in self.sweep_config.keys():
-            # this instance check is to silence mypy.
-            if isinstance(self.sweep_config, DictConfig):
-                self.sweep_config.pop("observation_budget")
+        if "observation_budget" in self.sweep_config and isinstance(self.sweep_config, DictConfig):
+            self.sweep_config.pop("observation_budget")
 
     def run(self) -> None:
         """Run the sweep."""
@@ -56,17 +57,17 @@ class WandbSweep:
         self.sweep_config.parameters = flattened_hpo_params
         sweep_id = wandb.sweep(
             OmegaConf.to_object(self.sweep_config),
-            project=f"{self.config.model.name}_{self.config.dataset.name}",
+            project=f"{self.config.model.class_path.split('.')[-1]}_{self.config.data.class_path.split('.')[-1]}",
             entity=self.entity,
         )
         wandb.agent(sweep_id, function=self.sweep, count=self.observation_budget)
 
     def sweep(self) -> None:
-        """Method to load the model, update config and call fit. The metrics are logged to ```wandb``` dashboard."""
+        """Load the model, update config and call fit. The metrics are logged to ```wandb``` dashboard."""
         wandb_logger = WandbLogger(config=flatten_sweep_params(self.sweep_config), log_model=False)
         sweep_config = wandb_logger.experiment.config
 
-        for param in sweep_config.keys():
+        for param in sweep_config:
             set_in_nested_config(self.config, param.split("."), sweep_config[param])
         config = update_input_size_config(self.config)
 
@@ -77,8 +78,8 @@ class WandbSweep:
         # Disable saving checkpoints as all checkpoints from the sweep will get uploaded
         config.trainer.enable_checkpointing = False
 
-        trainer = pl.Trainer(**config.trainer, logger=wandb_logger, callbacks=callbacks)
-        trainer.fit(model, datamodule=datamodule)
+        engine = Engine(**config.trainer, logger=wandb_logger, callbacks=callbacks)
+        engine.fit(model, datamodule=datamodule)
 
         del model
         gc.collect()
@@ -114,17 +115,17 @@ class CometSweep:
 
         opt = Optimizer(std_dict)
 
-        project_name = f"{self.config.model.name}_{self.config.dataset.name}"
+        project_name = f"{self.config.model.name}_{self.config.data.class_path.split('.')[-1]}"
 
         for experiment in opt.get_experiments(project_name=project_name):
             comet_logger = CometLogger(workspace=self.entity)
 
             # allow pytorch-lightning to use the experiment from optimizer
-            comet_logger._experiment = experiment  # pylint: disable=protected-access
+            comet_logger._experiment = experiment  # noqa: SLF001
             run_params = experiment.params
-            for param in run_params.keys():
+            for param in run_params:
                 # this check is needed as comet also returns model and sweep_config as keys
-                if param in self.sweep_config.parameters.keys():
+                if param in self.sweep_config.parameters:
                     set_in_nested_config(self.config, param.split("."), run_params[param])
             config = update_input_size_config(self.config)
 
@@ -135,5 +136,5 @@ class CometSweep:
             # Disable saving checkpoints as all checkpoints from the sweep will get uploaded
             config.trainer.enable_checkpointing = False
 
-            trainer = pl.Trainer(**config.trainer, logger=comet_logger, callbacks=callbacks)
-            trainer.fit(model, datamodule=datamodule)
+            engine = Engine(**config.trainer, logger=comet_logger, callbacks=callbacks)
+            engine.fit(model, datamodule=datamodule)

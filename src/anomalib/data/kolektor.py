@@ -17,12 +17,10 @@ Reference:
 """
 
 
-from __future__ import annotations
-
 import logging
 from pathlib import Path
 
-import albumentations as A
+import albumentations as A  # noqa: N812
 import numpy as np
 from cv2 import imread
 from pandas import DataFrame
@@ -45,13 +43,20 @@ logger = logging.getLogger(__name__)
 DOWNLOAD_INFO = DownloadInfo(
     name="kolektor",
     url="https://go.vicos.si/kolektorsdd",
-    hash="2b094030343c1cd59df02203ac6c57a0",
+    checksum="2b094030343c1cd59df02203ac6c57a0",
     filename="KolektorSDD.zip",
 )
 
 
-# Check if a mask shows defects
-def is_mask_anomalous(path):
+def is_mask_anomalous(path: str) -> int:
+    """Check if a mask shows defects.
+
+    Args:
+        path (str): Path to the mask file.
+
+    Returns:
+        int: 1 if the mask shows defects, 0 otherwise.
+    """
     img_arr = imread(path)
     if np.all(img_arr == 0):
         return 0
@@ -103,7 +108,6 @@ def make_kolektor_dataset(
     Returns:
         DataFrame: an output dataframe containing the samples of the dataset.
     """
-
     root = Path(root)
 
     # Get list of images and masks
@@ -111,7 +115,8 @@ def make_kolektor_dataset(
     masks_list = [(str(root),) + f.parts[-2:] for f in root.glob(r"**/*") if f.suffix == ".bmp"]
 
     if not samples_list:
-        raise RuntimeError(f"Found 0 images in {root}")
+        msg = f"Found 0 images in {root}"
+        raise RuntimeError(msg)
 
     # Create dataframes
     samples = DataFrame(samples_list, columns=["path", "item", "image_path"])
@@ -126,7 +131,7 @@ def make_kolektor_dataset(
     masks = masks.sort_values(by="image_path", ignore_index=True)
 
     # Add mask paths for sample images
-    samples["mask_path"] = masks.image_path.values
+    samples["mask_path"] = masks.image_path.to_numpy()
 
     # Use is_good func to configure the label_index
     samples["label_index"] = samples["mask_path"].apply(is_mask_anomalous)
@@ -141,7 +146,9 @@ def make_kolektor_dataset(
 
     # Divide 'good' images to train/test on 0.8/0.2 ratio
     train_samples, test_samples = train_test_split(
-        samples[samples.label == "Good"], train_size=train_split_ratio, random_state=42
+        samples[samples.label == "Good"],
+        train_size=train_split_ratio,
+        random_state=42,
     )
     samples.loc[train_samples.index, "split"] = "train"
     samples.loc[test_samples.index, "split"] = "test"
@@ -179,7 +186,7 @@ class KolektorDataset(AnomalibDataset):
         self,
         task: TaskType,
         transform: A.Compose,
-        root: Path | str,
+        root: Path | str = "./datasets/kolektor",
         split: str | Split | None = None,
     ) -> None:
         super().__init__(task=task, transform=transform)
@@ -222,8 +229,8 @@ class Kolektor(AnomalibDataModule):
 
     def __init__(
         self,
-        root: Path | str,
-        image_size: int | tuple[int, int] | None = None,
+        root: Path | str = "./datasets/kolektor",
+        image_size: int | tuple[int, int] = (256, 256),
         center_crop: int | tuple[int, int] | None = None,
         normalization: str | InputNormalizationMethod = InputNormalizationMethod.IMAGENET,
         train_batch_size: int = 32,

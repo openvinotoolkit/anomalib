@@ -84,8 +84,7 @@ Troubleshooting
 -  The system default version of Python on Ubuntu 20.04 is Python 3.8,
    on Ubuntu 22.04 - 3.10. If you also installed other versions of
    Python, it is recommended to use the full path the to system default
-   Python: ``/usr/bin/python3.8 -m venv anomalib_env`` on Ubuntu 20,
-   ``/usr/bin/python3.10 -m venv anomalib_env`` on Ubuntu 22.
+   Python: ``/usr/bin/python3.10 -m venv anomalib_env`` on Ubuntu 22.
 
 -  If you use Anaconda or Miniconda, see the :ref:`conda` installation instructions.
 

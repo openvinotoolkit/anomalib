@@ -9,7 +9,6 @@ Code adapted from https://github.com/samet-akcay/ganomaly.
 # Copyright (C) 2020-2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
 import math
 
@@ -88,7 +87,6 @@ class Encoder(nn.Module):
 
     def forward(self, input_tensor: Tensor) -> Tensor:
         """Return latent vectors."""
-
         output = self.input_layers(input_tensor)
         output = self.extra_layers(output)
         output = self.pyramid_features(output)
@@ -139,7 +137,7 @@ class Decoder(nn.Module):
             ),
         )
         self.latent_input.add_module(f"initial-{n_input_features}-batchnorm", nn.BatchNorm2d(n_input_features))
-        self.latent_input.add_module(f"initial-{n_input_features}-relu", nn.ReLU(True))
+        self.latent_input.add_module(f"initial-{n_input_features}-relu", nn.ReLU(inplace=True))
 
         # Create inverse pyramid
         self.inverse_pyramid = nn.Sequential()
@@ -159,7 +157,7 @@ class Decoder(nn.Module):
                 ),
             )
             self.inverse_pyramid.add_module(f"pyramid-{out_features}-batchnorm", nn.BatchNorm2d(out_features))
-            self.inverse_pyramid.add_module(f"pyramid-{out_features}-relu", nn.ReLU(True))
+            self.inverse_pyramid.add_module(f"pyramid-{out_features}-relu", nn.ReLU(inplace=True))
             n_input_features = out_features
             pyramid_dim = pyramid_dim // 2
 
@@ -171,10 +169,12 @@ class Decoder(nn.Module):
                 nn.Conv2d(n_input_features, n_input_features, kernel_size=3, stride=1, padding=1, bias=False),
             )
             self.extra_layers.add_module(
-                f"extra-layers-{layer}-{n_input_features}-batchnorm", nn.BatchNorm2d(n_input_features)
+                f"extra-layers-{layer}-{n_input_features}-batchnorm",
+                nn.BatchNorm2d(n_input_features),
             )
             self.extra_layers.add_module(
-                f"extra-layers-{layer}-{n_input_features}-relu", nn.LeakyReLU(0.2, inplace=True)
+                f"extra-layers-{layer}-{n_input_features}-relu",
+                nn.LeakyReLU(0.2, inplace=True),
             )
 
         # Final layers
@@ -197,8 +197,7 @@ class Decoder(nn.Module):
         output = self.latent_input(input_tensor)
         output = self.inverse_pyramid(output)
         output = self.extra_layers(output)
-        output = self.final_layers(output)
-        return output
+        return self.final_layers(output)
 
 
 class Discriminator(nn.Module):
@@ -214,7 +213,11 @@ class Discriminator(nn.Module):
     """
 
     def __init__(
-        self, input_size: tuple[int, int], num_input_channels: int, n_features: int, extra_layers: int = 0
+        self,
+        input_size: tuple[int, int],
+        num_input_channels: int,
+        n_features: int,
+        extra_layers: int = 0,
     ) -> None:
         super().__init__()
         encoder = Encoder(input_size, 1, num_input_channels, n_features, extra_layers)
@@ -262,11 +265,21 @@ class Generator(nn.Module):
     ) -> None:
         super().__init__()
         self.encoder1 = Encoder(
-            input_size, latent_vec_size, num_input_channels, n_features, extra_layers, add_final_conv_layer
+            input_size,
+            latent_vec_size,
+            num_input_channels,
+            n_features,
+            extra_layers,
+            add_final_conv_layer,
         )
         self.decoder = Decoder(input_size, latent_vec_size, num_input_channels, n_features, extra_layers)
         self.encoder2 = Encoder(
-            input_size, latent_vec_size, num_input_channels, n_features, extra_layers, add_final_conv_layer
+            input_size,
+            latent_vec_size,
+            num_input_channels,
+            n_features,
+            extra_layers,
+            add_final_conv_layer,
         )
 
     def forward(self, input_tensor: Tensor) -> tuple[Tensor, Tensor, Tensor]:

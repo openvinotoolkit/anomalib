@@ -3,18 +3,15 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
-
-from typing import Any
 
 import numpy as np
 from matplotlib.figure import Figure
 
 try:
-    from pytorch_lightning.loggers.tensorboard import TensorBoardLogger
+    from lightning.pytorch.loggers.tensorboard import TensorBoardLogger
 except ModuleNotFoundError:
     print("To use tensorboard logger install it using `pip install tensorboard`")
-from pytorch_lightning.utilities import rank_zero_only
+from lightning.pytorch.utilities import rank_zero_only
 
 from .base import ImageLoggerBase
 
@@ -25,6 +22,7 @@ class AnomalibTensorBoardLogger(ImageLoggerBase, TensorBoardLogger):
     Adds interface for `add_image` in the logger rather than calling the experiment object.
 
     Note:
+    ----
         Same as the Tensorboard Logger provided by PyTorch Lightning and the doc string is reproduced below.
 
     Logs are saved to
@@ -32,10 +30,10 @@ class AnomalibTensorBoardLogger(ImageLoggerBase, TensorBoardLogger):
     preinstalled.
 
     Example:
-        >>> from pytorch_lightning import Trainer
+        >>> from anomalib.engine import Engine
         >>> from anomalib.utils.loggers import AnomalibTensorBoardLogger
         >>> logger = AnomalibTensorBoardLogger("tb_logs", name="my_model")
-        >>> trainer = Trainer(logger=logger)
+        >>> engine =  Engine(logger=logger)
 
     Args:
         save_dir (str): Save directory
@@ -64,7 +62,7 @@ class AnomalibTensorBoardLogger(ImageLoggerBase, TensorBoardLogger):
         default_hp_metric: bool = True,
         prefix: str = "",
         **kwargs,
-    ):
+    ) -> None:
         super().__init__(
             save_dir,
             name=name,
@@ -76,7 +74,7 @@ class AnomalibTensorBoardLogger(ImageLoggerBase, TensorBoardLogger):
         )
 
     @rank_zero_only
-    def add_image(self, image: np.ndarray | Figure, name: str | None = None, **kwargs: Any):
+    def add_image(self, image: np.ndarray | Figure, name: str | None = None, **kwargs) -> None:
         """Interface to add image to tensorboard logger.
 
         Args:
@@ -85,7 +83,8 @@ class AnomalibTensorBoardLogger(ImageLoggerBase, TensorBoardLogger):
             kwargs: Accepts only `global_step` (int). The step at which to log the image.
         """
         if "global_step" not in kwargs:
-            raise ValueError("`global_step` is required for tensorboard logger")
+            msg = "`global_step` is required for tensorboard logger"
+            raise ValueError(msg)
 
         # Need to call different functions of `SummaryWriter` for  Figure vs np.ndarray
         if isinstance(image, Figure):

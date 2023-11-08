@@ -3,12 +3,11 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
+from collections.abc import Iterator
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Iterator
 
 import cv2
 import matplotlib.figure
@@ -79,16 +78,18 @@ class Visualizer:
 
     def __init__(self, mode: VisualizationMode, task: TaskType) -> None:
         if mode not in (VisualizationMode.FULL, VisualizationMode.SIMPLE):
-            raise ValueError(f"Unknown visualization mode: {mode}. Please choose one of ['full', 'simple']")
+            msg = f"Unknown visualization mode: {mode}. Please choose one of ['full', 'simple']"
+            raise ValueError(msg)
         self.mode = mode
         if task not in (TaskType.CLASSIFICATION, TaskType.DETECTION, TaskType.SEGMENTATION):
+            msg = f"Unknown task type: {mode}. Please choose one of ['classification', 'detection', 'segmentation']"
             raise ValueError(
-                f"Unknown task type: {mode}. Please choose one of ['classification', 'detection', 'segmentation']"
+                msg,
             )
         self.task = task
 
     def visualize_batch(self, batch: dict) -> Iterator[np.ndarray]:
-        """Generator that yields a visualization result for each item in the batch.
+        """Yield a visualization result for each item in the batch.
 
         Args:
             batch (dict): Dictionary containing the ground truth and predictions of a batch of images.
@@ -106,7 +107,8 @@ class Visualizer:
                 image = batch["original_image"][i].squeeze().numpy()
                 image = cv2.resize(image, dsize=(width, height), interpolation=cv2.INTER_AREA)
             else:
-                raise KeyError("Batch must have either 'image_path' or 'video_path' defined.")
+                msg = "Batch must have either 'image_path' or 'video_path' defined."
+                raise KeyError(msg)
 
             image_result = ImageResult(
                 image=image,
@@ -134,7 +136,8 @@ class Visualizer:
             return self._visualize_full(image_result)
         if self.mode == VisualizationMode.SIMPLE:
             return self._visualize_simple(image_result)
-        raise ValueError(f"Unknown visualization mode: {self.mode}")
+        msg = f"Unknown visualization mode: {self.mode}"
+        raise ValueError(msg)
 
     def _visualize_full(self, image_result: ImageResult) -> np.ndarray:
         """Generate the full set of visualization for an image.
@@ -195,14 +198,19 @@ class Visualizer:
         if self.task == TaskType.DETECTION:
             # return image with bounding boxes augmented
             image_with_boxes = draw_boxes(
-                image=np.copy(image_result.image), boxes=image_result.anomalous_boxes, color=(0, 0, 255)
+                image=np.copy(image_result.image),
+                boxes=image_result.anomalous_boxes,
+                color=(0, 0, 255),
             )
             if image_result.gt_boxes is not None:
                 image_with_boxes = draw_boxes(image=image_with_boxes, boxes=image_result.gt_boxes, color=(255, 0, 0))
             return image_with_boxes
         if self.task == TaskType.SEGMENTATION:
             visualization = mark_boundaries(
-                image_result.heat_map, image_result.pred_mask, color=(1, 0, 0), mode="thick"
+                image_result.heat_map,
+                image_result.pred_mask,
+                color=(1, 0, 0),
+                mode="thick",
             )
             return (visualization * 255).astype(np.uint8)
         if self.task == TaskType.CLASSIFICATION:
@@ -211,7 +219,8 @@ class Visualizer:
             else:
                 image_classified = add_normal_label(image_result.image, 1 - image_result.pred_score)
             return image_classified
-        raise ValueError(f"Unknown task type: {self.task}")
+        msg = f"Unknown task type: {self.task}"
+        raise ValueError(msg)
 
     @staticmethod
     def show(title: str, image: np.ndarray, delay: int = 0) -> None:
@@ -260,7 +269,7 @@ class ImageGrid:
           title (str): Image title shown on the plot.
           color_map (str | None): Name of matplotlib color map used to map scalar data to colours. Defaults to None.
         """
-        image_data = dict(image=image, title=title, color_map=color_map)
+        image_data = {"image": image, "title": title, "color_map": color_map}
         self.images.append(image_data)
 
     def generate(self) -> np.ndarray:
@@ -275,9 +284,9 @@ class ImageGrid:
         self.figure.subplots_adjust(right=0.9)
 
         axes = self.axis if isinstance(self.axis, np.ndarray) else np.array([self.axis])
-        for axis, image_dict in zip(axes, self.images):
-            axis.axes.xaxis.set_visible(False)
-            axis.axes.yaxis.set_visible(False)
+        for axis, image_dict in zip(axes, self.images, strict=True):
+            axis.axes.xaxis.set_visible(b=False)
+            axis.axes.yaxis.set_visible(b=False)
             axis.imshow(image_dict["image"], image_dict["color_map"], vmin=0, vmax=255)
             if image_dict["title"] is not None:
                 axis.title.set_text(image_dict["title"])

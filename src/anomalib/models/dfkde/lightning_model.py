@@ -3,13 +3,14 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
 import logging
+from collections.abc import Sequence
+from typing import Any
 
 import torch
+from lightning.pytorch.utilities.types import STEP_OUTPUT
 from omegaconf import DictConfig, ListConfig
-from pytorch_lightning.utilities.types import STEP_OUTPUT
 from torch import Tensor
 
 from anomalib.models.components import AnomalyModule
@@ -38,8 +39,8 @@ class Dfkde(AnomalyModule):
 
     def __init__(
         self,
-        layers: list[str],
-        backbone: str,
+        layers: Sequence[str] = ("layer4",),
+        backbone: str = "resnet18",
         pre_trained: bool = True,
         n_pca_components: int = 16,
         feature_scaling_method: FeatureScalingMethod = FeatureScalingMethod.SCALE,
@@ -61,13 +62,15 @@ class Dfkde(AnomalyModule):
     @staticmethod
     def configure_optimizers() -> None:  # pylint: disable=arguments-differ
         """DFKDE doesn't require optimization, therefore returns no optimizers."""
-        return None
+        return
 
     def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> None:
-        """Training Step of DFKDE. For each batch, features are extracted from the CNN.
+        """Perform the training step of DFKDE. For each batch, features are extracted from the CNN.
 
         Args:
             batch (batch: dict[str, str | Tensor]): Batch containing image filename, image, label and mask
+            args: Arguments.
+            kwargs: Keyword arguments.
 
         Returns:
           Deep CNN features.
@@ -93,20 +96,27 @@ class Dfkde(AnomalyModule):
         self.model.classifier.fit(embeddings)
 
     def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
-        """Validation Step of DFKDE.
+        """Perform the validation step of DFKDE.
 
         Similar to the training step, features are extracted from the CNN for each batch.
 
         Args:
-          batch (dict[str, str | Tensor]): Input batch
+            batch (dict[str, str | Tensor]): Input batch
+            args: Arguments.
+            kwargs: Keyword arguments.
 
         Returns:
-          Dictionary containing probability, prediction and ground truth values.
+            Dictionary containing probability, prediction and ground truth values.
         """
         del args, kwargs  # These variables are not used.
 
         batch["pred_scores"] = self.model(batch["image"])
         return batch
+
+    @property
+    def trainer_arguments(self) -> dict[str, Any]:
+        """Return DFKDE-specific trainer arguments."""
+        return {"gradient_clip_val": 0, "max_epochs": 1, "num_sanity_val_steps": 0}
 
 
 class DfkdeLightning(Dfkde):
@@ -125,5 +135,5 @@ class DfkdeLightning(Dfkde):
             feature_scaling_method=FeatureScalingMethod(hparams.model.feature_scaling_method),
             max_training_points=hparams.model.max_training_points,
         )
-        self.hparams: DictConfig | ListConfig  # type: ignore
+        self.hparams: DictConfig | ListConfig
         self.save_hyperparameters(hparams)

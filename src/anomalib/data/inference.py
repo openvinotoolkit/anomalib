@@ -3,12 +3,11 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
 from pathlib import Path
 from typing import Any
 
-import albumentations as A
+import albumentations as A  # noqa: N812
 from torch.utils.data.dataset import Dataset
 
 from anomalib.data.utils import get_image_filenames, get_transforms, read_image
@@ -29,7 +28,7 @@ class InferenceDataset(Dataset):
         self,
         path: str | Path,
         transform: A.Compose | None = None,
-        image_size: int | tuple[int, int] | None = None,
+        image_size: int | tuple[int, int] = (256, 256),
     ) -> None:
         super().__init__()
 
@@ -44,7 +43,7 @@ class InferenceDataset(Dataset):
         """Get the number of images in the given path."""
         return len(self.image_filenames)
 
-    def __getitem__(self, index: int) -> Any:
+    def __getitem__(self, index: int) -> dict[str, Any]:
         """Get the image based on the `index`."""
         image_filename = self.image_filenames[index]
         image = read_image(path=image_filename)

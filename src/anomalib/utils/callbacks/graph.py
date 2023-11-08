@@ -4,13 +4,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import torch
-from pytorch_lightning import Callback, LightningModule, Trainer
+from lightning.pytorch import Callback, LightningModule, Trainer
 
-from anomalib.utils.loggers import (
-    AnomalibCometLogger,
-    AnomalibTensorBoardLogger,
-    AnomalibWandbLogger,
-)
+from anomalib.utils.loggers import AnomalibCometLogger, AnomalibTensorBoardLogger, AnomalibWandbLogger
 
 
 class GraphLogger(Callback):
@@ -23,7 +19,6 @@ class GraphLogger(Callback):
             trainer: Trainer object which contans reference to loggers.
             pl_module: LightningModule object which is logged.
         """
-
         for logger in trainer.loggers:
             if isinstance(logger, AnomalibWandbLogger):
                 # NOTE: log graph gets populated only after one backward pass. This won't work for models which do not
@@ -38,9 +33,8 @@ class GraphLogger(Callback):
             trainer: Trainer object which contans reference to loggers.
             pl_module: LightningModule object which is logged.
         """
-
         for logger in trainer.loggers:
-            if isinstance(logger, (AnomalibCometLogger, AnomalibTensorBoardLogger)):
+            if isinstance(logger, AnomalibCometLogger | AnomalibTensorBoardLogger):
                 logger.log_graph(pl_module, input_array=torch.ones((1, 3, 256, 256)))
             elif isinstance(logger, AnomalibWandbLogger):
-                logger.experiment.unwatch(pl_module)  # type: ignore
+                logger.experiment.unwatch(pl_module)

@@ -9,9 +9,7 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-# pylint: disable=invalid-name
-
-from __future__ import annotations
+# ruff: noqa
 
 import math
 
@@ -22,8 +20,7 @@ from torch import Tensor
 
 def lerp_np(x, y, w):
     """Helper function."""
-    fin_out = (y - x) * w + x
-    return fin_out
+    return (y - x) * w + x
 
 
 def rand_perlin_2d_octaves_np(shape, res, octaves=1, persistence=0.5):
@@ -48,7 +45,7 @@ def generate_perlin_noise_2d(shape, res):
     d = (shape[0] // res[0], shape[1] // res[1])
     grid = np.mgrid[0 : res[0] : delta[0], 0 : res[1] : delta[1]].transpose(1, 2, 0) % 1
     # Gradients
-    angles = 2 * np.pi * np.random.rand(res[0] + 1, res[1] + 1)
+    angles = 2 * np.pi * np.random.default_rng().random(res[0] + 1, res[1] + 1)
     gradients = np.dstack((np.cos(angles), np.sin(angles)))
     g00 = gradients[0:-1, 0:-1].repeat(d[0], 0).repeat(d[1], 1)
     g10 = gradients[1:, 0:-1].repeat(d[0], 0).repeat(d[1], 1)
@@ -82,12 +79,13 @@ def random_2d_perlin(
     Returns:
         np.ndarray | Tensor: Random 2d-array/tensor generated using perlin noise.
     """
-    if isinstance(res[0], int):
+    if isinstance(res[0], int | np.integer):
         result = _rand_perlin_2d_np(shape, res, fade)
     elif isinstance(res[0], Tensor):
         result = _rand_perlin_2d(shape, res, fade)
     else:
-        raise TypeError(f"got scales of type {type(res[0])}")
+        msg = f"got scales of type {type(res[0])}"
+        raise TypeError(msg)
     return result
 
 
@@ -97,7 +95,7 @@ def _rand_perlin_2d_np(shape, res, fade=lambda t: 6 * t**5 - 15 * t**4 + 10 * t*
     d = (shape[0] // res[0], shape[1] // res[1])
     grid = np.mgrid[0 : res[0] : delta[0], 0 : res[1] : delta[1]].transpose(1, 2, 0) % 1
 
-    angles = 2 * math.pi * np.random.rand(res[0] + 1, res[1] + 1)
+    angles = 2 * math.pi * np.random.default_rng().random((res[0] + 1, res[1] + 1))
     gradients = np.stack((np.cos(angles), np.sin(angles)), axis=-1)
 
     def tile_grads(slice1, slice2):
@@ -136,7 +134,8 @@ def _rand_perlin_2d(shape, res, fade=lambda t: 6 * t**5 - 15 * t**4 + 10 * t**3)
     def dot(grad, shift):
         return (
             torch.stack(
-                (grid[: shape[0], : shape[1], 0] + shift[0], grid[: shape[0], : shape[1], 1] + shift[1]), dim=-1
+                (grid[: shape[0], : shape[1], 0] + shift[0], grid[: shape[0], : shape[1], 1] + shift[1]),
+                dim=-1,
             )
             * grad[: shape[0], : shape[1]]
         ).sum(dim=-1)

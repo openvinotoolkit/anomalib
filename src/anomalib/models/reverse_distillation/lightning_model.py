@@ -6,11 +6,12 @@ https://arxiv.org/abs/2201.10703v2
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
+from collections.abc import Sequence
+from typing import Any
+
+from lightning.pytorch.utilities.types import STEP_OUTPUT
 from omegaconf import DictConfig, ListConfig
-from pytorch_lightning.callbacks import EarlyStopping
-from pytorch_lightning.utilities.types import STEP_OUTPUT
 from torch import Tensor, optim
 
 from anomalib.models.components import AnomalyModule
@@ -33,12 +34,9 @@ class ReverseDistillation(AnomalyModule):
     def __init__(
         self,
         input_size: tuple[int, int],
-        backbone: str,
-        layers: list[str],
-        anomaly_map_mode: AnomalyMapGenerationMode,
-        lr: float,
-        beta1: float,
-        beta2: float,
+        backbone: str = "wide_resnet50_2",
+        layers: Sequence[str] = ("layer1", "layer2", "layer3"),
+        anomaly_map_mode: AnomalyMapGenerationMode = AnomalyMapGenerationMode.ADD,
         pre_trained: bool = True,
     ) -> None:
         super().__init__()
@@ -50,32 +48,21 @@ class ReverseDistillation(AnomalyModule):
             anomaly_map_mode=anomaly_map_mode,
         )
         self.loss = ReverseDistillationLoss()
-        # TODO: LR should be part of optimizer in config.yaml! Since reverse distillation has custom
-        #   optimizer this is to be addressed later.
-        self.learning_rate = lr
-        self.beta1 = beta1
-        self.beta2 = beta2
 
     def configure_optimizers(self) -> optim.Adam:
-        """Configures optimizers for decoder and bottleneck.
-
-        Note:
-            This method is used for the existing CLI.
-            When PL CLI is introduced, configure optimizers method will be
-                deprecated, and optimizers will be configured from either
-                config.yaml file or from CLI.
+        """Configure optimizers for decoder and bottleneck.
 
         Returns:
             Optimizer: Adam optimizer for each decoder
         """
         return optim.Adam(
             params=list(self.model.decoder.parameters()) + list(self.model.bottleneck.parameters()),
-            lr=self.learning_rate,
-            betas=(self.beta1, self.beta2),
+            lr=0.005,
+            betas=(0.5, 0.99),
         )
 
     def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
-        """Training Step of Reverse Distillation Model.
+        """Perform a training step of Reverse Distillation Model.
 
         Features are extracted from three layers of the Encoder model. These are passed to the bottleneck layer
         that are passed to the decoder network. The loss is then calculated based on the cosine similarity between the
@@ -83,6 +70,8 @@ class ReverseDistillation(AnomalyModule):
 
         Args:
           batch (batch: dict[str, str | Tensor]): Input batch
+          args: Additional arguments.
+          kwargs: Additional keyword arguments.
 
         Returns:
           Feature Map
@@ -94,13 +83,15 @@ class ReverseDistillation(AnomalyModule):
         return {"loss": loss}
 
     def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
-        """Validation Step of Reverse Distillation Model.
+        """Perform a validation step of Reverse Distillation Model.
 
         Similar to the training step, encoder/decoder features are extracted from the CNN for each batch, and
         anomaly map is computed.
 
         Args:
           batch (dict[str, str | Tensor]): Input batch
+          args: Additional arguments.
+          kwargs: Additional keyword arguments.
 
         Returns:
           Dictionary containing images, anomaly maps, true labels and masks.
@@ -110,6 +101,11 @@ class ReverseDistillation(AnomalyModule):
 
         batch["anomaly_maps"] = self.model(batch["image"])
         return batch
+
+    @property
+    def trainer_arguments(self) -> dict[str, Any]:
+        """Return Reverse Distillation trainer arguments."""
+        return {"gradient_clip_val": 0, "num_sanity_val_steps": 0}
 
 
 class ReverseDistillationLightning(ReverseDistillation):
@@ -126,25 +122,6 @@ class ReverseDistillationLightning(ReverseDistillation):
             layers=hparams.model.layers,
             pre_trained=hparams.model.pre_trained,
             anomaly_map_mode=hparams.model.anomaly_map_mode,
-            lr=hparams.model.lr,
-            beta1=hparams.model.beta1,
-            beta2=hparams.model.beta2,
         )
-        self.hparams: DictConfig | ListConfig  # type: ignore
+        self.hparams: DictConfig | ListConfig
         self.save_hyperparameters(hparams)
-
-    def configure_callbacks(self) -> list[EarlyStopping]:
-        """Configure model-specific callbacks.
-
-        Note:
-            This method is used for the existing CLI.
-            When PL CLI is introduced, configure callback method will be
-                deprecated, and callbacks will be configured from either
-                config.yaml file or from CLI.
-        """
-        early_stopping = EarlyStopping(
-            monitor=self.hparams.model.early_stopping.metric,
-            patience=self.hparams.model.early_stopping.patience,
-            mode=self.hparams.model.early_stopping.mode,
-        )
-        return [early_stopping]
