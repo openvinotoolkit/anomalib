@@ -96,7 +96,7 @@ class Patchcore(AnomalyModule, MemoryBankMixin):
         logger.info("Fitting the PatchCore model via core-set sampling.")
         sampler = KCenterGreedy(embedding=embedding, sampling_ratio=self.coreset_sampling_ratio)
         coreset = sampler.sample_coreset()
-        self.memory_bank = coreset
+        self.model.memory_bank = coreset
 
         # Model is now fitted.
         self._is_fitted = torch.tensor([True])

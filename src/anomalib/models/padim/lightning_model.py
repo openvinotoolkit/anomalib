@@ -86,7 +86,7 @@ class Padim(AnomalyModule, MemoryBankMixin):
         embedding = torch.vstack(self.embeddings)
 
         logger.info("Fitting a Gaussian to the embedding collected from the training set.")
-        self.gaussian.fit(embedding)
+        self.model.gaussian.fit(embedding)
         self._is_fitted = torch.tensor([True])
 
     def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
