@@ -12,7 +12,7 @@ import logging
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torch import Tensor
 
-from anomalib.models.components import AnomalyModule
+from anomalib.models.components import MemoryBankAnomalyModule
 from anomalib.models.padim.torch_model import PadimModel
 
 logger = logging.getLogger(__name__)
@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 __all__ = ["Padim"]
 
 
-class Padim(AnomalyModule):
+class Padim(MemoryBankAnomalyModule):
     """PaDiM: a Patch Distribution Modeling Framework for Anomaly Detection and Localization.
 
     Args:
@@ -29,7 +29,7 @@ class Padim(AnomalyModule):
         backbone (str): Backbone CNN network
         pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.
         n_features (int, optional): Number of features to retain in the dimension reduction step.
-                                Default values from the paper are available for: resnet18 (100), wide_resnet50_2 (550).
+            Default values from the paper are available for: resnet18 (100), wide_resnet50_2 (550).
     """
 
     def __init__(

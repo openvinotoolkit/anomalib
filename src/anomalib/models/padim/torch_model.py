@@ -9,10 +9,10 @@ from random import sample
 from typing import TYPE_CHECKING
 
 import torch
-from torch import Tensor, nn
+from torch import Tensor
 from torch.nn import functional as F  # noqa: N812
 
-from anomalib.models.components import FeatureExtractor, MultiVariateGaussian
+from anomalib.models.components import FeatureExtractor, MemoryBankTorchModule, MultiVariateGaussian
 from anomalib.models.components.feature_extractors import dryrun_find_featuremap_dims
 from anomalib.models.padim.anomaly_map import AnomalyMapGenerator
 
@@ -53,7 +53,7 @@ def _deduce_dims(
     return n_features_original, n_patches
 
 
-class PadimModel(nn.Module):
+class PadimModel(MemoryBankTorchModule):
     """Padim Module.
 
     Args:
@@ -106,12 +106,6 @@ class PadimModel(nn.Module):
         self.anomaly_map_generator = AnomalyMapGenerator(image_size=input_size)
 
         self.gaussian = MultiVariateGaussian(self.n_features, self.n_patches)
-        self._is_fitted: bool = False
-
-    @property
-    def is_fitted(self) -> bool:
-        """Check if the model is fitted."""
-        return self._is_fitted
 
     def generate_embedding(self, features: dict[str, Tensor]) -> Tensor:
         """Generate embedding from hierarchical feature map.

@@ -8,10 +8,10 @@ from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
 import torch
-from torch import Tensor, nn
+from torch import Tensor
 from torch.nn import functional as F  # noqa: N812
 
-from anomalib.models.components import DynamicBufferModule, FeatureExtractor, KCenterGreedy
+from anomalib.models.components import FeatureExtractor, KCenterGreedy, MemoryBankTorchModule
 from anomalib.models.patchcore.anomaly_map import AnomalyMapGenerator
 
 if TYPE_CHECKING:
@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class PatchcoreModel(DynamicBufferModule, nn.Module):
+class PatchcoreModel(MemoryBankTorchModule):
     """Patchcore Module."""
 
     def __init__(
@@ -46,14 +46,7 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
         self.register_buffer("memory_bank", Tensor())
         self.memory_bank: Tensor
 
-        self._is_fitted: bool = False
-
-    @property
-    def is_fitted(self) -> bool:
-        """Boolean property to check if the model is fitted."""
-        return self._is_fitted
-
-    def forward(self, input_tensor: Tensor) -> Tensor | tuple[Tensor, Tensor]:
+    def forward(self, input_tensor: Tensor) -> Tensor | dict[str, Tensor]:
         """Return Embedding during training, or a tuple of anomaly map and anomaly score during testing.
 
         Steps performed:
@@ -65,8 +58,7 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
             input_tensor (Tensor): Input tensor
 
         Returns:
-            Tensor | dict[str, Tensor]: Embedding for training,
-                anomaly map and anomaly score for testing.
+            Tensor | dict[str, Tensor]: Embedding for training, anomaly map and anomaly score for testing.
         """
         if self.tiler:
             input_tensor = self.tiler.tile(input_tensor)
