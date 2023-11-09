@@ -14,12 +14,6 @@ class MemoryBankTorchModule(ABC):
     It is a wrapper around a torch module that adds
         (i) a property to check if the module is fitted.
         (ii) a fit method that is called to fit the model using the embedding.
-
-    The reason why anomalib need this module is because the memory bank-based models first collect the embeddings.
-    Then they fit the model on the embeddings.
-
-    This is different from the usual training process where the model is trained on batches of data.
-    Hence, we need a separate module to fit the model on the embeddings.
     """
 
     def __init__(self) -> None:
