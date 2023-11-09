@@ -378,6 +378,49 @@ class Engine:
             self._setup_trainer(model)
         return self.trainer.predict(model, dataloaders, datamodule, return_predictions, ckpt_path)
 
+    def train(
+        self,
+        model: AnomalyModule,
+        train_dataloaders: TRAIN_DATALOADERS | AnomalibDataModule | None = None,
+        val_dataloaders: EVAL_DATALOADERS | None = None,
+        test_dataloaders: EVAL_DATALOADERS | None = None,
+        datamodule: AnomalibDataModule | None = None,
+        ckpt_path: str | None = None,
+    ) -> _EVALUATE_OUTPUT:
+        """Fits the model and then calls test on it.
+
+        Args:
+            model (AnomalyModule): Model to be trained.
+            train_dataloaders (TRAIN_DATALOADERS | AnomalibDataModule | None, optional): Train dataloaders.
+                Defaults to None.
+            val_dataloaders (EVAL_DATALOADERS | None, optional): Validation dataloaders.
+                Defaults to None.
+            test_dataloaders (EVAL_DATALOADERS | None, optional): Test dataloaders.
+                Defaults to None.
+            datamodule (AnomalibDataModule | None, optional): Lightning datamodule.
+                If provided, dataloaders will be instantiated from this.
+                Defaults to None.
+            ckpt_path (str | None, optional): Checkpoint path. If provided, the model will be loaded from this path.
+                Defaults to None.
+
+        CLI Usage:
+            1. you can pick a model, and you can run through the MVTec dataset.
+                ```python
+                anomalib train --model anomalib.models.Padim --data MVTec
+                ```
+            2. Of course, you can override the various values with commands.
+                ```python
+                anomalib test --model anomalib.models.Padim --data <CONFIG | CLASS_PATH_OR_NAME> --trainer.max_epochs 3
+                ```
+            4. If you have a ready configuration file, run it like this.
+                ```python
+                anomalib test --config <config_file_path>
+                ```
+        """
+        self._setup_trainer(model)
+        self.trainer.fit(model, train_dataloaders, val_dataloaders, datamodule, ckpt_path)
+        self.trainer.test(model, test_dataloaders, ckpt_path=ckpt_path, datamodule=datamodule)
+
     def export(
         self,
         model: AnomalyModule,
