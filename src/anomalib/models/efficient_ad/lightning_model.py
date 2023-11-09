@@ -17,7 +17,6 @@ import torch
 import tqdm
 from albumentations.pytorch import ToTensorV2
 from lightning.pytorch.utilities.types import STEP_OUTPUT
-from omegaconf import DictConfig, ListConfig
 from torch import Tensor, optim
 from torch.utils.data import DataLoader
 from torchvision.datasets import ImageFolder
@@ -292,25 +291,3 @@ class EfficientAd(AnomalyModule):
     def trainer_arguments(self) -> dict[str, Any]:
         """Return EfficientAD trainer arguments."""
         return {"gradient_clip_val": 0, "num_sanity_val_steps": 0}
-
-
-class EfficientAdLightning(EfficientAd):
-    """PL Lightning Module for the EfficientAd Algorithm.
-
-    Args:
-        hparams (DictConfig | ListConfig): Model params
-    """
-
-    def __init__(self, hparams: DictConfig | ListConfig) -> None:
-        super().__init__(
-            teacher_out_channels=hparams.model.teacher_out_channels,
-            model_size=hparams.model.model_size,
-            lr=hparams.model.lr,
-            weight_decay=hparams.model.weight_decay,
-            padding=hparams.model.padding,
-            pad_maps=hparams.model.pad_maps,
-            input_size=hparams.dataset.image_size,
-            batch_size=hparams.dataset.train_batch_size,
-        )
-        self.hparams: DictConfig | ListConfig
-        self.save_hyperparameters(hparams)

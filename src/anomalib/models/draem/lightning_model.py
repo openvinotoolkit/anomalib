@@ -12,7 +12,6 @@ from typing import Any
 
 import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
-from omegaconf import DictConfig, ListConfig
 from torch import Tensor, nn
 
 from anomalib.data.utils import Augmenter
@@ -20,7 +19,7 @@ from anomalib.models.components import AnomalyModule
 from anomalib.models.draem.loss import DraemLoss
 from anomalib.models.draem.torch_model import DraemModel
 
-__all__ = ["Draem", "DraemLightning"]
+__all__ = ["Draem"]
 
 
 class Draem(AnomalyModule):
@@ -135,20 +134,3 @@ class Draem(AnomalyModule):
     def configure_optimizers(self) -> torch.optim.Optimizer:
         """Configure the Adam optimizer."""
         return torch.optim.Adam(params=self.model.parameters(), lr=0.0001)
-
-
-class DraemLightning(Draem):
-    """DRÆM: A discriminatively trained reconstruction embedding for surface anomaly detection.
-
-    Args:
-        hparams (DictConfig | ListConfig): Model parameters
-    """
-
-    def __init__(self, hparams: DictConfig | ListConfig) -> None:
-        super().__init__(
-            enable_sspcab=hparams.model.enable_sspcab,
-            sspcab_lambda=hparams.model.sspcab_lambda,
-            anomaly_source_path=hparams.model.anomaly_source_path,
-        )
-        self.hparams: DictConfig | ListConfig
-        self.save_hyperparameters(hparams)

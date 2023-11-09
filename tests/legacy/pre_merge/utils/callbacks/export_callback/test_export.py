@@ -11,7 +11,6 @@ from anomalib.data.utils import random_split
 from anomalib.deploy import ExportMode
 from anomalib.engine import Engine
 from anomalib.utils.callbacks.export import ExportCallback
-from tests.legacy.helpers.config import get_test_configurable_parameters
 from tests.legacy.helpers.dataset import get_dataset_path
 from tests.legacy.pre_merge.utils.callbacks.export_callback.dummy_lightning_model import DummyLightningModule
 
@@ -38,22 +37,16 @@ def dummy_datamodule() -> MVTec:
 def test_export_model_callback(dummy_datamodule: MVTec, export_mode):
     """Tests if an optimized model is created."""
 
-    with patch("anomalib.config.config.update_input_size_config", side_effect=lambda config: config):
-        config = get_test_configurable_parameters(
-            config_path="tests/legacy/pre_merge/utils/callbacks/export_callback/dummy_config.yml",
-        )
-
     with tempfile.TemporaryDirectory() as tmp_dir:
-        config.trainer.default_root_dir = tmp_dir
-        model = DummyLightningModule(hparams=config)
+        model = DummyLightningModule()
         model.callbacks = [
             ExportCallback(
-                input_size=config.model.init_args.input_size,
+                input_size=(32, 32),
                 dirpath=os.path.join(tmp_dir),
                 filename="model",
                 export_mode=export_mode,
             ),
-            EarlyStopping(monitor=config.model.init_args.metric),
+            EarlyStopping(monitor="loss"),
         ]
         engine = Engine(
             accelerator="gpu",
@@ -62,6 +55,7 @@ def test_export_model_callback(dummy_datamodule: MVTec, export_mode):
             logger=False,
             enable_checkpointing=False,
             max_epochs=1,
+            default_root_dir=tmp_dir,
         )
         engine.fit(model, datamodule=dummy_datamodule)
 
