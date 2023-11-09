@@ -8,7 +8,7 @@ from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
 import torch
-from torch import Tensor
+from torch import Tensor, nn
 from torch.nn import functional as F  # noqa: N812
 
 from anomalib.models.components import FeatureExtractor, KCenterGreedy, MemoryBankTorchModule
@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class PatchcoreModel(MemoryBankTorchModule):
+class PatchcoreModel(nn.Module, MemoryBankTorchModule):
     """Patchcore Module."""
 
     def __init__(

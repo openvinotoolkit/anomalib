@@ -6,11 +6,8 @@
 
 from abc import ABC, abstractmethod
 
-from .anomaly_module import AnomalyModule
-from .dynamic_module import DynamicBufferModule
 
-
-class MemoryBankTorchModule(DynamicBufferModule, ABC):
+class MemoryBankTorchModule(ABC):
     """Memory Bank Torch Module.
 
     This module is used to implement memory bank modules.
@@ -25,8 +22,8 @@ class MemoryBankTorchModule(DynamicBufferModule, ABC):
     Hence, we need a separate module to fit the model on the embeddings.
     """
 
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
+    def __init__(self) -> None:
+        super().__init__()
         self._is_fitted: bool = False
 
     @property
@@ -45,7 +42,7 @@ class MemoryBankTorchModule(DynamicBufferModule, ABC):
         raise NotImplementedError(msg)
 
 
-class MemoryBankAnomalyModule(AnomalyModule, ABC):
+class MemoryBankLightningModule(ABC):
     """Memory Bank Lightning Module.
 
     This module is used to implement memory bank lightning modules.

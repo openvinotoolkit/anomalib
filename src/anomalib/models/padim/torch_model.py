@@ -9,7 +9,7 @@ from random import sample
 from typing import TYPE_CHECKING
 
 import torch
-from torch import Tensor
+from torch import Tensor, nn
 from torch.nn import functional as F  # noqa: N812
 
 from anomalib.models.components import FeatureExtractor, MemoryBankTorchModule, MultiVariateGaussian
@@ -53,7 +53,7 @@ def _deduce_dims(
     return n_features_original, n_patches
 
 
-class PadimModel(MemoryBankTorchModule):
+class PadimModel(nn.Module, MemoryBankTorchModule):
     """Padim Module.
 
     Args:
@@ -62,7 +62,7 @@ class PadimModel(MemoryBankTorchModule):
         backbone (str, optional): Pre-trained model backbone. Defaults to "resnet18".
         pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.
         n_features (int, optional): Number of features to retain in the dimension reduction step.
-                                Default values from the paper are available for: resnet18 (100), wide_resnet50_2 (550).
+            Default values from the paper are available for: resnet18 (100), wide_resnet50_2 (550).
     """
 
     def __init__(

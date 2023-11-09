@@ -14,13 +14,13 @@ from lightning.pytorch.utilities.types import STEP_OUTPUT
 from omegaconf import DictConfig, ListConfig
 from torch import Tensor
 
-from anomalib.models.components import MemoryBankAnomalyModule
+from anomalib.models.components import AnomalyModule, MemoryBankLightningModule
 from anomalib.models.patchcore.torch_model import PatchcoreModel
 
 logger = logging.getLogger(__name__)
 
 
-class Patchcore(MemoryBankAnomalyModule):
+class Patchcore(AnomalyModule, MemoryBankLightningModule):
     """PatchcoreLightning Module to train PatchCore algorithm.
 
     Args:
