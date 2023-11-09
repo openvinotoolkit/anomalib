@@ -8,23 +8,25 @@ writer:
   - tensorboard
 grid_search:
   data:
-    category:
-      - bottle
-      - cable
-      - capsule
-      - carpet
-      - grid
-      - hazelnut
-      - leather
-      - metal_nut
-      - pill
-      - screw
-      - tile
-      - toothbrush
-      - transistor
-      - wood
-      - zipper
-    image_size: [224]
+    class_path: anomalib.data.MVTec
+    init_args:
+      category:
+        - bottle
+        - cable
+        - capsule
+        - carpet
+        - grid
+        - hazelnut
+        - leather
+        - metal_nut
+        - pill
+        - screw
+        - tile
+        - toothbrush
+        - transistor
+        - wood
+        - zipper
+      image_size: [224]
   model_name:
     - padim
     - patchcore

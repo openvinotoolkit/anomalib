@@ -8,7 +8,6 @@ from typing import Any
 
 import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
-from omegaconf import DictConfig, ListConfig
 from torch import Tensor, optim
 
 from anomalib.models.components import AnomalyModule
@@ -100,23 +99,3 @@ class Fastflow(AnomalyModule):
             lr=0.001,
             weight_decay=0.00001,
         )
-
-
-class FastflowLightning(Fastflow):
-    """PL Lightning Module for the FastFlow algorithm.
-
-    Args:
-        hparams (DictConfig | ListConfig): Model params
-    """
-
-    def __init__(self, hparams: DictConfig | ListConfig) -> None:
-        super().__init__(
-            input_size=hparams.model.input_size,
-            backbone=hparams.model.backbone,
-            pre_trained=hparams.model.pre_trained,
-            flow_steps=hparams.model.flow_steps,
-            conv3x3_only=hparams.model.conv3x3_only,
-            hidden_ratio=hparams.model.hidden_ratio,
-        )
-        self.hparams: DictConfig | ListConfig
-        self.save_hyperparameters(hparams)

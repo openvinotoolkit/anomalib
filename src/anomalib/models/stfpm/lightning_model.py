@@ -12,14 +12,13 @@ from typing import Any
 
 import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
-from omegaconf import DictConfig, ListConfig
 from torch import Tensor, optim
 
 from anomalib.models.components import AnomalyModule
 from anomalib.models.stfpm.loss import STFPMLoss
 from anomalib.models.stfpm.torch_model import STFPMModel
 
-__all__ = ["StfpmLightning"]
+__all__ = ["Stfpm"]
 
 
 class Stfpm(AnomalyModule):
@@ -33,7 +32,7 @@ class Stfpm(AnomalyModule):
 
     def __init__(
         self,
-        input_size: tuple[int, int],
+        input_size: tuple[int, int] = (256, 256),
         backbone: str = "resnet18",
         layers: Sequence[str] = ("layer1", "layer2", "layer3"),
     ) -> None:
@@ -89,6 +88,7 @@ class Stfpm(AnomalyModule):
 
     @property
     def trainer_arguments(self) -> dict[str, Any]:
+        """Required trainer arguments."""
         return {"gradient_clip_val": 0, "num_sanity_val_steps": 0}
 
     def configure_optimizers(self) -> torch.optim.Optimizer:
@@ -104,20 +104,3 @@ class Stfpm(AnomalyModule):
             dampening=0.0,
             weight_decay=0.001,
         )
-
-
-class StfpmLightning(Stfpm):
-    """PL Lightning Module for the STFPM algorithm.
-
-    Args:
-        hparams (DictConfig | ListConfig): Model params
-    """
-
-    def __init__(self, hparams: DictConfig | ListConfig) -> None:
-        super().__init__(
-            input_size=hparams.model.input_size,
-            backbone=hparams.model.backbone,
-            layers=hparams.model.layers,
-        )
-        self.hparams: DictConfig | ListConfig
-        self.save_hyperparameters(hparams)

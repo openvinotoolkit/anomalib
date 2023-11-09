@@ -12,7 +12,6 @@ from typing import Any
 
 import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
-from omegaconf import DictConfig, ListConfig
 from torch import Tensor
 
 from anomalib.models.components import AnomalyModule
@@ -22,7 +21,7 @@ from .torch_model import CsFlowModel
 
 logger = logging.getLogger(__name__)
 
-__all__ = ["Csflow", "CsflowLightning"]
+__all__ = ["Csflow"]
 
 
 class Csflow(AnomalyModule):
@@ -109,22 +108,3 @@ class Csflow(AnomalyModule):
             weight_decay=1e-5,
             betas=(0.5, 0.9),
         )
-
-
-class CsflowLightning(Csflow):
-    """Fully Convolutional Cross-Scale-Flows for Image-based Defect Detection.
-
-    Args:
-        hprams (DictConfig | ListConfig): Model params
-    """
-
-    def __init__(self, hparams: DictConfig | ListConfig) -> None:
-        super().__init__(
-            input_size=hparams.model.input_size,
-            n_coupling_blocks=hparams.model.n_coupling_blocks,
-            cross_conv_hidden_channels=hparams.model.cross_conv_hidden_channels,
-            clamp=hparams.model.clamp,
-            num_channels=3,
-        )
-        self.hparams: DictConfig | ListConfig
-        self.save_hyperparameters(hparams)

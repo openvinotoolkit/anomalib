@@ -6,6 +6,8 @@
 
 import sys
 from importlib.util import find_spec
+from pathlib import Path
+from typing import Callable
 
 import pytest
 
@@ -17,7 +19,6 @@ from anomalib.utils.metrics.threshold import F1AdaptiveThreshold
 sys.path.append("tools/inference")
 
 
-@pytest.mark.order(5)
 class TestGradioInferenceEntrypoint:
     """This tests whether the entrypoints run without errors without quantitative measure of the outputs.
 
@@ -25,16 +26,19 @@ class TestGradioInferenceEntrypoint:
     """
 
     @pytest.fixture
-    def get_functions(self):
-        """Get functions from Gradio_inference.py"""
+    def get_functions(self) -> tuple[Callable, Callable]:
+        """Get functions from Gradio_inference.py."""
         if find_spec("gradio_inference") is not None:
             from tools.inference.gradio_inference import get_inferencer, get_parser
         else:
-            raise Exception("Unable to import gradio_inference.py for testing")
+            msg = "Unable to import gradio_inference.py for testing"
+            raise Exception(msg)
         return get_parser, get_inferencer
 
-    def test_torch_inference(self, get_functions, project_path, transforms_config):
-        """Test gradio_inference.py"""
+    def test_torch_inference(
+        self, get_functions: tuple[Callable, Callable], project_path: Path, transforms_config: dict
+    ) -> None:
+        """Test gradio_inference.py."""
         parser, inferencer = get_functions
         model = Padim(input_size=(100, 100))
         model.image_threshold = F1AdaptiveThreshold()
@@ -46,13 +50,15 @@ class TestGradioInferenceEntrypoint:
         arguments = parser().parse_args(
             [
                 "--weights",
-                project_path + "/weights/torch/model.pt",
-            ]
+                str(project_path) + "/weights/torch/model.pt",
+            ],
         )
         assert isinstance(inferencer(arguments.weights, arguments.metadata), TorchInferencer)
 
-    def test_openvino_inference(self, get_functions, project_path, transforms_config):
-        """Test gradio_inference.py"""
+    def test_openvino_inference(
+        self, get_functions: tuple[Callable, Callable], project_path: Path, transforms_config: dict
+    ) -> None:
+        """Test gradio_inference.py."""
         parser, inferencer = get_functions
         model = Padim(input_size=(100, 100))
         model.image_threshold = F1AdaptiveThreshold()
@@ -71,10 +77,10 @@ class TestGradioInferenceEntrypoint:
         arguments = parser().parse_args(
             [
                 "--weights",
-                project_path + "/weights/openvino/model.bin",
+                str(project_path) + "/weights/openvino/model.bin",
                 "--metadata",
-                project_path + "/weights/openvino/metadata.json",
-            ]
+                str(project_path) + "/weights/openvino/metadata.json",
+            ],
         )
         assert isinstance(inferencer(arguments.weights, arguments.metadata), OpenVINOInferencer)
 
@@ -83,7 +89,7 @@ class TestGradioInferenceEntrypoint:
             arguments = parser().parse_args(
                 [
                     "--weights",
-                    project_path + "/weights/openvino/model.bin",
+                    str(project_path) + "/weights/openvino/model.bin",
                 ]
             )
             inferencer(arguments.weights, arguments.metadata)

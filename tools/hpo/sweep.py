@@ -9,8 +9,7 @@ if __name__ == "__main__":
     parser = get_hpo_parser()
     args = parser.parse_args()
     sweep = Sweep(
-        model=args.model,
-        model_config=args.model_config,
+        project=args.project,
         sweep_config=args.sweep_config,
         backend=args.backend,
         entity=args.entity,

@@ -169,3 +169,33 @@ def set_in_nested_config(config: DictConfig, keymap: list, value: Any) -> None: 
         Replaced model config {'parent1': {'child1': 'a', 'child2': 1}, 'parent3': False, 'parent2': 'model1'}
     """
     get_from_nested_config(config, keymap[:-1])[keymap[-1]] = value
+
+
+def flattened_config_to_nested(config: dict[str, Any]) -> DictConfig:
+    """Convert a flattened config dictionary to a nested DictConfig object.
+
+    Args:
+        config: dict[str, Any]: Flattened config dictionary.
+
+    Examples:
+    >>> flattened_config = {
+    ...     "parent1.child1": 'a',
+    ...     "parent1.child2": 1,
+    ...     "parent2": 'model1',
+    ... }
+        >>> flattened_config_to_nested(flattened_config)
+        {'parent1': {'child1': 'a', 'child2': 1}, 'parent2': 'model1'}
+
+    Returns:
+        DictConfig: Nested DictConfig object.
+    """
+    nested_config = DictConfig({})
+    for key, value in config.items():
+        if len(key.split(".")) == 1:
+            nested_config[key] = value
+        else:
+            keymap = key.split(".", 1)
+            if keymap[0] not in nested_config:
+                nested_config[keymap[0]] = DictConfig({})
+            nested_config[keymap[0]].update(flattened_config_to_nested({keymap[1]: value}))
+    return nested_config

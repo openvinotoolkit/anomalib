@@ -43,7 +43,7 @@ def update_config(config: DictConfig | ListConfig | Namespace) -> DictConfig | L
     Returns:
         DictConfig | ListConfig | Namespace: Updated config.
     """
-    show_warnings(config)
+    _show_warnings(config)
 
     # keep track of the original config file because it will be modified
     config_original: DictConfig | ListConfig | Namespace = (
@@ -68,7 +68,7 @@ def update_config(config: DictConfig | ListConfig | Namespace) -> DictConfig | L
     config.trainer.default_root_dir = str(project_path)
     config.results_dir.path = str(project_path)
 
-    config = update_nncf_config(config)
+    config = _update_nncf_config(config)
 
     # write the original config for eventual debug (modified config at the end of the function)
     (project_path / "config_original.yaml").write_text(to_yaml(config_original))
@@ -138,7 +138,7 @@ def update_input_size_config(config: DictConfig | ListConfig | Namespace) -> Dic
     return config
 
 
-def update_nncf_config(config: DictConfig | ListConfig) -> DictConfig | ListConfig:
+def _update_nncf_config(config: DictConfig | ListConfig) -> DictConfig | ListConfig:
     """Set the NNCF input size based on the value of the crop_size parameter in the configurable parameters object.
 
     Args:
@@ -161,7 +161,7 @@ def update_nncf_config(config: DictConfig | ListConfig) -> DictConfig | ListConf
     return config
 
 
-def show_warnings(config: DictConfig | ListConfig | Namespace) -> None:
+def _show_warnings(config: DictConfig | ListConfig | Namespace) -> None:
     """Show warnings if any based on the configuration settings.
 
     Args:
@@ -179,42 +179,3 @@ def show_warnings(config: DictConfig | ListConfig | Namespace) -> None:
     ):
         logger.warning("Anomalib currently does not support multi-gpu training. Setting devices to 1.")
         config.trainer.devices = 1
-
-
-def get_configurable_parameters(
-    model_name: str | None = None,
-    config_path: Path | str | None = None,
-    config_filename: str | None = "config",
-    config_file_extension: str | None = "yaml",
-) -> DictConfig | ListConfig:
-    """Get configurable parameters.
-
-    Args:
-        model_name: str | None:  (Default value = None)
-        config_path: Path | str | None:  (Default value = None)
-        config_filename: str | None:  (Default value = "config")
-        config_file_extension: str | None:  (Default value = "yaml")
-
-    Returns:
-        DictConfig | ListConfig: Configurable parameters in DictConfig object.
-    """
-    if model_name is None and config_path is None:
-        msg = (
-            "Both model_name and model config path cannot be None! "
-            "Please provide a model name or path to a config file!"
-        )
-        raise ValueError(
-            msg,
-        )
-
-    if model_name == "efficientad":
-        msg = "`efficientad` is deprecated as --model. Please use `efficient_ad` instead."
-        logger.warning(msg)
-        model_name = "efficient_ad"
-
-    if config_path is None:
-        config_path = Path(f"src/anomalib/models/{model_name}/{config_filename}.{config_file_extension}")
-
-    config = OmegaConf.load(config_path)
-
-    return update_config(config)
