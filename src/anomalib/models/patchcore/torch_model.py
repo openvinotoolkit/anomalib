@@ -11,7 +11,7 @@ import torch
 from torch import Tensor, nn
 from torch.nn import functional as F  # noqa: N812
 
-from anomalib.models.components import FeatureExtractor, KCenterGreedy, MemoryBankTorchModule
+from anomalib.models.components import FeatureExtractor
 from anomalib.models.patchcore.anomaly_map import AnomalyMapGenerator
 
 if TYPE_CHECKING:
@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class PatchcoreModel(nn.Module, MemoryBankTorchModule):
+class PatchcoreModel(nn.Module):
     """Patchcore Module."""
 
     def __init__(
@@ -127,28 +127,6 @@ class PatchcoreModel(nn.Module, MemoryBankTorchModule):
         """
         embedding_size = embedding.size(1)
         return embedding.permute(0, 2, 3, 1).reshape(-1, embedding_size)
-
-    def fit(self, embedding: Tensor | list[Tensor], sampling_ratio: float) -> None:
-        """Fit the PatchCore model via coreset sampling.
-
-        Args:
-            embedding (Tensor | list[Tensor]): Embedding tensor from the CNN
-            sampling_ratio (float): Coreset sampling ratio
-        """
-        if isinstance(embedding, list):
-            if not isinstance(embedding[0], Tensor):
-                message = "Embedding must be a Tensor or a list of Tensors"
-                raise TypeError(message)
-            embedding = torch.vstack(embedding)
-
-        # Coreset Subsampling
-        logger.info("Fitting the PatchCore model via core-set sampling.")
-        sampler = KCenterGreedy(embedding=embedding, sampling_ratio=sampling_ratio)
-        coreset = sampler.sample_coreset()
-        self.memory_bank = coreset
-
-        # Model is now fitted.
-        self._is_fitted = True
 
     @staticmethod
     def euclidean_dist(x: Tensor, y: Tensor) -> Tensor:

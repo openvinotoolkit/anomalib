@@ -4,50 +4,35 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-from abc import ABC, abstractmethod
+from abc import abstractmethod
+
+import torch
+from torch import nn
 
 
-class MemoryBankTorchModule(ABC):
-    """Memory Bank Torch Module.
-
-    This module is used to implement memory bank modules.
-    It is a wrapper around a torch module that adds
-        (i) a property to check if the module is fitted.
-        (ii) a fit method that is called to fit the model using the embedding.
-    """
-
-    def __init__(self) -> None:
-        super().__init__()
-        self._is_fitted: bool = False
-
-    @property
-    def is_fitted(self) -> bool:
-        """Property to check if the model is fitted."""
-        return self._is_fitted
-
-    @abstractmethod
-    def fit(self, *args, **kwargs) -> None:
-        """Fit the model to the data.
-
-        Raises:
-            NotImplementedError: When the method is not implemented.
-        """
-        msg = f"fit method not implemented for {self.__class__.__name__}. To use a memory-bank module, implement fit."
-        raise NotImplementedError(msg)
-
-
-class MemoryBankLightningModule(ABC):
+class MemoryBankMixin(nn.Module):
     """Memory Bank Lightning Module.
 
     This module is used to implement memory bank lightning modules.
     It checks if the model is fitted before validation starts.
     """
 
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.register_buffer("_is_fitted", torch.tensor([False]))
+        self._is_fitted: torch.Tensor
 
     @abstractmethod
+    def fit(self) -> None:
+        """Fit the model to the data."""
+        msg = (
+            f"fit method not implemented for {self.__class__.__name__}. "
+            "To use a memory-bank module, implement ``fit.``"
+        )
+        raise NotImplementedError(msg)
+
     def on_validation_start(self) -> None:
         """Ensure that the model is fitted before validation starts."""
-        msg = "To use a memory-bank module, model ``fit`` must be called before validation starts."
-        raise NotImplementedError(msg)
+        if not self._is_fitted:
+            self.fit()
+            self._is_fitted = torch.tensor([True])

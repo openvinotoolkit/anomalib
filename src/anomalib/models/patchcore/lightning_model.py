@@ -10,17 +10,18 @@ import logging
 from collections.abc import Sequence
 from typing import Any
 
+import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 from omegaconf import DictConfig, ListConfig
 from torch import Tensor
 
-from anomalib.models.components import AnomalyModule, MemoryBankLightningModule
+from anomalib.models.components import AnomalyModule, KCenterGreedy, MemoryBankMixin
 from anomalib.models.patchcore.torch_model import PatchcoreModel
 
 logger = logging.getLogger(__name__)
 
 
-class Patchcore(AnomalyModule, MemoryBankLightningModule):
+class Patchcore(AnomalyModule, MemoryBankMixin):
     """PatchcoreLightning Module to train PatchCore algorithm.
 
     Args:
@@ -82,10 +83,23 @@ class Patchcore(AnomalyModule, MemoryBankLightningModule):
         embedding = self.model(batch["image"])
         self.embeddings.append(embedding)
 
-    def on_validation_start(self) -> None:
-        """Fit the model on the embeddings."""
-        if not self.model.is_fitted:
-            self.model.fit(self.embeddings, self.coreset_sampling_ratio)
+    def fit(self) -> None:
+        """Fit the PatchCore model via coreset sampling.
+
+        Args:
+            embedding (Tensor | list[Tensor]): Embedding tensor from the CNN
+            sampling_ratio (float): Coreset sampling ratio
+        """
+        embedding = torch.vstack(self.embeddings)
+
+        # Coreset Subsampling
+        logger.info("Fitting the PatchCore model via core-set sampling.")
+        sampler = KCenterGreedy(embedding=embedding, sampling_ratio=self.coreset_sampling_ratio)
+        coreset = sampler.sample_coreset()
+        self.memory_bank = coreset
+
+        # Model is now fitted.
+        self._is_fitted = torch.tensor([True])
 
     def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
         """Get batch of anomaly maps from input image batch.

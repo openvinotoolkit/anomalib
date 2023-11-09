@@ -9,10 +9,11 @@ Paper https://arxiv.org/abs/2011.08785
 
 import logging
 
+import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torch import Tensor
 
-from anomalib.models.components import AnomalyModule, MemoryBankLightningModule
+from anomalib.models.components import AnomalyModule, MemoryBankMixin
 from anomalib.models.padim.torch_model import PadimModel
 
 logger = logging.getLogger(__name__)
@@ -20,7 +21,7 @@ logger = logging.getLogger(__name__)
 __all__ = ["Padim"]
 
 
-class Padim(AnomalyModule, MemoryBankLightningModule):
+class Padim(AnomalyModule, MemoryBankMixin):
     """PaDiM: a Patch Distribution Modeling Framework for Anomaly Detection and Localization.
 
     Args:
@@ -80,10 +81,13 @@ class Padim(AnomalyModule, MemoryBankLightningModule):
         #   https://github.com/PyTorchLightning/pytorch-lightning/pull/7357
         self.embeddings.append(embedding.cpu())
 
-    def on_validation_start(self) -> None:
-        """Fit the model on validation start."""
-        if not self.model.is_fitted:
-            self.model.fit(self.embeddings)
+    def fit(self) -> None:
+        """Fit the model with embedding."""
+        embedding = torch.vstack(self.embeddings)
+
+        logger.info("Fitting a Gaussian to the embedding collected from the training set.")
+        self.gaussian.fit(embedding)
+        self._is_fitted = torch.tensor([True])
 
     def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
         """Perform a validation step of PADIM.

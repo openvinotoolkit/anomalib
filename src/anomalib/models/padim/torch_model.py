@@ -12,7 +12,7 @@ import torch
 from torch import Tensor, nn
 from torch.nn import functional as F  # noqa: N812
 
-from anomalib.models.components import FeatureExtractor, MemoryBankTorchModule, MultiVariateGaussian
+from anomalib.models.components import FeatureExtractor, MultiVariateGaussian
 from anomalib.models.components.feature_extractors import dryrun_find_featuremap_dims
 from anomalib.models.padim.anomaly_map import AnomalyMapGenerator
 
@@ -53,7 +53,7 @@ def _deduce_dims(
     return n_features_original, n_patches
 
 
-class PadimModel(nn.Module, MemoryBankTorchModule):
+class PadimModel(nn.Module):
     """Padim Module.
 
     Args:
@@ -166,19 +166,3 @@ class PadimModel(nn.Module, MemoryBankTorchModule):
                 inv_covariance=self.gaussian.inv_covariance,
             )
         return output
-
-    def fit(self, embedding: Tensor | list[Tensor]) -> None:
-        """Fit the model with embedding.
-
-        Args:
-            embedding (embedding: Tensor | list[Tensor]): Embedding vector
-        """
-        if isinstance(embedding, list):
-            if not isinstance(embedding[0], Tensor):
-                message = "Embedding must be a Tensor or a list of Tensors"
-                raise TypeError(message)
-            embedding = torch.vstack(embedding)
-
-        logger.info("Fitting a Gaussian to the embedding collected from the training set.")
-        self.gaussian.fit(embedding)
-        self._is_fitted = True
