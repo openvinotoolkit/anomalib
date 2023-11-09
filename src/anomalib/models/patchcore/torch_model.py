@@ -3,7 +3,6 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-import logging
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
@@ -11,16 +10,14 @@ import torch
 from torch import Tensor, nn
 from torch.nn import functional as F  # noqa: N812
 
-from anomalib.models.components import FeatureExtractor
+from anomalib.models.components import DynamicBufferModule, FeatureExtractor, KCenterGreedy
 from anomalib.models.patchcore.anomaly_map import AnomalyMapGenerator
 
 if TYPE_CHECKING:
     from anomalib.pre_processing import Tiler
 
-logger = logging.getLogger(__name__)
 
-
-class PatchcoreModel(nn.Module):
+class PatchcoreModel(DynamicBufferModule, nn.Module):
     """Patchcore Module."""
 
     def __init__(
@@ -58,7 +55,8 @@ class PatchcoreModel(nn.Module):
             input_tensor (Tensor): Input tensor
 
         Returns:
-            Tensor | dict[str, Tensor]: Embedding for training, anomaly map and anomaly score for testing.
+            Tensor | dict[str, Tensor]: Embedding for training,
+                anomaly map and anomaly score for testing.
         """
         if self.tiler:
             input_tensor = self.tiler.tile(input_tensor)
@@ -127,6 +125,18 @@ class PatchcoreModel(nn.Module):
         """
         embedding_size = embedding.size(1)
         return embedding.permute(0, 2, 3, 1).reshape(-1, embedding_size)
+
+    def subsample_embedding(self, embedding: Tensor, sampling_ratio: float) -> None:
+        """Subsample embedding based on coreset sampling and store to memory.
+
+        Args:
+            embedding (np.ndarray): Embedding tensor from the CNN
+            sampling_ratio (float): Coreset sampling ratio
+        """
+        # Coreset Subsampling
+        sampler = KCenterGreedy(embedding=embedding, sampling_ratio=sampling_ratio)
+        coreset = sampler.sample_coreset()
+        self.memory_bank = coreset
 
     @staticmethod
     def euclidean_dist(x: Tensor, y: Tensor) -> Tensor:

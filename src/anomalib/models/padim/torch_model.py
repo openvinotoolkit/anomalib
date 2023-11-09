@@ -4,7 +4,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-import logging
 from random import sample
 from typing import TYPE_CHECKING
 
@@ -18,8 +17,6 @@ from anomalib.models.padim.anomaly_map import AnomalyMapGenerator
 
 if TYPE_CHECKING:
     from anomalib.pre_processing import Tiler
-
-logger = logging.getLogger(__name__)
 
 # defaults from the paper
 _N_FEATURES_DEFAULTS = {
@@ -62,7 +59,7 @@ class PadimModel(nn.Module):
         backbone (str, optional): Pre-trained model backbone. Defaults to "resnet18".
         pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.
         n_features (int, optional): Number of features to retain in the dimension reduction step.
-            Default values from the paper are available for: resnet18 (100), wide_resnet50_2 (550).
+                                Default values from the paper are available for: resnet18 (100), wide_resnet50_2 (550).
     """
 
     def __init__(
@@ -107,25 +104,6 @@ class PadimModel(nn.Module):
 
         self.gaussian = MultiVariateGaussian(self.n_features, self.n_patches)
 
-    def generate_embedding(self, features: dict[str, Tensor]) -> Tensor:
-        """Generate embedding from hierarchical feature map.
-
-        Args:
-            features (dict[str, Tensor]): Hierarchical feature map from a CNN (ResNet18 or WideResnet)
-
-        Returns:
-            Embedding vector
-        """
-        embeddings = features[self.layers[0]]
-        for layer in self.layers[1:]:
-            layer_embedding = features[layer]
-            layer_embedding = F.interpolate(layer_embedding, size=embeddings.shape[-2:], mode="nearest")
-            embeddings = torch.cat((embeddings, layer_embedding), 1)
-
-        # subsample embeddings
-        idx = self.idx.to(embeddings.device)
-        return torch.index_select(embeddings, 1, idx)
-
     def forward(self, input_tensor: Tensor) -> Tensor:
         """Forward-pass image-batch (N, C, H, W) into model to extract features.
 
@@ -166,3 +144,22 @@ class PadimModel(nn.Module):
                 inv_covariance=self.gaussian.inv_covariance,
             )
         return output
+
+    def generate_embedding(self, features: dict[str, Tensor]) -> Tensor:
+        """Generate embedding from hierarchical feature map.
+
+        Args:
+            features (dict[str, Tensor]): Hierarchical feature map from a CNN (ResNet18 or WideResnet)
+
+        Returns:
+            Embedding vector
+        """
+        embeddings = features[self.layers[0]]
+        for layer in self.layers[1:]:
+            layer_embedding = features[layer]
+            layer_embedding = F.interpolate(layer_embedding, size=embeddings.shape[-2:], mode="nearest")
+            embeddings = torch.cat((embeddings, layer_embedding), 1)
+
+        # subsample embeddings
+        idx = self.idx.to(embeddings.device)
+        return torch.index_select(embeddings, 1, idx)

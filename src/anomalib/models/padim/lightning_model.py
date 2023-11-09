@@ -52,6 +52,7 @@ class Padim(AnomalyModule, MemoryBankMixin):
             n_features=n_features,
         ).eval()
 
+        self.stats: list[Tensor] = []
         self.embeddings: list[Tensor] = []
 
     @staticmethod
@@ -75,19 +76,15 @@ class Padim(AnomalyModule, MemoryBankMixin):
         self.model.feature_extractor.eval()
         embedding = self.model(batch["image"])
 
-        # NOTE: `self.embedding` appends each batch embedding to
-        #   store the training set embedding. We manually append these
-        #   values mainly due to the new order of hooks introduced after PL v1.4.0
-        #   https://github.com/PyTorchLightning/pytorch-lightning/pull/7357
         self.embeddings.append(embedding.cpu())
 
     def fit(self) -> None:
-        """Fit the model with embedding."""
-        embedding = torch.vstack(self.embeddings)
+        """Fit a Gaussian to the embedding collected from the training set."""
+        logger.info("Aggregating the embedding extracted from the training set.")
+        embeddings = torch.vstack(self.embeddings)
 
         logger.info("Fitting a Gaussian to the embedding collected from the training set.")
-        self.model.gaussian.fit(embedding)
-        self._is_fitted = torch.tensor([True])
+        self.stats = self.model.gaussian.fit(embeddings)
 
     def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
         """Perform a validation step of PADIM.

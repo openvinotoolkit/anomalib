@@ -14,7 +14,7 @@ import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torch import Tensor
 
-from anomalib.models.components import AnomalyModule, KCenterGreedy, MemoryBankMixin
+from anomalib.models.components import AnomalyModule, MemoryBankMixin
 from anomalib.models.patchcore.torch_model import PatchcoreModel
 
 logger = logging.getLogger(__name__)
@@ -75,30 +75,18 @@ class Patchcore(AnomalyModule, MemoryBankMixin):
         """
         del args, kwargs  # These variables are not used.
 
-        # Model is in eval mode to avoid updating the weights.
         self.model.feature_extractor.eval()
-
-        # Generate embedding
         embedding = self.model(batch["image"])
+
         self.embeddings.append(embedding)
 
     def fit(self) -> None:
-        """Fit the PatchCore model via coreset sampling.
+        """Apply subsampling to the embedding collected from the training set."""
+        logger.info("Aggregating the embedding extracted from the training set.")
+        embeddings = torch.vstack(self.embeddings)
 
-        Args:
-            embedding (Tensor | list[Tensor]): Embedding tensor from the CNN
-            sampling_ratio (float): Coreset sampling ratio
-        """
-        embedding = torch.vstack(self.embeddings)
-
-        # Coreset Subsampling
-        logger.info("Fitting the PatchCore model via core-set sampling.")
-        sampler = KCenterGreedy(embedding=embedding, sampling_ratio=self.coreset_sampling_ratio)
-        coreset = sampler.sample_coreset()
-        self.model.memory_bank = coreset
-
-        # Model is now fitted.
-        self._is_fitted = torch.tensor([True])
+        logger.info("Applying core-set subsampling to get the embedding.")
+        self.model.subsample_embedding(embeddings, self.coreset_sampling_ratio)
 
     def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
         """Get batch of anomaly maps from input image batch.
