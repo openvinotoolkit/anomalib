@@ -2,8 +2,42 @@ import torch.nn as nn
 from FrEIA import framework as ff
 from FrEIA import modules as fm
 
+from anomalib.models.components.flow import AllInOneBlock
+
 from .anomaly_map import AnomalyMapGenerator
 from .feature_extraction import get_feature_extractor
+
+
+class AffineCouplingSubnet:
+    """
+    Class for building the Affine Coupling subnet.
+    It is passed as an argument to the `AllInOneBlock` module.
+    """
+
+    def __init__(self, kernel_size: int, subnet_channels_ratio: float):
+        """
+        Args:
+            kernel_size (int): Kernel size.
+            subnet_channels_ratio (float): Subnet channels ratio.
+        """
+        self.kernel_size = kernel_size
+        self.subnet_channels_ratio = subnet_channels_ratio
+
+    def __call__(self, in_channels: int, out_channels: int) -> nn.Sequential:
+        """
+        Args:
+            in_channels (int): Input channels.
+            out_channels (int): Output channels.
+
+        Returns:
+            nn.Sequential: Affine Coupling subnet.
+        """
+        mid_channels = int(in_channels * self.subnet_channels_ratio)
+        return nn.Sequential(
+            nn.Conv2d(in_channels, mid_channels, self.kernel_size, padding="same"),
+            nn.ReLU(),
+            nn.Conv2d(mid_channels, out_channels, self.kernel_size, padding="same"),
+        )
 
 
 class UflowModel(nn.Module):
@@ -101,32 +135,20 @@ class UflowModel(nn.Module):
             List[ff.Node]: List of flow steps.
         """
 
-        def get_affine_coupling_subnet(kernel_size, subnet_channels_ratio):
-            def affine_coupling_subnet(in_channels, out_channels):
-                mid_channels = int(in_channels * subnet_channels_ratio)
-                return nn.Sequential(
-                    nn.Conv2d(in_channels, mid_channels, kernel_size, padding="same"),
-                    nn.ReLU(),
-                    nn.Conv2d(mid_channels, out_channels, kernel_size, padding="same"),
-                )
-
-            return affine_coupling_subnet
-
-        def glow_params(k):
-            return {
-                "subnet_constructor": get_affine_coupling_subnet(k, self.affine_subnet_channels_ratio),
-                "affine_clamping": self.affine_clamp,
-                "permute_soft": self.permute_soft,
-            }
-
         flow_size = in_node.output_dims[0][-1]
         nodes = []
         for step in range(flow_steps):
             nodes.append(
                 ff.Node(
                     in_node,
-                    fm.AllInOneBlock,
-                    glow_params(3 if step % 2 == 0 else 1),
+                    AllInOneBlock,
+                    module_args={
+                        "subnet_constructor": AffineCouplingSubnet(
+                            3 if step % 2 == 0 else 1, self.affine_subnet_channels_ratio
+                        ),
+                        "affine_clamping": self.affine_clamp,
+                        "permute_soft": self.permute_soft,
+                    },
                     conditions=condition_node,
                     name=f"flow{flow_size}_step{step}",
                 )
