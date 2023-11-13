@@ -472,7 +472,7 @@ class EfficientAdModel(nn.Module):
             map_combined = 0.5 * map_st + 0.5 * map_stae
 
             # map_combined = torch.nn.functional.pad(map_combined, (4, 4, 4, 4))
-            # output = F.interpolate(map_combined.cpu(), size=(self.input_size[0], self.input_size[1]), mode="bilinear")
+            # output = F.interpolate(map_combined, size=(self.input_size[0], self.input_size[1]), mode="bilinear")
 
             anomaly_score = map_combined.reshape((map_combined.shape[0], -1)).max(1)[0]
 
