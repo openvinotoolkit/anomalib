@@ -205,6 +205,7 @@ def anomaly_map_to_color_map(
     anomaly_map: np.ndarray,
     normalize: bool | tuple[float, float] = True,
     saturation_colors: tuple[tuple[int, int, int], tuple[int, int, int]] = ((0, 0, 0), (255, 255, 255)),  # black/white
+    cv2_colormap: int = cv2.COLORMAP_JET,
 ) -> np.ndarray:
     """Compute anomaly color heatmap.
 
@@ -243,7 +244,7 @@ def anomaly_map_to_color_map(
 
         saturation_color_below, saturation_color_above = saturation_colors
 
-    color_map = cv2.applyColorMap((anomaly_map_scaled * 255).astype(np.uint8), cv2.COLORMAP_JET)
+    color_map = cv2.applyColorMap((anomaly_map_scaled * 255).astype(np.uint8), cv2_colormap)
     color_map = cv2.cvtColor(color_map, cv2.COLOR_BGR2RGB)
 
     if bounds is None:
@@ -267,6 +268,7 @@ def superimpose_anomaly_map(
     normalize: bool | tuple[float, float] = False,
     saturation_colors: tuple[tuple[int, int, int], tuple[int, int, int]] = ((0, 0, 0), (255, 255, 255)),  # black/white
     ignore_low_scores: bool = True,
+    cv2_colormap: int = cv2.COLORMAP_JET,
 ) -> np.ndarray:
     """Superimpose anomaly map on top of in the input image.
     Args:
@@ -302,7 +304,12 @@ def superimpose_anomaly_map(
         )
 
     # there was a `anomaly_map.squeeze()` before --> do something about it? now it is validated to be squeezed
-    color_map = anomaly_map_to_color_map(anomaly_map, normalize=normalize, saturation_colors=saturation_colors)
+    color_map = anomaly_map_to_color_map(
+        anomaly_map,
+        normalize=normalize,
+        saturation_colors=saturation_colors,
+        cv2_colormap=cv2_colormap,
+    )
     superimposed_map = cv2.addWeighted(color_map, alpha, image, (1 - alpha), gamma)
 
     if isinstance(normalize, bool) or not ignore_low_scores:
