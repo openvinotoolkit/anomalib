@@ -10,7 +10,7 @@ import re
 from importlib import import_module
 
 from jsonargparse import Namespace
-from omegaconf import DictConfig, ListConfig
+from omegaconf import DictConfig, ListConfig, OmegaConf
 
 from anomalib.models.ai_vad import AiVad
 from anomalib.models.cfa import Cfa
@@ -120,7 +120,7 @@ def _get_model_by_name(name: str) -> AnomalyModule:
     return model
 
 
-def get_model(config: DictConfig | ListConfig | str | Namespace) -> AnomalyModule:
+def get_model(config: DictConfig | ListConfig | str | dict | Namespace) -> AnomalyModule:
     """Get Anomaly Model.
 
     Args:
@@ -141,11 +141,13 @@ def get_model(config: DictConfig | ListConfig | str | Namespace) -> AnomalyModul
     model: AnomalyModule
     if isinstance(config, str):
         model = _get_model_by_name(config)
-    elif isinstance(config, DictConfig | ListConfig | Namespace):
+    elif isinstance(config, DictConfig | ListConfig | Namespace | dict):
+        if isinstance(config, dict):
+            config = OmegaConf.create(config)
         if len(config.class_path.split(".")) > 1:
             module = import_module(".".join(config.class_path.split(".")[:-1]))
         else:
-            module = import_module(f"anomalib.models.{config.class_path}")
+            module = import_module(f"anomalib.models.{config.class_path.lower()}")
         model_class = getattr(module, config.class_path.split(".")[-1])
         model = model_class(**config.get("init_args", {}))
     else:

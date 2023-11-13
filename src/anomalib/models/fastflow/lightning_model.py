@@ -29,7 +29,7 @@ class Fastflow(AnomalyModule):
 
     def __init__(
         self,
-        input_size: tuple[int, int],
+        input_size: tuple[int, int] = (256, 256),
         backbone: str = "resnet18",
         pre_trained: bool = True,
         flow_steps: int = 8,
