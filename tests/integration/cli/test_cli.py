@@ -1,4 +1,7 @@
-"""Test CLI entrypoints."""
+"""Test CLI entrypoints.
+
+This just checks if one of the model works end-to-end. The rest of the models are checked using the API.
+"""
 
 # Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -8,7 +11,6 @@ from pathlib import Path
 
 import pytest
 import torch
-from tests.legacy.helpers.dataset import get_dataset_path
 
 from anomalib.utils.cli import AnomalibCLI
 
@@ -16,36 +18,25 @@ from anomalib.utils.cli import AnomalibCLI
 class TestCLI:
     """Do sanity check on all models."""
 
-    def test_fit(self, model_name: str, dataset_root: Path, project_path: Path) -> None:
+    def test_fit(self, dataset_path: Path, project_path: Path) -> None:
         """Test fit CLI.
 
         Args:
-            model_name (str): Name of the model to train.
-            dataset_root (str): Root of the synthetic/original dataset.
-            project_path (str): Path to temporary project folder.
+            dataset_path (Path): Root of the synthetic/original dataset.
+            project_path (Path): Path to temporary project folder.
         """
-        data_class = "anomalib.data.MVTec"
-        category = "shapes"
-        if model_name == "ai_vad":
-            # TODO(ashwinva): use dummy dataset path when it supports all the data formats
-            # CVS-109972
-            # aivad expects UCSD dataset
-            data_class = "anomalib.data.UCSDped"
-            dataset_root = get_dataset_path(dataset="ucsd")
-            category = "UCSDped2"
-
         # batch size of 8 is taken so that the lr computation for efficient_ad does not return 0 when max_epochs is 1
         AnomalibCLI(
             args=[
                 "fit",
-                "-c",
-                f"src/configs/model/{model_name}.yaml",
+                "--model",
+                "Padim",
                 "--data",
-                data_class,
+                "MVTec",
                 "--data.root",
-                str(dataset_root),
+                str(dataset_path / "mvtec"),
                 "--data.category",
-                category,
+                "dummy",
                 "--data.train_batch_size",
                 "8",
                 "--results_dir.path",
@@ -58,7 +49,7 @@ class TestCLI:
                 "1",
                 "--trainer.callbacks+=ModelCheckpoint",
                 "--trainer.callbacks.dirpath",
-                f"{project_path}/{model_name}/{data_class.split('.')[-1].lower()}/{category}/weights",
+                f"{project_path}/Padim/MVTec/dummy/weights",
                 "--trainer.callbacks.monitor",
                 "null",
                 "--trainer.callbacks.filename",
@@ -71,83 +62,59 @@ class TestCLI:
         )
         torch.cuda.empty_cache()
 
-    def test_test(self, model_name: str, dataset_root: Path, project_path: Path) -> None:
+    def test_test(self, dataset_path: Path, project_path: Path) -> None:
         """Test the test method of the CLI.
 
         Args:
-            model_name (str): Name of the model to train.
-            dataset_root (str): Root of the synthetic/original dataset.
-            project_path (str): Path to temporary project folder.
+            dataset_path (Path): Root of the synthetic/original dataset.
+            project_path (Path): Path to temporary project folder.
         """
-        data_class = "anomalib.data.MVTec"
-        category = "shapes"
-        dataset_root = str(dataset_root)
-        project_path = str(project_path)
-        if model_name == "ai_vad":
-            # TODO(ashwinva): use dummy dataset path when it supports all the data formats
-            # CVS-109972
-            # aivad expects UCSD dataset
-            data_class = "anomalib.data.UCSDped"
-            dataset_root = get_dataset_path(dataset="ucsd")
-            category = "UCSDped2"
-
         AnomalibCLI(
             args=[
                 "test",
-                "-c",
-                f"src/configs/model/{model_name}.yaml",
+                "--model",
+                "Padim",
                 "--data",
-                data_class,
+                "MVTec",
                 "--data.root",
-                str(dataset_root),
+                str(dataset_path / "mvtec"),
                 "--data.category",
-                category,
+                "dummy",
                 "--results_dir.path",
                 str(project_path),
                 "--results_dir.unique",
                 "false",
                 "--ckpt_path",
-                f"{project_path}/{model_name}/{data_class.split('.')[-1].lower()}/{category}/weights/last.ckpt",
+                f"{project_path}/Padim/MVTec/dummy/weights/last.ckpt",
             ],
         )
         torch.cuda.empty_cache()
 
     @pytest.mark.skip(reason="validation is not implemented in Anomalib Engine")
-    def test_validate(self, model_name: str, dataset_root: Path, project_path: Path) -> None:
+    def test_validate(self, dataset_path: Path, project_path: Path) -> None:
         """Test the validate method of the CLI.
 
         Args:
-            model_name (str): Name of the model to train.
-            dataset_root (str): Root of the synthetic/original dataset.
+            dataset_path (str): Root of the synthetic/original dataset.
             project_path (str): Path to temporary project folder.
         """
-        data_class = "anomalib.data.MVTec"
-        category = "shapes"
-        if model_name == "ai_vad":
-            # TODO(ashwinva): use dummy dataset path when it supports all the data formats
-            # CVS-109972
-            # aivad expects UCSD dataset
-            data_class = "anomalib.data.UCSDped"
-            dataset_root = get_dataset_path(dataset="ucsd")
-            category = "UCSDped2"
-
         AnomalibCLI(
             args=[
                 "validate",
-                "-c",
-                f"src/configs/model/{model_name}.yaml",
+                "--model",
+                "Padim",
                 "--data",
-                data_class,
+                "MVTec",
                 "--data.root",
-                str(dataset_root),
+                str(dataset_path / "mvtec"),
                 "--data.category",
-                category,
+                "dummy",
                 "--results_dir.path",
                 str(project_path),
                 "--results_dir.unique",
                 "false",
                 "--ckpt_path",
-                f"{project_path}/{model_name}/{data_class.split('.')[-1].lower()}/{category}/weights/last.ckpt",
+                f"{project_path}/Padim/MVTec/dummy/weights/last.ckpt",
             ],
         )
         torch.cuda.empty_cache()
