@@ -446,7 +446,6 @@ class EfficientAdModel(nn.Module):
                 ae_output = self.ae(batch)
 
             map_st = torch.mean(distance_st, dim=1, keepdim=True)
-            current_device = map_st.get_device()
 
             if student_output.shape != ae_output.shape:
                 student_output = F.interpolate(student_output, size=ae_output.shape[2:])
@@ -461,25 +460,19 @@ class EfficientAdModel(nn.Module):
 
             # To obtain smooth maps we need to use "bilinear".
             # Given the non-determinism of this strategy we have to compute it on cpu
-            map_st = F.interpolate(map_st.cpu(), size=(self.input_size[0], self.input_size[1]), mode="bilinear")
-            map_stae = F.interpolate(map_stae.cpu(), size=(self.input_size[0], self.input_size[1]), mode="bilinear")
+            map_st = F.interpolate(map_st, size=(self.input_size[0], self.input_size[1]), mode="bilinear")
+            map_stae = F.interpolate(map_stae, size=(self.input_size[0], self.input_size[1]), mode="bilinear")
 
             if self.is_set(self.quantiles):
-                map_st = (
-                    0.1
-                    * (map_st.to(current_device) - self.quantiles["qa_st"])
-                    / (self.quantiles["qb_st"] - self.quantiles["qa_st"])
-                )
+                map_st = 0.1 * (map_st - self.quantiles["qa_st"]) / (self.quantiles["qb_st"] - self.quantiles["qa_st"])
                 map_stae = (
-                    0.1
-                    * (map_stae.to(current_device) - self.quantiles["qa_ae"])
-                    / (self.quantiles["qb_ae"] - self.quantiles["qa_ae"])
+                    0.1 * (map_stae - self.quantiles["qa_ae"]) / (self.quantiles["qb_ae"] - self.quantiles["qa_ae"])
                 )
             # We interpolate after combining the maps, as it returns better results w/ the padding
             map_combined = 0.5 * map_st + 0.5 * map_stae
 
             # map_combined = torch.nn.functional.pad(map_combined, (4, 4, 4, 4))
-            # output = F.interpolate(map_combined.cpu(), size=(self.input_size[0], self.input_size[1]), mode="bilinear")
+            # output = F.interpolate(map_combined, size=(self.input_size[0], self.input_size[1]), mode="bilinear")
 
             anomaly_score = map_combined.reshape((map_combined.shape[0], -1)).max(1)[0]
 
