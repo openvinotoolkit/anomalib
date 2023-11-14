@@ -8,7 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Updated
 
-- Efficient_ad model's forward doesn't need to move maps on cpu to obtain determinism (after quadra 1.3.6 cuBLAS env variable hotfix)
+- Efficient_ad model's forward doesn't move maps on cpu to perform bilinear interp. anymore
 
 ## [v0.7.0+obx.1.2.5]
 
