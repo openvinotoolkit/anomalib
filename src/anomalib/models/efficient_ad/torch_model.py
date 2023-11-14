@@ -458,8 +458,6 @@ class EfficientAdModel(nn.Module):
                 map_st = F.pad(map_st, (4, 4, 4, 4))
                 map_stae = F.pad(map_stae, (4, 4, 4, 4))
 
-            # To obtain smooth maps we need to use "bilinear".
-            # Given the non-determinism of this strategy we have to compute it on cpu
             map_st = F.interpolate(map_st, size=(self.input_size[0], self.input_size[1]), mode="bilinear")
             map_stae = F.interpolate(map_stae, size=(self.input_size[0], self.input_size[1]), mode="bilinear")
 
