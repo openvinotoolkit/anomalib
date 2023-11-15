@@ -164,6 +164,25 @@ class Engine:
             # Callbacks need to be setup later as they depend on default_root_dir from the trainer
             self._setup_anomalib_callbacks()
 
+    def _setup_dataset_task(
+        self, *dataloaders: EVAL_DATALOADERS | TRAIN_DATALOADERS | AnomalibDataModule | None,
+    ) -> None:
+        """Override the dataloader task with the task passed to the Engine.
+
+        Args:
+            dataloaders (TRAIN_DATALOADERS | EVAL_DATALOADERS): Dataloaders to be used for training or evaluation.
+        """
+        for dataloader in dataloaders:
+            if dataloader is not None and isinstance(dataloader, AnomalibDataModule):
+                for attribute in ("train_data", "val_data", "test_data"):
+                    if hasattr(dataloader, attribute):
+                        data: AnomalibDataset = getattr(dataloader, attribute)
+                        if data.task != self.task:
+                            logger.info(
+                                f"Overriding task from {data.task} with {self.task} for {dataloader.__class__}",
+                            )
+                            data.task = self.task
+
     def _setup_anomalib_callbacks(self) -> None:
         """Set up callbacks for the trainer."""
         _callbacks: list[Callback] = [_PostProcessorCallback()]
@@ -225,6 +244,7 @@ class Engine:
                 ```
         """
         self._setup_trainer(model)
+        self._setup_dataset_task(train_dataloaders, val_dataloaders, datamodule)
         self.trainer.fit(model, train_dataloaders, val_dataloaders, datamodule, ckpt_path)
 
     def validate(
@@ -271,6 +291,7 @@ class Engine:
         """
         if model:
             self._setup_trainer(model)
+            self._setup_dataset_task(dataloaders)
         return self.trainer.validate(model, dataloaders, ckpt_path, verbose, datamodule)
 
     def test(
@@ -323,6 +344,7 @@ class Engine:
         """
         if model:
             self._setup_trainer(model)
+            self._setup_dataset_task(dataloaders)
         return self.trainer.test(model, dataloaders, ckpt_path, verbose, datamodule)
 
     def predict(
@@ -376,6 +398,7 @@ class Engine:
         """
         if model:
             self._setup_trainer(model)
+            self._setup_dataset_task(dataloaders, datamodule)
         return self.trainer.predict(model, dataloaders, datamodule, return_predictions, ckpt_path)
 
     def train(
@@ -418,6 +441,7 @@ class Engine:
                 ```
         """
         self._setup_trainer(model)
+        self._setup_dataset_task(train_dataloaders, val_dataloaders, test_dataloaders, datamodule)
         self.trainer.fit(model, train_dataloaders, val_dataloaders, datamodule, ckpt_path)
         self.trainer.test(model, test_dataloaders, ckpt_path=ckpt_path, datamodule=datamodule)
 
