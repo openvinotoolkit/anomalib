@@ -19,7 +19,7 @@ def standardize(
     """Standardize the targets to the z-domain."""
     if isinstance(targets, np.ndarray):
         targets = np.log(targets)
-    elif isinstance(targets, Tensor):
+    elif isinstance(targets, torch.Tensor):
         targets = torch.log(targets)
     else:
         msg = f"Targets must be either Tensor or Numpy array. Received {type(targets)}"
@@ -32,7 +32,7 @@ def standardize(
 
 def normalize(targets: np.ndarray | torch.Tensor, threshold: float | np.ndarray | torch.Tensor) -> np.ndarray | torch.Tensor:
     """Normalize the targets by using the cumulative density function."""
-    if isinstance(targets, Tensor):
+    if isinstance(targets, torch.Tensor):
         return normalize_torch(targets, threshold)
     if isinstance(targets, np.ndarray):
         return normalize_numpy(targets, threshold)

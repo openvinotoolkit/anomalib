@@ -6,7 +6,7 @@
 
 import torch
 import torchvision.transforms.functional as F  # noqa: N812
-, nn
+from torch import nn
 from torchvision.models.optical_flow import Raft_Large_Weights, raft_large
 
 
@@ -23,7 +23,7 @@ class FlowExtractor(nn.Module):
         self.model = raft_large(weights=weights)
         self.transforms = weights.transforms()
 
-    def pre_process(self, first_frame: torch.Tensor, last_frame: torch.Tensor) -> tuple[Tensor, Tensor]:
+    def pre_process(self, first_frame: torch.Tensor, last_frame: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         """Resize inputs to dimensions required by backbone.
 
         Args:
@@ -31,7 +31,7 @@ class FlowExtractor(nn.Module):
             last_frame (torch.Tensor): Last frame of optical flow computation.
 
         Returns:
-            tuple[Tensor, Tensor]: Preprocessed first and last frame.
+            tuple[torch.Tensor, torch.Tensor]: Preprocessed first and last frame.
         """
         first_frame = F.resize(first_frame, size=[520, 960], antialias=False)
         last_frame = F.resize(last_frame, size=[520, 960], antialias=False)

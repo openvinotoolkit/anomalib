@@ -6,7 +6,7 @@
 
 import torch
 from omegaconf import ListConfig
-, nn
+from torch import nn
 from torch.nn import functional as F  # noqa: N812
 
 

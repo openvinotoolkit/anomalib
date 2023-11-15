@@ -5,7 +5,8 @@
 
 from abc import ABC
 
-, nn
+import torch
+from torch import nn
 
 
 class DynamicBufferModule(ABC, nn.Module):
@@ -24,7 +25,7 @@ class DynamicBufferModule(ABC, nn.Module):
             Tensor: torch.Tensor attribute
         """
         attribute = getattr(self, attribute_name)
-        if isinstance(attribute, Tensor):
+        if isinstance(attribute, torch.Tensor):
             return attribute
 
         msg = f"Attribute with name '{attribute_name}' is not a torch Tensor"

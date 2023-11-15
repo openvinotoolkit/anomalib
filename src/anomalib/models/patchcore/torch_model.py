@@ -7,7 +7,7 @@ from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
 import torch
-, nn
+from torch import nn
 from torch.nn import functional as F  # noqa: N812
 
 from anomalib.models.components import DynamicBufferModule, FeatureExtractor, KCenterGreedy
@@ -40,10 +40,10 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
         self.feature_pooler = torch.nn.AvgPool2d(3, 1, 1)
         self.anomaly_map_generator = AnomalyMapGenerator(input_size=input_size)
 
-        self.register_buffer("memory_bank", Tensor())
+        self.register_buffer("memory_bank", torch.Tensor())
         self.memory_bank: torch.Tensor
 
-    def forward(self, input_tensor: torch.Tensor) -> Tensor | dict[str, Tensor]:
+    def forward(self, input_tensor: torch.Tensor) -> torch.Tensor | dict[str, torch.Tensor]:
         """Return Embedding during training, or a tuple of anomaly map and anomaly score during testing.
 
         Steps performed:
@@ -55,7 +55,7 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
             input_tensor (torch.Tensor): Input tensor
 
         Returns:
-            Tensor | dict[str, Tensor]: Embedding for training,
+            Tensor | dict[str, torch.Tensor]: Embedding for training,
                 anomaly map and anomaly score for testing.
         """
         if self.tiler:
@@ -92,7 +92,7 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
 
         return output
 
-    def generate_embedding(self, features: dict[str, Tensor]) -> torch.Tensor:
+    def generate_embedding(self, features: dict[str, torch.Tensor]) -> torch.Tensor:
         """Generate embedding from hierarchical feature map.
 
         Args:
@@ -158,7 +158,7 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
         res = x_norm - 2 * torch.matmul(x, y.transpose(-2, -1)) + y_norm.transpose(-2, -1)
         return res.clamp_min_(0).sqrt_()
 
-    def nearest_neighbors(self, embedding: torch.Tensor, n_neighbors: int) -> tuple[Tensor, Tensor]:
+    def nearest_neighbors(self, embedding: torch.Tensor, n_neighbors: int) -> tuple[torch.Tensor, torch.Tensor]:
         """Nearest Neighbours using brute force method and euclidean norm.
 
         Args:

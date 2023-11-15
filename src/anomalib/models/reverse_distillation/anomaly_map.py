@@ -15,7 +15,7 @@ from enum import Enum
 import torch
 from kornia.filters import gaussian_blur2d
 from omegaconf import ListConfig
-, nn
+from torch import nn
 from torch.nn import functional as F  # noqa: N812
 
 

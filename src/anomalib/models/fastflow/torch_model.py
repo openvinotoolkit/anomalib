@@ -17,7 +17,7 @@ import torch
 from FrEIA.framework import SequenceINN
 from timm.models.cait import Cait
 from timm.models.vision_transformer import VisionTransformer
-, nn
+from torch import nn
 
 from anomalib.models.components.flow import AllInOneBlock
 from anomalib.models.fastflow.anomaly_map import AnomalyMapGenerator
@@ -165,7 +165,7 @@ class FastflowModel(nn.Module):
             )
         self.anomaly_map_generator = AnomalyMapGenerator(input_size=input_size)
 
-    def forward(self, input_tensor: torch.Tensor) -> Tensor | list[torch.Tensor] | tuple[list[torch.Tensor]]:
+    def forward(self, input_tensor: torch.Tensor) -> torch.Tensor | list[torch.Tensor] | tuple[list[torch.Tensor]]:
         """Forward-Pass the input to the FastFlow Model.
 
         Args:

@@ -42,7 +42,7 @@ def masks_to_boxes(masks: torch.Tensor, anomaly_maps: torch.Tensor | None = None
         for label in labels[labels != 0]:
             y_loc, x_loc = torch.where(im_comps == label)
             # add box
-            box = Tensor([torch.min(x_loc), torch.min(y_loc), torch.max(x_loc), torch.max(y_loc)]).to(masks.device)
+            box = torch.Tensor([torch.min(x_loc), torch.min(y_loc), torch.max(x_loc), torch.max(y_loc)]).to(masks.device)
             im_boxes.append(box)
             if anomaly_maps is not None:
                 im_scores.append(torch.max(anomaly_maps[im_idx, y_loc, x_loc]))
@@ -107,5 +107,5 @@ def scale_boxes(boxes: torch.Tensor, image_size: torch.Size, new_size: torch.Siz
     Returns:
         Tensor: Updated boxes of shape (N, 4) - (x1, y1, x2, y2).
     """
-    scale = Tensor([*new_size]) / Tensor([*image_size])
+    scale = torch.Tensor([*new_size]) / torch.Tensor([*image_size])
     return boxes * scale.repeat(2).to(boxes.device)

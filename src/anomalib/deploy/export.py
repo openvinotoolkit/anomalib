@@ -161,20 +161,20 @@ def get_metadata(
 
     # Convert torch tensors to python lists or values for json serialization.
     for key, value in metadata.items():
-        if isinstance(value, Tensor):
+        if isinstance(value, torch.Tensor):
             metadata[key] = value.numpy().tolist()
 
     return metadata
 
 
-def _get_model_metadata(model: AnomalyModule) -> dict[str, Tensor]:
+def _get_model_metadata(model: AnomalyModule) -> dict[str, torch.Tensor]:
     """Get meta data related to normalization from model.
 
     Args:
         model (AnomalyModule): Anomaly model which contains metadata related to normalization.
 
     Returns:
-        dict[str, Tensor]: Model metadata
+        dict[str, torch.Tensor]: Model metadata
     """
     metadata = {}
     cached_metadata: dict[str, Number | torch.Tensor] = {

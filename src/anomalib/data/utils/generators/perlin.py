@@ -81,7 +81,7 @@ def random_2d_perlin(
     """
     if isinstance(res[0], int | np.integer):
         result = _rand_perlin_2d_np(shape, res, fade)
-    elif isinstance(res[0], Tensor):
+    elif isinstance(res[0], torch.Tensor):
         result = _rand_perlin_2d(shape, res, fade)
     else:
         msg = f"got scales of type {type(res[0])}"

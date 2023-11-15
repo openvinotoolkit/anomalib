@@ -30,8 +30,8 @@ class Denormalize:
         if std is None:
             std = [0.229, 0.224, 0.225]
 
-        self.mean = Tensor(mean)
-        self.std = Tensor(std)
+        self.mean = torch.Tensor(mean)
+        self.std = torch.Tensor(std)
 
     def __call__(self, tensor: torch.Tensor) -> np.ndarray:
         """Denormalize the input.

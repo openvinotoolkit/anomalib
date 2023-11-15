@@ -8,7 +8,7 @@ Paper https://arxiv.org/pdf/2212.00789.pdf
 
 
 import torch
-, nn
+from torch import nn
 
 from anomalib.models.ai_vad.density import CombinedDensityEstimator
 from anomalib.models.ai_vad.features import FeatureExtractor

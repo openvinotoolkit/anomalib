@@ -13,7 +13,7 @@
 from collections.abc import Callable
 
 import torch
-, nn
+from torch import nn
 from torchvision.models.resnet import BasicBlock, Bottleneck
 
 

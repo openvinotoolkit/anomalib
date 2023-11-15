@@ -12,7 +12,8 @@
 
 from collections.abc import Callable
 
-, nn
+import torch
+from torch import nn
 from torchvision.models.resnet import conv1x1, conv3x3
 
 

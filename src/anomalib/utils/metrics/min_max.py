@@ -28,6 +28,6 @@ class MinMax(Metric):
         self.max = torch.max(self.max, torch.max(predictions))
         self.min = torch.min(self.min, torch.min(predictions))
 
-    def compute(self) -> tuple[Tensor, Tensor]:
+    def compute(self) -> tuple[torch.Tensor, torch.Tensor]:
         """Return min and max values."""
         return self.min, self.max

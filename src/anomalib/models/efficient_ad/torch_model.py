@@ -9,7 +9,7 @@ from enum import Enum
 
 import numpy as np
 import torch
-, nn
+from torch import nn
 from torch.nn import functional as F  # noqa: N812
 from torchvision import transforms
 
@@ -344,7 +344,7 @@ class EfficientAdModel(nn.Module):
         transform_function = np.random.default_rng().choice(transform_functions)
         return transform_function(image, coefficient)
 
-    def forward(self, batch: torch.Tensor, batch_imagenet: torch.Tensor | None = None) -> Tensor | dict:
+    def forward(self, batch: torch.Tensor, batch_imagenet: torch.Tensor | None = None) -> torch.Tensor | dict:
         """Perform the forward-pass of the EfficientAd models.
 
         Args:

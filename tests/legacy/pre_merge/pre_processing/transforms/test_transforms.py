@@ -93,7 +93,7 @@ def test_to_tensor_returns_correct_type():
 
     pre_processor = get_transforms(config=None, image_size=256, to_tensor=True)
     transformed = pre_processor(image=image)["image"]
-    assert isinstance(transformed, Tensor)
+    assert isinstance(transformed, torch.Tensor)
 
     pre_processor = get_transforms(config=None, image_size=256, to_tensor=False)
     transformed = pre_processor(image=image)["image"]

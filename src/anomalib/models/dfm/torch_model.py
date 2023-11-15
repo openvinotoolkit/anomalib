@@ -7,7 +7,7 @@
 import math
 
 import torch
-, nn
+from torch import nn
 from torch.nn import functional as F  # noqa: N812
 
 from anomalib.models.components import PCA, DynamicBufferModule, FeatureExtractor
@@ -18,9 +18,9 @@ class SingleClassGaussian(DynamicBufferModule):
 
     def __init__(self) -> None:
         super().__init__()
-        self.register_buffer("mean_vec", Tensor())
-        self.register_buffer("u_mat", Tensor())
-        self.register_buffer("sigma_mat", Tensor())
+        self.register_buffer("mean_vec", torch.Tensor())
+        self.register_buffer("u_mat", torch.Tensor())
+        self.register_buffer("sigma_mat", torch.Tensor())
 
         self.mean_vec: torch.Tensor
         self.u_mat: torch.Tensor

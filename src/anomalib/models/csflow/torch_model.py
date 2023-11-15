@@ -17,7 +17,7 @@ import numpy as np
 import torch
 from FrEIA.framework import GraphINN, InputNode, Node, OutputNode
 from FrEIA.modules import InvertibleModule
-, nn
+from torch import nn
 from torch.nn import functional as F  # noqa: N812
 from torchvision.models.efficientnet import EfficientNet_B5_Weights
 
@@ -155,13 +155,13 @@ class CrossConvolutions(nn.Module):
 
         self.leaky_relu = nn.LeakyReLU(self.leaky_slope)
 
-    def forward(self, scale0: int, scale1: int, scale2: int) -> tuple[Tensor, Tensor, Tensor]:
+    def forward(self, scale0: int, scale1: int, scale2: int) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """Apply the cross convolution to the three scales.
 
         This block is represented in figure 4 of the paper.
 
         Returns:
-            tuple[Tensor, Tensor, Tensor]: Tensors indicating scale and transform parameters as a single tensor for
+            tuple[torch.Tensor, torch.Tensor, torch.Tensor]: Tensors indicating scale and transform parameters as a single tensor for
             each scale. The scale parameters are the first part across channel dimension and the transform parameters
             are the second.
         """
@@ -223,14 +223,14 @@ class ParallelPermute(InvertibleModule):
             self.perm.append(perm)
             self.perm_inv.append(perm_inv)
 
-    def get_random_perm(self, index: int) -> tuple[Tensor, Tensor]:
+    def get_random_perm(self, index: int) -> tuple[torch.Tensor, torch.Tensor]:
         """Return a random permutation of the channels for each input.
 
         Args:
             index (int): index of the input
 
         Returns:
-            tuple[Tensor, Tensor]: permutation and inverse permutation
+            tuple[torch.Tensor, torch.Tensor]: permutation and inverse permutation
         """
         perm = np.random.default_rng(self.seed).permutation(self.in_channels[index])
         perm_inv = np.zeros_like(perm)
@@ -251,7 +251,7 @@ class ParallelPermute(InvertibleModule):
             jac: (unused) if True, computes the log determinant of the Jacobian
 
         Returns:
-            tuple[Tensor, Tensor]: output tensor and log determinant of the Jacobian
+            tuple[torch.Tensor, torch.Tensor]: output tensor and log determinant of the Jacobian
         """
         del jac  # Unused argument.
 
@@ -302,7 +302,7 @@ class ParallelGlowCouplingLayer(InvertibleModule):
             return self.clamp * 0.636 * torch.atan(input_tensor / self.clamp)
         return input_tensor
 
-    def forward(self, input_tensor: list[torch.Tensor], rev: bool = False, jac: bool = True) -> tuple[list[torch.Tensor], Tensor]:
+    def forward(self, input_tensor: list[torch.Tensor], rev: bool = False, jac: bool = True) -> tuple[list[torch.Tensor], torch.Tensor]:
         """Apply GLOW coupling for the three scales."""
         del jac  # Unused argument.
 
@@ -460,14 +460,14 @@ class CrossScaleFlow(nn.Module):
         nodes.extend(output_nodes)
         return GraphINN(nodes)
 
-    def forward(self, inputs: torch.Tensor) -> tuple[Tensor, Tensor]:
+    def forward(self, inputs: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         """Forward pass.
 
         Args:
             inputs (torch.Tensor): Input tensor.
 
         Returns:
-            tuple[Tensor, Tensor]: Output tensor and log determinant of Jacobian.
+            tuple[torch.Tensor, torch.Tensor]: Output tensor and log determinant of Jacobian.
         """
         return self.graph(inputs)
 
@@ -550,14 +550,14 @@ class CsFlowModel(nn.Module):
         )
         self.anomaly_map_generator = AnomalyMapGenerator(input_dims=self.input_dims, mode=AnomalyMapMode.ALL)
 
-    def forward(self, images: torch.Tensor) -> tuple[Tensor, Tensor]:
+    def forward(self, images: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         """Forward method of the model.
 
         Args:
             images (torch.Tensor): Input images.
 
         Returns:
-            tuple[Tensor, Tensor]: During training: tuple containing the z_distribution for three scales and the sum
+            tuple[torch.Tensor, torch.Tensor]: During training: tuple containing the z_distribution for three scales and the sum
                 of log determinant of the Jacobian. During evaluation: tuple containing anomaly maps and anomaly scores
         """
         features = self.feature_extractor(images)

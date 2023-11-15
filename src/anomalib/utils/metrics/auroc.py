@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
+import torch
 from matplotlib.figure import Figure
 from torchmetrics import ROC
 from torchmetrics.functional import auc
@@ -37,7 +38,7 @@ class AUROC(ROC):
         """
         super().update(preds.flatten(), target.flatten())
 
-    def _compute(self) -> tuple[Tensor, Tensor]:
+    def _compute(self) -> tuple[torch.Tensor, torch.Tensor]:
         """Compute fpr/tpr value pairs.
 
         Returns:

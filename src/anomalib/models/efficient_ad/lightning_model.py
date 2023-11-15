@@ -17,7 +17,6 @@ import torch
 import tqdm
 from albumentations.pytorch import ToTensorV2
 from lightning.pytorch.utilities.types import STEP_OUTPUT
-, optim
 from torch.utils.data import DataLoader
 from torchvision.datasets import ImageFolder
 
@@ -142,14 +141,14 @@ class EfficientAd(AnomalyModule):
         self.imagenet_iterator = iter(self.imagenet_loader)
 
     @torch.no_grad()
-    def teacher_channel_mean_std(self, dataloader: DataLoader) -> dict[str, Tensor]:
+    def teacher_channel_mean_std(self, dataloader: DataLoader) -> dict[str, torch.Tensor]:
         """Calculate the mean and std of the teacher models activations.
 
         Args:
             dataloader (DataLoader): Dataloader of the respective dataset.
 
         Returns:
-            dict[str, Tensor]: Dictionary of channel-wise mean and std
+            dict[str, torch.Tensor]: Dictionary of channel-wise mean and std
         """
         y_means = []
         means_distance = []
@@ -171,14 +170,14 @@ class EfficientAd(AnomalyModule):
         return {"mean": channel_mean, "std": channel_std}
 
     @torch.no_grad()
-    def map_norm_quantiles(self, dataloader: DataLoader) -> dict[str, Tensor]:
+    def map_norm_quantiles(self, dataloader: DataLoader) -> dict[str, torch.Tensor]:
         """Calculate 90% and 99.5% quantiles of the student(st) and autoencoder(ae).
 
         Args:
             dataloader (DataLoader): Dataloader of the respective dataset.
 
         Returns:
-            dict[str, Tensor]: Dictionary of both the 90% and 99.5% quantiles
+            dict[str, torch.Tensor]: Dictionary of both the 90% and 99.5% quantiles
             of both the student and autoencoder feature maps.
         """
         maps_st = []
@@ -197,7 +196,7 @@ class EfficientAd(AnomalyModule):
         qa_ae, qb_ae = self._get_quantiles_of_maps(maps_ae)
         return {"qa_st": qa_st, "qa_ae": qa_ae, "qb_st": qb_st, "qb_ae": qb_ae}
 
-    def _get_quantiles_of_maps(self, maps: list[torch.Tensor]) -> tuple[Tensor, Tensor]:
+    def _get_quantiles_of_maps(self, maps: list[torch.Tensor]) -> tuple[torch.Tensor, torch.Tensor]:
         """Calculate 90% and 99.5% quantiles of the given anomaly maps.
 
         If the total number of elements in the given maps is larger than 16777216
@@ -208,16 +207,16 @@ class EfficientAd(AnomalyModule):
             maps (list[torch.Tensor]): List of anomaly maps.
 
         Returns:
-            tuple[Tensor, Tensor]: Two scalars - the 90% and the 99.5% quantile.
+            tuple[torch.Tensor, torch.Tensor]: Two scalars - the 90% and the 99.5% quantile.
         """
         maps_flat = reduce_tensor_elems(torch.cat(maps))
         qa = torch.quantile(maps_flat, q=0.9).to(self.device)
         qb = torch.quantile(maps_flat, q=0.995).to(self.device)
         return qa, qb
 
-    def configure_optimizers(self) -> optim.Optimizer:
+    def configure_optimizers(self) -> torch.optim.Optimizer:
         """Configure optimizers."""
-        optimizer = optim.Adam(
+        optimizer = torch.optim.Adam(
             list(self.model.student.parameters()) + list(self.model.ae.parameters()),
             lr=self.lr,
             weight_decay=self.weight_decay,
@@ -226,7 +225,7 @@ class EfficientAd(AnomalyModule):
             self.trainer.max_steps,
             self.trainer.max_epochs * len(self.trainer.datamodule.train_dataloader()),
         )
-        scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=int(0.95 * num_steps), gamma=0.1)
+        scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=int(0.95 * num_steps), gamma=0.1)
         return {"optimizer": optimizer, "lr_scheduler": scheduler}
 
     def on_train_start(self) -> None:
@@ -235,7 +234,7 @@ class EfficientAd(AnomalyModule):
             channel_mean_std = self.teacher_channel_mean_std(self.trainer.datamodule.train_dataloader())
             self.model.mean_std.update(channel_mean_std)
 
-    def training_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> dict[str, Tensor]:
+    def training_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> dict[str, torch.Tensor]:
         """Perform the training step for EfficientAd returns the student, autoencoder and combined loss.
 
         Args:

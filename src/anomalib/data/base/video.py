@@ -130,7 +130,7 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
             item["image"] = torch.stack([item["image"] for item in processed_frames]).squeeze(0)
             mask = torch.as_tensor(item["mask"])
             item["mask"] = torch.stack([item["mask"] for item in processed_frames]).squeeze(0)
-            item["label"] = Tensor([1 in frame for frame in mask]).int().squeeze(0)
+            item["label"] = torch.Tensor([1 in frame for frame in mask]).int().squeeze(0)
             if self.task == TaskType.DETECTION:
                 item["boxes"], _ = masks_to_boxes(item["mask"])
                 item["boxes"] = item["boxes"][0] if len(item["boxes"]) == 1 else item["boxes"]

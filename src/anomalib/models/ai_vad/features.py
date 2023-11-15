@@ -7,7 +7,7 @@
 from enum import Enum
 
 import torch
-, nn
+from torch import nn
 from torchvision.models.detection import KeypointRCNN_ResNet50_FPN_Weights, keypointrcnn_resnet50_fpn
 from torchvision.models.detection.roi_heads import keypointrcnn_inference
 from torchvision.ops import roi_align
@@ -78,7 +78,7 @@ class FeatureExtractor(nn.Module):
         boxes_list = [batch_item["boxes"] for batch_item in regions]
         indices = torch.repeat_interleave(
             torch.arange(len(regions)),
-            Tensor([boxes.shape[0] for boxes in boxes_list]).int(),
+            torch.Tensor([boxes.shape[0] for boxes in boxes_list]).int(),
         )
         boxes = torch.cat([indices.unsqueeze(1).to(rgb_batch.device), torch.cat(boxes_list)], dim=1)
 
@@ -227,7 +227,7 @@ class PoseExtractor(nn.Module):
 
         image_sizes = [b.shape[-2:] for b in batch]
         scales = [
-            Tensor(new) / Tensor([orig[0], orig[1]]) for orig, new in zip(image_sizes, images.image_sizes, strict=True)
+            torch.Tensor(new) / torch.Tensor([orig[0], orig[1]]) for orig, new in zip(image_sizes, images.image_sizes, strict=True)
         ]
 
         boxes = [box * scale.repeat(2).to(box.device) for box, scale in zip(boxes, scales, strict=True)]

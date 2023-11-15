@@ -80,7 +80,7 @@ class Csflow(AnomalyModule):
             kwargs: Keyword arguments.
 
         Returns:
-            dict[str, Tensor]: Dictionary containing the anomaly map, scores, etc.
+            dict[str, torch.Tensor]: Dictionary containing the anomaly map, scores, etc.
         """
         del args, kwargs  # These variables are not used.
 

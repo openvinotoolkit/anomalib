@@ -6,7 +6,7 @@
 
 import torch
 from omegaconf import ListConfig
-, nn
+from torch import nn
 from torch.nn import functional as F  # noqa: N812
 
 
@@ -36,14 +36,14 @@ class AnomalyMapGenerator(nn.Module):
 
     def compute_anomaly_map(
         self,
-        teacher_features: dict[str, Tensor],
-        student_features: dict[str, Tensor],
+        teacher_features: dict[str, torch.Tensor],
+        student_features: dict[str, torch.Tensor],
     ) -> torch.Tensor:
         """Compute the overall anomaly map via element-wise production the interpolated anomaly maps.
 
         Args:
-          teacher_features (dict[str, Tensor]): Teacher features
-          student_features (dict[str, Tensor]): Student features
+          teacher_features (dict[str, torch.Tensor]): Teacher features
+          student_features (dict[str, torch.Tensor]): Student features
 
         Returns:
           Final anomaly map
@@ -57,13 +57,13 @@ class AnomalyMapGenerator(nn.Module):
 
         return anomaly_map
 
-    def forward(self, **kwargs: dict[str, Tensor]) -> torch.Tensor:
+    def forward(self, **kwargs: dict[str, torch.Tensor]) -> torch.Tensor:
         """Return anomaly map.
 
         Expects `teach_features` and `student_features` keywords to be passed explicitly.
 
         Args:
-            kwargs (dict[str, Tensor]): Keyword arguments
+            kwargs (dict[str, torch.Tensor]): Keyword arguments
 
         Example:
             >>> anomaly_map_generator = AnomalyMapGenerator(image_size=tuple(hparams.model.input_size))
@@ -82,7 +82,7 @@ class AnomalyMapGenerator(nn.Module):
             msg = f"Expected keys `teacher_features` and `student_features. Found {kwargs.keys()}"
             raise ValueError(msg)
 
-        teacher_features: dict[str, Tensor] = kwargs["teacher_features"]
-        student_features: dict[str, Tensor] = kwargs["student_features"]
+        teacher_features: dict[str, torch.Tensor] = kwargs["teacher_features"]
+        student_features: dict[str, torch.Tensor] = kwargs["student_features"]
 
         return self.compute_anomaly_map(teacher_features, student_features)

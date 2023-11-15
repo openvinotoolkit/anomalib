@@ -13,7 +13,7 @@ import torch
 import torchvision
 from einops import rearrange
 from sklearn.cluster import KMeans
-, nn
+from torch import nn
 from torch.fx.graph_module import GraphModule
 from torch.nn import functional as F  # noqa: N812
 from torch.nn.common_types import _size_2_t
@@ -234,7 +234,7 @@ class Descriptor(nn.Module):
 
         self.layer = CoordConv2d(in_channels=dim, out_channels=out_channels, kernel_size=1)
 
-    def forward(self, features: list[torch.Tensor] | dict[str, Tensor]) -> torch.Tensor:
+    def forward(self, features: list[torch.Tensor] | dict[str, torch.Tensor]) -> torch.Tensor:
         """Forward pass."""
         if isinstance(features, dict):
             features = list(features.values())

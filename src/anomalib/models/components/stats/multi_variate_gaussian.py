@@ -7,7 +7,7 @@
 from typing import Any
 
 import torch
-, nn
+from torch import nn
 
 
 class MultiVariateGaussian(nn.Module):

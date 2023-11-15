@@ -13,7 +13,7 @@ Code adapted from https://github.com/samet-akcay/ganomaly.
 import math
 
 import torch
-, nn
+from torch import nn
 
 from anomalib.data.utils.image import pad_nextpow2
 
@@ -232,7 +232,7 @@ class Discriminator(nn.Module):
         self.classifier = nn.Sequential(layers[-1])
         self.classifier.add_module("Sigmoid", nn.Sigmoid())
 
-    def forward(self, input_tensor: torch.Tensor) -> tuple[Tensor, Tensor]:
+    def forward(self, input_tensor: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         """Return class of object and features."""
         features = self.features(input_tensor)
         classifier = self.classifier(features)
@@ -282,7 +282,7 @@ class Generator(nn.Module):
             add_final_conv_layer,
         )
 
-    def forward(self, input_tensor: torch.Tensor) -> tuple[Tensor, Tensor, Tensor]:
+    def forward(self, input_tensor: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """Return generated image and the latent vectors."""
         latent_i = self.encoder1(input_tensor)
         gen_image = self.decoder(latent_i)
@@ -343,7 +343,7 @@ class GanomalyModel(nn.Module):
             nn.init.normal_(module.weight.data, 1.0, 0.02)
             nn.init.constant_(module.bias.data, 0)
 
-    def forward(self, batch: torch.Tensor) -> tuple[Tensor, Tensor, Tensor, Tensor] | torch.Tensor:
+    def forward(self, batch: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor] | torch.Tensor:
         """Get scores for batch.
 
         Args:

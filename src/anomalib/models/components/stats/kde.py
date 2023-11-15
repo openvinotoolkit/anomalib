@@ -24,13 +24,13 @@ class GaussianKDE(DynamicBufferModule):
         if dataset is not None:
             self.fit(dataset)
 
-        self.register_buffer("bw_transform", Tensor())
-        self.register_buffer("dataset", Tensor())
-        self.register_buffer("norm", Tensor())
+        self.register_buffer("bw_transform", torch.Tensor())
+        self.register_buffer("dataset", torch.Tensor())
+        self.register_buffer("norm", torch.Tensor())
 
-        self.bw_transform = Tensor()
-        self.dataset = Tensor()
-        self.norm = Tensor()
+        self.bw_transform = torch.Tensor()
+        self.dataset = torch.Tensor()
+        self.norm = torch.Tensor()
 
     def forward(self, features: torch.Tensor) -> torch.Tensor:
         """Get the KDE estimates from the feature map.

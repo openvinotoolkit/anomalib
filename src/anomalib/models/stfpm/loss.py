@@ -5,7 +5,7 @@
 
 
 import torch
-, nn
+from torch import nn
 from torch.nn import functional as F  # noqa: N812
 
 
@@ -49,12 +49,12 @@ class STFPMLoss(nn.Module):
         norm_student_features = F.normalize(student_feats)
         return (0.5 / (width * height)) * self.mse_loss(norm_teacher_features, norm_student_features)
 
-    def forward(self, teacher_features: dict[str, Tensor], student_features: dict[str, Tensor]) -> torch.Tensor:
+    def forward(self, teacher_features: dict[str, torch.Tensor], student_features: dict[str, torch.Tensor]) -> torch.Tensor:
         """Compute the overall loss via the weighted average of the layer losses computed by the cosine similarity.
 
         Args:
-          teacher_features (dict[str, Tensor]): Teacher features
-          student_features (dict[str, Tensor]): Student features
+          teacher_features (dict[str, torch.Tensor]): Teacher features
+          student_features (dict[str, torch.Tensor]): Student features
 
         Returns:
           Total loss, which is the weighted average of the layer losses.

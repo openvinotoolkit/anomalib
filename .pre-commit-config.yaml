@@ -15,7 +15,7 @@ repos:
 
   # Ruff version.
   - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: "v0.1.2"
+    rev: "v0.1.5"
     hooks:
       - id: ruff
         exclude: "tests/legacy"
@@ -23,7 +23,7 @@ repos:
 
   # python static type checking
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: "v1.6.1"
+    rev: "v1.7.0"
     hooks:
       - id: mypy
         additional_dependencies: [types-PyYAML]
@@ -39,7 +39,7 @@ repos:
         args: ["--ignore=D100,D407,I001"]
 
   - repo: https://github.com/pre-commit/mirrors-prettier
-    rev: v3.0.3
+    rev: v3.1.0
     hooks:
       - id: prettier
 

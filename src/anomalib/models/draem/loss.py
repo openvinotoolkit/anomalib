@@ -3,6 +3,7 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+import torch
 from kornia.losses import FocalLoss, SSIMLoss
 from torch import nn
 

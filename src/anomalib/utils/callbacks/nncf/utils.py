@@ -8,6 +8,7 @@ import logging
 from copy import copy
 from typing import TYPE_CHECKING, Any
 
+import torch
 from nncf import NNCFConfig
 from nncf.api.compression import CompressionAlgorithmController
 from nncf.torch import create_compressed_model, load_state, register_default_init_args

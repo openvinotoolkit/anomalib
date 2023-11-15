@@ -11,7 +11,7 @@
 
 
 import torch
-, nn
+from torch import nn
 
 from anomalib.models.components.layers import SSPCAB
 
@@ -24,7 +24,7 @@ class DraemModel(nn.Module):
         self.reconstructive_subnetwork = ReconstructiveSubNetwork(sspcab=sspcab)
         self.discriminative_subnetwork = DiscriminativeSubNetwork(in_channels=6, out_channels=2)
 
-    def forward(self, batch: torch.Tensor) -> Tensor | tuple[Tensor, Tensor]:
+    def forward(self, batch: torch.Tensor) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
         """Compute the reconstruction and anomaly mask from an input image.
 
         Args:
@@ -168,7 +168,7 @@ class EncoderDiscriminative(nn.Module):
             nn.ReLU(inplace=True),
         )
 
-    def forward(self, batch: torch.Tensor) -> tuple[Tensor, Tensor, Tensor, Tensor, Tensor, Tensor]:
+    def forward(self, batch: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         """Convert the inputs to the salient space by running them through the encoder network.
 
         Args:

@@ -21,9 +21,9 @@ class PCA(DynamicBufferModule):
         super().__init__()
         self.n_components = n_components
 
-        self.register_buffer("singular_vectors", Tensor())
-        self.register_buffer("mean", Tensor())
-        self.register_buffer("num_components", Tensor())
+        self.register_buffer("singular_vectors", torch.Tensor())
+        self.register_buffer("mean", torch.Tensor())
+        self.register_buffer("num_components", torch.Tensor())
 
         self.singular_vectors: torch.Tensor
         self.singular_values: torch.Tensor
@@ -47,7 +47,7 @@ class PCA(DynamicBufferModule):
         else:
             num_components = int(self.n_components)
 
-        self.num_components = Tensor([num_components])
+        self.num_components = torch.Tensor([num_components])
 
         self.singular_vectors = v_h.transpose(-2, -1)[:, :num_components].float()
         self.singular_values = sig[:num_components].float()
@@ -65,7 +65,7 @@ class PCA(DynamicBufferModule):
         mean = dataset.mean(dim=0)
         dataset -= mean
         num_components = int(self.n_components)
-        self.num_components = Tensor([num_components])
+        self.num_components = torch.Tensor([num_components])
 
         v_h = torch.linalg.svd(dataset)[-1]
         self.singular_vectors = v_h.transpose(-2, -1)[:, :num_components]

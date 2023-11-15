@@ -66,7 +66,7 @@ class KCenterGreedy:
         Returns:
             int: Sample index
         """
-        if isinstance(self.min_distances, Tensor):
+        if isinstance(self.min_distances, torch.Tensor):
             idx = int(torch.argmax(self.min_distances).item())
         else:
             msg = f"self.min_distances must be of type Tensor. Got {type(self.min_distances)}"

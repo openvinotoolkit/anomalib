@@ -9,7 +9,7 @@ from typing import Any
 
 import torch
 from sklearn.mixture import GaussianMixture
-, nn
+from torch import nn
 
 from anomalib.models.ai_vad.features import FeatureType
 from anomalib.utils.metrics.min_max import MinMax
@@ -19,12 +19,12 @@ class BaseDensityEstimator(nn.Module, ABC):
     """Base density estimator."""
 
     @abstractmethod
-    def update(self, features: dict[FeatureType, Tensor] | torch.Tensor, group: str | None = None) -> None:
+    def update(self, features: dict[FeatureType, torch.Tensor] | torch.Tensor, group: str | None = None) -> None:
         """Update the density model with a new set of features."""
         raise NotImplementedError
 
     @abstractmethod
-    def predict(self, features: dict[FeatureType, Tensor] | torch.Tensor) -> Tensor | tuple[Tensor, Tensor]:
+    def predict(self, features: dict[FeatureType, torch.Tensor] | torch.Tensor) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
         """Predict the density of a set of features."""
         raise NotImplementedError
 
@@ -33,7 +33,7 @@ class BaseDensityEstimator(nn.Module, ABC):
         """Compose model using collected features."""
         raise NotImplementedError
 
-    def forward(self, features: dict[FeatureType, Tensor] | torch.Tensor) -> Tensor | tuple[Tensor, Tensor] | None:
+    def forward(self, features: dict[FeatureType, torch.Tensor] | torch.Tensor) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor] | None:
         """Update or predict depending on training status."""
         if self.training:
             self.update(features)
@@ -78,11 +78,11 @@ class CombinedDensityEstimator(BaseDensityEstimator):
             self.pose_estimator = GroupedKNNEstimator(n_neighbors=n_neighbors_pose)
         assert any((use_pose_features, use_deep_features, use_velocity_features))
 
-    def update(self, features: dict[FeatureType, Tensor], group: str | None = None) -> None:
+    def update(self, features: dict[FeatureType, torch.Tensor], group: str | None = None) -> None:
         """Update the density estimators for the different feature types.
 
         Args:
-            features (dict[FeatureType, Tensor]): Dictionary containing extracted features for a single frame.
+            features (dict[FeatureType, torch.Tensor]): Dictionary containing extracted features for a single frame.
             group (str): Identifier of the video from which the frame was sampled. Used for grouped density estimation.
         """
         if self.use_velocity_features:
@@ -101,7 +101,7 @@ class CombinedDensityEstimator(BaseDensityEstimator):
         if self.use_pose_features:
             self.pose_estimator.fit()
 
-    def predict(self, features: dict[FeatureType, Tensor]) -> tuple[Tensor, Tensor]:
+    def predict(self, features: dict[FeatureType, torch.Tensor]) -> tuple[torch.Tensor, torch.Tensor]:
         """Predict the region- and image-level anomaly scores for an image based on a set of features.
 
         Args:
@@ -283,7 +283,7 @@ class GMMEstimator(BaseDensityEstimator):
             Tensor: Density scores of the input feature vectors.
         """
         density = -self.gmm.score_samples(features.cpu())
-        density = Tensor(density).to(self.normalization_statistics.device)
+        density = torch.Tensor(density).to(self.normalization_statistics.device)
         if normalize:
             density = self._normalize(density)
         return density

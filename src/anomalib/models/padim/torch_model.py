@@ -8,7 +8,7 @@ from random import sample
 from typing import TYPE_CHECKING
 
 import torch
-, nn
+from torch import nn
 from torch.nn import functional as F  # noqa: N812
 
 from anomalib.models.components import FeatureExtractor, MultiVariateGaussian
@@ -145,11 +145,11 @@ class PadimModel(nn.Module):
             )
         return output
 
-    def generate_embedding(self, features: dict[str, Tensor]) -> torch.Tensor:
+    def generate_embedding(self, features: dict[str, torch.Tensor]) -> torch.Tensor:
         """Generate embedding from hierarchical feature map.
 
         Args:
-            features (dict[str, Tensor]): Hierarchical feature map from a CNN (ResNet18 or WideResnet)
+            features (dict[str, torch.Tensor]): Hierarchical feature map from a CNN (ResNet18 or WideResnet)
 
         Returns:
             Embedding vector

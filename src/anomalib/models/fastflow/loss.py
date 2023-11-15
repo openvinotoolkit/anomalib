@@ -5,7 +5,7 @@
 
 
 import torch
-, nn
+from torch import nn
 
 
 class FastflowLoss(nn.Module):

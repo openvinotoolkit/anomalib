@@ -35,7 +35,7 @@ class AnomalyScoreDistribution(Metric):
         if anomaly_scores is not None:
             self.anomaly_scores.append(anomaly_scores)
 
-    def compute(self) -> tuple[Tensor, Tensor, Tensor, Tensor]:
+    def compute(self) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         """Compute stats."""
         anomaly_scores = torch.hstack(self.anomaly_scores)
         anomaly_scores = torch.log(anomaly_scores)

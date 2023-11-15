@@ -10,7 +10,7 @@ Region Extractor.
 from enum import Enum
 
 import torch
-, nn
+from torch import nn
 from torchvision.models.detection import fasterrcnn_resnet50_fpn
 from torchvision.ops import boxes as box_ops
 
@@ -104,7 +104,7 @@ class RegionExtractor(nn.Module):
         regions = self.post_process_box_predictions(all_regions, all_scores)
 
         # convert from list of [N, 4] tensors to single [N, 5] tensor where each row is [index-in-batch, x1, y1, x2, y2]
-        indices = torch.repeat_interleave(torch.arange(len(regions)), Tensor([rois.shape[0] for rois in regions]).int())
+        indices = torch.repeat_interleave(torch.arange(len(regions)), torch.Tensor([rois.shape[0] for rois in regions]).int())
         return torch.cat([indices.unsqueeze(1).to(batch.device), torch.cat(regions)], dim=1)
 
     def post_process_box_predictions(self, pred_boxes: torch.Tensor, pred_scores: torch.Tensor) -> list[torch.Tensor]:

@@ -92,14 +92,14 @@ class AUPRO(Metric):
         target = target.type(torch.float)  # kornia expects FloatTensor
         return connected_components_gpu(target) if target.is_cuda else connected_components_cpu(target)
 
-    def compute_pro(self, cca: torch.Tensor, target: torch.Tensor, preds: torch.Tensor) -> tuple[Tensor, Tensor]:
+    def compute_pro(self, cca: torch.Tensor, target: torch.Tensor, preds: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         """Compute the pro/fpr value-pairs until the fpr specified by self.fpr_limit.
 
         It leverages the fact that the overlap corresponds to the tpr, and thus computes the overall
         PRO curve by aggregating per-region tpr/fpr values produced by ROC-construction.
 
         Returns:
-            tuple[Tensor, Tensor]: tuple containing final fpr and tpr values.
+            tuple[torch.Tensor, torch.Tensor]: tuple containing final fpr and tpr values.
         """
         if self.num_thresholds is not None:
             # binary_roc is applying a sigmoid on the predictions before computing the roc curve
@@ -187,13 +187,13 @@ class AUPRO(Metric):
         fpr /= labels.size(0)
         return fpr, tpr
 
-    def _compute(self) -> tuple[Tensor, Tensor]:
+    def _compute(self) -> tuple[torch.Tensor, torch.Tensor]:
         """Compute the PRO curve.
 
         Perform the Connected Component Analysis first then compute the PRO curve.
 
         Returns:
-            tuple[Tensor, Tensor]: tuple containing final fpr and tpr values.
+            tuple[torch.Tensor, torch.Tensor]: tuple containing final fpr and tpr values.
         """
         cca = self.perform_cca().flatten()
         target = dim_zero_cat(self.target).flatten()

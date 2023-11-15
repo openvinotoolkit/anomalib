@@ -19,7 +19,7 @@ def normalize(
     if isinstance(targets, np.ndarray | np.float32 | np.float64):
         normalized = np.minimum(normalized, 1)
         normalized = np.maximum(normalized, 0)
-    elif isinstance(targets, Tensor):
+    elif isinstance(targets, torch.Tensor):
         normalized = torch.minimum(normalized, torch.tensor(1))  # pylint: disable=not-callable
         normalized = torch.maximum(normalized, torch.tensor(0))  # pylint: disable=not-callable
     else:
