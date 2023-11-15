@@ -92,7 +92,12 @@ class AUPRO(Metric):
         target = target.type(torch.float)  # kornia expects FloatTensor
         return connected_components_gpu(target) if target.is_cuda else connected_components_cpu(target)
 
-    def compute_pro(self, cca: torch.Tensor, target: torch.Tensor, preds: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+    def compute_pro(
+        self,
+        cca: torch.Tensor,
+        target: torch.Tensor,
+        preds: torch.Tensor,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         """Compute the pro/fpr value-pairs until the fpr specified by self.fpr_limit.
 
         It leverages the fact that the overlap corresponds to the tpr, and thus computes the overall
@@ -121,9 +126,7 @@ class AUPRO(Metric):
             preds=preds,
             target=target,
             thresholds=thresholds,
-        )[
-            0
-        ]  # only need fpr
+        )[0]  # only need fpr
         output_size = torch.where(fpr <= self.fpr_limit)[0].size(0)
 
         # compute the PRO curve by aggregating per-region tpr/fpr curves/values.

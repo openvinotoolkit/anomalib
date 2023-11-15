@@ -22,7 +22,13 @@ class DraemLoss(nn.Module):
         self.focal_loss = FocalLoss(alpha=1, reduction="mean")
         self.ssim_loss = SSIMLoss(window_size=11)
 
-    def forward(self, input_image: torch.Tensor, reconstruction: torch.Tensor, anomaly_mask: torch.Tensor, prediction: torch.Tensor) -> torch.Tensor:
+    def forward(
+        self,
+        input_image: torch.Tensor,
+        reconstruction: torch.Tensor,
+        anomaly_mask: torch.Tensor,
+        prediction: torch.Tensor,
+    ) -> torch.Tensor:
         """Compute the loss over a batch for the DRAEM model."""
         l2_loss_val = self.l2_loss(reconstruction, input_image)
         focal_loss_val = self.focal_loss(prediction, anomaly_mask.squeeze(1).long())

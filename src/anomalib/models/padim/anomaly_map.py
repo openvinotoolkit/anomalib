@@ -77,7 +77,12 @@ class AnomalyMapGenerator(nn.Module):
         """
         return self.blur(anomaly_map)
 
-    def compute_anomaly_map(self, embedding: torch.Tensor, mean: torch.Tensor, inv_covariance: torch.Tensor) -> torch.Tensor:
+    def compute_anomaly_map(
+        self,
+        embedding: torch.Tensor,
+        mean: torch.Tensor,
+        inv_covariance: torch.Tensor,
+    ) -> torch.Tensor:
         """Compute anomaly score.
 
         Scores are calculated based on embedding vector, mean and inv_covariance of the multivariate gaussian

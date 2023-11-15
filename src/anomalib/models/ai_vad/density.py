@@ -24,7 +24,10 @@ class BaseDensityEstimator(nn.Module, ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def predict(self, features: dict[FeatureType, torch.Tensor] | torch.Tensor) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
+    def predict(
+        self,
+        features: dict[FeatureType, torch.Tensor] | torch.Tensor,
+    ) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
         """Predict the density of a set of features."""
         raise NotImplementedError
 
@@ -33,7 +36,10 @@ class BaseDensityEstimator(nn.Module, ABC):
         """Compose model using collected features."""
         raise NotImplementedError
 
-    def forward(self, features: dict[FeatureType, torch.Tensor] | torch.Tensor) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor] | None:
+    def forward(
+        self,
+        features: dict[FeatureType, torch.Tensor] | torch.Tensor,
+    ) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor] | None:
         """Update or predict depending on training status."""
         if self.training:
             self.update(features)

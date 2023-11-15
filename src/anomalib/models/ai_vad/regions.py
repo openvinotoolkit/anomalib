@@ -56,7 +56,8 @@ class RegionExtractor(nn.Module):
         """Perform forward-pass through region extractor.
 
         Args:
-            first_frame (torch.Tensor): Batch of input images of shape (N, C, H, W) forming the first frames in the clip.
+            first_frame (torch.Tensor): Batch of input images of shape (N, C, H, W)
+                forming the first frames in the clip.
             last_frame (torch.Tensor): Batch of input images of shape (N, C, H, W) forming the last frame in the clip.
 
         Returns:

@@ -9,7 +9,10 @@ import torch
 from anomalib.utils.cv import connected_components_cpu, connected_components_gpu
 
 
-def masks_to_boxes(masks: torch.Tensor, anomaly_maps: torch.Tensor | None = None) -> tuple[list[torch.Tensor], list[torch.Tensor]]:
+def masks_to_boxes(
+    masks: torch.Tensor,
+    anomaly_maps: torch.Tensor | None = None,
+) -> tuple[list[torch.Tensor], list[torch.Tensor]]:
     """Convert a batch of segmentation masks to bounding box coordinates.
 
     Args:
@@ -18,10 +21,10 @@ def masks_to_boxes(masks: torch.Tensor, anomaly_maps: torch.Tensor | None = None
             used to determine an anomaly score for the converted bounding boxes.
 
     Returns:
-        list[torch.Tensor]: A list of length B where each element is a tensor of shape (N, 4) containing the bounding box
-            coordinates of the objects in the masks in xyxy format.
-        list[torch.Tensor]: A list of length B where each element is a tensor of length (N) containing an anomaly score for
-            each of the converted boxes.
+        list[torch.Tensor]: A list of length B where each element is a tensor of shape (N, 4)
+            containing the bounding box coordinates of the objects in the masks in xyxy format.
+        list[torch.Tensor]: A list of length B where each element is a tensor of length (N)
+            containing an anomaly score for each of the converted boxes.
     """
     height, width = masks.shape[-2:]
     masks = masks.view((-1, 1, height, width)).float()  # reshape to (B, 1, H, W) and cast to float
@@ -42,7 +45,9 @@ def masks_to_boxes(masks: torch.Tensor, anomaly_maps: torch.Tensor | None = None
         for label in labels[labels != 0]:
             y_loc, x_loc = torch.where(im_comps == label)
             # add box
-            box = torch.Tensor([torch.min(x_loc), torch.min(y_loc), torch.max(x_loc), torch.max(y_loc)]).to(masks.device)
+            box = torch.Tensor([torch.min(x_loc), torch.min(y_loc), torch.max(x_loc), torch.max(y_loc)]).to(
+                masks.device,
+            )
             im_boxes.append(box)
             if anomaly_maps is not None:
                 im_scores.append(torch.max(anomaly_maps[im_idx, y_loc, x_loc]))
@@ -56,8 +61,8 @@ def boxes_to_masks(boxes: list[torch.Tensor], image_size: tuple[int, int]) -> to
     """Convert bounding boxes to segmentations masks.
 
     Args:
-        boxes (list[torch.Tensor]): A list of length B where each element is a tensor of shape (N, 4) containing the bounding
-            box coordinates of the regions of interest in xyxy format.
+        boxes (list[torch.Tensor]): A list of length B where each element is a tensor of shape (N, 4)
+            containing the bounding box coordinates of the regions of interest in xyxy format.
         image_size (tuple[int, int]): Image size of the output masks in (H, W) format.
 
     Returns:
@@ -76,15 +81,16 @@ def boxes_to_anomaly_maps(boxes: torch.Tensor, scores: torch.Tensor, image_size:
     """Convert bounding box coordinates to anomaly heatmaps.
 
     Args:
-        boxes (list[torch.Tensor]): A list of length B where each element is a tensor of shape (N, 4) containing the bounding
-            box coordinates of the regions of interest in xyxy format.
-        scores (list[torch.Tensor]): A list of length B where each element is a 1D tensor of length N containing the anomaly
-            scores for each region of interest.
+        boxes (list[torch.Tensor]): A list of length B where each element is a tensor of shape (N, 4)
+            containing the bounding box coordinates of the regions of interest in xyxy format.
+        scores (list[torch.Tensor]): A list of length B where each element is a 1D tensor of length N
+            containing the anomaly scores for each region of interest.
         image_size (tuple[int, int]): Image size of the output masks in (H, W) format.
 
     Returns:
-        Tensor: torch.Tensor of shape (B, H, W). The pixel locations within each bounding box are collectively assigned the
-            anomaly score of the bounding box. In the case of overlapping bounding boxes, the highest score is used.
+        Tensor: torch.Tensor of shape (B, H, W). The pixel locations within each bounding box are collectively
+            assigned the anomaly score of the bounding box. In the case of overlapping bounding boxes,
+            the highest score is used.
     """
     anomaly_maps = torch.zeros((len(boxes), *image_size)).to(boxes[0].device)
     for im_idx, (im_boxes, im_scores) in enumerate(zip(boxes, scores, strict=False)):

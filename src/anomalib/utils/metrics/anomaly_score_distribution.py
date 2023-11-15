@@ -26,7 +26,13 @@ class AnomalyScoreDistribution(Metric):
         self.pixel_mean = torch.empty(0)
         self.pixel_std = torch.empty(0)
 
-    def update(self, *args, anomaly_scores: torch.Tensor | None = None, anomaly_maps: torch.Tensor | None = None, **kwargs) -> None:
+    def update(
+        self,
+        *args,
+        anomaly_scores: torch.Tensor | None = None,
+        anomaly_maps: torch.Tensor | None = None,
+        **kwargs,
+    ) -> None:
         """Update the precision-recall curve metric."""
         del args, kwargs  # These variables are not used.
 

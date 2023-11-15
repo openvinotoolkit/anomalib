@@ -30,7 +30,10 @@ def standardize(
     return standardized
 
 
-def normalize(targets: np.ndarray | torch.Tensor, threshold: float | np.ndarray | torch.Tensor) -> np.ndarray | torch.Tensor:
+def normalize(
+    targets: np.ndarray | torch.Tensor,
+    threshold: float | np.ndarray | torch.Tensor,
+) -> np.ndarray | torch.Tensor:
     """Normalize the targets by using the cumulative density function."""
     if isinstance(targets, torch.Tensor):
         return normalize_torch(targets, threshold)

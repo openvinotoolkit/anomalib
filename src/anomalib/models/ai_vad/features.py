@@ -115,7 +115,8 @@ class DeepExtractor(nn.Module):
 
         Args:
             batch (torch.Tensor): Batch of RGB input images of shape (N, 3, H, W)
-            boxes (torch.Tensor): Bounding box coordinates of shaspe (M, 5). First column indicates batch index of the bbox.
+            boxes (torch.Tensor): Bounding box coordinates of shaspe (M, 5).
+                First column indicates batch index of the bbox.
             batch_size (int): Number of images in the batch.
 
         Returns:
@@ -147,7 +148,8 @@ class VelocityExtractor(nn.Module):
 
         Args:
             flows (torch.Tensor): Batch of optical flow images of shape (N, 2, H, W)
-            boxes (torch.Tensor): Bounding box coordinates of shaspe (M, 5). First column indicates batch index of the bbox.
+            boxes (torch.Tensor): Bounding box coordinates of shaspe (M, 5).
+                First column indicates batch index of the bbox.
 
         Returns:
             Tensor: Velocity feature tensor of shape (M, n_bins)
@@ -217,7 +219,8 @@ class PoseExtractor(nn.Module):
 
         Args:
             batch (torch.Tensor): Batch of RGB input images of shape (N, 3, H, W)
-            boxes (torch.Tensor): Bounding box coordinates of shaspe (M, 5). First column indicates batch index of the bbox.
+            boxes (torch.Tensor): Bounding box coordinates of shaspe (M, 5).
+                First column indicates batch index of the bbox.
 
         Returns:
             list[torch.Tensor]: list of pose feature tensors for each image.
@@ -227,7 +230,8 @@ class PoseExtractor(nn.Module):
 
         image_sizes = [b.shape[-2:] for b in batch]
         scales = [
-            torch.Tensor(new) / torch.Tensor([orig[0], orig[1]]) for orig, new in zip(image_sizes, images.image_sizes, strict=True)
+            torch.Tensor(new) / torch.Tensor([orig[0], orig[1]])
+            for orig, new in zip(image_sizes, images.image_sizes, strict=True)
         ]
 
         boxes = [box * scale.repeat(2).to(box.device) for box, scale in zip(boxes, scales, strict=True)]

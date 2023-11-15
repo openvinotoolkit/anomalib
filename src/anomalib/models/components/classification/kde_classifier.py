@@ -52,7 +52,11 @@ class KDEClassifier(nn.Module):
         self.register_buffer("max_length", torch.empty([]))
         self.max_length = torch.empty([])
 
-    def pre_process(self, feature_stack: torch.Tensor, max_length: torch.Tensor | None = None) -> tuple[torch.Tensor, torch.Tensor]:
+    def pre_process(
+        self,
+        feature_stack: torch.Tensor,
+        max_length: torch.Tensor | None = None,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         """Pre-process the CNN features.
 
         Args:

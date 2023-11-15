@@ -81,8 +81,8 @@ class RkdeModel(nn.Module):
             batch (torch.Tensor): Input images.
 
         Returns:
-            Tensor | tuple[torch.Tensor, torch.Tensor]: The extracted features (when in training mode), or the predicted rois
-                and corresponding anomaly scores.
+            Tensor | tuple[torch.Tensor, torch.Tensor]: The extracted features (when in training mode),
+                or the predicted rois and corresponding anomaly scores.
         """
         self.region_extractor.eval()
         self.feature_extractor.eval()

@@ -208,7 +208,10 @@ class TorchInferencer(Inferencer):
                 anomaly_map, pred_score = predictions
                 pred_score = pred_score.detach()
         else:
-            msg = f"Unknown prediction type {type(predictions)}. Expected Tensor, List[Tensor] or dict[str, torch.Tensor]."
+            msg = (
+                f"Unknown prediction type {type(predictions)}. "
+                "Expected torch.Tensor, list[torch.Tensor] or dict[str, torch.Tensor]."
+            )
             raise TypeError(msg)
 
         # Common practice in anomaly detection is to assign anomalous

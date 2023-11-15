@@ -168,7 +168,10 @@ class EncoderDiscriminative(nn.Module):
             nn.ReLU(inplace=True),
         )
 
-    def forward(self, batch: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+    def forward(
+        self,
+        batch: torch.Tensor,
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         """Convert the inputs to the salient space by running them through the encoder network.
 
         Args:
@@ -280,7 +283,15 @@ class DecoderDiscriminative(nn.Module):
 
         self.fin_out = nn.Sequential(nn.Conv2d(base_width, out_channels, kernel_size=3, padding=1))
 
-    def forward(self, act1: torch.Tensor, act2: torch.Tensor, act3: torch.Tensor, act4: torch.Tensor, act5: torch.Tensor, act6: torch.Tensor) -> torch.Tensor:
+    def forward(
+        self,
+        act1: torch.Tensor,
+        act2: torch.Tensor,
+        act3: torch.Tensor,
+        act4: torch.Tensor,
+        act5: torch.Tensor,
+        act6: torch.Tensor,
+    ) -> torch.Tensor:
         """Compute predicted anomaly class scores from the intermediate outputs of the encoder sub network.
 
         Args:

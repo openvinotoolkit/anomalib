@@ -177,7 +177,12 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
             patch_scores, locations = distances.topk(k=n_neighbors, largest=False, dim=1)
         return patch_scores, locations
 
-    def compute_anomaly_score(self, patch_scores: torch.Tensor, locations: torch.Tensor, embedding: torch.Tensor) -> torch.Tensor:
+    def compute_anomaly_score(
+        self,
+        patch_scores: torch.Tensor,
+        locations: torch.Tensor,
+        embedding: torch.Tensor,
+    ) -> torch.Tensor:
         """Compute Image-Level Anomaly Score.
 
         Args:

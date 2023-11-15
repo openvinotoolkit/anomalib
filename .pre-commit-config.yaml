@@ -17,9 +17,13 @@ repos:
   - repo: https://github.com/charliermarsh/ruff-pre-commit
     rev: "v0.1.5"
     hooks:
+      # Run the linter.
       - id: ruff
         exclude: "tests/legacy"
         args: ["--fix"]
+      # Run the formatter
+      - id: ruff-format
+        exclude: "tests/legacy"
 
   # python static type checking
   - repo: https://github.com/pre-commit/mirrors-mypy

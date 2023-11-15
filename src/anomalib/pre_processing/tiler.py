@@ -98,7 +98,11 @@ def upscale_image(image: torch.Tensor, size: tuple, mode: ImageUpscaleMode = Ima
     return image
 
 
-def downscale_image(image: torch.Tensor, size: tuple, mode: ImageUpscaleMode = ImageUpscaleMode.PADDING) -> torch.Tensor:
+def downscale_image(
+    image: torch.Tensor,
+    size: tuple,
+    mode: ImageUpscaleMode = ImageUpscaleMode.PADDING,
+) -> torch.Tensor:
     """Opposite of upscaling. This image downscales image to a desired size.
 
     Args:

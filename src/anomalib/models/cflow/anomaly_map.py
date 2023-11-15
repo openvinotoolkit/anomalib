@@ -26,7 +26,12 @@ class AnomalyMapGenerator(nn.Module):
         self.image_size = image_size if isinstance(image_size, tuple) else tuple(image_size)
         self.pool_layers: Sequence[str] = pool_layers
 
-    def compute_anomaly_map(self, distribution: list[torch.Tensor], height: list[int], width: list[int]) -> torch.Tensor:
+    def compute_anomaly_map(
+        self,
+        distribution: list[torch.Tensor],
+        height: list[int],
+        width: list[int],
+    ) -> torch.Tensor:
         """Compute the layer map based on likelihood estimation.
 
         Args:

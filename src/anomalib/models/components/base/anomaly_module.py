@@ -67,7 +67,12 @@ class AnomalyModule(pl.LightningModule, ABC):
         """To be implemented in the subclasses."""
         raise NotImplementedError
 
-    def predict_step(self, batch: dict[str, str | torch.Tensor], batch_idx: int, dataloader_idx: int = 0) -> STEP_OUTPUT:
+    def predict_step(
+        self,
+        batch: dict[str, str | torch.Tensor],
+        batch_idx: int,
+        dataloader_idx: int = 0,
+    ) -> STEP_OUTPUT:
         """Step function called during :meth:`~lightning.pytorch.trainer.Trainer.predict`.
 
         By default, it calls :meth:`~lightning.pytorch.core.lightning.LightningModule.forward`.
