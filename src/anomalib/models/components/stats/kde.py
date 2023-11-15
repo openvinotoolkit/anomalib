@@ -7,7 +7,7 @@
 import math
 
 import torch
-from torch import Tensor
+
 
 from anomalib.models.components.base import DynamicBufferModule
 
@@ -19,7 +19,7 @@ class GaussianKDE(DynamicBufferModule):
         dataset (Tensor | None, optional): Dataset on which to fit the KDE model. Defaults to None.
     """
 
-    def __init__(self, dataset: Tensor | None = None) -> None:
+    def __init__(self, dataset: torch.Tensor | None = None) -> None:
         super().__init__()
 
         if dataset is not None:
@@ -33,11 +33,11 @@ class GaussianKDE(DynamicBufferModule):
         self.dataset = Tensor()
         self.norm = Tensor()
 
-    def forward(self, features: Tensor) -> Tensor:
+    def forward(self, features: torch.Tensor) -> torch.Tensor:
         """Get the KDE estimates from the feature map.
 
         Args:
-          features (Tensor): Feature map extracted from the CNN
+          features (torch.Tensor): Feature map extracted from the CNN
 
         Returns: KDE Estimates
         """
@@ -51,11 +51,11 @@ class GaussianKDE(DynamicBufferModule):
 
         return estimate
 
-    def fit(self, dataset: Tensor) -> None:
+    def fit(self, dataset: torch.Tensor) -> None:
         """Fit a KDE model to the input dataset.
 
         Args:
-          dataset (Tensor): Input dataset.
+          dataset (torch.Tensor): Input dataset.
 
         Returns:
             None
@@ -82,11 +82,11 @@ class GaussianKDE(DynamicBufferModule):
         self.norm = norm
 
     @staticmethod
-    def cov(tensor: Tensor) -> Tensor:
+    def cov(tensor: torch.Tensor) -> torch.Tensor:
         """Calculate the unbiased covariance matrix.
 
         Args:
-            tensor (Tensor): Input tensor from which covariance matrix is computed.
+            tensor (torch.Tensor): Input tensor from which covariance matrix is computed.
 
         Returns:
             Output covariance matrix.

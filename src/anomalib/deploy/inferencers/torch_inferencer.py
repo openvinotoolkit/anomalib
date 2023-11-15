@@ -13,7 +13,7 @@ import cv2
 import numpy as np
 import torch
 from omegaconf import DictConfig
-from torch import Tensor, nn
+, nn
 
 from anomalib.data import TaskType
 from anomalib.data.utils.boxes import masks_to_boxes
@@ -130,7 +130,7 @@ class TorchInferencer(Inferencer):
         model.eval()
         return model.to(self.device)
 
-    def pre_process(self, image: np.ndarray) -> Tensor:
+    def pre_process(self, image: np.ndarray) -> torch.Tensor:
         """Pre process the input image by applying transformations.
 
         Args:
@@ -146,11 +146,11 @@ class TorchInferencer(Inferencer):
 
         return processed_image.to(self.device)
 
-    def forward(self, image: Tensor) -> Tensor:
+    def forward(self, image: torch.Tensor) -> torch.Tensor:
         """Forward-Pass input tensor to the model.
 
         Args:
-            image (Tensor): Input tensor.
+            image (torch.Tensor): Input tensor.
 
         Returns:
             Tensor: Output predictions.
@@ -159,7 +159,7 @@ class TorchInferencer(Inferencer):
 
     def post_process(
         self,
-        predictions: Tensor | list[Tensor] | dict[str, Tensor],
+        predictions: torch.Tensor | list[Tensor] | dict[str, Tensor],
         metadata: dict | DictConfig | None = None,
     ) -> dict[str, Any]:
         """Post process the output predictions.

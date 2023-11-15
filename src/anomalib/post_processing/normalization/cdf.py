@@ -7,16 +7,16 @@
 import numpy as np
 import torch
 from scipy.stats import norm
-from torch import Tensor
+
 from torch.distributions import Normal
 
 
 def standardize(
-    targets: np.ndarray | Tensor,
-    mean: float | np.ndarray | Tensor,
-    std: float | np.ndarray | Tensor,
+    targets: np.ndarray | torch.Tensor,
+    mean: float | np.ndarray | torch.Tensor,
+    std: float | np.ndarray | torch.Tensor,
     center_at: float | None = None,
-) -> np.ndarray | Tensor:
+) -> np.ndarray | torch.Tensor:
     """Standardize the targets to the z-domain."""
     if isinstance(targets, np.ndarray):
         targets = np.log(targets)
@@ -31,7 +31,7 @@ def standardize(
     return standardized
 
 
-def normalize(targets: np.ndarray | Tensor, threshold: float | np.ndarray | Tensor) -> np.ndarray | Tensor:
+def normalize(targets: np.ndarray | torch.Tensor, threshold: float | np.ndarray | torch.Tensor) -> np.ndarray | torch.Tensor:
     """Normalize the targets by using the cumulative density function."""
     if isinstance(targets, Tensor):
         return normalize_torch(targets, threshold)
@@ -41,7 +41,7 @@ def normalize(targets: np.ndarray | Tensor, threshold: float | np.ndarray | Tens
     raise TypeError(msg)
 
 
-def normalize_torch(targets: Tensor, threshold: Tensor) -> Tensor:
+def normalize_torch(targets: torch.Tensor, threshold: torch.Tensor) -> torch.Tensor:
     """Normalize the targets by using the cumulative density function, PyTorch version."""
     device = targets.device
     image_threshold = threshold.cpu()

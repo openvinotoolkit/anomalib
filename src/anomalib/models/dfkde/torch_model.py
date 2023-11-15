@@ -8,7 +8,7 @@ import logging
 from collections.abc import Sequence
 
 import torch
-from torch import Tensor, nn
+from torch import nn
 from torch.nn import functional as F  # noqa: N812
 
 from anomalib.models.components import FeatureExtractor
@@ -50,14 +50,14 @@ class DfkdeModel(nn.Module):
             max_training_points=max_training_points,
         )
 
-    def get_features(self, batch: Tensor) -> Tensor:
+    def get_features(self, batch: torch.Tensor) -> torch.Tensor:
         """Extract features from the pretrained network.
 
         Args:
-            batch (Tensor): Image batch.
+            batch (torch.Tensor): Image batch.
 
         Returns:
-            Tensor: Tensor containing extracted features.
+            Tensor: torch.Tensor containing extracted features.
         """
         self.feature_extractor.eval()
         layer_outputs = self.feature_extractor(batch)
@@ -67,11 +67,11 @@ class DfkdeModel(nn.Module):
             layer_outputs[layer] = layer_outputs[layer].view(batch_size, -1)
         return torch.cat(list(layer_outputs.values())).detach()
 
-    def forward(self, batch: Tensor) -> Tensor:
+    def forward(self, batch: torch.Tensor) -> torch.Tensor:
         """Prediction by normality model.
 
         Args:
-            batch (Tensor): Input images.
+            batch (torch.Tensor): Input images.
 
         Returns:
             Tensor: Predictions

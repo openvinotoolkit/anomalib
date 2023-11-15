@@ -6,7 +6,7 @@
 
 import torch
 from omegaconf import ListConfig
-from torch import Tensor, nn
+, nn
 from torch.nn import functional as F  # noqa: N812
 
 
@@ -17,7 +17,7 @@ class AnomalyMapGenerator(nn.Module):
         super().__init__()
         self.input_size = input_size if isinstance(input_size, tuple) else tuple(input_size)
 
-    def forward(self, hidden_variables: list[Tensor]) -> Tensor:
+    def forward(self, hidden_variables: list[Tensor]) -> torch.Tensor:
         """Generate Anomaly Heatmap.
 
         This implementation generates the heatmap based on the flow maps

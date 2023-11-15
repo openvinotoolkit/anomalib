@@ -24,7 +24,7 @@ import numpy as np
 import pandas as pd
 import torch
 from pandas import DataFrame
-from torch import Tensor
+
 
 from anomalib.data.base import AnomalibVideoDataModule, AnomalibVideoDataset
 from anomalib.data.base.video import VideoTargetFrame

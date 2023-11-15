@@ -17,7 +17,7 @@ import torch
 import tqdm
 from albumentations.pytorch import ToTensorV2
 from lightning.pytorch.utilities.types import STEP_OUTPUT
-from torch import Tensor, optim
+, optim
 from torch.utils.data import DataLoader
 from torchvision.datasets import ImageFolder
 
@@ -235,11 +235,11 @@ class EfficientAd(AnomalyModule):
             channel_mean_std = self.teacher_channel_mean_std(self.trainer.datamodule.train_dataloader())
             self.model.mean_std.update(channel_mean_std)
 
-    def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> dict[str, Tensor]:
+    def training_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> dict[str, Tensor]:
         """Perform the training step for EfficientAd returns the student, autoencoder and combined loss.
 
         Args:
-            batch (batch: dict[str, str | Tensor]): Batch containing image filename, image, label and mask
+            batch (batch: dict[str, str | torch.Tensor]): Batch containing image filename, image, label and mask
             args: Additional arguments.
             kwargs: Additional keyword arguments.
 
@@ -270,11 +270,11 @@ class EfficientAd(AnomalyModule):
             map_norm_quantiles = self.map_norm_quantiles(self.trainer.datamodule.val_dataloader())
             self.model.quantiles.update(map_norm_quantiles)
 
-    def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
+    def validation_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> STEP_OUTPUT:
         """Perform the validation step of EfficientAd returns anomaly maps for the input image batch.
 
         Args:
-          batch (dict[str, str | Tensor]): Input batch
+          batch (dict[str, str | torch.Tensor]): Input batch
           args: Additional arguments.
           kwargs: Additional keyword arguments.
 

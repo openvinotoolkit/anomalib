@@ -10,8 +10,9 @@ https://arxiv.org/abs/2201.10703v2
 from collections.abc import Sequence
 from typing import Any
 
+import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
-from torch import Tensor, optim
+from torch import optim
 
 from anomalib.models.components import AnomalyModule
 
@@ -60,7 +61,7 @@ class ReverseDistillation(AnomalyModule):
             betas=(0.5, 0.99),
         )
 
-    def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
+    def training_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> STEP_OUTPUT:
         """Perform a training step of Reverse Distillation Model.
 
         Features are extracted from three layers of the Encoder model. These are passed to the bottleneck layer
@@ -68,7 +69,7 @@ class ReverseDistillation(AnomalyModule):
         encoder and decoder features.
 
         Args:
-          batch (batch: dict[str, str | Tensor]): Input batch
+          batch (batch: dict[str, str | torch.Tensor]): Input batch
           args: Additional arguments.
           kwargs: Additional keyword arguments.
 
@@ -81,14 +82,14 @@ class ReverseDistillation(AnomalyModule):
         self.log("train_loss", loss.item(), on_epoch=True, prog_bar=True, logger=True)
         return {"loss": loss}
 
-    def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
+    def validation_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> STEP_OUTPUT:
         """Perform a validation step of Reverse Distillation Model.
 
         Similar to the training step, encoder/decoder features are extracted from the CNN for each batch, and
         anomaly map is computed.
 
         Args:
-          batch (dict[str, str | Tensor]): Input batch
+          batch (dict[str, str | torch.Tensor]): Input batch
           args: Additional arguments.
           kwargs: Additional keyword arguments.
 

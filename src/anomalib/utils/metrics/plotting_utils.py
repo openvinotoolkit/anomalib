@@ -8,13 +8,12 @@ import torch
 from matplotlib import pyplot as plt
 from matplotlib.axis import Axis
 from matplotlib.figure import Figure
-from torch import Tensor
 
 
 def plot_figure(
-    x_vals: Tensor,
-    y_vals: Tensor,
-    auc: Tensor,
+    x_vals: torch.Tensor,
+    y_vals: torch.Tensor,
+    auc: torch.Tensor,
     xlim: tuple[float, float],
     ylim: tuple[float, float],
     xlabel: str,
@@ -29,9 +28,9 @@ def plot_figure(
     every single plot which takes very long, especially for high-resolution segmentations.
 
     Args:
-        x_vals (Tensor): x values to plot
-        y_vals (Tensor): y values to plot
-        auc (Tensor): normalized area under the curve spanned by x_vals, y_vals
+        x_vals (torch.Tensor): x values to plot
+        y_vals (torch.Tensor): y values to plot
+        auc (torch.Tensor): normalized area under the curve spanned by x_vals, y_vals
         xlim (tuple[float, float]): displayed range for x-axis
         ylim (tuple[float, float]): displayed range for y-axis
         xlabel (str): label of x axis

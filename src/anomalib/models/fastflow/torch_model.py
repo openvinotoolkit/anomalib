@@ -17,7 +17,7 @@ import torch
 from FrEIA.framework import SequenceINN
 from timm.models.cait import Cait
 from timm.models.vision_transformer import VisionTransformer
-from torch import Tensor, nn
+, nn
 
 from anomalib.models.components.flow import AllInOneBlock
 from anomalib.models.fastflow.anomaly_map import AnomalyMapGenerator
@@ -165,18 +165,18 @@ class FastflowModel(nn.Module):
             )
         self.anomaly_map_generator = AnomalyMapGenerator(input_size=input_size)
 
-    def forward(self, input_tensor: Tensor) -> Tensor | list[Tensor] | tuple[list[Tensor]]:
+    def forward(self, input_tensor: torch.Tensor) -> Tensor | list[Tensor] | tuple[list[Tensor]]:
         """Forward-Pass the input to the FastFlow Model.
 
         Args:
-            input_tensor (Tensor): Input tensor.
+            input_tensor (torch.Tensor): Input tensor.
 
         Returns:
             Tensor | list[Tensor] | tuple[list[Tensor]]: During training, return
                 (hidden_variables, log-of-the-jacobian-determinants).
                 During the validation/test, return the anomaly map.
         """
-        return_val: Tensor | list[Tensor] | tuple[list[Tensor]]
+        return_val: torch.Tensor | list[Tensor] | tuple[list[Tensor]]
 
         self.feature_extractor.eval()
         if isinstance(self.feature_extractor, VisionTransformer):
@@ -203,11 +203,11 @@ class FastflowModel(nn.Module):
 
         return return_val
 
-    def _get_cnn_features(self, input_tensor: Tensor) -> list[Tensor]:
+    def _get_cnn_features(self, input_tensor: torch.Tensor) -> list[Tensor]:
         """Get CNN-based features.
 
         Args:
-            input_tensor (Tensor): Input Tensor.
+            input_tensor (torch.Tensor): Input Tensor.
 
         Returns:
             list[Tensor]: List of features.
@@ -215,11 +215,11 @@ class FastflowModel(nn.Module):
         features = self.feature_extractor(input_tensor)
         return [self.norms[i](feature) for i, feature in enumerate(features)]
 
-    def _get_cait_features(self, input_tensor: Tensor) -> list[Tensor]:
+    def _get_cait_features(self, input_tensor: torch.Tensor) -> list[Tensor]:
         """Get Class-Attention-Image-Transformers (CaiT) features.
 
         Args:
-            input_tensor (Tensor): Input Tensor.
+            input_tensor (torch.Tensor): Input Tensor.
 
         Returns:
             list[Tensor]: List of features.
@@ -235,11 +235,11 @@ class FastflowModel(nn.Module):
         feature = feature.reshape(batch_size, num_channels, self.input_size[0] // 16, self.input_size[1] // 16)
         return [feature]
 
-    def _get_vit_features(self, input_tensor: Tensor) -> list[Tensor]:
+    def _get_vit_features(self, input_tensor: torch.Tensor) -> list[Tensor]:
         """Get Vision Transformers (ViT) features.
 
         Args:
-            input_tensor (Tensor): Input Tensor.
+            input_tensor (torch.Tensor): Input Tensor.
 
         Returns:
             list[Tensor]: List of features.

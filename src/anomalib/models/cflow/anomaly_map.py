@@ -9,7 +9,7 @@ from typing import cast
 
 import torch
 from omegaconf import ListConfig
-from torch import Tensor, nn
+, nn
 from torch.nn import functional as F  # noqa: N812
 
 
@@ -26,7 +26,7 @@ class AnomalyMapGenerator(nn.Module):
         self.image_size = image_size if isinstance(image_size, tuple) else tuple(image_size)
         self.pool_layers: Sequence[str] = pool_layers
 
-    def compute_anomaly_map(self, distribution: list[Tensor], height: list[int], width: list[int]) -> Tensor:
+    def compute_anomaly_map(self, distribution: list[Tensor], height: list[int], width: list[int]) -> torch.Tensor:
         """Compute the layer map based on likelihood estimation.
 
         Args:
@@ -61,7 +61,7 @@ class AnomalyMapGenerator(nn.Module):
         # Invert probs to anomaly scores
         return score_map.max() - score_map
 
-    def forward(self, **kwargs: list[Tensor] | list[int] | list[list]) -> Tensor:
+    def forward(self, **kwargs: list[Tensor] | list[int] | list[list]) -> torch.Tensor:
         """Return anomaly_map.
 
         Expects `distribution`, `height` and 'width' keywords to be passed explicitly

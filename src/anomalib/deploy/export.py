@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING, Any
 import albumentations as A  # noqa: N812
 import numpy as np
 import torch
-from torch import Tensor
+
 
 from anomalib.data import AnomalibDataModule, AnomalibDataset, TaskType
 from anomalib.models.components import AnomalyModule
@@ -178,7 +178,7 @@ def _get_model_metadata(model: AnomalyModule) -> dict[str, Tensor]:
         dict[str, Tensor]: Model metadata
     """
     metadata = {}
-    cached_metadata: dict[str, Number | Tensor] = {
+    cached_metadata: dict[str, Number | torch.Tensor] = {
         "image_threshold": model.image_threshold.cpu().value.item(),
         "pixel_threshold": model.pixel_threshold.cpu().value.item(),
     }

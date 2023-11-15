@@ -8,7 +8,7 @@ from typing import Any
 
 import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
-from torch import Tensor, optim
+from torch import optim
 
 from anomalib.models.components import AnomalyModule
 from anomalib.models.fastflow.loss import FastflowLoss
@@ -48,11 +48,11 @@ class Fastflow(AnomalyModule):
         )
         self.loss = FastflowLoss()
 
-    def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
+    def training_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> STEP_OUTPUT:
         """Perform the training step input and return the loss.
 
         Args:
-            batch (batch: dict[str, str | Tensor]): Input batch
+            batch (batch: dict[str, str | torch.Tensor]): Input batch
             args: Additional arguments.
             kwargs: Additional keyword arguments.
 
@@ -66,11 +66,11 @@ class Fastflow(AnomalyModule):
         self.log("train_loss", loss.item(), on_epoch=True, prog_bar=True, logger=True)
         return {"loss": loss}
 
-    def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
+    def validation_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> STEP_OUTPUT:
         """Perform the validation step and return the anomaly map.
 
         Args:
-            batch (dict[str, str | Tensor]): Input batch
+            batch (dict[str, str | torch.Tensor]): Input batch
             args: Additional arguments.
             kwargs: Additional keyword arguments.
 

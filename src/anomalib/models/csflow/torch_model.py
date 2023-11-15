@@ -17,7 +17,7 @@ import numpy as np
 import torch
 from FrEIA.framework import GraphINN, InputNode, Node, OutputNode
 from FrEIA.modules import InvertibleModule
-from torch import Tensor, nn
+, nn
 from torch.nn import functional as F  # noqa: N812
 from torchvision.models.efficientnet import EfficientNet_B5_Weights
 
@@ -290,13 +290,13 @@ class ParallelGlowCouplingLayer(InvertibleModule):
         self.cross_convolution1 = CrossConvolutions(self.split_len1, self.split_len2 * 2, **subnet_args)
         self.cross_convolution2 = CrossConvolutions(self.split_len2, self.split_len1 * 2, **subnet_args)
 
-    def exp(self, input_tensor: Tensor) -> Tensor:
+    def exp(self, input_tensor: torch.Tensor) -> torch.Tensor:
         """Exponentiates the input and, optionally, clamps it to avoid numerical issues."""
         if self.clamp > 0:
             return torch.exp(self.log_e(input_tensor))
         return torch.exp(input_tensor)
 
-    def log_e(self, input_tensor: Tensor) -> Tensor:
+    def log_e(self, input_tensor: torch.Tensor) -> torch.Tensor:
         """Return log of input. And optionally clamped to avoid numerical issues."""
         if self.clamp > 0:
             return self.clamp * 0.636 * torch.atan(input_tensor / self.clamp)
@@ -460,11 +460,11 @@ class CrossScaleFlow(nn.Module):
         nodes.extend(output_nodes)
         return GraphINN(nodes)
 
-    def forward(self, inputs: Tensor) -> tuple[Tensor, Tensor]:
+    def forward(self, inputs: torch.Tensor) -> tuple[Tensor, Tensor]:
         """Forward pass.
 
         Args:
-            inputs (Tensor): Input tensor.
+            inputs (torch.Tensor): Input tensor.
 
         Returns:
             tuple[Tensor, Tensor]: Output tensor and log determinant of Jacobian.
@@ -493,11 +493,11 @@ class MultiScaleFeatureExtractor(nn.Module):
             return_nodes=["features.6.8"],
         )
 
-    def forward(self, input_tensor: Tensor) -> list[Tensor]:
+    def forward(self, input_tensor: torch.Tensor) -> list[Tensor]:
         """Extract features at three scales.
 
         Args:
-            input_tensor (Tensor): Input images.
+            input_tensor (torch.Tensor): Input images.
 
         Returns:
             list[Tensor]: List of tensors containing features at three scales.
@@ -550,11 +550,11 @@ class CsFlowModel(nn.Module):
         )
         self.anomaly_map_generator = AnomalyMapGenerator(input_dims=self.input_dims, mode=AnomalyMapMode.ALL)
 
-    def forward(self, images: Tensor) -> tuple[Tensor, Tensor]:
+    def forward(self, images: torch.Tensor) -> tuple[Tensor, Tensor]:
         """Forward method of the model.
 
         Args:
-            images (Tensor): Input images.
+            images (torch.Tensor): Input images.
 
         Returns:
             tuple[Tensor, Tensor]: During training: tuple containing the z_distribution for three scales and the sum
@@ -570,11 +570,11 @@ class CsFlowModel(nn.Module):
             output = anomaly_maps, anomaly_scores
         return output
 
-    def _compute_anomaly_scores(self, z_dists: Tensor) -> Tensor:
+    def _compute_anomaly_scores(self, z_dists: torch.Tensor) -> torch.Tensor:
         """Get anomaly scores from the latent distribution.
 
         Args:
-            z_dists (Tensor): Latent distribution.
+            z_dists (torch.Tensor): Latent distribution.
 
         Returns:
             Tensor: Anomaly scores.

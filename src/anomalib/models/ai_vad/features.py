@@ -7,7 +7,7 @@
 from enum import Enum
 
 import torch
-from torch import Tensor, nn
+, nn
 from torchvision.models.detection import KeypointRCNN_ResNet50_FPN_Weights, keypointrcnn_resnet50_fpn
 from torchvision.models.detection.roi_heads import keypointrcnn_inference
 from torchvision.ops import roi_align
@@ -56,8 +56,8 @@ class FeatureExtractor(nn.Module):
 
     def forward(
         self,
-        rgb_batch: Tensor,
-        flow_batch: Tensor,
+        rgb_batch: torch.Tensor,
+        flow_batch: torch.Tensor,
         regions: list[dict],
     ) -> list[dict]:
         """Forward pass through the feature extractor.
@@ -65,8 +65,8 @@ class FeatureExtractor(nn.Module):
         Extract any combination of velocity, pose and deep features depending on configuration.
 
         Args:
-            rgb_batch (Tensor): Batch of RGB images of shape (N, 3, H, W)
-            flow_batch (Tensor): Batch of optical flow images of shape (N, 2, H, W)
+            rgb_batch (torch.Tensor): Batch of RGB images of shape (N, 3, H, W)
+            flow_batch (torch.Tensor): Batch of optical flow images of shape (N, 2, H, W)
             regions (list[dict]): Region information per image in batch.
 
         Returns:
@@ -110,12 +110,12 @@ class DeepExtractor(nn.Module):
         self.encoder, _ = clip.load("ViT-B/16")
         self.transform = Normalize(mean=(0.48145466, 0.4578275, 0.40821073), std=(0.26862954, 0.26130258, 0.27577711))
 
-    def forward(self, batch: Tensor, boxes: Tensor, batch_size: int) -> Tensor:
+    def forward(self, batch: torch.Tensor, boxes: torch.Tensor, batch_size: int) -> torch.Tensor:
         """Extract deep features using CLIP encoder.
 
         Args:
-            batch (Tensor): Batch of RGB input images of shape (N, 3, H, W)
-            boxes (Tensor): Bounding box coordinates of shaspe (M, 5). First column indicates batch index of the bbox.
+            batch (torch.Tensor): Batch of RGB input images of shape (N, 3, H, W)
+            boxes (torch.Tensor): Bounding box coordinates of shaspe (M, 5). First column indicates batch index of the bbox.
             batch_size (int): Number of images in the batch.
 
         Returns:
@@ -142,12 +142,12 @@ class VelocityExtractor(nn.Module):
 
         self.n_bins = n_bins
 
-    def forward(self, flows: Tensor, boxes: Tensor) -> Tensor:
+    def forward(self, flows: torch.Tensor, boxes: torch.Tensor) -> torch.Tensor:
         """Extract velocioty features by filling a histogram.
 
         Args:
-            flows (Tensor): Batch of optical flow images of shape (N, 2, H, W)
-            boxes (Tensor): Bounding box coordinates of shaspe (M, 5). First column indicates batch index of the bbox.
+            flows (torch.Tensor): Batch of optical flow images of shape (N, 2, H, W)
+            boxes (torch.Tensor): Bounding box coordinates of shaspe (M, 5). First column indicates batch index of the bbox.
 
         Returns:
             Tensor: Velocity feature tensor of shape (M, n_bins)
@@ -212,12 +212,12 @@ class PoseExtractor(nn.Module):
             poses.append(normalized_keypoints.reshape(normalized_keypoints.shape[0], -1))
         return poses
 
-    def forward(self, batch: Tensor, boxes: Tensor) -> list[Tensor]:
+    def forward(self, batch: torch.Tensor, boxes: torch.Tensor) -> list[Tensor]:
         """Extract pose features using a human keypoint estimation model.
 
         Args:
-            batch (Tensor): Batch of RGB input images of shape (N, 3, H, W)
-            boxes (Tensor): Bounding box coordinates of shaspe (M, 5). First column indicates batch index of the bbox.
+            batch (torch.Tensor): Batch of RGB input images of shape (N, 3, H, W)
+            boxes (torch.Tensor): Bounding box coordinates of shaspe (M, 5). First column indicates batch index of the bbox.
 
         Returns:
             list[Tensor]: list of pose feature tensors for each image.

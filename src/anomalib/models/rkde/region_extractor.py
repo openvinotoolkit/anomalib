@@ -10,7 +10,7 @@ Region Extractor.
 from enum import Enum
 
 import torch
-from torch import Tensor, nn
+, nn
 from torchvision.models.detection import fasterrcnn_resnet50_fpn
 from torchvision.ops import boxes as box_ops
 
@@ -66,11 +66,11 @@ class RegionExtractor(nn.Module):
         )
 
     @torch.no_grad()
-    def forward(self, batch: Tensor) -> Tensor:
+    def forward(self, batch: torch.Tensor) -> torch.Tensor:
         """Forward pass of the model.
 
         Args:
-            batch (Tensor): Batch of input images of shape [B, C, H, W].
+            batch (torch.Tensor): Batch of input images of shape [B, C, H, W].
 
         Raises:
             ValueError: When ``stage`` is not one of ``rcnn`` or ``rpn``.
@@ -107,15 +107,15 @@ class RegionExtractor(nn.Module):
         indices = torch.repeat_interleave(torch.arange(len(regions)), Tensor([rois.shape[0] for rois in regions]).int())
         return torch.cat([indices.unsqueeze(1).to(batch.device), torch.cat(regions)], dim=1)
 
-    def post_process_box_predictions(self, pred_boxes: Tensor, pred_scores: Tensor) -> list[Tensor]:
+    def post_process_box_predictions(self, pred_boxes: torch.Tensor, pred_scores: torch.Tensor) -> list[Tensor]:
         """Post-processes the box predictions.
 
         The post-processing consists of removing small boxes, applying nms, and
         keeping only the k boxes with the highest confidence score.
 
         Args:
-            pred_boxes (Tensor): Box predictions of shape (N, 4).
-            pred_scores (Tensor): Tensor of shape () with a confidence score for each box prediction.
+            pred_boxes (torch.Tensor): Box predictions of shape (N, 4).
+            pred_scores (torch.Tensor): torch.Tensor of shape () with a confidence score for each box prediction.
 
         Returns:
             list[Tensor]: Post-processed box predictions of shape (N, 4).

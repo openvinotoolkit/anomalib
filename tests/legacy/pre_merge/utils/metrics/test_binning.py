@@ -1,4 +1,4 @@
-from torch import Tensor, all as torch_all
+, all as torch_all
 
 from anomalib.utils.metrics.binning import thresholds_between_min_and_max, thresholds_between_0_and_1
 

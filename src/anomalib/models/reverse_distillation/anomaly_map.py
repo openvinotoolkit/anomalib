@@ -15,7 +15,7 @@ from enum import Enum
 import torch
 from kornia.filters import gaussian_blur2d
 from omegaconf import ListConfig
-from torch import Tensor, nn
+, nn
 from torch.nn import functional as F  # noqa: N812
 
 
@@ -56,7 +56,7 @@ class AnomalyMapGenerator(nn.Module):
             raise ValueError(msg)
         self.mode = mode
 
-    def forward(self, student_features: list[Tensor], teacher_features: list[Tensor]) -> Tensor:
+    def forward(self, student_features: list[Tensor], teacher_features: list[Tensor]) -> torch.Tensor:
         """Compute anomaly map given encoder and decoder features.
 
         Args:

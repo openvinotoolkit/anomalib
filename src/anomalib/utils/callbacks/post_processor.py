@@ -10,7 +10,7 @@ import torch
 from lightning import Callback
 from lightning.pytorch import Trainer
 from lightning.pytorch.utilities.types import STEP_OUTPUT
-from torch import Tensor
+
 
 from anomalib.data.utils import boxes_to_anomaly_maps, boxes_to_masks, masks_to_boxes
 from anomalib.models import AnomalyModule
@@ -116,8 +116,8 @@ class _PostProcessorCallback(Callback):
                 # create anomaly maps from bbox predictions for thresholding and evaluation
                 image_size: tuple[int, int] = outputs["image"].shape[-2:]
                 true_boxes: list[Tensor] = outputs["boxes"]
-                pred_boxes: Tensor = outputs["pred_boxes"]
-                box_scores: Tensor = outputs["box_scores"]
+                pred_boxes: torch.Tensor = outputs["pred_boxes"]
+                box_scores: torch.Tensor = outputs["box_scores"]
 
                 outputs["anomaly_maps"] = boxes_to_anomaly_maps(pred_boxes, box_scores, image_size)
                 outputs["mask"] = boxes_to_masks(true_boxes, image_size)

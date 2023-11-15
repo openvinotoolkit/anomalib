@@ -5,7 +5,7 @@
 
 
 import torch
-from torch import Tensor
+
 from torchmetrics import Metric
 
 
@@ -22,7 +22,7 @@ class MinMax(Metric):
         self.min = torch.tensor(float("inf"))
         self.max = torch.tensor(float("-inf"))
 
-    def update(self, predictions: Tensor, *args, **kwargs) -> None:
+    def update(self, predictions: torch.Tensor, *args, **kwargs) -> None:
         """Update the min and max values."""
         del args, kwargs  # These variables are not used.
 

@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any
 
 import cv2
-from torch import Tensor
+
 from torchvision.datasets.video_utils import VideoClips
 
 

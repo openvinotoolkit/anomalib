@@ -6,7 +6,6 @@
 import logging
 
 import torch
-from torch import Tensor
 from torchmetrics import Metric, PrecisionRecallCurve
 
 logger = logging.getLogger(__name__)
@@ -32,15 +31,15 @@ class OptimalF1(Metric):
 
         self.precision_recall_curve = PrecisionRecallCurve(num_classes=num_classes)
 
-        self.threshold: Tensor
+        self.threshold: torch.Tensor
 
-    def update(self, preds: Tensor, target: Tensor, *args, **kwargs) -> None:
+    def update(self, preds: torch.Tensor, target: torch.Tensor, *args, **kwargs) -> None:
         """Update the precision-recall curve metric."""
         del args, kwargs  # These variables are not used.
 
         self.precision_recall_curve.update(preds, target)
 
-    def compute(self) -> Tensor:
+    def compute(self) -> torch.Tensor:
         """Compute the value of the optimal F1 score.
 
         Compute the F1 scores while varying the threshold. Store the optimal
@@ -49,9 +48,9 @@ class OptimalF1(Metric):
         Returns:
             Value of the F1 score at the optimal threshold.
         """
-        precision: Tensor
-        recall: Tensor
-        thresholds: Tensor
+        precision: torch.Tensor
+        recall: torch.Tensor
+        thresholds: torch.Tensor
 
         precision, recall, thresholds = self.precision_recall_curve.compute()
         f1_score = (2 * precision * recall) / (precision + recall + 1e-10)

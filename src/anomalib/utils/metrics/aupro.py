@@ -9,7 +9,7 @@ from typing import Any
 
 import torch
 from matplotlib.figure import Figure
-from torch import Tensor
+
 from torchmetrics import Metric
 from torchmetrics.functional import auc
 from torchmetrics.functional.classification import binary_roc
@@ -58,17 +58,17 @@ class AUPRO(Metric):
         self.register_buffer("fpr_limit", torch.tensor(fpr_limit))
         self.num_thresholds = num_thresholds
 
-    def update(self, preds: Tensor, target: Tensor) -> None:
+    def update(self, preds: torch.Tensor, target: torch.Tensor) -> None:
         """Update state with new values.
 
         Args:
-            preds (Tensor): predictions of the model
-            target (Tensor): ground truth targets
+            preds (torch.Tensor): predictions of the model
+            target (torch.Tensor): ground truth targets
         """
         self.target.append(target)
         self.preds.append(preds)
 
-    def perform_cca(self) -> Tensor:
+    def perform_cca(self) -> torch.Tensor:
         """Perform the Connected Component Analysis on the self.target tensor.
 
         Raises:
@@ -93,7 +93,7 @@ class AUPRO(Metric):
         target = target.type(torch.float)  # kornia expects FloatTensor
         return connected_components_gpu(target) if target.is_cuda else connected_components_cpu(target)
 
-    def compute_pro(self, cca: Tensor, target: Tensor, preds: Tensor) -> tuple[Tensor, Tensor]:
+    def compute_pro(self, cca: torch.Tensor, target: torch.Tensor, preds: torch.Tensor) -> tuple[Tensor, Tensor]:
         """Compute the pro/fpr value-pairs until the fpr specified by self.fpr_limit.
 
         It leverages the fact that the overlap corresponds to the tpr, and thus computes the overall
@@ -118,7 +118,7 @@ class AUPRO(Metric):
             thresholds = None
 
         # compute the global fpr-size
-        fpr: Tensor = binary_roc(
+        fpr: torch.Tensor = binary_roc(
             preds=preds,
             target=target,
             thresholds=thresholds,
@@ -138,8 +138,8 @@ class AUPRO(Metric):
         # We therefore need to resample per-region curves to a fixed sampling ratio (defined above).
         labels = cca.unique()[1:]  # 0 is background
         background = cca == 0
-        _fpr: Tensor
-        _tpr: Tensor
+        _fpr: torch.Tensor
+        _tpr: torch.Tensor
         for label in labels:
             interp: bool = False
             new_idx[-1] = output_size - 1
@@ -202,7 +202,7 @@ class AUPRO(Metric):
 
         return self.compute_pro(cca=cca, target=target, preds=preds)
 
-    def compute(self) -> Tensor:
+    def compute(self) -> torch.Tensor:
         """Fist compute PRO curve, then compute and scale area under the curve.
 
         Returns:
@@ -234,13 +234,13 @@ class AUPRO(Metric):
         return fig, "PRO"
 
     @staticmethod
-    def interp1d(old_x: Tensor, old_y: Tensor, new_x: Tensor) -> Tensor:
+    def interp1d(old_x: torch.Tensor, old_y: torch.Tensor, new_x: torch.Tensor) -> torch.Tensor:
         """Interpolate a 1D signal linearly to new sampling points.
 
         Args:
-            old_x (Tensor): original 1-D x values (same size as y)
-            old_y (Tensor): original 1-D y values (same size as x)
-            new_x (Tensor): x-values where y should be interpolated at
+            old_x (torch.Tensor): original 1-D x values (same size as y)
+            old_y (torch.Tensor): original 1-D y values (same size as x)
+            new_x (torch.Tensor): x-values where y should be interpolated at
 
         Returns:
             Tensor: y-values at corresponding new_x values.

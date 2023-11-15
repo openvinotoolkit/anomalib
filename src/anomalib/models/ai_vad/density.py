@@ -9,7 +9,7 @@ from typing import Any
 
 import torch
 from sklearn.mixture import GaussianMixture
-from torch import Tensor, nn
+, nn
 
 from anomalib.models.ai_vad.features import FeatureType
 from anomalib.utils.metrics.min_max import MinMax
@@ -19,12 +19,12 @@ class BaseDensityEstimator(nn.Module, ABC):
     """Base density estimator."""
 
     @abstractmethod
-    def update(self, features: dict[FeatureType, Tensor] | Tensor, group: str | None = None) -> None:
+    def update(self, features: dict[FeatureType, Tensor] | torch.Tensor, group: str | None = None) -> None:
         """Update the density model with a new set of features."""
         raise NotImplementedError
 
     @abstractmethod
-    def predict(self, features: dict[FeatureType, Tensor] | Tensor) -> Tensor | tuple[Tensor, Tensor]:
+    def predict(self, features: dict[FeatureType, Tensor] | torch.Tensor) -> Tensor | tuple[Tensor, Tensor]:
         """Predict the density of a set of features."""
         raise NotImplementedError
 
@@ -33,7 +33,7 @@ class BaseDensityEstimator(nn.Module, ABC):
         """Compose model using collected features."""
         raise NotImplementedError
 
-    def forward(self, features: dict[FeatureType, Tensor] | Tensor) -> Tensor | tuple[Tensor, Tensor] | None:
+    def forward(self, features: dict[FeatureType, Tensor] | torch.Tensor) -> Tensor | tuple[Tensor, Tensor] | None:
         """Update or predict depending on training status."""
         if self.training:
             self.update(features)
@@ -143,14 +143,14 @@ class GroupedKNNEstimator(BaseDensityEstimator):
         super().__init__()
 
         self.n_neighbors = n_neighbors
-        self.memory_bank: dict[Any, list[Tensor] | Tensor] = {}
+        self.memory_bank: dict[Any, list[Tensor] | torch.Tensor] = {}
         self.normalization_statistics = MinMax()
 
-    def update(self, features: Tensor, group: str | None = None) -> None:
+    def update(self, features: torch.Tensor, group: str | None = None) -> None:
         """Update the internal feature bank while keeping track of the group.
 
         Args:
-            features (Tensor): Feature vectors extracted from a video frame.
+            features (torch.Tensor): Feature vectors extracted from a video frame.
             group (str): Identifier of the group (video) from which the frame was sampled.
         """
         group = group or "default"
@@ -167,15 +167,15 @@ class GroupedKNNEstimator(BaseDensityEstimator):
 
     def predict(
         self,
-        features: Tensor,
+        features: torch.Tensor,
         group: str | None = None,
         n_neighbors: int = 1,
         normalize: bool = True,
-    ) -> Tensor:
+    ) -> torch.Tensor:
         """Predict the (normalized) density for a set of features.
 
         Args:
-            features (Tensor): Input features that will be compared to the density model.
+            features (torch.Tensor): Input features that will be compared to the density model.
             group (str, optional): Group (video id) from which the features originate. If passed, all features of the
                 same group in the memory bank will be excluded from the density estimation.
             n_neighbors (int): Number of neighbors used in the KNN search.
@@ -202,11 +202,11 @@ class GroupedKNNEstimator(BaseDensityEstimator):
         return distances.mean(axis=1)
 
     @staticmethod
-    def _nearest_neighbors(feature_bank: Tensor, features: Tensor, n_neighbors: int = 1) -> Tensor:
+    def _nearest_neighbors(feature_bank: torch.Tensor, features: torch.Tensor, n_neighbors: int = 1) -> torch.Tensor:
         """Perform the KNN search.
 
         Args:
-            feature_bank (Tensor): Feature bank used for KNN search.
+            feature_bank (torch.Tensor): Feature bank used for KNN search.
             features (Ternsor): Input features.
             n_neighbors (int): Number of neighbors used in KNN search.
 
@@ -229,11 +229,11 @@ class GroupedKNNEstimator(BaseDensityEstimator):
 
         self.normalization_statistics.compute()
 
-    def _normalize(self, distances: Tensor) -> Tensor:
+    def _normalize(self, distances: torch.Tensor) -> torch.Tensor:
         """Normalize distance predictions.
 
         Args:
-            distances (Tensor): Distance tensor produced by KNN search.
+            distances (torch.Tensor): Distance tensor produced by KNN search.
 
         Returns:
             Tensor: Normalized distances.
@@ -256,11 +256,11 @@ class GMMEstimator(BaseDensityEstimator):
         # TODO(djdameln): Replace with custom pytorch implementation of GMM
         # CVS-109432
         self.gmm = GaussianMixture(n_components=n_components, random_state=0)
-        self.memory_bank: list[Tensor] | Tensor = []
+        self.memory_bank: list[Tensor] | torch.Tensor = []
 
         self.normalization_statistics = MinMax()
 
-    def update(self, features: Tensor, group: str | None = None) -> None:
+    def update(self, features: torch.Tensor, group: str | None = None) -> None:
         """Update the feature bank."""
         del group
         if isinstance(self.memory_bank, list):
@@ -272,11 +272,11 @@ class GMMEstimator(BaseDensityEstimator):
         self.gmm.fit(self.memory_bank.cpu())
         self._compute_normalization_statistics()
 
-    def predict(self, features: Tensor, normalize: bool = True) -> Tensor:
+    def predict(self, features: torch.Tensor, normalize: bool = True) -> torch.Tensor:
         """Predict the density of a set of feature vectors.
 
         Args:
-            features (Tensor): Input feature vectors.
+            features (torch.Tensor): Input feature vectors.
             normalize (bool): Flag indicating if the density should be normalized to min-max stats of the feature bank.
 
         Returns:
@@ -294,11 +294,11 @@ class GMMEstimator(BaseDensityEstimator):
         self.normalization_statistics.update(training_scores)
         self.normalization_statistics.compute()
 
-    def _normalize(self, density: Tensor) -> Tensor:
+    def _normalize(self, density: torch.Tensor) -> torch.Tensor:
         """Normalize distance predictions.
 
         Args:
-            density (Tensor): Distance tensor produced by KNN search.
+            density (torch.Tensor): Distance tensor produced by KNN search.
 
         Returns:
             Tensor: Normalized distances.

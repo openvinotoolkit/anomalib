@@ -5,7 +5,7 @@
 
 
 import torch
-from torch import Tensor
+
 from torchmetrics import Metric
 from torchmetrics.functional import recall
 from torchmetrics.utilities.data import dim_zero_cat
@@ -26,12 +26,12 @@ class PRO(Metric):
         self.add_state("preds", default=[], dist_reduce_fx="cat")
         self.add_state("target", default=[], dist_reduce_fx="cat")
 
-    def update(self, predictions: Tensor, targets: Tensor) -> None:
+    def update(self, predictions: torch.Tensor, targets: torch.Tensor) -> None:
         """Compute the PRO score for the current batch."""
         self.target.append(targets)
         self.preds.append(predictions)
 
-    def compute(self) -> Tensor:
+    def compute(self) -> torch.Tensor:
         """Compute the macro average of the PRO score across all regions in all batches."""
         target = dim_zero_cat(self.target)
         preds = dim_zero_cat(self.preds)
@@ -41,12 +41,12 @@ class PRO(Metric):
         return pro_score(preds, comps, threshold=self.threshold)
 
 
-def pro_score(predictions: Tensor, comps: Tensor, threshold: float = 0.5) -> Tensor:
+def pro_score(predictions: torch.Tensor, comps: torch.Tensor, threshold: float = 0.5) -> torch.Tensor:
     """Calculate the PRO score for a batch of predictions.
 
     Args:
-        predictions (Tensor): Predicted anomaly masks (Bx1xHxW)
-        comps: (Tensor): Labeled connected components (BxHxW). The components should be labeled from 0 to N
+        predictions (torch.Tensor): Predicted anomaly masks (Bx1xHxW)
+        comps: (torch.Tensor): Labeled connected components (BxHxW). The components should be labeled from 0 to N
         threshold (float): When predictions are passed as float, the threshold is used to binarize the predictions.
 
     Returns:

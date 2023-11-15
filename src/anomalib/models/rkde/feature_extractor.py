@@ -7,7 +7,7 @@ Feature Extractor.
 # SPDX-License-Identifier: Apache-2.0
 
 import torch
-from torch import Tensor, nn
+from torch import nn
 from torchvision.ops import RoIAlign
 from torchvision.transforms import Normalize, Resize
 
@@ -55,15 +55,15 @@ class FeatureExtractor(nn.Module):
         self.load_state_dict(torch.hub.load_state_dict_from_url(WEIGHTS_URL, progress=False))
 
     @torch.no_grad()
-    def forward(self, batch: Tensor, rois: Tensor) -> Tensor:
+    def forward(self, batch: torch.Tensor, rois: torch.Tensor) -> torch.Tensor:
         """Perform a forward pass of the feature extractor.
 
         Args:
-            batch (Tensor): Batch of input images of shape [B, C, H, W].
-            rois (Tensor): Tensor of shape [N, 5] describing the regions-of-interest in the batch.
+            batch (torch.Tensor): Batch of input images of shape [B, C, H, W].
+            rois (torch.Tensor): torch.Tensor of shape [N, 5] describing the regions-of-interest in the batch.
 
         Returns:
-            Tensor: Tensor containing a 4096-dimensional feature vector for every RoI location.
+            Tensor: torch.Tensor containing a 4096-dimensional feature vector for every RoI location.
         """
         # Apply the feature extractor transforms
         transformed_batch = self.transform(batch)

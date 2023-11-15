@@ -7,7 +7,7 @@
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
-from torch import Tensor, nn
+, nn
 
 from anomalib.models.components import FeatureExtractor
 from anomalib.models.stfpm.anomaly_map import AnomalyMapGenerator
@@ -49,14 +49,14 @@ class STFPMModel(nn.Module):
 
         self.anomaly_map_generator = AnomalyMapGenerator(image_size=input_size)
 
-    def forward(self, images: Tensor) -> Tensor | dict[str, Tensor] | tuple[dict[str, Tensor]]:
+    def forward(self, images: torch.Tensor) -> Tensor | dict[str, Tensor] | tuple[dict[str, Tensor]]:
         """Forward-pass images into the network.
 
         During the training mode the model extracts the features from the teacher and student networks.
         During the evaluation mode, it returns the predicted anomaly map.
 
         Args:
-          images (Tensor): Batch of images.
+          images (torch.Tensor): Batch of images.
 
         Returns:
           Teacher and student features when in training mode, otherwise the predicted anomaly maps.

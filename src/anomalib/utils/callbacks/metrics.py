@@ -11,7 +11,7 @@ from typing import Any
 import torch
 from lightning.pytorch import Callback, Trainer
 from lightning.pytorch.utilities.types import STEP_OUTPUT
-from torch import Tensor
+
 
 from anomalib.data import TaskType
 from anomalib.models import AnomalyModule

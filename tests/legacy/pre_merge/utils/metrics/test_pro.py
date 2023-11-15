@@ -1,5 +1,5 @@
 import torch
-from torch import Tensor
+
 from torchvision.transforms import RandomAffine
 
 from anomalib.data.utils import random_2d_perlin

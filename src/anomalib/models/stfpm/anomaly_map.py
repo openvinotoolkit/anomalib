@@ -6,7 +6,7 @@
 
 import torch
 from omegaconf import ListConfig
-from torch import Tensor, nn
+, nn
 from torch.nn import functional as F  # noqa: N812
 
 
@@ -18,12 +18,12 @@ class AnomalyMapGenerator(nn.Module):
         self.distance = torch.nn.PairwiseDistance(p=2, keepdim=True)
         self.image_size = image_size if isinstance(image_size, tuple) else tuple(image_size)
 
-    def compute_layer_map(self, teacher_features: Tensor, student_features: Tensor) -> Tensor:
+    def compute_layer_map(self, teacher_features: torch.Tensor, student_features: torch.Tensor) -> torch.Tensor:
         """Compute the layer map based on cosine similarity.
 
         Args:
-          teacher_features (Tensor): Teacher features
-          student_features (Tensor): Student features
+          teacher_features (torch.Tensor): Teacher features
+          student_features (torch.Tensor): Student features
 
         Returns:
           Anomaly score based on cosine similarity.

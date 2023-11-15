@@ -9,7 +9,7 @@ from enum import Enum
 
 import numpy as np
 import torch
-from torch import Tensor, nn
+, nn
 from torch.nn import functional as F  # noqa: N812
 from torchvision import transforms
 
@@ -325,11 +325,11 @@ class EfficientAdModel(nn.Module):
         """
         return any(value.sum() != 0 for _, value in p_dic.items())
 
-    def choose_random_aug_image(self, image: Tensor) -> Tensor:
+    def choose_random_aug_image(self, image: torch.Tensor) -> torch.Tensor:
         """Choose a random augmentation function and apply it to the input image.
 
         Args:
-            image (Tensor): Input image.
+            image (torch.Tensor): Input image.
 
         Returns:
             Tensor: Augmented image.
@@ -344,12 +344,12 @@ class EfficientAdModel(nn.Module):
         transform_function = np.random.default_rng().choice(transform_functions)
         return transform_function(image, coefficient)
 
-    def forward(self, batch: Tensor, batch_imagenet: Tensor | None = None) -> Tensor | dict:
+    def forward(self, batch: torch.Tensor, batch_imagenet: torch.Tensor | None = None) -> Tensor | dict:
         """Perform the forward-pass of the EfficientAd models.
 
         Args:
-            batch (Tensor): Input images.
-            batch_imagenet (Tensor): ImageNet batch. Defaults to None.
+            batch (torch.Tensor): Input images.
+            batch_imagenet (torch.Tensor): ImageNet batch. Defaults to None.
 
         Returns:
             Tensor: Predictions

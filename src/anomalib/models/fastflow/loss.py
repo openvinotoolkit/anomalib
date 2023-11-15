@@ -5,13 +5,13 @@
 
 
 import torch
-from torch import Tensor, nn
+, nn
 
 
 class FastflowLoss(nn.Module):
     """FastFlow Loss."""
 
-    def forward(self, hidden_variables: list[Tensor], jacobians: list[Tensor]) -> Tensor:
+    def forward(self, hidden_variables: list[Tensor], jacobians: list[Tensor]) -> torch.Tensor:
         """Calculate the Fastflow loss.
 
         Args:
