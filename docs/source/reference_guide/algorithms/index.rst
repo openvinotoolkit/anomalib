@@ -18,6 +18,7 @@ Algorithms
    patchcore
    reverse_distillation
    stfpm
+   uflow
 
 
 Feature extraction & (pre-trained) backbones
