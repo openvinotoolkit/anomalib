@@ -13,7 +13,7 @@ import albumentations as A  # noqa: N812
 import numpy as np
 import pytest
 import skimage
-
+import torch
 
 from anomalib.data.utils import get_transforms
 
