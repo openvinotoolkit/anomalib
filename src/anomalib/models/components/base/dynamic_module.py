@@ -5,13 +5,14 @@
 
 from abc import ABC
 
-from torch import Tensor, nn
+import torch
+from torch import nn
 
 
 class DynamicBufferModule(ABC, nn.Module):
     """Torch module that allows loading variables from the state dict even in the case of shape mismatch."""
 
-    def get_tensor_attribute(self, attribute_name: str) -> Tensor:
+    def get_tensor_attribute(self, attribute_name: str) -> torch.Tensor:
         """Get attribute of the tensor given the name.
 
         Args:
@@ -21,10 +22,10 @@ class DynamicBufferModule(ABC, nn.Module):
             ValueError: `attribute_name` is not a torch Tensor
 
         Returns:
-            Tensor: Tensor attribute
+            Tensor: torch.Tensor attribute
         """
         attribute = getattr(self, attribute_name)
-        if isinstance(attribute, Tensor):
+        if isinstance(attribute, torch.Tensor):
             return attribute
 
         msg = f"Attribute with name '{attribute_name}' is not a torch Tensor"

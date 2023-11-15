@@ -9,7 +9,6 @@ from typing import Any
 
 import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
-from torch import Tensor
 
 from anomalib.models.components import AnomalyModule
 
@@ -56,7 +55,7 @@ class Dfm(AnomalyModule):
             n_comps=pca_level,
             score_type=score_type,
         )
-        self.embeddings: list[Tensor] = []
+        self.embeddings: list[torch.Tensor] = []
         self.score_type = score_type
 
     @staticmethod
@@ -64,13 +63,13 @@ class Dfm(AnomalyModule):
         """DFM doesn't require optimization, therefore returns no optimizers."""
         return
 
-    def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> None:
+    def training_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> None:
         """Perform the training step of DFM.
 
         For each batch, features are extracted from the CNN.
 
         Args:
-            batch (dict[str, str | Tensor]): Input batch
+            batch (dict[str, str | torch.Tensor]): Input batch
             args: Arguments.
             kwargs: Keyword arguments.
 
@@ -98,13 +97,13 @@ class Dfm(AnomalyModule):
         logger.info("Fitting a PCA and a Gaussian model to dataset.")
         self.model.fit(embeddings)
 
-    def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
+    def validation_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> STEP_OUTPUT:
         """Perform the validation step of DFM.
 
         Similar to the training step, features are extracted from the CNN for each batch.
 
         Args:
-          batch (dict[str, str | Tensor]): Input batch
+          batch (dict[str, str | torch.Tensor]): Input batch
           args: Arguments.
           kwargs: Keyword arguments.
 

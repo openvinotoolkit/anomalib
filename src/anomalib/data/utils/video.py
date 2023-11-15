@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any
 
 import cv2
-from torch import Tensor
+import torch
 from torchvision.datasets.video_utils import VideoClips
 
 
@@ -44,7 +44,7 @@ class ClipsIndexer(VideoClips, ABC):
         return self.clips[video_idx][-1][-1].item()
 
     @abstractmethod
-    def get_mask(self, idx: int) -> Tensor | None:
+    def get_mask(self, idx: int) -> torch.Tensor | None:
         """Return the masks for the given index."""
         raise NotImplementedError
 

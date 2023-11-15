@@ -13,7 +13,7 @@ import cv2
 import numpy as np
 import torch
 from omegaconf import DictConfig
-from torch import Tensor, nn
+from torch import nn
 
 from anomalib.data import TaskType
 from anomalib.data.utils.boxes import masks_to_boxes
@@ -130,7 +130,7 @@ class TorchInferencer(Inferencer):
         model.eval()
         return model.to(self.device)
 
-    def pre_process(self, image: np.ndarray) -> Tensor:
+    def pre_process(self, image: np.ndarray) -> torch.Tensor:
         """Pre process the input image by applying transformations.
 
         Args:
@@ -146,11 +146,11 @@ class TorchInferencer(Inferencer):
 
         return processed_image.to(self.device)
 
-    def forward(self, image: Tensor) -> Tensor:
+    def forward(self, image: torch.Tensor) -> torch.Tensor:
         """Forward-Pass input tensor to the model.
 
         Args:
-            image (Tensor): Input tensor.
+            image (torch.Tensor): Input tensor.
 
         Returns:
             Tensor: Output predictions.
@@ -159,13 +159,13 @@ class TorchInferencer(Inferencer):
 
     def post_process(
         self,
-        predictions: Tensor | list[Tensor] | dict[str, Tensor],
+        predictions: torch.Tensor | list[torch.Tensor] | dict[str, torch.Tensor],
         metadata: dict | DictConfig | None = None,
     ) -> dict[str, Any]:
         """Post process the output predictions.
 
         Args:
-            predictions (Tensor | list[Tensor] | dict[str, Tensor]): Raw output predicted by the model.
+            predictions (Tensor | list[torch.Tensor] | dict[str, torch.Tensor]): Raw output predicted by the model.
             metadata (dict, optional): Meta data. Post-processing step sometimes requires
                 additional meta data such as image shape. This variable comprises such info.
                 Defaults to None.
@@ -181,7 +181,7 @@ class TorchInferencer(Inferencer):
         # CVS-122674
 
         # Case I: Predictions could be a tensor.
-        if isinstance(predictions, Tensor):
+        if isinstance(predictions, torch.Tensor):
             anomaly_map = predictions.detach().cpu().numpy()
             pred_score = anomaly_map.reshape(-1).max()
 
@@ -200,7 +200,7 @@ class TorchInferencer(Inferencer):
 
         # Case III: Predictions could be a list of tensors.
         elif isinstance(predictions, Sequence):
-            if isinstance(predictions[1], (Tensor)):
+            if isinstance(predictions[1], (torch.Tensor)):
                 anomaly_map, pred_score = predictions
                 anomaly_map = anomaly_map.detach().cpu().numpy()
                 pred_score = pred_score.detach().cpu().numpy()
@@ -208,7 +208,10 @@ class TorchInferencer(Inferencer):
                 anomaly_map, pred_score = predictions
                 pred_score = pred_score.detach()
         else:
-            msg = f"Unknown prediction type {type(predictions)}. Expected Tensor, List[Tensor] or dict[str, Tensor]."
+            msg = (
+                f"Unknown prediction type {type(predictions)}. "
+                "Expected torch.Tensor, list[torch.Tensor] or dict[str, torch.Tensor]."
+            )
             raise TypeError(msg)
 
         # Common practice in anomaly detection is to assign anomalous
@@ -226,7 +229,7 @@ class TorchInferencer(Inferencer):
         anomaly_map = anomaly_map.squeeze()
         anomaly_map, pred_score = self._normalize(anomaly_maps=anomaly_map, pred_scores=pred_score, metadata=metadata)
 
-        if isinstance(anomaly_map, Tensor):
+        if isinstance(anomaly_map, torch.Tensor):
             anomaly_map = anomaly_map.detach().cpu().numpy()
 
         if "image_shape" in metadata and anomaly_map.shape != metadata["image_shape"]:

@@ -13,7 +13,7 @@ Code adapted from https://github.com/samet-akcay/ganomaly.
 import math
 
 import torch
-from torch import Tensor, nn
+from torch import nn
 
 from anomalib.data.utils.image import pad_nextpow2
 
@@ -85,7 +85,7 @@ class Encoder(nn.Module):
                 bias=False,
             )
 
-    def forward(self, input_tensor: Tensor) -> Tensor:
+    def forward(self, input_tensor: torch.Tensor) -> torch.Tensor:
         """Return latent vectors."""
         output = self.input_layers(input_tensor)
         output = self.extra_layers(output)
@@ -192,7 +192,7 @@ class Decoder(nn.Module):
         )
         self.final_layers.add_module(f"final-{num_input_channels}-tanh", nn.Tanh())
 
-    def forward(self, input_tensor: Tensor) -> Tensor:
+    def forward(self, input_tensor: torch.Tensor) -> torch.Tensor:
         """Return generated image."""
         output = self.latent_input(input_tensor)
         output = self.inverse_pyramid(output)
@@ -232,7 +232,7 @@ class Discriminator(nn.Module):
         self.classifier = nn.Sequential(layers[-1])
         self.classifier.add_module("Sigmoid", nn.Sigmoid())
 
-    def forward(self, input_tensor: Tensor) -> tuple[Tensor, Tensor]:
+    def forward(self, input_tensor: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         """Return class of object and features."""
         features = self.features(input_tensor)
         classifier = self.classifier(features)
@@ -282,7 +282,7 @@ class Generator(nn.Module):
             add_final_conv_layer,
         )
 
-    def forward(self, input_tensor: Tensor) -> tuple[Tensor, Tensor, Tensor]:
+    def forward(self, input_tensor: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """Return generated image and the latent vectors."""
         latent_i = self.encoder1(input_tensor)
         gen_image = self.decoder(latent_i)
@@ -343,11 +343,14 @@ class GanomalyModel(nn.Module):
             nn.init.normal_(module.weight.data, 1.0, 0.02)
             nn.init.constant_(module.bias.data, 0)
 
-    def forward(self, batch: Tensor) -> tuple[Tensor, Tensor, Tensor, Tensor] | Tensor:
+    def forward(
+        self,
+        batch: torch.Tensor,
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor] | torch.Tensor:
         """Get scores for batch.
 
         Args:
-            batch (Tensor): Images
+            batch (torch.Tensor): Images
 
         Returns:
             Tensor: Regeneration scores.

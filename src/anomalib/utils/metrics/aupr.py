@@ -4,8 +4,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
+import torch
 from matplotlib.figure import Figure
-from torch import Tensor
 from torchmetrics import PrecisionRecallCurve
 from torchmetrics.functional import auc
 from torchmetrics.utilities.data import dim_zero_cat
@@ -16,37 +16,37 @@ from .plotting_utils import plot_figure
 class AUPR(PrecisionRecallCurve):
     """Area under the PR curve."""
 
-    def compute(self) -> Tensor:
+    def compute(self) -> torch.Tensor:
         """First compute PR curve, then compute area under the curve.
 
         Returns:
             Value of the AUPR metric
         """
-        prec: Tensor
-        rec: Tensor
+        prec: torch.Tensor
+        rec: torch.Tensor
 
         prec, rec = self._compute()
         return auc(rec, prec, reorder=True)
 
-    def update(self, preds: Tensor, target: Tensor) -> None:
+    def update(self, preds: torch.Tensor, target: torch.Tensor) -> None:
         """Update state with new values.
 
         Need to flatten new values as PrecicionRecallCurve expects them in this format for binary classification.
 
         Args:
-            preds (Tensor): predictions of the model
-            target (Tensor): ground truth targets
+            preds (torch.Tensor): predictions of the model
+            target (torch.Tensor): ground truth targets
         """
         super().update(preds.flatten(), target.flatten())
 
-    def _compute(self) -> tuple[Tensor, Tensor]:
+    def _compute(self) -> tuple[torch.Tensor, torch.Tensor]:
         """Compute prec/rec value pairs.
 
         Returns:
             Tuple containing Tensors for rec and prec
         """
-        prec: Tensor
-        rec: Tensor
+        prec: torch.Tensor
+        rec: torch.Tensor
         prec, rec, _ = super().compute()
         return (prec, rec)
 

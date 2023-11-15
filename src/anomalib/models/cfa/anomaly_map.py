@@ -7,7 +7,7 @@
 import torch
 from einops import rearrange
 from omegaconf import ListConfig
-from torch import Tensor, nn
+from torch import nn
 from torch.nn import functional as F  # noqa: N812
 
 from anomalib.models.components import GaussianBlur2d
@@ -27,11 +27,11 @@ class AnomalyMapGenerator(nn.Module):
         self.num_nearest_neighbors = num_nearest_neighbors
         self.sigma = sigma
 
-    def compute_score(self, distance: Tensor, scale: tuple[int, int]) -> Tensor:
+    def compute_score(self, distance: torch.Tensor, scale: tuple[int, int]) -> torch.Tensor:
         """Compute score based on the distance.
 
         Args:
-            distance (Tensor): Distance tensor computed using target oriented
+            distance (torch.Tensor): Distance tensor computed using target oriented
                 features.
             scale (tuple[int, int]): Height and width of the largest feature
                 map.
@@ -47,11 +47,11 @@ class AnomalyMapGenerator(nn.Module):
         score = rearrange(distance, "b (h w) c -> b c h w", h=scale[0], w=scale[1])
         return score.detach()
 
-    def compute_anomaly_map(self, score: Tensor) -> Tensor:
+    def compute_anomaly_map(self, score: torch.Tensor) -> torch.Tensor:
         """Compute anomaly map based on the score.
 
         Args:
-            score (Tensor): Score tensor.
+            score (torch.Tensor): Score tensor.
 
         Returns:
             Tensor: Anomaly map.
@@ -62,7 +62,7 @@ class AnomalyMapGenerator(nn.Module):
         gaussian_blur = GaussianBlur2d(sigma=self.sigma).to(score.device)
         return gaussian_blur(anomaly_map)  # pylint: disable=not-callable
 
-    def forward(self, **kwargs) -> Tensor:
+    def forward(self, **kwargs) -> torch.Tensor:
         """Return anomaly map.
 
         Raises:
@@ -75,7 +75,7 @@ class AnomalyMapGenerator(nn.Module):
             msg = f"Expected keys `distance` and `scale. Found {kwargs.keys()}"
             raise ValueError(msg)
 
-        distance: Tensor = kwargs["distance"]
+        distance: torch.Tensor = kwargs["distance"]
         scale: tuple[int, int] = kwargs["scale"]
 
         score = self.compute_score(distance=distance, scale=scale)

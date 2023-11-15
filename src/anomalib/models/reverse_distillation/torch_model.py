@@ -7,7 +7,8 @@
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
-from torch import Tensor, nn
+import torch
+from torch import nn
 
 from anomalib.models.components import FeatureExtractor
 from anomalib.models.reverse_distillation.anomaly_map import AnomalyMapGenerator
@@ -51,18 +52,18 @@ class ReverseDistillationModel(nn.Module):
 
         self.anomaly_map_generator = AnomalyMapGenerator(image_size=input_size, mode=anomaly_map_mode)
 
-    def forward(self, images: Tensor) -> Tensor | list[Tensor] | tuple[list[Tensor]]:
+    def forward(self, images: torch.Tensor) -> torch.Tensor | list[torch.Tensor] | tuple[list[torch.Tensor]]:
         """Forward-pass images to the network.
 
         During the training mode the model extracts features from encoder and decoder networks.
         During evaluation mode, it returns the predicted anomaly map.
 
         Args:
-            images (Tensor): Batch of images
+            images (torch.Tensor): Batch of images
 
         Returns:
-            Tensor | list[Tensor] | tuple[list[Tensor]]: Encoder and decoder features in training mode,
-                else anomaly maps.
+            torch.Tensor | list[torch.Tensor] | tuple[list[torch.Tensor]]: Encoder and decoder features
+                in training mode, else anomaly maps.
         """
         self.encoder.eval()
 
