@@ -10,7 +10,6 @@ import numpy as np
 import torch
 
 
-
 class Denormalize:
     """Denormalize Torch Tensor into np image format."""
 

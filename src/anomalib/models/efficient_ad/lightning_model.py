@@ -197,7 +197,7 @@ class EfficientAd(AnomalyModule):
         qa_ae, qb_ae = self._get_quantiles_of_maps(maps_ae)
         return {"qa_st": qa_st, "qa_ae": qa_ae, "qb_st": qb_st, "qb_ae": qb_ae}
 
-    def _get_quantiles_of_maps(self, maps: list[Tensor]) -> tuple[Tensor, Tensor]:
+    def _get_quantiles_of_maps(self, maps: list[torch.Tensor]) -> tuple[Tensor, Tensor]:
         """Calculate 90% and 99.5% quantiles of the given anomaly maps.
 
         If the total number of elements in the given maps is larger than 16777216
@@ -205,7 +205,7 @@ class EfficientAd(AnomalyModule):
         elements.
 
         Args:
-            maps (list[Tensor]): List of anomaly maps.
+            maps (list[torch.Tensor]): List of anomaly maps.
 
         Returns:
             tuple[Tensor, Tensor]: Two scalars - the 90% and the 99.5% quantile.

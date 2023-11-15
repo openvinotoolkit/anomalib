@@ -242,7 +242,7 @@ class ParallelPermute(InvertibleModule):
         return perm, perm_inv
 
     # pylint: disable=unused-argument
-    def forward(self, input_tensor: list[Tensor], rev: bool = False, jac: bool = True) -> tuple[list[Tensor], float]:
+    def forward(self, input_tensor: list[torch.Tensor], rev: bool = False, jac: bool = True) -> tuple[list[torch.Tensor], float]:
         """Apply the permutation to the input.
 
         Args:
@@ -302,7 +302,7 @@ class ParallelGlowCouplingLayer(InvertibleModule):
             return self.clamp * 0.636 * torch.atan(input_tensor / self.clamp)
         return input_tensor
 
-    def forward(self, input_tensor: list[Tensor], rev: bool = False, jac: bool = True) -> tuple[list[Tensor], Tensor]:
+    def forward(self, input_tensor: list[torch.Tensor], rev: bool = False, jac: bool = True) -> tuple[list[torch.Tensor], Tensor]:
         """Apply GLOW coupling for the three scales."""
         del jac  # Unused argument.
 
@@ -493,14 +493,14 @@ class MultiScaleFeatureExtractor(nn.Module):
             return_nodes=["features.6.8"],
         )
 
-    def forward(self, input_tensor: torch.Tensor) -> list[Tensor]:
+    def forward(self, input_tensor: torch.Tensor) -> list[torch.Tensor]:
         """Extract features at three scales.
 
         Args:
             input_tensor (torch.Tensor): Input images.
 
         Returns:
-            list[Tensor]: List of tensors containing features at three scales.
+            list[torch.Tensor]: List of tensors containing features at three scales.
         """
         output = []
         for scale in range(self.n_scales):

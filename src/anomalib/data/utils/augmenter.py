@@ -18,7 +18,6 @@ import cv2
 import imgaug.augmenters as iaa
 import numpy as np
 import torch
-
 from torchvision.datasets.folder import IMG_EXTENSIONS
 
 from anomalib.data.utils.generators.perlin import random_2d_perlin

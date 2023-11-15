@@ -10,7 +10,6 @@ from typing import Any
 import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 
-
 from anomalib.models.components import AnomalyModule
 
 from .torch_model import DFMModel
@@ -56,7 +55,7 @@ class Dfm(AnomalyModule):
             n_comps=pca_level,
             score_type=score_type,
         )
-        self.embeddings: list[Tensor] = []
+        self.embeddings: list[torch.Tensor] = []
         self.score_type = score_type
 
     @staticmethod

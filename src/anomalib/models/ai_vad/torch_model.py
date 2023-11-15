@@ -92,16 +92,16 @@ class AiVadModel(nn.Module):
             n_neighbors_deep=n_neighbors_deep,
         )
 
-    def forward(self, batch: torch.Tensor) -> tuple[list[Tensor], list[Tensor], list[Tensor]]:
+    def forward(self, batch: torch.Tensor) -> tuple[list[torch.Tensor], list[torch.Tensor], list[torch.Tensor]]:
         """Forward pass through AI-VAD model.
 
         Args:
             batch (torch.Tensor): Input image of shape (N, L, C, H, W)
 
         Returns:
-            list[Tensor]: List of bbox locations for each image.
-            list[Tensor]: List of per-bbox anomaly scores for each image.
-            list[Tensor]: List of per-image anomaly scores.
+            list[torch.Tensor]: List of bbox locations for each image.
+            list[torch.Tensor]: List of per-bbox anomaly scores for each image.
+            list[torch.Tensor]: List of per-image anomaly scores.
         """
         self.flow_extractor.eval()
         self.region_extractor.eval()

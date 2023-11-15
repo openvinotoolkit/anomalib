@@ -11,7 +11,6 @@ from typing import Any
 import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 
-
 from anomalib.models.components import AnomalyModule
 from anomalib.models.components.classification import FeatureScalingMethod
 
@@ -56,7 +55,7 @@ class Dfkde(AnomalyModule):
             max_training_points=max_training_points,
         )
 
-        self.embeddings: list[Tensor] = []
+        self.embeddings: list[torch.Tensor] = []
 
     @staticmethod
     def configure_optimizers() -> None:  # pylint: disable=arguments-differ

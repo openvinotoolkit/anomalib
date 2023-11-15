@@ -99,7 +99,7 @@ class MultiVariateGaussian(nn.Module):
 
         return covariance.squeeze()
 
-    def forward(self, embedding: torch.Tensor) -> list[Tensor]:
+    def forward(self, embedding: torch.Tensor) -> list[torch.Tensor]:
         """Calculate multivariate Gaussian distribution.
 
         Args:
@@ -123,7 +123,7 @@ class MultiVariateGaussian(nn.Module):
 
         return [self.mean, self.inv_covariance]
 
-    def fit(self, embedding: torch.Tensor) -> list[Tensor]:
+    def fit(self, embedding: torch.Tensor) -> list[torch.Tensor]:
         """Fit multi-variate gaussian distribution to the input embedding.
 
         Args:

@@ -143,7 +143,7 @@ class GroupedKNNEstimator(BaseDensityEstimator):
         super().__init__()
 
         self.n_neighbors = n_neighbors
-        self.memory_bank: dict[Any, list[Tensor] | torch.Tensor] = {}
+        self.memory_bank: dict[Any, list[torch.Tensor] | torch.Tensor] = {}
         self.normalization_statistics = MinMax()
 
     def update(self, features: torch.Tensor, group: str | None = None) -> None:
@@ -256,7 +256,7 @@ class GMMEstimator(BaseDensityEstimator):
         # TODO(djdameln): Replace with custom pytorch implementation of GMM
         # CVS-109432
         self.gmm = GaussianMixture(n_components=n_components, random_state=0)
-        self.memory_bank: list[Tensor] | torch.Tensor = []
+        self.memory_bank: list[torch.Tensor] | torch.Tensor = []
 
         self.normalization_statistics = MinMax()
 

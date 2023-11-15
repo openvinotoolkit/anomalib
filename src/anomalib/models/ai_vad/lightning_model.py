@@ -13,7 +13,6 @@ from typing import Any
 import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 
-
 from anomalib.models.ai_vad.torch_model import AiVadModel
 from anomalib.models.components import AnomalyModule
 

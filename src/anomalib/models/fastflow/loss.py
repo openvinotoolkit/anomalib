@@ -11,12 +11,12 @@ import torch
 class FastflowLoss(nn.Module):
     """FastFlow Loss."""
 
-    def forward(self, hidden_variables: list[Tensor], jacobians: list[Tensor]) -> torch.Tensor:
+    def forward(self, hidden_variables: list[torch.Tensor], jacobians: list[torch.Tensor]) -> torch.Tensor:
         """Calculate the Fastflow loss.
 
         Args:
-            hidden_variables (list[Tensor]): Hidden variables from the fastflow model. f: X -> Z
-            jacobians (list[Tensor]): Log of the jacobian determinants from the fastflow model.
+            hidden_variables (list[torch.Tensor]): Hidden variables from the fastflow model. f: X -> Z
+            jacobians (list[torch.Tensor]): Log of the jacobian determinants from the fastflow model.
 
         Returns:
             Tensor: Fastflow loss computed based on the hidden variables and the log of the Jacobians.

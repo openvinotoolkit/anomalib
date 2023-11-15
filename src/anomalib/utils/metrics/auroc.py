@@ -5,7 +5,6 @@
 
 
 from matplotlib.figure import Figure
-
 from torchmetrics import ROC
 from torchmetrics.functional import auc
 

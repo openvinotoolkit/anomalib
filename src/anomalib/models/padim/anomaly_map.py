@@ -27,14 +27,14 @@ class AnomalyMapGenerator(nn.Module):
         self.blur = GaussianBlur2d(kernel_size=(kernel_size, kernel_size), sigma=(sigma, sigma), channels=1)
 
     @staticmethod
-    def compute_distance(embedding: torch.Tensor, stats: list[Tensor]) -> torch.Tensor:
+    def compute_distance(embedding: torch.Tensor, stats: list[torch.Tensor]) -> torch.Tensor:
         """Compute anomaly score to the patch in position(i,j) of a test image.
 
         Ref: Equation (2), Section III-C of the paper.
 
         Args:
             embedding (torch.Tensor): Embedding Vector
-            stats (list[Tensor]): Mean and Covariance Matrix of the multivariate Gaussian distribution
+            stats (list[torch.Tensor]): Mean and Covariance Matrix of the multivariate Gaussian distribution
 
         Returns:
             Anomaly score of a test image via mahalanobis distance.

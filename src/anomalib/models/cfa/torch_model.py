@@ -234,7 +234,7 @@ class Descriptor(nn.Module):
 
         self.layer = CoordConv2d(in_channels=dim, out_channels=out_channels, kernel_size=1)
 
-    def forward(self, features: list[Tensor] | dict[str, Tensor]) -> torch.Tensor:
+    def forward(self, features: list[torch.Tensor] | dict[str, Tensor]) -> torch.Tensor:
         """Forward pass."""
         if isinstance(features, dict):
             features = list(features.values())

@@ -8,7 +8,6 @@ import math
 
 import torch
 
-
 from anomalib.models.components.base import DynamicBufferModule
 
 

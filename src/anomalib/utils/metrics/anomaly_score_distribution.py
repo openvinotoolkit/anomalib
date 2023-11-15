@@ -5,7 +5,6 @@
 
 
 import torch
-
 from torchmetrics import Metric
 
 
@@ -14,8 +13,8 @@ class AnomalyScoreDistribution(Metric):
 
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
-        self.anomaly_maps: list[Tensor] = []
-        self.anomaly_scores: list[Tensor] = []
+        self.anomaly_maps: list[torch.Tensor] = []
+        self.anomaly_scores: list[torch.Tensor] = []
 
         self.add_state("image_mean", torch.empty(0), persistent=True)
         self.add_state("image_std", torch.empty(0), persistent=True)

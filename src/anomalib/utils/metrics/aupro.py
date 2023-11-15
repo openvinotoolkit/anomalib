@@ -9,7 +9,6 @@ from typing import Any
 
 import torch
 from matplotlib.figure import Figure
-
 from torchmetrics import Metric
 from torchmetrics.functional import auc
 from torchmetrics.functional.classification import binary_roc
@@ -27,8 +26,8 @@ class AUPRO(Metric):
     is_differentiable: bool = False
     higher_is_better: bool | None = None
     full_state_update: bool = False
-    preds: list[Tensor]
-    target: list[Tensor]
+    preds: list[torch.Tensor]
+    target: list[torch.Tensor]
     # When not None, the computation is performed in constant-memory by computing the roc curve
     # for fixed thresholds buckets/thresholds.
     # Warning: The thresholds are evenly distributed between the min and max predictions

@@ -7,7 +7,6 @@ Returns points that minimizes the maximum distance of any point to a center.
 
 import torch
 from rich.progress import track
-
 from torch.nn import functional as F  # noqa: N812
 
 from anomalib.models.components.dimensionality_reduction import SparseRandomProjection

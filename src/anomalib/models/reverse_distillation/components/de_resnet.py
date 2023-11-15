@@ -269,7 +269,7 @@ class ResNet(nn.Module):
 
         return nn.Sequential(*layers)
 
-    def forward(self, batch: torch.Tensor) -> list[Tensor]:
+    def forward(self, batch: torch.Tensor) -> list[torch.Tensor]:
         """Forward pass for Decoder ResNet. Returns list of features."""
         feature_a = self.layer1(batch)  # 512*8*8->256*16*16
         feature_b = self.layer2(feature_a)  # 256*16*16->128*32*32

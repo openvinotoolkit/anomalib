@@ -107,7 +107,7 @@ class RegionExtractor(nn.Module):
         indices = torch.repeat_interleave(torch.arange(len(regions)), Tensor([rois.shape[0] for rois in regions]).int())
         return torch.cat([indices.unsqueeze(1).to(batch.device), torch.cat(regions)], dim=1)
 
-    def post_process_box_predictions(self, pred_boxes: torch.Tensor, pred_scores: torch.Tensor) -> list[Tensor]:
+    def post_process_box_predictions(self, pred_boxes: torch.Tensor, pred_scores: torch.Tensor) -> list[torch.Tensor]:
         """Post-processes the box predictions.
 
         The post-processing consists of removing small boxes, applying nms, and
@@ -118,9 +118,9 @@ class RegionExtractor(nn.Module):
             pred_scores (torch.Tensor): torch.Tensor of shape () with a confidence score for each box prediction.
 
         Returns:
-            list[Tensor]: Post-processed box predictions of shape (N, 4).
+            list[torch.Tensor]: Post-processed box predictions of shape (N, 4).
         """
-        processed_boxes_list: list[Tensor] = []
+        processed_boxes_list: list[torch.Tensor] = []
         for boxes, scores in zip(pred_boxes, pred_scores, strict=True):
             # remove small boxes
             keep = box_ops.remove_small_boxes(boxes, min_size=self.min_size)

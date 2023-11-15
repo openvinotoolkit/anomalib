@@ -5,7 +5,6 @@
 
 
 import torch
-
 from torchmetrics import Metric
 from torchmetrics.functional import recall
 from torchmetrics.utilities.data import dim_zero_cat
@@ -16,8 +15,8 @@ from anomalib.utils.cv import connected_components_cpu, connected_components_gpu
 class PRO(Metric):
     """Per-Region Overlap (PRO) Score."""
 
-    target: list[Tensor]
-    preds: list[Tensor]
+    target: list[torch.Tensor]
+    preds: list[torch.Tensor]
 
     def __init__(self, threshold: float = 0.5, **kwargs) -> None:
         super().__init__(**kwargs)
@@ -50,7 +49,7 @@ def pro_score(predictions: torch.Tensor, comps: torch.Tensor, threshold: float =
         threshold (float): When predictions are passed as float, the threshold is used to binarize the predictions.
 
     Returns:
-        Tensor: Scalar value representing the average PRO score for the input batch.
+        torch.Tensor: Scalar value representing the average PRO score for the input batch.
     """
     if predictions.dtype == torch.float:
         predictions = predictions > threshold

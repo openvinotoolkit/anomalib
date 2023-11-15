@@ -26,7 +26,7 @@ class AnomalyMapGenerator(nn.Module):
         self.image_size = image_size if isinstance(image_size, tuple) else tuple(image_size)
         self.pool_layers: Sequence[str] = pool_layers
 
-    def compute_anomaly_map(self, distribution: list[Tensor], height: list[int], width: list[int]) -> torch.Tensor:
+    def compute_anomaly_map(self, distribution: list[torch.Tensor], height: list[int], width: list[int]) -> torch.Tensor:
         """Compute the layer map based on likelihood estimation.
 
         Args:
@@ -38,7 +38,7 @@ class AnomalyMapGenerator(nn.Module):
           Final Anomaly Map
 
         """
-        layer_maps: list[Tensor] = []
+        layer_maps: list[torch.Tensor] = []
         for layer_idx in range(len(self.pool_layers)):
             layer_distribution = distribution[layer_idx].clone().detach()
             # Normalize the likelihoods to (-Inf:0] and convert to probs in range [0:1]
@@ -61,7 +61,7 @@ class AnomalyMapGenerator(nn.Module):
         # Invert probs to anomaly scores
         return score_map.max() - score_map
 
-    def forward(self, **kwargs: list[Tensor] | list[int] | list[list]) -> torch.Tensor:
+    def forward(self, **kwargs: list[torch.Tensor] | list[int] | list[list]) -> torch.Tensor:
         """Return anomaly_map.
 
         Expects `distribution`, `height` and 'width' keywords to be passed explicitly
@@ -82,7 +82,7 @@ class AnomalyMapGenerator(nn.Module):
             raise KeyError(msg)
 
         # placate mypy
-        distribution: list[Tensor] = cast(list[Tensor], kwargs["distribution"])
+        distribution: list[torch.Tensor] = cast(list[torch.Tensor], kwargs["distribution"])
         height: list[int] = cast(list[int], kwargs["height"])
         width: list[int] = cast(list[int], kwargs["width"])
         return self.compute_anomaly_map(distribution, height, width)

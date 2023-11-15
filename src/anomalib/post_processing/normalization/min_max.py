@@ -8,7 +8,6 @@ import numpy as np
 import torch
 
 
-
 def normalize(
     targets: np.ndarray | np.float32 | torch.Tensor,
     threshold: float | np.ndarray | torch.Tensor,

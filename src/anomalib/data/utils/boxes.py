@@ -6,11 +6,10 @@
 
 import torch
 
-
 from anomalib.utils.cv import connected_components_cpu, connected_components_gpu
 
 
-def masks_to_boxes(masks: torch.Tensor, anomaly_maps: torch.Tensor | None = None) -> tuple[list[Tensor], list[Tensor]]:
+def masks_to_boxes(masks: torch.Tensor, anomaly_maps: torch.Tensor | None = None) -> tuple[list[torch.Tensor], list[torch.Tensor]]:
     """Convert a batch of segmentation masks to bounding box coordinates.
 
     Args:
@@ -19,9 +18,9 @@ def masks_to_boxes(masks: torch.Tensor, anomaly_maps: torch.Tensor | None = None
             used to determine an anomaly score for the converted bounding boxes.
 
     Returns:
-        list[Tensor]: A list of length B where each element is a tensor of shape (N, 4) containing the bounding box
+        list[torch.Tensor]: A list of length B where each element is a tensor of shape (N, 4) containing the bounding box
             coordinates of the objects in the masks in xyxy format.
-        list[Tensor]: A list of length B where each element is a tensor of length (N) containing an anomaly score for
+        list[torch.Tensor]: A list of length B where each element is a tensor of length (N) containing an anomaly score for
             each of the converted boxes.
     """
     height, width = masks.shape[-2:]
@@ -53,11 +52,11 @@ def masks_to_boxes(masks: torch.Tensor, anomaly_maps: torch.Tensor | None = None
     return batch_boxes, batch_scores
 
 
-def boxes_to_masks(boxes: list[Tensor], image_size: tuple[int, int]) -> torch.Tensor:
+def boxes_to_masks(boxes: list[torch.Tensor], image_size: tuple[int, int]) -> torch.Tensor:
     """Convert bounding boxes to segmentations masks.
 
     Args:
-        boxes (list[Tensor]): A list of length B where each element is a tensor of shape (N, 4) containing the bounding
+        boxes (list[torch.Tensor]): A list of length B where each element is a tensor of shape (N, 4) containing the bounding
             box coordinates of the regions of interest in xyxy format.
         image_size (tuple[int, int]): Image size of the output masks in (H, W) format.
 
@@ -77,9 +76,9 @@ def boxes_to_anomaly_maps(boxes: torch.Tensor, scores: torch.Tensor, image_size:
     """Convert bounding box coordinates to anomaly heatmaps.
 
     Args:
-        boxes (list[Tensor]): A list of length B where each element is a tensor of shape (N, 4) containing the bounding
+        boxes (list[torch.Tensor]): A list of length B where each element is a tensor of shape (N, 4) containing the bounding
             box coordinates of the regions of interest in xyxy format.
-        scores (list[Tensor]): A list of length B where each element is a 1D tensor of length N containing the anomaly
+        scores (list[torch.Tensor]): A list of length B where each element is a 1D tensor of length N containing the anomaly
             scores for each region of interest.
         image_size (tuple[int, int]): Image size of the output masks in (H, W) format.
 

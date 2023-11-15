@@ -159,13 +159,13 @@ class TorchInferencer(Inferencer):
 
     def post_process(
         self,
-        predictions: torch.Tensor | list[Tensor] | dict[str, Tensor],
+        predictions: torch.Tensor | list[torch.Tensor] | dict[str, Tensor],
         metadata: dict | DictConfig | None = None,
     ) -> dict[str, Any]:
         """Post process the output predictions.
 
         Args:
-            predictions (Tensor | list[Tensor] | dict[str, Tensor]): Raw output predicted by the model.
+            predictions (Tensor | list[torch.Tensor] | dict[str, Tensor]): Raw output predicted by the model.
             metadata (dict, optional): Meta data. Post-processing step sometimes requires
                 additional meta data such as image shape. This variable comprises such info.
                 Defaults to None.

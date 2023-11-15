@@ -12,7 +12,6 @@ import logging
 import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 
-
 from anomalib.models.components import AnomalyModule
 from anomalib.models.padim.torch_model import PadimModel
 
@@ -52,8 +51,8 @@ class Padim(AnomalyModule):
             n_features=n_features,
         ).eval()
 
-        self.stats: list[Tensor] = []
-        self.embeddings: list[Tensor] = []
+        self.stats: list[torch.Tensor] = []
+        self.embeddings: list[torch.Tensor] = []
 
     @staticmethod
     def configure_optimizers() -> None:

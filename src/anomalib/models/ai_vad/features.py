@@ -193,7 +193,7 @@ class PoseExtractor(nn.Module):
         self.roi_heads = model.roi_heads
 
     @staticmethod
-    def _post_process(keypoint_detections: list[dict]) -> list[Tensor]:
+    def _post_process(keypoint_detections: list[dict]) -> list[torch.Tensor]:
         """Convert keypoint predictions to 1D feature vectors.
 
         Post-processing consists of flattening and normalizing to bbox coordinates.
@@ -202,7 +202,7 @@ class PoseExtractor(nn.Module):
             keypoint_detections (list[dict]): Outputs of the keypoint extractor
 
         Returns:
-            list[Tensor]: List of pose feature tensors for each image
+            list[torch.Tensor]: List of pose feature tensors for each image
         """
         poses = []
         for detection in keypoint_detections:
@@ -212,7 +212,7 @@ class PoseExtractor(nn.Module):
             poses.append(normalized_keypoints.reshape(normalized_keypoints.shape[0], -1))
         return poses
 
-    def forward(self, batch: torch.Tensor, boxes: torch.Tensor) -> list[Tensor]:
+    def forward(self, batch: torch.Tensor, boxes: torch.Tensor) -> list[torch.Tensor]:
         """Extract pose features using a human keypoint estimation model.
 
         Args:
@@ -220,7 +220,7 @@ class PoseExtractor(nn.Module):
             boxes (torch.Tensor): Bounding box coordinates of shaspe (M, 5). First column indicates batch index of the bbox.
 
         Returns:
-            list[Tensor]: list of pose feature tensors for each image.
+            list[torch.Tensor]: list of pose feature tensors for each image.
         """
         images, _ = self.transform(batch)
         features = self.backbone(images.tensors)

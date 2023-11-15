@@ -56,12 +56,12 @@ class AnomalyMapGenerator(nn.Module):
             raise ValueError(msg)
         self.mode = mode
 
-    def forward(self, student_features: list[Tensor], teacher_features: list[Tensor]) -> torch.Tensor:
+    def forward(self, student_features: list[torch.Tensor], teacher_features: list[torch.Tensor]) -> torch.Tensor:
         """Compute anomaly map given encoder and decoder features.
 
         Args:
-            student_features (list[Tensor]): List of encoder features
-            teacher_features (list[Tensor]): List of decoder features
+            student_features (list[torch.Tensor]): List of encoder features
+            teacher_features (list[torch.Tensor]): List of decoder features
 
         Returns:
             Tensor: Anomaly maps of length batch.

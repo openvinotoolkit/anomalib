@@ -5,7 +5,6 @@
 
 
 import torch
-
 from torchmetrics import Metric
 
 

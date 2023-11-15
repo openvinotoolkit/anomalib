@@ -10,7 +10,6 @@ from lightning.pytorch import Callback, Trainer
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 from omegaconf import DictConfig, ListConfig
 
-
 from anomalib.models import AnomalyModule
 from anomalib.utils.metrics.threshold import BaseThreshold
 

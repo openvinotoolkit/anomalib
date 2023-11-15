@@ -59,7 +59,7 @@ class STFPMLoss(nn.Module):
         Returns:
           Total loss, which is the weighted average of the layer losses.
         """
-        layer_losses: list[Tensor] = []
+        layer_losses: list[torch.Tensor] = []
         for layer in teacher_features:
             loss = self.compute_layer_loss(teacher_features[layer], student_features[layer])
             layer_losses.append(loss)

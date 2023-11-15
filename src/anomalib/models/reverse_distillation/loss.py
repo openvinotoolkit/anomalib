@@ -11,7 +11,7 @@ import torch
 class ReverseDistillationLoss(nn.Module):
     """Loss function for Reverse Distillation."""
 
-    def forward(self, encoder_features: list[Tensor], decoder_features: list[Tensor]) -> torch.Tensor:
+    def forward(self, encoder_features: list[torch.Tensor], decoder_features: list[torch.Tensor]) -> torch.Tensor:
         """Compute cosine similarity loss based on features from encoder and decoder.
 
         Based on the official code:
@@ -19,8 +19,8 @@ class ReverseDistillationLoss(nn.Module):
         Calculates loss from flattened arrays of features, see https://github.com/hq-deng/RD4AD/issues/22
 
         Args:
-            encoder_features (list[Tensor]): List of features extracted from encoder
-            decoder_features (list[Tensor]): List of features extracted from decoder
+            encoder_features (list[torch.Tensor]): List of features extracted from encoder
+            decoder_features (list[torch.Tensor]): List of features extracted from decoder
 
         Returns:
             Tensor: Cosine similarity loss
