@@ -439,6 +439,7 @@ class PerImageBinClfCurve(Metric):
         )
         thresholds = thresholds.to(image_classes.device)
         masks = masks.to(image_classes.device)
+        binclf_curves = binclf_curves.to(image_classes.device)
 
         return thresholds, binclf_curves, image_classes
 
