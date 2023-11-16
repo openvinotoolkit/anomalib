@@ -4,26 +4,28 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
+from pathlib import Path
+
 from lightning.pytorch import seed_everything
 from lightning.pytorch.utilities.types import _EVALUATE_OUTPUT
 
 from anomalib.data import MVTec
 from anomalib.engine import Engine
 from anomalib.models import Padim
-from tests.legacy.helpers.dataset import get_dataset_path
 
 
-def run_train_test(normalization_method: str) -> _EVALUATE_OUTPUT:
+def run_train_test(normalization_method: str, dataset_path: Path) -> _EVALUATE_OUTPUT:
     """Run training and testing with a given normalization method.
 
     Args:
         normalization_method (str): Normalization method used to run the test.
+        dataset_path (Path): Path to the dummy dataset.
 
     Returns:
         _EVALUATE_OUTPUT: Results of the test.
     """
     model = Padim()
-    datamodule = MVTec(root=get_dataset_path(), category="bottle", seed=42)
+    datamodule = MVTec(root=dataset_path / "mvtec", category="dummy", seed=42)
 
     engine = Engine(
         normalization=normalization_method,
@@ -35,19 +37,19 @@ def run_train_test(normalization_method: str) -> _EVALUATE_OUTPUT:
     return engine.test(model=model, datamodule=datamodule)
 
 
-def test_normalizer() -> None:
+def test_normalizer(dataset_path: Path) -> None:
     """Test if all normalization methods give the same performance."""
     # run without normalization
     seed_everything(42)
-    results_without_normalization = run_train_test(normalization_method="none")
+    results_without_normalization = run_train_test(normalization_method="none", dataset_path=dataset_path)
 
     # run with cdf normalization
     seed_everything(42)
-    results_with_cdf_normalization = run_train_test(normalization_method="cdf")
+    results_with_cdf_normalization = run_train_test(normalization_method="cdf", dataset_path=dataset_path)
 
     # run without normalization
     seed_everything(42)
-    results_with_minmax_normalization = run_train_test(normalization_method="min_max")
+    results_with_minmax_normalization = run_train_test(normalization_method="min_max", dataset_path=dataset_path)
 
     # performance should be the same
     for metric in ["image_AUROC", "image_F1Score"]:

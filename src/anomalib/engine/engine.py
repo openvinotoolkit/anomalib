@@ -165,7 +165,8 @@ class Engine:
             self._setup_anomalib_callbacks()
 
     def _setup_dataset_task(
-        self, *dataloaders: EVAL_DATALOADERS | TRAIN_DATALOADERS | AnomalibDataModule | None,
+        self,
+        *dataloaders: EVAL_DATALOADERS | TRAIN_DATALOADERS | AnomalibDataModule | None,
     ) -> None:
         """Override the dataloader task with the task passed to the Engine.
 
@@ -488,7 +489,7 @@ class Engine:
             TODO(ashwinvaidya17)
         """
         if ckpt_path:
-            model = model.load_from_checkpoint(ckpt_path)
+            model = model.__class__.load_from_checkpoint(ckpt_path)
 
         if transform is None:
             if datamodule:
