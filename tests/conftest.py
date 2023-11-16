@@ -9,8 +9,11 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 import pytest
+from lightning.pytorch.callbacks import ModelCheckpoint
 
-from anomalib.data import ImageDataFormat, VideoDataFormat
+from anomalib.data import ImageDataFormat, MVTec, VideoDataFormat
+from anomalib.engine import Engine
+from anomalib.models import get_model
 from tests.helpers.data import DummyImageDatasetGenerator, DummyVideoDatasetGenerator
 
 
@@ -59,3 +62,33 @@ def dataset_path(project_path: Path) -> Path:
 def dataset_name(request: "pytest.FixtureRequest") -> list[str]:
     """Return the list of names of all the datasets."""
     return request.param
+
+
+@pytest.fixture(scope="session")
+def trained_padim_path(project_path: Path, dataset_path: Path) -> Path:
+    """Return the path to the trained model.
+
+    Since integration tests train all the models, model training occurs when running unit tests invididually.
+    """
+    ckpt_path = project_path / "padim" / "dummy" / "weights" / "last.ckpt"
+    if not ckpt_path.exists():
+        model = get_model("Padim")
+        engine = Engine(
+            logger=False,
+            default_root_dir=project_path,
+            max_epochs=1,
+            devices=1,
+            callbacks=[
+                ModelCheckpoint(
+                    dirpath=project_path / "padim" / "dummy" / "weights",
+                    monitor=None,
+                    filename="last",
+                    save_last=True,
+                    auto_insert_metric_name=False,
+                ),
+            ],
+        )
+        dataset = MVTec(root=dataset_path / "mvtec", category="dummy")
+        engine.fit(model=model, datamodule=dataset)
+
+    return ckpt_path
