@@ -4,13 +4,12 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-import inspect
 import logging
 import re
 from importlib import import_module
 
 from jsonargparse import Namespace
-from omegaconf import DictConfig, ListConfig, OmegaConf
+from omegaconf import DictConfig, OmegaConf
 
 from anomalib.models.ai_vad import AiVad
 from anomalib.models.cfa import Cfa
@@ -74,61 +73,78 @@ def _convert_pascal_to_snake_case(pascal_case: str) -> str:
     return re.sub(r"(?<!^)(?=[A-Z])", "_", pascal_case).lower()
 
 
-def get_available_models() -> list[str]:
-    """Get list of available models.
+def _convert_snake_to_pascal_case(snake_case: str) -> str:
+    """Convert snake_case to PascalCase.
+
+    Args:
+        snake_case (str): Input string in snake_case
 
     Returns:
-        list[str]: List of available models.
+        str: Output string in PascalCase
+
+    Examples:
+        >>> _convert_snake_to_pascal_case("efficient_ad")
+        EfficientAd
+
+        >>> _convert_snake_to_pascal_case("patchcore")
+        Patchcore
+    """
+    return "".join(word.capitalize() for word in snake_case.split("_"))
+
+
+def get_available_models() -> set[str]:
+    """Get set of available models.
+
+    Returns:
+        set[str]: List of available models.
 
     Example:
         >>> get_available_models()
         ['ai_vad', 'cfa', 'cflow', 'csflow', 'dfkde', 'dfm', 'draem', 'efficient_ad', 'fastflow', ...]
     """
-    return [_convert_pascal_to_snake_case(cls.__name__) for cls in AnomalyModule.__subclasses__()]
+    return {_convert_pascal_to_snake_case(cls.__name__) for cls in AnomalyModule.__subclasses__()}
 
 
-def _get_model_by_name(name: str) -> AnomalyModule:
-    """Gets the model by name.
+def _get_model_class_by_name(name: str) -> type[AnomalyModule]:
+    """Retrieves an anomaly model based on its name.
 
     Args:
-        name (str): Name of the model. The name is case insensitive.
+        name (str): The name of the model to retrieve. The name is case insensitive.
 
     Raises:
-        ModuleNotFoundError: If unsupported model is passed
+        UnknownModelError: If the model is not found.
 
     Returns:
-        AnomalyModule: Anomaly Model
+        type[AnomalyModule]: Anomaly Model
     """
     logger.info("Loading the model.")
-    model: AnomalyModule | None = None
+    model_class: type[AnomalyModule] | None = None
 
-    # search for model by name in available models.
-    for model_name in get_available_models():
-        if name.lower() in model_name:
-            module = import_module(f"anomalib.models.{model_name}")
-            for class_name in dir(module):
-                if class_name.lower() in class_name.lower():
-                    model_class = getattr(module, class_name, None)
-                    if inspect.isclass(model_class):
-                        model = model_class()
-                        break
-            break
-    if model is None:
+    name = _convert_snake_to_pascal_case(name).lower()
+    for model in AnomalyModule.__subclasses__():
+        if name == model.__name__.lower():
+            model_class = model
+    if model_class is None:
         logger.exception(f"Could not find the model {name}. Available models are {get_available_models()}")
         raise UnknownModelError
 
-    return model
+    return model_class
 
 
-def get_model(config: DictConfig | ListConfig | str | dict | Namespace) -> AnomalyModule:
+def get_model(model: DictConfig | str | dict | Namespace, *args, **kwdargs) -> AnomalyModule:
     """Get Anomaly Model.
 
     Args:
-        config (DictConfig | ListConfig | str): Can either be a configuration or a string.
+        model (DictConfig | str): Can either be a configuration or a string.
+        *args: Variable length argument list for model init.
+        **kwdargs: Arbitrary keyword arguments for model init.
 
     Examples:
         >>> get_model("Padim")
+        >>> get_model("efficient_ad")
+        >>> get_model("Patchcore", input_size=(100, 100))
         >>> get_model({"class_path": "Padim"})
+        >>> get_model({"class_path": "Patchcore"}, input_size=(100, 100))
         >>> get_model({"class_path": "Padim", "init_args": {"input_size": (100, 100)}})
         >>> get_model({"class_path": "anomalib.models.Padim", "init_args": {"input_size": (100, 100)}}})
 
@@ -138,19 +154,34 @@ def get_model(config: DictConfig | ListConfig | str | dict | Namespace) -> Anoma
     Returns:
         AnomalyModule: Anomaly Model
     """
-    model: AnomalyModule
-    if isinstance(config, str):
-        model = _get_model_by_name(config)
-    elif isinstance(config, DictConfig | ListConfig | Namespace | dict):
-        if isinstance(config, dict):
-            config = OmegaConf.create(config)
-        if len(config.class_path.split(".")) > 1:
-            module = import_module(".".join(config.class_path.split(".")[:-1]))
-        else:
-            module = import_module(f"anomalib.models.{config.class_path.lower()}")
-        model_class = getattr(module, config.class_path.split(".")[-1])
-        model = model_class(**config.get("init_args", {}))
+    _model: AnomalyModule
+    if isinstance(model, str):
+        _model_class = _get_model_class_by_name(model)
+        _model = _model_class(*args, **kwdargs)
+    elif isinstance(model, DictConfig | Namespace | dict):
+        if isinstance(model, dict):
+            model = OmegaConf.create(model)
+        try:
+            if len(model.class_path.split(".")) > 1:
+                module = import_module(".".join(model.class_path.split(".")[:-1]))
+            else:
+                module = import_module("anomalib.models")
+        except ModuleNotFoundError as exception:
+            logger.exception(
+                f"Could not find the module {model.class_path}. Available models are {get_available_models()}",
+            )
+            raise UnknownModelError from exception
+        try:
+            model_class = getattr(module, model.class_path.split(".")[-1])
+            init_args = model.get("init_args", {})
+            init_args.update(kwdargs)
+            _model = model_class(*args, **init_args)
+        except AttributeError as exception:
+            logger.exception(
+                f"Could not find the model {model.class_path}. Available models are {get_available_models()}",
+            )
+            raise UnknownModelError from exception
     else:
-        logger.error(f"Unsupported type {type(config)} for model configuration.")
+        logger.error(f"Unsupported type {type(model)} for model configuration.")
         raise TypeError
-    return model
+    return _model
