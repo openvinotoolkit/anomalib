@@ -174,7 +174,8 @@ def get_model(model: DictConfig | str | dict | Namespace, *args, **kwdargs) -> A
         try:
             model_class = getattr(module, model.class_path.split(".")[-1])
             init_args = model.get("init_args", {})
-            init_args.update(kwdargs)
+            if len(kwdargs) > 0:
+                init_args.update(kwdargs)
             _model = model_class(*args, **init_args)
         except AttributeError as exception:
             logger.exception(
