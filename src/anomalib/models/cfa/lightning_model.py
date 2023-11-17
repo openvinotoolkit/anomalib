@@ -39,7 +39,7 @@ class Cfa(AnomalyModule):
 
     def __init__(
         self,
-        input_size: tuple[int, int],
+        input_size: tuple[int, int] = (256, 256),
         backbone: str = "wide_resnet50_2",
         gamma_c: int = 1,
         gamma_d: int = 1,

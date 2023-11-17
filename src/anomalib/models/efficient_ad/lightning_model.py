@@ -83,7 +83,7 @@ class EfficientAd(AnomalyModule):
 
     def __init__(
         self,
-        input_size: tuple[int, int],
+        input_size: tuple[int, int] = (256, 256),
         teacher_out_channels: int = 384,
         model_size: EfficientAdModelSize = EfficientAdModelSize.S,
         lr: float = 0.0001,

@@ -33,7 +33,7 @@ class ReverseDistillation(AnomalyModule):
 
     def __init__(
         self,
-        input_size: tuple[int, int],
+        input_size: tuple[int, int] = (256, 256),
         backbone: str = "wide_resnet50_2",
         layers: Sequence[str] = ("layer1", "layer2", "layer3"),
         anomaly_map_mode: AnomalyMapGenerationMode = AnomalyMapGenerationMode.ADD,
