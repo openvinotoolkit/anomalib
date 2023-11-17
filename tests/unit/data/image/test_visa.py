@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from anomalib import TaskType, Visa
+from anomalib.utils.types import TaskType, Visa
 from tests.unit.data.base.image import _TestAnomalibImageDatamodule
 
 

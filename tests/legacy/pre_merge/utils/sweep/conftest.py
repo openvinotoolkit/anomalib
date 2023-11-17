@@ -7,7 +7,7 @@ from tempfile import TemporaryDirectory
 
 import pytest
 
-from anomalib import TaskType
+from anomalib.utils.types import TaskType
 from anomalib.data import MVTec
 from anomalib.deploy import ExportMode
 from anomalib.engine import Engine

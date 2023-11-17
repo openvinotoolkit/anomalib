@@ -28,7 +28,6 @@ from pathlib import Path
 import albumentations as A  # noqa: N812
 from pandas import DataFrame
 
-from anomalib import TaskType
 from anomalib.data.base import AnomalibDataModule, AnomalibDepthDataset
 from anomalib.data.utils import (
     DownloadInfo,
@@ -40,6 +39,7 @@ from anomalib.data.utils import (
     download_and_extract,
     get_transforms,
 )
+from anomalib.utils.types import TaskType
 
 logger = logging.getLogger(__name__)
 
