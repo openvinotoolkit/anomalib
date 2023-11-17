@@ -9,9 +9,9 @@ from pathlib import Path
 import pytest
 
 from anomalib.data import TaskType
-from anomalib.data.folder import FolderDataset
-from anomalib.data.synthetic import SyntheticAnomalyDataset
+from anomalib.data.image.folder import FolderDataset
 from anomalib.data.utils import get_transforms
+from anomalib.data.utils.synthetic import SyntheticAnomalyDataset
 
 
 @pytest.fixture(scope="module")
