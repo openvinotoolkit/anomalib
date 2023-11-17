@@ -66,7 +66,7 @@ def dataset_name(request: "pytest.FixtureRequest") -> list[str]:
 
 @pytest.fixture(scope="session")
 def ckpt_path(project_path: Path, dataset_path: Path) -> Callable[[str], Path]:
-    """."""
+    """Return the checkpoint path of the trained model."""
 
     def checkpoint(model_name: str) -> Path:
         """Return the path to the trained model.
