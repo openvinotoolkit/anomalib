@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 
 import albumentations as A  # noqa: N812
+from jsonargparse import Namespace
 from lightning.pytorch.callbacks import Callback
 from lightning.pytorch.trainer import Trainer
 from lightning.pytorch.trainer.connectors.callback_connector import _CallbackConnector
@@ -125,7 +126,7 @@ class Engine:
         task: TaskType = TaskType.SEGMENTATION,
         image_metrics: str | list[str] | None = None,
         pixel_metrics: str | list[str] | None = None,
-        visualization: DictConfig | dict[str, Any] | None = None,
+        visualization: DictConfig | dict[str, Any] | Namespace | None = None,
         **kwargs,
     ) -> None:
         if callbacks is None:
@@ -165,7 +166,8 @@ class Engine:
             self._setup_anomalib_callbacks()
 
     def _setup_dataset_task(
-        self, *dataloaders: EVAL_DATALOADERS | TRAIN_DATALOADERS | AnomalibDataModule | None,
+        self,
+        *dataloaders: EVAL_DATALOADERS | TRAIN_DATALOADERS | AnomalibDataModule | None,
     ) -> None:
         """Override the dataloader task with the task passed to the Engine.
 
