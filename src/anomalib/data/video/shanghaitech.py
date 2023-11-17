@@ -25,7 +25,7 @@ import pandas as pd
 import torch
 from pandas import DataFrame
 
-from anomalib.data import TaskType
+from anomalib import TaskType
 from anomalib.data.base import AnomalibVideoDataModule, AnomalibVideoDataset
 from anomalib.data.base.video import VideoTargetFrame
 from anomalib.data.utils import (

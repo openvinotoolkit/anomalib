@@ -12,7 +12,7 @@ from lightning.pytorch.callbacks import ModelCheckpoint
 from omegaconf import DictConfig, ListConfig
 
 from anomalib.config import _update_nncf_config
-from anomalib.data import TaskType, get_datamodule
+from anomalib import TaskType, get_datamodule
 from anomalib.engine import Engine
 from anomalib.models import get_model
 from anomalib.models.components import AnomalyModule

@@ -13,7 +13,7 @@ from pathlib import Path
 import pytest
 import torch
 
-from anomalib.data import TaskType
+from anomalib import TaskType
 from anomalib.models import AnomalyModule
 from anomalib.utils.cli import AnomalibCLI
 

@@ -30,7 +30,7 @@ from pathlib import Path
 import albumentations as A  # noqa: N812
 import cv2
 
-from anomalib.data import TaskType
+from anomalib import TaskType
 from anomalib.data.base import AnomalibDataModule, AnomalibDataset
 from anomalib.data.utils import (
     DownloadInfo,

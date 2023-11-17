@@ -17,7 +17,6 @@ from .base import AnomalibDataModule, AnomalibDataset
 from .depth import DepthDataFormat, Folder3D, MVTec3D
 from .image import BTech, Folder, ImageDataFormat, Kolektor, MVTec, Visa
 from .inference import InferenceDataset
-from .utils.task_type import TaskType
 from .video import Avenue, ShanghaiTech, UCSDped, VideoDataFormat
 
 logger = logging.getLogger(__name__)
@@ -65,7 +64,6 @@ __all__ = [
     "MVTec3D",
     "Avenue",
     "UCSDped",
-    "TaskType",
     "ShanghaiTech",
     "Visa",
 ]

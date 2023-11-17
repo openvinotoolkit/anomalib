@@ -11,7 +11,7 @@ import pytest
 from albumentations.pytorch import ToTensorV2
 from tests.legacy.helpers.dataset import TestDataset
 
-from anomalib.data import TaskType
+from anomalib import TaskType
 from anomalib.data.image.folder import FolderDataset
 from anomalib.deploy import ExportMode
 from anomalib.utils.sweep.helpers import get_openvino_throughput, get_torch_throughput

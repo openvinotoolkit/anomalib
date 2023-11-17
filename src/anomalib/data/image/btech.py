@@ -20,7 +20,7 @@ import pandas as pd
 from pandas.core.frame import DataFrame
 from tqdm import tqdm
 
-from anomalib.data import TaskType
+from anomalib import TaskType
 from anomalib.data.base import AnomalibDataModule, AnomalibDataset
 from anomalib.data.utils import (
     DownloadInfo,

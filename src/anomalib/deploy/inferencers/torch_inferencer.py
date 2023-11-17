@@ -15,7 +15,7 @@ import torch
 from omegaconf import DictConfig
 from torch import nn
 
-from anomalib.data import TaskType
+from anomalib import TaskType
 from anomalib.data.utils.boxes import masks_to_boxes
 
 from .base_inferencer import Inferencer

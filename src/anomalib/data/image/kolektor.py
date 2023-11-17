@@ -26,7 +26,7 @@ from cv2 import imread
 from pandas import DataFrame
 from sklearn.model_selection import train_test_split
 
-from anomalib.data import TaskType
+from anomalib import TaskType
 from anomalib.data.base import AnomalibDataModule, AnomalibDataset
 from anomalib.data.utils import (
     DownloadInfo,

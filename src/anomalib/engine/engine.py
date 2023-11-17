@@ -14,7 +14,8 @@ from lightning.pytorch.trainer.connectors.callback_connector import _CallbackCon
 from lightning.pytorch.utilities.types import _EVALUATE_OUTPUT, _PREDICT_OUTPUT, EVAL_DATALOADERS, TRAIN_DATALOADERS
 from omegaconf import DictConfig, ListConfig
 
-from anomalib.data import AnomalibDataModule, AnomalibDataset, TaskType
+from anomalib import TaskType
+from anomalib.data import AnomalibDataModule, AnomalibDataset
 from anomalib.deploy.export import ExportMode, export_to_onnx, export_to_openvino, export_to_torch
 from anomalib.models import AnomalyModule
 from anomalib.post_processing import NormalizationMethod

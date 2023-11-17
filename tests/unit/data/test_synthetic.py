@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from anomalib.data import TaskType
+from anomalib import TaskType
 from anomalib.data.image.folder import FolderDataset
 from anomalib.data.utils import get_transforms
 from anomalib.data.utils.synthetic import SyntheticAnomalyDataset
