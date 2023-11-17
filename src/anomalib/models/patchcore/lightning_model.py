@@ -12,7 +12,6 @@ from typing import Any
 
 import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
-from torch import Tensor
 
 from anomalib.models.components import AnomalyModule
 from anomalib.models.patchcore.torch_model import PatchcoreModel
@@ -52,7 +51,7 @@ class Patchcore(AnomalyModule):
             num_neighbors=num_neighbors,
         )
         self.coreset_sampling_ratio = coreset_sampling_ratio
-        self.embeddings: list[Tensor] = []
+        self.embeddings: list[torch.Tensor] = []
 
     def configure_optimizers(self) -> None:
         """Configure optimizers.
@@ -62,11 +61,11 @@ class Patchcore(AnomalyModule):
         """
         return
 
-    def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> None:
+    def training_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> None:
         """Generate feature embedding of the batch.
 
         Args:
-            batch (dict[str, str | Tensor]): Batch containing image filename, image, label and mask
+            batch (dict[str, str | torch.Tensor]): Batch containing image filename, image, label and mask
             args: Additional arguments.
             kwargs: Additional keyword arguments.
 
@@ -95,11 +94,11 @@ class Patchcore(AnomalyModule):
         logger.info("Applying core-set subsampling to get the embedding.")
         self.model.subsample_embedding(embeddings, self.coreset_sampling_ratio)
 
-    def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
+    def validation_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> STEP_OUTPUT:
         """Get batch of anomaly maps from input image batch.
 
         Args:
-            batch (dict[str, str | Tensor]): Batch containing image filename, image, label and mask
+            batch (dict[str, str | torch.Tensor]): Batch containing image filename, image, label and mask
             args: Additional arguments.
             kwargs: Additional keyword arguments.
 

@@ -7,7 +7,7 @@ Paper https://arxiv.org/abs/2111.09099
 # SPDX-License-Identifier: Apache-2.0
 
 import torch
-from torch import Tensor, nn
+from torch import nn
 from torch.nn import functional as F  # noqa: N812
 
 
@@ -26,7 +26,7 @@ class AttentionModule(nn.Module):
         self.fc1 = nn.Linear(in_channels, out_channels)
         self.fc2 = nn.Linear(out_channels, in_channels)
 
-    def forward(self, inputs: Tensor) -> Tensor:
+    def forward(self, inputs: torch.Tensor) -> torch.Tensor:
         """Forward pass through the attention module."""
         # reduce feature map to 1d vector through global average pooling
         avg_pooled = inputs.mean(dim=(2, 3))
@@ -64,7 +64,7 @@ class SSPCAB(nn.Module):
 
         self.attention_module = AttentionModule(in_channels=in_channels, reduction_ratio=reduction_ratio)
 
-    def forward(self, inputs: Tensor) -> Tensor:
+    def forward(self, inputs: torch.Tensor) -> torch.Tensor:
         """Forward pass through the SSPCAB block."""
         # compute masked convolution
         padded = F.pad(inputs, (self.pad,) * 4)

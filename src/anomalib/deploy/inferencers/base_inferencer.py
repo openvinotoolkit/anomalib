@@ -10,10 +10,10 @@ from typing import Any, cast
 
 import cv2
 import numpy as np
+import torch
 from omegaconf import DictConfig, OmegaConf
 from skimage.morphology import dilation
 from skimage.segmentation import find_boundaries
-from torch import Tensor
 
 from anomalib.data.utils import read_image
 from anomalib.post_processing import ImageResult, compute_mask
@@ -34,17 +34,17 @@ class Inferencer(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def pre_process(self, image: np.ndarray) -> np.ndarray | Tensor:
+    def pre_process(self, image: np.ndarray) -> np.ndarray | torch.Tensor:
         """Pre-process."""
         raise NotImplementedError
 
     @abstractmethod
-    def forward(self, image: np.ndarray | Tensor) -> np.ndarray | Tensor:
+    def forward(self, image: np.ndarray | torch.Tensor) -> np.ndarray | torch.Tensor:
         """Forward-Pass input to model."""
         raise NotImplementedError
 
     @abstractmethod
-    def post_process(self, predictions: np.ndarray | Tensor, metadata: dict[str, Any] | None) -> dict[str, Any]:
+    def post_process(self, predictions: np.ndarray | torch.Tensor, metadata: dict[str, Any] | None) -> dict[str, Any]:
         """Post-Process."""
         raise NotImplementedError
 
@@ -122,10 +122,10 @@ class Inferencer(ABC):
 
     @staticmethod
     def _normalize(
-        pred_scores: Tensor | np.float32,
+        pred_scores: torch.Tensor | np.float32,
         metadata: dict | DictConfig,
-        anomaly_maps: Tensor | np.ndarray | None = None,
-    ) -> tuple[np.ndarray | Tensor | None, float]:
+        anomaly_maps: torch.Tensor | np.ndarray | None = None,
+    ) -> tuple[np.ndarray | torch.Tensor | None, float]:
         """Apply normalization and resizes the image.
 
         Args:
@@ -135,7 +135,7 @@ class Inferencer(ABC):
             anomaly_maps (Tensor | np.ndarray | None): Predicted raw anomaly map.
 
         Returns:
-            tuple[np.ndarray | Tensor | None, float]: Post processed predictions that are ready to be
+            tuple[np.ndarray | torch.Tensor | None, float]: Post processed predictions that are ready to be
                 visualized and predicted scores.
         """
         # min max normalization
@@ -181,7 +181,7 @@ class Inferencer(ABC):
         Returns:
             dict | DictConfig: Dictionary containing the metadata.
         """
-        metadata: dict[str, float | np.ndarray | Tensor] | DictConfig = {}
+        metadata: dict[str, float | np.ndarray | torch.Tensor] | DictConfig = {}
         if path is not None:
             config = OmegaConf.load(path)
             metadata = cast(DictConfig, config)

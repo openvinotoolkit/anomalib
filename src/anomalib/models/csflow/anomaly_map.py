@@ -7,7 +7,7 @@
 from enum import Enum
 
 import torch
-from torch import Tensor, nn
+from torch import nn
 from torch.nn import functional as F  # noqa: N812
 
 
@@ -31,20 +31,20 @@ class AnomalyMapGenerator(nn.Module):
         self.mode = mode
         self.input_dims = input_dims
 
-    def forward(self, inputs: Tensor) -> Tensor:
+    def forward(self, inputs: torch.Tensor) -> torch.Tensor:
         """Get anomaly maps by taking mean of the z-distributions across channels.
 
         By default it computes anomaly maps for all the scales as it gave better performance on initial tests.
         Use ``AnomalyMapMode.MAX`` for the largest scale as mentioned in the paper.
 
         Args:
-            inputs (Tensor): z-distributions for the three scales.
+            inputs (torch.Tensor): z-distributions for the three scales.
             mode (AnomalyMapMode): Anomaly map mode.
 
         Returns:
             Tensor: Anomaly maps.
         """
-        anomaly_map: Tensor
+        anomaly_map: torch.Tensor
         if self.mode == AnomalyMapMode.ALL:
             anomaly_map = torch.ones(inputs[0].shape[0], 1, *self.input_dims[1:]).to(inputs[0].device)
             for z_dist in inputs:

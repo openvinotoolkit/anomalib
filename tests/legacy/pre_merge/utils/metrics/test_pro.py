@@ -1,5 +1,4 @@
 import torch
-from torch import Tensor
 from torchvision.transforms import RandomAffine
 
 from anomalib.data.utils import random_2d_perlin
@@ -13,7 +12,7 @@ from anomalib.utils.metrics.pro import (
 def test_pro():
     """Checks if PRO metric computes the (macro) average of the per-region overlap."""
 
-    labels = Tensor(
+    labels = torch.Tensor(
         [
             [
                 [0, 0, 0, 0, 0],

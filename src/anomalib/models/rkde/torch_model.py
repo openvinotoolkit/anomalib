@@ -7,7 +7,7 @@
 import logging
 
 import torch
-from torch import Tensor, nn
+from torch import nn
 
 from anomalib.models.components.classification import FeatureScalingMethod, KDEClassifier
 from anomalib.models.rkde.feature_extractor import FeatureExtractor
@@ -63,26 +63,26 @@ class RkdeModel(nn.Module):
             max_training_points=max_training_points,
         )
 
-    def fit(self, embeddings: Tensor) -> bool:
+    def fit(self, embeddings: torch.Tensor) -> bool:
         """Fit the model using a set of collected embeddings.
 
         Args:
-            embeddings (Tensor): Input embeddings to fit the model.
+            embeddings (torch.Tensor): Input embeddings to fit the model.
 
         Returns:
             Boolean confirming whether the training is successful.
         """
         return self.classifier.fit(embeddings)
 
-    def forward(self, batch: Tensor) -> Tensor | tuple[Tensor, Tensor]:
+    def forward(self, batch: torch.Tensor) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
         """Prediction by normality model.
 
         Args:
-            batch (Tensor): Input images.
+            batch (torch.Tensor): Input images.
 
         Returns:
-            Tensor | tuple[Tensor, Tensor]: The extracted features (when in training mode), or the predicted rois
-                and corresponding anomaly scores.
+            Tensor | tuple[torch.Tensor, torch.Tensor]: The extracted features (when in training mode),
+                or the predicted rois and corresponding anomaly scores.
         """
         self.region_extractor.eval()
         self.feature_extractor.eval()

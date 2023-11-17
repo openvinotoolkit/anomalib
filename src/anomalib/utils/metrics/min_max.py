@@ -5,7 +5,6 @@
 
 
 import torch
-from torch import Tensor
 from torchmetrics import Metric
 
 
@@ -22,13 +21,13 @@ class MinMax(Metric):
         self.min = torch.tensor(float("inf"))
         self.max = torch.tensor(float("-inf"))
 
-    def update(self, predictions: Tensor, *args, **kwargs) -> None:
+    def update(self, predictions: torch.Tensor, *args, **kwargs) -> None:
         """Update the min and max values."""
         del args, kwargs  # These variables are not used.
 
         self.max = torch.max(self.max, torch.max(predictions))
         self.min = torch.min(self.min, torch.min(predictions))
 
-    def compute(self) -> tuple[Tensor, Tensor]:
+    def compute(self) -> tuple[torch.Tensor, torch.Tensor]:
         """Return min and max values."""
         return self.min, self.max

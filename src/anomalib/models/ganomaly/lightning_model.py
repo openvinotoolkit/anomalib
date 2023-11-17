@@ -12,7 +12,7 @@ from typing import Any
 
 import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
-from torch import Tensor, optim
+from torch import optim
 
 from anomalib.models.components import AnomalyModule
 from anomalib.models.ganomaly.loss import DiscriminatorLoss, GeneratorLoss
@@ -66,8 +66,8 @@ class Ganomaly(AnomalyModule):
         self.real_label = torch.ones(size=(batch_size,), dtype=torch.float32)
         self.fake_label = torch.zeros(size=(batch_size,), dtype=torch.float32)
 
-        self.min_scores: Tensor = torch.tensor(float("inf"), dtype=torch.float32)  # pylint: disable=not-callable
-        self.max_scores: Tensor = torch.tensor(float("-inf"), dtype=torch.float32)  # pylint: disable=not-callable
+        self.min_scores: torch.Tensor = torch.tensor(float("inf"), dtype=torch.float32)  # pylint: disable=not-callable
+        self.max_scores: torch.Tensor = torch.tensor(float("-inf"), dtype=torch.float32)  # pylint: disable=not-callable
 
         self.generator_loss = GeneratorLoss(wadv, wcon, wenc)
         self.discriminator_loss = DiscriminatorLoss()
@@ -104,13 +104,13 @@ class Ganomaly(AnomalyModule):
 
     def training_step(
         self,
-        batch: dict[str, str | Tensor],
+        batch: dict[str, str | torch.Tensor],
         batch_idx: int,
     ) -> STEP_OUTPUT:
         """Perform the training step.
 
         Args:
-            batch (dict[str, str | Tensor]): Input batch containing images.
+            batch (dict[str, str | torch.Tensor]): Input batch containing images.
             batch_idx (int): Batch index.
             optimizer_idx (int): Optimizer which is being called for current training step.
 
@@ -153,11 +153,11 @@ class Ganomaly(AnomalyModule):
         self._reset_min_max()
         return super().on_validation_start()
 
-    def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
+    def validation_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> STEP_OUTPUT:
         """Update min and max scores from the current step.
 
         Args:
-            batch (dict[str, str | Tensor]): Predicted difference between z and z_hat.
+            batch (dict[str, str | torch.Tensor]): Predicted difference between z and z_hat.
             args: Additional arguments.
             kwargs: Additional keyword arguments.
 
@@ -187,7 +187,7 @@ class Ganomaly(AnomalyModule):
         self._reset_min_max()
         return super().on_test_start()
 
-    def test_step(self, batch: dict[str, str | Tensor], batch_idx: int, *args, **kwargs) -> STEP_OUTPUT:
+    def test_step(self, batch: dict[str, str | torch.Tensor], batch_idx: int, *args, **kwargs) -> STEP_OUTPUT:
         """Update min and max scores from the current step."""
         del args, kwargs  # Unused arguments.
 
@@ -207,11 +207,11 @@ class Ganomaly(AnomalyModule):
         outputs["pred_scores"] = self._normalize(outputs["pred_scores"])
         super().on_test_batch_end(outputs, batch, batch_idx, dataloader_idx=dataloader_idx)
 
-    def _normalize(self, scores: Tensor) -> Tensor:
+    def _normalize(self, scores: torch.Tensor) -> torch.Tensor:
         """Normalize the scores based on min/max of entire dataset.
 
         Args:
-            scores (Tensor): Un-normalized scores.
+            scores (torch.Tensor): Un-normalized scores.
 
         Returns:
             Tensor: Normalized scores.

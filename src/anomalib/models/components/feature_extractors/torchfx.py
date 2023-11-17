@@ -9,7 +9,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 
 import torch
-from torch import Tensor, nn
+from torch import nn
 from torch.fx.graph_module import GraphModule
 from torchvision.models._api import WeightsEnum
 from torchvision.models.feature_extraction import create_feature_extractor
@@ -209,6 +209,6 @@ class TorchFXFeatureExtractor(nn.Module):
 
         return backbone_class
 
-    def forward(self, inputs: Tensor) -> dict[str, Tensor]:
+    def forward(self, inputs: torch.Tensor) -> dict[str, torch.Tensor]:
         """Extract features from the input."""
         return self.feature_extractor(inputs)

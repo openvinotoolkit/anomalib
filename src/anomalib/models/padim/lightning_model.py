@@ -11,7 +11,6 @@ import logging
 
 import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
-from torch import Tensor
 
 from anomalib.models.components import AnomalyModule
 from anomalib.models.padim.torch_model import PadimModel
@@ -52,19 +51,19 @@ class Padim(AnomalyModule):
             n_features=n_features,
         ).eval()
 
-        self.stats: list[Tensor] = []
-        self.embeddings: list[Tensor] = []
+        self.stats: list[torch.Tensor] = []
+        self.embeddings: list[torch.Tensor] = []
 
     @staticmethod
     def configure_optimizers() -> None:
         """PADIM doesn't require optimization, therefore returns no optimizers."""
         return
 
-    def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> None:
+    def training_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> None:
         """Perform the training step of PADIM. For each batch, hierarchical features are extracted from the CNN.
 
         Args:
-            batch (dict[str, str | Tensor]): Batch containing image filename, image, label and mask
+            batch (dict[str, str | torch.Tensor]): Batch containing image filename, image, label and mask
             args: Additional arguments.
             kwargs: Additional keyword arguments.
 
@@ -93,13 +92,13 @@ class Padim(AnomalyModule):
         logger.info("Fitting a Gaussian to the embedding collected from the training set.")
         self.stats = self.model.gaussian.fit(embeddings)
 
-    def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
+    def validation_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> STEP_OUTPUT:
         """Perform a validation step of PADIM.
 
         Similar to the training step, hierarchical features are extracted from the CNN for each batch.
 
         Args:
-            batch (dict[str, str | Tensor]): Input batch
+            batch (dict[str, str | torch.Tensor]): Input batch
             args: Additional arguments.
             kwargs: Additional keyword arguments.
 
