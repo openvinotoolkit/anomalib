@@ -8,12 +8,13 @@ import tempfile
 import numpy as np
 import pytest
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
+from tests.legacy.helpers.dataset import TestDataset
 
-from anomalib.data import MVTec, TaskType
+from anomalib.data import MVTec
 from anomalib.engine import Engine
 from anomalib.models import get_model
 from anomalib.post_processing.visualizer import ImageGrid
-from tests.legacy.helpers.dataset import TestDataset
+from anomalib.utils.types import TaskType
 
 
 def test_visualize_fully_defected_masks():
