@@ -18,7 +18,6 @@ import cv2
 import imgaug.augmenters as iaa
 import numpy as np
 import torch
-from torch import Tensor
 from torchvision.datasets.folder import IMG_EXTENSIONS
 
 from anomalib.data.utils.generators.perlin import random_2d_perlin
@@ -127,11 +126,11 @@ class Augmenter:
 
         return perturbation, mask
 
-    def augment_batch(self, batch: Tensor) -> tuple[Tensor, Tensor]:
+    def augment_batch(self, batch: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         """Generate anomalous augmentations for a batch of input images.
 
         Args:
-            batch (Tensor): Batch of input images
+            batch (torch.Tensor): Batch of input images
 
         Returns:
             - Augmented image to which anomalous perturbations have been added.
@@ -151,8 +150,8 @@ class Augmenter:
                     random.sample(self.anomaly_source_paths, 1)[0] if len(self.anomaly_source_paths) > 0 else None
                 )
                 perturbation, mask = self.generate_perturbation(height, width, anomaly_source_path)
-                perturbations_list.append(Tensor(perturbation).permute((2, 0, 1)))
-                masks_list.append(Tensor(mask).permute((2, 0, 1)))
+                perturbations_list.append(torch.Tensor(perturbation).permute((2, 0, 1)))
+                masks_list.append(torch.Tensor(mask).permute((2, 0, 1)))
 
         perturbations = torch.stack(perturbations_list).to(batch.device)
         masks = torch.stack(masks_list).to(batch.device)

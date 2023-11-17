@@ -12,7 +12,7 @@ from pathlib import Path
 import cv2
 import numpy as np
 import tifffile as tiff
-from torch import Tensor
+import torch
 from torch.nn import functional as F  # noqa: N812
 from torchvision.datasets.folder import IMG_EXTENSIONS
 
@@ -226,14 +226,14 @@ def read_depth_image(path: str | Path) -> np.ndarray:
     return tiff.imread(path)
 
 
-def pad_nextpow2(batch: Tensor) -> Tensor:
+def pad_nextpow2(batch: torch.Tensor) -> torch.Tensor:
     """Compute required padding from input size and return padded images.
 
     Finds the largest dimension and computes a square image of dimensions that are of the power of 2.
     In case the image dimension is odd, it returns the image with an extra padding on one side.
 
     Args:
-        batch (Tensor): Input images
+        batch (torch.Tensor): Input images
 
     Returns:
         batch: Padded batch

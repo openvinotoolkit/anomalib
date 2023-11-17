@@ -13,7 +13,7 @@ import torch
 import torchvision
 from einops import rearrange
 from sklearn.cluster import KMeans
-from torch import Tensor, nn
+from torch import nn
 from torch.fx.graph_module import GraphModule
 from torch.nn import functional as F  # noqa: N812
 from torch.nn.common_types import _size_2_t
@@ -112,7 +112,7 @@ class CfaModel(DynamicBufferModule):
         self.num_hard_negative_features = num_hard_negative_features
 
         self.register_buffer("memory_bank", torch.tensor(0.0))
-        self.memory_bank: Tensor
+        self.memory_bank: torch.Tensor
 
         return_nodes = get_return_nodes(backbone)
         self.feature_extractor = get_feature_extractor(backbone, return_nodes)
@@ -170,11 +170,11 @@ class CfaModel(DynamicBufferModule):
 
         self.memory_bank = rearrange(self.memory_bank, "h w -> w h")
 
-    def compute_distance(self, target_oriented_features: Tensor) -> Tensor:
+    def compute_distance(self, target_oriented_features: torch.Tensor) -> torch.Tensor:
         """Compute distance using target oriented features.
 
         Args:
-            target_oriented_features (Tensor): Target oriented features computed
+            target_oriented_features (torch.Tensor): Target oriented features computed
                 using the descriptor.
 
         Returns:
@@ -188,11 +188,11 @@ class CfaModel(DynamicBufferModule):
         f_c = 2 * torch.matmul(target_oriented_features, (self.memory_bank.to(features.device)))
         return features + centers - f_c
 
-    def forward(self, input_tensor: Tensor) -> Tensor:
+    def forward(self, input_tensor: torch.Tensor) -> torch.Tensor:
         """Forward pass.
 
         Args:
-            input_tensor (Tensor): Input tensor.
+            input_tensor (torch.Tensor): Input tensor.
 
         Raises:
             ValueError: When the memory bank is not initialized.
@@ -234,12 +234,12 @@ class Descriptor(nn.Module):
 
         self.layer = CoordConv2d(in_channels=dim, out_channels=out_channels, kernel_size=1)
 
-    def forward(self, features: list[Tensor] | dict[str, Tensor]) -> Tensor:
+    def forward(self, features: list[torch.Tensor] | dict[str, torch.Tensor]) -> torch.Tensor:
         """Forward pass."""
         if isinstance(features, dict):
             features = list(features.values())
 
-        patch_features: Tensor | None = None
+        patch_features: torch.Tensor | None = None
         for feature in features:
             pooled_features = (
                 F.avg_pool2d(feature, 3, 1, 1) / feature.size(1)
@@ -302,11 +302,11 @@ class CoordConv2d(nn.Conv2d):
             bias=bias,
         )
 
-    def forward(self, input_tensor: Tensor) -> Tensor:  # pylint: disable=arguments-renamed
+    def forward(self, input_tensor: torch.Tensor) -> torch.Tensor:  # pylint: disable=arguments-renamed
         """Forward pass.
 
         Args:
-            input_tensor (Tensor): Input tensor.
+            input_tensor (torch.Tensor): Input tensor.
 
         Returns:
             Tensor: Output tensor after applying the CoordConv layer.
@@ -329,11 +329,11 @@ class AddCoords(nn.Module):
         super().__init__()
         self.with_r = with_r
 
-    def forward(self, input_tensor: Tensor) -> Tensor:
+    def forward(self, input_tensor: torch.Tensor) -> torch.Tensor:
         """Forward pass.
 
         Args:
-            input_tensor (Tensor): Input tensor
+            input_tensor (torch.Tensor): Input tensor
 
         Returns:
             Tensor: Output tensor with added coordinates.

@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 
 import albumentations as A  # noqa: N812
+from jsonargparse import Namespace
 from lightning.pytorch.callbacks import Callback
 from lightning.pytorch.trainer import Trainer
 from lightning.pytorch.trainer.connectors.callback_connector import _CallbackConnector
@@ -125,7 +126,7 @@ class Engine:
         task: TaskType = TaskType.SEGMENTATION,
         image_metrics: str | list[str] | None = None,
         pixel_metrics: str | list[str] | None = None,
-        visualization: DictConfig | dict[str, Any] | None = None,
+        visualization: DictConfig | dict[str, Any] | Namespace | None = None,
         **kwargs,
     ) -> None:
         if callbacks is None:
@@ -163,6 +164,26 @@ class Engine:
             self._trainer = Trainer(**self._cache.args)
             # Callbacks need to be setup later as they depend on default_root_dir from the trainer
             self._setup_anomalib_callbacks()
+
+    def _setup_dataset_task(
+        self,
+        *dataloaders: EVAL_DATALOADERS | TRAIN_DATALOADERS | AnomalibDataModule | None,
+    ) -> None:
+        """Override the dataloader task with the task passed to the Engine.
+
+        Args:
+            dataloaders (TRAIN_DATALOADERS | EVAL_DATALOADERS): Dataloaders to be used for training or evaluation.
+        """
+        for dataloader in dataloaders:
+            if dataloader is not None and isinstance(dataloader, AnomalibDataModule):
+                for attribute in ("train_data", "val_data", "test_data"):
+                    if hasattr(dataloader, attribute):
+                        data: AnomalibDataset = getattr(dataloader, attribute)
+                        if data.task != self.task:
+                            logger.info(
+                                f"Overriding task from {data.task} with {self.task} for {dataloader.__class__}",
+                            )
+                            data.task = self.task
 
     def _setup_anomalib_callbacks(self) -> None:
         """Set up callbacks for the trainer."""
@@ -225,6 +246,7 @@ class Engine:
                 ```
         """
         self._setup_trainer(model)
+        self._setup_dataset_task(train_dataloaders, val_dataloaders, datamodule)
         self.trainer.fit(model, train_dataloaders, val_dataloaders, datamodule, ckpt_path)
 
     def validate(
@@ -271,6 +293,7 @@ class Engine:
         """
         if model:
             self._setup_trainer(model)
+            self._setup_dataset_task(dataloaders)
         return self.trainer.validate(model, dataloaders, ckpt_path, verbose, datamodule)
 
     def test(
@@ -323,6 +346,7 @@ class Engine:
         """
         if model:
             self._setup_trainer(model)
+            self._setup_dataset_task(dataloaders)
         return self.trainer.test(model, dataloaders, ckpt_path, verbose, datamodule)
 
     def predict(
@@ -376,7 +400,52 @@ class Engine:
         """
         if model:
             self._setup_trainer(model)
+            self._setup_dataset_task(dataloaders, datamodule)
         return self.trainer.predict(model, dataloaders, datamodule, return_predictions, ckpt_path)
+
+    def train(
+        self,
+        model: AnomalyModule,
+        train_dataloaders: TRAIN_DATALOADERS | AnomalibDataModule | None = None,
+        val_dataloaders: EVAL_DATALOADERS | None = None,
+        test_dataloaders: EVAL_DATALOADERS | None = None,
+        datamodule: AnomalibDataModule | None = None,
+        ckpt_path: str | None = None,
+    ) -> _EVALUATE_OUTPUT:
+        """Fits the model and then calls test on it.
+
+        Args:
+            model (AnomalyModule): Model to be trained.
+            train_dataloaders (TRAIN_DATALOADERS | AnomalibDataModule | None, optional): Train dataloaders.
+                Defaults to None.
+            val_dataloaders (EVAL_DATALOADERS | None, optional): Validation dataloaders.
+                Defaults to None.
+            test_dataloaders (EVAL_DATALOADERS | None, optional): Test dataloaders.
+                Defaults to None.
+            datamodule (AnomalibDataModule | None, optional): Lightning datamodule.
+                If provided, dataloaders will be instantiated from this.
+                Defaults to None.
+            ckpt_path (str | None, optional): Checkpoint path. If provided, the model will be loaded from this path.
+                Defaults to None.
+
+        CLI Usage:
+            1. you can pick a model, and you can run through the MVTec dataset.
+                ```python
+                anomalib train --model anomalib.models.Padim --data MVTec
+                ```
+            2. Of course, you can override the various values with commands.
+                ```python
+                anomalib test --model anomalib.models.Padim --data <CONFIG | CLASS_PATH_OR_NAME> --trainer.max_epochs 3
+                ```
+            4. If you have a ready configuration file, run it like this.
+                ```python
+                anomalib test --config <config_file_path>
+                ```
+        """
+        self._setup_trainer(model)
+        self._setup_dataset_task(train_dataloaders, val_dataloaders, test_dataloaders, datamodule)
+        self.trainer.fit(model, train_dataloaders, val_dataloaders, datamodule, ckpt_path)
+        self.trainer.test(model, test_dataloaders, ckpt_path=ckpt_path, datamodule=datamodule)
 
     def export(
         self,

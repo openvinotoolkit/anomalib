@@ -7,7 +7,6 @@
 import logging
 
 import torch
-from torch import Tensor
 from torchmetrics import PrecisionRecallCurve
 
 from .base import BaseThreshold
@@ -30,7 +29,7 @@ class F1AdaptiveThreshold(PrecisionRecallCurve, BaseThreshold):
         self.add_state("value", default=torch.tensor(default_value), persistent=True)
         self.value = torch.tensor(default_value)
 
-    def compute(self) -> Tensor:
+    def compute(self) -> torch.Tensor:
         """Compute the threshold that yields the optimal F1 score.
 
         Compute the F1 scores while varying the threshold. Store the optimal
@@ -39,9 +38,9 @@ class F1AdaptiveThreshold(PrecisionRecallCurve, BaseThreshold):
         Returns:
             Value of the F1 score at the optimal threshold.
         """
-        precision: Tensor
-        recall: Tensor
-        thresholds: Tensor
+        precision: torch.Tensor
+        recall: torch.Tensor
+        thresholds: torch.Tensor
 
         if not any(1 in batch for batch in self.target):
             msg = (

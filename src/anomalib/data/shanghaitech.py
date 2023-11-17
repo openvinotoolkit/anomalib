@@ -24,7 +24,6 @@ import numpy as np
 import pandas as pd
 import torch
 from pandas import DataFrame
-from torch import Tensor
 
 from anomalib.data.base import AnomalibVideoDataModule, AnomalibVideoDataset
 from anomalib.data.base.video import VideoTargetFrame
@@ -116,7 +115,7 @@ class ShanghaiTechTrainClipsIndexer(ClipsIndexer):
     clips indexer implementations are needed.
     """
 
-    def get_mask(self, idx: int) -> Tensor | None:
+    def get_mask(self, idx: int) -> torch.Tensor | None:
         """No masks available for training set."""
         del idx  # Unused argument
         return None
@@ -129,7 +128,7 @@ class ShanghaiTechTestClipsIndexer(ClipsIndexer):
     clips indexer implementations are needed.
     """
 
-    def get_mask(self, idx: int) -> Tensor | None:
+    def get_mask(self, idx: int) -> torch.Tensor | None:
         """Retrieve the masks from the file system."""
         video_idx, frames_idx = self.get_clip_location(idx)
         mask_file = self.mask_paths[video_idx]
@@ -145,19 +144,19 @@ class ShanghaiTechTestClipsIndexer(ClipsIndexer):
         self.video_pts = []
         for video_path in self.video_paths:
             n_frames = len(list(Path(video_path).glob("*.jpg")))
-            self.video_pts.append(Tensor(range(n_frames)))
+            self.video_pts.append(torch.Tensor(range(n_frames)))
 
         self.video_fps = [None] * len(self.video_paths)  # fps information cannot be inferred from folder structure
 
-    def get_clip(self, idx: int) -> tuple[Tensor, Tensor, dict[str, Any], int]:
+    def get_clip(self, idx: int) -> tuple[torch.Tensor, torch.Tensor, dict[str, Any], int]:
         """Get a subclip from a list of videos.
 
         Args:
             idx (int): index of the subclip. Must be between 0 and num_clips().
 
         Returns:
-            video (Tensor)
-            audio (Tensor)
+            video (torch.Tensor)
+            audio (torch.Tensor)
             info (Dict)
             video_idx (int): index of the video in `video_paths`
         """
@@ -171,7 +170,7 @@ class ShanghaiTechTestClipsIndexer(ClipsIndexer):
         frames = sorted(Path(video_path).glob("*.jpg"))
 
         frame_paths = [frames[pt] for pt in clip_pts.int()]
-        video = torch.stack([Tensor(read_image(str(frame_path))) for frame_path in frame_paths])
+        video = torch.stack([torch.Tensor(read_image(str(frame_path))) for frame_path in frame_paths])
 
         return video, torch.empty((1, 0)), {}, video_idx
 

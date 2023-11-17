@@ -9,7 +9,7 @@ import random
 from enum import Enum
 
 import torch
-from torch import Tensor, nn
+from torch import nn
 
 from anomalib.models.components import PCA, GaussianKDE
 
@@ -52,11 +52,15 @@ class KDEClassifier(nn.Module):
         self.register_buffer("max_length", torch.empty([]))
         self.max_length = torch.empty([])
 
-    def pre_process(self, feature_stack: Tensor, max_length: Tensor | None = None) -> tuple[Tensor, Tensor]:
+    def pre_process(
+        self,
+        feature_stack: torch.Tensor,
+        max_length: torch.Tensor | None = None,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         """Pre-process the CNN features.
 
         Args:
-          feature_stack (Tensor): Features extracted from CNN
+          feature_stack (torch.Tensor): Features extracted from CNN
           max_length (Tensor | None): Used to unit normalize the feature_stack vector. If ``max_len`` is not
             provided, the length is calculated from the ``feature_stack``. Defaults to None.
 
@@ -75,11 +79,11 @@ class KDEClassifier(nn.Module):
             raise RuntimeError(msg)
         return feature_stack, max_length
 
-    def fit(self, embeddings: Tensor) -> bool:
+    def fit(self, embeddings: torch.Tensor) -> bool:
         """Fit a kde model to embeddings.
 
         Args:
-            embeddings (Tensor): Input embeddings to fit the model.
+            embeddings (torch.Tensor): Input embeddings to fit the model.
 
         Returns:
             Boolean confirming whether the training is successful.
@@ -102,18 +106,18 @@ class KDEClassifier(nn.Module):
 
         return True
 
-    def compute_kde_scores(self, features: Tensor, as_log_likelihood: bool | None = False) -> Tensor:
+    def compute_kde_scores(self, features: torch.Tensor, as_log_likelihood: bool | None = False) -> torch.Tensor:
         """Compute the KDE scores.
 
         The scores calculated from the KDE model are converted to densities. If `as_log_likelihood` is set to true then
             the log of the scores are calculated.
 
         Args:
-            features (Tensor): Features to which the PCA model is fit.
+            features (torch.Tensor): Features to which the PCA model is fit.
             as_log_likelihood (bool | None, optional): If true, gets log likelihood scores. Defaults to False.
 
         Returns:
-            (Tensor): Score
+            (torch.Tensor): Score
         """
         features = self.pca_model.transform(features)
         features, _ = self.pre_process(features, self.max_length)
@@ -129,22 +133,22 @@ class KDEClassifier(nn.Module):
         return kde_scores
 
     @staticmethod
-    def compute_probabilities(scores: Tensor) -> Tensor:
+    def compute_probabilities(scores: torch.Tensor) -> torch.Tensor:
         """Convert density scores to anomaly probabilities (see https://www.desmos.com/calculator/ifju7eesg7).
 
         Args:
-          scores (Tensor): density of an image.
+          scores (torch.Tensor): density of an image.
 
         Returns:
           probability that image with {density} is anomalous
         """
         return 1 / (1 + torch.exp(0.05 * (scores - 12)))
 
-    def predict(self, features: Tensor) -> Tensor:
+    def predict(self, features: torch.Tensor) -> torch.Tensor:
         """Predicts the probability that the features belong to the anomalous class.
 
         Args:
-          features (Tensor): Feature from which the output probabilities are detected.
+          features (torch.Tensor): Feature from which the output probabilities are detected.
 
         Returns:
           Detection probabilities
@@ -152,6 +156,6 @@ class KDEClassifier(nn.Module):
         scores = self.compute_kde_scores(features, as_log_likelihood=True)
         return self.compute_probabilities(scores)
 
-    def forward(self, features: Tensor) -> Tensor:
+    def forward(self, features: torch.Tensor) -> torch.Tensor:
         """Make predictions on extracted features."""
         return self.predict(features)

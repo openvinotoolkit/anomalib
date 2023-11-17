@@ -11,7 +11,6 @@ from typing import Any
 import torch
 from lightning.pytorch import Callback, Trainer
 from lightning.pytorch.utilities.types import STEP_OUTPUT
-from torch import Tensor
 
 from anomalib.data import TaskType
 from anomalib.models import AnomalyModule
@@ -183,7 +182,7 @@ class _MetricsCallback(Callback):
         if isinstance(output, dict):
             for key, value in output.items():
                 output[key] = self._outputs_to_device(value)
-        elif isinstance(output, Tensor):
+        elif isinstance(output, torch.Tensor):
             output = output.to(self.device)
         return output
 

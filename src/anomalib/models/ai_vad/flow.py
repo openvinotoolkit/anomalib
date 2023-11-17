@@ -6,7 +6,7 @@
 
 import torch
 import torchvision.transforms.functional as F  # noqa: N812
-from torch import Tensor, nn
+from torch import nn
 from torchvision.models.optical_flow import Raft_Large_Weights, raft_large
 
 
@@ -23,26 +23,26 @@ class FlowExtractor(nn.Module):
         self.model = raft_large(weights=weights)
         self.transforms = weights.transforms()
 
-    def pre_process(self, first_frame: Tensor, last_frame: Tensor) -> tuple[Tensor, Tensor]:
+    def pre_process(self, first_frame: torch.Tensor, last_frame: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         """Resize inputs to dimensions required by backbone.
 
         Args:
-            first_frame (Tensor): Starting frame of optical flow computation.
-            last_frame (Tensor): Last frame of optical flow computation.
+            first_frame (torch.Tensor): Starting frame of optical flow computation.
+            last_frame (torch.Tensor): Last frame of optical flow computation.
 
         Returns:
-            tuple[Tensor, Tensor]: Preprocessed first and last frame.
+            tuple[torch.Tensor, torch.Tensor]: Preprocessed first and last frame.
         """
         first_frame = F.resize(first_frame, size=[520, 960], antialias=False)
         last_frame = F.resize(last_frame, size=[520, 960], antialias=False)
         return self.transforms(first_frame, last_frame)
 
-    def forward(self, first_frame: Tensor, last_frame: Tensor) -> Tensor:
+    def forward(self, first_frame: torch.Tensor, last_frame: torch.Tensor) -> torch.Tensor:
         """Forward pass through the flow extractor.
 
         Args:
-            first_frame (Tensor): Batch of starting frames of shape (N, 3, H, W).
-            last_frame (Tensor): Batch of last frames of shape (N, 3, H, W).
+            first_frame (torch.Tensor): Batch of starting frames of shape (N, 3, H, W).
+            last_frame (torch.Tensor): Batch of last frames of shape (N, 3, H, W).
 
         Returns:
             Tensor: Estimated optical flow map of shape (N, 2, H, W).

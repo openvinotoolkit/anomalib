@@ -13,7 +13,6 @@ from typing import TYPE_CHECKING, Any
 import albumentations as A  # noqa: N812
 import numpy as np
 import torch
-from torch import Tensor
 
 from anomalib.data import AnomalibDataModule, AnomalibDataset, TaskType
 from anomalib.models.components import AnomalyModule
@@ -162,23 +161,23 @@ def get_metadata(
 
     # Convert torch tensors to python lists or values for json serialization.
     for key, value in metadata.items():
-        if isinstance(value, Tensor):
+        if isinstance(value, torch.Tensor):
             metadata[key] = value.numpy().tolist()
 
     return metadata
 
 
-def _get_model_metadata(model: AnomalyModule) -> dict[str, Tensor]:
+def _get_model_metadata(model: AnomalyModule) -> dict[str, torch.Tensor]:
     """Get meta data related to normalization from model.
 
     Args:
         model (AnomalyModule): Anomaly model which contains metadata related to normalization.
 
     Returns:
-        dict[str, Tensor]: Model metadata
+        dict[str, torch.Tensor]: Model metadata
     """
     metadata = {}
-    cached_metadata: dict[str, Number | Tensor] = {
+    cached_metadata: dict[str, Number | torch.Tensor] = {
         "image_threshold": model.image_threshold.cpu().value.item(),
         "pixel_threshold": model.pixel_threshold.cpu().value.item(),
     }

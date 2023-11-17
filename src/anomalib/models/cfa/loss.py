@@ -5,7 +5,7 @@
 
 
 import torch
-from torch import Tensor, nn
+from torch import nn
 
 
 class CfaLoss(nn.Module):
@@ -23,11 +23,11 @@ class CfaLoss(nn.Module):
         self.num_hard_negative_features = num_hard_negative_features
         self.radius = torch.ones(1, requires_grad=True) * radius
 
-    def forward(self, distance: Tensor) -> Tensor:
+    def forward(self, distance: torch.Tensor) -> torch.Tensor:
         """Compute the CFA loss.
 
         Args:
-            distance (Tensor): Distance computed using target oriented features.
+            distance (torch.Tensor): Distance computed using target oriented features.
 
         Returns:
             Tensor: CFA loss.

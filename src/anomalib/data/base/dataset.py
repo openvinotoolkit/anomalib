@@ -14,8 +14,8 @@ import albumentations as A  # noqa: N812
 import cv2
 import numpy as np
 import pandas as pd
+import torch
 from pandas import DataFrame
-from torch import Tensor
 from torch.utils.data import Dataset
 
 from anomalib.data.task_type import TaskType
@@ -102,14 +102,14 @@ class AnomalibDataset(Dataset, ABC):
         """Check if the dataset contains any anomalous samples."""
         return 1 in list(self.samples.label_index)
 
-    def __getitem__(self, index: int) -> dict[str, str | Tensor]:
+    def __getitem__(self, index: int) -> dict[str, str | torch.Tensor]:
         """Get dataset item for the index ``index``.
 
         Args:
             index (int): Index to get the item.
 
         Returns:
-            Union[dict[str, Tensor], dict[str, str | Tensor]]: Dict of image tensor during training.
+            dict[str, str | torch.Tensor]: Dict of image tensor during training.
                 Otherwise, Dict containing image path, target path, image tensor, label and transformed bounding box.
         """
         image_path = self._samples.iloc[index].image_path

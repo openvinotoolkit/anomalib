@@ -39,7 +39,7 @@ class TestLightningInferenceEntrypoint:
                 "--model",
                 "anomalib.models.Padim",
                 "--ckpt_path",
-                str(project_path) + "/padim/mvtec/shapes/weights/last.ckpt",
+                str(project_path) + "/padim/dummy/weights/last.ckpt",
                 "--data.path",
                 get_dummy_inference_image,
                 "--output",

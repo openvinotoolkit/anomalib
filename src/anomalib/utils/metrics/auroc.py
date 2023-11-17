@@ -4,8 +4,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
+import torch
 from matplotlib.figure import Figure
-from torch import Tensor
 from torchmetrics import ROC
 from torchmetrics.functional import auc
 
@@ -15,37 +15,37 @@ from .plotting_utils import plot_figure
 class AUROC(ROC):
     """Area under the ROC curve."""
 
-    def compute(self) -> Tensor:
+    def compute(self) -> torch.Tensor:
         """First compute ROC curve, then compute area under the curve.
 
         Returns:
             Tensor: Value of the AUROC metric
         """
-        tpr: Tensor
-        fpr: Tensor
+        tpr: torch.Tensor
+        fpr: torch.Tensor
 
         fpr, tpr = self._compute()
         return auc(fpr, tpr, reorder=True)
 
-    def update(self, preds: Tensor, target: Tensor) -> None:
+    def update(self, preds: torch.Tensor, target: torch.Tensor) -> None:
         """Update state with new values.
 
         Need to flatten new values as ROC expects them in this format for binary classification.
 
         Args:
-            preds (Tensor): predictions of the model
-            target (Tensor): ground truth targets
+            preds (torch.Tensor): predictions of the model
+            target (torch.Tensor): ground truth targets
         """
         super().update(preds.flatten(), target.flatten())
 
-    def _compute(self) -> tuple[Tensor, Tensor]:
+    def _compute(self) -> tuple[torch.Tensor, torch.Tensor]:
         """Compute fpr/tpr value pairs.
 
         Returns:
             Tuple containing Tensors for fpr and tpr
         """
-        tpr: Tensor
-        fpr: Tensor
+        tpr: torch.Tensor
+        fpr: torch.Tensor
         fpr, tpr, _thresholds = super().compute()
         return (fpr, tpr)
 
