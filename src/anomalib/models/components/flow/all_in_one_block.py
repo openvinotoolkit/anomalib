@@ -14,17 +14,17 @@ from typing import Any
 import torch
 from FrEIA.modules import InvertibleModule
 from scipy.stats import special_ortho_group
-from torch import Tensor, nn
+from torch import nn
 from torch.nn import functional as F  # noqa: N812
 
 logger = logging.getLogger(__name__)
 
 
-def _global_scale_sigmoid_activation(input_tensor: Tensor) -> Tensor:
+def _global_scale_sigmoid_activation(input_tensor: torch.Tensor) -> torch.Tensor:
     """Global scale sigmoid activation.
 
     Args:
-        input_tensor (Tensor): Input tensor
+        input_tensor (torch.Tensor): Input tensor
 
     Returns:
         Tensor: Sigmoid activation
@@ -32,11 +32,11 @@ def _global_scale_sigmoid_activation(input_tensor: Tensor) -> Tensor:
     return 10 * torch.sigmoid(input_tensor - 2.0)
 
 
-def _global_scale_softplus_activation(input_tensor: Tensor) -> Tensor:
+def _global_scale_softplus_activation(input_tensor: torch.Tensor) -> torch.Tensor:
     """Global scale softplus activation.
 
     Args:
-        input_tensor (Tensor): Input tensor
+        input_tensor (torch.Tensor): Input tensor
 
     Returns:
         Tensor: Softplus activation
@@ -45,11 +45,11 @@ def _global_scale_softplus_activation(input_tensor: Tensor) -> Tensor:
     return 0.1 * softplus(input_tensor)
 
 
-def _global_scale_exp_activation(input_tensor: Tensor) -> Tensor:
+def _global_scale_exp_activation(input_tensor: torch.Tensor) -> torch.Tensor:
     """Global scale exponential activation.
 
     Args:
-        input_tensor (Tensor): Input tensor
+        input_tensor (torch.Tensor): Input tensor
 
     Returns:
         Tensor: Exponential activation
@@ -225,7 +225,7 @@ class AllInOneBlock(InvertibleModule):
             w = w.unsqueeze(-1)
         return w
 
-    def _permute(self, x: torch.Tensor, rev: bool = False) -> tuple[Any, float | Tensor]:
+    def _permute(self, x: torch.Tensor, rev: bool = False) -> tuple[Any, float | torch.Tensor]:
         """Perform the permutation and scaling after the coupling operation.
 
         Returns transformed outputs and the LogJacDet of the scaling operation.
@@ -235,7 +235,7 @@ class AllInOneBlock(InvertibleModule):
             rev (bool, optional): Reverse the permutation. Defaults to False.
 
         Returns:
-            tuple[Any, float | Tensor]: Transformed outputs and the LogJacDet of the scaling operation.
+            tuple[Any, float | torch.Tensor]: Transformed outputs and the LogJacDet of the scaling operation.
         """
         if self.GIN:
             scale = 1.0

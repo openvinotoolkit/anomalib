@@ -8,7 +8,7 @@ from random import sample
 from typing import TYPE_CHECKING
 
 import torch
-from torch import Tensor, nn
+from torch import nn
 from torch.nn import functional as F  # noqa: N812
 
 from anomalib.models.components import FeatureExtractor, MultiVariateGaussian
@@ -98,18 +98,18 @@ class PadimModel(nn.Module):
             "idx",
             torch.tensor(sample(range(self.n_features_original), self.n_features)),
         )
-        self.idx: Tensor
+        self.idx: torch.Tensor
         self.loss = None
         self.anomaly_map_generator = AnomalyMapGenerator(image_size=input_size)
 
         self.gaussian = MultiVariateGaussian(self.n_features, self.n_patches)
 
-    def forward(self, input_tensor: Tensor) -> Tensor:
+    def forward(self, input_tensor: torch.Tensor) -> torch.Tensor:
         """Forward-pass image-batch (N, C, H, W) into model to extract features.
 
         Args:
             input_tensor: Image-batch (N, C, H, W)
-            input_tensor: Tensor:
+            input_tensor: torch.Tensor:
 
         Returns:
             Features from single/multiple layers.
@@ -145,11 +145,11 @@ class PadimModel(nn.Module):
             )
         return output
 
-    def generate_embedding(self, features: dict[str, Tensor]) -> Tensor:
+    def generate_embedding(self, features: dict[str, torch.Tensor]) -> torch.Tensor:
         """Generate embedding from hierarchical feature map.
 
         Args:
-            features (dict[str, Tensor]): Hierarchical feature map from a CNN (ResNet18 or WideResnet)
+            features (dict[str, torch.Tensor]): Hierarchical feature map from a CNN (ResNet18 or WideResnet)
 
         Returns:
             Embedding vector

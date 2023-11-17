@@ -14,7 +14,6 @@ from typing import Any
 
 import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
-from torch import Tensor
 
 from anomalib.models.cfa.loss import CfaLoss
 from anomalib.models.cfa.torch_model import CfaModel
@@ -68,11 +67,11 @@ class Cfa(AnomalyModule):
         """Initialize the centroid for the memory bank computation."""
         self.model.initialize_centroid(data_loader=self.trainer.datamodule.train_dataloader())
 
-    def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
+    def training_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> STEP_OUTPUT:
         """Perform the training step for the CFA model.
 
         Args:
-            batch (dict[str, str | Tensor]): Batch input.
+            batch (dict[str, str | torch.Tensor]): Batch input.
             *args: Arguments.
             **kwargs: Keyword arguments.
 
@@ -85,11 +84,11 @@ class Cfa(AnomalyModule):
         loss = self.loss(distance)
         return {"loss": loss}
 
-    def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
+    def validation_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> STEP_OUTPUT:
         """Perform the validation step for the CFA model.
 
         Args:
-            batch (dict[str, str | Tensor]): Input batch.
+            batch (dict[str, str | torch.Tensor]): Input batch.
             *args: Arguments.
             **kwargs: Keyword arguments.
 
@@ -101,11 +100,11 @@ class Cfa(AnomalyModule):
         batch["anomaly_maps"] = self.model(batch["image"])
         return batch
 
-    def backward(self, loss: Tensor, *args, **kwargs) -> None:
+    def backward(self, loss: torch.Tensor, *args, **kwargs) -> None:
         """Perform backward-pass for the CFA model.
 
         Args:
-            loss (Tensor): Loss value.
+            loss (torch.Tensor): Loss value.
             *args: Arguments.
             **kwargs: Keyword arguments.
         """

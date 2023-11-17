@@ -12,7 +12,8 @@
 
 from collections.abc import Callable
 
-from torch import Tensor, nn
+import torch
+from torch import nn
 from torchvision.models.resnet import conv1x1, conv3x3
 
 
@@ -77,7 +78,7 @@ class DecoderBasicBlock(nn.Module):
         self.upsample = upsample
         self.stride = stride
 
-    def forward(self, batch: Tensor) -> Tensor:
+    def forward(self, batch: torch.Tensor) -> torch.Tensor:
         """Forward-pass of de-resnet block."""
         identity = batch
 
@@ -149,7 +150,7 @@ class DecoderBottleneck(nn.Module):
         self.upsample = upsample
         self.stride = stride
 
-    def forward(self, batch: Tensor) -> Tensor:
+    def forward(self, batch: torch.Tensor) -> torch.Tensor:
         """Forward-pass of de-resnet bottleneck block."""
         identity = batch
 
@@ -269,7 +270,7 @@ class ResNet(nn.Module):
 
         return nn.Sequential(*layers)
 
-    def forward(self, batch: Tensor) -> list[Tensor]:
+    def forward(self, batch: torch.Tensor) -> list[torch.Tensor]:
         """Forward pass for Decoder ResNet. Returns list of features."""
         feature_a = self.layer1(batch)  # 512*8*8->256*16*16
         feature_b = self.layer2(feature_a)  # 256*16*16->128*32*32

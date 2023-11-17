@@ -15,7 +15,6 @@ import math
 
 import numpy as np
 import torch
-from torch import Tensor
 
 
 def lerp_np(x, y, w):
@@ -65,23 +64,23 @@ def generate_perlin_noise_2d(shape, res):
 
 def random_2d_perlin(
     shape: tuple,
-    res: tuple[int | Tensor, int | Tensor],
+    res: tuple[int | torch.Tensor, int | torch.Tensor],
     fade=lambda t: 6 * t**5 - 15 * t**4 + 10 * t**3,
-) -> np.ndarray | Tensor:
+) -> np.ndarray | torch.Tensor:
     """Returns a random 2d perlin noise array.
 
     Args:
         shape (tuple): Shape of the 2d map.
-        res (tuple[int | Tensor, int | Tensor]): Tuple of scales for perlin noise for height and width dimension.
+        res (tuple[int | torch.Tensor, int | torch.Tensor]): Tuple of scales for perlin noise for height and width dimension.
         fade (_type_, optional): Function used for fading the resulting 2d map.
             Defaults to equation 6*t**5-15*t**4+10*t**3.
 
     Returns:
-        np.ndarray | Tensor: Random 2d-array/tensor generated using perlin noise.
+        np.ndarray | torch.Tensor: Random 2d-array/tensor generated using perlin noise.
     """
     if isinstance(res[0], int | np.integer):
         result = _rand_perlin_2d_np(shape, res, fade)
-    elif isinstance(res[0], Tensor):
+    elif isinstance(res[0], torch.Tensor):
         result = _rand_perlin_2d(shape, res, fade)
     else:
         msg = f"got scales of type {type(res[0])}"

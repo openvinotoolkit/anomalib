@@ -6,7 +6,7 @@ from abc import ABC
 import albumentations as A  # noqa: N812
 import cv2
 import numpy as np
-from torch import Tensor
+import torch
 
 from anomalib.data.base.dataset import AnomalibDataset
 from anomalib.data.task_type import TaskType
@@ -26,7 +26,7 @@ class AnomalibDepthDataset(AnomalibDataset, ABC):
 
         self.transform = transform
 
-    def __getitem__(self, index: int) -> dict[str, str | Tensor]:
+    def __getitem__(self, index: int) -> dict[str, str | torch.Tensor]:
         """Return rgb image, depth image and mask."""
         image_path = self._samples.iloc[index].image_path
         mask_path = self._samples.iloc[index].mask_path

@@ -4,18 +4,18 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import torch
-from torch import Tensor, nn
+from torch import nn
 
 
 class CsFlowLoss(nn.Module):
     """Loss function for the CS-Flow Model Implementation."""
 
-    def forward(self, z_dist: Tensor, jacobians: Tensor) -> Tensor:
+    def forward(self, z_dist: torch.Tensor, jacobians: torch.Tensor) -> torch.Tensor:
         """Compute the loss CS-Flow.
 
         Args:
-            z_dist (Tensor): Latent space image mappings from NF.
-            jacobians (Tensor): Jacobians of the distribution
+            z_dist (torch.Tensor): Latent space image mappings from NF.
+            jacobians (torch.Tensor): Jacobians of the distribution
 
         Returns:
             Loss value

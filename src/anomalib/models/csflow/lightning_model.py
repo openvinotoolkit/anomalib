@@ -12,7 +12,6 @@ from typing import Any
 
 import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
-from torch import Tensor
 
 from anomalib.models.components import AnomalyModule
 
@@ -53,11 +52,11 @@ class Csflow(AnomalyModule):
         )
         self.loss = CsFlowLoss()
 
-    def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
+    def training_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> STEP_OUTPUT:
         """Perform the training step of CS-Flow.
 
         Args:
-            batch (dict[str, str | Tensor]): Input batch
+            batch (dict[str, str | torch.Tensor]): Input batch
             args: Arguments.
             kwargs: Keyword arguments.
 
@@ -72,16 +71,16 @@ class Csflow(AnomalyModule):
         self.log("train_loss", loss.item(), on_epoch=True, prog_bar=True, logger=True)
         return {"loss": loss}
 
-    def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
+    def validation_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> STEP_OUTPUT:
         """Perform the validation step for CS Flow.
 
         Args:
-            batch (Tensor): Input batch
+            batch (torch.Tensor): Input batch
             args: Arguments.
             kwargs: Keyword arguments.
 
         Returns:
-            dict[str, Tensor]: Dictionary containing the anomaly map, scores, etc.
+            dict[str, torch.Tensor]: Dictionary containing the anomaly map, scores, etc.
         """
         del args, kwargs  # These variables are not used.
 

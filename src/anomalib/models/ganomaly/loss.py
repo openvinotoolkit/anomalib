@@ -5,7 +5,7 @@
 
 
 import torch
-from torch import Tensor, nn
+from torch import nn
 
 
 class GeneratorLoss(nn.Module):
@@ -30,22 +30,22 @@ class GeneratorLoss(nn.Module):
 
     def forward(
         self,
-        latent_i: Tensor,
-        latent_o: Tensor,
-        images: Tensor,
-        fake: Tensor,
-        pred_real: Tensor,
-        pred_fake: Tensor,
-    ) -> Tensor:
+        latent_i: torch.Tensor,
+        latent_o: torch.Tensor,
+        images: torch.Tensor,
+        fake: torch.Tensor,
+        pred_real: torch.Tensor,
+        pred_fake: torch.Tensor,
+    ) -> torch.Tensor:
         """Compute the loss for a batch.
 
         Args:
-            latent_i (Tensor): Latent features of the first encoder.
-            latent_o (Tensor): Latent features of the second encoder.
-            images (Tensor): Real image that served as input of the generator.
-            fake (Tensor): Generated image.
-            pred_real (Tensor): Discriminator predictions for the real image.
-            pred_fake (Tensor): Discriminator predictions for the fake image.
+            latent_i (torch.Tensor): Latent features of the first encoder.
+            latent_o (torch.Tensor): Latent features of the second encoder.
+            images (torch.Tensor): Real image that served as input of the generator.
+            fake (torch.Tensor): Generated image.
+            pred_real (torch.Tensor): Discriminator predictions for the real image.
+            pred_fake (torch.Tensor): Discriminator predictions for the fake image.
 
         Returns:
             Tensor: The computed generator loss.
@@ -65,12 +65,12 @@ class DiscriminatorLoss(nn.Module):
 
         self.loss_bce = nn.BCELoss()
 
-    def forward(self, pred_real: Tensor, pred_fake: Tensor) -> Tensor:
+    def forward(self, pred_real: torch.Tensor, pred_fake: torch.Tensor) -> torch.Tensor:
         """Compute the loss for a predicted batch.
 
         Args:
-            pred_real (Tensor): Discriminator predictions for the real image.
-            pred_fake (Tensor): Discriminator predictions for the fake image.
+            pred_real (torch.Tensor): Discriminator predictions for the real image.
+            pred_fake (torch.Tensor): Discriminator predictions for the fake image.
 
         Returns:
             Tensor: The computed discriminator loss.

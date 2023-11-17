@@ -14,7 +14,6 @@ import cv2
 import numpy as np
 import torch
 from pandas import DataFrame
-from torch import Tensor
 
 from anomalib.data.base import AnomalibVideoDataModule, AnomalibVideoDataset
 from anomalib.data.base.video import VideoTargetFrame
@@ -117,19 +116,19 @@ class UCSDpedClipsIndexer(ClipsIndexer):
         self.video_pts = []
         for video_path in self.video_paths:
             n_frames = len(list(Path(video_path).glob("*.tif")))
-            self.video_pts.append(Tensor(range(n_frames)))
+            self.video_pts.append(torch.Tensor(range(n_frames)))
 
         self.video_fps = [None] * len(self.video_paths)  # fps information cannot be inferred from folder structure
 
-    def get_clip(self, idx: int) -> tuple[Tensor, Tensor, dict[str, Any], int]:
+    def get_clip(self, idx: int) -> tuple[torch.Tensor, torch.Tensor, dict[str, Any], int]:
         """Get a subclip from a list of videos.
 
         Args:
             idx (int): index of the subclip. Must be between 0 and num_clips().
 
         Returns:
-            video (Tensor)
-            audio (Tensor)
+            video (torch.Tensor)
+            audio (torch.Tensor)
             info (dict)
             video_idx (int): index of the video in `video_paths`
         """
@@ -143,7 +142,7 @@ class UCSDpedClipsIndexer(ClipsIndexer):
         frames = sorted(Path(video_path).glob("*.tif"))
 
         frame_paths = [frames[pt] for pt in clip_pts.int()]
-        video = torch.stack([Tensor(read_image(str(frame_path))) for frame_path in frame_paths])
+        video = torch.stack([torch.Tensor(read_image(str(frame_path))) for frame_path in frame_paths])
 
         return video, torch.empty((1, 0)), {}, video_idx
 
