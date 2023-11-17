@@ -1,23 +1,20 @@
-"""MVTec AD Dataset (CC BY-NC-SA 4.0).
+"""MVTec 3D-AD Dataset (CC BY-NC-SA 4.0).
 
 Description:
     This script contains PyTorch Dataset, Dataloader and PyTorch
-        Lightning DataModule for the MVTec AD dataset.
+        Lightning DataModule for the MVTec 3D-AD dataset.
     If the dataset is not on the file system, the script downloads and
         extracts the dataset and create PyTorch data objects.
 License:
-    MVTec AD dataset is released under the Creative Commons
+    MVTec 3D-AD dataset is released under the Creative Commons
     Attribution-NonCommercial-ShareAlike 4.0 International License
     (CC BY-NC-SA 4.0)(https://creativecommons.org/licenses/by-nc-sa/4.0/).
 Reference:
-    - Paul Bergmann, Kilian Batzner, Michael Fauser, David Sattlegger, Carsten Steger:
-      The MVTec Anomaly Detection Dataset: A Comprehensive Real-World Dataset for
-      Unsupervised Anomaly Detection; in: International Journal of Computer Vision
-      129(4):1038-1059, 2021, DOI: 10.1007/s11263-020-01400-4.
-    - Paul Bergmann, Michael Fauser, David Sattlegger, Carsten Steger: MVTec AD —
-      A Comprehensive Real-World Dataset for Unsupervised Anomaly Detection;
-      in: IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR),
-      9584-9592, 2019, DOI: 10.1109/CVPR.2019.00982.
+    - Paul Bergmann, Xin Jin, David Sattlegger, Carsten Steger:
+    The MVTec 3D-AD Dataset for Unsupervised 3D Anomaly Detection and Localization
+    in: Proceedings of the 17th International Joint Conference on Computer Vision, Imaging
+    and Computer Graphics Theory and Applications - Volume 5: VISAPP, 202-213, 2022,
+    DOI: 10.5220/0010865000003124.
 """
 
 # Copyright (C) 2022 Intel Corporation
@@ -31,8 +28,8 @@ from pathlib import Path
 import albumentations as A  # noqa: N812
 from pandas import DataFrame
 
-from anomalib.data.base import AnomalibDataModule, AnomalibDataset
-from anomalib.data.task_type import TaskType
+from anomalib.data import TaskType
+from anomalib.data.base import AnomalibDataModule, AnomalibDepthDataset
 from anomalib.data.utils import (
     DownloadInfo,
     InputNormalizationMethod,
@@ -47,40 +44,24 @@ from anomalib.data.utils import (
 logger = logging.getLogger(__name__)
 
 
-IMG_EXTENSIONS = (".png", ".PNG")
+IMG_EXTENSIONS = [".png", ".PNG", ".tiff"]
 
 DOWNLOAD_INFO = DownloadInfo(
-    name="mvtec",
-    url="https://www.mydrive.ch/shares/38536/3830184030e49fe74747669442f0f282/download/420938113-1629952094"
-    "/mvtec_anomaly_detection.tar.xz",
-    checksum="eefca59f2cede9c3fc5b6befbfec275e",
+    name="mvtec_3d",
+    url="https://www.mydrive.ch/shares/45920/dd1eb345346df066c63b5c95676b961b/download/428824485-1643285832"
+    "/mvtec_3d_anomaly_detection.tar.xz",
+    checksum="d8bb2800fbf3ac88e798da6ae10dc819",
 )
 
-CATEGORIES = (
-    "bottle",
-    "cable",
-    "capsule",
-    "carpet",
-    "grid",
-    "hazelnut",
-    "leather",
-    "metal_nut",
-    "pill",
-    "screw",
-    "tile",
-    "toothbrush",
-    "transistor",
-    "wood",
-    "zipper",
-)
+CATEGORIES = ("bagel", "cable_gland", "carrot", "cookie", "dowel", "foam", "peach", "potato", "rope", "tire")
 
 
-def make_mvtec_dataset(
+def make_mvtec_3d_dataset(
     root: str | Path,
     split: str | Split | None = None,
     extensions: Sequence[str] | None = None,
 ) -> DataFrame:
-    """Create MVTec AD samples by parsing the MVTec AD data file structure.
+    """Create MVTec 3D-AD samples by parsing the MVTec AD data file structure.
 
     The files are expected to follow the structure:
         path/to/dataset/split/category/image_filename.png
@@ -99,22 +80,28 @@ def make_mvtec_dataset(
         extensions (Sequence[str] | None, optional): List of file extensions to be included in the dataset.
 
     Examples:
-        The following example shows how to get training samples from MVTec AD bottle category:
+        The following example shows how to get training samples from MVTec 3D-AD bagel category:
 
-        >>> root = Path('./MVTec')
-        >>> category = 'bottle'
+        >>> root = Path('./MVTec3D')
+        >>> category = 'bagel'
         >>> path = root / category
         >>> path
-        PosixPath('MVTec/bottle')
+        PosixPath('MVTec3D/bagel')
 
-        >>> samples = make_mvtec_dataset(path, split='train', split_ratio=0.1, seed=0)
+        >>> samples = make_mvtec_3d_dataset(path, split='train', split_ratio=0.1, seed=0)
         >>> samples.head()
-           path         split label image_path                           mask_path                   label_index
-        0  MVTec/bottle train good MVTec/bottle/train/good/105.png MVTec/bottle/ground_truth/good/105_mask.png 0
-        1  MVTec/bottle train good MVTec/bottle/train/good/017.png MVTec/bottle/ground_truth/good/017_mask.png 0
-        2  MVTec/bottle train good MVTec/bottle/train/good/137.png MVTec/bottle/ground_truth/good/137_mask.png 0
-        3  MVTec/bottle train good MVTec/bottle/train/good/152.png MVTec/bottle/ground_truth/good/152_mask.png 0
-        4  MVTec/bottle train good MVTec/bottle/train/good/109.png MVTec/bottle/ground_truth/good/109_mask.png 0
+           path         split label image_path                           mask_path
+        0  MVTec3D/bagel train good MVTec3D/bagel/train/good/rgb/105.png MVTec3D/bagel/ground_truth/good/gt/105.png
+        1  MVTec3D/bagel train good MVTec3D/bagel/train/good/rgb/017.png MVTec3D/bagel/ground_truth/good/gt/017.png
+        2  MVTec3D/bagel train good MVTec3D/bagel/train/good/rgb/137.png MVTec3D/bagel/ground_truth/good/gt/137.png
+        3  MVTec3D/bagel train good MVTec3D/bagel/train/good/rgb/152.png MVTec3D/bagel/ground_truth/good/gt/152.png
+        4  MVTec3D/bagel train good MVTec3D/bagel/train/good/rgb/109.png MVTec3D/bagel/ground_truth/good/gt/109.png
+           depth_path                                   label_index
+           MVTec3D/bagel/ground_truth/good/xyz/105.tiff 0
+           MVTec3D/bagel/ground_truth/good/xyz/017.tiff 0
+           MVTec3D/bagel/ground_truth/good/xyz/137.tiff 0
+           MVTec3D/bagel/ground_truth/good/xyz/152.tiff 0
+           MVTec3D/bagel/ground_truth/good/xyz/109.tiff 0
 
     Returns:
         DataFrame: an output dataframe containing the samples of the dataset.
@@ -123,15 +110,28 @@ def make_mvtec_dataset(
         extensions = IMG_EXTENSIONS
 
     root = Path(root)
-    samples_list = [(str(root),) + f.parts[-3:] for f in root.glob(r"**/*") if f.suffix in extensions]
+    samples_list = [(str(root),) + f.parts[-4:] for f in root.glob(r"**/*") if f.suffix in extensions]
     if not samples_list:
         msg = f"Found 0 images in {root}"
         raise RuntimeError(msg)
 
-    samples = DataFrame(samples_list, columns=["path", "split", "label", "image_path"])
+    samples = DataFrame(samples_list, columns=["path", "split", "label", "type", "file_name"])
 
     # Modify image_path column by converting to absolute path
-    samples["image_path"] = samples.path + "/" + samples.split + "/" + samples.label + "/" + samples.image_path
+    samples.loc[(samples.type == "rgb"), "image_path"] = (
+        samples.path + "/" + samples.split + "/" + samples.label + "/" + "rgb/" + samples.file_name
+    )
+    samples.loc[(samples.type == "rgb"), "depth_path"] = (
+        samples.path
+        + "/"
+        + samples.split
+        + "/"
+        + samples.label
+        + "/"
+        + "xyz/"
+        + samples.file_name.str.split(".").str[0]
+        + ".tiff"
+    )
 
     # Create label index for normal (0) and anomalous (1) images.
     samples.loc[(samples.label == "good"), "label_index"] = LabelName.NORMAL
@@ -139,25 +139,36 @@ def make_mvtec_dataset(
     samples.label_index = samples.label_index.astype(int)
 
     # separate masks from samples
-    mask_samples = samples.loc[samples.split == "ground_truth"].sort_values(by="image_path", ignore_index=True)
-    samples = samples[samples.split != "ground_truth"].sort_values(by="image_path", ignore_index=True)
+    mask_samples = samples.loc[((samples.split == "test") & (samples.type == "rgb"))].sort_values(
+        by="image_path",
+        ignore_index=True,
+    )
+    samples = samples.sort_values(by="image_path", ignore_index=True)
 
-    # assign mask paths to anomalous test images
-    samples["mask_path"] = ""
-    samples.loc[
-        (samples.split == "test") & (samples.label_index == LabelName.ABNORMAL),
-        "mask_path",
-    ] = mask_samples.image_path.to_numpy()
+    # assign mask paths to all test images
+    samples.loc[((samples.split == "test") & (samples.type == "rgb")), "mask_path"] = (
+        mask_samples.path + "/" + samples.split + "/" + samples.label + "/" + "gt/" + samples.file_name
+    )
+    samples = samples.dropna(subset=["image_path"])
+    samples = samples.astype({"image_path": "str", "mask_path": "str", "depth_path": "str"})
 
     # assert that the right mask files are associated with the right test images
-    if len(samples.loc[samples.label_index == LabelName.ABNORMAL]):
-        assert (
-            samples.loc[samples.label_index == LabelName.ABNORMAL]
-            .apply(lambda x: Path(x.image_path).stem in Path(x.mask_path).stem, axis=1)
-            .all()
-        ), "Mismatch between anomalous images and ground truth masks. Make sure the mask files in 'ground_truth' \
-                folder follow the same naming convention as the anomalous images in the dataset (e.g. image: \
-                '000.png', mask: '000.png' or '000_mask.png')."
+    assert (
+        samples.loc[samples.label_index == LabelName.ABNORMAL]
+        .apply(lambda x: Path(x.image_path).stem in Path(x.mask_path).stem, axis=1)
+        .all()
+    ), "Mismatch between anomalous images and ground truth masks. Make sure the mask files in 'ground_truth' \
+              folder follow the same naming convention as the anomalous images in the dataset (e.g. image: '000.png', \
+              mask: '000.png' or '000_mask.png')."
+
+    # assert that the right depth image files are associated with the right test images
+    assert (
+        samples.loc[samples.label_index == LabelName.ABNORMAL]
+        .apply(lambda x: Path(x.image_path).stem in Path(x.depth_path).stem, axis=1)
+        .all()
+    ), "Mismatch between anomalous images and depth images. Make sure the mask files in 'xyz' \
+              folder follow the same naming convention as the anomalous images in the dataset (e.g. image: '000.png', \
+              depth: '000.tiff')."
 
     if split:
         samples = samples[samples.split == split].reset_index(drop=True)
@@ -165,23 +176,23 @@ def make_mvtec_dataset(
     return samples
 
 
-class MVTecDataset(AnomalibDataset):
-    """MVTec dataset class.
+class MVTec3DDataset(AnomalibDepthDataset):
+    """MVTec 3D dataset class.
 
     Args:
         task (TaskType): Task type, ``classification``, ``detection`` or ``segmentation``
         transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
         split (str | Split | None): Split of the dataset, usually Split.TRAIN or Split.TEST
         root (Path | str): Path to the root of the dataset
-        category (str): Sub-category of the dataset, e.g. 'bottle'
+        category (str): Sub-category of the dataset, e.g. 'bagel'
     """
 
     def __init__(
         self,
         task: TaskType,
         transform: A.Compose,
-        root: Path | str = "./datasets/MVTec",
-        category: str = "bottle",
+        root: Path | str = "./datasets/MVTec3D",
+        category: str = "bagel",
         split: str | Split | None = None,
     ) -> None:
         super().__init__(task=task, transform=transform)
@@ -190,10 +201,10 @@ class MVTecDataset(AnomalibDataset):
         self.split = split
 
     def _setup(self) -> None:
-        self.samples = make_mvtec_dataset(self.root_category, split=self.split, extensions=IMG_EXTENSIONS)
+        self.samples = make_mvtec_3d_dataset(self.root_category, split=self.split, extensions=IMG_EXTENSIONS)
 
 
-class MVTec(AnomalibDataModule):
+class MVTec3D(AnomalibDataModule):
     """MVTec Datamodule.
 
     Args:
@@ -223,11 +234,11 @@ class MVTec(AnomalibDataModule):
 
     def __init__(
         self,
-        root: Path | str = "./datasets/MVTec",
-        category: str = "bottle",
+        root: Path | str = "./datasets/MVTec3D",
+        category: str = "bagel",
         image_size: int | tuple[int, int] = (256, 256),
         center_crop: int | tuple[int, int] | None = None,
-        normalization: InputNormalizationMethod | str = InputNormalizationMethod.IMAGENET,
+        normalization: str | InputNormalizationMethod = InputNormalizationMethod.IMAGENET,
         train_batch_size: int = 32,
         eval_batch_size: int = 32,
         num_workers: int = 8,
@@ -267,14 +278,14 @@ class MVTec(AnomalibDataModule):
             normalization=InputNormalizationMethod(normalization),
         )
 
-        self.train_data = MVTecDataset(
+        self.train_data = MVTec3DDataset(
             task=task,
             transform=transform_train,
             split=Split.TRAIN,
             root=root,
             category=category,
         )
-        self.test_data = MVTecDataset(
+        self.test_data = MVTec3DDataset(
             task=task,
             transform=transform_eval,
             split=Split.TEST,
