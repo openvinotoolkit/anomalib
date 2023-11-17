@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-from collections.abc import Generator
+from collections.abc import Callable, Generator
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -65,30 +65,35 @@ def dataset_name(request: "pytest.FixtureRequest") -> list[str]:
 
 
 @pytest.fixture(scope="session")
-def trained_padim_path(project_path: Path, dataset_path: Path) -> Path:
-    """Return the path to the trained model.
+def ckpt_path(project_path: Path, dataset_path: Path) -> Callable[[str], Path]:
+    """."""
 
-    Since integration tests train all the models, model training occurs when running unit tests invididually.
-    """
-    ckpt_path = project_path / "padim" / "dummy" / "weights" / "last.ckpt"
-    if not ckpt_path.exists():
-        model = get_model("Padim")
-        engine = Engine(
-            logger=False,
-            default_root_dir=project_path,
-            max_epochs=1,
-            devices=1,
-            callbacks=[
-                ModelCheckpoint(
-                    dirpath=project_path / "padim" / "dummy" / "weights",
-                    monitor=None,
-                    filename="last",
-                    save_last=True,
-                    auto_insert_metric_name=False,
-                ),
-            ],
-        )
-        dataset = MVTec(root=dataset_path / "mvtec", category="dummy")
-        engine.fit(model=model, datamodule=dataset)
+    def checkpoint(model_name: str) -> Path:
+        """Return the path to the trained model.
 
-    return ckpt_path
+        Since integration tests train all the models, model training occurs when running unit tests invididually.
+        """
+        _ckpt_path = project_path / model_name.lower() / "dummy" / "weights" / "last.ckpt"
+        if not _ckpt_path.exists():
+            model = get_model(model_name)
+            engine = Engine(
+                logger=False,
+                default_root_dir=project_path,
+                max_epochs=1,
+                devices=1,
+                callbacks=[
+                    ModelCheckpoint(
+                        dirpath=project_path / model_name.lower() / "dummy" / "weights",
+                        monitor=None,
+                        filename="last",
+                        save_last=True,
+                        auto_insert_metric_name=False,
+                    ),
+                ],
+            )
+            dataset = MVTec(root=dataset_path / "mvtec", category="dummy")
+            engine.fit(model=model, datamodule=dataset)
+
+        return _ckpt_path
+
+    return checkpoint

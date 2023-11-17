@@ -3,7 +3,7 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
+from collections.abc import Callable
 from pathlib import Path
 
 import numpy as np
@@ -42,13 +42,14 @@ class TestVisualizer:
     @pytest.mark.parametrize("mode", ["full", "simple"])
     def test_model_visualizer_mode(
         self,
-        trained_padim_path: Path,
+        ckpt_path: Callable[[str], Path],
         project_path: Path,
         dataset_path: Path,
         task: TaskType,
         mode: str,
     ) -> None:
         """Test combination of model/visualizer/mode on only 1 epoch as a sanity check before merge."""
+        _ckpt_path: Path = ckpt_path("Padim")
         model = get_model("padim")
         engine = Engine(
             default_root_dir=project_path,
@@ -58,8 +59,8 @@ class TestVisualizer:
             task=task,
         )
         datamodule = MVTec(root=dataset_path / "mvtec", category="dummy", task=task)
-        engine.test(model=model, datamodule=datamodule, ckpt_path=str(trained_padim_path))
+        engine.test(model=model, datamodule=datamodule, ckpt_path=str(_ckpt_path))
 
         dataset = InferenceDataset(path=dataset_path / "mvtec" / "dummy" / "test")
         datamodule = DataLoader(dataset)
-        engine.predict(model=model, dataloaders=datamodule, ckpt_path=str(trained_padim_path))
+        engine.predict(model=model, dataloaders=datamodule, ckpt_path=str(_ckpt_path))
