@@ -10,9 +10,9 @@ import torch
 from anomalib.data import MVTec
 from anomalib.engine import Engine
 from anomalib.models import Padim
-from anomalib.post_processing.normalization import NormalizationMethod
 from anomalib.utils.callbacks import get_callbacks
 from anomalib.utils.metrics import F1AdaptiveThreshold
+from anomalib.utils.normalization import NormalizationMethod
 
 
 @pytest.mark.parametrize(

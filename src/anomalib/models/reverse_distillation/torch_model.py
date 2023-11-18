@@ -17,7 +17,7 @@ from anomalib.models.reverse_distillation.components import get_bottleneck_layer
 from .anomaly_map import AnomalyMapGenerationMode
 
 if TYPE_CHECKING:
-    from anomalib.pre_processing import Tiler
+    from anomalib.data.utils.tiler import Tiler
 
 
 class ReverseDistillationModel(nn.Module):

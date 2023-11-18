@@ -3,8 +3,8 @@
 # Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from anomalib.post_processing import VisualizationMode
 from anomalib.utils.types import TaskType
+from anomalib.utils.visualization import VisualizationMode
 
 from .visualizer_base import BaseVisualizerCallback
 from .visualizer_image import ImageVisualizerCallback
