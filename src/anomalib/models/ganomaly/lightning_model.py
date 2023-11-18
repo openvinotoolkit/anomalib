@@ -39,7 +39,7 @@ class Ganomaly(AnomalyModule):
 
     def __init__(
         self,
-        input_size: tuple[int, int],
+        input_size: tuple[int, int] = (256, 256),
         batch_size: int = 32,
         n_features: int = 64,
         latent_vec_size: int = 100,

@@ -36,7 +36,7 @@ class Csflow(AnomalyModule):
 
     def __init__(
         self,
-        input_size: tuple[int, int],
+        input_size: tuple[int, int] = (256, 256),
         cross_conv_hidden_channels: int = 1024,
         n_coupling_blocks: int = 4,
         clamp: int = 3,

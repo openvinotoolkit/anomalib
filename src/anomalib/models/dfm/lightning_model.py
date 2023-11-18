@@ -36,7 +36,7 @@ class Dfm(AnomalyModule):
 
     def __init__(
         self,
-        input_size: tuple[int, int],
+        input_size: tuple[int, int] = (256, 256),
         backbone: str = "resnet50",
         layer: str = "layer3",
         pre_trained: bool = True,
