@@ -18,49 +18,62 @@ import torch
 from anomalib.data.utils import get_transforms
 
 
-def test_transforms_and_image_size_cannot_be_none():
-    """When transformations ``config`` and ``image_size`` are ``None``
-    ``PreProcessor`` class should raise a ``ValueError``."""
+def test_transforms_and_image_size_cannot_be_none() -> None:
+    """Test when both config and image_size are None.
 
-    with pytest.raises(ValueError):
+    When transformations ``config`` and ``image_size`` are ``None``
+    ``PreProcessor`` class should raise a ``ValueError``.
+    """
+    with pytest.raises(ValueError):  # noqa: PT011
         get_transforms(config=None, image_size=None)
 
 
-@pytest.mark.parametrize("image_size, center_crop", [(256, None), ((256, 256), None), (256, 224), (256, (224, 224))])
-def test_dimensions_can_be_int_or_tuple(image_size, center_crop):
-    """When ``config`` is None, ``image_size`` could be either ``int`` or
-    ``Tuple[int, int]``."""
+@pytest.mark.parametrize(
+    ("image_size", "center_crop"),
+    [(256, None), ((256, 256), None), (256, 224), (256, (224, 224))],
+)
+def test_dimensions_can_be_int_or_tuple(image_size: tuple | int, center_crop: tuple | int) -> None:
+    """Test combinations of image size and center crop.
 
+    When ``config`` is None, ``image_size`` could be either ``int`` or
+    ``Tuple[int, int]``.
+    """
     get_transforms(config=None, image_size=image_size, center_crop=center_crop)
     get_transforms(config=None, image_size=image_size, center_crop=center_crop)
 
 
-@pytest.mark.parametrize("image_size, center_crop", [(256.0, 224), (256, 224.0)])
-def test_dimensions_cannot_be_float(image_size, center_crop):
+@pytest.mark.parametrize(("image_size", "center_crop"), [(256.0, 224), (256, 224.0)])
+def test_dimensions_cannot_be_float(image_size: float | int, center_crop: float | int) -> None:
+    """Ensure dimensions are not float."""
     with pytest.raises(TypeError):
         get_transforms(config=None, image_size=image_size, center_crop=center_crop)
 
 
-def test_crop_size_larger_than_image_size():
-    with pytest.raises(ValueError):
+def test_crop_size_larger_than_image_size() -> None:
+    """Ensure crop size is not larger than image size."""
+    with pytest.raises(ValueError):  # noqa: PT011
         get_transforms(config=None, image_size=224, center_crop=256)
 
 
-def test_center_crop_could_be_int_or_tuple():
-    """When ``config`` is None, ``image_size`` could be either ``int`` or
-    ``Tuple[int, int]``."""
+def test_center_crop_could_be_int_or_tuple() -> None:
+    """Ensure center crop is either int or tuple.
 
+    When ``config`` is None, ``image_size`` could be either ``int`` or
+    ``Tuple[int, int]``.
+    """
     get_transforms(image_size=256)
     get_transforms(image_size=(256, 512))
     with pytest.raises(TypeError):
         get_transforms(config=None, image_size=0.0)
 
 
-def test_load_transforms_from_string():
-    """When the pre-processor is instantiated via a transform config file, it
-    should work with either string or A.Compose and return a ValueError
-    otherwise."""
+def test_load_transforms_from_string() -> None:
+    """Load transforms from yaml.
 
+    When the pre-processor is instantiated via a transform config file, it
+    should work with either string or A.Compose and return a ValueError
+    otherwise.
+    """
     config_path = tempfile.NamedTemporaryFile(suffix=".yaml").name
 
     # Create a dummy transformation.
@@ -69,7 +82,7 @@ def test_load_transforms_from_string():
             A.Resize(1024, 1024, always_apply=True),
             A.CenterCrop(256, 256, always_apply=True),
             A.Resize(224, 224, always_apply=True),
-        ]
+        ],
     )
     A.save(transform=transforms, filepath=config_path, data_format="yaml")
 
@@ -86,9 +99,12 @@ def test_load_transforms_from_string():
         get_transforms(config=0)
 
 
-def test_to_tensor_returns_correct_type():
-    """`to_tensor` flag should ensure that pre-processor returns the expected
-    type."""
+def test_to_tensor_returns_correct_type() -> None:
+    """Ensure correct type.
+
+    `to_tensor` flag should ensure that pre-processor returns the expected
+    type.
+    """
     image = skimage.data.astronaut()
 
     pre_processor = get_transforms(config=None, image_size=256, to_tensor=True)
