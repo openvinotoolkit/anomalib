@@ -11,8 +11,8 @@ from lightning.pytorch import Callback, Trainer
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 
 from anomalib import engine
+from anomalib.metrics import AnomalyScoreDistribution
 from anomalib.models.components import AnomalyModule
-from anomalib.utils.metrics import AnomalyScoreDistribution
 from anomalib.utils.normalization.cdf import normalize, standardize
 
 if TYPE_CHECKING:

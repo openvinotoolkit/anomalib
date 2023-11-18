@@ -11,8 +11,8 @@ from torchvision import transforms
 from torchvision.datasets import FakeData
 
 from anomalib.callbacks import ImageVisualizerCallback
-from anomalib.utils.metrics import AnomalyScoreDistribution, F1AdaptiveThreshold, MinMax
-from anomalib.utils.metrics.collection import AnomalibMetricCollection
+from anomalib.metrics import AnomalyScoreDistribution, F1AdaptiveThreshold, MinMax
+from anomalib.metrics.collection import AnomalibMetricCollection
 
 
 class FakeDataModule(pl.LightningDataModule):

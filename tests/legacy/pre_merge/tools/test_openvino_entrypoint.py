@@ -12,8 +12,8 @@ from pathlib import Path
 import pytest
 
 from anomalib.deploy import export_to_openvino
+from anomalib.metrics.threshold import F1AdaptiveThreshold
 from anomalib.models import Padim
-from anomalib.utils.metrics.threshold import F1AdaptiveThreshold
 from anomalib.utils.types import TaskType
 
 sys.path.append("tools/inference")

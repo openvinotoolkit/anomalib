@@ -14,13 +14,13 @@ import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torch import nn
 
-from anomalib.utils.metrics.threshold import BaseThreshold
+from anomalib.metrics.threshold import BaseThreshold
 
 if TYPE_CHECKING:
     from lightning.pytorch.callbacks import Callback
     from torchmetrics import Metric
 
-    from anomalib.utils.metrics import AnomalibMetricCollection
+    from anomalib.metrics import AnomalibMetricCollection
 
 logger = logging.getLogger(__name__)
 

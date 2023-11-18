@@ -22,8 +22,8 @@ from anomalib.callbacks.post_processor import _PostProcessorCallback
 from anomalib.callbacks.thresholding import _ThresholdCallback
 from anomalib.data import AnomalibDataModule, AnomalibDataset
 from anomalib.deploy.export import ExportMode, export_to_onnx, export_to_openvino, export_to_torch
+from anomalib.metrics.threshold import BaseThreshold
 from anomalib.models import AnomalyModule
-from anomalib.utils.metrics.threshold import BaseThreshold
 from anomalib.utils.normalization import NormalizationMethod
 from anomalib.utils.types import TaskType
 

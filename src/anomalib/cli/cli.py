@@ -28,10 +28,10 @@ from anomalib.data import AnomalibDataModule
 from anomalib.deploy import export_to_onnx, export_to_openvino, export_to_torch
 from anomalib.engine import Engine
 from anomalib.loggers import configure_logger
+from anomalib.metrics.threshold import BaseThreshold
 from anomalib.models import AnomalyModule
 from anomalib.pipelines.benchmarking import distribute
 from anomalib.pipelines.hpo import Sweep, get_hpo_parser
-from anomalib.utils.metrics.threshold import BaseThreshold
 from anomalib.utils.types import TaskType
 
 traceback.install()
