@@ -29,7 +29,7 @@ from anomalib.deploy import export_to_onnx, export_to_openvino, export_to_torch
 from anomalib.engine import Engine
 from anomalib.models import AnomalyModule
 from anomalib.pipelines.benchmarking import distribute
-from anomalib.utils.hpo import Sweep, get_hpo_parser
+from anomalib.pipelines.hpo import Sweep, get_hpo_parser
 from anomalib.utils.loggers import configure_logger
 from anomalib.utils.metrics.threshold import BaseThreshold
 from anomalib.utils.types import TaskType
