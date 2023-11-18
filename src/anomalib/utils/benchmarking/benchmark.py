@@ -23,12 +23,12 @@ import torch
 from lightning.pytorch import seed_everything
 from omegaconf import DictConfig, ListConfig, OmegaConf
 
+from anomalib.callbacks.timer import TimerCallback
 from anomalib.config import update_input_size_config
 from anomalib.data import get_datamodule
 from anomalib.deploy.export import export_to_openvino, export_to_torch
 from anomalib.engine import Engine
 from anomalib.models import get_model
-from anomalib.utils.callbacks.timer import TimerCallback
 from anomalib.utils.loggers import configure_logger
 from anomalib.utils.sweep import get_openvino_throughput, get_run_config, get_torch_throughput
 from anomalib.utils.sweep.config import flattened_config_to_nested

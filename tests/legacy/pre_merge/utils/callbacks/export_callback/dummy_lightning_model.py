@@ -4,15 +4,15 @@ from unittest.mock import MagicMock
 import lightning.pytorch as pl
 import torch
 from omegaconf import DictConfig, ListConfig
+from tests.legacy.helpers.dummy import DummyModel
 from torch import nn, optim
 from torch.utils.data import DataLoader
 from torchvision import transforms
 from torchvision.datasets import FakeData
 
-from anomalib.utils.callbacks import ImageVisualizerCallback
+from anomalib.callbacks import ImageVisualizerCallback
 from anomalib.utils.metrics import AnomalyScoreDistribution, F1AdaptiveThreshold, MinMax
 from anomalib.utils.metrics.collection import AnomalibMetricCollection
-from tests.legacy.helpers.dummy import DummyModel
 
 
 class FakeDataModule(pl.LightningDataModule):

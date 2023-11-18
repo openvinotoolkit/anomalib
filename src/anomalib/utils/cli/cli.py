@@ -15,14 +15,14 @@ from lightning.pytorch.cli import ArgsType, LightningArgumentParser, LightningCL
 from lightning.pytorch.utilities.types import _EVALUATE_OUTPUT, _PREDICT_OUTPUT
 from rich import traceback
 
+from anomalib.callbacks import get_callbacks, get_visualization_callbacks
+from anomalib.callbacks.normalization import get_normalization_callback
 from anomalib.config.config import update_config
 from anomalib.data import AnomalibDataModule
 from anomalib.deploy import export_to_onnx, export_to_openvino, export_to_torch
 from anomalib.engine import Engine
 from anomalib.models import AnomalyModule
 from anomalib.utils.benchmarking import distribute
-from anomalib.utils.callbacks import get_callbacks, get_visualization_callbacks
-from anomalib.utils.callbacks.normalization import get_normalization_callback
 from anomalib.utils.cli.help_formatter import CustomHelpFormatter
 from anomalib.utils.cli.subcommands import (
     add_onnx_export_arguments,

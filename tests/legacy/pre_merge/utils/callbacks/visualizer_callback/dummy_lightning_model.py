@@ -8,8 +8,8 @@ from tests.legacy.helpers.dataset import get_dataset_path
 from tests.legacy.helpers.metrics import get_metrics
 from torch import nn
 
+from anomalib.callbacks import ImageVisualizerCallback
 from anomalib.models.components import AnomalyModule
-from anomalib.utils.callbacks import ImageVisualizerCallback
 
 
 class _DummyAnomalyMapGenerator(nn.Module):

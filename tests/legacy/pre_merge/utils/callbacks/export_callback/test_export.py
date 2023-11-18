@@ -8,11 +8,11 @@ from lightning.pytorch.callbacks.early_stopping import EarlyStopping
 from tests.legacy.helpers.dataset import get_dataset_path
 from tests.legacy.pre_merge.utils.callbacks.export_callback.dummy_lightning_model import DummyLightningModule
 
+from anomalib.callbacks.export import ExportCallback
 from anomalib.data.image.mvtec import MVTec
 from anomalib.data.utils import random_split
 from anomalib.deploy import ExportMode
 from anomalib.engine import Engine
-from anomalib.utils.callbacks.export import ExportCallback
 
 
 # TODO: This is temporarily here. Move it to conftest.py in integration tests.
