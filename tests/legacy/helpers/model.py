@@ -13,11 +13,11 @@ from omegaconf import DictConfig, ListConfig
 
 from anomalib.callbacks import get_callbacks
 from anomalib.callbacks.visualizer import BaseVisualizerCallback
-from anomalib.config import _update_nncf_config
 from anomalib.data import get_datamodule
 from anomalib.engine import Engine
 from anomalib.models import get_model
 from anomalib.models.components import AnomalyModule
+from anomalib.utils.config import _update_nncf_config
 from anomalib.utils.types import TaskType
 
 

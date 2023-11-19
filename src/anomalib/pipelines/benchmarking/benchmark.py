@@ -24,7 +24,6 @@ from lightning.pytorch import seed_everything
 from omegaconf import DictConfig, ListConfig, OmegaConf
 
 from anomalib.callbacks.timer import TimerCallback
-from anomalib.config import update_input_size_config
 from anomalib.data import get_datamodule
 from anomalib.deploy.export import export_to_openvino, export_to_torch
 from anomalib.engine import Engine
@@ -32,6 +31,7 @@ from anomalib.loggers import configure_logger
 from anomalib.models import get_model
 from anomalib.pipelines.sweep import get_openvino_throughput, get_run_config, get_torch_throughput
 from anomalib.pipelines.sweep.config import flattened_config_to_nested
+from anomalib.utils.config import update_input_size_config
 
 from .utils import upload_to_comet, upload_to_wandb, write_metrics
 
