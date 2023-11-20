@@ -14,14 +14,14 @@ import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 
 from anomalib.models.ai_vad.torch_model import AiVadModel
-from anomalib.models.components import AnomalyModule
+from anomalib.models.components import AnomalyModule, MemoryBankMixin
 
 logger = logging.getLogger(__name__)
 
 __all__ = ["AiVad"]
 
 
-class AiVad(AnomalyModule):
+class AiVad(MemoryBankMixin, AnomalyModule):
     """AI-VAD: Attribute-based Representations for Accurate and Interpretable Video Anomaly Detection.
 
     Args:
@@ -97,11 +97,8 @@ class AiVad(AnomalyModule):
         for features, video_path in zip(features_per_batch, batch["video_path"], strict=True):
             self.model.density_estimator.update(features, video_path)
 
-    def on_validation_start(self) -> None:
+    def fit(self) -> None:
         """Fit the density estimators to the extracted features from the training set."""
-        # NOTE: Previous anomalib versions fit Gaussian at the end of the epoch.
-        #   This is not possible anymore with PyTorch Lightning v1.4.0 since validation
-        #   is run within train epoch.
         self.model.density_estimator.fit()
 
     def validation_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> STEP_OUTPUT:

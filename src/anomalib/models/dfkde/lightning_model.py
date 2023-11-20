@@ -11,7 +11,7 @@ from typing import Any
 import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 
-from anomalib.models.components import AnomalyModule
+from anomalib.models.components import AnomalyModule, MemoryBankMixin
 from anomalib.models.components.classification import FeatureScalingMethod
 
 from .torch_model import DfkdeModel
@@ -19,7 +19,7 @@ from .torch_model import DfkdeModel
 logger = logging.getLogger(__name__)
 
 
-class Dfkde(AnomalyModule):
+class Dfkde(MemoryBankMixin, AnomalyModule):
     """DFKDE: Deep Feature Kernel Density Estimation.
 
     Args:
@@ -76,18 +76,10 @@ class Dfkde(AnomalyModule):
         del args, kwargs  # These variables are not used.
 
         embedding = self.model(batch["image"])
-
-        # NOTE: `self.embedding` appends each batch embedding to
-        #   store the training set embedding. We manually append these
-        #   values mainly due to the new order of hooks introduced after PL v1.4.0
-        #   https://github.com/PyTorchLightning/pytorch-lightning/pull/7357
         self.embeddings.append(embedding)
 
-    def on_validation_start(self) -> None:
+    def fit(self) -> None:
         """Fit a KDE Model to the embedding collected from the training set."""
-        # NOTE: Previous anomalib versions fit Gaussian at the end of the epoch.
-        #   This is not possible anymore with PyTorch Lightning v1.4.0 since validation
-        #   is run within train epoch.
         embeddings = torch.vstack(self.embeddings)
 
         logger.info("Fitting a KDE model to the embedding collected from the training set.")
