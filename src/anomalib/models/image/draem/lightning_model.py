@@ -16,8 +16,9 @@ from torch import nn
 
 from anomalib.data.utils import Augmenter
 from anomalib.models.components import AnomalyModule
-from anomalib.models.draem.loss import DraemLoss
-from anomalib.models.draem.torch_model import DraemModel
+
+from .loss import DraemLoss
+from .torch_model import DraemModel
 
 __all__ = ["Draem"]
 
