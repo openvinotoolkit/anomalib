@@ -21,9 +21,10 @@ from torch.utils.data import DataLoader
 from torchvision.models.feature_extraction import create_feature_extractor
 from tqdm import tqdm
 
-from anomalib.models.cfa.anomaly_map import AnomalyMapGenerator
 from anomalib.models.components import DynamicBufferModule
 from anomalib.models.components.feature_extractors import dryrun_find_featuremap_dims
+
+from .anomaly_map import AnomalyMapGenerator
 
 SUPPORTED_BACKBONES = ("vgg19_bn", "resnet18", "wide_resnet50_2", "efficientnet_b5")
 

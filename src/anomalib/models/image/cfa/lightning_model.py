@@ -15,9 +15,10 @@ from typing import Any
 import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 
-from anomalib.models.cfa.loss import CfaLoss
-from anomalib.models.cfa.torch_model import CfaModel
 from anomalib.models.components import AnomalyModule
+
+from .loss import CfaLoss
+from .torch_model import CfaModel
 
 logger = logging.getLogger(__name__)
 
