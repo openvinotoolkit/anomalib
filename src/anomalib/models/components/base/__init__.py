@@ -5,5 +5,6 @@
 
 from .anomaly_module import AnomalyModule
 from .dynamic_module import DynamicBufferModule
+from .memory_bank_module import MemoryBankMixin
 
-__all__ = ["AnomalyModule", "DynamicBufferModule"]
+__all__ = ["AnomalyModule", "DynamicBufferModule", "MemoryBankMixin"]

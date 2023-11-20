@@ -60,3 +60,11 @@ class F1AdaptiveThreshold(PrecisionRecallCurve, BaseThreshold):
         else:
             self.value = thresholds[torch.argmax(f1_score)]
         return self.value
+
+    def __repr__(self) -> str:
+        """Return threshold value within the string representation.
+
+        Returns:
+            str: String representation of the class.
+        """
+        return f"{super().__repr__()} (value={self.value:.2f})"

@@ -12,7 +12,7 @@ import logging
 import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 
-from anomalib.models.components import AnomalyModule
+from anomalib.models.components import AnomalyModule, MemoryBankMixin
 from anomalib.models.padim.torch_model import PadimModel
 
 logger = logging.getLogger(__name__)
@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 __all__ = ["Padim"]
 
 
-class Padim(AnomalyModule):
+class Padim(MemoryBankMixin, AnomalyModule):
     """PaDiM: a Patch Distribution Modeling Framework for Anomaly Detection and Localization.
 
     Args:
@@ -29,7 +29,7 @@ class Padim(AnomalyModule):
         backbone (str): Backbone CNN network
         pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.
         n_features (int, optional): Number of features to retain in the dimension reduction step.
-                                Default values from the paper are available for: resnet18 (100), wide_resnet50_2 (550).
+            Default values from the paper are available for: resnet18 (100), wide_resnet50_2 (550).
     """
 
     def __init__(
@@ -75,17 +75,10 @@ class Padim(AnomalyModule):
         self.model.feature_extractor.eval()
         embedding = self.model(batch["image"])
 
-        # NOTE: `self.embedding` appends each batch embedding to
-        #   store the training set embedding. We manually append these
-        #   values mainly due to the new order of hooks introduced after PL v1.4.0
-        #   https://github.com/PyTorchLightning/pytorch-lightning/pull/7357
         self.embeddings.append(embedding.cpu())
 
-    def on_validation_start(self) -> None:
+    def fit(self) -> None:
         """Fit a Gaussian to the embedding collected from the training set."""
-        # NOTE: Previous anomalib versions fit Gaussian at the end of the epoch.
-        #   This is not possible anymore with PyTorch Lightning v1.4.0 since validation
-        #   is run within train epoch.
         logger.info("Aggregating the embedding extracted from the training set.")
         embeddings = torch.vstack(self.embeddings)
 

@@ -10,7 +10,7 @@ from typing import Any
 import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 
-from anomalib.models.components import AnomalyModule
+from anomalib.models.components import AnomalyModule, MemoryBankMixin
 from anomalib.models.components.classification import FeatureScalingMethod
 
 from .region_extractor import RoiStage
@@ -19,7 +19,7 @@ from .torch_model import RkdeModel
 logger = logging.getLogger(__name__)
 
 
-class Rkde(AnomalyModule):
+class Rkde(MemoryBankMixin, AnomalyModule):
     """Region Based Anomaly Detection With Real-Time Training and Analysis.
 
     Args:
@@ -81,7 +81,7 @@ class Rkde(AnomalyModule):
         features = self.model(batch["image"])
         self.embeddings.append(features)
 
-    def on_validation_start(self) -> None:
+    def fit(self) -> None:
         """Fit a KDE Model to the embedding collected from the training set."""
         embeddings = torch.vstack(self.embeddings)
 
