@@ -120,9 +120,8 @@ class AnomalyModule(pl.LightningModule, ABC):
             "pixel_threshold_class"
         ] = f"{self.pixel_threshold.__class__.__module__}.{self.pixel_threshold.__class__.__name__}"
         if hasattr(self, "normalization_metrics"):
-            destination[
-                "normalization_class"
-            ] = f"{self.normalization_metrics.__class__.__module__}.{self.normalization_metrics.__class__.__name__}"
+            destination["normalization_class"] = f"{self.normalization_metrics.__class__.__module__}."
+            f"{self.normalization_metrics.__class__.__name__}"
 
         return super()._save_to_state_dict(destination, prefix, keep_vars)
 
