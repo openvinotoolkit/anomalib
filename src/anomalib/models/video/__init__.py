@@ -1,6 +1,6 @@
 """Anomalib Video Models."""
 
-# Copyright (C) 2022 Intel Corporation
+# Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 from .ai_vad import AiVad
