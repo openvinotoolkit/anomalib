@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from .cfa import Cfa
+from .csflow import Csflow
 from .dfkde import Dfkde
 from .dfm import Dfm
 from .draem import Draem
@@ -11,4 +12,4 @@ from .efficient_ad import EfficientAd
 from .fastflow import Fastflow
 from .ganomaly import Ganomaly
 
-__all__ = ["Cfa", "Dfkde", "Dfm", "Draem", "EfficientAd", "Fastflow", "Ganomaly"]
+__all__ = ["Cfa", "Csflow", "Dfkde", "Dfm", "Draem", "EfficientAd", "Fastflow", "Ganomaly"]
