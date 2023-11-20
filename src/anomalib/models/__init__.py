@@ -18,14 +18,13 @@ from anomalib.models.dfkde import Dfkde
 from anomalib.models.dfm import Dfm
 from anomalib.models.draem import Draem
 from anomalib.models.efficient_ad import EfficientAd
-from anomalib.models.fastflow import Fastflow
 from anomalib.models.padim import Padim
 from anomalib.models.patchcore import Patchcore
 from anomalib.models.reverse_distillation import ReverseDistillation
 from anomalib.models.rkde import Rkde
 from anomalib.models.stfpm import Stfpm
 
-from .image import Cfa, Ganomaly
+from .image import Cfa, Fastflow, Ganomaly
 from .video import AiVad
 
 

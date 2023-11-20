@@ -11,8 +11,9 @@ from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torch import optim
 
 from anomalib.models.components import AnomalyModule
-from anomalib.models.fastflow.loss import FastflowLoss
-from anomalib.models.fastflow.torch_model import FastflowModel
+
+from .loss import FastflowLoss
+from .torch_model import FastflowModel
 
 
 class Fastflow(AnomalyModule):
