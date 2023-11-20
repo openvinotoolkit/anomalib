@@ -19,6 +19,7 @@ from anomalib.utils.cli.help_formatter import (
 
 
 def test_pre_parse_arguments() -> None:
+    """Test pre_parse_arguments."""
     argv = ["anomalib", "subcommand", "--arg1", "value1", "-a2", "value2"]
     expected_output: dict = {
         "subcommand": "subcommand",
@@ -30,6 +31,7 @@ def test_pre_parse_arguments() -> None:
 
 
 def test_get_verbosity_subcommand() -> None:
+    """Test if the verbosity level and subcommand are correctly parsed."""
     argv = ["anomalib", "fit", "-h"]
     with patch.object(sys, "argv", argv):
         assert get_verbosity_subcommand() == (0, "fit")
@@ -48,11 +50,13 @@ def test_get_verbosity_subcommand() -> None:
 
 
 def test_get_verbose_usage() -> None:
+    """Test if the verbose usage is correctly parsed."""
     subcommand = "test111"
     assert f"anomalib {subcommand} [optional_arguments]" in get_verbose_usage(subcommand=subcommand)
 
 
 def test_get_cli_usage_docstring() -> None:
+    """Test if the CLI usage docstring is correctly parsed."""
     assert get_cli_usage_docstring(None) is None
 
     class Component:
@@ -80,6 +84,7 @@ def test_get_cli_usage_docstring() -> None:
 
 
 def test_render_guide() -> None:
+    """Test if the guide is correctly rendered."""
     subcommand = "fit"
     contents = render_guide(subcommand)
     assert len(contents) == 2
@@ -91,8 +96,11 @@ def test_render_guide() -> None:
 
 
 class TestCustomHelpFormatter:
+    """Test Custom Help Formatter."""
+
     @pytest.fixture()
     def mock_parser(self) -> ArgumentParser:
+        """Mock ArgumentParser."""
         parser = ArgumentParser(formatter_class=CustomHelpFormatter)
         parser.formatter_class.subcommand = "fit"
         parser.add_argument(
@@ -108,7 +116,8 @@ class TestCustomHelpFormatter:
         )
         return parser
 
-    def test_verbose_0(self, capfd, mock_parser) -> None:
+    def test_verbose_0(self, capfd: "pytest.CaptureFixture", mock_parser: ArgumentParser) -> None:
+        """Test verbose level 0."""
         argv = ["anomalib", "fit", "-h"]
         assert mock_parser.formatter_class == CustomHelpFormatter
         mock_parser.formatter_class.verbose_level = 0
@@ -118,7 +127,8 @@ class TestCustomHelpFormatter:
         assert "Quick-Start" in out
         assert "Arguments" not in out
 
-    def test_verbose_1(self, capfd, mock_parser) -> None:
+    def test_verbose_1(self, capfd: "pytest.CaptureFixture", mock_parser: ArgumentParser) -> None:
+        """Test verbose level 1."""
         argv = ["anomalib", "fit", "-h", "-v"]
         assert mock_parser.formatter_class == CustomHelpFormatter
         mock_parser.formatter_class.verbose_level = 1
@@ -128,7 +138,8 @@ class TestCustomHelpFormatter:
         assert "Quick-Start" in out
         assert "Arguments" in out
 
-    def test_verbose_2(self, capfd, mock_parser) -> None:
+    def test_verbose_2(self, capfd: "pytest.CaptureFixture", mock_parser: ArgumentParser) -> None:
+        """Test verbose level 2."""
         argv = ["anomalib", "fit", "-h", "-vv"]
         assert mock_parser.formatter_class == CustomHelpFormatter
         mock_parser.formatter_class.verbose_level = 2
