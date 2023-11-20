@@ -1,10 +1,10 @@
+"""Test feature extractors."""
+
 from tempfile import TemporaryDirectory
-from typing import Tuple
 
 import pytest
 import torch
-from tests.legacy.helpers.dummy import DummyModel
-from torchvision.models import ResNet18_Weights, resnet18
+from torchvision.models import ResNet18_Weights, mobilenet_v3_small, resnet18
 from torchvision.models.efficientnet import EfficientNet_B5_Weights
 
 from anomalib.models.components.feature_extractors import (
@@ -16,6 +16,8 @@ from anomalib.models.components.feature_extractors import (
 
 
 class TestFeatureExtractor:
+    """Test the feature extractor."""
+
     @pytest.mark.parametrize(
         "backbone",
         ["resnet18", "wide_resnet50_2"],
@@ -24,7 +26,8 @@ class TestFeatureExtractor:
         "pretrained",
         [True, False],
     )
-    def test_timm_feature_extraction(self, backbone, pretrained):
+    def test_timm_feature_extraction(self, backbone: str, pretrained: bool) -> None:
+        """Test if the feature extractor can be instantiated and if the output is as expected."""
         layers = ["layer1", "layer2", "layer3"]
         model = FeatureExtractor(backbone=backbone, layers=layers, pre_trained=pretrained)
         test_input = torch.rand((32, 3, 256, 256))
@@ -45,7 +48,8 @@ class TestFeatureExtractor:
         else:
             pass
 
-    def test_torchfx_feature_extraction(self):
+    def test_torchfx_feature_extraction(self) -> None:
+        """Test types of inputs for instantiating the feature extractor."""
         model = TorchFXFeatureExtractor("resnet18", ["layer1", "layer2", "layer3"])
         test_input = torch.rand((32, 3, 256, 256))
         features = model(test_input)
@@ -55,7 +59,9 @@ class TestFeatureExtractor:
 
         # Test if model can be loaded by using just its name
         model = TorchFXFeatureExtractor(
-            backbone="efficientnet_b5", return_nodes=["features.6.8"], weights=EfficientNet_B5_Weights.DEFAULT
+            backbone="efficientnet_b5",
+            return_nodes=["features.6.8"],
+            weights=EfficientNet_B5_Weights.DEFAULT,
         )
         features = model(test_input)
         assert features["features.6.8"].shape == torch.Size((32, 304, 8, 8))
@@ -73,14 +79,14 @@ class TestFeatureExtractor:
 
         # Test if local model can be instantiated from class and weights can be loaded using string of weights path
         with TemporaryDirectory() as tmpdir:
-            torch.save(DummyModel().state_dict(), tmpdir + "/dummy_model.pt")
+            torch.save(mobilenet_v3_small().state_dict(), tmpdir + "/mobilenet.pt")
             model = TorchFXFeatureExtractor(
-                backbone=BackboneParams(class_path=DummyModel),
-                weights=tmpdir + "/dummy_model.pt",
-                return_nodes=["conv3"],
+                backbone=BackboneParams(class_path=mobilenet_v3_small),
+                weights=tmpdir + "/mobilenet.pt",
+                return_nodes=["features.12"],
             )
             features = model(test_input)
-            assert features["conv3"].shape == torch.Size((32, 1, 244, 244))
+            assert features["features.12"].shape == torch.Size((32, 576, 8, 8))
 
         # Test if nn.Module instance can be passed directly
         resnet = resnet18(weights=ResNet18_Weights)
@@ -100,7 +106,7 @@ class TestFeatureExtractor:
     "input_size",
     [(256, 256), (224, 224), (128, 128)],
 )
-def test_dryrun_find_featuremap_dims(backbone: str, input_size: Tuple[int, int]):
+def test_dryrun_find_featuremap_dims(backbone: str, input_size: tuple[int, int]) -> None:
     """Use the function and check the expected output format."""
     layers = ["layer1", "layer2", "layer3"]
     model = FeatureExtractor(backbone=backbone, layers=layers, pre_trained=True)

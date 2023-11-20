@@ -4,6 +4,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
+from pathlib import Path
+
 import numpy as np
 from matplotlib.figure import Figure
 
@@ -72,6 +74,7 @@ class AnomalibTensorBoardLogger(ImageLoggerBase, TensorBoardLogger):
             prefix=prefix,
             **kwargs,
         )
+        Path(save_dir).mkdir(parents=True, exist_ok=True)
 
     @rank_zero_only
     def add_image(self, image: np.ndarray | Figure, name: str | None = None, **kwargs) -> None:
