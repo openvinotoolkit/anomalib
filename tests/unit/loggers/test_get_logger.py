@@ -51,7 +51,7 @@ def test_get_experiment_logger(tmp_path: Path) -> None:
     )
     with (
         # Patch Anomalib WandB logger
-        patch("anomalib.utils.loggers.wandb.AnomalibWandbLogger.experiment"),
+        patch("anomalib.loggers.wandb.AnomalibWandbLogger.experiment"),
         # Patch WandB logger objects.
         patch("wandb.Artifact", MagicMock()),
         patch("wandb.sdk.lib.RunDisabled", MagicMock()),
