@@ -1,3 +1,8 @@
+"""Test PRO metric."""
+
+# Copyright (C) 2023 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
 import torch
 from torchvision.transforms import RandomAffine
 
@@ -9,9 +14,8 @@ from anomalib.metrics.pro import (
 )
 
 
-def test_pro():
+def test_pro() -> None:
     """Checks if PRO metric computes the (macro) average of the per-region overlap."""
-
     labels = torch.Tensor(
         [
             [
@@ -25,8 +29,8 @@ def test_pro():
                 [1, 1, 1, 1, 0],
                 [0, 0, 0, 0, 0],
                 [1, 1, 1, 1, 1],
-            ]
-        ]
+            ],
+        ],
     )
     # ground truth mask is int type
     labels = labels.type(torch.int32)
@@ -37,15 +41,14 @@ def test_pro():
 
     thresholds = [0.0, 0.2, 0.4, 0.6, 0.8, 1.0]
     targets = [1.0, 0.8, 0.6, 0.4, 0.2, 0.0]
-    for threshold, target in zip(thresholds, targets):
+    for threshold, target in zip(thresholds, targets, strict=True):
         pro = PRO(threshold=threshold)
         pro.update(preds, labels)
         assert pro.compute() == target
 
 
-def test_device_consistency():
+def test_device_consistency() -> None:
     """Test if the pro metric yields the same results between cpu and gpu."""
-
     transform = RandomAffine(5, None, (0.95, 1.05), 5)
 
     batch = torch.zeros((32, 256, 256))
@@ -65,9 +68,8 @@ def test_device_consistency():
     assert torch.isclose(pro_cpu.compute(), pro_gpu.compute().cpu())
 
 
-def test_connected_component_labeling():
+def test_connected_component_labeling() -> None:
     """Tests if the connected component labeling algorithms on cpu and gpu yield the same result."""
-
     # generate batch of random binary images using perlin noise
     batch = torch.zeros((32, 1, 256, 256))
     for i in range(batch.shape[0]):

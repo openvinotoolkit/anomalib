@@ -12,7 +12,6 @@ from pathlib import Path
 import pytest
 
 from anomalib.deploy import export_to_openvino
-from anomalib.metrics.threshold import F1AdaptiveThreshold
 from anomalib.models import Padim
 from anomalib.utils.types import TaskType
 
@@ -28,28 +27,27 @@ class TestOpenVINOInferenceEntrypoint:
         if find_spec("openvino_inference") is not None:
             from tools.inference.openvino_inference import get_parser, infer
         else:
-            raise Exception("Unable to import openvino_inference.py for testing")
+            msg = "Unable to import openvino_inference.py for testing"
+            raise ImportError(msg)
         return get_parser, infer
 
     def test_openvino_inference(
         self,
         get_functions: tuple[Callable, Callable],
-        project_path: Path,
+        ckpt_path: Callable[[str], Path],
         get_dummy_inference_image: str,
         transforms_config: dict,
     ) -> None:
         """Test openvino_inference.py."""
         get_parser, infer = get_functions
-
-        model = Padim(input_size=(100, 100))
-        model.image_threshold = F1AdaptiveThreshold()
-        model.pixel_threshold = F1AdaptiveThreshold()
+        _ckpt_path = ckpt_path("Padim")
+        model = Padim.load_from_checkpoint(_ckpt_path)
 
         # export OpenVINO model
         export_to_openvino(
-            export_path=project_path,
+            export_path=_ckpt_path.parent.parent,
             model=model,
-            input_size=(100, 100),
+            input_size=(256, 256),
             transform=transforms_config,
             mo_args={},
             task=TaskType.SEGMENTATION,
@@ -58,13 +56,13 @@ class TestOpenVINOInferenceEntrypoint:
         arguments = get_parser().parse_args(
             [
                 "--weights",
-                str(project_path) + "/weights/openvino/model.bin",
+                str(_ckpt_path.parent) + "/openvino/model.bin",
                 "--metadata",
-                str(project_path) + "/weights/openvino/metadata.json",
+                str(_ckpt_path.parent) + "/openvino/metadata.json",
                 "--input",
                 get_dummy_inference_image,
                 "--output",
-                str(project_path) + "/output.png",
+                str(_ckpt_path.parent) + "/output.png",
             ],
         )
         infer(arguments)

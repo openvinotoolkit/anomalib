@@ -12,7 +12,6 @@ from pathlib import Path
 import pytest
 
 from anomalib.deploy import export_to_torch
-from anomalib.metrics.threshold import F1AdaptiveThreshold
 from anomalib.models import Padim
 from anomalib.utils.types import TaskType
 
@@ -22,28 +21,38 @@ sys.path.append("tools/inference")
 class TestTorchInferenceEntrypoint:
     """This tests whether the entrypoints run without errors without quantitative measure of the outputs."""
 
-    @pytest.fixture
+    @pytest.fixture()
     def get_functions(self) -> tuple[Callable, Callable]:
         """Get functions from torch_inference.py."""
         if find_spec("torch_inference") is not None:
             from tools.inference.torch_inference import get_parser, infer
         else:
-            raise Exception("Unable to import torch_inference.py for testing")
+            msg = "Unable to import torch_inference.py for testing"
+            raise ImportError(msg)
         return get_parser, infer
 
     def test_torch_inference(
-        self, get_functions: tuple[Callable, Callable], project_path: Path, get_dummy_inference_image, transforms_config
-    ):
+        self,
+        get_functions: tuple[Callable, Callable],
+        project_path: Path,
+        ckpt_path: Callable[[str], Path],
+        get_dummy_inference_image: str,
+        transforms_config: dict,
+    ) -> None:
         """Test torch_inference.py."""
+        _ckpt_path = ckpt_path("Padim")
         get_parser, infer = get_functions
-        model = Padim(input_size=(100, 100))
-        model.image_threshold = F1AdaptiveThreshold()
-        model.pixel_threshold = F1AdaptiveThreshold()
-        export_to_torch(model=model, export_path=project_path, transform=transforms_config, task=TaskType.SEGMENTATION)
+        model = Padim.load_from_checkpoint(_ckpt_path)
+        export_to_torch(
+            model=model,
+            export_path=_ckpt_path.parent.parent,
+            transform=transforms_config,
+            task=TaskType.SEGMENTATION,
+        )
         arguments = get_parser().parse_args(
             [
                 "--weights",
-                str(project_path) + "/weights/torch/model.pt",
+                str(_ckpt_path.parent) + "/torch/model.pt",
                 "--input",
                 get_dummy_inference_image,
                 "--output",

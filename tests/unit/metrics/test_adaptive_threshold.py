@@ -2,12 +2,10 @@
 
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
-import random
 
 import pytest
 import torch
 
-from anomalib.callbacks import get_callbacks
 from anomalib.data import MVTec
 from anomalib.engine import Engine
 from anomalib.metrics import F1AdaptiveThreshold
@@ -16,15 +14,14 @@ from anomalib.utils.normalization import NormalizationMethod
 
 
 @pytest.mark.parametrize(
-    ["labels", "preds", "target_threshold"],
+    ("labels", "preds", "target_threshold"),
     [
         (torch.Tensor([0, 0, 0, 1, 1]), torch.Tensor([2.3, 1.6, 2.6, 7.9, 3.3]), 3.3),  # standard case
         (torch.Tensor([1, 0, 0, 0]), torch.Tensor([4, 3, 2, 1]), 4),  # 100% recall for all thresholds
     ],
 )
-def test_adaptive_threshold(labels, preds, target_threshold):
+def test_adaptive_threshold(labels: torch.Tensor, preds: torch.Tensor, target_threshold: int | float) -> None:
     """Test if the adaptive threshold computation returns the desired value."""
-
     adaptive_threshold = F1AdaptiveThreshold(default_value=0.5)
     adaptive_threshold.update(preds, labels)
     threshold_value = adaptive_threshold.compute()
@@ -32,12 +29,12 @@ def test_adaptive_threshold(labels, preds, target_threshold):
     assert threshold_value == target_threshold
 
 
-def test_manual_threshold():
-    """
+def test_manual_threshold() -> None:
+    """Test manual threshold.
+
     Test if the manual threshold gets used in the F1 score computation when
     adaptive thresholding is disabled and no normalization is used.
     """
-
     image_threshold = 0.12345  # random.random()  # nosec: B311
     pixel_threshold = 0.189761  # random.random()  # nosec: B311
     threshold = [

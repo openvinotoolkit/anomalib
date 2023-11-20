@@ -23,7 +23,8 @@ class TestLightningInferenceEntrypoint:
         if find_spec("lightning_inference") is not None:
             from tools.inference.lightning_inference import get_parser, infer
         else:
-            raise Exception("Unable to import lightning_inference.py for testing")
+            msg = "Unable to import lightning_inference.py for testing"
+            raise ImportError(msg)
         return get_parser, infer
 
     def test_lightning_inference(
