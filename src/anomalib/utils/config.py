@@ -13,11 +13,11 @@ from collections.abc import Sequence
 from datetime import datetime
 from importlib import import_module
 from pathlib import Path
+from typing import Any, cast
 
 from jsonargparse import Namespace
+from jsonargparse import Path as JSONArgparsePath
 from omegaconf import DictConfig, ListConfig, OmegaConf
-
-from .utils import to_tuple, to_yaml
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +32,65 @@ def get_default_root_directory(config: DictConfig | ListConfig) -> Path:
     time_stamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S") if config.results_dir.unique else ""
     # loggers should write to results/model/dataset/category/ folder
     return Path(root_dir, model_name, data_name, category, time_stamp)
+
+
+def _convert_nested_path_to_str(config: Any) -> Any:  # noqa: ANN401
+    """Goes over the dictionary and converts all path values to str."""
+    if isinstance(config, dict):
+        for key, value in config.items():
+            config[key] = _convert_nested_path_to_str(value)
+    elif isinstance(config, list):
+        for i, item in enumerate(config):
+            config[i] = _convert_nested_path_to_str(item)
+    elif isinstance(config, Path | JSONArgparsePath):
+        config = str(config)
+    return config
+
+
+def to_yaml(config: Namespace | ListConfig | DictConfig) -> str:
+    """Convert the config to a yaml string.
+
+    Args:
+        config (Namespace | ListConfig | DictConfig): Config
+
+    Returns:
+        str: YAML string
+    """
+    _config = config.clone() if isinstance(config, Namespace) else config.copy()
+    if isinstance(_config, Namespace):
+        _config = _config.as_dict()
+        _config = _convert_nested_path_to_str(_config)
+    return OmegaConf.to_yaml(_config)
+
+
+def to_tuple(input_size: int | ListConfig) -> tuple[int, int]:
+    """Convert int or list to a tuple.
+
+    Args:
+        input_size (int | ListConfig): input_size
+
+    Example:
+        >>> to_tuple(256)
+        (256, 256)
+        >>> to_tuple([256, 256])
+        (256, 256)
+
+    Raises:
+        ValueError: Unsupported value type.
+
+    Returns:
+        tuple[int, int]: Tuple of input_size
+    """
+    ret_val: tuple[int, int]
+    if isinstance(input_size, int):
+        ret_val = cast(tuple[int, int], (input_size,) * 2)
+    elif isinstance(input_size, ListConfig | Sequence):
+        assert len(input_size) == 2, "Expected a single integer or tuple of length 2 for width and height."
+        ret_val = cast(tuple[int, int], tuple(input_size))
+    else:
+        msg = f"Expected either int or ListConfig, got {type(input_size)}"
+        raise TypeError(msg)
+    return ret_val
 
 
 def update_config(config: DictConfig | ListConfig | Namespace) -> DictConfig | ListConfig | Namespace:

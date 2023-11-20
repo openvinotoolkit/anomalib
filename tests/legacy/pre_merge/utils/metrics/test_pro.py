@@ -2,7 +2,7 @@ import torch
 from torchvision.transforms import RandomAffine
 
 from anomalib.data.utils import random_2d_perlin
-from anomalib.utils.metrics.pro import (
+from anomalib.metrics.pro import (
     PRO,
     connected_components_cpu,
     connected_components_gpu,

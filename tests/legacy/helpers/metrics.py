@@ -4,7 +4,7 @@ from typing import Tuple, Union
 
 from omegaconf import DictConfig, ListConfig
 
-from anomalib.utils.metrics import (
+from anomalib.metrics import (
     AnomalibMetricCollection,
     metric_collection_from_names,
 )

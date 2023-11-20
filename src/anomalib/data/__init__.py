@@ -11,7 +11,7 @@ from itertools import chain
 
 from omegaconf import DictConfig, ListConfig
 
-from anomalib.config.utils import to_tuple
+from anomalib.utils.config import to_tuple
 
 from .base import AnomalibDataModule, AnomalibDataset
 from .depth import DepthDataFormat, Folder3D, MVTec3D

@@ -51,7 +51,7 @@ def metric_collection_from_names(metric_names: list[str], prefix: str | None) ->
     Returns:
         AnomalibMetricCollection: Collection of metrics.
     """
-    metrics_module = importlib.import_module("anomalib.utils.metrics")
+    metrics_module = importlib.import_module("anomalib.metrics")
     metrics = AnomalibMetricCollection([], prefix=prefix)
     for metric_name in metric_names:
         if hasattr(metrics_module, metric_name):
@@ -116,7 +116,7 @@ def metric_collection_from_dicts(metrics: dict[str, dict[str, Any]], prefix: str
                 "init_args": {},
             },
             "PixelWiseAUROC": {
-                "class_path": "anomalib.utils.metrics.AUROC",
+                "class_path": "anomalib.metrics.AUROC",
                 "init_args": {
                     "compute_on_cpu": True,
                 },
@@ -132,7 +132,7 @@ def metric_collection_from_dicts(metrics: dict[str, dict[str, Any]], prefix: str
                     class_path: torchmetrics.F1Score
                     init_args: {}
                 PixelWiseAUROC:
-                    class_path: anomalib.utils.metrics.AUROC
+                    class_path: anomalib.metrics.AUROC
                     init_args:
                         compute_on_cpu: true
         ```

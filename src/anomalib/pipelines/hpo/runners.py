@@ -11,12 +11,12 @@ import torch
 from lightning.pytorch.loggers import CometLogger, WandbLogger
 from omegaconf import DictConfig, ListConfig, OmegaConf
 
-from anomalib.config import update_input_size_config
 from anomalib.data import get_datamodule
 from anomalib.engine import Engine
 from anomalib.models import get_model
+from anomalib.pipelines.sweep import flatten_sweep_params, flattened_config_to_nested, set_in_nested_config
+from anomalib.utils.config import update_input_size_config
 from anomalib.utils.exceptions import try_import
-from anomalib.utils.sweep import flatten_sweep_params, flattened_config_to_nested, set_in_nested_config
 
 from .config import flatten_hpo_params
 
