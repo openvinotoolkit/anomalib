@@ -3,6 +3,7 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -37,23 +38,20 @@ else:
         get_experiment_logger,
     )
 
-from lightning.pytorch.loggers import CometLogger
 
-
-def test_get_experiment_logger():
+def test_get_experiment_logger(tmp_path: Path) -> None:
     """Test whether the right logger is returned."""
-
     config = OmegaConf.create(
         {
-            "project": {"path": "/tmp"},
+            "project": {"path": tmp_path},
             "data": {"class_path": "dummy", "init_args": {"category": "cat1"}},
             "model": {"class_path": "DummyModel"},
-            "trainer": {"logger": None, "default_root_dir": "/tmp"},
+            "trainer": {"logger": None, "default_root_dir": tmp_path},
         },
     )
     with (
         # Patch Anomalib WandB logger
-        patch("anomalib.utils.loggers.wandb.AnomalibWandbLogger.experiment"),
+        patch("anomalib.loggers.wandb.AnomalibWandbLogger.experiment"),
         # Patch WandB logger objects.
         patch("wandb.Artifact", MagicMock()),
         patch("wandb.sdk.lib.RunDisabled", MagicMock()),
@@ -99,6 +97,6 @@ def test_get_experiment_logger():
         assert isinstance(logger[3], AnomalibCometLogger)
 
         # raise unknown
+        config.trainer.logger = "randomlogger"
         with pytest.raises(UnknownLoggerError):
-            config.trainer.logger = "randomlogger"
             logger = get_experiment_logger(config=config)

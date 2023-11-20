@@ -51,6 +51,8 @@ def test_manual_threshold() -> None:
         image_metrics="F1Score",
         pixel_metrics="F1Score",
         fast_dev_run=True,
+        accelerator="gpu",
+        devices=1,
     )
     engine.fit(model=model, datamodule=datamodule)
     assert engine.trainer.model.image_metrics.F1Score.threshold == image_threshold

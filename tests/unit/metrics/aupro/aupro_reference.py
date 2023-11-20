@@ -1,27 +1,31 @@
 # REMARK: CODE WAS TAKEN FROM https://github.com/eliahuhorwitz/3D-ADS/blob/main/utils/au_pro_util.py
 
-"""
+"""Utils for testing AUPRO metric.
+
 Code based on the official MVTec 3D-AD evaluation code found at
 https://www.mydrive.ch/shares/45924/9ce7a138c69bbd4c8d648b72151f839d/download/428846918-1643297332/evaluation_code.tar.xz
 Utility functions that compute a PRO curve and its definite integral, given
 pairs of anomaly and ground truth maps.
 The PRO curve can also be integrated up to a constant integration limit.
 """
+import logging
 from bisect import bisect
 
 import numpy as np
 from scipy.ndimage.measurements import label
 
+logger = logging.getLogger(__name__)
+
 
 class GroundTruthComponent:
-    """
-    Stores sorted anomaly scores of a single ground truth component.
+    """Stores sorted anomaly scores of a single ground truth component.
+
     Used to efficiently compute the region overlap for many increasing thresholds.
     """
 
-    def __init__(self, anomaly_scores):
-        """
-        Initialize the module.
+    def __init__(self, anomaly_scores: np.ndarray) -> None:
+        """Initialize the module.
+
         Args:
             anomaly_scores: List of all anomaly scores within the ground truth
                             component as numpy array.
@@ -36,12 +40,14 @@ class GroundTruthComponent:
         # The last evaluated threshold.
         self.last_threshold = None
 
-    def compute_overlap(self, threshold):
-        """
-        Compute the region overlap for a specific threshold.
+    def compute_overlap(self, threshold: float) -> float:
+        """Compute the region overlap for a specific threshold.
+
         Thresholds must be passed in increasing order.
+
         Args:
             threshold: Threshold to compute the region overlap.
+
         Returns:
             Region overlap for the specified threshold.
         """
@@ -56,12 +62,13 @@ class GroundTruthComponent:
         return 1.0 - self.index / len(self.anomaly_scores)
 
 
-def trapezoid(x, y, x_max=None):
-    """
-    This function calculates the definit integral of a curve given by x- and corresponding y-values.
+def trapezoid(x: list[float], y: list[float], x_max: float | None = None) -> float:
+    """This function calculates the definit integral of a curve given by x- and corresponding y-values.
+
     In contrast to, e.g., 'numpy.trapz()', this function allows to define an upper bound to the integration range by
     setting a value x_max.
     Points that do not have a finite x or y value will be ignored with a warning.
+
     Args:
         x:     Samples from the domain of the function to integrate need to be sorted in ascending order. May contain
                the same value multiple times. In that case, the order of the corresponding y values will affect the
@@ -69,16 +76,17 @@ def trapezoid(x, y, x_max=None):
         y:     Values of the function corresponding to x values.
         x_max: Upper limit of the integration. The y value at max_x will be determined by interpolating between its
                neighbors. Must not lie outside of the range of x.
+
     Returns:
         Area under the curve.
     """
-
     x = np.array(x)
     y = np.array(y)
     finite_mask = np.logical_and(np.isfinite(x), np.isfinite(y))
     if not finite_mask.all():
-        print(
-            "WARNING: Not all x and y values passed to trapezoid are finite. Will continue with only the finite values."
+        logger.warning(
+            "WARNING: Not all x and y values passed to trapezoid are finite."
+            " Will continue with only the finite values.",
         )
     x = x[finite_mask]
     y = y[finite_mask]
@@ -106,8 +114,12 @@ def trapezoid(x, y, x_max=None):
     return np.sum(0.5 * (y[1:] + y[:-1]) * (x[1:] - x[:-1])) + correction
 
 
-def collect_anomaly_scores(anomaly_maps, ground_truth_maps):
-    """
+def collect_anomaly_scores(
+    anomaly_maps: list[np.ndarray],
+    ground_truth_maps: list[np.ndarray],
+) -> tuple[list[GroundTruthComponent], np.ndarray]:
+    """Collect anomaly scores.
+
     Extract anomaly scores for each ground truth connected component as well as anomaly scores for each potential false
     positive pixel from anomaly maps.
 
@@ -116,6 +128,7 @@ def collect_anomaly_scores(anomaly_maps, ground_truth_maps):
         ground_truth_maps: List of ground truth maps (2D numpy arrays) that contain binary-valued ground truth labels
                            for each pixel. 0 indicates that a pixel is anomaly-free. 1 indicates that a pixel contains
                            an anomaly.
+
     Returns:
         ground_truth_components: A list of all ground truth connected components that appear in the dataset.
             For each component, a sorted list of its anomaly scores is stored.
@@ -134,7 +147,7 @@ def collect_anomaly_scores(anomaly_maps, ground_truth_maps):
 
     # Collect anomaly scores within each ground truth region and for all potential fp pixels.
     ok_index = 0
-    for gt_map, prediction in zip(ground_truth_maps, anomaly_maps):
+    for gt_map, prediction in zip(ground_truth_maps, anomaly_maps, strict=True):
         # Compute the connected components in the ground truth map.
         labeled, n_components = label(gt_map, structure)
 
@@ -155,8 +168,13 @@ def collect_anomaly_scores(anomaly_maps, ground_truth_maps):
     return ground_truth_components, anomaly_scores_ok_pixels
 
 
-def compute_pro(anomaly_maps, ground_truth_maps, num_thresholds):
-    """
+def compute_pro(
+    anomaly_maps: list[np.ndarray],
+    ground_truth_maps: list[np.ndarray],
+    num_thresholds: int,
+) -> tuple[list[float], list[float]]:
+    """Compute the PRO curve.
+
     Compute the PRO curve at equidistant interpolation points for a set of anomaly maps with corresponding ground
     truth maps. The number of interpolation points can be set manually.
 
@@ -199,14 +217,20 @@ def compute_pro(anomaly_maps, ground_truth_maps, num_thresholds):
     return fprs, pros
 
 
-def calculate_au_pro(gts, predictions, integration_limit=0.3, num_thresholds=100):
-    """
-    Compute the area under the PRO curve for a set of ground truth images and corresponding anomaly images.
+def calculate_au_pro(
+    gts: list[np.ndarray],
+    predictions: list[np.ndarray],
+    integration_limit: float = 0.3,
+    num_thresholds: int = 100,
+) -> tuple[float, tuple[list[float], list[float]]]:
+    """Compute the area under the PRO curve for a set of ground truth images and corresponding anomaly images.
+
     Args:
         gts:         List of tensors that contain the ground truth images for a single dataset object.
         predictions: List of tensors containing anomaly images for each ground truth image.
         integration_limit:    Integration limit to use when computing the area under the PRO curve.
         num_thresholds:       Number of thresholds to use to sample the area under the PRO curve.
+
     Returns:
         au_pro:    Area under the PRO curve computed up to the given integration limit.
         pro_curve: PRO curve values for localization (fpr,pro).

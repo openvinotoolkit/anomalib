@@ -9,14 +9,16 @@ from anomalib.pipelines.sweep.config import get_run_config, set_in_nested_config
 
 
 class TestSweepConfig:
-    def test_get_run_config(self):
+    """Test sweep config utils."""
+
+    def test_get_run_config(self) -> None:
         """Test whether the run config is returned correctly and patches the keys which have only one value."""
         dummy_config = DictConfig(
             {
                 "parent1": {"child1": ["a", "b"], "child2": [1, 2]},
                 "parent2": ["model1", "model2"],
                 "parent3": "replacement_value",
-            }
+            },
         )
         run_config = list(get_run_config(dummy_config))
         expected_value = [
@@ -31,9 +33,10 @@ class TestSweepConfig:
         ]
         assert run_config == expected_value
 
-    def set_in_nested_config(self):
+    def set_in_nested_config(self) -> None:
+        """Test if we can pass a nested grid search config and set the values in the model config."""
         dummy_config = DictConfig(
-            {"parent1": {"child1": ["a", "b", "c"], "child2": [1, 2, 3]}, "parent2": ["model1", "model2"]}
+            {"parent1": {"child1": ["a", "b", "c"], "child2": [1, 2, 3]}, "parent2": ["model1", "model2"]},
         )
 
         model_config = DictConfig(
@@ -43,10 +46,10 @@ class TestSweepConfig:
                     "child2": 4,
                 },
                 "parent3": False,
-            }
+            },
         )
 
         for run_config in get_run_config(dummy_config):
-            for param in run_config.keys():
+            for param in run_config:
                 set_in_nested_config(model_config, param.split("."), run_config[param])
         assert model_config == {"parent1": {"child1": "a", "child2": 1}, "parent3": False, "parent2": "model1"}

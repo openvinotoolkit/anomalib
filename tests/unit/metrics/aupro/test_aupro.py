@@ -8,7 +8,8 @@ import pytest
 import torch
 
 from anomalib.metrics import AUPRO
-from tests.legacy.helpers.aupro_reference import calculate_au_pro
+
+from .aupro_reference import calculate_au_pro
 
 
 def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:

@@ -3,9 +3,10 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from pathlib import Path
 
+import numpy as np
 import pytest
 import torch
 
@@ -14,7 +15,35 @@ from anomalib.deploy import ExportMode, OpenVINOInferencer, TorchInferencer
 from anomalib.engine import Engine
 from anomalib.models import Padim
 from anomalib.utils.types import TaskType
-from tests.legacy.helpers.inference import MockImageLoader
+
+
+class _MockImageLoader:
+    """Create mock images for inference on CPU based on the specifics of the original torch test dataset.
+
+    Uses yield so as to avoid storing everything in the memory.
+
+    Args:
+        image_size (list[int]): Size of input image
+        total_count (int): Total images in the test dataset
+    """
+
+    def __init__(self, image_size: list[int], total_count: int) -> None:
+        self.total_count = total_count
+        self.image_size = image_size
+        self.image = np.ones((*self.image_size, 3)).astype(np.uint8)
+
+    def __len__(self) -> int:
+        """Get total count of images."""
+        return self.total_count
+
+    def __call__(self) -> Iterable[np.ndarray]:
+        """Yield batch of generated images.
+
+        Args:
+            idx (int): Unused
+        """
+        for _ in range(self.total_count):
+            yield self.image
 
 
 @pytest.mark.parametrize(
@@ -53,7 +82,7 @@ def test_torch_inference(task: TaskType, ckpt_path: Callable[[str], Path], datas
         path=export_path / "weights" / "torch" / "model.pt",
         device="cpu",
     )
-    torch_dataloader = MockImageLoader([256, 256], total_count=1)
+    torch_dataloader = _MockImageLoader([256, 256], total_count=1)
     with torch.no_grad():
         for image in torch_dataloader():
             prediction = torch_inferencer.predict(image)
@@ -97,7 +126,7 @@ def test_openvino_inference(task: TaskType, ckpt_path: Callable[[str], Path], da
         export_path / "weights/openvino/model.xml",
         export_path / "weights/openvino/metadata.json",
     )
-    openvino_dataloader = MockImageLoader([256, 256], total_count=1)
+    openvino_dataloader = _MockImageLoader([256, 256], total_count=1)
     for image in openvino_dataloader():
         prediction = openvino_inferencer.predict(image)
         assert 0.0 <= prediction.pred_score <= 1.0  # confirm if predicted scores are normalized
