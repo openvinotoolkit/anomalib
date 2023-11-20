@@ -24,7 +24,7 @@ from .split import (
     random_split,
     split_by_label,
 )
-from .transform import InputNormalizationMethod, get_transforms
+from .transforms import InputNormalizationMethod, get_transforms
 
 __all__ = [
     "generate_output_image_filename",

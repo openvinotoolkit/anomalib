@@ -9,8 +9,8 @@ from collections.abc import Sequence
 import lightning.pytorch as pl
 from lightning.pytorch.callbacks import Callback
 
+from anomalib.data.utils.tiler import ImageUpscaleMode, Tiler
 from anomalib.models.components import AnomalyModule
-from anomalib.pre_processing.tiler import ImageUpscaleMode, Tiler
 
 __all__ = ["TilerConfigurationCallback"]
 

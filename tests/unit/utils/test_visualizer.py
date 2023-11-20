@@ -15,8 +15,8 @@ from anomalib.data import MVTec
 from anomalib.data.inference import InferenceDataset
 from anomalib.engine import Engine
 from anomalib.models import get_model
-from anomalib.post_processing.visualizer import ImageGrid
 from anomalib.utils.types import TaskType
+from anomalib.utils.visualization import ImageGrid
 
 
 def test_visualize_fully_defected_masks() -> None:

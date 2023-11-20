@@ -12,8 +12,8 @@ from lightning.pytorch.utilities.types import STEP_OUTPUT
 
 from anomalib import engine
 from anomalib.models.components import AnomalyModule
-from anomalib.post_processing.normalization.cdf import normalize, standardize
 from anomalib.utils.metrics import AnomalyScoreDistribution
+from anomalib.utils.normalization.cdf import normalize, standardize
 
 if TYPE_CHECKING:
     from torch.distributions import LogNormal
