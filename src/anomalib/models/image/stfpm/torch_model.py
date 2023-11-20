@@ -11,7 +11,8 @@ import torch
 from torch import nn
 
 from anomalib.models.components import FeatureExtractor
-from anomalib.models.stfpm.anomaly_map import AnomalyMapGenerator
+
+from .anomaly_map import AnomalyMapGenerator
 
 if TYPE_CHECKING:
     from anomalib.data.utils.tiler import Tiler

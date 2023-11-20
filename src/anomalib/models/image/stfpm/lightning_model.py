@@ -15,8 +15,9 @@ from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torch import optim
 
 from anomalib.models.components import AnomalyModule
-from anomalib.models.stfpm.loss import STFPMLoss
-from anomalib.models.stfpm.torch_model import STFPMModel
+
+from .loss import STFPMLoss
+from .torch_model import STFPMModel
 
 __all__ = ["Stfpm"]
 

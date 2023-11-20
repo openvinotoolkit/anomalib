@@ -16,6 +16,7 @@ from .padim import Padim
 from .patchcore import Patchcore
 from .reverse_distillation import ReverseDistillation
 from .rkde import Rkde
+from .stfpm import Stfpm
 
 __all__ = [
     "Cfa",
@@ -31,4 +32,5 @@ __all__ = [
     "Patchcore",
     "ReverseDistillation",
     "Rkde",
+    "Stfpm",
 ]

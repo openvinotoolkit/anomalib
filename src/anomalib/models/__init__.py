@@ -12,13 +12,12 @@ from jsonargparse import Namespace
 from omegaconf import DictConfig, OmegaConf
 
 from anomalib.models.components import AnomalyModule
-from anomalib.models.image.dfkde import Dfkde
-from anomalib.models.stfpm import Stfpm
 
 from .image import (
     Cfa,
     Cflow,
     Csflow,
+    Dfkde,
     Dfm,
     Draem,
     EfficientAd,
@@ -28,6 +27,7 @@ from .image import (
     Patchcore,
     ReverseDistillation,
     Rkde,
+    Stfpm,
 )
 from .video import AiVad
 
@@ -43,6 +43,7 @@ __all__ = [
     "Dfkde",
     "Dfm",
     "Draem",
+    "EfficientAd",
     "Fastflow",
     "Ganomaly",
     "Padim",
@@ -51,7 +52,6 @@ __all__ = [
     "Rkde",
     "Stfpm",
     "AiVad",
-    "EfficientAd",
 ]
 
 logger = logging.getLogger(__name__)
