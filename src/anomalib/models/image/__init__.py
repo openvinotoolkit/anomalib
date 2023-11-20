@@ -15,6 +15,7 @@ from .ganomaly import Ganomaly
 from .padim import Padim
 from .patchcore import Patchcore
 from .reverse_distillation import ReverseDistillation
+from .rkde import Rkde
 
 __all__ = [
     "Cfa",
@@ -29,4 +30,5 @@ __all__ = [
     "Padim",
     "Patchcore",
     "ReverseDistillation",
+    "Rkde",
 ]

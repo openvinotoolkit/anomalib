@@ -13,7 +13,6 @@ from omegaconf import DictConfig, OmegaConf
 
 from anomalib.models.components import AnomalyModule
 from anomalib.models.image.dfkde import Dfkde
-from anomalib.models.rkde import Rkde
 from anomalib.models.stfpm import Stfpm
 
 from .image import (
@@ -28,6 +27,7 @@ from .image import (
     Padim,
     Patchcore,
     ReverseDistillation,
+    Rkde,
 )
 from .video import AiVad
 

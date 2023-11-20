@@ -10,8 +10,9 @@ import torch
 from torch import nn
 
 from anomalib.models.components.classification import FeatureScalingMethod, KDEClassifier
-from anomalib.models.rkde.feature_extractor import FeatureExtractor
-from anomalib.models.rkde.region_extractor import RegionExtractor, RoiStage
+
+from .feature_extractor import FeatureExtractor
+from .region_extractor import RegionExtractor, RoiStage
 
 logger = logging.getLogger(__name__)
 
