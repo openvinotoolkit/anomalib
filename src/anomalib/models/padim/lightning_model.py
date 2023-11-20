@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 __all__ = ["Padim"]
 
 
-class Padim(AnomalyModule, MemoryBankMixin):
+class Padim(MemoryBankMixin, AnomalyModule):
     """PaDiM: a Patch Distribution Modeling Framework for Anomaly Detection and Localization.
 
     Args:

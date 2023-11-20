@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 __all__ = ["AiVad"]
 
 
-class AiVad(AnomalyModule, MemoryBankMixin):
+class AiVad(MemoryBankMixin, AnomalyModule):
     """AI-VAD: Attribute-based Representations for Accurate and Interpretable Video Anomaly Detection.
 
     Args:

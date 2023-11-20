@@ -19,7 +19,7 @@ from .torch_model import DfkdeModel
 logger = logging.getLogger(__name__)
 
 
-class Dfkde(AnomalyModule, MemoryBankMixin):
+class Dfkde(MemoryBankMixin, AnomalyModule):
     """DFKDE: Deep Feature Kernel Density Estimation.
 
     Args:

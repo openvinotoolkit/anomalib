@@ -17,7 +17,7 @@ from .torch_model import DFMModel
 logger = logging.getLogger(__name__)
 
 
-class Dfm(AnomalyModule, MemoryBankMixin):
+class Dfm(MemoryBankMixin, AnomalyModule):
     """DFM: Deep Featured Kernel Density Estimation.
 
     Args:

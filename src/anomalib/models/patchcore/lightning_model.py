@@ -19,7 +19,7 @@ from anomalib.models.patchcore.torch_model import PatchcoreModel
 logger = logging.getLogger(__name__)
 
 
-class Patchcore(AnomalyModule, MemoryBankMixin):
+class Patchcore(MemoryBankMixin, AnomalyModule):
     """PatchcoreLightning Module to train PatchCore algorithm.
 
     Args:

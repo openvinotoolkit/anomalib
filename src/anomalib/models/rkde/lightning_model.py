@@ -19,7 +19,7 @@ from .torch_model import RkdeModel
 logger = logging.getLogger(__name__)
 
 
-class Rkde(AnomalyModule, MemoryBankMixin):
+class Rkde(MemoryBankMixin, AnomalyModule):
     """Region Based Anomaly Detection With Real-Time Training and Analysis.
 
     Args:
