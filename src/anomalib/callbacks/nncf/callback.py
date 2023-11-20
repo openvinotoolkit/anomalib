@@ -13,7 +13,7 @@ from lightning.pytorch import Callback
 from nncf import NNCFConfig
 from nncf.torch import register_default_init_args
 
-from anomalib.utils.callbacks.nncf.utils import InitLoader, wrap_nncf_model
+from anomalib.callbacks.nncf.utils import InitLoader, wrap_nncf_model
 
 if TYPE_CHECKING:
     from nncf.api.compression import CompressionAlgorithmController

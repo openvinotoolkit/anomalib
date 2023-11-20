@@ -15,23 +15,23 @@ from lightning.pytorch.cli import ArgsType, LightningArgumentParser, LightningCL
 from lightning.pytorch.utilities.types import _EVALUATE_OUTPUT, _PREDICT_OUTPUT
 from rich import traceback
 
-from anomalib.config.config import update_config
-from anomalib.data import AnomalibDataModule
-from anomalib.deploy import export_to_onnx, export_to_openvino, export_to_torch
-from anomalib.engine import Engine
-from anomalib.models import AnomalyModule
-from anomalib.utils.benchmarking import distribute
-from anomalib.utils.callbacks import get_callbacks, get_visualization_callbacks
-from anomalib.utils.callbacks.normalization import get_normalization_callback
-from anomalib.utils.cli.help_formatter import CustomHelpFormatter
-from anomalib.utils.cli.subcommands import (
+from anomalib.callbacks import get_callbacks, get_visualization_callbacks
+from anomalib.callbacks.normalization import get_normalization_callback
+from anomalib.cli.subcommands import (
     add_onnx_export_arguments,
     add_openvino_export_arguments,
     add_torch_export_arguments,
 )
-from anomalib.utils.hpo import Sweep, get_hpo_parser
-from anomalib.utils.loggers import configure_logger
-from anomalib.utils.metrics.threshold import BaseThreshold
+from anomalib.cli.utils import CustomHelpFormatter
+from anomalib.data import AnomalibDataModule
+from anomalib.deploy import export_to_onnx, export_to_openvino, export_to_torch
+from anomalib.engine import Engine
+from anomalib.loggers import configure_logger
+from anomalib.metrics.threshold import BaseThreshold
+from anomalib.models import AnomalyModule
+from anomalib.pipelines.benchmarking import distribute
+from anomalib.pipelines.hpo import Sweep, get_hpo_parser
+from anomalib.utils.config import update_config
 from anomalib.utils.types import TaskType
 
 traceback.install()

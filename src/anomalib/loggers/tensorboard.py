@@ -33,7 +33,7 @@ class AnomalibTensorBoardLogger(ImageLoggerBase, TensorBoardLogger):
 
     Example:
         >>> from anomalib.engine import Engine
-        >>> from anomalib.utils.loggers import AnomalibTensorBoardLogger
+        >>> from anomalib.loggers import AnomalibTensorBoardLogger
         >>> logger = AnomalibTensorBoardLogger("tb_logs", name="my_model")
         >>> engine =  Engine(logger=logger)
 

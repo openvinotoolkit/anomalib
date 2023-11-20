@@ -20,7 +20,7 @@ if wandb_installed:
     with patch("wandb.init"):
         from lightning.pytorch.loggers import CSVLogger
 
-        from anomalib.utils.loggers import (
+        from anomalib.loggers import (
             AnomalibCometLogger,
             AnomalibTensorBoardLogger,
             AnomalibWandbLogger,
@@ -30,7 +30,7 @@ if wandb_installed:
 else:
     from lightning.pytorch.loggers import CSVLogger
 
-    from anomalib.utils.loggers import (
+    from anomalib.loggers import (
         AnomalibCometLogger,
         AnomalibTensorBoardLogger,
         AnomalibWandbLogger,

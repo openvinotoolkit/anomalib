@@ -11,8 +11,8 @@ import torch
 from sklearn.mixture import GaussianMixture
 from torch import nn
 
+from anomalib.metrics.min_max import MinMax
 from anomalib.models.ai_vad.features import FeatureType
-from anomalib.utils.metrics.min_max import MinMax
 
 
 class BaseDensityEstimator(nn.Module, ABC):

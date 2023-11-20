@@ -5,7 +5,7 @@
 from argparse import ArgumentParser
 from pathlib import Path
 
-from anomalib.utils.benchmarking import distribute
+from anomalib.pipelines.benchmarking import distribute
 
 if __name__ == "__main__":
     parser = ArgumentParser()

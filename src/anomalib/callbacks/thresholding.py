@@ -11,8 +11,8 @@ from lightning.pytorch import Callback, Trainer
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 from omegaconf import DictConfig, ListConfig
 
+from anomalib.metrics.threshold import BaseThreshold
 from anomalib.models import AnomalyModule
-from anomalib.utils.metrics.threshold import BaseThreshold
 
 
 class _ThresholdCallback(Callback):
@@ -155,7 +155,7 @@ class _ThresholdCallback(Callback):
             >>> __get_threshold_from_config(config)
             or
             >>> config = DictConfig({
-            ...    "class_path": "anomalib.utils.metrics.threshold.F1AdaptiveThreshold"
+            ...    "class_path": "anomalib.metrics.threshold.F1AdaptiveThreshold"
             ... })
             >>> __get_threshold_from_config(config)
 
@@ -169,7 +169,7 @@ class _ThresholdCallback(Callback):
         init_args = threshold["init_args"] if "init_args" in threshold else {}
 
         if len(class_path.split(".")) == 1:
-            module_path = "anomalib.utils.metrics.threshold"
+            module_path = "anomalib.metrics.threshold"
 
         else:
             module_path = ".".join(class_path.split(".")[:-1])
