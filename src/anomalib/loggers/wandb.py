@@ -60,7 +60,7 @@ class AnomalibWandbLogger(ImageLoggerBase, WandbLogger):
             If both ``log_model`` and ``offline``is set to ``True``.
 
     Example:
-        >>> from anomalib.utils.loggers import AnomalibWandbLogger
+        >>> from anomalib.loggers import AnomalibWandbLogger
         >>> from anomalib.engine import Engine
         >>> wandb_logger = AnomalibWandbLogger()
         >>> engine =  Engine(logger=wandb_logger)

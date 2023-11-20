@@ -8,7 +8,7 @@ from unittest.mock import patch
 import pytest
 from jsonargparse import ArgumentParser
 
-from anomalib.utils.cli.help_formatter import (
+from anomalib.cli.utils.help_formatter import (
     CustomHelpFormatter,
     get_cli_usage_docstring,
     get_verbose_usage,

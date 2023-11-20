@@ -8,7 +8,7 @@ from torch import nn
 from torch.nn import functional as F  # noqa: N812
 from torch.utils.data import DataLoader, Dataset
 
-from anomalib.utils.loggers.tensorboard import AnomalibTensorBoardLogger
+from anomalib.loggers.tensorboard import AnomalibTensorBoardLogger
 
 
 class DummyDataset(Dataset):

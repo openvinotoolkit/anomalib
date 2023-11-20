@@ -64,7 +64,7 @@ class AnomalibCometLogger(ImageLoggerBase, CometLogger):
             If neither ``api_key`` nor ``save_dir`` are passed as arguments.
 
     Example:
-        >>> from anomalib.utils.loggers import AnomalibCometLogger
+        >>> from anomalib.loggers import AnomalibCometLogger
         >>> from anomalib.engine import Engine
         >>> comet_logger = AnomalibCometLogger()
         >>> engine =  Engine(logger=comet_logger)

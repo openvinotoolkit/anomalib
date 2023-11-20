@@ -7,7 +7,7 @@ import numpy as np
 import pytest
 import torch
 
-from anomalib.utils.metrics import AUPRO
+from anomalib.metrics import AUPRO
 from tests.legacy.helpers.aupro_reference import calculate_au_pro
 
 

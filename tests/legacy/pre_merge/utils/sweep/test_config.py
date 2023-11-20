@@ -5,7 +5,7 @@
 
 from omegaconf import DictConfig
 
-from anomalib.utils.sweep.config import get_run_config, set_in_nested_config
+from anomalib.pipelines.sweep.config import get_run_config, set_in_nested_config
 
 
 class TestSweepConfig:
