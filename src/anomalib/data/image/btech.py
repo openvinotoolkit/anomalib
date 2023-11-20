@@ -21,7 +21,6 @@ from pandas.core.frame import DataFrame
 from tqdm import tqdm
 
 from anomalib.data.base import AnomalibDataModule, AnomalibDataset
-from anomalib.data.task_type import TaskType
 from anomalib.data.utils import (
     DownloadInfo,
     InputNormalizationMethod,
@@ -32,6 +31,7 @@ from anomalib.data.utils import (
     download_and_extract,
     get_transforms,
 )
+from anomalib.utils.types import TaskType
 
 logger = logging.getLogger(__name__)
 
@@ -134,7 +134,7 @@ class BTechDataset(AnomalibDataset):
 
     Examples:
         >>> from anomalib.data.btech import BTechDataset
-        >>> from anomalib.pre_processing import get_transforms
+        >>> from anomalib.data.utils.transforms import get_transforms
         >>> transform = get_transforms(image_size=256)
         >>> dataset = BTechDataset(
         ...     root='./datasets/BTech',

@@ -27,7 +27,6 @@ from pandas import DataFrame
 from sklearn.model_selection import train_test_split
 
 from anomalib.data.base import AnomalibDataModule, AnomalibDataset
-from anomalib.data.task_type import TaskType
 from anomalib.data.utils import (
     DownloadInfo,
     InputNormalizationMethod,
@@ -37,6 +36,7 @@ from anomalib.data.utils import (
     download_and_extract,
     get_transforms,
 )
+from anomalib.utils.types import TaskType
 
 logger = logging.getLogger(__name__)
 

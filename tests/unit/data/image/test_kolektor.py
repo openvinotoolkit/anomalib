@@ -7,8 +7,8 @@ from pathlib import Path
 
 import pytest
 
-from anomalib.data import TaskType
-from anomalib.data.kolektor import Kolektor
+from anomalib.data import Kolektor
+from anomalib.utils.types import TaskType
 from tests.unit.data.base.image import _TestAnomalibImageDatamodule
 
 

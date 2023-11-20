@@ -13,7 +13,7 @@ from pathlib import Path
 
 from anomalib.data.utils import generate_output_image_filename, get_image_filenames, read_image
 from anomalib.deploy import OpenVINOInferencer
-from anomalib.post_processing import Visualizer
+from anomalib.utils.visualization import Visualizer
 
 logger = logging.getLogger(__name__)
 
