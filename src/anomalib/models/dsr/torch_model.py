@@ -153,6 +153,8 @@ class DsrModel(nn.Module):
                     out_mask_sm[:, 1:, :, :], 21, stride=1, padding=21 // 2
                 ).detach()
                 image_score = torch.amax(out_mask_averaged, dim=(2, 3)).squeeze()
+
+                # prevent crash when image_score is a single value (batch size of 1)
                 if image_score.size() == torch.Size([]):
                     image_score = image_score.unsqueeze(0)
 
