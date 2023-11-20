@@ -491,7 +491,7 @@ class Engine:
             TODO(ashwinvaidya17)
         """
         if ckpt_path:
-            model = model.load_from_checkpoint(ckpt_path)
+            model = model.__class__.load_from_checkpoint(ckpt_path)
 
         if transform is None:
             if datamodule:
