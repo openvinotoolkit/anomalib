@@ -8,7 +8,7 @@ import importlib
 from lightning.pytorch import Callback
 from omegaconf import DictConfig
 
-from anomalib.post_processing import NormalizationMethod
+from anomalib.utils.normalization import NormalizationMethod
 
 from .cdf_normalization import _CdfNormalizationCallback
 from .min_max_normalization import _MinMaxNormalizationCallback

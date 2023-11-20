@@ -12,9 +12,10 @@ from pathlib import Path
 import pytest
 from lightning.pytorch.callbacks import ModelCheckpoint
 
-from anomalib.data import AnomalibDataModule, MVTec, TaskType, UCSDped
+from anomalib.data import AnomalibDataModule, MVTec, UCSDped
 from anomalib.engine import Engine
 from anomalib.models import AnomalyModule, get_available_models, get_model
+from anomalib.utils.types import TaskType
 
 
 def models() -> list[str]:

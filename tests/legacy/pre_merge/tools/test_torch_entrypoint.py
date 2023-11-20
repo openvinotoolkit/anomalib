@@ -11,10 +11,10 @@ from pathlib import Path
 
 import pytest
 
-from anomalib.data import TaskType
 from anomalib.deploy import export_to_torch
 from anomalib.models import Padim
 from anomalib.utils.metrics.threshold import F1AdaptiveThreshold
+from anomalib.utils.types import TaskType
 
 sys.path.append("tools/inference")
 

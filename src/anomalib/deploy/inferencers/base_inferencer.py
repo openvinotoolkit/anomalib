@@ -16,10 +16,11 @@ from skimage.morphology import dilation
 from skimage.segmentation import find_boundaries
 
 from anomalib.data.utils import read_image
-from anomalib.post_processing import ImageResult, compute_mask
-from anomalib.post_processing.normalization.cdf import normalize as normalize_cdf
-from anomalib.post_processing.normalization.cdf import standardize
-from anomalib.post_processing.normalization.min_max import normalize as normalize_min_max
+from anomalib.utils.normalization.cdf import normalize as normalize_cdf
+from anomalib.utils.normalization.cdf import standardize
+from anomalib.utils.normalization.min_max import normalize as normalize_min_max
+from anomalib.utils.post_processing import compute_mask
+from anomalib.utils.visualization import ImageResult
 
 
 class Inferencer(ABC):

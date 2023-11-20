@@ -9,21 +9,19 @@ from pathlib import Path
 import albumentations as A  # noqa: N812
 import pytest
 from albumentations.pytorch import ToTensorV2
+from tests.legacy.helpers.dataset import TestDataset
 
-from anomalib.data import TaskType
-from anomalib.data.folder import FolderDataset
+from anomalib.data.image.folder import FolderDataset
 from anomalib.deploy import ExportMode
 from anomalib.utils.sweep.helpers import get_openvino_throughput, get_torch_throughput
-from tests.legacy.helpers.dataset import TestDataset
+from anomalib.utils.types import TaskType
 
 transforms = A.Compose([A.ToFloat(max_value=255), ToTensorV2()])
 
 
 @pytest.mark.xfail()
 @TestDataset(num_train=20, num_test=10)
-def test_torch_throughput(
-    project_path: Path, path: str | None = None, category: str = "shapes"
-) -> None:
+def test_torch_throughput(project_path: Path, path: str | None = None, category: str = "shapes") -> None:
     """Test get_torch_throughput from utils/sweep/inference.py."""
     # generate results with torch model exported
     engine = generate_results_dir(
@@ -49,9 +47,7 @@ def test_torch_throughput(
 
 @pytest.mark.xfail()
 @TestDataset(num_train=20, num_test=10)
-def test_openvino_throughput(
-    generate_results_dir: Callable, path: str | None = None, category: str = "shapes"
-) -> None:
+def test_openvino_throughput(generate_results_dir: Callable, path: str | None = None, category: str = "shapes") -> None:
     """Test get_openvino_throughput from utils/sweep/inference.py."""
     # generate results with torch model exported
     engine = generate_results_dir(
