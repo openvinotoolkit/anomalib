@@ -9,12 +9,12 @@ from pathlib import Path
 import albumentations as A  # noqa: N812
 from albumentations.pytorch import ToTensorV2
 
-from anomalib.data import TaskType
-from anomalib.data.folder import FolderDataset
+from anomalib.data import FolderDataset
 from anomalib.deploy import ExportMode
 from anomalib.engine import Engine
 from anomalib.models import Padim
-from anomalib.utils.sweep.helpers import get_openvino_throughput, get_torch_throughput
+from anomalib.pipelines.sweep.helpers import get_openvino_throughput, get_torch_throughput
+from anomalib.utils.types import TaskType
 
 transforms = A.Compose([A.ToFloat(max_value=255), ToTensorV2()])
 

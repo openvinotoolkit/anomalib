@@ -5,7 +5,7 @@
 
 import torch
 
-from anomalib.utils.metrics.binning import thresholds_between_0_and_1, thresholds_between_min_and_max
+from anomalib.metrics.binning import thresholds_between_0_and_1, thresholds_between_min_and_max
 
 
 def test_thresholds_between_min_and_max() -> None:
