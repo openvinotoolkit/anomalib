@@ -11,7 +11,6 @@ from importlib import import_module
 from jsonargparse import Namespace
 from omegaconf import DictConfig, OmegaConf
 
-from anomalib.models.ai_vad import AiVad
 from anomalib.models.cfa import Cfa
 from anomalib.models.cflow import Cflow
 from anomalib.models.components import AnomalyModule
@@ -27,6 +26,8 @@ from anomalib.models.patchcore import Patchcore
 from anomalib.models.reverse_distillation import ReverseDistillation
 from anomalib.models.rkde import Rkde
 from anomalib.models.stfpm import Stfpm
+
+from .video import AiVad
 
 
 class UnknownModelError(ModuleNotFoundError):

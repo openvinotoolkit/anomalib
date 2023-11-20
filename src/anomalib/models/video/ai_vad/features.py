@@ -13,7 +13,7 @@ from torchvision.models.detection.roi_heads import keypointrcnn_inference
 from torchvision.ops import roi_align
 from torchvision.transforms import Normalize
 
-from anomalib.models.ai_vad.clip import clip
+from .clip import clip
 
 
 class FeatureType(str, Enum):
