@@ -23,25 +23,25 @@ Each subsection in the section ``metrics`` of the config file can have a differe
             init_args:
                compute_on_cpu: true
          AUROC:
-            class_path: anomalib.utils.metrics.AUROC
+            class_path: anomalib.metrics.AUROC
             init_args:
                compute_on_cpu: true
 
 List of metric names
 --------------------
 
-A list of strings that match the name of a class in ``anomalib.utils.metrics`` or ``torchmetrics`` (in this order of priority), which will be instantiated with default arguments.
+A list of strings that match the name of a class in ``anomalib.metrics`` or ``torchmetrics`` (in this order of priority), which will be instantiated with default arguments.
 
 Mapping of metric names to class path and init args
 ---------------------------------------------------
 
 A mapping of metric names (str) to a dictionary with two keys: "class_path" and "init_args".
 
-"class_path" is a string with the full path to a metric (from root package down to the class name, e.g.: "anomalib.utils.metrics.AUROC").
+"class_path" is a string with the full path to a metric (from root package down to the class name, e.g.: "anomalib.metrics.AUROC").
 
 "init_args" is a dictionary of arguments to be passed to the class constructor.
 
-.. automodule:: anomalib.utils.metrics
+.. automodule:: anomalib.metrics
    :members:
    :undoc-members:
    :show-inheritance:
