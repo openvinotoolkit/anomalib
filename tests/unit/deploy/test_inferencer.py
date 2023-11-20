@@ -3,6 +3,7 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
@@ -23,19 +24,19 @@ from tests.legacy.helpers.inference import MockImageLoader
         TaskType.SEGMENTATION,
     ],
 )
-def test_torch_inference(task: TaskType, trained_padim_path: Path, dataset_path: Path) -> None:
+def test_torch_inference(task: TaskType, ckpt_path: Callable[[str], Path], dataset_path: Path) -> None:
     """Tests Torch inference.
 
     Model is not trained as this checks that the inferencers are working.
 
     Args:
         task (TaskType): Task type
-        trained_padim_path (Path): Path to trained PADIM model checkpoint.
+        ckpt_path: Callable[[str], Path]: Path to trained PADIM model checkpoint.
         dataset_path (Path): Path to dummy dataset.
     """
     model = Padim()
     engine = Engine()
-    export_path = trained_padim_path.parent.parent
+    export_path = ckpt_path("Padim").parent.parent
     datamodule = MVTec(root=dataset_path / "mvtec", category="dummy")
     engine.export(
         model=model,
@@ -43,7 +44,7 @@ def test_torch_inference(task: TaskType, trained_padim_path: Path, dataset_path:
         input_size=(256, 256),
         export_path=export_path,
         datamodule=datamodule,
-        ckpt_path=str(trained_padim_path),
+        ckpt_path=str(ckpt_path("Padim")),
         task=task,
     )
     # Test torch inferencer
@@ -66,19 +67,19 @@ def test_torch_inference(task: TaskType, trained_padim_path: Path, dataset_path:
         TaskType.SEGMENTATION,
     ],
 )
-def test_openvino_inference(task: TaskType, trained_padim_path: Path, dataset_path: Path) -> None:
+def test_openvino_inference(task: TaskType, ckpt_path: Callable[[str], Path], dataset_path: Path) -> None:
     """Tests OpenVINO inference.
 
     Model is not trained as this checks that the inferencers are working.
 
     Args:
         task (TaskType): Task type
-        trained_padim_path (Path): Path to trained PADIM model checkpoint.
+        ckpt_path: Callable[[str], Path]: Path to trained PADIM model checkpoint.
         dataset_path (Path): Path to dummy dataset.
     """
     model = Padim()
     engine = Engine()
-    export_path = trained_padim_path.parent.parent
+    export_path = ckpt_path("Padim").parent.parent
     datamodule = MVTec(root=dataset_path / "mvtec", category="dummy")
     engine.export(
         model=model,
@@ -86,7 +87,7 @@ def test_openvino_inference(task: TaskType, trained_padim_path: Path, dataset_pa
         input_size=(256, 256),
         export_path=export_path,
         datamodule=datamodule,
-        ckpt_path=str(trained_padim_path),
+        ckpt_path=str(ckpt_path("Padim")),
         task=task,
     )
 

@@ -8,12 +8,13 @@ import logging
 from copy import copy
 from typing import TYPE_CHECKING, Any
 
+import torch
 from nncf import NNCFConfig
 from nncf.api.compression import CompressionAlgorithmController
 from nncf.torch import create_compressed_model, load_state, register_default_init_args
 from nncf.torch.initialization import PTInitializingDataLoader
 from nncf.torch.nncf_network import NNCFNetwork
-from torch import Tensor, nn
+from torch import nn
 from torch.utils.data.dataloader import DataLoader
 
 if TYPE_CHECKING:
@@ -35,12 +36,12 @@ class InitLoader(PTInitializingDataLoader):
         self._data_loader_iter = iter(self._data_loader)
         return self
 
-    def __next__(self) -> Tensor:
+    def __next__(self) -> torch.Tensor:
         """Return next item from dataloader iterator."""
         loaded_item = next(self._data_loader_iter)
         return loaded_item["image"]
 
-    def get_inputs(self, dataloader_output: dict[str, str | Tensor]) -> tuple[tuple, dict]:
+    def get_inputs(self, dataloader_output: dict[str, str | torch.Tensor]) -> tuple[tuple, dict]:
         """Get input to model.
 
         Returns:

@@ -11,7 +11,6 @@ from math import ceil
 
 import torch
 import torchvision.transforms as T  # noqa: N812
-from torch import Tensor
 from torch.nn import functional as F  # noqa: N812
 
 
@@ -60,11 +59,11 @@ def compute_new_image_size(image_size: tuple, tile_size: tuple, stride: tuple) -
     return resized_h, resized_w
 
 
-def upscale_image(image: Tensor, size: tuple, mode: ImageUpscaleMode = ImageUpscaleMode.PADDING) -> Tensor:
+def upscale_image(image: torch.Tensor, size: tuple, mode: ImageUpscaleMode = ImageUpscaleMode.PADDING) -> torch.Tensor:
     """Upscale image to the desired size via either padding or interpolation.
 
     Args:
-        image (Tensor): Image
+        image (torch.Tensor): Image
         size (tuple): tuple to which image is upscaled.
         mode (str, optional): Upscaling mode. Defaults to "padding".
 
@@ -99,11 +98,15 @@ def upscale_image(image: Tensor, size: tuple, mode: ImageUpscaleMode = ImageUpsc
     return image
 
 
-def downscale_image(image: Tensor, size: tuple, mode: ImageUpscaleMode = ImageUpscaleMode.PADDING) -> Tensor:
+def downscale_image(
+    image: torch.Tensor,
+    size: tuple,
+    mode: ImageUpscaleMode = ImageUpscaleMode.PADDING,
+) -> torch.Tensor:
     """Opposite of upscaling. This image downscales image to a desired size.
 
     Args:
-        image (Tensor): Input image
+        image (torch.Tensor): Input image
         size (tuple): Size to which image is down scaled.
         mode (str, optional): Downscaling mode. Defaults to "padding".
 
@@ -214,7 +217,7 @@ class Tiler:
 
         return output
 
-    def __random_tile(self, image: Tensor) -> Tensor:
+    def __random_tile(self, image: torch.Tensor) -> torch.Tensor:
         """Randomly crop tiles from the given image.
 
         Args:
@@ -224,7 +227,7 @@ class Tiler:
         """
         return torch.vstack([T.RandomCrop(self.tile_size_h)(image) for i in range(self.random_tile_count)])
 
-    def __unfold(self, tensor: Tensor) -> Tensor:
+    def __unfold(self, tensor: torch.Tensor) -> torch.Tensor:
         """Unfolds tensor into tiles.
 
         This is the core function to perform tiling operation.
@@ -269,7 +272,7 @@ class Tiler:
         tiles = tiles.permute(2, 0, 1, 3, 4, 5)
         return tiles.contiguous().view(-1, channels, self.tile_size_h, self.tile_size_w)
 
-    def __fold(self, tiles: Tensor) -> Tensor:
+    def __fold(self, tiles: torch.Tensor) -> torch.Tensor:
         """Fold the tiles back into the original tensor.
 
         This is the core method to reconstruct the original image from its tiled version.
@@ -346,7 +349,7 @@ class Tiler:
 
         return img
 
-    def tile(self, image: Tensor, use_random_tiling: bool = False) -> Tensor:
+    def tile(self, image: torch.Tensor, use_random_tiling: bool = False) -> torch.Tensor:
         """Tiles an input image to either overlapping, non-overlapping or random patches.
 
         Args:
@@ -391,7 +394,7 @@ class Tiler:
 
         return self.__random_tile(image) if use_random_tiling else self.__unfold(image)
 
-    def untile(self, tiles: Tensor) -> Tensor:
+    def untile(self, tiles: torch.Tensor) -> torch.Tensor:
         """Untiles patches to reconstruct the original input image.
 
         If patches, are overlapping patches, the function averages the overlapping pixels,

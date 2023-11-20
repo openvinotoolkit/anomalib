@@ -5,24 +5,26 @@
 
 
 import torch
-from torch import Tensor
 
 from anomalib.utils.cv import connected_components_cpu, connected_components_gpu
 
 
-def masks_to_boxes(masks: Tensor, anomaly_maps: Tensor | None = None) -> tuple[list[Tensor], list[Tensor]]:
+def masks_to_boxes(
+    masks: torch.Tensor,
+    anomaly_maps: torch.Tensor | None = None,
+) -> tuple[list[torch.Tensor], list[torch.Tensor]]:
     """Convert a batch of segmentation masks to bounding box coordinates.
 
     Args:
-        masks (Tensor): Input tensor of shape (B, 1, H, W), (B, H, W) or (H, W)
+        masks (torch.Tensor): Input tensor of shape (B, 1, H, W), (B, H, W) or (H, W)
         anomaly_maps (Tensor | None, optional): Anomaly maps of shape (B, 1, H, W), (B, H, W) or (H, W) which are
             used to determine an anomaly score for the converted bounding boxes.
 
     Returns:
-        list[Tensor]: A list of length B where each element is a tensor of shape (N, 4) containing the bounding box
-            coordinates of the objects in the masks in xyxy format.
-        list[Tensor]: A list of length B where each element is a tensor of length (N) containing an anomaly score for
-            each of the converted boxes.
+        list[torch.Tensor]: A list of length B where each element is a tensor of shape (N, 4)
+            containing the bounding box coordinates of the objects in the masks in xyxy format.
+        list[torch.Tensor]: A list of length B where each element is a tensor of length (N)
+            containing an anomaly score for each of the converted boxes.
     """
     height, width = masks.shape[-2:]
     masks = masks.view((-1, 1, height, width)).float()  # reshape to (B, 1, H, W) and cast to float
@@ -43,7 +45,9 @@ def masks_to_boxes(masks: Tensor, anomaly_maps: Tensor | None = None) -> tuple[l
         for label in labels[labels != 0]:
             y_loc, x_loc = torch.where(im_comps == label)
             # add box
-            box = Tensor([torch.min(x_loc), torch.min(y_loc), torch.max(x_loc), torch.max(y_loc)]).to(masks.device)
+            box = torch.Tensor([torch.min(x_loc), torch.min(y_loc), torch.max(x_loc), torch.max(y_loc)]).to(
+                masks.device,
+            )
             im_boxes.append(box)
             if anomaly_maps is not None:
                 im_scores.append(torch.max(anomaly_maps[im_idx, y_loc, x_loc]))
@@ -53,16 +57,16 @@ def masks_to_boxes(masks: Tensor, anomaly_maps: Tensor | None = None) -> tuple[l
     return batch_boxes, batch_scores
 
 
-def boxes_to_masks(boxes: list[Tensor], image_size: tuple[int, int]) -> Tensor:
+def boxes_to_masks(boxes: list[torch.Tensor], image_size: tuple[int, int]) -> torch.Tensor:
     """Convert bounding boxes to segmentations masks.
 
     Args:
-        boxes (list[Tensor]): A list of length B where each element is a tensor of shape (N, 4) containing the bounding
-            box coordinates of the regions of interest in xyxy format.
+        boxes (list[torch.Tensor]): A list of length B where each element is a tensor of shape (N, 4)
+            containing the bounding box coordinates of the regions of interest in xyxy format.
         image_size (tuple[int, int]): Image size of the output masks in (H, W) format.
 
     Returns:
-        Tensor: Tensor of shape (B, H, W) in which each slice is a binary mask showing the pixels contained by a
+        Tensor: torch.Tensor of shape (B, H, W) in which each slice is a binary mask showing the pixels contained by a
             bounding box.
     """
     masks = torch.zeros((len(boxes), *image_size)).to(boxes[0].device)
@@ -73,19 +77,20 @@ def boxes_to_masks(boxes: list[Tensor], image_size: tuple[int, int]) -> Tensor:
     return masks
 
 
-def boxes_to_anomaly_maps(boxes: Tensor, scores: Tensor, image_size: tuple[int, int]) -> Tensor:
+def boxes_to_anomaly_maps(boxes: torch.Tensor, scores: torch.Tensor, image_size: tuple[int, int]) -> torch.Tensor:
     """Convert bounding box coordinates to anomaly heatmaps.
 
     Args:
-        boxes (list[Tensor]): A list of length B where each element is a tensor of shape (N, 4) containing the bounding
-            box coordinates of the regions of interest in xyxy format.
-        scores (list[Tensor]): A list of length B where each element is a 1D tensor of length N containing the anomaly
-            scores for each region of interest.
+        boxes (list[torch.Tensor]): A list of length B where each element is a tensor of shape (N, 4)
+            containing the bounding box coordinates of the regions of interest in xyxy format.
+        scores (list[torch.Tensor]): A list of length B where each element is a 1D tensor of length N
+            containing the anomaly scores for each region of interest.
         image_size (tuple[int, int]): Image size of the output masks in (H, W) format.
 
     Returns:
-        Tensor: Tensor of shape (B, H, W). The pixel locations within each bounding box are collectively assigned the
-            anomaly score of the bounding box. In the case of overlapping bounding boxes, the highest score is used.
+        Tensor: torch.Tensor of shape (B, H, W). The pixel locations within each bounding box are collectively
+            assigned the anomaly score of the bounding box. In the case of overlapping bounding boxes,
+            the highest score is used.
     """
     anomaly_maps = torch.zeros((len(boxes), *image_size)).to(boxes[0].device)
     for im_idx, (im_boxes, im_scores) in enumerate(zip(boxes, scores, strict=False)):
@@ -97,16 +102,16 @@ def boxes_to_anomaly_maps(boxes: Tensor, scores: Tensor, image_size: tuple[int, 
     return anomaly_maps
 
 
-def scale_boxes(boxes: Tensor, image_size: torch.Size, new_size: torch.Size) -> Tensor:
+def scale_boxes(boxes: torch.Tensor, image_size: torch.Size, new_size: torch.Size) -> torch.Tensor:
     """Scale bbox coordinates to a new image size.
 
     Args:
-        boxes (Tensor): Boxes of shape (N, 4) - (x1, y1, x2, y2).
+        boxes (torch.Tensor): Boxes of shape (N, 4) - (x1, y1, x2, y2).
         image_size (Size): Size of the original image in which the bbox coordinates were retrieved.
         new_size (Size): New image size to which the bbox coordinates will be scaled.
 
     Returns:
         Tensor: Updated boxes of shape (N, 4) - (x1, y1, x2, y2).
     """
-    scale = Tensor([*new_size]) / Tensor([*image_size])
+    scale = torch.Tensor([*new_size]) / torch.Tensor([*image_size])
     return boxes * scale.repeat(2).to(boxes.device)

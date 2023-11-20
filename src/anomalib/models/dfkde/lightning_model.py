@@ -10,7 +10,6 @@ from typing import Any
 
 import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
-from torch import Tensor
 
 from anomalib.models.components import AnomalyModule
 from anomalib.models.components.classification import FeatureScalingMethod
@@ -56,18 +55,18 @@ class Dfkde(AnomalyModule):
             max_training_points=max_training_points,
         )
 
-        self.embeddings: list[Tensor] = []
+        self.embeddings: list[torch.Tensor] = []
 
     @staticmethod
     def configure_optimizers() -> None:  # pylint: disable=arguments-differ
         """DFKDE doesn't require optimization, therefore returns no optimizers."""
         return
 
-    def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> None:
+    def training_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> None:
         """Perform the training step of DFKDE. For each batch, features are extracted from the CNN.
 
         Args:
-            batch (batch: dict[str, str | Tensor]): Batch containing image filename, image, label and mask
+            batch (batch: dict[str, str | torch.Tensor]): Batch containing image filename, image, label and mask
             args: Arguments.
             kwargs: Keyword arguments.
 
@@ -94,13 +93,13 @@ class Dfkde(AnomalyModule):
         logger.info("Fitting a KDE model to the embedding collected from the training set.")
         self.model.classifier.fit(embeddings)
 
-    def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
+    def validation_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> STEP_OUTPUT:
         """Perform the validation step of DFKDE.
 
         Similar to the training step, features are extracted from the CNN for each batch.
 
         Args:
-            batch (dict[str, str | Tensor]): Input batch
+            batch (dict[str, str | torch.Tensor]): Input batch
             args: Arguments.
             kwargs: Keyword arguments.
 

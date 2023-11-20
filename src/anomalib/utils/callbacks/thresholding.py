@@ -6,10 +6,10 @@
 import importlib
 from typing import Any
 
+import torch
 from lightning.pytorch import Callback, Trainer
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 from omegaconf import DictConfig, ListConfig
-from torch import Tensor
 
 from anomalib.models import AnomalyModule
 from anomalib.utils.metrics.threshold import BaseThreshold
@@ -189,7 +189,7 @@ class _ThresholdCallback(Callback):
         if isinstance(output, dict):
             for key, value in output.items():
                 output[key] = self._outputs_to_cpu(value)
-        elif isinstance(output, Tensor):
+        elif isinstance(output, torch.Tensor):
             output = output.cpu()
         return output
 

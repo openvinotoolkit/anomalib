@@ -9,7 +9,6 @@ from typing import Any
 
 import torch
 from matplotlib.figure import Figure
-from torch import Tensor
 from torchmetrics import Metric
 from torchmetrics.functional import auc
 from torchmetrics.functional.classification import binary_roc
@@ -27,8 +26,8 @@ class AUPRO(Metric):
     is_differentiable: bool = False
     higher_is_better: bool | None = None
     full_state_update: bool = False
-    preds: list[Tensor]
-    target: list[Tensor]
+    preds: list[torch.Tensor]
+    target: list[torch.Tensor]
     # When not None, the computation is performed in constant-memory by computing the roc curve
     # for fixed thresholds buckets/thresholds.
     # Warning: The thresholds are evenly distributed between the min and max predictions
@@ -58,17 +57,17 @@ class AUPRO(Metric):
         self.register_buffer("fpr_limit", torch.tensor(fpr_limit))
         self.num_thresholds = num_thresholds
 
-    def update(self, preds: Tensor, target: Tensor) -> None:
+    def update(self, preds: torch.Tensor, target: torch.Tensor) -> None:
         """Update state with new values.
 
         Args:
-            preds (Tensor): predictions of the model
-            target (Tensor): ground truth targets
+            preds (torch.Tensor): predictions of the model
+            target (torch.Tensor): ground truth targets
         """
         self.target.append(target)
         self.preds.append(preds)
 
-    def perform_cca(self) -> Tensor:
+    def perform_cca(self) -> torch.Tensor:
         """Perform the Connected Component Analysis on the self.target tensor.
 
         Raises:
@@ -93,14 +92,19 @@ class AUPRO(Metric):
         target = target.type(torch.float)  # kornia expects FloatTensor
         return connected_components_gpu(target) if target.is_cuda else connected_components_cpu(target)
 
-    def compute_pro(self, cca: Tensor, target: Tensor, preds: Tensor) -> tuple[Tensor, Tensor]:
+    def compute_pro(
+        self,
+        cca: torch.Tensor,
+        target: torch.Tensor,
+        preds: torch.Tensor,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         """Compute the pro/fpr value-pairs until the fpr specified by self.fpr_limit.
 
         It leverages the fact that the overlap corresponds to the tpr, and thus computes the overall
         PRO curve by aggregating per-region tpr/fpr values produced by ROC-construction.
 
         Returns:
-            tuple[Tensor, Tensor]: tuple containing final fpr and tpr values.
+            tuple[torch.Tensor, torch.Tensor]: tuple containing final fpr and tpr values.
         """
         if self.num_thresholds is not None:
             # binary_roc is applying a sigmoid on the predictions before computing the roc curve
@@ -118,13 +122,11 @@ class AUPRO(Metric):
             thresholds = None
 
         # compute the global fpr-size
-        fpr: Tensor = binary_roc(
+        fpr: torch.Tensor = binary_roc(
             preds=preds,
             target=target,
             thresholds=thresholds,
-        )[
-            0
-        ]  # only need fpr
+        )[0]  # only need fpr
         output_size = torch.where(fpr <= self.fpr_limit)[0].size(0)
 
         # compute the PRO curve by aggregating per-region tpr/fpr curves/values.
@@ -138,8 +140,8 @@ class AUPRO(Metric):
         # We therefore need to resample per-region curves to a fixed sampling ratio (defined above).
         labels = cca.unique()[1:]  # 0 is background
         background = cca == 0
-        _fpr: Tensor
-        _tpr: Tensor
+        _fpr: torch.Tensor
+        _tpr: torch.Tensor
         for label in labels:
             interp: bool = False
             new_idx[-1] = output_size - 1
@@ -188,13 +190,13 @@ class AUPRO(Metric):
         fpr /= labels.size(0)
         return fpr, tpr
 
-    def _compute(self) -> tuple[Tensor, Tensor]:
+    def _compute(self) -> tuple[torch.Tensor, torch.Tensor]:
         """Compute the PRO curve.
 
         Perform the Connected Component Analysis first then compute the PRO curve.
 
         Returns:
-            tuple[Tensor, Tensor]: tuple containing final fpr and tpr values.
+            tuple[torch.Tensor, torch.Tensor]: tuple containing final fpr and tpr values.
         """
         cca = self.perform_cca().flatten()
         target = dim_zero_cat(self.target).flatten()
@@ -202,7 +204,7 @@ class AUPRO(Metric):
 
         return self.compute_pro(cca=cca, target=target, preds=preds)
 
-    def compute(self) -> Tensor:
+    def compute(self) -> torch.Tensor:
         """Fist compute PRO curve, then compute and scale area under the curve.
 
         Returns:
@@ -234,13 +236,13 @@ class AUPRO(Metric):
         return fig, "PRO"
 
     @staticmethod
-    def interp1d(old_x: Tensor, old_y: Tensor, new_x: Tensor) -> Tensor:
+    def interp1d(old_x: torch.Tensor, old_y: torch.Tensor, new_x: torch.Tensor) -> torch.Tensor:
         """Interpolate a 1D signal linearly to new sampling points.
 
         Args:
-            old_x (Tensor): original 1-D x values (same size as y)
-            old_y (Tensor): original 1-D y values (same size as x)
-            new_x (Tensor): x-values where y should be interpolated at
+            old_x (torch.Tensor): original 1-D x values (same size as y)
+            old_y (torch.Tensor): original 1-D y values (same size as x)
+            new_x (torch.Tensor): x-values where y should be interpolated at
 
         Returns:
             Tensor: y-values at corresponding new_x values.

@@ -73,7 +73,8 @@ class TestAPI:
             project_path (Path): path to the temporary project folder
 
         Returns:
-            tuple[AnomalyModule, AnomalibDataModule, Engine]: _description_
+            tuple[AnomalyModule, AnomalibDataModule, Engine]: Returns the created objects for model, dataset,
+                and engine
         """
         # select task type
         if model_name in ("rkde", "ai_vad"):

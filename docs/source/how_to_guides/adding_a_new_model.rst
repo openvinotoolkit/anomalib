@@ -97,7 +97,7 @@ This module's availability is dependent on the algorithm. If the algorithm requi
     class NewModelLoss(nn.Module):
         """NewModel Loss."""
 
-        def forward(self) -> Tensor:
+        def forward(self) -> torch.Tensor:
             """Calculate the NewModel loss."""
             pass
 
@@ -113,7 +113,7 @@ Similar to the loss.py module, the anomaly map.py module is optional depending o
         def __init__(self, input_size: Union[ListConfig, Tuple]):
             pass
 
-        def forward(self, x: Tensor) -> Tensor:
+        def forward(self, x: torch.Tensor) -> torch.Tensor:
             """Generate Anomaly Heatmap."""
             ...
             return anomaly_map

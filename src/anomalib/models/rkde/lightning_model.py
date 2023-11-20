@@ -9,7 +9,6 @@ from typing import Any
 
 import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
-from torch import Tensor
 
 from anomalib.models.components import AnomalyModule
 from anomalib.models.components.classification import FeatureScalingMethod
@@ -59,18 +58,18 @@ class Rkde(AnomalyModule):
             feature_scaling_method=feature_scaling_method,
             max_training_points=max_training_points,
         )
-        self.embeddings: list[Tensor] = []
+        self.embeddings: list[torch.Tensor] = []
 
     @staticmethod
     def configure_optimizers() -> None:
         """RKDE doesn't require optimization, therefore returns no optimizers."""
         return
 
-    def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> None:
+    def training_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> None:
         """Perform a training Step of RKDE. For each batch, features are extracted from the CNN.
 
         Args:
-            batch (dict[str, str | Tensor]): Batch containing image filename, image, label and mask
+            batch (dict[str, str | torch.Tensor]): Batch containing image filename, image, label and mask
             args: Additional arguments.
             kwargs: Additional keyword arguments.
 
@@ -89,13 +88,13 @@ class Rkde(AnomalyModule):
         logger.info("Fitting a KDE model to the embedding collected from the training set.")
         self.model.fit(embeddings)
 
-    def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
+    def validation_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> STEP_OUTPUT:
         """Perform a validation Step of RKde.
 
         Similar to the training step, features are extracted from the CNN for each batch.
 
         Args:
-            batch (dict[str, str | Tensor]): Batch containing image filename, image, label and mask
+            batch (dict[str, str | torch.Tensor]): Batch containing image filename, image, label and mask
             args: Additional arguments.
             kwargs: Additional keyword arguments.
 
@@ -108,7 +107,7 @@ class Rkde(AnomalyModule):
         boxes, scores = self.model(batch["image"])
 
         # convert batched predictions to list format
-        image: Tensor = batch["image"]
+        image: torch.Tensor = batch["image"]
         batch_size = image.shape[0]
         indices = boxes[:, 0]
         batch["pred_boxes"] = [boxes[indices == i, 1:] for i in range(batch_size)]

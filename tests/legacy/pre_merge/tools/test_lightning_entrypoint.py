@@ -31,7 +31,7 @@ class TestLightningInferenceEntrypoint:
         get_functions: tuple[Callable, Callable],
         project_path: Path,
         get_dummy_inference_image: str,
-        trained_padim_path: Path,
+        ckpt_path: Callable[[str], Path],
     ) -> None:
         """Test lightning_inference.py."""
         get_parser, infer = get_functions
@@ -40,7 +40,7 @@ class TestLightningInferenceEntrypoint:
                 "--model",
                 "anomalib.models.Padim",
                 "--ckpt_path",
-                str(trained_padim_path),
+                str(ckpt_path("Padim")),
                 "--data.path",
                 get_dummy_inference_image,
                 "--output",

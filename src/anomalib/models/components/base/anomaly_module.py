@@ -10,8 +10,9 @@ from collections import OrderedDict
 from typing import TYPE_CHECKING, Any
 
 import lightning.pytorch as pl
+import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
-from torch import Tensor, nn
+from torch import nn
 
 from anomalib.utils.metrics.threshold import BaseThreshold
 
@@ -47,11 +48,11 @@ class AnomalyModule(pl.LightningModule, ABC):
         self.image_metrics: AnomalibMetricCollection
         self.pixel_metrics: AnomalibMetricCollection
 
-    def forward(self, batch: dict[str, str | Tensor], *args, **kwargs) -> Any:  # noqa: ANN401
+    def forward(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> Any:  # noqa: ANN401
         """Perform the forward-pass by passing input tensor to the module.
 
         Args:
-            batch (dict[str, str | Tensor]): Input batch.
+            batch (dict[str, str | torch.Tensor]): Input batch.
             *args: Arguments.
             **kwargs: Keyword arguments.
 
@@ -62,11 +63,16 @@ class AnomalyModule(pl.LightningModule, ABC):
 
         return self.model(batch)
 
-    def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
+    def validation_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> STEP_OUTPUT:
         """To be implemented in the subclasses."""
         raise NotImplementedError
 
-    def predict_step(self, batch: dict[str, str | Tensor], batch_idx: int, dataloader_idx: int = 0) -> STEP_OUTPUT:
+    def predict_step(
+        self,
+        batch: dict[str, str | torch.Tensor],
+        batch_idx: int,
+        dataloader_idx: int = 0,
+    ) -> STEP_OUTPUT:
         """Step function called during :meth:`~lightning.pytorch.trainer.Trainer.predict`.
 
         By default, it calls :meth:`~lightning.pytorch.core.lightning.LightningModule.forward`.
@@ -84,11 +90,11 @@ class AnomalyModule(pl.LightningModule, ABC):
 
         return self.validation_step(batch)
 
-    def test_step(self, batch: dict[str, str | Tensor], batch_idx: int, *args, **kwargs) -> STEP_OUTPUT:
+    def test_step(self, batch: dict[str, str | torch.Tensor], batch_idx: int, *args, **kwargs) -> STEP_OUTPUT:
         """Calls validation_step for anomaly map/score calculation.
 
         Args:
-          batch (dict[str, str | Tensor]): Input batch
+          batch (dict[str, str | torch.Tensor]): Input batch
           batch_idx (int): Batch index
           args: Arguments.
           kwargs: Keyword arguments.

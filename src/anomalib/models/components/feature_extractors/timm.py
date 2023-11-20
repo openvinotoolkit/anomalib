@@ -11,7 +11,7 @@ import logging
 
 import timm
 import torch
-from torch import Tensor, nn
+from torch import nn
 
 logger = logging.getLogger(__name__)
 
@@ -97,11 +97,11 @@ class TimmFeatureExtractor(nn.Module):
 
         return idx
 
-    def forward(self, inputs: Tensor) -> dict[str, Tensor]:
+    def forward(self, inputs: torch.Tensor) -> dict[str, torch.Tensor]:
         """Forward-pass input tensor into the CNN.
 
         Args:
-            inputs (Tensor): Input tensor
+            inputs (torch.Tensor): Input tensor
 
         Returns:
             Feature map extracted from the CNN
