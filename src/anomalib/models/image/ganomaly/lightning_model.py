@@ -15,8 +15,8 @@ from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torch import optim
 
 from anomalib.models.components import AnomalyModule
-from anomalib.models.ganomaly.loss import DiscriminatorLoss, GeneratorLoss
 
+from .loss import DiscriminatorLoss, GeneratorLoss
 from .torch_model import GanomalyModel
 
 logger = logging.getLogger(__name__)

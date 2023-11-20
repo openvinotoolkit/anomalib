@@ -4,5 +4,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from .cfa import Cfa
+from .ganomaly import Ganomaly
 
-__all__ = ["Cfa"]
+__all__ = ["Cfa", "Ganomaly"]
