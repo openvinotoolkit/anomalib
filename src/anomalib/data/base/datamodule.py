@@ -12,8 +12,8 @@ from lightning.pytorch import LightningDataModule
 from lightning.pytorch.utilities.types import EVAL_DATALOADERS, TRAIN_DATALOADERS
 from torch.utils.data.dataloader import DataLoader, default_collate
 
-from anomalib.data.synthetic import SyntheticAnomalyDataset
 from anomalib.data.utils import TestSplitMode, ValSplitMode, random_split, split_by_label
+from anomalib.data.utils.synthetic import SyntheticAnomalyDataset
 
 if TYPE_CHECKING:
     from pandas import DataFrame
