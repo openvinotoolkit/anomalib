@@ -17,9 +17,10 @@ from torch import optim
 from torch.nn import functional as F  # noqa: N812
 from torch.optim import Optimizer
 
-from anomalib.models.cflow.torch_model import CflowModel
-from anomalib.models.cflow.utils import get_logp, positional_encoding_2d
 from anomalib.models.components import AnomalyModule
+
+from .torch_model import CflowModel
+from .utils import get_logp, positional_encoding_2d
 
 __all__ = ["Cflow"]
 
