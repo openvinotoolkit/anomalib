@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING, Any
 import albumentations as A  # noqa: N812
 import torch
 from pandas import DataFrame
-from torch import Tensor
 
 from anomalib.data.base.datamodule import AnomalibDataModule
 from anomalib.data.base.dataset import AnomalibDataset
@@ -114,7 +113,7 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
             item["frames"] = item["frames"][idx]
         return item
 
-    def __getitem__(self, index: int) -> dict[str, str | Tensor]:
+    def __getitem__(self, index: int) -> dict[str, str | torch.Tensor]:
         """Return mask, clip and file system information."""
         assert isinstance(self.indexer, ClipsIndexer)
 
@@ -131,7 +130,7 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
             item["image"] = torch.stack([item["image"] for item in processed_frames]).squeeze(0)
             mask = torch.as_tensor(item["mask"])
             item["mask"] = torch.stack([item["mask"] for item in processed_frames]).squeeze(0)
-            item["label"] = Tensor([1 in frame for frame in mask]).int().squeeze(0)
+            item["label"] = torch.Tensor([1 in frame for frame in mask]).int().squeeze(0)
             if self.task == TaskType.DETECTION:
                 item["boxes"], _ = masks_to_boxes(item["mask"])
                 item["boxes"] = item["boxes"][0] if len(item["boxes"]) == 1 else item["boxes"]

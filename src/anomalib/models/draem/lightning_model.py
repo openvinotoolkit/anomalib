@@ -12,7 +12,7 @@ from typing import Any
 
 import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
-from torch import Tensor, nn
+from torch import nn
 
 from anomalib.data.utils import Augmenter
 from anomalib.models.components import AnomalyModule
@@ -60,14 +60,14 @@ class Draem(AnomalyModule):
                 name (str): Identifier for the retrieved activations.
             """
 
-            def hook(_, __, output: Tensor) -> None:  # noqa: ANN001
+            def hook(_, __, output: torch.Tensor) -> None:  # noqa: ANN001
                 """Create hook for retrieving the activations.
 
                 Args:
                 ----
                     _: Placeholder for the module input.
                     __: Placeholder for the module output.
-                    output (Tensor): The output tensor of the module.
+                    output (torch.Tensor): The output tensor of the module.
                 """
                 self.sspcab_activations[name] = output
 
@@ -76,14 +76,14 @@ class Draem(AnomalyModule):
         self.model.reconstructive_subnetwork.encoder.mp4.register_forward_hook(get_activation("input"))
         self.model.reconstructive_subnetwork.encoder.block5.register_forward_hook(get_activation("output"))
 
-    def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
+    def training_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> STEP_OUTPUT:
         """Perform the training step of DRAEM.
 
         Feeds the original image and the simulated anomaly
         image through the network and computes the training loss.
 
         Args:
-            batch (dict[str, str | Tensor]): Batch containing image filename, image, label and mask
+            batch (dict[str, str | torch.Tensor]): Batch containing image filename, image, label and mask
             args: Arguments.
             kwargs: Keyword arguments.
 
@@ -109,11 +109,11 @@ class Draem(AnomalyModule):
         self.log("train_loss", loss.item(), on_epoch=True, prog_bar=True, logger=True)
         return {"loss": loss}
 
-    def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
+    def validation_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> STEP_OUTPUT:
         """Perform the validation step of DRAEM. The Softmax predictions of the anomalous class are used as anomaly map.
 
         Args:
-            batch (dict[str, str | Tensor]): Batch of input images
+            batch (dict[str, str | torch.Tensor]): Batch of input images
             args: Arguments.
             kwargs: Keyword arguments.
 

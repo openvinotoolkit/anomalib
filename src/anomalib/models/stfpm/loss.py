@@ -5,7 +5,7 @@
 
 
 import torch
-from torch import Tensor, nn
+from torch import nn
 from torch.nn import functional as F  # noqa: N812
 
 
@@ -33,12 +33,12 @@ class STFPMLoss(nn.Module):
         super().__init__()
         self.mse_loss = nn.MSELoss(reduction="sum")
 
-    def compute_layer_loss(self, teacher_feats: Tensor, student_feats: Tensor) -> Tensor:
+    def compute_layer_loss(self, teacher_feats: torch.Tensor, student_feats: torch.Tensor) -> torch.Tensor:
         """Compute layer loss based on Equation (1) in Section 3.2 of the paper.
 
         Args:
-          teacher_feats (Tensor): Teacher features
-          student_feats (Tensor): Student features
+          teacher_feats (torch.Tensor): Teacher features
+          student_feats (torch.Tensor): Student features
 
         Returns:
           L2 distance between teacher and student features.
@@ -49,17 +49,21 @@ class STFPMLoss(nn.Module):
         norm_student_features = F.normalize(student_feats)
         return (0.5 / (width * height)) * self.mse_loss(norm_teacher_features, norm_student_features)
 
-    def forward(self, teacher_features: dict[str, Tensor], student_features: dict[str, Tensor]) -> Tensor:
+    def forward(
+        self,
+        teacher_features: dict[str, torch.Tensor],
+        student_features: dict[str, torch.Tensor],
+    ) -> torch.Tensor:
         """Compute the overall loss via the weighted average of the layer losses computed by the cosine similarity.
 
         Args:
-          teacher_features (dict[str, Tensor]): Teacher features
-          student_features (dict[str, Tensor]): Student features
+          teacher_features (dict[str, torch.Tensor]): Teacher features
+          student_features (dict[str, torch.Tensor]): Student features
 
         Returns:
           Total loss, which is the weighted average of the layer losses.
         """
-        layer_losses: list[Tensor] = []
+        layer_losses: list[torch.Tensor] = []
         for layer in teacher_features:
             loss = self.compute_layer_loss(teacher_features[layer], student_features[layer])
             layer_losses.append(loss)

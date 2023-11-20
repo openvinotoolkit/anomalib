@@ -13,7 +13,7 @@
 from collections.abc import Callable
 
 import torch
-from torch import Tensor, nn
+from torch import nn
 from torchvision.models.resnet import BasicBlock, Bottleneck
 
 
@@ -136,11 +136,11 @@ class OCBE(nn.Module):
 
         return nn.Sequential(*layers)
 
-    def forward(self, features: list[Tensor]) -> Tensor:
+    def forward(self, features: list[torch.Tensor]) -> torch.Tensor:
         """Forward-pass of Bottleneck layer.
 
         Args:
-            features (list[Tensor]): List of features extracted from the encoder.
+            features (list[torch.Tensor]): List of features extracted from the encoder.
 
         Returns:
             Tensor: Output of the bottleneck layer

@@ -12,7 +12,7 @@ from typing import Any
 
 import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
-from torch import Tensor, optim
+from torch import optim
 
 from anomalib.models.components import AnomalyModule
 from anomalib.models.stfpm.loss import STFPMLoss
@@ -45,13 +45,13 @@ class Stfpm(AnomalyModule):
         )
         self.loss = STFPMLoss()
 
-    def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
+    def training_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> STEP_OUTPUT:
         """Perform a training step of STFPM.
 
         For each batch, teacher and student and teacher features are extracted from the CNN.
 
         Args:
-          batch (dict[str, str | Tensor]): Input batch.
+          batch (dict[str, str | torch.Tensor]): Input batch.
           args: Additional arguments.
           kwargs: Additional keyword arguments.
 
@@ -66,14 +66,14 @@ class Stfpm(AnomalyModule):
         self.log("train_loss", loss.item(), on_epoch=True, prog_bar=True, logger=True)
         return {"loss": loss}
 
-    def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
+    def validation_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> STEP_OUTPUT:
         """Perform a validation Step of STFPM.
 
         Similar to the training step, student/teacher features are extracted from the CNN for each batch, and
         anomaly map is computed.
 
         Args:
-          batch (dict[str, str | Tensor]): Input batch
+          batch (dict[str, str | torch.Tensor]): Input batch
           args: Additional arguments
           kwargs: Additional keyword arguments
 

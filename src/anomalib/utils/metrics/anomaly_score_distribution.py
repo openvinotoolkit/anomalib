@@ -5,7 +5,6 @@
 
 
 import torch
-from torch import Tensor
 from torchmetrics import Metric
 
 
@@ -14,8 +13,8 @@ class AnomalyScoreDistribution(Metric):
 
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
-        self.anomaly_maps: list[Tensor] = []
-        self.anomaly_scores: list[Tensor] = []
+        self.anomaly_maps: list[torch.Tensor] = []
+        self.anomaly_scores: list[torch.Tensor] = []
 
         self.add_state("image_mean", torch.empty(0), persistent=True)
         self.add_state("image_std", torch.empty(0), persistent=True)
@@ -27,7 +26,13 @@ class AnomalyScoreDistribution(Metric):
         self.pixel_mean = torch.empty(0)
         self.pixel_std = torch.empty(0)
 
-    def update(self, *args, anomaly_scores: Tensor | None = None, anomaly_maps: Tensor | None = None, **kwargs) -> None:
+    def update(
+        self,
+        *args,
+        anomaly_scores: torch.Tensor | None = None,
+        anomaly_maps: torch.Tensor | None = None,
+        **kwargs,
+    ) -> None:
         """Update the precision-recall curve metric."""
         del args, kwargs  # These variables are not used.
 
@@ -36,7 +41,7 @@ class AnomalyScoreDistribution(Metric):
         if anomaly_scores is not None:
             self.anomaly_scores.append(anomaly_scores)
 
-    def compute(self) -> tuple[Tensor, Tensor, Tensor, Tensor]:
+    def compute(self) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         """Compute stats."""
         anomaly_scores = torch.hstack(self.anomaly_scores)
         anomaly_scores = torch.log(anomaly_scores)

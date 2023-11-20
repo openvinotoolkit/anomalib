@@ -10,8 +10,8 @@ Paper https://arxiv.org/pdf/2212.00789.pdf
 import logging
 from typing import Any
 
+import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
-from torch import Tensor
 
 from anomalib.models.ai_vad.torch_model import AiVadModel
 from anomalib.models.components import AnomalyModule
@@ -84,13 +84,13 @@ class AiVad(AnomalyModule):
         """AI-VAD training does not involve fine-tuning of NN weights, no optimizers needed."""
         return
 
-    def training_step(self, batch: dict[str, str | Tensor]) -> None:
+    def training_step(self, batch: dict[str, str | torch.Tensor]) -> None:
         """Training Step of AI-VAD.
 
         Extract features from the batch of clips and update the density estimators.
 
         Args:
-            batch (dict[str, str | Tensor]): Batch containing image filename, image, label and mask
+            batch (dict[str, str | torch.Tensor]): Batch containing image filename, image, label and mask
         """
         features_per_batch = self.model(batch["image"])
 
@@ -104,13 +104,13 @@ class AiVad(AnomalyModule):
         #   is run within train epoch.
         self.model.density_estimator.fit()
 
-    def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
+    def validation_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> STEP_OUTPUT:
         """Perform the validation step of AI-VAD.
 
         Extract boxes and box scores..
 
         Args:
-            batch (dict[str, str | Tensor]): Input batch
+            batch (dict[str, str | torch.Tensor]): Input batch
             *args: Arguments.
             **kwargs: Keyword arguments.
 
@@ -122,7 +122,7 @@ class AiVad(AnomalyModule):
         boxes, anomaly_scores, image_scores = self.model(batch["image"])
         batch["pred_boxes"] = [box.int() for box in boxes]
         batch["box_scores"] = [score.to(self.device) for score in anomaly_scores]
-        batch["pred_scores"] = Tensor(image_scores).to(self.device)
+        batch["pred_scores"] = torch.Tensor(image_scores).to(self.device)
 
         return batch
 

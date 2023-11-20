@@ -56,6 +56,20 @@ class TestGetModel:
         model = get_model(namespace)
         assert isinstance(model, Padim)
 
+        # Argparse returns an object of type Namespace
+        namespace = Namespace(
+            class_path="anomalib.models.Padim",
+            init_args=Namespace(
+                layers=["layer1", "layer2", "layer3"],
+                input_size=(256, 256),
+                backbone="resnet18",
+                pre_trained=True,
+                n_features=None,
+            ),
+        )
+        model = get_model(namespace)
+        assert isinstance(model, Padim)
+
     def test_get_model_by_dict_config(self) -> None:
         """Test get_model by dict config."""
         config = OmegaConf.create({"class_path": "Padim"})

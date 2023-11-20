@@ -10,20 +10,20 @@ import math
 import numpy as np
 import torch
 from FrEIA.framework import SequenceINN
-from torch import Tensor, nn
+from torch import nn
 
 from anomalib.models.components.flow import AllInOneBlock
 
 logger = logging.getLogger(__name__)
 
 
-def get_logp(dim_feature_vector: int, p_u: Tensor, logdet_j: Tensor) -> Tensor:
+def get_logp(dim_feature_vector: int, p_u: torch.Tensor, logdet_j: torch.Tensor) -> torch.Tensor:
     """Return the log likelihood estimation.
 
     Args:
         dim_feature_vector (int): Dimensions of the condition vector
-        p_u (Tensor): Random variable u
-        logdet_j (Tensor): log of determinant of jacobian returned from the invertable decoder
+        p_u (torch.Tensor): Random variable u
+        logdet_j (torch.Tensor): log of determinant of jacobian returned from the invertable decoder
 
     Returns:
         Tensor: Log probability
@@ -32,7 +32,7 @@ def get_logp(dim_feature_vector: int, p_u: Tensor, logdet_j: Tensor) -> Tensor:
     return dim_feature_vector * ln_sqrt_2pi - 0.5 * torch.sum(p_u**2, 1) + logdet_j
 
 
-def positional_encoding_2d(condition_vector: int, height: int, width: int) -> Tensor:
+def positional_encoding_2d(condition_vector: int, height: int, width: int) -> torch.Tensor:
     """Create embedding to store relative position of the feature vector using sine and cosine functions.
 
     Args:

@@ -7,7 +7,7 @@
 import math
 
 import torch
-from torch import Tensor, nn
+from torch import nn
 from torch.nn import functional as F  # noqa: N812
 
 from anomalib.models.components import PCA, DynamicBufferModule, FeatureExtractor
@@ -18,15 +18,15 @@ class SingleClassGaussian(DynamicBufferModule):
 
     def __init__(self) -> None:
         super().__init__()
-        self.register_buffer("mean_vec", Tensor())
-        self.register_buffer("u_mat", Tensor())
-        self.register_buffer("sigma_mat", Tensor())
+        self.register_buffer("mean_vec", torch.Tensor())
+        self.register_buffer("u_mat", torch.Tensor())
+        self.register_buffer("sigma_mat", torch.Tensor())
 
-        self.mean_vec: Tensor
-        self.u_mat: Tensor
-        self.sigma_mat: Tensor
+        self.mean_vec: torch.Tensor
+        self.u_mat: torch.Tensor
+        self.sigma_mat: torch.Tensor
 
-    def fit(self, dataset: Tensor) -> None:
+    def fit(self, dataset: torch.Tensor) -> None:
         """Fit a Gaussian model to dataset X.
 
         Covariance matrix is not calculated directly using:
@@ -38,32 +38,32 @@ class SingleClassGaussian(DynamicBufferModule):
         This simplifies the calculation of the log-likelihood without requiring full matrix inversion.
 
         Args:
-            dataset (Tensor): Input dataset to fit the model.
+            dataset (torch.Tensor): Input dataset to fit the model.
         """
         num_samples = dataset.shape[1]
         self.mean_vec = torch.mean(dataset, dim=1)
         data_centered = (dataset - self.mean_vec.reshape(-1, 1)) / math.sqrt(num_samples)
         self.u_mat, self.sigma_mat, _ = torch.linalg.svd(data_centered, full_matrices=False)
 
-    def score_samples(self, features: Tensor) -> Tensor:
+    def score_samples(self, features: torch.Tensor) -> torch.Tensor:
         """Compute the NLL (negative log likelihood) scores.
 
         Args:
-            features (Tensor): semantic features on which density modeling is performed.
+            features (torch.Tensor): semantic features on which density modeling is performed.
 
         Returns:
-            nll (Tensor): Torch tensor of scores
+            nll (torch.Tensor): Torch tensor of scores
         """
         features_transformed = torch.matmul(features - self.mean_vec, self.u_mat / self.sigma_mat)
         return torch.sum(features_transformed * features_transformed, dim=1) + 2 * torch.sum(torch.log(self.sigma_mat))
 
-    def forward(self, dataset: Tensor) -> None:
+    def forward(self, dataset: torch.Tensor) -> None:
         """Provide the same functionality as `fit`.
 
         Transforms the input dataset based on singular values calculated earlier.
 
         Args:
-            dataset (Tensor): Input dataset
+            dataset (torch.Tensor): Input dataset
         """
         self.fit(dataset)
 
@@ -107,18 +107,18 @@ class DFMModel(nn.Module):
             layers=[layer],
         ).eval()
 
-    def fit(self, dataset: Tensor) -> None:
+    def fit(self, dataset: torch.Tensor) -> None:
         """Fit a pca transformation and a Gaussian model to dataset.
 
         Args:
-            dataset (Tensor): Input dataset to fit the model.
+            dataset (torch.Tensor): Input dataset to fit the model.
         """
         self.pca_model.fit(dataset)
         if self.score_type == "nll":
             features_reduced = self.pca_model.transform(dataset)
             self.gaussian_model.fit(features_reduced.T)
 
-    def score(self, features: Tensor, feature_shapes: tuple) -> Tensor:
+    def score(self, features: torch.Tensor, feature_shapes: tuple) -> torch.Tensor:
         """Compute scores.
 
         Scores are either PCA-based feature reconstruction error (FRE) scores or
@@ -129,7 +129,7 @@ class DFMModel(nn.Module):
             feature_shapes  (tuple): shape of `features` tensor. Used to generate anomaly map of correct shape.
 
         Returns:
-            score (Tensor): numpy array of scores
+            score (torch.Tensor): numpy array of scores
         """
         feats_projected = self.pca_model.transform(features)
         if self.score_type == "nll":
@@ -146,14 +146,14 @@ class DFMModel(nn.Module):
 
         return score if self.score_type == "nll" else (score_map, score)
 
-    def get_features(self, batch: Tensor) -> Tensor:
+    def get_features(self, batch: torch.Tensor) -> torch.Tensor:
         """Extract features from the pretrained network.
 
         Args:
-            batch (Tensor): Image batch.
+            batch (torch.Tensor): Image batch.
 
         Returns:
-            Tensor: Tensor containing extracted features.
+            Tensor: torch.Tensor containing extracted features.
         """
         self.feature_extractor.eval()
         features = self.feature_extractor(batch)[self.layer]
@@ -164,11 +164,11 @@ class DFMModel(nn.Module):
         features = features.view(batch_size, -1).detach()
         return features if self.training else (features, feature_shapes)
 
-    def forward(self, batch: Tensor) -> Tensor:
+    def forward(self, batch: torch.Tensor) -> torch.Tensor:
         """Compute score from input images.
 
         Args:
-            batch (Tensor): Input images
+            batch (torch.Tensor): Input images
 
         Returns:
             Tensor: Scores

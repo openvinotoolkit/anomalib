@@ -8,7 +8,6 @@ from venv import logger
 
 import numpy as np
 import torch
-from torch import Tensor
 
 
 class Denormalize:
@@ -31,14 +30,14 @@ class Denormalize:
         if std is None:
             std = [0.229, 0.224, 0.225]
 
-        self.mean = Tensor(mean)
-        self.std = Tensor(std)
+        self.mean = torch.Tensor(mean)
+        self.std = torch.Tensor(std)
 
-    def __call__(self, tensor: Tensor) -> np.ndarray:
+    def __call__(self, tensor: torch.Tensor) -> np.ndarray:
         """Denormalize the input.
 
         Args:
-            tensor (Tensor): Input tensor image (C, H, W)
+            tensor (torch.Tensor): Input tensor image (C, H, W)
 
         Returns:
             Denormalized numpy array (H, W, C).
@@ -65,11 +64,11 @@ class Denormalize:
 class ToNumpy:
     """Convert Tensor into Numpy Array."""
 
-    def __call__(self, tensor: Tensor, dims: tuple[int, ...] | None = None) -> np.ndarray:
+    def __call__(self, tensor: torch.Tensor, dims: tuple[int, ...] | None = None) -> np.ndarray:
         """Convert Tensor into Numpy Array.
 
         Args:
-           tensor (Tensor): Tensor to convert. Input tensor in range 0-1.
+           tensor (torch.Tensor): torch.Tensor to convert. Input tensor in range 0-1.
            dims (tuple[int, ...] | None, optional): Convert dimensions from torch to numpy format.
                 Tuple corresponding to axis permutation from torch tensor to numpy array. Defaults to None.
 

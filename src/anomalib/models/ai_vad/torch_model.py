@@ -8,7 +8,7 @@ Paper https://arxiv.org/pdf/2212.00789.pdf
 
 
 import torch
-from torch import Tensor, nn
+from torch import nn
 
 from anomalib.models.ai_vad.density import CombinedDensityEstimator
 from anomalib.models.ai_vad.features import FeatureExtractor
@@ -92,16 +92,16 @@ class AiVadModel(nn.Module):
             n_neighbors_deep=n_neighbors_deep,
         )
 
-    def forward(self, batch: Tensor) -> tuple[list[Tensor], list[Tensor], list[Tensor]]:
+    def forward(self, batch: torch.Tensor) -> tuple[list[torch.Tensor], list[torch.Tensor], list[torch.Tensor]]:
         """Forward pass through AI-VAD model.
 
         Args:
-            batch (Tensor): Input image of shape (N, L, C, H, W)
+            batch (torch.Tensor): Input image of shape (N, L, C, H, W)
 
         Returns:
-            list[Tensor]: List of bbox locations for each image.
-            list[Tensor]: List of per-bbox anomaly scores for each image.
-            list[Tensor]: List of per-image anomaly scores.
+            list[torch.Tensor]: List of bbox locations for each image.
+            list[torch.Tensor]: List of per-bbox anomaly scores for each image.
+            list[torch.Tensor]: List of per-image anomaly scores.
         """
         self.flow_extractor.eval()
         self.region_extractor.eval()
