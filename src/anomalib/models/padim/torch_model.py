@@ -16,7 +16,7 @@ from anomalib.models.components.feature_extractors import dryrun_find_featuremap
 from anomalib.models.padim.anomaly_map import AnomalyMapGenerator
 
 if TYPE_CHECKING:
-    from anomalib.pre_processing import Tiler
+    from anomalib.data.utils.tiler import Tiler
 
 # defaults from the paper
 _N_FEATURES_DEFAULTS = {

@@ -18,13 +18,13 @@ from omegaconf import DictConfig, ListConfig
 from anomalib.data import AnomalibDataModule, AnomalibDataset
 from anomalib.deploy.export import ExportMode, export_to_onnx, export_to_openvino, export_to_torch
 from anomalib.models import AnomalyModule
-from anomalib.post_processing import NormalizationMethod
 from anomalib.utils.callbacks import get_visualization_callbacks
 from anomalib.utils.callbacks.metrics import _MetricsCallback
 from anomalib.utils.callbacks.normalization import get_normalization_callback
 from anomalib.utils.callbacks.post_processor import _PostProcessorCallback
 from anomalib.utils.callbacks.thresholding import _ThresholdCallback
 from anomalib.utils.metrics.threshold import BaseThreshold
+from anomalib.utils.normalization import NormalizationMethod
 from anomalib.utils.types import TaskType
 
 logger = logging.getLogger(__name__)

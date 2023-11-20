@@ -134,7 +134,7 @@ class BTechDataset(AnomalibDataset):
 
     Examples:
         >>> from anomalib.data.btech import BTechDataset
-        >>> from anomalib.pre_processing import get_transforms
+        >>> from anomalib.data.utils.transforms import get_transforms
         >>> transform = get_transforms(image_size=256)
         >>> dataset = BTechDataset(
         ...     root='./datasets/BTech',
