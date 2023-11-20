@@ -13,7 +13,8 @@ from torch.nn import functional as F  # noqa: N812
 
 from anomalib.models.components import FeatureExtractor, MultiVariateGaussian
 from anomalib.models.components.feature_extractors import dryrun_find_featuremap_dims
-from anomalib.models.padim.anomaly_map import AnomalyMapGenerator
+
+from .anomaly_map import AnomalyMapGenerator
 
 if TYPE_CHECKING:
     from anomalib.data.utils.tiler import Tiler

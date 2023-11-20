@@ -13,7 +13,8 @@ import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 
 from anomalib.models.components import AnomalyModule, MemoryBankMixin
-from anomalib.models.padim.torch_model import PadimModel
+
+from .torch_model import PadimModel
 
 logger = logging.getLogger(__name__)
 

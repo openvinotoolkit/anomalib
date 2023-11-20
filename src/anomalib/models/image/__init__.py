@@ -12,5 +12,17 @@ from .draem import Draem
 from .efficient_ad import EfficientAd
 from .fastflow import Fastflow
 from .ganomaly import Ganomaly
+from .padim import Padim
 
-__all__ = ["Cfa", "Cflow", "Csflow", "Dfkde", "Dfm", "Draem", "EfficientAd", "Fastflow", "Ganomaly"]
+__all__ = [
+    "Cfa",
+    "Cflow",
+    "Csflow",
+    "Dfkde",
+    "Dfm",
+    "Draem",
+    "EfficientAd",
+    "Fastflow",
+    "Ganomaly",
+    "Padim",
+]
