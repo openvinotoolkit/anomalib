@@ -119,19 +119,25 @@ class AnomalyModule(pl.LightningModule, ABC):
         destination[
             "pixel_threshold_class"
         ] = f"{self.pixel_threshold.__class__.__module__}.{self.pixel_threshold.__class__.__name__}"
+        if hasattr(self, "normalization_metrics"):
+            normalization_class = self.normalization_metrics.__class__
+            destination["normalization_class"] = f"{normalization_class.__module__}.{normalization_class.__name__}"
+
         return super()._save_to_state_dict(destination, prefix, keep_vars)
 
     def load_state_dict(self, state_dict: OrderedDict[str, Any], strict: bool = True) -> Any:  # noqa: ANN401
         """Initialize auxiliary object."""
         if "image_threshold_class" in state_dict:
-            self.image_threshold = self._get_threshold_instance(state_dict, "image")
+            self.image_threshold = self._get_instance(state_dict, "image_threshold_class")
         if "pixel_threshold_class" in state_dict:
-            self.pixel_threshold = self._get_threshold_instance(state_dict, "pixel")
+            self.pixel_threshold = self._get_instance(state_dict, "pixel_threshold_class")
+        if "normalization_class" in state_dict:
+            self.normalization_metrics = self._get_instance(state_dict, "normalization_class")
 
         return super().load_state_dict(state_dict, strict)
 
-    def _get_threshold_instance(self, state_dict: OrderedDict[str, Any], threshold_key: str) -> BaseThreshold:
+    def _get_instance(self, state_dict: OrderedDict[str, Any], dict_key: str) -> BaseThreshold:
         """Get the threshold class from the ``state_dict``."""
-        class_path = state_dict.pop(f"{threshold_key}_threshold_class")
+        class_path = state_dict.pop(dict_key)
         module = importlib.import_module(".".join(class_path.split(".")[:-1]))
         return getattr(module, class_path.split(".")[-1])()
