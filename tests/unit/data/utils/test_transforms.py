@@ -16,7 +16,6 @@ import skimage
 import torch
 
 from anomalib.data.utils import get_transforms
-from anomalib.data.utils.transforms import Denormalize, ToNumpy
 
 
 def test_transforms_and_image_size_cannot_be_none() -> None:
@@ -115,51 +114,3 @@ def test_to_tensor_returns_correct_type() -> None:
     pre_processor = get_transforms(config=None, image_size=256, to_tensor=False)
     transformed = pre_processor(image=image)["image"]
     assert isinstance(transformed, np.ndarray)
-
-
-class TestDenormalize:
-    """Test Denormalize class."""
-
-    def test_denormalize_channel_dims(self) -> None:
-        """Test if tensor of shape (B, C, H, W) is converted to (H, W, C)."""
-        tensor = torch.rand(1, 3, 4, 4)
-        denormalize = Denormalize()
-        result = denormalize(tensor)
-        assert result.shape == (4, 4, 3)
-
-    def test_denormalize_values(self) -> None:
-        """Test if tensor values are denormalized."""
-        tensor = torch.ones(3, 10, 10)
-        mean = [0.1, 0.1, 0.1]
-        std = [0.5, 0.5, 0.5]
-        denormalize = Denormalize(mean, std)
-        result = denormalize(tensor)
-        assert (result == np.full((10, 10, 3), 153, dtype=np.uint8)).all()
-
-
-class TestToNumpy:
-    """Test ToNumpy class."""
-
-    def test_convert_tensor_shape_1hw_to_numpy_shape_hw(self) -> None:
-        """Convert tensor with shape (1, H, W) to numpy array with shape (H, W)."""
-        # Arrange
-        tensor = torch.rand(1, 4, 5)
-        to_numpy = ToNumpy()
-
-        # Act
-        result = to_numpy(tensor)
-
-        # Assert
-        assert result.shape == (4, 5)
-
-    def test_convert_tensor_shape_nchw_to_numpy_array(self) -> None:
-        """Convert tensor with shape (N, C, H, W) to numpy array with shape (N, H, W, C)."""
-        # Arrange
-        tensor = torch.rand(2, 3, 4, 5)
-        to_numpy = ToNumpy()
-
-        # Act
-        result = to_numpy(tensor)
-
-        # Assert
-        assert result.shape == (2, 4, 5, 3)
