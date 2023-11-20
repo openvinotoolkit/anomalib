@@ -23,7 +23,7 @@ class _MockImageLoader:
     Uses yield so as to avoid storing everything in the memory.
 
     Args:
-        image_size (List[int]): Size of input image
+        image_size (list[int]): Size of input image
         total_count (int): Total images in the test dataset
     """
 
