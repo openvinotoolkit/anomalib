@@ -7,10 +7,11 @@ from tempfile import TemporaryDirectory
 
 import pytest
 
-from anomalib.data import MVTec, TaskType
+from anomalib.data import MVTec
 from anomalib.deploy import ExportMode
 from anomalib.engine import Engine
 from anomalib.models import Padim
+from anomalib.utils.types import TaskType
 
 
 @pytest.fixture(scope="package")

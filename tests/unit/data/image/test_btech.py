@@ -7,7 +7,8 @@ from pathlib import Path
 
 import pytest
 
-from anomalib.data import BTech, TaskType
+from anomalib.data import BTech
+from anomalib.utils.types import TaskType
 from tests.unit.data.base.image import _TestAnomalibImageDatamodule
 
 

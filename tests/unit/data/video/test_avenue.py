@@ -7,7 +7,8 @@ from pathlib import Path
 
 import pytest
 
-from anomalib.data import Avenue, TaskType
+from anomalib.data import Avenue
+from anomalib.utils.types import TaskType
 from tests.unit.data.base.video import _TestAnomalibVideoDatamodule
 
 
