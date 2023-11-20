@@ -11,10 +11,9 @@ import torch
 from torch import nn
 
 from anomalib.models.components import FeatureExtractor
-from anomalib.models.reverse_distillation.anomaly_map import AnomalyMapGenerator
-from anomalib.models.reverse_distillation.components import get_bottleneck_layer, get_decoder
 
-from .anomaly_map import AnomalyMapGenerationMode
+from .anomaly_map import AnomalyMapGenerationMode, AnomalyMapGenerator
+from .components import get_bottleneck_layer, get_decoder
 
 if TYPE_CHECKING:
     from anomalib.data.utils.tiler import Tiler

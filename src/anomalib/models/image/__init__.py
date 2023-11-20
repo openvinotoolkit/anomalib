@@ -14,6 +14,7 @@ from .fastflow import Fastflow
 from .ganomaly import Ganomaly
 from .padim import Padim
 from .patchcore import Patchcore
+from .reverse_distillation import ReverseDistillation
 
 __all__ = [
     "Cfa",
@@ -27,4 +28,5 @@ __all__ = [
     "Ganomaly",
     "Padim",
     "Patchcore",
+    "ReverseDistillation",
 ]
