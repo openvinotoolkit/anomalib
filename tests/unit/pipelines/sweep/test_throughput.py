@@ -9,7 +9,7 @@ from pathlib import Path
 import albumentations as A  # noqa: N812
 from albumentations.pytorch import ToTensorV2
 
-from anomalib.data import FolderDataset
+from anomalib.data.image.folder import FolderDataset
 from anomalib.deploy import ExportMode
 from anomalib.engine import Engine
 from anomalib.models import Padim
