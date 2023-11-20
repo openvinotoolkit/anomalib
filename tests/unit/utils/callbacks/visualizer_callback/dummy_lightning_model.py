@@ -1,5 +1,8 @@
 """Dummy model that is used to test teh visualizer callback."""
 
+# Copyright (C) 2023 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
 from pathlib import Path
 from typing import Any
 
@@ -14,7 +17,10 @@ class _DummyModel(nn.Module):
 
 
 class DummyModule(AnomalyModule):
-    """A dummy model which calls visualizer callback on fake images and masks."""
+    """A dummy model which calls visualizer callback on fake images and masks.
+
+    TODO(ashwinvaidya17): Remove this when the DummyModels have been refactored.
+    """
 
     def __init__(self, dataset_path: Path) -> None:
         """Initializes the dummy model."""

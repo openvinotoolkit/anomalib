@@ -29,7 +29,6 @@ import albumentations as A  # noqa: N812
 from pandas import DataFrame
 
 from anomalib.data.base import AnomalibDataModule, AnomalibDepthDataset
-from anomalib.data.task_type import TaskType
 from anomalib.data.utils import (
     DownloadInfo,
     InputNormalizationMethod,
@@ -40,6 +39,7 @@ from anomalib.data.utils import (
     download_and_extract,
     get_transforms,
 )
+from anomalib.utils.types import TaskType
 
 logger = logging.getLogger(__name__)
 

@@ -1,6 +1,6 @@
 """Task type enum."""
 
-# Copyright (C) 2022 Intel Corporation
+# Copyright (C) 2022-2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 from enum import Enum

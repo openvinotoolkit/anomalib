@@ -7,7 +7,8 @@ from pathlib import Path
 
 import pytest
 
-from anomalib.data import MVTec3D, TaskType
+from anomalib.data import MVTec3D
+from anomalib.utils.types import TaskType
 from tests.unit.data.base import _TestAnomalibDepthDatamodule
 
 

@@ -10,10 +10,11 @@ import numpy as np
 import pytest
 import torch
 
-from anomalib.data import MVTec, TaskType
+from anomalib.data import MVTec
 from anomalib.deploy import ExportMode, OpenVINOInferencer, TorchInferencer
 from anomalib.engine import Engine
 from anomalib.models import Padim
+from anomalib.utils.types import TaskType
 
 
 class _MockImageLoader:

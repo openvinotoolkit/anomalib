@@ -13,45 +13,18 @@ from omegaconf import DictConfig, ListConfig
 
 from anomalib.config.utils import to_tuple
 
-from .avenue import Avenue
 from .base import AnomalibDataModule, AnomalibDataset
-from .btech import BTech
-from .folder import Folder
-from .folder_3d import Folder3D
+from .depth import DepthDataFormat, Folder3D, MVTec3D
+from .image import BTech, Folder, ImageDataFormat, Kolektor, MVTec, Visa
 from .inference import InferenceDataset
-from .mvtec import MVTec
-from .mvtec_3d import MVTec3D
-from .shanghaitech import ShanghaiTech
-from .task_type import TaskType
-from .ucsd_ped import UCSDped
-from .visa import Visa
+from .video import Avenue, ShanghaiTech, UCSDped, VideoDataFormat
 
 logger = logging.getLogger(__name__)
 
 
-class ImageDataFormat(str, Enum):
-    """Supported Image Dataset Types."""
-
-    MVTEC = "mvtec"
-    MVTEC_3D = "mvtec_3d"
-    BTECH = "btech"
-    KOLEKTOR = "kolektor"
-    FOLDER = "folder"
-    FOLDER_3D = "folder_3d"
-    VISA = "visa"
-
-
-class VideoDataFormat(str, Enum):
-    """Supported Video Dataset Types."""
-
-    UCSDPED = "ucsdped"
-    AVENUE = "avenue"
-    SHANGHAITECH = "shanghaitech"
-
-
 DataFormat = Enum(  # type: ignore[misc]
     "DataFormat",
-    {i.name: i.value for i in chain(ImageDataFormat, VideoDataFormat)},
+    {i.name: i.value for i in chain(DepthDataFormat, ImageDataFormat, VideoDataFormat)},
 )
 
 
@@ -78,16 +51,19 @@ def get_datamodule(config: DictConfig | ListConfig) -> AnomalibDataModule:
 __all__ = [
     "AnomalibDataset",
     "AnomalibDataModule",
+    "DepthDataFormat",
+    "ImageDataFormat",
+    "VideoDataFormat",
     "get_datamodule",
     "BTech",
     "Folder",
     "Folder3D",
     "InferenceDataset",
+    "Kolektor",
     "MVTec",
     "MVTec3D",
     "Avenue",
     "UCSDped",
-    "TaskType",
     "ShanghaiTech",
     "Visa",
 ]

@@ -11,8 +11,8 @@ from lightning.pytorch import Callback, Trainer
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 
 from anomalib.models.components import AnomalyModule
-from anomalib.post_processing.normalization.min_max import normalize
 from anomalib.utils.metrics import MinMax
+from anomalib.utils.normalization.min_max import normalize
 
 
 class _MinMaxNormalizationCallback(Callback):
