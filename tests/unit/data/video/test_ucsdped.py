@@ -7,7 +7,8 @@ from pathlib import Path
 
 import pytest
 
-from anomalib.data import TaskType, UCSDped
+from anomalib.data import UCSDped
+from anomalib.utils.types import TaskType
 from tests.unit.data.base.video import _TestAnomalibVideoDatamodule
 
 

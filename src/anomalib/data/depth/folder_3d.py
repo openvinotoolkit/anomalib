@@ -13,7 +13,6 @@ import albumentations as A  # noqa: N812
 from pandas import DataFrame, isna
 
 from anomalib.data.base import AnomalibDataModule, AnomalibDepthDataset
-from anomalib.data.task_type import TaskType
 from anomalib.data.utils import (
     DirType,
     InputNormalizationMethod,
@@ -24,6 +23,7 @@ from anomalib.data.utils import (
     get_transforms,
 )
 from anomalib.data.utils.path import _prepare_files_labels, _resolve_path
+from anomalib.utils.types import TaskType
 
 
 def make_folder3d_dataset(

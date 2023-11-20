@@ -8,13 +8,14 @@ from tempfile import TemporaryDirectory
 
 import pytest
 import torch
+from tests.legacy.helpers.dataset import TestDataset, get_dataset_path
+from tests.legacy.helpers.inference import MockImageLoader
 
-from anomalib.data import MVTec, TaskType
+from anomalib.data import MVTec
 from anomalib.deploy import ExportMode, OpenVINOInferencer, TorchInferencer
 from anomalib.engine import Engine
 from anomalib.models import get_model
-from tests.legacy.helpers.dataset import TestDataset, get_dataset_path
-from tests.legacy.helpers.inference import MockImageLoader
+from anomalib.utils.types import TaskType
 
 
 @pytest.fixture(autouse=True)
