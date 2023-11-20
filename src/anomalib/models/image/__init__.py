@@ -13,6 +13,7 @@ from .efficient_ad import EfficientAd
 from .fastflow import Fastflow
 from .ganomaly import Ganomaly
 from .padim import Padim
+from .patchcore import Patchcore
 
 __all__ = [
     "Cfa",
@@ -25,4 +26,5 @@ __all__ = [
     "Fastflow",
     "Ganomaly",
     "Padim",
+    "Patchcore",
 ]

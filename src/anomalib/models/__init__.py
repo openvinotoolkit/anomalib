@@ -13,12 +13,11 @@ from omegaconf import DictConfig, OmegaConf
 
 from anomalib.models.components import AnomalyModule
 from anomalib.models.image.dfkde import Dfkde
-from anomalib.models.patchcore import Patchcore
 from anomalib.models.reverse_distillation import ReverseDistillation
 from anomalib.models.rkde import Rkde
 from anomalib.models.stfpm import Stfpm
 
-from .image import Cfa, Cflow, Csflow, Dfm, Draem, EfficientAd, Fastflow, Ganomaly, Padim
+from .image import Cfa, Cflow, Csflow, Dfm, Draem, EfficientAd, Fastflow, Ganomaly, Padim, Patchcore
 from .video import AiVad
 
 

@@ -11,7 +11,8 @@ from torch import nn
 from torch.nn import functional as F  # noqa: N812
 
 from anomalib.models.components import DynamicBufferModule, FeatureExtractor, KCenterGreedy
-from anomalib.models.patchcore.anomaly_map import AnomalyMapGenerator
+
+from .anomaly_map import AnomalyMapGenerator
 
 if TYPE_CHECKING:
     from anomalib.data.utils.tiler import Tiler

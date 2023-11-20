@@ -14,7 +14,8 @@ import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 
 from anomalib.models.components import AnomalyModule, MemoryBankMixin
-from anomalib.models.patchcore.torch_model import PatchcoreModel
+
+from .torch_model import PatchcoreModel
 
 logger = logging.getLogger(__name__)
 
