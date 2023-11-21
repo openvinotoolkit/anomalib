@@ -39,7 +39,7 @@ Anomalib is a deep learning library that aims to collect state-of-the-art anomal
 
 ---
 
-# 📝 Getting Started
+## Getting Started
 
 Anomalib provides a set of resources to get started with the library. These include:
 
