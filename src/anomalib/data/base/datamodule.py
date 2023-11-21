@@ -3,31 +3,28 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
 import logging
 from abc import ABC
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from pandas import DataFrame
-from pytorch_lightning import LightningDataModule
-from pytorch_lightning.utilities.types import EVAL_DATALOADERS, TRAIN_DATALOADERS
+from lightning.pytorch import LightningDataModule
+from lightning.pytorch.utilities.types import EVAL_DATALOADERS, TRAIN_DATALOADERS
 from torch.utils.data.dataloader import DataLoader, default_collate
 
-from anomalib.data.base.dataset import AnomalibDataset
-from anomalib.data.synthetic import SyntheticAnomalyDataset
-from anomalib.data.utils import (
-    TestSplitMode,
-    ValSplitMode,
-    random_split,
-    split_by_label,
-)
+from anomalib.data.utils import TestSplitMode, ValSplitMode, random_split, split_by_label
+from anomalib.data.utils.synthetic import SyntheticAnomalyDataset
+
+if TYPE_CHECKING:
+    from pandas import DataFrame
+
+    from anomalib.data.base.dataset import AnomalibDataset
 
 logger = logging.getLogger(__name__)
 
 
 def collate_fn(batch: list) -> dict[str, Any]:
-    """Custom collate function that collates bounding boxes as lists.
+    """Collate bounding boxes as lists.
 
     Bounding boxes are collated as a list of tensors, while the default collate function is used for all other entries.
 
@@ -40,7 +37,7 @@ def collate_fn(batch: list) -> dict[str, Any]:
     elem = batch[0]  # sample an element from the batch to check the type.
     out_dict = {}
     if isinstance(elem, dict):
-        if "boxes" in elem.keys():
+        if "boxes" in elem:
             # collate boxes as list
             out_dict["boxes"] = [item.pop("boxes") for item in batch]
         # collate other data normally
@@ -93,7 +90,7 @@ class AnomalibDataModule(LightningDataModule, ABC):
         self._samples: DataFrame | None = None
 
     def setup(self, stage: str | None = None) -> None:
-        """Setup train, validation and test data.
+        """Set up train, validation and test data.
 
         Args:
           stage: str | None:  Train/Val/Test stages. (Default value = None)
@@ -141,14 +138,18 @@ class AnomalibDataModule(LightningDataModule, ABC):
         elif self.test_split_mode == TestSplitMode.SYNTHETIC:
             self.test_data = SyntheticAnomalyDataset.from_dataset(normal_test_data)
         elif self.test_split_mode != TestSplitMode.NONE:
-            raise ValueError(f"Unsupported Test Split Mode: {self.test_split_mode}")
+            msg = f"Unsupported Test Split Mode: {self.test_split_mode}"
+            raise ValueError(msg)
 
     def _create_val_split(self) -> None:
         """Obtain the validation set based on the settings in the config."""
         if self.val_split_mode == ValSplitMode.FROM_TEST:
             # randomly sampled from test set
             self.test_data, self.val_data = random_split(
-                self.test_data, self.val_split_ratio, label_aware=True, seed=self.seed
+                self.test_data,
+                self.val_split_ratio,
+                label_aware=True,
+                seed=self.seed,
             )
         elif self.val_split_mode == ValSplitMode.SAME_AS_TEST:
             # equal to test set
@@ -158,7 +159,8 @@ class AnomalibDataModule(LightningDataModule, ABC):
             self.train_data, normal_val_data = random_split(self.train_data, self.val_split_ratio, seed=self.seed)
             self.val_data = SyntheticAnomalyDataset.from_dataset(normal_val_data)
         elif self.val_split_mode != ValSplitMode.NONE:
-            raise ValueError(f"Unknown validation split mode: {self.val_split_mode}")
+            msg = f"Unknown validation split mode: {self.val_split_mode}"
+            raise ValueError(msg)
 
     @property
     def is_setup(self) -> bool:
@@ -168,16 +170,18 @@ class AnomalibDataModule(LightningDataModule, ABC):
         """
         _is_setup: bool = False
         for data in ("train_data", "val_data", "test_data"):
-            if hasattr(self, data):
-                if getattr(self, data).is_setup:
-                    _is_setup = True
+            if hasattr(self, data) and getattr(self, data).is_setup:
+                _is_setup = True
 
         return _is_setup
 
     def train_dataloader(self) -> TRAIN_DATALOADERS:
         """Get train dataloader."""
         return DataLoader(
-            dataset=self.train_data, shuffle=True, batch_size=self.train_batch_size, num_workers=self.num_workers
+            dataset=self.train_data,
+            shuffle=True,
+            batch_size=self.train_batch_size,
+            num_workers=self.num_workers,
         )
 
     def val_dataloader(self) -> EVAL_DATALOADERS:

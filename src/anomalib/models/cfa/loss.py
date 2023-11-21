@@ -5,7 +5,7 @@
 
 
 import torch
-from torch import Tensor, nn
+from torch import nn
 
 
 class CfaLoss(nn.Module):
@@ -23,17 +23,17 @@ class CfaLoss(nn.Module):
         self.num_hard_negative_features = num_hard_negative_features
         self.radius = torch.ones(1, requires_grad=True) * radius
 
-    def forward(self, distance: Tensor) -> Tensor:
+    def forward(self, distance: torch.Tensor) -> torch.Tensor:
         """Compute the CFA loss.
 
         Args:
-            distance (Tensor): Distance computed using target oriented features.
+            distance (torch.Tensor): Distance computed using target oriented features.
 
         Returns:
             Tensor: CFA loss.
         """
         num_neighbors = self.num_nearest_neighbors + self.num_hard_negative_features
-        distance = distance.topk(num_neighbors, largest=False).values
+        distance = distance.topk(num_neighbors, largest=False).values  # noqa: PD011
 
         score = distance[:, :, : self.num_nearest_neighbors] - (self.radius**2).to(distance.device)
         l_att = torch.mean(torch.max(torch.zeros_like(score), score))
@@ -41,6 +41,4 @@ class CfaLoss(nn.Module):
         score = (self.radius**2).to(distance.device) - distance[:, :, self.num_hard_negative_features :]
         l_rep = torch.mean(torch.max(torch.zeros_like(score), score - 0.1))
 
-        loss = (l_att + l_rep) * 1000
-
-        return loss
+        return (l_att + l_rep) * 1000

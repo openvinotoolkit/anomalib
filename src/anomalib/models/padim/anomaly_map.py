@@ -3,12 +3,11 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
 import torch
-import torch.nn.functional as F
 from omegaconf import ListConfig
-from torch import Tensor, nn
+from torch import nn
+from torch.nn import functional as F  # noqa: N812
 
 from anomalib.models.components import GaussianBlur2d
 
@@ -28,19 +27,18 @@ class AnomalyMapGenerator(nn.Module):
         self.blur = GaussianBlur2d(kernel_size=(kernel_size, kernel_size), sigma=(sigma, sigma), channels=1)
 
     @staticmethod
-    def compute_distance(embedding: Tensor, stats: list[Tensor]) -> Tensor:
+    def compute_distance(embedding: torch.Tensor, stats: list[torch.Tensor]) -> torch.Tensor:
         """Compute anomaly score to the patch in position(i,j) of a test image.
 
         Ref: Equation (2), Section III-C of the paper.
 
         Args:
-            embedding (Tensor): Embedding Vector
-            stats (list[Tensor]): Mean and Covariance Matrix of the multivariate Gaussian distribution
+            embedding (torch.Tensor): Embedding Vector
+            stats (list[torch.Tensor]): Mean and Covariance Matrix of the multivariate Gaussian distribution
 
         Returns:
             Anomaly score of a test image via mahalanobis distance.
         """
-
         batch, channel, height, width = embedding.shape
         embedding = embedding.reshape(batch, channel, height * width)
 
@@ -50,73 +48,69 @@ class AnomalyMapGenerator(nn.Module):
 
         distances = (torch.matmul(delta, inv_covariance) * delta).sum(2).permute(1, 0)
         distances = distances.reshape(batch, 1, height, width)
-        distances = distances.clamp(0).sqrt()
+        return distances.clamp(0).sqrt()
 
-        return distances
-
-    def up_sample(self, distance: Tensor) -> Tensor:
+    def up_sample(self, distance: torch.Tensor) -> torch.Tensor:
         """Up sample anomaly score to match the input image size.
 
         Args:
-            distance (Tensor): Anomaly score computed via the mahalanobis distance.
+            distance (torch.Tensor): Anomaly score computed via the mahalanobis distance.
 
         Returns:
             Resized distance matrix matching the input image size
         """
-
-        score_map = F.interpolate(
+        return F.interpolate(
             distance,
             size=self.image_size,
             mode="bilinear",
             align_corners=False,
         )
-        return score_map
 
-    def smooth_anomaly_map(self, anomaly_map: Tensor) -> Tensor:
+    def smooth_anomaly_map(self, anomaly_map: torch.Tensor) -> torch.Tensor:
         """Apply gaussian smoothing to the anomaly map.
 
         Args:
-            anomaly_map (Tensor): Anomaly score for the test image(s).
+            anomaly_map (torch.Tensor): Anomaly score for the test image(s).
 
         Returns:
             Filtered anomaly scores
         """
+        return self.blur(anomaly_map)
 
-        blurred_anomaly_map = self.blur(anomaly_map)
-        return blurred_anomaly_map
-
-    def compute_anomaly_map(self, embedding: Tensor, mean: Tensor, inv_covariance: Tensor) -> Tensor:
+    def compute_anomaly_map(
+        self,
+        embedding: torch.Tensor,
+        mean: torch.Tensor,
+        inv_covariance: torch.Tensor,
+    ) -> torch.Tensor:
         """Compute anomaly score.
 
         Scores are calculated based on embedding vector, mean and inv_covariance of the multivariate gaussian
         distribution.
 
         Args:
-            embedding (Tensor): Embedding vector extracted from the test set.
-            mean (Tensor): Mean of the multivariate gaussian distribution
-            inv_covariance (Tensor): Inverse Covariance matrix of the multivariate gaussian distribution.
+            embedding (torch.Tensor): Embedding vector extracted from the test set.
+            mean (torch.Tensor): Mean of the multivariate gaussian distribution
+            inv_covariance (torch.Tensor): Inverse Covariance matrix of the multivariate gaussian distribution.
 
         Returns:
             Output anomaly score.
         """
-
         score_map = self.compute_distance(
             embedding=embedding,
             stats=[mean.to(embedding.device), inv_covariance.to(embedding.device)],
         )
         up_sampled_score_map = self.up_sample(score_map)
-        smoothed_anomaly_map = self.smooth_anomaly_map(up_sampled_score_map)
+        return self.smooth_anomaly_map(up_sampled_score_map)
 
-        return smoothed_anomaly_map
-
-    def forward(self, **kwargs) -> Tensor:
-        """Returns anomaly_map.
+    def forward(self, **kwargs) -> torch.Tensor:
+        """Return anomaly_map.
 
         Expects `embedding`, `mean` and `covariance` keywords to be passed explicitly.
 
         Example:
-        >>> anomaly_map_generator = AnomalyMapGenerator(image_size=input_size)
-        >>> output = anomaly_map_generator(embedding=embedding, mean=mean, covariance=covariance)
+            >>> anomaly_map_generator = AnomalyMapGenerator(image_size=input_size)
+            >>> output = anomaly_map_generator(embedding=embedding, mean=mean, covariance=covariance)
 
         Raises:
             ValueError: `embedding`. `mean` or `covariance` keys are not found
@@ -124,12 +118,12 @@ class AnomalyMapGenerator(nn.Module):
         Returns:
             torch.Tensor: anomaly map
         """
-
         if not ("embedding" in kwargs and "mean" in kwargs and "inv_covariance" in kwargs):
-            raise ValueError(f"Expected keys `embedding`, `mean` and `covariance`. Found {kwargs.keys()}")
+            msg = f"Expected keys `embedding`, `mean` and `covariance`. Found {kwargs.keys()}"
+            raise ValueError(msg)
 
-        embedding: Tensor = kwargs["embedding"]
-        mean: Tensor = kwargs["mean"]
-        inv_covariance: Tensor = kwargs["inv_covariance"]
+        embedding: torch.Tensor = kwargs["embedding"]
+        mean: torch.Tensor = kwargs["mean"]
+        inv_covariance: torch.Tensor = kwargs["inv_covariance"]
 
         return self.compute_anomaly_map(embedding, mean, inv_covariance)

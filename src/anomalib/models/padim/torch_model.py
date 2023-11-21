@@ -3,18 +3,20 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
 from random import sample
+from typing import TYPE_CHECKING
 
 import torch
-import torch.nn.functional as F
-from torch import Tensor, nn
+from torch import nn
+from torch.nn import functional as F  # noqa: N812
 
 from anomalib.models.components import FeatureExtractor, MultiVariateGaussian
 from anomalib.models.components.feature_extractors import dryrun_find_featuremap_dims
 from anomalib.models.padim.anomaly_map import AnomalyMapGenerator
-from anomalib.pre_processing import Tiler
+
+if TYPE_CHECKING:
+    from anomalib.data.utils.tiler import Tiler
 
 # defaults from the paper
 _N_FEATURES_DEFAULTS = {
@@ -24,7 +26,9 @@ _N_FEATURES_DEFAULTS = {
 
 
 def _deduce_dims(
-    feature_extractor: FeatureExtractor, input_size: tuple[int, int], layers: list[str]
+    feature_extractor: FeatureExtractor,
+    input_size: tuple[int, int],
+    layers: list[str],
 ) -> tuple[int, int]:
     """Run a dry run to deduce the dimensions of the extracted features.
 
@@ -41,7 +45,7 @@ def _deduce_dims(
     n_patches = torch.tensor(first_layer_resolution).prod().int().item()
 
     # the original embedding size is the sum of the channels of all layers
-    n_features_original = sum(dimensions_mapping[layer]["num_features"] for layer in layers)  # type: ignore
+    n_features_original = sum(dimensions_mapping[layer]["num_features"] for layer in layers)  # type: ignore[misc]
 
     return n_features_original, n_patches
 
@@ -77,10 +81,11 @@ class PadimModel(nn.Module):
         n_features = n_features or _N_FEATURES_DEFAULTS.get(self.backbone)
 
         if n_features is None:
-            raise ValueError(
+            msg = (
                 f"n_features must be specified for backbone {self.backbone}. "
                 f"Default values are available for: {sorted(_N_FEATURES_DEFAULTS.keys())}"
             )
+            raise ValueError(msg)
 
         assert (
             0 < n_features <= self.n_features_original
@@ -88,24 +93,23 @@ class PadimModel(nn.Module):
 
         self.n_features = n_features
 
-        # pylint: disable=not-callable
         # Since idx is randomly selected, save it with model to get same results
         self.register_buffer(
             "idx",
-            torch.tensor(sample(range(0, self.n_features_original), self.n_features)),
+            torch.tensor(sample(range(self.n_features_original), self.n_features)),
         )
-        self.idx: Tensor
+        self.idx: torch.Tensor
         self.loss = None
         self.anomaly_map_generator = AnomalyMapGenerator(image_size=input_size)
 
         self.gaussian = MultiVariateGaussian(self.n_features, self.n_patches)
 
-    def forward(self, input_tensor: Tensor) -> Tensor:
+    def forward(self, input_tensor: torch.Tensor) -> torch.Tensor:
         """Forward-pass image-batch (N, C, H, W) into model to extract features.
 
         Args:
             input_tensor: Image-batch (N, C, H, W)
-            input_tensor: Tensor:
+            input_tensor: torch.Tensor:
 
         Returns:
             Features from single/multiple layers.
@@ -121,7 +125,6 @@ class PadimModel(nn.Module):
             torch.Size([32, 128, 28, 28]),
             torch.Size([32, 256, 14, 14])]
         """
-
         if self.tiler:
             input_tensor = self.tiler.tile(input_tensor)
 
@@ -136,20 +139,21 @@ class PadimModel(nn.Module):
             output = embeddings
         else:
             output = self.anomaly_map_generator(
-                embedding=embeddings, mean=self.gaussian.mean, inv_covariance=self.gaussian.inv_covariance
+                embedding=embeddings,
+                mean=self.gaussian.mean,
+                inv_covariance=self.gaussian.inv_covariance,
             )
         return output
 
-    def generate_embedding(self, features: dict[str, Tensor]) -> Tensor:
+    def generate_embedding(self, features: dict[str, torch.Tensor]) -> torch.Tensor:
         """Generate embedding from hierarchical feature map.
 
         Args:
-            features (dict[str, Tensor]): Hierarchical feature map from a CNN (ResNet18 or WideResnet)
+            features (dict[str, torch.Tensor]): Hierarchical feature map from a CNN (ResNet18 or WideResnet)
 
         Returns:
             Embedding vector
         """
-
         embeddings = features[self.layers[0]]
         for layer in self.layers[1:]:
             layer_embedding = features[layer]
@@ -158,5 +162,4 @@ class PadimModel(nn.Module):
 
         # subsample embeddings
         idx = self.idx.to(embeddings.device)
-        embeddings = torch.index_select(embeddings, 1, idx)
-        return embeddings
+        return torch.index_select(embeddings, 1, idx)

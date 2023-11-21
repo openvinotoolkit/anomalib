@@ -3,19 +3,16 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
 import logging
+from collections.abc import Sequence
 
 import torch
-import torch.nn.functional as F
-from torch import Tensor, nn
+from torch import nn
+from torch.nn import functional as F  # noqa: N812
 
 from anomalib.models.components import FeatureExtractor
-from anomalib.models.components.classification import (
-    FeatureScalingMethod,
-    KDEClassifier,
-)
+from anomalib.models.components.classification import FeatureScalingMethod, KDEClassifier
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +33,7 @@ class DfkdeModel(nn.Module):
 
     def __init__(
         self,
-        layers: list[str],
+        layers: Sequence[str],
         backbone: str,
         pre_trained: bool = True,
         n_pca_components: int = 16,
@@ -53,14 +50,14 @@ class DfkdeModel(nn.Module):
             max_training_points=max_training_points,
         )
 
-    def get_features(self, batch: Tensor) -> Tensor:
+    def get_features(self, batch: torch.Tensor) -> torch.Tensor:
         """Extract features from the pretrained network.
 
         Args:
-            batch (Tensor): Image batch.
+            batch (torch.Tensor): Image batch.
 
         Returns:
-            Tensor: Tensor containing extracted features.
+            Tensor: torch.Tensor containing extracted features.
         """
         self.feature_extractor.eval()
         layer_outputs = self.feature_extractor(batch)
@@ -68,24 +65,21 @@ class DfkdeModel(nn.Module):
             batch_size = len(layer_outputs[layer])
             layer_outputs[layer] = F.adaptive_avg_pool2d(input=layer_outputs[layer], output_size=(1, 1))
             layer_outputs[layer] = layer_outputs[layer].view(batch_size, -1)
-        layer_outputs = torch.cat(list(layer_outputs.values())).detach()
-        return layer_outputs
+        return torch.cat(list(layer_outputs.values())).detach()
 
-    def forward(self, batch: Tensor) -> Tensor:
+    def forward(self, batch: torch.Tensor) -> torch.Tensor:
         """Prediction by normality model.
 
         Args:
-            batch (Tensor): Input images.
+            batch (torch.Tensor): Input images.
 
         Returns:
             Tensor: Predictions
         """
-
         # 1. apply feature extraction
         features = self.get_features(batch)
         if self.training:
             return features
 
         # 2. apply density estimation
-        scores = self.classifier(features)
-        return scores
+        return self.classifier(features)

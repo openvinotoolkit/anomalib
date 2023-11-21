@@ -13,7 +13,7 @@
 
 [![python](https://img.shields.io/badge/python-3.7%2B-green)]()
 [![pytorch](https://img.shields.io/badge/pytorch-1.8.1%2B-orange)]()
-[![openvino](https://img.shields.io/badge/openvino-2021.4.2-purple)]()
+[![openvino](https://img.shields.io/badge/openvino-2022.3.0-purple)]()
 [![comet](https://custom-icon-badges.herokuapp.com/badge/comet__ml-3.31.7-orange?logo=logo_comet_ml)](https://www.comet.com/site/products/ml-experiment-tracking/?utm_source=anomalib&utm_medium=referral)
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/684927c1c76c4c5e94bb53480812fbbb)](https://www.codacy.com/gh/openvinotoolkit/anomalib/dashboard?utm_source=github.com&utm_medium=referral&utm_content=openvinotoolkit/anomalib&utm_campaign=Badge_Grade)
 [![black](https://img.shields.io/badge/code%20style-black-000000.svg)]()
@@ -181,7 +181,7 @@ By placing the above configuration to the `dataset` section of the `config.yaml`
 
 # Inference
 
-Anomalib includes multiple inferencing scripts, including Torch, Lightning, Gradio, and OpenVINO inferencers, to perform inference using the trained/exported model. In this section, we will go over how to use these scripts to perform inference.
+Anomalib includes multiple inferencing scripts, including Torch, Lightning, Gradio, and OpenVINO inferencers to perform inference using the trained/exported model. In this section, we will go over how to use these scripts to perform inference.
 
 <details>
 <summary>PyTorch Inference</summary>
@@ -286,7 +286,7 @@ Refer to the [Benchmarking Documentation](https://openvinotoolkit.github.io/anom
 
 # Experiment Management
 
-Anomablib is integrated with various libraries for experiment tracking such as Comet, tensorboard, and wandb through [pytorch lighting loggers](https://pytorch-lightning.readthedocs.io/en/stable/extensions/logging.html).
+Anomalib is integrated with various libraries for experiment tracking such as Comet, tensorboard, and wandb through [pytorch lighting loggers](https://pytorch-lightning.readthedocs.io/en/stable/extensions/logging.html).
 
 Below is an example of how to enable logging for hyper-parameters, metrics, model graphs, and predictions on images in the test data-set
 

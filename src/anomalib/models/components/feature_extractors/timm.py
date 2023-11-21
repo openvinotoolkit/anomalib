@@ -6,14 +6,12 @@ This script extracts features from a CNN network
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
 import logging
-import warnings
 
 import timm
 import torch
-from torch import Tensor, nn
+from torch import nn
 
 logger = logging.getLogger(__name__)
 
@@ -43,8 +41,18 @@ class TimmFeatureExtractor(nn.Module):
             [torch.Size([32, 64, 64, 64]), torch.Size([32, 128, 32, 32]), torch.Size([32, 256, 16, 16])]
     """
 
-    def __init__(self, backbone: str, layers: list[str], pre_trained: bool = True, requires_grad: bool = False):
+    def __init__(self, backbone: str, layers: list[str], pre_trained: bool = True, requires_grad: bool = False) -> None:
         super().__init__()
+
+        # Extract backbone-name and weight-URI from the backbone string.
+        if "__AT__" in backbone:
+            backbone, uri = backbone.split("__AT__")
+            pretrained_cfg = timm.models.registry.get_pretrained_cfg(backbone)
+            # Override pretrained_cfg["url"] to use different pretrained weights.
+            pretrained_cfg["url"] = uri
+        else:
+            pretrained_cfg = None
+
         self.backbone = backbone
         self.layers = layers
         self.idx = self._map_layer_to_idx()
@@ -52,6 +60,7 @@ class TimmFeatureExtractor(nn.Module):
         self.feature_extractor = timm.create_model(
             backbone,
             pretrained=pre_trained,
+            pretrained_cfg=pretrained_cfg,
             features_only=True,
             exportable=True,
             out_indices=self.idx,
@@ -60,13 +69,15 @@ class TimmFeatureExtractor(nn.Module):
         self._features = {layer: torch.empty(0) for layer in self.layers}
 
     def _map_layer_to_idx(self, offset: int = 3) -> list[int]:
-        """Maps set of layer names to indices of model.
+        """Map set of layer names to indices of model.
 
         Args:
-            offset (int) `timm` ignores the first few layers when indexing please update offset based on need
+            offset (int, optional): `timm` ignores the first few layers when indexing.
+                Please update offset based on need.
+                Defaults to 3.
 
         Returns:
-            Feature map extracted from the CNN
+            list[int]: Feature map extracted from the CNN.
         """
         idx = []
         features = timm.create_model(
@@ -78,28 +89,29 @@ class TimmFeatureExtractor(nn.Module):
         for i in self.layers:
             try:
                 idx.append(list(dict(features.named_children()).keys()).index(i) - offset)
-            except ValueError:
-                warnings.warn(f"Layer {i} not found in model {self.backbone}")
+            except ValueError:  # noqa: PERF203
+                msg = f"Layer {i} not found in model {self.backbone}"
+                logger.warning(msg)
                 # Remove unfound key from layer dict
                 self.layers.remove(i)
 
         return idx
 
-    def forward(self, inputs: Tensor) -> dict[str, Tensor]:
+    def forward(self, inputs: torch.Tensor) -> dict[str, torch.Tensor]:
         """Forward-pass input tensor into the CNN.
 
         Args:
-            inputs (Tensor): Input tensor
+            inputs (torch.Tensor): Input tensor
 
         Returns:
             Feature map extracted from the CNN
         """
         if self.requires_grad:
-            features = dict(zip(self.layers, self.feature_extractor(inputs)))
+            features = dict(zip(self.layers, self.feature_extractor(inputs), strict=True))
         else:
             self.feature_extractor.eval()
             with torch.no_grad():
-                features = dict(zip(self.layers, self.feature_extractor(inputs)))
+                features = dict(zip(self.layers, self.feature_extractor(inputs), strict=True))
         return features
 
 
@@ -109,9 +121,9 @@ class FeatureExtractor(TimmFeatureExtractor):
     See :class:`anomalib.models.components.feature_extractors.timm.TimmFeatureExtractor` for more details.
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         logger.warning(
             "FeatureExtractor is deprecated. Use TimmFeatureExtractor instead."
-            " Both FeatureExtractor and TimmFeatureExtractor will be removed in a future release."
+            " Both FeatureExtractor and TimmFeatureExtractor will be removed in a future release.",
         )
         super().__init__(*args, **kwargs)

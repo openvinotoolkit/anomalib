@@ -12,6 +12,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Deprecated
 
+- Support only Python 3.10 and greater in https://github.com/openvinotoolkit/anomalib/pull/1299
+
 ### Fixed
 
 ## [v0.7.0] - 2023-08-28

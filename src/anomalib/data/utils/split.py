@@ -11,17 +11,19 @@ These function are useful
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
+import logging
 import math
-import warnings
+from collections.abc import Sequence
 from enum import Enum
-from typing import TYPE_CHECKING, Sequence
+from typing import TYPE_CHECKING
 
 import torch
 
 if TYPE_CHECKING:
-    from anomalib.data import AnomalibDataset
+    from anomalib import data
+
+logger = logging.getLogger(__name__)
 
 
 class Split(str, Enum):
@@ -49,7 +51,7 @@ class ValSplitMode(str, Enum):
     SYNTHETIC = "synthetic"
 
 
-def concatenate_datasets(datasets: Sequence[AnomalibDataset]) -> AnomalibDataset:
+def concatenate_datasets(datasets: Sequence["data.AnomalibDataset"]) -> "data.AnomalibDataset":
     """Concatenate multiple datasets into a single dataset object.
 
     Args:
@@ -65,11 +67,11 @@ def concatenate_datasets(datasets: Sequence[AnomalibDataset]) -> AnomalibDataset
 
 
 def random_split(
-    dataset: AnomalibDataset,
+    dataset: "data.AnomalibDataset",
     split_ratio: float | Sequence[float],
     label_aware: bool = False,
     seed: int | None = None,
-) -> list[AnomalibDataset]:
+) -> list["data.AnomalibDataset"]:
     """Perform a random split of a dataset.
 
     Args:
@@ -81,24 +83,23 @@ def random_split(
             be maintained in each of the subsets.
         seed (int | None, optional): Seed that can be passed if results need to be reproducible
     """
-
     if isinstance(split_ratio, float):
         split_ratio = [1 - split_ratio, split_ratio]
 
-    assert (
+    assert (  # noqa: PT018
         math.isclose(sum(split_ratio), 1) and sum(split_ratio) <= 1
     ), f"split ratios must sum to 1, found {sum(split_ratio)}"
     assert all(0 < ratio < 1 for ratio in split_ratio), f"all split ratios must be between 0 and 1, found {split_ratio}"
 
     # create list of source data
-    if label_aware and "label_index" in dataset.samples.keys():
+    if label_aware and "label_index" in dataset.samples:
         indices_per_label = [group.index for _, group in dataset.samples.groupby("label_index")]
         per_label_datasets = [dataset.subsample(indices) for indices in indices_per_label]
     else:
         per_label_datasets = [dataset]
 
     # outer list: per-label unique, inner list: random subsets with the given ratio
-    subsets: list[list[AnomalibDataset]] = []
+    subsets: list[list["data.AnomalibDataset"]] = []
     # split each (label-aware) subset of source data
     for label_dataset in per_label_datasets:
         # get subset lengths
@@ -107,26 +108,27 @@ def random_split(
             subset_idx = i % sum(subset_lengths)
             subset_lengths[subset_idx] += 1
         if 0 in subset_lengths:
-            warnings.warn(
+            msg = (
                 "Zero subset length encountered during splitting. This means one of your subsets might be"
-                " empty or devoid of either normal or anomalous images."
+                " empty or devoid of either normal or anomalous images.",
             )
+            logger.warning(msg)
 
         # perform random subsampling
         random_state = torch.Generator().manual_seed(seed) if seed else None
         indices = torch.randperm(len(label_dataset.samples), generator=random_state)
         subsets.append(
-            [label_dataset.subsample(subset_indices) for subset_indices in torch.split(indices, subset_lengths)]
+            [label_dataset.subsample(subset_indices) for subset_indices in torch.split(indices, subset_lengths)],
         )
 
     # invert outer/inner lists
     # outer list: subsets with the given ratio, inner list: per-label unique
-    subsets = list(map(list, zip(*subsets)))
+    subsets = list(map(list, zip(*subsets, strict=True)))
     return [concatenate_datasets(subset) for subset in subsets]
 
 
-def split_by_label(dataset: AnomalibDataset) -> tuple[AnomalibDataset, AnomalibDataset]:
-    """Splits the dataset into the normal and anomalous subsets."""
+def split_by_label(dataset: "data.AnomalibDataset") -> tuple["data.AnomalibDataset", "data.AnomalibDataset"]:
+    """Split the dataset into the normal and anomalous subsets."""
     samples = dataset.samples
     normal_indices = samples[samples.label_index == 0].index
     anomalous_indices = samples[samples.label_index == 1].index

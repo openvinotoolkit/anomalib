@@ -3,10 +3,9 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
 import torch
-from torch import Tensor, nn
+from torch import nn
 
 
 class GeneratorLoss(nn.Module):
@@ -18,7 +17,7 @@ class GeneratorLoss(nn.Module):
         wenc (int, optional): Latent vector encoder weight. Defaults to 1.
     """
 
-    def __init__(self, wadv=1, wcon=50, wenc=1) -> None:
+    def __init__(self, wadv: int = 1, wcon: int = 50, wenc: int = 1) -> None:
         super().__init__()
 
         self.loss_enc = nn.SmoothL1Loss()
@@ -30,17 +29,23 @@ class GeneratorLoss(nn.Module):
         self.wenc = wenc
 
     def forward(
-        self, latent_i: Tensor, latent_o: Tensor, images: Tensor, fake: Tensor, pred_real: Tensor, pred_fake: Tensor
-    ) -> Tensor:
+        self,
+        latent_i: torch.Tensor,
+        latent_o: torch.Tensor,
+        images: torch.Tensor,
+        fake: torch.Tensor,
+        pred_real: torch.Tensor,
+        pred_fake: torch.Tensor,
+    ) -> torch.Tensor:
         """Compute the loss for a batch.
 
         Args:
-            latent_i (Tensor): Latent features of the first encoder.
-            latent_o (Tensor): Latent features of the second encoder.
-            images (Tensor): Real image that served as input of the generator.
-            fake (Tensor): Generated image.
-            pred_real (Tensor): Discriminator predictions for the real image.
-            pred_fake (Tensor): Discriminator predictions for the fake image.
+            latent_i (torch.Tensor): Latent features of the first encoder.
+            latent_o (torch.Tensor): Latent features of the second encoder.
+            images (torch.Tensor): Real image that served as input of the generator.
+            fake (torch.Tensor): Generated image.
+            pred_real (torch.Tensor): Discriminator predictions for the real image.
+            pred_fake (torch.Tensor): Discriminator predictions for the fake image.
 
         Returns:
             Tensor: The computed generator loss.
@@ -49,8 +54,7 @@ class GeneratorLoss(nn.Module):
         error_con = self.loss_con(images, fake)
         error_adv = self.loss_adv(pred_real, pred_fake)
 
-        loss = error_adv * self.wadv + error_con * self.wcon + error_enc * self.wenc
-        return loss
+        return error_adv * self.wadv + error_con * self.wcon + error_enc * self.wenc
 
 
 class DiscriminatorLoss(nn.Module):
@@ -61,21 +65,22 @@ class DiscriminatorLoss(nn.Module):
 
         self.loss_bce = nn.BCELoss()
 
-    def forward(self, pred_real: Tensor, pred_fake: Tensor) -> Tensor:
+    def forward(self, pred_real: torch.Tensor, pred_fake: torch.Tensor) -> torch.Tensor:
         """Compute the loss for a predicted batch.
 
         Args:
-            pred_real (Tensor): Discriminator predictions for the real image.
-            pred_fake (Tensor): Discriminator predictions for the fake image.
+            pred_real (torch.Tensor): Discriminator predictions for the real image.
+            pred_fake (torch.Tensor): Discriminator predictions for the fake image.
 
         Returns:
             Tensor: The computed discriminator loss.
         """
         error_discriminator_real = self.loss_bce(
-            pred_real, torch.ones(size=pred_real.shape, dtype=torch.float32, device=pred_real.device)
+            pred_real,
+            torch.ones(size=pred_real.shape, dtype=torch.float32, device=pred_real.device),
         )
         error_discriminator_fake = self.loss_bce(
-            pred_fake, torch.zeros(size=pred_fake.shape, dtype=torch.float32, device=pred_fake.device)
+            pred_fake,
+            torch.zeros(size=pred_fake.shape, dtype=torch.float32, device=pred_fake.device),
         )
-        loss_discriminator = (error_discriminator_fake + error_discriminator_real) * 0.5
-        return loss_discriminator
+        return (error_discriminator_fake + error_discriminator_real) * 0.5

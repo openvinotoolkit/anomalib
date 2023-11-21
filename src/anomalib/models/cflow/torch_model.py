@@ -3,9 +3,8 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
-from typing import Any
+from collections.abc import Sequence
 
 import einops
 import torch
@@ -23,7 +22,7 @@ class CflowModel(nn.Module):
         self,
         input_size: tuple[int, int],
         backbone: str,
-        layers: list[str],
+        layers: Sequence[str],
         pre_trained: bool = True,
         fiber_batch_size: int = 64,
         decoder: str = "freia-cflow",
@@ -52,7 +51,7 @@ class CflowModel(nn.Module):
                     permute_soft=permute_soft,
                 )
                 for pool_dim in self.pool_dims
-            ]
+            ],
         )
 
         # encoder model is fixed
@@ -61,7 +60,7 @@ class CflowModel(nn.Module):
 
         self.anomaly_map_generator = AnomalyMapGenerator(image_size=input_size, pool_layers=self.pool_layers)
 
-    def forward(self, images) -> Any:
+    def forward(self, images: torch.Tensor) -> torch.Tensor:
         """Forward-pass images into the network to extract encoder features and compute probability.
 
         Args:
@@ -71,7 +70,6 @@ class CflowModel(nn.Module):
           Predicted anomaly maps.
 
         """
-
         self.encoder.eval()
         self.decoders.eval()
         with torch.no_grad():
@@ -105,7 +103,7 @@ class CflowModel(nn.Module):
             # testing. In case it is observed in the future, we can use only this line and ensure that FIB is at
             # least 1 or set `drop_last` in the dataloader to drop the last non-full batch.
             fiber_batches = embedding_length // self.fiber_batch_size + int(
-                embedding_length % self.fiber_batch_size > 0
+                embedding_length % self.fiber_batch_size > 0,
             )
 
             for batch_num in range(fiber_batches):  # per-fiber processing

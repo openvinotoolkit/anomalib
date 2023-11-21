@@ -3,10 +3,8 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
 import torch
-from torch import Tensor
 
 from anomalib.models.components.base import DynamicBufferModule
 
@@ -19,24 +17,24 @@ class PCA(DynamicBufferModule):
           or a ratio between 0-1.
     """
 
-    def __init__(self, n_components: int | float):
+    def __init__(self, n_components: int | float) -> None:
         super().__init__()
         self.n_components = n_components
 
-        self.register_buffer("singular_vectors", Tensor())
-        self.register_buffer("mean", Tensor())
-        self.register_buffer("num_components", Tensor())
+        self.register_buffer("singular_vectors", torch.Tensor())
+        self.register_buffer("mean", torch.Tensor())
+        self.register_buffer("num_components", torch.Tensor())
 
-        self.singular_vectors: Tensor
-        self.singular_values: Tensor
-        self.mean: Tensor
-        self.num_components: Tensor
+        self.singular_vectors: torch.Tensor
+        self.singular_values: torch.Tensor
+        self.mean: torch.Tensor
+        self.num_components: torch.Tensor
 
-    def fit(self, dataset: Tensor) -> None:
+    def fit(self, dataset: torch.Tensor) -> None:
         """Fits the PCA model to the dataset.
 
         Args:
-          dataset (Tensor): Input dataset to fit the model.
+          dataset (torch.Tensor): Input dataset to fit the model.
         """
         mean = dataset.mean(dim=0)
         dataset -= mean
@@ -49,17 +47,17 @@ class PCA(DynamicBufferModule):
         else:
             num_components = int(self.n_components)
 
-        self.num_components = Tensor([num_components])
+        self.num_components = torch.Tensor([num_components])
 
         self.singular_vectors = v_h.transpose(-2, -1)[:, :num_components].float()
         self.singular_values = sig[:num_components].float()
         self.mean = mean
 
-    def fit_transform(self, dataset: Tensor) -> Tensor:
+    def fit_transform(self, dataset: torch.Tensor) -> torch.Tensor:
         """Fit and transform PCA to dataset.
 
         Args:
-          dataset (Tensor): Dataset to which the PCA if fit and transformed
+          dataset (torch.Tensor): Dataset to which the PCA if fit and transformed
 
         Returns:
           Transformed dataset
@@ -67,7 +65,7 @@ class PCA(DynamicBufferModule):
         mean = dataset.mean(dim=0)
         dataset -= mean
         num_components = int(self.n_components)
-        self.num_components = Tensor([num_components])
+        self.num_components = torch.Tensor([num_components])
 
         v_h = torch.linalg.svd(dataset)[-1]
         self.singular_vectors = v_h.transpose(-2, -1)[:, :num_components]
@@ -75,35 +73,33 @@ class PCA(DynamicBufferModule):
 
         return torch.matmul(dataset, self.singular_vectors)
 
-    def transform(self, features: Tensor) -> Tensor:
-        """Transforms the features based on singular vectors calculated earlier.
+    def transform(self, features: torch.Tensor) -> torch.Tensor:
+        """Transform the features based on singular vectors calculated earlier.
 
         Args:
-          features (Tensor): Input features
+          features (torch.Tensor): Input features
 
         Returns:
           Transformed features
         """
-
         features -= self.mean
         return torch.matmul(features, self.singular_vectors)
 
-    def inverse_transform(self, features: Tensor) -> Tensor:
+    def inverse_transform(self, features: torch.Tensor) -> torch.Tensor:
         """Inverses the transformed features.
 
         Args:
-          features (Tensor): Transformed features
+          features (torch.Tensor): Transformed features
 
         Returns: Inverse features
         """
-        inv_features = torch.matmul(features, self.singular_vectors.transpose(-2, -1))
-        return inv_features
+        return torch.matmul(features, self.singular_vectors.transpose(-2, -1))
 
-    def forward(self, features: Tensor) -> Tensor:
-        """Transforms the features.
+    def forward(self, features: torch.Tensor) -> torch.Tensor:
+        """Transform the features.
 
         Args:
-          features (Tensor): Input features
+          features (torch.Tensor): Input features
 
         Returns:
           Transformed features

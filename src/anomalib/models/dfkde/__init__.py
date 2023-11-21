@@ -3,6 +3,6 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from .lightning_model import Dfkde, DfkdeLightning
+from .lightning_model import Dfkde
 
-__all__ = ["Dfkde", "DfkdeLightning"]
+__all__ = ["Dfkde"]

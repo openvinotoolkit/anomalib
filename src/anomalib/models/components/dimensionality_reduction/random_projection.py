@@ -1,18 +1,15 @@
-"""This module comprises PatchCore Sampling Methods for the embedding.
+"""Random Sparse Projector.
 
-- Random Sparse Projector
-    Sparse Random Projection using PyTorch Operations
+Sparse Random Projection using PyTorch Operations
 """
 
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
 import numpy as np
 import torch
 from sklearn.utils.random import sample_without_replacement
-from torch import Tensor
 
 
 class NotFittedError(ValueError, AttributeError):
@@ -31,11 +28,11 @@ class SparseRandomProjection:
 
     def __init__(self, eps: float = 0.1, random_state: int | None = None) -> None:
         self.n_components: int
-        self.sparse_random_matrix: Tensor
+        self.sparse_random_matrix: torch.Tensor
         self.eps = eps
         self.random_state = random_state
 
-    def _sparse_random_matrix(self, n_features: int):
+    def _sparse_random_matrix(self, n_features: int) -> torch.Tensor:
         """Random sparse matrix. Based on https://web.stanford.edu/~hastie/Papers/Ping/KDD06_rp.pdf.
 
         Args:
@@ -46,7 +43,6 @@ class SparseRandomProjection:
                 The generated Gaussian random matrix is in CSR (compressed sparse row)
                 format.
         """
-
         # Density 'auto'. Factorize density
         density = 1 / np.sqrt(n_features)
 
@@ -66,7 +62,9 @@ class SparseRandomProjection:
                 # pylint: disable=not-callable
                 c_idx = torch.tensor(
                     sample_without_replacement(
-                        n_population=n_features, n_samples=nnz_idx, random_state=self.random_state
+                        n_population=n_features,
+                        n_samples=nnz_idx,
+                        random_state=self.random_state,
                     ),
                     dtype=torch.int64,
                 )
@@ -78,7 +76,7 @@ class SparseRandomProjection:
 
         return components
 
-    def johnson_lindenstrauss_min_dim(self, n_samples: int, eps: float = 0.1):
+    def johnson_lindenstrauss_min_dim(self, n_samples: int, eps: float = 0.1) -> int | np.integer:
         """Find a 'safe' number of components to randomly project to.
 
         Ref eqn 2.1 https://cseweb.ucsd.edu/~dasgupta/papers/jl.pdf
@@ -87,15 +85,14 @@ class SparseRandomProjection:
             n_samples (int): Number of samples used to compute safe components
             eps (float, optional): Minimum distortion rate. Defaults to 0.1.
         """
-
         denominator = (eps**2 / 2) - (eps**3 / 3)
         return (4 * np.log(n_samples) / denominator).astype(np.int64)
 
-    def fit(self, embedding: Tensor) -> SparseRandomProjection:
-        """Generates sparse matrix from the embedding tensor.
+    def fit(self, embedding: torch.Tensor) -> "SparseRandomProjection":
+        """Generate sparse matrix from the embedding tensor.
 
         Args:
-            embedding (Tensor): embedding tensor for generating embedding
+            embedding (torch.Tensor): embedding tensor for generating embedding
 
         Returns:
             (SparseRandomProjection): Return self to be used as
@@ -115,19 +112,19 @@ class SparseRandomProjection:
 
         return self
 
-    def transform(self, embedding: Tensor) -> Tensor:
+    def transform(self, embedding: torch.Tensor) -> torch.Tensor:
         """Project the data by using matrix product with the random matrix.
 
         Args:
-            embedding (Tensor): Embedding of shape (n_samples, n_features)
+            embedding (torch.Tensor): Embedding of shape (n_samples, n_features)
                 The input data to project into a smaller dimensional space
 
         Returns:
-            projected_embedding (Tensor): Sparse matrix of shape
+            projected_embedding (torch.Tensor): Sparse matrix of shape
                 (n_samples, n_components) Projected array.
         """
         if self.sparse_random_matrix is None:
-            raise NotFittedError("`fit()` has not been called on SparseRandomProjection yet.")
+            msg = "`fit()` has not been called on SparseRandomProjection yet."
+            raise NotFittedError(msg)
 
-        projected_embedding = embedding @ self.sparse_random_matrix.T.float()
-        return projected_embedding
+        return embedding @ self.sparse_random_matrix.T.float()

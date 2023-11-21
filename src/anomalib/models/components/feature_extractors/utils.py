@@ -1,6 +1,5 @@
 """Utility functions to manipulate feature extractors."""
 
-from __future__ import annotations
 
 import torch
 from torch.fx.graph_module import GraphModule
@@ -19,7 +18,6 @@ def dryrun_find_featuremap_dims(
         tuple[int, int]: maping of `layer -> dimensions dict`
             Each `dimension dict` has two keys: `num_features` (int) and `resolution`(tuple[int, int]).
     """
-
     dryrun_input = torch.empty(1, 3, *input_size)
     dryrun_features = feature_extractor(dryrun_input)
     return {

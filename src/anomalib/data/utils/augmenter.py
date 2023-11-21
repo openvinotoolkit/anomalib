@@ -10,24 +10,21 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-from __future__ import annotations
-
-import glob
 import math
 import random
+from pathlib import Path
 
 import cv2
 import imgaug.augmenters as iaa
 import numpy as np
 import torch
-from torch import Tensor
 from torchvision.datasets.folder import IMG_EXTENSIONS
 
 from anomalib.data.utils.generators.perlin import random_2d_perlin
 
 
-def nextpow2(value):
-    """Returns the smallest power of 2 greater than or equal to the input value."""
+def nextpow2(value: int) -> int:
+    """Return the smallest power of 2 greater than or equal to the input value."""
     return 2 ** (math.ceil(math.log(value, 2)))
 
 
@@ -46,14 +43,14 @@ class Augmenter:
         anomaly_source_path: str | None = None,
         p_anomalous: float = 0.5,
         beta: float | tuple[float, float] = (0.2, 1.0),
-    ):
+    ) -> None:
         self.p_anomalous = p_anomalous
         self.beta = beta
 
-        self.anomaly_source_paths = []
+        self.anomaly_source_paths: list[Path] = []
         if anomaly_source_path is not None:
             for img_ext in IMG_EXTENSIONS:
-                self.anomaly_source_paths.extend(glob.glob(anomaly_source_path + "/**/*" + img_ext, recursive=True))
+                self.anomaly_source_paths.extend(Path(anomaly_source_path).rglob("*" + img_ext))
 
         self.augmenters = [
             iaa.GammaContrast((0.5, 2.0), per_channel=True),
@@ -70,24 +67,26 @@ class Augmenter:
         self.rot = iaa.Sequential([iaa.Affine(rotate=(-90, 90))])
 
     def rand_augmenter(self) -> iaa.Sequential:
-        """Selects 3 random transforms that will be applied to the anomaly source images.
+        """Select 3 random transforms that will be applied to the anomaly source images.
 
         Returns:
             A selection of 3 transforms.
         """
-        aug_ind = np.random.choice(np.arange(len(self.augmenters)), 3, replace=False)
-        aug = iaa.Sequential([self.augmenters[aug_ind[0]], self.augmenters[aug_ind[1]], self.augmenters[aug_ind[2]]])
-        return aug
+        aug_ind = np.random.default_rng().choice(np.arange(len(self.augmenters)), 3, replace=False)
+        return iaa.Sequential([self.augmenters[aug_ind[0]], self.augmenters[aug_ind[1]], self.augmenters[aug_ind[2]]])
 
     def generate_perturbation(
-        self, height: int, width: int, anomaly_source_path: str | None
+        self,
+        height: int,
+        width: int,
+        anomaly_source_path: Path | str | None = None,
     ) -> tuple[np.ndarray, np.ndarray]:
         """Generate an image containing a random anomalous perturbation using a source image.
 
         Args:
             height (int): height of the generated image.
             width: (int): width of the generated image.
-            anomaly_source_path (str | None): Path to an image file. If not provided, random noise will be used
+            anomaly_source_path (Path | str | None): Path to an image file. If not provided, random noise will be used
             instead.
 
         Returns:
@@ -97,11 +96,12 @@ class Augmenter:
         perlin_scale = 6
         min_perlin_scale = 0
 
-        perlin_scalex = 2 ** random.randint(min_perlin_scale, perlin_scale)  # nosec: B311
-        perlin_scaley = 2 ** random.randint(min_perlin_scale, perlin_scale)  # nosec: B311
+        perlin_scalex = 2 ** np.random.default_rng().integers(min_perlin_scale, perlin_scale)
+        perlin_scaley = 2 ** np.random.default_rng().integers(min_perlin_scale, perlin_scale)
 
         perlin_noise = random_2d_perlin((nextpow2(height), nextpow2(width)), (perlin_scalex, perlin_scaley))[
-            :height, :width
+            :height,
+            :width,
         ]
         perlin_noise = self.rot(image=perlin_noise)
 
@@ -126,11 +126,11 @@ class Augmenter:
 
         return perturbation, mask
 
-    def augment_batch(self, batch: Tensor) -> tuple[Tensor, Tensor]:
+    def augment_batch(self, batch: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         """Generate anomalous augmentations for a batch of input images.
 
         Args:
-            batch (Tensor): Batch of input images
+            batch (torch.Tensor): Batch of input images
 
         Returns:
             - Augmented image to which anomalous perturbations have been added.
@@ -150,8 +150,8 @@ class Augmenter:
                     random.sample(self.anomaly_source_paths, 1)[0] if len(self.anomaly_source_paths) > 0 else None
                 )
                 perturbation, mask = self.generate_perturbation(height, width, anomaly_source_path)
-                perturbations_list.append(Tensor(perturbation).permute((2, 0, 1)))
-                masks_list.append(Tensor(mask).permute((2, 0, 1)))
+                perturbations_list.append(torch.Tensor(perturbation).permute((2, 0, 1)))
+                masks_list.append(torch.Tensor(mask).permute((2, 0, 1)))
 
         perturbations = torch.stack(perturbations_list).to(batch.device)
         masks = torch.stack(masks_list).to(batch.device)
@@ -161,9 +161,10 @@ class Augmenter:
             beta = self.beta
         elif isinstance(self.beta, tuple):
             beta = torch.rand(batch_size) * (self.beta[1] - self.beta[0]) + self.beta[0]
-            beta = beta.view(batch_size, 1, 1, 1).expand_as(batch).to(batch.device)  # type: ignore
+            beta = beta.view(batch_size, 1, 1, 1).expand_as(batch).to(batch.device)  # type: ignore[attr-defined]
         else:
-            raise ValueError("Beta must be either float or tuple of floats")
+            msg = "Beta must be either float or tuple of floats"
+            raise TypeError(msg)
 
         augmented_batch = batch * (1 - masks) + (beta) * perturbations + (1 - beta) * batch * (masks)
 

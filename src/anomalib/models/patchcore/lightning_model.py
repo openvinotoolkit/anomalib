@@ -6,22 +6,20 @@ Paper https://arxiv.org/abs/2106.08265.
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
-
 import logging
+from collections.abc import Sequence
+from typing import Any
 
 import torch
-from omegaconf import DictConfig, ListConfig
-from pytorch_lightning.utilities.types import STEP_OUTPUT
-from torch import Tensor
+from lightning.pytorch.utilities.types import STEP_OUTPUT
 
-from anomalib.models.components import AnomalyModule
+from anomalib.models.components import AnomalyModule, MemoryBankMixin
 from anomalib.models.patchcore.torch_model import PatchcoreModel
 
 logger = logging.getLogger(__name__)
 
 
-class Patchcore(AnomalyModule):
+class Patchcore(MemoryBankMixin, AnomalyModule):
     """PatchcoreLightning Module to train PatchCore algorithm.
 
     Args:
@@ -36,9 +34,9 @@ class Patchcore(AnomalyModule):
 
     def __init__(
         self,
-        input_size: tuple[int, int],
-        backbone: str,
-        layers: list[str],
+        input_size: tuple[int, int] = (224, 224),
+        backbone: str = "wide_resnet50_2",
+        layers: Sequence[str] = ("layer2", "layer3"),
         pre_trained: bool = True,
         coreset_sampling_ratio: float = 0.1,
         num_neighbors: int = 9,
@@ -53,7 +51,7 @@ class Patchcore(AnomalyModule):
             num_neighbors=num_neighbors,
         )
         self.coreset_sampling_ratio = coreset_sampling_ratio
-        self.embeddings: list[Tensor] = []
+        self.embeddings: list[torch.Tensor] = []
 
     def configure_optimizers(self) -> None:
         """Configure optimizers.
@@ -61,13 +59,15 @@ class Patchcore(AnomalyModule):
         Returns:
             None: Do not set optimizers by returning None.
         """
-        return None
+        return
 
-    def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> None:
+    def training_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> None:
         """Generate feature embedding of the batch.
 
         Args:
-            batch (dict[str, str | Tensor]): Batch containing image filename, image, label and mask
+            batch (dict[str, str | torch.Tensor]): Batch containing image filename, image, label and mask
+            args: Additional arguments.
+            kwargs: Additional keyword arguments.
 
         Returns:
             dict[str, np.ndarray]: Embedding Vector
@@ -77,57 +77,40 @@ class Patchcore(AnomalyModule):
         self.model.feature_extractor.eval()
         embedding = self.model(batch["image"])
 
-        # NOTE: `self.embedding` appends each batch embedding to
-        #   store the training set embedding. We manually append these
-        #   values mainly due to the new order of hooks introduced after PL v1.4.0
-        #   https://github.com/PyTorchLightning/pytorch-lightning/pull/7357
         self.embeddings.append(embedding)
 
-    def on_validation_start(self) -> None:
+    def fit(self) -> None:
         """Apply subsampling to the embedding collected from the training set."""
-        # NOTE: Previous anomalib versions fit subsampling at the end of the epoch.
-        #   This is not possible anymore with PyTorch Lightning v1.4.0 since validation
-        #   is run within train epoch.
         logger.info("Aggregating the embedding extracted from the training set.")
         embeddings = torch.vstack(self.embeddings)
 
         logger.info("Applying core-set subsampling to get the embedding.")
         self.model.subsample_embedding(embeddings, self.coreset_sampling_ratio)
 
-    def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
+    def validation_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> STEP_OUTPUT:
         """Get batch of anomaly maps from input image batch.
 
         Args:
-            batch (dict[str, str | Tensor]): Batch containing image filename,
-                image, label and mask
+            batch (dict[str, str | torch.Tensor]): Batch containing image filename, image, label and mask
+            args: Additional arguments.
+            kwargs: Additional keyword arguments.
 
         Returns:
             dict[str, Any]: Image filenames, test images, GT and predicted label/masks
         """
-        del args, kwargs  # These variables are not used.
+        # These variables are not used.
+        del args, kwargs
 
-        anomaly_maps, anomaly_score = self.model(batch["image"])
-        batch["anomaly_maps"] = anomaly_maps
-        batch["pred_scores"] = anomaly_score
+        # Get anomaly maps and predicted scores from the model.
+        output = self.model(batch["image"])
+
+        # Add anomaly maps and predicted scores to the batch.
+        batch["anomaly_maps"] = output["anomaly_map"]
+        batch["pred_scores"] = output["pred_score"]
 
         return batch
 
-
-class PatchcoreLightning(Patchcore):
-    """PatchcoreLightning Module to train PatchCore algorithm.
-
-    Args:
-        hparams (DictConfig | ListConfig): Model params
-    """
-
-    def __init__(self, hparams) -> None:
-        super().__init__(
-            input_size=hparams.model.input_size,
-            backbone=hparams.model.backbone,
-            layers=hparams.model.layers,
-            pre_trained=hparams.model.pre_trained,
-            coreset_sampling_ratio=hparams.model.coreset_sampling_ratio,
-            num_neighbors=hparams.model.num_neighbors,
-        )
-        self.hparams: DictConfig | ListConfig  # type: ignore
-        self.save_hyperparameters(hparams)
+    @property
+    def trainer_arguments(self) -> dict[str, Any]:
+        """Return Patchcore trainer arguments."""
+        return {"gradient_clip_val": 0, "max_epochs": 1, "num_sanity_val_steps": 0}

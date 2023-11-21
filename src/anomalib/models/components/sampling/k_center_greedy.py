@@ -1,16 +1,13 @@
-"""This module comprises PatchCore Sampling Methods for the embedding.
+"""k-Center Greedy Method.
 
-- k Center Greedy Method
-    Returns points that minimizes the maximum distance of any point to a center.
-    . https://arxiv.org/abs/1708.00489
+Returns points that minimizes the maximum distance of any point to a center.
+- https://arxiv.org/abs/1708.00489
 """
 
-from __future__ import annotations
 
 import torch
-import torch.nn.functional as F
-from torch import Tensor
-from tqdm import tqdm
+from rich.progress import track
+from torch.nn import functional as F  # noqa: N812
 
 from anomalib.models.components.dimensionality_reduction import SparseRandomProjection
 
@@ -19,7 +16,7 @@ class KCenterGreedy:
     """Implements k-center-greedy method.
 
     Args:
-        embedding (Tensor): Embedding vector extracted from a CNN
+        embedding (torch.Tensor): Embedding vector extracted from a CNN
         sampling_ratio (float): Ratio to choose coreset size from the embedding size.
 
     Example:
@@ -32,13 +29,13 @@ class KCenterGreedy:
         torch.Size([219, 1536])
     """
 
-    def __init__(self, embedding: Tensor, sampling_ratio: float) -> None:
+    def __init__(self, embedding: torch.Tensor, sampling_ratio: float) -> None:
         self.embedding = embedding
         self.coreset_size = int(embedding.shape[0] * sampling_ratio)
         self.model = SparseRandomProjection(eps=0.9)
 
-        self.features: Tensor
-        self.min_distances: Tensor = None
+        self.features: torch.Tensor
+        self.min_distances: torch.Tensor = None
         self.n_observations = self.embedding.shape[0]
 
     def reset_distances(self) -> None:
@@ -51,7 +48,6 @@ class KCenterGreedy:
         Args:
             cluster_centers (list[int]): indices of cluster centers
         """
-
         if cluster_centers:
             centers = self.features[cluster_centers]
 
@@ -70,11 +66,11 @@ class KCenterGreedy:
         Returns:
             int: Sample index
         """
-
-        if isinstance(self.min_distances, Tensor):
+        if isinstance(self.min_distances, torch.Tensor):
             idx = int(torch.argmax(self.min_distances).item())
         else:
-            raise ValueError(f"self.min_distances must be of type Tensor. Got {type(self.min_distances)}")
+            msg = f"self.min_distances must be of type Tensor. Got {type(self.min_distances)}"
+            raise TypeError(msg)
 
         return idx
 
@@ -87,7 +83,6 @@ class KCenterGreedy:
         Returns:
           indices of samples selected to minimize distance to cluster centers
         """
-
         if selected_idxs is None:
             selected_idxs = []
 
@@ -101,17 +96,18 @@ class KCenterGreedy:
 
         selected_coreset_idxs: list[int] = []
         idx = int(torch.randint(high=self.n_observations, size=(1,)).item())
-        for _ in tqdm(range(self.coreset_size), "Selecting Coreset Indices."):
+        for _ in track(range(self.coreset_size), description="Selecting Coreset Indices."):
             self.update_distances(cluster_centers=[idx])
             idx = self.get_new_idx()
             if idx in selected_idxs:
-                raise ValueError("New indices should not be in selected indices.")
+                msg = "New indices should not be in selected indices."
+                raise ValueError(msg)
             self.min_distances[idx] = 0
             selected_coreset_idxs.append(idx)
 
         return selected_coreset_idxs
 
-    def sample_coreset(self, selected_idxs: list[int] | None = None) -> Tensor:
+    def sample_coreset(self, selected_idxs: list[int] | None = None) -> torch.Tensor:
         """Select coreset from the embedding.
 
         Args:
@@ -128,8 +124,5 @@ class KCenterGreedy:
             >>> coreset.shape
             torch.Size([219, 1536])
         """
-
         idxs = self.select_coreset_idxs(selected_idxs)
-        coreset = self.embedding[idxs]
-
-        return coreset
+        return self.embedding[idxs]

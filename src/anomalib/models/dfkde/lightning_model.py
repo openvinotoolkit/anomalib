@@ -3,16 +3,15 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
 import logging
+from collections.abc import Sequence
+from typing import Any
 
 import torch
-from omegaconf import DictConfig, ListConfig
-from pytorch_lightning.utilities.types import STEP_OUTPUT
-from torch import Tensor
+from lightning.pytorch.utilities.types import STEP_OUTPUT
 
-from anomalib.models.components import AnomalyModule
+from anomalib.models.components import AnomalyModule, MemoryBankMixin
 from anomalib.models.components.classification import FeatureScalingMethod
 
 from .torch_model import DfkdeModel
@@ -20,7 +19,7 @@ from .torch_model import DfkdeModel
 logger = logging.getLogger(__name__)
 
 
-class Dfkde(AnomalyModule):
+class Dfkde(MemoryBankMixin, AnomalyModule):
     """DFKDE: Deep Feature Kernel Density Estimation.
 
     Args:
@@ -38,8 +37,8 @@ class Dfkde(AnomalyModule):
 
     def __init__(
         self,
-        layers: list[str],
-        backbone: str,
+        layers: Sequence[str] = ("layer4",),
+        backbone: str = "resnet18",
         pre_trained: bool = True,
         n_pca_components: int = 16,
         feature_scaling_method: FeatureScalingMethod = FeatureScalingMethod.SCALE,
@@ -56,18 +55,20 @@ class Dfkde(AnomalyModule):
             max_training_points=max_training_points,
         )
 
-        self.embeddings: list[Tensor] = []
+        self.embeddings: list[torch.Tensor] = []
 
     @staticmethod
     def configure_optimizers() -> None:  # pylint: disable=arguments-differ
         """DFKDE doesn't require optimization, therefore returns no optimizers."""
-        return None
+        return
 
-    def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> None:
-        """Training Step of DFKDE. For each batch, features are extracted from the CNN.
+    def training_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> None:
+        """Perform the training step of DFKDE. For each batch, features are extracted from the CNN.
 
         Args:
-            batch (batch: dict[str, str | Tensor]): Batch containing image filename, image, label and mask
+            batch (batch: dict[str, str | torch.Tensor]): Batch containing image filename, image, label and mask
+            args: Arguments.
+            kwargs: Keyword arguments.
 
         Returns:
           Deep CNN features.
@@ -75,55 +76,34 @@ class Dfkde(AnomalyModule):
         del args, kwargs  # These variables are not used.
 
         embedding = self.model(batch["image"])
-
-        # NOTE: `self.embedding` appends each batch embedding to
-        #   store the training set embedding. We manually append these
-        #   values mainly due to the new order of hooks introduced after PL v1.4.0
-        #   https://github.com/PyTorchLightning/pytorch-lightning/pull/7357
         self.embeddings.append(embedding)
 
-    def on_validation_start(self) -> None:
+    def fit(self) -> None:
         """Fit a KDE Model to the embedding collected from the training set."""
-        # NOTE: Previous anomalib versions fit Gaussian at the end of the epoch.
-        #   This is not possible anymore with PyTorch Lightning v1.4.0 since validation
-        #   is run within train epoch.
         embeddings = torch.vstack(self.embeddings)
 
         logger.info("Fitting a KDE model to the embedding collected from the training set.")
         self.model.classifier.fit(embeddings)
 
-    def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
-        """Validation Step of DFKDE.
+    def validation_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> STEP_OUTPUT:
+        """Perform the validation step of DFKDE.
 
         Similar to the training step, features are extracted from the CNN for each batch.
 
         Args:
-          batch (dict[str, str | Tensor]): Input batch
+            batch (dict[str, str | torch.Tensor]): Input batch
+            args: Arguments.
+            kwargs: Keyword arguments.
 
         Returns:
-          Dictionary containing probability, prediction and ground truth values.
+            Dictionary containing probability, prediction and ground truth values.
         """
         del args, kwargs  # These variables are not used.
 
         batch["pred_scores"] = self.model(batch["image"])
         return batch
 
-
-class DfkdeLightning(Dfkde):
-    """DFKDE: Deep Feature Kernel Density Estimation.
-
-    Args:
-        hparams (DictConfig | ListConfig): Model params
-    """
-
-    def __init__(self, hparams: DictConfig | ListConfig) -> None:
-        super().__init__(
-            layers=hparams.model.layers,
-            backbone=hparams.model.backbone,
-            pre_trained=hparams.model.pre_trained,
-            n_pca_components=hparams.model.n_pca_components,
-            feature_scaling_method=FeatureScalingMethod(hparams.model.feature_scaling_method),
-            max_training_points=hparams.model.max_training_points,
-        )
-        self.hparams: DictConfig | ListConfig  # type: ignore
-        self.save_hyperparameters(hparams)
+    @property
+    def trainer_arguments(self) -> dict[str, Any]:
+        """Return DFKDE-specific trainer arguments."""
+        return {"gradient_clip_val": 0, "max_epochs": 1, "num_sanity_val_steps": 0}
