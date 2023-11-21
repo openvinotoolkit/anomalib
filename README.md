@@ -108,6 +108,40 @@ anomalib fit
 
 </details>
 
+# 🤖 Inference - v1
+
+Anomalib includes multiple inferencing scripts, including Torch, Lightning, Gradio, and OpenVINO inferencers to perform inference using the trained/exported model. In this section, we will go over how to use these scripts to perform inference.
+
+## API
+
+<details>
+<summary>Torch Inference</summary>
+</details>
+<details>
+<summary>Lightning Inference</summary>
+</details>
+<details>
+<summary>OpenVINO Inference</summary>
+</details>
+<details>
+<summary>Gradio Inference</summary>
+</details>
+
+## CLI
+
+<details>
+<summary>Torch Inference</summary>
+</details>
+<details>
+<summary>Lightning Inference</summary>
+</details>
+<details>
+<summary>OpenVINO Inference</summary>
+</details>
+<details>
+<summary>Gradio Inference</summary>
+</details>
+
 # 🤖 Inference
 
 Anomalib includes multiple inferencing scripts, including Torch, Lightning, Gradio, and OpenVINO inferencers to perform inference using the trained/exported model. In this section, we will go over how to use these scripts to perform inference.
