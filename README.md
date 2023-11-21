@@ -14,12 +14,10 @@
 [![python](https://img.shields.io/badge/python-3.7%2B-green)]()
 [![pytorch](https://img.shields.io/badge/pytorch-1.8.1%2B-orange)]()
 [![openvino](https://img.shields.io/badge/openvino-2022.3.0-purple)]()
-[![comet](https://custom-icon-badges.herokuapp.com/badge/comet__ml-3.31.7-orange?logo=logo_comet_ml)](https://www.comet.com/site/products/ml-experiment-tracking/?utm_source=anomalib&utm_medium=referral)
-[![Codacy Badge](https://app.codacy.com/project/badge/Grade/684927c1c76c4c5e94bb53480812fbbb)](https://www.codacy.com/gh/openvinotoolkit/anomalib/dashboard?utm_source=github.com&utm_medium=referral&utm_content=openvinotoolkit/anomalib&utm_campaign=Badge_Grade)
-[![black](https://img.shields.io/badge/code%20style-black-000000.svg)]()
+<br/>
 [![Pre-Merge Checks](https://github.com/openvinotoolkit/anomalib/actions/workflows/pre_merge.yml/badge.svg)](https://github.com/openvinotoolkit/anomalib/actions/workflows/pre_merge.yml)
-[![codecov](https://codecov.io/gh/openvinotoolkit/anomalib/branch/main/graph/badge.svg?token=Z6A07N1BZK)](https://codecov.io/gh/openvinotoolkit/anomalib)
 [![Documentation Status](https://readthedocs.org/projects/anomalib/badge/?version=latest)](https://anomalib.readthedocs.io/en/latest/?badge=latest)
+[![codecov](https://codecov.io/gh/openvinotoolkit/anomalib/branch/main/graph/badge.svg?token=Z6A07N1BZK)](https://codecov.io/gh/openvinotoolkit/anomalib)
 [![Downloads](https://static.pepy.tech/personalized-badge/anomalib?period=total&units=international_system&left_color=grey&right_color=green&left_text=PyPI%20Downloads)](https://pepy.tech/project/anomalib)
 
 </div>
@@ -43,40 +41,72 @@ Anomalib is a deep learning library that aims to collect state-of-the-art anomal
 
 # Getting Started
 
-Following is a guide on how to get started with `anomalib`. For more details, look at the [Documentation](https://openvinotoolkit.github.io/anomalib).
+Following is a guide on how to get started with `anomalib`. For more details, please refer to the library's [documentation](https://anomalib.readthedocs.io). To get started with a Jupyter Notebook, refer to the [Notebooks](notebooks) folder of this repository.
 
-## Jupyter Notebooks
+# Installation
 
-For getting started with a Jupyter Notebook, please refer to the [Notebooks](notebooks) folder of this repository. Additionally, you can refer to a few created by the community:
+Anomalib provides two ways to install the library. The first is through PyPI, and the second is through a local installation. PyPI installation is recommended if you want to use the library without making any changes to the source code. If you want to make changes to the library, then a local installation is recommended.
 
-## PyPI Install
-
-You can get started with `anomalib` by just using pip.
+<details>
+<summary>Install from PyPI</summary>
+Installing the library with pip is the easiest way to get started with `anomalib`.
 
 ```bash
 pip install anomalib
 ```
 
-## Local Install
+</details>
 
-It is highly recommended to use virtual environment when installing anomalib. For instance, with [anaconda](https://www.anaconda.com/products/individual), `anomalib` could be installed as,
+<details>
+<summary>Install from source</summary>
+To install from source, you need to clone the repository and install the library using pip via editable mode.
 
 ```bash
+# Use of virtual environment is highy recommended
+# Using conda
 yes | conda create -n anomalib_env python=3.10
 conda activate anomalib_env
+
+# Or using your favorite virtual environment
+# ...
+
+# Clone the repository and install in editable mode
 git clone https://github.com/openvinotoolkit/anomalib.git
 cd anomalib
 pip install -e .
 ```
 
+</details>
+
 # Training
+
+Anomalib now supports both API and CLI-based training. The API is more flexible and allows for more customization, while the CLI training utilizes command line interfaces, and might be easier for those who would like to use anomalib off-the-shelf.
+
+<details>
+<summary>Training via API</summary>
+
+```python
+from anomalib.models import PaDiM
+from anomalib.datasets import MVTec
+```
+
+</details>
+
+<details>
+<summary>Training via CLI</summary>
+
+```bash
+# To get help about the arguments, run:
+anomalib -h
+
+# Example CLI training command:
+anomalib fit
+```
+
+</details>
 
 By default [`python tools/train.py`](tools/train.py)
 runs [PADIM](https://arxiv.org/abs/2011.08785) model on `leather` category from the [MVTec AD](https://www.mvtec.com/company/research/datasets/mvtec-ad) [(CC BY-NC-SA 4.0)](https://creativecommons.org/licenses/by-nc-sa/4.0/) dataset.
-
-```bash
-python tools/train.py    # Train PADIM on MVTec AD leather
-```
 
 Training a model on a specific dataset and category requires further configuration. Each model has its own configuration
 file, [`config.yaml`](src/anomalib/models/padim/config.yaml)
