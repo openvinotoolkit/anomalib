@@ -41,7 +41,10 @@ Anomalib is a deep learning library that aims to collect state-of-the-art anomal
 
 # 📝 Getting Started
 
-Following is a guide on how to get started with `anomalib`. For more details, please refer to the library's [documentation](https://anomalib.readthedocs.io). To get started with a Jupyter Notebook, refer to the [Notebooks](notebooks) folder of this repository.
+Anomalib provides a set of resources to get started with the library. These include:
+
+- Library [Documentation](https://anomalib.readthedocs.io)
+- Jupyter [Notebooks](notebooks)
 
 # 📦 Installation
 
