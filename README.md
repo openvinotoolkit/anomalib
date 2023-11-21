@@ -35,7 +35,7 @@ Anomalib is a deep learning library that aims to collect state-of-the-art anomal
 - The largest public collection of ready-to-use deep learning anomaly detection algorithms and benchmark datasets.
 - [**PyTorch Lightning**](https://www.pytorchlightning.ai/) based model implementations to reduce boilerplate code and limit the implementation efforts to the bare essentials.
 - All models can be exported to [**OpenVINO**](https://www.intel.com/content/www/us/en/developer/tools/openvino-toolkit/overview.html) Intermediate Representation (IR) for accelerated inference on intel hardware.
-- A set of [inference tools](#inference) for quick and easy deployment of the standard or custom anomaly detection models.
+- A set of [inference tools](tools) for quick and easy deployment of the standard or custom anomaly detection models.
 
 ---
 
@@ -99,156 +99,67 @@ from anomalib.datasets import MVTec
 <summary>Training via CLI</summary>
 
 ```bash
-# To get help about the arguments, run:
-anomalib -h
+# To get help about the inference arguments, run:
+anomalib predict -h
 
-# Example CLI training command:
-anomalib fit
+# To predict on a single image using Lightning inferencer:
+anomalib predict --config patchcore.yaml ...
 ```
 
-</details>
-
-# 🤖 Inference - v1
-
-Anomalib includes multiple inferencing scripts, including Torch, Lightning, Gradio, and OpenVINO inferencers to perform inference using the trained/exported model. In this section, we will go over how to use these scripts to perform inference.
-
-## API
-
-<details>
-<summary>Torch Inference</summary>
-</details>
-<details>
-<summary>Lightning Inference</summary>
-</details>
-<details>
-<summary>OpenVINO Inference</summary>
-</details>
-<details>
-<summary>Gradio Inference</summary>
-</details>
-
-## CLI
-
-<details>
-<summary>Torch Inference</summary>
-</details>
-<details>
-<summary>Lightning Inference</summary>
-</details>
-<details>
-<summary>OpenVINO Inference</summary>
-</details>
-<details>
-<summary>Gradio Inference</summary>
 </details>
 
 # 🤖 Inference
 
-Anomalib includes multiple inferencing scripts, including Torch, Lightning, Gradio, and OpenVINO inferencers to perform inference using the trained/exported model. In this section, we will go over how to use these scripts to perform inference.
+Anomalib includes multiple inferencing scripts, including Torch, Lightning, Gradio, and OpenVINO inferencers to perform inference using the trained/exported model. Here we show an inference example using the Lightning inferencer. For other inferencers, please refer to the [Inference Documentation](https://anomalib.readthedocs.io).
 
-<!-- Torch -->
 <details>
-<summary>Torch Inference</summary>
+<summary>Inference via API</summary>
 
-This is the content of the main section.
+```python
+# Import the dataset, model and Engine
+from anomalib.models import Patchcore
+from anomalib.datasets import Visa
+from anomalib.engine import Engine
 
-## API
+# Create the datamodule, model and engine
+datamodule = Visa()
+model = Patchcore()
+engine = Engine()
 
-This is the content of the first nested section.
+# Fit the model on the dataset.
+engine.fit(datamodule=datamodule, model=model)
 
-## CLI
-
-```bash
-# To get help about the arguments, run:
-python tools/inference/torch_inference.py --help
-
-# Example Torch inference command:
-python tools/inference/torch_inference.py \
-    --weights results/padim/mvtec/bottle/run/weights/torch/model.pt \
-    --input datasets/MVTec/bottle/test/broken_large/000.png \
-    --output results/padim/mvtec/bottle/images
+# Perform inference on the predict dataset
+predictions = engine.predict(datamodule=datamodule, model=model)
 ```
 
-</details>
+It is also possible to perform inference using a model that is previously trained.
 
-<!-- Lightning -->
-<details> <!-- Open Lightning section. -->
-<summary>Lightning Inference</summary>
+```python
+# Import and create the datamodule, model and engine same as above
+...
 
-This is the content of the main section.
-
-<details> <!-- Open Lightning - API section. -->
-<summary>API</summary>
-
-This is the content of the first nested section.
-
-</details> <!-- Close Lightning - API section. -->
-
-<details> <!-- Open Lightning - CLI section. -->
-<summary>CLI</summary>
-
-```bash
-# To get help about the arguments, run:
-python tools/inference/lightning_inference.py --help
-
-# Example Lightning inference command:
-python tools/inference/lightning_inference.py \
-    --config src/anomalib/models/padim/config.yaml \
-    --weights results/padim/mvtec/bottle/run/weights/model.ckpt \
-    --input datasets/MVTec/bottle/test/broken_large/000.png \
-    --output results/padim/mvtec/bottle/images
-```
-
-</details> <!-- Close Lightning - CLI section. -->
-
-</details> <!-- Close Lightning Section -->
-
-<!-- OpenVINO -->
-<details>
-<summary>OpenVINO Inference</summary>
-
-## API
-
-This is the content of the main section.
-
-## CLI
-
-To run the OpenVINO inference, you need to first export the PyTorch model to an OpenVINO model. ensure that `export_mode` is set to `"openvino"` in the respective model `config.yaml`.
-
-```yaml
-# Example config.yaml for OpenVINO
-optimization:
-  export_mode: "openvino" # options: openvino, onnx
-```
-
-```bash
-# To get help about the arguments, run:
-python tools/inference/openvino_inference.py --help
-
-# Example OpenVINO inference command:
-python tools/inference/openvino_inference.py \
-    --weights results/padim/mvtec/bottle/run/openvino/model.bin \
-    --metadata results/padim/mvtec/bottle/run/openvino/metadata.json \
-    --input datasets/MVTec/bottle/test/broken_large/000.png \
-    --output results/padim/mvtec/bottle/images
+# Predict using a checkpoint from file
+predictions = engine.predict(datamodule=datamodule, model=model, ckpt_path="path/to/checkpoint.ckpt")
 ```
 
 </details>
 
 <details>
-<summary>Gradio Inference</summary>
-
-You can also use Gradio Inference to interact with the trained models using a UI. Refer to our [guide](https://anomalib.readthedocs.io/en/latest/tutorials/inference.html#gradio-inference) for more details.
+<summary>Inference via CLI</summary>
 
 ```bash
 # To get help about the arguments, run:
-python tools/inference/gradio_inference.py --help
+anomalib predict -h
 
-# Example Gradio inference command:
-python tools/inference/gradio_inference.py \
-    --weights results/padim/mvtec/bottle/run/weights/model.ckpt \
-    --metadata results/padim/mvtec/bottle/run/openvino/metadata.json  \ # Optional
-    --share  # Optional to share the UI
+# Predict via providing the model name
+anomalib predict --model anomalib.models.Patchcore
+
+# Predict by overriding the various values with commands.
+anomalib predict --model anomalib.models.Patchcore --data <CONFIG | CLASS_PATH_OR_NAME>
+
+# Predict by using a config file.
+anomalib predict --config <config_file_path> --return_predictions
 ```
 
 </details>
