@@ -7,7 +7,6 @@
 import logging
 from typing import TYPE_CHECKING, Any
 
-from lightning import Trainer
 from lightning.pytorch import Callback, Trainer
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 
