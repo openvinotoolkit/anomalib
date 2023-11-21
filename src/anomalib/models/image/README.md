@@ -5,8 +5,9 @@
 This sub-package contains the models for handling image datasets in anomalib.
 
 The anomalib.models.image subpackage provides:
-Classes and functions for working with image datasets.
-Models for image classification, object detection, and image generation.
+
+- Classes and functions to define image anomaly models.
+- Models for image-based anomaly classification, detection or segmentation.
 
 ## ⚠️ Note
 
