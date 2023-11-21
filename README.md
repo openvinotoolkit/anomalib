@@ -115,32 +115,19 @@ Anomalib includes multiple inferencing scripts, including Torch, Lightning, Grad
 <details>
 <summary>Inference via API</summary>
 
-```python
-# Import the dataset, model and Engine
-from anomalib.models import Patchcore
-from anomalib.datasets import Visa
-from anomalib.engine import Engine
+The following example demonstrates how to perform Lightning inference by loading a model from a checkpoint file.
 
+```python
+# Follow the same steps as in the Training section
 # Create the datamodule, model and engine
-datamodule = Visa()
-model = Patchcore()
-engine = Engine()
-
-# Fit the model on the dataset.
-engine.fit(datamodule=datamodule, model=model)
-
-# Perform inference on the predict dataset
-predictions = engine.predict(datamodule=datamodule, model=model)
-```
-
-It is also possible to perform inference using a model that is previously trained.
-
-```python
-# Import and create the datamodule, model and engine same as above
 ...
 
 # Predict using a checkpoint from file
-predictions = engine.predict(datamodule=datamodule, model=model, ckpt_path="path/to/checkpoint.ckpt")
+predictions = engine.predict(
+    datamodule=datamodule,
+    model=model,
+    ckpt_path="path/to/checkpoint.ckpt",
+)
 ```
 
 </details>
