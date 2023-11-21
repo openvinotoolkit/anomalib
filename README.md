@@ -39,11 +39,11 @@ Anomalib is a deep learning library that aims to collect state-of-the-art anomal
 
 ---
 
-# Getting Started
+# 📝 Getting Started
 
 Following is a guide on how to get started with `anomalib`. For more details, please refer to the library's [documentation](https://anomalib.readthedocs.io). To get started with a Jupyter Notebook, refer to the [Notebooks](notebooks) folder of this repository.
 
-# Installation
+# 📦 Installation
 
 Anomalib provides two ways to install the library. The first is through PyPI, and the second is through a local installation. PyPI installation is recommended if you want to use the library without making any changes to the source code. If you want to make changes to the library, then a local installation is recommended.
 
@@ -78,7 +78,7 @@ pip install -e .
 
 </details>
 
-# Training
+# 🧠 Training
 
 Anomalib now supports both API and CLI-based training. The API is more flexible and allows for more customization, while the CLI training utilizes command line interfaces, and might be easier for those who would like to use anomalib off-the-shelf.
 
@@ -105,116 +105,21 @@ anomalib fit
 
 </details>
 
-By default [`python tools/train.py`](tools/train.py)
-runs [PADIM](https://arxiv.org/abs/2011.08785) model on `leather` category from the [MVTec AD](https://www.mvtec.com/company/research/datasets/mvtec-ad) [(CC BY-NC-SA 4.0)](https://creativecommons.org/licenses/by-nc-sa/4.0/) dataset.
-
-Training a model on a specific dataset and category requires further configuration. Each model has its own configuration
-file, [`config.yaml`](src/anomalib/models/padim/config.yaml)
-, which contains data, model and training configurable parameters. To train a specific model on a specific dataset and
-category, the config file is to be provided:
-
-```bash
-python tools/train.py --config <path/to/model/config.yaml>
-```
-
-For example, to train [PADIM](src/anomalib/models/padim) you can use
-
-```bash
-python tools/train.py --config src/anomalib/models/padim/config.yaml
-```
-
-Alternatively, a model name could also be provided as an argument, where the scripts automatically finds the corresponding config file.
-
-```bash
-python tools/train.py --model padim
-```
-
-where the currently available models are:
-
-- [CFA](src/anomalib/models/cfa)
-- [CFlow](src/anomalib/models/cflow)
-- [DFKDE](src/anomalib/models/dfkde)
-- [DFM](src/anomalib/models/dfm)
-- [DRAEM](src/anomalib/models/draem)
-- [EfficientAd](src/anomalib/models/efficient_ad)
-- [FastFlow](src/anomalib/models/fastflow)
-- [GANomaly](src/anomalib/models/ganomaly)
-- [PADIM](src/anomalib/models/padim)
-- [PatchCore](src/anomalib/models/patchcore)
-- [Reverse Distillation](src/anomalib/models/reverse_distillation)
-- [STFPM](src/anomalib/models/stfpm)
-
-## Feature extraction & (pre-trained) backbones
-
-The pre-trained backbones come from [PyTorch Image Models (timm)](https://github.com/rwightman/pytorch-image-models), which are wrapped by `FeatureExtractor`.
-
-For more information, please check our documentation or the [section about feature extraction in "Getting Started with PyTorch Image Models (timm): A Practitioner’s Guide"](https://towardsdatascience.com/getting-started-with-pytorch-image-models-timm-a-practitioners-guide-4e77b4bf9055#b83b:~:text=ready%20to%20train!-,Feature%20Extraction,-timm%20models%20also>).
-
-Tips:
-
-- Papers With Code has an interface to easily browse models available in timm: [https://paperswithcode.com/lib/timm](https://paperswithcode.com/lib/timm)
-
-- You can also find them with the function `timm.list_models("resnet*", pretrained=True)`
-
-The backbone can be set in the config file, two examples below.
-
-```yaml
-model:
-  name: cflow
-  backbone: wide_resnet50_2
-  pre_trained: true
-```
-
-## Custom Dataset
-
-It is also possible to train on a custom folder dataset. To do so, `data` section in `config.yaml` is to be modified as follows:
-
-<details>
-<summary>Configuration for Custom Dataset</summary>
-
-```yaml
-dataset:
-  name: <name-of-the-dataset>
-  format: folder
-  path: <path/to/folder/dataset>
-  normal_dir: normal # name of the folder containing normal images.
-  abnormal_dir: abnormal # name of the folder containing abnormal images.
-  normal_test_dir: null # name of the folder containing normal test images.
-  task: segmentation # classification or segmentation
-  mask: <path/to/mask/annotations> #optional
-  extensions: null
-  split_ratio: 0.2 # ratio of the normal images that will be used to create a test split
-  image_size: 256
-  train_batch_size: 32
-  test_batch_size: 32
-  num_workers: 8
-  normalization: imagenet # data distribution to which the images will be normalized: [none, imagenet]
-  test_split_mode: from_dir # options: [from_dir, synthetic]
-  val_split_mode: same_as_test # options: [same_as_test, from_test, sythetic]
-  val_split_ratio: 0.5 # fraction of train/test images held out for validation (usage depends on val_split_mode)
-  transform_config:
-    train: null
-    val: null
-  create_validation_set: true
-  tiling:
-    apply: false
-    tile_size: null
-    stride: null
-    remove_border_count: 0
-    use_random_tiling: False
-    random_tile_count: 16
-```
-
-</details>
-
-By placing the above configuration to the `dataset` section of the `config.yaml` file, the model will be trained on the custom dataset.
-
-# Inference
+# 🤖 Inference
 
 Anomalib includes multiple inferencing scripts, including Torch, Lightning, Gradio, and OpenVINO inferencers to perform inference using the trained/exported model. In this section, we will go over how to use these scripts to perform inference.
 
+<!-- Torch -->
 <details>
-<summary>PyTorch Inference</summary>
+<summary>Torch Inference</summary>
+
+This is the content of the main section.
+
+## API
+
+This is the content of the first nested section.
+
+## CLI
 
 ```bash
 # To get help about the arguments, run:
@@ -229,8 +134,21 @@ python tools/inference/torch_inference.py \
 
 </details>
 
-<details>
+<!-- Lightning -->
+<details> <!-- Open Lightning section. -->
 <summary>Lightning Inference</summary>
+
+This is the content of the main section.
+
+<details> <!-- Open Lightning - API section. -->
+<summary>API</summary>
+
+This is the content of the first nested section.
+
+</details> <!-- Close Lightning - API section. -->
+
+<details> <!-- Open Lightning - CLI section. -->
+<summary>CLI</summary>
 
 ```bash
 # To get help about the arguments, run:
@@ -244,10 +162,19 @@ python tools/inference/lightning_inference.py \
     --output results/padim/mvtec/bottle/images
 ```
 
-</details>
+</details> <!-- Close Lightning - CLI section. -->
 
+</details> <!-- Close Lightning Section -->
+
+<!-- OpenVINO -->
 <details>
 <summary>OpenVINO Inference</summary>
+
+## API
+
+This is the content of the main section.
+
+## CLI
 
 To run the OpenVINO inference, you need to first export the PyTorch model to an OpenVINO model. ensure that `export_mode` is set to `"openvino"` in the respective model `config.yaml`.
 
@@ -268,8 +195,6 @@ python tools/inference/openvino_inference.py \
     --input datasets/MVTec/bottle/test/broken_large/000.png \
     --output results/padim/mvtec/bottle/images
 ```
-
-> Ensure that you provide path to `metadata.json` if you want the normalization to be applied correctly.
 
 </details>
 
