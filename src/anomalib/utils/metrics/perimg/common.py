@@ -247,7 +247,11 @@ def _validate_and_convert_fpath(fpath: str | Path, extension: str | None) -> Pat
 
 
 def perimg_boxplot_stats(
-    values: Tensor, image_classes: Tensor, only_class: int | None = None
+    values: Tensor,
+    image_classes: Tensor,
+    only_class: int | None = None,
+    fliers_policy: str | None = None,
+    repeated_policy: str | None = None,
 ) -> list[dict[str, str | int | float | None]]:
     """Compute boxplot statistics for a given tensor of values.
 
@@ -268,6 +272,12 @@ def perimg_boxplot_stats(
                             closest to the statistic in an actual image (i.e. in `values`).
             - 'imgidx': Index of the image in `values` that has the `nearest` value to the statistic.
     """
+
+    assert fliers_policy in (None, "hi", "lo", "both"), f"Invalid argument `fliers`: {fliers_policy}"
+    assert repeated_policy in (
+        None,
+        "avoid",
+    ), f"Invalid argument `repeated_policy`: {repeated_policy}"
 
     _validate_image_classes(image_classes)
     _validate_image_class(only_class)
@@ -292,21 +302,33 @@ def perimg_boxplot_stats(
     imgs_mask = numpy.ones_like(image_classes, dtype=bool) if only_class is None else (image_classes == only_class)
     values = values[imgs_mask]
     imgs_idxs = numpy.nonzero(imgs_mask)[0]
-
-    def arg_find_nearest(stat_value):
-        return (numpy.abs(values - stat_value)).argmin()
-
-    # function used in `matplotlib.boxplot`
-    boxplot_stats = mpl.cbook.boxplot_stats(values)[0]  # [0] is for the only boxplot
-
-    records = []
+    imgs_idxs_selected = set()
 
     def append_record(stat_, val_):
-        # make sure to use a value that is actually in the array
-        # because some statistics (e.g. 'mean') are not guaranteed to be in the array
-        invalues_idx = arg_find_nearest(val_)
-        nearest = values[invalues_idx]
-        imgidx = imgs_idxs[invalues_idx]
+        candidates_invalues_idxs = numpy.abs(values - val_).argsort()
+
+        first_candidate = candidates_invalues_idxs[0]
+        nearest = values[first_candidate]
+        imgidx = imgs_idxs[first_candidate]
+
+        if imgidx not in imgs_idxs_selected or repeated_policy is None:
+            pass
+
+        elif repeated_policy == "avoid":
+            for candidate in candidates_invalues_idxs:
+                imgidx_candidate = imgs_idxs[candidate]
+                if imgidx_candidate in imgs_idxs_selected:
+                    continue
+                # if the code reaches here, it means that `imgidx_candidate` is not in `imgs_idxs_selected`
+                # note that the first choce has not changed, so if none is selected, it will be the first choice
+                nearest_candidate = values[candidate]
+                if numpy.isclose(nearest_candidate, val_, atol=1e-2):
+                    nearest = nearest_candidate
+                    imgidx = imgidx_candidate
+                    break
+
+        imgs_idxs_selected.add(imgidx)
+
         records.append(
             dict(
                 statistic=stat_,
@@ -316,6 +338,12 @@ def perimg_boxplot_stats(
             )
         )
 
+    # function used in `matplotlib.boxplot`
+    boxplot_stats = mpl.cbook.boxplot_stats(values)[0]  # [0] is for the only boxplot
+
+    records = []  # type: ignore
+
+    # TODO make it deterministic with sort
     for stat, val in boxplot_stats.items():
         if stat in ("iqr", "cilo", "cihi"):
             continue
@@ -324,11 +352,15 @@ def perimg_boxplot_stats(
             append_record(stat, val)
             continue
 
+        elif fliers_policy is None:
+            continue
+
         for val_ in val:
-            append_record(
-                "flierhi" if val_ > boxplot_stats["med"] else "flierlo",
-                val_,
-            )
+            stat_ = "flierhi" if val_ > boxplot_stats["med"] else "flierlo"
+            if (fliers_policy == "hi" and stat_ == "flierlo") or (fliers_policy == "lo" and stat_ == "flierhi"):
+                continue
+            # else means that they match or `fliers == "both"`
+            append_record(stat_, val_)
 
     records = sorted(records, key=lambda r: r["value"])
     return records
