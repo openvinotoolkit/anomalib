@@ -73,8 +73,25 @@ class TestCLI:
         )
         torch.cuda.empty_cache()
 
-        # TODO(ashwinvaidya17): Validate
-        # CVS-109972
+    def test_train(self, random_model_name: str, dataset_path: Path, project_path: Path) -> None:
+        """Test the test method of the CLI.
+
+        Args:
+            random_model_name: Name of the model to test.
+            dataset_path (Path): Root of the synthetic/original dataset.
+            project_path (Path): Path to temporary project folder.
+        """
+        AnomalibCLI(
+            args=[
+                "train",
+                "--model",
+                random_model_name,
+                *self._get_common_cli_args(random_model_name, dataset_path, project_path),
+                "--ckpt_path",
+                f"{project_path}/{random_model_name}/dummy/weights/last.ckpt",
+            ],
+        )
+        torch.cuda.empty_cache()
 
     def test_validate(self, random_model_name: str, dataset_path: Path, project_path: Path) -> None:
         """Test the test method of the CLI.
