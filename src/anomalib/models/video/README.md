@@ -29,7 +29,7 @@ from anomalib.models import AiVad
 from anomalib.engine import Engine
 
 # Load the avenue dataset, model and engine.
-datamodule = Avenue(clip_length_in_frames=2)
+datamodule = Avenue()
 model = AiVad()
 engine = Engine()
 
