@@ -39,7 +39,9 @@ engine.train(model, datamodule)
 <details>
 <summary>Using the EfficientAD model on a Video Dataset such as Avenue</summary>
 
-To use an image model to train on a video dataset, we need to convert the video dataset to a frame-based image dataset. To do this, we could use Anomalib's Folder dataset.
+To use an image model to train on a video dataset, we need to convert the video dataset to a frame-based image dataset. To do this, we could use `clip_length_in_frames=1` when loading the dataset.
+
+```python
 
 ```python
 # Import the necessary modules
