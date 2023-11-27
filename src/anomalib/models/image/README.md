@@ -42,8 +42,6 @@ engine.train(model, datamodule)
 To use an image model to train on a video dataset, we need to convert the video dataset to a frame-based image dataset. To do this, we could use `clip_length_in_frames=1` when loading the dataset.
 
 ```python
-
-```python
 # Import the necessary modules
 from anomalib.data import Avenue
 from anomalib.models import EfficientAD
