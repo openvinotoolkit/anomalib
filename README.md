@@ -110,7 +110,7 @@ engine.fit(datamodule=datamodule, model=model)
 
 ```bash
 # To get help about the training arguments, run:
-anomalib fit -h
+anomalib train -h
 
 # To train the model on the default values, run:
 anomalib train --model anomalib.models.patchcore --data anomalib.data.MVTec
@@ -128,11 +128,8 @@ Anomalib includes multiple inferencing scripts, including Torch, Lightning, Grad
 The following example demonstrates how to perform Lightning inference by loading a model from a checkpoint file.
 
 ```python
-# Follow the same steps as in the Training section
-# Create the datamodule, model and engine
-...
-
-# Predict using a checkpoint from file
+# Assuming the datamodule, model and engine is initialized from the previous step,
+# a prediction via a checkpoint file can be performed as follows:
 predictions = engine.predict(
     datamodule=datamodule,
     model=model,
