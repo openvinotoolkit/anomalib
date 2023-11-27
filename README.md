@@ -24,7 +24,7 @@
 
 ---
 
-# Introduction
+# 👋 Introduction
 
 Anomalib is a deep learning library that aims to collect state-of-the-art anomaly detection algorithms for benchmarking on both public and private datasets. Anomalib provides several ready-to-use implementations of anomaly detection algorithms described in the recent literature, as well as a set of tools that facilitate the development and implementation of custom models. The library has a strong focus on image-based anomaly detection, where the goal of the algorithm is to identify anomalous images, or anomalous pixel regions within images in a dataset. Anomalib is constantly updated with new algorithms and training/inference extensions, so keep checking!
 
@@ -158,148 +158,96 @@ anomalib predict --config <config_file_path> --return_predictions
 
 </details>
 
-# Hyperparameter Optimization
+# ⚙️ Hyperparameter Optimization
 
-To run hyperparameter optimization, use the following command:
+Anomalib supports hyperparameter optimization (HPO) using [wandb](https://wandb.ai/) and [comet.ml](https://www.comet.com/).
+
+<details>
+<summary>HPO via API</summary>
+
+```python
+# To be enabled in v1.1
+```
+
+</details>
+
+<details>
+<summary>HPO via CLI</summary>
+
+The following example demonstrates how to perform HPO for the Patchcore model.
 
 ```bash
-python tools/hpo/sweep.py \
-    --model padim --model_config ./path_to_config.yaml \
-    --sweep_config tools/hpo/sweep.yaml
+# Place the HPO CLI command here.
 ```
+
+</details>
 
 For more details refer the [HPO Documentation](https://openvinotoolkit.github.io/anomalib/tutorials/hyperparameter_optimization.html)
 
-# Benchmarking
-
-To gather benchmarking data such as throughput across categories, use the following command:
-
-```bash
-python tools/benchmarking/benchmark.py \
-    --config <relative/absolute path>/<paramfile>.yaml
-```
-
-Refer to the [Benchmarking Documentation](https://openvinotoolkit.github.io/anomalib/tutorials/benchmarking.html) for more details.
-
-# Experiment Management
+# 🧪 Experiment Management
 
 Anomalib is integrated with various libraries for experiment tracking such as Comet, tensorboard, and wandb through [pytorch lighting loggers](https://pytorch-lightning.readthedocs.io/en/stable/extensions/logging.html).
 
-Below is an example of how to enable logging for hyper-parameters, metrics, model graphs, and predictions on images in the test data-set
+<details>
+<summary>Experiment Management via API</summary>
+
+```python
+# To be enabled in v1.1
+```
+
+</details>
+
+<details>
+<summary>Experiment Management via CLI</summary>
+
+Below is an example of how to enable logging for hyper-parameters, metrics, model graphs, and predictions on images in the test data-set.
+
+You first need to modify the `config.yaml` file to enable logging. The following example shows how to enable logging:
 
 ```yaml
-visualization:
-  log_images: True # log images to the available loggers (if any)
-  mode: full # options: ["full", "simple"]
-
- logging:
-  logger: [comet, tensorboard, wandb]
-  log_graph: True
+# Place the experiment management config here.
 ```
+
+```bash
+# Place the Experiment Management CLI command here.
+```
+
+</details>
 
 For more information, refer to the [Logging Documentation](https://openvinotoolkit.github.io/anomalib/tutorials/logging.html)
 
-Note: Set your API Key for [Comet.ml](https://www.comet.com/signup?utm_source=anomalib&utm_medium=referral) via `comet_ml.init()` in interactive python or simply run `export COMET_API_KEY=<Your API Key>`
+> **Note**: If you configure wandb or Comet.ML for the first time, you might need to set your API Key properly. You could refer to the [wandb](https://docs.wandb.ai/quickstart) and [Comet.ml](https://www.comet.com/signup?utm_source=anomalib&utm_medium=referral) documentation for more information.
 
-# Community Projects
+# 📊 Benchmarking
 
-## 1. Web-based Pipeline for Training and Inference
+Anomalib provides a benchmarking tool to evaluate the performance of the anomaly detection models on a given dataset. The benchmarking tool can be used to evaluate the performance of the models on a given dataset, or to compare the performance of multiple models on a given dataset.
 
-This project showcases an end-to-end training and inference pipeline build on top of Anomalib. It provides a web-based UI for uploading MVTec style datasets and training them on the available Anomalib models. It also has sections for calling inference on individual images as well as listing all the images with their predictions in the database.
+As of v1.0, the benchmarking tool supports the CLI only. The API support will be enabled in v1.1.
 
-You can view the project on [Github](https://github.com/vnk8071/anomaly-detection-in-industry-manufacturing/tree/master/anomalib_contribute)
-For more details see the [Discussion forum](https://github.com/openvinotoolkit/anomalib/discussions/733)
+To run the benchmarking tool, run the following command:
 
-# Datasets
+```bash
+# Benchmarking via CLI.
+```
 
-`anomalib` supports MVTec AD [(CC BY-NC-SA 4.0)](https://creativecommons.org/licenses/by-nc-sa/4.0/) and BeanTech [(CC-BY-SA)](https://creativecommons.org/licenses/by-sa/4.0/legalcode) for benchmarking and `folder` for custom dataset training/inference.
+Each model in anomalib is benchmarked on a set of datasets, and the results are available in `src/anomalib/models/<model_name>README.md`. For example, the MVTec AD results for the Patchcore model are available in the corresponding [README.md](https://github.com/openvinotoolkit/anomalib/tree/main/src/anomalib/models/patchcore#mvtec-ad-dataset) file.
 
-## [MVTec AD Dataset](https://www.mvtec.com/company/research/datasets/mvtec-ad)
-
-MVTec AD dataset is one of the main benchmarks for anomaly detection, and is released under the
-Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License [(CC BY-NC-SA 4.0)](https://creativecommons.org/licenses/by-nc-sa/4.0/).
-
-> Note: These metrics are collected with image size of 256 and seed `42`. This common setting is used to make model comparisons fair.
-
-## Image-Level AUC
-
-| Model           |                |    Avg    |  Carpet   |   Grid    |  Leather  |   Tile    |   Wood    |  Bottle   |   Cable   |  Capsule  | Hazelnut | Metal Nut |   Pill    |   Screw   | Toothbrush | Transistor |  Zipper   |
-| --------------- | -------------- | :-------: | :-------: | :-------: | :-------: | :-------: | :-------: | :-------: | :-------: | :-------: | :------: | :-------: | :-------: | :-------: | :--------: | :--------: | :-------: |
-| **EfficientAd** | **PDN-S**      | **0.982** |   0.982   | **1.000** |   0.997   | **1.000** |   0.986   | **1.000** |   0.952   |   0.950   |  0.952   |   0.979   | **0.987** |   0.960   |   0.997    |   0.999    | **0.994** |
-| EfficientAd     | PDN-M          |   0.975   |   0.972   |   0.998   | **1.000** |   0.999   |   0.984   |   0.991   |   0.945   |   0.957   |  0.948   |   0.989   |   0.926   | **0.975** | **1.000**  |   0.965    |   0.971   |
-| PatchCore       | Wide ResNet-50 |   0.980   |   0.984   |   0.959   |   1.000   | **1.000** |   0.989   |   1.000   | **0.990** | **0.982** |  1.000   |   0.994   |   0.924   |   0.960   |   0.933    | **1.000**  |   0.982   |
-| PatchCore       | ResNet-18      |   0.973   |   0.970   |   0.947   |   1.000   |   0.997   |   0.997   |   1.000   |   0.986   |   0.965   |  1.000   |   0.991   |   0.916   |   0.943   |   0.931    |   0.996    |   0.953   |
-| CFlow           | Wide ResNet-50 |   0.962   |   0.986   |   0.962   | **1.000** |   0.999   |   0.993   |  **1.0**  |   0.893   |   0.945   | **1.0**  | **0.995** |   0.924   |   0.908   |   0.897    |   0.943    |   0.984   |
-| CFA             | Wide ResNet-50 |   0.956   |   0.978   |   0.961   |   0.990   |   0.999   |   0.994   |   0.998   |   0.979   |   0.872   |  1.000   | **0.995** |   0.946   |   0.703   | **1.000**  |   0.957    |   0.967   |
-| CFA             | ResNet-18      |   0.930   |   0.953   |   0.947   |   0.999   |   1.000   | **1.000** |   0.991   |   0.947   |   0.858   |  0.995   |   0.932   |   0.887   |   0.625   |   0.994    |   0.895    |   0.919   |
-| PaDiM           | Wide ResNet-50 |   0.950   | **0.995** |   0.942   | **1.000** |   0.974   |   0.993   |   0.999   |   0.878   |   0.927   |  0.964   |   0.989   |   0.939   |   0.845   |   0.942    |   0.976    |   0.882   |
-| PaDiM           | ResNet-18      |   0.891   |   0.945   |   0.857   |   0.982   |   0.950   |   0.976   |   0.994   |   0.844   |   0.901   |  0.750   |   0.961   |   0.863   |   0.759   |   0.889    |   0.920    |   0.780   |
-| DFM             | Wide ResNet-50 |   0.943   |   0.855   |   0.784   |   0.997   |   0.995   |   0.975   |   0.999   |   0.969   |   0.924   |  0.978   |   0.939   |   0.962   |   0.873   |   0.969    |   0.971    |   0.961   |
-| DFM             | ResNet-18      |   0.936   |   0.817   |   0.736   |   0.993   |   0.966   |   0.977   |   1.000   |   0.956   |   0.944   |  0.994   |   0.922   |   0.961   |   0.89    |   0.969    |   0.939    |   0.969   |
-| STFPM           | Wide ResNet-50 |   0.876   |   0.957   |   0.977   |   0.981   |   0.976   |   0.939   |   0.987   |   0.878   |   0.732   |  0.995   |   0.973   |   0.652   |   0.825   |   0.500    |   0.875    |   0.899   |
-| STFPM           | ResNet-18      |   0.893   |   0.954   | **0.982** |   0.989   |   0.949   |   0.961   |   0.979   |   0.838   |   0.759   |  0.999   |   0.956   |   0.705   |   0.835   | **0.997**  |   0.853    |   0.645   |
-| DFKDE           | Wide ResNet-50 |   0.774   |   0.708   |   0.422   |   0.905   |   0.959   |   0.903   |   0.936   |   0.746   |   0.853   |  0.736   |   0.687   |   0.749   |   0.574   |   0.697    |   0.843    |   0.892   |
-| DFKDE           | ResNet-18      |   0.762   |   0.646   |   0.577   |   0.669   |   0.965   |   0.863   |   0.951   |   0.751   |   0.698   |  0.806   |   0.729   |   0.607   |   0.694   |   0.767    |   0.839    |   0.866   |
-| GANomaly        |                |   0.421   |   0.203   |   0.404   |   0.413   |   0.408   |   0.744   |   0.251   |   0.457   |   0.682   |  0.537   |   0.270   |   0.472   |   0.231   |   0.372    |   0.440    |   0.434   |
-
-## Pixel-Level AUC
-
-| Model       |                    |    Avg    |  Carpet   |   Grid    |  Leather  |   Tile    |   Wood    |  Bottle   |   Cable   |  Capsule  | Hazelnut  | Metal Nut |   Pill    |   Screw   | Toothbrush | Transistor |  Zipper   |
-| ----------- | ------------------ | :-------: | :-------: | :-------: | :-------: | :-------: | :-------: | :-------: | :-------: | :-------: | :-------: | :-------: | :-------: | :-------: | :--------: | :--------: | :-------: |
-| **CFA**     | **Wide ResNet-50** | **0.983** |   0.980   |   0.954   |   0.989   | **0.985** | **0.974** | **0.989** | **0.988** | **0.989** |   0.985   | **0.992** | **0.988** |   0.979   | **0.991**  |   0.977    | **0.990** |
-| CFA         | ResNet-18          |   0.979   |   0.970   |   0.973   |   0.992   |   0.978   |   0.964   |   0.986   |   0.984   |   0.987   |   0.987   |   0.981   |   0.981   |   0.973   |   0.990    |   0.964    |   0.978   |
-| PatchCore   | Wide ResNet-50     |   0.980   |   0.988   |   0.968   |   0.991   |   0.961   |   0.934   |   0.984   | **0.988** |   0.988   |   0.987   |   0.989   |   0.980   | **0.989** |   0.988    | **0.981**  |   0.983   |
-| PatchCore   | ResNet-18          |   0.976   |   0.986   |   0.955   |   0.990   |   0.943   |   0.933   |   0.981   |   0.984   |   0.986   |   0.986   |   0.986   |   0.974   |   0.991   |   0.988    |   0.974    |   0.983   |
-| CFlow       | Wide ResNet-50     |   0.971   |   0.986   |   0.968   |   0.993   |   0.968   |   0.924   |   0.981   |   0.955   |   0.988   | **0.990** |   0.982   |   0.983   |   0.979   |   0.985    |   0.897    |   0.980   |
-| PaDiM       | Wide ResNet-50     |   0.979   | **0.991** |   0.970   |   0.993   |   0.955   |   0.957   |   0.985   |   0.970   |   0.988   |   0.985   |   0.982   |   0.966   |   0.988   | **0.991**  |   0.976    |   0.986   |
-| PaDiM       | ResNet-18          |   0.968   |   0.984   |   0.918   | **0.994** |   0.934   |   0.947   |   0.983   |   0.965   |   0.984   |   0.978   |   0.970   |   0.957   |   0.978   |   0.988    |   0.968    |   0.979   |
-| EfficientAd | PDN-S              |   0.960   |   0.963   |   0.937   |   0.976   |   0.907   |   0.868   |   0.983   |   0.983   |   0.980   |   0.976   |   0.978   |   0.986   |   0.985   |   0.962    |   0.956    |   0.961   |
-| EfficientAd | PDN-M              |   0.957   |   0.948   |   0.937   |   0.976   |   0.906   |   0.867   |   0.976   |   0.986   |   0.957   |   0.977   |   0.984   |   0.978   |   0.986   |   0.964    |   0.947    |   0.960   |
-| STFPM       | Wide ResNet-50     |   0.903   |   0.987   | **0.989** |   0.980   |   0.966   |   0.956   |   0.966   |   0.913   |   0.956   |   0.974   |   0.961   |   0.946   |   0.988   |   0.178    |   0.807    |   0.980   |
-| STFPM       | ResNet-18          |   0.951   |   0.986   |   0.988   |   0.991   |   0.946   |   0.949   |   0.971   |   0.898   |   0.962   |   0.981   |   0.942   |   0.878   |   0.983   |   0.983    |   0.838    |   0.972   |
-
-## Image F1 Score
-
-| Model         |                    |    Avg    |  Carpet   |   Grid    |  Leather  |   Tile    |   Wood    |  Bottle   |   Cable   |  Capsule  | Hazelnut  | Metal Nut |   Pill    |   Screw   | Toothbrush | Transistor |  Zipper   |
-| ------------- | ------------------ | :-------: | :-------: | :-------: | :-------: | :-------: | :-------: | :-------: | :-------: | :-------: | :-------: | :-------: | :-------: | :-------: | :--------: | :--------: | :-------: |
-| **PatchCore** | **Wide ResNet-50** | **0.976** |   0.971   |   0.974   | **1.000** | **1.000** |   0.967   | **1.000** |   0.968   | **0.982** | **1.000** |   0.984   |   0.940   |   0.943   |   0.938    | **1.000**  | **0.979** |
-| PatchCore     | ResNet-18          |   0.970   |   0.949   |   0.946   | **1.000** |   0.98    |   0.992   | **1.000** | **0.978** |   0.969   | **1.000** | **0.989** |   0.940   |   0.932   |   0.935    |   0.974    |   0.967   |
-| EfficientAd   | PDN-S              |   0.970   |   0.966   | **1.000** |   0.995   | **1.000** |   0.975   | **1.000** |   0.907   |   0.956   |   0.897   |   0.978   |   0.982   |   0.944   |   0.984    |   0.988    |   0.983   |
-| EfficientAd   | PDN-M              |   0.966   |   0.977   |   0.991   | **1.000** |   0.994   |   0.967   |   0.984   |   0.922   |   0.969   |   0.884   |   0.984   |   0.952   |   0.955   |   1.000    |   0.929    |   0.979   |
-| CFA           | Wide ResNet-50     |   0.962   |   0.961   |   0.957   |   0.995   |   0.994   |   0.983   |   0.984   |   0.962   |   0.946   | **1.000** |   0.984   | **0.952** |   0.855   | **1.000**  |   0.907    |   0.975   |
-| CFA           | ResNet-18          |   0.946   |   0.956   |   0.946   |   0.973   | **1.000** | **1.000** |   0.983   |   0.907   |   0.938   |   0.996   |   0.958   |   0.920   |   0.858   |   0.984    |   0.795    |   0.949   |
-| CFlow         | Wide ResNet-50     |   0.944   |   0.972   |   0.932   | **1.000** |   0.988   |   0.967   | **1.000** |   0.832   |   0.939   | **1.000** |   0.979   |   0.924   | **0.971** |   0.870    |   0.818    |   0.967   |
-| PaDiM         | Wide ResNet-50     |   0.951   | **0.989** |   0.930   | **1.000** |   0.960   |   0.983   |   0.992   |   0.856   | **0.982** |   0.937   |   0.978   |   0.946   |   0.895   |   0.952    |   0.914    |   0.947   |
-| PaDiM         | ResNet-18          |   0.916   |   0.930   |   0.893   |   0.984   |   0.934   |   0.952   |   0.976   |   0.858   |   0.960   |   0.836   |   0.974   |   0.932   |   0.879   |   0.923    |   0.796    |   0.915   |
-| DFM           | Wide ResNet-50     |   0.950   |   0.915   |   0.870   |   0.995   |   0.988   |   0.960   |   0.992   |   0.939   |   0.965   |   0.971   |   0.942   |   0.956   |   0.906   |   0.966    |   0.914    |   0.971   |
-| DFM           | ResNet-18          |   0.943   |   0.895   |   0.871   |   0.978   |   0.958   |   0.900   |   1.000   |   0.935   |   0.965   |   0.966   |   0.942   |   0.956   |   0.914   |   0.966    |   0.868    |   0.964   |
-| STFPM         | Wide ResNet-50     |   0.926   |   0.973   |   0.973   |   0.974   |   0.965   |   0.929   |   0.976   |   0.853   |   0.920   |   0.972   |   0.974   |   0.922   |   0.884   |   0.833    |   0.815    |   0.931   |
-| STFPM         | ResNet-18          |   0.932   |   0.961   | **0.982** |   0.989   |   0.930   |   0.951   |   0.984   |   0.819   |   0.918   |   0.993   |   0.973   |   0.918   |   0.887   | **0.984**  |   0.790    |   0.908   |
-| DFKDE         | Wide ResNet-50     |   0.875   |   0.907   |   0.844   |   0.905   |   0.945   |   0.914   |   0.946   |   0.790   |   0.914   |   0.817   |   0.894   |   0.922   |   0.855   |   0.845    |   0.722    |   0.910   |
-| DFKDE         | ResNet-18          |   0.872   |   0.864   |   0.844   |   0.854   |   0.960   |   0.898   |   0.942   |   0.793   |   0.908   |   0.827   |   0.894   |   0.916   |   0.859   |   0.853    |   0.756    |   0.916   |
-| GANomaly      |                    |   0.834   |   0.864   |   0.844   |   0.852   |   0.836   |   0.863   |   0.863   |   0.760   |   0.905   |   0.777   |   0.894   |   0.916   |   0.853   |   0.833    |   0.571    |   0.881   |
-
-# Reference
+# ✍️ Reference
 
 If you use this library and love it, use this to cite it 🤗
 
 ```tex
-@misc{anomalib,
-      title={Anomalib: A Deep Learning Library for Anomaly Detection},
-      author={Samet Akcay and
-              Dick Ameln and
-              Ashwin Vaidya and
-              Barath Lakshmanan and
-              Nilesh Ahuja and
-              Utku Genc},
-      year={2022},
-      eprint={2202.08341},
-      archivePrefix={arXiv},
-      primaryClass={cs.CV}
+@inproceedings{akcay2022anomalib,
+  title={Anomalib: A deep learning library for anomaly detection},
+  author={Akcay, Samet and Ameln, Dick and Vaidya, Ashwin and Lakshmanan, Barath and Ahuja, Nilesh and Genc, Utku},
+  booktitle={2022 IEEE International Conference on Image Processing (ICIP)},
+  pages={1706--1710},
+  year={2022},
+  organization={IEEE}
 }
 ```
 
-# Contributing
+# 👥 Contributing
 
 For those who would like to contribute to the library, see [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
