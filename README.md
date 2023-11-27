@@ -89,8 +89,18 @@ Anomalib now supports both API and CLI-based training. The API is more flexible 
 <summary>Training via API</summary>
 
 ```python
-from anomalib.models import PaDiM
+# Import the required modules
 from anomalib.datasets import MVTec
+from anomalib.models import Patchcore
+from anomalib.engine import Engine
+
+# Initialize the datamodule, model and engine
+datamodule = MVTec()
+model = Patchcore()
+engine = Engine()
+
+# Train the model
+engine.fit(datamodule=datamodule, model=model)
 ```
 
 </details>
@@ -99,11 +109,11 @@ from anomalib.datasets import MVTec
 <summary>Training via CLI</summary>
 
 ```bash
-# To get help about the inference arguments, run:
-anomalib predict -h
+# To get help about the training arguments, run:
+anomalib fit -h
 
-# To predict on a single image using Lightning inferencer:
-anomalib predict --config patchcore.yaml ...
+# To train the model on the default values, run:
+anomalib train --model anomalib.models.patchcore --data anomalib.data.MVTec
 ```
 
 </details>
