@@ -174,7 +174,7 @@ Anomalib supports hyperparameter optimization (HPO) using [wandb](https://wandb.
 The following example demonstrates how to perform HPO for the Patchcore model.
 
 ```bash
-# Place the HPO CLI command here.
+anomalib hpo --backend WANDB  --sweep_config tools/hpo/configs/wandb.yaml
 ```
 
 </details>
@@ -227,12 +227,10 @@ Each model in anomalib is benchmarked on a set of datasets, and the results are 
 <details>
 <summary>Benchmarking via API</summary>
 
-As of v1.0, the benchmarking tool supports the CLI only. The API support will be enabled in v1.1.
-
 To run the benchmarking tool, run the following command:
 
 ```bash
-# Benchmarking via CLI.
+anomalib benchmark --config tools/benchmarking/benchmark_params.yaml
 ```
 
 </details>
