@@ -160,7 +160,7 @@ anomalib predict --config <config_file_path> --return_predictions
 
 # ⚙️ Hyperparameter Optimization
 
-Anomalib supports hyperparameter optimization (HPO) using [wandb](https://wandb.ai/) and [comet.ml](https://www.comet.com/).
+Anomalib supports hyperparameter optimization (HPO) using [wandb](https://wandb.ai/) and [comet.ml](https://www.comet.com/). For more details refer the [HPO Documentation](https://openvinotoolkit.github.io/anomalib/tutorials/hyperparameter_optimization.html)
 
 <details>
 <summary>HPO via API</summary>
@@ -182,11 +182,9 @@ The following example demonstrates how to perform HPO for the Patchcore model.
 
 </details>
 
-For more details refer the [HPO Documentation](https://openvinotoolkit.github.io/anomalib/tutorials/hyperparameter_optimization.html)
-
 # 🧪 Experiment Management
 
-Anomalib is integrated with various libraries for experiment tracking such as Comet, tensorboard, and wandb through [pytorch lighting loggers](https://pytorch-lightning.readthedocs.io/en/stable/extensions/logging.html).
+Anomalib is integrated with various libraries for experiment tracking such as Comet, tensorboard, and wandb through [pytorch lighting loggers](https://pytorch-lightning.readthedocs.io/en/stable/extensions/logging.html). For more information, refer to the [Logging Documentation](https://openvinotoolkit.github.io/anomalib/tutorials/logging.html)
 
 <details>
 <summary>Experiment Management via API</summary>
@@ -214,13 +212,23 @@ You first need to modify the `config.yaml` file to enable logging. The following
 
 </details>
 
-For more information, refer to the [Logging Documentation](https://openvinotoolkit.github.io/anomalib/tutorials/logging.html)
-
-> **Note**: If you configure wandb or Comet.ML for the first time, you might need to set your API Key properly. You could refer to the [wandb](https://docs.wandb.ai/quickstart) and [Comet.ml](https://www.comet.com/signup?utm_source=anomalib&utm_medium=referral) documentation for more information.
-
 # 📊 Benchmarking
 
 Anomalib provides a benchmarking tool to evaluate the performance of the anomaly detection models on a given dataset. The benchmarking tool can be used to evaluate the performance of the models on a given dataset, or to compare the performance of multiple models on a given dataset.
+
+Each model in anomalib is benchmarked on a set of datasets, and the results are available in `src/anomalib/models/<model_name>README.md`. For example, the MVTec AD results for the Patchcore model are available in the corresponding [README.md](https://github.com/openvinotoolkit/anomalib/tree/main/src/anomalib/models/patchcore#mvtec-ad-dataset) file.
+
+<details>
+<summary>Benchmarking via API</summary>
+
+```python
+# To be enabled in v1.1
+```
+
+</details>
+
+<details>
+<summary>Benchmarking via API</summary>
 
 As of v1.0, the benchmarking tool supports the CLI only. The API support will be enabled in v1.1.
 
@@ -230,7 +238,7 @@ To run the benchmarking tool, run the following command:
 # Benchmarking via CLI.
 ```
 
-Each model in anomalib is benchmarked on a set of datasets, and the results are available in `src/anomalib/models/<model_name>README.md`. For example, the MVTec AD results for the Patchcore model are available in the corresponding [README.md](https://github.com/openvinotoolkit/anomalib/tree/main/src/anomalib/models/patchcore#mvtec-ad-dataset) file.
+</details>
 
 # ✍️ Reference
 
