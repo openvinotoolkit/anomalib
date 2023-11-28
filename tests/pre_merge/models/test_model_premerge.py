@@ -31,6 +31,7 @@ class TestModel:
             ("reverse_distillation", False),
             ("rkde", False),
             ("stfpm", False),
+            ("uflow", False),
         ],
     )
     @TestDataset(num_train=20, num_test=10)

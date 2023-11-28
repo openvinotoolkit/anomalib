@@ -287,10 +287,11 @@ class EfficientAdModel(nn.Module):
         transform_function = random.choice(transform_functions)  # nosec: B311
         return transform_function(image, coefficient)
 
-    def forward(self, batch: Tensor, batch_imagenet: Tensor = None) -> Tensor | dict:
+    def forward(self, batch: Tensor, batch_imagenet: Tensor = None, normalize: bool = True) -> Tensor | dict:
         """Prediction by EfficientAd models.
 
         Args:
+            normalize: Normalize anomaly maps or not.
             batch (Tensor): Input images.
 
         Returns:
@@ -346,7 +347,7 @@ class EfficientAdModel(nn.Module):
             map_st = F.interpolate(map_st, size=(self.input_size[0], self.input_size[1]), mode="bilinear")
             map_stae = F.interpolate(map_stae, size=(self.input_size[0], self.input_size[1]), mode="bilinear")
 
-            if self.is_set(self.quantiles):
+            if self.is_set(self.quantiles) and normalize:
                 map_st = 0.1 * (map_st - self.quantiles["qa_st"]) / (self.quantiles["qb_st"] - self.quantiles["qa_st"])
                 map_stae = (
                     0.1 * (map_stae - self.quantiles["qa_ae"]) / (self.quantiles["qb_ae"] - self.quantiles["qa_ae"])

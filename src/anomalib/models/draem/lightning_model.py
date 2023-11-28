@@ -33,11 +33,15 @@ class Draem(AnomalyModule):
     """
 
     def __init__(
-        self, enable_sspcab: bool = False, sspcab_lambda: float = 0.1, anomaly_source_path: str | None = None
+        self,
+        enable_sspcab: bool = False,
+        sspcab_lambda: float = 0.1,
+        anomaly_source_path: str | None = None,
+        beta: float | tuple[float, float] = (0.1, 1.0),
     ) -> None:
         super().__init__()
 
-        self.augmenter = Augmenter(anomaly_source_path)
+        self.augmenter = Augmenter(anomaly_source_path, beta=beta)
         self.model = DraemModel(sspcab=enable_sspcab)
         self.loss = DraemLoss()
         self.sspcab = enable_sspcab
@@ -121,10 +125,17 @@ class DraemLightning(Draem):
     """
 
     def __init__(self, hparams: DictConfig | ListConfig) -> None:
+        # beta in config can be either float or sequence
+        beta = hparams.model.beta
+        # if sequence - change to tuple[float, float]
+        if isinstance(beta, ListConfig):
+            beta = tuple(beta)
+
         super().__init__(
             enable_sspcab=hparams.model.enable_sspcab,
             sspcab_lambda=hparams.model.sspcab_lambda,
             anomaly_source_path=hparams.model.anomaly_source_path,
+            beta=beta,
         )
         self.hparams: DictConfig | ListConfig  # type: ignore
         self.save_hyperparameters(hparams)
@@ -138,13 +149,19 @@ class DraemLightning(Draem):
                 deprecated, and callbacks will be configured from either
                 config.yaml file or from CLI.
         """
-        early_stopping = EarlyStopping(
-            monitor=self.hparams.model.early_stopping.metric,
-            patience=self.hparams.model.early_stopping.patience,
-            mode=self.hparams.model.early_stopping.mode,
-        )
-        return [early_stopping]
+        callbacks = []
+        if "early_stopping" in self.hparams.model:
+            early_stopping = EarlyStopping(
+                monitor=self.hparams.model.early_stopping.metric,
+                patience=self.hparams.model.early_stopping.patience,
+                mode=self.hparams.model.early_stopping.mode,
+            )
+            callbacks.append(early_stopping)
 
-    def configure_optimizers(self) -> torch.optim.Optimizer:
+        return callbacks
+
+    def configure_optimizers(self) -> tuple[list[torch.optim.Optimizer], list[torch.optim.lr_scheduler.LRScheduler]]:
         """Configure the Adam optimizer."""
-        return torch.optim.Adam(params=self.model.parameters(), lr=self.hparams.model.lr)
+        optimizer = torch.optim.Adam(params=self.model.parameters(), lr=self.hparams.model.lr)
+        scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[400, 600], gamma=0.1)
+        return [optimizer], [scheduler]
