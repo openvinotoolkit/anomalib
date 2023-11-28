@@ -151,7 +151,7 @@ class AvenueDataset(AnomalibVideoDataset):
         split: Split,
         root: Path | str = "./datasets/avenue",
         gt_dir: Path | str = "./datasets/avenue/ground_truth_demo",
-        clip_length_in_frames: int = 1,
+        clip_length_in_frames: int = 2,
         frames_between_clips: int = 1,
         target_frame: VideoTargetFrame = VideoTargetFrame.LAST,
     ) -> None:
@@ -200,7 +200,7 @@ class Avenue(AnomalibVideoDataModule):
         self,
         root: Path | str = "./datasets/avenue",
         gt_dir: Path | str = "./datasets/avenue/ground_truth_demo",
-        clip_length_in_frames: int = 1,
+        clip_length_in_frames: int = 2,
         frames_between_clips: int = 1,
         target_frame: VideoTargetFrame = VideoTargetFrame.LAST,
         task: TaskType = TaskType.SEGMENTATION,
