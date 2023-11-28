@@ -103,11 +103,17 @@ engine.fit(datamodule=datamodule, model=model)
 <summary>Training via CLI</summary>
 
 ```bash
-# To get help about the training arguments, run:
+# Get help about the training arguments, run:
 anomalib train -h
 
-# To train the model on the default values, run:
-anomalib train --model Patchcore --data MVTec
+# Train by using the default values.
+anomalib train --model Patchcore --data anomalib.data.MVTec
+
+# Train by overriding arguments.
+anomalib train --model Patchcore --data anomalib.data.MVTec --data.category transistor
+
+# Train by using a config file.
+anomalib train --config <path/to/config>
 ```
 
 </details>
@@ -140,14 +146,18 @@ predictions = engine.predict(
 # To get help about the arguments, run:
 anomalib predict -h
 
-# Predict via providing the model name
-anomalib predict --model anomalib.models.Patchcore
+# Predict by using the default values.
+anomalib predict --model anomalib.models.Patchcore \
+                 --data anomalib.data.MVTec \
+                 --ckpt_path <path/to/model.ckpt>
 
-# Predict by overriding the various values with commands.
-anomalib predict --model anomalib.models.Patchcore --data <CONFIG | CLASS_PATH_OR_NAME>
+# Predict by overriding arguments.
+anomalib predict --model anomalib.models.Patchcore \
+                 --data anomalib.data.MVTec \
+                 --return_predictions
 
 # Predict by using a config file.
-anomalib predict --config <config_file_path> --return_predictions
+anomalib predict --config <path/to/config> --return_predictions
 ```
 
 </details>
