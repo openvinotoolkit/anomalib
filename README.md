@@ -154,6 +154,7 @@ anomalib predict --model anomalib.models.Patchcore \
 # Predict by overriding arguments.
 anomalib predict --model anomalib.models.Patchcore \
                  --data anomalib.data.MVTec \
+                 --ckpt_path <path/to/model.ckpt>
                  --return_predictions
 
 # Predict by using a config file.
