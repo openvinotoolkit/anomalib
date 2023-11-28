@@ -35,7 +35,7 @@ Anomalib is a deep learning library that aims to collect state-of-the-art anomal
 ## Key features
 
 - The largest public collection of ready-to-use deep learning anomaly detection algorithms and benchmark datasets.
-- [**PyTorch Lightning**](https://www.pytorchlightning.ai/) based model implementations to reduce boilerplate code and limit the implementation efforts to the bare essentials.
+- [**Lightning**](https://www.lightning.ai/) based model implementations to reduce boilerplate code and limit the implementation efforts to the bare essentials.
 - All models can be exported to [**OpenVINO**](https://www.intel.com/content/www/us/en/developer/tools/openvino-toolkit/overview.html) Intermediate Representation (IR) for accelerated inference on intel hardware.
 - A set of [inference tools](tools) for quick and easy deployment of the standard or custom anomaly detection models.
 
