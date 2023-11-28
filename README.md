@@ -77,7 +77,7 @@ pip install -e .
 
 # 🧠 Training
 
-Anomalib now supports both API and CLI-based training. The API is more flexible and allows for more customization, while the CLI training utilizes command line interfaces, and might be easier for those who would like to use anomalib off-the-shelf.
+Anomalib supports both API and CLI-based training. The API is more flexible and allows for more customization, while the CLI training utilizes command line interfaces, and might be easier for those who would like to use anomalib off-the-shelf.
 
 <details>
 <summary>Training via API</summary>
