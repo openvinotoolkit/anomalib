@@ -211,7 +211,8 @@ class PoseExtractor(nn.Module):
             boxes = detection["boxes"].unsqueeze(1)
             keypoints = detection["keypoints"]
             normalized_keypoints = (keypoints[..., :2] - boxes[..., :2]) / (boxes[..., 2:] - boxes[..., :2])
-            poses.append(normalized_keypoints.reshape(normalized_keypoints.shape[0], -1))
+            length = normalized_keypoints.shape[-1] * normalized_keypoints.shape[-2]
+            poses.append(normalized_keypoints.reshape(normalized_keypoints.shape[0], length))
         return poses
 
     def forward(self, batch: torch.Tensor, boxes: torch.Tensor) -> list[torch.Tensor]:
