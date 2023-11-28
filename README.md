@@ -107,7 +107,7 @@ engine.fit(datamodule=datamodule, model=model)
 anomalib train -h
 
 # To train the model on the default values, run:
-anomalib train --model anomalib.models.patchcore --data anomalib.data.MVTec
+anomalib train --model Patchcore --data MVTec
 ```
 
 </details>
