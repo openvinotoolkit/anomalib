@@ -35,7 +35,7 @@ class _TestAnomalibVideoDatamodule(_TestAnomalibDataModule):
         assert batch.keys() == expected_keys
 
         # Check that the batch has the correct shape.
-        assert batch["image"].shape == (4, 3, 256, 256)
+        assert batch["image"].shape == (4, 2, 3, 256, 256)
         assert len(batch["video_path"]) == 4
         assert len(batch["frames"]) == 4
         assert len(batch["last_frame"]) == 4
