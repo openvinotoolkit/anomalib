@@ -126,7 +126,7 @@ class DeepExtractor(nn.Module):
 
         batched_regions = torch.split(rgb_regions, batch_size)
         with torch.no_grad():
-            return torch.vstack([self.encoder.encode_image(self.transform(batch)) for batch in batched_regions])
+            return torch.vstack([self.encoder.encode_image(self.transform(batch)) for batch in batched_regions]).float()
 
 
 class VelocityExtractor(nn.Module):

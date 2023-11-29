@@ -121,15 +121,15 @@ class CombinedDensityEstimator(BaseDensityEstimator):
         device = next(iter(features.values())).device
         region_scores = torch.zeros(n_regions).to(device)
         image_score = 0
-        if self.use_velocity_features:
+        if self.use_velocity_features and features[FeatureType.VELOCITY].numel():
             velocity_scores = self.velocity_estimator.predict(features[FeatureType.VELOCITY])
             region_scores += velocity_scores
             image_score += velocity_scores.max()
-        if self.use_deep_features:
+        if self.use_deep_features and features[FeatureType.DEEP].numel():
             deep_scores = self.appearance_estimator.predict(features[FeatureType.DEEP])
             region_scores += deep_scores
             image_score += deep_scores.max()
-        if self.use_pose_features:
+        if self.use_pose_features and features[FeatureType.POSE].numel():
             pose_scores = self.pose_estimator.predict(features[FeatureType.POSE])
             region_scores += pose_scores
             image_score += pose_scores.max()
