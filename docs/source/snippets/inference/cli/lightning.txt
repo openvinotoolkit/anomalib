@@ -1,0 +1,16 @@
+# To get help about the arguments, run:
+anomalib predict -h
+
+# Predict by using the default values.
+anomalib predict --model anomalib.models.Patchcore \
+                 --data anomalib.data.MVTec \
+                 --ckpt_path <path/to/model.ckpt>
+
+# Predict by overriding arguments.
+anomalib predict --model anomalib.models.Patchcore \
+                 --data anomalib.data.MVTec \
+                 --ckpt_path <path/to/model.ckpt>
+                 --return_predictions
+
+# Predict by using a config file.
+anomalib predict --config <path/to/config> --return_predictions
