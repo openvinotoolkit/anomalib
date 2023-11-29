@@ -9,7 +9,7 @@ dataset:
   num_workers: 8
   image_size: 256 # dimensions to which images are resized (mandatory)
   center_crop: null # dimensions to which images are center-cropped after resizing (optional)
-  normalization: imagenet # data distribution to which the images will be normalized: [none, imagenet]
+  normalization: none # data distribution to which the images will be normalized: [none, imagenet]
   transform_config:
     train: null
     eval: null
@@ -29,12 +29,14 @@ model:
   name: draem
   anomaly_source_path: null # optional, e.g. ./datasets/dtd
   lr: 0.0001
+  beta: [0.1, 1.0] # generated anomaly opacity parameter, either float or interval
   enable_sspcab: false
   sspcab_lambda: 0.1
-  early_stopping:
-    patience: 20
-    metric: pixel_AUROC
-    mode: max
+  # uncomment the following settings to enable early stopping
+  #early_stopping:
+  #  patience: 20
+  #  metric: pixel_AUROC
+  #  mode: max
   normalization_method: min_max # options: [none, min_max, cdf]
 
 metrics:

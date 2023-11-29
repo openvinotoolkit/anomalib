@@ -11,12 +11,14 @@ Algorithms
    dfkde
    dfm
    draem
+   dsr
    fastflow
    ganomaly
    padim
    patchcore
    reverse_distillation
    stfpm
+   uflow
 
 
 Feature extraction & (pre-trained) backbones

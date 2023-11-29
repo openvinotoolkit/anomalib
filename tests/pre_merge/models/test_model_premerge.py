@@ -23,6 +23,7 @@ class TestModel:
             ("dfkde", False),
             ("dfm", False),
             ("draem", False),
+            ("dsr", False),
             ("fastflow", False),
             ("ganomaly", False),
             ("padim", False),
@@ -30,6 +31,7 @@ class TestModel:
             ("reverse_distillation", False),
             ("rkde", False),
             ("stfpm", False),
+            ("uflow", False),
         ],
     )
     @TestDataset(num_train=20, num_test=10)

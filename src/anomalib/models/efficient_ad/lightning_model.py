@@ -96,7 +96,7 @@ class EfficientAd(AnomalyModule):
 
     def prepare_pretrained_model(self) -> None:
         pretrained_models_dir = Path("./pre_trained/")
-        if not pretrained_models_dir.is_dir():
+        if not (pretrained_models_dir / "efficientad_pretrained_weights").is_dir():
             download_and_extract(pretrained_models_dir, WEIGHTS_DOWNLOAD_INFO)
         teacher_path = (
             pretrained_models_dir / "efficientad_pretrained_weights" / f"pretrained_teacher_{self.model_size}.pth"
@@ -125,6 +125,7 @@ class EfficientAd(AnomalyModule):
     @torch.no_grad()
     def teacher_channel_mean_std(self, dataloader: DataLoader) -> dict[str, Tensor]:
         """Calculate the mean and std of the teacher models activations.
+        Adapted from https://math.stackexchange.com/a/2148949
 
         Args:
             dataloader (DataLoader): Dataloader of the respective dataset.
@@ -132,23 +133,32 @@ class EfficientAd(AnomalyModule):
         Returns:
             dict[str, Tensor]: Dictionary of channel-wise mean and std
         """
-        y_means = []
-        means_distance = []
 
-        logger.info("Calculate teacher channel mean and std")
-        for batch in tqdm.tqdm(dataloader, desc="Calculate teacher channel mean", position=0, leave=True):
+        arrays_defined = False
+        n: torch.Tensor | None = None
+        chanel_sum: torch.Tensor | None = None
+        chanel_sum_sqr: torch.Tensor | None = None
+
+        for batch in tqdm.tqdm(dataloader, desc="Calculate teacher channel mean & std", position=0, leave=True):
             y = self.model.teacher(batch["image"].to(self.device))
-            y_means.append(torch.mean(y, dim=[0, 2, 3]))
+            if not arrays_defined:
+                _, num_channels, _, _ = y.shape
+                n = torch.zeros((num_channels,), dtype=torch.int64, device=y.device)
+                chanel_sum = torch.zeros((num_channels,), dtype=torch.float64, device=y.device)
+                chanel_sum_sqr = torch.zeros((num_channels,), dtype=torch.float64, device=y.device)
+                arrays_defined = True
 
-        channel_mean = torch.mean(torch.stack(y_means), dim=0)[None, :, None, None]
+            n += y[:, 0].numel()
+            chanel_sum += torch.sum(y, dim=[0, 2, 3])
+            chanel_sum_sqr += torch.sum(y**2, dim=[0, 2, 3])
 
-        for batch in tqdm.tqdm(dataloader, desc="Calculate teacher channel std", position=0, leave=True):
-            y = self.model.teacher(batch["image"].to(self.device))
-            distance = (y - channel_mean) ** 2
-            means_distance.append(torch.mean(distance, dim=[0, 2, 3]))
+        assert n is not None
 
-        channel_var = torch.mean(torch.stack(means_distance), dim=0)[None, :, None, None]
-        channel_std = torch.sqrt(channel_var)
+        channel_mean = chanel_sum / n
+
+        channel_std = (torch.sqrt((chanel_sum_sqr / n) - (channel_mean**2))).float()[None, :, None, None]
+        channel_mean = channel_mean.float()[None, :, None, None]
+
         return {"mean": channel_mean, "std": channel_std}
 
     @torch.no_grad()
@@ -168,7 +178,7 @@ class EfficientAd(AnomalyModule):
         for batch in tqdm.tqdm(dataloader, desc="Calculate Validation Dataset Quantiles", position=0, leave=True):
             for img, label in zip(batch["image"], batch["label"]):
                 if label == 0:  # only use good images of validation set!
-                    output = self.model(img.to(self.device))
+                    output = self.model(img.to(self.device), normalize=False)
                     map_st = output["map_st"]
                     map_ae = output["map_ae"]
                     maps_st.append(map_st)
@@ -204,7 +214,7 @@ class EfficientAd(AnomalyModule):
             weight_decay=self.weight_decay,
         )
         num_steps = min(
-            self.trainer.max_steps, self.trainer.max_epochs * len(self.trainer.datamodule.train_dataloader())
+            self.trainer.max_steps // len(self.trainer.datamodule.train_dataloader()), self.trainer.max_epochs
         )
         scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=int(0.95 * num_steps), gamma=0.1)
         return {"optimizer": optimizer, "lr_scheduler": scheduler}
@@ -246,9 +256,8 @@ class EfficientAd(AnomalyModule):
         """
         Calculate the feature map quantiles of the validation dataset and push to the model.
         """
-        if (self.current_epoch + 1) == self.trainer.max_epochs:
-            map_norm_quantiles = self.map_norm_quantiles(self.trainer.datamodule.val_dataloader())
-            self.model.quantiles.update(map_norm_quantiles)
+        map_norm_quantiles = self.map_norm_quantiles(self.trainer.datamodule.val_dataloader())
+        self.model.quantiles.update(map_norm_quantiles)
 
     def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
         """Validation Step of EfficientAd returns anomaly maps for the input image batch

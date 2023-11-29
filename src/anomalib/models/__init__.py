@@ -21,6 +21,7 @@ from anomalib.models.csflow import Csflow
 from anomalib.models.dfkde import Dfkde
 from anomalib.models.dfm import Dfm
 from anomalib.models.draem import Draem
+from anomalib.models.dsr import Dsr
 from anomalib.models.efficient_ad import EfficientAd
 from anomalib.models.fastflow import Fastflow
 from anomalib.models.ganomaly import Ganomaly
@@ -29,6 +30,7 @@ from anomalib.models.patchcore import Patchcore
 from anomalib.models.reverse_distillation import ReverseDistillation
 from anomalib.models.rkde import Rkde
 from anomalib.models.stfpm import Stfpm
+from anomalib.models.uflow import Uflow
 
 __all__ = [
     "Cfa",
@@ -37,6 +39,7 @@ __all__ = [
     "Dfkde",
     "Dfm",
     "Draem",
+    "Dsr",
     "Fastflow",
     "Ganomaly",
     "Padim",
@@ -44,6 +47,7 @@ __all__ = [
     "ReverseDistillation",
     "Rkde",
     "Stfpm",
+    "Uflow",
     "AiVad",
     "EfficientAd",
 ]
