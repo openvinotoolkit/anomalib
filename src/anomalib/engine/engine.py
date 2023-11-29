@@ -452,7 +452,6 @@ class Engine:
         self,
         model: AnomalyModule,
         export_mode: ExportMode,
-        task: TaskType,
         export_path: str | Path | None = None,
         transform: dict[str, Any] | A.Compose | str | Path | None = None,
         datamodule: AnomalibDataModule | None = None,
@@ -466,7 +465,6 @@ class Engine:
         Args:
             model (AnomalyModule): Trained model.
             export_mode (ExportMode): Export mode.
-            task (TaskType): Task type.
             export_path (str | Path | None, optional): Path to the output directory. If it is not set, the model is
                 exported to trainer.default_root_dir. Defaults to None.
             transform (dict[str, Any] | A.Compose | str | Path | None, optional): Transform config. Can either be a
@@ -490,6 +488,8 @@ class Engine:
         CLI Usage:
             TODO(ashwinvaidya17)
         """
+        self._setup_trainer(model)
+        self._setup_dataset_task(datamodule, dataset)
         if ckpt_path:
             model = model.__class__.load_from_checkpoint(ckpt_path)
 
@@ -512,10 +512,16 @@ class Engine:
         if export_path is None:
             export_path = Path(self.trainer.default_root_dir)
         if export_mode == ExportMode.TORCH:
-            export_to_torch(model=model, export_path=export_path, transform=transform, task=task)
+            export_to_torch(model=model, export_path=export_path, transform=transform, task=self.task)
         elif export_mode == ExportMode.ONNX:
             assert input_size is not None, "input_size must be provided for ONNX export mode."
-            export_to_onnx(model=model, input_size=input_size, export_path=export_path, transform=transform, task=task)
+            export_to_onnx(
+                model=model,
+                input_size=input_size,
+                export_path=export_path,
+                transform=transform,
+                task=self.task,
+            )
         else:
             assert input_size is not None, "input_size must be provided for OpenVINO export mode."
             export_to_openvino(
@@ -523,6 +529,6 @@ class Engine:
                 input_size=input_size,
                 export_path=export_path,
                 transform=transform,
-                task=task,
+                task=self.task,
                 mo_args=mo_args,
             )

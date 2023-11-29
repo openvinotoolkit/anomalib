@@ -15,6 +15,7 @@ import torch
 
 from anomalib.cli import AnomalibCLI
 from anomalib.data import MVTec, UCSDped
+from anomalib.deploy.export import ExportMode
 from anomalib.models import AnomalyModule
 from anomalib.utils.types import TaskType
 
@@ -74,7 +75,7 @@ class TestCLI:
         torch.cuda.empty_cache()
 
     def test_train(self, random_model_name: str, dataset_path: Path, project_path: Path) -> None:
-        """Test the test method of the CLI.
+        """Test the train method of the CLI.
 
         Args:
             random_model_name: Name of the model to test.
@@ -94,7 +95,7 @@ class TestCLI:
         torch.cuda.empty_cache()
 
     def test_validate(self, random_model_name: str, dataset_path: Path, project_path: Path) -> None:
-        """Test the test method of the CLI.
+        """Test the validate method of the CLI.
 
         Args:
             random_model_name: Name of the model to test.
@@ -114,7 +115,7 @@ class TestCLI:
         torch.cuda.empty_cache()
 
     def test_predict(self, random_model_name: str, dataset_path: Path, project_path: Path) -> None:
-        """Test the test method of the CLI.
+        """Test the predict method of the CLI.
 
         Args:
             random_model_name: Name of the model to test.
@@ -137,8 +138,34 @@ class TestCLI:
         )
         torch.cuda.empty_cache()
 
-    # TODO(ashwinvaidya17): export
-    # CVS-109972
+    @pytest.mark.parametrize("export_mode", [ExportMode.TORCH, ExportMode.ONNX, ExportMode.OPENVINO])
+    def test_export(
+        self,
+        random_model_name: str,
+        dataset_path: Path,
+        project_path: Path,
+        export_mode: ExportMode,
+    ) -> None:
+        """Test the export method of the CLI.
+
+        Args:
+            random_model_name: Name of the model to test.
+            dataset_path (Path): Root of the synthetic/original dataset.
+            project_path (Path): Path to temporary project folder.
+            export_mode (ExportMode): Export mode.
+        """
+        AnomalibCLI(
+            args=[
+                "export",
+                "--model",
+                random_model_name,
+                "--export_mode",
+                export_mode,
+                *self._get_common_cli_args(random_model_name, dataset_path, project_path),
+                "--input_size",
+                "[256, 256]",
+            ],
+        )
 
     @staticmethod
     def _get_common_cli_args(model_name: str, dataset_path: Path, project_path: Path) -> list[str]:
