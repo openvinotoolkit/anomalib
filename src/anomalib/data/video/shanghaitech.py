@@ -196,7 +196,7 @@ class ShanghaiTechDataset(AnomalibVideoDataset):
         split: Split,
         root: Path | str = "./datasets/shanghaitech",
         scene: int = 1,
-        clip_length_in_frames: int = 1,
+        clip_length_in_frames: int = 2,
         frames_between_clips: int = 1,
         target_frame: VideoTargetFrame = VideoTargetFrame.LAST,
     ) -> None:
@@ -245,7 +245,7 @@ class ShanghaiTech(AnomalibVideoDataModule):
         self,
         root: Path | str = "./datasets/shanghaitech",
         scene: int = 1,
-        clip_length_in_frames: int = 1,
+        clip_length_in_frames: int = 2,
         frames_between_clips: int = 1,
         target_frame: VideoTargetFrame = VideoTargetFrame.LAST,
         task: TaskType = TaskType.SEGMENTATION,

@@ -21,8 +21,6 @@ class TestUCSDped(_TestAnomalibVideoDatamodule):
         _datamodule = UCSDped(
             root=dataset_path / "ucsdped",
             category="dummy",
-            clip_length_in_frames=1,
-            frames_between_clips=1,
             task=task_type,
             image_size=256,
             train_batch_size=4,
