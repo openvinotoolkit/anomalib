@@ -139,11 +139,11 @@ When the numbers are produced, early stopping callback (patience: 5) is used. It
 
 ### Sample Results
 
-![Sample Result 1](../../../docs/source/images/cfa/results/0.png "Sample Result 1")
+![Sample Result 1](../../../../docs/source/images/cfa/results/0.png "Sample Result 1")
 
-![Sample Result 2](../../../docs/source/images/cfa/results/1.png "Sample Result 2")
+![Sample Result 2](../../../../docs/source/images/cfa/results/1.png "Sample Result 2")
 
-![Sample Result 3](../../../docs/source/images/cfa/results/2.png "Sample Result 3")
+![Sample Result 3](../../../../docs/source/images/cfa/results/2.png "Sample Result 3")
 
 ## Reference
 
