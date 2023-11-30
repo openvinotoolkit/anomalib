@@ -38,22 +38,13 @@ Anomalib provides two ways to install the library. The first is through PyPI, an
 
 ## {octicon}`light-bulb` Get Started
 
-::::{grid} 1 2 2 2
-:margin: 1 1 0 0
-:gutter: 1
+::::{grid}
 
 :::{grid-item-card} {octicon}`hourglass` Anomalib in 15 minutes
-:link: markdown/get_started/anomalib_in_fifteen_mins
+:link: markdown/get_started/anomalib
 :link-type: doc
 
 Get started with anomalib in 15 minutes.
-:::
-
-:::{grid-item-card} {octicon}`book` Jupyter Notebooks
-:link: markdown/get_started/anomalib_in_fifteen_mins
-:link-type: doc
-
-Dive into the details of anomalib via Jupyter notebooks.
 :::
 
 ::::
@@ -65,21 +56,21 @@ Dive into the details of anomalib via Jupyter notebooks.
 :gutter: 1
 
 :::{grid-item-card} {octicon}`codescan` Reference Guide
-:link: markdown/get_started/anomalib_in_fifteen_mins
+:link: markdown/guides/reference/index
 :link-type: doc
 
 Learn more about anomalib API and CLI.
 :::
 
 :::{grid-item-card} {octicon}`question` How-to Guides
-:link: markdown/get_started/anomalib_in_fifteen_mins
+:link: markdown/get_started/anomalib
 :link-type: doc
 
 Learn how to use anomalib for your anomaly detection tasks.
 :::
 
 :::{grid-item-card} {octicon}`telescope` Topic Guides
-:link: markdown/get_started/anomalib_in_fifteen_mins
+:link: markdown/get_started/anomalib
 :link-type: doc
 
 Learn more about the internals of anomalib.
@@ -91,6 +82,14 @@ Learn more about the internals of anomalib.
 :caption: Get Started
 :hidden:
 
-markdown/get_started/anomalib_in_fifteen_mins
-markdown/get_started/jupyter_notebooks
+markdown/get_started/anomalib
+```
+
+```{toctree}
+:caption: Guides
+:hidden:
+
+markdown/guides/reference/index
+markdown/guides/how_to
+markdown/guides/topic
 ```

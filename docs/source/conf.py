@@ -1,13 +1,25 @@
-# Configuration file for the Sphinx documentation builder.
-#
-# For the full list of built-in configuration values, see the documentation:
-# https://www.sphinx-doc.org/en/master/usage/configuration.html
+"""Configuration file for the Sphinx documentation builder.
 
-# -- Project information -----------------------------------------------------
-# https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
+For the full list of built-in configuration values, see the documentation:
+https://www.sphinx-doc.org/en/master/usage/configuration.html
+
+-- Project information -----------------------------------------------------
+https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
+"""
+
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+
+# Define the path to your module using Path
+module_path = Path(__file__).parent.parent
+
+# Insert the path to sys.path
+sys.path.insert(0, str(module_path.resolve()))
 
 project = "Anomalib"
-copyright = "2023, Intel OpenVINO"
+copyright = "2023, Intel OpenVINO"  # noqa: A001
 author = "Intel OpenVINO"
 release = "2022"
 
@@ -15,18 +27,19 @@ release = "2022"
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = [
+    "sphinx.ext.autodoc",
     "sphinx_design",
-    "myst_parser",  # This enables MyST
-    # other extensions...
+    "myst_parser",
+    "nbsphinx",
 ]
 
 myst_enable_extensions = [
     "colon_fence",
     # other MyST extensions...
 ]
-
+nbsphinx_allow_errors = True
 templates_path = ["_templates"]
-exclude_patterns = []
+exclude_patterns: list[str] = []
 
 
 # -- Options for HTML output -------------------------------------------------
