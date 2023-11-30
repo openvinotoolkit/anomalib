@@ -78,3 +78,10 @@ Learn more about the internals of anomalib.
 :::
 
 ::::
+
+```{toctree}
+:caption: Data
+:hidden:
+
+./data
+```

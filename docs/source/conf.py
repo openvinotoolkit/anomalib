@@ -13,7 +13,7 @@ import sys
 from pathlib import Path
 
 # Define the path to your module using Path
-module_path = Path(__file__).parent.parent
+module_path = Path(__file__).parent.parent / "src"
 
 # Insert the path to sys.path
 sys.path.insert(0, str(module_path.resolve()))
@@ -26,11 +26,14 @@ release = "2022"
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
+
 extensions = [
     "sphinx.ext.autodoc",
     "sphinx_design",
     "myst_parser",
     "nbsphinx",
+    "sphinx.ext.napoleon",
+    "sphinx_autodoc_typehints",
 ]
 
 myst_enable_extensions = [
