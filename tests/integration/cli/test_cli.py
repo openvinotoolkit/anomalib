@@ -14,7 +14,6 @@ import pytest
 import torch
 
 from anomalib.cli import AnomalibCLI
-from anomalib.data import MVTec, UCSDped
 from anomalib.deploy.export import ExportMode
 from anomalib.models import AnomalyModule
 from anomalib.utils.types import TaskType
@@ -45,7 +44,8 @@ class TestCLI:
                 "fit",
                 "--model",
                 random_model_name,
-                *self._get_common_cli_args(random_model_name, dataset_path, project_path),
+                *self._get_data_parameters(random_model_name, dataset_path),
+                *self._get_common_cli_args(random_model_name, project_path),
                 # TODO(ashwinvaidya17): Fix these Edge cases
                 # https://github.com/openvinotoolkit/anomalib/issues/1478
                 "--data.train_batch_size",
@@ -67,7 +67,8 @@ class TestCLI:
                 "test",
                 "--model",
                 random_model_name,
-                *self._get_common_cli_args(random_model_name, dataset_path, project_path),
+                *self._get_data_parameters(random_model_name, dataset_path),
+                *self._get_common_cli_args(random_model_name, project_path),
                 "--ckpt_path",
                 f"{project_path}/{random_model_name}/dummy/weights/last.ckpt",
             ],
@@ -87,7 +88,8 @@ class TestCLI:
                 "train",
                 "--model",
                 random_model_name,
-                *self._get_common_cli_args(random_model_name, dataset_path, project_path),
+                *self._get_data_parameters(random_model_name, dataset_path),
+                *self._get_common_cli_args(random_model_name, project_path),
                 "--ckpt_path",
                 f"{project_path}/{random_model_name}/dummy/weights/last.ckpt",
             ],
@@ -107,7 +109,8 @@ class TestCLI:
                 "validate",
                 "--model",
                 random_model_name,
-                *self._get_common_cli_args(random_model_name, dataset_path, project_path),
+                *self._get_data_parameters(random_model_name, dataset_path),
+                *self._get_common_cli_args(random_model_name, project_path),
                 "--ckpt_path",
                 f"{project_path}/{random_model_name}/dummy/weights/last.ckpt",
             ],
@@ -127,9 +130,10 @@ class TestCLI:
                 "predict",
                 "--model",
                 random_model_name,
+                "--data",
+                f"{dataset_path}/mvtec/dummy/test",
                 *self._get_common_cli_args(
                     random_model_name,
-                    dataset_path,
                     project_path,
                 ),
                 "--ckpt_path",
@@ -161,31 +165,23 @@ class TestCLI:
                 random_model_name,
                 "--export_mode",
                 export_mode,
-                *self._get_common_cli_args(random_model_name, dataset_path, project_path),
+                *self._get_data_parameters(random_model_name, dataset_path),
+                *self._get_common_cli_args(random_model_name, project_path),
                 "--input_size",
                 "[256, 256]",
+                "--ckpt_path",
+                f"{project_path}/{random_model_name}/dummy/weights/last.ckpt",
             ],
         )
 
     @staticmethod
-    def _get_common_cli_args(model_name: str, dataset_path: Path, project_path: Path) -> list[str]:
+    def _get_common_cli_args(model_name: str, project_path: Path) -> list[str]:
         """Return common CLI args for all models.
 
         Args:
             model_name (str): Name of the model class.
-            dataset_path (Path): Path to the dataset.
             project_path (Path): Path to the project folder.
         """
-        # We need to set the predict dataloader as MVTec and UCSDped do have have predict_dataloader attribute defined.
-        if model_name == "AiVad":
-            data_root = f"{dataset_path}/ucsdped"
-            dataclass = "UCSDped"
-            UCSDped.predict_dataloader = UCSDped.test_dataloader
-        else:
-            data_root = f"{dataset_path}/mvtec"
-            dataclass = "MVTec"
-            MVTec.predict_dataloader = MVTec.test_dataloader
-
         task_type = TaskType.SEGMENTATION
         if model_name in ("Rkde", "AiVad"):
             task_type = TaskType.DETECTION
@@ -205,12 +201,6 @@ class TestCLI:
 
         return [
             *extra_args,
-            "--data",
-            dataclass,
-            "--data.root",
-            data_root,
-            "--data.category",
-            "dummy",
             "--results_dir.path",
             str(project_path),
             "--results_dir.unique",
@@ -230,4 +220,23 @@ class TestCLI:
             "true",
             "--trainer.callbacks.auto_insert_metric_name",
             "false",
+        ]
+
+    @staticmethod
+    def _get_data_parameters(model_name: str, dataset_path: Path) -> list[str]:
+        """Get data parameters for the CLI."""
+        if model_name == "AiVad":
+            data_root = f"{dataset_path}/ucsdped"
+            dataclass = "UCSDped"
+        else:
+            data_root = f"{dataset_path}/mvtec"
+            dataclass = "MVTec"
+
+        return [
+            "--data",
+            dataclass,
+            "--data.root",
+            data_root,
+            "--data.category",
+            "dummy",
         ]

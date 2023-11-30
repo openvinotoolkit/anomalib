@@ -10,7 +10,7 @@ from torch.utils.data import DataLoader
 
 from anomalib.data.inference import InferenceDataset
 from anomalib.engine import Engine
-from anomalib.models import AnomalyModule, get_model
+from anomalib.models import AnomalyModule
 
 
 def get_parser() -> LightningArgumentParser:
@@ -57,15 +57,13 @@ def infer(args: Namespace) -> None:
         visualization["image_save_path"] = args.output
 
     callbacks = None if not hasattr(args, "callbacks") else args.callbacks
-    engine = Engine(callbacks=callbacks, visualization=visualization)
+    engine = Engine(callbacks=callbacks, visualization=visualization, devices=1)
 
     # create the dataset
     dataset = InferenceDataset(**args.data)
     dataloader = DataLoader(dataset)
 
-    # generate predictions
-    model = get_model(args.model)
-    engine.predict(model=model, dataloaders=[dataloader], ckpt_path=args.ckpt_path)
+    engine.predict(model=args.model, dataloaders=[dataloader], ckpt_path=args.ckpt_path)
 
 
 if __name__ == "__main__":
