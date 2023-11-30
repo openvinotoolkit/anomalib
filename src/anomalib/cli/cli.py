@@ -17,14 +17,9 @@ from rich import traceback
 
 from anomalib.callbacks import get_callbacks, get_visualization_callbacks
 from anomalib.callbacks.normalization import get_normalization_callback
-from anomalib.cli.subcommands import (
-    add_onnx_export_arguments,
-    add_openvino_export_arguments,
-    add_torch_export_arguments,
-)
 from anomalib.cli.utils import CustomHelpFormatter
-from anomalib.data import AnomalibDataModule
-from anomalib.deploy import export_to_onnx, export_to_openvino, export_to_torch
+from anomalib.cli.utils.openvino import add_openvino_export_arguments
+from anomalib.data import AnomalibDataModule, AnomalibDataset
 from anomalib.engine import Engine
 from anomalib.loggers import configure_logger
 from anomalib.metrics.threshold import BaseThreshold
@@ -171,11 +166,26 @@ class AnomalibCLI(LightningCLI):
 
     def add_export_arguments(self, parser: LightningArgumentParser) -> None:
         """Add export arguments to the parser."""
-        subcommand = parser.add_subcommands(dest="export_mode", help="Export mode.")
-        # Add export mode sub parsers
-        add_torch_export_arguments(subcommand)
-        add_onnx_export_arguments(subcommand)
-        add_openvino_export_arguments(subcommand)
+        parser.add_argument(
+            "-c",
+            "--config",
+            action=ActionConfigFile,
+            help="Path to a configuration file in json or yaml format.",
+        )
+        parser.add_lightning_class_args(self.trainer_class, "trainer")
+        trainer_defaults = {"trainer." + k: v for k, v in self.trainer_defaults.items() if k != "callbacks"}
+        parser.set_defaults(trainer_defaults)
+        parser.add_lightning_class_args(AnomalyModule, "model", subclass_mode=True)
+        parser.add_subclass_arguments((AnomalibDataModule, AnomalibDataset), "data")
+        added = parser.add_method_arguments(
+            Engine,
+            "export",
+            skip={"mo_args", "datamodule", "dataset", "model"},
+        )
+        self._subcommand_method_arguments["export"] = added
+        add_openvino_export_arguments(parser)
+        self.add_arguments_to_parser(parser)
+        self.add_default_arguments_to_parser(parser)
 
     def add_hpo_arguments(self, parser: LightningArgumentParser) -> None:
         """Add hyperparameter optimization arguments."""
@@ -209,7 +219,7 @@ class AnomalibCLI(LightningCLI):
         else:
             self.config_init = self.parser.instantiate_classes(self.config)
             subcommand = self.config["subcommand"]
-            if subcommand == "train":
+            if subcommand in ("train", "export"):
                 self.engine = self.instantiate_engine()
             if "model" in self.config_init[subcommand]:
                 self.model = self._get(self.config_init, "model")
@@ -258,7 +268,7 @@ class AnomalibCLI(LightningCLI):
 
         This overrides the original ``_run_subcommand`` to run the ``Engine`` method rather than the ``Train`` method
         """
-        if self.config["subcommand"] in (*self.subcommands(), "train"):
+        if self.config["subcommand"] in (*self.subcommands(), "train", "export"):
             fn = getattr(self.engine, subcommand)
             fn_kwargs = self._prepare_subcommand_kwargs(subcommand)
             fn(**fn_kwargs)
@@ -291,6 +301,11 @@ class AnomalibCLI(LightningCLI):
         """Train the model using engine's train method."""
         return self.engine.train
 
+    @property
+    def export(self) -> Callable[..., None]:
+        """Export the model using engine's export method."""
+        return self.engine.export
+
     def hpo(self) -> None:
         """Run hpo subcommand."""
         config = self.config["hpo"]
@@ -306,38 +321,6 @@ class AnomalibCLI(LightningCLI):
         """Run benchmark subcommand."""
         config = self.config["benchmark"]
         distribute(config.config)
-
-    def export(self) -> None:
-        """Run export."""
-        export_mode = self.config.export.export_mode
-        config = self.config.export[export_mode]
-        if export_mode == "torch":
-            export_to_torch(
-                export_path=config.export_path,
-                model=config.model,
-                transform=config.transform,
-                task=config.task,
-            )
-        elif export_mode == "onnx":
-            export_to_onnx(
-                model=config.model,
-                input_size=config.input_size,
-                export_path=config.export_path,
-                transform=config.transform,
-                task=config.task,
-            )
-        elif export_mode == "openvino":
-            export_to_openvino(
-                export_path=config.export_path,
-                model=config.model,
-                input_size=config.input_size,
-                transform=config.transform,
-                task=config.task,
-                mo_args={**config.mo_args},
-            )
-        else:
-            logger.error(f"Unsupported export mode: {export_mode}")
-            raise NotImplementedError
 
 
 def main() -> None:

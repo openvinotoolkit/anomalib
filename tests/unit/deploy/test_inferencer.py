@@ -65,7 +65,7 @@ def test_torch_inference(task: TaskType, ckpt_path: Callable[[str], Path], datas
         dataset_path (Path): Path to dummy dataset.
     """
     model = Padim()
-    engine = Engine()
+    engine = Engine(task=task)
     export_path = ckpt_path("Padim").parent.parent
     datamodule = MVTec(root=dataset_path / "mvtec", category="dummy")
     engine.export(
@@ -75,7 +75,6 @@ def test_torch_inference(task: TaskType, ckpt_path: Callable[[str], Path], datas
         export_path=export_path,
         datamodule=datamodule,
         ckpt_path=str(ckpt_path("Padim")),
-        task=task,
     )
     # Test torch inferencer
     torch_inferencer = TorchInferencer(
@@ -108,7 +107,7 @@ def test_openvino_inference(task: TaskType, ckpt_path: Callable[[str], Path], da
         dataset_path (Path): Path to dummy dataset.
     """
     model = Padim()
-    engine = Engine()
+    engine = Engine(task=task)
     export_path = ckpt_path("Padim").parent.parent
     datamodule = MVTec(root=dataset_path / "mvtec", category="dummy")
     engine.export(
@@ -118,7 +117,6 @@ def test_openvino_inference(task: TaskType, ckpt_path: Callable[[str], Path], da
         export_path=export_path,
         datamodule=datamodule,
         ckpt_path=str(ckpt_path("Padim")),
-        task=task,
     )
 
     # Test OpenVINO inferencer
