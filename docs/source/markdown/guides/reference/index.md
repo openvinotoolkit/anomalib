@@ -7,74 +7,66 @@ This section contains the API and CLI reference for anomalib.
 :gutter: 1
 
 :::{grid-item-card} {octicon}`database` Data
-:link: ./data
+:link: ./data/index
 :link-type: doc
 
-Learn more about anomalib API and CLI.
+Learn more about anomalib datamodules.
 :::
 
-:::{grid-item-card} {octicon}`question` Models
+:::{grid-item-card} {octicon}`dependabot` Models
+:link: ./models/index
+:link-type: doc
 
-<!-- :link: markdown/get_started/anomalib
-:link-type: doc -->
-
-Learn how to use anomalib for your anomaly detection tasks.
+Learn more about image and video models.
 :::
 
-:::{grid-item-card} {octicon}`telescope` Engine
+:::{grid-item-card} {octicon}`gear` Engine
+:link: ./engine/index
+:link-type: doc
 
-<!-- :link: markdown/get_started/anomalib
-:link-type: doc -->
-
-Learn more about the internals of anomalib.
+Learn more about anomalib Engine.
 :::
 
-:::{grid-item-card} {octicon}`codescan` Metrics
+:::{grid-item-card} {octicon}`meter` Metrics
+:link: ./metrics/index
+:link-type: doc
 
-<!-- :link: markdown/get_started/anomalib
-:link-type: doc -->
-
-Learn more about anomalib API and CLI.
+Learn more about anomalib metrics
 :::
 
-:::{grid-item-card} {octicon}`question` Loggers
+:::{grid-item-card} {octicon}`graph` Loggers
+:link: ./loggers/index
+:link-type: doc
 
-<!-- :link: markdown/get_started/anomalib
-:link-type: doc -->
-
-Learn how to use anomalib for your anomaly detection tasks.
+Learn more about anomalib loggers
 :::
 
-:::{grid-item-card} {octicon}`telescope` Callbacks
+:::{grid-item-card} {octicon}`gear` Callbacks
+:link: ./callbacks/index
+:link-type: doc
 
-<!-- :link: markdown/get_started/anomalib
-:link-type: doc -->
-
-Learn more about the internals of anomalib.
+Learn more about anomalib callbacks
 :::
 
-:::{grid-item-card} {octicon}`codescan` CLI
+:::{grid-item-card} {octicon}`code-square` CLI
+:link: ./cli/index
+:link-type: doc
 
-<!-- :link: markdown/get_started/anomalib
-:link-type: doc -->
-
-Learn more about anomalib API and CLI.
+Learn more about anomalib CLI
 :::
 
-:::{grid-item-card} {octicon}`question` Deployment
+:::{grid-item-card} {octicon}`cpu` Deployment
+:link: ./deploy/index
+:link-type: doc
 
-<!-- :link: markdown/get_started/anomalib
-:link-type: doc -->
-
-Learn how to use anomalib for your anomaly detection tasks.
+Learn more about anomalib CLI
 :::
 
-:::{grid-item-card} {octicon}`telescope` Pipelines
+:::{grid-item-card} {octicon}`workflow` Pipelines
+:link: ./pipelines/index
+:link-type: doc
 
-<!-- :link: markdown/get_started/anomalib
-:link-type: doc -->
-
-Learn more about the internals of anomalib.
+Learn more about anomalib hpo, sweep and benchmarking pipelines
 :::
 
 ::::
@@ -83,5 +75,13 @@ Learn more about the internals of anomalib.
 :caption: Data
 :hidden:
 
-./data
+./data/index
+./models/index
+./engine/index
+./metrics/index
+./loggers/index
+./callbacks/index
+./cli/index
+./deploy/index
+./pipelines/index
 ```

@@ -49,7 +49,7 @@ Get started with anomalib in 15 minutes.
 
 ::::
 
-## {octicon}`bookmark` Guides
+## {octicon}`book` Guides
 
 ::::{grid}
 :margin: 1 1 0 0
@@ -62,15 +62,15 @@ Get started with anomalib in 15 minutes.
 Learn more about anomalib API and CLI.
 :::
 
-:::{grid-item-card} {octicon}`question` How-to Guides
-:link: markdown/get_started/anomalib
+:::{grid-item-card} {octicon}`question` How-To Guides
+:link: markdown/guides/how_to
 :link-type: doc
 
 Learn how to use anomalib for your anomaly detection tasks.
 :::
 
 :::{grid-item-card} {octicon}`telescope` Topic Guides
-:link: markdown/get_started/anomalib
+:link: markdown/guides/topic
 :link-type: doc
 
 Learn more about the internals of anomalib.

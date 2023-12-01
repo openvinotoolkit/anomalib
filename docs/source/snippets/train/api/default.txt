@@ -1,5 +1,5 @@
 # Import the required modules
-from anomalib.datasets import MVTec
+from anomalib.data import MVTec
 from anomalib.models import Patchcore
 from anomalib.engine import Engine
 
