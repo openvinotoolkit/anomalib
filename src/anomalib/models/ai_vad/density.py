@@ -8,13 +8,14 @@ from abc import ABC, abstractmethod
 from typing import Any
 
 import torch
+from torch import Tensor
+# from sklearn.mixture import GaussianMixture
+from anomalib.models.components.cluster.gmm import GaussianMixture
+from anomalib.models.components.base import DynamicBufferModule
 from torch import nn
 
 from anomalib.metrics.min_max import MinMax
 from anomalib.models.ai_vad.features import FeatureType
-
-# from sklearn.mixture import GaussianMixture
-from anomalib.models.components.cluster.gmm import GaussianMixture
 
 
 class BaseDensityEstimator(nn.Module, ABC):
@@ -138,7 +139,7 @@ class CombinedDensityEstimator(BaseDensityEstimator):
         return region_scores, image_score
 
 
-class GroupedKNNEstimator(BaseDensityEstimator):
+class GroupedKNNEstimator(DynamicBufferModule, BaseDensityEstimator):
     """Grouped KNN density estimator.
 
     Keeps track of the group (e.g. video id) from which the features were sampled for normalization purposes.
@@ -152,7 +153,11 @@ class GroupedKNNEstimator(BaseDensityEstimator):
 
         self.n_neighbors = n_neighbors
         self.memory_bank: dict[Any, list[torch.Tensor] | torch.Tensor] = {}
+        self.group_index: dict[str, int] = {}
         self.normalization_statistics = MinMax()
+
+        self.register_buffer("memory_bank_tensor", Tensor())
+        self.memory_bank_tensor: torch.Tensor = Tensor()
 
     def update(self, features: torch.Tensor, group: str | None = None) -> None:
         """Update the internal feature bank while keeping track of the group.
@@ -171,7 +176,11 @@ class GroupedKNNEstimator(BaseDensityEstimator):
     def fit(self) -> None:
         """Fit the KNN model by stacking the feature vectors and computing the normalization statistics."""
         self.memory_bank = {key: torch.vstack(value) for key, value in self.memory_bank.items()}
+        self.memory_bank_tensor = torch.vstack([features for features in self.memory_bank.values()])
+        self.group_index = torch.repeat_interleave(Tensor([features.shape[0] for features in self.memory_bank.values()]).int())
+        self.group_names = list(self.memory_bank.keys())
         self._compute_normalization_statistics()
+        del self.memory_bank
 
     def predict(
         self,
@@ -195,14 +204,12 @@ class GroupedKNNEstimator(BaseDensityEstimator):
         n_neighbors = n_neighbors or self.n_neighbors
 
         if group:
-            mem_bank = self.memory_bank.copy()
-            mem_bank.pop(group)
+            group_idx = self.group_names.index(group)
+            mem_bank = self.memory_bank_tensor[self.group_index != group_idx]
         else:
-            mem_bank = self.memory_bank
+            mem_bank = self.memory_bank_tensor
 
-        mem_bank_tensor = torch.vstack(list(mem_bank.values()))
-
-        distances = self._nearest_neighbors(mem_bank_tensor, features, n_neighbors=n_neighbors)
+        distances = self._nearest_neighbors(mem_bank, features, n_neighbors=n_neighbors)
 
         if normalize:
             distances = self._normalize(distances)
