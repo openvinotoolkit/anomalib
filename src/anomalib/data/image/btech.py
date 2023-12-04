@@ -11,7 +11,6 @@ extracts the dataset and create PyTorch data objects.
 
 import logging
 import shutil
-import subprocess
 from pathlib import Path
 
 import albumentations as A  # noqa: N812
@@ -185,51 +184,36 @@ class BTech(AnomalibDataModule):
     Args:
         root (Path | str): Path to the BTech dataset.
             Defaults to ``"./datasets/BTech"``.
-
         category (str): Name of the BTech category.
             Defaults to ``"01"``.
-
         image_size (int | tuple[int, int] | None, optional): Variable to which image is resized.
             Defaults to ``(256, 256)``.
-
         center_crop (int | tuple[int, int] | None, optional): When provided, the images will be center-cropped to the
             provided dimensions.
             Defaults to ``None``.
-
         normalization (str | InputNormalizationMethod, optional): When True, the images will be normalized to the
             ImageNet statistics.
             Defaults to ``InputNormalizationMethod.IMAGENET``.
-
         train_batch_size (int, optional): Training batch size.
             Defaults to ``32``.
-
         eval_batch_size (int, optional): Eval batch size.
             Defaults to ``32``.
-
         num_workers (int, optional): Number of workers.
             Defaults to ``8``.
-
         task (TaskType, optional): Task type.
             Defaults to ``TaskType.SEGMENTATION``.
-
         transform_config_train (str | A.Compose | None, optional): Config for pre-processing during training.
             Defaults to ``None``.
-
         transform_config_eval (str | A.Compose | None, optional): Config for pre-processing during validation.
             Defaults to ``None``.
-
         test_split_mode (TestSplitMode, optional): Setting that determines how the testing subset is obtained.
             Defaults to ``TestSplitMode.FROM_DIR``.
-
         test_split_ratio (float, optional): Fraction of images from the train set that will be reserved for testing.
             Defaults to ``0.2``.
-
         val_split_mode (ValSplitMode, optional): Setting that determines how the validation subset is obtained.
             Defaults to ``ValSplitMode.SAME_AS_TEST``.
-
         val_split_ratio (float, optional): Fraction of train or test images that will be reserved for validation.
             Defaults to ``0.5``.
-
         seed (int | None, optional): Seed which may be set to a fixed value for reproducibility.
             Defaults to ``None``.
 
@@ -388,12 +372,3 @@ class BTech(AnomalibDataModule):
                 image = cv2.imread(str(filename))
                 cv2.imwrite(str(filename.with_suffix(".png")), image)
                 filename.unlink()
-
-        # Add bash block to execute a command
-        bash_block = """
-        echo "Executing a bash command"
-        # Add your bash command here
-        """
-
-        # Execute the bash block
-        subprocess.run(["bash", "-c", bash_block], check=True, text=True, capture_output=True)
