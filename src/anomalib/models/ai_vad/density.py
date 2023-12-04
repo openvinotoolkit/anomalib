@@ -8,11 +8,13 @@ from abc import ABC, abstractmethod
 from typing import Any
 
 import torch
-from sklearn.mixture import GaussianMixture
 from torch import nn
 
 from anomalib.metrics.min_max import MinMax
 from anomalib.models.ai_vad.features import FeatureType
+
+# from sklearn.mixture import GaussianMixture
+from anomalib.models.components.cluster.gmm import GaussianMixture
 
 
 class BaseDensityEstimator(nn.Module, ABC):
@@ -261,7 +263,7 @@ class GMMEstimator(BaseDensityEstimator):
 
         # TODO(djdameln): Replace with custom pytorch implementation of GMM
         # CVS-109432
-        self.gmm = GaussianMixture(n_components=n_components, random_state=0)
+        self.gmm = GaussianMixture(n_components=n_components)
         self.memory_bank: list[torch.Tensor] | torch.Tensor = []
 
         self.normalization_statistics = MinMax()
@@ -275,7 +277,7 @@ class GMMEstimator(BaseDensityEstimator):
     def fit(self) -> None:
         """Fit the GMM and compute normalization statistics."""
         self.memory_bank = torch.vstack(self.memory_bank)
-        self.gmm.fit(self.memory_bank.cpu())
+        self.gmm.fit(self.memory_bank)
         self._compute_normalization_statistics()
 
     def predict(self, features: torch.Tensor, normalize: bool = True) -> torch.Tensor:
@@ -288,7 +290,7 @@ class GMMEstimator(BaseDensityEstimator):
         Returns:
             Tensor: Density scores of the input feature vectors.
         """
-        density = -self.gmm.score_samples(features.cpu())
+        density = -self.gmm.score_samples(features)
         density = torch.Tensor(density).to(self.normalization_statistics.device)
         if normalize:
             density = self._normalize(density)
