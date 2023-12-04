@@ -51,15 +51,18 @@ class AnomalibDataModule(LightningDataModule, ABC):
 
     Args:
         train_batch_size (int): Batch size used by the train dataloader.
-        test_batch_size (int): Batch size used by the val and test dataloaders.
+        eval_batch_size (int): Batch size used by the val and test dataloaders.
         num_workers (int): Number of workers used by the train, val and test dataloaders.
-        test_split_mode (Optional[TestSplitMode], optional): Determines how the test split is obtained.
-            Options: [none, from_dir, synthetic]
-        test_split_ratio (float): Fraction of the train images held out for testing.
-        val_split_mode (ValSplitMode): Determines how the validation split is obtained. Options: [none, same_as_test,
-            from_test, synthetic]
+        val_split_mode (ValSplitMode): Determines how the validation split is obtained.
+            Options: [none, same_as_test, from_test, synthetic]
         val_split_ratio (float): Fraction of the train or test images held our for validation.
+        test_split_mode (Optional[TestSplitMode], optional): Determines how the test split is obtained.
+            Options: [none, from_dir, synthetic].
+            Defaults to ``None``.
+        test_split_ratio (float): Fraction of the train images held out for testing.
+            Defaults to ``None``.
         seed (int | None, optional): Seed used during random subset splitting.
+            Defaults to ``None``.
     """
 
     def __init__(
@@ -93,7 +96,8 @@ class AnomalibDataModule(LightningDataModule, ABC):
         """Set up train, validation and test data.
 
         Args:
-          stage: str | None:  Train/Val/Test stages. (Default value = None)
+            stage: str | None:  Train/Val/Test stages.
+                Defaults to ``None``.
         """
         if not self.is_setup:
             self._setup(stage)
@@ -104,10 +108,12 @@ class AnomalibDataModule(LightningDataModule, ABC):
 
         This method may be overridden in subclass for custom splitting behaviour.
 
-        Note: The stage argument is not used here. This is because, for a given instance of an AnomalibDataModule
-        subclass, all three subsets are created at the first call of setup(). This is to accommodate the subset
-        splitting behaviour of anomaly tasks, where the validation set is usually extracted from the test set, and
-        the test set must therefore be created as early as the `fit` stage.
+        Note:
+            The stage argument is not used here. This is because, for a given instance of an AnomalibDataModule
+            subclass, all three subsets are created at the first call of setup(). This is to accommodate the subset
+            splitting behaviour of anomaly tasks, where the validation set is usually extracted from the test set, and
+            the test set must therefore be created as early as the `fit` stage.
+
         """
         assert self.train_data is not None
         assert self.test_data is not None

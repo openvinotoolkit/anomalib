@@ -39,7 +39,8 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
         transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
         clip_length_in_frames (int): Number of video frames in each clip.
         frames_between_clips (int): Number of frames between each consecutive video clip.
-        target_frame (VideoTargetFrame): Specifies the target frame in the video clip, used for ground truth retrieval
+        target_frame (VideoTargetFrame): Specifies the target frame in the video clip, used for ground truth retrieval.
+            Defaults to ``VideoTargetFrame.LAST``.
     """
 
     def __init__(
@@ -73,7 +74,14 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
 
     @samples.setter
     def samples(self, samples: DataFrame) -> None:
-        """Overwrite samples and re-index subvideos."""
+        """Overwrite samples and re-index subvideos.
+
+        Args:
+            samples (DataFrame): DataFrame with new samples.
+
+        Raises:
+            ValueError: If the indexer class is not set.
+        """
         super(AnomalibVideoDataset, self.__class__).samples.fset(self, samples)  # type: ignore[attr-defined]
         self._setup_clips()
 
@@ -91,6 +99,17 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
         )
 
     def _select_targets(self, item: dict[str, Any]) -> dict[str, Any]:
+        """Select the target frame from the clip.
+
+        Args:
+            item (dict[str, Any]): Item containing the clip information.
+
+        Raises:
+            ValueError: If the target frame is not one of the supported options.
+
+        Returns:
+            dict[str, Any]: Selected item from the clip.
+        """
         if self.target_frame == VideoTargetFrame.FIRST:
             idx = 0
         elif self.target_frame == VideoTargetFrame.LAST:
@@ -114,7 +133,14 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
         return item
 
     def __getitem__(self, index: int) -> dict[str, str | torch.Tensor]:
-        """Return mask, clip and file system information."""
+        """Get the dataset item for the index ``index``.
+
+        Args:
+            index (int): Index of the item to be returned.
+
+        Returns:
+            dict[str, str | torch.Tensor]: Dictionary containing the mask, clip and file system information.
+        """
         assert isinstance(self.indexer, ClipsIndexer)
 
         item = self.indexer.get_item(index)

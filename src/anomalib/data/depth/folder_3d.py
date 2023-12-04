@@ -43,23 +43,27 @@ def make_folder3d_dataset(
     Args:
         normal_dir (str | Path): Path to the directory containing normal images.
         root (str | Path | None): Path to the root directory of the dataset.
+            Defaults to ``None``.
         abnormal_dir (str | Path | None, optional): Path to the directory containing abnormal images.
-        normal_test_dir (str | Path | None, optional): Path to the directory containing
-            normal images for the test dataset. Normal test images will be a split of `normal_dir`
-            if `None`. Defaults to None.
-        mask_dir (str | Path | None, optional): Path to the directory containing
-            the mask annotations. Defaults to None.
+            Defaults to ``None``.
+        normal_test_dir (str | Path | None, optional): Path to the directory containing normal images for the test
+        dataset. Normal test images will be a split of `normal_dir` if `None`.
+            Defaults to ``None``.
+        mask_dir (str | Path | None, optional): Path to the directory containing the mask annotations.
+            Defaults to ``None``.
         normal_depth_dir (str | Path | None, optional): Path to the directory containing
             normal depth images for the test dataset. Normal test depth images will be a split of `normal_dir`
-        abnormal_depth_dir (str | Path | None, optional): Path to the directory containing
-            abnormal depth images for the test dataset.
-        normal_test_depth_dir (str | Path | None, optional): Path to the directory containing
-            normal depth images for the test dataset. Normal test images will be a split of `normal_dir`
-            if `None`. Defaults to None.
+            Defaults to ``None``.
+        abnormal_depth_dir (str | Path | None, optional): Path to the directory containing abnormal depth images for
+            the test dataset.
+            Defaults to ``None``.
+        normal_test_depth_dir (str | Path | None, optional): Path to the directory containing normal depth images for
+            the test dataset. Normal test images will be a split of `normal_dir` if `None`.
+            Defaults to ``None``.
         split (str | Split | None, optional): Dataset split (ie., Split.FULL, Split.TRAIN or Split.TEST).
-            Defaults to None.
-        extensions (tuple[str, ...] | None, optional): Type of the image extensions to read from the
-            directory.
+            Defaults to ``None``.
+        extensions (tuple[str, ...] | None, optional): Type of the image extensions to read from the directory.
+            Defaults to ``None``.
 
     Returns:
         DataFrame: an output dataframe containing samples for the requested split (ie., train or test)
@@ -185,25 +189,31 @@ class Folder3DDataset(AnomalibDepthDataset):
     Args:
         task (TaskType): Task type. (``classification``, ``detection`` or ``segmentation``).
         transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
-        split (str | Split | None): Fixed subset split that follows from folder structure on file system.
-            Choose from [Split.FULL, Split.TRAIN, Split.TEST]
         normal_dir (str | Path): Path to the directory containing normal images.
         root (str | Path | None): Root folder of the dataset.
+            Defaults to ``None``.
         abnormal_dir (str | Path | None, optional): Path to the directory containing abnormal images.
+            Defaults to ``None``.
         normal_test_dir (str | Path | None, optional): Path to the directory containing
-            normal images for the test dataset. Defaults to None.
+            normal images for the test dataset.
+            Defaults to ``None``.
         mask_dir (str | Path | None, optional): Path to the directory containing
-            the mask annotations. Defaults to None.
+            the mask annotations.
+            Defaults to ``None``.
         normal_depth_dir (str | Path | None, optional): Path to the directory containing
             normal depth images for the test dataset. Normal test depth images will be a split of `normal_dir`
-        abnormal_depth_dir (str | Path | None, optional): Path to the directory containing
-            abnormal depth images for the test dataset.
+            Defaults to ``None``.
+        abnormal_depth_dir (str | Path | None, optional): Path to the directory containing abnormal depth images for
+            the test dataset.
+            Defaults to ``None``.
         normal_test_depth_dir (str | Path | None, optional): Path to the directory containing
-            normal depth images for the test dataset. Normal test images will be a split of `normal_dir`
-            if `None`. Defaults to None.
-        extensions (tuple[str, ...] | None, optional): Type of the image extensions to read from the
-            directory.
-        val_split_mode (ValSplitMode): Setting that determines how the validation subset is obtained.
+            normal depth images for the test dataset. Normal test images will be a split of `normal_dir` if `None`.
+            Defaults to ``None``.
+        split (str | Split | None): Fixed subset split that follows from folder structure on file system.
+            Choose from [Split.FULL, Split.TRAIN, Split.TEST]
+            Defaults to ``None``.
+        extensions (tuple[str, ...] | None, optional): Type of the image extensions to read from the directory.
+            Defaults to ``None``.
 
     Raises:
         ValueError: When task is set to classification and `mask_dir` is provided. When `mask_dir` is
@@ -259,14 +269,15 @@ class Folder3D(AnomalibDataModule):
 
     Args:
         normal_dir (str | Path): Name of the directory containing normal images.
-            Defaults to "normal".
         root (str | Path | None): Path to the root folder containing normal and abnormal dirs.
+            Defaults to ``None``.
         abnormal_dir (str | Path | None): Name of the directory containing abnormal images.
-            Defaults to "abnormal".
-        normal_test_dir (str | Path | None, optional): Path to the directory containing
-            normal images for the test dataset. Defaults to None.
-        mask_dir (str | Path | None, optional): Path to the directory containing
-            the mask annotations. Defaults to None.
+            Defaults to ``abnormal``.
+        normal_test_dir (str | Path | None, optional): Path to the directory containing normal images for the test
+            dataset.
+            Defaults to ``None``.
+        mask_dir (str | Path | None, optional): Path to the directory containing the mask annotations.
+            Defaults to ``None``.
         normal_depth_dir (str | Path | None, optional): Path to the directory containing
             normal depth images for the test dataset. Normal test depth images will be a split of `normal_dir`
         abnormal_depth_dir (str | Path | None, optional): Path to the directory containing
@@ -281,25 +292,33 @@ class Folder3D(AnomalibDataModule):
             directory. Defaults to None.
         image_size (int | tuple[int, int] | None, optional): Size of the input image.
             Defaults to None.
-        center_crop (int | tuple[int, int] | None, optional): When provided, the images will be center-cropped
-            to the provided dimensions.
-        normalize (bool): When True, the images will be normalized to the ImageNet statistics.
-        train_batch_size (int, optional): Training batch size. Defaults to 32.
-        test_batch_size (int, optional): Test batch size. Defaults to 32.
-        num_workers (int, optional): Number of workers. Defaults to 8.
+        center_crop (int | tuple[int, int] | None, optional): When provided, the images will be center-cropped to the
+            provided dimensions.
+            Defaults to ``None``.
+        normalization (str | InputNormalizationMethod): Normalization method to apply to the input images.
+            Defaults to ``InputNormalizationMethod.IMAGENET``.
+        train_batch_size (int, optional): Training batch size.
+            Defaults to ``32``.
+        eval_batch_size (int, optional): Test batch size.
+            Defaults to ``32``.
+        num_workers (int, optional): Number of workers.
+            Defaults to ``8``.
         task (TaskType, optional): Task type. Could be ``classification``, ``detection`` or ``segmentation``.
-            Defaults to segmentation.
-        transform_config_train (str | A.Compose | None, optional): Config for pre-processing
-            during training.
-            Defaults to None.
-        transform_config_val (str | A.Compose | None, optional): Config for pre-processing
-            during validation.
-            Defaults to None.
+            Defaults to ``TaskType.SEGMENTATION``.
+        transform_config_train (str | A.Compose | None, optional): Config for pre-processing during training.
+            Defaults to ``None``.
+        transform_config_val (str | A.Compose | None, optional): Config for pre-processing during validation.
+            Defaults to ``None``.
         test_split_mode (TestSplitMode): Setting that determines how the testing subset is obtained.
+            Defaults to ``TestSplitMode.FROM_DIR``.
         test_split_ratio (float): Fraction of images from the train set that will be reserved for testing.
+            Defaults to ``0.2``.
         val_split_mode (ValSplitMode): Setting that determines how the validation subset is obtained.
+            Defaults to ``ValSplitMode.FROM_TEST``.
         val_split_ratio (float): Fraction of train or test images that will be reserved for validation.
+            Defaults to ``0.5``.
         seed (int | None, optional): Seed used during random subset splitting.
+            Defaults to ``None``.
     """
 
     def __init__(
