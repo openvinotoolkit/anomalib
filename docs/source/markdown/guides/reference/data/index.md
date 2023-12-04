@@ -4,22 +4,29 @@
 
 ::::{grid}
 
+:::{grid-item-card} {octicon}`copy` Base Classes
+:link: ./base/index
+:link-type: doc
+
+Learn more about anomalib API and CLI.
+:::
+
 :::{grid-item-card} {octicon}`file-media` Image
-:link: ./image
+:link: ./image/index
 :link-type: doc
 
 Learn more about anomalib API and CLI.
 :::
 
 :::{grid-item-card} {octicon}`video` Video
-:link: ./video
+:link: ./video/index
 :link-type: doc
 
 Learn more about anomalib API and CLI.
 :::
 
 :::{grid-item-card} {octicon}`database` Depth
-:link: ./depth
+:link: ./depth/index
 :link-type: doc
 
 Learn more about anomalib API and CLI.
@@ -31,8 +38,8 @@ Learn more about anomalib API and CLI.
 :caption: Data
 :hidden:
 
-./image
-./video
-./depth
+./image/index
+./video/index
+./depth/index
 ./utils/index
 ```
