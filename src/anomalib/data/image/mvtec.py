@@ -1,23 +1,28 @@
 """MVTec AD Dataset (CC BY-NC-SA 4.0).
 
-Description:
-    This script contains PyTorch Dataset, Dataloader and PyTorch
-        Lightning DataModule for the MVTec AD dataset.
-    If the dataset is not on the file system, the script downloads and
-        extracts the dataset and create PyTorch data objects.
-License:
-    MVTec AD dataset is released under the Creative Commons
-    Attribution-NonCommercial-ShareAlike 4.0 International License
-    (CC BY-NC-SA 4.0)(https://creativecommons.org/licenses/by-nc-sa/4.0/).
-Reference:
-    - Paul Bergmann, Kilian Batzner, Michael Fauser, David Sattlegger, Carsten Steger:
-      The MVTec Anomaly Detection Dataset: A Comprehensive Real-World Dataset for
-      Unsupervised Anomaly Detection; in: International Journal of Computer Vision
-      129(4):1038-1059, 2021, DOI: 10.1007/s11263-020-01400-4.
-    - Paul Bergmann, Michael Fauser, David Sattlegger, Carsten Steger: MVTec AD —
-      A Comprehensive Real-World Dataset for Unsupervised Anomaly Detection;
-      in: IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR),
-      9584-9592, 2019, DOI: 10.1109/CVPR.2019.00982.
+Description
+-----------
+This script contains PyTorch Dataset, Dataloader and PyTorch Lightning
+DataModule for the MVTec AD dataset. If the dataset is not on the file system,
+the script downloads and extracts the dataset and create PyTorch data objects.
+
+License
+--------
+MVTec AD dataset is released under the Creative Commons
+Attribution-NonCommercial-ShareAlike 4.0 International License
+(CC BY-NC-SA 4.0)(https://creativecommons.org/licenses/by-nc-sa/4.0/).
+
+References:
+----------
+- Paul Bergmann, Kilian Batzner, Michael Fauser, David Sattlegger, Carsten Steger:
+The MVTec Anomaly Detection Dataset: A Comprehensive Real-World Dataset for
+Unsupervised Anomaly Detection; in: International Journal of Computer Vision
+129(4):1038-1059, 2021, DOI: 10.1007/s11263-020-01400-4.
+
+- Paul Bergmann, Michael Fauser, David Sattlegger, Carsten Steger: MVTec AD —
+A Comprehensive Real-World Dataset for Unsupervised Anomaly Detection;
+in: IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR),
+9584-9592, 2019, DOI: 10.1109/CVPR.2019.00982.
 """
 
 # Copyright (C) 2022 Intel Corporation
@@ -87,16 +92,19 @@ def make_mvtec_dataset(
         path/to/dataset/ground_truth/category/mask_filename.png
 
     This function creates a dataframe to store the parsed information based on the following format:
-    |---|---------------|-------|---------|---------------|---------------------------------------|-------------|
+
+    +---+---------------+-------+---------+---------------+---------------------------------------+-------------+
     |   | path          | split | label   | image_path    | mask_path                             | label_index |
-    |---|---------------|-------|---------|---------------|---------------------------------------|-------------|
-    | 0 | datasets/name |  test |  defect |  filename.png | ground_truth/defect/filename_mask.png | 1           |
-    |---|---------------|-------|---------|---------------|---------------------------------------|-------------|
+    +===+===============+=======+=========+===============+=======================================+=============+
+    | 0 | datasets/name | test  | defect  | filename.png  | ground_truth/defect/filename_mask.png | 1           |
+    +---+---------------+-------+---------+---------------+---------------------------------------+-------------+
 
     Args:
         root (Path): Path to dataset
-        split (str | Split | None, optional): Dataset split (ie., either train or test). Defaults to None.
+        split (str | Split | None, optional): Dataset split (ie., either train or test).
+            Defaults to ``None``.
         extensions (Sequence[str] | None, optional): List of file extensions to be included in the dataset.
+            Defaults to ``None``.
 
     Examples:
         The following example shows how to get training samples from MVTec AD bottle category:
@@ -169,11 +177,14 @@ class MVTecDataset(AnomalibDataset):
     """MVTec dataset class.
 
     Args:
-        task (TaskType): Task type, ``classification``, ``detection`` or ``segmentation``
+        task (TaskType): Task type, ``classification``, ``detection`` or ``segmentation``.
         transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
-        split (str | Split | None): Split of the dataset, usually Split.TRAIN or Split.TEST
-        root (Path | str): Path to the root of the dataset
+        root (Path | str): Path to the root of the dataset.
+            Defaults to ``./datasets/MVTec``.
         category (str): Sub-category of the dataset, e.g. 'bottle'
+            Defaults to ``bottle``.
+        split (str | Split | None): Split of the dataset, usually Split.TRAIN or Split.TEST
+            Defaults to ``None``.
     """
 
     def __init__(
@@ -197,7 +208,9 @@ class MVTec(AnomalibDataModule):
     """MVTec Datamodule.
 
     Args:
-        root (Path | str): Path to the root of the dataset
+        root (Path | str): Path to the root of the dataset.
+            Defaults to ``"./datasets/MVTec"``.
+
         category (str): Category of the MVTec dataset (e.g. "bottle" or "cable").
         image_size (int | tuple[int, int] | None, optional): Size of the input image.
             Defaults to None.
@@ -283,7 +296,45 @@ class MVTec(AnomalibDataModule):
         )
 
     def prepare_data(self) -> None:
-        """Download the dataset if not available."""
+        """Download the dataset if not available.
+
+        This method checks if the specified dataset is available in the file system.
+        If not, it downloads and extracts the dataset into the appropriate directory.
+
+        Examples:
+            Assume the dataset is not available on the file system.
+            Here's how the directory structure looks before and after calling the
+            `prepare_data` method:
+
+            Before:
+
+            .. code-block:: bash
+
+                $ tree datasets
+                datasets
+                ├── dataset1
+                └── dataset2
+
+            Calling the method:
+
+            .. code-block:: python
+
+                >> datamodule = MVTec(root="./datasets/MVTec", category="bottle")
+                >> datamodule.prepare_data()
+
+            After:
+
+            .. code-block:: bash
+
+                $ tree datasets
+                datasets
+                ├── dataset1
+                ├── dataset2
+                └── MVTec
+                    ├── bottle
+                    ├── ...
+                    └── zipper
+        """
         if (self.root / self.category).is_dir():
             logger.info("Found the dataset.")
         else:

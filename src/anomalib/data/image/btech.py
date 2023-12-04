@@ -9,9 +9,9 @@ extracts the dataset and create PyTorch data objects.
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 import logging
 import shutil
+import subprocess
 from pathlib import Path
 
 import albumentations as A  # noqa: N812
