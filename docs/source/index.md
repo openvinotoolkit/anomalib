@@ -91,5 +91,6 @@ markdown/get_started/anomalib
 
 markdown/guides/reference/index
 markdown/guides/how_to
+markdown/guides/how_to/backbones
 markdown/guides/topic
 ```
