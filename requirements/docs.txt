@@ -4,4 +4,5 @@ pandoc
 sphinx
 sphinx_autodoc_typehints
 sphinx_book_theme
+sphinx-copybutton
 sphinx_design

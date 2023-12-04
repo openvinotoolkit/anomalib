@@ -34,6 +34,7 @@ extensions = [
     "nbsphinx",
     "sphinx.ext.napoleon",
     "sphinx_autodoc_typehints",
+    "sphinx_copybutton",
 ]
 
 myst_enable_extensions = [
