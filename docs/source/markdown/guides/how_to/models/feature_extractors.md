@@ -1,16 +1,24 @@
-# Feature extractor backbone
+# Feature extractors
 
 ```{warning}
 This section is under construction 🚧
 ```
 
-This guide contains information on backbone selection for models that use pretrained backbones.
+This guide demonstrates how different backboes can be used as feature extractors for anomaly detection models. Here we
+we show how to use API and CLI to use different backbones as feature extractors.
 
+::::{tab-set}
+
+:::{tab-item} API
 Models can use either Timm Feature Extractor or TorchFx Feature Extractor, but when selecting backbone through config, the implementation is not really important.
 
 ```{seealso}
 For specifics of implementation refer to implementation classes {py:class}`Timm Feature Extractor <anomalib.models.components.feature_extractors.TimmFeatureExtractor>` and {py:class}`TorchFx Feature Extractor <anomalib.models.components.feature_extractors.TorchFXFeatureExtractor>`
 ```
+
+:::
+
+:::{tab-item} CLI
 
 ## Backbone config
 
@@ -36,4 +44,7 @@ model:
 
 ## Available backbones and layers
 
-List timm and torchfx layers and how to find them (layer4 is same as layer4.something AKA last out...). 
+List timm and torchfx layers and how to find them (layer4 is same as layer4.something AKA last out...).
+:::
+
+::::
