@@ -1,4 +1,4 @@
-# Visa Dataset
+# Visa Data
 
 ```{eval-rst}
 .. automodule:: anomalib.data.image.visa

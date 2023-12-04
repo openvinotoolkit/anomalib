@@ -1,4 +1,4 @@
-# Folder Dataset
+# Folder Data
 
 ```{eval-rst}
 .. automodule:: anomalib.data.image.folder

@@ -1,4 +1,4 @@
-# Image Datasets
+# Image Data
 
 ::::{grid}
 
@@ -6,21 +6,21 @@
 :link: ./btech
 :link-type: doc
 
-Learn more about anomalib API and CLI.
+Learn more about BTech dataset.
 :::
 
 :::{grid-item-card} Folder
 :link: ./folder
 :link-type: doc
 
-Learn more about anomalib API and CLI.
+Learn more about custom folder dataset.
 :::
 
 :::{grid-item-card} Kolektor
 :link: ./kolektor
 :link-type: doc
 
-Learn more about anomalib API and CLI.
+Learn more about Kolektor dataset.
 :::
 
 :::{grid-item-card} MVTec 2D

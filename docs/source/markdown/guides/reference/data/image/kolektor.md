@@ -1,4 +1,4 @@
-# Kolektor Dataset
+# Kolektor Data
 
 ```{eval-rst}
 .. automodule:: anomalib.data.image.kolektor

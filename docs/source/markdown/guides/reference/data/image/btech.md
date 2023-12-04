@@ -1,4 +1,4 @@
-#  BTech Dataset
+#  BTech Data
 
 ```{eval-rst}
 .. automodule:: anomalib.data.image.btech

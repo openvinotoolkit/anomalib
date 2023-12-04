@@ -1,4 +1,4 @@
-# MVTec Dataset
+# MVTec Data
 
 ```{eval-rst}
 .. automodule:: anomalib.data.image.mvtec
