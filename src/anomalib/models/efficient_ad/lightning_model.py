@@ -122,7 +122,7 @@ class EfficientAd(AnomalyModule):
         self.imagenet_loader = DataLoader(imagenet_dataset, batch_size=self.batch_size, shuffle=True, pin_memory=True)
         self.imagenet_iterator = iter(self.imagenet_loader)
 
-    @torch.inference_mode()
+    @torch.no_grad()
     def teacher_channel_mean_std(self, dataloader: DataLoader) -> dict[str, Tensor]:
         """Calculate the mean and std of the teacher models activations.
         Adapted from https://math.stackexchange.com/a/2148949
@@ -138,6 +138,8 @@ class EfficientAd(AnomalyModule):
         n: torch.Tensor | None = None
         chanel_sum: torch.Tensor | None = None
         chanel_sum_sqr: torch.Tensor | None = None
+
+        self.model.teacher.eval()
 
         for batch in tqdm.tqdm(dataloader, desc="Calculate teacher channel mean & std", position=0, leave=True):
             y = self.model.teacher(batch["image"].to(self.device))
@@ -158,6 +160,8 @@ class EfficientAd(AnomalyModule):
 
         channel_std = (torch.sqrt((chanel_sum_sqr / n) - (channel_mean**2))).float()[None, :, None, None]
         channel_mean = channel_mean.float()[None, :, None, None]
+
+        self.model.teacher.train()
 
         return {"mean": channel_mean, "std": channel_std}
 
