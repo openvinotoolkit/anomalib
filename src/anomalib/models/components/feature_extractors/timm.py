@@ -28,17 +28,20 @@ class TimmFeatureExtractor(nn.Module):
             computation is required.
 
     Example:
-        >>> import torch
-        >>> from anomalib.models.components.feature_extractors import TimmFeatureExtractor
+        .. code-block:: python
 
-        >>> model = TimmFeatureExtractor(model="resnet18", layers=['layer1', 'layer2', 'layer3'])
-        >>> input = torch.rand((32, 3, 256, 256))
-        >>> features = model(input)
+            import torch
+            from anomalib.models.components.feature_extractors import TimmFeatureExtractor
 
-        >>> [layer for layer in features.keys()]
-            ['layer1', 'layer2', 'layer3']
-        >>> [feature.shape for feature in features.values()]
-            [torch.Size([32, 64, 64, 64]), torch.Size([32, 128, 32, 32]), torch.Size([32, 256, 16, 16])]
+            model = TimmFeatureExtractor(model="resnet18", layers=['layer1', 'layer2', 'layer3'])
+            input = torch.rand((32, 3, 256, 256))
+            features = model(input)
+
+            print([layer for layer in features.keys()])
+            # Output: ['layer1', 'layer2', 'layer3']
+
+            print([feature.shape for feature in features.values()]()
+            # Output: [torch.Size([32, 64, 64, 64]), torch.Size([32, 128, 32, 32]), torch.Size([32, 256, 16, 16])]
     """
 
     def __init__(self, backbone: str, layers: list[str], pre_trained: bool = True, requires_grad: bool = False) -> None:
@@ -105,6 +108,14 @@ class TimmFeatureExtractor(nn.Module):
 
         Returns:
             Feature map extracted from the CNN
+
+        Example:
+            .. code-block:: python
+
+                model = TimmFeatureExtractor(model="resnet50", layers=['layer3'])
+                input = torch.rand((32, 3, 256, 256))
+                features = model.forward(input)
+
         """
         if self.requires_grad:
             features = dict(zip(self.layers, self.feature_extractor(inputs), strict=True))
@@ -118,7 +129,8 @@ class TimmFeatureExtractor(nn.Module):
 class FeatureExtractor(TimmFeatureExtractor):
     """Compatibility wrapper for the old FeatureExtractor class.
 
-    See :class:`anomalib.models.components.feature_extractors.timm.TimmFeatureExtractor` for more details.
+    .. deprecated:: 1.0.0
+        Use :class:`anomalib.models.components.feature_extractors.TimmFeatureExtractor` instead
     """
 
     def __init__(self, *args, **kwargs) -> None:
