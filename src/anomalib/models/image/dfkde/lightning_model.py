@@ -24,21 +24,23 @@ class Dfkde(MemoryBankMixin, AnomalyModule):
 
     Args:
         backbone (str): Pre-trained model backbone.
+            Defaults to ``"resnet18"``.
+        layers (Sequence[str], optional): Layers to extract features from.
+            Defaults to ``("layer4",)``.
         pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.
+            Defaults to ``True``.
+        n_pca_components (int, optional): Number of PCA components.
+            Defaults to ``16``.
+        feature_scaling_method (FeatureScalingMethod, optional): Feature scaling method.
+            Defaults to ``FeatureScalingMethod.SCALE``.
         max_training_points (int, optional): Number of training points to fit the KDE model.
-            Defaults to 40000.
-        pre_processing (str, optional): Preprocess features before passing to KDE.
-            Options are between `norm` and `scale`. Defaults to "scale".
-        n_components (int, optional): Number of PCA components. Defaults to 16.
-        threshold_steepness (float, optional): Controls how quickly the value saturates around zero.
-            Defaults to 0.05.
-        threshold_offset (float, optional): Offset of the density function from 0. Defaults to 12.0.
+            Defaults to ``40000``.
     """
 
     def __init__(
         self,
-        layers: Sequence[str] = ("layer4",),
         backbone: str = "resnet18",
+        layers: Sequence[str] = ("layer4",),
         pre_trained: bool = True,
         n_pca_components: int = 16,
         feature_scaling_method: FeatureScalingMethod = FeatureScalingMethod.SCALE,
