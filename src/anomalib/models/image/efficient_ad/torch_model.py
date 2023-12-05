@@ -41,7 +41,8 @@ def reduce_tensor_elems(tensor: torch.Tensor, m: int = 2**24) -> torch.Tensor:
 
     Args:
         tensor (torch.Tensor): input tensor from which elements are selected
-        m (int): number of maximum tensor elements. Default: 2**24
+        m (int): number of maximum tensor elements.
+            Defaults to ``2**24``
 
     Returns:
             Tensor: reduced tensor
@@ -67,6 +68,8 @@ class SmallPatchDescriptionNetwork(nn.Module):
 
     Args:
         out_channels (int): number of convolution output channels
+        padding (bool): use padding in convoluional layers
+            Defaults to ``False``.
     """
 
     def __init__(self, out_channels: int, padding: bool = False) -> None:
@@ -102,6 +105,8 @@ class MediumPatchDescriptionNetwork(nn.Module):
 
     Args:
         out_channels (int): number of convolution output channels
+        padding (bool): use padding in convoluional layers
+            Defaults to ``False``.
     """
 
     def __init__(self, out_channels: int, padding: bool = False) -> None:
@@ -259,13 +264,13 @@ class EfficientAdModel(nn.Module):
 
     Args:
         teacher_out_channels (int): number of convolution output channels of the pre-trained teacher model
-        pretrained_models_dir (str): path to the pretrained model weights
         input_size (tuple): size of input images
         model_size (str): size of student and teacher model
         padding (bool): use padding in convoluional layers
+            Defaults to ``False``.
         pad_maps (bool): relevant if padding is set to False. In this case, pad_maps = True pads the
             output anomaly maps so that their size matches the size in the padding = True case.
-        device (str): which device the model should be loaded on
+            Defaults to ``True``.
     """
 
     def __init__(
