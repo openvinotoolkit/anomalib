@@ -36,6 +36,8 @@ from anomalib.data.utils import (
 )
 from anomalib.utils.types import TaskType
 
+__all__ = ["Kolektor", "KolektorDataset", "make_kolektor_dataset"]
+
 logger = logging.getLogger(__name__)
 
 DOWNLOAD_INFO = DownloadInfo(
@@ -91,8 +93,10 @@ def make_kolektor_dataset(
 
     Args:
         root (Path): Path to the dataset.
-        train_split_ratio (float, optional): Ratio for splitting good images into train/test sets. Defaults to 0.8.
-        split (str | Split | None, optional): Dataset split (either 'train' or 'test'). Defaults to None.
+        train_split_ratio (float, optional): Ratio for splitting good images into train/test sets.
+            Defaults to ``0.8``.
+        split (str | Split | None, optional): Dataset split (either 'train' or 'test').
+            Defaults to ``None``.
 
     Returns:
         pandas.DataFrame: An output DataFrame containing the samples of the dataset.
@@ -209,9 +213,10 @@ class Kolektor(AnomalibDataModule):
     Args:
         root (Path | str): Path to the root of the dataset
         image_size (int | tuple[int, int] | None, optional): Size of the input image.
-            Defaults to None.
+            Defaults to ``None``.
         center_crop (int | tuple[int, int] | None, optional): When provided, the images will be center-cropped
             to the provided dimensions.
+            Defaults to ``None``.
         normalization (str | InputNormalizationMethod): Normalization method to apply to the input images.
             Defaults to ``InputNormalizationMethod.IMAGENET``.
         train_batch_size (int, optional): Training batch size.
