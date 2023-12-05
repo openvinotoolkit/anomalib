@@ -11,7 +11,11 @@ from torch.nn import functional as F  # noqa: N812
 
 
 class AnomalyMapGenerator(nn.Module):
-    """Generate Anomaly Heatmap."""
+    """Generate Anomaly Heatmap.
+
+    Args:
+        input_size (ListConfig | tuple): Input size.
+    """
 
     def __init__(self, input_size: ListConfig | tuple) -> None:
         super().__init__()
