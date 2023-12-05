@@ -5,17 +5,14 @@
 
 
 from abc import ABC, abstractmethod
-from typing import Any
 
 import torch
-from torch import Tensor
-# from sklearn.mixture import GaussianMixture
-from anomalib.models.components.cluster.gmm import GaussianMixture
-from anomalib.models.components.base import DynamicBufferModule
-from torch import nn
+from torch import Tensor, nn
 
 from anomalib.metrics.min_max import MinMax
 from anomalib.models.ai_vad.features import FeatureType
+from anomalib.models.components.base import DynamicBufferModule
+from anomalib.models.components.cluster.gmm import GaussianMixture
 
 
 class BaseDensityEstimator(nn.Module, ABC):
@@ -152,12 +149,12 @@ class GroupedKNNEstimator(DynamicBufferModule, BaseDensityEstimator):
         super().__init__()
 
         self.n_neighbors = n_neighbors
-        self.memory_bank: dict[Any, list[torch.Tensor] | torch.Tensor] = {}
+        self.feature_collection: dict[str, list[torch.Tensor]] = {}
         self.group_index: dict[str, int] = {}
         self.normalization_statistics = MinMax()
 
         self.register_buffer("memory_bank_tensor", Tensor())
-        self.memory_bank_tensor: torch.Tensor = Tensor()
+        self.memory_bank: torch.Tensor = Tensor()
 
     def update(self, features: torch.Tensor, group: str | None = None) -> None:
         """Update the internal feature bank while keeping track of the group.
@@ -168,19 +165,24 @@ class GroupedKNNEstimator(DynamicBufferModule, BaseDensityEstimator):
         """
         group = group or "default"
 
-        if group in self.memory_bank:
-            self.memory_bank[group].append(features)
+        if group in self.feature_collection:
+            self.feature_collection[group].append(features)
         else:
-            self.memory_bank[group] = [features]
+            self.feature_collection[group] = [features]
 
     def fit(self) -> None:
         """Fit the KNN model by stacking the feature vectors and computing the normalization statistics."""
-        self.memory_bank = {key: torch.vstack(value) for key, value in self.memory_bank.items()}
-        self.memory_bank_tensor = torch.vstack([features for features in self.memory_bank.values()])
-        self.group_index = torch.repeat_interleave(Tensor([features.shape[0] for features in self.memory_bank.values()]).int())
-        self.group_names = list(self.memory_bank.keys())
-        self._compute_normalization_statistics()
-        del self.memory_bank
+        # stack the collected features group-wise
+        feature_collection = {key: torch.vstack(value) for key, value in self.feature_collection.items()}
+        # assign memory bank, group index and group names
+        self.memory_bank = torch.vstack(list(feature_collection.values()))
+        self.group_index = torch.repeat_interleave(
+            Tensor([features.shape[0] for features in feature_collection.values()]).int(),
+        )
+        self.group_names = list(feature_collection.keys())
+        self._compute_normalization_statistics(feature_collection)
+        # delete the feature collection to free up memory
+        del self.feature_collection
 
     def predict(
         self,
@@ -205,9 +207,9 @@ class GroupedKNNEstimator(DynamicBufferModule, BaseDensityEstimator):
 
         if group:
             group_idx = self.group_names.index(group)
-            mem_bank = self.memory_bank_tensor[self.group_index != group_idx]
+            mem_bank = self.memory_bank[self.group_index != group_idx]
         else:
-            mem_bank = self.memory_bank_tensor
+            mem_bank = self.memory_bank
 
         distances = self._nearest_neighbors(mem_bank, features, n_neighbors=n_neighbors)
 
@@ -236,9 +238,9 @@ class GroupedKNNEstimator(DynamicBufferModule, BaseDensityEstimator):
         distances, _ = distances.topk(k=n_neighbors, largest=False, dim=1)
         return distances
 
-    def _compute_normalization_statistics(self) -> None:
+    def _compute_normalization_statistics(self, grouped_features: dict[str, Tensor]) -> None:
         """Compute min-max normalization statistics while taking the group into account."""
-        for group, features in self.memory_bank.items():
+        for group, features in grouped_features.items():
             distances = self.predict(features, group, normalize=False)
             self.normalization_statistics.update(distances)
 
