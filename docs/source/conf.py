@@ -45,6 +45,9 @@ nbsphinx_allow_errors = True
 templates_path = ["_templates"]
 exclude_patterns: list[str] = []
 
+# Automatic exclusion of prompts from the copies
+# https://sphinx-copybutton.readthedocs.io/en/latest/use.html#automatic-exclusion-of-prompts-from-the-copies
+copybutton_exclude = ".linenos, .gp, .go"
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
