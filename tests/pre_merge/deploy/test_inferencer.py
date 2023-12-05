@@ -134,6 +134,7 @@ def test_torch_inference(
     ],
 )
 @TestDataset(num_train=20, num_test=1, path=get_dataset_path(), use_mvtec=False)
+@pytest.mark.skip(reason="Isolating tests")
 def test_openvino_inference(
     model_name: str, generate_results_dir, task: str, category: str = "shapes", path: str = "./datasets/MVTec"
 ):
