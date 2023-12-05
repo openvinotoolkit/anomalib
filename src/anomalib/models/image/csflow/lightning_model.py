@@ -28,10 +28,15 @@ class Csflow(AnomalyModule):
 
     Args:
         input_size (tuple[int, int]): Size of the model input.
+            Defaults to ``(256, 256)``.
         n_coupling_blocks (int): Number of coupling blocks in the model.
+            Defaults to ``4``.
         cross_conv_hidden_channels (int): Number of hidden channels in the cross convolution.
+            Defaults to ``1024``.
         clamp (int): Clamp value for glow layer.
+            Defaults to ``3``.
         num_channels (int): Number of channels in the model.
+            Defaults to ``3``.
     """
 
     def __init__(
