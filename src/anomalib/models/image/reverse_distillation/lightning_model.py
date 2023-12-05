@@ -26,9 +26,15 @@ class ReverseDistillation(AnomalyModule):
 
     Args:
         input_size (tuple[int, int]): Size of model input
+            Defaults to ``(256, 256)``.
         backbone (str): Backbone of CNN network
+            Defaults to ``wide_resnet50_2``.
         layers (list[str]): Layers to extract features from the backbone CNN
+            Defaults to ``["layer1", "layer2", "layer3"]``.
+        anomaly_map_mode (AnomalyMapGenerationMode, optional): Mode to generate anomaly map.
+            Defaults to ``AnomalyMapGenerationMode.ADD``.
         pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.
+            Defaults to ``True``.
     """
 
     def __init__(
