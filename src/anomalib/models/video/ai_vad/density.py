@@ -154,7 +154,7 @@ class GroupedKNNEstimator(DynamicBufferModule, BaseDensityEstimator):
         self.group_index: dict[str, int] = {}
         self.normalization_statistics = MinMax()
 
-        self.register_buffer("memory_bank_tensor", Tensor())
+        self.register_buffer("memory_bank", Tensor())
         self.memory_bank: torch.Tensor = Tensor()
 
     def update(self, features: torch.Tensor, group: str | None = None) -> None:
