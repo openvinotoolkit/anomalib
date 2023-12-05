@@ -24,7 +24,7 @@ from anomalib.models.components import AnomalyModule
 logger = logging.getLogger("anomalib")
 
 if find_spec("openvino") is not None:
-    from openvino.runtime import Model, serialize
+    from openvino.runtime import Core, serialize
     from openvino.tools.mo import convert_model
 else:
     convert_model = None
@@ -180,15 +180,14 @@ def export_to_openvino(
         input_size (tuple[int, int]): Input size of the model. Used for adding metadata to the IR.
     """
 
-    if convert_model and serialize:
-        ov_model = convert_model(input_model=str(onnx_path), output_dir=str(export_path))
-        _add_metadata_to_ir(ov_model, metadata, input_size)
-        serialize(ov_model, str(export_path) + "/model.xml")
+    if convert_model:
+        convert_model(input_model=str(onnx_path), output_dir=str(export_path))
+        _add_metadata_to_ir(str(export_path) + f"/{onnx_path.with_suffix('.xml').name}", metadata, input_size)
     else:
         raise ImportError("OpenVINO is not installed. Please install OpenVINO to use convert to OpenVINO IR.") from None
 
 
-def _add_metadata_to_ir(ov_model: Model, metadata: dict[str, Any], input_size: tuple[int, int]) -> None:
+def _add_metadata_to_ir(xml_file: str, metadata: dict[str, Any], input_size: tuple[int, int]) -> None:
     """Adds the metadata to the model IR.
 
     Adds the metadata to the model IR. So that it can be used with the new modelAPI.
@@ -201,6 +200,8 @@ def _add_metadata_to_ir(ov_model: Model, metadata: dict[str, Any], input_size: t
         metadata (dict[str, Any]): Metadata to add to the model.
         input_size (tuple[int, int]): Input size of the model.
     """
+    core = Core()
+    model = core.read_model(xml_file)
 
     _metadata = {}
     for key, value in metadata.items():
@@ -231,7 +232,15 @@ def _add_metadata_to_ir(ov_model: Model, metadata: dict[str, Any], input_size: t
     _metadata[("model_info", "image_shape")] = _serialize_list(input_size)
 
     for k, data in _metadata.items():
-        ov_model.set_rt_info(data, list(k))
+        model.set_rt_info(data, list(k))
+
+    tmp_xml_path = Path(xml_file).parent / "tmp.xml"
+    serialize(model, str(tmp_xml_path))
+    # we delete the file if it already exists, to prevent WinError 183 error on Windows
+    Path(xml_file).unlink(missing_ok=True)
+    tmp_xml_path.rename(xml_file)
+    # since we create new openvino IR files, we don't need the bin file. So we delete it.
+    tmp_xml_path.with_suffix(".bin").unlink()
 
 
 def _serialize_list(arr: list[int] | list[float] | tuple[int, int]) -> str:
