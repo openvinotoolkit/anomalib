@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 import logging
+import subprocess  # nosec
 from enum import Enum
 from importlib.util import find_spec
 from pathlib import Path
@@ -25,9 +26,7 @@ logger = logging.getLogger("anomalib")
 
 if find_spec("openvino") is not None:
     from openvino.runtime import Core, serialize
-    from openvino.tools.mo import convert_model
 else:
-    convert_model = None
     logger.warning("OpenVINO is not installed. Please install OpenVINO to use OpenVINOInferencer.")
 
 
@@ -179,12 +178,9 @@ def export_to_openvino(
         metadata (dict[str, Any]): Metadata for the exported model.
         input_size (tuple[int, int]): Input size of the model. Used for adding metadata to the IR.
     """
-
-    if convert_model:
-        convert_model(input_model=str(onnx_path), output_dir=str(export_path))
-        _add_metadata_to_ir(str(export_path) + f"/{onnx_path.with_suffix('.xml').name}", metadata, input_size)
-    else:
-        raise ImportError("OpenVINO is not installed. Please install OpenVINO to use convert to OpenVINO IR.") from None
+    optimize_command = ["mo", "--input_model", str(onnx_path), "--output_dir", str(export_path)]
+    subprocess.run(optimize_command, check=True)  # nosec
+    _add_metadata_to_ir(str(export_path) + f"/{onnx_path.with_suffix('.xml').name}", metadata, input_size)
 
 
 def _add_metadata_to_ir(xml_file: str, metadata: dict[str, Any], input_size: tuple[int, int]) -> None:
