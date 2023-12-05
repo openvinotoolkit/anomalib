@@ -1,18 +1,20 @@
 """CUHK Avenue Dataset.
 
 Description:
-    This module contains PyTorch Dataset and PyTorch
-        Lightning DataModule for the CUHK Avenue dataset.
-    If the dataset is not on the file system, the DataModule class downloads and
-        extracts the dataset and converts the .mat mask files to .png format.
+    This module provides a PyTorch Dataset and PyTorch Lightning DataModule for the CUHK Avenue dataset.
+    If the dataset is not already present on the file system, the DataModule class will download and
+    extract the dataset, converting the .mat mask files to .png format.
+
 Reference:
-    - Lu, Cewu, Jianping Shi, and Jiaya Jia. "Abnormal event detection at 150 fps in matlab."
-    Proceedings of the IEEE international conference on computer vision. 2013.
+    - Lu, Cewu, Jianping Shi, and Jiaya Jia. "Abnormal event detection at 150 fps in Matlab."
+      In Proceedings of the IEEE International Conference on Computer Vision, 2013.
 """
+
 
 # Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+__all__ = ["Avenue", "AvenueDataset", "make_avenue_dataset"]
 
 import logging
 import math
@@ -60,13 +62,14 @@ def make_avenue_dataset(root: Path, gt_dir: Path, split: Split | str | None = No
     """Create CUHK Avenue dataset by parsing the file structure.
 
     The files are expected to follow the structure:
-        path/to/dataset/[training_videos|testing_videos]/video_filename.avi
-        path/to/ground_truth/mask_filename.mat
+        - path/to/dataset/[training_videos|testing_videos]/video_filename.avi
+        - path/to/ground_truth/mask_filename.mat
 
     Args:
         root (Path): Path to dataset
         gt_dir (Path): Path to the ground truth
-        split (Split | str | None = None, optional): Dataset split (ie., either train or test). Defaults to None.
+        split (Split | str | None = None, optional): Dataset split (ie., either train or test).
+            Defaults to ``None``.
 
     Example:
         The following example shows how to get testing samples from Avenue dataset:
@@ -138,10 +141,70 @@ class AvenueDataset(AnomalibVideoDataset):
         transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
         split (Split): Split of the dataset, usually Split.TRAIN or Split.TEST
         root (Path | str): Path to the root of the dataset
+            Defaults to ``./datasets/avenue``.
         gt_dir (Path | str): Path to the ground truth files
+            Defaults to ``./datasets/avenue/ground_truth_demo``.
         clip_length_in_frames (int, optional): Number of video frames in each clip.
+            Defaults to ``2``.
         frames_between_clips (int, optional): Number of frames between each consecutive video clip.
+            Defaults to ``1``.
         target_frame (VideoTargetFrame): Specifies the target frame in the video clip, used for ground truth retrieval
+            Defaults to ``VideoTargetFrame.LAST``.
+
+    Examples:
+        To create an Avenue dataset to train a classification model:
+
+        .. code-block:: python
+
+            transform = A.Compose([A.Resize(256, 256), A.pytorch.ToTensorV2()])
+            dataset = AvenueDataset(
+                task="classification",
+                transform=transform,
+                split="train",
+                root="./datasets/avenue/",
+            )
+
+            dataset.setup()
+            dataset[0].keys()
+
+            # Output: dict_keys(['image', 'video_path', 'frames', 'last_frame', 'original_image'])
+
+        If you would like to test a segmentation model, you can use the following code:
+
+        .. code-block:: python
+
+            dataset = AvenueDataset(
+                task="segmentation",
+                transform=transform,
+                split="test",
+                root="./datasets/avenue/",
+            )
+
+            dataset.setup()
+            dataset[0].keys()
+
+            # Output: dict_keys(['image', 'mask', 'video_path', 'frames', 'last_frame', 'original_image', 'label'])
+
+        Avenue video dataset can also be used as an image dataset if you set the clip length to 1. This means that each
+        video frame will be treated as a separate sample. This is useful for training a classification model on the
+        Avenue dataset. The following code shows how to create an image dataset for classification:
+
+        .. code-block:: python
+
+            dataset = AvenueDataset(
+                task="classification",
+                transform=transform,
+                split="test",
+                root="./datasets/avenue/",
+                clip_length_in_frames=1,
+            )
+
+            dataset.setup()
+            dataset[0].keys()
+            # Output: dict_keys(['image', 'video_path', 'frames', 'last_frame', 'original_image', 'label'])
+
+            dataset[0]["image"].shape
+            # Output: torch.Size([3, 256, 256])
     """
 
     def __init__(
@@ -171,29 +234,90 @@ class Avenue(AnomalibVideoDataModule):
     """Avenue DataModule class.
 
     Args:
-        root (Path | str): Path to the root of the dataset
+        root (Path | str): Path to the root  of the dataset
+            Defaults to ``./datasets/avenue``.
         gt_dir (Path | str): Path to the ground truth files
+            Defaults to ``./datasets/avenue/ground_truth_demo``.
         clip_length_in_frames (int, optional): Number of video frames in each clip.
+            Defaults to ``2``.
         frames_between_clips (int, optional): Number of frames between each consecutive video clip.
+            Defaults to ``1``.
         target_frame (VideoTargetFrame): Specifies the target frame in the video clip, used for ground truth retrieval
-        task TaskType): Task type, 'classification', 'detection' or 'segmentation'
+            Defaults to ``VideoTargetFrame.LAST``.
+        task (TaskType): Task type, 'classification', 'detection' or 'segmentation'
+            Defaults to ``TaskType.SEGMENTATION``.
         image_size (int | tuple[int, int] | None, optional): Size of the input image.
-            Defaults to None.
+            Defaults to ``(256, 256)``.
         center_crop (int | tuple[int, int] | None, optional): When provided, the images will be center-cropped
             to the provided dimensions.
-        normalize (bool): When True, the images will be normalized to the ImageNet statistics.
-        train_batch_size (int, optional): Training batch size. Defaults to 32.
-        eval_batch_size (int, optional): Test batch size. Defaults to 32.
-        num_workers (int, optional): Number of workers. Defaults to 8.
+            Defaults to ``None``.
+        normalization (InputNormalizationMethod | str): Normalization method to be applied to the input images.
+            Defaults to ``InputNormalizationMethod.IMAGENET``.
+        train_batch_size (int, optional): Training batch size.
+            Defaults to ``32``.
+        eval_batch_size (int, optional): Test batch size.
+            Defaults to ``32``.
+        num_workers (int, optional): Number of workers.
+            Defaults to ``8``.
         transform_config_train (str | A.Compose | None, optional): Config for pre-processing
             during training.
-            Defaults to None.
+            Defaults to ``None``.
         transform_config_val (str | A.Compose | None, optional): Config for pre-processing
             during validation.
-            Defaults to None.
+            Defaults to ``None``.
         val_split_mode (ValSplitMode): Setting that determines how the validation subset is obtained.
+            Defaults to ``ValSplitMode.FROM_TEST``.
         val_split_ratio (float): Fraction of train or test images that will be reserved for validation.
+            Defaults to ``0.5``.
         seed (int | None, optional): Seed which may be set to a fixed value for reproducibility.
+            Defaults to ``None``.
+
+    Examples:
+        To create a DataModule for Avenue dataset with default parameters:
+
+        .. code-block:: python
+
+            datamodule = Avenue()
+            datamodule.setup()
+
+            i, data = next(enumerate(datamodule.train_dataloader()))
+            data.keys()
+            # Output: dict_keys(['image', 'video_path', 'frames', 'last_frame', 'original_image'])
+
+            i, data = next(enumerate(datamodule.test_dataloader()))
+            data.keys()
+            # Output: dict_keys(['image', 'mask', 'video_path', 'frames', 'last_frame', 'original_image', 'label'])
+
+            data["image"].shape
+            # Output: torch.Size([32, 2, 3, 256, 256])
+
+        Note that the default task type is segmentation and the dataloader returns a mask in addition to the input.
+        Also, it is important to note that the dataloader returns a batch of clips, where each clip is a sequence of
+        frames. The number of frames in each clip is determined by the ``clip_length_in_frames`` parameter. The
+        ``frames_between_clips`` parameter determines the number of frames between each consecutive clip. The
+        ``target_frame`` parameter determines which frame in the clip is used for ground truth retrieval. For example,
+        if ``clip_length_in_frames=2``, ``frames_between_clips=1`` and ``target_frame=VideoTargetFrame.LAST``, then the
+        dataloader will return a batch of clips where each clip contains two consecutive frames from the video. The
+        second frame in each clip will be used as the ground truth for the first frame in the clip. The following code
+        shows how to create a dataloader for classification:
+
+        .. code-block:: python
+
+            datamodule = Avenue(
+                task="classification",
+                clip_length_in_frames=2,
+                frames_between_clips=1,
+                target_frame=VideoTargetFrame.LAST
+            )
+            datamodule.setup()
+
+            i, data = next(enumerate(datamodule.train_dataloader()))
+            data.keys()
+            # Output: dict_keys(['image', 'video_path', 'frames', 'last_frame', 'original_image'])
+
+            data["image"].shape
+            # Output: torch.Size([32, 2, 3, 256, 256])
+
     """
 
     def __init__(
@@ -264,7 +388,59 @@ class Avenue(AnomalibVideoDataModule):
         )
 
     def prepare_data(self) -> None:
-        """Download the dataset and ground truth if not available, and convert mask files to a more usable format."""
+        """Download the dataset if not available.
+
+        This method checks if the specified dataset is available in the file system.
+        If not, it downloads and extracts the dataset into the appropriate directory.
+
+        Example:
+            Assume the dataset is not available on the file system.
+            Here's how the directory structure looks before and after calling the
+            `prepare_data` method:
+
+            Before:
+
+            .. code-block:: bash
+
+                $ tree datasets
+                datasets
+                ├── dataset1
+                └── dataset2
+
+            Calling the method:
+
+            .. code-block:: python
+
+                >> datamodule = Avenue()
+                >> datamodule.prepare_data()
+
+            After:
+
+            .. code-block:: bash
+
+                $ tree datasets
+                datasets
+                ├── dataset1
+                ├── dataset2
+                └── avenue
+                    ├── ground_truth_demo
+                    │   ├── ground_truth_show.m
+                    │   ├── Readme.txt
+                    │   ├── testing_label_mask
+                    │   └── testing_videos
+                    ├── testing_videos
+                    │   ├── ...
+                    │   └── 21.avi
+                    ├── testing_vol
+                    │   ├── ...
+                    │   └── vol21.mat
+                    ├── training_videos
+                    │   ├── ...
+                    │   └── 16.avi
+                    └── training_vol
+                        ├── ...
+                        └── vol16.mat
+        """
         if self.root.is_dir():
             logger.info("Found the dataset.")
         else:
