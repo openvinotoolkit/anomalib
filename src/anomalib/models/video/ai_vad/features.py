@@ -29,9 +29,13 @@ class FeatureExtractor(nn.Module):
 
     Args:
         n_velocity_bins (int): Number of discrete bins used for velocity histogram features.
+            Defaults to ``8``.
         use_velocity_features (bool): Flag indicating if velocity features should be used.
+            Defaults to ``True``.
         use_pose_features (bool): Flag indicating if pose features should be used.
+            Defaults to ``True``.
         use_deep_features (bool): Flag indicating if deep features should be used.
+            Defaults to ``True``.
     """
 
     def __init__(

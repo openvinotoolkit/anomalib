@@ -54,12 +54,18 @@ class CombinedDensityEstimator(BaseDensityEstimator):
     Combines density estimators for the different feature types included in the model.
 
     Args:
-        use_velocity_features (bool): Flag indicating if velocity features should be used.
         use_pose_features (bool): Flag indicating if pose features should be used.
+            Defaults to ``True``.
         use_deep_features (bool): Flag indicating if deep features should be used.
-        n_components_velocity (int): Number of components used by GMM density estimation for velocity features.
+            Defaults to ``True``.
+        use_velocity_features (bool): Flag indicating if velocity features should be used.
+            Defaults to ``False``.
         n_neighbors_pose (int): Number of neighbors used in KNN density estimation for pose features.
+            Defaults to ``1``.
         n_neighbors_deep (int): Number of neighbors used in KNN density estimation for deep features.
+            Defaults to ``1``.
+        n_components_velocity (int): Number of components used by GMM density estimation for velocity features.
+            Defaults to ``5``.
     """
 
     def __init__(
@@ -185,8 +191,11 @@ class GroupedKNNEstimator(BaseDensityEstimator):
             features (torch.Tensor): Input features that will be compared to the density model.
             group (str, optional): Group (video id) from which the features originate. If passed, all features of the
                 same group in the memory bank will be excluded from the density estimation.
+                Defaults to ``None``.
             n_neighbors (int): Number of neighbors used in the KNN search.
+                Defaults to ``1``.
             normalize (bool): Flag indicating if the density should be normalized to min-max stats of the feature bank.
+                Defatuls to ``True``.
 
         Returns:
             Tensor: Mean (normalized) distances of input feature vectors to k nearest neighbors in feature bank.
@@ -255,6 +264,7 @@ class GMMEstimator(BaseDensityEstimator):
 
     Args:
         n_components (int): Number of components used in the GMM.
+            Defaults to ``2``.
     """
 
     def __init__(self, n_components: int = 2) -> None:
@@ -285,6 +295,7 @@ class GMMEstimator(BaseDensityEstimator):
         Args:
             features (torch.Tensor): Input feature vectors.
             normalize (bool): Flag indicating if the density should be normalized to min-max stats of the feature bank.
+                Defaults to ``True``.
 
         Returns:
             Tensor: Density scores of the input feature vectors.
