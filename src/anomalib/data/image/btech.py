@@ -325,7 +325,7 @@ class BTech(AnomalibDataModule):
         This method checks if the specified dataset is available in the file system.
         If not, it downloads and extracts the dataset into the appropriate directory.
 
-        Examples:
+        Example:
             Assume the dataset is not available on the file system.
             Here's how the directory structure looks before and after calling the
             `prepare_data` method:
