@@ -178,10 +178,10 @@ def _get_model_metadata(model: AnomalyModule) -> dict[str, torch.Tensor]:
         dict[str, torch.Tensor]: Model metadata
     """
     metadata = {}
-    cached_metadata: dict[str, Number | torch.Tensor] = {
-        "image_threshold": model.image_threshold.cpu().value.item(),
-        "pixel_threshold": model.pixel_threshold.cpu().value.item(),
-    }
+    cached_metadata: dict[str, Number | torch.Tensor] = {}
+    for threshold_name in ("image_threshold", "pixel_threshold"):
+        if hasattr(model, threshold_name):
+            cached_metadata[threshold_name] = getattr(model, threshold_name).cpu().value.item()
     if hasattr(model, "normalization_metrics") and model.normalization_metrics.state_dict() is not None:
         for key, value in model.normalization_metrics.state_dict().items():
             cached_metadata[key] = value.cpu()

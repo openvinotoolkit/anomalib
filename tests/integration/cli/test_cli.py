@@ -14,6 +14,8 @@ import pytest
 import torch
 
 from anomalib.cli import AnomalibCLI
+from anomalib.data import MVTec, UCSDped
+from anomalib.deploy.export import ExportMode
 from anomalib.models import AnomalyModule
 from anomalib.utils.types import TaskType
 
@@ -72,14 +74,98 @@ class TestCLI:
         )
         torch.cuda.empty_cache()
 
-        # TODO(ashwinvaidya17): Validate
-        # CVS-109972
+    def test_train(self, random_model_name: str, dataset_path: Path, project_path: Path) -> None:
+        """Test the train method of the CLI.
 
-        # TODO(ashwinvaidya17): Predict
-        # CVS-109972
+        Args:
+            random_model_name: Name of the model to test.
+            dataset_path (Path): Root of the synthetic/original dataset.
+            project_path (Path): Path to temporary project folder.
+        """
+        AnomalibCLI(
+            args=[
+                "train",
+                "--model",
+                random_model_name,
+                *self._get_common_cli_args(random_model_name, dataset_path, project_path),
+                "--ckpt_path",
+                f"{project_path}/{random_model_name}/dummy/weights/last.ckpt",
+            ],
+        )
+        torch.cuda.empty_cache()
 
-        # TODO(ashwinvaidya17): export
-        # CVS-109972
+    def test_validate(self, random_model_name: str, dataset_path: Path, project_path: Path) -> None:
+        """Test the validate method of the CLI.
+
+        Args:
+            random_model_name: Name of the model to test.
+            dataset_path (Path): Root of the synthetic/original dataset.
+            project_path (Path): Path to temporary project folder.
+        """
+        AnomalibCLI(
+            args=[
+                "validate",
+                "--model",
+                random_model_name,
+                *self._get_common_cli_args(random_model_name, dataset_path, project_path),
+                "--ckpt_path",
+                f"{project_path}/{random_model_name}/dummy/weights/last.ckpt",
+            ],
+        )
+        torch.cuda.empty_cache()
+
+    def test_predict(self, random_model_name: str, dataset_path: Path, project_path: Path) -> None:
+        """Test the predict method of the CLI.
+
+        Args:
+            random_model_name: Name of the model to test.
+            dataset_path (Path): Root of the synthetic/original dataset.
+            project_path (Path): Path to temporary project folder.
+        """
+        AnomalibCLI(
+            args=[
+                "predict",
+                "--model",
+                random_model_name,
+                *self._get_common_cli_args(
+                    random_model_name,
+                    dataset_path,
+                    project_path,
+                ),
+                "--ckpt_path",
+                f"{project_path}/{random_model_name}/dummy/weights/last.ckpt",
+            ],
+        )
+        torch.cuda.empty_cache()
+
+    @pytest.mark.parametrize("export_mode", [ExportMode.TORCH, ExportMode.ONNX, ExportMode.OPENVINO])
+    def test_export(
+        self,
+        random_model_name: str,
+        dataset_path: Path,
+        project_path: Path,
+        export_mode: ExportMode,
+    ) -> None:
+        """Test the export method of the CLI.
+
+        Args:
+            random_model_name: Name of the model to test.
+            dataset_path (Path): Root of the synthetic/original dataset.
+            project_path (Path): Path to temporary project folder.
+            export_mode (ExportMode): Export mode.
+        """
+        AnomalibCLI(
+            args=[
+                "export",
+                "--model",
+                random_model_name,
+                "--export_mode",
+                export_mode,
+                *self._get_common_cli_args(random_model_name, dataset_path, project_path),
+                "--input_size",
+                "[256, 256]",
+            ],
+        )
 
     @staticmethod
     def _get_common_cli_args(model_name: str, dataset_path: Path, project_path: Path) -> list[str]:
@@ -90,14 +176,15 @@ class TestCLI:
             dataset_path (Path): Path to the dataset.
             project_path (Path): Path to the project folder.
         """
-        # batch size of 8 is taken so that the lr computation for efficient_ad does not return 0 when
-        # max_epochs is 1
+        # We need to set the predict dataloader as MVTec and UCSDped do have have predict_dataloader attribute defined.
         if model_name == "AiVad":
             data_root = f"{dataset_path}/ucsdped"
             dataclass = "UCSDped"
+            UCSDped.predict_dataloader = UCSDped.test_dataloader
         else:
             data_root = f"{dataset_path}/mvtec"
             dataclass = "MVTec"
+            MVTec.predict_dataloader = MVTec.test_dataloader
 
         task_type = TaskType.SEGMENTATION
         if model_name in ("Rkde", "AiVad"):

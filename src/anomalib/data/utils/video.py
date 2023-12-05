@@ -29,7 +29,7 @@ class ClipsIndexer(VideoClips, ABC):
         self,
         video_paths: list[str],
         mask_paths: list[str],
-        clip_length_in_frames: int = 1,
+        clip_length_in_frames: int = 2,
         frames_between_clips: int = 1,
     ) -> None:
         super().__init__(

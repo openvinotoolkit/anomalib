@@ -39,7 +39,6 @@ def test_torch_throughput(
     engine.export(
         model=model,
         export_mode=ExportMode.TORCH,
-        task=TaskType.CLASSIFICATION,
         dataset=dataset,
         export_path=_ckpt_path.parent.parent,
     )
@@ -68,7 +67,6 @@ def test_openvino_throughput(
     engine.export(
         model=model,
         export_mode=ExportMode.OPENVINO,
-        task=TaskType.CLASSIFICATION,
         dataset=dataset,
         input_size=(256, 256),
         export_path=_ckpt_path.parent.parent,
