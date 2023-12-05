@@ -122,7 +122,7 @@ class EfficientAd(AnomalyModule):
         self.imagenet_loader = DataLoader(imagenet_dataset, batch_size=self.batch_size, shuffle=True, pin_memory=True)
         self.imagenet_iterator = iter(self.imagenet_loader)
 
-    @torch.no_grad()
+    @torch.inference_mode()
     def teacher_channel_mean_std(self, dataloader: DataLoader) -> dict[str, Tensor]:
         """Calculate the mean and std of the teacher models activations.
         Adapted from https://math.stackexchange.com/a/2148949
