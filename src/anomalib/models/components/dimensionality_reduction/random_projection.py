@@ -21,9 +21,32 @@ class SparseRandomProjection:
 
     Args:
         eps (float, optional): Minimum distortion rate parameter for calculating
-            Johnson-Lindenstrauss minimum dimensions. Defaults to 0.1.
+            Johnson-Lindenstrauss minimum dimensions.
+            Defaults to ``0.1``.
         random_state (int | None, optional): Uses the seed to set the random
-            state for sample_without_replacement function. Defaults to None.
+            state for sample_without_replacement function.
+            Defaults to ``None``.
+
+    Example:
+        To fit and transform the embedding tensor, use the following code:
+
+        .. code-block:: python
+
+            import torch
+            from anomalib.models.components import SparseRandomProjection
+
+            sparse_embedding = torch.rand(1000, 5).cuda()
+            model = SparseRandomProjection(eps=0.1)
+
+        Fit the model and transform the embedding tensor:
+
+        .. code-block:: python
+
+            model.fit(sparse_embedding)
+            projected_embedding = model.transform(sparse_embedding)
+
+            print(projected_embedding.shape)
+            # Output: torch.Size([1000, 5920])
     """
 
     def __init__(self, eps: float = 0.1, random_state: int | None = None) -> None:
