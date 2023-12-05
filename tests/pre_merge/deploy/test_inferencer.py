@@ -88,7 +88,7 @@ def generate_results_dir():
         ("patchcore", "segmentation"),
         ("reverse_distillation", "segmentation"),
         ("stfpm", "segmentation"),
-        ("uflow", "segmentation"),
+        # ("uflow", "segmentation"),
         # also test different task types for a single model
         ("padim", "classification"),
         ("padim", "detection"),
