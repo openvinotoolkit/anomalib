@@ -29,6 +29,7 @@ release = "2022"
 
 extensions = [
     "sphinx.ext.autodoc",
+    "sphinx.ext.mathjax",
     "sphinx_design",
     "myst_parser",
     "nbsphinx",
