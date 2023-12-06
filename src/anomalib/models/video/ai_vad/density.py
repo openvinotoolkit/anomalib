@@ -299,7 +299,6 @@ class GMMEstimator(BaseDensityEstimator):
             Tensor: Density scores of the input feature vectors.
         """
         density = -self.gmm.score_samples(features)
-        density = torch.Tensor(density).to(self.normalization_statistics.device)
         if normalize:
             density = self._normalize(density)
         return density
