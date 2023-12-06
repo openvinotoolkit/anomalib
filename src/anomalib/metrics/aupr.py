@@ -37,6 +37,10 @@ class AUPR(PrecisionRecallCurve):
         ...     # Compute prediction and target tensors
         ...     metric.update(pred, true)
         >>> metric.compute()
+
+        Once the metric has been computed, we can plot the PR curve:
+
+        >>> figure, title = metric.generate_figure()
     """
 
     def compute(self) -> torch.Tensor:
