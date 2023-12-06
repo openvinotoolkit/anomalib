@@ -15,7 +15,15 @@ logger = logging.getLogger(__name__)
 
 
 class LoadModelCallback(Callback):
-    """Callback that loads the model weights from the state dict."""
+    """Callback that loads the model weights from the state dict.
+
+    Examples:
+        >>> from anomalib.callbacks import LoadModelCallback
+        >>> from anomalib.engine import Engine
+        ...
+        >>> callbacks = [LoadModelCallback(weights_path="path/to/weights.pt")]
+        >>> engine = Engine(callbacks=callbacks)
+    """
 
     def __init__(self, weights_path: str) -> None:
         self.weights_path = weights_path

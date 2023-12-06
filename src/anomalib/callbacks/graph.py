@@ -10,7 +10,28 @@ from anomalib.loggers import AnomalibCometLogger, AnomalibTensorBoardLogger, Ano
 
 
 class GraphLogger(Callback):
-    """Log model graph to respective logger."""
+    """Log model graph to respective logger.
+
+    Examples:
+        Log model graph to Tensorboard
+
+        >>> from anomalib.callbacks import GraphLogger
+        >>> from anomalib.loggers import AnomalibTensorBoardLogger
+        >>> from anomalib.engine import Engine
+        ...
+        >>> logger = AnomalibTensorBoardLogger()
+        >>> callbacks = [GraphLogger()]
+        >>> engine = Engine(logger=logger, callbacks=callbacks)
+
+        Log model graph to Comet
+
+        >>> from anomalib.loggers import AnomalibCometLogger
+        >>> from anomalib.engine import Engine
+        ...
+        >>> logger = AnomalibCometLogger()
+        >>> callbacks = [GraphLogger()]
+        >>> engine = Engine(logger=logger, callbacks=callbacks)
+    """
 
     def on_train_start(self, trainer: Trainer, pl_module: LightningModule) -> None:
         """Log model graph to respective logger.

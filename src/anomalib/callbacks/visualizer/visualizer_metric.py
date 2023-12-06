@@ -16,10 +16,19 @@ from .visualizer_base import BaseVisualizerCallback
 
 
 class MetricVisualizerCallback(BaseVisualizerCallback):
-    """Callback that visualizes the metric results of a model by plotting the corresponding curves.
+    """Metric Visualization.
 
-    To save the images to the filesystem, add the 'local' keyword to the `project.log_images_to` parameter in the
-    config.yaml file.
+    This callback visualizes the metric results of a model by plotting the
+    corresponding curves. To save the images to the filesystem, add the ``local``
+    keyword to the ``project.log_images_to`` parameter in the ``config.yaml``
+    file.
+
+    Examples:
+        >>> from anomalib.callbacks import MetricVisualizerCallback
+        >>> from anomalib.engine import Engine
+        ...
+        >>> callbacks = [MetricVisualizerCallback()]
+        >>> engine = Engine(callbacks=callbacks)
     """
 
     def on_test_end(self, trainer: pl.Trainer, pl_module: AnomalyModule) -> None:
