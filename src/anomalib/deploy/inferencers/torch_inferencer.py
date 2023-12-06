@@ -26,7 +26,36 @@ class TorchInferencer(Inferencer):
 
     Args:
         path (str | Path): Path to Torch model weights.
-        device (str): Device to use for inference. Options are auto, cpu, cuda. Defaults to "auto".
+        device (str): Device to use for inference. Options are ``auto``,
+            ``cpu``, ``cuda``.
+            Defaults to ``auto``.
+
+    Examples:
+        Assume that we have a Torch ``pt`` model and metadata files in the
+        following structure:
+
+        >>> from anomalib.deploy.inferencers import TorchInferencer
+        >>> inferencer = TorchInferencer(path="path/to/torch/model.pt", device="cpu")
+
+        This will ensure that the model is loaded on the ``CPU`` device. To make
+        a prediction, we can simply call the ``predict`` method:
+
+        >>> import cv2
+        >>> image = cv2.imread("path/to/image.jpg")
+        >>> image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        >>> result = inferencer.predict(image)
+
+        ``result`` will be an ``ImageResult`` object containing the prediction
+        results. For example, to visualize the heatmap, we can do the following:
+
+        >>> from matplotlib import pyplot as plt
+        >>> plt.imshow(result.heatmap)
+
+        It is also possible to visualize the true and predicted masks if the
+        task is ``TaskType.SEGMENTATION``:
+
+        >>> plt.imshow(result.gt_mask)
+        >>> plt.imshow(result.pred_mask)
     """
 
     def __init__(
