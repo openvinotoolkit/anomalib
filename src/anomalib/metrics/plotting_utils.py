@@ -39,6 +39,7 @@ def plot_figure(
             https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.legend.html
         title (str): title of the plot
         sample_points (int): number of sampling points to subsample x_vals/y_vals with
+            Defaults to ``1000``.
 
     Returns:
         tuple[Figure, Axis]: Figure and the contained Axis
