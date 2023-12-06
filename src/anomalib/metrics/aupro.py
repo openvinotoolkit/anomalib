@@ -38,7 +38,7 @@ class AUPRO(Metric):
             If ``None``, the roc curve is computed with the thresholds returned by
             ``torchmetrics.functional.classification.thresholds``.
 
-    Example:
+    Examples:
         >>> import torch
         >>> from anomalib.metrics import AUPRO
         ...
