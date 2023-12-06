@@ -227,7 +227,7 @@ class UCSDped(AnomalibVideoDataModule):
         center_crop: int | tuple[int, int] | None = None,
         normalization: InputNormalizationMethod | str = InputNormalizationMethod.IMAGENET,
         train_batch_size: int = 8,
-        eval_batch_size: int = 32,
+        eval_batch_size: int = 8,
         num_workers: int = 8,
         transform_config_train: str | A.Compose | None = None,
         transform_config_eval: str | A.Compose | None = None,
