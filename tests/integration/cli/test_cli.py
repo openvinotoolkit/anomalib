@@ -7,7 +7,6 @@ This just checks if one of the model works end-to-end. The rest of the models ar
 # SPDX-License-Identifier: Apache-2.0
 
 
-import random
 from pathlib import Path
 
 import pytest
@@ -16,27 +15,23 @@ import torch
 from anomalib.cli import AnomalibCLI
 from anomalib.data import MVTec, UCSDped
 from anomalib.deploy.export import ExportMode
-from anomalib.models import AnomalyModule
 from anomalib.utils.types import TaskType
 
 
 @pytest.fixture(scope="module")
-def random_model_name() -> str:
-    """Return a random model name."""
-    # TODO(ashwinvaidya17): Restore AiVad test
-    # CVS-109972
-    all_models = [model.__name__ for model in AnomalyModule.__subclasses__() if model.__name__ != "AiVad"]
-    return random.choice(all_models)  # noqa: S311
+def model_name() -> str:
+    """Return the name of the model used throughout the CLI tests."""
+    return "Padim"
 
 
 class TestCLI:
     """Do sanity check on all models."""
 
-    def test_fit(self, random_model_name: str, dataset_path: Path, project_path: Path) -> None:
+    def test_fit(self, model_name: str, dataset_path: Path, project_path: Path) -> None:
         """Test fit CLI.
 
         Args:
-            random_model_name: Name of the model to test.
+            model_name: Name of the model to test.
             dataset_path (Path): Root of the synthetic/original dataset.
             project_path (Path): Path to temporary project folder.
         """
@@ -44,8 +39,8 @@ class TestCLI:
             args=[
                 "fit",
                 "--model",
-                random_model_name,
-                *self._get_common_cli_args(random_model_name, dataset_path, project_path),
+                model_name,
+                *self._get_common_cli_args(model_name, dataset_path, project_path),
                 # TODO(ashwinvaidya17): Fix these Edge cases
                 # https://github.com/openvinotoolkit/anomalib/issues/1478
                 "--data.train_batch_size",
@@ -54,11 +49,11 @@ class TestCLI:
         )
         torch.cuda.empty_cache()
 
-    def test_test(self, random_model_name: str, dataset_path: Path, project_path: Path) -> None:
+    def test_test(self, model_name: str, dataset_path: Path, project_path: Path) -> None:
         """Test the test method of the CLI.
 
         Args:
-            random_model_name: Name of the model to test.
+            model_name: Name of the model to test.
             dataset_path (Path): Root of the synthetic/original dataset.
             project_path (Path): Path to temporary project folder.
         """
@@ -66,19 +61,19 @@ class TestCLI:
             args=[
                 "test",
                 "--model",
-                random_model_name,
-                *self._get_common_cli_args(random_model_name, dataset_path, project_path),
+                model_name,
+                *self._get_common_cli_args(model_name, dataset_path, project_path),
                 "--ckpt_path",
-                f"{project_path}/{random_model_name}/dummy/weights/last.ckpt",
+                f"{project_path}/{model_name}/dummy/weights/last.ckpt",
             ],
         )
         torch.cuda.empty_cache()
 
-    def test_train(self, random_model_name: str, dataset_path: Path, project_path: Path) -> None:
+    def test_train(self, model_name: str, dataset_path: Path, project_path: Path) -> None:
         """Test the train method of the CLI.
 
         Args:
-            random_model_name: Name of the model to test.
+            model_name: Name of the model to test.
             dataset_path (Path): Root of the synthetic/original dataset.
             project_path (Path): Path to temporary project folder.
         """
@@ -86,19 +81,19 @@ class TestCLI:
             args=[
                 "train",
                 "--model",
-                random_model_name,
-                *self._get_common_cli_args(random_model_name, dataset_path, project_path),
+                model_name,
+                *self._get_common_cli_args(model_name, dataset_path, project_path),
                 "--ckpt_path",
-                f"{project_path}/{random_model_name}/dummy/weights/last.ckpt",
+                f"{project_path}/{model_name}/dummy/weights/last.ckpt",
             ],
         )
         torch.cuda.empty_cache()
 
-    def test_validate(self, random_model_name: str, dataset_path: Path, project_path: Path) -> None:
+    def test_validate(self, model_name: str, dataset_path: Path, project_path: Path) -> None:
         """Test the validate method of the CLI.
 
         Args:
-            random_model_name: Name of the model to test.
+            model_name: Name of the model to test.
             dataset_path (Path): Root of the synthetic/original dataset.
             project_path (Path): Path to temporary project folder.
         """
@@ -106,19 +101,19 @@ class TestCLI:
             args=[
                 "validate",
                 "--model",
-                random_model_name,
-                *self._get_common_cli_args(random_model_name, dataset_path, project_path),
+                model_name,
+                *self._get_common_cli_args(model_name, dataset_path, project_path),
                 "--ckpt_path",
-                f"{project_path}/{random_model_name}/dummy/weights/last.ckpt",
+                f"{project_path}/{model_name}/dummy/weights/last.ckpt",
             ],
         )
         torch.cuda.empty_cache()
 
-    def test_predict(self, random_model_name: str, dataset_path: Path, project_path: Path) -> None:
+    def test_predict(self, model_name: str, dataset_path: Path, project_path: Path) -> None:
         """Test the predict method of the CLI.
 
         Args:
-            random_model_name: Name of the model to test.
+            model_name: Name of the model to test.
             dataset_path (Path): Root of the synthetic/original dataset.
             project_path (Path): Path to temporary project folder.
         """
@@ -126,14 +121,14 @@ class TestCLI:
             args=[
                 "predict",
                 "--model",
-                random_model_name,
+                model_name,
                 *self._get_common_cli_args(
-                    random_model_name,
+                    model_name,
                     dataset_path,
                     project_path,
                 ),
                 "--ckpt_path",
-                f"{project_path}/{random_model_name}/dummy/weights/last.ckpt",
+                f"{project_path}/{model_name}/dummy/weights/last.ckpt",
             ],
         )
         torch.cuda.empty_cache()
@@ -141,7 +136,7 @@ class TestCLI:
     @pytest.mark.parametrize("export_mode", [ExportMode.TORCH, ExportMode.ONNX, ExportMode.OPENVINO])
     def test_export(
         self,
-        random_model_name: str,
+        model_name: str,
         dataset_path: Path,
         project_path: Path,
         export_mode: ExportMode,
@@ -149,7 +144,7 @@ class TestCLI:
         """Test the export method of the CLI.
 
         Args:
-            random_model_name: Name of the model to test.
+            model_name: Name of the model to test.
             dataset_path (Path): Root of the synthetic/original dataset.
             project_path (Path): Path to temporary project folder.
             export_mode (ExportMode): Export mode.
@@ -158,10 +153,10 @@ class TestCLI:
             args=[
                 "export",
                 "--model",
-                random_model_name,
+                model_name,
                 "--export_mode",
                 export_mode,
-                *self._get_common_cli_args(random_model_name, dataset_path, project_path),
+                *self._get_common_cli_args(model_name, dataset_path, project_path),
                 "--input_size",
                 "[256, 256]",
             ],
