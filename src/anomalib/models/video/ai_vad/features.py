@@ -129,7 +129,7 @@ class DeepExtractor(nn.Module):
         batched_regions = [batch for batch in batched_regions if batch.numel() != 0]
         with torch.no_grad():
             features = [self.encoder.encode_image(self.transform(batch)) for batch in batched_regions]
-            return torch.vstack(features) if len(features) else torch.empty(0, self.output_dim).to(batch.device)
+            return torch.vstack(features).float() if len(features) else torch.empty(0, self.output_dim).to(batch.device)
 
 
 class VelocityExtractor(nn.Module):
