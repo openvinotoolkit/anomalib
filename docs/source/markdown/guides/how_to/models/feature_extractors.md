@@ -1,6 +1,6 @@
 # Feature extractors
 
-This guide demonstrates how different backbones can be used as feature extractors for anomaly detection models. Most of these models use Timm Feature Extractor except **CSFLOW** which uses TorchFx Feature Extractor. Here show how to use API and CLI to use different backbones as feature extractors.
+This guide demonstrates how different backbones can be used as feature extractors for anomaly detection models. Most of these models use Timm Feature Extractor except **CSFLOW** which uses TorchFx Feature Extractor. Here we show how to use API and CLI to use different backbones as feature extractors.
 
 ```{seealso}
 For specifics of implementation refer to implementation classes {py:class}`Timm Feature Extractor <anomalib.models.components.feature_extractors.TimmFeatureExtractor>` and {py:class}`TorchFx Feature Extractor <anomalib.models.components.feature_extractors.TorchFXFeatureExtractor>`
