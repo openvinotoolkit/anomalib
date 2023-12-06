@@ -34,7 +34,6 @@ class GaussianMixture(DynamicBufferModule):
         self.means: Tensor
         self.covariances: Tensor
         self.weights: Tensor
-        self.precisions_cholesky: Tensor
 
     def fit(self, data: Tensor) -> None:
         """Fit the model to the data.
@@ -48,12 +47,11 @@ class GaussianMixture(DynamicBufferModule):
         converged = False
         for _ in range(self.n_iter):
             # E-step
-            resp = self._e_step(data)
+            log_likelihood_new, resp = self._e_step(data)
             # M-step
             self._m_step(data, resp)
 
             # Check for convergence
-            log_likelihood_new = self._compute_log_likelihood(data).sum()
             if torch.abs(log_likelihood_new - log_likelihood_old) < self.tol:
                 converged = True
                 break
@@ -82,18 +80,13 @@ class GaussianMixture(DynamicBufferModule):
             data (Tensor): Data to fit the model to. Tensor of shape (n_samples, n_features).
 
         Returns:
+            Tensor: log probability of the data given the gaussians.
             Tensor: Tensor of shape (n_samples, n_components) containing the responsibilities.
         """
-        log_resp = torch.stack(
-            [
-                MultivariateNormal(self.means[comp], self.covariances[comp]).log_prob(data)
-                for comp in range(self.n_components)
-            ],
-            dim=1,
-        )
-        log_resp += torch.log(self.weights)
-        log_resp -= torch.logsumexp(log_resp, dim=1, keepdim=True)
-        return torch.exp(log_resp)
+        weighted_log_prob = self._estimate_weighted_log_prob(data)
+        log_prob_norm = torch.logsumexp(weighted_log_prob, axis=1)
+        log_resp = weighted_log_prob - torch.logsumexp(weighted_log_prob, dim=1, keepdim=True)
+        return torch.mean(log_prob_norm), torch.exp(log_resp)
 
     def _m_step(self, data: Tensor, resp: Tensor) -> None:
         """Perform the M-step to update the parameters of the gaussians.
@@ -112,20 +105,23 @@ class GaussianMixture(DynamicBufferModule):
         # Add a small constant for numerical stability
         self.covariances = covariances + torch.eye(data.shape[1], device=data.device) * 1e-6  # new covariances
 
-    def _compute_log_likelihood(self, data: Tensor) -> Tensor:
-        """Compute the log-likelihood of the data given the gaussian parameters.
+    def _estimate_weighted_log_prob(self, data: Tensor) -> Tensor:
+        """Estimate the log probability of the data given the gaussian parameters.
 
         Args:
             data (Tensor): Data to fit the model to. Tensor of shape (n_samples, n_features).
 
         Returns:
-            Tensor: Tensor of shape (n_samples,) containing the log-likelihood of each sample.
+            Tensor: Tensor of shape (n_samples, n_components) containing the log-probabilities of each sample.
         """
-        log_likelihood = [
-            MultivariateNormal(self.means[comp], self.covariances[comp]).log_prob(data)
-            for comp in range(self.n_components)
-        ]
-        return torch.logsumexp(self.weights * torch.vstack(log_likelihood).T, dim=1)
+        log_prob = torch.stack(
+            [
+                MultivariateNormal(self.means[comp], self.covariances[comp]).log_prob(data)
+                for comp in range(self.n_components)
+            ],
+            dim=1,
+        )
+        return log_prob + torch.log(self.weights)
 
     def score_samples(self, data: Tensor) -> Tensor:
         """Assign a likelihood score to each sample in the data.
@@ -136,7 +132,7 @@ class GaussianMixture(DynamicBufferModule):
         Returns:
             Tensor: Tensor of shape (n_samples,) containing the log-likelihood score of each sample.
         """
-        return self._compute_log_likelihood(data)
+        return torch.logsumexp(self._estimate_weighted_log_prob(data), dim=1)
 
     def predict(self, data: Tensor) -> Tensor:
         """Predict the cluster labels of the data.
@@ -147,5 +143,5 @@ class GaussianMixture(DynamicBufferModule):
         Returns:
             Tensor: Tensor of shape (n_samples,) containing the predicted cluster label of each sample.
         """
-        resp = self._e_step(data)
+        _, resp = self._e_step(data)
         return torch.argmax(resp, axis=1)
