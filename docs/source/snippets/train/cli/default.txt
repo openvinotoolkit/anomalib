@@ -1,0 +1,11 @@
+# Get help about the training arguments, run:
+anomalib train -h
+
+# Train by using the default values.
+anomalib train --model Patchcore --data anomalib.data.MVTec
+
+# Train by overriding arguments.
+anomalib train --model Patchcore --data anomalib.data.MVTec --data.category transistor
+
+# Train by using a config file.
+anomalib train --config <path/to/config>
