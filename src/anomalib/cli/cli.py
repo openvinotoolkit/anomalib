@@ -15,8 +15,9 @@ from lightning.pytorch.cli import ArgsType, LightningArgumentParser, LightningCL
 from lightning.pytorch.utilities.types import _EVALUATE_OUTPUT, _PREDICT_OUTPUT
 from rich import traceback
 
-from anomalib.callbacks import get_callbacks, get_visualization_callbacks
+from anomalib.callbacks import get_callbacks
 from anomalib.callbacks.normalization import get_normalization_callback
+from anomalib.callbacks.visualizer import _VisualizationCallback
 from anomalib.cli.utils import CustomHelpFormatter
 from anomalib.cli.utils.openvino import add_openvino_export_arguments
 from anomalib.data import AnomalibDataModule, AnomalibDataset
@@ -123,7 +124,8 @@ class AnomalibCLI(LightningCLI):
         """
         parser.add_function_arguments(get_normalization_callback, "normalization")
         # visualization takes task from the project
-        parser.add_function_arguments(get_visualization_callbacks, "visualization", skip={"task"})
+        parser.add_function_arguments(_VisualizationCallback, "visualization", skip={"task", "save_root"})
+
         parser.add_argument("--task", type=TaskType, default=TaskType.SEGMENTATION)
         parser.add_argument("--metrics.image", type=list[str] | str | None, default=["F1Score", "AUROC"])
         parser.add_argument("--metrics.pixel", type=list[str] | str | None, default=None, required=False)
