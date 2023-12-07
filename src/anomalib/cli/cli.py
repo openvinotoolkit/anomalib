@@ -124,7 +124,7 @@ class AnomalibCLI(LightningCLI):
         """
         parser.add_function_arguments(get_normalization_callback, "normalization")
         # visualization takes task from the project
-        parser.add_function_arguments(_VisualizationCallback, "visualization", skip={"task", "save_root"})
+        parser.add_class_arguments(_VisualizationCallback, "visualization", skip={"task", "save_root"})
 
         parser.add_argument("--task", type=TaskType, default=TaskType.SEGMENTATION)
         parser.add_argument("--metrics.image", type=list[str] | str | None, default=["F1Score", "AUROC"])
