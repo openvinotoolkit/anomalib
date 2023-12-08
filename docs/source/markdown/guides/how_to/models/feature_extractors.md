@@ -12,7 +12,7 @@ For specifics of implementation refer to implementation classes {py:class}`Timm 
 
 :::{tab-item} Timm
 
-Available Timm models are listed on [Timm GitHub page](https://github.com/huggingface/pytorch-image-models#models). 
+Available Timm models are listed on [Timm GitHub page](https://github.com/huggingface/pytorch-image-models#models).
 
 In most cases, we want to use a pretrained backbone, so can get a list of all such models using the following code:
 
@@ -41,13 +41,12 @@ We can then use selected model name and layer names with either API or using con
 
 :::
 
-
 :::{tab-item} TorchFX
 
 When using TorchFX for feature extraction, you can use either model name, custom model, or instance of model.
 In this guide, we will cover pretrained models from Torchvision passed by name. For use of the custom model or instance of a model refer to {py:class}`TorchFxFeatureExtractor class examples <anomalib.models.components.feature_extractors.TorchFXFeatureExtractor>`.
 
-Available torchvision models are listed on [Torchvision models page](https://pytorch.org/vision/stable/models.html). 
+Available torchvision models are listed on [Torchvision models page](https://pytorch.org/vision/stable/models.html).
 
 We can get layer names for selected model using the following code:
 
@@ -64,7 +63,8 @@ train_nodes, eval_nodes = get_graph_node_names(model)
 print(eval_nodes)
 >>>['x', 'conv1', 'bn1', 'relu', 'maxpool', ..., 'layer4.1.relu_1', 'avgpool', 'flatten', 'fc']
 ```
-As a result, we get a list of all model nodes, which is quite long. 
+
+As a result, we get a list of all model nodes, which is quite long.
 
 Now for example, if we want only output from the last node in the block named `layer4`, we specify `layer4.1.relu_1`.
 If we want to avoid writing `layer4.1.relu_1` to get the last output of `layer4` block, we can shorten it to `layer4`.
@@ -140,3 +140,4 @@ anomalib train --config <path/to/config>
 :::
 
 ::::
+````
