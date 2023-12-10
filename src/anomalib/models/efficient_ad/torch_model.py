@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import logging
 import random
+import math
 from enum import Enum
 
 import torch
@@ -148,8 +149,8 @@ class Decoder(nn.Module):
         super().__init__(*args, **kwargs)
         self.img_size = img_size
         self.last_upsample = (
-            (img_size[0] + 3) // 4 if padding else (img_size[0] + 3) // 4 - 8,
-            (img_size[1] + 3) // 4 if padding else (img_size[1] + 3) // 4 - 8,
+            math.ceil(img_size[0] / 4) if padding else math.ceil(img_size[0] / 4) - 8,
+            math.ceil(img_size[1] / 4) if padding else math.ceil(img_size[1] / 4) - 8,
         )
         self.deconv1 = nn.Conv2d(64, 64, kernel_size=4, stride=1, padding=2)
         self.deconv2 = nn.Conv2d(64, 64, kernel_size=4, stride=1, padding=2)
