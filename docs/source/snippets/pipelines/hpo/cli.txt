@@ -1,0 +1,5 @@
+# To perform hpo using wandb sweep
+anomalib hpo --backend WANDB  --sweep_config tools/hpo/configs/wandb.yaml
+
+# To perform hpo using comet.ml sweep
+anomalib hpo --backend COMET  --sweep_config tools/hpo/configs/comet.yaml

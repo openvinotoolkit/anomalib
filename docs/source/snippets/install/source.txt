@@ -1,0 +1,12 @@
+# Use of virtual environment is highy recommended
+# Using conda
+yes | conda create -n anomalib_env python=3.10
+conda activate anomalib_env
+
+# Or using your favorite virtual environment
+# ...
+
+# Clone the repository and install in editable mode
+git clone https://github.com/openvinotoolkit/anomalib.git
+cd anomalib
+pip install -e .

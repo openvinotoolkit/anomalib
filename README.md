@@ -84,7 +84,7 @@ Anomalib supports both API and CLI-based training. The API is more flexible and 
 
 ```python
 # Import the required modules
-from anomalib.datasets import MVTec
+from anomalib.data import MVTec
 from anomalib.models import Patchcore
 from anomalib.engine import Engine
 
