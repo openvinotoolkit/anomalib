@@ -48,7 +48,7 @@ def make_btech_dataset(path: Path, split: str | Split | None = None) -> DataFram
 
     The files are expected to follow the structure:
 
-        ..code-block:: bash
+        .. code-block:: bash
 
             path/to/dataset/split/category/image_filename.png
             path/to/dataset/ground_truth/category/mask_filename.png

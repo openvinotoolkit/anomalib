@@ -133,11 +133,10 @@ model:
 
 Then we can train using:
 
-````{code-block} cmd
+```{code-block} bash
 anomalib train --config <path/to/config>
 ```
 
 :::
 
 ::::
-````
