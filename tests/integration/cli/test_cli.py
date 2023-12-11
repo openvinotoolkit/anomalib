@@ -7,35 +7,24 @@ This just checks if one of the model works end-to-end. The rest of the models ar
 # SPDX-License-Identifier: Apache-2.0
 
 
-import random
 from pathlib import Path
 
 import pytest
 import torch
 
 from anomalib.cli import AnomalibCLI
+from anomalib.data import MVTec, UCSDped
 from anomalib.deploy.export import ExportMode
-from anomalib.models import AnomalyModule
 from anomalib.utils.types import TaskType
-
-
-@pytest.fixture(scope="module")
-def random_model_name() -> str:
-    """Return a random model name."""
-    # TODO(ashwinvaidya17): Restore AiVad test
-    # CVS-109972
-    all_models = [model.__name__ for model in AnomalyModule.__subclasses__() if model.__name__ != "AiVad"]
-    return random.choice(all_models)  # noqa: S311
 
 
 class TestCLI:
     """Do sanity check on all models."""
 
-    def test_fit(self, random_model_name: str, dataset_path: Path, project_path: Path) -> None:
+    def test_fit(self, dataset_path: Path, project_path: Path) -> None:
         """Test fit CLI.
 
         Args:
-            random_model_name: Name of the model to test.
             dataset_path (Path): Root of the synthetic/original dataset.
             project_path (Path): Path to temporary project folder.
         """
@@ -43,9 +32,8 @@ class TestCLI:
             args=[
                 "fit",
                 "--model",
-                random_model_name,
-                *self._get_data_parameters(random_model_name, dataset_path),
-                *self._get_common_cli_args(random_model_name, project_path),
+                "Padim",
+                *self._get_common_cli_args("Padim", dataset_path, project_path),
                 # TODO(ashwinvaidya17): Fix these Edge cases
                 # https://github.com/openvinotoolkit/anomalib/issues/1478
                 "--data.train_batch_size",
@@ -54,11 +42,10 @@ class TestCLI:
         )
         torch.cuda.empty_cache()
 
-    def test_test(self, random_model_name: str, dataset_path: Path, project_path: Path) -> None:
+    def test_test(self, dataset_path: Path, project_path: Path) -> None:
         """Test the test method of the CLI.
 
         Args:
-            random_model_name: Name of the model to test.
             dataset_path (Path): Root of the synthetic/original dataset.
             project_path (Path): Path to temporary project folder.
         """
@@ -66,20 +53,18 @@ class TestCLI:
             args=[
                 "test",
                 "--model",
-                random_model_name,
-                *self._get_data_parameters(random_model_name, dataset_path),
-                *self._get_common_cli_args(random_model_name, project_path),
+                "Padim",
+                *self._get_common_cli_args("Padim", dataset_path, project_path),
                 "--ckpt_path",
-                f"{project_path}/{random_model_name}/dummy/weights/last.ckpt",
+                f"{project_path}/padim/dummy/weights/last.ckpt",
             ],
         )
         torch.cuda.empty_cache()
 
-    def test_train(self, random_model_name: str, dataset_path: Path, project_path: Path) -> None:
+    def test_train(self, dataset_path: Path, project_path: Path) -> None:
         """Test the train method of the CLI.
 
         Args:
-            random_model_name: Name of the model to test.
             dataset_path (Path): Root of the synthetic/original dataset.
             project_path (Path): Path to temporary project folder.
         """
@@ -87,20 +72,18 @@ class TestCLI:
             args=[
                 "train",
                 "--model",
-                random_model_name,
-                *self._get_data_parameters(random_model_name, dataset_path),
-                *self._get_common_cli_args(random_model_name, project_path),
+                "Padim",
+                *self._get_common_cli_args("Padim", dataset_path, project_path),
                 "--ckpt_path",
-                f"{project_path}/{random_model_name}/dummy/weights/last.ckpt",
+                f"{project_path}/padim/dummy/weights/last.ckpt",
             ],
         )
         torch.cuda.empty_cache()
 
-    def test_validate(self, random_model_name: str, dataset_path: Path, project_path: Path) -> None:
+    def test_validate(self, dataset_path: Path, project_path: Path) -> None:
         """Test the validate method of the CLI.
 
         Args:
-            random_model_name: Name of the model to test.
             dataset_path (Path): Root of the synthetic/original dataset.
             project_path (Path): Path to temporary project folder.
         """
@@ -108,20 +91,18 @@ class TestCLI:
             args=[
                 "validate",
                 "--model",
-                random_model_name,
-                *self._get_data_parameters(random_model_name, dataset_path),
-                *self._get_common_cli_args(random_model_name, project_path),
+                "Padim",
+                *self._get_common_cli_args("Padim", dataset_path, project_path),
                 "--ckpt_path",
-                f"{project_path}/{random_model_name}/dummy/weights/last.ckpt",
+                f"{project_path}/padim/dummy/weights/last.ckpt",
             ],
         )
         torch.cuda.empty_cache()
 
-    def test_predict(self, random_model_name: str, dataset_path: Path, project_path: Path) -> None:
+    def test_predict(self, dataset_path: Path, project_path: Path) -> None:
         """Test the predict method of the CLI.
 
         Args:
-            random_model_name: Name of the model to test.
             dataset_path (Path): Root of the synthetic/original dataset.
             project_path (Path): Path to temporary project folder.
         """
@@ -129,15 +110,14 @@ class TestCLI:
             args=[
                 "predict",
                 "--model",
-                random_model_name,
-                "--data",
-                f"{dataset_path}/mvtec/dummy/test",
+                "Padim",
                 *self._get_common_cli_args(
-                    random_model_name,
+                    "Padim",
+                    dataset_path,
                     project_path,
                 ),
                 "--ckpt_path",
-                f"{project_path}/{random_model_name}/dummy/weights/last.ckpt",
+                f"{project_path}/padim/dummy/weights/last.ckpt",
             ],
         )
         torch.cuda.empty_cache()
@@ -145,7 +125,6 @@ class TestCLI:
     @pytest.mark.parametrize("export_mode", [ExportMode.TORCH, ExportMode.ONNX, ExportMode.OPENVINO])
     def test_export(
         self,
-        random_model_name: str,
         dataset_path: Path,
         project_path: Path,
         export_mode: ExportMode,
@@ -153,7 +132,6 @@ class TestCLI:
         """Test the export method of the CLI.
 
         Args:
-            random_model_name: Name of the model to test.
             dataset_path (Path): Root of the synthetic/original dataset.
             project_path (Path): Path to temporary project folder.
             export_mode (ExportMode): Export mode.
@@ -162,26 +140,34 @@ class TestCLI:
             args=[
                 "export",
                 "--model",
-                random_model_name,
+                "Padim",
                 "--export_mode",
                 export_mode,
-                *self._get_data_parameters(random_model_name, dataset_path),
-                *self._get_common_cli_args(random_model_name, project_path),
+                *self._get_common_cli_args("Padim", dataset_path, project_path),
                 "--input_size",
                 "[256, 256]",
-                "--ckpt_path",
-                f"{project_path}/{random_model_name}/dummy/weights/last.ckpt",
             ],
         )
 
     @staticmethod
-    def _get_common_cli_args(model_name: str, project_path: Path) -> list[str]:
+    def _get_common_cli_args(model_name: str, dataset_path: Path, project_path: Path) -> list[str]:
         """Return common CLI args for all models.
 
         Args:
             model_name (str): Name of the model class.
+            dataset_path (Path): Path to the dataset.
             project_path (Path): Path to the project folder.
         """
+        # We need to set the predict dataloader as MVTec and UCSDped do have have predict_dataloader attribute defined.
+        if model_name == "AiVad":
+            data_root = f"{dataset_path}/ucsdped"
+            dataclass = "UCSDped"
+            UCSDped.predict_dataloader = UCSDped.test_dataloader
+        else:
+            data_root = f"{dataset_path}/mvtec"
+            dataclass = "MVTec"
+            MVTec.predict_dataloader = MVTec.test_dataloader
+
         task_type = TaskType.SEGMENTATION
         if model_name in ("Rkde", "AiVad"):
             task_type = TaskType.DETECTION
@@ -201,6 +187,12 @@ class TestCLI:
 
         return [
             *extra_args,
+            "--data",
+            dataclass,
+            "--data.root",
+            data_root,
+            "--data.category",
+            "dummy",
             "--results_dir.path",
             str(project_path),
             "--results_dir.unique",
@@ -220,23 +212,4 @@ class TestCLI:
             "true",
             "--trainer.callbacks.auto_insert_metric_name",
             "false",
-        ]
-
-    @staticmethod
-    def _get_data_parameters(model_name: str, dataset_path: Path) -> list[str]:
-        """Get data parameters for the CLI."""
-        if model_name == "AiVad":
-            data_root = f"{dataset_path}/ucsdped"
-            dataclass = "UCSDped"
-        else:
-            data_root = f"{dataset_path}/mvtec"
-            dataclass = "MVTec"
-
-        return [
-            "--data",
-            dataclass,
-            "--data.root",
-            data_root,
-            "--data.category",
-            "dummy",
         ]
