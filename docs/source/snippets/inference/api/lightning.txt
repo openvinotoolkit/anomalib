@@ -1,0 +1,7 @@
+# Assuming the datamodule, model and engine is initialized from the previous step,
+# a prediction via a checkpoint file can be performed as follows:
+predictions = engine.predict(
+    datamodule=datamodule,
+    model=model,
+    ckpt_path="path/to/checkpoint.ckpt",
+)

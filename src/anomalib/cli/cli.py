@@ -167,11 +167,16 @@ class AnomalibCLI(LightningCLI):
         self.add_default_arguments_to_parser(parser)
         self._add_trainer_arguments_to_parser(parser)
         parser.add_lightning_class_args(AnomalyModule, "model", subclass_mode=True)
-        parser.add_subclass_arguments((AnomalibDataModule, DataLoader, Dataset, str, Path), "data")
+        parser.add_argument("--ckpt_path", type=str, required=True, help="Path to model weights")
+        parser.add_subclass_arguments(
+            (AnomalibDataModule, DataLoader, Dataset, str, Path),
+            "data",
+            required=True,
+        )
         added = parser.add_method_arguments(
             Engine,
             "predict",
-            skip={"model", "dataloaders", "datamodule", "dataset"},
+            skip={"model", "dataloaders", "datamodule", "dataset", "ckpt_path"},
         )
         self._subcommand_method_arguments["predict"] = added
         self.add_arguments_to_parser(parser)
