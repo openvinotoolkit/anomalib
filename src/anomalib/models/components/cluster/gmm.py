@@ -6,7 +6,6 @@
 import logging
 
 import torch
-from torch import Tensor
 from torch.distributions.multivariate_normal import MultivariateNormal
 from torch.nn.functional import one_hot
 
@@ -22,7 +21,33 @@ class GaussianMixture(DynamicBufferModule):
     Args:
         n_components (int): Number of components.
         n_iter (int): Maximum number of iterations to perform.
+            Defaults to ``100``.
         tol (float): Convergence threshold.
+            Defaults to ``1e-3``.
+
+    Example:
+        The following examples shows how to fit a Gaussian Mixture Model to some data and get the cluster means and
+        predicted labels and log-likelihood scores of the data.
+
+        .. code-block:: python
+
+            >>> import torch
+            >>> from anomalib.models.components.cluster import GaussianMixture
+            >>> model = GaussianMixture(n_components=2)
+            >>> data = torch.tensor(
+            ...     [
+            ...             [2, 1], [2, 2], [2, 3],
+            ...             [7, 5], [8, 5], [9, 5],
+            ...     ]
+            ... ).float()
+            >>> model.fit(data)
+            >>> model.means  # get the means of the gaussians
+            tensor([[8., 5.],
+                    [2., 2.]])
+            >>> model.predict(data)  # get the predicted cluster label of each sample
+            tensor([1, 1, 1, 0, 0, 0])
+            >>> model.score_samples(data)  # get the log-likelihood score of each sample
+            tensor([3.8295, 4.5795, 3.8295, 3.8295, 4.5795, 3.8295])
     """
 
     def __init__(self, n_components: int, n_iter: int = 100, tol: float = 1e-3) -> None:
@@ -31,15 +56,15 @@ class GaussianMixture(DynamicBufferModule):
         self.tol = tol
         self.n_iter = n_iter
 
-        self.register_buffer("means", Tensor())
-        self.register_buffer("covariances", Tensor())
-        self.register_buffer("weights", Tensor())
+        self.register_buffer("means", torch.Tensor())
+        self.register_buffer("covariances", torch.Tensor())
+        self.register_buffer("weights", torch.Tensor())
 
-        self.means: Tensor
-        self.covariances: Tensor
-        self.weights: Tensor
+        self.means: torch.Tensor
+        self.covariances: torch.Tensor
+        self.weights: torch.Tensor
 
-    def fit(self, data: Tensor) -> None:
+    def fit(self, data: torch.Tensor) -> None:
         """Fit the model to the data.
 
         Args:
@@ -67,7 +92,7 @@ class GaussianMixture(DynamicBufferModule):
                         Consider increasing the number of iterations.",
             )
 
-    def _initialize_parameters_kmeans(self, data: Tensor) -> None:
+    def _initialize_parameters_kmeans(self, data: torch.Tensor) -> None:
         """Initialize parameters with K-means.
 
         Args:
@@ -77,7 +102,7 @@ class GaussianMixture(DynamicBufferModule):
         resp = one_hot(labels, num_classes=self.n_components).float()
         self._m_step(data, resp)
 
-    def _e_step(self, data: Tensor) -> Tensor:
+    def _e_step(self, data: torch.Tensor) -> torch.Tensor:
         """Perform the E-step to estimate the responsibilities of the gaussians.
 
         Args:
@@ -92,7 +117,7 @@ class GaussianMixture(DynamicBufferModule):
         log_resp = weighted_log_prob - torch.logsumexp(weighted_log_prob, dim=1, keepdim=True)
         return torch.mean(log_prob_norm), torch.exp(log_resp)
 
-    def _m_step(self, data: Tensor, resp: Tensor) -> None:
+    def _m_step(self, data: torch.Tensor, resp: torch.Tensor) -> None:
         """Perform the M-step to update the parameters of the gaussians.
 
         Args:
@@ -109,7 +134,7 @@ class GaussianMixture(DynamicBufferModule):
         # Add a small constant for numerical stability
         self.covariances = covariances + torch.eye(data.shape[1], device=data.device) * 1e-6  # new covariances
 
-    def _estimate_weighted_log_prob(self, data: Tensor) -> Tensor:
+    def _estimate_weighted_log_prob(self, data: torch.Tensor) -> torch.Tensor:
         """Estimate the log probability of the data given the gaussian parameters.
 
         Args:
@@ -127,7 +152,7 @@ class GaussianMixture(DynamicBufferModule):
         )
         return log_prob + torch.log(self.weights)
 
-    def score_samples(self, data: Tensor) -> Tensor:
+    def score_samples(self, data: torch.Tensor) -> torch.Tensor:
         """Assign a likelihood score to each sample in the data.
 
         Args:
@@ -138,7 +163,7 @@ class GaussianMixture(DynamicBufferModule):
         """
         return torch.logsumexp(self._estimate_weighted_log_prob(data), dim=1)
 
-    def predict(self, data: Tensor) -> Tensor:
+    def predict(self, data: torch.Tensor) -> torch.Tensor:
         """Predict the cluster labels of the data.
 
         Args:
