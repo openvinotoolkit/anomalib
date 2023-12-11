@@ -17,7 +17,6 @@ from rich import traceback
 
 from anomalib.callbacks import get_callbacks
 from anomalib.callbacks.normalization import get_normalization_callback
-from anomalib.callbacks.visualizer import _VisualizationCallback
 from anomalib.cli.utils import CustomHelpFormatter
 from anomalib.cli.utils.openvino import add_openvino_export_arguments
 from anomalib.data import AnomalibDataModule, AnomalibDataset
@@ -29,6 +28,7 @@ from anomalib.pipelines.benchmarking import distribute
 from anomalib.pipelines.hpo import Sweep, get_hpo_parser
 from anomalib.utils.config import update_config
 from anomalib.utils.types import TaskType
+from anomalib.utils.visualization.base import BaseVisualizationGenerator
 
 traceback.install()
 logger = logging.getLogger("anomalib.cli")
@@ -124,7 +124,14 @@ class AnomalibCLI(LightningCLI):
         """
         parser.add_function_arguments(get_normalization_callback, "normalization")
         # visualization takes task from the project
-        parser.add_class_arguments(_VisualizationCallback, "visualization", skip={"task", "save_root"})
+        parser.add_argument(
+            "--visualization.generators",
+            type=BaseVisualizationGenerator | list[BaseVisualizationGenerator] | None,
+            default=None,
+        )
+        parser.add_argument("--visualization.save", type=bool, default=False)
+        parser.add_argument("--visualization.log", type=bool, default=False)
+        parser.add_argument("--visualization.show", type=bool, default=False)
 
         parser.add_argument("--task", type=TaskType, default=TaskType.SEGMENTATION)
         parser.add_argument("--metrics.image", type=list[str] | str | None, default=["F1Score", "AUROC"])
@@ -242,7 +249,7 @@ class AnomalibCLI(LightningCLI):
             "task": self._get(self.config_init, "task"),
             "image_metrics": self._get(self.config_init, "metrics.image"),
             "pixel_metrics": self._get(self.config_init, "metrics.pixel"),
-            "visualization": self._get(self.config_init, "visualization"),
+            **self._get_visualization_parameters(),
         }
         trainer_config = {**self._get(self.config_init, "trainer", default={}), **engine_args}
         key = "callbacks"
@@ -264,6 +271,16 @@ class AnomalibCLI(LightningCLI):
                 trainer_config[key].append(config_callback)
         trainer_config[key].extend(get_callbacks(self.config[self.subcommand]))
         return Engine(**trainer_config)
+
+    def _get_visualization_parameters(self) -> dict[str, Any]:
+        """Return visualization parameters."""
+        subcommand = self.config.subcommand
+        return {
+            "visualization_generators": self.config_init[subcommand].visualization.generators,
+            "save_image": self.config[subcommand].visualization.save,
+            "log_image": self.config[subcommand].visualization.log,
+            "show_image": self.config[subcommand].visualization.show,
+        }
 
     def _run_subcommand(self, subcommand: str) -> None:
         """Run subcommand depending on the subcommand.

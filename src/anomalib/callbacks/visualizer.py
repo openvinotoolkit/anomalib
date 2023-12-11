@@ -35,6 +35,19 @@ class _VisualizationCallback(Callback):
         log: bool = False,
         show: bool = False,
     ) -> None:
+        """Callback for visualization that is used internally by the Engine.
+
+        Args:
+            generators (BaseVisualizationGenerator | list[BaseVisualizationGenerator]):
+                Generator objects that are used for computing the visualizations. Defaults to None.
+            save (bool, optional): Save the image. Defaults to False.
+            save_root (Path | None, optional): The path to save the images. Defaults to None.
+            log (bool, optional): Log the images into the loggers. Defaults to False.
+            show (bool, optional): Show the images. Defaults to False.
+
+        Raises:
+            ValueError: Incase `save_root` is None and `save` is True.
+        """
         self.visualizer = Visualizer()
         self.save = save
         if save and save_root is None:

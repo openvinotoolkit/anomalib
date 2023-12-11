@@ -16,13 +16,13 @@ from anomalib.data.inference import InferenceDataset
 from anomalib.engine import Engine
 from anomalib.models import get_model
 from anomalib.utils.types import TaskType
-from anomalib.utils.visualization import ImageGrid
+from anomalib.utils.visualization.image import ImageVisualizationGenerator, VisualizationMode, _ImageGrid
 
 
 def test_visualize_fully_defected_masks() -> None:
     """Test if a fully defected anomaly mask results in a completely white image."""
     # create visualizer and add fully defected mask
-    visualizer = ImageGrid()
+    visualizer = _ImageGrid()
     mask = np.ones((256, 256)) * 255
     visualizer.add_image(image=mask, color_map="gray", title="fully defected mask")
     visualizer.generate()
@@ -40,14 +40,14 @@ class TestVisualizer:
     """Test visualization callback for test and predict with different task types."""
 
     @pytest.mark.parametrize("task", [TaskType.CLASSIFICATION, TaskType.SEGMENTATION, TaskType.DETECTION])
-    @pytest.mark.parametrize("mode", ["full", "simple"])
+    @pytest.mark.parametrize("mode", [VisualizationMode.FULL, VisualizationMode.SIMPLE])
     def test_model_visualizer_mode(
         self,
         ckpt_path: Callable[[str], Path],
         project_path: Path,
         dataset_path: Path,
         task: TaskType,
-        mode: str,
+        mode: VisualizationMode,
     ) -> None:
         """Test combination of model/visualizer/mode on only 1 epoch as a sanity check before merge."""
         _ckpt_path: Path = ckpt_path("Padim")
@@ -55,7 +55,8 @@ class TestVisualizer:
         engine = Engine(
             default_root_dir=project_path,
             fast_dev_run=True,
-            visualization={"mode": mode},
+            visualization_generators=ImageVisualizationGenerator(mode=mode),
+            save_image=True,
             devices=1,
             task=task,
         )
