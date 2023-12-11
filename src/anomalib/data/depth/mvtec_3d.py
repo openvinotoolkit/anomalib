@@ -1,20 +1,19 @@
 """MVTec 3D-AD Dataset (CC BY-NC-SA 4.0).
 
 Description:
-    This script contains PyTorch Dataset, Dataloader and PyTorch
-        Lightning DataModule for the MVTec 3D-AD dataset.
-    If the dataset is not on the file system, the script downloads and
-        extracts the dataset and create PyTorch data objects.
+    This script contains PyTorch Dataset, Dataloader and PyTorch Lightning DataModule for the MVTec 3D-AD dataset.
+    If the dataset is not on the file system, the script downloads and extracts the dataset and create PyTorch data
+        objects.
+
 License:
-    MVTec 3D-AD dataset is released under the Creative Commons
-    Attribution-NonCommercial-ShareAlike 4.0 International License
-    (CC BY-NC-SA 4.0)(https://creativecommons.org/licenses/by-nc-sa/4.0/).
+    MVTec 3D-AD dataset is released under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International
+        License (CC BY-NC-SA 4.0)(https://creativecommons.org/licenses/by-nc-sa/4.0/).
+
 Reference:
-    - Paul Bergmann, Xin Jin, David Sattlegger, Carsten Steger:
-    The MVTec 3D-AD Dataset for Unsupervised 3D Anomaly Detection and Localization
-    in: Proceedings of the 17th International Joint Conference on Computer Vision, Imaging
-    and Computer Graphics Theory and Applications - Volume 5: VISAPP, 202-213, 2022,
-    DOI: 10.5220/0010865000003124.
+    - Paul Bergmann, Xin Jin, David Sattlegger, Carsten Steger: The MVTec 3D-AD Dataset for Unsupervised 3D Anomaly
+        Detection and Localization in: Proceedings of the 17th International Joint Conference on Computer Vision,
+        Imaging and Computer Graphics Theory and Applications - Volume 5: VISAPP, 202-213, 2022, DOI: 10.5220/
+        0010865000003124.
 """
 
 # Copyright (C) 2022 Intel Corporation
@@ -63,48 +62,42 @@ def make_mvtec_3d_dataset(
 ) -> DataFrame:
     """Create MVTec 3D-AD samples by parsing the MVTec AD data file structure.
 
-    The files are expected to follow the structure:
-        path/to/dataset/split/category/image_filename.png
-        path/to/dataset/ground_truth/category/mask_filename.png
+    The files are expected to follow this structure:
+    - `path/to/dataset/split/category/image_filename.png`
+    - `path/to/dataset/ground_truth/category/mask_filename.png`
 
-    This function creates a dataframe to store the parsed information based on the following format:
-    |---|---------------|-------|---------|---------------|---------------------------------------|-------------|
+    This function creates a DataFrame to store the parsed information. The DataFrame follows this format:
+    +---+---------------+-------+---------+---------------+---------------------------------------+-------------+
     |   | path          | split | label   | image_path    | mask_path                             | label_index |
-    |---|---------------|-------|---------|---------------|---------------------------------------|-------------|
-    | 0 | datasets/name |  test |  defect |  filename.png | ground_truth/defect/filename_mask.png | 1           |
-    |---|---------------|-------|---------|---------------|---------------------------------------|-------------|
+    +---+---------------+-------+---------+---------------+---------------------------------------+-------------+
+    | 0 | datasets/name | test  | defect  | filename.png  | ground_truth/defect/filename_mask.png | 1           |
+    +---+---------------+-------+---------+---------------+---------------------------------------+-------------+
 
     Args:
-        root (Path): Path to dataset
-        split (str | Split | None, optional): Dataset split (ie., either train or test). Defaults to None.
+        root (Path): Path to the dataset.
+        split (str | Split | None, optional): Dataset split (e.g., 'train' or 'test').
+            Defaults to ``None``.
         extensions (Sequence[str] | None, optional): List of file extensions to be included in the dataset.
+            Defaults to ``None``.
 
     Examples:
-        The following example shows how to get training samples from MVTec 3D-AD bagel category:
+        The following example shows how to get training samples from the MVTec 3D-AD 'bagel' category:
 
+        >>> from pathlib import Path
         >>> root = Path('./MVTec3D')
         >>> category = 'bagel'
         >>> path = root / category
-        >>> path
+        >>> print(path)
         PosixPath('MVTec3D/bagel')
 
-        >>> samples = make_mvtec_3d_dataset(path, split='train', split_ratio=0.1, seed=0)
-        >>> samples.head()
-           path         split label image_path                           mask_path
-        0  MVTec3D/bagel train good MVTec3D/bagel/train/good/rgb/105.png MVTec3D/bagel/ground_truth/good/gt/105.png
-        1  MVTec3D/bagel train good MVTec3D/bagel/train/good/rgb/017.png MVTec3D/bagel/ground_truth/good/gt/017.png
-        2  MVTec3D/bagel train good MVTec3D/bagel/train/good/rgb/137.png MVTec3D/bagel/ground_truth/good/gt/137.png
-        3  MVTec3D/bagel train good MVTec3D/bagel/train/good/rgb/152.png MVTec3D/bagel/ground_truth/good/gt/152.png
-        4  MVTec3D/bagel train good MVTec3D/bagel/train/good/rgb/109.png MVTec3D/bagel/ground_truth/good/gt/109.png
-           depth_path                                   label_index
-           MVTec3D/bagel/ground_truth/good/xyz/105.tiff 0
-           MVTec3D/bagel/ground_truth/good/xyz/017.tiff 0
-           MVTec3D/bagel/ground_truth/good/xyz/137.tiff 0
-           MVTec3D/bagel/ground_truth/good/xyz/152.tiff 0
-           MVTec3D/bagel/ground_truth/good/xyz/109.tiff 0
+        >>> samples = create_mvtec_3d_ad_samples(path, split='train')
+        >>> print(samples.head())
+            path          split label image_path                          mask_path                        label_index
+            MVTec3D/bagel train good MVTec3D/bagel/train/good/rgb/105.png MVTec3D/bagel/ground_truth/good/gt/105.png 0
+            MVTec3D/bagel train good MVTec3D/bagel/train/good/rgb/017.png MVTec3D/bagel/ground_truth/good/gt/017.png 0
 
     Returns:
-        DataFrame: an output dataframe containing the samples of the dataset.
+        DataFrame: An output DataFrame containing the samples of the dataset.
     """
     if extensions is None:
         extensions = IMG_EXTENSIONS
@@ -182,9 +175,12 @@ class MVTec3DDataset(AnomalibDepthDataset):
     Args:
         task (TaskType): Task type, ``classification``, ``detection`` or ``segmentation``
         transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
-        split (str | Split | None): Split of the dataset, usually Split.TRAIN or Split.TEST
         root (Path | str): Path to the root of the dataset
+            Defaults to ``"./datasets/MVTec3D"``.
         category (str): Sub-category of the dataset, e.g. 'bagel'
+            Defaults to ``"bagel"``.
+        split (str | Split | None): Split of the dataset, usually Split.TRAIN or Split.TEST
+            Defaults to ``None``.
     """
 
     def __init__(
@@ -209,27 +205,38 @@ class MVTec3D(AnomalibDataModule):
 
     Args:
         root (Path | str): Path to the root of the dataset
+            Defaults to ``"./datasets/MVTec3D"``.
         category (str): Category of the MVTec dataset (e.g. "bottle" or "cable").
+            Defaults to ``bagel``.
         image_size (int | tuple[int, int] | None, optional): Size of the input image.
+            Defaults to ``(256, 256)``.
+        center_crop (int | tuple[int, int] | None, optional): When provided, the images will be center-cropped to the
+            provided dimensions.
+            Defaults to ``None``.
+        normalization (str | InputNormalizationMethod): Normalization method to be applied to the input images.
+            Defaults to ``InputNormalizationMethod.IMAGENET``.
+        train_batch_size (int, optional): Training batch size.
+            Defaults to ``32``.
+        eval_batch_size (int, optional): Test batch size.
+            Defaults to ``32``.
+        num_workers (int, optional): Number of workers.
+            Defaults to ``8``.
+        task (TaskType): Task type, 'classification', 'detection' or 'segmentation'
+            Defaults to ``TaskType.SEGMENTATION``.
+        transform_config_train (str | A.Compose | None, optional): Config for pre-processing during training.
             Defaults to None.
-        center_crop (int | tuple[int, int] | None, optional): When provided, the images will be center-cropped
-            to the provided dimensions.
-        normalize (bool): When True, the images will be normalized to the ImageNet statistics.
-        train_batch_size (int, optional): Training batch size. Defaults to 32.
-        eval_batch_size (int, optional): Test batch size. Defaults to 32.
-        num_workers (int, optional): Number of workers. Defaults to 8.
-        task TaskType): Task type, 'classification', 'detection' or 'segmentation'
-        transform_config_train (str | A.Compose | None, optional): Config for pre-processing
-            during training.
-            Defaults to None.
-        transform_config_val (str | A.Compose | None, optional): Config for pre-processing
-            during validation.
+        transform_config_val (str | A.Compose | None, optional): Config for pre-processing during validation.
             Defaults to None.
         test_split_mode (TestSplitMode): Setting that determines how the testing subset is obtained.
+            Defaults to ``TestSplitMode.FROM_DIR``.
         test_split_ratio (float): Fraction of images from the train set that will be reserved for testing.
+            Defaults to ``0.2``.
         val_split_mode (ValSplitMode): Setting that determines how the validation subset is obtained.
+            Defaults to ``ValSplitMode.SAME_AS_TEST``.
         val_split_ratio (float): Fraction of train or test images that will be reserved for validation.
+            Defaults to ``0.5``.
         seed (int | None, optional): Seed which may be set to a fixed value for reproducibility.
+            Defaults to ``None``.
     """
 
     def __init__(

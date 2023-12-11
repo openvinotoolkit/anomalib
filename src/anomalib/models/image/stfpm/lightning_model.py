@@ -27,8 +27,11 @@ class Stfpm(AnomalyModule):
 
     Args:
         input_size (tuple[int, int]): Size of the model input.
+            Defaults to ``(256, 256)``.
         backbone (str): Backbone CNN network
+            Defaults to ``resnet18``.
         layers (list[str]): Layers to extract features from the backbone CNN
+            Defaults to ``["layer1", "layer2", "layer3"]``.
     """
 
     def __init__(

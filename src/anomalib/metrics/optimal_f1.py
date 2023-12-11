@@ -14,8 +14,21 @@ logger = logging.getLogger(__name__)
 class OptimalF1(Metric):
     """Optimal F1 Metric.
 
-    Compute the optimal F1 score at the adaptive threshold, based on the F1 metric of the true labels and the
-    predicted anomaly scores.
+    Compute the optimal F1 score at the adaptive threshold, based on the F1
+    metric of the true labels and the predicted anomaly scores.
+
+    Args:
+        num_classes (int): Number of classes.
+        full_state_update (bool, optional): Whether to update the state with the
+            new values.
+            Defaults to ``False``.
+        kwargs: Any keyword arguments.
+
+    .. deprecated:: 1.0.0
+        OptimalF1 metric is deprecated and will be removed in a future release.
+        The optimal F1 score for Anomalib predictions can be obtained by
+        computing the adaptive threshold with the AnomalyScoreThreshold metric
+        and setting the computed threshold value in TorchMetrics F1Score metric.
     """
 
     full_state_update: bool = False

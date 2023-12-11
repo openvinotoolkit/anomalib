@@ -9,7 +9,30 @@ from torchmetrics import Metric
 
 
 class MinMax(Metric):
-    """Track the min and max values of the observations in each batch."""
+    """Track the min and max values of the observations in each batch.
+
+    Args:
+        full_state_update (bool, optional): Whether to update the state with the
+            new values.
+            Defaults to ``True``.
+        kwargs: Any keyword arguments.
+
+    Examples:
+        >>> from anomalib.metrics import MinMax
+        >>> import torch
+        ...
+        >>> predictions = torch.tensor([0.0807, 0.6329, 0.0559, 0.9860, 0.3595])
+        >>> minmax = MinMax()
+        >>> minmax(predictions)
+        (tensor(0.0559), tensor(0.9860))
+
+        It is possible to update the minmax values with a new tensor of predictions.
+
+        >>> new_predictions = torch.tensor([0.3251, 0.3169, 0.3072, 0.6247, 0.9999])
+        >>> minmax.update(new_predictions)
+        >>> minmax.compute()
+        (tensor(0.0559), tensor(0.9999))
+    """
 
     full_state_update: bool = True
 

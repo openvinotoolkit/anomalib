@@ -28,8 +28,7 @@ class AnomalibWandbLogger(ImageLoggerBase, WandbLogger):
 
     Adds interface for `add_image` in the logger rather than calling the experiment object.
 
-    Note:
-    ----
+    .. note::
         Same as the wandb Logger provided by PyTorch Lightning and the doc string is reproduced below.
 
     Log using `Weights and Biases <https://www.wandb.com/>`_.
@@ -42,15 +41,25 @@ class AnomalibWandbLogger(ImageLoggerBase, WandbLogger):
 
     Args:
         name: Display name for the run.
+            Defaults to ``None``.
         save_dir: Path where data is saved (wandb dir by default).
+            Defaults to ``None``.
         offline: Run offline (data can be streamed later to wandb servers).
+            Defaults to ``False``.
         id: Sets the version, mainly used to resume a previous run.
-        version: Same as id.
+            Defaults to ``None``.
         anonymous: Enables or explicitly disables anonymous logging.
+            Defaults to ``None``.
+        version: Same as id.
+            Defaults to ``None``.
         project: The name of the project to which this run will belong.
+            Defaults to ``None``.
         log_model: Save checkpoints in wandb dir to upload on W&B servers.
-        prefix: A string to put at the beginning of metric keys.
+            Defaults to ``False``.
         experiment: WandB experiment object. Automatically set when creating a run.
+            Defaults to ``None``.
+        prefix: A string to put at the beginning of metric keys.
+            Defaults to ``''``.
         **kwargs: Arguments passed to :func:`wandb.init` like `entity`, `group`, `tags`, etc.
 
     Raises:
@@ -62,11 +71,13 @@ class AnomalibWandbLogger(ImageLoggerBase, WandbLogger):
     Example:
         >>> from anomalib.loggers import AnomalibWandbLogger
         >>> from anomalib.engine import Engine
+        ...
         >>> wandb_logger = AnomalibWandbLogger()
         >>> engine =  Engine(logger=wandb_logger)
 
-    Note: When logging manually through `wandb.log` or `trainer.logger.experiment.log`,
-    make sure to use `commit=False` so the logging step does not increase.
+    .. note::
+        When logging manually through `wandb.log` or `trainer.logger.experiment.log`,
+        make sure to use `commit=False` so the logging step does not increase.
 
     See Also:
         - `Tutorial <https://colab.research.google.com/drive/16d1uctGaw2y9KhGBlINNTsWpmlXdJwRW?usp=sharing>`__
@@ -111,6 +122,7 @@ class AnomalibWandbLogger(ImageLoggerBase, WandbLogger):
         Args:
             image (np.ndarray | Figure): Image to log
             name (str | None): The tag of the image
+                Defaults to ``None``.
             kwargs: Additional arguments to `wandb.Image`
         """
         del kwargs  # Unused argument.
@@ -122,8 +134,7 @@ class AnomalibWandbLogger(ImageLoggerBase, WandbLogger):
     def save(self) -> None:
         """Upload images to wandb server.
 
-        Note:
-        ----
+        .. note::
             There is a limit on the number of images that can be logged together to the `wandb` server.
         """
         super().save()

@@ -19,11 +19,19 @@ from .visualizer_base import BaseVisualizerCallback
 class ImageVisualizerCallback(BaseVisualizerCallback):
     """Callback that visualizes the inference results of a model.
 
-    The callback generates a figure showing the original image, the ground truth segmentation mask,
-    the predicted error heat map, and the predicted segmentation mask.
+    The callback generates a figure showing the original image, the ground truth
+    segmentation mask, the predicted error heat map, and the predicted
+    segmentation mask.
 
-    To save the images to the filesystem, add the 'local' keyword to the `project.log_images_to` parameter in the
-    config.yaml file.
+    To save the images to the filesystem, add the ``local`` keyword to the
+    ``project.log_images_to`` parameter in the ``config.yaml`` file.
+
+    Examples:
+        >>> from anomalib.callbacks import ImageVisualizerCallback
+        >>> from anomalib.engine import Engine
+        ...
+        >>> callbacks = [ImageVisualizerCallback()]
+        >>> engine = Engine(callbacks=callbacks)
     """
 
     def on_predict_batch_end(

@@ -27,14 +27,29 @@ class Ganomaly(AnomalyModule):
 
     Args:
         input_size (tuple[int, int]): Input dimension.
+            Defaults to ``(256, 256)``.
         batch_size (int): Batch size.
+            Defaults to ``32``.
         n_features (int): Number of features layers in the CNNs.
+            Defaults to ``64``.
         latent_vec_size (int): Size of autoencoder latent vector.
-        extra_layers (int, optional): Number of extra layers for encoder/decoder. Defaults to 0.
-        add_final_conv_layer (bool, optional): Add convolution layer at the end. Defaults to True.
-        wadv (int, optional): Weight for adversarial loss. Defaults to 1.
-        wcon (int, optional): Image regeneration weight. Defaults to 50.
-        wenc (int, optional): Latent vector encoder weight. Defaults to 1.
+            Defaults to ``100``.
+        extra_layers (int, optional): Number of extra layers for encoder/decoder.
+            Defaults to ``0``.
+        add_final_conv_layer (bool, optional): Add convolution layer at the end.
+            Defaults to ``True``.
+        wadv (int, optional): Weight for adversarial loss.
+            Defaults to ``1``.
+        wcon (int, optional): Image regeneration weight.
+            Defaults to ``50``.
+        wenc (int, optional): Latent vector encoder weight.
+            Defaults to ``1``.
+        lr (float, optional): Learning rate.
+            Defaults to ``0.0002``.
+        beta1 (float, optional): Adam beta1.
+            Defaults to ``0.5``.
+        beta2 (float, optional): Adam beta2.
+            Defaults to ``0.999``.
     """
 
     def __init__(

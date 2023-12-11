@@ -32,11 +32,16 @@ class CrossConvolutions(nn.Module):
     Args:
         in_channels (int): Number of input channels.
         channels (int): Number of output channels in the hidden convolution and the upscaling layers.
-        channels_hidden (int, optional): Number of input channels in the hidden convolution layers. Defaults to 512.
-        kernel_size (int, optional): Kernel size of the convolution layers. Defaults to 3.
-        leaky_slope (float, optional): Slope of the leaky ReLU activation. Defaults to 0.1.
-        batch_norm (bool, optional): Whether to use batch normalization. Defaults to False.
-        use_gamma (bool, optional): Whether to use gamma parameters for the cross convolutions. Defaults to True.
+        channels_hidden (int, optional): Number of input channels in the hidden convolution layers.
+            Defaults to ``512``.
+        kernel_size (int, optional): Kernel size of the convolution layers.
+            Defaults to ``3``.
+        leaky_slope (float, optional): Slope of the leaky ReLU activation.
+            Defaults to ``0.1``.
+        batch_norm (bool, optional): Whether to use batch normalization.
+            Defaults to ``False``.
+        use_gamma (bool, optional): Whether to use gamma parameters for the cross convolutions.
+            Defaults to ``True``.
     """
 
     def __init__(
@@ -253,7 +258,9 @@ class ParallelPermute(InvertibleModule):
         Args:
             input_tensor: list of input tensors
             rev: if True, applies the inverse permutation
+                Defaults to ``False``.
             jac: (unused) if True, computes the log determinant of the Jacobian
+                Defaults to ``True``.
 
         Returns:
             tuple[torch.Tensor, torch.Tensor]: output tensor and log determinant of the Jacobian
@@ -277,6 +284,7 @@ class ParallelGlowCouplingLayer(InvertibleModule):
         dims_in (list[tuple[int]]): list of dimensions of the input tensors
         subnet_args (dict): arguments of the subnet
         clamp (float): clamp value for the output of the subnet
+            Defaults to ``5.0``.
     """
 
     def __init__(self, dims_in: list[tuple[int]], subnet_args: dict, clamp: float = 5.0) -> None:
@@ -535,8 +543,11 @@ class CsFlowModel(nn.Module):
         input_size (tuple[int, int]): Input image size.
         cross_conv_hidden_channels (int): Number of hidden channels in the cross convolution.
         n_coupling_blocks (int): Number of coupling blocks.
+            Defaults to ``4``.
         clamp (float): Clamp value for the coupling blocks.
+            Defaults to ``3``.
         num_channels (int): Number of channels in the input image.
+            Defaults to ``3``.
     """
 
     def __init__(

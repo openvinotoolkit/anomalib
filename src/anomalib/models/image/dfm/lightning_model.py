@@ -22,16 +22,19 @@ class Dfm(MemoryBankMixin, AnomalyModule):
 
     Args:
         input_size (tuple[int, int]): Input size for the model.
+            Defaults to ``(256, 256)``.
         backbone (str): Backbone CNN network
+            Defaults to ``"resnet50"``.
         layer (str): Layer to extract features from the backbone CNN
+            Defaults to ``"layer3"``.
         pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.
+            Defaults to ``True``.
         pooling_kernel_size (int, optional): Kernel size to pool features extracted from the CNN.
-            Defaults to 4.
+            Defaults to ``4``.
         pca_level (float, optional): Ratio from which number of components for PCA are calculated.
-            Defaults to 0.97.
-        score_type (str, optional): Scoring type. Options are `fre` and `nll`. Defaults to "fre".
-        nll: for Gaussian modeling, fre: pca feature-reconstruction error. Anomaly segmentation is
-        supported with `fre` only. If using `nll`, set `task` in config.yaml to classification
+            Defaults to ``0.97``.
+        score_type (str, optional): Scoring type. Options are `fre` and `nll`.
+            Defaults to ``fre``.
     """
 
     def __init__(

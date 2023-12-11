@@ -18,16 +18,13 @@ from .aupro import AUPRO
 from .auroc import AUROC
 from .collection import AnomalibMetricCollection
 from .min_max import MinMax
-from .optimal_f1 import OptimalF1
 from .pro import PRO
-from .threshold import BaseThreshold, F1AdaptiveThreshold, ManualThreshold
+from .threshold import F1AdaptiveThreshold, ManualThreshold
 
 __all__ = [
     "AUROC",
     "AUPR",
     "AUPRO",
-    "OptimalF1",
-    "BaseThreshold",
     "AnomalyScoreDistribution",
     "F1AdaptiveThreshold",
     "ManualThreshold",

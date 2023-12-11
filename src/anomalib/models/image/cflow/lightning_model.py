@@ -1,11 +1,15 @@
-"""CFLOW: Real-Time  Unsupervised Anomaly Detection via Conditional Normalizing Flows.
+"""Cflow.
 
-https://arxiv.org/pdf/2107.12571v1.pdf
+Real-Time Unsupervised Anomaly Detection via Conditional Normalizing Flows.
+
+For more details, see the paper: `Real-Time Unsupervised Anomaly Detection via
+Conditional Normalizing Flows <https://arxiv.org/pdf/2107.12571v1.pdf>`_.
 """
 
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+__all__ = ["Cflow"]
 
 from collections.abc import Sequence
 from typing import Any
@@ -22,11 +26,34 @@ from anomalib.models.components import AnomalyModule
 from .torch_model import CflowModel
 from .utils import get_logp, positional_encoding_2d
 
-__all__ = ["Cflow"]
-
 
 class Cflow(AnomalyModule):
-    """PL Lightning Module for the CFLOW algorithm."""
+    """PL Lightning Module for the CFLOW algorithm.
+
+    Args:
+        input_size (tuple[int, int], optional): Input image size.
+            Defaults to ``(256, 256)``.
+        backbone (str, optional): Backbone CNN architecture.
+            Defaults to ``"wide_resnet50_2"``.
+        layers (Sequence[str], optional): Layers to extract features from.
+            Defaults to ``("layer2", "layer3", "layer4")``.
+        pre_trained (bool, optional): Whether to use pre-trained weights.
+            Defaults to ``True``.
+        fiber_batch_size (int, optional): Fiber batch size.
+            Defaults to ``64``.
+        decoder (str, optional): Decoder architecture.
+            Defaults to ``"freia-cflow"``.
+        condition_vector (int, optional): Condition vector size.
+            Defaults to ``128``.
+        coupling_blocks (int, optional): Number of coupling blocks.
+            Defaults to ``8``.
+        clamp_alpha (float, optional): Clamping value for the alpha parameter.
+            Defaults to ``1.9``.
+        permute_soft (bool, optional): Whether to use soft permutation.
+            Defaults to ``False``.
+        lr (float, optional): Learning rate.
+            Defaults to ``0.0001``.
+    """
 
     def __init__(
         self,

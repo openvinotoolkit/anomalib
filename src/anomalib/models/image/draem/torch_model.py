@@ -17,7 +17,12 @@ from anomalib.models.components.layers import SSPCAB
 
 
 class DraemModel(nn.Module):
-    """DRAEM PyTorch model consisting of the reconstructive and discriminative sub networks."""
+    """DRAEM PyTorch model consisting of the reconstructive and discriminative sub networks.
+
+    Args:
+        sspcab (bool): Enable SSPCAB training.
+            Defaults to ``False``.
+    """
 
     def __init__(self, sspcab: bool = False) -> None:
         super().__init__()
@@ -47,8 +52,13 @@ class ReconstructiveSubNetwork(nn.Module):
 
     Args:
         in_channels (int): Number of input channels.
+            Defaults to ``3``.
         out_channels (int): Number of output channels.
+            Defaults to ``3``.
         base_width (int): Base dimensionality of the layers of the autoencoder.
+            Defaults to ``128``.
+        sspcab (bool): Enable SSPCAB training.
+            Defaults to ``False``.
     """
 
     def __init__(
@@ -80,8 +90,11 @@ class DiscriminativeSubNetwork(nn.Module):
 
     Args:
         in_channels (int): Number of input channels.
+            Defaults to ``3``.
         out_channels (int): Number of output channels.
+            Defaults to ``3``.
         base_width (int): Base dimensionality of the layers of the autoencoder.
+            Defaults to ``64``.
     """
 
     def __init__(self, in_channels: int = 3, out_channels: int = 3, base_width: int = 64) -> None:
@@ -201,6 +214,7 @@ class DecoderDiscriminative(nn.Module):
     Args:
         base_width (int): Base dimensionality of the layers of the autoencoder.
         out_channels (int): Number of output channels.
+            Defaults to ``1``.
     """
 
     def __init__(self, base_width: int, out_channels: int = 1) -> None:
@@ -334,6 +348,8 @@ class EncoderReconstructive(nn.Module):
     Args:
         in_channels (int): Number of input channels.
         base_width (int): Base dimensionality of the layers of the autoencoder.
+        sspcab (bool): Enable SSPCAB training.
+            Defaults to ``False``.
     """
 
     def __init__(self, in_channels: int, base_width: int, sspcab: bool = False) -> None:
@@ -412,6 +428,7 @@ class DecoderReconstructive(nn.Module):
     Args:
         base_width (int): Base dimensionality of the layers of the autoencoder.
         out_channels (int): Number of output channels.
+            Defaults to ``1``.
     """
 
     def __init__(self, base_width: int, out_channels: int = 1) -> None:

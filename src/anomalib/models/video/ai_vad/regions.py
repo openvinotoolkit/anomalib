@@ -20,14 +20,21 @@ class RegionExtractor(nn.Module):
 
     Args:
         box_score_thresh (float): Confidence threshold for bounding box predictions.
+            Defaults to ``0.8``.
         persons_only (bool): When enabled, only regions labeled as person are included.
+            Defaults to ``False``.
         min_bbox_area (int): Minimum bounding box area. Regions with a surface area lower than this value are excluded.
+            Defaults to ``100``.
         max_bbox_overlap (float): Maximum allowed overlap between bounding boxes.
+            Defaults to ``0.65``.
         enable_foreground_detections (bool): Add additional foreground detections based on pixel difference between
             consecutive frames.
+            Defaults to ``True``.
         foreground_kernel_size (int): Gaussian kernel size used in foreground detection.
+            Defaults to ``3``.
         foreground_binary_threshold (int): Value between 0 and 255 which acts as binary threshold in foreground
             detection.
+            Defaults to ``18``.
     """
 
     def __init__(

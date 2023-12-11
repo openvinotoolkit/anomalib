@@ -35,9 +35,54 @@ class OpenVINOInferencer(Inferencer):
     Args:
         path (str | Path): Path to the openvino onnx, xml or bin file.
         metadata (str | Path | dict, optional): Path to metadata file or a dict object defining the
-            metadata. Defaults to None.
-        device (str | None, optional): Device to run the inference on. Defaults to "CPU".
-        task (TaskType | None, optional): Task type. Defaults to None.
+            metadata.
+            Defaults to ``None``.
+        device (str | None, optional): Device to run the inference on.
+            Defaults to ``CPU``.
+        task (TaskType | None, optional): Task type.
+            Defaults to ``None``.
+
+
+    Examples:
+        Assume that we have an OpenVINO IR model and metadata files in the following structure:
+
+        .. code-block:: bash
+
+            $ tree weights
+            ./weights
+            ├── model.bin
+            ├── model.xml
+            └── metadata.json
+
+        We could then create ``OpenVINOInferencer`` as follows:
+
+        >>> from anomalib.deploy.inferencers import OpenVINOInferencer
+        >>> inferencer = OpenVINOInferencer(
+        ...     path="weights/model.xml",
+        ...     metadata="weights/metadata.json",
+        ...     device="CPU",
+        ... )
+
+        This will ensure that the model is loaded on the ``CPU`` device and the
+        metadata is loaded from the ``metadata.json`` file. To make a prediction,
+        we can simply call the ``predict`` method:
+
+        >>> import cv2
+        >>> image = cv2.imread("path/to/image.jpg")
+        >>> image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        >>> result = inferencer.predict(image)
+
+        ``result`` will be an ``ImageResult`` object containing the prediction
+        results. For example, to visualize the heatmap, we can do the following:
+
+        >>> from matplotlib import pyplot as plt
+        >>> plt.imshow(result.heatmap)
+
+        It is also possible to visualize the true and predicted masks if the
+        task is ``TaskType.SEGMENTATION``:
+
+        >>> plt.imshow(result.gt_mask)
+        >>> plt.imshow(result.pred_mask)
     """
 
     def __init__(

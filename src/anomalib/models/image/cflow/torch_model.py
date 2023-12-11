@@ -17,7 +17,27 @@ from .utils import cflow_head, get_logp, positional_encoding_2d
 
 
 class CflowModel(nn.Module):
-    """CFLOW: Conditional Normalizing Flows."""
+    """CFLOW: Conditional Normalizing Flows.
+
+    Args:
+        input_size (tuple[int, int]): Input image size.
+        backbone (str): Backbone CNN architecture.
+        layers (Sequence[str]): Layers to extract features from.
+        pre_trained (bool): Whether to use pre-trained weights.
+            Defaults to ``True``.
+        fiber_batch_size (int): Fiber batch size.
+            Defaults to ``64``.
+        decoder (str): Decoder architecture.
+            Defaults to ``"freia-cflow"``.
+        condition_vector (int): Condition vector size.
+            Defaults to ``128``.
+        coupling_blocks (int): Number of coupling blocks.
+            Defaults to ``8``.
+        clamp_alpha (float): Clamping value for the alpha parameter.
+            Defaults to ``1.9``.
+        permute_soft (bool): Whether to use soft permutation.
+            Defaults to ``False``.
+    """
 
     def __init__(
         self,

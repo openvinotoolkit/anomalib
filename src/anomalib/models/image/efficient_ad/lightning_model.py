@@ -71,14 +71,22 @@ class EfficientAd(AnomalyModule):
 
     Args:
         input_size (tuple): size of input images
+            Defaults to ``(256, 256)``.
         teacher_out_channels (int): number of convolution output channels
+            Defaults to ``384``.
         model_size (str): size of student and teacher model
+            Defaults to ``EfficientAdModelSize.S``.
         lr (float): learning rate
+            Defaults to ``0.0001``.
         weight_decay (float): optimizer weight decay
+            Defaults to ``0.00001``.
         padding (bool): use padding in convoluional layers
+            Defaults to ``False``.
         pad_maps (bool): relevant if padding is set to False. In this case, pad_maps = True pads the
             output anomaly maps so that their size matches the size in the padding = True case.
+            Defaults to ``True``.
         batch_size (int): batch size for imagenet dataloader
+            Defaults to ``1``.
     """
 
     def __init__(

@@ -96,8 +96,10 @@ class _TrainerArgumentsCache:
 class Engine:
     """Anomalib Engine.
 
-    Note:
-        Refer to PyTorch Lightning's Trainer for a list of parameters for details on other Trainer parameters.
+    .. note::
+
+        Refer to PyTorch Lightning's Trainer for a list of parameters for
+        details on other Trainer parameters.
 
     Args:
         callbacks (list[Callback]): Add a callback or list of callbacks.

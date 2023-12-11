@@ -39,11 +39,11 @@ class AnomalibCLI(LightningCLI):
     The advantage of this tool is its flexibility to configure the pipeline
     from both the CLI and a configuration file (.yaml or .json). It is even
     possible to use both the CLI and a configuration file simultaneously.
-    For more details, the reader could refer to PyTorch Lightning CLI documentation.
+    For more details, the reader could refer to PyTorch Lightning CLI
+    documentation.
 
-
-    ``save_config_kwargs`` is set to overwrite=True so that the SaveConfigCallback overwrites the config if it already
-    exists.
+    ``save_config_kwargs`` is set to ``overwrite=True`` so that the
+    ``SaveConfigCallback`` overwrites the config if it already exists.
     """
 
     def __init__(
@@ -116,10 +116,9 @@ class AnomalibCLI(LightningCLI):
     def add_arguments_to_parser(self, parser: LightningArgumentParser) -> None:
         """Extend trainer's arguments to add engine arguments.
 
-        Note:
-        ----
-            Since ``Engine`` parameters are manually added, any change to the ``Engine`` class should be reflected
-            manually.
+        .. note::
+            Since ``Engine`` parameters are manually added, any change to the
+            ``Engine`` class should be reflected manually.
         """
         parser.add_function_arguments(get_normalization_callback, "normalization")
         # visualization takes task from the project
@@ -229,9 +228,10 @@ class AnomalibCLI(LightningCLI):
     def instantiate_engine(self) -> Engine:
         """Instantiate the engine.
 
-        Note:
-            Most of the code in this method is taken from LightningCLI's ``instantiate_trainer`` method.
-            Refer to that method for more details.
+        .. note::
+            Most of the code in this method is taken from ``LightningCLI``'s
+            ``instantiate_trainer`` method. Refer to that method for more
+            details.
         """
         extra_callbacks = [self._get(self.config_init, c) for c in self._parser(self.subcommand).callback_keys]
         engine_args = {
@@ -266,7 +266,8 @@ class AnomalibCLI(LightningCLI):
     def _run_subcommand(self, subcommand: str) -> None:
         """Run subcommand depending on the subcommand.
 
-        This overrides the original ``_run_subcommand`` to run the ``Engine`` method rather than the ``Train`` method
+        This overrides the original ``_run_subcommand`` to run the ``Engine``
+        method rather than the ``Train`` method.
         """
         if self.config["subcommand"] in (*self.subcommands(), "train", "export"):
             fn = getattr(self.engine, subcommand)
