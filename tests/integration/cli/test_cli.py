@@ -31,8 +31,6 @@ class TestCLI:
         AnomalibCLI(
             args=[
                 "fit",
-                "--model",
-                "Padim",
                 *self._get_common_cli_args("padim", dataset_path, project_path),
                 # TODO(ashwinvaidya17): Fix these Edge cases
                 # https://github.com/openvinotoolkit/anomalib/issues/1478
@@ -52,8 +50,6 @@ class TestCLI:
         AnomalibCLI(
             args=[
                 "test",
-                "--model",
-                "Padim",
                 *self._get_common_cli_args("padim", dataset_path, project_path),
                 "--ckpt_path",
                 f"{project_path}/padim/dummy/weights/last.ckpt",
@@ -71,8 +67,6 @@ class TestCLI:
         AnomalibCLI(
             args=[
                 "train",
-                "--model",
-                "Padim",
                 *self._get_common_cli_args("padim", dataset_path, project_path),
                 "--ckpt_path",
                 f"{project_path}/padim/dummy/weights/last.ckpt",
@@ -90,8 +84,6 @@ class TestCLI:
         AnomalibCLI(
             args=[
                 "validate",
-                "--model",
-                "Padim",
                 *self._get_common_cli_args("padim", dataset_path, project_path),
                 "--ckpt_path",
                 f"{project_path}/padim/dummy/weights/last.ckpt",
@@ -109,8 +101,6 @@ class TestCLI:
         AnomalibCLI(
             args=[
                 "predict",
-                "--model",
-                "Padim",
                 *self._get_common_cli_args(
                     "Padim",
                     dataset_path,
@@ -139,8 +129,6 @@ class TestCLI:
         AnomalibCLI(
             args=[
                 "export",
-                "--model",
-                "Padim",
                 "--export_mode",
                 export_mode,
                 *self._get_common_cli_args("padim", dataset_path, project_path),
@@ -186,6 +174,8 @@ class TestCLI:
             extra_args = ["--trainer.max_steps", "70000"]
 
         return [
+            "--model",
+            "Padim",
             *extra_args,
             "--data",
             dataclass,
