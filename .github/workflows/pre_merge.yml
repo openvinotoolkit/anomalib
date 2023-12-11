@@ -39,7 +39,7 @@ jobs:
       matrix:
         include:
           - python-version: "3.9"
-            tox-env: "py310"
+            tox-env: "py39"
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
