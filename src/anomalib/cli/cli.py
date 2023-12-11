@@ -92,11 +92,16 @@ class AnomalibCLI(LightningCLI):
         return parser
 
     @staticmethod
+    def subcommands() -> dict[str, set[str]]:
+        """Skip predict subcommand as it is added later."""
+        return {key: value for key, value in LightningCLI.subcommands().items() if key != "predict"}
+
+    @staticmethod
     def anomalib_subcommands() -> dict[str, dict[str, str]]:
         """Return a dictionary of subcommands and their description."""
         return {
-            "predict": {"description": "Run inference on a model."},
             "train": {"description": "Fit the model and then call test on the trained model."},
+            "predict": {"description": "Run inference on a model."},
             "export": {"description": "Export the model to ONNX or OpenVINO format."},
             "benchmark": {"description": "Run benchmarking script"},
             "hpo": {"description": "Run Hyperparameter Optimization"},
@@ -219,7 +224,7 @@ class AnomalibCLI(LightningCLI):
         But for subcommands we do not want to instantiate any trainer specific classes such as datamodule, model, etc
         This is because the subcommand is responsible for instantiating and executing code based on the passed config
         """
-        if self.config["subcommand"] in self.subcommands():  # trainer commands
+        if self.config["subcommand"] in (*self.subcommands(), "predict"):  # trainer commands
             # since all classes are instantiated, the LightningCLI also creates an unused ``Trainer`` object.
             # the minor change here is that engine is instantiated instead of trainer
             self.config_init = self.parser.instantiate_classes(self.config)
@@ -279,7 +284,7 @@ class AnomalibCLI(LightningCLI):
 
         This overrides the original ``_run_subcommand`` to run the ``Engine`` method rather than the ``Train`` method
         """
-        if self.config["subcommand"] in (*self.subcommands(), "train", "export"):
+        if self.config["subcommand"] in (*self.subcommands(), "train", "export", "predict"):
             fn = getattr(self.engine, subcommand)
             fn_kwargs = self._prepare_subcommand_kwargs(subcommand)
             fn(**fn_kwargs)
