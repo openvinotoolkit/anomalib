@@ -20,9 +20,7 @@ from anomalib.utils.types import TaskType
 
 def models() -> list[str]:
     """Return all available models except ai_vad."""
-    # TODO(ashwinvaidya17): Restore AiVad test
-    # CVS-109972
-    return [model for model in get_available_models() if model != "ai_vad"]
+    return get_available_models()
 
 
 class TestAPI:

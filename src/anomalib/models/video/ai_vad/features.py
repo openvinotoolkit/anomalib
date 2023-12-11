@@ -113,6 +113,7 @@ class DeepExtractor(nn.Module):
 
         self.encoder, _ = clip.load("ViT-B/16")
         self.transform = Normalize(mean=(0.48145466, 0.4578275, 0.40821073), std=(0.26862954, 0.26130258, 0.27577711))
+        self.output_dim = self.encoder.visual.output_dim
 
     def forward(self, batch: torch.Tensor, boxes: torch.Tensor, batch_size: int) -> torch.Tensor:
         """Extract deep features using CLIP encoder.
@@ -129,8 +130,10 @@ class DeepExtractor(nn.Module):
         rgb_regions = roi_align(batch, boxes, output_size=[224, 224])
 
         batched_regions = torch.split(rgb_regions, batch_size)
+        batched_regions = [batch for batch in batched_regions if batch.numel() != 0]
         with torch.no_grad():
-            return torch.vstack([self.encoder.encode_image(self.transform(batch)) for batch in batched_regions])
+            features = [self.encoder.encode_image(self.transform(batch)) for batch in batched_regions]
+            return torch.vstack(features).float() if len(features) else torch.empty(0, self.output_dim).to(batch.device)
 
 
 class VelocityExtractor(nn.Module):
@@ -179,6 +182,8 @@ class VelocityExtractor(nn.Module):
             final_histogram[mask] = histogram_mag[mask] / histogram_counts[mask]
             velocity_histograms.append(final_histogram)
 
+        if len(velocity_histograms) == 0:
+            return torch.empty(0, self.n_bins).to(flows.device)
         return torch.stack(velocity_histograms).to(flows.device)
 
 
@@ -215,7 +220,8 @@ class PoseExtractor(nn.Module):
             boxes = detection["boxes"].unsqueeze(1)
             keypoints = detection["keypoints"]
             normalized_keypoints = (keypoints[..., :2] - boxes[..., :2]) / (boxes[..., 2:] - boxes[..., :2])
-            poses.append(normalized_keypoints.reshape(normalized_keypoints.shape[0], -1))
+            length = normalized_keypoints.shape[-1] * normalized_keypoints.shape[-2]
+            poses.append(normalized_keypoints.reshape(normalized_keypoints.shape[0], length))
         return poses
 
     def forward(self, batch: torch.Tensor, boxes: torch.Tensor) -> list[torch.Tensor]:

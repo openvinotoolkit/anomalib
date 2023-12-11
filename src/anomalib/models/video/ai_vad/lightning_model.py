@@ -94,6 +94,8 @@ class AiVad(MemoryBankMixin, AnomalyModule):
             n_neighbors_deep=n_neighbors_deep,
         )
 
+        self.total_detections = 0
+
     @staticmethod
     def configure_optimizers() -> None:
         """AI-VAD training does not involve fine-tuning of NN weights, no optimizers needed."""
@@ -111,9 +113,13 @@ class AiVad(MemoryBankMixin, AnomalyModule):
 
         for features, video_path in zip(features_per_batch, batch["video_path"], strict=True):
             self.model.density_estimator.update(features, video_path)
+            self.total_detections += len(next(iter(features.values())))
 
     def fit(self) -> None:
         """Fit the density estimators to the extracted features from the training set."""
+        if self.total_detections == 0:
+            msg = "No regions were extracted during training."
+            raise ValueError(msg)
         self.model.density_estimator.fit()
 
     def validation_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> STEP_OUTPUT:

@@ -5,13 +5,13 @@
 
 
 from abc import ABC, abstractmethod
-from typing import Any
 
 import torch
-from sklearn.mixture import GaussianMixture
-from torch import nn
+from torch import Tensor, nn
 
 from anomalib.metrics.min_max import MinMax
+from anomalib.models.components.base import DynamicBufferModule
+from anomalib.models.components.cluster.gmm import GaussianMixture
 
 from .features import FeatureType
 
@@ -128,22 +128,22 @@ class CombinedDensityEstimator(BaseDensityEstimator):
         device = next(iter(features.values())).device
         region_scores = torch.zeros(n_regions).to(device)
         image_score = 0
-        if self.use_velocity_features:
+        if self.use_velocity_features and features[FeatureType.VELOCITY].numel():
             velocity_scores = self.velocity_estimator.predict(features[FeatureType.VELOCITY])
             region_scores += velocity_scores
             image_score += velocity_scores.max()
-        if self.use_deep_features:
+        if self.use_deep_features and features[FeatureType.DEEP].numel():
             deep_scores = self.appearance_estimator.predict(features[FeatureType.DEEP])
             region_scores += deep_scores
             image_score += deep_scores.max()
-        if self.use_pose_features:
+        if self.use_pose_features and features[FeatureType.POSE].numel():
             pose_scores = self.pose_estimator.predict(features[FeatureType.POSE])
             region_scores += pose_scores
             image_score += pose_scores.max()
         return region_scores, image_score
 
 
-class GroupedKNNEstimator(BaseDensityEstimator):
+class GroupedKNNEstimator(DynamicBufferModule, BaseDensityEstimator):
     """Grouped KNN density estimator.
 
     Keeps track of the group (e.g. video id) from which the features were sampled for normalization purposes.
@@ -156,8 +156,12 @@ class GroupedKNNEstimator(BaseDensityEstimator):
         super().__init__()
 
         self.n_neighbors = n_neighbors
-        self.memory_bank: dict[Any, list[torch.Tensor] | torch.Tensor] = {}
+        self.feature_collection: dict[str, list[torch.Tensor]] = {}
+        self.group_index: dict[str, int] = {}
         self.normalization_statistics = MinMax()
+
+        self.register_buffer("memory_bank", Tensor())
+        self.memory_bank: torch.Tensor = Tensor()
 
     def update(self, features: torch.Tensor, group: str | None = None) -> None:
         """Update the internal feature bank while keeping track of the group.
@@ -168,15 +172,24 @@ class GroupedKNNEstimator(BaseDensityEstimator):
         """
         group = group or "default"
 
-        if group in self.memory_bank:
-            self.memory_bank[group].append(features)
+        if group in self.feature_collection:
+            self.feature_collection[group].append(features)
         else:
-            self.memory_bank[group] = [features]
+            self.feature_collection[group] = [features]
 
     def fit(self) -> None:
         """Fit the KNN model by stacking the feature vectors and computing the normalization statistics."""
-        self.memory_bank = {key: torch.vstack(value) for key, value in self.memory_bank.items()}
-        self._compute_normalization_statistics()
+        # stack the collected features group-wise
+        feature_collection = {key: torch.vstack(value) for key, value in self.feature_collection.items()}
+        # assign memory bank, group index and group names
+        self.memory_bank = torch.vstack(list(feature_collection.values()))
+        self.group_index = torch.repeat_interleave(
+            Tensor([features.shape[0] for features in feature_collection.values()]).int(),
+        )
+        self.group_names = list(feature_collection.keys())
+        self._compute_normalization_statistics(feature_collection)
+        # delete the feature collection to free up memory
+        del self.feature_collection
 
     def predict(
         self,
@@ -203,14 +216,12 @@ class GroupedKNNEstimator(BaseDensityEstimator):
         n_neighbors = n_neighbors or self.n_neighbors
 
         if group:
-            mem_bank = self.memory_bank.copy()
-            mem_bank.pop(group)
+            group_idx = self.group_names.index(group)
+            mem_bank = self.memory_bank[self.group_index != group_idx]
         else:
             mem_bank = self.memory_bank
 
-        mem_bank_tensor = torch.vstack(list(mem_bank.values()))
-
-        distances = self._nearest_neighbors(mem_bank_tensor, features, n_neighbors=n_neighbors)
+        distances = self._nearest_neighbors(mem_bank, features, n_neighbors=n_neighbors)
 
         if normalize:
             distances = self._normalize(distances)
@@ -237,9 +248,9 @@ class GroupedKNNEstimator(BaseDensityEstimator):
         distances, _ = distances.topk(k=n_neighbors, largest=False, dim=1)
         return distances
 
-    def _compute_normalization_statistics(self) -> None:
+    def _compute_normalization_statistics(self, grouped_features: dict[str, Tensor]) -> None:
         """Compute min-max normalization statistics while taking the group into account."""
-        for group, features in self.memory_bank.items():
+        for group, features in grouped_features.items():
             distances = self.predict(features, group, normalize=False)
             self.normalization_statistics.update(distances)
 
@@ -270,9 +281,7 @@ class GMMEstimator(BaseDensityEstimator):
     def __init__(self, n_components: int = 2) -> None:
         super().__init__()
 
-        # TODO(djdameln): Replace with custom pytorch implementation of GMM
-        # CVS-109432
-        self.gmm = GaussianMixture(n_components=n_components, random_state=0)
+        self.gmm = GaussianMixture(n_components=n_components)
         self.memory_bank: list[torch.Tensor] | torch.Tensor = []
 
         self.normalization_statistics = MinMax()
@@ -286,7 +295,7 @@ class GMMEstimator(BaseDensityEstimator):
     def fit(self) -> None:
         """Fit the GMM and compute normalization statistics."""
         self.memory_bank = torch.vstack(self.memory_bank)
-        self.gmm.fit(self.memory_bank.cpu())
+        self.gmm.fit(self.memory_bank)
         self._compute_normalization_statistics()
 
     def predict(self, features: torch.Tensor, normalize: bool = True) -> torch.Tensor:
@@ -300,8 +309,7 @@ class GMMEstimator(BaseDensityEstimator):
         Returns:
             Tensor: Density scores of the input feature vectors.
         """
-        density = -self.gmm.score_samples(features.cpu())
-        density = torch.Tensor(density).to(self.normalization_statistics.device)
+        density = -self.gmm.score_samples(features)
         if normalize:
             density = self._normalize(density)
         return density

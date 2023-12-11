@@ -234,7 +234,7 @@ class RegionExtractor(nn.Module):
             if not any(overlap_ratio > threshold):
                 keep.append(indices[idx])
 
-        return self.subsample_regions(regions, torch.stack(keep))
+        return self.subsample_regions(regions, torch.tensor(keep, dtype=torch.int64))
 
     @staticmethod
     def subsample_regions(regions: dict[str, torch.Tensor], indices: torch.Tensor) -> dict[str, torch.Tensor]:

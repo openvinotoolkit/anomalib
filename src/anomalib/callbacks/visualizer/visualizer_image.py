@@ -58,7 +58,15 @@ class ImageVisualizerCallback(BaseVisualizerCallback):
         assert outputs is not None
 
         for i, image in enumerate(self.visualizer.visualize_batch(outputs)):
-            filename = Path(outputs["image_path"][i])
+            if "image_path" in outputs:
+                filename = Path(outputs["image_path"][i])
+            elif "video_path" in outputs:
+                zero_fill = int(math.log10(outputs["last_frame"][i])) + 1
+                suffix = f"{str(outputs['frames'][i].int().item()).zfill(zero_fill)}.png"
+                filename = Path(outputs["video_path"][i]) / suffix
+            else:
+                msg = "Batch must have either 'image_path' or 'video_path' defined."
+                raise KeyError(msg)
             if self.save_images:
                 file_path = self.image_save_path / filename.parent.name / filename.name
                 self.visualizer.save(file_path, image)
