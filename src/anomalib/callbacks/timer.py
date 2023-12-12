@@ -13,7 +13,15 @@ logger = logging.getLogger(__name__)
 
 
 class TimerCallback(Callback):
-    """Callback that measures the training and testing time of a PyTorch Lightning module."""
+    """Callback that measures the training and testing time of a PyTorch Lightning module.
+
+    Examples:
+        >>> from anomalib.callbacks import TimerCallback
+        >>> from anomalib.engine import Engine
+        ...
+        >>> callbacks = [TimerCallback()]
+        >>> engine = Engine(callbacks=callbacks)
+    """
 
     def __init__(self) -> None:
         self.start: float

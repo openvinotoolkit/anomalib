@@ -27,7 +27,9 @@ class Encoder(nn.Module):
         num_input_channels (int): Number of input channels in the image
         n_features (int): Number of features per convolution layer
         extra_layers (int): Number of extra layers since the network uses only a single encoder layer by default.
-            Defaults to 0.
+            Defaults to ``0``.
+        add_final_conv_layer (bool): Add a final convolution layer in the encoder.
+            Defaults to ``True``.
     """
 
     def __init__(
@@ -105,7 +107,7 @@ class Decoder(nn.Module):
         num_input_channels (int): Number of input channels in the image
         n_features (int): Number of features per convolution layer
         extra_layers (int): Number of extra layers since the network uses only a single encoder layer by default.
-            Defaults to 0.
+            Defaults to ``0``.
     """
 
     def __init__(
@@ -209,7 +211,8 @@ class Discriminator(nn.Module):
         input_size (tuple[int, int]): Input image size.
         num_input_channels (int): Number of image channels.
         n_features (int): Number of feature maps in each convolution layer.
-        extra_layers (int, optional): Add extra intermediate layers. Defaults to 0.
+        extra_layers (int, optional): Add extra intermediate layers.
+            Defaults to ``0``.
     """
 
     def __init__(
@@ -250,8 +253,10 @@ class Generator(nn.Module):
         latent_vec_size (int): Dimension of latent vector produced between the first encoder-decoder.
         num_input_channels (int): Number of channels in input image.
         n_features (int): Number of feature maps in each convolution layer.
-        extra_layers (int, optional): Extra intermediate layers in the encoder/decoder. Defaults to 0.
-        add_final_conv_layer (bool, optional): Add a final convolution layer in the decoder. Defaults to True.
+        extra_layers (int, optional): Extra intermediate layers in the encoder/decoder.
+            Defaults to ``0``.
+        add_final_conv_layer (bool, optional): Add a final convolution layer in the decoder.
+            Defaults to ``True``.
     """
 
     def __init__(
@@ -298,8 +303,10 @@ class GanomalyModel(nn.Module):
         num_input_channels (int): Number of input channels.
         n_features (int): Number of features layers in the CNNs.
         latent_vec_size (int): Size of autoencoder latent vector.
-        extra_layers (int, optional): Number of extra layers for encoder/decoder. Defaults to 0.
-        add_final_conv_layer (bool, optional): Add convolution layer at the end. Defaults to True.
+        extra_layers (int, optional): Number of extra layers for encoder/decoder.
+            Defaults to ``0``.
+        add_final_conv_layer (bool, optional): Add convolution layer at the end.
+            Defaults to ``True``.
     """
 
     def __init__(

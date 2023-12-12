@@ -13,7 +13,30 @@ from .plotting_utils import plot_figure
 
 
 class AUROC(ROC):
-    """Area under the ROC curve."""
+    """Area under the ROC curve.
+
+    Examples:
+        >>> import torch
+        >>> from anomalib.metrics import AUROC
+        ...
+        >>> preds = torch.tensor([0.13, 0.26, 0.08, 0.92, 0.03])
+        >>> target = torch.tensor([0, 0, 1, 1, 0])
+        ...
+        >>> auroc = AUROC()
+        >>> auroc(preds, target)
+        tensor(0.6667)
+
+        It is possible to update the metric state incrementally:
+
+        >>> auroc.update(preds[:2], target[:2])
+        >>> auroc.update(preds[2:], target[2:])
+        >>> auroc.compute()
+        tensor(0.6667)
+
+        To plot the ROC curve, use the ``generate_figure`` method:
+
+        >>> fig, title = auroc.generate_figure()
+    """
 
     def compute(self) -> torch.Tensor:
         """First compute ROC curve, then compute area under the curve.

@@ -73,7 +73,8 @@ def create_fast_flow_block(
         conv3x3_only (bool): Boolean whether to use conv3x3 only or conv3x3 and conv1x1.
         hidden_ratio (float): Ratio for the hidden layer channels.
         flow_steps (int): Flow steps.
-        clamp (float, optional): Clamp. Defaults to 2.0.
+        clamp (float, optional): Clamp.
+            Defaults to ``2.0``.
 
     Returns:
         SequenceINN: FastFlow Block.
@@ -99,9 +100,13 @@ class FastflowModel(nn.Module):
         input_size (tuple[int, int]): Model input size.
         backbone (str): Backbone CNN network
         pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.
+            Defaults to ``True``.
         flow_steps (int, optional): Flow steps.
-        conv3x3_only (bool, optinoal): Use only conv3x3 in fast_flow model. Defaults to False.
-        hidden_ratio (float, optional): Ratio to calculate hidden var channels. Defaults to 1.0.
+            Defaults to ``8``.
+        conv3x3_only (bool, optinoal): Use only conv3x3 in fast_flow model.
+            Defaults to ``False``.
+        hidden_ratio (float, optional): Ratio to calculate hidden var channels.
+            Defaults to ``1.0``.
 
     Raises:
         ValueError: When the backbone is not supported.

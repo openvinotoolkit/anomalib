@@ -1,19 +1,17 @@
 """Kolektor Surface-Defect Dataset (CC BY-NC-SA 4.0).
 
 Description:
-    This script contains PyTorch Dataset, Dataloader and PyTorch
-        Lightning DataModule for the Kolektor Surface-Defect dataset.
-    The dataset can be found at https://www.vicos.si/resources/kolektorsdd/
+    This script provides a PyTorch Dataset, DataLoader, and PyTorch Lightning DataModule for the Kolektor
+    Surface-Defect dataset. The dataset can be accessed at `Kolektor Surface-Defect Dataset <https://www.vicos.si/resources/kolektorsdd/>`_.
 
 License:
-    Kolektor Surface-Defect dataset is released under the Creative Commons
-    Attribution-NonCommercial-ShareAlike 4.0 International License
-    (CC BY-NC-SA 4.0)(https://creativecommons.org/licenses/by-nc-sa/4.0/).
+    The Kolektor Surface-Defect dataset is released under the Creative Commons Attribution-NonCommercial-ShareAlike
+    4.0 International License (CC BY-NC-SA 4.0). For more details, visit
+    `Creative Commons License <https://creativecommons.org/licenses/by-nc-sa/4.0/>`_.
 
 Reference:
-    - Tabernik, Domen, Samo Šela, Jure Skvarč, and Danijel Skočaj.
-    "Segmentation-based deep-learning approach for surface-defect detection."
-    Journal of Intelligent Manufacturing 31, no. 3 (2020): 759-776.
+    Tabernik, Domen, Samo Šela, Jure Skvarč, and Danijel Skočaj. "Segmentation-based deep-learning approach
+    for surface-defect detection." Journal of Intelligent Manufacturing 31, no. 3 (2020): 759-776.
 """
 
 
@@ -38,6 +36,8 @@ from anomalib.data.utils import (
 )
 from anomalib.utils.types import TaskType
 
+__all__ = ["Kolektor", "KolektorDataset", "make_kolektor_dataset"]
+
 logger = logging.getLogger(__name__)
 
 DOWNLOAD_INFO = DownloadInfo(
@@ -56,6 +56,15 @@ def is_mask_anomalous(path: str) -> int:
 
     Returns:
         int: 1 if the mask shows defects, 0 otherwise.
+
+    Example:
+        Assume that the following image is a mask for a defective image.
+        Then the function will return 1.
+
+        >>> from anomalib.data.image.kolektor import is_mask_anomalous
+        >>> path = './KolektorSDD/kos01/Part0_label.bmp'
+        >>> is_mask_anomalous(path)
+        1
     """
     img_arr = imread(path)
     if np.all(img_arr == 0):
@@ -68,45 +77,43 @@ def make_kolektor_dataset(
     train_split_ratio: float = 0.8,
     split: str | Split | None = None,
 ) -> DataFrame:
-    """Create Kolektor samples by parsing the Koelktor data file structure.
+    """Create Kolektor samples by parsing the Kolektor data file structure.
 
-    The files are expected to follow the structure:
-        image files:
-            path/to/dataset/item/image_filename.jpg
-            path/to/dataset/kos01/Part0.jpg
-        mask files:
-            path/to/dataset/item/mask_filename.bmp
-            path/to/dataset/kos01/Part0_label.bmp
+    The files are expected to follow this structure:
+    - Image files: `path/to/dataset/item/image_filename.jpg`, `path/to/dataset/kos01/Part0.jpg`
+    - Mask files: `path/to/dataset/item/mask_filename.bmp`, `path/to/dataset/kos01/Part0_label.bmp`
 
-    This function creates a dataframe to store the parsed information based on the following format:
-    |---|--------------------|--------|-------|---------|---------------------|--------------------|-------------|
-    |   |    path            | item   | split | label   |  image_path         | mask_path          | label_index |
-    |---|--------------------|--------|-------|---------|---------------------|--------------------|-------------|
-    | 0 |   KolektorSDD      | kos01  | test  |  Bad    | /path/to/image_file | /path/to/mask_file |      1      |
-    |---|--------------------|--------|-------|---------|---------------------|--------------------|-------------|
+    This function creates a DataFrame to store the parsed information in the following format:
+
+    +---+-------------------+--------+-------+---------+-----------------------+------------------------+-------------+
+    |   | path              | item   | split | label   | image_path            | mask_path              | label_index |
+    +---+-------------------+--------+-------+---------+-----------------------+------------------------+-------------+
+    | 0 | KolektorSDD       | kos01  | test  | Bad     | /path/to/image_file   | /path/to/mask_file     | 1           |
+    +---+-------------------+--------+-------+---------+-----------------------+------------------------+-------------+
 
     Args:
-        root (Path): Path to dataset
-        train_split_ratio (float, optional): Ratio to split good images into train/test
-            Defaults to 0.8 for train.
-        split (str | Split | None, optional): Dataset split (Either train or test). Defaults to None.
-
-    Examples:
-        The following example shows how to get training samples from Kolektor Dataset:
-
-        >>> root = Path('./KolektorSDD/')
-
-        >>> samples = make_kolektor_dataset(root, train_split_ratio=0.8)
-        >>> print(samples.head())
-                path      item   split  label        image_path                        mask_path             label_index
-        0    KolektorSDD  kos01  train  Good  KolektorSDD/kos01/Part0.jpg  KolektorSDD/kos01/Part0_label.bmp      0
-        1    KolektorSDD  kos01  train  Good  KolektorSDD/kos01/Part1.jpg  KolektorSDD/kos01/Part1_label.bmp      0
-        2    KolektorSDD  kos01  train  Good  KolektorSDD/kos01/Part2.jpg  KolektorSDD/kos01/Part2_label.bmp      0
-        3    KolektorSDD  kos01   test  Good  KolektorSDD/kos01/Part3.jpg  KolektorSDD/kos01/Part3_label.bmp      0
-        4    KolektorSDD  kos01  train  Good  KolektorSDD/kos01/Part4.jpg  KolektorSDD/kos01/Part4_label.bmp      0
+        root (Path): Path to the dataset.
+        train_split_ratio (float, optional): Ratio for splitting good images into train/test sets.
+            Defaults to ``0.8``.
+        split (str | Split | None, optional): Dataset split (either 'train' or 'test').
+            Defaults to ``None``.
 
     Returns:
-        DataFrame: an output dataframe containing the samples of the dataset.
+        pandas.DataFrame: An output DataFrame containing the samples of the dataset.
+
+    Example:
+        The following example shows how to get training samples from the Kolektor Dataset:
+
+        >>> from pathlib import Path
+        >>> root = Path('./KolektorSDD/')
+        >>> samples = create_kolektor_samples(root, train_split_ratio=0.8)
+        >>> samples.head()
+               path       item  split label   image_path                    mask_path                   label_index
+           0   KolektorSDD   kos01  train Good  KolektorSDD/kos01/Part0.jpg  KolektorSDD/kos01/Part0_label.bmp  0
+           1   KolektorSDD   kos01  train Good  KolektorSDD/kos01/Part1.jpg  KolektorSDD/kos01/Part1_label.bmp  0
+           2   KolektorSDD   kos01  train Good  KolektorSDD/kos01/Part2.jpg  KolektorSDD/kos01/Part2_label.bmp  0
+           3   KolektorSDD   kos01  test  Good  KolektorSDD/kos01/Part3.jpg  KolektorSDD/kos01/Part3_label.bmp  0
+           4   KolektorSDD   kos01  train Good  KolektorSDD/kos01/Part4.jpg  KolektorSDD/kos01/Part4_label.bmp  0
     """
     root = Path(root)
 
@@ -179,7 +186,9 @@ class KolektorDataset(AnomalibDataset):
         task (TaskType): Task type, ``classification``, ``detection`` or ``segmentation``
         transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
         root (Path | str): Path to the root of the dataset
+            Defaults to ``./datasets/kolektor``.
         split (str | Split | None): Split of the dataset, usually Split.TRAIN or Split.TEST
+            Defaults to ``None``.
     """
 
     def __init__(
@@ -204,27 +213,35 @@ class Kolektor(AnomalibDataModule):
     Args:
         root (Path | str): Path to the root of the dataset
         image_size (int | tuple[int, int] | None, optional): Size of the input image.
-            Defaults to None.
+            Defaults to ``None``.
         center_crop (int | tuple[int, int] | None, optional): When provided, the images will be center-cropped
             to the provided dimensions.
-        normalize (bool): When True, the images will be normalized to the ImageNet statistics.
-        train_batch_size (int, optional): Training batch size. Defaults to 32.
-        eval_batch_size (int, optional): Test batch size. Defaults to 32.
-        num_workers (int, optional): Number of workers. Defaults to 8.
+            Defaults to ``None``.
+        normalization (str | InputNormalizationMethod): Normalization method to apply to the input images.
+            Defaults to ``InputNormalizationMethod.IMAGENET``.
+        train_batch_size (int, optional): Training batch size.
+            Defaults to ``32``.
+        eval_batch_size (int, optional): Test batch size.
+            Defaults to ``32``.
+        num_workers (int, optional): Number of workers.
+            Defaults to ``8``.
         task TaskType): Task type, 'classification', 'detection' or 'segmentation'
-        transform_config_train (str | A.Compose | None, optional): Config for pre-processing
-            during training.
-            Defaults to None.
+            Defaults to ``TaskType.SEGMENTATION``.
+        transform_config_train (str | A.Compose | None, optional): Config for pre-processing during training.
+            Defaults to ``None``.
         transform_config_val (str | A.Compose | None, optional): Config for pre-processing
             during validation.
-            Defaults to None.
+            Defaults to ``None``.
         test_split_mode (TestSplitMode): Setting that determines how the testing subset is obtained.
+            Defaults to ``TestSplitMode.FROM_DIR``
         test_split_ratio (float): Fraction of images from the train set that will be reserved for testing.
-            Defaults to 0.2
+            Defaults to ``0.2``
         val_split_mode (ValSplitMode): Setting that determines how the validation subset is obtained.
+            Defaults to ``ValSplitMode.SAME_AS_TEST``
         val_split_ratio (float): Fraction of train or test images that will be reserved for validation.
-            Defaults to 0.5
+            Defaults to ``0.5``
         seed (int | None, optional): Seed which may be set to a fixed value for reproducibility.
+            Defaults to ``None``.
     """
 
     def __init__(
@@ -285,7 +302,49 @@ class Kolektor(AnomalibDataModule):
         )
 
     def prepare_data(self) -> None:
-        """Download the dataset if not available."""
+        """Download the dataset if not available.
+
+        This method checks if the specified dataset is available in the file system.
+        If not, it downloads and extracts the dataset into the appropriate directory.
+
+        Example:
+            Assume the dataset is not available on the file system.
+            Here's how the directory structure looks before and after calling the
+            `prepare_data` method:
+
+            Before:
+
+            .. code-block:: bash
+
+                $ tree datasets
+                datasets
+                ├── dataset1
+                └── dataset2
+
+            Calling the method:
+
+            .. code-block:: python
+
+                >> datamodule = Kolektor(root="./datasets/kolektor")
+                >> datamodule.prepare_data()
+
+            After:
+
+            .. code-block:: bash
+
+                $ tree datasets
+                datasets
+                ├── dataset1
+                ├── dataset2
+                └── kolektor
+                    ├── kolektorsdd
+                    ├── kos01
+                    ├── ...
+                    └── kos50
+                        ├── Part0.jpg
+                        ├── Part0_label.bmp
+                        └── ...
+        """
         if (self.root).is_dir():
             logger.info("Found the dataset.")
         else:

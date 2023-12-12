@@ -18,9 +18,27 @@ class F1AdaptiveThreshold(PrecisionRecallCurve, BaseThreshold):
     """Anomaly Score Threshold.
 
     This class computes/stores the threshold that determines the anomalous label
-    given anomaly scores.
-    The class initially computes the adaptive threshold to find the optimal f1_score and stores the computed
-    adaptive threshold value.
+    given anomaly scores. It initially computes the adaptive threshold to find
+    the optimal f1_score and stores the computed adaptive threshold value.
+
+    Args:
+        default_value: Default value of the threshold.
+            Defaults to ``0.5``.
+
+    Examples:
+        To find the best threshold that maximizes the F1 score, we could run the
+        following:
+
+        >>> from anomalib.metrics import F1AdaptiveThreshold
+        >>> import torch
+        ...
+        >>> labels = torch.tensor([0, 0, 0, 1, 1])
+        >>> preds = torch.tensor([2.3, 1.6, 2.6, 7.9, 3.3])
+        ...
+        >>> adaptive_threshold = F1AdaptiveThreshold(default_value=0.5)
+        >>> threshold = adaptive_threshold(preds, labels)
+        >>> threshold
+        tensor(3.3000)
     """
 
     def __init__(self, default_value: float = 0.5, **kwargs) -> None:

@@ -63,14 +63,14 @@ Learn more about anomalib API and CLI.
 :::
 
 :::{grid-item-card} {octicon}`question` How-To Guides
-:link: markdown/guides/how_to
+:link: markdown/guides/how_to/index
 :link-type: doc
 
 Learn how to use anomalib for your anomaly detection tasks.
 :::
 
 :::{grid-item-card} {octicon}`telescope` Topic Guides
-:link: markdown/guides/topic
+:link: markdown/guides/topic/index
 :link-type: doc
 
 Learn more about the internals of anomalib.
@@ -90,6 +90,6 @@ markdown/get_started/anomalib
 :hidden:
 
 markdown/guides/reference/index
-markdown/guides/how_to
-markdown/guides/topic
+markdown/guides/how_to/index
+markdown/guides/topic/index
 ```

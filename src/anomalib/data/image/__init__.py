@@ -1,4 +1,7 @@
-"""Anomalib Image Datasets."""
+"""Anomalib Image Datasets.
+
+This module contains the supported image datasets for Anomalib.
+"""
 
 # Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0

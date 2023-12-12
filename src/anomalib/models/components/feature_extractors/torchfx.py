@@ -45,46 +45,63 @@ class TorchFXFeatureExtractor(nn.Module):
     Example:
         With torchvision models:
 
-            >>> import torch
-            >>> from anomalib.models.components.feature_extractors import TorchFXFeatureExtractor
-            >>> from torchvision.models.efficientnet import EfficientNet_B5_Weights
-            >>> feature_extractor = TorchFXFeatureExtractor(
-                    backbone="efficientnet_b5",
-                    return_nodes=["features.6.8"],
-                    weights=EfficientNet_B5_Weights.DEFAULT
-                )
-            >>> input = torch.rand((32, 3, 256, 256))
-            >>> features = feature_extractor(input)
-            >>> [layer for layer in features.keys()]
-                ["features.6.8"]
-            >>> [feature.shape for feature in features.values()]
-                [torch.Size([32, 304, 8, 8])]
+        .. code-block:: python
+
+            import torch
+            from anomalib.models.components.feature_extractors import TorchFXFeatureExtractor
+            from torchvision.models.efficientnet import EfficientNet_B5_Weights
+
+            feature_extractor = TorchFXFeatureExtractor(
+                backbone="efficientnet_b5",
+                return_nodes=["features.6.8"],
+                weights=EfficientNet_B5_Weights.DEFAULT
+            )
+
+            input = torch.rand((32, 3, 256, 256))
+            features = feature_extractor(input)
+
+            print([layer for layer in features.keys()])
+            # Output: ["features.6.8"]
+
+            print([feature.shape for feature in features.values()])
+            # Output: [torch.Size([32, 304, 8, 8])]
 
         With custom models:
 
-            >>> import torch
-            >>> from anomalib.models.components.feature_extractors import TorchFXFeatureExtractor
-            >>> feature_extractor = TorchFXFeatureExtractor(
-                    "path.to.CustomModel", ["linear_relu_stack.3"], weights="path/to/weights.pth"
-                )
-            >>> input = torch.randn(1, 1, 28, 28)
-            >>> features = feature_extractor(input)
-            >>> [layer for layer in features.keys()]
-                ["linear_relu_stack.3"]
+        .. code-block:: python
+
+            import torch
+            from anomalib.models.components.feature_extractors import TorchFXFeatureExtractor
+
+            feature_extractor = TorchFXFeatureExtractor(
+                "path.to.CustomModel", ["linear_relu_stack.3"], weights="path/to/weights.pth"
+            )
+
+            input = torch.randn(1, 1, 28, 28)
+            features = feature_extractor(input)
+
+            print([layer for layer in features.keys()])
+            # Output: ["linear_relu_stack.3"]
 
         with model instances:
 
-            >>> import torch
-            >>> from anomalib.models.components.feature_extractors import TorchFXFeatureExtractor
-            >>> from timm import create_model
-            >>> model = create_model("resnet18", pretrained=True)
-            >>> feature_extractor = TorchFXFeatureExtractor(model, ["layer1"])
-            >>> input = torch.rand((32, 3, 256, 256))
-            >>> features = feature_extractor(input)
-            >>> [layer for layer in features.keys()]
-                ["layer1"]
-            >>> [feature.shape for feature in features.values()]
-                [torch.Size([32, 64, 64, 64])]
+        .. code-block:: python
+
+            import torch
+            from anomalib.models.components.feature_extractors import TorchFXFeatureExtractor
+            from timm import create_model
+
+            model = create_model("resnet18", pretrained=True)
+            feature_extractor = TorchFXFeatureExtractor(model, ["layer1"])
+
+            input = torch.rand((32, 3, 256, 256))
+            features = feature_extractor(input)
+
+            print([layer for layer in features.keys()])
+            # Output: ["layer1"]
+
+            print([feature.shape for feature in features.values()])
+            # Output: [torch.Size([32, 64, 64, 64])]
     """
 
     def __init__(

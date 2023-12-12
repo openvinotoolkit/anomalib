@@ -21,7 +21,40 @@ from .plotting_utils import plot_figure
 
 
 class AUPRO(Metric):
-    """Area under per region overlap (AUPRO) Metric."""
+    """Area under per region overlap (AUPRO) Metric.
+
+    Args:
+        compute_on_step (bool): Forward only calls ``update()`` and return None if this is set to False.
+            Default: ``True``
+        dist_sync_on_step (bool): Synchronize metric state across processes at each ``forward()``
+            before returning the value at the step. Default: ``False``
+        process_group (Optional[Any]): Specify the process group on which synchronization is called.
+            Default: ``None`` (which selects the entire world)
+        dist_sync_fn (Optional[Callable]): Callback that performs the allgather operation on the metric state.
+            When ``None``, DDP will be used to perform the allgather.
+            Default: ``None``
+        fpr_limit (float): Limit for the false positive rate. Defaults to ``0.3``.
+        num_thresholds (int): Number of thresholds to use for computing the roc curve. Defaults to ``None``.
+            If ``None``, the roc curve is computed with the thresholds returned by
+            ``torchmetrics.functional.classification.thresholds``.
+
+    Examples:
+        >>> import torch
+        >>> from anomalib.metrics import AUPRO
+        ...
+        >>> labels = torch.randint(low=0, high=2, size=(1, 10, 5), dtype=torch.float32)
+        >>> preds = torch.rand_like(labels)
+        ...
+        >>> aupro = AUPRO(fpr_limit=0.3)
+        >>> aupro(preds, labels)
+        tensor(0.4321)
+
+        Increasing the fpr_limit will increase the AUPRO value:
+
+        >>> aupro = AUPRO(fpr_limit=0.7)
+        >>> aupro(preds, labels)
+        tensor(0.5271)
+    """
 
     is_differentiable: bool = False
     higher_is_better: bool | None = None

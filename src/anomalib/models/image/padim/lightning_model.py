@@ -25,19 +25,24 @@ class Padim(MemoryBankMixin, AnomalyModule):
     """PaDiM: a Patch Distribution Modeling Framework for Anomaly Detection and Localization.
 
     Args:
-        layers (list[str]): Layers to extract features from the backbone CNN
         input_size (tuple[int, int]): Size of the model input.
+            Defaults to ``(256, 256)``.
         backbone (str): Backbone CNN network
+            Defaults to ``resnet18``.
+        layers (list[str]): Layers to extract features from the backbone CNN
+            Defaults to ``["layer1", "layer2", "layer3"]``.
         pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.
+            Defaults to ``True``.
         n_features (int, optional): Number of features to retain in the dimension reduction step.
             Default values from the paper are available for: resnet18 (100), wide_resnet50_2 (550).
+            Defaults to ``None``.
     """
 
     def __init__(
         self,
-        layers: list[str] = ["layer1", "layer2", "layer3"],  # noqa: B006
         input_size: tuple[int, int] = (256, 256),
         backbone: str = "resnet18",
+        layers: list[str] = ["layer1", "layer2", "layer3"],  # noqa: B006
         pre_trained: bool = True,
         n_features: int | None = None,
     ) -> None:
