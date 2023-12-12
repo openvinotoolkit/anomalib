@@ -1,6 +1,6 @@
 # Model Components
 
-::::{grid}
+::::{grid} 2
 :margin: 1 1 0 0
 :gutter: 1
 
@@ -61,3 +61,17 @@ Learn more about classification model components.
 :::
 
 ::::
+
+```{toctree}
+:caption: Data
+:hidden:
+
+./feature_extractors
+./dimensionality_reduction
+./normalizing_flows
+./sampling_components
+./filters
+./classification
+./cluster
+./stats
+```
