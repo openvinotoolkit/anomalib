@@ -206,7 +206,11 @@ class AnomalibCLI(LightningCLI):
         parser = get_hpo_parser(parser)
 
     def add_benchmark_arguments(self, parser: LightningArgumentParser) -> None:
-        """Add benchmark arguments to the parser."""
+        """Add benchmark arguments to the parser.
+
+        Example:
+            $ anomalib benchmark --b
+        """
         parser.add_argument("--benchmark_config", type=Path, help="Path to the benchmark config.", required=True)
 
     def before_instantiate_classes(self) -> None:
@@ -336,7 +340,7 @@ class AnomalibCLI(LightningCLI):
     def benchmark(self) -> None:
         """Run benchmark subcommand."""
         config = self.config["benchmark"]
-        distribute(config.config)
+        distribute(config.benchmark_config)
 
     def _add_trainer_arguments_to_parser(self, parser: LightningArgumentParser) -> None:
         """Add trainer arguments to the parser."""
@@ -344,8 +348,8 @@ class AnomalibCLI(LightningCLI):
         trainer_defaults = {"trainer." + k: v for k, v in self.trainer_defaults.items() if k != "callbacks"}
         parser.set_defaults(trainer_defaults)
 
-    def _set_predict_dataloader(self, data_path: str | Path | Namespace) -> Namespace:
-        """Set the predict dataloader.
+    def _set_predict_dataloader_namespace(self, data_path: str | Path | Namespace) -> Namespace:
+        """Set the predict dataloader namespace.
 
         If the argument is of type str or Path, then it is assumed to be the path to the prediction data and is
         assigned to InferenceDataset.
