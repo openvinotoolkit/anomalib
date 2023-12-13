@@ -20,8 +20,8 @@ from anomalib.models import AnomalyModule, get_available_models, get_model
 from anomalib.utils.types import TaskType
 
 
-def models() -> list[str]:
-    """Return all available models except ai_vad."""
+def models() -> set[str]:
+    """Return all available models."""
     return get_available_models()
 
 
@@ -105,12 +105,15 @@ class TestAPI:
             dataset_path (Path): Root to dataset from fixture.
             project_path (Path): Path to temporary project folder from fixture.
         """
-        model, _, engine = self._get_objects(
+        model, _dataloader, engine = self._get_objects(
             model_name=model_name,
             dataset_path=dataset_path,
             project_path=project_path,
         )
-        dataloader = DataLoader(InferenceDataset(dataset_path / "mvtec" / "dummy" / "test"))
+        if model_name == "ai_vad":
+            dataloader = _dataloader
+        else:
+            dataloader = DataLoader(InferenceDataset(dataset_path / "mvtec" / "dummy" / "test"))
         engine.predict(
             model=model,
             dataloaders=dataloader,
@@ -130,6 +133,8 @@ class TestAPI:
             # TODO(ashwinvaidya17): Restore this test after fixing reverse distillation
             # https://github.com/openvinotoolkit/anomalib/issues/1513
             pytest.skip("Reverse distillation fails to convert to ONNX")
+        elif model_name == "ai_vad":
+            pytest.skip("Export fails for video models.")
         model, dataset, engine = self._get_objects(
             model_name=model_name,
             dataset_path=dataset_path,
