@@ -32,9 +32,10 @@ class AnomalyMapGenerator(nn.Module):
     Args:
         image_size (ListConfig, tuple): Size of original image used for upscaling the anomaly map.
         sigma (int): Standard deviation of the gaussian kernel used to smooth anomaly map.
+            Defaults to ``4``.
         mode (AnomalyMapGenerationMode, optional): Operation used to generate anomaly map.
-        Options are `AnomalyMapGenerationMode.ADD` and `AnomalyMapGenerationMode.MULTIPLY`.
-        Defaults to "AnomalyMapGenerationMode.MULTIPLY".
+            Options are ``AnomalyMapGenerationMode.ADD`` and ``AnomalyMapGenerationMode.MULTIPLY``.
+            Defaults to ``AnomalyMapGenerationMode.MULTIPLY``.
 
     Raises:
         ValueError: In case modes other than multiply and add are passed.

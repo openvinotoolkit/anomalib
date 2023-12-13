@@ -23,7 +23,8 @@ class AnomalyMapGenerator(nn.Module):
 
     Args:
         input_dims (tuple[int, int, int]): Input dimensions.
-        mode (AnomalyMapMode): Anomaly map mode. Defaults to AnomalyMapMode.ALL.
+        mode (AnomalyMapMode): Anomaly map mode.
+            Defaults to ``AnomalyMapMode.ALL``.
     """
 
     def __init__(self, input_dims: tuple[int, int, int], mode: AnomalyMapMode = AnomalyMapMode.ALL) -> None:

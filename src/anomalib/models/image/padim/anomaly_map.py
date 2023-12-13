@@ -17,7 +17,8 @@ class AnomalyMapGenerator(nn.Module):
 
     Args:
         image_size (ListConfig, tuple): Size of the input image. The anomaly map is upsampled to this dimension.
-        sigma (int, optional): Standard deviation for Gaussian Kernel. Defaults to 4.
+        sigma (int, optional): Standard deviation for Gaussian Kernel.
+            Defaults to ``4``.
     """
 
     def __init__(self, image_size: ListConfig | tuple, sigma: int = 4) -> None:

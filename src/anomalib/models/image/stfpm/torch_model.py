@@ -24,7 +24,8 @@ class STFPMModel(nn.Module):
     Args:
         layers (list[str]): Layers used for feature extraction
         input_size (tuple[int, int]): Input size for the model.
-        backbone (str, optional): Pre-trained model backbone. Defaults to "resnet18".
+        backbone (str, optional): Pre-trained model backbone.
+            Defaults to ``resnet18``.
     """
 
     def __init__(

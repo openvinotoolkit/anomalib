@@ -43,11 +43,11 @@ class AnomalibCLI(LightningCLI):
     The advantage of this tool is its flexibility to configure the pipeline
     from both the CLI and a configuration file (.yaml or .json). It is even
     possible to use both the CLI and a configuration file simultaneously.
-    For more details, the reader could refer to PyTorch Lightning CLI documentation.
+    For more details, the reader could refer to PyTorch Lightning CLI
+    documentation.
 
-
-    ``save_config_kwargs`` is set to overwrite=True so that the SaveConfigCallback overwrites the config if it already
-    exists.
+    ``save_config_kwargs`` is set to ``overwrite=True`` so that the
+    ``SaveConfigCallback`` overwrites the config if it already exists.
     """
 
     def __init__(
@@ -92,11 +92,16 @@ class AnomalibCLI(LightningCLI):
         return parser
 
     @staticmethod
+    def subcommands() -> dict[str, set[str]]:
+        """Skip predict subcommand as it is added later."""
+        return {key: value for key, value in LightningCLI.subcommands().items() if key != "predict"}
+
+    @staticmethod
     def anomalib_subcommands() -> dict[str, dict[str, str]]:
         """Return a dictionary of subcommands and their description."""
         return {
-            "predict": {"description": "Run inference on a model."},
             "train": {"description": "Fit the model and then call test on the trained model."},
+            "predict": {"description": "Run inference on a model."},
             "export": {"description": "Export the model to ONNX or OpenVINO format."},
             "benchmark": {"description": "Run benchmarking script"},
             "hpo": {"description": "Run Hyperparameter Optimization"},
@@ -122,9 +127,9 @@ class AnomalibCLI(LightningCLI):
     def add_arguments_to_parser(self, parser: LightningArgumentParser) -> None:
         """Extend trainer's arguments to add engine arguments.
 
-        Note:
-            Since ``Engine`` parameters are manually added, any change to the ``Engine`` class should be reflected
-            manually.
+        .. note::
+            Since ``Engine`` parameters are manually added, any change to the
+            ``Engine`` class should be reflected manually.
         """
         parser.add_function_arguments(get_normalization_callback, "normalization")
         # visualization takes task from the project
@@ -201,7 +206,11 @@ class AnomalibCLI(LightningCLI):
         parser = get_hpo_parser(parser)
 
     def add_benchmark_arguments(self, parser: LightningArgumentParser) -> None:
-        """Add benchmark arguments to the parser."""
+        """Add benchmark arguments to the parser.
+
+        Example:
+            $ anomalib benchmark --benchmark_config tools/benchmarking/benchmark_params.yaml
+        """
         parser.add_argument("--benchmark_config", type=Path, help="Path to the benchmark config.", required=True)
 
     def before_instantiate_classes(self) -> None:
@@ -219,7 +228,7 @@ class AnomalibCLI(LightningCLI):
         But for subcommands we do not want to instantiate any trainer specific classes such as datamodule, model, etc
         This is because the subcommand is responsible for instantiating and executing code based on the passed config
         """
-        if self.config["subcommand"] in self.subcommands():  # trainer commands
+        if self.config["subcommand"] in (*self.subcommands(), "predict"):  # trainer commands
             # since all classes are instantiated, the LightningCLI also creates an unused ``Trainer`` object.
             # the minor change here is that engine is instantiated instead of trainer
             self.config_init = self.parser.instantiate_classes(self.config)
@@ -240,9 +249,10 @@ class AnomalibCLI(LightningCLI):
     def instantiate_engine(self) -> Engine:
         """Instantiate the engine.
 
-        Note:
-            Most of the code in this method is taken from LightningCLI's ``instantiate_trainer`` method.
-            Refer to that method for more details.
+        .. note::
+            Most of the code in this method is taken from ``LightningCLI``'s
+            ``instantiate_trainer`` method. Refer to that method for more
+            details.
         """
         extra_callbacks = [self._get(self.config_init, c) for c in self._parser(self.subcommand).callback_keys]
         engine_args = {
@@ -277,9 +287,10 @@ class AnomalibCLI(LightningCLI):
     def _run_subcommand(self, subcommand: str) -> None:
         """Run subcommand depending on the subcommand.
 
-        This overrides the original ``_run_subcommand`` to run the ``Engine`` method rather than the ``Train`` method
+        This overrides the original ``_run_subcommand`` to run the ``Engine``
+        method rather than the ``Train`` method.
         """
-        if self.config["subcommand"] in (*self.subcommands(), "train", "export"):
+        if self.config["subcommand"] in (*self.subcommands(), "train", "export", "predict"):
             fn = getattr(self.engine, subcommand)
             fn_kwargs = self._prepare_subcommand_kwargs(subcommand)
             fn(**fn_kwargs)
@@ -331,7 +342,7 @@ class AnomalibCLI(LightningCLI):
     def benchmark(self) -> None:
         """Run benchmark subcommand."""
         config = self.config["benchmark"]
-        distribute(config.config)
+        distribute(config.benchmark_config)
 
     def _add_trainer_arguments_to_parser(self, parser: LightningArgumentParser) -> None:
         """Add trainer arguments to the parser."""
@@ -339,8 +350,8 @@ class AnomalibCLI(LightningCLI):
         trainer_defaults = {"trainer." + k: v for k, v in self.trainer_defaults.items() if k != "callbacks"}
         parser.set_defaults(trainer_defaults)
 
-    def _set_predict_dataloader(self, data_path: str | Path | Namespace) -> Namespace:
-        """Set the predict dataloader.
+    def _set_predict_dataloader_namespace(self, data_path: str | Path | Namespace) -> Namespace:
+        """Set the predict dataloader namespace.
 
         If the argument is of type str or Path, then it is assumed to be the path to the prediction data and is
         assigned to InferenceDataset.

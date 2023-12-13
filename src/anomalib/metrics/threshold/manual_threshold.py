@@ -13,8 +13,33 @@ class ManualThreshold(BaseThreshold):
     """Initialize Manual Threshold.
 
     Args:
-        default_value (float, optional): Default threshold value. Defaults to 0.5.
+        default_value (float, optional): Default threshold value.
+            Defaults to ``0.5``.
         kwargs: Any keyword arguments.
+
+    Examples:
+        >>> from anomalib.metrics import ManualThreshold
+        >>> import torch
+        ...
+        >>> manual_threshold = ManualThreshold(default_value=0.5)
+        ...
+        >>> labels = torch.randint(low=0, high=2, size=(5,))
+        >>> preds = torch.rand(5)
+        ...
+        >>> threshold = manual_threshold(preds, labels)
+        >>> threshold
+        tensor(0.5000, dtype=torch.float64)
+
+        As the threshold is manually set, the threshold value is the same as the
+        ``default_value``.
+
+        >>> labels = torch.randint(low=0, high=2, size=(5,))
+        >>> preds = torch.rand(5)
+        >>> threshold = manual_threshold(preds2, labels2)
+        >>> threshold
+        tensor(0.5000, dtype=torch.float64)
+
+        The threshold value remains the same even if the inputs change.
     """
 
     def __init__(self, default_value: float = 0.5, **kwargs) -> None:

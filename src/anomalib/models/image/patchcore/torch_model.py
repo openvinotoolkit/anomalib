@@ -19,7 +19,18 @@ if TYPE_CHECKING:
 
 
 class PatchcoreModel(DynamicBufferModule, nn.Module):
-    """Patchcore Module."""
+    """Patchcore Module.
+
+    Args:
+        input_size (tuple[int, int]): Input size for the model.
+        layers (list[str]): Layers used for feature extraction
+        backbone (str, optional): Pre-trained model backbone.
+            Defaults to ``resnet18``.
+        pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.
+            Defaults to ``True``.
+        num_neighbors (int, optional): Number of nearest neighbors.
+            Defaults to ``9``.
+    """
 
     def __init__(
         self,
@@ -56,8 +67,7 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
             input_tensor (torch.Tensor): Input tensor
 
         Returns:
-            Tensor | dict[str, torch.Tensor]: Embedding for training,
-                anomaly map and anomaly score for testing.
+            Tensor | dict[str, torch.Tensor]: Embedding for training, anomaly map and anomaly score for testing.
         """
         if self.tiler:
             input_tensor = self.tiler.tile(input_tensor)
@@ -116,7 +126,7 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
         """Reshape Embedding.
 
         Reshapes Embedding to the following format:
-        [Batch, Embedding, Patch, Patch] to [Batch*Patch*Patch, Embedding]
+            - [Batch, Embedding, Patch, Patch] to [Batch*Patch*Patch, Embedding]
 
         Args:
             embedding (torch.Tensor): Embedding tensor extracted from CNN features.

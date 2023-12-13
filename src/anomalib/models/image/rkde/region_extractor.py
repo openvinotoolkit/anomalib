@@ -29,10 +29,15 @@ class RegionExtractor(nn.Module):
 
     Args:
         stage (RoiStage, optional): Processing stage from which rois are extracted.
+            Defaults to ``RoiStage.RCNN``.
         score_threshold (float, optional): Mimumum confidence score for the region proposals.
+            Defaults to ``0.001``.
         min_size (int, optional): Minimum size in pixels for the region proposals.
+            Defaults to ``25``.
         iou_threshold (float, optional): Intersection-Over-Union threshold used during NMS.
+            Defaults to ``0.3``.
         max_detections_per_image (int, optional): Maximum number of region proposals per image.
+            Defaults to ``100``.
     """
 
     def __init__(

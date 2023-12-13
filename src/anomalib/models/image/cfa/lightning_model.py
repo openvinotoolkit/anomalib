@@ -30,12 +30,19 @@ class Cfa(AnomalyModule):
 
     Args:
         input_size (tuple[int, int]): Size of the model input.
+            Defaults to ``(256, 256)``.
         backbone (str): Backbone CNN network
-        gamma_c (int, optional): gamma_c value from the paper. Defaults to 1.
-        gamma_d (int, optional): gamma_d value from the paper. Defaults to 1.
+            Defaults to ``"wide_resnet50_2"``.
+        gamma_c (int, optional): gamma_c value from the paper.
+            Defaults to ``1``.
+        gamma_d (int, optional): gamma_d value from the paper.
+            Defaults to ``1``.
         num_nearest_neighbors (int): Number of nearest neighbors.
+            Defaults to ``3``.
         num_hard_negative_features (int): Number of hard negative features.
+            Defaults to ``3``.
         radius (float): Radius of the hypersphere to search the soft boundary.
+            Defaults to ``1e-5``.
     """
 
     def __init__(
