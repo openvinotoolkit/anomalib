@@ -69,5 +69,5 @@ def infer(args: Namespace) -> None:
 
 if __name__ == "__main__":
     parser = get_parser()
-    config = parser.parse_args()
-    infer(config)
+    args = parser.parse_args()
+    infer(args)
