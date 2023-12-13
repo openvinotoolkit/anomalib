@@ -28,6 +28,7 @@ from .image import (
     ReverseDistillation,
     Rkde,
     Stfpm,
+    WinClip,
 )
 from .video import AiVad
 
@@ -52,6 +53,7 @@ __all__ = [
     "Rkde",
     "Stfpm",
     "AiVad",
+    "WinClip",
 ]
 
 logger = logging.getLogger(__name__)
