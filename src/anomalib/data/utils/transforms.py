@@ -72,6 +72,7 @@ def get_transforms(
 
 
         Transforms could be read from albumentations Compose object.
+
         >>> import albumentations as A  # noqa: N812
         >>> from albumentations.pytorch import ToTensorV2
         >>> config = A.Compose([A.Resize(512, 512), ToTensorV2()])
@@ -83,6 +84,7 @@ def get_transforms(
         numpy.ndarray
 
         Transforms could be deserialized from a yaml file.
+
         >>> transforms = A.Compose([A.Resize(1024, 1024), ToTensorV2()])
         >>> A.save(transforms, "/tmp/transforms.yaml", data_format="yaml")
         >>> transforms = get_transforms(config="/tmp/transforms.yaml")
