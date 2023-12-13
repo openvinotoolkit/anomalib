@@ -209,7 +209,7 @@ class AnomalibCLI(LightningCLI):
         """Add benchmark arguments to the parser.
 
         Example:
-            $ anomalib benchmark --b
+            $ anomalib benchmark --benchmark_config tools/benchmarking/benchmark_params.yaml
         """
         parser.add_argument("--benchmark_config", type=Path, help="Path to the benchmark config.", required=True)
 
