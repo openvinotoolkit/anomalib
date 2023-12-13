@@ -31,9 +31,17 @@ We're excited to announce that Anomalib v1 is on the horizon! This major release
 
 Get a sneak peek of Anomalib v1:
 
-- 📝 **Documentation**: Discover the latest additions and enhancements [here](https://anomalib--1540.org.readthedocs.build/en/1540/).
+- ⚙️ **Installation**: Until it is released, you can install it via:
+
+  ```bash
+  git command git clone -b v1 git@github.com:openvinotoolkit/anomalib.git
+  cd anomalib
+  pip install -e .
+  ```
+
+- 📘 **Documentation**: Discover the latest additions and enhancements [here](https://anomalib.readthedocs.io/en/v1/).
 - 🧪 **Early Testing**: Help us refine the final release by testing pre-release features and report issues [here](https://github.com/openvinotoolkit/anomalib/issues).
-- 📝 **Contribute**: Your input is invaluable - Help us make anomalib v1.x even better. Read more about the contribution guidelines [here](https://github.com/openvinotoolkit/anomalib/blob/main/CONTRIBUTING.md)
+- 👩‍💻 **Contribute**: Your input is invaluable - Help us make anomalib v1.x even better. Read more about the contribution guidelines [here](https://github.com/openvinotoolkit/anomalib/blob/main/CONTRIBUTING.md)
 
 ---
 
