@@ -25,6 +25,26 @@
 
 ---
 
+# 🌟 Upcoming Release: Anomalib v1 🌟
+
+We're excited to announce that Anomalib v1 is on the horizon! This major release packs new features, enhancements, and performance improvements.
+
+Get a sneak peek of Anomalib v1:
+
+- ⚙️ **Installation**: Until it is released, you can install it via:
+
+  ```bash
+  git command git clone -b v1 git@github.com:openvinotoolkit/anomalib.git
+  cd anomalib
+  pip install -e .
+  ```
+
+- 📘 **Documentation**: Discover the latest additions and enhancements [here](https://anomalib.readthedocs.io/en/v1/).
+- 🧪 **Early Testing**: Help us refine the final release by testing pre-release features and report issues [here](https://github.com/openvinotoolkit/anomalib/issues).
+- 👩‍💻 **Contribute**: Your input is invaluable - Help us make anomalib v1.x even better. Read more about the contribution guidelines [here](https://github.com/openvinotoolkit/anomalib/blob/main/CONTRIBUTING.md)
+
+---
+
 # Introduction
 
 Anomalib is a deep learning library that aims to collect state-of-the-art anomaly detection algorithms for benchmarking on both public and private datasets. Anomalib provides several ready-to-use implementations of anomaly detection algorithms described in the recent literature, as well as a set of tools that facilitate the development and implementation of custom models. The library has a strong focus on image-based anomaly detection, where the goal of the algorithm is to identify anomalous images, or anomalous pixel regions within images in a dataset. Anomalib is constantly updated with new algorithms and training/inference extensions, so keep checking!
