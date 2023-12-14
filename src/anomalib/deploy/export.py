@@ -52,7 +52,7 @@ def export_to_torch(
     export_path: Path | str,
     transform: dict[str, Any] | AnomalibDataset | AnomalibDataModule | A.Compose,
     task: TaskType | None = None,
-) -> None:
+) -> Path:
     """Export AnomalibModel to torch.
 
     Args:
@@ -63,6 +63,9 @@ def export_to_torch(
             Albumentations.
         task (TaskType | None): Task type should be provided if transforms is of type dict or A.Compose object.
             Defaults to ``None``.
+
+    Returns:
+        Path: Path to the exported torch model.
 
     Examples:
         Assume that we have a model to train and we want to export it to torch format.
@@ -87,8 +90,6 @@ def export_to_torch(
         ...     transform=datamodule.test_data.transform,
         ...     task=datamodule.test_data.task,
         ... )
-
-
     """
     export_path = _create_export_path(export_path, ExportMode.TORCH)
     metadata = get_metadata(task=task, transform=transform, model=model)
@@ -96,6 +97,7 @@ def export_to_torch(
         obj={"model": model.model, "metadata": metadata},
         f=export_path / "model.pt",
     )
+    return export_path / "model.pt"
 
 
 def export_to_onnx(
@@ -179,7 +181,7 @@ def export_to_openvino(
     transform: dict[str, Any] | AnomalibDataset | AnomalibDataModule | A.Compose,
     mo_args: dict[str, Any] | None = None,
     task: TaskType | None = None,
-) -> None:
+) -> Path:
     """Convert onnx model to OpenVINO IR.
 
     Args:
@@ -196,6 +198,9 @@ def export_to_openvino(
 
     Raises:
         ModuleNotFoundError: If OpenVINO is not installed.
+
+    Returns:
+        Path: Path to the exported OpenVINO IR.
 
     Examples:
         Export the Lightning Model to OpenVINO IR:
@@ -239,6 +244,7 @@ def export_to_openvino(
     else:
         logger.exception("Could not find OpenVINO methods. Please check OpenVINO installation.")
         raise ModuleNotFoundError
+    return model_path.with_suffix(".xml")
 
 
 def get_metadata(

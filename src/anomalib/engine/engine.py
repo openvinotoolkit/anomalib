@@ -400,6 +400,10 @@ class Engine:
                 ```python
                 anomalib predict --config <config_file_path> --return_predictions
                 ```
+            5. You can also point to a folder with image or a single image instead of passing a dataset.
+                ```python
+                anomalib predict --model Padim --data <PATH_TO_IMAGE_OR_FOLDER> --ckpt_path <PATH_TO_CHECKPOINT>
+                ```
         """
         if model:
             self._setup_trainer(model)
@@ -438,11 +442,11 @@ class Engine:
                 ```
             2. Of course, you can override the various values with commands.
                 ```python
-                anomalib test --model anomalib.models.Padim --data <CONFIG | CLASS_PATH_OR_NAME> --trainer.max_epochs 3
+                anomalib train --model anomalib.models.Padim --data <CONFIG | CLASS_PATH_OR_NAME> --trainer.max_epochs 3
                 ```
             4. If you have a ready configuration file, run it like this.
                 ```python
-                anomalib test --config <config_file_path>
+                anomalib train --config <config_file_path>
                 ```
         """
         self._setup_trainer(model)
@@ -462,7 +466,7 @@ class Engine:
         mo_args: dict[str, Any] | None = None,
         ckpt_path: str | None = None,
     ) -> None:
-        """Export the model in the specified format.
+        """Export the model in PyTorch, ONNX or OpenVINO format.
 
         Args:
             model (AnomalyModule): Trained model.
@@ -488,7 +492,23 @@ class Engine:
             TypeError: If path to the transform file is not a string or Path.
 
         CLI Usage:
-            TODO(ashwinvaidya17)
+            1. To export as a torch ``.pt`` file you can run the following command.
+                ```python
+                anomalib export --model Padim --export_mode TORCH --data MVTec
+                ```
+            2. To export as an ONNX ``.onnx`` file you can run the following command.
+                ```python
+                anomalib export --model Padim --export_mode ONNX --data Visa --input_size "[256,256]"
+                ```
+            3. To export as an OpenVINO ``.xml`` and ``.bin`` file you can run the following command.
+                ```python
+                anomalib export --model Padim --export_mode OPENVINO --data Visa --input_size "[256,256]"
+                ```
+            4. You can also overrride OpenVINO model optimizer by adding the ``--mo_args.<key>`` arguments.
+                ```python
+                anomalib export --model Padim --export_mode OPENVINO --data Visa --input_size "[256,256]" \
+                    --mo_args.compress_to_fp16 False
+                ```
         """
         self._setup_trainer(model)
         self._setup_dataset_task(datamodule, dataset)
@@ -514,10 +534,10 @@ class Engine:
         if export_path is None:
             export_path = Path(self.trainer.default_root_dir)
         if export_mode == ExportMode.TORCH:
-            export_to_torch(model=model, export_path=export_path, transform=transform, task=self.task)
+            exported_path = export_to_torch(model=model, export_path=export_path, transform=transform, task=self.task)
         elif export_mode == ExportMode.ONNX:
             assert input_size is not None, "input_size must be provided for ONNX export mode."
-            export_to_onnx(
+            exported_path = export_to_onnx(
                 model=model,
                 input_size=input_size,
                 export_path=export_path,
@@ -526,7 +546,7 @@ class Engine:
             )
         else:
             assert input_size is not None, "input_size must be provided for OpenVINO export mode."
-            export_to_openvino(
+            exported_path = export_to_openvino(
                 model=model,
                 input_size=input_size,
                 export_path=export_path,
@@ -534,3 +554,4 @@ class Engine:
                 task=self.task,
                 mo_args=mo_args,
             )
+        logger.info(f"Exported model to folder: {exported_path}")
