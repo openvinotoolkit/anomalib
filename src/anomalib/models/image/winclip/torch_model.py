@@ -6,15 +6,15 @@
 # Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+import open_clip
 import torch
+from open_clip.tokenizer import tokenize
 from torch import nn
 
 # from .third_party import CLIPAD
 from .ad_prompts import *
-
-import open_clip
-from open_clip.tokenizer import tokenize
 from .prompting import create_prompt_ensemble
+from .utils import cosine_similarity
 
 valid_backbones = ["ViT-B-16-plus-240"]
 valid_pretrained_datasets = ["laion400m_e32"]
@@ -28,26 +28,28 @@ def _convert_to_rgb(image):
     return image.convert("RGB")
 
 
-class patch_scale():
+class patch_scale:
     def __init__(self, image_size):
         self.h, self.w = image_size
- 
-    def make_mask(self, patch_size = 16, kernel_size = 16, stride_size = 16): 
+
+    def make_mask(self, patch_size=16, kernel_size=16, stride_size=16):
         self.patch_size = patch_size
-        self.patch_num_h = self.h//self.patch_size
-        self.patch_num_w = self.w//self.patch_size
+        self.patch_num_h = self.h // self.patch_size
+        self.patch_num_w = self.w // self.patch_size
         ###################################################### patch_level
-        self.kernel_size = kernel_size//patch_size
-        self.stride_size = stride_size//patch_size
-        self.idx_board = torch.arange(1, self.patch_num_h * self.patch_num_w + 1, dtype = torch.float32).reshape((1,1,self.patch_num_h, self.patch_num_w))
+        self.kernel_size = kernel_size // patch_size
+        self.stride_size = stride_size // patch_size
+        self.idx_board = torch.arange(1, self.patch_num_h * self.patch_num_w + 1, dtype=torch.float32).reshape(
+            (1, 1, self.patch_num_h, self.patch_num_w)
+        )
         patchfy = torch.nn.functional.unfold(self.idx_board, kernel_size=self.kernel_size, stride=self.stride_size)
         return patchfy
-    
+
 
 class WinClipModel(nn.Module):
-    def __init__(self, model_name = 'ViT-B-16-plus-240'):
+    def __init__(self, model_name="ViT-B-16-plus-240"):
         super().__init__()
-        self.model, _, self.preprocess = open_clip.create_model_and_transforms(model_name, pretrained='laion400m_e31')
+        self.model, _, self.preprocess = open_clip.create_model_and_transforms(model_name, pretrained="laion400m_e31")
         # self.model.visual.output_tokens = True
         self.mask = patch_scale((240, 240))
 
@@ -55,7 +57,7 @@ class WinClipModel(nn.Module):
 
     def multiscale(self):
         pass
-    
+
     def encode_text(self, text):
         return self.model.encode_text(text)
 
@@ -66,10 +68,13 @@ class WinClipModel(nn.Module):
 
         # register hook to retrieve feature map
         feature_map = {}
+
         def get_feature_map(name):
             def hook(model, input, output):
                 feature_map[name] = input[0].detach()
+
             return hook
+
         self.model.visual.patch_dropout.register_forward_hook(get_feature_map("patch_dropout"))
 
         # get patch embeddings
@@ -80,17 +85,24 @@ class WinClipModel(nn.Module):
         large_scale = self.mask.make_mask(kernel_size=48, patch_size=patch_size).squeeze().cuda()
         mid_scale = self.mask.make_mask(kernel_size=32, patch_size=patch_size).squeeze().cuda()
 
-        large_scale_embeddings = self._get_window_embeddings(intermediate_tokens, large_scale)
-        mid_scale_embeddings = self._get_window_embeddings(intermediate_tokens, mid_scale)
+        large_scale_embeddings = self._get_window_embeddings(intermediate_tokens, large_scale).squeeze()
+        mid_scale_embeddings = self._get_window_embeddings(intermediate_tokens, mid_scale).squeeze()
 
-        return large_scale_embeddings, mid_scale_embeddings, patch_embeddings.unsqueeze(2), image_embeddings, large_scale, mid_scale
+        return (
+            large_scale_embeddings,
+            mid_scale_embeddings,
+            patch_embeddings.unsqueeze(2),
+            image_embeddings,
+            large_scale,
+            mid_scale,
+        )
 
     def _get_window_embeddings(self, x, mask_scale):
         x_select = []
         mask_scale = mask_scale.T
         mask_num, L = mask_scale.shape
-        class_index = torch.zeros((mask_scale.shape[0], 1), dtype = torch.int32).to(mask_scale)
-        mask_scale = torch.cat((class_index, mask_scale.int()), dim = 1)
+        class_index = torch.zeros((mask_scale.shape[0], 1), dtype=torch.int32).to(mask_scale)
+        mask_scale = torch.cat((class_index, mask_scale.int()), dim=1)
 
         for i in mask_scale:
             try:
@@ -116,18 +128,26 @@ class WinClipModel(nn.Module):
 
         if self.model.visual.proj is not None:
             pooled = pooled @ self.model.visual.proj
-        
+
         # if self.model.visual.output_tokens:
         #     return pooled, tokens
-        return pooled.reshape((mask_num, x.shape[0], 1 , -1)).permute(1,0,2,3)
+        return pooled.reshape((mask_num, x.shape[0], 1, -1)).permute(1, 0, 2, 3)
 
     def forward(self, x):
-        large_scale_embeddings, mid_scale_embeddings, patch_embeddings, image_embeddings, large_scale, mid_scale = self.encode_image(x, patch_size=16, mask=True)
-        
+        x = torch.load("/home/djameln/WinCLIP-pytorch/image_wnclp.pt")
+        (
+            large_scale_embeddings,
+            mid_scale_embeddings,
+            patch_embeddings,
+            image_embeddings,
+            large_scale,
+            mid_scale,
+        ) = self.encode_image(x, patch_size=16, mask=True)
+
         # get anomaly scores
-        image_embeddings /= image_embeddings.norm(dim=1, keepdim=True)
-        scores = ((image_embeddings @ self.text_embeddings.T) / 0.07).softmax(dim=1)
-        scores = scores[:, 1]
+        scores = cosine_similarity(image_embeddings, self.text_embeddings)
+        large_scale_sim = cosine_similarity(large_scale_embeddings, self.text_embeddings)
+        mid_scale_sim = cosine_similarity(mid_scale_embeddings, self.text_embeddings)
         return scores
 
     def collect_text_embeddings(self, object: str, device: torch.device | None = None):
@@ -140,11 +160,11 @@ class WinClipModel(nn.Module):
         normal_embeddings = self.model.encode_text(normal_tokens)
         anomalous_embeddings = self.model.encode_text(anomalous_tokens)
         # average
-        normal_embeddings = torch.mean(normal_embeddings, dim=0, keepdim= True) 
-        anomalous_embeddings = torch.mean(anomalous_embeddings, dim=0, keepdim= True)
+        normal_embeddings = torch.mean(normal_embeddings, dim=0, keepdim=True)
+        anomalous_embeddings = torch.mean(anomalous_embeddings, dim=0, keepdim=True)
         # normalize
         text_embeddings = torch.cat((normal_embeddings, anomalous_embeddings))
-        text_embeddings /= text_embeddings.norm(dim=1, keepdim=True)
+        # text_embeddings /= text_embeddings.norm(dim=1, keepdim=True)
         # move to device
         if device is not None:
             text_embeddings = text_embeddings.to(device)
@@ -162,9 +182,7 @@ class WinClipAD(torch.nn.Module):
         precision="fp32",
         # **kwargs
     ):
-        """
-
-        :param out_size_h:
+        """:param out_size_h:
         :param out_size_w:
         :param device:
         :param backbone:
@@ -191,7 +209,10 @@ class WinClipAD(torch.nn.Module):
         assert pretrained_dataset in valid_pretrained_datasets
 
         model = CLIPAD.create_model(
-            model_name=backbone, pretrained=pretrained_dataset, scales=scales, precision=self.precision,
+            model_name=backbone,
+            pretrained=pretrained_dataset,
+            scales=scales,
+            precision=self.precision,
         )
         tokenizer = get_tokenizer(backbone)
         model.eval()
