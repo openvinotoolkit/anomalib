@@ -218,7 +218,7 @@ class AnomalibCLI(LightningCLI):
         subcommand = self.config["subcommand"]
         if subcommand in (*self.subcommands(), "train", "predict"):
             if self.config["subcommand"] == "predict" and isinstance(self.config["predict"]["data"], str | Path):
-                self.config["predict"]["data"] = self._set_predict_dataloader(self.config["predict"]["data"])
+                self.config["predict"]["data"] = self._set_predict_dataloader_namespace(self.config["predict"]["data"])
             self.config[subcommand] = update_config(self.config[subcommand])
 
     def instantiate_classes(self) -> None:
