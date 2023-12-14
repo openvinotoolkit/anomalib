@@ -406,6 +406,9 @@ class Engine:
         if model:
             self._setup_trainer(model)
 
+        if not ckpt_path:
+            logger.warning("ckpt_path is not provided. Model weights will not be loaded.")
+
         if datamodule is not None and isinstance(datamodule, Dataset):
             dataloader = DataLoader(datamodule)
             datamodule = None
