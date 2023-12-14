@@ -24,8 +24,6 @@ from anomalib.engine import Engine
 from anomalib.loggers import configure_logger
 from anomalib.metrics.threshold import BaseThreshold
 from anomalib.models import AnomalyModule
-from anomalib.pipelines.benchmarking import distribute
-from anomalib.pipelines.hpo import Sweep, get_hpo_parser
 from anomalib.utils.config import update_config
 from anomalib.utils.types import TaskType
 
@@ -92,8 +90,6 @@ class AnomalibCLI(LightningCLI):
         """Return a dictionary of subcommands and their description."""
         return {
             "export": {"description": "Export the model to ONNX or OpenVINO format."},
-            "benchmark": {"description": "Run benchmarking script"},
-            "hpo": {"description": "Run Hyperparameter Optimization"},
             "train": {"description": "Fit the model and then call test on the trained model."},
         }
 
@@ -101,7 +97,7 @@ class AnomalibCLI(LightningCLI):
         """Initialize base subcommands and add anomalib specific on top of it."""
         # Initializes fit, validate, test, predict and tune
         super()._add_subcommands(parser, **kwargs)
-        # Add  export, benchmark and hpo
+        # Add anomalib subcommands
         for subcommand in self.anomalib_subcommands():
             sub_parser = LightningArgumentParser(formatter_class=CustomHelpFormatter)
             self._subcommand_parsers[subcommand] = sub_parser
@@ -185,14 +181,6 @@ class AnomalibCLI(LightningCLI):
         add_openvino_export_arguments(parser)
         self.add_arguments_to_parser(parser)
         self.add_default_arguments_to_parser(parser)
-
-    def add_hpo_arguments(self, parser: LightningArgumentParser) -> None:
-        """Add hyperparameter optimization arguments."""
-        parser = get_hpo_parser(parser)
-
-    def add_benchmark_arguments(self, parser: LightningArgumentParser) -> None:
-        """Add benchmark arguments to the parser."""
-        parser.add_argument("--config", type=Path, help="Path to the benchmark config.", required=True)
 
     def before_instantiate_classes(self) -> None:
         """Modify the configuration to properly instantiate classes and sets up tiler."""
@@ -306,22 +294,6 @@ class AnomalibCLI(LightningCLI):
     def export(self) -> Callable[..., None]:
         """Export the model using engine's export method."""
         return self.engine.export
-
-    def hpo(self) -> None:
-        """Run hpo subcommand."""
-        config = self.config["hpo"]
-        sweep = Sweep(
-            project=config.project,
-            sweep_config=config.sweep_config,
-            backend=config.backend,
-            entity=config.entity,
-        )
-        sweep.run()
-
-    def benchmark(self) -> None:
-        """Run benchmark subcommand."""
-        config = self.config["benchmark"]
-        distribute(config.config)
 
 
 def main() -> None:
