@@ -141,7 +141,7 @@ class AnomalibCLI(LightningCLI):
         parser.add_argument("--logging.log_graph", type=bool, help="Log the model to the logger", default=False)
         if hasattr(parser, "subcommand") and parser.subcommand != "predict":  # Predict also accepts str and Path inputs
             parser.link_arguments("data.init_args.image_size", "model.init_args.input_size")
-        parser.link_arguments("task", "data.init_args.task")
+            parser.link_arguments("task", "data.init_args.task")
         parser.add_argument(
             "--results_dir.path",
             type=Path,
@@ -173,9 +173,9 @@ class AnomalibCLI(LightningCLI):
         self._add_trainer_arguments_to_parser(parser)
         parser.add_lightning_class_args(AnomalyModule, "model", subclass_mode=True)
         parser.add_argument("--ckpt_path", type=str, required=False, help="Path to model weights.")
-        parser.add_subclass_arguments(
-            (AnomalibDataModule, DataLoader, Dataset, str, Path),
-            "data",
+        parser.add_argument(
+            "--data",
+            type=Dataset | AnomalibDataModule | DataLoader | str | Path,
             required=True,
         )
         added = parser.add_method_arguments(

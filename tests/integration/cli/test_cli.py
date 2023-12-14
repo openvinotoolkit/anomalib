@@ -103,13 +103,11 @@ class TestCLI:
                     dataset_path,
                     project_path,
                 ),
-                "--ckpt_path",
-                f"{project_path}/padim/dummy/weights/last.ckpt",
             ],
         )
         torch.cuda.empty_cache()
 
-    def test_predict_with_image_paths(self, project_path: Path) -> None:
+    def test_predict_with_image_folder(self, project_path: Path) -> None:
         """Test the predict method of the CLI.
 
         This test uses the path to image folder for predict test.
@@ -123,6 +121,28 @@ class TestCLI:
                 "predict",
                 "--data",
                 f"{project_path}/datasets/visa_pytorch/dummy/test/bad",
+                *self._get_common_cli_args(
+                    None,
+                    project_path,
+                ),
+            ],
+        )
+        torch.cuda.empty_cache()
+
+    def test_predict_with_image_path(self, project_path: Path) -> None:
+        """Test the predict method of the CLI.
+
+        This test uses the path to image for predict test.
+
+        Args:
+            project_path (Path): Path to temporary project folder.
+        """
+        # Test with image path
+        AnomalibCLI(
+            args=[
+                "predict",
+                "--data",
+                f"{project_path}/datasets/visa_pytorch/dummy/test/bad/000.jpg",
                 *self._get_common_cli_args(
                     None,
                     project_path,
