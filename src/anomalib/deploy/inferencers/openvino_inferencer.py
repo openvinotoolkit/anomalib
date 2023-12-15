@@ -21,10 +21,10 @@ from .base_inferencer import Inferencer
 logger = logging.getLogger("anomalib")
 
 if find_spec("openvino") is not None:
-    from openvino.runtime import Core
+    import openvino as ov
 
     if TYPE_CHECKING:
-        from openvino.runtime import CompiledModel
+        from openvino import CompiledModel
 else:
     logger.warning("OpenVINO is not installed. Please install OpenVINO to use OpenVINOInferencer.")
 
@@ -113,11 +113,10 @@ class OpenVINOInferencer(Inferencer):
             [tuple[str, str, ExecutableNetwork]]: Input and Output blob names
                 together with the Executable network.
         """
-        ie_core = Core()
+        core = ov.Core()
         # If tuple of bytes is passed
-
         if isinstance(path, tuple):
-            model = ie_core.read_model(model=path[0], weights=path[1], init_from_buffer=True)
+            model = core.read_model(model=path[0], weights=path[1])
         else:
             path = path if isinstance(path, Path) else Path(path)
             if path.suffix in (".bin", ".xml"):
@@ -125,18 +124,18 @@ class OpenVINOInferencer(Inferencer):
                     bin_path, xml_path = path, path.with_suffix(".xml")
                 elif path.suffix == ".xml":
                     xml_path, bin_path = path, path.with_suffix(".bin")
-                model = ie_core.read_model(xml_path, bin_path)
+                model = core.read_model(xml_path, bin_path)
             elif path.suffix == ".onnx":
-                model = ie_core.read_model(path)
+                model = core.read_model(path)
             else:
                 msg = f"Path must be .onnx, .bin or .xml file. Got {path.suffix}"
                 raise ValueError(msg)
         # Create cache folder
         cache_folder = Path("cache")
         cache_folder.mkdir(exist_ok=True)
-        ie_core.set_property({"CACHE_DIR": cache_folder})
+        core.set_property({"CACHE_DIR": cache_folder})
 
-        compile_model = ie_core.compile_model(model=model, device_name=self.device, config=self.config)
+        compile_model = core.compile_model(model=model, device_name=self.device, config=self.config)
 
         input_blob = compile_model.input(0)
         output_blob = compile_model.output(0)
