@@ -21,10 +21,10 @@ from .base_inferencer import Inferencer
 logger = logging.getLogger("anomalib")
 
 if find_spec("openvino") is not None:
-    import openvino as ov
+    import openvino.runtime as ov
 
     if TYPE_CHECKING:
-        from openvino import CompiledModel
+        from openvino.runtime import CompiledModel
 else:
     logger.warning("OpenVINO is not installed. Please install OpenVINO to use OpenVINOInferencer.")
 
