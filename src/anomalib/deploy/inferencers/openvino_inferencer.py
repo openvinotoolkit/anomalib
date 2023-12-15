@@ -37,11 +37,12 @@ class OpenVINOInferencer(Inferencer):
         metadata (str | Path | dict, optional): Path to metadata file or a dict object defining the
             metadata.
             Defaults to ``None``.
-        device (str | None, optional): Device to run the inference on.
-            Defaults to ``CPU``.
+        device (str | None, optional): Device to run the inference on (AUTO, CPU, GPU, NPU).
+            Defaults to ``AUTO``.
         task (TaskType | None, optional): Task type.
             Defaults to ``None``.
-
+        config (dict | None, optional): Configuration parameters for the inference
+            Defaults to ``None``.
 
     Examples:
         Assume that we have an OpenVINO IR model and metadata files in the following structure:
@@ -89,7 +90,7 @@ class OpenVINOInferencer(Inferencer):
         self,
         path: str | Path | tuple[bytes, bytes],
         metadata: str | Path | dict | None = None,
-        device: str | None = "CPU",
+        device: str | None = "AUTO",
         task: str | None = None,
         config: dict | None = None,
     ) -> None:
@@ -143,7 +144,7 @@ class OpenVINOInferencer(Inferencer):
         return input_blob, output_blob, compile_model
 
     def pre_process(self, image: np.ndarray) -> np.ndarray:
-        """Pre process the input image by applying transformations.
+        """Pre-process the input image by applying transformations.
 
         Args:
             image (np.ndarray): Input image.
@@ -178,8 +179,8 @@ class OpenVINOInferencer(Inferencer):
 
         Args:
             predictions (np.ndarray): Raw output predicted by the model.
-            metadata (Dict, optional): Meta data. Post-processing step sometimes requires
-                additional meta data such as image shape. This variable comprises such info.
+            metadata (Dict, optional): Metadata. Post-processing step sometimes requires
+                additional metadata such as image shape. This variable comprises such info.
                 Defaults to None.
 
         Returns:
