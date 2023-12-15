@@ -461,7 +461,7 @@ class Engine:
         input_size: tuple[int, int] | None = None,
         ov_args: dict[str, Any] | None = None,
         ckpt_path: str | None = None,
-    ) -> Path:
+    ) -> Path | None:
         """Export the model in the specified format.
 
         Args:
@@ -517,7 +517,7 @@ class Engine:
 
         if export_mode == ExportMode.TORCH:
             return export_to_torch(model=model, export_path=export_path, transform=transform, task=self.task)
-        elif export_mode == ExportMode.ONNX:
+        if export_mode == ExportMode.ONNX:
             assert input_size is not None, "input_size must be provided for ONNX export mode."
             return export_to_onnx(
                 model=model,
@@ -526,7 +526,7 @@ class Engine:
                 transform=transform,
                 task=self.task,
             )
-        elif export_mode == ExportMode.OPENVINO:
+        if export_mode == ExportMode.OPENVINO:
             assert input_size is not None, "input_size must be provided for OpenVINO export mode."
             return export_to_openvino(
                 model=model,
@@ -536,5 +536,6 @@ class Engine:
                 task=self.task,
                 ov_args=ov_args,
             )
-        else:
-            logging.error(f"Export mode {export_mode} is not supported yet.")
+
+        logging.error(f"Export mode {export_mode} is not supported yet.")
+        return None

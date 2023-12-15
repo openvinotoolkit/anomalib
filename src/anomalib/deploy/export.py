@@ -63,6 +63,7 @@ def export_to_torch(
             Albumentations.
         task (TaskType | None): Task type should be provided if transforms is of type dict or A.Compose object.
             Defaults to ``None``.
+
     Returns:
         Path: Path to the exported pytorch model.
 
@@ -245,9 +246,9 @@ def export_to_openvino(
         model = convert_model(model_path, **ov_args)
         serialize(model, ov_model_path)
         return ov_model_path
-    else:
-        logger.exception("Could not find OpenVINO methods. Please check OpenVINO installation.")
-        raise ModuleNotFoundError
+
+    logger.exception("Could not find OpenVINO methods. Please check OpenVINO installation.")
+    raise ModuleNotFoundError
 
 
 def get_metadata(
