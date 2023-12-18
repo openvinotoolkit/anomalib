@@ -236,7 +236,7 @@ def get_datamodule(config: DictConfig | ListConfig) -> AnomalibDataModule:
             val_split_mode=config.dataset.val_split_mode,
             val_split_ratio=config.dataset.val_split_ratio,
         )
-    if config.dataset.format.lower() == DataFormat.UNITX:
+    elif config.dataset.format.lower() == DataFormat.UNITX:
         datamodule = UnitXPerDefect(
             root=config.dataset.path,
             exclude_labels=config.dataset.exclude_labels,

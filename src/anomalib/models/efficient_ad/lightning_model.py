@@ -261,7 +261,6 @@ class EfficientAd(AnomalyModule):
           Dictionary containing anomaly maps.
         """
         del args, kwargs  # These variables are not used.
-
         batch["anomaly_maps"] = self.model(batch["image"])["anomaly_map"]
 
         return batch

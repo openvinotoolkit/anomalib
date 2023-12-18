@@ -111,19 +111,18 @@ def make_unitx_dataset(
     root = Path(root)
     samples_list = [
         (str(root),) + f.parts[-4:]
-        for f in root.glob(r"**/*")
+        for f in root.glob(f"*/*/images/*")
         if f.is_file() and (f.parts[-3] == "train" or f.parts[-3] == "val")
     ]
     if not samples_list:
         raise RuntimeError(f"Found 0 images in {root}")
 
     samples = DataFrame(samples_list, columns=["path", "label", "split", "is_images_or_masks", "asset_id"])
-
     # separate masks from samples
-    mask_samples = samples[samples.is_images_or_masks == "masks"].sort_values(by="asset_id", ignore_index=True)
-    mask_samples['asset_id'] = mask_samples['asset_id'].apply(lambda x: x.strip(".npy"))
-    samples = samples[samples.is_images_or_masks == "images"].sort_values(by="asset_id", ignore_index=True)
-    assert(len(mask_samples) == len(samples))
+    # mask_samples = samples[samples.is_images_or_masks == "masks"].sort_values(by="asset_id", ignore_index=True)
+    # mask_samples['asset_id'] = mask_samples['asset_id'].apply(lambda x: x.strip(".npy"))
+    # samples = samples[samples.is_images_or_masks == "images"].sort_values(by="asset_id", ignore_index=True)
+    # assert(len(mask_samples) == len(samples))
 
     samples = samples[~samples.label.isin(exclude_labels)]
     samples = samples[~samples.asset_id.isin(exclude_asset_ids)]
@@ -134,23 +133,23 @@ def make_unitx_dataset(
     )
 
     samples["mask_path"] = (
-        mask_samples.path
+        samples.path
         + "/"
-        + mask_samples.label
+        + samples.label
         + "/"
-        + mask_samples.split
+        + samples.split
         + "/"
         + "masks"
         + "/"
-        + mask_samples.asset_id
+        + samples.asset_id
     )
     samples["mask_path"] = samples["mask_path"].apply(lambda x: x + ".npy") # add back the suffix
 
     samples = samples.drop(columns=["is_images_or_masks", "asset_id"])
 
     # Create label index for normal (0) and anomalous (1) images.
-    samples.loc[(samples.label == "good"), "label_index"] = LabelName.NORMAL
-    samples.loc[(samples.label != "good"), "label_index"] = LabelName.ABNORMAL
+    samples.loc[(samples.label == "OKOK"), "label_index"] = LabelName.NORMAL
+    samples.loc[(samples.label != "OKOK"), "label_index"] = LabelName.ABNORMAL
     samples.label_index = samples.label_index.astype(int)
 
 
@@ -291,8 +290,11 @@ class UnitXPerDefect(AnomalibDataModule):
             exclude_labels=exclude_labels,
             exclude_asset_ids=exclude_asset_ids,
             )
+        
         self.test_data = UnitXPerDefectDataset(
-            task=task, transform=transform_eval, split=Split.TEST, root=root,
-            exclude_labels=exclude_labels,
+            task=task, transform=transform_eval, split=Split.VAL, root=root,
+            exclude_labels=[],
             exclude_asset_ids=exclude_asset_ids,
             )
+        
+        self.val_data = self.test_data

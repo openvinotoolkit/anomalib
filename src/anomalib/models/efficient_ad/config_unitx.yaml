@@ -1,23 +1,35 @@
 dataset:
   name: unitx
   format: unitx
-  path: /Users/steveyang/datasets/1416_by_ng
-  exclude_labels: ['NGall']
+  path: /home/di/datasets/1416_by_ng
+  exclude_labels: [
+    "NGK钩上面脏",
+    "NGK钩上黑皮",
+    "NGK钩侧黑皮",
+    "NGK钩刷损",
+    "NGK钩叠料",
+    "NGK钩损",
+    "NGK钩毛刺",
+    "NGK钩表面刷损",
+    "NGK钩尖打伤",
+    "NGK钩翘",
+    "NGK钩贴壁"
+  ]
   exclude_asset_ids: []
   task: segmentation
   train_batch_size: 1
-  eval_batch_size: 16
-  num_workers: 8
-  image_size: [960, 416] # dimensions to which images are resized (mandatory)
+  eval_batch_size: 1
+  num_workers: 4
+  image_size: 256 # dimensions to which images are resized (mandatory)
   center_crop: null # dimensions to which images are center-cropped after resizing (optional)
   normalization: none # data distribution to which the images will be normalized: [none, imagenet]
   transform_config:
     train: null
     eval: null
   test_split_mode: from_dir # options: [from_dir, synthetic]
-  test_split_ratio: 0.2 # fraction of train images held out testing (usage depends on test_split_mode)
+  test_split_ratio: null # fraction of train images held out testing (usage depends on test_split_mode)
   val_split_mode: same_as_test # options: [same_as_test, from_test, synthetic]
-  val_split_ratio: 0.5 # fraction of train/test images held out for validation (usage depends on val_split_mode)
+  val_split_ratio: null # fraction of train/test images held out for validation (usage depends on val_split_mode)
 
 model:
   name: efficient_ad
@@ -54,11 +66,11 @@ project:
   path: ./results
 
 logging:
-  logger: [] # options: [comet, tensorboard, wandb, csv] or combinations.
+  logger: ['tensorboard'] # options: [comet, tensorboard, wandb, csv] or combinations.
   log_graph: false # Logs the model graph to respective logger.
 
 optimization:
-  export_mode: null # options: torch, onnx, openvino
+  export_mode: torch # options: torch, onnx, openvino
 # PL Trainer Args. Don't add extra parameter here.
 trainer:
   enable_checkpointing: true
@@ -71,9 +83,9 @@ trainer:
   overfit_batches: 0.0
   track_grad_norm: -1
   check_val_every_n_epoch: 1
-  fast_dev_run: true
+  fast_dev_run: false
   accumulate_grad_batches: 1
-  max_epochs: 200
+  max_epochs: 150
   min_epochs: null
   max_steps: 70000
   min_steps: null

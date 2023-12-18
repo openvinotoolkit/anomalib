@@ -237,7 +237,7 @@ class Visualizer:
         """
         file_path.parent.mkdir(parents=True, exist_ok=True)
         image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
-        cv2.imwrite(str(file_path), image)
+        cv2.imwrite(str(file_path)+'.png', image)
 
 
 class ImageGrid:
