@@ -102,18 +102,17 @@ class EfficientAd(AnomalyModule):
 
         self.model_size = model_size
         self.pre_padding = pre_padding
-        self.pre_padding_values = self.compute_pre_padding() if self.pre_padding else None
+        self.input_size = input_size
         self.model: EfficientAdModel = EfficientAdModel(
             teacher_out_channels=teacher_out_channels,
             input_size=input_size,
             model_size=model_size,
             padding=padding,
             pad_maps=pad_maps,
-            pre_padding_values=self.pre_padding_values,
+            pre_padding=self.pre_padding,
             pretrained_teacher_type=pretrained_teacher_type,
         )
         self.batch_size = batch_size
-        self.input_size = input_size
         self.lr = lr
         self.weight_decay = weight_decay
         self.pretrained_models_dir = Path(pretrained_models_dir)
@@ -121,9 +120,6 @@ class EfficientAd(AnomalyModule):
 
         self.prepare_pretrained_model()
         self.prepare_imagenette_data()
-
-    def compute_pre_padding(self) -> Tuple[int, int, int, int]:
-        return (20, 20, 20, 20)
 
     def prepare_pretrained_model(self) -> None:
         if self.model.pretrained_teacher_type == "nelson":
@@ -182,7 +178,9 @@ class EfficientAd(AnomalyModule):
         logger.info("Calculate teacher channel mean and std")
         for batch in tqdm.tqdm(dataloader, desc="Calculate teacher channel mean", position=0, leave=True):
             if self.pre_padding:
-                batch["image"] = torch.nn.functional.pad(batch["image"], self.pre_padding_values)
+                if self.model.pre_padding_values is None:
+                    raise ValueError("Pre-padding should not be None here, given that pre_padding has been set to True")
+                batch["image"] = torch.nn.functional.pad(batch["image"], self.model.pre_padding_values)
             y = self.model.teacher(batch["image"].to(self.device))
             y_means.append(torch.mean(y, dim=[0, 2, 3]))
             teacher_outputs.append(y)
@@ -215,7 +213,11 @@ class EfficientAd(AnomalyModule):
             for img, label in zip(batch["image"], batch["label"]):
                 if label == 0:  # only use good images of validation set!
                     if self.pre_padding:
-                        img = torch.nn.functional.pad(img, self.pre_padding_values)
+                        if self.model.pre_padding_values is None:
+                            raise ValueError(
+                                "Pre-padding should not be None here, given that pre_padding has been set to True"
+                            )
+                        img = torch.nn.functional.pad(img, self.model.pre_padding_values)
                     output = self.model(img.to(self.device))
                     map_st = output[2]
                     map_ae = output[3]

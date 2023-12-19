@@ -314,21 +314,18 @@ class EfficientAdModel(nn.Module):
         model_size: EfficientAdModelSize = EfficientAdModelSize.S,
         padding: bool = False,
         pad_maps: bool = True,
-        pre_padding_values: Optional[Tuple] = None,
+        pre_padding: Optional[Tuple] = None,
         pretrained_teacher_type: Literal["anomalib", "nelson"] = "nelson",
     ) -> None:
         super().__init__()
 
         self.pad_maps = pad_maps
-        self.pre_padding_values = pre_padding_values
         self.teacher: PDN_M | PDN_S | nn.Sequential
         self.student: PDN_M | PDN_S | nn.Sequential
         self.pretrained_teacher_type = pretrained_teacher_type
         self.model_size = model_size
         self.input_size: tuple[int, int] = input_size
-        if self.pre_padding_values is not None:
-            self.input_size[0] += self.pre_padding_values[2] + self.pre_padding_values[3]
-            self.input_size[1] += self.pre_padding_values[0] + self.pre_padding_values[1]
+        self.pre_padding = pre_padding
 
         if self.model_size == EfficientAdModelSize.M:
             if self.pretrained_teacher_type == "anomalib":
@@ -372,11 +369,35 @@ class EfficientAdModel(nn.Module):
             }
         )
 
+        if self.pre_padding:
+            self.pre_padding_values = self.compute_pre_padding(self.input_size)
+            self.input_size[0] += self.pre_padding_values[2] + self.pre_padding_values[3]
+            self.input_size[1] += self.pre_padding_values[0] + self.pre_padding_values[1]
+        else:
+            self.pre_padding_values = None
+
     def is_set(self, p_dic: nn.ParameterDict) -> bool:
         for _, value in p_dic.items():
             if value.sum() != 0:
                 return True
         return False
+
+    def compute_pre_padding(self, original_input_size) -> Tuple[int, int, int, int]:
+        """Computes pre_padding values based on
+        Args:
+            original_input_size (tuple[int, int]): Input images' original input size [H, W].
+            model_size: Either S or M.
+        Returns padding values for the pre_padding: [left, right, top, bottom].
+        """
+        inpt = torch.randn(1, 3, original_input_size[0], original_input_size[1])
+        output_size = self.student(inpt).shape[-2:]
+        # 4 is the same value used by pad_maps in the torch_model.py
+        # it's the value needed to even out the pixels lost due to padding=False
+        h_expansion_ratio = original_input_size[0] / (output_size[0] + 4)
+        w_expansion_ratio = original_input_size[1] / (output_size[1] + 4)
+        w_value = int(4 * (w_expansion_ratio + 1))
+        h_value = int(4 * (h_expansion_ratio + 1))
+        return [w_value, w_value, h_value, h_value]
 
     # TODO: This seems to be broken. We are not using it
     def choose_random_aug_image(self, image: Tensor) -> Tensor:
