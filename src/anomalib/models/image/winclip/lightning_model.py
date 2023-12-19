@@ -73,10 +73,11 @@ class WinClip(AnomalyModule):
     def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
         """Validation Step of WinCLIP"""
         del args, kwargs  # These variables are not used.
-        scores = self.model(batch["image"])
+        image_scores, pixel_scores = self.model(batch["image"])
         # scores = [resize(torch.tensor(score).unsqueeze(0), batch["image"].shape[-2:]).squeeze() for score in scores]
         # batch["anomaly_maps"] = torch.stack(scores).to(self.device)
-        batch["pred_scores"] = scores
+        batch["pred_scores"] = image_scores
+        batch["anomaly_maps"] = pixel_scores
         return batch
 
     @property

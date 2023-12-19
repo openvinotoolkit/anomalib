@@ -10,11 +10,12 @@ import open_clip
 import torch
 from open_clip.tokenizer import tokenize
 from torch import nn
+import torch.nn.functional as F
 
 # from .third_party import CLIPAD
 from .ad_prompts import *
 from .prompting import create_prompt_ensemble
-from .utils import cosine_similarity
+from .utils import cosine_similarity, harmonic_aggregation
 
 valid_backbones = ["ViT-B-16-plus-240"]
 valid_pretrained_datasets = ["laion400m_e32"]
@@ -44,7 +45,6 @@ class patch_scale:
         )
         patchfy = torch.nn.functional.unfold(self.idx_board, kernel_size=self.kernel_size, stride=self.stride_size)
         return patchfy
-
 
 class WinClipModel(nn.Module):
     def __init__(self, model_name="ViT-B-16-plus-240"):
@@ -82,6 +82,7 @@ class WinClipModel(nn.Module):
         intermediate_tokens = feature_map["patch_dropout"]
 
         # get window embeddings
+        # TODO: make masks in init (same for every batch)
         large_scale = self.mask.make_mask(kernel_size=48, patch_size=patch_size).squeeze().cuda()
         mid_scale = self.mask.make_mask(kernel_size=32, patch_size=patch_size).squeeze().cuda()
 
@@ -134,7 +135,7 @@ class WinClipModel(nn.Module):
         return pooled.reshape((mask_num, x.shape[0], 1, -1)).permute(1, 0, 2, 3)
 
     def forward(self, x):
-        x = torch.load("/home/djameln/WinCLIP-pytorch/image_wnclp.pt")
+        # x = torch.load("/home/djameln/WinCLIP-pytorch/image_wnclp.pt")
         (
             large_scale_embeddings,
             mid_scale_embeddings,
@@ -145,10 +146,21 @@ class WinClipModel(nn.Module):
         ) = self.encode_image(x, patch_size=16, mask=True)
 
         # get anomaly scores
-        scores = cosine_similarity(image_embeddings, self.text_embeddings)
-        large_scale_sim = cosine_similarity(large_scale_embeddings, self.text_embeddings)
-        mid_scale_sim = cosine_similarity(mid_scale_embeddings, self.text_embeddings)
-        return scores
+        image_scores = cosine_similarity(image_embeddings, self.text_embeddings)[..., -1]
+        large_scale_sim = cosine_similarity(large_scale_embeddings, self.text_embeddings)[..., -1]
+        mid_scale_sim = cosine_similarity(mid_scale_embeddings, self.text_embeddings)[..., -1]
+
+        large_scale_scores = harmonic_aggregation(large_scale_sim, (15, 15), large_scale)
+        mid_scale_scores = harmonic_aggregation(mid_scale_sim, (15, 15), mid_scale)
+
+        multiscale_scores = 3 / (1 / large_scale_scores + 1 / mid_scale_scores + 1 / image_scores.view(-1, 1, 1))
+        pixel_scores = F.interpolate(
+            multiscale_scores.unsqueeze(1),
+            size=x.shape[-2:],
+            mode="bilinear",
+            align_corners=False,
+        ).squeeze()
+        return image_scores, pixel_scores
 
     def collect_text_embeddings(self, object: str, device: torch.device | None = None):
         # collect prompt ensemble
