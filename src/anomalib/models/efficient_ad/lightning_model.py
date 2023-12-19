@@ -95,31 +95,35 @@ class EfficientAd(AnomalyModule):
         padding: bool = False,
         pad_maps: bool = True,
         batch_size: int = 1,
-        pre_padding: Optional[Tuple] = None,
+        pre_padding: bool = False,
         pretrained_teacher_type: Literal["nelson", "anomalib"] = "nelson",
     ) -> None:
         super().__init__()
 
         self.model_size = model_size
+        self.pre_padding = pre_padding
+        self.pre_padding_values = self.compute_pre_padding() if self.pre_padding else None
         self.model: EfficientAdModel = EfficientAdModel(
             teacher_out_channels=teacher_out_channels,
             input_size=input_size,
             model_size=model_size,
             padding=padding,
             pad_maps=pad_maps,
-            pre_padding=pre_padding,
+            pre_padding_values=self.pre_padding_values,
             pretrained_teacher_type=pretrained_teacher_type,
         )
         self.batch_size = batch_size
         self.input_size = input_size
         self.lr = lr
         self.weight_decay = weight_decay
-        self.pre_padding = pre_padding
         self.pretrained_models_dir = Path(pretrained_models_dir)
         self.imagenette_dir = Path(imagenette_dir)
 
         self.prepare_pretrained_model()
         self.prepare_imagenette_data()
+
+    def compute_pre_padding(self) -> Tuple[int, int, int, int]:
+        return (20, 20, 20, 20)
 
     def prepare_pretrained_model(self) -> None:
         if self.model.pretrained_teacher_type == "nelson":
@@ -177,8 +181,8 @@ class EfficientAd(AnomalyModule):
 
         logger.info("Calculate teacher channel mean and std")
         for batch in tqdm.tqdm(dataloader, desc="Calculate teacher channel mean", position=0, leave=True):
-            if self.pre_padding is not None:
-                batch["image"] = torch.nn.functional.pad(batch["image"], self.pre_padding)
+            if self.pre_padding:
+                batch["image"] = torch.nn.functional.pad(batch["image"], self.pre_padding_values)
             y = self.model.teacher(batch["image"].to(self.device))
             y_means.append(torch.mean(y, dim=[0, 2, 3]))
             teacher_outputs.append(y)
@@ -210,8 +214,8 @@ class EfficientAd(AnomalyModule):
         for batch in tqdm.tqdm(dataloader, desc="Calculate Validation Dataset Quantiles", position=0, leave=True):
             for img, label in zip(batch["image"], batch["label"]):
                 if label == 0:  # only use good images of validation set!
-                    if self.pre_padding is not None:
-                        img = torch.nn.functional.pad(img, self.pre_padding)
+                    if self.pre_padding:
+                        img = torch.nn.functional.pad(img, self.pre_padding_values)
                     output = self.model(img.to(self.device))
                     map_st = output[2]
                     map_ae = output[3]
@@ -291,7 +295,7 @@ class EfficientAd(AnomalyModule):
         """
         Calculate the feature map quantiles of the validation dataset and push to the model.
         """
-        if (self.current_epoch + 1) == self.trainer.max_epochs:
+        if (self.current_epoch > self.trainer.max_epochs) or (self.global_step > self.trainer.max_steps):
             # TODO: Anomalib uses validation which is heavily biased as it generally performed over test images since
             # val is not available most of the times.
             map_norm_quantiles = self.map_norm_quantiles(self.trainer.datamodule.train_dataloader())
@@ -332,7 +336,7 @@ class EfficientAdLightning(EfficientAd):
             pretrained_models_dir=hparams.model.pretrained_models_dir,
             imagenette_dir=hparams.model.imagenette_dir,
             pad_maps=hparams.model.pad_maps,
-            pre_padding=tuple(hparams.model.pre_padding),
+            pre_padding=hparams.model.pre_padding,
             pretrained_teacher_type=hparams.model.pretrained_teacher_type,
         )
         self.hparams: DictConfig | ListConfig  # type: ignore

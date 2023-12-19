@@ -301,7 +301,7 @@ class EfficientAdModel(nn.Module):
         pad_maps (bool): relevant if padding is set to False. In this case, pad_maps = True pads the
             output anomaly maps so that their size matches the size in the padding = True case.
         device (str): which device the model should be loaded on
-        pre_padding (tuple): [left, right, top, bottom] padding to add before the forward
+        pre_padding_values (tuple): [left, right, top, bottom] padding to add before the forward
         pretrained_teacher_type (str): which pretrained teacher model to use. Currently supported are:
             - "nelson": Nelson's original models
             - "anomalib": Anomalib's models
@@ -314,21 +314,21 @@ class EfficientAdModel(nn.Module):
         model_size: EfficientAdModelSize = EfficientAdModelSize.S,
         padding: bool = False,
         pad_maps: bool = True,
-        pre_padding: Optional[Tuple] = None,
+        pre_padding_values: Optional[Tuple] = None,
         pretrained_teacher_type: Literal["anomalib", "nelson"] = "nelson",
     ) -> None:
         super().__init__()
 
         self.pad_maps = pad_maps
-        self.pre_padding = pre_padding
+        self.pre_padding_values = pre_padding_values
         self.teacher: PDN_M | PDN_S | nn.Sequential
         self.student: PDN_M | PDN_S | nn.Sequential
         self.pretrained_teacher_type = pretrained_teacher_type
         self.model_size = model_size
         self.input_size: tuple[int, int] = input_size
-        if self.pre_padding is not None:
-            self.input_size[0] += self.pre_padding[2] + self.pre_padding[3]
-            self.input_size[1] += self.pre_padding[0] + self.pre_padding[1]
+        if self.pre_padding_values is not None:
+            self.input_size[0] += self.pre_padding_values[2] + self.pre_padding_values[3]
+            self.input_size[1] += self.pre_padding_values[0] + self.pre_padding_values[1]
 
         if self.model_size == EfficientAdModelSize.M:
             if self.pretrained_teacher_type == "anomalib":
@@ -405,12 +405,12 @@ class EfficientAdModel(nn.Module):
             if len(batch_imagenet.shape) < 4:
                 batch_imagenet = batch_imagenet.unsqueeze(0)
 
-        if self.pre_padding is not None:
+        if self.pre_padding_values is not None:
             # Apply pre_padding
             # TODO: This is a workaround to solve the maps' inactive "frame" issue
-            batch = torch.nn.functional.pad(batch, self.pre_padding)
+            batch = torch.nn.functional.pad(batch, self.pre_padding_values)
             if batch_imagenet is not None:
-                batch_imagenet = torch.nn.functional.pad(batch_imagenet, self.pre_padding)
+                batch_imagenet = torch.nn.functional.pad(batch_imagenet, self.pre_padding_values)
 
         with torch.no_grad():
             teacher_output = self.teacher(batch)
@@ -481,13 +481,19 @@ class EfficientAdModel(nn.Module):
                     0.1 * (map_stae - self.quantiles["qa_ae"]) / (self.quantiles["qb_ae"] - self.quantiles["qa_ae"])
                 )
 
-            # Remove pre_padding
-            if self.pre_padding is not None:
+            # Remove pre_padding_values
+            if self.pre_padding_values is not None:
                 map_st = map_st[
-                    :, :, self.pre_padding[2] : -self.pre_padding[3], self.pre_padding[0] : -self.pre_padding[1]
+                    :,
+                    :,
+                    self.pre_padding_values[2] : -self.pre_padding_values[3],
+                    self.pre_padding_values[0] : -self.pre_padding_values[1],
                 ]
                 map_stae = map_stae[
-                    :, :, self.pre_padding[2] : -self.pre_padding[3], self.pre_padding[0] : -self.pre_padding[1]
+                    :,
+                    :,
+                    self.pre_padding_values[2] : -self.pre_padding_values[3],
+                    self.pre_padding_values[0] : -self.pre_padding_values[1],
                 ]
 
             # We interpolate after combining the maps, as it returns better results w/ the padding
