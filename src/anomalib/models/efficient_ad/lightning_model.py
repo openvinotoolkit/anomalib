@@ -59,7 +59,7 @@ class EfficientAd(AnomalyModule):
         model_size (str): size of student and teacher model
         lr (float): learning rate
         weight_decay (float): optimizer weight decay
-        padding (bool): use padding in convoluional layers of the student/teacher architecture
+        padding (bool): use padding in the convolutional layers of the student/teacher architecture
         batch_size (int): batch size for imagenet dataloader
         pretraining_images_dir (str): path to folder with images used to pretrain the teacher model
                              and the code is calling it "imagenette", but it could be any dataset.
