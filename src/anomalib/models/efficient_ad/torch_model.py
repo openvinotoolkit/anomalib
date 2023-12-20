@@ -9,7 +9,7 @@ import logging
 import random
 from enum import Enum
 from typing import Literal
-from typing import List, Union
+from typing import Tuple
 
 import torch
 import torch.nn.functional as F
@@ -301,6 +301,7 @@ class EfficientAdModel(nn.Module):
         pad_maps (bool): relevant if padding is set to False. In this case, pad_maps = True pads the
             output anomaly maps so that their size matches the size in the padding = True case.
         device (str): which device the model should be loaded on
+        pre_padding (bool): If True, apply prepadding during forward.
         pretrained_teacher_type (str): which pretrained teacher model to use. Currently supported are:
             - "nelson": Nelson's original models
             - "anomalib": Anomalib's models
@@ -309,10 +310,11 @@ class EfficientAdModel(nn.Module):
     def __init__(
         self,
         teacher_out_channels: int,
-        input_size: tuple[int, int],
+        input_size: Tuple[int, int],
         model_size: EfficientAdModelSize = EfficientAdModelSize.S,
         padding: bool = False,
         pad_maps: bool = True,
+        pre_padding: bool = False,
         pretrained_teacher_type: Literal["anomalib", "nelson"] = "nelson",
     ) -> None:
         super().__init__()
@@ -322,6 +324,8 @@ class EfficientAdModel(nn.Module):
         self.student: PDN_M | PDN_S | nn.Sequential
         self.pretrained_teacher_type = pretrained_teacher_type
         self.model_size = model_size
+        self.input_size: Tuple[int, int] = input_size
+        self.pre_padding = pre_padding
 
         if self.model_size == EfficientAdModelSize.M:
             if self.pretrained_teacher_type == "anomalib":
@@ -348,7 +352,6 @@ class EfficientAdModel(nn.Module):
             self.ae: nn.Sequential = get_autoencoder(out_channels=teacher_out_channels)
 
         self.teacher_out_channels: int = teacher_out_channels
-        self.input_size: tuple[int, int] = input_size
 
         self.mean_std: nn.ParameterDict = nn.ParameterDict(
             {
@@ -366,11 +369,35 @@ class EfficientAdModel(nn.Module):
             }
         )
 
+        if self.pre_padding:
+            self.pre_padding_values = self.compute_pre_padding(self.input_size)
+            self.input_size[0] += self.pre_padding_values[2] + self.pre_padding_values[3]
+            self.input_size[1] += self.pre_padding_values[0] + self.pre_padding_values[1]
+        else:
+            self.pre_padding_values = None
+
     def is_set(self, p_dic: nn.ParameterDict) -> bool:
         for _, value in p_dic.items():
             if value.sum() != 0:
                 return True
         return False
+
+    def compute_pre_padding(self, original_input_size: Tuple[int, int]) -> Tuple[int, int, int, int]:
+        """Computes pre_padding values based on images original input_size
+        Args:
+            original_input_size (tuple[int, int]): Input images' original input size [H, W].
+
+        Returns padding values for the pre_padding: [left, right, top, bottom].
+        """
+        inpt = torch.randn(1, 3, original_input_size[0], original_input_size[1])
+        output_size = self.student(inpt).shape[-2:]
+        # 4 is the same value used by pad_maps in the torch_model.py
+        # it's the value needed to even out the pixels lost due to padding=False
+        h_expansion_ratio = original_input_size[0] / (output_size[0] + 4)
+        w_expansion_ratio = original_input_size[1] / (output_size[1] + 4)
+        w_value = int(4 * (w_expansion_ratio + 1))
+        h_value = int(4 * (h_expansion_ratio + 1))
+        return [w_value, w_value, h_value, h_value]
 
     # TODO: This seems to be broken. We are not using it
     def choose_random_aug_image(self, image: Tensor) -> Tensor:
@@ -398,6 +425,14 @@ class EfficientAdModel(nn.Module):
         if batch_imagenet is not None:
             if len(batch_imagenet.shape) < 4:
                 batch_imagenet = batch_imagenet.unsqueeze(0)
+
+        if self.pre_padding_values is not None:
+            # Apply pre_padding
+            # TODO: This is a workaround to solve the maps' inactive "frame" issue
+            batch = torch.nn.functional.pad(batch, self.pre_padding_values)
+            if batch_imagenet is not None:
+                batch_imagenet = torch.nn.functional.pad(batch_imagenet, self.pre_padding_values)
+
         with torch.no_grad():
             teacher_output = self.teacher(batch)
             if self.is_set(self.mean_std):
@@ -466,6 +501,22 @@ class EfficientAdModel(nn.Module):
                 map_stae = (
                     0.1 * (map_stae - self.quantiles["qa_ae"]) / (self.quantiles["qb_ae"] - self.quantiles["qa_ae"])
                 )
+
+            # Remove pre_padding_values
+            if self.pre_padding_values is not None:
+                map_st = map_st[
+                    :,
+                    :,
+                    self.pre_padding_values[2] : -self.pre_padding_values[3],
+                    self.pre_padding_values[0] : -self.pre_padding_values[1],
+                ]
+                map_stae = map_stae[
+                    :,
+                    :,
+                    self.pre_padding_values[2] : -self.pre_padding_values[3],
+                    self.pre_padding_values[0] : -self.pre_padding_values[1],
+                ]
+
             # We interpolate after combining the maps, as it returns better results w/ the padding
             map_combined = 0.5 * map_st + 0.5 * map_stae
 

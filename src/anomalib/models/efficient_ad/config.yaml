@@ -31,6 +31,7 @@ model:
   imagenette_dir: ${oc.env:HOME}/shared/generic/imagenette_efficientad
   padding: false
   pad_maps: true # relevant for "padding: false", see EfficientAd in lightning_model.py
+  pre_padding: false
   # generic params
   normalization_method: min_max # options: [null, min_max, cdf]
 
