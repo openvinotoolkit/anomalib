@@ -111,33 +111,14 @@ class WinClipModel(nn.Module):
         # get anomaly scores
         image_scores = simmilarity_score(image_embeddings, self.text_embeddings)[..., -1]
 
-        # get multiscale scores
-        window_scores = [image_scores.view(-1, 1, 1).repeat(1, self.grid_size[0], self.grid_size[1])]
-        for window_embedding, mask in zip(window_embeddings, self.masks):
-            scores = simmilarity_score(window_embedding, self.text_embeddings)[..., -1]
-            window_scores.append(harmonic_aggregation(scores, self.grid_size, mask))
-        window_scores = torch.stack(window_scores)
-
-        multiscale_scores = (len(self.scales) + 1) / (1 / window_scores).sum(dim=0)
-
+        # get 0-shot scores
+        multiscale_scores = self._compute_zero_shot_scores(image_scores, window_embeddings)
 
         # get n-shot scores
         if self.n_shot:
-            window_association_scores = [
-                compute_association_map(window_embedding, ref_embedding) 
-                for window_embedding, ref_embedding in zip(window_embeddings, self.window_embeddings_ref)
-            ]
-            window_association_scores = [
-                harmonic_aggregation(window_association_score, self.grid_size, mask)
-                for window_association_score, mask in zip(window_association_scores, self.masks)
-            ]
-            patch_association_scores = compute_association_map(patch_embeddings, self.patch_embeddings_ref)
-            patch_association_scores = patch_association_scores.reshape((-1, ) + self.grid_size)
-
-            few_shot_scores = torch.stack([patch_association_scores] + window_association_scores).mean(dim=0)
+            few_shot_scores = self._compute_few_shot_scores(patch_embeddings, window_embeddings)
             multiscale_scores = (multiscale_scores + few_shot_scores) / 2
             image_scores  = (image_scores + few_shot_scores.amax(dim=(-2, -1))) / 2
-
 
         pixel_scores = F.interpolate(
             multiscale_scores.unsqueeze(1),
@@ -147,6 +128,35 @@ class WinClipModel(nn.Module):
         ).squeeze()
         return image_scores, pixel_scores
     
+    def _compute_zero_shot_scores(self, image_scores: torch.Tensor, window_embeddings: list[torch.Tensor]) -> torch.Tensor:
+        """
+        Compute the text scores for each window based on the image scores and window embeddings.
+
+        Args:
+            image_scores (torch.Tensor): Tensor of shape (batch_size) representing the image scores.
+            window_embeddings (list[torch.Tensor]): List of tensors representing the embeddings for each window.
+
+        Returns:
+            torch.Tensor: Tensor of shape (batch_size, num_windows) representing the text scores for each window.
+        """
+        multiscale_scores = [image_scores.view(-1, 1, 1).repeat(1, self.grid_size[0], self.grid_size[1])]
+        for window_embedding, mask in zip(window_embeddings, self.masks):
+            scores = simmilarity_score(window_embedding, self.text_embeddings)[..., -1]
+            multiscale_scores.append(harmonic_aggregation(scores, self.grid_size, mask))
+
+        return (len(self.scales) + 1) / (1 / torch.stack(multiscale_scores)).sum(dim=0)
+
+    def _compute_few_shot_scores(self, patch_embeddings, window_embeddings):
+            multiscale_scores = [
+                compute_association_map(patch_embeddings, self.patch_embeddings).reshape((-1, ) + self.grid_size)
+            ]
+            for window_embedding, reference_embedding, mask in zip(
+                window_embeddings, self.visual_embeddings, self.masks
+            ):
+                scores = compute_association_map(window_embedding, reference_embedding)
+                multiscale_scores.append(harmonic_aggregation(scores, self.grid_size, mask))
+
+            return torch.stack(multiscale_scores).mean(dim=0)
 
     def collect_text_embeddings(self, object: str, device: torch.device | None = None):
         # collect prompt ensemble
@@ -173,8 +183,8 @@ class WinClipModel(nn.Module):
         # encode
         with torch.no_grad():
             _, window_embeddings, patch_embeddings = self.encode_image(images)
-        self.window_embeddings_ref = [window.to(device) for window in window_embeddings]
-        self.patch_embeddings_ref = patch_embeddings.to(device)
+        self.visual_embeddings = [window.to(device) for window in window_embeddings]
+        self.patch_embeddings = patch_embeddings.to(device)
 
 
     def create_masks(self, device: torch.device | None = None) -> None:
