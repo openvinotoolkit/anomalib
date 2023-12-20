@@ -11,7 +11,7 @@ import logging
 from pathlib import Path
 
 import itertools
-from typing import Literal, Optional, Tuple
+from typing import Literal, Tuple
 import albumentations as A
 import numpy as np
 import torch
@@ -87,7 +87,7 @@ class EfficientAd(AnomalyModule):
         self,
         imagenette_dir: str,
         teacher_out_channels: int,
-        input_size: tuple[int, int],
+        input_size: Tuple[int, int],
         pretrained_models_dir: str = "./efficient_ad_pretrained_models",
         model_size: EfficientAdModelSize = EfficientAdModelSize.S,
         lr: float = 0.0001,
@@ -227,7 +227,7 @@ class EfficientAd(AnomalyModule):
 
         return {"qa_st": qa_st, "qa_ae": qa_ae, "qb_st": qb_st, "qb_ae": qb_ae}
 
-    def _get_quantiles_of_maps(self, maps: list[Tensor]) -> tuple[Tensor, Tensor]:
+    def _get_quantiles_of_maps(self, maps: list[Tensor]) -> Tuple[Tensor, Tensor]:
         """Calculate 90% and 99.5% quantiles of the given anomaly maps.
 
         If the total number of elements in the given maps is larger than 16777216
