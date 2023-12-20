@@ -79,7 +79,7 @@ class EfficientAd(AnomalyModule):
         pad_maps (bool): relevant if padding is set to False. In this case, pad_maps = True pads the
             output anomaly maps so that their size matches the size in the padding = True case.
         batch_size (int): batch size for imagenet dataloader
-        pre_padding (tuple): [left, right, top, bottom] padding to add before the forward.
+        pre_padding (bool): If True, apply prepadding to inputs inside forward function.
         pretrained_teacher_type (str): Type of pretrained model. Currently nelson and anomalib are supported.
     """
 
