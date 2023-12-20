@@ -301,7 +301,7 @@ class EfficientAdModel(nn.Module):
         pad_maps (bool): relevant if padding is set to False. In this case, pad_maps = True pads the
             output anomaly maps so that their size matches the size in the padding = True case.
         device (str): which device the model should be loaded on
-        pre_padding_values (tuple): [left, right, top, bottom] padding to add before the forward
+        pre_padding (bool): If True, apply prepadding during forward.
         pretrained_teacher_type (str): which pretrained teacher model to use. Currently supported are:
             - "nelson": Nelson's original models
             - "anomalib": Anomalib's models
@@ -314,7 +314,7 @@ class EfficientAdModel(nn.Module):
         model_size: EfficientAdModelSize = EfficientAdModelSize.S,
         padding: bool = False,
         pad_maps: bool = True,
-        pre_padding: Optional[Tuple] = None,
+        pre_padding: Optional[bool] = False,
         pretrained_teacher_type: Literal["anomalib", "nelson"] = "nelson",
     ) -> None:
         super().__init__()
