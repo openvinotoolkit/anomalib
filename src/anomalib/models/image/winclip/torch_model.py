@@ -15,24 +15,22 @@ import torch.nn.functional as F
 # from .third_party import CLIPAD
 from .ad_prompts import *
 from .prompting import create_prompt_ensemble
-from .utils import cosine_similarity, harmonic_aggregation, make_masks
+from .utils import harmonic_aggregation, make_masks, simmilarity_score, compute_association_map
 
-valid_backbones = ["ViT-B-16-plus-240"]
-valid_pretrained_datasets = ["laion400m_e32"]
-
-
-mean_train = [0.48145466, 0.4578275, 0.40821073]
-std_train = [0.26862954, 0.26130258, 0.27577711]
+# valid_backbones = ["ViT-B-16-plus-240"]
+# valid_pretrained_datasets = ["laion400m_e32"]
 
 
-def _convert_to_rgb(image):
-    return image.convert("RGB")
+# mean_train = [0.48145466, 0.4578275, 0.40821073]
+# std_train = [0.26862954, 0.26130258, 0.27577711]
+
 
 class WinClipModel(nn.Module):
-    def __init__(self, model_name="ViT-B-16-plus-240", scales=(2, 3)):
+    def __init__(self, n_shot: int=0, model_name="ViT-B-16-plus-240", scales=(2, 3)):
         super().__init__()
         self.model, _, self.preprocess = open_clip.create_model_and_transforms(model_name, pretrained="laion400m_e31")
         self.grid_size = self.model.visual.grid_size
+        self.n_shot = n_shot
         # self.model.visual.output_tokens = True
         self.scales = scales
 
@@ -45,7 +43,7 @@ class WinClipModel(nn.Module):
     def encode_text(self, text):
         return self.model.encode_text(text)
 
-    def encode_image(self, image, patch_size, mask=True):
+    def encode_image(self, image):
         self.model.visual.output_tokens = True
         # TODO: Investigate if this is actually needed
         self.model.visual.final_ln_after_pool = True
@@ -71,21 +69,17 @@ class WinClipModel(nn.Module):
         return (
             image_embeddings,
             window_embeddings,
-            # patch_embeddings.unsqueeze(2),
+            patch_embeddings,
         )
 
     def _get_window_embeddings(self, x, mask_scale):
-        x_select = []
         mask_scale = mask_scale.T
         mask_num, L = mask_scale.shape
         class_index = torch.zeros((mask_scale.shape[0], 1), dtype=torch.int32).to(mask_scale)
         mask_scale = torch.cat((class_index, mask_scale.int()), dim=1)
 
-        for i in mask_scale:
-            try:
-                x_select.append(torch.index_select(x, 1, i.int()))
-            except:
-                print("i", i)
+        # TODO: improve device handling
+        x_select = [torch.index_select(x, 1, mask.to(x.device)) for mask in mask_scale]
         x_scale = torch.cat(x_select)  #
 
         x_scale = self.model.visual.patch_dropout(x_scale)
@@ -112,21 +106,39 @@ class WinClipModel(nn.Module):
 
     def forward(self, x):
         # x = torch.load("/home/djameln/WinCLIP-pytorch/image_wnclp.pt")
-        image_embeddings, window_embeddings = self.encode_image(x, patch_size=16, mask=True)
+        image_embeddings, window_embeddings, patch_embeddings = self.encode_image(x)
 
         # get anomaly scores
-        image_scores = cosine_similarity(image_embeddings, self.text_embeddings)[..., -1]
+        image_scores = simmilarity_score(image_embeddings, self.text_embeddings)[..., -1]
 
         # get multiscale scores
         window_scores = [image_scores.view(-1, 1, 1).repeat(1, self.grid_size[0], self.grid_size[1])]
         for window_embedding, mask in zip(window_embeddings, self.masks):
-            scores = cosine_similarity(window_embedding, self.text_embeddings)[..., -1]
+            scores = simmilarity_score(window_embedding, self.text_embeddings)[..., -1]
             window_scores.append(harmonic_aggregation(scores, self.grid_size, mask))
         window_scores = torch.stack(window_scores)
 
         multiscale_scores = (len(self.scales) + 1) / (1 / window_scores).sum(dim=0)
 
-        # multiscale_scores = 3 / (1 / large_scale_scores + 1 / mid_scale_scores + 1 / image_scores.view(-1, 1, 1))
+
+        # get n-shot scores
+        if self.n_shot:
+            window_association_scores = [
+                compute_association_map(window_embedding, ref_embedding) 
+                for window_embedding, ref_embedding in zip(window_embeddings, self.window_embeddings_ref)
+            ]
+            window_association_scores = [
+                harmonic_aggregation(window_association_score, self.grid_size, mask)
+                for window_association_score, mask in zip(window_association_scores, self.masks)
+            ]
+            patch_association_scores = compute_association_map(patch_embeddings, self.patch_embeddings_ref)
+            patch_association_scores = patch_association_scores.reshape((-1, ) + self.grid_size)
+
+            few_shot_scores = torch.stack([patch_association_scores] + window_association_scores).mean(dim=0)
+            multiscale_scores = (multiscale_scores + few_shot_scores) / 2
+            image_scores  = (image_scores + few_shot_scores.amax(dim=(-2, -1))) / 2
+
+
         pixel_scores = F.interpolate(
             multiscale_scores.unsqueeze(1),
             size=x.shape[-2:],
@@ -134,6 +146,7 @@ class WinClipModel(nn.Module):
             align_corners=False,
         ).squeeze()
         return image_scores, pixel_scores
+    
 
     def collect_text_embeddings(self, object: str, device: torch.device | None = None):
         # collect prompt ensemble
@@ -155,6 +168,14 @@ class WinClipModel(nn.Module):
             text_embeddings = text_embeddings.to(device)
         # store
         self.text_embeddings = text_embeddings.detach()
+
+    def collect_image_embeddings(self, images: torch.Tensor, device: torch.device | None = None) -> None:
+        # encode
+        with torch.no_grad():
+            _, window_embeddings, patch_embeddings = self.encode_image(images)
+        self.window_embeddings_ref = [window.to(device) for window in window_embeddings]
+        self.patch_embeddings_ref = patch_embeddings.to(device)
+
 
     def create_masks(self, device: torch.device | None = None) -> None:
         """Create masks for each scale."""

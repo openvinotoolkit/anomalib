@@ -39,24 +39,29 @@ class WinClip(AnomalyModule):
     ) -> None:
         super().__init__()
         # self.model = WinClipAD()
-        self.model = WinClipModel()
+        self.model = WinClipModel(n_shot=n_shot)
         self.class_name = class_name
         self.n_shot = n_shot
 
     def setup(self, stage) -> None:
+        # TODO: check if there is a better hook, which is called after setting the device
         del stage
         self.model.collect_text_embeddings(self.class_name, device=self.device)
         self.model.create_masks(device=self.device)
 
-    def on_train_start(self) -> None:
         if self.n_shot:
-            gallery = self.collect_image_gallery()
-            self.model.build_image_feature_gallery(gallery)
+            gallery = self.collect_reference_images()
+            self.model.collect_image_embeddings(gallery, device=self.device)
 
-    def collect_image_gallery(self):
-        gallery = Tensor().to(self.device)
+    # def on_train_start(self) -> None:
+    #     if self.n_shot:
+    #         gallery = self.collect_image_gallery()
+    #         self.model.build_image_feature_gallery(gallery)
+
+    def collect_reference_images(self):
+        gallery = Tensor()
         for batch in self.trainer.datamodule.train_dataloader():
-            images = batch["image"][:self.n_shot-gallery.shape[0]].to(self.device)
+            images = batch["image"][:self.n_shot-gallery.shape[0]]
             gallery = torch.cat((gallery, images))
             if self.n_shot == gallery.shape[0]:
                 break

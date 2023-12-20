@@ -22,7 +22,12 @@ def cosine_similarity(input1, input2):
     input1_norm = F.normalize(input1, p=2, dim=-1)
     input2_norm = F.normalize(input2, p=2, dim=-1)
     # TODO check if we can remove 0.07 factor and softmax
-    return (torch.bmm(input1_norm, input2_norm.transpose(-2, -1)) / 0.07).softmax(dim=-1).squeeze()
+    return torch.bmm(input1_norm, input2_norm.transpose(-2, -1))
+
+
+def simmilarity_score(input1, input2):
+    """Compute similarity score between two tensors."""
+    return (cosine_similarity(input1, input2) / 0.07).softmax(dim=-1).squeeze()
 
 
 def harmonic_aggregation(window_scores, output_size, masks):
@@ -50,6 +55,13 @@ def harmonic_aggregation(window_scores, output_size, masks):
     return scores.reshape(batch_size, height, width)
 
 
+def compute_association_map(embeddings: torch.Tensor, reference_embeddings: torch.Tensor):
+    """Compute window- or patch-level association map."""
+    reference_embeddings = reference_embeddings.reshape(-1, embeddings.shape[-1])
+    scores = cosine_similarity(embeddings, reference_embeddings)
+    return (1 - scores).min(dim=-1)[0] / 2
+
+
 def make_masks(grid_size: tuple, kernel_size: int, stride: int=1) -> torch.Tensor:
     """Make a mask to select patches from a feature map.
     
@@ -64,5 +76,5 @@ def make_masks(grid_size: tuple, kernel_size: int, stride: int=1) -> torch.Tenso
     height, width = grid_size
     # TODO: check if we can remove the +1
     grid = torch.arange(1, height * width + 1).reshape(1, 1, height, width)
-    masks = F.unfold(grid.float(), kernel_size=kernel_size, stride=stride)
+    masks = F.unfold(grid.float(), kernel_size=kernel_size, stride=stride).int()
     return masks.squeeze()
