@@ -382,7 +382,7 @@ class EfficientAdModel(nn.Module):
                 return True
         return False
 
-    def compute_pre_padding(self, original_input_size) -> Tuple[int, int, int, int]:
+    def compute_pre_padding(self, original_input_size: Tuple[int, int]) -> Tuple[int, int, int, int]:
         """Computes pre_padding values based on images original input_size
         Args:
             original_input_size (tuple[int, int]): Input images' original input size [H, W].
