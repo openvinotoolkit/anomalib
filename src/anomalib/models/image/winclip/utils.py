@@ -48,3 +48,21 @@ def harmonic_aggregation(window_scores, output_size, masks):
         scores[:, idx] = sum(patch_mask) / (1 / window_scores.T[patch_mask]).sum(dim=0)
 
     return scores.reshape(batch_size, height, width)
+
+
+def make_masks(grid_size: tuple, kernel_size: int, stride: int=1) -> torch.Tensor:
+    """Make a mask to select patches from a feature map.
+    
+    Args:
+        grid_size tuple(int, int): The size of the feature map.
+        kernel_size (int): The size of the kernel.
+        stride (int): The size of the stride.
+    
+    Returns:
+        torch.Tensor: The mask.
+    """
+    height, width = grid_size
+    # TODO: check if we can remove the +1
+    grid = torch.arange(1, height * width + 1).reshape(1, 1, height, width)
+    masks = F.unfold(grid.float(), kernel_size=kernel_size, stride=stride)
+    return masks.squeeze()

@@ -46,6 +46,7 @@ class WinClip(AnomalyModule):
     def setup(self, stage) -> None:
         del stage
         self.model.collect_text_embeddings(self.class_name, device=self.device)
+        self.model.create_masks(device=self.device)
 
     def on_train_start(self) -> None:
         if self.n_shot:
