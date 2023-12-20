@@ -314,7 +314,7 @@ class EfficientAdModel(nn.Module):
         model_size: EfficientAdModelSize = EfficientAdModelSize.S,
         padding: bool = False,
         pad_maps: bool = True,
-        pre_padding: Optional[bool] = False,
+        pre_padding: bool = False,
         pretrained_teacher_type: Literal["anomalib", "nelson"] = "nelson",
     ) -> None:
         super().__init__()
