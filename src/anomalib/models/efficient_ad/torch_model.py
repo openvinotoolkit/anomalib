@@ -383,10 +383,10 @@ class EfficientAdModel(nn.Module):
         return False
 
     def compute_pre_padding(self, original_input_size) -> Tuple[int, int, int, int]:
-        """Computes pre_padding values based on
+        """Computes pre_padding values based on images original input_size
         Args:
             original_input_size (tuple[int, int]): Input images' original input size [H, W].
-            model_size: Either S or M.
+
         Returns padding values for the pre_padding: [left, right, top, bottom].
         """
         inpt = torch.randn(1, 3, original_input_size[0], original_input_size[1])
