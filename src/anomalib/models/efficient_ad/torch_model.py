@@ -9,7 +9,7 @@ import logging
 import random
 from enum import Enum
 from typing import Literal
-from typing import List, Optional, Tuple, Union
+from typing import Tuple
 
 import torch
 import torch.nn.functional as F
@@ -310,7 +310,7 @@ class EfficientAdModel(nn.Module):
     def __init__(
         self,
         teacher_out_channels: int,
-        input_size: tuple[int, int],
+        input_size: Tuple[int, int],
         model_size: EfficientAdModelSize = EfficientAdModelSize.S,
         padding: bool = False,
         pad_maps: bool = True,
@@ -324,7 +324,7 @@ class EfficientAdModel(nn.Module):
         self.student: PDN_M | PDN_S | nn.Sequential
         self.pretrained_teacher_type = pretrained_teacher_type
         self.model_size = model_size
-        self.input_size: tuple[int, int] = input_size
+        self.input_size: Tuple[int, int] = input_size
         self.pre_padding = pre_padding
 
         if self.model_size == EfficientAdModelSize.M:
