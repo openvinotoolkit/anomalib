@@ -14,8 +14,9 @@ import albumentations as A  # noqa: N812
 import pandas as pd
 import torch
 from pandas import DataFrame
+from PIL import Image
 from torch.utils.data import Dataset
-from torchvision.io import read_image
+from torchvision.transforms.functional import to_tensor
 from torchvision.tv_tensors import Mask
 
 from anomalib.data.utils import masks_to_boxes
@@ -117,7 +118,7 @@ class AnomalibDataset(Dataset, ABC):
         mask_path = self._samples.iloc[index].mask_path
         label_index = self._samples.iloc[index].label_index
 
-        image = read_image(image_path)
+        image = to_tensor(Image.open(image_path))
         item = {"image_path": image_path, "label": label_index}
 
         if self.task == TaskType.CLASSIFICATION:
@@ -125,7 +126,11 @@ class AnomalibDataset(Dataset, ABC):
         elif self.task in (TaskType.DETECTION, TaskType.SEGMENTATION):
             # Only Anomalous (1) images have masks in anomaly datasets
             # Therefore, create empty mask for Normal (0) images.
-            mask = Mask(torch.zeros(1, *image.shape[-2:])) if label_index == 0 else Mask(read_image(mask_path) / 255)
+            mask = (
+                Mask(torch.zeros(image.shape[-2:]))
+                if label_index == 0
+                else Mask(to_tensor(Image.open(mask_path)).squeeze())
+            )
 
             item["image"], item["mask"] = self.transform(image, mask)
             item["mask_path"] = mask_path
