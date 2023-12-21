@@ -36,6 +36,14 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
         axis=0,
     ).astype(int)
 
+    expected_tprs_norm = np.array([np.nan, np.nan, np.nan, np.nan])
+    expected_tprs_anom = np.array([1.0, 1.0, 1.0, 0.5])
+    expected_tprs = np.stack([expected_tprs_anom, expected_tprs_norm], axis=0).astype(np.float64)
+
+    expected_fprs_norm = np.array([1.0, 0.75, 0.5, 0.25])
+    expected_fprs_anom = np.array([1.0, 0.5, 0.0, 0.0])
+    expected_fprs = np.stack([expected_fprs_anom, expected_fprs_norm], axis=0).astype(np.float64)
+
     # in the case where all thresholds are higher than the highest prediction
     expected_norm_threshs_too_high = np.stack(
         [
@@ -158,12 +166,12 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
             ],
         )
 
-    # the following tests are for `per_img_binclf_curve()`, which expects
+    # the following tests are for `per_image_binclf_curve()`, which expects
     # inputs in image spatial format, i.e. (height, width)
     preds = preds.reshape(2, 2, 2)
     gts = gts.reshape(2, 2, 2)
 
-    per_img_binclf_curves_numpy_argvalues = [
+    per_image_binclf_curves_numpy_argvalues = [
         # `threshs_choice` = "given"
         (
             preds,
@@ -213,7 +221,7 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
         ),
     ]
 
-    if metafunc.function is test_per_img_binclf_curve_numpy:
+    if metafunc.function is test_per_image_binclf_curve_numpy:
         metafunc.parametrize(
             argnames=(
                 "anomaly_maps",
@@ -224,11 +232,11 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
                 "expected_threshs",
                 "expected_binclf_curves",
             ),
-            argvalues=per_img_binclf_curves_numpy_argvalues,
+            argvalues=per_image_binclf_curves_numpy_argvalues,
         )
 
     # the test with the torch interface are the same we just convert ndarray to Tensor
-    if metafunc.function is test_per_img_binclf_curve_torch:
+    if metafunc.function is test_per_image_binclf_curve_torch:
         metafunc.parametrize(
             argnames=(
                 "anomaly_maps",
@@ -241,11 +249,11 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
             ),
             argvalues=[
                 tuple(torch.from_numpy(v) if isinstance(v, np.ndarray) else v for v in argvals)
-                for argvals in per_img_binclf_curves_numpy_argvalues
+                for argvals in per_image_binclf_curves_numpy_argvalues
             ],
         )
 
-    if metafunc.function is test_per_img_binclf_curve_numpy or metafunc.function is test_per_img_binclf_curve_torch:
+    if metafunc.function is test_per_image_binclf_curve_numpy or metafunc.function is test_per_image_binclf_curve_torch:
         metafunc.parametrize(
             argnames=("algorithm",),
             argvalues=[
@@ -254,9 +262,7 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
             ],
         )
 
-    # if metafunc.function is test_per_img_binclf_curve_numpy:
-
-    if metafunc.function is test_per_img_binclf_curve_numpy_validations:
+    if metafunc.function is test_per_image_binclf_curve_numpy_validations:
         metafunc.parametrize(
             argnames=("args", "exception"),
             argvalues=[
@@ -290,7 +296,7 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
         )
 
     # same as above but testing other validations
-    if metafunc.function is test_per_img_binclf_curve_numpy_validations_alt:
+    if metafunc.function is test_per_image_binclf_curve_numpy_validations_alt:
         metafunc.parametrize(
             argnames=("args", "kwargs", "exception"),
             argvalues=[
@@ -300,6 +306,23 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
                     {"algorithm": "glfrb", "threshs_choice": "given", "threshs_given": threshs, "num_threshs": None},
                     NotImplementedError,
                 ),
+            ],
+        )
+
+    if metafunc.function is test_rate_metrics_numpy:
+        metafunc.parametrize(
+            argnames=("binclf_curves", "expected_fprs", "expected_tprs"),
+            argvalues=[
+                (binclf_curves, expected_fprs, expected_tprs),
+                (10 * binclf_curves, expected_fprs, expected_tprs),
+            ],
+        )
+
+    if metafunc.function is test_rate_metrics_torch:
+        metafunc.parametrize(
+            argnames=("binclf_curves", "expected_fprs", "expected_tprs"),
+            argvalues=[
+                (torch.from_numpy(binclf_curves), torch.from_numpy(expected_fprs), torch.from_numpy(expected_tprs)),
             ],
         )
 
@@ -401,7 +424,7 @@ def test_binclf_multiple_curves_validations(args: list, kwargs: dict, exception:
         binclf_curve_numpy.binclf_multiple_curves(*args, **kwargs)
 
 
-def test_per_img_binclf_curve_numpy(
+def test_per_image_binclf_curve_numpy(
     anomaly_maps: ndarray,
     masks: ndarray,
     algorithm: str,
@@ -411,10 +434,10 @@ def test_per_img_binclf_curve_numpy(
     expected_threshs: ndarray,
     expected_binclf_curves: ndarray,
 ) -> None:
-    """Test if `per_img_binclf_curve()` returns the expected values."""
+    """Test if `per_image_binclf_curve()` returns the expected values."""
     from anomalib.metrics.per_image import binclf_curve_numpy
 
-    computed_threshs, computed_binclf_curves = binclf_curve_numpy.per_img_binclf_curve(
+    computed_threshs, computed_binclf_curves = binclf_curve_numpy.per_image_binclf_curve(
         anomaly_maps,
         masks,
         algorithm=algorithm,
@@ -434,24 +457,38 @@ def test_per_img_binclf_curve_numpy(
     assert (computed_binclf_curves == expected_binclf_curves).all()
 
 
-def test_per_img_binclf_curve_numpy_validations(args: list, kwargs: dict, exception: Exception) -> None:
-    """Test if `per_img_binclf_curve()` raises the expected errors."""
+def test_per_image_binclf_curve_numpy_validations(args: list, kwargs: dict, exception: Exception) -> None:
+    """Test if `per_image_binclf_curve()` raises the expected errors."""
     from anomalib.metrics.per_image import binclf_curve_numpy
 
     with pytest.raises(exception):
-        binclf_curve_numpy.per_img_binclf_curve(*args, **kwargs)
+        binclf_curve_numpy.per_image_binclf_curve(*args, **kwargs)
 
 
-def test_per_img_binclf_curve_numpy_validations_alt(args: list, kwargs: dict, exception: Exception) -> None:
-    """Test if `per_img_binclf_curve()` raises the expected errors."""
-    test_per_img_binclf_curve_numpy_validations(args, kwargs, exception)
+def test_per_image_binclf_curve_numpy_validations_alt(args: list, kwargs: dict, exception: Exception) -> None:
+    """Test if `per_image_binclf_curve()` raises the expected errors."""
+    test_per_image_binclf_curve_numpy_validations(args, kwargs, exception)
+
+
+def test_rate_metrics_numpy(binclf_curves: ndarray, expected_fprs: ndarray, expected_tprs: ndarray) -> None:
+    """Test if rate metrics are computed correctly."""
+    from anomalib.metrics.per_image import binclf_curve_numpy
+
+    tprs = binclf_curve_numpy.per_image_tpr(binclf_curves)
+    fprs = binclf_curve_numpy.per_image_fpr(binclf_curves)
+
+    assert tprs.shape == expected_tprs.shape
+    assert fprs.shape == expected_fprs.shape
+
+    assert np.allclose(tprs, expected_tprs, equal_nan=True)
+    assert np.allclose(fprs, expected_fprs, equal_nan=True)
 
 
 # ==================================================================================================
 # API FUNCTIONS (TORCH)
 
 
-def test_per_img_binclf_curve_torch(
+def test_per_image_binclf_curve_torch(
     anomaly_maps: Tensor,
     masks: Tensor,
     algorithm: str,
@@ -461,10 +498,10 @@ def test_per_img_binclf_curve_torch(
     expected_threshs: Tensor,
     expected_binclf_curves: Tensor,
 ) -> None:
-    """Test if `per_img_binclf_curve()` returns the expected values."""
+    """Test if `per_image_binclf_curve()` returns the expected values."""
     from anomalib.metrics.per_image import binclf_curve
 
-    results_object = binclf_curve.per_img_binclf_curve(
+    computed_threshs, computed_binclf_curves = binclf_curve.per_image_binclf_curve(
         anomaly_maps,
         masks,
         algorithm=algorithm,
@@ -472,7 +509,6 @@ def test_per_img_binclf_curve_torch(
         threshs_given=threshs_given,
         num_threshs=num_threshs,
     )
-    computed_threshs, computed_binclf_curves = results_object.threshs, results_object.binclf_curves
 
     # threshs
     assert computed_threshs.shape == expected_threshs.shape
@@ -484,6 +520,16 @@ def test_per_img_binclf_curve_torch(
     assert computed_binclf_curves.dtype == expected_binclf_curves.dtype
     assert (computed_binclf_curves == expected_binclf_curves).all()
 
-    # test properties
-    results_object.fprs  # noqa: B018
-    results_object.tprs  # noqa: B018
+
+def test_rate_metrics_torch(binclf_curves: Tensor, expected_fprs: Tensor, expected_tprs: Tensor) -> None:
+    """Test if rate metrics are computed correctly."""
+    from anomalib.metrics.per_image import binclf_curve
+
+    tprs = binclf_curve.per_image_tpr(binclf_curves)
+    fprs = binclf_curve.per_image_fpr(binclf_curves)
+
+    assert tprs.shape == expected_tprs.shape
+    assert fprs.shape == expected_fprs.shape
+
+    assert torch.allclose(tprs, expected_tprs, equal_nan=True)
+    assert torch.allclose(fprs, expected_fprs, equal_nan=True)

@@ -383,10 +383,10 @@ def binclf_multiple_curves(
     raise NotImplementedError(msg)
 
 
-# ========================================= PER-IMAGE ===========================================
+# ========================================= PER-IMAGE BINCLF CURVE =========================================
 
 
-def per_img_binclf_curve(
+def per_image_binclf_curve(
     anomaly_maps: ndarray,
     masks: ndarray,
     algorithm: str = Algorithm.NUMBA,
@@ -397,8 +397,8 @@ def per_img_binclf_curve(
     """Compute the binary classification matrix of each image in the batch for multiple thresholds (shared).
 
     Args:
-        anomaly_maps (ndarray): Anomaly score maps of shape (N, H, W [, D, ...])
-        masks (ndarray): Binary ground truth masks of shape (N, H, W [, D, ...])
+        anomaly_maps (ndarray): Anomaly score maps of shape (N, H, W)
+        masks (ndarray): Binary ground truth masks of shape (N, H, W)
         algorithm (str, optional): Algorithm to use. Defaults to ALGORITHM_NUMBA.
         threshs_choice (str, optional): Sequence of thresholds to use. Defaults to THRESH_SEQUENCE_MINMAX_LINSPACE.
         #
@@ -500,3 +500,56 @@ def per_img_binclf_curve(
         raise RuntimeError(msg) from ex
 
     return threshs, binclf_curves
+
+
+# =========================================== RATE METRICS ===========================================
+
+
+def per_image_tpr(binclf_curves: ndarray) -> ndarray:
+    """True positive rates (TPR) for image for each thresh.
+
+    TPR = TP / P = TP / (TP + FN)
+
+    TP: true positives
+    FM: false negatives
+    P: positives (TP + FN)
+
+    Args:
+        binclf_curves (ndarray): Binary classification matrix curves (N, K, 2, 2). See `per_image_binclf_curve`.
+
+    Returns:
+        Tensor: shape (N, K), dtype float64
+        N: number of images
+        K: number of thresholds
+    """
+    # shape: (num images, num threshs)
+    tps = binclf_curves[..., 1, 1]
+    pos = binclf_curves[..., 1, :].sum(axis=2)  # 2 was the 3 originally
+
+    # tprs will be nan if pos == 0 (normal image), which is expected
+    return tps.astype(np.float64) / pos.astype(np.float64)
+
+
+def per_image_fpr(binclf_curves: ndarray) -> ndarray:
+    """False positive rates (TPR) for image for each thresh.
+
+    FPR = FP / N = FP / (FP + TN)
+
+    FP: false positives
+    TN: true negatives
+    N: negatives (FP + TN)
+
+    Args:
+        binclf_curves (ndarray): Binary classification matrix curves (N, K, 2, 2). See `per_image_binclf_curve`.
+
+    Returns:
+        Tensor: shape (N, K), dtype float64
+        N: number of images
+        K: number of thresholds
+    """
+    # shape: (num images, num threshs)
+    fps = binclf_curves[..., 0, 1]
+    neg = binclf_curves[..., 0, :].sum(axis=2)  # 2 was the 3 originally
+
+    # it can be `nan` if an anomalous image is fully covered by the mask
+    return fps.astype(np.float64) / neg.astype(np.float64)
