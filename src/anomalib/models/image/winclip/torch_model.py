@@ -104,6 +104,7 @@ class WinClipModel(nn.Module):
         # get n-shot scores
         if self.n_shot:
             few_shot_scores = self._compute_few_shot_scores(patch_embeddings, window_embeddings)
+            # TODO: use sum instead of average?
             multiscale_scores = (multiscale_scores + few_shot_scores) / 2
             image_scores = (image_scores + few_shot_scores.amax(dim=(-2, -1))) / 2
 
