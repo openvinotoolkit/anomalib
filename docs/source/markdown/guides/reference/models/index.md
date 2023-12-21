@@ -5,21 +5,21 @@
 :gutter: 1
 
 :::{grid-item-card} {octicon}`codescan` Model Components
-:link: ./components
+:link: ./components/index
 :link-type: doc
 
 Learn more about components to design your own anomaly detection models.
 :::
 
 :::{grid-item-card} {octicon}`file-media` Image Models
-:link: ./image
+:link: ./image/index
 :link-type: doc
 
 Learn more about image anomaly detection models.
 :::
 
 :::{grid-item-card} {octicon}`video` Video Models
-:link: ./video
+:link: ./video/index
 :link-type: doc
 
 Learn more about video anomaly detection models.
@@ -31,7 +31,7 @@ Learn more about video anomaly detection models.
 :caption: Data
 :hidden:
 
-./components
-./image
-./video
+./components/index
+./image/index
+./video/index
 ```
