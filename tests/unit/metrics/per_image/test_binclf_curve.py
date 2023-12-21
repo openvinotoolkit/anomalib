@@ -3,7 +3,9 @@
 
 import numpy as np
 import pytest
+import torch
 from numpy import ndarray
+from torch import Tensor
 
 
 def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
@@ -164,7 +166,72 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
     preds = preds.reshape(2, 2, 2)
     gts = gts.reshape(2, 2, 2)
 
-    if metafunc.function is test_per_img_binclf_curve:
+    per_img_binclf_curves_numpy_argvalues = [
+        # `threshs_choice` = "given"
+        (
+            preds,
+            gts,
+            "given",
+            threshs,
+            None,
+            threshs,
+            binclf_curves,
+        ),
+        (
+            preds,
+            gts,
+            "given",
+            10 * threshs,
+            2,
+            10 * threshs,
+            binclf_curves_threshs_too_high,
+        ),
+        (
+            preds,
+            gts,
+            "given",
+            0.01 * threshs,
+            None,
+            0.01 * threshs,
+            binclf_curves_threshs_too_low,
+        ),
+        # `threshs_choice` = 'minmax-linspace'"
+        (
+            preds,
+            gts,
+            "minmax-linspace",
+            None,
+            len(threshs),
+            threshs,
+            binclf_curves,
+        ),
+        (
+            2 * preds,
+            gts.astype(int),  # this is ok
+            "minmax-linspace",
+            None,
+            len(threshs),
+            2 * threshs,
+            binclf_curves,
+        ),
+    ]
+
+    if metafunc.function is test_per_img_binclf_curve_numpy:
+        metafunc.parametrize(
+            argnames=(
+                "anomaly_maps",
+                "masks",
+                "threshs_choice",
+                "threshs_given",
+                "num_threshs",
+                "expected_threshs",
+                "expected_binclf_curves",
+            ),
+            argvalues=per_img_binclf_curves_numpy_argvalues,
+        )
+
+    # the test with the torch interface are the same we just convert ndarray to Tensor
+    if metafunc.function is test_per_img_binclf_curve_torch:
         metafunc.parametrize(
             argnames=(
                 "anomaly_maps",
@@ -176,55 +243,12 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
                 "expected_binclf_curves",
             ),
             argvalues=[
-                # `threshs_choice` = "given"
-                (
-                    preds,
-                    gts,
-                    "given",
-                    threshs,
-                    None,
-                    threshs,
-                    binclf_curves,
-                ),
-                (
-                    preds,
-                    gts,
-                    "given",
-                    10 * threshs,
-                    2,
-                    10 * threshs,
-                    binclf_curves_threshs_too_high,
-                ),
-                (
-                    preds,
-                    gts,
-                    "given",
-                    0.01 * threshs,
-                    None,
-                    0.01 * threshs,
-                    binclf_curves_threshs_too_low,
-                ),
-                # `threshs_choice` = 'minmax-linspace'"
-                (
-                    preds,
-                    gts,
-                    "minmax-linspace",
-                    None,
-                    len(threshs),
-                    threshs,
-                    binclf_curves,
-                ),
-                (
-                    2 * preds,
-                    gts.astype(int),  # this is ok
-                    "minmax-linspace",
-                    None,
-                    len(threshs),
-                    2 * threshs,
-                    binclf_curves,
-                ),
+                tuple(torch.from_numpy(v) if isinstance(v, np.ndarray) else v for v in argvals)
+                for argvals in per_img_binclf_curves_numpy_argvalues
             ],
         )
+
+    if metafunc.function is test_per_img_binclf_curve_numpy or metafunc.function is test_per_img_binclf_curve_torch:
         metafunc.parametrize(
             argnames=("algorithm",),
             argvalues=[
@@ -233,7 +257,9 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
             ],
         )
 
-    if metafunc.function is test_per_img_binclf_curve_validations:
+    # if metafunc.function is test_per_img_binclf_curve_numpy:
+
+    if metafunc.function is test_per_img_binclf_curve_numpy_validations:
         metafunc.parametrize(
             argnames=("args", "exception"),
             argvalues=[
@@ -317,7 +343,7 @@ def test__binclf_multiple_curves_numba(preds: ndarray, gts: ndarray, threshs: nd
 
 
 # ==================================================================================================
-# API FUNCTIONS
+# API FUNCTIONS (NUMPY)
 
 
 def test_binclf_multiple_curves(
@@ -364,7 +390,7 @@ def test_binclf_multiple_curves_validations(args: list, kwargs: dict, exception:
         binclf_curve_numpy.binclf_multiple_curves(*args, **kwargs)
 
 
-def test_per_img_binclf_curve(
+def test_per_img_binclf_curve_numpy(
     anomaly_maps: ndarray,
     masks: ndarray,
     algorithm: str,
@@ -397,9 +423,46 @@ def test_per_img_binclf_curve(
     assert (computed_binclf_curves == expected_binclf_curves).all()
 
 
-def test_per_img_binclf_curve_validations(args: list, kwargs: dict, exception: Exception) -> None:
+def test_per_img_binclf_curve_numpy_validations(args: list, kwargs: dict, exception: Exception) -> None:
     """Test if `per_img_binclf_curve()` raises the expected errors."""
     from anomalib.metrics.per_image import binclf_curve_numpy
 
     with pytest.raises(exception):
         binclf_curve_numpy.per_img_binclf_curve(*args, **kwargs)
+
+
+# ==================================================================================================
+# API FUNCTIONS (TORCH)
+
+
+def test_per_img_binclf_curve_torch(
+    anomaly_maps: Tensor,
+    masks: Tensor,
+    algorithm: str,
+    threshs_choice: str,
+    threshs_given: Tensor | None,
+    num_threshs: int | None,
+    expected_threshs: Tensor,
+    expected_binclf_curves: Tensor,
+) -> None:
+    """Test if `per_img_binclf_curve()` returns the expected values."""
+    from anomalib.metrics.per_image import binclf_curve
+
+    computed_threshs, computed_binclf_curves = binclf_curve.per_img_binclf_curve(
+        anomaly_maps,
+        masks,
+        algorithm=algorithm,
+        threshs_choice=threshs_choice,
+        threshs_given=threshs_given,
+        num_threshs=num_threshs,
+    )
+
+    # threshs
+    assert computed_threshs.shape == expected_threshs.shape
+    assert computed_threshs.dtype == computed_threshs.dtype
+    assert (computed_threshs == expected_threshs).all()
+
+    # binclf_curves
+    assert computed_binclf_curves.shape == expected_binclf_curves.shape
+    assert computed_binclf_curves.dtype == expected_binclf_curves.dtype
+    assert (computed_binclf_curves == expected_binclf_curves).all()
