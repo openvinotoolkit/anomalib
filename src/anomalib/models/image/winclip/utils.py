@@ -31,8 +31,7 @@ def simmilarity_score(input1, input2):
 
 
 def harmonic_aggregation(window_scores, output_size, masks):
-    """
-    Perform harmonic aggregation on window scores.
+    """Perform harmonic aggregation on window scores.
 
     Args:
         window_scores (torch.Tensor): Tensor of shape (b, n_masks) representing the window scores.
@@ -49,27 +48,27 @@ def harmonic_aggregation(window_scores, output_size, masks):
     scores = torch.zeros((batch_size, height * width)).to(window_scores.device)
 
     for idx in range(height * width):
-        patch_mask = torch.any(masks==idx+1, dim=0)  # boolean tensor indicating which masks contain the patch
+        patch_mask = torch.any(masks == idx + 1, dim=0)  # boolean tensor indicating which masks contain the patch
         scores[:, idx] = sum(patch_mask) / (1 / window_scores.T[patch_mask]).sum(dim=0)
 
     return scores.reshape(batch_size, height, width)
 
 
-def compute_association_map(embeddings: torch.Tensor, reference_embeddings: torch.Tensor):
+def visual_association_score(embeddings: torch.Tensor, reference_embeddings: torch.Tensor):
     """Compute window- or patch-level association map."""
     reference_embeddings = reference_embeddings.reshape(-1, embeddings.shape[-1])
     scores = cosine_similarity(embeddings, reference_embeddings)
     return (1 - scores).min(dim=-1)[0] / 2
 
 
-def make_masks(grid_size: tuple, kernel_size: int, stride: int=1) -> torch.Tensor:
+def make_masks(grid_size: tuple, kernel_size: int, stride: int = 1) -> torch.Tensor:
     """Make a mask to select patches from a feature map.
-    
+
     Args:
         grid_size tuple(int, int): The size of the feature map.
         kernel_size (int): The size of the kernel.
         stride (int): The size of the stride.
-    
+
     Returns:
         torch.Tensor: The mask.
     """

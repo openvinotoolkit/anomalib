@@ -9,20 +9,13 @@ Paper https://arxiv.org/abs/2303.14814
 from __future__ import annotations
 
 import logging
-from pathlib import Path
-from typing import Sequence, Union
-from lightning.pytorch.callbacks.callback import Callback
 
 import torch
-from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.utilities.types import STEP_OUTPUT
 from torch import Tensor
-from torchvision.transforms.functional import resize
 
 from anomalib.models.components import AnomalyModule
-from anomalib.models.image.winclip.torch_model import WinClipAD, WinClipModel
-from anomalib.utils.callbacks.model_checkpoint_zero_shot import ZeroShotModelCheckpoint
-from lightning.pytorch.callbacks import ModelCheckpoint
+from anomalib.models.image.winclip.torch_model import WinClipModel
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +54,7 @@ class WinClip(AnomalyModule):
     def collect_reference_images(self):
         gallery = Tensor()
         for batch in self.trainer.datamodule.train_dataloader():
-            images = batch["image"][:self.n_shot-gallery.shape[0]]
+            images = batch["image"][: self.n_shot - gallery.shape[0]]
             gallery = torch.cat((gallery, images))
             if self.n_shot == gallery.shape[0]:
                 break
@@ -70,11 +63,11 @@ class WinClip(AnomalyModule):
     @staticmethod
     def configure_optimizers() -> None:  # pylint: disable=arguments-differ
         """WinCLIP doesn't require optimization, therefore returns no optimizers."""
-        return None
+        return
 
     def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> None:
         """Training Step of WinCLIP"""
-        return None
+        return
 
     def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
         """Validation Step of WinCLIP"""
