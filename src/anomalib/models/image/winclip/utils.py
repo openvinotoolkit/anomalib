@@ -21,12 +21,12 @@ def cosine_similarity(input1, input2):
 
     input1_norm = F.normalize(input1, p=2, dim=-1)
     input2_norm = F.normalize(input2, p=2, dim=-1)
-    # TODO check if we can remove 0.07 factor and softmax
     return torch.bmm(input1_norm, input2_norm.transpose(-2, -1))
 
 
 def simmilarity_score(input1, input2):
     """Compute similarity score between two tensors."""
+    # 0.07 is the temperature hyperparameter from the clip paper
     return (cosine_similarity(input1, input2) / 0.07).softmax(dim=-1).squeeze()
 
 
