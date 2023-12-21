@@ -448,7 +448,7 @@ def test_per_img_binclf_curve_torch(
     """Test if `per_img_binclf_curve()` returns the expected values."""
     from anomalib.metrics.per_image import binclf_curve
 
-    computed_threshs, computed_binclf_curves = binclf_curve.per_img_binclf_curve(
+    results_object = binclf_curve.per_img_binclf_curve(
         anomaly_maps,
         masks,
         algorithm=algorithm,
@@ -456,6 +456,7 @@ def test_per_img_binclf_curve_torch(
         threshs_given=threshs_given,
         num_threshs=num_threshs,
     )
+    computed_threshs, computed_binclf_curves = results_object.threshs, results_object.binclf_curves
 
     # threshs
     assert computed_threshs.shape == expected_threshs.shape
@@ -466,3 +467,7 @@ def test_per_img_binclf_curve_torch(
     assert computed_binclf_curves.shape == expected_binclf_curves.shape
     assert computed_binclf_curves.dtype == expected_binclf_curves.dtype
     assert (computed_binclf_curves == expected_binclf_curves).all()
+
+    # test properties
+    results_object.fprs  # noqa: B018
+    results_object.tprs  # noqa: B018

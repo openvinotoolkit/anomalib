@@ -33,8 +33,6 @@ THRESHS_CHOICES = (
     THRESHS_CHOICE_MEAN_FPR_OPTIMIZED,
 )
 
-# TODO(jpcbertoldo): warn when the rations from binclf are too imprecise  # noqa: TD003
-
 
 logger = logging.getLogger(__name__)
 
@@ -184,7 +182,7 @@ def _validate_same_shape(*args) -> None:
         raise ValueError(msg)
 
 
-def _validate_binclf_curves(binclf_curves: ndarray) -> None:
+def _validate_binclf_curves(binclf_curves: ndarray, valid_threshs: ndarray | None) -> None:
     if not isinstance(binclf_curves, ndarray):
         msg = f"Expected `binclf_curves` to be an ndarray, but got {type(binclf_curves)}"
         raise TypeError(msg)
@@ -216,6 +214,16 @@ def _validate_binclf_curves(binclf_curves: ndarray) -> None:
     if (pos != pos[:, :1]).any():
         msg = "Expected `binclf_curves` to have the same number of positives per image for every thresh."
         raise ValueError(msg)
+
+    if valid_threshs is None:
+        return
+
+    if binclf_curves.shape[1] != valid_threshs.shape[0]:
+        msg = (
+            "Expected `binclf_curves` to have the same number of thresholds as `threshs`, "
+            f"but got {binclf_curves.shape[1]} and {valid_threshs.shape[0]}"
+        )
+        raise RuntimeError(msg)
 
 
 # =========================================== PYTHON VERSION ===========================================
@@ -465,8 +473,19 @@ def per_img_binclf_curve(
 
     binclf_curves = binclf_multiple_curves(scores_batch, gts_batch, threshs, algorithm=algorithm)
 
+    num_images = anomaly_maps.shape[0]
+
     try:
-        _validate_binclf_curves(binclf_curves)
+        _validate_binclf_curves(binclf_curves, valid_threshs=threshs)
+
+        # these two validations cannot be done in `_validate_binclf_curves` because it does not have access to the
+        # original shapes of `anomaly_maps`
+        if binclf_curves.shape[0] != num_images:
+            msg = (
+                "Expected `binclf_curves` to have the same number of images as `anomaly_maps`, "
+                f"but got {binclf_curves.shape[0]} and {anomaly_maps.shape[0]}"
+            )
+            raise RuntimeError(msg)
 
     except (TypeError, ValueError) as ex:
         msg = "Invalid `binclf_curves` was computed."
