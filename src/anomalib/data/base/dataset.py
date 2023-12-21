@@ -11,14 +11,14 @@ from collections.abc import Sequence
 from pathlib import Path
 
 import albumentations as A  # noqa: N812
-import cv2
-import numpy as np
 import pandas as pd
 import torch
 from pandas import DataFrame
 from torch.utils.data import Dataset
+from torchvision.io import read_image
+from torchvision.tv_tensors import Mask
 
-from anomalib.data.utils import masks_to_boxes, read_image
+from anomalib.data.utils import masks_to_boxes
 from anomalib.utils.types import TaskType
 
 _EXPECTED_COLUMNS_CLASSIFICATION = ["image_path", "split"]
@@ -121,19 +121,14 @@ class AnomalibDataset(Dataset, ABC):
         item = {"image_path": image_path, "label": label_index}
 
         if self.task == TaskType.CLASSIFICATION:
-            transformed = self.transform(image=image)
-            item["image"] = transformed["image"]
+            item["image"] = self.transform(image)
         elif self.task in (TaskType.DETECTION, TaskType.SEGMENTATION):
             # Only Anomalous (1) images have masks in anomaly datasets
             # Therefore, create empty mask for Normal (0) images.
+            mask = Mask(torch.zeros(1, *image.shape[-2:])) if label_index == 0 else Mask(read_image(mask_path) / 255)
 
-            mask = np.zeros(shape=image.shape[:2]) if label_index == 0 else cv2.imread(mask_path, flags=0) / 255.0
-
-            transformed = self.transform(image=image, mask=mask)
-
-            item["image"] = transformed["image"]
+            item["image"], item["mask"] = self.transform(image, mask)
             item["mask_path"] = mask_path
-            item["mask"] = transformed["mask"]
 
             if self.task == TaskType.DETECTION:
                 # create boxes from masks for detection task
