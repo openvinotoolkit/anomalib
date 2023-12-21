@@ -1,4 +1,9 @@
-"""Binary classification curve (numpy-only implementation)."""
+"""Binary classification curve (numpy-only implementation).
+
+A binary classification (binclf) matrix (TP, FP, FN, TN) is evaluated at multiple thresholds.
+
+The thresholds are shared by all instances/images, but their binclf are computed independently for each instance/image.
+"""
 
 import itertools
 import logging
@@ -376,15 +381,15 @@ def per_img_binclf_curve(
     """Compute the binary classification matrix of each image in the batch for multiple thresholds (shared).
 
     Args:
-        anomaly_maps (Tensor): Anomaly score maps of shape (N, H, W [, D, ...])
-        masks (Tensor): Binary ground truth masks of shape (N, H, W [, D, ...])
+        anomaly_maps (ndarray): Anomaly score maps of shape (N, H, W [, D, ...])
+        masks (ndarray): Binary ground truth masks of shape (N, H, W [, D, ...])
         algorithm (str, optional): Algorithm to use. Defaults to ALGORITHM_NUMBA.
         threshs_choice (str, optional): Sequence of thresholds to use. Defaults to THRESH_SEQUENCE_MINMAX_LINSPACE.
         #
         # `threshs_choice`-dependent arguments
         #
         # THRESH_SEQUENCE_GIVEN
-        threshs_given (Tensor, optional): Sequence of thresholds to use.
+        threshs_given (ndarray, optional): Sequence of thresholds to use.
         #
         # THRESH_SEQUENCE_MINMAX_LINSPACE
         num_threshs (int, optional): Number of thresholds between the min and max of the anomaly maps.
