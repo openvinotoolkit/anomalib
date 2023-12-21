@@ -5,8 +5,6 @@ This module implements interfaces for the code in `binclf_curve_numpy.py`. Check
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-
 import torch
 from torch import Tensor
 
@@ -44,92 +42,17 @@ def _validate_binclf_curves(binclf_curves: Tensor, valid_threshs: Tensor | None 
     )
 
 
-# =========================================== RESULTS DATACLASS ===========================================
-
-
-@dataclass
-class PerImageBinClfCurveResult:
-    """Class interface for the results of `per_img_binclf_curve()`."""
-
-    algorithm: str
-    threshs_choice: str
-    threshs: Tensor
-    binclf_curves: Tensor
-
-    def __post_init__(self):  # noqa: D105, ANN204
-        try:
-            _validate_threshs(self.threshs)
-
-        except (TypeError, ValueError) as ex:
-            msg = "Invalid `threshs`!"
-            raise RuntimeError(msg) from ex
-
-        try:
-            _validate_binclf_curves(self.binclf_curves, valid_threshs=self.threshs)
-
-        except (TypeError, ValueError) as ex:
-            msg = "Invalid `binclf_curves`!"
-            raise RuntimeError(msg) from ex
-
-    @property
-    def num_images(self) -> int:
-        """Number of images (N)."""
-        return self.binclf_curves.shape[0]
-
-    @property
-    def num_threshs(self) -> int:
-        """Number of thresholds (K)."""
-        return self.threshs.shape[0]
-
-    @property
-    def tprs(self) -> Tensor:
-        """True positive rates (TPR) for image for each thresh.
-
-        TPR = TP / P = TP / (TP + FN)
-
-        Returns:
-            Tensor: shape (N, K), dtype float64
-            N: number of images
-            K: number of thresholds
-        """
-        # shape: (num images, num threshs)
-        tps = self.binclf_curves[..., 1, 1]
-        pos = self.binclf_curves[..., 1, :].sum(dim=-1)
-
-        # tprs will be nan if pos == 0 (normal image), which is expected
-        return tps.to(torch.float64) / pos.to(torch.float64)
-
-    @property
-    def fprs(self) -> Tensor:
-        """False positive rates (TPR) for image for each thresh.
-
-        FPR = FP / N = FP / (FP + TN)
-
-        Returns:
-            Tensor: shape (N, K), dtype float64
-            N: number of images
-            K: number of thresholds
-        """
-        # shape: (num images, num threshs)
-        fps = self.binclf_curves[..., 0, 1]
-        neg = self.binclf_curves[..., 0, :].sum(dim=-1)
-
-        # it can be `nan` if an anomalous image is fully covered by the mask
-        return fps.to(torch.float64) / neg.to(torch.float64)
-
-
 # =========================================== FUNCTIONAL ===========================================
 
 
-def per_img_binclf_curve(
+def per_image_binclf_curve(
     anomaly_maps: Tensor,
     masks: Tensor,
     algorithm: str = Algorithm.NUMBA,
     threshs_choice: str = ThreshsChoice.MINMAX_LINSPACE,
-    return_result_object: bool = True,
     threshs_given: Tensor | None = None,
     num_threshs: int | None = None,
-) -> PerImageBinClfCurveResult | tuple[Tensor, Tensor]:
+) -> tuple[Tensor, Tensor]:
     """Compute the binary classification matrix of each image in the batch for multiple thresholds (shared).
 
     ATTENTION: tensors are converted to numpy arrays and then converted back to tensors (same device as `anomaly_maps`).
@@ -189,7 +112,7 @@ def per_img_binclf_curve(
     else:
         threshs_given_array = None
 
-    threshs_array, binclf_curves_array = binclf_curve_numpy.per_img_binclf_curve(
+    threshs_array, binclf_curves_array = binclf_curve_numpy.per_image_binclf_curve(
         anomaly_maps=anomaly_maps_array,
         masks=masks_array,
         algorithm=algorithm,
@@ -200,12 +123,49 @@ def per_img_binclf_curve(
     threshs = torch.from_numpy(threshs_array).to(anomaly_maps.device)
     binclf_curves = torch.from_numpy(binclf_curves_array).to(anomaly_maps.device).long()
 
-    if not return_result_object:
-        return threshs, binclf_curves
+    return threshs, binclf_curves
 
-    return PerImageBinClfCurveResult(
-        algorithm=algorithm,
-        threshs_choice=threshs_choice,
-        threshs=threshs,
-        binclf_curves=binclf_curves,
-    )
+
+# =========================================== RATE METRICS ===========================================
+
+
+def per_image_tpr(binclf_curves: Tensor) -> Tensor:
+    """Compute the true positive rates (TPR) for each image in the batch.
+
+    Args:
+        binclf_curves (Tensor): Binary classification matrix curves (N, K, 2, 2). See `per_image_binclf_curve`.
+
+    Returns:
+        Tensor: True positive rates (TPR) of shape (N, K)
+
+            N: number of images/instances
+            K: number of thresholds
+
+            The last dimension is the TPR for each threshold.
+
+    """
+    _validate_binclf_curves(binclf_curves)
+    binclf_curves_array = binclf_curves.detach().cpu().numpy()
+    tprs_array = binclf_curve_numpy.per_image_tpr(binclf_curves_array)
+    return torch.from_numpy(tprs_array).to(binclf_curves.device)
+
+
+def per_image_fpr(binclf_curves: Tensor) -> Tensor:
+    """Compute the false positive rates (FPR) for each image in the batch.
+
+    Args:
+        binclf_curves (Tensor): Binary classification matrix curves (N, K, 2, 2). See `per_image_binclf_curve`.
+
+    Returns:
+        Tensor: False positive rates (FPR) of shape (N, K)
+
+            N: number of images/instances
+            K: number of thresholds
+
+            The last dimension is the FPR for each threshold.
+
+    """
+    _validate_binclf_curves(binclf_curves)
+    binclf_curves_array = binclf_curves.detach().cpu().numpy()
+    fprs_array = binclf_curve_numpy.per_image_fpr(binclf_curves_array)
+    return torch.from_numpy(fprs_array).to(binclf_curves.device)
