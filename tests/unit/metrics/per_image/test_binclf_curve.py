@@ -132,32 +132,29 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
 
     if metafunc.function is test_binclf_multiple_curves_validations:
         metafunc.parametrize(
-            argnames=("args", "exception"),
+            argnames=("args", "kwargs", "exception"),
             argvalues=[
                 # `scores` and `gts` must be 2D
-                ([preds.reshape(2, 2, 2), gts, threshs], ValueError),
-                ([preds, gts.flatten(), threshs], ValueError),
+                ([preds.reshape(2, 2, 2), gts, threshs], {"algorithm": "numba"}, ValueError),
+                ([preds, gts.flatten(), threshs], {"algorithm": "numba"}, ValueError),
                 # `threshs` must be 1D
-                ([preds, gts, threshs.reshape(2, 2)], ValueError),
+                ([preds, gts, threshs.reshape(2, 2)], {"algorithm": "numba"}, ValueError),
                 # `scores` and `gts` must have the same shape
-                ([preds, gts[:1], threshs], ValueError),
-                ([preds[:, :2], gts, threshs], ValueError),
+                ([preds, gts[:1], threshs], {"algorithm": "numba"}, ValueError),
+                ([preds[:, :2], gts, threshs], {"algorithm": "numba"}, ValueError),
                 # `scores` be of type float
-                ([preds.astype(int), gts, threshs], TypeError),
+                ([preds.astype(int), gts, threshs], {"algorithm": "numba"}, TypeError),
                 # `gts` be of type bool
-                ([preds, gts.astype(int), threshs], TypeError),
+                ([preds, gts.astype(int), threshs], {"algorithm": "numba"}, TypeError),
                 # `threshs` be of type float
-                ([preds, gts, threshs.astype(int)], TypeError),
+                ([preds, gts, threshs.astype(int)], {"algorithm": "numba"}, TypeError),
                 # `threshs` must be sorted in ascending order
-                ([preds, gts, np.flip(threshs)], ValueError),
-                ([preds, gts, np.concatenate([threshs[-2:], threshs[:2]])], ValueError),
-            ],
-        )
-        metafunc.parametrize(
-            argnames=("kwargs",),
-            argvalues=[
-                ({"algorithm": "python"},),
-                ({"algorithm": "numba"},),
+                ([preds, gts, np.flip(threshs)], {"algorithm": "numba"}, ValueError),
+                ([preds, gts, np.concatenate([threshs[-2:], threshs[:2]])], {"algorithm": "numba"}, ValueError),
+                # `threshs` must be unique
+                ([preds, gts, np.sort(np.concatenate([threshs, threshs]))], {"algorithm": "numba"}, ValueError),
+                # invalid `algorithm`
+                ([preds, gts, threshs], {"algorithm": "blurp"}, NotImplementedError),
             ],
         )
 
@@ -288,6 +285,20 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
                         "threshs_given": None,
                         "num_threshs": len(threshs),
                     },
+                ),
+            ],
+        )
+
+    # same as above but testing other validations
+    if metafunc.function is test_per_img_binclf_curve_numpy_validations_alt:
+        metafunc.parametrize(
+            argnames=("args", "kwargs", "exception"),
+            argvalues=[
+                # invalid `threshs_choice`
+                (
+                    [preds, gts],
+                    {"algorithm": "glfrb", "threshs_choice": "given", "threshs_given": threshs, "num_threshs": None},
+                    NotImplementedError,
                 ),
             ],
         )
@@ -429,6 +440,11 @@ def test_per_img_binclf_curve_numpy_validations(args: list, kwargs: dict, except
 
     with pytest.raises(exception):
         binclf_curve_numpy.per_img_binclf_curve(*args, **kwargs)
+
+
+def test_per_img_binclf_curve_numpy_validations_alt(args: list, kwargs: dict, exception: Exception) -> None:
+    """Test if `per_img_binclf_curve()` raises the expected errors."""
+    test_per_img_binclf_curve_numpy_validations(args, kwargs, exception)
 
 
 # ==================================================================================================

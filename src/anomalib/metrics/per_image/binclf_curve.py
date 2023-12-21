@@ -11,6 +11,7 @@ import torch
 from torch import Tensor
 
 from . import binclf_curve_numpy
+from .binclf_curve_numpy import Algorithm, ThreshsChoice
 
 # =========================================== ARGS VALIDATION ===========================================
 
@@ -123,8 +124,8 @@ class PerImageBinClfCurveResult:
 def per_img_binclf_curve(
     anomaly_maps: Tensor,
     masks: Tensor,
-    algorithm: str = binclf_curve_numpy.ALGORITHM_NUMBA,
-    threshs_choice: str = binclf_curve_numpy.THRESHS_CHOICE_MINMAX_LINSPACE,
+    algorithm: str = Algorithm.NUMBA,
+    threshs_choice: str = ThreshsChoice.MINMAX_LINSPACE,
     return_result_object: bool = True,
     threshs_given: Tensor | None = None,
     num_threshs: int | None = None,
