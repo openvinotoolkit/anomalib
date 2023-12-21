@@ -362,6 +362,8 @@ def binclf_multiple_curves(
 
         Thresholds are shared across all instances, so all confusion matrices, for instance,
         at position [:, 0, :, :] are relative to the 1st threshold in `threshs`.
+
+        Thresholds are sorted in ascending order.
     """
     _validate_scores_batch(scores_batch)
     _validate_gts_batch(gts_batch)
@@ -526,9 +528,11 @@ def per_image_tpr(binclf_curves: ndarray) -> ndarray:
         binclf_curves (ndarray): Binary classification matrix curves (N, K, 2, 2). See `per_image_binclf_curve`.
 
     Returns:
-        Tensor: shape (N, K), dtype float64
+        ndarray: shape (N, K), dtype float64
         N: number of images
         K: number of thresholds
+
+        Thresholds are sorted in ascending order, so TPR is in descending order.
     """
     # shape: (num images, num threshs)
     tps = binclf_curves[..., 1, 1]
@@ -551,9 +555,11 @@ def per_image_fpr(binclf_curves: ndarray) -> ndarray:
         binclf_curves (ndarray): Binary classification matrix curves (N, K, 2, 2). See `per_image_binclf_curve`.
 
     Returns:
-        Tensor: shape (N, K), dtype float64
+        ndarray: shape (N, K), dtype float64
         N: number of images
         K: number of thresholds
+
+        Thresholds are sorted in ascending order, so FPR is in descending order.
     """
     # shape: (num images, num threshs)
     fps = binclf_curves[..., 0, 1]
