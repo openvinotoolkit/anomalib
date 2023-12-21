@@ -82,8 +82,12 @@ class WinClipModel(nn.Module):
         masked = self.model.visual.transformer(masked)
         masked = masked.permute(1, 0, 2)  # LND -> NLD
 
-        pooled, _ = self.model.visual._global_pool(masked)
-        pooled = self.model.visual.ln_post(pooled)
+        if self.model.visual.final_ln_after_pool:
+            pooled, _ = self.model.visual._global_pool(masked)
+            pooled = self.model.visual.ln_post(pooled)
+        else:
+            masked = self.model.visual.ln_post(masked)
+            pooled, _ = self.model.visual._global_pool(masked)
 
         if self.model.visual.proj is not None:
             pooled = pooled @ self.model.visual.proj
