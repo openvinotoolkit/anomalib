@@ -111,7 +111,7 @@ class Augmenter:
 
         # Load anomaly source image
         if anomaly_source_path:
-            anomaly_source_img = cv2.imread(anomaly_source_path)
+            anomaly_source_img = cv2.imread(str(anomaly_source_path))
             anomaly_source_img = cv2.resize(anomaly_source_img, dsize=(width, height))
         else:  # if no anomaly source is specified, we use the perlin noise as anomalous source
             anomaly_source_img = np.expand_dims(perlin_noise, 2).repeat(3, 2)
