@@ -74,6 +74,9 @@ def get_transforms(
         # Add center crop transform
         if center_crop is not None:
             crop_height, crop_width = get_image_height_and_width(center_crop)
+            if crop_height > resize_height or crop_width > resize_width:
+                msg = f"Crop size may not be larger than image size. Found {image_size} and {center_crop}"
+                raise ValueError(msg)
             transforms_list.append(v2.CenterCrop(size=(crop_height, crop_width)))
 
         # Add convert-to-float transform
