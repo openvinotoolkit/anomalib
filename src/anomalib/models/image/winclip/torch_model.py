@@ -41,22 +41,21 @@ class WinClipModel(nn.Module):
         self.model.visual.final_ln_after_pool = True
 
         # register hook to retrieve feature map
-        feature_map = {}
-
+        outputs = {}
         def get_feature_map(name):
-            def hook(model, input, output):
-                feature_map[name] = input[0].detach()
-
+            def hook(_model, input, _output):
+                outputs[name] = input[0].detach()
             return hook
 
-        self.model.visual.patch_dropout.register_forward_hook(get_feature_map("patch_dropout"))
+        # register hook to get the intermediate tokens of the transformer
+        self.model.visual.patch_dropout.register_forward_hook(get_feature_map("feature_map"))
 
         # get patch embeddings
         image_embeddings, patch_embeddings = self.model.encode_image(image)
 
         # get window embeddings
-        intermediate_tokens = feature_map["patch_dropout"]
-        window_embeddings = [self._get_window_embeddings(intermediate_tokens, masks) for masks in self.masks]
+        feature_map = outputs["feature_map"]
+        window_embeddings = [self._get_window_embeddings(feature_map, masks) for masks in self.masks]
 
         return (
             image_embeddings,
