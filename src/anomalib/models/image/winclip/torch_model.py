@@ -91,7 +91,6 @@ class WinClipModel(nn.Module):
         return pooled.reshape((n_masks, batch_size, -1)).permute(1, 0, 2)
 
     def forward(self, image):
-        image = torch.load("/home/djameln/WinCLIP-pytorch/image_wnclp.pt")
         image_embeddings, window_embeddings, patch_embeddings = self.encode_image(image)
 
         # get anomaly scores

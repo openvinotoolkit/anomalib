@@ -46,16 +46,7 @@ class WinClip(AnomalyModule):
             gallery = self.collect_reference_images()
             self.model.collect_image_embeddings(gallery, device=self.device)
 
-    # def on_train_start(self) -> None:
-    #     if self.n_shot:
-    #         gallery = self.collect_image_gallery()
-    #         self.model.build_image_feature_gallery(gallery)
-
     def collect_reference_images(self):
-        if self.n_shot == 1:
-            return torch.load("/home/djameln/WinCLIP-pytorch/1shot_images.pt")
-        elif self.n_shot == 2:
-            return torch.load("/home/djameln/WinCLIP-pytorch/2shot_images.pt")
         gallery = Tensor()
         for batch in self.trainer.datamodule.train_dataloader():
             images = batch["image"][: self.n_shot - gallery.shape[0]]
