@@ -108,12 +108,7 @@ class WinClipModel(nn.Module):
             multiscale_scores = (multiscale_scores + few_shot_scores) / 2
             image_scores = (image_scores + few_shot_scores.amax(dim=(-2, -1))) / 2
 
-        pixel_scores = F.interpolate(
-            multiscale_scores.unsqueeze(1),
-            size=image.shape[-2:],
-            mode="bilinear",
-            align_corners=False,
-        ).squeeze()
+        pixel_scores = F.interpolate(multiscale_scores.unsqueeze(1), size=image.shape[-2:], mode="bilinear").squeeze()
         return image_scores, pixel_scores
 
     def _compute_zero_shot_scores(
