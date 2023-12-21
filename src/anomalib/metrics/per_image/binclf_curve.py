@@ -1,6 +1,9 @@
 """Binary classification curve (torch interface).
 
-This module implements interfaces for the code in `binclf_curve_numpy.py`. Check its docstring for more details.
+This module implements torch interfaces to access the numpy code in `binclf_curve_numpy.py`.
+Check its docstring for more details.
+
+Tensors are build with `torch.from_numpy` and so the returned tensors will share the same memory as the numpy arrays.
 """
 
 from __future__ import annotations
@@ -99,6 +102,7 @@ def per_image_binclf_curve(
             Thresholds are shared across all images, so all confusion matrices, for instance,
             at position [:, 0, :, :] are relative to the 1st threshold in `threshs`.
 
+            Thresholds are sorted in ascending order.
     """
     _validate_is_tensor(anomaly_maps, argname="anomaly_maps")
     anomaly_maps_array = anomaly_maps.detach().cpu().numpy()
@@ -143,6 +147,7 @@ def per_image_tpr(binclf_curves: Tensor) -> Tensor:
 
             The last dimension is the TPR for each threshold.
 
+            Thresholds are sorted in ascending order, so TPR is in descending order.
     """
     _validate_binclf_curves(binclf_curves)
     binclf_curves_array = binclf_curves.detach().cpu().numpy()
@@ -164,6 +169,7 @@ def per_image_fpr(binclf_curves: Tensor) -> Tensor:
 
             The last dimension is the FPR for each threshold.
 
+            Thresholds are sorted in ascending order, so FPR is in descending order.
     """
     _validate_binclf_curves(binclf_curves)
     binclf_curves_array = binclf_curves.detach().cpu().numpy()
