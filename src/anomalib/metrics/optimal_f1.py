@@ -33,7 +33,7 @@ class OptimalF1(Metric):
 
     full_state_update: bool = False
 
-    def __init__(self, num_classes: int, **kwargs) -> None:
+    def __init__(self, num_classes: int=1, **kwargs) -> None:
         msg = (
             "OptimalF1 metric is deprecated and will be removed in a future release. The optimal F1 score for "
             "Anomalib predictions can be obtained by computing the adaptive threshold with the "
