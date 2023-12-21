@@ -7,6 +7,8 @@ The thresholds are shared by all instances/images, but their binclf are computed
 
 import itertools
 import logging
+from dataclasses import dataclass
+from typing import ClassVar
 
 import numpy as np
 from numpy import ndarray
@@ -19,22 +21,28 @@ else:
     HAS_NUMBA = True
     from . import _binclf_curve_numba
 
-
-ALGORITHM_PYTHON = "python"
-ALGORITHM_NUMBA = "numba"
-ALGORIGHTMS = (ALGORITHM_PYTHON, ALGORITHM_NUMBA)
-
-THRESHS_CHOICE_GIVEN = "given"
-THRESHS_CHOICE_MINMAX_LINSPACE = "minmax-linspace"
-THRESHS_CHOICE_MEAN_FPR_OPTIMIZED = "mean-fpr-optimized"
-THRESHS_CHOICES = (
-    THRESHS_CHOICE_GIVEN,
-    THRESHS_CHOICE_MINMAX_LINSPACE,
-    THRESHS_CHOICE_MEAN_FPR_OPTIMIZED,
-)
-
-
 logger = logging.getLogger(__name__)
+
+# =========================================== CONSTANTS ===========================================
+
+
+@dataclass
+class Algorithm:
+    """Algorithm to use."""
+
+    PYTHON: ClassVar[str] = "python"
+    NUMBA: ClassVar[str] = "numba"
+    ALGORITHMS: ClassVar[tuple[str, ...]] = (PYTHON, NUMBA)
+
+
+@dataclass
+class ThreshsChoice:
+    """Sequence of thresholds to use."""
+
+    GIVEN: ClassVar[str] = "given"
+    MINMAX_LINSPACE: ClassVar[str] = "minmax-linspace"
+    MEAN_FPR_OPTIMIZED: ClassVar[str] = "mean-fpr-optimized"
+    CHOICES: ClassVar[tuple[str, ...]] = (GIVEN, MINMAX_LINSPACE, MEAN_FPR_OPTIMIZED)
 
 
 # =========================================== ARGS VALIDATION ===========================================
@@ -317,7 +325,7 @@ def binclf_multiple_curves(
     scores_batch: ndarray,
     gts_batch: ndarray,
     threshs: ndarray,
-    algorithm: str = ALGORITHM_NUMBA,
+    algorithm: str = Algorithm.NUMBA,
 ) -> ndarray:
     """Multiple binary classification matrix (per-instance scope) at each threshold (shared).
 
@@ -360,10 +368,10 @@ def binclf_multiple_curves(
     _validate_same_shape(scores_batch, gts_batch)
     _validate_threshs(threshs)
 
-    if algorithm == ALGORITHM_PYTHON:
+    if algorithm == Algorithm.PYTHON:
         return _binclf_multiple_curves_python(scores_batch, gts_batch, threshs)
 
-    if algorithm == ALGORITHM_NUMBA:
+    if algorithm == Algorithm.NUMBA:
         if not HAS_NUMBA:
             logger.warning(
                 "Algorithm 'numba' was selected, but numba is not installed. Fallback to 'python' algorithm.",
@@ -371,7 +379,7 @@ def binclf_multiple_curves(
             return _binclf_multiple_curves_python(scores_batch, gts_batch, threshs)
         return _binclf_curve_numba.binclf_multiple_curves_numba(scores_batch, gts_batch, threshs)
 
-    msg = f"Expected `algorithm` to be one of {ALGORIGHTMS}, but got {algorithm}"
+    msg = f"Expected `algorithm` to be one of {Algorithm.ALGORITHMS}, but got {algorithm}"
     raise NotImplementedError(msg)
 
 
@@ -381,8 +389,8 @@ def binclf_multiple_curves(
 def per_img_binclf_curve(
     anomaly_maps: ndarray,
     masks: ndarray,
-    algorithm: str = ALGORITHM_NUMBA,
-    threshs_choice: str = THRESHS_CHOICE_MINMAX_LINSPACE,
+    algorithm: str = Algorithm.NUMBA,
+    threshs_choice: str = ThreshsChoice.MINMAX_LINSPACE,
     threshs_given: ndarray | None = None,
     num_threshs: int | None = None,
 ) -> tuple[ndarray, ndarray]:
@@ -437,7 +445,7 @@ def per_img_binclf_curve(
 
     threshs: ndarray
 
-    if threshs_choice == THRESHS_CHOICE_GIVEN:
+    if threshs_choice == ThreshsChoice.GIVEN:
         assert threshs_given is not None
         _validate_threshs(threshs_given)
         if num_threshs is not None:
@@ -446,7 +454,7 @@ def per_img_binclf_curve(
             )
         threshs = threshs_given.astype(anomaly_maps.dtype)
 
-    elif threshs_choice == THRESHS_CHOICE_MINMAX_LINSPACE:
+    elif threshs_choice == ThreshsChoice.MINMAX_LINSPACE:
         assert num_threshs is not None
         if threshs_given is not None:
             logger.warning(
@@ -460,11 +468,11 @@ def per_img_binclf_curve(
             raise ValueError(msg) from ex
         threshs = np.linspace(thresh_low, thresh_high, num_threshs, dtype=anomaly_maps.dtype)
 
-    elif threshs_choice == THRESHS_CHOICE_MEAN_FPR_OPTIMIZED:
+    elif threshs_choice == ThreshsChoice.MEAN_FPR_OPTIMIZED:
         raise NotImplementedError(f"TODO implement {threshs_choice}")  # noqa: EM102
 
     else:
-        msg = f"Expected `threshs_choice` to be one of {THRESHS_CHOICES}, but got {threshs_choice}"
+        msg = f"Expected `threshs_choice` to be one of {ThreshsChoice.CHOICES}, but got {threshs_choice}"
         raise NotImplementedError(msg)
 
     # keep the batch dimension and flatten the rest
