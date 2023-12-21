@@ -80,10 +80,8 @@ def get_transforms(
         transforms_list.append(v2.ToDtype(dtype=torch.float32, scale=True))
 
         # Add normalize transform
-        if normalization == InputNormalizationMethod.IMAGENET:
-            transforms_list.append(v2.Normalize(**NORMALIZATION_STATS["imagenet"]))
-        elif normalization == InputNormalizationMethod.CLIP:
-            transforms_list.append(v2.Normalize(**NORMALIZATION_STATS["clip"]))
+        if normalization in [InputNormalizationMethod.IMAGENET, InputNormalizationMethod.CLIP]:
+            transforms_list.append(v2.Normalize(**NORMALIZATION_STATS[normalization]))
         elif normalization != InputNormalizationMethod.NONE:
             msg = f"Unknown normalization method: {normalization}"
             raise ValueError(msg)
