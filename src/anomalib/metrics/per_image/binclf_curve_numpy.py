@@ -386,6 +386,19 @@ def binclf_multiple_curves(
 # ========================================= PER-IMAGE BINCLF CURVE =========================================
 
 
+def _get_threshs_minmax_linspace(anomaly_maps: ndarray, num_threshs: int) -> ndarray:
+    """Get thresholds linearly spaced between the min and max of the anomaly maps."""
+    _validate_num_threshs(num_threshs)
+    # this operation can be a bit expensive
+    thresh_low, thresh_high = thresh_bounds = (anomaly_maps.min().item(), anomaly_maps.max().item())
+    try:
+        _validate_thresh_bounds(thresh_bounds)
+    except ValueError as ex:
+        msg = "Invalid `thresh_bounds` computed from `anomaly_maps`."
+        raise ValueError(msg) from ex
+    return np.linspace(thresh_low, thresh_high, num_threshs, dtype=anomaly_maps.dtype)
+
+
 def per_image_binclf_curve(
     anomaly_maps: ndarray,
     masks: ndarray,
@@ -437,6 +450,7 @@ def per_image_binclf_curve(
             Thresholds are shared across all images, so all confusion matrices, for instance,
             at position [:, 0, :, :] are relative to the 1st threshold in `threshs`.
 
+            Thresholds are sorted in ascending order.
     """
     # validate inputs
     _validate_anomaly_maps(anomaly_maps)
@@ -460,13 +474,7 @@ def per_image_binclf_curve(
             logger.warning(
                 f"Argument `threshs_given` was given, but it is ignored because `threshs_choice` is {threshs_choice}.",
             )
-        thresh_low, thresh_high = thresh_bounds = (anomaly_maps.min().item(), anomaly_maps.max().item())
-        try:
-            _validate_thresh_bounds(thresh_bounds)
-        except ValueError as ex:
-            msg = "Invalid `thresh_bounds` computed from `anomaly_maps`."
-            raise ValueError(msg) from ex
-        threshs = np.linspace(thresh_low, thresh_high, num_threshs, dtype=anomaly_maps.dtype)
+        threshs = _get_threshs_minmax_linspace(anomaly_maps, num_threshs)
 
     elif threshs_choice == ThreshsChoice.MEAN_FPR_OPTIMIZED:
         raise NotImplementedError(f"TODO implement {threshs_choice}")  # noqa: EM102
