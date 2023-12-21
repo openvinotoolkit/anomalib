@@ -4,12 +4,13 @@
 from abc import ABC
 
 import albumentations as A  # noqa: N812
-import cv2
-import numpy as np
 import torch
+from PIL import Image
+from torchvision.transforms.functional import to_tensor
+from torchvision.tv_tensors import Mask
 
 from anomalib.data.base.dataset import AnomalibDataset
-from anomalib.data.utils import masks_to_boxes, read_depth_image, read_image
+from anomalib.data.utils import masks_to_boxes, read_depth_image
 from anomalib.utils.types import TaskType
 
 
@@ -40,25 +41,23 @@ class AnomalibDepthDataset(AnomalibDataset, ABC):
         label_index = self._samples.iloc[index].label_index
         depth_path = self._samples.iloc[index].depth_path
 
-        image = read_image(image_path)
-        depth_image = read_depth_image(depth_path)
+        image = to_tensor(Image.open(image_path))
+        depth_image = to_tensor(read_depth_image(depth_path))
         item = {"image_path": image_path, "depth_path": depth_path, "label": label_index}
 
         if self.task == TaskType.CLASSIFICATION:
-            transformed = self.transform(image=image, depth_image=depth_image)
-            item["image"] = transformed["image"]
-            item["depth_image"] = transformed["depth_image"]
+            item["image"], item["depth_image"] = self.transform(image, depth_image)
         elif self.task in (TaskType.DETECTION, TaskType.SEGMENTATION):
             # Only Anomalous (1) images have masks in anomaly datasets
             # Therefore, create empty mask for Normal (0) images.
-            mask = np.zeros(shape=image.shape[:2]) if label_index == 0 else cv2.imread(mask_path, flags=0) / 255.0
+            mask = (
+                Mask(torch.zeros(image.shape[-2:]))
+                if label_index == 0
+                else Mask(to_tensor(Image.open(mask_path)).squeeze())
+            )
 
-            transformed = self.transform(image=image, depth_image=depth_image, mask=mask)
-
-            item["image"] = transformed["image"]
-            item["depth_image"] = transformed["depth_image"]
+            item["image"], item["depth_image"], item["mask"] = self.transform(image, depth_image, mask)
             item["mask_path"] = mask_path
-            item["mask"] = transformed["mask"]
 
             if self.task == TaskType.DETECTION:
                 # create boxes from masks for detection task
