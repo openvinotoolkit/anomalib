@@ -13,6 +13,9 @@ from .prompting import create_prompt_ensemble
 from .utils import harmonic_aggregation, make_masks, simmilarity_score, visual_association_score
 
 
+BACKBONE = "ViT-B-16-plus-240"
+
+
 class WinClipModel(nn.Module):
     """
     PyTorch module that implements the WinClip model for image anomaly detection.
@@ -20,8 +23,6 @@ class WinClipModel(nn.Module):
     Args:
         n_shot (int, optional): The number of reference images used for few-shot anomaly detection.
             Defaults to 0.
-        model_name (str, optional): The name of the CLIP model to use.
-            Defaults to "ViT-B-16-plus-240".
         scales (tuple[int], optional): The scales of the sliding windows used for multiscale anomaly detection.
             Defaults to (2, 3).
 
@@ -35,9 +36,9 @@ class WinClipModel(nn.Module):
         visual_embeddings (list[torch.Tensor] | None): The multiscale embeddings for the reference images.
         patch_embeddings (torch.Tensor | None): The patch embeddings for the reference images.
     """
-    def __init__(self, n_shot: int = 0, model_name="ViT-B-16-plus-240", scales=(2, 3)):
+    def __init__(self, n_shot: int = 0, scales=(2, 3)):
         super().__init__()
-        self.clip = open_clip.create_model(model_name, pretrained="laion400m_e31")
+        self.clip = open_clip.create_model(BACKBONE, pretrained="laion400m_e31")
         self.clip.visual.output_tokens = True
         self.grid_size = self.clip.visual.grid_size
         self.n_shot = n_shot
