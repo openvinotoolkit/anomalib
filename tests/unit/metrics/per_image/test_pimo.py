@@ -177,6 +177,52 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
         )
 
 
+def _do_test_pimo_outputs(
+    threshs: ndarray | Tensor,
+    shared_fpr: ndarray | Tensor,
+    per_image_tprs: ndarray | Tensor,
+    image_classes: ndarray | Tensor,
+    expected_threshs: ndarray | Tensor,
+    expected_shared_fpr: ndarray | Tensor,
+    expected_per_image_tprs: ndarray | Tensor,
+    expected_image_classes: ndarray | Tensor,
+) -> None:
+    """Test if the outputs of any of the PIMO interfaces are correct."""
+    if isinstance(threshs, Tensor):
+        assert isinstance(shared_fpr, Tensor)
+        assert isinstance(per_image_tprs, Tensor)
+        assert isinstance(image_classes, Tensor)
+        assert isinstance(expected_threshs, Tensor)
+        assert isinstance(expected_shared_fpr, Tensor)
+        assert isinstance(expected_per_image_tprs, Tensor)
+        assert isinstance(expected_image_classes, Tensor)
+        allclose = torch.allclose
+
+    elif isinstance(threshs, ndarray):
+        assert isinstance(shared_fpr, ndarray)
+        assert isinstance(per_image_tprs, ndarray)
+        assert isinstance(image_classes, ndarray)
+        assert isinstance(expected_threshs, ndarray)
+        assert isinstance(expected_shared_fpr, ndarray)
+        assert isinstance(expected_per_image_tprs, ndarray)
+        assert isinstance(expected_image_classes, ndarray)
+        allclose = np.allclose
+
+    else:
+        msg = "Expected `threshs` to be a Tensor or ndarray."
+        raise TypeError(msg)
+
+    assert threshs.ndim == 1
+    assert shared_fpr.ndim == 1
+    assert per_image_tprs.ndim == 2
+    assert tuple(image_classes.shape) == (3,)
+
+    assert allclose(threshs, expected_threshs)
+    assert allclose(shared_fpr, expected_shared_fpr)
+    assert allclose(per_image_tprs, expected_per_image_tprs, equal_nan=True)
+    assert (image_classes == expected_image_classes).all()
+
+
 def test_pimo_numpy(
     anomaly_maps: ndarray,
     masks: ndarray,
@@ -196,16 +242,16 @@ def test_pimo_numpy(
         binclf_algorithm=binclf_algorithm,
         shared_fpr_metric="mean-per-image-fpr",
     )
-
-    assert threshs.ndim == 1
-    assert shared_fpr.ndim == 1
-    assert per_image_tprs.ndim == 2
-    assert image_classes.ndim == 1
-
-    assert np.allclose(threshs, expected_threshs)
-    assert np.allclose(shared_fpr, expected_shared_fpr)
-    assert np.allclose(per_image_tprs, expected_per_image_tprs, equal_nan=True)
-    assert (image_classes == expected_image_classes).all()
+    _do_test_pimo_outputs(
+        threshs,
+        shared_fpr,
+        per_image_tprs,
+        image_classes,
+        expected_threshs,
+        expected_shared_fpr,
+        expected_per_image_tprs,
+        expected_image_classes,
+    )
 
 
 def test_pimo(
@@ -219,7 +265,26 @@ def test_pimo(
 ) -> None:
     """Test if `pimo()` returns the expected values."""
     from anomalib.metrics.per_image import pimo
+    from anomalib.metrics.per_image.pimo import PIMOResult
 
+    def do_assertions(pimoresult: PIMOResult) -> None:
+        assert pimoresult.shared_fpr_metric == "mean-per-image-fpr"
+        threshs = pimoresult.threshs
+        shared_fpr = pimoresult.shared_fpr
+        per_image_tprs = pimoresult.per_image_tprs
+        image_classes = pimoresult.image_classes
+        _do_test_pimo_outputs(
+            threshs,
+            shared_fpr,
+            per_image_tprs,
+            image_classes,
+            expected_threshs,
+            expected_shared_fpr,
+            expected_per_image_tprs,
+            expected_image_classes,
+        )
+
+    # functional interface
     pimoresult = pimo.pimo(
         anomaly_maps,
         masks,
@@ -227,23 +292,52 @@ def test_pimo(
         binclf_algorithm=binclf_algorithm,
         shared_fpr_metric="mean-per-image-fpr",
     )
-    threshs = pimoresult.threshs
-    shared_fpr = pimoresult.shared_fpr
-    per_image_tprs = pimoresult.per_image_tprs
-    image_classes = pimoresult.image_classes
+    do_assertions(pimoresult)
 
-    # metadata
-    assert pimoresult.shared_fpr_metric == "mean-per-image-fpr"
-    # data
-    assert threshs.ndim == 1
-    assert shared_fpr.ndim == 1
-    assert per_image_tprs.ndim == 2
-    assert image_classes.ndim == 1
+    # metric interface
+    metric = pimo.PIMO(
+        num_threshs=7,
+        binclf_algorithm=binclf_algorithm,
+        shared_fpr_metric="mean-per-image-fpr",
+    )
+    metric.update(anomaly_maps, masks)
+    pimoresult = metric.compute()
+    do_assertions(pimoresult)
 
-    assert torch.allclose(threshs, expected_threshs)
-    assert torch.allclose(shared_fpr, expected_shared_fpr)
-    assert torch.allclose(per_image_tprs, expected_per_image_tprs, equal_nan=True)
-    assert (image_classes == expected_image_classes).all()
+
+def _do_test_aupimo_outputs(
+    threshs: ndarray | Tensor,
+    shared_fpr: ndarray | Tensor,
+    per_image_tprs: ndarray | Tensor,
+    image_classes: ndarray | Tensor,
+    aupimos: ndarray | Tensor,
+    expected_threshs: ndarray | Tensor,
+    expected_shared_fpr: ndarray | Tensor,
+    expected_per_image_tprs: ndarray | Tensor,
+    expected_image_classes: ndarray | Tensor,
+    expected_aupimos: ndarray | Tensor,
+) -> None:
+    _do_test_pimo_outputs(
+        threshs,
+        shared_fpr,
+        per_image_tprs,
+        image_classes,
+        expected_threshs,
+        expected_shared_fpr,
+        expected_per_image_tprs,
+        expected_image_classes,
+    )
+    if isinstance(threshs, Tensor):
+        assert isinstance(aupimos, Tensor)
+        assert isinstance(expected_aupimos, Tensor)
+        allclose = torch.allclose
+
+    elif isinstance(threshs, ndarray):
+        assert isinstance(aupimos, ndarray)
+        assert isinstance(expected_aupimos, ndarray)
+        allclose = np.allclose
+    assert tuple(aupimos.shape) == (3,)
+    assert allclose(aupimos, expected_aupimos, equal_nan=True)
 
 
 def test_aupimo_values_numpy(
@@ -269,20 +363,18 @@ def test_aupimo_values_numpy(
         fpr_bounds=fpr_bounds,
         force=True,
     )
-
-    assert threshs.ndim == 1
-    assert shared_fpr.ndim == 1
-    assert per_image_tprs.ndim == 2
-    assert image_classes.ndim == 1
-
-    assert np.allclose(threshs, expected_threshs)
-    assert np.allclose(shared_fpr, expected_shared_fpr)
-    assert np.allclose(per_image_tprs, expected_per_image_tprs, equal_nan=True)
-    assert (image_classes == expected_image_classes).all()
-
-    assert aupimos.ndim == 1
-    assert aupimos.shape == (3,)
-    assert np.allclose(aupimos, expected_aupimos, equal_nan=True)
+    _do_test_aupimo_outputs(
+        threshs,
+        shared_fpr,
+        per_image_tprs,
+        image_classes,
+        aupimos,
+        expected_threshs,
+        expected_shared_fpr,
+        expected_per_image_tprs,
+        expected_image_classes,
+        expected_aupimos,
+    )
 
 
 def test_aupimo_values(
@@ -298,8 +390,41 @@ def test_aupimo_values(
 ) -> None:
     """Test if `aupimo()` returns the expected values."""
     from anomalib.metrics.per_image import pimo
+    from anomalib.metrics.per_image.pimo import AUPIMOResult, PIMOResult
 
-    pimoresult, aupimoresult = pimo.aupimo(
+    def do_assertions(pimoresult: PIMOResult, aupimoresult: AUPIMOResult) -> None:
+        # test metadata
+        assert pimoresult.shared_fpr_metric == "mean-per-image-fpr"
+        assert aupimoresult.shared_fpr_metric == "mean-per-image-fpr"
+        assert aupimoresult.fpr_bounds == fpr_bounds
+        assert aupimoresult.num_threshs == 7
+
+        # test data
+        # from pimo result
+        threshs = pimoresult.threshs
+        shared_fpr = pimoresult.shared_fpr
+        per_image_tprs = pimoresult.per_image_tprs
+        image_classes = pimoresult.image_classes
+        # from aupimo result
+        aupimos = aupimoresult.aupimos
+        _do_test_aupimo_outputs(
+            threshs,
+            shared_fpr,
+            per_image_tprs,
+            image_classes,
+            aupimos,
+            expected_threshs,
+            expected_shared_fpr,
+            expected_per_image_tprs,
+            expected_image_classes,
+            expected_aupimos,
+        )
+        thresh_lower_bound = aupimoresult.thresh_lower_bound
+        thresh_upper_bound = aupimoresult.thresh_upper_bound
+        assert anomaly_maps.min() <= thresh_lower_bound < thresh_upper_bound <= anomaly_maps.max()
+
+    # functional interface
+    pimoresult_from_functional, aupimoresult_from_functional = pimo.aupimo(
         anomaly_maps,
         masks,
         num_threshs=7,
@@ -308,39 +433,19 @@ def test_aupimo_values(
         fpr_bounds=fpr_bounds,
         force=True,
     )
+    do_assertions(pimoresult_from_functional, aupimoresult_from_functional)
 
-    # from pimo result
-    threshs = pimoresult.threshs
-    shared_fpr = pimoresult.shared_fpr
-    per_image_tprs = pimoresult.per_image_tprs
-    image_classes = pimoresult.image_classes
-
-    # from aupimo result
-    fpr_lower_bound = aupimoresult.fpr_lower_bound
-    fpr_upper_bound = aupimoresult.fpr_upper_bound
-    thresh_lower_bound = aupimoresult.thresh_lower_bound
-    thresh_upper_bound = aupimoresult.thresh_upper_bound
-    num_threshs = aupimoresult.num_threshs
-    aupimos = aupimoresult.aupimos
-
-    # test metadata
-    assert pimoresult.shared_fpr_metric == "mean-per-image-fpr"
-    assert aupimoresult.shared_fpr_metric == "mean-per-image-fpr"
-    assert (fpr_lower_bound, fpr_upper_bound) == fpr_bounds
-    assert num_threshs == 7
-
-    # test data
-    assert threshs.ndim == 1
-    assert shared_fpr.ndim == 1
-    assert per_image_tprs.ndim == 2
-    assert image_classes.ndim == 1
-    assert anomaly_maps.min() <= thresh_lower_bound < thresh_upper_bound <= anomaly_maps.max()
-
-    assert torch.allclose(threshs, expected_threshs)
-    assert torch.allclose(shared_fpr, expected_shared_fpr)
-    assert torch.allclose(per_image_tprs, expected_per_image_tprs, equal_nan=True)
-    assert (image_classes == expected_image_classes).all()
-    assert torch.allclose(aupimos, expected_aupimos, equal_nan=True)
+    # metric interface
+    metric = pimo.AUPIMO(
+        num_threshs=7,
+        binclf_algorithm=binclf_algorithm,
+        shared_fpr_metric="mean-per-image-fpr",
+        fpr_bounds=fpr_bounds,
+        force=True,
+    )
+    metric.update(anomaly_maps, masks)
+    pimoresult_from_metric, aupimoresult_from_metric = metric.compute()
+    do_assertions(pimoresult_from_metric, aupimoresult_from_metric)
 
 
 def test_aupimo_edge(
