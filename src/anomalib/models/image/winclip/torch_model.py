@@ -203,7 +203,7 @@ class WinClipModel(nn.Module):
 
         return torch.stack(multiscale_scores).mean(dim=0)
 
-    def collect_text_embeddings(self, object_name: str, device: torch.device | None = None):
+    def collect_text_embeddings(self, class_name: str, device: torch.device | None = None):
             """
             Collect text embeddings for the object class using a compositional prompt ensemble.
 
@@ -213,12 +213,12 @@ class WinClipModel(nn.Module):
             the model to be used during inference.
 
             Args:
-                object_name (str): The name of the object class.
+                class_name (str): The name of the object class used in the prompt ensemble.
                 device (torch.device | None, optional): The device on which the embeddings should be stored. 
                     Defaults to None.
             """
             # collect prompt ensemble
-            normal_prompts, anomalous_prompts = create_prompt_ensemble(object_name)
+            normal_prompts, anomalous_prompts = create_prompt_ensemble(class_name)
             # tokenize prompts
             normal_tokens = tokenize(normal_prompts)
             anomalous_tokens = tokenize(anomalous_prompts)

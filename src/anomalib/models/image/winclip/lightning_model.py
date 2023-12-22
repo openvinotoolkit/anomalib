@@ -19,16 +19,23 @@ from anomalib.models.image.winclip.torch_model import WinClipModel
 
 logger = logging.getLogger(__name__)
 
-__all__ = ["WinClip", "WinClipLightning"]
+__all__ = ["WinClip"]
 
 
 class WinClip(AnomalyModule):
-    """WinCLIP"""
+    """
+    WinCLIP Lightning model.
 
+    Args:
+        class_name (str): The name of the object class used in the prompt ensemble.
+            Defaults to ``object``.
+        n_shot (int): The number of reference images for few-shot inference.
+            Defaults to ``0``.
+    """
     def __init__(
         self,
-        class_name: str,
-        n_shot: int,
+        class_name: str="object",
+        n_shot: int=0,
     ) -> None:
         super().__init__()
         self.model = WinClipModel(n_shot=n_shot)
@@ -36,23 +43,38 @@ class WinClip(AnomalyModule):
         self.n_shot = n_shot
 
     def setup(self, stage) -> None:
+        """Setup WinCLIP.
+        
+        - Prepare the mask locations for the sliding-window approach.
+        - Collect text embeddings for zero-shot inference.
+        - Collect reference images for few-shot inference.
+        """
         # TODO: check if there is a better hook, which is called after setting the device
         del stage
-        self.model.collect_text_embeddings(self.class_name, device=self.device)
         self.model.prepare_masks(device=self.device)
+        self.model.collect_text_embeddings(self.class_name, device=self.device)
 
         if self.n_shot:
-            gallery = self.collect_reference_images()
-            self.model.collect_image_embeddings(gallery, device=self.device)
+            ref_images = self.collect_reference_images()
+            self.model.collect_image_embeddings(ref_images, device=self.device)
 
     def collect_reference_images(self):
-        gallery = Tensor()
+        """
+        Collect reference images for few-shot inference.
+
+        The reference images are collected by iterating the training dataset until the required number of images are 
+        collected.
+
+        Returns:
+            ref_images (Tensor): A tensor containing the reference images.
+        """
+        ref_images = Tensor()
         for batch in self.trainer.datamodule.train_dataloader():
-            images = batch["image"][: self.n_shot - gallery.shape[0]]
-            gallery = torch.cat((gallery, images))
-            if self.n_shot == gallery.shape[0]:
+            images = batch["image"][: self.n_shot - ref_images.shape[0]]
+            ref_images = torch.cat((ref_images, images))
+            if self.n_shot == ref_images.shape[0]:
                 break
-        return gallery
+        return ref_images
 
     @staticmethod
     def configure_optimizers() -> None:  # pylint: disable=arguments-differ
@@ -66,11 +88,7 @@ class WinClip(AnomalyModule):
     def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
         """Validation Step of WinCLIP"""
         del args, kwargs  # These variables are not used.
-        image_scores, pixel_scores = self.model(batch["image"])
-        # scores = [resize(torch.tensor(score).unsqueeze(0), batch["image"].shape[-2:]).squeeze() for score in scores]
-        # batch["anomaly_maps"] = torch.stack(scores).to(self.device)
-        batch["pred_scores"] = image_scores
-        batch["anomaly_maps"] = pixel_scores
+        batch["pred_scores"], batch["anomaly_maps"] = self.model(batch["image"])
         return batch
 
     @property
