@@ -29,18 +29,18 @@ class WinClip(AnomalyModule):
     Args:
         class_name (str): The name of the object class used in the prompt ensemble.
             Defaults to ``object``.
-        n_shot (int): The number of reference images for few-shot inference.
+        k_shot (int): The number of reference images for few-shot inference.
             Defaults to ``0``.
     """
     def __init__(
         self,
         class_name: str="object",
-        n_shot: int=0,
+        k_shot: int=0,
     ) -> None:
         super().__init__()
-        self.model = WinClipModel(n_shot=n_shot)
+        self.model = WinClipModel(k_shot)
         self.class_name = class_name
-        self.n_shot = n_shot
+        self.k_shot = k_shot
 
     def setup(self, stage) -> None:
         """Setup WinCLIP.
@@ -48,13 +48,14 @@ class WinClip(AnomalyModule):
         - Prepare the mask locations for the sliding-window approach.
         - Collect text embeddings for zero-shot inference.
         - Collect reference images for few-shot inference.
+
+        We need to pass the device because this hook is called before the model is moved to the device.
         """
-        # TODO: check if there is a better hook, which is called after setting the device
         del stage
         self.model.prepare_masks(device=self.device)
         self.model.collect_text_embeddings(self.class_name, device=self.device)
 
-        if self.n_shot:
+        if self.k_shot:
             ref_images = self.collect_reference_images()
             self.model.collect_image_embeddings(ref_images, device=self.device)
 
@@ -70,9 +71,9 @@ class WinClip(AnomalyModule):
         """
         ref_images = Tensor()
         for batch in self.trainer.datamodule.train_dataloader():
-            images = batch["image"][: self.n_shot - ref_images.shape[0]]
+            images = batch["image"][: self.k_shot - ref_images.shape[0]]
             ref_images = torch.cat((ref_images, images))
-            if self.n_shot == ref_images.shape[0]:
+            if self.k_shot == ref_images.shape[0]:
                 break
         return ref_images
 

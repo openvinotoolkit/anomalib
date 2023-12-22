@@ -21,7 +21,7 @@ class WinClipModel(nn.Module):
     PyTorch module that implements the WinClip model for image anomaly detection.
 
     Args:
-        n_shot (int, optional): The number of reference images used for few-shot anomaly detection.
+        k_shot (int, optional): The number of reference images used for few-shot anomaly detection.
             Defaults to 0.
         scales (tuple[int], optional): The scales of the sliding windows used for multiscale anomaly detection.
             Defaults to (2, 3).
@@ -29,19 +29,19 @@ class WinClipModel(nn.Module):
     Attributes:
         clip (CLIP): The CLIP model used for image and text encoding.
         grid_size (tuple[int]): The size of the feature map grid.
-        n_shot (int): The number of reference images used for few-shot anomaly detection.
+        k_shot (int): The number of reference images used for few-shot anomaly detection.
         scales (tuple[int]): The scales of the sliding windows used for multiscale anomaly detection.
         masks (list[torch.Tensor] | None): The masks representing the sliding window locations.
         text_embeddings (torch.Tensor | None): The text embeddings for the compositional prompt ensemble.
         visual_embeddings (list[torch.Tensor] | None): The multiscale embeddings for the reference images.
         patch_embeddings (torch.Tensor | None): The patch embeddings for the reference images.
     """
-    def __init__(self, n_shot: int = 0, scales=(2, 3)):
+    def __init__(self, k_shot: int = 0, scales=(2, 3)):
         super().__init__()
         self.clip = open_clip.create_model(BACKBONE, pretrained="laion400m_e31")
         self.clip.visual.output_tokens = True
         self.grid_size = self.clip.visual.grid_size
-        self.n_shot = n_shot
+        self.k_shot = k_shot
         self.scales = scales
 
         self.masks: list[torch.Tensor] | None = None
@@ -140,7 +140,7 @@ class WinClipModel(nn.Module):
         multiscale_scores = self._compute_zero_shot_scores(image_scores, window_embeddings)
 
         # get n-shot scores
-        if self.n_shot:
+        if self.k_shot:
             few_shot_scores = self._compute_few_shot_scores(patch_embeddings, window_embeddings)
             multiscale_scores = (multiscale_scores + few_shot_scores) / 2
             image_scores = (image_scores + few_shot_scores.amax(dim=(-2, -1))) / 2
