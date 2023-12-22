@@ -40,13 +40,13 @@ class WinClipModel(nn.Module):
         super().__init__()
         self.backbone = BACKBONE
         self.temperature = TEMPERATURE
-        self.grid_size = self.clip.visual.grid_size
         self.k_shot = k_shot
         self.scales = scales
 
         # initialize CLIP model
         self.clip = open_clip.create_model(self.backbone, pretrained="laion400m_e31")
         self.clip.visual.output_tokens = True
+        self.grid_size = self.clip.visual.grid_size
 
         self.masks: list[torch.Tensor] | None = None
         self.text_embeddings: torch.Tensor | None = None
