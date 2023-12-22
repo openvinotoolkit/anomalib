@@ -2,7 +2,9 @@
 
 import numpy as np
 import pytest
+import torch
 from numpy import ndarray
+from torch import Tensor
 
 
 def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
@@ -55,7 +57,35 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
         argvalues=[("python",), ("numba",)],
     )
 
-    if metafunc.function is test_pimo or metafunc.function is test_aupimo_values:
+    if (
+        metafunc.function is test_pimo_numpy
+        or metafunc.function is test_pimo
+        or metafunc.function is test_aupimo_values_numpy
+        or metafunc.function is test_aupimo_values
+    ):
+        argvalues_arrays = [
+            (
+                anomaly_maps,
+                masks,
+                expected_threshs,
+                expected_shared_fpr,
+                expected_per_image_tprs,
+                expected_image_classes,
+            ),
+            (
+                10 * anomaly_maps,
+                masks,
+                10 * expected_threshs,
+                expected_shared_fpr,
+                expected_per_image_tprs,
+                expected_image_classes,
+            ),
+        ]
+        argvalues_tensors = [
+            tuple(torch.from_numpy(arg) if isinstance(arg, ndarray) else arg for arg in arvals)
+            for arvals in argvalues_arrays
+        ]
+        argvalues = argvalues_arrays if "numpy" in metafunc.function.__name__ else argvalues_tensors
         metafunc.parametrize(
             argnames=(
                 "anomaly_maps",
@@ -65,69 +95,58 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
                 "expected_per_image_tprs",
                 "expected_image_classes",
             ),
-            argvalues=[
-                (
-                    anomaly_maps,
-                    masks,
-                    expected_threshs,
-                    expected_shared_fpr,
-                    expected_per_image_tprs,
-                    expected_image_classes,
-                ),
-                (
-                    10 * anomaly_maps,
-                    masks,
-                    10 * expected_threshs,
-                    expected_shared_fpr,
-                    expected_per_image_tprs,
-                    expected_image_classes,
-                ),
-            ],
+            argvalues=argvalues,
         )
 
-    if metafunc.function is test_aupimo_values:
+    if metafunc.function is test_aupimo_values_numpy or metafunc.function is test_aupimo_values:
+        argvalues_arrays = [
+            (
+                (1e-1, 1.0),
+                np.array(
+                    [
+                        np.nan,
+                        # recall: trapezium area = (a + b) * h / 2
+                        (0.10 + 1.0) * 1 / 2,
+                        (1.0 + 1.0) * 1 / 2,
+                    ],
+                    dtype=np.float64,
+                ),
+            ),
+            (
+                (1e-3, 1e-1),
+                np.array(
+                    [
+                        np.nan,
+                        # average of two trapezium areas / 2 (normalizing factor)
+                        (((1e-3 + 1e-2) * 1 / 2) + ((1e-2 + 1e-1) * 1 / 2)) / 2,
+                        (((1e-2 + 1e-1) * 1 / 2) + ((1e-1 + 1.0) * 1 / 2)) / 2,
+                    ],
+                    dtype=np.float64,
+                ),
+            ),
+            (
+                (1e-5, 1e-4),
+                np.array(
+                    [
+                        np.nan,
+                        (1e-5 + 1e-4) * 1 / 2,
+                        (1e-4 + 1e-3) * 1 / 2,
+                    ],
+                    dtype=np.float64,
+                ),
+            ),
+        ]
+        argvalues_tensors = [
+            tuple(torch.from_numpy(arg) if isinstance(arg, ndarray) else arg for arg in arvals)
+            for arvals in argvalues_arrays
+        ]
+        argvalues = argvalues_arrays if "numpy" in metafunc.function.__name__ else argvalues_tensors
         metafunc.parametrize(
             argnames=(
                 "fpr_bounds",
                 "expected_aupimos",  # trapezoid surfaces
             ),
-            argvalues=[
-                (
-                    (1e-1, 1.0),
-                    np.array(
-                        [
-                            np.nan,
-                            # recall: trapezium area = (a + b) * h / 2
-                            (0.10 + 1.0) * 1 / 2,
-                            (1.0 + 1.0) * 1 / 2,
-                        ],
-                        dtype=np.float64,
-                    ),
-                ),
-                (
-                    (1e-3, 1e-1),
-                    np.array(
-                        [
-                            np.nan,
-                            # average of two trapezium areas / 2 (normalizing factor)
-                            (((1e-3 + 1e-2) * 1 / 2) + ((1e-2 + 1e-1) * 1 / 2)) / 2,
-                            (((1e-2 + 1e-1) * 1 / 2) + ((1e-1 + 1.0) * 1 / 2)) / 2,
-                        ],
-                        dtype=np.float64,
-                    ),
-                ),
-                (
-                    (1e-5, 1e-4),
-                    np.array(
-                        [
-                            np.nan,
-                            (1e-5 + 1e-4) * 1 / 2,
-                            (1e-4 + 1e-3) * 1 / 2,
-                        ],
-                        dtype=np.float64,
-                    ),
-                ),
-            ],
+            argvalues=argvalues,
         )
 
     if metafunc.function is test_aupimo_edge:
@@ -158,7 +177,7 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
         )
 
 
-def test_pimo(
+def test_pimo_numpy(
     anomaly_maps: ndarray,
     masks: ndarray,
     binclf_algorithm: str,
@@ -175,6 +194,7 @@ def test_pimo(
         masks,
         num_threshs=7,
         binclf_algorithm=binclf_algorithm,
+        shared_fpr_metric="mean-per-image-fpr",
     )
 
     assert threshs.ndim == 1
@@ -185,10 +205,48 @@ def test_pimo(
     assert np.allclose(threshs, expected_threshs)
     assert np.allclose(shared_fpr, expected_shared_fpr)
     assert np.allclose(per_image_tprs, expected_per_image_tprs, equal_nan=True)
-    assert np.allclose(image_classes, expected_image_classes)
+    assert (image_classes == expected_image_classes).all()
 
 
-def test_aupimo_values(
+def test_pimo(
+    anomaly_maps: Tensor,
+    masks: Tensor,
+    binclf_algorithm: str,
+    expected_threshs: Tensor,
+    expected_shared_fpr: Tensor,
+    expected_per_image_tprs: Tensor,
+    expected_image_classes: Tensor,
+) -> None:
+    """Test if `pimo()` returns the expected values."""
+    from anomalib.metrics.per_image import pimo
+
+    pimoresult = pimo.pimo(
+        anomaly_maps,
+        masks,
+        num_threshs=7,
+        binclf_algorithm=binclf_algorithm,
+        shared_fpr_metric="mean-per-image-fpr",
+    )
+    threshs = pimoresult.threshs
+    shared_fpr = pimoresult.shared_fpr
+    per_image_tprs = pimoresult.per_image_tprs
+    image_classes = pimoresult.image_classes
+
+    # metadata
+    assert pimoresult.shared_fpr_metric == "mean-per-image-fpr"
+    # data
+    assert threshs.ndim == 1
+    assert shared_fpr.ndim == 1
+    assert per_image_tprs.ndim == 2
+    assert image_classes.ndim == 1
+
+    assert torch.allclose(threshs, expected_threshs)
+    assert torch.allclose(shared_fpr, expected_shared_fpr)
+    assert torch.allclose(per_image_tprs, expected_per_image_tprs, equal_nan=True)
+    assert (image_classes == expected_image_classes).all()
+
+
+def test_aupimo_values_numpy(
     anomaly_maps: ndarray,
     masks: ndarray,
     binclf_algorithm: str,
@@ -207,6 +265,7 @@ def test_aupimo_values(
         masks,
         num_threshs=7,
         binclf_algorithm=binclf_algorithm,
+        shared_fpr_metric="mean-per-image-fpr",
         fpr_bounds=fpr_bounds,
         force=True,
     )
@@ -219,11 +278,69 @@ def test_aupimo_values(
     assert np.allclose(threshs, expected_threshs)
     assert np.allclose(shared_fpr, expected_shared_fpr)
     assert np.allclose(per_image_tprs, expected_per_image_tprs, equal_nan=True)
-    assert np.allclose(image_classes, expected_image_classes)
+    assert (image_classes == expected_image_classes).all()
 
     assert aupimos.ndim == 1
     assert aupimos.shape == (3,)
     assert np.allclose(aupimos, expected_aupimos, equal_nan=True)
+
+
+def test_aupimo_values(
+    anomaly_maps: ndarray,
+    masks: ndarray,
+    binclf_algorithm: str,
+    fpr_bounds: tuple[float, float],
+    expected_threshs: ndarray,
+    expected_shared_fpr: ndarray,
+    expected_per_image_tprs: ndarray,
+    expected_image_classes: ndarray,
+    expected_aupimos: ndarray,
+) -> None:
+    """Test if `aupimo()` returns the expected values."""
+    from anomalib.metrics.per_image import pimo
+
+    pimoresult, aupimoresult = pimo.aupimo(
+        anomaly_maps,
+        masks,
+        num_threshs=7,
+        binclf_algorithm=binclf_algorithm,
+        shared_fpr_metric="mean-per-image-fpr",
+        fpr_bounds=fpr_bounds,
+        force=True,
+    )
+
+    # from pimo result
+    threshs = pimoresult.threshs
+    shared_fpr = pimoresult.shared_fpr
+    per_image_tprs = pimoresult.per_image_tprs
+    image_classes = pimoresult.image_classes
+
+    # from aupimo result
+    fpr_lower_bound = aupimoresult.fpr_lower_bound
+    fpr_upper_bound = aupimoresult.fpr_upper_bound
+    thresh_lower_bound = aupimoresult.thresh_lower_bound
+    thresh_upper_bound = aupimoresult.thresh_upper_bound
+    num_threshs = aupimoresult.num_threshs
+    aupimos = aupimoresult.aupimos
+
+    # test metadata
+    assert pimoresult.shared_fpr_metric == "mean-per-image-fpr"
+    assert aupimoresult.shared_fpr_metric == "mean-per-image-fpr"
+    assert (fpr_lower_bound, fpr_upper_bound) == fpr_bounds
+    assert num_threshs == 7
+
+    # test data
+    assert threshs.ndim == 1
+    assert shared_fpr.ndim == 1
+    assert per_image_tprs.ndim == 2
+    assert image_classes.ndim == 1
+    assert anomaly_maps.min() <= thresh_lower_bound < thresh_upper_bound <= anomaly_maps.max()
+
+    assert torch.allclose(threshs, expected_threshs)
+    assert torch.allclose(shared_fpr, expected_shared_fpr)
+    assert torch.allclose(per_image_tprs, expected_per_image_tprs, equal_nan=True)
+    assert (image_classes == expected_image_classes).all()
+    assert torch.allclose(aupimos, expected_aupimos, equal_nan=True)
 
 
 def test_aupimo_edge(
@@ -236,7 +353,7 @@ def test_aupimo_edge(
     from anomalib.metrics.per_image import pimo_numpy
 
     # None is the case of testing the default bounds
-    fpr_bounds = {"fpr_bounds": fpr_bounds} if fpr_bounds is not None else {}
+    fpr_bounds = {"fpr_bounds": fpr_bounds, "shared_fpr_metric": "mean-per-image-fpr"} if fpr_bounds is not None else {}
 
     # not enough points on the curve
     # 10 threshs / 6 decades = 1.6 threshs per decade < 3
