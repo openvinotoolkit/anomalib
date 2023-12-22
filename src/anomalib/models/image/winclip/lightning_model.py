@@ -45,6 +45,7 @@ class WinClip(AnomalyModule):
     def setup(self, stage) -> None:
         """Setup WinCLIP.
         
+        - Set the class name used in the prompt ensemble.
         - Prepare the mask locations for the sliding-window approach.
         - Collect text embeddings for zero-shot inference.
         - Collect reference images for few-shot inference.
@@ -52,12 +53,31 @@ class WinClip(AnomalyModule):
         We need to pass the device because this hook is called before the model is moved to the device.
         """
         del stage
+        self._set_class_name()
         self.model.prepare_masks(device=self.device)
         self.model.collect_text_embeddings(self.class_name, device=self.device)
 
         if self.k_shot:
             ref_images = self.collect_reference_images()
             self.model.collect_visual_embeddings(ref_images, device=self.device)
+
+    def _set_class_name(self):
+        """Set the class name used in the prompt ensemble.
+        
+        - When a class name is provided by the user, it is used.
+        - When the user did not provide a class name, the category name from the datamodule is used, if available.
+        - When the user did not provide a class name and the datamodule does not have a category name, the default
+            class name "object" is used.
+        """
+        if self.class_name is not None:
+            logger.info("Using class name: %s", self.class_name)
+            return
+        if hasattr(self.trainer.datamodule, "category"):
+            logger.info("No class name provided, using category from datamodule: %s", self.trainer.datamodule.category)
+            self.class_name = self.trainer.datamodule.category
+        else:
+            logger.info("No class name provided and no category name found in datamodule using default: object")
+            self.class_name = "object"
 
     def collect_reference_images(self):
         """
