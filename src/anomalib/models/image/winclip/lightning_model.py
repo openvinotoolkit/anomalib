@@ -31,7 +31,6 @@ class WinClip(AnomalyModule):
         n_shot: int,
     ) -> None:
         super().__init__()
-        # self.model = WinClipAD()
         self.model = WinClipModel(n_shot=n_shot)
         self.class_name = class_name
         self.n_shot = n_shot
@@ -40,7 +39,7 @@ class WinClip(AnomalyModule):
         # TODO: check if there is a better hook, which is called after setting the device
         del stage
         self.model.collect_text_embeddings(self.class_name, device=self.device)
-        self.model.create_masks(device=self.device)
+        self.model.prepare_masks(device=self.device)
 
         if self.n_shot:
             gallery = self.collect_reference_images()
