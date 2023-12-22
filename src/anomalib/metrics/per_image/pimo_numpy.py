@@ -46,7 +46,7 @@ logger = logging.getLogger(__name__)
 class SharedFPRMetric:
     """Shared FPR metric (x-axis of the PIMO curve)."""
 
-    MEAN_PERIMAGE_FPR: ClassVar[str] = "mean_perimage_fpr"
+    MEAN_PERIMAGE_FPR: ClassVar[str] = "mean-per-image-fpr"
 
     METRICS: ClassVar[tuple[str, ...]] = (MEAN_PERIMAGE_FPR,)
 
@@ -119,6 +119,7 @@ def pimo(  # noqa: D103
     masks: ndarray,
     num_threshs: int,
     binclf_algorithm: str = BinclfAlgorithm.NUMBA,
+    shared_fpr_metric: str = SharedFPRMetric.MEAN_PERIMAGE_FPR,
 ) -> tuple[ndarray, ndarray, ndarray, ndarray]:
     # validate inputs
     binclf_curve_numpy._validate_num_threshs(num_threshs)  # noqa: SLF001
@@ -150,13 +151,20 @@ def pimo(  # noqa: D103
         num_threshs=None,
     )
 
-    # shape -> (N, K)
-    per_image_fprs = binclf_curve_numpy.per_image_fpr(binclf_curves)
-    # TODO(jpcbertoldo): validate per_image_fprs  # noqa: TD003
+    shared_fpr: ndarray
+    if shared_fpr_metric == SharedFPRMetric.MEAN_PERIMAGE_FPR:
+        # shape -> (N, K)
+        per_image_fprs = binclf_curve_numpy.per_image_fpr(binclf_curves)
+        # TODO(jpcbertoldo): validate per_image_fprs  # noqa: TD003
 
-    # shape -> (K,)
-    # this is the only shared FPR metric implemented so far, see note about shared FPR in the module's docstring
-    shared_fpr = per_image_fprs[image_classes == 0].mean(axis=0)
+        # shape -> (K,)
+        # this is the only shared FPR metric implemented so far, see note about shared FPR in the module's docstring
+        shared_fpr = per_image_fprs[image_classes == 0].mean(axis=0)
+
+    else:
+        msg = f"Shared FPR metric `{shared_fpr_metric}` is not implemented."
+        raise NotImplementedError(msg)
+
     # TODO(jpcbertoldo): validate shared_fpr  # noqa: TD003
 
     # shape -> (N, K)
@@ -183,6 +191,7 @@ def aupimo(  # noqa: D103
     masks: ndarray,
     num_threshs: int = 300_000,
     binclf_algorithm: str = BinclfAlgorithm.NUMBA,
+    shared_fpr_metric: str = SharedFPRMetric.MEAN_PERIMAGE_FPR,
     fpr_bounds: tuple[float, float] = (1e-5, 1e-4),
     force: bool = False,
 ) -> tuple[ndarray, ndarray, ndarray, ndarray, ndarray]:
@@ -195,6 +204,7 @@ def aupimo(  # noqa: D103
         masks=masks,
         num_threshs=num_threshs,
         binclf_algorithm=binclf_algorithm,
+        shared_fpr_metric=shared_fpr_metric,
     )
 
     fpr_lower_bound, fpr_upper_bound = fpr_bounds
