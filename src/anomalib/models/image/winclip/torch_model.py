@@ -21,24 +21,18 @@ class WinClipModel(nn.Module):
     def __init__(self, n_shot: int = 0, model_name="ViT-B-16-plus-240", scales=(2, 3)):
         super().__init__()
         self.model, _, self.preprocess = open_clip.create_model_and_transforms(model_name, pretrained="laion400m_e31")
+        self.model.visual.output_tokens = True
         self.grid_size = self.model.visual.grid_size
         self.n_shot = n_shot
-        # self.model.visual.output_tokens = True
         self.scales = scales
 
         self.masks: list[torch.Tensor] | None = None
         self.text_embeddings: torch.Tensor | None = None
 
-    def multiscale(self):
-        pass
-
     def encode_text(self, text):
         return self.model.encode_text(text)
 
     def encode_image(self, image):
-        self.model.visual.output_tokens = True
-        # TODO: Investigate if this is actually needed
-        self.model.visual.final_ln_after_pool = True
 
         # register hook to retrieve feature map
         outputs = {}
@@ -82,12 +76,8 @@ class WinClipModel(nn.Module):
         masked = self.model.visual.transformer(masked)
         masked = masked.permute(1, 0, 2)  # LND -> NLD
 
-        if self.model.visual.final_ln_after_pool:
-            pooled, _ = self.model.visual._global_pool(masked)
-            pooled = self.model.visual.ln_post(pooled)
-        else:
-            masked = self.model.visual.ln_post(masked)
-            pooled, _ = self.model.visual._global_pool(masked)
+        masked = self.model.visual.ln_post(masked)
+        pooled, _ = self.model.visual._global_pool(masked)
 
         if self.model.visual.proj is not None:
             pooled = pooled @ self.model.visual.proj
