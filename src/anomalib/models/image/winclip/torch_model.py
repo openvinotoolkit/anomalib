@@ -1,8 +1,5 @@
-# Original Code
-# https://github.com/caoyunkang/WinClip.
-# SPDX-License-Identifier: MIT
-#
-# Modified
+"""PyTorch model for the WinCLIP implementation."""
+
 # Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
@@ -96,7 +93,6 @@ class WinClipModel(nn.Module):
         # get n-shot scores
         if self.n_shot:
             few_shot_scores = self._compute_few_shot_scores(patch_embeddings, window_embeddings)
-            # TODO: use sum instead of average?
             multiscale_scores = (multiscale_scores + few_shot_scores) / 2
             image_scores = (image_scores + few_shot_scores.amax(dim=(-2, -1))) / 2
 
@@ -150,7 +146,6 @@ class WinClipModel(nn.Module):
         anomalous_embeddings = torch.mean(anomalous_embeddings, dim=0, keepdim=True)
         # normalize
         text_embeddings = torch.cat((normal_embeddings, anomalous_embeddings))
-        # text_embeddings /= text_embeddings.norm(dim=1, keepdim=True)
         # move to device
         if device is not None:
             text_embeddings = text_embeddings.to(device)
