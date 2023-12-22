@@ -10,16 +10,28 @@ so often times the Tensor arguments will be converted to ndarray and then valida
 """
 from __future__ import annotations
 
+import warnings
 from dataclasses import dataclass, field
 
 import torch
 from torch import Tensor
+from torchmetrics import Metric
 
-from . import _validate, pimo_numpy
+from . import _validate, binclf_curve_numpy, pimo_numpy
 from .binclf_curve_numpy import Algorithm as BinclfAlgorithm
 from .pimo_numpy import SharedFPRMetric
 
 # =========================================== ARGS VALIDATION ===========================================
+
+
+def _validate_anomaly_maps(anomaly_maps: Tensor) -> None:
+    _validate.is_tensor(anomaly_maps, argname="anomaly_maps")
+    binclf_curve_numpy._validate_anomaly_maps(anomaly_maps.numpy())  # noqa: SLF001
+
+
+def _validate_masks(masks: Tensor) -> None:
+    _validate.is_tensor(masks, argname="masks")
+    binclf_curve_numpy._validate_masks(masks.numpy())  # noqa: SLF001
 
 
 # =========================================== RESULT OBJECT ===========================================
@@ -97,6 +109,22 @@ class AUPIMOResult:  # noqa: D101
         """Image classes (0: normal, 1: anomalous)."""
         # if an instance has `nan` aupimo it's because it's a normal image
         return self.aupimos.isnan().to(torch.int32)
+
+    @property
+    def fpr_bounds(self) -> tuple[float, float]:
+        """Lower and upper bounds of the FPR integration range."""
+        return self.fpr_lower_bound, self.fpr_upper_bound
+
+    @property
+    def thresh_bounds(self) -> tuple[float, float]:
+        """Lower and upper bounds of the threshold integration range.
+
+        Recall: they correspond to the FPR bounds in reverse order.
+        I.e.:
+            fpr_lower_bound --> thresh_upper_bound
+            fpr_upper_bound --> thresh_lower_bound
+        """
+        return self.thresh_lower_bound, self.thresh_upper_bound
 
 
 # =========================================== FUNCTIONAL ===========================================
@@ -209,3 +237,187 @@ def aupimo(  # noqa: D103
             aupimos=aupimos,
         ),
     )
+
+
+# =========================================== TORCHMETRICS ===========================================
+
+
+# TODO(jpcbertoldo): missing docstring for `PIMO`  # noqa: TD003
+class PIMO(Metric):  # noqa: D101
+    is_differentiable: bool = False
+    higher_is_better: bool | None = None
+    full_state_update: bool = False
+
+    num_threshs: int
+    binclf_algorithm: str
+    shared_fpr_metric: str
+
+    anomaly_maps: list[Tensor]
+    masks: list[Tensor]
+
+    @property
+    def is_empty(self) -> bool:
+        """Return True if the metric has not been updated yet."""
+        return len(self.anomaly_maps) == 0
+
+    @property
+    def num_images(self) -> int:
+        """Number of images."""
+        return sum([am.shape[0] for am in self.anomaly_maps])
+
+    @property
+    def image_classes(self) -> Tensor:
+        """Image classes (0: normal, 1: anomalous)."""
+        return pimo_numpy._images_classes_from_masks(torch.concat(self.masks, dim=0).cpu().numpy())  # noqa: SLF001
+
+    def __init__(
+        self,
+        num_threshs: int,
+        binclf_algorithm: str = BinclfAlgorithm.NUMBA,
+        shared_fpr_metric: str = SharedFPRMetric.MEAN_PERIMAGE_FPR,
+    ) -> None:
+        """Per-Image Overlap (PIMO) curve."""
+        # TODO(jpcbertoldo): docstring of `PIMO.__init__()`  # noqa: TD003
+        super().__init__()
+
+        warnings.warn(
+            f"Metric `{self.__class__.__name__}` will save all targets and predictions in buffer."
+            " For large datasets this may lead to large memory footprint.",
+            UserWarning,
+            stacklevel=1,
+        )
+
+        # the options below are, redundantly, validated here to avoid reaching
+        # an error later in the execution
+
+        _validate.num_threshs(num_threshs)
+        self.num_threshs = num_threshs
+
+        # validate binclf_algorithm and shared_fpr_metric
+        BinclfAlgorithm.validate(binclf_algorithm)
+        self.binclf_algorithm = binclf_algorithm
+
+        SharedFPRMetric.validate(shared_fpr_metric)
+        self.shared_fpr_metric = SharedFPRMetric.MEAN_PERIMAGE_FPR
+
+        self.add_state("anomaly_maps", default=[], dist_reduce_fx="cat")
+        self.add_state("masks", default=[], dist_reduce_fx="cat")
+
+    def update(self, anomaly_maps: Tensor, masks: Tensor) -> None:
+        """Update list of anomaly maps and masks.
+
+        Args:
+            anomaly_maps (Tensor): predictions of the model (ndim == 2, float)
+            masks (Tensor): ground truth masks (ndim == 2, binary)
+        """
+        _validate_anomaly_maps(anomaly_maps)
+        _validate_masks(masks)
+        _validate.same_shape(anomaly_maps, masks)
+        self.anomaly_maps.append(anomaly_maps)
+        self.masks.append(masks)
+
+    # TODO(jpcbertoldo): missing docstring for `PIMO.compute`  # noqa: TD003
+    def compute(self) -> PIMOResult:  # noqa: D102
+        if self.is_empty:
+            msg = "No anomaly maps and masks have been added yet. Please call `update()` first."
+            raise RuntimeError(msg)
+        anomaly_maps = torch.concat(self.anomaly_maps, dim=0)
+        masks = torch.concat(self.masks, dim=0)
+        return pimo(
+            anomaly_maps,
+            masks,
+            self.num_threshs,
+            binclf_algorithm=self.binclf_algorithm,
+            shared_fpr_metric=self.shared_fpr_metric,
+        )
+
+
+class AUPIMO(PIMO):
+    """Area Under the Per-Image Overlap (PIMO) curve.
+
+    TODO(jpcbertoldo): docstring of `AUPIMO`  # noqa: DAR101
+    """
+
+    fpr_bounds: tuple[float, float]
+    force: bool
+
+    @staticmethod
+    def normalizing_factor(fpr_bounds: tuple[float, float]) -> float:
+        """Constant that normalizes the AUPIMO integral to 0-1 range.
+
+        It is the maximum possible value from the integral in AUPIMO's definition.
+        It corresponds to assuming a constant function T_i: thresh --> 1.
+
+        Args:
+            fpr_bounds: lower and upper bounds of the FPR integration range.
+
+        Returns:
+            float: the normalization factor (>0).
+        """
+        return pimo_numpy.aupimo_normalizing_factor(fpr_bounds)
+
+    @staticmethod
+    def random_model_score(fpr_bounds: tuple[float, float]) -> float:
+        """AUPIMO of a theoretical random model.
+
+        "Random model" means that there is no discrimination between normal and anomalous pixels/patches/images.
+        It corresponds to assuming the functions T = F.
+
+        For the FPR bounds (1e-5, 1e-4), the random model AUPIMO is ~4e-5.
+
+        Args:
+            fpr_bounds: lower and upper bounds of the FPR integration range.
+
+        Returns:
+            float: the AUPIMO score.
+        """
+        return pimo_numpy.aupimo_random_model_score(fpr_bounds)
+
+    def __repr__(self) -> str:
+        """Show the metric name and its integration bounds."""
+        metric = self.shared_fpr_metric
+        lower, upper = self.fpr_bounds
+        return f"{self.__class__.__name__}({metric} in [{lower:.2g}, {upper:.2g}])"
+
+    def __init__(
+        self,
+        num_threshs: int = 300_000,
+        binclf_algorithm: str = BinclfAlgorithm.NUMBA,
+        shared_fpr_metric: str = SharedFPRMetric.MEAN_PERIMAGE_FPR,
+        fpr_bounds: tuple[float, float] = (1e-5, 1e-4),
+        force: bool = False,
+    ) -> None:
+        """Area Under the Per-Image Overlap (PIMO) curve.
+
+        TODO(jpcbertoldo): docstring of `AUPIMO.__init__()`  # noqa: DAR101
+        """
+        super().__init__(
+            num_threshs=num_threshs,
+            binclf_algorithm=binclf_algorithm,
+            shared_fpr_metric=shared_fpr_metric,
+        )
+
+        # other validations are done in PIMO.__init__()
+
+        _validate.rate_range(fpr_bounds)
+        self.fpr_bounds = fpr_bounds
+
+        self.force = force
+
+    def compute(self, force: bool | None = None) -> tuple[PIMOResult, AUPIMOResult]:  # type: ignore[override]
+        """TODO(jpcbertoldo): docstring of `AUPIMO.compute()`."""  # noqa: D402
+        if self.is_empty:
+            msg = "No anomaly maps and masks have been added yet. Please call `update()` first."
+            raise RuntimeError(msg)
+        anomaly_maps = torch.concat(self.anomaly_maps, dim=0)
+        masks = torch.concat(self.masks, dim=0)
+        force = force if force is not None else self.force
+        return aupimo(
+            anomaly_maps,
+            masks,
+            self.num_threshs,
+            binclf_algorithm=self.binclf_algorithm,
+            shared_fpr_metric=self.shared_fpr_metric,
+            fpr_bounds=self.fpr_bounds,
+            force=force,
+        )

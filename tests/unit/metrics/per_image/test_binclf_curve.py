@@ -162,7 +162,7 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
                 # `threshs` must be unique
                 ([preds, gts, np.sort(np.concatenate([threshs, threshs]))], {"algorithm": "numba"}, ValueError),
                 # invalid `algorithm`
-                ([preds, gts, threshs], {"algorithm": "blurp"}, NotImplementedError),
+                ([preds, gts, threshs], {"algorithm": "blurp"}, ValueError),
             ],
         )
 
@@ -304,7 +304,7 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
                 (
                     [preds, gts],
                     {"algorithm": "glfrb", "threshs_choice": "given", "threshs_given": threshs, "num_threshs": None},
-                    NotImplementedError,
+                    ValueError,
                 ),
             ],
         )

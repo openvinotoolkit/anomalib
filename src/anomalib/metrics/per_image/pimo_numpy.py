@@ -33,7 +33,7 @@ from typing import ClassVar
 import numpy as np
 from numpy import ndarray
 
-from . import binclf_curve_numpy
+from . import _validate, binclf_curve_numpy
 from .binclf_curve_numpy import Algorithm as BinclfAlgorithm
 from .binclf_curve_numpy import ThreshsChoice as BinclfThreshsChoice
 
@@ -50,44 +50,15 @@ class SharedFPRMetric:
 
     METRICS: ClassVar[tuple[str, ...]] = (MEAN_PERIMAGE_FPR,)
 
+    @staticmethod
+    def validate(metric: str) -> None:
+        """Validate the argument `metric`."""
+        if metric not in SharedFPRMetric.METRICS:
+            msg = f"Invalid `metric`. Expected one of {SharedFPRMetric.METRICS}, but got {metric} instead."
+            raise ValueError(msg)
+
 
 # =========================================== ARGS VALIDATION ===========================================
-
-
-def _validate_rate(rate: float | int, zero_ok: bool, one_ok: bool) -> None:
-    if not isinstance(rate, float | int):
-        msg = f"Expected rate to be a float or int, but got {type(rate)}."
-        raise TypeError(msg)
-
-    if rate < 0.0 or rate > 1.0:
-        msg = f"Rate `{rate}` is not a valid because it must be in [0, 1]."
-        raise ValueError(msg)
-
-    if not zero_ok and rate == 0.0:
-        msg = "Rate cannot be 0."
-        raise ValueError(msg)
-
-    if not one_ok and rate == 1.0:
-        msg = "Rate cannot be 1."
-        raise ValueError(msg)
-
-
-def _validate_fpr_bounds(fpr_bounds: tuple[float, float]) -> None:
-    if not isinstance(fpr_bounds, tuple):
-        msg = f"Expected `fpr_bounds` to be a tuple, but got {type(fpr_bounds)}"
-        raise TypeError(msg)
-
-    if len(fpr_bounds) != 2:
-        msg = f"Expected `fpr_bounds` to be a tuple of length 2, but got {len(fpr_bounds)}"
-        raise ValueError(msg)
-
-    lower, upper = fpr_bounds
-    _validate_rate(lower, zero_ok=False, one_ok=False)
-    _validate_rate(upper, zero_ok=False, one_ok=True)
-
-    if lower >= upper:
-        msg = f"Expected `fpr_bounds[1]` > `fpr_bounds[0]`, but got {fpr_bounds[1]} <= {fpr_bounds[0]}"
-        raise ValueError(msg)
 
 
 def _images_classes_from_masks(masks: ndarray) -> ndarray:
@@ -121,11 +92,12 @@ def pimo(  # noqa: D103
     binclf_algorithm: str = BinclfAlgorithm.NUMBA,
     shared_fpr_metric: str = SharedFPRMetric.MEAN_PERIMAGE_FPR,
 ) -> tuple[ndarray, ndarray, ndarray, ndarray]:
-    # validate inputs
-    binclf_curve_numpy._validate_num_threshs(num_threshs)  # noqa: SLF001
+    BinclfAlgorithm.validate(binclf_algorithm)
+    SharedFPRMetric.validate(shared_fpr_metric)
+    _validate.num_threshs(num_threshs)
     binclf_curve_numpy._validate_anomaly_maps(anomaly_maps)  # noqa: SLF001
     binclf_curve_numpy._validate_masks(masks)  # noqa: SLF001
-    binclf_curve_numpy._validate_same_shape(anomaly_maps, masks)  # noqa: SLF001
+    _validate.same_shape(anomaly_maps, masks)
     _validate_atleast_one_anomalous_image(masks)
     _validate_atleast_one_normal_image(masks)
 
@@ -195,8 +167,7 @@ def aupimo(  # noqa: D103
     fpr_bounds: tuple[float, float] = (1e-5, 1e-4),
     force: bool = False,
 ) -> tuple[ndarray, ndarray, ndarray, ndarray, ndarray]:
-    # validate inputs
-    _validate_fpr_bounds(fpr_bounds)
+    _validate.rate_range(fpr_bounds)
 
     # other validations are done in the `pimo` function
     threshs, shared_fpr, per_image_tprs, image_classes = pimo(
@@ -307,7 +278,7 @@ def aupimo(  # noqa: D103
     aucs: ndarray = np.trapz(per_image_tprs_bounded, x=shared_fpr_bounded_log, axis=1)
 
     # normalize, then clip(0, 1) makes sure that the values are in [0, 1] in case of numerical errors
-    normalization_factor = _aupimo_max_integral_value(fpr_bounds)
+    normalization_factor = aupimo_normalizing_factor(fpr_bounds)
     aucs = (aucs / normalization_factor).clip(0, 1)
 
     return threshs, shared_fpr, per_image_tprs, image_classes, aucs
@@ -338,7 +309,7 @@ def thresh_at_shared_fpr_level(threshs: ndarray, shared_fpr: ndarray, fpr_level:
     binclf_curve_numpy._validate_threshs(threshs)  # noqa: SLF001
     # TODO(jpcbertoldo): validate shared_fpr  # noqa: TD003
     _joint_validate_threshs_shared_fpr(threshs, shared_fpr)
-    _validate_rate(fpr_level, zero_ok=True, one_ok=True)
+    _validate.rate(fpr_level, zero_ok=True, one_ok=True)
 
     shared_fpr_min, shared_fpr_max = shared_fpr.min(), shared_fpr.max()
 
@@ -373,9 +344,39 @@ def thresh_at_shared_fpr_level(threshs: ndarray, shared_fpr: ndarray, fpr_level:
     return index, thresh, fpr_level_defacto
 
 
-def _aupimo_max_integral_value(fpr_bounds: tuple[float, float]) -> float:
-    """Constant that normalizes the AUPIMO integral to 0-1 range."""
-    _validate_fpr_bounds(fpr_bounds)
+def aupimo_normalizing_factor(fpr_bounds: tuple[float, float]) -> float:
+    """Constant that normalizes the AUPIMO integral to 0-1 range.
+
+    It is the maximum possible value from the integral in AUPIMO's definition.
+    It corresponds to assuming a constant function T_i: thresh --> 1.
+
+    Args:
+        fpr_bounds: lower and upper bounds of the FPR integration range.
+
+    Returns:
+        float: the normalization factor (>0).
+    """
+    _validate.rate_range(fpr_bounds)
     fpr_lower_bound, fpr_upper_bound = fpr_bounds
     # the log's base must be the same as the one used in the integration!
     return float(np.log(fpr_upper_bound / fpr_lower_bound))
+
+
+def aupimo_random_model_score(fpr_bounds: tuple[float, float]) -> float:
+    """AUPIMO of a theoretical random model.
+
+    "Random model" means that there is no discrimination between normal and anomalous pixels/patches/images.
+    It corresponds to assuming the functions T = F.
+
+    For the FPR bounds (1e-5, 1e-4), the random model AUPIMO is ~4e-5.
+
+    Args:
+        fpr_bounds: lower and upper bounds of the FPR integration range.
+
+    Returns:
+        float: the AUPIMO score.
+    """
+    _validate.rate_range(fpr_bounds)
+    fpr_lower_bound, fpr_upper_bound = fpr_bounds
+    integral_value = fpr_upper_bound - fpr_lower_bound
+    return float(integral_value / aupimo_normalizing_factor(fpr_bounds))

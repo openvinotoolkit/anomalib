@@ -21,6 +21,8 @@ else:
     HAS_NUMBA = True
     from . import _binclf_curve_numba
 
+from . import _validate
+
 logger = logging.getLogger(__name__)
 
 # =========================================== CONSTANTS ===========================================
@@ -33,6 +35,13 @@ class Algorithm:
     PYTHON: ClassVar[str] = "python"
     NUMBA: ClassVar[str] = "numba"
     ALGORITHMS: ClassVar[tuple[str, ...]] = (PYTHON, NUMBA)
+
+    @staticmethod
+    def validate(algorithm: str) -> None:
+        """Validate `algorithm` argument."""
+        if algorithm not in Algorithm.ALGORITHMS:
+            msg = f"Expected `algorithm` to be one of {Algorithm.ALGORITHMS}, but got {algorithm}"
+            raise ValueError(msg)
 
 
 @dataclass
@@ -106,16 +115,6 @@ def _validate_threshs(threshs: ndarray) -> None:
         raise ValueError(msg)
 
 
-def _validate_num_threshs(num_threshs: int) -> None:
-    if not isinstance(num_threshs, int):
-        msg = f"Expected `num_threshs` to be an integer, but got {type(num_threshs)}"
-        raise TypeError(msg)
-
-    if num_threshs < 2:
-        msg = f"If argument `num_threshs` is an integer, expected it to be larger than 1, but got {num_threshs}"
-        raise ValueError(msg)
-
-
 def _validate_thresh_bounds(thresh_bounds: tuple[float, float]) -> None:
     if not isinstance(thresh_bounds, tuple):
         msg = f"Expected `thresh_bounds` to be a tuple, but got {type(thresh_bounds)}"
@@ -180,14 +179,6 @@ def _validate_masks(masks: ndarray) -> None:
             f"but got ndarray with dtype {masks.dtype}"
         )
         raise TypeError(msg)
-
-
-def _validate_same_shape(*args) -> None:
-    assert len(args) > 0
-    shapes = [tuple(arg.shape) for arg in args]
-    if not all(shape == shapes[0] for shape in shapes):
-        msg = f"Expecteds to have the same shape, but got {shapes}"
-        raise ValueError(msg)
 
 
 def _validate_binclf_curves(binclf_curves: ndarray, valid_threshs: ndarray | None) -> None:
@@ -365,9 +356,10 @@ def binclf_multiple_curves(
 
         Thresholds are sorted in ascending order.
     """
+    Algorithm.validate(algorithm)
     _validate_scores_batch(scores_batch)
     _validate_gts_batch(gts_batch)
-    _validate_same_shape(scores_batch, gts_batch)
+    _validate.same_shape(scores_batch, gts_batch)
     _validate_threshs(threshs)
 
     if algorithm == Algorithm.PYTHON:
@@ -390,7 +382,7 @@ def binclf_multiple_curves(
 
 def _get_threshs_minmax_linspace(anomaly_maps: ndarray, num_threshs: int) -> ndarray:
     """Get thresholds linearly spaced between the min and max of the anomaly maps."""
-    _validate_num_threshs(num_threshs)
+    _validate.num_threshs(num_threshs)
     # this operation can be a bit expensive
     thresh_low, thresh_high = thresh_bounds = (anomaly_maps.min().item(), anomaly_maps.max().item())
     try:
@@ -454,10 +446,10 @@ def per_image_binclf_curve(
 
             Thresholds are sorted in ascending order.
     """
-    # validate inputs
+    Algorithm.validate(algorithm)
     _validate_anomaly_maps(anomaly_maps)
     _validate_masks(masks)
-    _validate_same_shape(anomaly_maps, masks)
+    _validate.same_shape(anomaly_maps, masks)
 
     threshs: ndarray
 
@@ -476,6 +468,7 @@ def per_image_binclf_curve(
             logger.warning(
                 f"Argument `threshs_given` was given, but it is ignored because `threshs_choice` is {threshs_choice}.",
             )
+        # `num_threshs` is validated in the function below
         threshs = _get_threshs_minmax_linspace(anomaly_maps, num_threshs)
 
     elif threshs_choice == ThreshsChoice.MEAN_FPR_OPTIMIZED:
