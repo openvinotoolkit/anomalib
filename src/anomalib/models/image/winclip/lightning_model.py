@@ -57,7 +57,7 @@ class WinClip(AnomalyModule):
 
         if self.k_shot:
             ref_images = self.collect_reference_images()
-            self.model.collect_image_embeddings(ref_images, device=self.device)
+            self.model.collect_visual_embeddings(ref_images, device=self.device)
 
     def collect_reference_images(self):
         """

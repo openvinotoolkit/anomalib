@@ -45,6 +45,7 @@ class WinClipModel(nn.Module):
 
         # initialize CLIP model
         self.clip = open_clip.create_model(self.backbone, pretrained="laion400m_e31")
+        # self.clip.visual.final_ln_after_pool = True
         self.clip.visual.output_tokens = True
         self.grid_size = self.clip.visual.grid_size
 
