@@ -4,6 +4,9 @@ This module implements torch interfaces to access the numpy code in `binclf_curv
 Check its docstring for more details.
 
 Tensors are build with `torch.from_numpy` and so the returned tensors will share the same memory as the numpy arrays.
+
+Validations will preferably happen in ndarray so the numpy code can be reused without torch,
+so often times the Tensor arguments will be converted to ndarray and then validated.
 """
 
 from __future__ import annotations
@@ -11,32 +14,19 @@ from __future__ import annotations
 import torch
 from torch import Tensor
 
-from . import binclf_curve_numpy
+from . import _validate, binclf_curve_numpy
 from .binclf_curve_numpy import Algorithm, ThreshsChoice
 
 # =========================================== ARGS VALIDATION ===========================================
 
 
-def _validate_is_tensor(tensor: Tensor, argname: str | None = None) -> None:
-    """Validate that `tensor` is a tensor and convert it to a numpy ndarray.
-
-    Validations will preferably happen in ndarray so the numpy code can be reused without torch,
-    so often times the Tensor arguments will be converted to ndarray and then validated.
-    """
-    argname = f"'{argname}'" if argname is not None else "argument"
-
-    if not isinstance(tensor, Tensor):
-        msg = f"Expected {argname} to be a tensor, but got {type(tensor)}"
-        raise TypeError(msg)
-
-
 def _validate_threshs(threshs: Tensor) -> None:
-    _validate_is_tensor(threshs, argname="threshs")
+    _validate.is_tensor(threshs, argname="threshs")
     binclf_curve_numpy._validate_threshs(threshs.detach().cpu().numpy())  # noqa: SLF001
 
 
 def _validate_binclf_curves(binclf_curves: Tensor, valid_threshs: Tensor | None = None) -> None:
-    _validate_is_tensor(binclf_curves, argname="binclf_curves")
+    _validate.is_tensor(binclf_curves, argname="binclf_curves")
     if valid_threshs is not None:
         _validate_threshs(valid_threshs)
     binclf_curve_numpy._validate_binclf_curves(  # noqa: SLF001
@@ -104,14 +94,14 @@ def per_image_binclf_curve(
 
             Thresholds are sorted in ascending order.
     """
-    _validate_is_tensor(anomaly_maps, argname="anomaly_maps")
+    _validate.is_tensor(anomaly_maps, argname="anomaly_maps")
     anomaly_maps_array = anomaly_maps.detach().cpu().numpy()
 
-    _validate_is_tensor(masks, argname="masks")
+    _validate.is_tensor(masks, argname="masks")
     masks_array = masks.detach().cpu().numpy()
 
     if threshs_given is not None:
-        _validate_is_tensor(threshs_given, argname="threshs_given")
+        _validate.is_tensor(threshs_given, argname="threshs_given")
         threshs_given_array = threshs_given.detach().cpu().numpy()
     else:
         threshs_given_array = None
