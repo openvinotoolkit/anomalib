@@ -12,8 +12,8 @@ from torch import nn
 from .prompting import create_prompt_ensemble
 from .utils import harmonic_aggregation, make_masks, simmilarity_score, visual_association_score
 
-
 BACKBONE = "ViT-B-16-plus-240"
+TEMPERATURE = 0.07  # temperature hyperparameter from the clip paper
 
 
 class WinClipModel(nn.Module):
@@ -38,11 +38,15 @@ class WinClipModel(nn.Module):
     """
     def __init__(self, k_shot: int = 0, scales=(2, 3)):
         super().__init__()
-        self.clip = open_clip.create_model(BACKBONE, pretrained="laion400m_e31")
-        self.clip.visual.output_tokens = True
+        self.backbone = BACKBONE
+        self.temperature = TEMPERATURE
         self.grid_size = self.clip.visual.grid_size
         self.k_shot = k_shot
         self.scales = scales
+
+        # initialize CLIP model
+        self.clip = open_clip.create_model(self.backbone, pretrained="laion400m_e31")
+        self.clip.visual.output_tokens = True
 
         self.masks: list[torch.Tensor] | None = None
         self.text_embeddings: torch.Tensor | None = None
@@ -136,7 +140,7 @@ class WinClipModel(nn.Module):
         image_embeddings, window_embeddings, patch_embeddings = self.encode_image(batch)
 
         # get 0-shot scores
-        image_scores = simmilarity_score(image_embeddings, self.text_embeddings)[..., -1]
+        image_scores = simmilarity_score(image_embeddings, self.text_embeddings, self.temperature)[..., -1]
         multiscale_scores = self._compute_zero_shot_scores(image_scores, window_embeddings)
 
         # get n-shot scores
@@ -170,7 +174,7 @@ class WinClipModel(nn.Module):
         multiscale_scores = [image_scores.view(-1, 1, 1).repeat(1, self.grid_size[0], self.grid_size[1])]
         # add aggregated scores for each scale
         for window_embedding, mask in zip(window_embeddings, self.masks):
-            scores = simmilarity_score(window_embedding, self.text_embeddings)[..., -1]
+            scores = simmilarity_score(window_embedding, self.text_embeddings, self.temperature)[..., -1]
             multiscale_scores.append(harmonic_aggregation(scores, self.grid_size, mask))
         # aggregate scores across scales
         return (len(self.scales) + 1) / (1 / torch.stack(multiscale_scores)).sum(dim=0)

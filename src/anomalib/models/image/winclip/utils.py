@@ -4,7 +4,7 @@ import torch
 import torch.nn.functional as F
 
 
-def cosine_similarity(input1, input2):
+def cosine_similarity(input1: torch.Tensor, input2: torch.Tensor) -> torch.Tensor:
     """Compute cosine similarity matrix between two tensors.
 
     # TODO: add examples
@@ -24,10 +24,15 @@ def cosine_similarity(input1, input2):
     return torch.bmm(input1_norm, input2_norm.transpose(-2, -1))
 
 
-def simmilarity_score(input1, input2):
-    """Compute similarity score between two tensors."""
-    # 0.07 is the temperature hyperparameter from the clip paper
-    return (cosine_similarity(input1, input2) / 0.07).softmax(dim=-1).squeeze()
+def simmilarity_score(input1: torch.Tensor, input2: torch.Tensor, temp: float = 1.0) -> torch.Tensor:
+    """Compute similarity score between two tensors.
+    
+    Args:
+        input1 (torch.Tensor): Input tensor of shape (N, D) or (B, N, D).
+        input2 (torch.Tensor): Input tensor of shape (M, D) or (B, M, D).
+        temp (float): Temperature hyperparameter.
+    """
+    return (cosine_similarity(input1, input2) / temp).softmax(dim=-1).squeeze()
 
 
 def harmonic_aggregation(window_scores, output_size, masks):
