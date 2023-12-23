@@ -34,6 +34,42 @@ def _validate_masks(masks: Tensor) -> None:
     binclf_curve_numpy._validate_masks(masks.numpy())  # noqa: SLF001
 
 
+def _validate_threshs(threshs: Tensor) -> None:
+    _validate.is_tensor(threshs, argname="threshs")
+    binclf_curve_numpy._validate_threshs(threshs.numpy())  # noqa: SLF001
+
+
+def _validate_shared_fpr(shared_fpr: Tensor, nan_allowed: bool = False, decreasing: bool = True) -> None:
+    _validate.is_tensor(shared_fpr, argname="shared_fpr")
+    pimo_numpy._validate_rate_curve(shared_fpr.numpy(), nan_allowed=nan_allowed, decreasing=decreasing)  # noqa: SLF001
+
+
+def _validate_image_classes(image_classes: Tensor) -> None:
+    _validate.is_tensor(image_classes, argname="image_classes")
+    pimo_numpy._validate_image_classes(image_classes.numpy())  # noqa: SLF001
+
+
+def _validate_per_image_tprs(per_image_tprs: Tensor, image_classes: Tensor) -> None:
+    _validate.is_tensor(per_image_tprs, argname="per_image_tprs")
+    _validate_image_classes(image_classes)
+
+    pimo_numpy._validate_per_image_rate_curves(  # noqa: SLF001
+        per_image_tprs[image_classes == 1].numpy(),
+        nan_allowed=False,
+        decreasing=True,
+    )
+
+    normal_images_tprs = per_image_tprs[image_classes == 0]
+    if not normal_images_tprs.isnan().all():
+        msg = "Expected all normal images to have NaN TPRs, but some have non-NaN values."
+        raise ValueError(msg)
+
+
+def _validate_aupimos(aupimos: Tensor) -> None:
+    _validate.is_tensor(aupimos, argname="aupimos")
+    pimo_numpy._validate_rates(aupimos.numpy(), nan_allowed=True)  # noqa: SLF001
+
+
 # =========================================== RESULT OBJECT ===========================================
 
 
@@ -44,9 +80,9 @@ class PIMOResult:  # noqa: D101
     shared_fpr_metric: str
 
     # data
-    threshs: Tensor = field(repr=False)
-    shared_fpr: Tensor = field(repr=False)
-    per_image_tprs: Tensor = field(repr=False)
+    threshs: Tensor = field(repr=False)  # shape => (K,)
+    shared_fpr: Tensor = field(repr=False)  # shape => (K,)
+    per_image_tprs: Tensor = field(repr=False)  # shape => (N, K)
 
     @property
     def num_threshs(self) -> int:
@@ -62,6 +98,32 @@ class PIMOResult:  # noqa: D101
     def image_classes(self) -> Tensor:
         """Image classes (0: normal, 1: anomalous)."""
         return (self.per_image_tprs.flatten(1) == 1).any(dim=1).to(torch.int32)
+
+    def __post_init__(self) -> None:
+        """Validate the inputs for the result object are consistent."""
+        try:
+            SharedFPRMetric.validate(self.shared_fpr_metric)
+            _validate_threshs(self.threshs)
+            _validate_shared_fpr(self.shared_fpr, nan_allowed=False)
+            _validate_per_image_tprs(self.per_image_tprs, self.image_classes)
+
+        except (TypeError, ValueError) as ex:
+            msg = f"Invalid inputs for {self.__class__.__name__} object."
+            raise ValueError(msg) from ex
+
+        if self.threshs.shape != self.shared_fpr.shape:
+            msg = (
+                f"Invalid {self.__class__.__name__} object. Attributes have inconsistent shapes: "
+                f"threshs.shape={self.threshs.shape} != shared_fpr.shape={self.shared_fpr.shape}."
+            )
+            raise ValueError(msg)
+
+        if self.threshs.shape[0] != self.per_image_tprs.shape[1]:
+            msg = (
+                f"Invalid {self.__class__.__name__} object. Attributes have inconsistent shapes: "
+                f"threshs.shape[0]={self.threshs.shape[0]} != per_image_tprs.shape[1]={self.per_image_tprs.shape[1]}."
+            )
+            raise ValueError(msg)
 
     def thresh_at(self, fpr_level: float) -> tuple[int, float, float]:
         """Return the threshold at the given shared FPR.
@@ -97,7 +159,7 @@ class AUPIMOResult:  # noqa: D101
     # data
     thresh_lower_bound: float = field(repr=False)
     thresh_upper_bound: float = field(repr=False)
-    aupimos: Tensor = field(repr=False)
+    aupimos: Tensor = field(repr=False)  # shape => (N,)
 
     @property
     def num_images(self) -> int:
@@ -125,6 +187,25 @@ class AUPIMOResult:  # noqa: D101
             fpr_upper_bound --> thresh_lower_bound
         """
         return self.thresh_lower_bound, self.thresh_upper_bound
+
+    def __post_init__(self) -> None:
+        """Validate the inputs for the result object are consistent."""
+        try:
+            SharedFPRMetric.validate(self.shared_fpr_metric)
+            _validate.rate_range((self.fpr_lower_bound, self.fpr_upper_bound))
+            _validate.num_threshs(self.num_threshs)
+            _validate_aupimos(self.aupimos)
+
+        except (TypeError, ValueError) as ex:
+            msg = f"Invalid inputs for {self.__class__.__name__} object."
+            raise ValueError(msg) from ex
+
+        if self.thresh_lower_bound >= self.thresh_upper_bound:
+            msg = (
+                f"Invalid {self.__class__.__name__} object. "
+                f"thresh_lower_bound={self.thresh_lower_bound} >= thresh_upper_bound={self.thresh_upper_bound}."
+            )
+            raise ValueError(msg)
 
 
 # =========================================== FUNCTIONAL ===========================================
