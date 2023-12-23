@@ -69,7 +69,7 @@ def get_transforms(
             msg = "Both config and image_size cannot be `None`."
             raise ValueError(msg)
         resize_height, resize_width = get_image_height_and_width(image_size)
-        transforms_list.append(v2.Resize(size=(resize_height, resize_width)))
+        transforms_list.append(v2.Resize(size=(resize_height, resize_width), interpolation=3, antialias=True))
 
         # Add center crop transform
         if center_crop is not None:
