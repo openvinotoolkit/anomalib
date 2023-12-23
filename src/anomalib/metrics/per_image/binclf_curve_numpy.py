@@ -169,7 +169,7 @@ def _validate_masks(masks: ndarray) -> None:
         if np.any((masks_unique_vals != 0) & (masks_unique_vals != 1)):
             msg = (
                 "Expected `masks` to be a *binary* ndarray with ground truth labels, "
-                f"but got ndarray with unique values {masks_unique_vals}"
+                f"but got ndarray with unique values {sorted(masks_unique_vals)}"
             )
             raise ValueError(msg)
 
