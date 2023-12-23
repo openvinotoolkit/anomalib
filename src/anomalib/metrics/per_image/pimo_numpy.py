@@ -67,14 +67,14 @@ def _images_classes_from_masks(masks: ndarray) -> ndarray:
     return (masks == 1).any(axis=(1, 2)).astype(np.int32)
 
 
-def _validate_atleast_one_anomalous_image(masks: ndarray) -> None:
+def _validate_at_least_one_anomalous_image(masks: ndarray) -> None:
     image_classes = _images_classes_from_masks(masks)
     if (image_classes == 1).sum() == 0:
         msg = "Expected at least one ANOMALOUS image, but found none."
         raise ValueError(msg)
 
 
-def _validate_atleast_one_normal_image(masks: ndarray) -> None:
+def _validate_at_least_one_normal_image(masks: ndarray) -> None:
     image_classes = _images_classes_from_masks(masks)
     if (image_classes == 0).sum() == 0:
         msg = "Expected at least one NORMAL image, but found none."
@@ -85,7 +85,7 @@ def _validate_atleast_one_normal_image(masks: ndarray) -> None:
 
 
 # TODO(jpcbertoldo): missing docstring for `pimo`  # noqa: TD003
-def pimo(  # noqa: D103
+def pimo_curves(  # noqa: D103
     anomaly_maps: ndarray,
     masks: ndarray,
     num_threshs: int,
@@ -98,8 +98,8 @@ def pimo(  # noqa: D103
     binclf_curve_numpy._validate_anomaly_maps(anomaly_maps)  # noqa: SLF001
     binclf_curve_numpy._validate_masks(masks)  # noqa: SLF001
     _validate.same_shape(anomaly_maps, masks)
-    _validate_atleast_one_anomalous_image(masks)
-    _validate_atleast_one_normal_image(masks)
+    _validate_at_least_one_anomalous_image(masks)
+    _validate_at_least_one_normal_image(masks)
 
     image_classes = _images_classes_from_masks(masks)
 
@@ -158,7 +158,7 @@ def _joint_validate_threshs_shared_fpr(threshs: ndarray, shared_fpr: ndarray) ->
 
 
 # TODO(jpcbertoldo): missing docstring for `aupimo`  # noqa: TD003
-def aupimo(  # noqa: D103
+def aupimo_scores(  # noqa: D103
     anomaly_maps: ndarray,
     masks: ndarray,
     num_threshs: int = 300_000,
@@ -170,7 +170,7 @@ def aupimo(  # noqa: D103
     _validate.rate_range(fpr_bounds)
 
     # other validations are done in the `pimo` function
-    threshs, shared_fpr, per_image_tprs, image_classes = pimo(
+    threshs, shared_fpr, per_image_tprs, image_classes = pimo_curves(
         anomaly_maps=anomaly_maps,
         masks=masks,
         num_threshs=num_threshs,

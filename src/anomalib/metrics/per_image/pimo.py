@@ -131,7 +131,7 @@ class AUPIMOResult:  # noqa: D101
 
 
 # TODO(jpcbertoldo): missing docstring for `pimo`  # noqa: TD003
-def pimo(  # noqa: D103
+def pimo_curves(  # noqa: D103
     anomaly_maps: Tensor,
     masks: Tensor,
     num_threshs: int,
@@ -145,7 +145,7 @@ def pimo(  # noqa: D103
     masks_array = masks.detach().cpu().numpy()
 
     # other validations are done in the numpy code
-    threshs_array, shared_fpr_array, per_image_tprs_array, _ = pimo_numpy.pimo(
+    threshs_array, shared_fpr_array, per_image_tprs_array, _ = pimo_numpy.pimo_curves(
         anomaly_maps_array,
         masks_array,
         num_threshs,
@@ -174,7 +174,7 @@ def pimo(  # noqa: D103
 
 
 # TODO(jpcbertoldo): missing docstring for `aupimo`  # noqa: TD003
-def aupimo(  # noqa: D103
+def aupimo_scores(  # noqa: D103
     anomaly_maps: Tensor,
     masks: Tensor,
     num_threshs: int = 300_000,
@@ -191,7 +191,7 @@ def aupimo(  # noqa: D103
 
     # other validations are done in the numpy code
 
-    threshs_array, shared_fpr_array, per_image_tprs_array, _, aupimos_array = pimo_numpy.aupimo(
+    threshs_array, shared_fpr_array, per_image_tprs_array, _, aupimos_array = pimo_numpy.aupimo_scores(
         anomaly_maps_array,
         masks_array,
         num_threshs,
@@ -323,7 +323,7 @@ class PIMO(Metric):  # noqa: D101
             raise RuntimeError(msg)
         anomaly_maps = torch.concat(self.anomaly_maps, dim=0)
         masks = torch.concat(self.masks, dim=0)
-        return pimo(
+        return pimo_curves(
             anomaly_maps,
             masks,
             self.num_threshs,
@@ -412,7 +412,7 @@ class AUPIMO(PIMO):
         anomaly_maps = torch.concat(self.anomaly_maps, dim=0)
         masks = torch.concat(self.masks, dim=0)
         force = force if force is not None else self.force
-        return aupimo(
+        return aupimo_scores(
             anomaly_maps,
             masks,
             self.num_threshs,
