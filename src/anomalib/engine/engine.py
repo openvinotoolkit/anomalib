@@ -350,6 +350,10 @@ class Engine:
         if model:
             self._setup_trainer(model)
             self._setup_dataset_task(dataloaders)
+        if ckpt_path is None:
+            # if no checkpoint patch is provided, we're running test on an untrained model.
+            # in this case, we need to run validate first for normalization and thresholding
+            self.trainer.validate(model, dataloaders, None, False, datamodule)
         return self.trainer.test(model, dataloaders, ckpt_path, verbose, datamodule)
 
     def predict(
