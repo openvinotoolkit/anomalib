@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
 
@@ -84,4 +85,28 @@ def rate_range(bounds: tuple[float, float]) -> None:
 
     if lower >= upper:
         msg = f"Expected `bounds[1]` > `bounds[0]`, but got {bounds[1]} <= {bounds[0]}"
+        raise ValueError(msg)
+
+
+def file_path(file_path: str | Path, must_exist: bool, extension: str | None) -> None:
+    if isinstance(file_path, str):
+        file_path = Path(file_path)
+
+    elif not isinstance(file_path, Path):
+        msg = f"Expected file path to be a string or pathlib.Path, but got {type(file_path)}"
+        raise TypeError(msg)
+
+    if file_path.is_dir():
+        msg = "Expected file path to be a file, but got a directory."
+        raise ValueError(msg)
+
+    if must_exist and not file_path.exists():
+        msg = f"File does not exist: {file_path}"
+        raise FileNotFoundError(msg)
+
+    if extension is None:
+        return
+
+    if file_path.suffix != extension:
+        msg = f"Expected file path to have extension '{extension}', but got '{file_path.suffix}'"
         raise ValueError(msg)

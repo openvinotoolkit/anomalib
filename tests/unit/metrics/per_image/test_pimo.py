@@ -1,5 +1,8 @@
 """Test `anomalib.metrics.per_image.pimo_numpy`."""
 
+import tempfile
+from pathlib import Path
+
 import numpy as np
 import pytest
 import torch
@@ -497,6 +500,7 @@ def test_pimoresult_conversions(
     from anomalib.metrics.per_image import pimo
     from anomalib.metrics.per_image.pimo import PIMOResult
 
+    # object -> dict -> object
     pimoresult = pimo.pimo_curves(
         anomaly_maps,
         masks,
@@ -516,6 +520,19 @@ def test_pimoresult_conversions(
     assert torch.allclose(pimoresult_from_dict.shared_fpr, pimoresult.shared_fpr)
     assert torch.allclose(pimoresult_from_dict.per_image_tprs, pimoresult.per_image_tprs, equal_nan=True)
 
+    # object -> file -> object
+    with tempfile.TemporaryDirectory() as tmpdir:
+        file_path = Path(tmpdir) / "pimo.pt"
+        pimoresult.save(str(file_path))
+        assert file_path.exists()
+        pimoresult_from_load = PIMOResult.load(str(file_path))
+    assert isinstance(pimoresult_from_load, PIMOResult)
+    # values should be the same
+    assert pimoresult_from_load.shared_fpr_metric == pimoresult.shared_fpr_metric
+    assert torch.allclose(pimoresult_from_load.threshs, pimoresult.threshs)
+    assert torch.allclose(pimoresult_from_load.shared_fpr, pimoresult.shared_fpr)
+    assert torch.allclose(pimoresult_from_load.per_image_tprs, pimoresult.per_image_tprs, equal_nan=True)
+
 
 def test_aupimoresult_conversions(
     anomaly_maps: Tensor,
@@ -525,6 +542,7 @@ def test_aupimoresult_conversions(
     from anomalib.metrics.per_image import pimo
     from anomalib.metrics.per_image.pimo import AUPIMOResult
 
+    # object -> dict -> object
     _, aupimoresult = pimo.aupimo_scores(
         anomaly_maps,
         masks,
@@ -546,3 +564,17 @@ def test_aupimoresult_conversions(
     assert aupimoresult_from_dict.num_threshs == aupimoresult.num_threshs
     assert aupimoresult_from_dict.thresh_bounds == aupimoresult.thresh_bounds
     assert torch.allclose(aupimoresult_from_dict.aupimos, aupimoresult.aupimos, equal_nan=True)
+
+    # object -> file -> object
+    with tempfile.TemporaryDirectory() as tmpdir:
+        file_path = Path(tmpdir) / "aupimo.json"
+        aupimoresult.save(str(file_path))
+        assert file_path.exists()
+        aupimoresult_from_load = AUPIMOResult.load(str(file_path))
+    assert isinstance(aupimoresult_from_load, AUPIMOResult)
+    # values should be the same
+    assert aupimoresult_from_load.shared_fpr_metric == aupimoresult.shared_fpr_metric
+    assert aupimoresult_from_load.fpr_bounds == aupimoresult.fpr_bounds
+    assert aupimoresult_from_load.num_threshs == aupimoresult.num_threshs
+    assert aupimoresult_from_load.thresh_bounds == aupimoresult.thresh_bounds
+    assert torch.allclose(aupimoresult_from_load.aupimos, aupimoresult.aupimos, equal_nan=True)

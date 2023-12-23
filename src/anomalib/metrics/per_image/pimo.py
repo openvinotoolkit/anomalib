@@ -10,12 +10,16 @@ so often times the Tensor arguments will be converted to ndarray and then valida
 """
 from __future__ import annotations
 
+import json
 import warnings
 from dataclasses import dataclass, field
+from pathlib import Path
 
 import torch
 from torch import Tensor
 from torchmetrics import Metric
+
+from anomalib.data.utils.image import duplicate_filename
 
 from . import _validate, binclf_curve_numpy, pimo_numpy
 from .binclf_curve_numpy import Algorithm as BinclfAlgorithm
@@ -166,6 +170,38 @@ class PIMOResult:  # noqa: D101
 
         return cls(**dic)
 
+    def save(self, file_path: str | Path) -> None:
+        """Save to a `.pt` file.
+
+        Args:
+            file_path: path to the `.pt` file where to save the PIMO result.
+                - must have a `.pt` extension
+                - if the file already exists, a numerical suffix is added to the filename
+        """
+        _validate.file_path(file_path, must_exist=False, extension=".pt")
+        file_path = duplicate_filename(file_path)
+        payload = self.to_dict()
+        torch.save(payload, file_path)
+
+    @classmethod
+    def load(cls: type[PIMOResult], file_path: str | Path) -> PIMOResult:
+        """Load from a `.pt` file.
+
+        Args:
+            file_path: path to the `.pt` file where to load the PIMO result.
+                - must have a `.pt` extension
+        """
+        _validate.file_path(file_path, must_exist=True, extension=".pt")
+        payload = torch.load(file_path)
+        if not isinstance(payload, dict):
+            msg = f"Invalid payload in file {file_path}. Must be a dictionary."
+            raise TypeError(msg)
+        try:
+            return cls.from_dict(payload)
+        except (TypeError, ValueError) as ex:
+            msg = f"Invalid payload in file {file_path}."
+            raise ValueError(msg) from ex
+
 
 # TODO(jpcbertoldo): add image file path to `AUPIMOResult`  # noqa: TD003
 # TODO(jpcbertoldo): missing docstring for `AUPIMOResult`  # noqa: TD003
@@ -222,6 +258,14 @@ class AUPIMOResult:  # noqa: D101
             msg = f"Invalid inputs for {self.__class__.__name__} object."
             raise ValueError(msg) from ex
 
+        if not isinstance(self.thresh_lower_bound, float):
+            msg = f"Invalid inputs for {self.__class__.__name__} object. `thresh_lower_bound` must be a float."
+            raise TypeError(msg)
+
+        if not isinstance(self.thresh_upper_bound, float):
+            msg = f"Invalid inputs for {self.__class__.__name__} object. `thresh_upper_bound` must be a float."
+            raise TypeError(msg)
+
         if self.thresh_lower_bound >= self.thresh_upper_bound:
             msg = (
                 f"Invalid {self.__class__.__name__} object. "
@@ -259,6 +303,45 @@ class AUPIMOResult:  # noqa: D101
                 raise ValueError(msg)
 
         return cls(**dic)  # type: ignore[arg-type]
+
+    def save(self, file_path: str | Path) -> None:
+        """Save to a `.json` file.
+
+        Args:
+            file_path: path to the `.json` file where to save the AUPIMO result.
+                - must have a `.json` extension
+                - if the file already exists, a numerical suffix is added to the filename
+        """
+        _validate.file_path(file_path, must_exist=False, extension=".json")
+        file_path = duplicate_filename(file_path)
+        file_path = Path(file_path)
+        payload = self.to_dict()
+        payload = {k: v.numpy().tolist() if isinstance(v, Tensor) else v for k, v in payload.items()}
+        with file_path.open("w") as f:
+            json.dump(payload, f, indent=4)
+
+    @classmethod
+    def load(cls: type[AUPIMOResult], file_path: str | Path) -> AUPIMOResult:
+        """Load from a `.json` file.
+
+        Args:
+            file_path: path to the `.json` file where to load the AUPIMO result.
+                - must have a `.json` extension
+        """
+        _validate.file_path(file_path, must_exist=True, extension=".json")
+        file_path = Path(file_path)
+        with file_path.open("r") as f:
+            payload = json.load(f)
+        if not isinstance(payload, dict):
+            file_path = str(file_path)
+            msg = f"Invalid payload in file {file_path}. Must be a dictionary."
+            raise TypeError(msg)
+        payload["aupimos"] = torch.tensor(payload["aupimos"], dtype=torch.float64)
+        try:
+            return cls.from_dict(payload)
+        except (TypeError, ValueError) as ex:
+            msg = f"Invalid payload in file {file_path}."
+            raise ValueError(msg) from ex
 
 
 # =========================================== FUNCTIONAL ===========================================
@@ -363,11 +446,11 @@ def aupimo_scores(  # noqa: D103
         pimoresult,
         AUPIMOResult(
             shared_fpr_metric=shared_fpr_metric,
-            fpr_lower_bound=(fpr_lower_bound),
-            fpr_upper_bound=(fpr_upper_bound),
+            fpr_lower_bound=fpr_lower_bound,
+            fpr_upper_bound=fpr_upper_bound,
             num_threshs=num_threshs,
-            thresh_lower_bound=thresh_lower_bound,
-            thresh_upper_bound=thresh_upper_bound,
+            thresh_lower_bound=float(thresh_lower_bound),
+            thresh_upper_bound=float(thresh_upper_bound),
             aupimos=aupimos,
         ),
     )
