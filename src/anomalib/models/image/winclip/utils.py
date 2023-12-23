@@ -55,14 +55,13 @@ def harmonic_aggregation(window_scores: torch.Tensor, output_size: tuple, masks:
     """
     batch_size = window_scores.shape[0]
     height, width = output_size
-
-    scores = torch.zeros((batch_size, height * width)).to(window_scores.device)
+    
     scores = []
     for idx in range(height * width):
         patch_mask = torch.any(masks == idx + 1, dim=0)  # boolean tensor indicating which masks contain the patch
         scores.append(sum(patch_mask) / (1 / window_scores.T[patch_mask]).sum(dim=0))
 
-    return torch.stack(scores).T.reshape(batch_size, height, width)
+    return torch.stack(scores).T.reshape(batch_size, height, width).nan_to_num(posinf=0.0)
 
 
 def visual_association_score(embeddings: torch.Tensor, reference_embeddings: torch.Tensor) -> torch.Tensor:
