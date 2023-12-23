@@ -235,7 +235,7 @@ def test_pimo_numpy(
     """Test if `pimo()` returns the expected values."""
     from anomalib.metrics.per_image import pimo_numpy
 
-    threshs, shared_fpr, per_image_tprs, image_classes = pimo_numpy.pimo(
+    threshs, shared_fpr, per_image_tprs, image_classes = pimo_numpy.pimo_curves(
         anomaly_maps,
         masks,
         num_threshs=7,
@@ -285,7 +285,7 @@ def test_pimo(
         )
 
     # functional interface
-    pimoresult = pimo.pimo(
+    pimoresult = pimo.pimo_curves(
         anomaly_maps,
         masks,
         num_threshs=7,
@@ -354,7 +354,7 @@ def test_aupimo_values_numpy(
     """Test if `aupimo()` returns the expected values."""
     from anomalib.metrics.per_image import pimo_numpy
 
-    threshs, shared_fpr, per_image_tprs, image_classes, aupimos = pimo_numpy.aupimo(
+    threshs, shared_fpr, per_image_tprs, image_classes, aupimos = pimo_numpy.aupimo_scores(
         anomaly_maps,
         masks,
         num_threshs=7,
@@ -424,7 +424,7 @@ def test_aupimo_values(
         assert anomaly_maps.min() <= thresh_lower_bound < thresh_upper_bound <= anomaly_maps.max()
 
     # functional interface
-    pimoresult_from_functional, aupimoresult_from_functional = pimo.aupimo(
+    pimoresult_from_functional, aupimoresult_from_functional = pimo.aupimo_scores(
         anomaly_maps,
         masks,
         num_threshs=7,
@@ -463,7 +463,7 @@ def test_aupimo_edge(
     # not enough points on the curve
     # 10 threshs / 6 decades = 1.6 threshs per decade < 3
     with pytest.raises(RuntimeError):  # force=False --> raise error
-        pimo_numpy.aupimo(
+        pimo_numpy.aupimo_scores(
             anomaly_maps,
             masks,
             num_threshs=10,
@@ -473,7 +473,7 @@ def test_aupimo_edge(
         )
 
     with pytest.warns(RuntimeWarning):  # force=True --> warn
-        pimo_numpy.aupimo(
+        pimo_numpy.aupimo_scores(
             anomaly_maps,
             masks,
             num_threshs=10,
@@ -484,7 +484,7 @@ def test_aupimo_edge(
 
     # default number of points on the curve (300k threshs) should be enough
     rng = np.random.default_rng(42)
-    pimo_numpy.aupimo(
+    pimo_numpy.aupimo_scores(
         anomaly_maps * rng.uniform(1.0, 1.1, size=anomaly_maps.shape),
         masks,
         # num_threshs=,
