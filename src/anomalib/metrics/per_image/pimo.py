@@ -73,6 +73,7 @@ def _validate_aupimos(aupimos: Tensor) -> None:
 # =========================================== RESULT OBJECT ===========================================
 
 
+# TODO(jpcbertoldo): add image file path to `PIMOResult`  # noqa: TD003
 # TODO(jpcbertoldo): missing docstring for `PIMOResult`  # noqa: TD003
 @dataclass
 class PIMOResult:  # noqa: D101
@@ -145,7 +146,28 @@ class PIMOResult:  # noqa: D101
             fpr_level,
         )
 
+    def to_dict(self) -> dict[str, Tensor | str]:
+        """Return a dictionary with the result object's attributes."""
+        return {
+            "shared_fpr_metric": self.shared_fpr_metric,
+            "threshs": self.threshs,
+            "shared_fpr": self.shared_fpr,
+            "per_image_tprs": self.per_image_tprs,
+        }
 
+    @classmethod
+    def from_dict(cls: type[PIMOResult], dic: dict[str, Tensor | str]) -> PIMOResult:
+        """Return a result object from a dictionary."""
+        keys = ["shared_fpr_metric", "threshs", "shared_fpr", "per_image_tprs"]
+        for key in keys:
+            if key not in dic:
+                msg = f"Invalid input dictionary for {cls.__name__} object, missing key: {key}. Must contain: {keys}."
+                raise ValueError(msg)
+
+        return cls(**dic)
+
+
+# TODO(jpcbertoldo): add image file path to `AUPIMOResult`  # noqa: TD003
 # TODO(jpcbertoldo): missing docstring for `AUPIMOResult`  # noqa: TD003
 # TODO(jpcbertoldo): change `aucs` in the paper supp mat to `aupimos`  # noqa: TD003
 @dataclass
@@ -206,6 +228,37 @@ class AUPIMOResult:  # noqa: D101
                 f"thresh_lower_bound={self.thresh_lower_bound} >= thresh_upper_bound={self.thresh_upper_bound}."
             )
             raise ValueError(msg)
+
+    def to_dict(self) -> dict[str, Tensor | str | float | int]:
+        """Return a dictionary with the result object's attributes."""
+        return {
+            "shared_fpr_metric": self.shared_fpr_metric,
+            "fpr_lower_bound": self.fpr_lower_bound,
+            "fpr_upper_bound": self.fpr_upper_bound,
+            "num_threshs": self.num_threshs,
+            "thresh_lower_bound": self.thresh_lower_bound,
+            "thresh_upper_bound": self.thresh_upper_bound,
+            "aupimos": self.aupimos,
+        }
+
+    @classmethod
+    def from_dict(cls: type[AUPIMOResult], dic: dict[str, Tensor | str | float | int]) -> AUPIMOResult:
+        """Return a result object from a dictionary."""
+        keys = [
+            "shared_fpr_metric",
+            "fpr_lower_bound",
+            "fpr_upper_bound",
+            "num_threshs",
+            "thresh_lower_bound",
+            "thresh_upper_bound",
+            "aupimos",
+        ]
+        for key in keys:
+            if key not in dic:
+                msg = f"Invalid input dictionary for {cls.__name__} object, missing key: {key}. Must contain: {keys}."
+                raise ValueError(msg)
+
+        return cls(**dic)  # type: ignore[arg-type]
 
 
 # =========================================== FUNCTIONAL ===========================================

@@ -52,11 +52,6 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
     expected_per_image_tprs = np.stack([expected_tpr_norm, expected_tpr_anom1, expected_tpr_anom2], axis=0)
     expected_image_classes = np.array([0, 1, 1], dtype=np.int32)
 
-    metafunc.parametrize(
-        argnames=("binclf_algorithm",),
-        argvalues=[("python",), ("numba",)],
-    )
-
     if (
         metafunc.function is test_pimo_numpy
         or metafunc.function is test_pimo
@@ -176,6 +171,11 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
             ],
         )
 
+    if metafunc.function is test_pimoresult_conversions or metafunc.function is test_aupimoresult_conversions:
+        anomaly_maps = torch.from_numpy(anomaly_maps)
+        masks = torch.from_numpy(masks)
+        metafunc.parametrize(argnames=("anomaly_maps", "masks"), argvalues=[(anomaly_maps, masks)])
+
 
 def _do_test_pimo_outputs(
     threshs: ndarray | Tensor,
@@ -226,7 +226,6 @@ def _do_test_pimo_outputs(
 def test_pimo_numpy(
     anomaly_maps: ndarray,
     masks: ndarray,
-    binclf_algorithm: str,
     expected_threshs: ndarray,
     expected_shared_fpr: ndarray,
     expected_per_image_tprs: ndarray,
@@ -239,7 +238,7 @@ def test_pimo_numpy(
         anomaly_maps,
         masks,
         num_threshs=7,
-        binclf_algorithm=binclf_algorithm,
+        binclf_algorithm="numba",
         shared_fpr_metric="mean-per-image-fpr",
     )
     _do_test_pimo_outputs(
@@ -257,7 +256,6 @@ def test_pimo_numpy(
 def test_pimo(
     anomaly_maps: Tensor,
     masks: Tensor,
-    binclf_algorithm: str,
     expected_threshs: Tensor,
     expected_shared_fpr: Tensor,
     expected_per_image_tprs: Tensor,
@@ -289,7 +287,7 @@ def test_pimo(
         anomaly_maps,
         masks,
         num_threshs=7,
-        binclf_algorithm=binclf_algorithm,
+        binclf_algorithm="numba",
         shared_fpr_metric="mean-per-image-fpr",
     )
     do_assertions(pimoresult)
@@ -297,7 +295,7 @@ def test_pimo(
     # metric interface
     metric = pimo.PIMO(
         num_threshs=7,
-        binclf_algorithm=binclf_algorithm,
+        binclf_algorithm="numba",
         shared_fpr_metric="mean-per-image-fpr",
     )
     metric.update(anomaly_maps, masks)
@@ -343,7 +341,6 @@ def _do_test_aupimo_outputs(
 def test_aupimo_values_numpy(
     anomaly_maps: ndarray,
     masks: ndarray,
-    binclf_algorithm: str,
     fpr_bounds: tuple[float, float],
     expected_threshs: ndarray,
     expected_shared_fpr: ndarray,
@@ -358,7 +355,7 @@ def test_aupimo_values_numpy(
         anomaly_maps,
         masks,
         num_threshs=7,
-        binclf_algorithm=binclf_algorithm,
+        binclf_algorithm="numba",
         shared_fpr_metric="mean-per-image-fpr",
         fpr_bounds=fpr_bounds,
         force=True,
@@ -380,7 +377,6 @@ def test_aupimo_values_numpy(
 def test_aupimo_values(
     anomaly_maps: ndarray,
     masks: ndarray,
-    binclf_algorithm: str,
     fpr_bounds: tuple[float, float],
     expected_threshs: ndarray,
     expected_shared_fpr: ndarray,
@@ -428,7 +424,7 @@ def test_aupimo_values(
         anomaly_maps,
         masks,
         num_threshs=7,
-        binclf_algorithm=binclf_algorithm,
+        binclf_algorithm="numba",
         shared_fpr_metric="mean-per-image-fpr",
         fpr_bounds=fpr_bounds,
         force=True,
@@ -438,7 +434,7 @@ def test_aupimo_values(
     # metric interface
     metric = pimo.AUPIMO(
         num_threshs=7,
-        binclf_algorithm=binclf_algorithm,
+        binclf_algorithm="numba",
         shared_fpr_metric="mean-per-image-fpr",
         fpr_bounds=fpr_bounds,
         force=True,
@@ -451,7 +447,6 @@ def test_aupimo_values(
 def test_aupimo_edge(
     anomaly_maps: ndarray,
     masks: ndarray,
-    binclf_algorithm: str,
     fpr_bounds: tuple[float, float],
 ) -> None:
     """Test some edge cases."""
@@ -467,7 +462,7 @@ def test_aupimo_edge(
             anomaly_maps,
             masks,
             num_threshs=10,
-            binclf_algorithm=binclf_algorithm,
+            binclf_algorithm="numba",
             force=False,
             **fpr_bounds,
         )
@@ -477,7 +472,7 @@ def test_aupimo_edge(
             anomaly_maps,
             masks,
             num_threshs=10,
-            binclf_algorithm=binclf_algorithm,
+            binclf_algorithm="numba",
             force=True,
             **fpr_bounds,
         )
@@ -488,7 +483,66 @@ def test_aupimo_edge(
         anomaly_maps * rng.uniform(1.0, 1.1, size=anomaly_maps.shape),
         masks,
         # num_threshs=,
-        binclf_algorithm=binclf_algorithm,
+        binclf_algorithm="numba",
         force=False,
         **fpr_bounds,
     )
+
+
+def test_pimoresult_conversions(
+    anomaly_maps: Tensor,
+    masks: Tensor,
+) -> None:
+    """Test if `PIMOResult` can be converted to other formats and back."""
+    from anomalib.metrics.per_image import pimo
+    from anomalib.metrics.per_image.pimo import PIMOResult
+
+    pimoresult = pimo.pimo_curves(
+        anomaly_maps,
+        masks,
+        num_threshs=7,
+        binclf_algorithm="numba",
+        shared_fpr_metric="mean-per-image-fpr",
+    )
+    # convert to dict
+    dic = pimoresult.to_dict()
+    assert isinstance(dic, dict)
+    # convert back to PIMOResult
+    pimoresult_from_dict = PIMOResult.from_dict(dic)
+    assert isinstance(pimoresult_from_dict, PIMOResult)
+    # values should be the same
+    assert pimoresult_from_dict.shared_fpr_metric == pimoresult.shared_fpr_metric
+    assert torch.allclose(pimoresult_from_dict.threshs, pimoresult.threshs)
+    assert torch.allclose(pimoresult_from_dict.shared_fpr, pimoresult.shared_fpr)
+    assert torch.allclose(pimoresult_from_dict.per_image_tprs, pimoresult.per_image_tprs, equal_nan=True)
+
+
+def test_aupimoresult_conversions(
+    anomaly_maps: Tensor,
+    masks: Tensor,
+) -> None:
+    """Test if `AUPIMOResult` can be converted to other formats and back."""
+    from anomalib.metrics.per_image import pimo
+    from anomalib.metrics.per_image.pimo import AUPIMOResult
+
+    _, aupimoresult = pimo.aupimo_scores(
+        anomaly_maps,
+        masks,
+        num_threshs=7,
+        binclf_algorithm="numba",
+        shared_fpr_metric="mean-per-image-fpr",
+        fpr_bounds=(1e-5, 1e-4),
+        force=True,
+    )
+    # convert to dict
+    dic = aupimoresult.to_dict()
+    assert isinstance(dic, dict)
+    # convert back to AUPIMOResult
+    aupimoresult_from_dict = AUPIMOResult.from_dict(dic)
+    assert isinstance(aupimoresult_from_dict, AUPIMOResult)
+    # values should be the same
+    assert aupimoresult_from_dict.shared_fpr_metric == aupimoresult.shared_fpr_metric
+    assert aupimoresult_from_dict.fpr_bounds == aupimoresult.fpr_bounds
+    assert aupimoresult_from_dict.num_threshs == aupimoresult.num_threshs
+    assert aupimoresult_from_dict.thresh_bounds == aupimoresult.thresh_bounds
+    assert torch.allclose(aupimoresult_from_dict.aupimos, aupimoresult.aupimos, equal_nan=True)
