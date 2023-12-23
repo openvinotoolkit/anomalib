@@ -20,7 +20,7 @@ def is_tensor(tensor: Any, argname: str | None = None) -> None:  # noqa: ANN401
 
 
 def num_threshs(num_threshs: int) -> None:
-    """Validate that `num_threshs` is a positive integer > 2."""
+    """Validate that `num_threshs` is a positive integer >= 2."""
     if not isinstance(num_threshs, int):
         msg = f"Expected `num_threshs` to be an integer, but got {type(num_threshs)}"
         raise TypeError(msg)
