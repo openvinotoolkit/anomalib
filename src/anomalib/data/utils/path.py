@@ -58,13 +58,15 @@ def _prepare_files_labels(
     if isinstance(extensions, str):
         extensions = (extensions,)
 
+    assert all(extension[0] == "." for extension in extensions), "All extension names must start with the dot."
+
     filenames = [
         f
         for f in path.glob("**/*")
         if f.suffix in extensions and not f.is_dir() and not any(part.startswith(".") for part in f.parts)
     ]
     if not filenames:
-        raise RuntimeError(f"Found 0 {path_type} images in {path}")
+        raise RuntimeError(f"Found 0 {path_type} images in {path} with extensions {extensions}")
 
     labels = [path_type] * len(filenames)
 
