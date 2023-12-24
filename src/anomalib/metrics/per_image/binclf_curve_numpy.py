@@ -93,138 +93,6 @@ def _validate_gts_batch(gts_batch: ndarray) -> None:
         raise ValueError(msg)
 
 
-def _validate_threshs(threshs: ndarray) -> None:
-    if not isinstance(threshs, ndarray):
-        msg = f"Expected `threshs` to be an ndarray, but got {type(threshs)}"
-        raise TypeError(msg)
-
-    if threshs.ndim != 1:
-        msg = f"Expected `threshs` to be 1D, but got {threshs.ndim}"
-        raise ValueError(msg)
-
-    if threshs.dtype.kind != "f":
-        msg = (
-            "Expected `threshs` to be an floating ndarray with anomaly scores,"
-            f" but got ndarray with dtype {threshs.dtype}"
-        )
-        raise TypeError(msg)
-
-    # make sure they are strictly increasing
-    if any(thresh <= prev_th for prev_th, thresh in itertools.pairwise(threshs)):
-        msg = "Expected `threshs` to be strictly increasing, but it is not."
-        raise ValueError(msg)
-
-
-def _validate_thresh_bounds(thresh_bounds: tuple[float, float]) -> None:
-    if not isinstance(thresh_bounds, tuple):
-        msg = f"Expected `thresh_bounds` to be a tuple, but got {type(thresh_bounds)}"
-        raise TypeError(msg)
-
-    if len(thresh_bounds) != 2:
-        msg = f"Expected `thresh_bounds` to be a tuple of length 2, but got {len(thresh_bounds)}"
-        raise ValueError(msg)
-
-    lower, upper = thresh_bounds
-
-    if not isinstance(lower, float) or not isinstance(upper, float):
-        msg = f"Expected `thresh_bounds` to be a tuple of floats, but got {type(lower)} and {type(upper)}"
-        raise TypeError(msg)
-
-    if lower >= upper:
-        msg = f"Expected `thresh_bounds[1]` > `thresh_bounds[0]`, but got {thresh_bounds[1]} <= {thresh_bounds[0]}"
-        raise ValueError(msg)
-
-
-def _validate_anomaly_maps(anomaly_maps: ndarray) -> None:
-    if not isinstance(anomaly_maps, ndarray):
-        msg = f"Expected `anomaly_maps` to be an ndarray, but got {type(anomaly_maps)}"
-        raise TypeError(msg)
-
-    if anomaly_maps.ndim != 3:
-        msg = f"Expected `anomaly_maps` have 3 dimensions (N, H, W), but got {anomaly_maps.ndim} dimensions"
-        raise ValueError(msg)
-
-    if anomaly_maps.dtype.kind != "f":
-        msg = (
-            "Expected `anomaly_maps` to be an floating ndarray with anomaly scores,"
-            f" but got ndarray with dtype {anomaly_maps.dtype}"
-        )
-        raise TypeError(msg)
-
-
-def _validate_masks(masks: ndarray) -> None:
-    if not isinstance(masks, ndarray):
-        msg = f"Expected `masks` to be an ndarray, but got {type(masks)}"
-        raise TypeError(msg)
-
-    if masks.ndim != 3:
-        msg = f"Expected `masks` have 3 dimensions (N, H, W), but got {masks.ndim} dimensions"
-        raise ValueError(msg)
-
-    if masks.dtype.kind == "b":
-        pass
-
-    elif masks.dtype.kind in ("i", "u"):
-        masks_unique_vals = np.unique(masks)
-        if np.any((masks_unique_vals != 0) & (masks_unique_vals != 1)):
-            msg = (
-                "Expected `masks` to be a *binary* ndarray with ground truth labels, "
-                f"but got ndarray with unique values {sorted(masks_unique_vals)}"
-            )
-            raise ValueError(msg)
-
-    else:
-        msg = (
-            "Expected `masks` to be an integer or boolean ndarray with ground truth labels, "
-            f"but got ndarray with dtype {masks.dtype}"
-        )
-        raise TypeError(msg)
-
-
-def _validate_binclf_curves(binclf_curves: ndarray, valid_threshs: ndarray | None) -> None:
-    if not isinstance(binclf_curves, ndarray):
-        msg = f"Expected `binclf_curves` to be an ndarray, but got {type(binclf_curves)}"
-        raise TypeError(msg)
-
-    if binclf_curves.ndim != 4:
-        msg = f"Expected `binclf_curves` to be 4D, but got {binclf_curves.ndim}D"
-        raise ValueError(msg)
-
-    if binclf_curves.shape[-2:] != (2, 2):
-        msg = f"Expected `binclf_curves` to have shape (..., 2, 2), but got {binclf_curves.shape}"
-        raise ValueError(msg)
-
-    if binclf_curves.dtype != np.int64:
-        msg = f"Expected `binclf_curves` to have dtype int64, but got {binclf_curves.dtype}."
-        raise TypeError(msg)
-
-    if (binclf_curves < 0).any():
-        msg = "Expected `binclf_curves` to have non-negative values, but got negative values."
-        raise ValueError(msg)
-
-    neg = binclf_curves[:, :, 0, :].sum(axis=-1)  # (num_images, num_threshs)
-
-    if (neg != neg[:, :1]).any():
-        msg = "Expected `binclf_curves` to have the same number of negatives per image for every thresh."
-        raise ValueError(msg)
-
-    pos = binclf_curves[:, :, 1, :].sum(axis=-1)  # (num_images, num_threshs)
-
-    if (pos != pos[:, :1]).any():
-        msg = "Expected `binclf_curves` to have the same number of positives per image for every thresh."
-        raise ValueError(msg)
-
-    if valid_threshs is None:
-        return
-
-    if binclf_curves.shape[1] != valid_threshs.shape[0]:
-        msg = (
-            "Expected `binclf_curves` to have the same number of thresholds as `threshs`, "
-            f"but got {binclf_curves.shape[1]} and {valid_threshs.shape[0]}"
-        )
-        raise RuntimeError(msg)
-
-
 # =========================================== PYTHON VERSION ===========================================
 
 
@@ -360,7 +228,7 @@ def binclf_multiple_curves(
     _validate_scores_batch(scores_batch)
     _validate_gts_batch(gts_batch)
     _validate.same_shape(scores_batch, gts_batch)
-    _validate_threshs(threshs)
+    _validate.threshs(threshs)
 
     if algorithm == Algorithm.PYTHON:
         return _binclf_multiple_curves_python(scores_batch, gts_batch, threshs)
@@ -386,9 +254,9 @@ def _get_threshs_minmax_linspace(anomaly_maps: ndarray, num_threshs: int) -> nda
     # this operation can be a bit expensive
     thresh_low, thresh_high = thresh_bounds = (anomaly_maps.min().item(), anomaly_maps.max().item())
     try:
-        _validate_thresh_bounds(thresh_bounds)
+        _validate.thresh_bounds(thresh_bounds)
     except ValueError as ex:
-        msg = "Invalid `thresh_bounds` computed from `anomaly_maps`."
+        msg = f"Invalid threshold bounds computed from the given anomaly maps. Cause: {ex}"
         raise ValueError(msg) from ex
     return np.linspace(thresh_low, thresh_high, num_threshs, dtype=anomaly_maps.dtype)
 
@@ -447,15 +315,15 @@ def per_image_binclf_curve(
             Thresholds are sorted in ascending order.
     """
     Algorithm.validate(algorithm)
-    _validate_anomaly_maps(anomaly_maps)
-    _validate_masks(masks)
+    _validate.anomaly_maps(anomaly_maps)
+    _validate.masks(masks)
     _validate.same_shape(anomaly_maps, masks)
 
     threshs: ndarray
 
     if threshs_choice == ThreshsChoice.GIVEN:
         assert threshs_given is not None
-        _validate_threshs(threshs_given)
+        _validate.threshs(threshs_given)
         if num_threshs is not None:
             logger.warning(
                 f"Argument `num_threshs` was given, but it is ignored because `threshs_choice` is {threshs_choice}.",
@@ -487,9 +355,9 @@ def per_image_binclf_curve(
     num_images = anomaly_maps.shape[0]
 
     try:
-        _validate_binclf_curves(binclf_curves, valid_threshs=threshs)
+        _validate.binclf_curves(binclf_curves, valid_threshs=threshs)
 
-        # these two validations cannot be done in `_validate_binclf_curves` because it does not have access to the
+        # these two validations cannot be done in `_validate.binclf_curves` because it does not have access to the
         # original shapes of `anomaly_maps`
         if binclf_curves.shape[0] != num_images:
             msg = (
@@ -499,7 +367,7 @@ def per_image_binclf_curve(
             raise RuntimeError(msg)
 
     except (TypeError, ValueError) as ex:
-        msg = "Invalid `binclf_curves` was computed."
+        msg = f"Invalid `binclf_curves` was computed. Cause: {ex}"
         raise RuntimeError(msg) from ex
 
     return threshs, binclf_curves
