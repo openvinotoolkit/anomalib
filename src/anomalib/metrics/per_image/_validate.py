@@ -258,19 +258,19 @@ def binclf_curves(binclf_curves: ndarray, valid_threshs: ndarray | None) -> None
         raise RuntimeError(msg)
 
 
-def image_classes(image_classes: ndarray) -> None:
-    if not isinstance(image_classes, ndarray):
-        msg = f"Expected image classes to be an ndarray, but got {type(image_classes)}."
+def images_classes(images_classes: ndarray) -> None:
+    if not isinstance(images_classes, ndarray):
+        msg = f"Expected image classes to be an ndarray, but got {type(images_classes)}."
         raise TypeError(msg)
 
-    if image_classes.ndim != 1:
-        msg = f"Expected image classes to be 1D, but got {image_classes.ndim}D."
+    if images_classes.ndim != 1:
+        msg = f"Expected image classes to be 1D, but got {images_classes.ndim}D."
         raise ValueError(msg)
 
-    if image_classes.dtype.kind == "b":
+    if images_classes.dtype.kind == "b":
         pass
-    elif image_classes.dtype.kind in ("i", "u"):
-        unique_vals = np.unique(image_classes)
+    elif images_classes.dtype.kind in ("i", "u"):
+        unique_vals = np.unique(images_classes)
         if np.any((unique_vals != 0) & (unique_vals != 1)):
             msg = (
                 "Expected image classes to be a *binary* ndarray with ground truth labels, "
@@ -280,7 +280,7 @@ def image_classes(image_classes: ndarray) -> None:
     else:
         msg = (
             "Expected image classes to be an integer or boolean ndarray with ground truth labels, "
-            f"but got ndarray with dtype {image_classes.dtype}"
+            f"but got ndarray with dtype {images_classes.dtype}"
         )
         raise TypeError(msg)
 
