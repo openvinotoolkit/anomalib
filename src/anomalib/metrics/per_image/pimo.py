@@ -269,6 +269,50 @@ class AUPIMOResult:  # noqa: D101
             msg = f"Invalid inputs for {self.__class__.__name__} object. Cause: {ex}."
             raise ValueError(msg) from ex
 
+    @classmethod
+    def from_pimoresult(
+        cls: type[AUPIMOResult],
+        pimoresult: PIMOResult,
+        fpr_bounds: tuple[float, float],
+        aupimos: Tensor,
+    ) -> AUPIMOResult:
+        """Return an AUPIMO result object from a PIMO result object.
+
+        Args:
+            pimoresult: PIMO result object
+            fpr_bounds: lower and upper bounds of the FPR integration range
+            aupimos: AUPIMO scores
+        """
+        if pimoresult.per_image_tprs.shape[0] != aupimos.shape[0]:
+            msg = (
+                f"Invalid {cls.__name__} object. Attributes have inconsistent shapes: "
+                f"there are {pimoresult.per_image_tprs.shape[0]} PIMO curves but {aupimos.shape[0]} AUPIMO scores."
+            )
+            raise ValueError(msg)
+
+        if not torch.isnan(aupimos[pimoresult.image_classes == 0]).all():
+            msg = "Expected all normal images to have NaN AUPIMOs, but some have non-NaN values."
+            raise ValueError(msg)
+
+        if torch.isnan(aupimos[pimoresult.image_classes == 1]).any():
+            msg = "Expected all anomalous images to have valid AUPIMOs (not nan), but some have NaN values."
+            raise ValueError(msg)
+
+        fpr_lower_bound, fpr_upper_bound = fpr_bounds
+        # recall: fpr upper/lower bounds are the same as the thresh lower/upper bounds
+        _, thresh_lower_bound, __ = pimoresult.thresh_at(fpr_upper_bound)
+        _, thresh_upper_bound, __ = pimoresult.thresh_at(fpr_lower_bound)
+        # `_` is the threshold's index, `__` is the actual fpr value
+        return cls(
+            shared_fpr_metric=pimoresult.shared_fpr_metric,
+            fpr_lower_bound=fpr_lower_bound,
+            fpr_upper_bound=fpr_upper_bound,
+            num_threshs=pimoresult.num_threshs,
+            thresh_lower_bound=float(thresh_lower_bound),
+            thresh_upper_bound=float(thresh_upper_bound),
+            aupimos=aupimos,
+        )
+
     def to_dict(self) -> dict[str, Tensor | str | float | int]:
         """Return a dictionary with the result object's attributes."""
         return {
@@ -312,7 +356,8 @@ class AUPIMOResult:  # noqa: D101
         file_path = duplicate_filename(file_path)
         file_path = Path(file_path)
         payload = self.to_dict()
-        payload = {k: v.numpy().tolist() if isinstance(v, Tensor) else v for k, v in payload.items()}
+        aupimos: Tensor = payload["aupimos"]
+        payload["aupimos"] = aupimos.numpy().tolist()
         with file_path.open("w") as f:
             json.dump(payload, f, indent=4)
 
@@ -433,23 +478,12 @@ def aupimo_scores(  # noqa: D103
         shared_fpr=shared_fpr,
         per_image_tprs=per_image_tprs,
     )
-    fpr_lower_bound, fpr_upper_bound = fpr_bounds
-    # recall: fpr upper/lower bounds are the same as the thresh lower/upper bounds
-    # `_` is the threshold's index, `__` is the actual fpr value
-    _, thresh_lower_bound, __ = pimoresult.thresh_at(fpr_upper_bound)
-    _, thresh_upper_bound, __ = pimoresult.thresh_at(fpr_lower_bound)
-    return (
+    aupimoresult = AUPIMOResult.from_pimoresult(
         pimoresult,
-        AUPIMOResult(
-            shared_fpr_metric=shared_fpr_metric,
-            fpr_lower_bound=fpr_lower_bound,
-            fpr_upper_bound=fpr_upper_bound,
-            num_threshs=num_threshs,
-            thresh_lower_bound=float(thresh_lower_bound),
-            thresh_upper_bound=float(thresh_upper_bound),
-            aupimos=aupimos,
-        ),
+        fpr_bounds=fpr_bounds,
+        aupimos=aupimos,
     )
+    return pimoresult, aupimoresult
 
 
 # =========================================== TORCHMETRICS ===========================================
