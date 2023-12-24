@@ -3,10 +3,14 @@
 This module implements torch interfaces to access the numpy code in `pimo_numpy.py`.
 Check its docstring for more details.
 
-Tensors are build with `torch.from_numpy` and so the returned tensors will share the same memory as the numpy arrays.
-
 Validations will preferably happen in ndarray so the numpy code can be reused without torch,
 so often times the Tensor arguments will be converted to ndarray and then validated.
+
+TODO(jpcbertoldo): add ref to paper to all functions
+TODO(jpcbertoldo): add link to the tutorial notebooks
+TODO(jpcbertoldo): add image file path to `PIMOResult` and `AUPIMOResult` and change save/load methods
+TODO(jpcbertoldo): change `aucs` in the paper supp mat to `aupimos`
+TODO(jpcbertoldo): add formalities (license header, author)
 """
 from __future__ import annotations
 
@@ -87,10 +91,25 @@ def _validate_aupimos(aupimos: Tensor) -> None:
 # =========================================== RESULT OBJECT ===========================================
 
 
-# TODO(jpcbertoldo): add image file path to `PIMOResult`  # noqa: TD003
-# TODO(jpcbertoldo): missing docstring for `PIMOResult`  # noqa: TD003
 @dataclass
-class PIMOResult:  # noqa: D101
+class PIMOResult:
+    """Per-Image Overlap (PIMO, pronounced pee-mo) curve.
+
+    This interface gathers the PIMO curve data and metadata and provides several utility methods.
+
+    Notation:
+        - N: number of images
+        - K: number of thresholds
+        - FPR: False Positive Rate
+        - TPR: True Positive Rate
+
+    Attributes:
+        shared_fpr_metric (str): [metadata] shared FPR metric used to compute the PIMO curve
+        threshs (Tensor): sequence of K (monotonically increasing) thresholds used to compute the PIMO curve
+        shared_fpr (Tensor): K values of the shared FPR metric at the corresponding thresholds
+        per_image_tprs (Tensor): for each of the N images, the K values of in-image TPR at the corresponding thresholds
+    """
+
     # metadata
     shared_fpr_metric: str
 
@@ -213,11 +232,26 @@ class PIMOResult:  # noqa: D101
             raise ValueError(msg) from ex
 
 
-# TODO(jpcbertoldo): add image file path to `AUPIMOResult`  # noqa: TD003
-# TODO(jpcbertoldo): missing docstring for `AUPIMOResult`  # noqa: TD003
-# TODO(jpcbertoldo): change `aucs` in the paper supp mat to `aupimos`  # noqa: TD003
 @dataclass
-class AUPIMOResult:  # noqa: D101
+class AUPIMOResult:
+    """Area Under the Per-Image Overlap (AUPIMO, pronounced a-u-pee-mo) curve.
+
+    This interface gathers the AUPIMO data and metadata and provides several utility methods.
+
+    Notation:
+        - N: number of images
+        - K: number of thresholds
+
+    Attributes:
+        shared_fpr_metric (str): [metadata] shared FPR metric used to compute the PIMO curve
+        fpr_lower_bound (float): [metadata] LOWER bound of the FPR integration range
+        fpr_upper_bound (float): [metadata] UPPER bound of the FPR integration range
+        num_threshs (int): [metadata] number of thresholds used to compute the PIMO curve (K)
+        thresh_lower_bound (float): LOWER threshold bound --> corresponds to the UPPER FPR bound
+        thresh_upper_bound (float): UPPER threshold bound --> corresponds to the LOWER FPR bound
+        aupimos (Tensor): N values of AUPIMO scores
+    """
+
     # metadata
     shared_fpr_metric: str
     fpr_lower_bound: float
@@ -388,14 +422,29 @@ class AUPIMOResult:  # noqa: D101
 # =========================================== FUNCTIONAL ===========================================
 
 
-# TODO(jpcbertoldo): missing docstring for `pimo`  # noqa: TD003
-def pimo_curves(  # noqa: D103
+def pimo_curves(
     anomaly_maps: Tensor,
     masks: Tensor,
     num_threshs: int,
     binclf_algorithm: str = BinclfAlgorithm.NUMBA,
     shared_fpr_metric: str = SharedFPRMetric.MEAN_PERIMAGE_FPR,
 ) -> PIMOResult:
+    """Compute the Per-IMage Overlap (PIMO, pronounced pee-mo) curves.
+
+    This torch interface is a wrapper around the numpy code.
+    The tensors are converted to numpy arrays and then passed and validated in the numpy code.
+    The results are converted back to tensors and wrapped in an dataclass object.
+
+    Refer to `pimo_numpy.pimo_curves()` and `PIMOResult` (their docstrings below).
+
+    pimo_numpy.pimo_curves.__doc__
+    ==============================
+    {docstring_pimo_curves}
+
+    PIMOResult.__doc__
+    ==================
+    {docstring_pimoresult}
+    """
     _validate.is_tensor(anomaly_maps, argname="anomaly_maps")
     anomaly_maps_array = anomaly_maps.detach().cpu().numpy()
 
@@ -431,8 +480,14 @@ def pimo_curves(  # noqa: D103
     )
 
 
-# TODO(jpcbertoldo): missing docstring for `aupimo`  # noqa: TD003
-def aupimo_scores(  # noqa: D103
+# append the docstring
+pimo_curves.__doc__ = pimo_curves.__doc__.format(  # type: ignore[union-attr]
+    docstring_pimo_curves=pimo_numpy.pimo_curves.__doc__,
+    docstring_pimoresult=PIMOResult.__doc__,
+)
+
+
+def aupimo_scores(
     anomaly_maps: Tensor,
     masks: Tensor,
     num_threshs: int = 300_000,
@@ -441,6 +496,26 @@ def aupimo_scores(  # noqa: D103
     fpr_bounds: tuple[float, float] = (1e-5, 1e-4),
     force: bool = False,
 ) -> tuple[PIMOResult, AUPIMOResult]:
+    """Compute the PIMO curves and their Area Under the Curve (i.e. AUPIMO) scores.
+
+    This torch interface is a wrapper around the numpy code.
+    The tensors are converted to numpy arrays and then passed and validated in the numpy code.
+    The results are converted back to tensors and wrapped in an dataclass object.
+
+    Refer to `pimo_numpy.aupimo_scores()`, `PIMOResult` and `AUPIMOResult` (their docstrings below).
+
+    pimo_numpy.aupimo_scores.__doc__
+    =================================
+    {docstring_aupimo_scores}
+
+    PIMOResult.__doc__
+    ==================
+    {docstring_pimoresult}
+
+    AUPIMOResult.__doc__
+    ====================
+    {docstring_aupimoresult}
+    """
     _validate.is_tensor(anomaly_maps, argname="anomaly_maps")
     anomaly_maps_array = anomaly_maps.detach().cpu().numpy()
 
@@ -486,11 +561,35 @@ def aupimo_scores(  # noqa: D103
     return pimoresult, aupimoresult
 
 
+# append the docstrings
+aupimo_scores.__doc__ = aupimo_scores.__doc__.format(  # type: ignore[union-attr]
+    docstring_aupimo_scores=pimo_numpy.aupimo_scores.__doc__,
+    docstring_pimoresult=PIMOResult.__doc__,
+    docstring_aupimoresult=AUPIMOResult.__doc__,
+)
+
+
 # =========================================== TORCHMETRICS ===========================================
 
 
-# TODO(jpcbertoldo): missing docstring for `PIMO`  # noqa: TD003
-class PIMO(Metric):  # noqa: D101
+class PIMO(Metric):
+    """Per-Image Overlap (PIMO) curve.
+
+    This torchmetrics interface is a wrapper around the functional interface, which is a wrapper around the numpy code.
+    The tensors are converted to numpy arrays and then passed and validated in the numpy code.
+    The results are converted back to tensors and wrapped in an dataclass object.
+
+    Refer to `pimo_numpy.pimo_curves()` and `PIMOResult` (their docstrings below).
+
+    pimo_numpy.pimo_curves.__doc__
+    ==============================
+    {docstring_pimo_curves}
+
+    PIMOResult.__doc__
+    ==================
+    {docstring_pimoresult}
+    """
+
     is_differentiable: bool = False
     higher_is_better: bool | None = None
     full_state_update: bool = False
@@ -503,7 +602,7 @@ class PIMO(Metric):  # noqa: D101
     masks: list[Tensor]
 
     @property
-    def is_empty(self) -> bool:
+    def _is_empty(self) -> bool:
         """Return True if the metric has not been updated yet."""
         return len(self.anomaly_maps) == 0
 
@@ -523,8 +622,13 @@ class PIMO(Metric):  # noqa: D101
         binclf_algorithm: str = BinclfAlgorithm.NUMBA,
         shared_fpr_metric: str = SharedFPRMetric.MEAN_PERIMAGE_FPR,
     ) -> None:
-        """Per-Image Overlap (PIMO) curve."""
-        # TODO(jpcbertoldo): docstring of `PIMO.__init__()`  # noqa: TD003
+        """Per-Image Overlap (PIMO) curve.
+
+        Args:
+            num_threshs: number of thresholds used to compute the PIMO curve
+            binclf_algorithm: algorithm to compute the binary classification curve
+            shared_fpr_metric: metric to compute the shared FPR curve
+        """
         super().__init__()
 
         warnings.warn(
@@ -551,7 +655,7 @@ class PIMO(Metric):  # noqa: D101
         self.add_state("masks", default=[], dist_reduce_fx="cat")
 
     def update(self, anomaly_maps: Tensor, masks: Tensor) -> None:
-        """Update list of anomaly maps and masks.
+        """Update lists of anomaly maps and masks.
 
         Args:
             anomaly_maps (Tensor): predictions of the model (ndim == 2, float)
@@ -563,9 +667,15 @@ class PIMO(Metric):  # noqa: D101
         self.anomaly_maps.append(anomaly_maps)
         self.masks.append(masks)
 
-    # TODO(jpcbertoldo): missing docstring for `PIMO.compute`  # noqa: TD003
-    def compute(self) -> PIMOResult:  # noqa: D102
-        if self.is_empty:
+    def compute(self) -> PIMOResult:
+        """Compute the PIMO curves.
+
+        Call the functional interface `pimo_curves()`, which is a wrapper around the numpy code.
+
+        Returns:
+            PIMOResult: PIMO curves dataclass object. See `PIMOResult` for details.
+        """
+        if self._is_empty:
             msg = "No anomaly maps and masks have been added yet. Please call `update()` first."
             raise RuntimeError(msg)
         anomaly_maps = torch.concat(self.anomaly_maps, dim=0)
@@ -579,10 +689,33 @@ class PIMO(Metric):  # noqa: D101
         )
 
 
+# append the docstrings
+PIMO.__doc__ = PIMO.__doc__.format(  # type: ignore[union-attr]
+    docstring_pimo_curves=pimo_numpy.pimo_curves.__doc__,
+    docstring_pimoresult=PIMOResult.__doc__,
+)
+
+
 class AUPIMO(PIMO):
     """Area Under the Per-Image Overlap (PIMO) curve.
 
-    TODO(jpcbertoldo): docstring of `AUPIMO`  # noqa: DAR101
+    This torchmetrics interface is a wrapper around the functional interface, which is a wrapper around the numpy code.
+    The tensors are converted to numpy arrays and then passed and validated in the numpy code.
+    The results are converted back to tensors and wrapped in an dataclass object.
+
+    Refer to `pimo_numpy.aupimo_scores()`, `PIMOResult` and `AUPIMOResult` (their docstrings below).
+
+    pimo_numpy.aupimo_scores.__doc__
+    =================================
+    {docstring_aupimo_scores}
+
+    PIMOResult.__doc__
+    ==================
+    {docstring_pimoresult}
+
+    AUPIMOResult.__doc__
+    ====================
+    {docstring_aupimoresult}
     """
 
     fpr_bounds: tuple[float, float]
@@ -636,7 +769,12 @@ class AUPIMO(PIMO):
     ) -> None:
         """Area Under the Per-Image Overlap (PIMO) curve.
 
-        TODO(jpcbertoldo): docstring of `AUPIMO.__init__()`  # noqa: DAR101
+        Args:
+            num_threshs: [passed to parent `PIMO`] number of thresholds used to compute the PIMO curve
+            binclf_algorithm: [passed to parent `PIMO`] algorithm to compute the binary classification curve
+            shared_fpr_metric: [passed to parent `PIMO`] metric to compute the shared FPR curve
+            fpr_bounds: lower and upper bounds of the FPR integration range
+            force: if True, force the computation of the AUPIMO scores even in bad conditions (e.g. few points)
         """
         super().__init__(
             num_threshs=num_threshs,
@@ -652,8 +790,18 @@ class AUPIMO(PIMO):
         self.force = force
 
     def compute(self, force: bool | None = None) -> tuple[PIMOResult, AUPIMOResult]:  # type: ignore[override]
-        """TODO(jpcbertoldo): docstring of `AUPIMO.compute()`."""  # noqa: D402
-        if self.is_empty:
+        """Compute the PIMO curves and their Area Under the curve (AUPIMO) scores.
+
+        Call the functional interface `aupimo_scores()`, which is a wrapper around the numpy code.
+
+        Args:
+            force: if given (not None), override the `force` attribute.
+
+        Returns:
+            tuple[PIMOResult, AUPIMOResult]: PIMO curves and AUPIMO scores dataclass objects.
+                See `PIMOResult` and `AUPIMOResult` for details.
+        """
+        if self._is_empty:
             msg = "No anomaly maps and masks have been added yet. Please call `update()` first."
             raise RuntimeError(msg)
         anomaly_maps = torch.concat(self.anomaly_maps, dim=0)
@@ -668,3 +816,11 @@ class AUPIMO(PIMO):
             fpr_bounds=self.fpr_bounds,
             force=force,
         )
+
+
+# append the docstrings
+AUPIMO.__doc__ = AUPIMO.__doc__.format(  # type: ignore[union-attr]
+    docstring_aupimo_scores=pimo_numpy.aupimo_scores.__doc__,
+    docstring_pimoresult=PIMOResult.__doc__,
+    docstring_aupimoresult=AUPIMOResult.__doc__,
+)

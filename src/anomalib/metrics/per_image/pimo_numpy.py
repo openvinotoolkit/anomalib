@@ -2,8 +2,8 @@
 
 # PIMO
 
-PIMO is a measure of average True Positive Rate (TPR), on each image, across multiple anomaly score thresholds.
-The anomaly score thresholds are indexed by an False Positive Rate (FPR) measure on the normal images.
+PIMO is a curve of True Positive Rate (TPR) values on each image across multiple anomaly score thresholds.
+The anomaly score thresholds are indexed by a (shared) valued of False Positive Rate (FPR) measure on the normal images.
 
 Each *anomalous* image has its own curve such that the X-axis is shared by all of them.
 
@@ -22,7 +22,9 @@ So far there is only one shared FPR metric implemented but others will be added 
 
 `AUPIMO` is the area under each `PIMO` curve with bounded integration range in terms of shared FPR.
 
-TODO(jpcbertoldo): add ref to paper
+TODO(jpcbertoldo): add ref to paper to all functions
+TODO(jpcbertoldo): add link to the tutorial notebooks
+TODO(jpcbertoldo): add formalities (license header, author)
 """
 
 import logging
@@ -96,14 +98,41 @@ def _joint_validate_threshs_shared_fpr(threshs: ndarray, shared_fpr: ndarray) ->
 # =========================================== PIMO ===========================================
 
 
-# TODO(jpcbertoldo): missing docstring for `pimo`  # noqa: TD003
-def pimo_curves(  # noqa: D103
+def pimo_curves(
     anomaly_maps: ndarray,
     masks: ndarray,
     num_threshs: int,
     binclf_algorithm: str = BinclfAlgorithm.NUMBA,
     shared_fpr_metric: str = SharedFPRMetric.MEAN_PERIMAGE_FPR,
 ) -> tuple[ndarray, ndarray, ndarray, ndarray]:
+    """Compute the Per-IMage Overlap (PIMO, pronounced pee-mo) curves.
+
+    PIMO is a curve of True Positive Rate (TPR) values on each image across multiple anomaly score thresholds.
+    The anomaly score thresholds are indexed by a (cross-image shared) value of False Positive Rate (FPR) measure on
+    the normal images.
+
+    See the module's docstring for more details.
+
+    Args' notation:
+        N: number of images
+        H: image height
+        W: image width
+        K: number of thresholds
+
+    Args:
+        anomaly_maps: floating point anomaly score maps of shape (N, H, W)
+        masks: binary (bool or int) ground truth masks of shape (N, H, W)
+        num_threshs: number of thresholds to compute (K)
+        binclf_algorithm: algorithm to compute the binary classifier curve (see `binclf_curve_numpy.Algorithm`)
+        shared_fpr_metric: metric to compute the shared FPR axis
+
+    Returns:
+        tuple[ndarray, ndarray, ndarray, ndarray]:
+            [0] thresholds of shape (K,) in ascending order
+            [1] shared FPR values of shape (K,) in descending order (indices correspond to the thresholds)
+            [2] per-image TPR curves of shape (N, K), axis 1 in descending order (indices correspond to the thresholds)
+            [3] image classes of shape (N,) with values 0 (normal) or 1 (anomalous)
+    """
     BinclfAlgorithm.validate(binclf_algorithm)
     SharedFPRMetric.validate(shared_fpr_metric)
     _validate.num_threshs(num_threshs)
@@ -162,8 +191,7 @@ def pimo_curves(  # noqa: D103
 # =========================================== AUPIMO ===========================================
 
 
-# TODO(jpcbertoldo): missing docstring for `aupimo`  # noqa: TD003
-def aupimo_scores(  # noqa: D103
+def aupimo_scores(
     anomaly_maps: ndarray,
     masks: ndarray,
     num_threshs: int = 300_000,
@@ -172,6 +200,36 @@ def aupimo_scores(  # noqa: D103
     fpr_bounds: tuple[float, float] = (1e-5, 1e-4),
     force: bool = False,
 ) -> tuple[ndarray, ndarray, ndarray, ndarray, ndarray]:
+    """Compute the PIMO curves and their Area Under the Curve (i.e. AUPIMO) scores.
+
+    Scores are computed from the integration of the PIMO curves within the given FPR bounds, then normalized to [0, 1].
+    It can be thought of as the average TPR of the PIMO curves within the given FPR bounds.
+
+    See `pimo_curves()` and the module's docstring for more details.
+
+    Args' notation:
+        N: number of images
+        H: image height
+        W: image width
+        K: number of thresholds
+
+    Args:
+        anomaly_maps: floating point anomaly score maps of shape (N, H, W)
+        masks: binary (bool or int) ground truth masks of shape (N, H, W)
+        num_threshs: number of thresholds to compute (K)
+        binclf_algorithm: algorithm to compute the binary classifier curve (see `binclf_curve_numpy.Algorithm`)
+        shared_fpr_metric: metric to compute the shared FPR axis
+        fpr_bounds: lower and upper bounds of the FPR integration range
+        force: whether to force the computation despite bad conditions
+
+    Returns:
+        tuple[ndarray, ndarray, ndarray, ndarray, ndarray]:
+            [0] thresholds of shape (K,) in ascending order
+            [1] shared FPR values of shape (K,) in descending order (indices correspond to the thresholds)
+            [2] per-image TPR curves of shape (N, K), axis 1 in descending order (indices correspond to the thresholds)
+            [3] image classes of shape (N,) with values 0 (normal) or 1 (anomalous)
+            [4] AUPIMO scores of shape (N,) in [0, 1]
+    """
     _validate.rate_range(fpr_bounds)
 
     # other validations are done in the `pimo` function
