@@ -20,7 +20,6 @@ from .collection import AnomalibMetricCollection
 from .min_max import MinMax
 from .pro import PRO
 from .threshold import F1AdaptiveThreshold, ManualThreshold
-from .optimal_f1 import OptimalF1
 
 __all__ = [
     "AUROC",
@@ -30,7 +29,6 @@ __all__ = [
     "F1AdaptiveThreshold",
     "ManualThreshold",
     "MinMax",
-    "OptimalF1",
     "PRO",
 ]
 
