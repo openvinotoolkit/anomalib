@@ -1,6 +1,8 @@
 """Utils for validating arguments and results.
 
 `torch` is imported in the functions that use it, so this module can be used in numpy-standalone mode.
+
+TODO(jpcbertoldo): add formalities (license header, author)
 """
 
 from __future__ import annotations

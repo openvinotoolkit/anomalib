@@ -3,6 +3,8 @@
 A binary classification (binclf) matrix (TP, FP, FN, TN) is evaluated at multiple thresholds.
 
 The thresholds are shared by all instances/images, but their binclf are computed independently for each instance/image.
+
+TODO(jpcbertoldo): add formalities (license header, author)
 """
 
 import itertools

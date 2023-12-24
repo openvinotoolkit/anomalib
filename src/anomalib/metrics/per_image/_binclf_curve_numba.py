@@ -1,6 +1,8 @@
 """Binary classification matrix curve (NUMBA implementation of low level functions).
 
 See docstring of `binclf_curve` or `binclf_curve_numpy` for more details.
+
+TODO(jpcbertoldo): add formalities (license header, author)
 """
 
 import numba

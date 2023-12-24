@@ -1,4 +1,7 @@
-"""Per-Image Metrics."""
+"""Per-Image Metrics.
+
+TODO(jpcbertoldo): add formalities (license header, author)
+"""
 
 from .binclf_curve import per_image_binclf_curve, per_image_fpr, per_image_tpr
 from .binclf_curve_numpy import Algorithm as BinClfAlgorithm
