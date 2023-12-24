@@ -1,4 +1,4 @@
-"""WinCLIP: Zero-/Few-Shot Anomaly Classification and Segmentation
+"""WinCLIP: Zero-/Few-Shot Anomaly Classification and Segmentation.
 
 Paper https://arxiv.org/abs/2303.14814
 """
@@ -11,7 +11,7 @@ from __future__ import annotations
 import logging
 
 import torch
-from pytorch_lightning.utilities.types import STEP_OUTPUT
+from pytorch_lightning.utilities.types import STEP_OUTPUT  # noqa: TCH002
 from torch import Tensor
 
 from anomalib.models.components import AnomalyModule
@@ -23,8 +23,7 @@ __all__ = ["WinClip"]
 
 
 class WinClip(AnomalyModule):
-    """
-    WinCLIP Lightning model.
+    """WinCLIP Lightning model.
 
     Args:
         class_name (str): The name of the object class used in the prompt ensemble.
@@ -32,19 +31,20 @@ class WinClip(AnomalyModule):
         k_shot (int): The number of reference images for few-shot inference.
             Defaults to ``0``.
     """
+
     def __init__(
         self,
         class_name: str | None = None,
-        k_shot: int=0,
+        k_shot: int = 0,
     ) -> None:
         super().__init__()
         self.model = WinClipModel(k_shot)
         self.class_name = class_name
         self.k_shot = k_shot
 
-    def setup(self, stage) -> None:
+    def setup(self, stage: str) -> None:
         """Setup WinCLIP.
-        
+
         - Set the class name used in the prompt ensemble.
         - Prepare the mask locations for the sliding-window approach.
         - Collect text embeddings for zero-shot inference.
@@ -61,9 +61,9 @@ class WinClip(AnomalyModule):
             ref_images = self.collect_reference_images()
             self.model.collect_visual_embeddings(ref_images, device=self.device)
 
-    def _set_class_name(self):
+    def _set_class_name(self) -> None:
         """Set the class name used in the prompt ensemble.
-        
+
         - When a class name is provided by the user, it is used.
         - When the user did not provide a class name, the category name from the datamodule is used, if available.
         - When the user did not provide a class name and the datamodule does not have a category name, the default
@@ -79,11 +79,10 @@ class WinClip(AnomalyModule):
             logger.info("No class name provided and no category name found in datamodule using default: object")
             self.class_name = "object"
 
-    def collect_reference_images(self):
-        """
-        Collect reference images for few-shot inference.
+    def collect_reference_images(self) -> torch.Tensor:
+        """Collect reference images for few-shot inference.
 
-        The reference images are collected by iterating the training dataset until the required number of images are 
+        The reference images are collected by iterating the training dataset until the required number of images are
         collected.
 
         Returns:
@@ -103,11 +102,11 @@ class WinClip(AnomalyModule):
         return
 
     def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> None:
-        """Training Step of WinCLIP"""
-        return
+        """Training Step of WinCLIP."""
+        del batch, args, kwargs
 
     def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
-        """Validation Step of WinCLIP"""
+        """Validation Step of WinCLIP."""
         del args, kwargs  # These variables are not used.
         batch["pred_scores"], batch["anomaly_maps"] = self.model(batch["image"])
         return batch

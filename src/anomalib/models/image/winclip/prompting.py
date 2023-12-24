@@ -10,14 +10,14 @@ NORMAL_STATES = [
     "unblemished {}",
     "{} without flaw",
     "{} without defect",
-    "{} without damage"
+    "{} without damage",
 ]
 
 ANOMALOUS_STATES = [
     "damaged {}",
     "{} with flaw",
     "{} with defect",
-    "{} with damage"
+    "{} with damage",
 ]
 
 TEMPLATES = [
@@ -41,18 +41,22 @@ TEMPLATES = [
     "a photo of the {} for visual inspection.",
     "a photo of a {} for visual inspection.",
     "a photo of the {} for anomaly detection.",
-    "a photo of a {} for anomaly detection."
+    "a photo of a {} for anomaly detection.",
 ]
 
-def create_prompt_ensemble(object_name: str):
+
+def create_prompt_ensemble(class_name: str) -> tuple[list[str], list[str]]:
     """Create prompt ensemble for WinCLIP.
-    
+
     Args:
         class_name (str): Name of the object.
+
+    Returns:
+        tuple[list[str], list[str]]: Tuple containing the normal and anomalous prompts.
     """
-    normal_states = [state.format(object_name) for state in NORMAL_STATES]
+    normal_states = [state.format(class_name) for state in NORMAL_STATES]
     normal_ensemble = [template.format(state) for state in normal_states for template in TEMPLATES]
 
-    anomalous_states = [state.format(object_name) for state in ANOMALOUS_STATES]
+    anomalous_states = [state.format(class_name) for state in ANOMALOUS_STATES]
     anomalous_ensemble = [template.format(state) for state in anomalous_states for template in TEMPLATES]
     return normal_ensemble, anomalous_ensemble

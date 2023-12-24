@@ -3,11 +3,13 @@
 # Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from collections.abc import Callable
+
 import open_clip
 import torch
-import torch.nn.functional as F
 from open_clip.tokenizer import tokenize
 from torch import nn
+from torch.nn.modules.linear import Identity
 
 from .prompting import create_prompt_ensemble
 from .utils import harmonic_aggregation, make_masks, simmilarity_score, visual_association_score
@@ -17,8 +19,7 @@ TEMPERATURE = 0.07  # temperature hyperparameter from the clip paper
 
 
 class WinClipModel(nn.Module):
-    """
-    PyTorch module that implements the WinClip model for image anomaly detection.
+    """PyTorch module that implements the WinClip model for image anomaly detection.
 
     Args:
         k_shot (int, optional): The number of reference images used for few-shot anomaly detection.
@@ -36,7 +37,8 @@ class WinClipModel(nn.Module):
         visual_embeddings (list[torch.Tensor] | None): The multiscale embeddings for the reference images.
         patch_embeddings (torch.Tensor | None): The patch embeddings for the reference images.
     """
-    def __init__(self, k_shot: int = 0, scales=(2, 3)):
+
+    def __init__(self, k_shot: int = 0, scales: tuple = (2, 3)) -> None:
         super().__init__()
         self.backbone = BACKBONE
         self.temperature = TEMPERATURE
@@ -45,7 +47,6 @@ class WinClipModel(nn.Module):
 
         # initialize CLIP model
         self.clip = open_clip.create_model(self.backbone, pretrained="laion400m_e31")
-        # self.clip.visual.final_ln_after_pool = True
         self.clip.visual.output_tokens = True
         self.grid_size = self.clip.visual.grid_size
 
@@ -55,8 +56,7 @@ class WinClipModel(nn.Module):
         self.patch_embeddings: torch.Tensor | None = None
 
     def encode_image(self, batch: torch.Tensor) -> tuple[torch.Tensor, list[torch.Tensor], torch.Tensor]:
-        """
-        Encode the batch of images to obtain image embeddings, window embeddings, and patch embeddings.
+        """Encode the batch of images to obtain image embeddings, window embeddings, and patch embeddings.
 
         The image embeddings and patch embeddings are obtained by passing the batch of images through the model. The
         window embeddings are obtained by masking the feature map and passing it through the transformer. A forward hook
@@ -69,11 +69,15 @@ class WinClipModel(nn.Module):
             Tuple[torch.Tensor, List[torch.Tensor], torch.Tensor]: A tuple containing the image embeddings,
             window embeddings, and patch embeddings respectively.
         """
+        assert isinstance(self.masks, list), "Masks have not been prepared."
         # register hook to retrieve intermediate feature map
         outputs = {}
-        def get_feature_map(name):
-            def hook(_model, input, _output):
-                outputs[name] = input[0].detach()
+
+        def get_feature_map(name: str) -> Callable:
+            def hook(_model: Identity, inputs: tuple[torch.Tensor,], _outputs: torch.Tensor) -> None:
+                del _model, _outputs
+                outputs[name] = inputs[0].detach()
+
             return hook
 
         # register hook to get the intermediate tokens of the transformer
@@ -93,8 +97,7 @@ class WinClipModel(nn.Module):
         )
 
     def _get_window_embeddings(self, feature_map: torch.Tensor, masks: torch.Tensor) -> torch.Tensor:
-        """
-        Computes the embeddings for each window in the feature map using the given masks.
+        """Computes the embeddings for each window in the feature map using the given masks.
 
         Args:
             feature_map (torch.Tensor): The input feature map of shape (n_batches, n_patches, dimensionality).
@@ -122,19 +125,19 @@ class WinClipModel(nn.Module):
         masked = masked.permute(1, 0, 2)  # LND -> NLD
 
         masked = self.clip.visual.ln_post(masked)
-        pooled, _ = self.clip.visual._global_pool(masked)
+        pooled, _ = self.clip.visual._global_pool(masked)  # noqa: SLF001
 
         if self.clip.visual.proj is not None:
             pooled = pooled @ self.clip.visual.proj
 
         return pooled.reshape((n_masks, batch_size, -1)).permute(1, 0, 2)
 
-    def forward(self, batch: torch.Tensor) -> None:
+    def forward(self, batch: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         """Forward-pass through the model to obtain image and pixel scores.
-        
+
         Args:
             batch (torch.Tensor): Batch of input images of shape (batch_size, C, H, W).
-        
+
         Returns:
             Tuple[torch.Tensor, torch.Tensor]: Tuple containing the image scores and pixel scores.
         """
@@ -151,11 +154,13 @@ class WinClipModel(nn.Module):
             image_scores = (image_scores + few_shot_scores.amax(dim=(-2, -1))) / 2
 
         # reshape to image dimensions
-        pixel_scores = F.interpolate(multiscale_scores.unsqueeze(1), size=batch.shape[-2:], mode="bilinear")
+        pixel_scores = nn.functional.interpolate(multiscale_scores.unsqueeze(1), size=batch.shape[-2:], mode="bilinear")
         return image_scores, pixel_scores.squeeze()
 
     def _compute_zero_shot_scores(
-        self, image_scores: torch.Tensor, window_embeddings: list[torch.Tensor]
+        self,
+        image_scores: torch.Tensor,
+        window_embeddings: list[torch.Tensor],
     ) -> torch.Tensor:
         """Compute the multiscale anomaly score maps based on the text embeddings.
 
@@ -165,100 +170,106 @@ class WinClipModel(nn.Module):
 
         Args:
             image_scores (torch.Tensor): Tensor of shape (batch_size) representing the full image scores.
-            window_embeddings (list[torch.Tensor]): List of tensors of shape (batch_size, n_windows, n_features) 
+            window_embeddings (list[torch.Tensor]): List of tensors of shape (batch_size, n_windows, n_features)
                 representing the embeddings for each sliding window location.
 
         Returns:
             torch.Tensor: Tensor of shape (batch_size, H, W) representing the 0-shot scores for each patch location.
         """
+        assert isinstance(self.masks, torch.Tensor), "Masks have not been prepared."
         # image scores are added to represent the full image scale
         multiscale_scores = [image_scores.view(-1, 1, 1).repeat(1, self.grid_size[0], self.grid_size[1])]
         # add aggregated scores for each scale
-        for window_embedding, mask in zip(window_embeddings, self.masks):
+        for window_embedding, mask in zip(window_embeddings, self.masks, strict=True):
             scores = simmilarity_score(window_embedding, self.text_embeddings, self.temperature)[..., -1]
             multiscale_scores.append(harmonic_aggregation(scores, self.grid_size, mask))
         # aggregate scores across scales
         return (len(self.scales) + 1) / (1 / torch.stack(multiscale_scores)).sum(dim=0)
 
-    def _compute_few_shot_scores(self, patch_embeddings: torch.Tensor, window_embeddings: list[torch.Tensor]) -> torch.Tensor:
-        """
-        Compute the multiscale anomaly score maps based on the reference image embeddings.
+    def _compute_few_shot_scores(
+        self,
+        patch_embeddings: torch.Tensor,
+        window_embeddings: list[torch.Tensor],
+    ) -> torch.Tensor:
+        """Compute the multiscale anomaly score maps based on the reference image embeddings.
 
-        Visual association scores are computed between the extracted embeddings and the reference image embeddings for 
-        each scale. The window-level scores are additionally aggregated into a single score map for each scale using 
+        Visual association scores are computed between the extracted embeddings and the reference image embeddings for
+        each scale. The window-level scores are additionally aggregated into a single score map for each scale using
         harmonic averaging. The final score maps are obtained by averaging across scales.
 
         Args:
             patch_embeddings (torch.Tensor): Full-scale patch embeddings of shape (batch_size, n_patches, n_features).
-            window_embeddings (list[torch.Tensor]): List of tensors of shape (batch_size, n_windows, n_features) 
+            window_embeddings (list[torch.Tensor]): List of tensors of shape (batch_size, n_windows, n_features)
                 representing the embeddings for each sliding window location.
 
         Returns:
             torch.Tensor: Tensor of shape (batch_size, H, W) representing the few-shot scores for each patch location.
         """
+        assert isinstance(self.visual_embeddings, list), "Visual embeddings have not been prepared."
+        assert isinstance(self.masks, list), "Masks have not been prepared."
+
         multiscale_scores = [
-            visual_association_score(patch_embeddings, self.patch_embeddings).reshape((-1,) + self.grid_size),
+            visual_association_score(patch_embeddings, self.patch_embeddings).reshape((-1, *self.grid_size)),
         ]
         for window_embedding, reference_embedding, mask in zip(
             window_embeddings,
             self.visual_embeddings,
             self.masks,
+            strict=True,
         ):
             scores = visual_association_score(window_embedding, reference_embedding)
             multiscale_scores.append(harmonic_aggregation(scores, self.grid_size, mask))
 
         return torch.stack(multiscale_scores).mean(dim=0)
 
-    def collect_text_embeddings(self, class_name: str, device: torch.device | None = None):
-            """
-            Collect text embeddings for the object class using a compositional prompt ensemble.
+    def collect_text_embeddings(self, class_name: str, device: torch.device | None = None) -> None:
+        """Collect text embeddings for the object class using a compositional prompt ensemble.
 
-            First, an ensemble of normal and anomalous prompts is created based on the name of the object class. The 
-            prompt ensembles are then tokenized and encoded to obtain prompt embeddings. The prompt embeddings are 
-            averaged to obtain a single text embedding for the object class. These final text embeddings are stored in 
-            the model to be used during inference.
+        First, an ensemble of normal and anomalous prompts is created based on the name of the object class. The
+        prompt ensembles are then tokenized and encoded to obtain prompt embeddings. The prompt embeddings are
+        averaged to obtain a single text embedding for the object class. These final text embeddings are stored in
+        the model to be used during inference.
 
-            Args:
-                class_name (str): The name of the object class used in the prompt ensemble.
-                device (torch.device | None, optional): The device on which the embeddings should be stored. 
-                    Defaults to None.
-            """
-            # collect prompt ensemble
-            normal_prompts, anomalous_prompts = create_prompt_ensemble(class_name)
-            # tokenize prompts
-            normal_tokens = tokenize(normal_prompts)
-            anomalous_tokens = tokenize(anomalous_prompts)
-            # encode tokens to obtain prompt embeddings
-            with torch.no_grad():
-                normal_embeddings = self.clip.encode_text(normal_tokens)
-                anomalous_embeddings = self.clip.encode_text(anomalous_tokens)
-            # average prompt embeddings
-            normal_embeddings = torch.mean(normal_embeddings, dim=0, keepdim=True)
-            anomalous_embeddings = torch.mean(anomalous_embeddings, dim=0, keepdim=True)
-            # concatenate and store
-            text_embeddings = torch.cat((normal_embeddings, anomalous_embeddings))
-            self.text_embeddings = text_embeddings.to(device)
+        Args:
+            class_name (str): The name of the object class used in the prompt ensemble.
+            device (torch.device | None, optional): The device on which the embeddings should be stored.
+                Defaults to None.
+        """
+        # collect prompt ensemble
+        normal_prompts, anomalous_prompts = create_prompt_ensemble(class_name)
+        # tokenize prompts
+        normal_tokens = tokenize(normal_prompts)
+        anomalous_tokens = tokenize(anomalous_prompts)
+        # encode tokens to obtain prompt embeddings
+        with torch.no_grad():
+            normal_embeddings = self.clip.encode_text(normal_tokens)
+            anomalous_embeddings = self.clip.encode_text(anomalous_tokens)
+        # average prompt embeddings
+        normal_embeddings = torch.mean(normal_embeddings, dim=0, keepdim=True)
+        anomalous_embeddings = torch.mean(anomalous_embeddings, dim=0, keepdim=True)
+        # concatenate and store
+        text_embeddings = torch.cat((normal_embeddings, anomalous_embeddings))
+        self.text_embeddings = text_embeddings.to(device)
 
     def collect_visual_embeddings(self, images: torch.Tensor, device: torch.device | None = None) -> None:
-            """
-            Collect visual embeddings based on a set of normal reference images.
+        """Collect visual embeddings based on a set of normal reference images.
 
-            Args:
-                images (torch.Tensor): Tensor of shape (batch_size, C, H, W) containing the reference images.
-                device (torch.device | None, optional): The device on which the embeddings should be stored.
-                    Defaults to None.
-            """
-            with torch.no_grad():
-                _, window_embeddings, patch_embeddings = self.encode_image(images)
-            self.visual_embeddings = [window.to(device) for window in window_embeddings]
-            self.patch_embeddings = patch_embeddings.to(device)
+        Args:
+            images (torch.Tensor): Tensor of shape (batch_size, C, H, W) containing the reference images.
+            device (torch.device | None, optional): The device on which the embeddings should be stored.
+                Defaults to None.
+        """
+        with torch.no_grad():
+            _, window_embeddings, patch_embeddings = self.encode_image(images)
+        self.visual_embeddings = [window.to(device) for window in window_embeddings]
+        self.patch_embeddings = patch_embeddings.to(device)
 
     def prepare_masks(self, device: torch.device | None = None) -> None:
         """Prepare a set of masks that operate as multiscale sliding windows.
 
-        For each of the scales, a set of masks is created that select patches from the feature map. Each mask represents 
+        For each of the scales, a set of masks is created that select patches from the feature map. Each mask represents
         a sliding window location in the pixel domain. The masks are stored in the model to be used during inference.
-        
+
         Args:
             device (torch.device | None, optional): The device on which the masks should be stored.
                 Defaults to None.
