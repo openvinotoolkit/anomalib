@@ -174,7 +174,7 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
             ],
         )
 
-    if metafunc.function is test_pimoresult_conversions or metafunc.function is test_aupimoresult_conversions:
+    if metafunc.function is test_pimoresult_object or metafunc.function is test_aupimoresult_object:
         anomaly_maps = torch.from_numpy(anomaly_maps)
         masks = torch.from_numpy(masks)
         metafunc.parametrize(argnames=("anomaly_maps", "masks"), argvalues=[(anomaly_maps, masks)])
@@ -492,7 +492,7 @@ def test_aupimo_edge(
     )
 
 
-def test_pimoresult_conversions(
+def test_pimoresult_object(
     anomaly_maps: Tensor,
     masks: Tensor,
 ) -> None:
@@ -500,7 +500,6 @@ def test_pimoresult_conversions(
     from anomalib.metrics.per_image import pimo
     from anomalib.metrics.per_image.pimo import PIMOResult
 
-    # object -> dict -> object
     pimoresult = pimo.pimo_curves(
         anomaly_maps,
         masks,
@@ -508,10 +507,14 @@ def test_pimoresult_conversions(
         binclf_algorithm="numba",
         shared_fpr_metric="mean-per-image-fpr",
     )
-    # convert to dict
+
+    _ = pimoresult.num_threshs
+    _ = pimoresult.num_images
+    _ = pimoresult.image_classes
+
+    # object -> dict -> object
     dic = pimoresult.to_dict()
     assert isinstance(dic, dict)
-    # convert back to PIMOResult
     pimoresult_from_dict = PIMOResult.from_dict(dic)
     assert isinstance(pimoresult_from_dict, PIMOResult)
     # values should be the same
@@ -534,7 +537,7 @@ def test_pimoresult_conversions(
     assert torch.allclose(pimoresult_from_load.per_image_tprs, pimoresult.per_image_tprs, equal_nan=True)
 
 
-def test_aupimoresult_conversions(
+def test_aupimoresult_object(
     anomaly_maps: Tensor,
     masks: Tensor,
 ) -> None:
@@ -542,7 +545,6 @@ def test_aupimoresult_conversions(
     from anomalib.metrics.per_image import pimo
     from anomalib.metrics.per_image.pimo import AUPIMOResult
 
-    # object -> dict -> object
     _, aupimoresult = pimo.aupimo_scores(
         anomaly_maps,
         masks,
@@ -552,10 +554,16 @@ def test_aupimoresult_conversions(
         fpr_bounds=(1e-5, 1e-4),
         force=True,
     )
-    # convert to dict
+
+    # call properties
+    _ = aupimoresult.num_images
+    _ = aupimoresult.image_classes
+    _ = aupimoresult.fpr_bounds
+    _ = aupimoresult.thresh_bounds
+
+    # object -> dict -> object
     dic = aupimoresult.to_dict()
     assert isinstance(dic, dict)
-    # convert back to AUPIMOResult
     aupimoresult_from_dict = AUPIMOResult.from_dict(dic)
     assert isinstance(aupimoresult_from_dict, AUPIMOResult)
     # values should be the same
