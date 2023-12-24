@@ -22,14 +22,14 @@ from .binclf_curve_numpy import Algorithm, ThreshsChoice
 
 def _validate_threshs(threshs: Tensor) -> None:
     _validate.is_tensor(threshs, argname="threshs")
-    binclf_curve_numpy._validate_threshs(threshs.numpy())  # noqa: SLF001
+    _validate.threshs(threshs.numpy())
 
 
 def _validate_binclf_curves(binclf_curves: Tensor, valid_threshs: Tensor | None = None) -> None:
     _validate.is_tensor(binclf_curves, argname="binclf_curves")
     if valid_threshs is not None:
         _validate_threshs(valid_threshs)
-    binclf_curve_numpy._validate_binclf_curves(  # noqa: SLF001
+    _validate.binclf_curves(
         binclf_curves.detach().cpu().numpy(),
         valid_threshs=valid_threshs.numpy() if valid_threshs is not None else None,
     )
