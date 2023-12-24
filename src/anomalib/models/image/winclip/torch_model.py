@@ -176,7 +176,7 @@ class WinClipModel(nn.Module):
         Returns:
             torch.Tensor: Tensor of shape (batch_size, H, W) representing the 0-shot scores for each patch location.
         """
-        assert isinstance(self.masks, torch.Tensor), "Masks have not been prepared."
+        assert isinstance(self.masks, list), "Masks have not been prepared."
         # image scores are added to represent the full image scale
         multiscale_scores = [image_scores.view(-1, 1, 1).repeat(1, self.grid_size[0], self.grid_size[1])]
         # add aggregated scores for each scale
