@@ -243,7 +243,7 @@ def aupimo_scores(
     try:
         _validate.threshs(threshs)
         _validate.rate_curve(shared_fpr, nan_allowed=False, decreasing=True)
-        _validate.image_classes(image_classes)
+        _validate.images_classes(image_classes)
         _validate.per_image_rate_curves(per_image_tprs[image_classes == 1], nan_allowed=False, decreasing=True)
 
     except ValueError as ex:

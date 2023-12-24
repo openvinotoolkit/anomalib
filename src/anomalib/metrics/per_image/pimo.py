@@ -64,7 +64,7 @@ def _validate_shared_fpr(shared_fpr: Tensor, nan_allowed: bool = False, decreasi
 
 def _validate_image_classes(image_classes: Tensor) -> None:
     _validate.is_tensor(image_classes, argname="image_classes")
-    _validate.image_classes(image_classes.numpy())
+    _validate.images_classes(image_classes.numpy())
 
 
 def _validate_per_image_tprs(per_image_tprs: Tensor, image_classes: Tensor) -> None:
