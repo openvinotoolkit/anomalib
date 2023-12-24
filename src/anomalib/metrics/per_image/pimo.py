@@ -21,43 +21,53 @@ from torchmetrics import Metric
 
 from anomalib.data.utils.image import duplicate_filename
 
-from . import _validate, binclf_curve_numpy, pimo_numpy
+from . import _validate, pimo_numpy
 from .binclf_curve_numpy import Algorithm as BinclfAlgorithm
 from .pimo_numpy import SharedFPRMetric
 
 # =========================================== ARGS VALIDATION ===========================================
 
 
+def _images_classes_from_masks(masks: Tensor) -> Tensor:
+    masks = torch.concat(masks, dim=0)
+    device = masks.device
+    image_classes = pimo_numpy._images_classes_from_masks(masks.numpy())  # noqa: SLF001
+    return torch.from_numpy(image_classes, device=device)
+
+
+# =========================================== ARGS VALIDATION ===========================================
+
+
 def _validate_anomaly_maps(anomaly_maps: Tensor) -> None:
     _validate.is_tensor(anomaly_maps, argname="anomaly_maps")
-    binclf_curve_numpy._validate_anomaly_maps(anomaly_maps.numpy())  # noqa: SLF001
+    _validate.anomaly_maps(anomaly_maps.numpy())
 
 
 def _validate_masks(masks: Tensor) -> None:
     _validate.is_tensor(masks, argname="masks")
-    binclf_curve_numpy._validate_masks(masks.numpy())  # noqa: SLF001
+    _validate.masks(masks.numpy())
 
 
 def _validate_threshs(threshs: Tensor) -> None:
     _validate.is_tensor(threshs, argname="threshs")
-    binclf_curve_numpy._validate_threshs(threshs.numpy())  # noqa: SLF001
+    _validate.threshs(threshs.numpy())
 
 
 def _validate_shared_fpr(shared_fpr: Tensor, nan_allowed: bool = False, decreasing: bool = True) -> None:
     _validate.is_tensor(shared_fpr, argname="shared_fpr")
-    pimo_numpy._validate_rate_curve(shared_fpr.numpy(), nan_allowed=nan_allowed, decreasing=decreasing)  # noqa: SLF001
+    _validate.rate_curve(shared_fpr.numpy(), nan_allowed=nan_allowed, decreasing=decreasing)
 
 
 def _validate_image_classes(image_classes: Tensor) -> None:
     _validate.is_tensor(image_classes, argname="image_classes")
-    pimo_numpy._validate_image_classes(image_classes.numpy())  # noqa: SLF001
+    _validate.image_classes(image_classes.numpy())
 
 
 def _validate_per_image_tprs(per_image_tprs: Tensor, image_classes: Tensor) -> None:
     _validate.is_tensor(per_image_tprs, argname="per_image_tprs")
     _validate_image_classes(image_classes)
 
-    pimo_numpy._validate_per_image_rate_curves(  # noqa: SLF001
+    _validate.per_image_rate_curves(
         per_image_tprs[image_classes == 1].numpy(),
         nan_allowed=False,
         decreasing=True,
@@ -71,7 +81,7 @@ def _validate_per_image_tprs(per_image_tprs: Tensor, image_classes: Tensor) -> N
 
 def _validate_aupimos(aupimos: Tensor) -> None:
     _validate.is_tensor(aupimos, argname="aupimos")
-    pimo_numpy._validate_rates(aupimos.numpy(), nan_allowed=True)  # noqa: SLF001
+    _validate.rates(aupimos.numpy(), nan_allowed=True)
 
 
 # =========================================== RESULT OBJECT ===========================================
@@ -113,7 +123,7 @@ class PIMOResult:  # noqa: D101
             _validate_per_image_tprs(self.per_image_tprs, self.image_classes)
 
         except (TypeError, ValueError) as ex:
-            msg = f"Invalid inputs for {self.__class__.__name__} object."
+            msg = f"Invalid inputs for {self.__class__.__name__} object. Cause: {ex}."
             raise ValueError(msg) from ex
 
         if self.threshs.shape != self.shared_fpr.shape:
@@ -199,7 +209,7 @@ class PIMOResult:  # noqa: D101
         try:
             return cls.from_dict(payload)
         except (TypeError, ValueError) as ex:
-            msg = f"Invalid payload in file {file_path}."
+            msg = f"Invalid payload in file {file_path}. Cause: {ex}."
             raise ValueError(msg) from ex
 
 
@@ -253,25 +263,11 @@ class AUPIMOResult:  # noqa: D101
             _validate.rate_range((self.fpr_lower_bound, self.fpr_upper_bound))
             _validate.num_threshs(self.num_threshs)
             _validate_aupimos(self.aupimos)
+            _validate.thresh_bounds((self.thresh_lower_bound, self.thresh_upper_bound))
 
         except (TypeError, ValueError) as ex:
-            msg = f"Invalid inputs for {self.__class__.__name__} object."
+            msg = f"Invalid inputs for {self.__class__.__name__} object. Cause: {ex}."
             raise ValueError(msg) from ex
-
-        if not isinstance(self.thresh_lower_bound, float):
-            msg = f"Invalid inputs for {self.__class__.__name__} object. `thresh_lower_bound` must be a float."
-            raise TypeError(msg)
-
-        if not isinstance(self.thresh_upper_bound, float):
-            msg = f"Invalid inputs for {self.__class__.__name__} object. `thresh_upper_bound` must be a float."
-            raise TypeError(msg)
-
-        if self.thresh_lower_bound >= self.thresh_upper_bound:
-            msg = (
-                f"Invalid {self.__class__.__name__} object. "
-                f"thresh_lower_bound={self.thresh_lower_bound} >= thresh_upper_bound={self.thresh_upper_bound}."
-            )
-            raise ValueError(msg)
 
     def to_dict(self) -> dict[str, Tensor | str | float | int]:
         """Return a dictionary with the result object's attributes."""
@@ -340,7 +336,7 @@ class AUPIMOResult:  # noqa: D101
         try:
             return cls.from_dict(payload)
         except (TypeError, ValueError) as ex:
-            msg = f"Invalid payload in file {file_path}."
+            msg = f"Invalid payload in file {file_path}. Cause: {ex}."
             raise ValueError(msg) from ex
 
 
@@ -485,7 +481,7 @@ class PIMO(Metric):  # noqa: D101
     @property
     def image_classes(self) -> Tensor:
         """Image classes (0: normal, 1: anomalous)."""
-        return pimo_numpy._images_classes_from_masks(torch.concat(self.masks, dim=0).cpu().numpy())  # noqa: SLF001
+        return _images_classes_from_masks(self.masks)
 
     def __init__(
         self,

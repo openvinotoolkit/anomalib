@@ -58,40 +58,16 @@ class SharedFPRMetric:
             raise ValueError(msg)
 
 
-# =========================================== ARGS VALIDATION ===========================================
+# =========================================== AUX ===========================================
 
 
 def _images_classes_from_masks(masks: ndarray) -> ndarray:
     """Deduce the image classes from the masks."""
-    binclf_curve_numpy._validate_masks(masks)  # noqa: SLF001
+    _validate.masks(masks)
     return (masks == 1).any(axis=(1, 2)).astype(np.int32)
 
 
-def _validate_image_classes(image_classes: ndarray) -> None:
-    if not isinstance(image_classes, ndarray):
-        msg = f"Expected image classes to be an ndarray, but got {type(image_classes)}."
-        raise TypeError(msg)
-
-    if image_classes.ndim != 1:
-        msg = f"Expected image classes to be 1D, but got {image_classes.ndim}D."
-        raise ValueError(msg)
-
-    if image_classes.dtype.kind == "b":
-        pass
-    elif image_classes.dtype.kind in ("i", "u"):
-        unique_vals = np.unique(image_classes)
-        if np.any((unique_vals != 0) & (unique_vals != 1)):
-            msg = (
-                "Expected image classes to be a *binary* ndarray with ground truth labels, "
-                f"but got ndarray with unique values {sorted(unique_vals)}"
-            )
-            raise ValueError(msg)
-    else:
-        msg = (
-            "Expected image classes to be an integer or boolean ndarray with ground truth labels, "
-            f"but got ndarray with dtype {image_classes.dtype}"
-        )
-        raise TypeError(msg)
+# =========================================== ARGS VALIDATION ===========================================
 
 
 def _validate_at_least_one_anomalous_image(masks: ndarray) -> None:
@@ -108,102 +84,11 @@ def _validate_at_least_one_normal_image(masks: ndarray) -> None:
         raise ValueError(msg)
 
 
-def _validate_rates(rates: ndarray, nan_allowed: bool) -> None:
-    if not isinstance(rates, ndarray):
-        msg = f"Expected rates to be an ndarray, but got {type(rates)}."
-        raise TypeError(msg)
-
-    if rates.ndim != 1:
-        msg = f"Expected rates to be 1D, but got {rates.ndim}D."
-        raise ValueError(msg)
-
-    if rates.dtype.kind != "f":
-        msg = f"Expected rates to have dtype of float type, but got {rates.dtype}."
-        raise ValueError(msg)
-
-    isnan_mask = np.isnan(rates)
-    if nan_allowed:
-        # if they are all nan, then there is nothing to validate
-        if isnan_mask.all():
-            return
-        valid_values = rates[~isnan_mask]
-    elif isnan_mask.any():
-        msg = "Expected rates to not contain NaN values, but got NaN values."
-        raise ValueError(msg)
-    else:
-        valid_values = rates
-
-    if (valid_values < 0).any():
-        msg = "Expected rates to have values in the interval [0, 1], but got values < 0."
-        raise ValueError(msg)
-
-    if (valid_values > 1).any():
-        msg = "Expected rates to have values in the interval [0, 1], but got values > 1."
-        raise ValueError(msg)
-
-
-def _validate_rate_curve(rate_curve: ndarray, nan_allowed: bool, decreasing: bool) -> None:
-    _validate_rates(rate_curve, nan_allowed=nan_allowed)
-
-    diffs = np.diff(rate_curve)
-    diffs_valid = diffs[~np.isnan(diffs)] if nan_allowed else diffs
-
-    if decreasing and (diffs_valid > 0).any():
-        msg = "Expected rate curve to be monotonically decreasing, but got non-monotonically decreasing values."
-        raise ValueError(msg)
-
-    if not decreasing and (diffs_valid < 0).any():
-        msg = "Expected rate curve to be monotonically increasing, but got non-monotonically increasing values."
-        raise ValueError(msg)
-
-
-def _validate_per_image_rate_curves(rate_curves: ndarray, nan_allowed: bool, decreasing: bool) -> None:
-    if not isinstance(rate_curves, ndarray):
-        msg = f"Expected per-image rate curves to be an ndarray, but got {type(rate_curves)}."
-        raise TypeError(msg)
-
-    if rate_curves.ndim != 2:
-        msg = f"Expected per-image rate curves to be 2D, but got {rate_curves.ndim}D."
-        raise ValueError(msg)
-
-    if rate_curves.dtype.kind != "f":
-        msg = f"Expected per-image rate curves to have dtype of float type, but got {rate_curves.dtype}."
-        raise ValueError(msg)
-
-    isnan_mask = np.isnan(rate_curves)
-    if nan_allowed:
-        # if they are all nan, then there is nothing to validate
-        if isnan_mask.all():
-            return
-        valid_values = rate_curves[~isnan_mask]
-    elif isnan_mask.any():
-        msg = "Expected per-image rate curves to not contain NaN values, but got NaN values."
-        raise ValueError(msg)
-    else:
-        valid_values = rate_curves
-
-    if (valid_values < 0).any():
-        msg = "Expected per-image rate curves to have values in the interval [0, 1], but got values < 0."
-        raise ValueError(msg)
-
-    if (valid_values > 1).any():
-        msg = "Expected per-image rate curves to have values in the interval [0, 1], but got values > 1."
-        raise ValueError(msg)
-
-    diffs = np.diff(rate_curves, axis=1)
-    diffs_valid = diffs[~np.isnan(diffs)] if nan_allowed else diffs
-
-    if decreasing and (diffs_valid > 0).any():
+def _joint_validate_threshs_shared_fpr(threshs: ndarray, shared_fpr: ndarray) -> None:
+    if threshs.shape[0] != shared_fpr.shape[0]:
         msg = (
-            "Expected per-image rate curves to be monotonically decreasing, "
-            "but got non-monotonically decreasing values."
-        )
-        raise ValueError(msg)
-
-    if not decreasing and (diffs_valid < 0).any():
-        msg = (
-            "Expected per-image rate curves to be monotonically increasing, "
-            "but got non-monotonically increasing values."
+            "Expected `threshs` and `shared_fpr` to have the same number of elements, "
+            f"but got {threshs.shape[0]} != {shared_fpr.shape[0]}"
         )
         raise ValueError(msg)
 
@@ -222,8 +107,8 @@ def pimo_curves(  # noqa: D103
     BinclfAlgorithm.validate(binclf_algorithm)
     SharedFPRMetric.validate(shared_fpr_metric)
     _validate.num_threshs(num_threshs)
-    binclf_curve_numpy._validate_anomaly_maps(anomaly_maps)  # noqa: SLF001
-    binclf_curve_numpy._validate_masks(masks)  # noqa: SLF001
+    _validate.anomaly_maps(anomaly_maps)
+    _validate.masks(masks)
     _validate.same_shape(anomaly_maps, masks)
     _validate_at_least_one_anomalous_image(masks)
     _validate_at_least_one_normal_image(masks)
@@ -255,9 +140,9 @@ def pimo_curves(  # noqa: D103
         # shape -> (N, K)
         per_image_fprs_normals = binclf_curve_numpy.per_image_fpr(binclf_curves[image_classes == 0])
         try:
-            _validate_per_image_rate_curves(per_image_fprs_normals, nan_allowed=False, decreasing=True)
+            _validate.per_image_rate_curves(per_image_fprs_normals, nan_allowed=False, decreasing=True)
         except ValueError as ex:
-            msg = "Cannot compute PIMO because the per-image FPR curves from normal images are invalid."
+            msg = f"Cannot compute PIMO because the per-image FPR curves from normal images are invalid. Cause: {ex}"
             raise RuntimeError(msg) from ex
 
         # shape -> (K,)
@@ -272,15 +157,6 @@ def pimo_curves(  # noqa: D103
     per_image_tprs = binclf_curve_numpy.per_image_tpr(binclf_curves)
 
     return threshs, shared_fpr, per_image_tprs, image_classes
-
-
-def _joint_validate_threshs_shared_fpr(threshs: ndarray, shared_fpr: ndarray) -> None:
-    if threshs.shape[0] != shared_fpr.shape[0]:
-        msg = (
-            "Expected `threshs` and `shared_fpr` to have the same number of elements, "
-            f"but got {threshs.shape[0]} != {shared_fpr.shape[0]}"
-        )
-        raise ValueError(msg)
 
 
 # =========================================== AUPIMO ===========================================
@@ -307,13 +183,13 @@ def aupimo_scores(  # noqa: D103
         shared_fpr_metric=shared_fpr_metric,
     )
     try:
-        binclf_curve_numpy._validate_threshs(threshs)  # noqa: SLF001
-        _validate_rate_curve(shared_fpr, nan_allowed=False, decreasing=True)
-        _validate_image_classes(image_classes)
-        _validate_per_image_rate_curves(per_image_tprs[image_classes == 1], nan_allowed=False, decreasing=True)
+        _validate.threshs(threshs)
+        _validate.rate_curve(shared_fpr, nan_allowed=False, decreasing=True)
+        _validate.image_classes(image_classes)
+        _validate.per_image_rate_curves(per_image_tprs[image_classes == 1], nan_allowed=False, decreasing=True)
 
     except ValueError as ex:
-        msg = "Cannot compute AUPIMO because the PIMO curves are invalid."
+        msg = f"Cannot compute AUPIMO because the PIMO curves are invalid. Cause: {ex}"
         raise RuntimeError(msg) from ex
 
     fpr_lower_bound, fpr_upper_bound = fpr_bounds
@@ -444,8 +320,8 @@ def thresh_at_shared_fpr_level(threshs: ndarray, shared_fpr: ndarray, fpr_level:
             [1] threshold
             [2] the actual shared FPR value at the returned threshold
     """
-    binclf_curve_numpy._validate_threshs(threshs)  # noqa: SLF001
-    _validate_rate_curve(shared_fpr, nan_allowed=False, decreasing=True)
+    _validate.threshs(threshs)
+    _validate.rate_curve(shared_fpr, nan_allowed=False, decreasing=True)
     _joint_validate_threshs_shared_fpr(threshs, shared_fpr)
     _validate.rate(fpr_level, zero_ok=True, one_ok=True)
 
