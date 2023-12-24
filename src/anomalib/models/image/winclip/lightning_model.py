@@ -34,7 +34,7 @@ class WinClip(AnomalyModule):
     """
     def __init__(
         self,
-        class_name: str="object",
+        class_name: str | None = None,
         k_shot: int=0,
     ) -> None:
         super().__init__()
