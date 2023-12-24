@@ -69,7 +69,7 @@ class WinClipModel(nn.Module):
             Tuple[torch.Tensor, List[torch.Tensor], torch.Tensor]: A tuple containing the image embeddings,
             window embeddings, and patch embeddings respectively.
         """
-        assert isinstance(self.masks, list), "Masks have not been prepared."
+        assert isinstance(self.masks, list), "Masks have not been prepared. Call prepare_masks before inference."
         # register hook to retrieve intermediate feature map
         outputs = {}
 
@@ -176,7 +176,7 @@ class WinClipModel(nn.Module):
         Returns:
             torch.Tensor: Tensor of shape (batch_size, H, W) representing the 0-shot scores for each patch location.
         """
-        assert isinstance(self.masks, list), "Masks have not been prepared."
+        assert isinstance(self.masks, list), "Masks have not been prepared. Call prepare_masks before inference."
         # image scores are added to represent the full image scale
         multiscale_scores = [image_scores.view(-1, 1, 1).repeat(1, self.grid_size[0], self.grid_size[1])]
         # add aggregated scores for each scale
@@ -205,8 +205,11 @@ class WinClipModel(nn.Module):
         Returns:
             torch.Tensor: Tensor of shape (batch_size, H, W) representing the few-shot scores for each patch location.
         """
-        assert isinstance(self.visual_embeddings, list), "Visual embeddings have not been prepared."
-        assert isinstance(self.masks, list), "Masks have not been prepared."
+        assert isinstance(
+            self.visual_embeddings,
+            list,
+        ), "Visual embeddings have not been prepared. Call collect_visual_embeddings before inference."
+        assert isinstance(self.masks, list), "Masks have not been prepared. Call prepare_masks before inference."
 
         multiscale_scores = [
             visual_association_score(patch_embeddings, self.patch_embeddings).reshape((-1, *self.grid_size)),
