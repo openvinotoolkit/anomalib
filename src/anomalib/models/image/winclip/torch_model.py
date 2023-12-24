@@ -143,11 +143,11 @@ class WinClipModel(nn.Module):
         """
         image_embeddings, window_embeddings, patch_embeddings = self.encode_image(batch)
 
-        # get 0-shot scores
+        # get zero-shot scores
         image_scores = simmilarity_score(image_embeddings, self.text_embeddings, self.temperature)[..., -1]
         multiscale_scores = self._compute_zero_shot_scores(image_scores, window_embeddings)
 
-        # get n-shot scores
+        # get few-shot scores
         if self.k_shot:
             few_shot_scores = self._compute_few_shot_scores(patch_embeddings, window_embeddings)
             multiscale_scores = (multiscale_scores + few_shot_scores) / 2
