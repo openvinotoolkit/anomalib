@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
-class Algorithm:
+class BinclfAlgorithm:
     """Algorithm to use."""
 
     PYTHON: ClassVar[str] = "python"
@@ -41,13 +41,13 @@ class Algorithm:
     @staticmethod
     def validate(algorithm: str) -> None:
         """Validate `algorithm` argument."""
-        if algorithm not in Algorithm.ALGORITHMS:
-            msg = f"Expected `algorithm` to be one of {Algorithm.ALGORITHMS}, but got {algorithm}"
+        if algorithm not in BinclfAlgorithm.ALGORITHMS:
+            msg = f"Expected `algorithm` to be one of {BinclfAlgorithm.ALGORITHMS}, but got {algorithm}"
             raise ValueError(msg)
 
 
 @dataclass
-class ThreshsChoice:
+class BinclfThreshsChoice:
     """Sequence of thresholds to use."""
 
     GIVEN: ClassVar[str] = "given"
@@ -186,7 +186,7 @@ def binclf_multiple_curves(
     scores_batch: ndarray,
     gts_batch: ndarray,
     threshs: ndarray,
-    algorithm: str = Algorithm.NUMBA,
+    algorithm: str = BinclfAlgorithm.NUMBA,
 ) -> ndarray:
     """Multiple binary classification matrix (per-instance scope) at each threshold (shared).
 
@@ -226,16 +226,16 @@ def binclf_multiple_curves(
 
         Thresholds are sorted in ascending order.
     """
-    Algorithm.validate(algorithm)
+    BinclfAlgorithm.validate(algorithm)
     _validate_scores_batch(scores_batch)
     _validate_gts_batch(gts_batch)
     _validate.same_shape(scores_batch, gts_batch)
     _validate.threshs(threshs)
 
-    if algorithm == Algorithm.PYTHON:
+    if algorithm == BinclfAlgorithm.PYTHON:
         return _binclf_multiple_curves_python(scores_batch, gts_batch, threshs)
 
-    if algorithm == Algorithm.NUMBA:
+    if algorithm == BinclfAlgorithm.NUMBA:
         if not HAS_NUMBA:
             logger.warning(
                 "Algorithm 'numba' was selected, but numba is not installed. Fallback to 'python' algorithm.",
@@ -243,7 +243,7 @@ def binclf_multiple_curves(
             return _binclf_multiple_curves_python(scores_batch, gts_batch, threshs)
         return _binclf_curve_numba.binclf_multiple_curves_numba(scores_batch, gts_batch, threshs)
 
-    msg = f"Expected `algorithm` to be one of {Algorithm.ALGORITHMS}, but got {algorithm}"
+    msg = f"Expected `algorithm` to be one of {BinclfAlgorithm.ALGORITHMS}, but got {algorithm}"
     raise NotImplementedError(msg)
 
 
@@ -266,8 +266,8 @@ def _get_threshs_minmax_linspace(anomaly_maps: ndarray, num_threshs: int) -> nda
 def per_image_binclf_curve(
     anomaly_maps: ndarray,
     masks: ndarray,
-    algorithm: str = Algorithm.NUMBA,
-    threshs_choice: str = ThreshsChoice.MINMAX_LINSPACE,
+    algorithm: str = BinclfAlgorithm.NUMBA,
+    threshs_choice: str = BinclfThreshsChoice.MINMAX_LINSPACE,
     threshs_given: ndarray | None = None,
     num_threshs: int | None = None,
 ) -> tuple[ndarray, ndarray]:
@@ -316,14 +316,14 @@ def per_image_binclf_curve(
 
             Thresholds are sorted in ascending order.
     """
-    Algorithm.validate(algorithm)
+    BinclfAlgorithm.validate(algorithm)
     _validate.anomaly_maps(anomaly_maps)
     _validate.masks(masks)
     _validate.same_shape(anomaly_maps, masks)
 
     threshs: ndarray
 
-    if threshs_choice == ThreshsChoice.GIVEN:
+    if threshs_choice == BinclfThreshsChoice.GIVEN:
         assert threshs_given is not None
         _validate.threshs(threshs_given)
         if num_threshs is not None:
@@ -332,7 +332,7 @@ def per_image_binclf_curve(
             )
         threshs = threshs_given.astype(anomaly_maps.dtype)
 
-    elif threshs_choice == ThreshsChoice.MINMAX_LINSPACE:
+    elif threshs_choice == BinclfThreshsChoice.MINMAX_LINSPACE:
         assert num_threshs is not None
         if threshs_given is not None:
             logger.warning(
@@ -341,11 +341,11 @@ def per_image_binclf_curve(
         # `num_threshs` is validated in the function below
         threshs = _get_threshs_minmax_linspace(anomaly_maps, num_threshs)
 
-    elif threshs_choice == ThreshsChoice.MEAN_FPR_OPTIMIZED:
+    elif threshs_choice == BinclfThreshsChoice.MEAN_FPR_OPTIMIZED:
         raise NotImplementedError(f"TODO implement {threshs_choice}")  # noqa: EM102
 
     else:
-        msg = f"Expected `threshs_choice` to be one of {ThreshsChoice.CHOICES}, but got {threshs_choice}"
+        msg = f"Expected `threshs_choice` to be one of {BinclfThreshsChoice.CHOICES}, but got {threshs_choice}"
         raise NotImplementedError(msg)
 
     # keep the batch dimension and flatten the rest
