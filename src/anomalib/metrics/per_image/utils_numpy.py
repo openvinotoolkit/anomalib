@@ -2,11 +2,16 @@
 
 TODO(jpcbertoldo): add formalities (license header, author)
 """
+from __future__ import annotations
 
+import itertools
+from collections import OrderedDict
 from typing import ClassVar
 
 import matplotlib as mpl
 import numpy as np
+import scipy
+import scipy.stats
 from numpy import ndarray
 
 from . import _validate
@@ -62,6 +67,26 @@ class StatsRepeatedPolicy:
             raise ValueError(msg)
 
 
+class StatsAlternativeHypothesis:
+    """Alternative hypothesis for the statistical tests used to compare per-image metrics."""
+
+    TWO_SIDED: ClassVar[str] = "two-sided"
+    LESS: ClassVar[str] = "less"
+    GREATER: ClassVar[str] = "greater"
+
+    ALTERNATIVES: ClassVar[tuple[str, ...]] = (TWO_SIDED, LESS, GREATER)
+
+    @staticmethod
+    def validate(alternative: str) -> None:
+        """Validate the argument `alternative`."""
+        if alternative not in StatsAlternativeHypothesis.ALTERNATIVES:
+            msg = (
+                "Invalid `alternative`. "
+                f"Expected one of {StatsAlternativeHypothesis.ALTERNATIVES}, but got {alternative}."
+            )
+            raise ValueError(msg)
+
+
 # =========================================== ARGS VALIDATION ===========================================
 def _validate_image_class(image_class: int) -> None:
     if not isinstance(image_class, int):
@@ -81,6 +106,59 @@ def _validate_per_image_scores(per_image_scores: ndarray) -> None:
     if per_image_scores.ndim != 1:
         msg = f"Expected per-image scores to be 1D, but got {per_image_scores.ndim}D."
         raise ValueError(msg)
+
+
+def _validate_scores_per_model(scores_per_model: dict[str, ndarray] | OrderedDict[str, ndarray]) -> None:
+    if not isinstance(scores_per_model, dict | OrderedDict):
+        msg = f"Expected scores per model to be a dictionary or ordered dictionary, but got {type(scores_per_model)}."
+        raise TypeError(msg)
+
+    if len(scores_per_model) < 2:
+        msg = f"Expected scores per model to have at least 2 models, but got {len(scores_per_model)}."
+        raise ValueError(msg)
+
+    first_key_value = None
+
+    for model_name, scores in scores_per_model.items():
+        if not isinstance(model_name, str):
+            msg = f"Expected model name to be a string, but got {type(model_name)} for model {model_name}."
+            raise TypeError(msg)
+
+        if not isinstance(scores, ndarray):
+            msg = f"Expected scores to be a numpy array, but got {type(scores)} for model {model_name}."
+            raise TypeError(msg)
+
+        if scores.ndim != 1:
+            msg = f"Expected scores to be 1D, but got {scores.ndim}D for model {model_name}."
+            raise ValueError(msg)
+
+        num_valid_scores = scores[~np.isnan(scores)].shape[0]
+
+        if num_valid_scores < 2:
+            msg = f"Expected at least 2 scores, but got {num_valid_scores} for model {model_name}."
+            raise ValueError(msg)
+
+        if first_key_value is None:
+            first_key_value = (model_name, scores)
+            continue
+
+        first_model_name, first_scores = first_key_value
+
+        # same shape
+        if scores.shape != first_scores.shape:
+            msg = (
+                "Expected scores to have the same shape, "
+                f"but got ({model_name}) {scores.shape} != {first_scores.shape} ({first_model_name})."
+            )
+            raise ValueError(msg)
+
+        # `nan` at the same indices
+        if (np.isnan(scores) != np.isnan(first_scores)).any():
+            msg = (
+                "Expected `nan` values, if any, to be at the same indices, "
+                f"but there are differences between models {model_name} and {first_model_name}."
+            )
+            raise ValueError(msg)
 
 
 # =========================================== FUNCTIONS ===========================================
@@ -245,3 +323,151 @@ def per_image_scores_stats(
     for stat, val in sorted(boxplot_stats.items(), key=lambda x: x[1]):
         append_record(stat, val)
     return sorted(records, key=lambda r: r["score"])
+
+
+def compare_models_pairwise_ttest(
+    scores_per_model: dict[str, ndarray] | OrderedDict[str, ndarray],
+    alternative: str,
+    higher_is_better: bool,
+) -> tuple[tuple[str, ...], dict[tuple[str, str], float]]:
+    """Compare all pairs of models using the paired t-test (parametric).
+
+    If an ordered dictionary is given, the models are sorted by the order of the dictionary.
+    Otherwise, the models are sorted by average SCORE.
+
+    Each comparison of two models is a paired t-test (null hypothesis is that they are equal).
+
+    Args:
+        scores_per_model: Dictionary of models and their per-image scores.
+            key: model name
+            value: tensor of shape (num_images,). All `nan` values must be at the same positions.
+        higher_is_better: Whether higher values of the metric are better. Defaults to True.
+        alternative: Alternative hypothesis for the statistical tests. See `StatsAlternativeHypothesis`.
+
+    Returns:
+            (models_ordered, test_results):
+                - models_ordered: List of models ordered (by the user or by average score, see above).
+                - confidences: Dictionary of confidence values for each pair of models.
+                    For all pairs of indices i and j from 0 to n-1, where `n` is the number of models and i != j:
+                        - key: (models_ordered[i], models_ordered[j])
+                        - value: confidence on the alternative hypothesis.
+                    For models `models_ordered[i]` and `models_ordered[j]`, the alternative hypothesis is:
+                        - if `less`: model[i] < model[j]
+                        - if `greater`: model[i] > model[j]
+                        - if `two-sided`: model[i] != model[j]
+                    on average.
+    """
+    _validate_scores_per_model(scores_per_model)
+    StatsAlternativeHypothesis.validate(alternative)
+
+    # remove nan values; list of items keeps the order of the OrderedDict
+    scores_per_model_nonan_items = [
+        (model_name, scores[~np.isnan(scores)]) for model_name, scores in scores_per_model.items()
+    ]
+
+    # sort models by average value if not an ordered dictionary
+    # position 0 is assumed the best model
+    if isinstance(scores_per_model, OrderedDict):
+        scores_per_model_nonan = OrderedDict(scores_per_model_nonan_items)
+    else:
+        scores_per_model_nonan = OrderedDict(
+            sorted(scores_per_model_nonan_items, key=lambda kv: kv[1].mean(), reverse=higher_is_better),
+        )
+
+    models_ordered = tuple(scores_per_model_nonan.keys())
+    models_pairs = list(itertools.permutations(models_ordered, 2))
+    confidences: dict[tuple[str, str], float] = {}
+    for model_i, model_j in models_pairs:
+        values_i = scores_per_model_nonan[model_i]
+        values_j = scores_per_model_nonan[model_j]
+        pvalue = scipy.stats.ttest_rel(
+            values_i,
+            values_j,
+            alternative=alternative,
+        ).pvalue
+        confidences[(model_i, model_j)] = 1.0 - float(pvalue)
+
+    return models_ordered, confidences
+
+
+def compare_models_pairwise_wilcoxon(
+    scores_per_model: dict[str, ndarray] | OrderedDict[str, ndarray],
+    alternative: str,
+    higher_is_better: bool,
+    atol: float | None = 1e-3,
+) -> tuple[tuple[str, ...], dict[tuple[str, str], float]]:
+    """Compare all pairs of models using the Wilcoxon signed-rank test (non-parametric).
+
+    If an ordered dictionary is given, the models are sorted by the order of the dictionary.
+    Otherwise, the models are sorted by average RANK.
+
+    Each comparison of two models is a Wilcoxon signed-rank test (null hypothesis is that they are equal).
+
+    This is like the non-parametric version of the paired t-test.
+
+    Args:
+        scores_per_model: Dictionary of models and their per-image scores.
+            key: model name
+            value: tensor of shape (num_images,). All `nan` values must be at the same positions.
+        higher_is_better: Whether higher values of the metric are better. Defaults to True.
+        alternative: Alternative hypothesis for the statistical tests. See `StatsAlternativeHypothesis`.
+        atol: Absolute tolerance used to consider two scores as equal. Defaults to 1e-3 (0.1%).
+              When doing a paired test, if the difference between two scores is below `atol`, the difference is
+              truncated to 0. If `atol` is None, no truncation is done.
+
+    Returns:
+            (models_ordered, test_results):
+                - models_ordered: List of models ordered (by the user or by average score, see above).
+                - confidences: Dictionary of confidence values for each pair of models.
+                    For all pairs of indices i and j from 0 to n-1, where `n` is the number of models and i != j:
+                        - key: (models_ordered[i], models_ordered[j])
+                        - value: confidence on the alternative hypothesis.
+                    For models `models_ordered[i]` and `models_ordered[j]`, the alternative hypothesis is:
+                        - if `less`: model[i] < model[j]
+                        - if `greater`: model[i] > model[j]
+                        - if `two-sided`: model[i] != model[j]
+                    on average in terms of ranks (not scores).
+    """
+    _validate_scores_per_model(scores_per_model)
+    StatsAlternativeHypothesis.validate(alternative)
+
+    # remove nan values; list of items keeps the order of the OrderedDict
+    scores_per_model_nonan_items = [
+        (model_name, scores[~np.isnan(scores)]) for model_name, scores in scores_per_model.items()
+    ]
+
+    # sort models by average value if not an ordered dictionary
+    # position 0 is assumed the best model
+    if isinstance(scores_per_model, OrderedDict):
+        scores_per_model_nonan = OrderedDict(scores_per_model_nonan_items)
+    else:
+        # these average ranks will NOT consider `atol` because we want to rank the models anyway
+        scores_nonan = np.stack([v for _, v in scores_per_model_nonan_items], axis=0)
+        avg_ranks = scipy.stats.rankdata(
+            -scores_nonan if higher_is_better else scores_nonan,
+            method="average",
+            axis=0,
+        ).mean(axis=1)
+        argsort_avg_ranks = avg_ranks.argsort()  # ascending order, lower score is better
+        scores_per_model_nonan = OrderedDict(scores_per_model_nonan_items[idx] for idx in argsort_avg_ranks)
+
+    models_ordered = tuple(scores_per_model_nonan.keys())
+    models_pairs = list(itertools.permutations(models_ordered, 2))
+    confidences: dict[tuple[str, str], float] = {}
+    for model_i, model_j in models_pairs:
+        values_i = scores_per_model_nonan[model_i]
+        values_j = scores_per_model_nonan[model_j]
+        diff = values_i - values_j
+
+        if atol is not None:
+            # make the difference null if below the tolerance
+            diff[np.abs(diff) <= atol] = 0.0
+
+        # extreme case
+        if (diff == 0).all():  # noqa: SIM108
+            pvalue = 1.0
+        else:
+            pvalue = scipy.stats.wilcoxon(diff, alternative=alternative).pvalue
+        confidences[(model_i, model_j)] = 1.0 - float(pvalue)
+
+    return models_ordered, confidences

@@ -1,7 +1,73 @@
 """Test `utils.py`."""
 
+from collections import OrderedDict
+
 import numpy as np
+import pytest
 import torch
+from torch import Tensor
+
+from anomalib.metrics.per_image import AUPIMOResult, PIMOSharedFPRMetric
+
+
+def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
+    """Generate test cases."""
+    num_images = 100
+    # avg is 0.8
+    aucs1 = 0.8 * torch.ones(num_images)
+    # avg ~ 0.7
+    aucs2 = torch.linspace(0.6, 0.8, num_images)
+    # avg ~ 0.6
+    aucs3 = torch.sin(torch.linspace(0, torch.pi, num_images)).clip(0, 1)
+
+    def get_similar(aucs: Tensor) -> Tensor:
+        # a multiplicative factor oscilating around 99.5% and 100.5% signal
+        # to provoke the non-parametric plot to show
+        # the two are within the tolerance
+        factor = 1 - 0.005 * torch.sin(torch.linspace(0, 2 * torch.pi, len(aucs)))
+        aucs_bis = (aucs * factor).clip(0, 1)
+        aucs_bis[torch.isnan(aucs)] = torch.nan
+        return aucs_bis
+
+    if (
+        metafunc.function is test_compare_models_pairwise_ttest
+        or metafunc.function is test_compare_models_pairwise_wilcoxon
+    ):
+        mock_aupimoresult_stuff = {
+            "shared_fpr_metric": PIMOSharedFPRMetric.MEAN_PERIMAGE_FPR,
+            "fpr_lower_bound": 1e-5,
+            "fpr_upper_bound": 1e-4,
+            "num_threshs": 1_000,
+            "thresh_lower_bound": 1.0,
+            "thresh_upper_bound": 2.0,
+        }
+        metafunc.parametrize(
+            ("scores_per_model",),
+            [
+                ({"a": aucs1, "b": aucs2},),
+                ({"a": aucs1, "b": get_similar(aucs1)},),
+                ({"a": aucs1, "b": aucs2, "c": aucs3},),
+                (OrderedDict([("c", aucs1), ("b", aucs2), ("a", aucs3)]),),
+                (
+                    {
+                        "a": AUPIMOResult(**{**mock_aupimoresult_stuff, "aupimos": aucs1}),
+                        "b": AUPIMOResult(**{**mock_aupimoresult_stuff, "aupimos": aucs2}),
+                        "c": AUPIMOResult(**{**mock_aupimoresult_stuff, "aupimos": aucs3}),
+                    },
+                ),
+            ],
+        )
+        metafunc.parametrize(
+            ("alternative", "higher_is_better"),
+            [
+                ("two-sided", True),
+                ("two-sided", False),
+                ("less", False),
+                ("greater", True),
+                # not considering the case (less, true) and (greater, false) because it will break
+                # some assumptions in the assertions but they are possible
+            ],
+        )
 
 
 def assert_statsdict_stuff(statdic: dict, max_image_idx: int) -> None:
@@ -116,3 +182,92 @@ def test_per_image_scores_stats_specific_values() -> None:
 
     assert statdict_whishi["stat_name"] == "whishi"
     assert statdict_whishi["stat_value"] == 1.0
+
+
+def test_compare_models_pairwise_ttest(scores_per_model: dict, alternative: str, higher_is_better: bool) -> None:
+    """Test `compare_models_pairwise_ttest`."""
+    from anomalib.metrics.per_image import AUPIMOResult, compare_models_pairwise_ttest
+
+    models_ordered, confidences = compare_models_pairwise_ttest(
+        scores_per_model,
+        alternative=alternative,
+        higher_is_better=higher_is_better,
+    )
+    assert len(confidences) == (len(models_ordered) * (len(models_ordered) - 1))
+
+    diff = set(scores_per_model.keys()).symmetric_difference(set(models_ordered))
+    assert len(diff) == 0
+
+    if isinstance(scores_per_model, OrderedDict):
+        assert models_ordered == tuple(scores_per_model.keys())
+
+    elif len(scores_per_model) == 2:
+        assert models_ordered == (("a", "b") if higher_is_better else ("b", "a"))
+
+    elif len(scores_per_model) == 3:
+        assert models_ordered == (("a", "b", "c") if higher_is_better else ("c", "b", "a"))
+
+    if isinstance(next(iter(scores_per_model.values())), AUPIMOResult):
+        return
+
+    def copy_and_add_nan(scores: Tensor) -> Tensor:
+        scores = scores.clone()
+        scores[5:] = torch.nan
+        return scores
+
+    # removing samples should reduce the confidences
+    scores_per_model["a"] = copy_and_add_nan(scores_per_model["a"])
+    scores_per_model["b"] = copy_and_add_nan(scores_per_model["b"])
+    if "c" in scores_per_model:
+        scores_per_model["c"] = copy_and_add_nan(scores_per_model["c"])
+
+    compare_models_pairwise_ttest(
+        scores_per_model,
+        alternative=alternative,
+        higher_is_better=higher_is_better,
+    )
+
+
+def test_compare_models_pairwise_wilcoxon(scores_per_model: dict, alternative: str, higher_is_better: bool) -> None:
+    """Test `compare_models_pairwise_wilcoxon`."""
+    from anomalib.metrics.per_image import AUPIMOResult, compare_models_pairwise_wilcoxon
+
+    models_ordered, confidences = compare_models_pairwise_wilcoxon(
+        scores_per_model,
+        alternative=alternative,
+        higher_is_better=higher_is_better,
+    )
+    assert len(confidences) == (len(models_ordered) * (len(models_ordered) - 1))
+
+    diff = set(scores_per_model.keys()).symmetric_difference(set(models_ordered))
+    assert len(diff) == 0
+
+    if isinstance(scores_per_model, OrderedDict):
+        assert models_ordered == tuple(scores_per_model.keys())
+
+    elif len(scores_per_model) == 2:
+        assert models_ordered == (("a", "b") if higher_is_better else ("b", "a"))
+
+    elif len(scores_per_model) == 3:
+        # this one is not trivial without looking at the data, so no assertions
+        pass
+
+    if isinstance(next(iter(scores_per_model.values())), AUPIMOResult):
+        return
+
+    def copy_and_add_nan(scores: Tensor) -> Tensor:
+        scores = scores.clone()
+        scores[5:] = torch.nan
+        return scores
+
+    # removing samples should reduce the confidences
+    scores_per_model["a"] = copy_and_add_nan(scores_per_model["a"])
+    scores_per_model["b"] = copy_and_add_nan(scores_per_model["b"])
+    if "c" in scores_per_model:
+        scores_per_model["c"] = copy_and_add_nan(scores_per_model["c"])
+
+    compare_models_pairwise_wilcoxon(
+        scores_per_model,
+        alternative=alternative,
+        higher_is_better=higher_is_better,
+    )
