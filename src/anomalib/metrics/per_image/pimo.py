@@ -25,9 +25,10 @@ from torchmetrics import Metric
 
 from anomalib.data.utils.image import duplicate_filename
 
-from . import _validate, pimo_numpy
+from . import _validate, pimo_numpy, utils
 from .binclf_curve_numpy import Algorithm as BinclfAlgorithm
 from .pimo_numpy import SharedFPRMetric
+from .utils import StatsOutliersPolicy, StatsRepeatedPolicy
 
 # =========================================== ARGS VALIDATION ===========================================
 
@@ -417,6 +418,37 @@ class AUPIMOResult:
         except (TypeError, ValueError) as ex:
             msg = f"Invalid payload in file {file_path}. Cause: {ex}."
             raise ValueError(msg) from ex
+
+    def stats(
+        self,
+        outliers_policy: str | None = StatsOutliersPolicy.NONE,
+        repeated_policy: str | None = StatsRepeatedPolicy.AVOID,
+        repeated_replacement_atol: float = 1e-2,
+    ) -> list[dict[str, str | int | float]]:
+        """Return the AUPIMO statistics.
+
+        See `anomalib.utils.metrics.per_image.per_image_scores_stats` for details (its docstring below).
+
+        Returns:
+            list[dict[str, str | int | float]]: AUPIMO statistics
+
+        `anomalib.utils.metrics.per_image.per_image_scores_stats`.__doc__
+        ==================================================================
+        {docstring_per_image_scores_stats}
+        """
+        return utils.per_image_scores_stats(
+            self.aupimos,
+            self.image_classes,
+            only_class=1,
+            outliers_policy=outliers_policy,
+            repeated_policy=repeated_policy,
+            repeated_replacement_atol=repeated_replacement_atol,
+        )
+
+
+AUPIMOResult.__doc__ = AUPIMOResult.__doc__.format(  # type: ignore[union-attr]
+    docstring_per_image_scores_stats=utils.per_image_scores_stats.__doc__,
+)
 
 
 # =========================================== FUNCTIONAL ===========================================

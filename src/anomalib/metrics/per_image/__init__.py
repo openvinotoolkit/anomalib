@@ -8,11 +8,15 @@ from .binclf_curve_numpy import Algorithm as BinClfAlgorithm
 from .binclf_curve_numpy import ThreshsChoice as BinclfThreshsChoice
 from .pimo import AUPIMO, PIMO, AUPIMOResult, PIMOResult, aupimo_scores, pimo_curves
 from .pimo_numpy import SharedFPRMetric
+from .utils import per_image_scores_stats
+from .utils_numpy import StatsOutliersPolicy, StatsRepeatedPolicy
 
 __all__ = [
     # constants
     "BinClfAlgorithm",
     "BinclfThreshsChoice",
+    "StatsOutliersPolicy",
+    "StatsRepeatedPolicy",
     "SharedFPRMetric",
     # result classes
     "PIMOResult",
@@ -23,6 +27,7 @@ __all__ = [
     "per_image_tpr",
     "pimo_curves",
     "aupimo_scores",
+    "per_image_scores_stats",
     # torchmetrics interfaces
     "PIMO",
     "AUPIMO",
