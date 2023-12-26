@@ -36,8 +36,7 @@ import numpy as np
 from numpy import ndarray
 
 from . import _validate, binclf_curve_numpy
-from .binclf_curve_numpy import Algorithm as BinclfAlgorithm
-from .binclf_curve_numpy import ThreshsChoice as BinclfThreshsChoice
+from .binclf_curve_numpy import BinclfAlgorithm, BinclfThreshsChoice
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +44,7 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
-class SharedFPRMetric:
+class PIMOSharedFPRMetric:
     """Shared FPR metric (x-axis of the PIMO curve)."""
 
     MEAN_PERIMAGE_FPR: ClassVar[str] = "mean-per-image-fpr"
@@ -55,8 +54,8 @@ class SharedFPRMetric:
     @staticmethod
     def validate(metric: str) -> None:
         """Validate the argument `metric`."""
-        if metric not in SharedFPRMetric.METRICS:
-            msg = f"Invalid `metric`. Expected one of {SharedFPRMetric.METRICS}, but got {metric} instead."
+        if metric not in PIMOSharedFPRMetric.METRICS:
+            msg = f"Invalid `metric`. Expected one of {PIMOSharedFPRMetric.METRICS}, but got {metric} instead."
             raise ValueError(msg)
 
 
@@ -103,7 +102,7 @@ def pimo_curves(
     masks: ndarray,
     num_threshs: int,
     binclf_algorithm: str = BinclfAlgorithm.NUMBA,
-    shared_fpr_metric: str = SharedFPRMetric.MEAN_PERIMAGE_FPR,
+    shared_fpr_metric: str = PIMOSharedFPRMetric.MEAN_PERIMAGE_FPR,
 ) -> tuple[ndarray, ndarray, ndarray, ndarray]:
     """Compute the Per-IMage Overlap (PIMO, pronounced pee-mo) curves.
 
@@ -134,7 +133,7 @@ def pimo_curves(
             [3] image classes of shape (N,) with values 0 (normal) or 1 (anomalous)
     """
     BinclfAlgorithm.validate(binclf_algorithm)
-    SharedFPRMetric.validate(shared_fpr_metric)
+    PIMOSharedFPRMetric.validate(shared_fpr_metric)
     _validate.num_threshs(num_threshs)
     _validate.anomaly_maps(anomaly_maps)
     _validate.masks(masks)
@@ -165,7 +164,7 @@ def pimo_curves(
     )
 
     shared_fpr: ndarray
-    if shared_fpr_metric == SharedFPRMetric.MEAN_PERIMAGE_FPR:
+    if shared_fpr_metric == PIMOSharedFPRMetric.MEAN_PERIMAGE_FPR:
         # shape -> (N, K)
         per_image_fprs_normals = binclf_curve_numpy.per_image_fpr(binclf_curves[image_classes == 0])
         try:
@@ -196,7 +195,7 @@ def aupimo_scores(
     masks: ndarray,
     num_threshs: int = 300_000,
     binclf_algorithm: str = BinclfAlgorithm.NUMBA,
-    shared_fpr_metric: str = SharedFPRMetric.MEAN_PERIMAGE_FPR,
+    shared_fpr_metric: str = PIMOSharedFPRMetric.MEAN_PERIMAGE_FPR,
     fpr_bounds: tuple[float, float] = (1e-5, 1e-4),
     force: bool = False,
 ) -> tuple[ndarray, ndarray, ndarray, ndarray, ndarray]:

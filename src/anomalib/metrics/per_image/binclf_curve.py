@@ -17,7 +17,7 @@ import torch
 from torch import Tensor
 
 from . import _validate, binclf_curve_numpy
-from .binclf_curve_numpy import Algorithm, ThreshsChoice
+from .binclf_curve_numpy import BinclfAlgorithm, BinclfThreshsChoice
 
 # =========================================== ARGS VALIDATION ===========================================
 
@@ -43,8 +43,8 @@ def _validate_binclf_curves(binclf_curves: Tensor, valid_threshs: Tensor | None 
 def per_image_binclf_curve(
     anomaly_maps: Tensor,
     masks: Tensor,
-    algorithm: str = Algorithm.NUMBA,
-    threshs_choice: str = ThreshsChoice.MINMAX_LINSPACE,
+    algorithm: str = BinclfAlgorithm.NUMBA,
+    threshs_choice: str = BinclfThreshsChoice.MINMAX_LINSPACE,
     threshs_given: Tensor | None = None,
     num_threshs: int | None = None,
 ) -> tuple[Tensor, Tensor]:
