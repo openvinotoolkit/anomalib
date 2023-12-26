@@ -586,3 +586,11 @@ def test_aupimoresult_object(
     assert aupimoresult_from_load.num_threshs == aupimoresult.num_threshs
     assert aupimoresult_from_load.thresh_bounds == aupimoresult.thresh_bounds
     assert torch.allclose(aupimoresult_from_load.aupimos, aupimoresult.aupimos, equal_nan=True)
+
+    # statistics
+    stats = aupimoresult.stats()
+    assert len(stats) == 6
+    from .test_utils import assert_statsdict_stuff
+
+    for statdic in stats:
+        assert_statsdict_stuff(statdic, 2)
