@@ -239,18 +239,15 @@ class AUPIMOResult:
 
     This interface gathers the AUPIMO data and metadata and provides several utility methods.
 
-    Notation:
-        - N: number of images
-        - K: number of thresholds
-
     Attributes:
         shared_fpr_metric (str): [metadata] shared FPR metric used to compute the PIMO curve
         fpr_lower_bound (float): [metadata] LOWER bound of the FPR integration range
         fpr_upper_bound (float): [metadata] UPPER bound of the FPR integration range
-        num_threshs (int): [metadata] number of thresholds used to compute the PIMO curve (K)
+        num_threshs (int): [metadata] number of thresholds used to effectively compute AUPIMO;
+                            should not be confused with the number of thresholds used to compute the PIMO curve
         thresh_lower_bound (float): LOWER threshold bound --> corresponds to the UPPER FPR bound
         thresh_upper_bound (float): UPPER threshold bound --> corresponds to the LOWER FPR bound
-        aupimos (Tensor): N values of AUPIMO scores
+        aupimos (Tensor): values of AUPIMO scores (1 per image)
     """
 
     # metadata
@@ -268,6 +265,16 @@ class AUPIMOResult:
     def num_images(self) -> int:
         """Number of images."""
         return self.aupimos.shape[0]
+
+    @property
+    def num_normal_images(self) -> int:
+        """Number of normal images."""
+        return int((self.image_classes == 0).sum())
+
+    @property
+    def num_anomalous_images(self) -> int:
+        """Number of anomalous images."""
+        return int((self.image_classes == 1).sum())
 
     @property
     def image_classes(self) -> Tensor:
@@ -296,6 +303,7 @@ class AUPIMOResult:
         try:
             PIMOSharedFPRMetric.validate(self.shared_fpr_metric)
             _validate.rate_range((self.fpr_lower_bound, self.fpr_upper_bound))
+            # TODO(jpcbertoldo): warn when it's too low (use parameters from the numpy code)  # noqa: TD003
             _validate.num_threshs(self.num_threshs)
             _validate_aupimos(self.aupimos)
             _validate.thresh_bounds((self.thresh_lower_bound, self.thresh_upper_bound))
@@ -309,6 +317,7 @@ class AUPIMOResult:
         cls: type[AUPIMOResult],
         pimoresult: PIMOResult,
         fpr_bounds: tuple[float, float],
+        num_threshs_auc: int,
         aupimos: Tensor,
     ) -> AUPIMOResult:
         """Return an AUPIMO result object from a PIMO result object.
@@ -316,6 +325,8 @@ class AUPIMOResult:
         Args:
             pimoresult: PIMO result object
             fpr_bounds: lower and upper bounds of the FPR integration range
+            num_threshs_auc: number of thresholds used to effectively compute AUPIMO;
+                         NOT the number of thresholds used to compute the PIMO curve!
             aupimos: AUPIMO scores
         """
         if pimoresult.per_image_tprs.shape[0] != aupimos.shape[0]:
@@ -342,7 +353,7 @@ class AUPIMOResult:
             shared_fpr_metric=pimoresult.shared_fpr_metric,
             fpr_lower_bound=fpr_lower_bound,
             fpr_upper_bound=fpr_upper_bound,
-            num_threshs=pimoresult.num_threshs,
+            num_threshs=num_threshs_auc,
             thresh_lower_bound=float(thresh_lower_bound),
             thresh_upper_bound=float(thresh_upper_bound),
             aupimos=aupimos,
@@ -556,7 +567,7 @@ def aupimo_scores(
 
     # other validations are done in the numpy code
 
-    threshs_array, shared_fpr_array, per_image_tprs_array, _, aupimos_array = pimo_numpy.aupimo_scores(
+    threshs_array, shared_fpr_array, per_image_tprs_array, _, aupimos_array, num_threshs_auc = pimo_numpy.aupimo_scores(
         anomaly_maps_array,
         masks_array,
         num_threshs,
@@ -588,6 +599,10 @@ def aupimo_scores(
     aupimoresult = AUPIMOResult.from_pimoresult(
         pimoresult,
         fpr_bounds=fpr_bounds,
+        # not `num_threshs`!
+        # `num_threshs` is the number of thresholds used to compute the PIMO curve
+        # this is the number of thresholds used to compute the AUPIMO integral
+        num_threshs_auc=num_threshs_auc,
         aupimos=aupimos,
     )
     return pimoresult, aupimoresult

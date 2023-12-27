@@ -354,7 +354,7 @@ def test_aupimo_values_numpy(
     """Test if `aupimo()` returns the expected values."""
     from anomalib.metrics.per_image import pimo_numpy
 
-    threshs, shared_fpr, per_image_tprs, image_classes, aupimos = pimo_numpy.aupimo_scores(
+    threshs, shared_fpr, per_image_tprs, image_classes, aupimos, _ = pimo_numpy.aupimo_scores(
         anomaly_maps,
         masks,
         num_threshs=7,
@@ -396,7 +396,10 @@ def test_aupimo_values(
         assert pimoresult.shared_fpr_metric == "mean-per-image-fpr"
         assert aupimoresult.shared_fpr_metric == "mean-per-image-fpr"
         assert aupimoresult.fpr_bounds == fpr_bounds
-        assert aupimoresult.num_threshs == 7
+        # recall: this one is not the same as the number of thresholds in the curve
+        # this is the number of thresholds used to compute the integral in `aupimo()`
+        # always less because of the integration bounds
+        assert aupimoresult.num_threshs < 7
 
         # test data
         # from pimo result
