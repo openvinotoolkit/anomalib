@@ -198,7 +198,7 @@ def aupimo_scores(
     shared_fpr_metric: str = PIMOSharedFPRMetric.MEAN_PERIMAGE_FPR,
     fpr_bounds: tuple[float, float] = (1e-5, 1e-4),
     force: bool = False,
-) -> tuple[ndarray, ndarray, ndarray, ndarray, ndarray]:
+) -> tuple[ndarray, ndarray, ndarray, ndarray, ndarray, int]:
     """Compute the PIMO curves and their Area Under the Curve (i.e. AUPIMO) scores.
 
     Scores are computed from the integration of the PIMO curves within the given FPR bounds, then normalized to [0, 1].
@@ -228,6 +228,7 @@ def aupimo_scores(
             [2] per-image TPR curves of shape (N, K), axis 1 in descending order (indices correspond to the thresholds)
             [3] image classes of shape (N,) with values 0 (normal) or 1 (anomalous)
             [4] AUPIMO scores of shape (N,) in [0, 1]
+            [5] number of points used in the AUC integration
     """
     _validate.rate_range(fpr_bounds)
 
@@ -323,7 +324,7 @@ def aupimo_scores(
         shared_fpr_bounded_log = shared_fpr_bounded_log[~invalid_shared_fpr]
         per_image_tprs_bounded = per_image_tprs_bounded[:, ~invalid_shared_fpr]
 
-    num_points_integral = shared_fpr_bounded_log.shape[0]
+    num_points_integral = int(shared_fpr_bounded_log.shape[0])
 
     if num_points_integral <= 30:
         msg = (
@@ -352,7 +353,7 @@ def aupimo_scores(
     normalization_factor = aupimo_normalizing_factor(fpr_bounds)
     aucs = (aucs / normalization_factor).clip(0, 1)
 
-    return threshs, shared_fpr, per_image_tprs, image_classes, aucs
+    return threshs, shared_fpr, per_image_tprs, image_classes, aucs, num_points_integral
 
 
 # =========================================== AUX ===========================================
