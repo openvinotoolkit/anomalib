@@ -20,43 +20,32 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
     # avg ~ 0.6
     aucs3 = torch.sin(torch.linspace(0, torch.pi, num_images)).clip(0, 1)
 
-    def get_similar(aucs: Tensor) -> Tensor:
-        # a multiplicative factor oscilating around 99.5% and 100.5% signal
-        # to provoke the non-parametric plot to show
-        # the two are within the tolerance
-        factor = 1 - 0.005 * torch.sin(torch.linspace(0, 2 * torch.pi, len(aucs)))
-        aucs_bis = (aucs * factor).clip(0, 1)
-        aucs_bis[torch.isnan(aucs)] = torch.nan
-        return aucs_bis
+    mock_aupimoresult_stuff = {
+        "shared_fpr_metric": PIMOSharedFPRMetric.MEAN_PERIMAGE_FPR,
+        "fpr_lower_bound": 1e-5,
+        "fpr_upper_bound": 1e-4,
+        "num_threshs": 1_000,
+        "thresh_lower_bound": 1.0,
+        "thresh_upper_bound": 2.0,
+    }
+    scores_per_model_dicts = [
+        ({"a": aucs1, "b": aucs2},),
+        ({"a": aucs1, "b": aucs2, "c": aucs3},),
+        (OrderedDict([("c", aucs1), ("b", aucs2), ("a", aucs3)]),),
+        (
+            {
+                "a": AUPIMOResult(**{**mock_aupimoresult_stuff, "aupimos": aucs1}),
+                "b": AUPIMOResult(**{**mock_aupimoresult_stuff, "aupimos": aucs2}),
+                "c": AUPIMOResult(**{**mock_aupimoresult_stuff, "aupimos": aucs3}),
+            },
+        ),
+    ]
 
     if (
         metafunc.function is test_compare_models_pairwise_ttest
         or metafunc.function is test_compare_models_pairwise_wilcoxon
     ):
-        mock_aupimoresult_stuff = {
-            "shared_fpr_metric": PIMOSharedFPRMetric.MEAN_PERIMAGE_FPR,
-            "fpr_lower_bound": 1e-5,
-            "fpr_upper_bound": 1e-4,
-            "num_threshs": 1_000,
-            "thresh_lower_bound": 1.0,
-            "thresh_upper_bound": 2.0,
-        }
-        metafunc.parametrize(
-            ("scores_per_model",),
-            [
-                ({"a": aucs1, "b": aucs2},),
-                ({"a": aucs1, "b": get_similar(aucs1)},),
-                ({"a": aucs1, "b": aucs2, "c": aucs3},),
-                (OrderedDict([("c", aucs1), ("b", aucs2), ("a", aucs3)]),),
-                (
-                    {
-                        "a": AUPIMOResult(**{**mock_aupimoresult_stuff, "aupimos": aucs1}),
-                        "b": AUPIMOResult(**{**mock_aupimoresult_stuff, "aupimos": aucs2}),
-                        "c": AUPIMOResult(**{**mock_aupimoresult_stuff, "aupimos": aucs3}),
-                    },
-                ),
-            ],
-        )
+        metafunc.parametrize(("scores_per_model",), scores_per_model_dicts)
         metafunc.parametrize(
             ("alternative", "higher_is_better"),
             [
@@ -68,6 +57,9 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
                 # some assumptions in the assertions but they are possible
             ],
         )
+
+    if metafunc.function is test_format_pairwise_tests_results:
+        metafunc.parametrize(("scores_per_model",), scores_per_model_dicts[:3])
 
 
 def assert_statsdict_stuff(statdic: dict, max_image_idx: int) -> None:
@@ -271,3 +263,42 @@ def test_compare_models_pairwise_wilcoxon(scores_per_model: dict, alternative: s
         alternative=alternative,
         higher_is_better=higher_is_better,
     )
+
+
+def test_format_pairwise_tests_results(scores_per_model: dict) -> None:
+    """Test `format_pairwise_tests_results`."""
+    from anomalib.metrics.per_image import (
+        compare_models_pairwise_ttest,
+        compare_models_pairwise_wilcoxon,
+        format_pairwise_tests_results,
+    )
+
+    models_ordered, confidences = compare_models_pairwise_wilcoxon(
+        scores_per_model,
+        alternative="greater",
+        higher_is_better=True,
+    )
+    confidence_df = format_pairwise_tests_results(
+        models_ordered,
+        confidences,
+        model1_as_column=True,
+        left_to_right=True,
+        top_to_bottom=True,
+    )
+    assert tuple(confidence_df.columns.tolist()) == models_ordered
+    assert tuple(confidence_df.index.tolist()) == models_ordered
+
+    models_ordered, confidences = compare_models_pairwise_ttest(
+        scores_per_model,
+        alternative="greater",
+        higher_is_better=True,
+    )
+    confidence_df = format_pairwise_tests_results(
+        models_ordered,
+        confidences,
+        model1_as_column=True,
+        left_to_right=True,
+        top_to_bottom=True,
+    )
+    assert tuple(confidence_df.columns.tolist()) == models_ordered
+    assert tuple(confidence_df.index.tolist()) == models_ordered

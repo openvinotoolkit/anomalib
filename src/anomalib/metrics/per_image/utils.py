@@ -2,9 +2,12 @@
 from __future__ import annotations
 
 from collections import OrderedDict
+from copy import deepcopy
 from typing import TYPE_CHECKING
 
+import pandas as pd
 import torch
+from pandas import DataFrame
 from torch import Tensor
 
 from . import _validate, utils_numpy
@@ -12,6 +15,81 @@ from .utils_numpy import StatsOutliersPolicy, StatsRepeatedPolicy
 
 if TYPE_CHECKING:
     from .pimo import AUPIMOResult
+
+
+# =========================================== ARGS VALIDATION ===========================================
+
+
+def _validate_models_ordered(models_ordered: tuple[str, ...]) -> None:
+    if not isinstance(models_ordered, tuple):
+        msg = f"Expected models ordered to be a tuple, but got {type(models_ordered)}."
+        raise TypeError(msg)
+
+    if len(models_ordered) < 2:
+        msg = f"Expected models ordered to have at least 2 models, but got {len(models_ordered)}."
+        raise ValueError(msg)
+
+    for model_name in models_ordered:
+        if not isinstance(model_name, str):
+            msg = f"Expected model name to be a string, but got {type(model_name)} for model {model_name}."
+            raise TypeError(msg)
+
+        if model_name == "":
+            msg = "Expected model name to be non-empty, but got empty string."
+            raise ValueError(msg)
+
+    num_redundant_models = len(models_ordered) - len(set(models_ordered))
+    if num_redundant_models > 0:
+        msg = f"Expected models ordered to have unique models, but got {num_redundant_models} redundant models."
+        raise ValueError(msg)
+
+
+def _validate_confidences(confidences: dict[tuple[str, str], float]) -> None:
+    if not isinstance(confidences, dict):
+        msg = f"Expected confidences to be a dict, but got {type(confidences)}."
+        raise TypeError(msg)
+
+    for (model1, model2), confidence in confidences.items():
+        if not isinstance(model1, str):
+            msg = f"Expected model name to be a string, but got {type(model1)} for model {model1}."
+            raise TypeError(msg)
+
+        if not isinstance(model2, str):
+            msg = f"Expected model name to be a string, but got {type(model2)} for model {model2}."
+            raise TypeError(msg)
+
+        if not isinstance(confidence, float):
+            msg = f"Expected confidence to be a float, but got {type(confidence)} for models {model1} and {model2}."
+            raise TypeError(msg)
+
+        if not (0 <= confidence <= 1):
+            msg = f"Expected confidence to be between 0 and 1, but got {confidence} for models {model1} and {model2}."
+            raise ValueError(msg)
+
+
+def _joint_validate_models_ordered_and_confidences(
+    models_ordered: tuple[str, ...],
+    confidences: dict[tuple[str, str], float],
+) -> None:
+    num_models = len(models_ordered)
+    expected_num_pairs = num_models * (num_models - 1)
+
+    if len(confidences) != expected_num_pairs:
+        msg = f"Expected {expected_num_pairs} pairs of models, but got {len(confidences)} pairs of models."
+        raise ValueError(msg)
+
+    models_in_confidences = {model for pair_models in confidences for model in pair_models}
+
+    diff = set(models_ordered).symmetric_difference(models_in_confidences)
+    if len(diff) > 0:
+        msg = (
+            "Expected models in confidences to be the same as models ordered, but got models missing in one"
+            f"of them: {diff}."
+        )
+        raise ValueError(msg)
+
+
+# =========================================== FUNCTIONS ===========================================
 
 
 def per_image_scores_stats(
@@ -218,25 +296,68 @@ compare_models_pairwise_wilcoxon.__doc__ = compare_models_pairwise_wilcoxon.__do
 )
 
 
-# NEXT
-# NEXT
-# NEXT
-# NEXT
-# NEXT
-# NEXT
-# NEXT
-# NEXT
-# NEXT
-# NEXT
-# NEXT
-# NEXT
-# NEXT
-# NEXT
-# NEXT
-# NEXT
-# NEXT
-# NEXT
-# NEXT
-# NEXT
-# GET RID OF THIS ERROR FOR NOT DEFINING AUPIMORESULT
-# MAKE THE FORMATING OF STATS TEST LIKE BEFORE
+def format_pairwise_tests_results(
+    models_ordered: tuple[str, ...],
+    confidences: dict[tuple[str, str], float],
+    model1_as_column: bool = True,
+    left_to_right: bool = False,
+    top_to_bottom: bool = False,
+) -> DataFrame:
+    """Format the results of pairwise tests into a square dataframe.
+
+    The confidence values refer to the confidence level (in [0, 1]) on the alternative hypothesis,
+    which is formulated as "`model1` <alternative> `model2`", where `<alternative>` can be '<', '>', or '!='.
+
+    HOW TO READ THE DATAFRAME
+    =========================
+    There are 6 possible ways to read the dataframe, depending on the values of `model1_as_column` and `alternative`
+    (from the pairwise test function that generated `confidences`).
+
+    *column* and *row* below refer to a generic column and row value (model names) in the dataframe.
+
+    if (
+        model1_as_column == True and alternative == 'less'
+        or model1_as_column == False and alternative == 'greater'
+    )
+        read: "column < row"
+        equivalently: "row > column"
+
+    elif (
+        model1_as_column == True and alternative == 'greater'
+        or model1_as_column == False and alternative == 'less'
+    )
+        read: "column > row"
+        equivalently: "row < column"
+
+    else:  # alternative == 'two-sided'
+        read: "column != row"
+        equivalently: "row != column"
+
+    Args:
+        models_ordered: The models ordered in a meaningful way, generally from best to worst when automatically ordered.
+        confidences: The confidence on the alternative hypothesis, as returned by the pairwise test function.
+        model1_as_column: Whether to put `model1` as column or row in the dataframe.
+        left_to_right: Whether to order the columns from best to worst model as left to right.
+        top_to_bottom: Whether to order the rows from best to worst model as top to bottom.
+            Default column/row ordering is from worst to best model (left to right, top to bottom),
+            so the upper left corner is the worst model compared to itself, and the bottom right corner is the best
+            model compared to itself.
+
+    """
+    _validate_models_ordered(models_ordered)
+    _validate_confidences(confidences)
+    _joint_validate_models_ordered_and_confidences(models_ordered, confidences)
+    confidences = deepcopy(confidences)
+    confidences.update({(model, model): torch.nan for model in models_ordered})
+    # `df` stands for `dataframe`
+    confdf = pd.DataFrame(confidences, index=["confidence"]).T
+    confdf.index.names = ["model1", "model2"]
+    confdf = confdf.reset_index()
+    confdf["model1"] = pd.Categorical(confdf["model1"], categories=models_ordered, ordered=True)
+    confdf["model2"] = pd.Categorical(confdf["model2"], categories=models_ordered, ordered=True)
+    # df at this point: 3 columns: model1, model2, confidence
+    index_model, column_model = ("model2", "model1") if model1_as_column else ("model1", "model2")
+    confdf = confdf.pivot_table(index=index_model, columns=column_model, values="confidence", dropna=False, sort=False)
+    # now it is a square dataframe with models as index and columns, and confidence as values
+    confdf = confdf.sort_index(axis=0, ascending=top_to_bottom)
+    return confdf.sort_index(axis=1, ascending=left_to_right)

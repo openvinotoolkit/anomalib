@@ -338,24 +338,34 @@ def compare_models_pairwise_ttest(
     Each comparison of two models is a paired t-test (null hypothesis is that they are equal).
 
     Args:
-        scores_per_model: Dictionary of models and their per-image scores.
+        scores_per_model: Dictionary of `n` models and their per-image scores.
             key: model name
             value: tensor of shape (num_images,). All `nan` values must be at the same positions.
-        higher_is_better: Whether higher values of the metric are better. Defaults to True.
-        alternative: Alternative hypothesis for the statistical tests. See `StatsAlternativeHypothesis`.
+        higher_is_better: Whether higher values of score are better or worse. Defaults to True.
+        alternative: Alternative hypothesis for the statistical tests. See `confidences` in "Returns" section.
+                     Valid values are `StatsAlternativeHypothesis.ALTERNATIVES`.
 
     Returns:
             (models_ordered, test_results):
-                - models_ordered: List of models ordered (by the user or by average score, see above).
+                - models_ordered: Models sorted by the user (`OrderedDict` input) or automatically (`dict` input).
+
+                    Automatic sorting is by average score from best to worst model.
+                    Depending on `higher_is_better`, this corresponds to:
+                        - `higher_is_better=True` ==> descending score order
+                        - `higher_is_better=False` ==> ascending score order
+                    along the indices from 0 to `n-1`.
+
                 - confidences: Dictionary of confidence values for each pair of models.
-                    For all pairs of indices i and j from 0 to n-1, where `n` is the number of models and i != j:
+
+                    For all pairs of indices i and j from 0 to `n-1` such that i != j:
                         - key: (models_ordered[i], models_ordered[j])
                         - value: confidence on the alternative hypothesis.
+
                     For models `models_ordered[i]` and `models_ordered[j]`, the alternative hypothesis is:
                         - if `less`: model[i] < model[j]
                         - if `greater`: model[i] > model[j]
                         - if `two-sided`: model[i] != model[j]
-                    on average.
+                    in termos of average score.
     """
     _validate_scores_per_model(scores_per_model)
     StatsAlternativeHypothesis.validate(alternative)
@@ -406,27 +416,34 @@ def compare_models_pairwise_wilcoxon(
     This is like the non-parametric version of the paired t-test.
 
     Args:
-        scores_per_model: Dictionary of models and their per-image scores.
+        scores_per_model: Dictionary of `n` models and their per-image scores.
             key: model name
             value: tensor of shape (num_images,). All `nan` values must be at the same positions.
-        higher_is_better: Whether higher values of the metric are better. Defaults to True.
-        alternative: Alternative hypothesis for the statistical tests. See `StatsAlternativeHypothesis`.
+        higher_is_better: Whether higher values of score are better or worse. Defaults to True.
+        alternative: Alternative hypothesis for the statistical tests. See `confidences` in "Returns" section.
+                     Valid values are `StatsAlternativeHypothesis.ALTERNATIVES`.
         atol: Absolute tolerance used to consider two scores as equal. Defaults to 1e-3 (0.1%).
               When doing a paired test, if the difference between two scores is below `atol`, the difference is
               truncated to 0. If `atol` is None, no truncation is done.
 
     Returns:
             (models_ordered, test_results):
-                - models_ordered: List of models ordered (by the user or by average score, see above).
+                - models_ordered: Models sorted by the user (`OrderedDict` input) or automatically (`dict` input).
+
+                    Automatic sorting is from "best to worst" model, which corresponds to ascending average rank
+                    along the indices from 0 to `n-1`.
+
                 - confidences: Dictionary of confidence values for each pair of models.
-                    For all pairs of indices i and j from 0 to n-1, where `n` is the number of models and i != j:
+
+                    For all pairs of indices i and j from 0 to `n-1` such that i != j:
                         - key: (models_ordered[i], models_ordered[j])
                         - value: confidence on the alternative hypothesis.
+
                     For models `models_ordered[i]` and `models_ordered[j]`, the alternative hypothesis is:
                         - if `less`: model[i] < model[j]
                         - if `greater`: model[i] > model[j]
                         - if `two-sided`: model[i] != model[j]
-                    on average in terms of ranks (not scores).
+                    in terms of average ranks (not scores!).
     """
     _validate_scores_per_model(scores_per_model)
     StatsAlternativeHypothesis.validate(alternative)
@@ -448,7 +465,8 @@ def compare_models_pairwise_wilcoxon(
             method="average",
             axis=0,
         ).mean(axis=1)
-        argsort_avg_ranks = avg_ranks.argsort()  # ascending order, lower score is better
+        # ascending order, lower score is better --> best to worst model
+        argsort_avg_ranks = avg_ranks.argsort()
         scores_per_model_nonan = OrderedDict(scores_per_model_nonan_items[idx] for idx in argsort_avg_ranks)
 
     models_ordered = tuple(scores_per_model_nonan.keys())
