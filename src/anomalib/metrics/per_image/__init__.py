@@ -8,7 +8,7 @@ from .binclf_curve_numpy import BinclfAlgorithm, BinclfThreshsChoice
 from .pimo import AUPIMO, PIMO, AUPIMOResult, PIMOResult, aupimo_scores, pimo_curves
 from .pimo_numpy import PIMOSharedFPRMetric
 from .utils import (
-    compare_models_pairwise_ttest,
+    compare_models_pairwise_ttest_rel,
     compare_models_pairwise_wilcoxon,
     format_pairwise_tests_results,
     per_image_scores_stats,
@@ -35,7 +35,7 @@ __all__ = [
     "PIMO",
     "AUPIMO",
     # utils
-    "compare_models_pairwise_ttest",
+    "compare_models_pairwise_ttest_rel",
     "compare_models_pairwise_wilcoxon",
     "format_pairwise_tests_results",
     "per_image_scores_stats",

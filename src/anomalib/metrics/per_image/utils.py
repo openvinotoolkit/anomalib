@@ -228,7 +228,7 @@ def _validate_scores_per_model(  # noqa: C901
             raise ValueError(msg)
 
 
-def compare_models_pairwise_ttest(
+def compare_models_pairwise_ttest_rel(
     scores_per_model: dict[str, Tensor]
     | OrderedDict[str, Tensor]
     | dict[str, AUPIMOResult]
@@ -236,7 +236,7 @@ def compare_models_pairwise_ttest(
     alternative: str,
     higher_is_better: bool,
 ) -> tuple[tuple[str, ...], dict[tuple[str, str], float]]:
-    """Torch-oriented interface for `compare_models_pairwise_ttest`. See its dscription for more details (below).
+    """Torch-oriented interface for `compare_models_pairwise_ttest_rel`. See its dscription for more details (below).
 
     Numpy version docstring
     =======================
@@ -254,11 +254,11 @@ def compare_models_pairwise_ttest(
     cls = OrderedDict if isinstance(scores_per_model, OrderedDict) else dict
     scores_per_model_with_arrays = cls(scores_per_model_items)
 
-    return utils_numpy.compare_models_pairwise_ttest(scores_per_model_with_arrays, alternative, higher_is_better)
+    return utils_numpy.compare_models_pairwise_ttest_rel(scores_per_model_with_arrays, alternative, higher_is_better)
 
 
-compare_models_pairwise_ttest.__doc__ = compare_models_pairwise_ttest.__doc__.format(  # type: ignore[union-attr]
-    docstring=utils_numpy.compare_models_pairwise_ttest.__doc__,
+compare_models_pairwise_ttest_rel.__doc__ = compare_models_pairwise_ttest_rel.__doc__.format(  # type: ignore[union-attr]
+    docstring=utils_numpy.compare_models_pairwise_ttest_rel.__doc__,
 )
 
 
