@@ -16,3 +16,4 @@ torch>=2,<2.2.0 # rkde export fails even with ONNX 17 (latest) with torch 2.2.0.
 torchmetrics==0.10.3
 rich-argparse
 open-clip-torch>=2.23.0
+numba>=0.58.1
