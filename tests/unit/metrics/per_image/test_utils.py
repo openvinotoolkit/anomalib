@@ -178,9 +178,9 @@ def test_per_image_scores_stats_specific_values() -> None:
 
 def test_compare_models_pairwise_ttest(scores_per_model: dict, alternative: str, higher_is_better: bool) -> None:
     """Test `compare_models_pairwise_ttest`."""
-    from anomalib.metrics.per_image import AUPIMOResult, compare_models_pairwise_ttest
+    from anomalib.metrics.per_image import AUPIMOResult, compare_models_pairwise_ttest_rel
 
-    models_ordered, confidences = compare_models_pairwise_ttest(
+    models_ordered, confidences = compare_models_pairwise_ttest_rel(
         scores_per_model,
         alternative=alternative,
         higher_is_better=higher_is_better,
@@ -213,7 +213,7 @@ def test_compare_models_pairwise_ttest(scores_per_model: dict, alternative: str,
     if "c" in scores_per_model:
         scores_per_model["c"] = copy_and_add_nan(scores_per_model["c"])
 
-    compare_models_pairwise_ttest(
+    compare_models_pairwise_ttest_rel(
         scores_per_model,
         alternative=alternative,
         higher_is_better=higher_is_better,
@@ -268,7 +268,7 @@ def test_compare_models_pairwise_wilcoxon(scores_per_model: dict, alternative: s
 def test_format_pairwise_tests_results(scores_per_model: dict) -> None:
     """Test `format_pairwise_tests_results`."""
     from anomalib.metrics.per_image import (
-        compare_models_pairwise_ttest,
+        compare_models_pairwise_ttest_rel,
         compare_models_pairwise_wilcoxon,
         format_pairwise_tests_results,
     )
@@ -288,7 +288,7 @@ def test_format_pairwise_tests_results(scores_per_model: dict) -> None:
     assert tuple(confidence_df.columns.tolist()) == models_ordered
     assert tuple(confidence_df.index.tolist()) == models_ordered
 
-    models_ordered, confidences = compare_models_pairwise_ttest(
+    models_ordered, confidences = compare_models_pairwise_ttest_rel(
         scores_per_model,
         alternative="greater",
         higher_is_better=True,

@@ -174,6 +174,9 @@ def per_image_scores_stats(
 ) -> list[dict[str, str | int | float]]:
     """Compute statistics of per-image scores (based on a boxplot's statistics).
 
+    For a single per-image metric collection (1 model, 1 dataset), compute statistics (based on a boxplot)
+    and find the closest image to each statistic.
+
     This function uses `matplotlib.cbook.boxplot_stats`, which is the same function used by `matplotlib.pyplot.boxplot`.
 
     ** OUTLIERS **
@@ -325,17 +328,24 @@ def per_image_scores_stats(
     return sorted(records, key=lambda r: r["score"])
 
 
-def compare_models_pairwise_ttest(
+def compare_models_pairwise_ttest_rel(
     scores_per_model: dict[str, ndarray] | OrderedDict[str, ndarray],
     alternative: str,
     higher_is_better: bool,
 ) -> tuple[tuple[str, ...], dict[tuple[str, str], float]]:
-    """Compare all pairs of models using the paired t-test (parametric).
+    """Compare all pairs of models using the paired t-test on two related samples (parametric).
+
+    This is a test for the null hypothesis that two repeated samples have identical average (expected) values.
+    In fact, it tests whether the average of the differences between the two samples is significantly different from 0.
+
+    Refs:
+        - `scipy.stats.ttest_rel`: https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.ttest_rel.html
+        - Wikipedia page: https://en.wikipedia.org/wiki/Student's_t-test#Dependent_t-test_for_paired_samples
+
+    ===
 
     If an ordered dictionary is given, the models are sorted by the order of the dictionary.
     Otherwise, the models are sorted by average SCORE.
-
-    Each comparison of two models is a paired t-test (null hypothesis is that they are equal).
 
     Args:
         scores_per_model: Dictionary of `n` models and their per-image scores.
@@ -408,12 +418,19 @@ def compare_models_pairwise_wilcoxon(
 ) -> tuple[tuple[str, ...], dict[tuple[str, str], float]]:
     """Compare all pairs of models using the Wilcoxon signed-rank test (non-parametric).
 
-    If an ordered dictionary is given, the models are sorted by the order of the dictionary.
-    Otherwise, the models are sorted by average RANK.
-
     Each comparison of two models is a Wilcoxon signed-rank test (null hypothesis is that they are equal).
 
+    It tests whether the distribution of the differences of scores is symmetric about zero in a non-parametric way.
     This is like the non-parametric version of the paired t-test.
+
+    Refs:
+        - `scipy.stats.wilcoxon`: https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.wilcoxon.html#scipy.stats.wilcoxon
+        - Wikipedia page: https://en.wikipedia.org/wiki/Wilcoxon_signed-rank_test
+
+    ===
+
+    If an ordered dictionary is given, the models are sorted by the order of the dictionary.
+    Otherwise, the models are sorted by average RANK.
 
     Args:
         scores_per_model: Dictionary of `n` models and their per-image scores.
