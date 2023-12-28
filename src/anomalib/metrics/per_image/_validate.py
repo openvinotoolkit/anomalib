@@ -93,19 +93,25 @@ def rate_range(bounds: tuple[float, float]) -> None:
         raise ValueError(msg)
 
 
-def file_path(file_path: str | Path, must_exist: bool, extension: str | None) -> None:
+def file_path(file_path: str | Path, must_exist: bool, extension: str | None, pathlib_ok: bool) -> None:
     """Validate the given path is a file (optionally) with the expected extension.
 
     Args:
         file_path (str | Path): The file path to validate.
         must_exist (bool): Flag indicating whether the file must exist.
         extension (str | None): The expected file extension, eg. .png, .jpg, etc. If `None`, no validation is performed.
+        pathlib_ok (bool): Flag indicating whether `pathlib.Path` is allowed; if False, only `str` paths are allowed.
     """
     if isinstance(file_path, str):
         file_path = Path(file_path)
 
     elif not isinstance(file_path, Path):
         msg = f"Expected file path to be a string or pathlib.Path, but got {type(file_path)}"
+        raise TypeError(msg)
+
+    # if it's here, then it's a `pathlib.Path`
+    elif not pathlib_ok:
+        msg = f"Only `str` paths are allowed, but got {type(file_path)}"
         raise TypeError(msg)
 
     if file_path.is_dir():
@@ -122,6 +128,31 @@ def file_path(file_path: str | Path, must_exist: bool, extension: str | None) ->
     if file_path.suffix != extension:
         msg = f"Expected file path to have extension '{extension}', but got '{file_path.suffix}'"
         raise ValueError(msg)
+
+
+def file_paths(file_paths: list[str | Path], must_exist: bool, extension: str | None, pathlib_ok: bool) -> None:
+    """Validate the given paths are files (optionally) with the expected extension.
+
+    Args:
+        file_paths (list[str | Path]): The file paths to validate.
+        must_exist (bool): Flag indicating whether the files must exist.
+        extension (str | None): The expected file extension, eg. .png, .jpg, etc. If `None`, no validation is performed.
+        pathlib_ok (bool): Flag indicating whether `pathlib.Path` is allowed; if False, only `str` paths are allowed.
+    """
+    if not isinstance(file_paths, list):
+        msg = f"Expected paths to be a list, but got {type(file_paths)}."
+        raise TypeError(msg)
+
+    for idx, path in enumerate(file_paths):
+        try:
+            msg = f"Invalid path at index {idx}: {path}"
+            file_path(path, must_exist=must_exist, extension=extension, pathlib_ok=pathlib_ok)
+
+        except TypeError as ex:  # noqa: PERF203
+            raise TypeError(msg) from ex
+
+        except ValueError as ex:
+            raise ValueError(msg) from ex
 
 
 def threshs(threshs: ndarray) -> None:
@@ -334,7 +365,7 @@ def rate_curve(rate_curve: ndarray, nan_allowed: bool, decreasing: bool) -> None
         raise ValueError(msg)
 
 
-def per_image_rate_curves(rate_curves: ndarray, nan_allowed: bool, decreasing: bool) -> None:
+def per_image_rate_curves(rate_curves: ndarray, nan_allowed: bool, decreasing: bool | None) -> None:
     if not isinstance(rate_curves, ndarray):
         msg = f"Expected per-image rate curves to be an ndarray, but got {type(rate_curves)}."
         raise TypeError(msg)
@@ -366,6 +397,9 @@ def per_image_rate_curves(rate_curves: ndarray, nan_allowed: bool, decreasing: b
     if (valid_values > 1).any():
         msg = "Expected per-image rate curves to have values in the interval [0, 1], but got values > 1."
         raise ValueError(msg)
+
+    if decreasing is None:
+        return
 
     diffs = np.diff(rate_curves, axis=1)
     diffs_valid = diffs[~np.isnan(diffs)] if nan_allowed else diffs

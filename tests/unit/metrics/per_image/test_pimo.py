@@ -178,6 +178,7 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
         anomaly_maps = torch.from_numpy(anomaly_maps)
         masks = torch.from_numpy(masks)
         metafunc.parametrize(argnames=("anomaly_maps", "masks"), argvalues=[(anomaly_maps, masks)])
+        metafunc.parametrize(argnames=("paths",), argvalues=[(None,), (["/path/to/a", "/path/to/b", "/path/to/c"],)])
 
 
 def _do_test_pimo_outputs(
@@ -498,10 +499,15 @@ def test_aupimo_edge(
 def test_pimoresult_object(
     anomaly_maps: Tensor,
     masks: Tensor,
+    paths: list[str] | None,
 ) -> None:
     """Test if `PIMOResult` can be converted to other formats and back."""
     from anomalib.metrics.per_image import pimo
     from anomalib.metrics.per_image.pimo import PIMOResult
+
+    optional_kwargs = {}
+    if paths is not None:
+        optional_kwargs["paths"] = paths
 
     pimoresult = pimo.pimo_curves(
         anomaly_maps,
@@ -509,6 +515,7 @@ def test_pimoresult_object(
         num_threshs=7,
         binclf_algorithm="numba",
         shared_fpr_metric="mean-per-image-fpr",
+        **optional_kwargs,
     )
 
     _ = pimoresult.num_threshs
@@ -543,10 +550,15 @@ def test_pimoresult_object(
 def test_aupimoresult_object(
     anomaly_maps: Tensor,
     masks: Tensor,
+    paths: list[str] | None,
 ) -> None:
     """Test if `AUPIMOResult` can be converted to other formats and back."""
     from anomalib.metrics.per_image import pimo
     from anomalib.metrics.per_image.pimo import AUPIMOResult
+
+    optional_kwargs = {}
+    if paths is not None:
+        optional_kwargs["paths"] = paths
 
     _, aupimoresult = pimo.aupimo_scores(
         anomaly_maps,
@@ -556,6 +568,7 @@ def test_aupimoresult_object(
         shared_fpr_metric="mean-per-image-fpr",
         fpr_bounds=(1e-5, 1e-4),
         force=True,
+        **optional_kwargs,
     )
 
     # call properties

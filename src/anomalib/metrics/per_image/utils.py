@@ -1,6 +1,8 @@
 """Torch-oriented interfaces for `utils.py`."""
 from __future__ import annotations
 
+import logging
+import warnings
 from collections import OrderedDict
 from copy import deepcopy
 from typing import TYPE_CHECKING
@@ -16,6 +18,8 @@ from .utils_numpy import StatsOutliersPolicy, StatsRepeatedPolicy
 if TYPE_CHECKING:
     from .pimo import AUPIMOResult
 
+
+logger = logging.getLogger(__name__)
 
 # =========================================== ARGS VALIDATION ===========================================
 
@@ -134,7 +138,90 @@ per_image_scores_stats.__doc__ = per_image_scores_stats.__doc__.format(  # type:
 )
 
 
-def _validate_scores_per_model(  # noqa: C901
+def _validate_scores_per_model_tensor(scores_per_model: dict[str, Tensor] | OrderedDict[str, Tensor]) -> None:
+    first_key_value = None
+
+    for model_name, scores in scores_per_model.items():
+        if scores.ndim != 1:
+            msg = f"Expected scores to be 1D, but got {scores.ndim}D for model {model_name}."
+            raise ValueError(msg)
+
+        num_valid_scores = scores[~torch.isnan(scores)].numel()
+
+        if num_valid_scores < 1:
+            msg = f"Expected at least 1 non-nan score, but got {num_valid_scores} for model {model_name}."
+            raise ValueError(msg)
+
+        if first_key_value is None:
+            first_key_value = (model_name, scores)
+            continue
+
+        first_model_name, first_scores = first_key_value
+
+        # same shape
+        if scores.shape[0] != first_scores.shape[0]:
+            msg = (
+                "Expected scores to have the same number of scores, "
+                f"but got ({model_name}) {scores.shape[0]} != {first_scores.shape[0]} ({first_model_name})."
+            )
+            raise ValueError(msg)
+
+        # `nan` at the same indices
+        if (torch.isnan(scores) != torch.isnan(first_scores)).any():
+            msg = (
+                "Expected `nan` values, if any, to be at the same indices, "
+                f"but there are differences between models {model_name} and {first_model_name}."
+            )
+            raise ValueError(msg)
+
+
+def _validate_scores_per_model_aupimoresult(
+    scores_per_model: dict[str, AUPIMOResult] | OrderedDict[str, AUPIMOResult],
+    missing_paths_ok: bool,
+) -> None:
+    first_key_value = None
+
+    for model_name, aupimoresult in scores_per_model.items():
+        if first_key_value is None:
+            first_key_value = (model_name, aupimoresult)
+            continue
+
+        first_model_name, first_aupimoresult = first_key_value
+
+        # check that the metadata is the same, so they can be compared indeed
+        if aupimoresult.shared_fpr_metric != first_aupimoresult.shared_fpr_metric:
+            msg = (
+                "Expected AUPIMOResult objects in scores per model to have the same shared FPR metric, "
+                f"but got ({model_name}) {aupimoresult.shared_fpr_metric} != "
+                f"{first_aupimoresult.shared_fpr_metric} ({first_model_name})."
+            )
+            raise ValueError(msg)
+
+        if aupimoresult.fpr_bounds != first_aupimoresult.fpr_bounds:
+            msg = (
+                "Expected AUPIMOResult objects in scores per model to have the same FPR bounds, "
+                f"but got ({model_name}) {aupimoresult.fpr_bounds} != "
+                f"{first_aupimoresult.fpr_bounds} ({first_model_name})."
+            )
+            raise ValueError(msg)
+
+    available_paths = [tuple(scores.paths) for scores in scores_per_model.values() if scores.paths is not None]
+
+    if len(set(available_paths)) > 1:
+        msg = (
+            "Expected AUPIMOResult objects in scores per model to have the same paths, "
+            "but got different paths for different models."
+        )
+        raise ValueError(msg)
+
+    if len(available_paths) != len(scores_per_model):
+        msg = "Some models have paths, while others are missing them."
+        if missing_paths_ok:
+            warnings.warn(msg, UserWarning, stacklevel=3)
+            logger.warning(msg)
+
+
+def _validate_scores_per_model(
     scores_per_model: dict[str, Tensor]
     | OrderedDict[str, Tensor]
     | dict[str, AUPIMOResult]
@@ -151,81 +238,34 @@ def _validate_scores_per_model(  # noqa: C901
         msg = f"Expected scores per model to have at least 2 models, but got {len(scores_per_model)}."
         raise ValueError(msg)
 
-    first_key_value_tensor = None
+    if not all(isinstance(model_name, str) for model_name in scores_per_model):
+        msg = "Expected scores per model to have model names (strings) as keys."
+        raise TypeError(msg)
 
-    for model_name, scores in scores_per_model.items():
-        if not isinstance(model_name, str):
-            msg = f"Expected model name to be a string, but got {type(model_name)} for model {model_name}."
-            raise TypeError(msg)
+    first_instance = next(iter(scores_per_model.values()))
 
-        if isinstance(scores, AUPIMOResult):
-            scores_tensor = scores.aupimos
-        elif isinstance(scores, Tensor):
-            scores_tensor = scores
-        else:
-            msg = f"Expected scores to be a Tensor or AUPIMOResult, but got {type(scores)} for model {model_name}."
-            raise TypeError(msg)
+    if (
+        isinstance(first_instance, Tensor)
+        and any(not isinstance(scores, Tensor) for scores in scores_per_model.values())
+    ) or (
+        isinstance(first_instance, AUPIMOResult)
+        and any(not isinstance(scores, AUPIMOResult) for scores in scores_per_model.values())
+    ):
+        msg = (
+            "Values in the scores per model dict must have the same type for values (Tensor or AUPIMOResult), "
+            "but more than one type was found."
+        )
+        raise TypeError(msg)
 
-        if scores_tensor.ndim != 1:
-            msg = f"Expected scores to be 1D Tensor, but got {scores_tensor.ndim}D for model {model_name}."
-            raise ValueError(msg)
+    if isinstance(first_instance, Tensor):
+        _validate_scores_per_model_tensor(scores_per_model)
+        return
 
-        num_valid_scores = scores_tensor[~torch.isnan(scores_tensor)].numel()
+    _validate_scores_per_model_tensor(
+        {model_name: scores.aupimos for model_name, scores in scores_per_model.items()},
+    )
 
-        if num_valid_scores < 2:
-            msg = f"Expected at least 2 scores, but got {num_valid_scores} for model {model_name}."
-            raise ValueError(msg)
-
-        if first_key_value_tensor is None:
-            first_key_value_tensor = (model_name, scores, scores_tensor)
-            continue
-
-        first_model_name, first_scores, first_scores_tensor = first_key_value_tensor
-
-        # must have the same type
-        # test using `isinstance` to avoid issues with subclasses
-        if isinstance(scores, Tensor) != isinstance(first_scores, Tensor):
-            msg = (
-                "Expected scores to have the same type, "
-                f"but got ({model_name}) {type(scores)} != {type(first_scores)} ({first_model_name})."
-            )
-            raise TypeError(msg)
-
-        # same shape
-        if scores_tensor.shape != first_scores_tensor.shape:
-            msg = (
-                "Expected scores to have the same shape, "
-                f"but got ({model_name}) {scores_tensor.shape} != {first_scores_tensor.shape} ({first_model_name})."
-            )
-            raise ValueError(msg)
-
-        # `nan` at the same indices
-        if (torch.isnan(scores_tensor) != torch.isnan(first_scores_tensor)).any():
-            msg = (
-                "Expected `nan` values, if any, to be at the same indices, "
-                f"but there are differences between models {model_name} and {first_model_name}."
-            )
-            raise ValueError(msg)
-
-        if isinstance(scores, Tensor):
-            continue
-
-        # check that the metadata is the same, so they can be compared indeed
-
-        if scores.shared_fpr_metric != first_scores.shared_fpr_metric:
-            msg = (
-                "Expected scores to have the same shared FPR metric, "
-                f"but got ({model_name}) {scores.shared_fpr_metric} != "
-                f"{first_scores.shared_fpr_metric} ({first_model_name})."
-            )
-            raise ValueError(msg)
-
-        if scores.fpr_bounds != first_scores.fpr_bounds:
-            msg = (
-                "Expected scores to have the same FPR bounds, "
-                f"but got ({model_name}) {scores.fpr_bounds} != {first_scores.fpr_bounds} ({first_model_name})."
-            )
-            raise ValueError(msg)
+    _validate_scores_per_model_aupimoresult(scores_per_model, missing_paths_ok=True)
 
 
 def compare_models_pairwise_ttest_rel(

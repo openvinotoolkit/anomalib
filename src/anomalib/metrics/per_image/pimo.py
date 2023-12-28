@@ -18,6 +18,7 @@ import json
 import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import torch
 from torch import Tensor
@@ -29,6 +30,9 @@ from . import _validate, pimo_numpy, utils
 from .binclf_curve_numpy import BinclfAlgorithm
 from .pimo_numpy import PIMOSharedFPRMetric
 from .utils import StatsOutliersPolicy, StatsRepeatedPolicy
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 # =========================================== ARGS VALIDATION ===========================================
 
@@ -69,15 +73,24 @@ def _validate_image_classes(image_classes: Tensor) -> None:
 
 
 def _validate_per_image_tprs(per_image_tprs: Tensor, image_classes: Tensor) -> None:
-    _validate.is_tensor(per_image_tprs, argname="per_image_tprs")
     _validate_image_classes(image_classes)
+    _validate.is_tensor(per_image_tprs, argname="per_image_tprs")
 
+    # general validations
+    _validate.per_image_rate_curves(
+        per_image_tprs.numpy(),
+        nan_allowed=True,  # normal images have NaN TPRs
+        decreasing=None,  # not checked here
+    )
+
+    # specific to anomalous images
     _validate.per_image_rate_curves(
         per_image_tprs[image_classes == 1].numpy(),
         nan_allowed=False,
         decreasing=True,
     )
 
+    # specific to normal images
     normal_images_tprs = per_image_tprs[image_classes == 0]
     if not normal_images_tprs.isnan().all():
         msg = "Expected all normal images to have NaN TPRs, but some have non-NaN values."
@@ -89,10 +102,30 @@ def _validate_aupimos(aupimos: Tensor) -> None:
     _validate.rates(aupimos.numpy(), nan_allowed=True)
 
 
+def _validate_source_images_paths(paths: Sequence[str], expected_num_paths: int | None) -> None:
+    _validate.file_paths(
+        paths,  # type: ignore[arg-type]
+        # not necessary to exist because the metric can be computed
+        # directly from the anomaly maps and masks, without the images
+        must_exist=False,
+        # this will eventually be serialized to a file, so we don't want pathlib objects keep it simple
+        pathlib_ok=False,
+        # not enforcing the image type (e.g. png, jpg, etc.)
+        extension=None,
+    )
+
+    if expected_num_paths is None:
+        return
+
+    if len(paths) != expected_num_paths:
+        msg = f"Invalid `paths` argument. Expected {expected_num_paths} paths, but got {len(paths)} instead."
+        raise ValueError(msg)
+
+
 # =========================================== RESULT OBJECT ===========================================
 
 
-@dataclass
+@dataclass(frozen=True)
 class PIMOResult:
     """Per-Image Overlap (PIMO, pronounced pee-mo) curve.
 
@@ -109,6 +142,7 @@ class PIMOResult:
         threshs (Tensor): sequence of K (monotonically increasing) thresholds used to compute the PIMO curve
         shared_fpr (Tensor): K values of the shared FPR metric at the corresponding thresholds
         per_image_tprs (Tensor): for each of the N images, the K values of in-image TPR at the corresponding thresholds
+        paths (list[str]) (optional): [metadata] paths to the source images to which the PIMO curves correspond
     """
 
     # metadata
@@ -118,6 +152,9 @@ class PIMOResult:
     threshs: Tensor = field(repr=False)  # shape => (K,)
     shared_fpr: Tensor = field(repr=False)  # shape => (K,)
     per_image_tprs: Tensor = field(repr=False)  # shape => (N, K)
+
+    # optional metadata
+    paths: list[str] | None = field(repr=False, default=None)
 
     @property
     def num_threshs(self) -> int:
@@ -131,34 +168,40 @@ class PIMOResult:
 
     @property
     def image_classes(self) -> Tensor:
-        """Image classes (0: normal, 1: anomalous)."""
-        return (self.per_image_tprs.flatten(1) == 1).any(dim=1).to(torch.int32)
+        """Image classes (0: normal, 1: anomalous).
+
+        Deduced from the per-image TPRs.
+        If any TPR value is not NaN, the image is considered anomalous.
+        """
+        return (~torch.isnan(self.per_image_tprs)).any(dim=1).to(torch.int32)
 
     def __post_init__(self) -> None:
         """Validate the inputs for the result object are consistent."""
         try:
-            PIMOSharedFPRMetric.validate(self.shared_fpr_metric)
             _validate_threshs(self.threshs)
             _validate_shared_fpr(self.shared_fpr, nan_allowed=False)
             _validate_per_image_tprs(self.per_image_tprs, self.image_classes)
 
+            if self.paths is not None:
+                _validate_source_images_paths(self.paths, expected_num_paths=self.per_image_tprs.shape[0])
+
         except (TypeError, ValueError) as ex:
             msg = f"Invalid inputs for {self.__class__.__name__} object. Cause: {ex}."
-            raise ValueError(msg) from ex
+            raise TypeError(msg) from ex
 
         if self.threshs.shape != self.shared_fpr.shape:
             msg = (
                 f"Invalid {self.__class__.__name__} object. Attributes have inconsistent shapes: "
-                f"threshs.shape={self.threshs.shape} != shared_fpr.shape={self.shared_fpr.shape}."
+                f"{self.threshs.shape=} != {self.shared_fpr.shape=}."
             )
-            raise ValueError(msg)
+            raise TypeError(msg)
 
         if self.threshs.shape[0] != self.per_image_tprs.shape[1]:
             msg = (
                 f"Invalid {self.__class__.__name__} object. Attributes have inconsistent shapes: "
-                f"threshs.shape[0]={self.threshs.shape[0]} != per_image_tprs.shape[1]={self.per_image_tprs.shape[1]}."
+                f"{self.threshs.shape[0]=} != {self.per_image_tprs.shape[1]=}."
             )
-            raise ValueError(msg)
+            raise TypeError(msg)
 
     def thresh_at(self, fpr_level: float) -> tuple[int, float, float]:
         """Return the threshold at the given shared FPR.
@@ -182,33 +225,34 @@ class PIMOResult:
 
     def to_dict(self) -> dict[str, Tensor | str]:
         """Return a dictionary with the result object's attributes."""
-        return {
+        dic = {
             "shared_fpr_metric": self.shared_fpr_metric,
             "threshs": self.threshs,
             "shared_fpr": self.shared_fpr,
             "per_image_tprs": self.per_image_tprs,
         }
+        if self.paths is not None:
+            dic["paths"] = self.paths
+        return dic
 
     @classmethod
-    def from_dict(cls: type[PIMOResult], dic: dict[str, Tensor | str]) -> PIMOResult:
+    def from_dict(cls: type[PIMOResult], dic: dict[str, Tensor | str | list[str]]) -> PIMOResult:
         """Return a result object from a dictionary."""
-        keys = ["shared_fpr_metric", "threshs", "shared_fpr", "per_image_tprs"]
-        for key in keys:
-            if key not in dic:
-                msg = f"Invalid input dictionary for {cls.__name__} object, missing key: {key}. Must contain: {keys}."
-                raise ValueError(msg)
+        try:
+            return cls(**dic)  # type: ignore[arg-type]
 
-        return cls(**dic)
+        except TypeError as ex:
+            msg = f"Invalid input dictionary for {cls.__name__} object. Cause: {ex}."
+            raise TypeError(msg) from ex
 
     def save(self, file_path: str | Path) -> None:
         """Save to a `.pt` file.
 
         Args:
             file_path: path to the `.pt` file where to save the PIMO result.
-                - must have a `.pt` extension
-                - if the file already exists, a numerical suffix is added to the filename
+                       If the file already exists, a numerical suffix is added to the filename.
         """
-        _validate.file_path(file_path, must_exist=False, extension=".pt")
+        _validate.file_path(file_path, must_exist=False, extension=".pt", pathlib_ok=True)
         file_path = duplicate_filename(file_path)
         payload = self.to_dict()
         torch.save(payload, file_path)
@@ -219,21 +263,20 @@ class PIMOResult:
 
         Args:
             file_path: path to the `.pt` file where to load the PIMO result.
-                - must have a `.pt` extension
         """
-        _validate.file_path(file_path, must_exist=True, extension=".pt")
+        _validate.file_path(file_path, must_exist=True, extension=".pt", pathlib_ok=True)
         payload = torch.load(file_path)
         if not isinstance(payload, dict):
-            msg = f"Invalid payload in file {file_path}. Must be a dictionary."
+            msg = f"Invalid content in file {file_path}. Must be a dictionary."
             raise TypeError(msg)
         try:
             return cls.from_dict(payload)
-        except (TypeError, ValueError) as ex:
-            msg = f"Invalid payload in file {file_path}. Cause: {ex}."
-            raise ValueError(msg) from ex
+        except TypeError as ex:
+            msg = f"Invalid content in file {file_path}. Cause: {ex}."
+            raise TypeError(msg) from ex
 
 
-@dataclass
+@dataclass(frozen=True)
 class AUPIMOResult:
     """Area Under the Per-Image Overlap (AUPIMO, pronounced a-u-pee-mo) curve.
 
@@ -260,6 +303,9 @@ class AUPIMOResult:
     thresh_lower_bound: float = field(repr=False)
     thresh_upper_bound: float = field(repr=False)
     aupimos: Tensor = field(repr=False)  # shape => (N,)
+
+    # optional metadata
+    paths: list[str] | None = field(repr=False, default=None)
 
     @property
     def num_images(self) -> int:
@@ -301,16 +347,18 @@ class AUPIMOResult:
     def __post_init__(self) -> None:
         """Validate the inputs for the result object are consistent."""
         try:
-            PIMOSharedFPRMetric.validate(self.shared_fpr_metric)
             _validate.rate_range((self.fpr_lower_bound, self.fpr_upper_bound))
             # TODO(jpcbertoldo): warn when it's too low (use parameters from the numpy code)  # noqa: TD003
             _validate.num_threshs(self.num_threshs)
             _validate_aupimos(self.aupimos)
             _validate.thresh_bounds((self.thresh_lower_bound, self.thresh_upper_bound))
 
+            if self.paths is not None:
+                _validate_source_images_paths(self.paths, expected_num_paths=self.aupimos.shape[0])
+
         except (TypeError, ValueError) as ex:
             msg = f"Invalid inputs for {self.__class__.__name__} object. Cause: {ex}."
-            raise ValueError(msg) from ex
+            raise TypeError(msg) from ex
 
     @classmethod
     def from_pimoresult(
@@ -319,6 +367,7 @@ class AUPIMOResult:
         fpr_bounds: tuple[float, float],
         num_threshs_auc: int,
         aupimos: Tensor,
+        paths: list[str] | None = None,
     ) -> AUPIMOResult:
         """Return an AUPIMO result object from a PIMO result object.
 
@@ -328,21 +377,28 @@ class AUPIMOResult:
             num_threshs_auc: number of thresholds used to effectively compute AUPIMO;
                          NOT the number of thresholds used to compute the PIMO curve!
             aupimos: AUPIMO scores
+            paths: paths to the source images to which the AUPIMO scores correspond.
         """
         if pimoresult.per_image_tprs.shape[0] != aupimos.shape[0]:
             msg = (
                 f"Invalid {cls.__name__} object. Attributes have inconsistent shapes: "
                 f"there are {pimoresult.per_image_tprs.shape[0]} PIMO curves but {aupimos.shape[0]} AUPIMO scores."
             )
-            raise ValueError(msg)
+            raise TypeError(msg)
 
         if not torch.isnan(aupimos[pimoresult.image_classes == 0]).all():
             msg = "Expected all normal images to have NaN AUPIMOs, but some have non-NaN values."
-            raise ValueError(msg)
+            raise TypeError(msg)
 
         if torch.isnan(aupimos[pimoresult.image_classes == 1]).any():
             msg = "Expected all anomalous images to have valid AUPIMOs (not nan), but some have NaN values."
-            raise ValueError(msg)
+            raise TypeError(msg)
+
+        if pimoresult.paths is not None:
+            paths = pimoresult.paths
+
+        elif paths is not None:
+            _validate_source_images_paths(paths, expected_num_paths=pimoresult.num_images)
 
         fpr_lower_bound, fpr_upper_bound = fpr_bounds
         # recall: fpr upper/lower bounds are the same as the thresh lower/upper bounds
@@ -357,11 +413,12 @@ class AUPIMOResult:
             thresh_lower_bound=float(thresh_lower_bound),
             thresh_upper_bound=float(thresh_upper_bound),
             aupimos=aupimos,
+            paths=paths,
         )
 
     def to_dict(self) -> dict[str, Tensor | str | float | int]:
         """Return a dictionary with the result object's attributes."""
-        return {
+        dic = {
             "shared_fpr_metric": self.shared_fpr_metric,
             "fpr_lower_bound": self.fpr_lower_bound,
             "fpr_upper_bound": self.fpr_upper_bound,
@@ -370,35 +427,28 @@ class AUPIMOResult:
             "thresh_upper_bound": self.thresh_upper_bound,
             "aupimos": self.aupimos,
         }
+        if self.paths is not None:
+            dic["paths"] = self.paths
+        return dic
 
     @classmethod
-    def from_dict(cls: type[AUPIMOResult], dic: dict[str, Tensor | str | float | int]) -> AUPIMOResult:
+    def from_dict(cls: type[AUPIMOResult], dic: dict[str, Tensor | str | float | int | list[str]]) -> AUPIMOResult:
         """Return a result object from a dictionary."""
-        keys = [
-            "shared_fpr_metric",
-            "fpr_lower_bound",
-            "fpr_upper_bound",
-            "num_threshs",
-            "thresh_lower_bound",
-            "thresh_upper_bound",
-            "aupimos",
-        ]
-        for key in keys:
-            if key not in dic:
-                msg = f"Invalid input dictionary for {cls.__name__} object, missing key: {key}. Must contain: {keys}."
-                raise ValueError(msg)
+        try:
+            return cls(**dic)  # type: ignore[arg-type]
 
-        return cls(**dic)  # type: ignore[arg-type]
+        except TypeError as ex:
+            msg = f"Invalid input dictionary for {cls.__name__} object. Cause: {ex}."
+            raise TypeError(msg) from ex
 
     def save(self, file_path: str | Path) -> None:
         """Save to a `.json` file.
 
         Args:
             file_path: path to the `.json` file where to save the AUPIMO result.
-                - must have a `.json` extension
-                - if the file already exists, a numerical suffix is added to the filename
+                       If the file already exists, a numerical suffix is added to the filename.
         """
-        _validate.file_path(file_path, must_exist=False, extension=".json")
+        _validate.file_path(file_path, must_exist=False, extension=".json", pathlib_ok=True)
         file_path = duplicate_filename(file_path)
         file_path = Path(file_path)
         payload = self.to_dict()
@@ -413,9 +463,8 @@ class AUPIMOResult:
 
         Args:
             file_path: path to the `.json` file where to load the AUPIMO result.
-                - must have a `.json` extension
         """
-        _validate.file_path(file_path, must_exist=True, extension=".json")
+        _validate.file_path(file_path, must_exist=True, extension=".json", pathlib_ok=True)
         file_path = Path(file_path)
         with file_path.open("r") as f:
             payload = json.load(f)
@@ -428,7 +477,7 @@ class AUPIMOResult:
             return cls.from_dict(payload)
         except (TypeError, ValueError) as ex:
             msg = f"Invalid payload in file {file_path}. Cause: {ex}."
-            raise ValueError(msg) from ex
+            raise TypeError(msg) from ex
 
     def stats(
         self,
@@ -471,6 +520,7 @@ def pimo_curves(
     num_threshs: int,
     binclf_algorithm: str = BinclfAlgorithm.NUMBA,
     shared_fpr_metric: str = PIMOSharedFPRMetric.MEAN_PERIMAGE_FPR,
+    paths: list[str] | None = None,
 ) -> PIMOResult:
     """Compute the Per-IMage Overlap (PIMO, pronounced pee-mo) curves.
 
@@ -480,6 +530,9 @@ def pimo_curves(
 
     Refer to `pimo_numpy.pimo_curves()` and `PIMOResult` (their docstrings below).
 
+    Args (extra):
+        paths: paths to the source images to which the PIMO curves correspond.
+
     pimo_numpy.pimo_curves.__doc__
     ==============================
     {docstring_pimo_curves}
@@ -488,11 +541,14 @@ def pimo_curves(
     ==================
     {docstring_pimoresult}
     """
-    _validate.is_tensor(anomaly_maps, argname="anomaly_maps")
+    _validate_anomaly_maps(anomaly_maps)
     anomaly_maps_array = anomaly_maps.detach().cpu().numpy()
 
-    _validate.is_tensor(masks, argname="masks")
+    _validate_masks(masks)
     masks_array = masks.detach().cpu().numpy()
+
+    if paths is not None:
+        _validate_source_images_paths(paths, expected_num_paths=anomaly_maps.shape[0])
 
     # other validations are done in the numpy code
     threshs_array, shared_fpr_array, per_image_tprs_array, _ = pimo_numpy.pimo_curves(
@@ -520,6 +576,7 @@ def pimo_curves(
         threshs=threshs,
         shared_fpr=shared_fpr,
         per_image_tprs=per_image_tprs,
+        paths=paths,
     )
 
 
@@ -538,6 +595,7 @@ def aupimo_scores(
     shared_fpr_metric: str = PIMOSharedFPRMetric.MEAN_PERIMAGE_FPR,
     fpr_bounds: tuple[float, float] = (1e-5, 1e-4),
     force: bool = False,
+    paths: list[str] | None = None,
 ) -> tuple[PIMOResult, AUPIMOResult]:
     """Compute the PIMO curves and their Area Under the Curve (i.e. AUPIMO) scores.
 
@@ -546,6 +604,9 @@ def aupimo_scores(
     The results are converted back to tensors and wrapped in an dataclass object.
 
     Refer to `pimo_numpy.aupimo_scores()`, `PIMOResult` and `AUPIMOResult` (their docstrings below).
+
+    Args (extra):
+        paths: paths to the source images to which the AUPIMO scores correspond.
 
     pimo_numpy.aupimo_scores.__doc__
     =================================
@@ -559,11 +620,14 @@ def aupimo_scores(
     ====================
     {docstring_aupimoresult}
     """
-    _validate.is_tensor(anomaly_maps, argname="anomaly_maps")
+    _validate_anomaly_maps(anomaly_maps)
     anomaly_maps_array = anomaly_maps.detach().cpu().numpy()
 
-    _validate.is_tensor(masks, argname="masks")
+    _validate_masks(masks)
     masks_array = masks.detach().cpu().numpy()
+
+    if paths is not None:
+        _validate_source_images_paths(paths, expected_num_paths=anomaly_maps.shape[0])
 
     # other validations are done in the numpy code
 
@@ -595,6 +659,7 @@ def aupimo_scores(
         threshs=threshs,
         shared_fpr=shared_fpr,
         per_image_tprs=per_image_tprs,
+        paths=paths,
     )
     aupimoresult = AUPIMOResult.from_pimoresult(
         pimoresult,
