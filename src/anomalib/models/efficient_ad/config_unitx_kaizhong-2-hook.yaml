@@ -1,22 +1,22 @@
 dataset:
   name: unitx
   format: unitx
-  # path: /home/sota/Kaizhong Data/segment_task/kaizhong-2-hook-relabel-preprocessed
-  path: /home/sota/datasets/SAFT_Shells_Top
-  # exclude_labels: [
-  #   "NG钩上面脏",
-  #   "NG钩上黑皮",
-  #   "NG钩侧黑皮",
-  #   "NG钩刷损",
-  #   "NG钩叠料",
-  #   "NG钩损",
-  #   "NG钩毛刺",
-  #   "NG钩表面刷损",
-  #   "NG钩尖打伤",
-  #   "NG钩翘",
-  #   "NG钩贴壁"
-  # ]
-  exclude_labels: ['NGCracked_Glass', 'NGFOD', 'NGbroken_glass', 'NGburr', 'NGdamaged_post', 'NGloose_electrode', 'NGmissing_glass', 'NGstringer', 'NGtool_marking', 'NGtooling_crash']
+  path: /home/sota/datasets//kaizhong-2-hook-relabel-preprocessed
+  # path: /home/sota/datasets/SAFT_Shells_Top
+  exclude_labels: [
+    "NG钩上面脏",
+    "NG钩上黑皮",
+    "NG钩侧黑皮",
+    "NG钩刷损",
+    "NG钩叠料",
+    "NG钩损",
+    "NG钩毛刺",
+    "NG钩表面刷损",
+    "NG钩尖打伤",
+    "NG钩翘",
+    "NG钩贴壁"
+  ]
+  # exclude_labels: ['NGCracked_Glass', 'NGFOD', 'NGbroken_glass', 'NGburr', 'NGdamaged_post', 'NGloose_electrode', 'NGmissing_glass', 'NGstringer', 'NGtool_marking', 'NGtooling_crash']
   exclude_asset_ids: []
   task: segmentation
   train_batch_size: 1
@@ -66,7 +66,7 @@ visualization:
 
 project:
   seed: 42
-  path: ./results/SAFT_Shells_Top
+  path: /home/sota/unitx_repos/anomalib/results/kaizhong-2-hook-efficient_ad-resize256
 
 logging:
   logger: ['tensorboard'] # options: [comet, tensorboard, wandb, csv] or combinations.
@@ -90,6 +90,7 @@ trainer:
   # fast_dev_run: true
   accumulate_grad_batches: 1
   max_epochs: 150
+  # max_epochs: 1
   min_epochs: null
   max_steps: 70000
   min_steps: null

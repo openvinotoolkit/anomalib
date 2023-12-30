@@ -66,7 +66,7 @@ visualization:
 
 project:
   seed: 42
-  path: ./results/SAFT_Shells_Top
+  path: /home/sota/unitx_repos/anomalib/results/SAFT_Shells_Top-efficient_ad-resize256
 
 logging:
   logger: ['tensorboard'] # options: [comet, tensorboard, wandb, csv] or combinations.
@@ -90,6 +90,7 @@ trainer:
   # fast_dev_run: true
   accumulate_grad_batches: 1
   max_epochs: 150
+  # max_epochs: 1
   min_epochs: null
   max_steps: 70000
   min_steps: null

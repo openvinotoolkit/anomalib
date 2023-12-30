@@ -143,7 +143,7 @@ def make_unitx_dataset(
         + "/"
         + samples.asset_id
     )
-    samples["mask_path"] = samples["mask_path"].apply(lambda x: x + ".npy") # add back the suffix
+    samples["mask_path"] = samples["mask_path"].apply(lambda x: x.replace(".png", "") + ".npy") # add back the suffix
 
     samples = samples.drop(columns=["is_images_or_masks", "asset_id"])
 
@@ -290,11 +290,11 @@ class UnitXPerDefect(AnomalibDataModule):
             exclude_labels=exclude_labels,
             exclude_asset_ids=exclude_asset_ids,
             )
-        
+
         self.test_data = UnitXPerDefectDataset(
-            task=task, transform=transform_eval, split=Split.VAL, root=root,
+            task=task, transform=transform_eval, split=Split.TRAIN, root=root,
             exclude_labels=[],
             exclude_asset_ids=exclude_asset_ids,
             )
-        
+
         self.val_data = self.test_data

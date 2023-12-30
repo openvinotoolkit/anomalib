@@ -1,30 +1,41 @@
 seed: 42
 compute_openvino: false
 hardware:
-  - cpu
   - gpu
 writer:
-  - wandb
   - tensorboard
 grid_search:
   dataset:
-    category:
-      - bottle
-      - cable
-      - capsule
-      - carpet
-      - grid
-      - hazelnut
-      - leather
-      - metal_nut
-      - pill
-      - screw
-      - tile
-      - toothbrush
-      - transistor
-      - wood
-      - zipper
-    image_size: [224]
+    name: [unitx]
+    format: [unitx]
+    path: [/home/sota/datasets/kaizhong-2-hook-relabel-preprocessed]
+    exclude_labels: [
+      ["NG钩上面脏", "NG钩上黑皮", "NG钩侧黑皮", "NG钩刷损", "NG钩叠料", "NG钩损", "NG钩毛刺", "NG钩表面刷损", "NG钩尖打伤", "NG钩翘", "NG钩贴壁"]
+      # ['NGCracked_Glass', 'NGFOD', 'NGbroken_glass', 'NGburr', 'NGdamaged_post', 'NGloose_electrode', 'NGmissing_glass', 'NGstringer', 'NGtool_marking', 'NGtooling_crash'],
+    ]
+    exclude_asset_ids: [[]]
+    task: [segmentation]
+    # mask_dir: [
+    #   /home/sota/datasets/kaizhong-2-hook-relabel-preprocessed
+    #   # /home/sota/datasets/SAFT_Shells_Top
+    # ]
+    split_ratio: null
+    image_size: [256]
+    train_batch_size: [1]
+    eval_batch_size: [1]
+    num_workers: [4]
+    center_crop: [null] # dimensions to which images are center-cropped after resizing (optional)
+    normalization: [none] # data distribution to which the images will be normalized: [none, imagenet]
+    transform_config:
+      train: [null]
+      eval: [null]
+    test_split_mode: [from_dir] # options: [from_dir, synthetic]
+    test_split_ratio: [null] # fraction of train images held out testing (usage depends on test_split_mode)
+    val_split_mode: [same_as_test] # options: [same_as_test, from_test, synthetic]
+    val_split_ratio: [null] # fraction of train/test images held out for validation (usage depends on val_split_mode)
+
   model_name:
     - padim
-    - patchcore
+    # - patchcore
+    # - draem
+    - efficient_ad
