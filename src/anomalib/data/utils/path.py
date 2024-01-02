@@ -58,7 +58,8 @@ def _prepare_files_labels(
     if isinstance(extensions, str):
         extensions = (extensions,)
 
-    assert all(extension.startswith(".") for extension in extensions), "All extension names must start with the dot."
+    if not all(extension.startswith(".") for extension in extensions):
+        raise RuntimeError(f"All extensions {extensions} must start with the dot")
 
     filenames = [
         f
