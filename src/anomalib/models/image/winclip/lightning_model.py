@@ -3,7 +3,7 @@
 Paper https://arxiv.org/abs/2303.14814
 """
 
-# Copyright (C) 2023 Intel Corporation
+# Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 from __future__ import annotations

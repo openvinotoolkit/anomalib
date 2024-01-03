@@ -1,6 +1,6 @@
 """PyTorch model for the WinCLIP implementation."""
 
-# Copyright (C) 2023 Intel Corporation
+# Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 from collections.abc import Callable

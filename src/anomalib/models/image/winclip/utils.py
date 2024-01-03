@@ -1,5 +1,8 @@
 """WinCLIP utils."""
 
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
 import torch
 from torch import nn
 
