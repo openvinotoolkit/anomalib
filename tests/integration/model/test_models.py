@@ -19,8 +19,8 @@ from anomalib.utils.types import TaskType
 
 
 def models() -> list[str]:
-    """Return all available models except ai_vad."""
-    return get_available_models()
+    """Return all available models except winclip."""
+    return [model for model in get_available_models() if model != "win_clip"]
 
 
 class TestAPI:
