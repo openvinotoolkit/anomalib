@@ -1,0 +1,13 @@
+# Import the datamodule
+from anomalib.data import Folder
+from anomalib.data.utils import TestSplitMode
+
+# Create the datamodule
+datamodule = Folder(
+    root="datasets/MVTec/transistor",
+    normal_dir="train/good",
+    test_split_mode=TestSplitMode.SYNTHETIC,
+)
+
+# Setup the datamodule
+datamodule.setup()

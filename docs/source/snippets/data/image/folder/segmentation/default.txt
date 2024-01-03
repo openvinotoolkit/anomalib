@@ -1,0 +1,14 @@
+# Import the datamodule
+from anomalib.data import Folder
+
+# Create the datamodule
+datamodule = Folder(
+    root="datasets/MVTec/transistor",
+    normal_dir="train/good",
+    abnormal_dir="test/bent_lead",
+    normal_test_dir="test/good",
+    mask_dir="ground_truth/bent_lead",
+)
+
+# Setup the datamodule
+datamodule.setup()
