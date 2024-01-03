@@ -103,7 +103,10 @@ class WinClip(AnomalyModule):
         return
 
     def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> None:
-        """Training Step of WinCLIP."""
+        """Training Step of WinCLIP.
+
+        Since WinCLIP is a zero-/few-shot model, there is no training step.
+        """
         del batch, args, kwargs
 
     def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
@@ -114,7 +117,12 @@ class WinClip(AnomalyModule):
 
     @property
     def trainer_arguments(self) -> dict[str, int | float]:
-        """Set model-specific trainer arguments."""
+        """Set model-specific trainer arguments.
+
+        Sets the number of epochs to 1 and the number of training batches to 1. This is needed to ensure that lightning
+        runs the validation loop when calling ``engine.fit()`` or ``engine.train()`` so that the normalization and
+        thresholding statistics are computed.
+        """
         return {
             "max_epochs": 1,
             "limit_train_batches": 1,
