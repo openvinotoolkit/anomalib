@@ -8,6 +8,7 @@ from typing import Any
 
 import torch
 from torch import nn
+from torch._tensor import Tensor
 
 from anomalib.models.components import AnomalyModule
 
@@ -29,6 +30,11 @@ class DummyModule(AnomalyModule):
         self.task = "segmentation"
         self.mode = "full"
         self.dataset_path = dataset_path
+
+    def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> dict:
+        """Only used to avoid NotImplementedError."""
+        del batch
+        return self.test_step(*args, **kwargs)
 
     def test_step(self, *_, **__) -> dict:
         """Only used to trigger on_test_epoch_end."""
