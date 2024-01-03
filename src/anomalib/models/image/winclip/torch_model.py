@@ -15,6 +15,7 @@ from .prompting import create_prompt_ensemble
 from .utils import harmonic_aggregation, make_masks, simmilarity_score, visual_association_score
 
 BACKBONE = "ViT-B-16-plus-240"
+PRETRAINED = "laion400m_e31"
 TEMPERATURE = 0.07  # temperature hyperparameter from the clip paper
 
 
@@ -41,12 +42,13 @@ class WinClipModel(nn.Module):
     def __init__(self, k_shot: int = 0, scales: tuple = (2, 3)) -> None:
         super().__init__()
         self.backbone = BACKBONE
+        self.pretrained = PRETRAINED
         self.temperature = TEMPERATURE
         self.k_shot = k_shot
         self.scales = scales
 
         # initialize CLIP model
-        self.clip = open_clip.create_model(self.backbone, pretrained="laion400m_e31")
+        self.clip = open_clip.create_model(self.backbone, pretrained=self.pretrained)
         self.clip.visual.output_tokens = True
         self.grid_size = self.clip.visual.grid_size
 

@@ -36,9 +36,10 @@ class WinClip(AnomalyModule):
         self,
         class_name: str | None = None,
         k_shot: int = 0,
+        scales: tuple = (2, 3),
     ) -> None:
         super().__init__()
-        self.model = WinClipModel(k_shot)
+        self.model = WinClipModel(k_shot=k_shot, scales=scales)
         self.class_name = class_name
         self.k_shot = k_shot
 
