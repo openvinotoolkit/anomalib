@@ -40,11 +40,11 @@ WinCLIP is a zero-shot model, which means that we can directly evaluate the mode
 
 ## Benchmark
 
-All results gathered with seed `42`.
-
-## [MVTec AD Dataset](https://www.mvtec.com/company/research/datasets/mvtec-ad)
-
 Coming soon...
+
+<!-- All results gathered with seed `42`. -->
+
+<!-- ## [MVTec AD Dataset](https://www.mvtec.com/company/research/datasets/mvtec-ad) -->
 
 <!-- ### Image-Level AUC -->
 
@@ -73,37 +73,4 @@ Coming soon...
 | 2-shot         |       |        |       |         |       |       |        |       |         |          |           |       |       |            |            |        |
 | 4-shot         |       |        |       |         |       |       |        |       |         |          |           |       |       |            |            |        | -->
 
-### Sample Results
-
-#### Bottle Category
-
-0-shot
-![Bottle: 0-Shot](../../../../../docs/source/images/winclip/results/0-shot_0.png "Bottle: 0-Shot")
-1-shot
-![Bottle: 1-Shot](../../../../../docs/source/images/winclip/results/1-shot_0.png "Bottle: 1-Shot")
-2-shot
-![Bottle: 2-Shot](../../../../../docs/source/images/winclip/results/2-shot_0.png "Bottle: 2-Shot")
-4-shot
-![Bottle: 4-Shot](../../../../../docs/source/images/winclip/results/4-shot_0.png "Bottle: 4-Shot")
-
-#### Leather Category
-
-0-shot
-![Leather: 0-Shot](../../../../../docs/source/images/winclip/results/0-shot_1.png "Leather: 0-Shot")
-1-shot
-![Leather: 1-Shot](../../../../../docs/source/images/winclip/results/1-shot_1.png "Leather: 1-Shot")
-2-shot
-![Leather: 2-Shot](../../../../../docs/source/images/winclip/results/2-shot_1.png "Leather: 2-Shot")
-4-shot
-![Leather: 4-Shot](../../../../../docs/source/images/winclip/results/4-shot_1.png "Leather: 4-Shot")
-
-#### Hazelnut Category
-
-0-shot
-![Hazelnut: 0-Shot](../../../../../docs/source/images/winclip/results/0-shot_2.png "Hazelnut: 0-Shot")
-1-shot
-![Hazelnut: 1-Shot](../../../../../docs/source/images/winclip/results/1-shot_2.png "Hazelnut: 1-Shot")
-2-shot
-![Hazelnut: 2-Shot](../../../../../docs/source/images/winclip/results/2-shot_2.png "Hazelnut: 2-Shot")
-4-shot
-![Hazelnut: 4-Shot](../../../../../docs/source/images/winclip/results/4-shot_2.png "Hazelnut: 4-Shot")
+<!-- ### Sample Results -->
