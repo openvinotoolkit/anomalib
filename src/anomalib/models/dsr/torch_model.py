@@ -154,6 +154,10 @@ class DsrModel(nn.Module):
                 ).detach()
                 image_score = torch.amax(out_mask_averaged, dim=(2, 3)).squeeze()
 
+                # prevent crash when image_score is a single value (batch size of 1)
+                if image_score.size() == torch.Size([]):
+                    image_score = image_score.unsqueeze(0)
+
                 out_mask_cv = out_mask_sm_up[:, 1, :, :]
 
                 outputs = {"anomaly_map": out_mask_cv, "pred_score": image_score}
