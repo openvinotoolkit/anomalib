@@ -6,11 +6,11 @@ dataset to train anomalib models on your custom data.
 
 ```{warning}
 This tutorial assumes that you have already installed anomalib.
-If not, please refer to the :ref:`installation` section.
+If not, please refer to the installation section.
 ```
 
 ```{note}
-We will use the MVTec AD dataset to show the capabilities of the [Folder](../../reference/data/image/folder.md)
+We will use our [hazelnut_toy](https://github.com/openvinotoolkit/anomalib/blob/main/docs/source/data/hazelnut_toy.zip) dataset to show the capabilities of the [Folder](../../reference/data/image/folder.md)
 dataset, but you can use any dataset you want.
 ```
 
@@ -82,7 +82,8 @@ Here is the CLI command to create the same custom datamodule:
 :language: yaml
 ```
 
-Assume that we have saved the above config file as `segmentation.yaml`. We could run the following CLI command to train a Patchcore model on above dataset:
+Assume that we have saved the above config file as `segmentation.yaml`.
+We could run the following CLI command to train a Patchcore model on above dataset:
 
 ```bash
 anomalib train --data segmentation.yaml --model anomalib.models.Patchcore
@@ -100,10 +101,20 @@ segmentation dataset with only normal images.
 ### With Only Normal Images
 
 There are certain cases where we only have normal images in our dataset
-but would like to train a segmentation model. Anomalib provides
-synthetic anomaly generation capabilities to create abnormal images from
-normal images. We could use the [Folder](../../reference/data/image/folder.md) datamodule to train a model on
-this dataset.
+but would like to train a segmentation model. This could be done in two ways:
+
+- Train the model and skip the validation and test steps, as
+  we do not have abnormal images to validate and test the model on, or
+- Use the synthetic anomaly generation feature to create abnormal
+  images from normal images, and perform the validation and test steps.
+
+We will show how to do both.
+
+#### Without Validation and Testing
+
+Here we will create a custom datamodule with only normal images and train an
+unsupervised model on this dataset. We will skip the validation and test steps
+as we do not have abnormal images to validate and test the model on.
 
 :::::{dropdown} Code Syntax
 :icon: code
@@ -115,6 +126,59 @@ this dataset.
 We could run the following python code to create the custom datamodule:
 
 ```{literalinclude} ../../../../snippets/data/image/folder/segmentation/normal.txt
+:language: python
+```
+
+As can be seen above, we need to specify that we only have normal images in our
+dataset by setting the `val_split_mode` and `test_split_mode` arguments to
+`NONE`. The [Folder](../../reference/data/image/folder.md) datamodule will
+create training dataset and dataloader for us.
+
+:::
+
+:::{tab-item} CLI
+:sync: label-2
+
+Here is the CLI command to create the same custom datamodule with only normal
+images. We specify the `val_split_mode` and `test_split_mode` arguments to
+`NONE` to tell anomalib that we only have normal images in our dataset.
+
+```{literalinclude} ../../../../snippets/config/data/image/folder/segmentation/cli/normal.yaml
+:language: yaml
+```
+
+Assume that we have saved the above config file as `normal.yaml`. We could run the following CLI command to train a Patchcore model on above dataset:
+
+```bash
+anomalib train --data normal.yaml --model anomalib.models.Patchcore
+```
+
+:::
+::::
+:::::
+
+#### With Validation and Testing via Synthetic Anomalies
+
+If we want to check the performance of the model, we will need to have abnormal
+images to validate and test the model on. During the validation stage,
+these anomalous images are used to normalize the anomaly scores and find the
+best threshold that separates normal and abnormal images.
+
+Anomalib provides synthetic anomaly generation capabilities to create abnormal
+images from normal images so we could check the performance. We could use the
+[Folder](../../reference/data/image/folder.md) datamodule to train a model on
+this dataset.
+
+:::::{dropdown} Code Syntax
+:icon: code
+
+::::{tab-set}
+:::{tab-item} API
+:sync: label-1
+
+We could run the following python code to create the custom datamodule:
+
+```{literalinclude} ../../../../snippets/data/image/folder/segmentation/normal_and_synthetic.txt
 :language: python
 ```
 
@@ -145,16 +209,19 @@ print(train_data["mask"].shape)
 :::{tab-item} CLI
 :sync: label-2
 
-Here is the CLI command to create the same custom datamodule with only normal images. We only need to change the `test_split_mode` argument to `SYNTHETIC` to generate synthetic anomalies.
+Here is the CLI command to create the same custom datamodule with only normal
+images. We only need to change the `test_split_mode` argument to `SYNTHETIC` to
+generate synthetic anomalies.
 
-```{literalinclude} ../../../../snippets/config/data/image/folder/segmentation/cli/normal.yaml
+```{literalinclude} ../../../../snippets/config/data/image/folder/segmentation/cli/normal_and_synthetic.yaml
 :language: yaml
 ```
 
-Assume that we have saved the above config file as `normal.yaml`. We could run the following CLI command to train a Patchcore model on above dataset:
+Assume that we have saved the above config file as `synthetic.yaml`. We could
+run the following CLI command to train a Patchcore model on above dataset:
 
 ```bash
-anomalib train --data normal.yaml --model anomalib.models.Patchcore
+anomalib train --data synthetic.yaml --model anomalib.models.Patchcore
 ```
 
 :::
@@ -163,15 +230,20 @@ anomalib train --data normal.yaml --model anomalib.models.Patchcore
 
 ## Classification Dataset
 
-Assume that we have a dataset in which the training set contains only
-normal images, and the test set contains both normal and abnormal
-images. We want to train a classification model that will be able to
-detect the abnormal images in the test set.
+In certain use-cases, ground-truth masks for the abnormal images may not be
+available. In such cases, we could use the classification task to train a model
+that will be able to detect the abnormal images in the test set.
+
+Similar to the segmentation task, we will split the section to two tasks:
+
+- Classification with normal and abnormal images, and
+- Classification with only normal images.
 
 ### With Normal and Abnormal Images
 
-We could use [Folder](../../reference/data/image/folder.md) datamodule to train a model on this dataset. We
-could run the following python code to create the custom datamodule:
+We could use [Folder](../../reference/data/image/folder.md) datamodule to train
+a model on this dataset. We could run the following python code to create the
+custom datamodule:
 
 :::::{dropdown} Code Syntax
 :icon: code
@@ -203,7 +275,7 @@ the masks for the classification task.
 
 Training the model is as simple as running the following command:
 
-```{literalinclude} ../../../../snippets/train/api/segmentation/model_and_engine.txt
+```{literalinclude} ../../../../snippets/train/api/classification/model_and_engine.txt
 :language: python
 ```
 
@@ -238,10 +310,18 @@ As can be seen above, we also need to specify the ``task`` argument to ``CLASSIF
 
 Similar to the segmentation task, there are certain cases where we only
 have normal images in our dataset but would like to train a
-classification model. We could use the synthetic anomaly generation
-feature again to create abnormal images from normal images. We could
-then use the [Folder](../../reference/data/image/folder.md) datamodule to train a model on this dataset. Here
-is the python code to create the custom datamodule:
+classification model.
+
+This could be done in two ways:
+
+- Train the model and skip the validation and test steps, as we do not have
+  abnormal images to validate and test the model on, or
+- Use the synthetic anomaly generation feature to create abnormal images from
+  normal images, and perform the validation and test steps.
+
+#### Without Validation and Testing
+
+Similar to the segmentation task, we will create a custom datamodule with only normal images and train an unsupervised model on this dataset. We will skip the validation and test steps as we do not have abnormal images to validate and test the model on.
 
 :::::{dropdown} Code Syntax
 :icon: code
@@ -250,13 +330,61 @@ is the python code to create the custom datamodule:
 :::{tab-item} API
 :sync: label-1
 
+We could run the following python code to create the custom datamodule:
+
 ```{literalinclude} ../../../../snippets/data/image/folder/classification/normal.txt
+:language: python
+```
+
+As can be seen above, we need to specify that we only have normal images in our
+dataset by setting the `val_split_mode` and `test_split_mode` arguments to
+`NONE`. The [Folder](../../reference/data/image/folder.md) datamodule will
+create training dataset and dataloader for us.
+
+:::
+
+:::{tab-item} CLI
+:sync: label-2
+
+Here is the CLI command to create the same custom datamodule with only normal
+images. We specify the `val_split_mode` and `test_split_mode` arguments to
+`NONE` to tell anomalib that we only have normal images in our dataset.
+
+```{literalinclude} ../../../../snippets/config/data/image/folder/classification/cli/normal.yaml
+:language: yaml
+```
+
+Assume that we have saved the above config file as `normal.yaml`. We could run the following CLI command to train a Patchcore model on above dataset:
+
+```bash
+anomalib train --data normal.yaml --model anomalib.models.Patchcore
+```
+
+:::
+::::
+:::::
+
+#### With Validation and Testing via Synthetic Anomalies
+
+We could use the synthetic anomaly generation feature again to create abnormal
+images from normal images. We could then use the
+[Folder](../../reference/data/image/folder.md) datamodule to train a model on
+this dataset. Here is the python code to create the custom datamodule:
+
+:::::{dropdown} Code Syntax
+:icon: code
+
+::::{tab-set}
+:::{tab-item} API
+:sync: label-1
+
+```{literalinclude} ../../../../snippets/data/image/folder/classification/normal_and_synthetic.txt
 :language: python
 ```
 
 Once the datamodule is setup, the rest of the process is the same as in the previous classification example.
 
-```{literalinclude} ../../../../snippets/train/api/segmentation/model_and_engine.txt
+```{literalinclude} ../../../../snippets/train/api/classification/model_and_engine.txt
 :language: python
 ```
 
@@ -269,7 +397,7 @@ where we train a Patchcore model on this custom dataset with default model param
 
 Here is the CLI command to create the same custom datamodule with only normal images. We only need to change the `test_split_mode` argument to `SYNTHETIC` to generate synthetic anomalies.
 
-```{literalinclude} ../../../../snippets/config/data/image/folder/segmentation/cli/normal.yaml
+```{literalinclude} ../../../../snippets/config/data/image/folder/classification/cli/normal_and_synthetic.yaml
 :language: yaml
 ```
 
@@ -281,7 +409,6 @@ anomalib train --data normal.yaml --model anomalib.models.Patchcore --task CLASS
 
 ```{note}
 As shown in the previous classification example, we, again, need to specify the ``task`` argument to ``CLASSIFICATION`` to explicitly tell anomalib that we want to train a classification model. This is because the default `task` is `SEGMENTATION` within `Engine`.
-``
 ```
 
 :::

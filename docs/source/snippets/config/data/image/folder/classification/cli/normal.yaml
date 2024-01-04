@@ -1,20 +1,8 @@
 class_path: anomalib.data.Folder
 init_args:
-  root: "datasets/MVTec/transistor"
-  normal_dir: "train/good"
-  normal_test_dir: "test/good"
-  extensions: [".png"]
-  image_size: [256, 256]
-  center_crop: null
+  root: "datasets/hazelnut_toy"
+  normal_dir: "good"
   normalization: imagenet
-  train_batch_size: 32
-  eval_batch_size: 32
-  num_workers: 8
+  val_split_mode: NONE
+  test_split_mode: NONE
   task: CLASSIFICATION
-  transform_config_train: null
-  transform_config_eval: null
-  test_split_mode: SYNTHETIC
-  test_split_ratio: 0.2
-  val_split_mode: SAME_AS_TEST
-  val_split_ratio: 0.5
-  seed: null
