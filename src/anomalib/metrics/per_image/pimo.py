@@ -8,8 +8,6 @@ so often times the Tensor arguments will be converted to ndarray and then valida
 
 TODO(jpcbertoldo): add ref to paper to all functions
 TODO(jpcbertoldo): add link to the tutorial notebooks
-TODO(jpcbertoldo): add image file path to `PIMOResult` and `AUPIMOResult` and change save/load methods
-TODO(jpcbertoldo): change `aucs` in the paper supp mat to `aupimos`
 TODO(jpcbertoldo): add formalities (license header, author)
 """
 from __future__ import annotations
@@ -125,7 +123,7 @@ def _validate_source_images_paths(paths: Sequence[str], expected_num_paths: int 
 # =========================================== RESULT OBJECT ===========================================
 
 
-@dataclass(frozen=True)
+@dataclass
 class PIMOResult:
     """Per-Image Overlap (PIMO, pronounced pee-mo) curve.
 
@@ -276,7 +274,7 @@ class PIMOResult:
             raise TypeError(msg) from ex
 
 
-@dataclass(frozen=True)
+@dataclass
 class AUPIMOResult:
     """Area Under the Per-Image Overlap (AUPIMO, pronounced a-u-pee-mo) curve.
 
