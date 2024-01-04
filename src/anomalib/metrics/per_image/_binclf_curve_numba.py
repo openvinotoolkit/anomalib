@@ -2,8 +2,11 @@
 
 See docstring of `binclf_curve` or `binclf_curve_numpy` for more details.
 
-TODO(jpcbertoldo): add formalities (license header, author)
+author: jpcbertoldo
 """
+
+# Copyright (C) 2022 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
 
 import numba
 import numpy as np
