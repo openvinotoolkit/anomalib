@@ -1,7 +1,10 @@
 """Per-Image Metrics.
 
-TODO(jpcbertoldo): add formalities (license header, author)
+author: jpcbertoldo
 """
+
+# Copyright (C) 2022 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
 
 from .binclf_curve import per_image_binclf_curve, per_image_fpr, per_image_tpr
 from .binclf_curve_numpy import BinclfAlgorithm, BinclfThreshsChoice

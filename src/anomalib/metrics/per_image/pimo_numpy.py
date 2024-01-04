@@ -22,10 +22,11 @@ So far there is only one shared FPR metric implemented but others will be added 
 
 `AUPIMO` is the area under each `PIMO` curve with bounded integration range in terms of shared FPR.
 
-TODO(jpcbertoldo): add ref to paper to all functions
-TODO(jpcbertoldo): add link to the tutorial notebooks
-TODO(jpcbertoldo): add formalities (license header, author)
+author: jpcbertoldo
 """
+
+# Copyright (C) 2022 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
 
 import logging
 import warnings

@@ -4,8 +4,11 @@ A binary classification (binclf) matrix (TP, FP, FN, TN) is evaluated at multipl
 
 The thresholds are shared by all instances/images, but their binclf are computed independently for each instance/image.
 
-TODO(jpcbertoldo): add formalities (license header, author)
+author: jpcbertoldo
 """
+
+# Copyright (C) 2022 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
 
 import itertools
 import logging

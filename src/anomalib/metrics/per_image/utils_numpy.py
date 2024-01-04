@@ -1,7 +1,11 @@
 """Utility functions for per-image metrics.
 
-TODO(jpcbertoldo): add formalities (license header, author)
+author: jpcbertoldo
 """
+
+# Copyright (C) 2022 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
 from __future__ import annotations
 
 import itertools
