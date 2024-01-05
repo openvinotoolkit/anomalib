@@ -8,14 +8,33 @@ from torch import nn
 
 
 def cosine_similarity(input1: torch.Tensor, input2: torch.Tensor) -> torch.Tensor:
-    """Compute cosine similarity matrix between two tensors.
+    """Compute pairwise cosine similarity matrix between two tensors.
+
+    Computes the cosine similarity between all pairs of vectors in the two tensors.
 
     Args:
         input1 (torch.Tensor): Input tensor of shape (N, D) or (B, N, D).
         input2 (torch.Tensor): Input tensor of shape (M, D) or (B, M, D).
 
     Returns:
-        torch.Tensor: Cosine similarity matrix of shape (N, M).
+        torch.Tensor: Cosine similarity matrix of shape (N, M) or (B, N, M).
+
+    Examples:
+        >>> input1 = torch.tensor([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]])
+        >>> input2 = torch.tensor([[0.0, 1.0, 0.0], [1.0, 1.0, 0.0]])
+        >>> cosine_similarity(input1, input2)
+        tensor([[[0.0000, 0.7071],
+                 [1.0000, 0.7071]]])
+
+        >>> input1 = torch.randn(100, 128)
+        >>> input2 = torch.randn(200, 128)
+        >>> cosine_similarity(input1, input2).shape
+        torch.Size([100, 200])
+
+        >>> input1 = torch.randn(10, 100, 128)
+        >>> input2 = torch.randn(10, 200, 128)
+        >>> cosine_similarity(input1, input2).shape
+        torch.Size([10, 100, 200])
     """
     input1 = input1.unsqueeze(0) if input1.ndim == 2 else input1
     input2 = input2.repeat(input1.shape[0], 1, 1) if input2.ndim == 2 else input2
