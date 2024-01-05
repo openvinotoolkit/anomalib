@@ -102,7 +102,7 @@ class WinClip(AnomalyModule):
         return ref_images
 
     @staticmethod
-    def configure_optimizers() -> None:  # pylint: disable=arguments-differ
+    def configure_optimizers() -> None:
         """WinCLIP doesn't require optimization, therefore returns no optimizers."""
         return
 
