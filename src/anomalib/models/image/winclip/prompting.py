@@ -48,11 +48,20 @@ TEMPLATES = [
 def create_prompt_ensemble(class_name: str) -> tuple[list[str], list[str]]:
     """Create prompt ensemble for WinCLIP.
 
+    All combinations of states and templates are generated for both normal and anomalous prompts.
+
     Args:
         class_name (str): Name of the object.
 
     Returns:
         tuple[list[str], list[str]]: Tuple containing the normal and anomalous prompts.
+
+    Example:
+        >>> normal_prompts, anomalous_prompts = create_prompt_ensemble("bottle")
+        >>> normal_prompts[:2]
+        ['a cropped photo of the bottle.', 'a close-up photo of a bottle.']
+        >>> anomalous_prompts[:2]
+        ['a cropped photo of the damaged bottle.', 'a close-up photo of a damaged bottle.']
     """
     normal_states = [state.format(class_name) for state in NORMAL_STATES]
     normal_ensemble = [template.format(state) for state in normal_states for template in TEMPLATES]
