@@ -11,7 +11,6 @@ from __future__ import annotations
 import logging
 
 import torch
-from pytorch_lightning.utilities.types import STEP_OUTPUT  # noqa: TCH002
 from torch import Tensor
 
 from anomalib.models.components import AnomalyModule
@@ -109,7 +108,7 @@ class WinClip(AnomalyModule):
         """
         del batch, args, kwargs
 
-    def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
+    def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> dict:
         """Validation Step of WinCLIP."""
         del args, kwargs  # These variables are not used.
         batch["pred_scores"], batch["anomaly_maps"] = self.model(batch["image"])
