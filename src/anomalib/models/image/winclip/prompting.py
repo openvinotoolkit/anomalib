@@ -56,7 +56,7 @@ def create_prompt_ensemble(class_name: str) -> tuple[list[str], list[str]]:
     Returns:
         tuple[list[str], list[str]]: Tuple containing the normal and anomalous prompts.
 
-    Example:
+    Examples:
         >>> normal_prompts, anomalous_prompts = create_prompt_ensemble("bottle")
         >>> normal_prompts[:2]
         ['a cropped photo of the bottle.', 'a close-up photo of a bottle.']

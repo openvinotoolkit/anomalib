@@ -25,7 +25,7 @@ def cosine_similarity(input1: torch.Tensor, input2: torch.Tensor) -> torch.Tenso
     return torch.bmm(input1_norm, input2_norm.transpose(-2, -1))
 
 
-def simmilarity_score(input1: torch.Tensor, input2: torch.Tensor, temp: float = 1.0) -> torch.Tensor:
+def similarity_score(input1: torch.Tensor, input2: torch.Tensor, temp: float = 1.0) -> torch.Tensor:
     """Compute similarity score between two tensors.
 
     The similarity score is computed as the softmax of the cosine similarity matrix, scaled by a temperature parameter.
