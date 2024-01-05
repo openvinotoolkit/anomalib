@@ -62,6 +62,7 @@ class Padim(AnomalyModule):
 
         self.stats: list[Tensor] = []
         self.embeddings: list[Tensor] = []
+        self.automatic_optimization = False
 
     @staticmethod
     def configure_optimizers() -> None:  # pylint: disable=arguments-differ
@@ -92,7 +93,12 @@ class Padim(AnomalyModule):
         #   store the training set embedding. We manually append these
         #   values mainly due to the new order of hooks introduced after PL v1.4.0
         #   https://github.com/PyTorchLightning/pytorch-lightning/pull/7357
-        self.embeddings.append(embedding.cpu())
+        if embedding.dtype in [torch.float16, torch.bfloat16]:
+            self.embeddings.append(embedding)
+        else:
+            self.embeddings.append(embedding.cpu())
+        zero_loss = torch.tensor(0.0, requires_grad=True, device=self.device)
+        return {"loss": zero_loss}
 
     def on_validation_start(self) -> None:
         """Fit a Gaussian to the embedding collected from the training set."""

@@ -68,7 +68,7 @@ class Patchcore(AnomalyModule):
         )
         self.coreset_sampling_ratio = coreset_sampling_ratio
         self.embeddings: list[Tensor] = []
-        # self.automatic_optimization = False
+        self.automatic_optimization = False
         self.coreset_sampler = coreset_sampler
 
     def configure_optimizers(self) -> None:
@@ -102,6 +102,8 @@ class Patchcore(AnomalyModule):
         #   values mainly due to the new order of hooks introduced after PL v1.4.0
         #   https://github.com/PyTorchLightning/pytorch-lightning/pull/7357
         self.embeddings.append(embedding)
+        zero_loss = torch.tensor(0.0, requires_grad=True, device=self.device)
+        return {"loss": zero_loss}
 
     def on_validation_start(self) -> None:
         """Apply subsampling to the embedding collected from the training set."""
