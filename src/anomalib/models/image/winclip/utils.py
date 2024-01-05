@@ -48,20 +48,54 @@ def cosine_similarity(input1: torch.Tensor, input2: torch.Tensor) -> torch.Tenso
     return similarity
 
 
-def similarity_score(input1: torch.Tensor, input2: torch.Tensor, temp: float = 1.0) -> torch.Tensor:
-    """Compute similarity score between two tensors.
+def class_scores(
+    image_embeddings: torch.Tensor,
+    text_embeddings: torch.Tensor,
+    temperature: float = 1.0,
+    target_class: int | None = None,
+) -> torch.Tensor:
+    """Compute class scores between a set of N image embeddings and a set of M text embeddings.
 
-    The similarity score is computed as the softmax of the cosine similarity matrix, scaled by a temperature parameter.
+    Each text embedding represents the embedding of a prompt for a specific class. By computing the cosine similarity
+    between each image embedding and each text embedding, we obtain a similarity matrix of shape (N, M). This matrix is
+    then used to compute the confidence scores for each class by scaling by a temperature parameter and applying the
+    softmax function (Equation (1) in the WinCLIP paper).
 
     Args:
-        input1 (torch.Tensor): Input tensor of shape (N, D) or (B, N, D).
-        input2 (torch.Tensor): Input tensor of shape (M, D) or (B, M, D).
-        temp (float): Temperature hyperparameter.
+        image_embeddings (torch.Tensor): Image embedding matrix of shape (N, D) or (B, N, D).
+        text_embeddings (torch.Tensor): Text embedding matrix of shape (M, D) or (B, M, D).
+        temperature (float): Temperature hyperparameter.
+        target_class (int): Index of the target class. If None, the scores for all classes are returned.
 
     Returns:
-        torch.Tensor: Similarity score of shape (N, M).
+        torch.Tensor: Similarity score of shape (N, M) or (B, N, M).
+
+    Examples:
+        >>> image_embeddings = torch.tensor([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]])
+        >>> text_embeddings = torch.tensor([[0.0, 1.0, 0.0], [1.0, 1.0, 0.0]])
+        >>> class_scores(image_embeddings, text_embeddings)
+        tensor([[0.3302, 0.6698],
+                [0.5727, 0.4273]])
+
+        >>> image_embeddings = torch.randn(100, 128)
+        >>> text_embeddings = torch.randn(200, 128)
+        >>> class_scores(image_embeddings, text_embeddings).shape
+        torch.Size([100, 200])
+
+        >>> image_embeddings = torch.randn(10, 100, 128)
+        >>> text_embeddings = torch.randn(10, 200, 128)
+        >>> class_scores(image_embeddings, text_embeddings).shape
+        torch.Size([10, 100, 200])
+
+        >>> image_embeddings = torch.randn(10, 100, 128)
+        >>> text_embeddings = torch.randn(10, 200, 128)
+        >>> class_scores(image_embeddings, text_embeddings, target_class=0).shape
+        torch.Size([10, 100])
     """
-    return (cosine_similarity(input1, input2) / temp).softmax(dim=-1)
+    scores = (cosine_similarity(image_embeddings, text_embeddings) / temperature).softmax(dim=-1)
+    if target_class is not None:
+        return scores[..., target_class]
+    return scores
 
 
 def harmonic_aggregation(window_scores: torch.Tensor, output_size: tuple, masks: torch.Tensor) -> torch.Tensor:

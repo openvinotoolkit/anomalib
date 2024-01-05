@@ -12,7 +12,7 @@ from torch import nn
 from torch.nn.modules.linear import Identity
 
 from .prompting import create_prompt_ensemble
-from .utils import harmonic_aggregation, make_masks, similarity_score, visual_association_score
+from .utils import class_scores, harmonic_aggregation, make_masks, visual_association_score
 
 BACKBONE = "ViT-B-16-plus-240"
 PRETRAINED = "laion400m_e31"
@@ -146,7 +146,7 @@ class WinClipModel(nn.Module):
         image_embeddings, window_embeddings, patch_embeddings = self.encode_image(batch)
 
         # get zero-shot scores
-        image_scores = similarity_score(image_embeddings, self.text_embeddings, self.temperature)[..., -1]
+        image_scores = class_scores(image_embeddings, self.text_embeddings, self.temperature, target_class=1)
         multiscale_scores = self._compute_zero_shot_scores(image_scores, window_embeddings)
 
         # get few-shot scores
@@ -183,7 +183,7 @@ class WinClipModel(nn.Module):
         multiscale_scores = [image_scores.view(-1, 1, 1).repeat(1, self.grid_size[0], self.grid_size[1])]
         # add aggregated scores for each scale
         for window_embedding, mask in zip(window_embeddings, self.masks, strict=True):
-            scores = similarity_score(window_embedding, self.text_embeddings, self.temperature)[..., -1]
+            scores = class_scores(window_embedding, self.text_embeddings, self.temperature, target_class=1)
             multiscale_scores.append(harmonic_aggregation(scores, self.grid_size, mask))
         # aggregate scores across scales
         return (len(self.scales) + 1) / (1 / torch.stack(multiscale_scores)).sum(dim=0)
