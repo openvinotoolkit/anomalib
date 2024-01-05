@@ -25,10 +25,12 @@ class WinClip(AnomalyModule):
     """WinCLIP Lightning model.
 
     Args:
-        class_name (str): The name of the object class used in the prompt ensemble.
-            Defaults to ``object``.
+        class_name (str, optional): The name of the object class used in the prompt ensemble.
+            Defaults to ``None``.
         k_shot (int): The number of reference images for few-shot inference.
             Defaults to ``0``.
+        scales (tuple[int], optional): The scales of the sliding windows used for multiscale anomaly detection.
+            Defaults to ``(2, 3)``.
     """
 
     def __init__(
@@ -51,6 +53,9 @@ class WinClip(AnomalyModule):
         - Collect reference images for few-shot inference.
 
         We need to pass the device because this hook is called before the model is moved to the device.
+
+        Args:
+            stage (str): The stage in which the setup is called. Usually ``"fit"``, ``"test"`` or ``predict``.
         """
         del stage
         self._set_class_name()

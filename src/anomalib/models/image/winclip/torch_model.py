@@ -24,9 +24,9 @@ class WinClipModel(nn.Module):
 
     Args:
         k_shot (int, optional): The number of reference images used for few-shot anomaly detection.
-            Defaults to 0.
+            Defaults to ``0``.
         scales (tuple[int], optional): The scales of the sliding windows used for multiscale anomaly detection.
-            Defaults to (2, 3).
+            Defaults to ``(2, 3)``.
 
     Attributes:
         clip (CLIP): The CLIP model used for image and text encoding.
