@@ -157,7 +157,7 @@ class WinClipModel(nn.Module):
 
         # reshape to image dimensions
         pixel_scores = nn.functional.interpolate(multiscale_scores.unsqueeze(1), size=batch.shape[-2:], mode="bilinear")
-        return image_scores, pixel_scores.squeeze()
+        return image_scores, pixel_scores.squeeze(1)
 
     def _compute_zero_shot_scores(
         self,

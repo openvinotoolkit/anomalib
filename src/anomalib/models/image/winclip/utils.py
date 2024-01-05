@@ -36,12 +36,16 @@ def cosine_similarity(input1: torch.Tensor, input2: torch.Tensor) -> torch.Tenso
         >>> cosine_similarity(input1, input2).shape
         torch.Size([10, 100, 200])
     """
+    ndim = input1.ndim
     input1 = input1.unsqueeze(0) if input1.ndim == 2 else input1
     input2 = input2.repeat(input1.shape[0], 1, 1) if input2.ndim == 2 else input2
 
     input1_norm = nn.functional.normalize(input1, p=2, dim=-1)
     input2_norm = nn.functional.normalize(input2, p=2, dim=-1)
-    return torch.bmm(input1_norm, input2_norm.transpose(-2, -1))
+    similarity = torch.bmm(input1_norm, input2_norm.transpose(-2, -1))
+    if ndim == 2:
+        return similarity.squeeze(0)
+    return similarity
 
 
 def similarity_score(input1: torch.Tensor, input2: torch.Tensor, temp: float = 1.0) -> torch.Tensor:
@@ -57,7 +61,7 @@ def similarity_score(input1: torch.Tensor, input2: torch.Tensor, temp: float = 1
     Returns:
         torch.Tensor: Similarity score of shape (N, M).
     """
-    return (cosine_similarity(input1, input2) / temp).softmax(dim=-1).squeeze()
+    return (cosine_similarity(input1, input2) / temp).softmax(dim=-1)
 
 
 def harmonic_aggregation(window_scores: torch.Tensor, output_size: tuple, masks: torch.Tensor) -> torch.Tensor:
