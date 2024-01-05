@@ -11,10 +11,10 @@ from __future__ import annotations
 import logging
 
 import torch
-from torch import Tensor
 
 from anomalib.models.components import AnomalyModule
-from anomalib.models.image.winclip.torch_model import WinClipModel
+
+from .torch_model import WinClipModel
 
 logger = logging.getLogger(__name__)
 
@@ -88,7 +88,7 @@ class WinClip(AnomalyModule):
         Returns:
             ref_images (Tensor): A tensor containing the reference images.
         """
-        ref_images = Tensor()
+        ref_images = torch.Tensor()
         for batch in self.trainer.datamodule.train_dataloader():
             images = batch["image"][: self.k_shot - ref_images.shape[0]]
             ref_images = torch.cat((ref_images, images))
@@ -101,14 +101,14 @@ class WinClip(AnomalyModule):
         """WinCLIP doesn't require optimization, therefore returns no optimizers."""
         return
 
-    def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> None:
+    def training_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> None:
         """Training Step of WinCLIP.
 
         Since WinCLIP is a zero-/few-shot model, there is no training step.
         """
         del batch, args, kwargs
 
-    def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> dict:
+    def validation_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> dict:
         """Validation Step of WinCLIP."""
         del args, kwargs  # These variables are not used.
         batch["pred_scores"], batch["anomaly_maps"] = self.model(batch["image"])
