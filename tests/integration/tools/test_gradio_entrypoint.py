@@ -78,7 +78,7 @@ class TestGradioInferenceEntrypoint:
             model=model,
             input_size=(256, 256),
             transform=transforms_config,
-            mo_args={},
+            ov_args={},
             task=TaskType.SEGMENTATION,
         )
 

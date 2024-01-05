@@ -459,9 +459,9 @@ class Engine:
         datamodule: AnomalibDataModule | None = None,
         dataset: AnomalibDataset | None = None,
         input_size: tuple[int, int] | None = None,
-        mo_args: dict[str, Any] | None = None,
+        ov_args: dict[str, Any] | None = None,
         ckpt_path: str | None = None,
-    ) -> None:
+    ) -> Path | None:
         """Export the model in the specified format.
 
         Args:
@@ -479,9 +479,12 @@ class Engine:
                  is optional. Defaults to None.
             input_size (tuple[int, int] | None, optional): This is required only if the model is exported to ONNX and
                 OpenVINO format. Defaults to None.
-            mo_args (dict[str, Any] | None, optional): This is optional and used only for OpenVINO's model optimizer.
+            ov_args (dict[str, Any] | None, optional): This is optional and used only for OpenVINO's model optimizer.
                 Defaults to None.
             ckpt_path (str | None): Checkpoint path. If provided, the model will be loaded from this path.
+
+        Returns:
+            Path: Path to the exported model.
 
         Raises:
             ValueError: If Dataset, Datamodule, and transform are not provided.
@@ -509,28 +512,30 @@ class Engine:
             logger.exception(f"Unknown type {type(transform)} for transform.")
             raise TypeError
 
-        if export_mode in (ExportMode.OPENVINO, ExportMode.ONNX):
-            assert input_size is not None, "input_size must be provided for OpenVINO and ONNX export modes."
         if export_path is None:
             export_path = Path(self.trainer.default_root_dir)
+
         if export_mode == ExportMode.TORCH:
-            export_to_torch(model=model, export_path=export_path, transform=transform, task=self.task)
-        elif export_mode == ExportMode.ONNX:
+            return export_to_torch(model=model, export_path=export_path, transform=transform, task=self.task)
+        if export_mode == ExportMode.ONNX:
             assert input_size is not None, "input_size must be provided for ONNX export mode."
-            export_to_onnx(
+            return export_to_onnx(
                 model=model,
                 input_size=input_size,
                 export_path=export_path,
                 transform=transform,
                 task=self.task,
             )
-        else:
+        if export_mode == ExportMode.OPENVINO:
             assert input_size is not None, "input_size must be provided for OpenVINO export mode."
-            export_to_openvino(
+            return export_to_openvino(
                 model=model,
                 input_size=input_size,
                 export_path=export_path,
                 transform=transform,
                 task=self.task,
-                mo_args=mo_args,
+                ov_args=ov_args,
             )
+
+        logging.error(f"Export mode {export_mode} is not supported yet.")
+        return None

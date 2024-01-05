@@ -303,7 +303,7 @@ class AnomalibCLI(LightningCLI):
         return self.engine.train
 
     @property
-    def export(self) -> Callable[..., None]:
+    def export(self) -> Callable[..., Path | None]:
         """Export the model using engine's export method."""
         return self.engine.export
 

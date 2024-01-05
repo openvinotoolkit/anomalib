@@ -52,7 +52,7 @@ def export_to_torch(
     export_path: Path | str,
     transform: dict[str, Any] | AnomalibDataset | AnomalibDataModule | A.Compose,
     task: TaskType | None = None,
-) -> None:
+) -> Path:
     """Export AnomalibModel to torch.
 
     Args:
@@ -63,6 +63,9 @@ def export_to_torch(
             Albumentations.
         task (TaskType | None): Task type should be provided if transforms is of type dict or A.Compose object.
             Defaults to ``None``.
+
+    Returns:
+        Path: Path to the exported pytorch model.
 
     Examples:
         Assume that we have a model to train and we want to export it to torch format.
@@ -92,10 +95,12 @@ def export_to_torch(
     """
     export_path = _create_export_path(export_path, ExportMode.TORCH)
     metadata = get_metadata(task=task, transform=transform, model=model)
+    pt_model_path = export_path / "model.pt"
     torch.save(
         obj={"model": model.model, "metadata": metadata},
-        f=export_path / "model.pt",
+        f=pt_model_path,
     )
+    return pt_model_path
 
 
 def export_to_onnx(
@@ -177,9 +182,9 @@ def export_to_openvino(
     model: AnomalyModule,
     input_size: tuple[int, int],
     transform: dict[str, Any] | AnomalibDataset | AnomalibDataModule | A.Compose,
-    mo_args: dict[str, Any] | None = None,
+    ov_args: dict[str, Any] | None = None,
     task: TaskType | None = None,
-) -> None:
+) -> Path:
     """Convert onnx model to OpenVINO IR.
 
     Args:
@@ -189,10 +194,13 @@ def export_to_openvino(
         transform (dict[str, Any] | AnomalibDataset | AnomalibDataModule | A.Compose): Data transforms (augmentations)
             used for the model. When using dict, ensure that the transform dict is in the format required by
             Albumentations.
-        mo_args: Model optimizer arguments for OpenVINO model conversion.
+        ov_args: Model optimizer arguments for OpenVINO model conversion.
             Defaults to ``None``.
         task (TaskType | None): Task type should be provided if transforms is of type dict or A.Compose object.
             Defaults to ``None``.
+
+    Returns:
+        Path: Path to the exported onnx model.
 
     Raises:
         ModuleNotFoundError: If OpenVINO is not installed.
@@ -232,13 +240,15 @@ def export_to_openvino(
 
     """
     model_path = export_to_onnx(model, input_size, export_path, transform, task, ExportMode.OPENVINO)
-    mo_args = {} if mo_args is None else mo_args
+    ov_model_path = model_path.with_suffix(".xml")
+    ov_args = {} if ov_args is None else ov_args
     if convert_model is not None and serialize is not None:
-        model = convert_model(input_model=str(model_path), output_dir=str(model_path.parent), **mo_args)
-        serialize(model, model_path.with_suffix(".xml"))
-    else:
-        logger.exception("Could not find OpenVINO methods. Please check OpenVINO installation.")
-        raise ModuleNotFoundError
+        model = convert_model(model_path, **ov_args)
+        serialize(model, ov_model_path)
+        return ov_model_path
+
+    logger.exception("Could not find OpenVINO methods. Please check OpenVINO installation.")
+    raise ModuleNotFoundError
 
 
 def get_metadata(
