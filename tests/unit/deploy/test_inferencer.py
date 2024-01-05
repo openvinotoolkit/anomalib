@@ -110,7 +110,7 @@ def test_openvino_inference(task: TaskType, ckpt_path: Callable[[str], Path], da
     engine = Engine(task=task)
     export_path = ckpt_path("Padim").parent.parent
     datamodule = MVTec(root=dataset_path / "mvtec", category="dummy")
-    real_exported_path = engine.export(
+    export_path = engine.export(
         model=model,
         export_mode=ExportMode.OPENVINO,
         input_size=(256, 256),
@@ -121,8 +121,8 @@ def test_openvino_inference(task: TaskType, ckpt_path: Callable[[str], Path], da
 
     # Test OpenVINO inferencer
     openvino_inferencer = OpenVINOInferencer(
-        real_exported_path,
-        real_exported_path.parent / "metadata.json",
+        export_path,
+        export_path.parent / "metadata.json",
     )
     openvino_dataloader = _MockImageLoader([256, 256], total_count=1)
     for image in openvino_dataloader():
