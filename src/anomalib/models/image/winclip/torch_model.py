@@ -52,10 +52,10 @@ class WinClipModel(nn.Module):
         self.clip.visual.output_tokens = True
         self.grid_size = self.clip.visual.grid_size
 
-        self.masks: list[torch.Tensor] | None = None
-        self.text_embeddings: torch.Tensor | None = None
-        self.visual_embeddings: list[torch.Tensor] | None = None
-        self.patch_embeddings: torch.Tensor | None = None
+        self.masks: list[torch.Tensor]
+        self.text_embeddings: torch.Tensor
+        self.visual_embeddings: list[torch.Tensor]
+        self.patch_embeddings: torch.Tensor
 
     def encode_image(self, batch: torch.Tensor) -> tuple[torch.Tensor, list[torch.Tensor], torch.Tensor]:
         """Encode the batch of images to obtain image embeddings, window embeddings, and patch embeddings.
