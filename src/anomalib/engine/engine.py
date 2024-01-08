@@ -392,11 +392,14 @@ class Engine:
         CLI Usage:
             1. you can pick a model.
                 ```python
-                anomalib predict --model Padim --data datasets/MVTec/bottle/test/broken_large
+                anomalib predict --model anomalib.models.Padim
+                anomalib predict --model Padim \
+                                 --data datasets/MVTec/bottle/test/broken_large
                 ```
             2. Of course, you can override the various values with commands.
                 ```python
-                anomalib predict --model anomalib.models.Padim --data <CONFIG | CLASS_PATH_OR_NAME>
+                anomalib predict --model anomalib.models.Padim \
+                                 --data <CONFIG | CLASS_PATH_OR_NAME>
                 ```
             4. If you have a ready configuration file, run it like this.
                 ```python
@@ -409,6 +412,7 @@ class Engine:
         if not ckpt_path:
             logger.warning("ckpt_path is not provided. Model weights will not be loaded.")
 
+        # Handle the instance when a dataset is passed to the predict method
         if datamodule is not None and isinstance(datamodule, Dataset):
             dataloader = DataLoader(datamodule)
             datamodule = None
@@ -416,8 +420,11 @@ class Engine:
                 dataloaders = dataloader
             elif isinstance(dataloaders, DataLoader):
                 dataloaders = [dataloaders, dataloader]
-            else:  # dataloader is a list
-                dataloaders = [*dataloaders, dataloader]
+            elif isinstance(dataloaders, list):  # dataloader is a list
+                dataloaders.append(dataloader)
+            else:
+                msg = f"Unknown type for dataloaders {type(dataloaders)}"
+                raise TypeError(msg)
 
         self._setup_dataset_task(dataloaders, datamodule)
 
