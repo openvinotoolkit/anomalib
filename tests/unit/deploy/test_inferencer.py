@@ -11,7 +11,7 @@ import pytest
 import torch
 
 from anomalib.data import MVTec
-from anomalib.deploy import ExportMode, OpenVINOInferencer, TorchInferencer
+from anomalib.deploy import ExportType, OpenVINOInferencer, TorchInferencer
 from anomalib.engine import Engine
 from anomalib.models import Padim
 from anomalib.utils.types import TaskType
@@ -70,7 +70,7 @@ def test_torch_inference(task: TaskType, ckpt_path: Callable[[str], Path], datas
     datamodule = MVTec(root=dataset_path / "mvtec", category="dummy")
     engine.export(
         model=model,
-        export_mode=ExportMode.TORCH,
+        export_type=ExportType.TORCH,
         input_size=(256, 256),
         export_path=export_path,
         datamodule=datamodule,
@@ -112,7 +112,7 @@ def test_openvino_inference(task: TaskType, ckpt_path: Callable[[str], Path], da
     datamodule = MVTec(root=dataset_path / "mvtec", category="dummy")
     exported_xml_file_path = engine.export(
         model=model,
-        export_mode=ExportMode.OPENVINO,
+        export_type=ExportType.OPENVINO,
         input_size=(256, 256),
         export_path=export_dir,
         datamodule=datamodule,
