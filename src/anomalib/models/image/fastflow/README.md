@@ -43,7 +43,7 @@ All results gathered with seed `0`.
 | Transistor |   0.938   |     0.979     | 0.993 | 0.983 |
 | Wood       |   0.978   |     0.992     | 0.979 | 0.989 |
 | Zipper     |   0.878   |     0.951     | 0.981 | 0.977 |
-| Average    |           |               |       |       |
+| Average    |   0.907   |     0.963     | 0.925 | 0.944 |
 
 ### Pixel-Level AUC
 
@@ -64,7 +64,7 @@ All results gathered with seed `0`.
 | Transistor |   0.964   |     0.971     | 0.949 | 0.960 |
 | Wood       |   0.956   |     0.941     | 0.952 | 0.954 |
 | Zipper     |   0.965   |     0.985     | 0.978 | 0.979 |
-| Average    |           |               |       |       |
+| Average    |   0.968   |     0.979     | 0.975 | 0.980 |
 
 ### Image F1 Score
 
@@ -85,7 +85,7 @@ All results gathered with seed `0`.
 | Transistor |   0.779   |     0.854     | 0.873 | 0.909 |
 | Wood       |   0.983   |     0.968     | 0.944 | 0.967 |
 | Zipper     |   0.921   |     0.975     | 0.958 | 0.933 |
-| Average    |           |               |       |       |
+| Average    |   0.916   |    0.947      | 0.906 | 0.911 |
 
 ### Pixel F1 Score
 
@@ -106,7 +106,7 @@ All results gathered with seed `0`.
 | Transistor |   0.558   |     0.573     | 0.527 | 0.567 |
 | Wood       |   0.557   |     0.488     | 0.614 | 0.572 |
 | Zipper     |   0.492   |     0.621     | 0.522 | 0.504 |
-| Average    |           |               |       |       |
+| Average    |   0.519   |     0.589     | 0.557 | 0.575 |
 
 ### Sample Results
 
