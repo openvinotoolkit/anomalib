@@ -70,6 +70,18 @@ class WinClipModel(nn.Module):
         Returns:
             Tuple[torch.Tensor, List[torch.Tensor], torch.Tensor]: A tuple containing the image embeddings,
             window embeddings, and patch embeddings respectively.
+
+        Examples:
+            >>> model = WinClipModel()
+            >>> model.prepare_masks()
+            >>> batch = torch.rand((1, 3, 240, 240))
+            >>> image_embeddings, window_embeddings, patch_embeddings = model.encode_image(batch)
+            >>> image_embeddings.shape
+            torch.Size([1, 640])
+            >>> [embedding.shape for embedding in window_embeddings]
+            [torch.Size([1, 196, 640]), torch.Size([1, 169, 640])]
+            >>> patch_embeddings.shape
+            torch.Size([1, 225, 896])
         """
         assert isinstance(self.masks, list), "Masks have not been prepared. Call prepare_masks before inference."
         # register hook to retrieve intermediate feature map
