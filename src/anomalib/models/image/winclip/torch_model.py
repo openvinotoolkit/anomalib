@@ -212,7 +212,7 @@ class WinClipModel(nn.Module):
         harmonic averaging. The final score maps are obtained by averaging across scales.
 
         Args:
-            patch_embeddings (torch.Tensor): Full-scale patch embeddings of shape (batch_size, n_patches, n_features).
+            patch_embeddings (torch.Tensor): Full-scale patch embeddings of shape ``(batch_size, n_patches, n_features)``.
             window_embeddings (list[torch.Tensor]): List of tensors of shape (batch_size, n_windows, n_features)
                 representing the embeddings for each sliding window location.
 
