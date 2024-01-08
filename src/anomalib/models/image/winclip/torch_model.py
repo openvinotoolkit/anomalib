@@ -65,7 +65,7 @@ class WinClipModel(nn.Module):
         is used to retrieve the intermediate feature map and share computation between the image and window embeddings.
 
         Args:
-            batch (torch.Tensor): Batch of input images of shape (N, C, H, W).
+            batch (torch.Tensor): Batch of input images of shape ``(N, C, H, W)``.
 
         Returns:
             Tuple[torch.Tensor, List[torch.Tensor], torch.Tensor]: A tuple containing the image embeddings,
@@ -114,8 +114,8 @@ class WinClipModel(nn.Module):
         """Computes the embeddings for each window in the feature map using the given masks.
 
         Args:
-            feature_map (torch.Tensor): The input feature map of shape (n_batches, n_patches, dimensionality).
-            masks (torch.Tensor): Masks of shape (kernel_size, n_masks) representing the sliding window locations.
+            feature_map (torch.Tensor): The input feature map of shape ``(n_batches, n_patches, dimensionality)``.
+            masks (torch.Tensor): Masks of shape ``(kernel_size, n_masks)`` representing the sliding window locations.
 
         Returns:
             torch.Tensor: The embeddings for each sliding window location.
@@ -150,7 +150,7 @@ class WinClipModel(nn.Module):
         """Forward-pass through the model to obtain image and pixel scores.
 
         Args:
-            batch (torch.Tensor): Batch of input images of shape (batch_size, C, H, W).
+            batch (torch.Tensor): Batch of input images of shape ``(batch_size, C, H, W)``.
 
         Returns:
             Tuple[torch.Tensor, torch.Tensor]: Tuple containing the image scores and pixel scores.
@@ -183,7 +183,7 @@ class WinClipModel(nn.Module):
         the score maps are combined into a single multiscale score map by aggregating across scales.
 
         Args:
-            image_scores (torch.Tensor): Tensor of shape (batch_size) representing the full image scores.
+            image_scores (torch.Tensor): Tensor of shape ``(batch_size)`` representing the full image scores.
             window_embeddings (list[torch.Tensor]): List of tensors of shape ``(batch_size, n_windows, n_features)``
                 representing the embeddings for each sliding window location.
 
@@ -212,12 +212,14 @@ class WinClipModel(nn.Module):
         harmonic averaging. The final score maps are obtained by averaging across scales.
 
         Args:
-            patch_embeddings (torch.Tensor): Full-scale patch embeddings of shape ``(batch_size, n_patches, n_features)``.
-            window_embeddings (list[torch.Tensor]): List of tensors of shape (batch_size, n_windows, n_features)
+            patch_embeddings (torch.Tensor): Full-scale patch embeddings of shape
+                ``(batch_size, n_patches, n_features)``.
+            window_embeddings (list[torch.Tensor]): List of tensors of shape ``(batch_size, n_windows, n_features)``
                 representing the embeddings for each sliding window location.
 
         Returns:
-            torch.Tensor: Tensor of shape (batch_size, H, W) representing the few-shot scores for each patch location.
+            torch.Tensor: Tensor of shape ``(batch_size, H, W)`` representing the few-shot scores for each patch
+                location.
         """
         assert isinstance(
             self.visual_embeddings,
@@ -272,7 +274,7 @@ class WinClipModel(nn.Module):
         """Collect visual embeddings based on a set of normal reference images.
 
         Args:
-            images (torch.Tensor): Tensor of shape (batch_size, C, H, W) containing the reference images.
+            images (torch.Tensor): Tensor of shape ``(batch_size, C, H, W)`` containing the reference images.
             device (torch.device | None, optional): The device on which the embeddings should be stored.
                 Defaults to None.
         """
