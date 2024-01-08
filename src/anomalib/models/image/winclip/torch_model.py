@@ -184,7 +184,7 @@ class WinClipModel(nn.Module):
 
         Args:
             image_scores (torch.Tensor): Tensor of shape (batch_size) representing the full image scores.
-            window_embeddings (list[torch.Tensor]): List of tensors of shape (batch_size, n_windows, n_features)
+            window_embeddings (list[torch.Tensor]): List of tensors of shape ``(batch_size, n_windows, n_features)``
                 representing the embeddings for each sliding window location.
 
         Returns:
