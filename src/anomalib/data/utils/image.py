@@ -44,7 +44,7 @@ def get_image_filenames(path: str | Path) -> list[Path]:
         msg = f"Found 0 images in {path}"
         raise ValueError(msg)
 
-    return image_filenames
+    return sorted(image_filenames)
 
 
 def duplicate_filename(path: str | Path) -> Path:

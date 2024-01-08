@@ -8,6 +8,7 @@ from collections.abc import Callable
 import open_clip
 import torch
 from open_clip.tokenizer import tokenize
+from open_clip.transform import PreprocessCfg
 from torch import nn
 from torch.nn.modules.linear import Identity
 
@@ -48,7 +49,9 @@ class WinClipModel(nn.Module):
         self.scales = scales
 
         # initialize CLIP model
-        self.clip = open_clip.create_model(self.backbone, pretrained=self.pretrained)
+        self.clip, _, self.transform = open_clip.create_model_and_transforms(self.backbone, pretrained=self.pretrained)
+        self._preprocess_cfg = self.clip.visual.preprocess_cfg
+        self._preprocess_config = PreprocessCfg(**self.clip.visual.preprocess_cfg)
         self.clip.visual.output_tokens = True
         self.grid_size = self.clip.visual.grid_size
 

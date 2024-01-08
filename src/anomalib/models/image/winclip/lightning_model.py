@@ -9,9 +9,14 @@ Paper https://arxiv.org/abs/2303.14814
 from __future__ import annotations
 
 import logging
+from copy import copy
+from pathlib import Path
 
 import torch
+from torch.utils.data import DataLoader
+from torchvision.transforms import Compose, ToPILImage
 
+from anomalib.data.inference import InferenceDataset
 from anomalib.models.components import AnomalyModule
 
 from .torch_model import WinClipModel
@@ -31,6 +36,8 @@ class WinClip(AnomalyModule):
             Defaults to ``0``.
         scales (tuple[int], optional): The scales of the sliding windows used for multiscale anomaly detection.
             Defaults to ``(2, 3)``.
+        few_shot_source (str | Path, optional): Path to a folder of reference images used for few-shot inference.
+            Defaults to ``None``.
     """
 
     def __init__(
@@ -38,11 +45,13 @@ class WinClip(AnomalyModule):
         class_name: str | None = None,
         k_shot: int = 0,
         scales: tuple = (2, 3),
+        few_shot_source: Path | str | None = None,
     ) -> None:
         super().__init__()
         self.model = WinClipModel(k_shot=k_shot, scales=scales)
         self.class_name = class_name
         self.k_shot = k_shot
+        self.few_shot_source = Path(few_shot_source) if few_shot_source else None
 
     def setup(self, stage: str) -> None:
         """Setup WinCLIP.
@@ -63,7 +72,15 @@ class WinClip(AnomalyModule):
         self.model.collect_text_embeddings(self.class_name, device=self.device)
 
         if self.k_shot:
-            ref_images = self.collect_reference_images()
+            if self.few_shot_source:
+                logger.info("Loading reference images from %s", self.few_shot_source)
+                reference_dataset = InferenceDataset(self.few_shot_source, transform=self.transform)
+                dataloader = DataLoader(reference_dataset, batch_size=1, shuffle=False)
+            else:
+                logger.info("Collecting reference images from training dataset")
+                dataloader = self.trainer.datamodule.train_dataloader()
+
+            ref_images = self.collect_reference_images(dataloader)
             self.model.collect_visual_embeddings(ref_images, device=self.device)
 
     def _set_class_name(self) -> None:
@@ -84,7 +101,7 @@ class WinClip(AnomalyModule):
             logger.info("No class name provided and no category name found in datamodule using default: object")
             self.class_name = "object"
 
-    def collect_reference_images(self) -> torch.Tensor:
+    def collect_reference_images(self, dataloader: DataLoader) -> torch.Tensor:
         """Collect reference images for few-shot inference.
 
         The reference images are collected by iterating the training dataset until the required number of images are
@@ -94,7 +111,7 @@ class WinClip(AnomalyModule):
             ref_images (Tensor): A tensor containing the reference images.
         """
         ref_images = torch.Tensor()
-        for batch in self.trainer.datamodule.train_dataloader():
+        for batch in dataloader:
             images = batch["image"][: self.k_shot - ref_images.shape[0]]
             ref_images = torch.cat((ref_images, images))
             if self.k_shot == ref_images.shape[0]:
@@ -131,3 +148,14 @@ class WinClip(AnomalyModule):
             "max_epochs": 1,
             "limit_train_batches": 1,
         }
+
+    @property
+    def transform(self) -> None:
+        """The transform used by the model.
+
+        To obtain the transforms, we retrieve the transforms from the clip backbone. Since the original transforms are
+        intended for PIL images, we prepend a ToPILImage transform to the list of transforms.
+        """
+        transforms = copy(self.model.transform.transforms)
+        transforms.insert(0, ToPILImage())
+        return Compose(transforms)
