@@ -143,7 +143,7 @@ def get_single_model_metrics(
                 model=model,
                 input_size=input_size,
                 transform=engine.trainer.datamodule.test_data.transform,
-                mo_args={},
+                ov_args={},
                 task=engine.trainer.datamodule.test_data.task,
             )
             openvino_throughput = get_openvino_throughput(model_path=project_path, test_dataset=datamodule.test_data)
