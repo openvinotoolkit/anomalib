@@ -188,7 +188,7 @@ class WinClipModel(nn.Module):
                 representing the embeddings for each sliding window location.
 
         Returns:
-            torch.Tensor: Tensor of shape (batch_size, H, W) representing the 0-shot scores for each patch location.
+            torch.Tensor: Tensor of shape ``(batch_size, H, W)`` representing the 0-shot scores for each patch location.
         """
         assert isinstance(self.masks, list), "Masks have not been prepared. Call prepare_masks before inference."
         # image scores are added to represent the full image scale
