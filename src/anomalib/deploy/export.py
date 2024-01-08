@@ -111,7 +111,7 @@ def export_to_onnx(
     task: TaskType | None = None,
     export_type: ExportType = ExportType.ONNX,
 ) -> Path:
-    """Export typel to onnx.
+    """Export model to onnx.
 
     Args:
         model (AnomalyModule): Model to export.

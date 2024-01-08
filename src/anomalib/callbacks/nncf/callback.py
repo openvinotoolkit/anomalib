@@ -98,7 +98,7 @@ class NNCFCallback(Callback):
 
         Path(self.export_dir).mkdir(parents=True, exist_ok=True)
         onnx_path = str(Path(self.export_dir) / "model_nncf.onnx")
-        self.nncf_ctrl.export_typel(onnx_path)
+        self.nncf_ctrl.export_model(onnx_path)
 
         optimize_command = ["mo", "--input_model", onnx_path, "--output_dir", self.export_dir]
         # TODO(samet-akcay): Check if mo can be donw via python API
