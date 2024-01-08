@@ -113,6 +113,19 @@ def harmonic_aggregation(window_scores: torch.Tensor, output_size: tuple, masks:
 
     Returns:
         torch.Tensor: Tensor of shape ``(batch_size, H, W)```` representing the aggregated scores.
+
+    Examples:
+        >>> # example for a 3x3 patch grid with 4 sliding windows of size 2x2
+        >>> window_scores = scores = torch.tensor([[1.0, 0.75, 0.5, 0.25]])
+        >>> output_size = (3, 3)
+        >>> masks = torch.Tensor([[1,2,4,5],
+                                  [2,3,5,6],
+                                  [4,5,7,8],
+                                  [5,6,8,9]])
+        >>> harmonic_aggregation(window_scores, output_size, masks)
+        tensor([[[1.0000, 0.8571, 0.7500],
+                 [0.6667, 0.4800, 0.3750],
+                 [0.5000, 0.3333, 0.2500]]])
     """
     batch_size = window_scores.shape[0]
     height, width = output_size
@@ -128,14 +141,28 @@ def harmonic_aggregation(window_scores: torch.Tensor, output_size: tuple, masks:
 def visual_association_score(embeddings: torch.Tensor, reference_embeddings: torch.Tensor) -> torch.Tensor:
     """Compute visual association scores between a set of embeddings and a set of reference embeddings.
 
+    Returns a visual association score for each patch location in the inputs. The visual association score is the
+    minimum cosine distance between each embedding and the reference embeddings. Equation (4) in the paper.
+
     Args:
-        embeddings (torch.Tensor): Tensor of shape ``(batch_size, n_embeddings, dimensionality)`` representing the
+        embeddings (torch.Tensor): Tensor of shape ``(batch_size, n_patches, dimensionality)`` representing the
             embeddings.
-        reference_embeddings (torch.Tensor): Tensor of shape ``(n_patches, n_embeddings)`` representing the reference
-            embeddings.
+        reference_embeddings (torch.Tensor): Tensor of shape ``(n_reference_embeddings, n_patches, dimensionality)``
+            representing the reference embeddings.
 
     Returns:
-        torch.Tensor: Tensor of shape ``(batch_size, n_embeddings)`` representing the visual association scores.
+        torch.Tensor: Tensor of shape ``(batch_size, n_patches)`` representing the visual association scores.
+
+    Examples:
+        >>> embeddings = torch.tensor([[[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]]])
+        >>> reference_embeddings = torch.tensor([[[0.0, 1.0, 0.0], [1.0, 1.0, 0.0]]])
+        >>> visual_association_score(embeddings, reference_embeddings)
+        tensor([[0.1464, 0.0000]])
+
+        >>> embeddings = torch.randn(10, 100, 128)
+        >>> reference_embeddings = torch.randn(2, 100, 128)
+        >>> visual_association_score(embeddings, reference_embeddings).shape
+        torch.Size([10, 100])
     """
     reference_embeddings = reference_embeddings.reshape(-1, embeddings.shape[-1])
     scores = cosine_similarity(embeddings, reference_embeddings)
