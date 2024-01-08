@@ -19,7 +19,8 @@ from anomalib.utils.types import TaskType
 
 
 def models() -> list[str]:
-    """Return all available models except winclip."""
+    """Return all available models."""
+    # skip winclip because we don't have a test design for zero-shot yet
     return [model for model in get_available_models() if model != "win_clip"]
 
 
