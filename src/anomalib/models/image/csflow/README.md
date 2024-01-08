@@ -1,4 +1,4 @@
-# Real-Time Unsupervised Anomaly Detection via Conditional Normalizing Flows
+# Fully Convolutional Cross-Scale-Flows for Image-based Defect Detection
 
 This is the implementation of the [CS-Flow](https://arxiv.org/pdf/2110.02855.pdf) paper. This code is modified form of the [official repository](https://github.com/marco-rudolph/cs-flow).
 
