@@ -170,7 +170,10 @@ def visual_association_score(embeddings: torch.Tensor, reference_embeddings: tor
 
 
 def make_masks(grid_size: tuple[int, int], kernel_size: int, stride: int = 1) -> torch.Tensor:
-    """Make a set of mask to select patches from a feature map in a sliding window fashion.
+    """Make a set of masks to select patches from a feature map in a sliding window fashion.
+
+    Each column in the returned tensor represents a mask. Each mask is a set of indices indicating which patches are
+    covered by the mask. The number of masks is equal to the number of sliding windows that fit in the feature map.
 
     Args:
         grid_size (tuple[int, int]): The shape of the feature map.
@@ -178,7 +181,26 @@ def make_masks(grid_size: tuple[int, int], kernel_size: int, stride: int = 1) ->
         stride (int): The size of the stride in number of patches.
 
     Returns:
-        torch.Tensor: Set of masks of shape ``(1, n_patches_per_mask, n_masks)``.
+        torch.Tensor: Set of masks of shape ``(n_patches_per_mask, n_masks)``.
+
+    Examples:
+        >>> make_masks((3, 3), 2)
+        tensor([[1, 2, 4, 5],
+                [2, 3, 5, 6],
+                [4, 5, 7, 8],
+                [5, 6, 8, 9]])
+
+        >>> make_masks((4, 4), 2)
+        tensor([[ 1,  2,  3,  5,  6,  7,  9, 10, 11],
+                [ 2,  3,  4,  6,  7,  8, 10, 11, 12],
+                [ 5,  6,  7,  9, 10, 11, 13, 14, 15],
+                [ 6,  7,  8, 10, 11, 12, 14, 15, 16]])
+
+        >>> make_masks((4, 4), 2, stride=2)
+        tensor([[ 1,  3,  9, 11],
+                [ 2,  4, 10, 12],
+                [ 5,  7, 13, 15],
+                [ 6,  8, 14, 16]])
     """
     height, width = grid_size
     grid = torch.arange(1, height * width + 1).reshape(1, 1, height, width)
