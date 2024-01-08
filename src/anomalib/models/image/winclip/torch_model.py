@@ -25,17 +25,17 @@ class WinClipModel(nn.Module):
     Args:
         k_shot (int, optional): The number of reference images used for few-shot anomaly detection.
             Defaults to ``0``.
-        scales (tuple[int], optional): The scales of the sliding windows used for multiscale anomaly detection.
+        scales (tuple[int], optional): The scales of the sliding windows used for multi-scale anomaly detection.
             Defaults to ``(2, 3)``.
 
     Attributes:
         clip (CLIP): The CLIP model used for image and text encoding.
         grid_size (tuple[int]): The size of the feature map grid.
         k_shot (int): The number of reference images used for few-shot anomaly detection.
-        scales (tuple[int]): The scales of the sliding windows used for multiscale anomaly detection.
+        scales (tuple[int]): The scales of the sliding windows used for multi-scale anomaly detection.
         masks (list[torch.Tensor] | None): The masks representing the sliding window locations.
         text_embeddings (torch.Tensor | None): The text embeddings for the compositional prompt ensemble.
-        visual_embeddings (list[torch.Tensor] | None): The multiscale embeddings for the reference images.
+        visual_embeddings (list[torch.Tensor] | None): The multi-scale embeddings for the reference images.
         patch_embeddings (torch.Tensor | None): The patch embeddings for the reference images.
     """
 
@@ -159,16 +159,20 @@ class WinClipModel(nn.Module):
 
         # get zero-shot scores
         image_scores = class_scores(image_embeddings, self.text_embeddings, self.temperature, target_class=1)
-        multiscale_scores = self._compute_zero_shot_scores(image_scores, window_embeddings)
+        multi_scale_scores = self._compute_zero_shot_scores(image_scores, window_embeddings)
 
         # get few-shot scores
         if self.k_shot:
             few_shot_scores = self._compute_few_shot_scores(patch_embeddings, window_embeddings)
-            multiscale_scores = (multiscale_scores + few_shot_scores) / 2
+            multi_scale_scores = (multi_scale_scores + few_shot_scores) / 2
             image_scores = (image_scores + few_shot_scores.amax(dim=(-2, -1))) / 2
 
         # reshape to image dimensions
-        pixel_scores = nn.functional.interpolate(multiscale_scores.unsqueeze(1), size=batch.shape[-2:], mode="bilinear")
+        pixel_scores = nn.functional.interpolate(
+            multi_scale_scores.unsqueeze(1),
+            size=batch.shape[-2:],
+            mode="bilinear",
+        )
         return image_scores, pixel_scores.squeeze(1)
 
     def _compute_zero_shot_scores(
@@ -176,11 +180,11 @@ class WinClipModel(nn.Module):
         image_scores: torch.Tensor,
         window_embeddings: list[torch.Tensor],
     ) -> torch.Tensor:
-        """Compute the multiscale anomaly score maps based on the text embeddings.
+        """Compute the multi-scale anomaly score maps based on the text embeddings.
 
         Each window embedding is compared to the text embeddings to obtain a similarity score for each window. Harmonic
         averaging is then used to aggregate the scores for each window into a single score map for each scale. Finally,
-        the score maps are combined into a single multiscale score map by aggregating across scales.
+        the score maps are combined into a single multi-scale score map by aggregating across scales.
 
         Args:
             image_scores (torch.Tensor): Tensor of shape ``(batch_size)`` representing the full image scores.
@@ -192,20 +196,20 @@ class WinClipModel(nn.Module):
         """
         assert isinstance(self.masks, list), "Masks have not been prepared. Call prepare_masks before inference."
         # image scores are added to represent the full image scale
-        multiscale_scores = [image_scores.view(-1, 1, 1).repeat(1, self.grid_size[0], self.grid_size[1])]
+        multi_scale_scores = [image_scores.view(-1, 1, 1).repeat(1, self.grid_size[0], self.grid_size[1])]
         # add aggregated scores for each scale
         for window_embedding, mask in zip(window_embeddings, self.masks, strict=True):
             scores = class_scores(window_embedding, self.text_embeddings, self.temperature, target_class=1)
-            multiscale_scores.append(harmonic_aggregation(scores, self.grid_size, mask))
+            multi_scale_scores.append(harmonic_aggregation(scores, self.grid_size, mask))
         # aggregate scores across scales
-        return (len(self.scales) + 1) / (1 / torch.stack(multiscale_scores)).sum(dim=0)
+        return (len(self.scales) + 1) / (1 / torch.stack(multi_scale_scores)).sum(dim=0)
 
     def _compute_few_shot_scores(
         self,
         patch_embeddings: torch.Tensor,
         window_embeddings: list[torch.Tensor],
     ) -> torch.Tensor:
-        """Compute the multiscale anomaly score maps based on the reference image embeddings.
+        """Compute the multi-scale anomaly score maps based on the reference image embeddings.
 
         Visual association scores are computed between the extracted embeddings and the reference image embeddings for
         each scale. The window-level scores are additionally aggregated into a single score map for each scale using
@@ -227,7 +231,7 @@ class WinClipModel(nn.Module):
         ), "Visual embeddings have not been prepared. Call collect_visual_embeddings before inference."
         assert isinstance(self.masks, list), "Masks have not been prepared. Call prepare_masks before inference."
 
-        multiscale_scores = [
+        multi_scale_scores = [
             visual_association_score(patch_embeddings, self.patch_embeddings).reshape((-1, *self.grid_size)),
         ]
         for window_embedding, reference_embedding, mask in zip(
@@ -237,9 +241,9 @@ class WinClipModel(nn.Module):
             strict=True,
         ):
             scores = visual_association_score(window_embedding, reference_embedding)
-            multiscale_scores.append(harmonic_aggregation(scores, self.grid_size, mask))
+            multi_scale_scores.append(harmonic_aggregation(scores, self.grid_size, mask))
 
-        return torch.stack(multiscale_scores).mean(dim=0)
+        return torch.stack(multi_scale_scores).mean(dim=0)
 
     def collect_text_embeddings(self, class_name: str, device: torch.device | None = None) -> None:
         """Collect text embeddings for the object class using a compositional prompt ensemble.
@@ -284,7 +288,7 @@ class WinClipModel(nn.Module):
         self.patch_embeddings = patch_embeddings.to(device)
 
     def prepare_masks(self, device: torch.device | None = None) -> None:
-        """Prepare a set of masks that operate as multiscale sliding windows.
+        """Prepare a set of masks that operate as multi-scale sliding windows.
 
         For each of the scales, a set of masks is created that select patches from the feature map. Each mask represents
         a sliding window location in the pixel domain. The masks are stored in the model to be used during inference.
