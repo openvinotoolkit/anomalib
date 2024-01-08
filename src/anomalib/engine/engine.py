@@ -21,7 +21,7 @@ from anomalib.callbacks.normalization import get_normalization_callback
 from anomalib.callbacks.post_processor import _PostProcessorCallback
 from anomalib.callbacks.thresholding import _ThresholdCallback
 from anomalib.data import AnomalibDataModule, AnomalibDataset
-from anomalib.deploy.export import ExportMode, export_to_onnx, export_to_openvino, export_to_torch
+from anomalib.deploy.export import ExportType, export_to_onnx, export_to_openvino, export_to_torch
 from anomalib.metrics.threshold import BaseThreshold
 from anomalib.models import AnomalyModule
 from anomalib.utils.normalization import NormalizationMethod
@@ -453,7 +453,7 @@ class Engine:
     def export(
         self,
         model: AnomalyModule,
-        export_mode: ExportMode,
+        export_type: ExportType,
         export_path: str | Path | None = None,
         transform: dict[str, Any] | A.Compose | str | Path | None = None,
         datamodule: AnomalibDataModule | None = None,
@@ -466,7 +466,7 @@ class Engine:
 
         Args:
             model (AnomalyModule): Trained model.
-            export_mode (ExportMode): Export mode.
+            export_type (ExportType): Export type.
             export_path (str | Path | None, optional): Path to the output directory. If it is not set, the model is
                 exported to trainer.default_root_dir. Defaults to None.
             transform (dict[str, Any] | A.Compose | str | Path | None, optional): Transform config. Can either be a
@@ -515,10 +515,10 @@ class Engine:
         if export_path is None:
             export_path = Path(self.trainer.default_root_dir)
 
-        if export_mode == ExportMode.TORCH:
+        if export_type == ExportType.TORCH:
             return export_to_torch(model=model, export_path=export_path, transform=transform, task=self.task)
-        if export_mode == ExportMode.ONNX:
-            assert input_size is not None, "input_size must be provided for ONNX export mode."
+        if export_type == ExportType.ONNX:
+            assert input_size is not None, "input_size must be provided for ONNX export type."
             return export_to_onnx(
                 model=model,
                 input_size=input_size,
@@ -526,8 +526,8 @@ class Engine:
                 transform=transform,
                 task=self.task,
             )
-        if export_mode == ExportMode.OPENVINO:
-            assert input_size is not None, "input_size must be provided for OpenVINO export mode."
+        if export_type == ExportType.OPENVINO:
+            assert input_size is not None, "input_size must be provided for OpenVINO export type."
             return export_to_openvino(
                 model=model,
                 input_size=input_size,
@@ -537,5 +537,5 @@ class Engine:
                 ov_args=ov_args,
             )
 
-        logging.error(f"Export mode {export_mode} is not supported yet.")
+        logging.error(f"Export type {export_type} is not supported yet.")
         return None
