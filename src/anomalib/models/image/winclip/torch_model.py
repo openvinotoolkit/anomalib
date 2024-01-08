@@ -97,7 +97,7 @@ class WinClipModel(nn.Module):
         # register hook to get the intermediate tokens of the transformer
         self.clip.visual.patch_dropout.register_forward_hook(get_feature_map("feature_map"))
 
-        # get patch embeddings
+        # get image and patch embeddings
         image_embeddings, patch_embeddings = self.clip.encode_image(batch)
 
         # get window embeddings
