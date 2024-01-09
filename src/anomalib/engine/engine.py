@@ -21,7 +21,7 @@ from anomalib.callbacks.metrics import _MetricsCallback
 from anomalib.callbacks.normalization import get_normalization_callback
 from anomalib.callbacks.post_processor import _PostProcessorCallback
 from anomalib.callbacks.thresholding import _ThresholdCallback
-from anomalib.data import AnomalibDataModule, AnomalibDataset, InferenceDataset
+from anomalib.data import AnomalibDataModule, AnomalibDataset, PredictDataset
 from anomalib.deploy.export import ExportType, export_to_onnx, export_to_openvino, export_to_torch
 from anomalib.metrics.threshold import BaseThreshold
 from anomalib.models import AnomalyModule
@@ -357,7 +357,7 @@ class Engine:
         self,
         model: AnomalyModule | None = None,
         dataloaders: EVAL_DATALOADERS | AnomalibDataModule | None = None,
-        datamodule: AnomalibDataModule | Dataset | InferenceDataset | None = None,
+        datamodule: AnomalibDataModule | Dataset | PredictDataset | None = None,
         return_predictions: bool | None = None,
         ckpt_path: str | None = None,
     ) -> _PREDICT_OUTPUT | None:
