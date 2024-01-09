@@ -45,6 +45,19 @@ class _VisualizationCallback(Callback):
             log (bool, optional): Log the images into the loggers. Defaults to False.
             show (bool, optional): Show the images. Defaults to False.
 
+        Example:
+            >>> generators = [ImageVisualizationGenerator(), MetricsVisualizationGenerator()]
+            >>> visualization_callback = _VisualizationCallback(
+            ... generators=generators,
+            ... save=True,
+            ... save_root="results/images"
+            ... )
+
+            CLI
+            $ anomalib fit --model Padim --data MVTec \
+                --visualization.generators ImageVisualizationGenerator \
+                --visualization.generators+=MetricsVisualizationGenerator
+
         Raises:
             ValueError: Incase `save_root` is None and `save` is True.
         """
