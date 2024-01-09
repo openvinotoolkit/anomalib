@@ -290,7 +290,7 @@ class Folder(AnomalibDataModule):
         center_crop (int | tuple[int, int] | None, optional): When provided, the images will be center-cropped
             to the provided dimensions.
             Defaults to ``None``.
-        normalization (str | InputNormalizationMethod): Normalization method to apply to the input images.
+        normalization (InputNormalizationMethod | str): Normalization method to apply to the input images.
             Defaults to ``InputNormalizationMethod.IMAGENET``.
         train_batch_size (int, optional): Training batch size.
             Defaults to ``32``.
@@ -384,7 +384,7 @@ class Folder(AnomalibDataModule):
         extensions: tuple[str] | None = None,
         image_size: int | tuple[int, int] = (256, 256),
         center_crop: int | tuple[int, int] | None = None,
-        normalization: str | InputNormalizationMethod = InputNormalizationMethod.IMAGENET,
+        normalization: InputNormalizationMethod | str = InputNormalizationMethod.IMAGENET,
         train_batch_size: int = 32,
         eval_batch_size: int = 32,
         num_workers: int = 8,
