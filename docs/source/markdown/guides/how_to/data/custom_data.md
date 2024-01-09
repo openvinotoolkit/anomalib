@@ -110,7 +110,7 @@ This could be done in two ways:
 
 We will create a custom datamodule with only normal images and train an
 unsupervised model on this dataset. We will skip the validation and test steps
-as we do not have abnormal images to validate and test the model on.
+as we do not have abnormal images to validate and test the model on. Please note that Anomalib will not be able to compute the normalization statistics or adaptive threshold values in this case. When training a model without anomalous validation images it is recommended to disable normalization and use a manual threshold.
 
 :::::{dropdown} Code Syntax
 :icon: code
