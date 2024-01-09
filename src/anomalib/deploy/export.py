@@ -29,16 +29,16 @@ if try_import("openvino"):
     from openvino.tools.mo.convert import convert_model
 
 
-class ExportMode(str, Enum):
-    """Model export mode.
+class ExportType(str, Enum):
+    """Model export type.
 
     Examples:
-        >>> from anomalib.deploy import ExportMode
-        >>> ExportMode.ONNX
+        >>> from anomalib.deploy import ExportType
+        >>> ExportType.ONNX
         'onnx'
-        >>> ExportMode.OPENVINO
+        >>> ExportType.OPENVINO
         'openvino'
-        >>> ExportMode.TORCH
+        >>> ExportType.TORCH
         'torch'
     """
 
@@ -93,7 +93,7 @@ def export_to_torch(
 
 
     """
-    export_path = _create_export_path(export_path, ExportMode.TORCH)
+    export_path = _create_export_path(export_path, ExportType.TORCH)
     metadata = get_metadata(task=task, transform=transform, model=model)
     pt_model_path = export_path / "model.pt"
     torch.save(
@@ -109,7 +109,7 @@ def export_to_onnx(
     export_path: Path | str,
     transform: dict[str, Any] | AnomalibDataset | AnomalibDataModule | A.Compose,
     task: TaskType | None = None,
-    export_mode: ExportMode = ExportMode.ONNX,
+    export_type: ExportType = ExportType.ONNX,
 ) -> Path:
     """Export model to onnx.
 
@@ -122,9 +122,9 @@ def export_to_onnx(
             Albumentations.
         task (TaskType | None): Task type should be provided if transforms is of type dict or A.Compose object.
             Defaults to ``None``.
-        export_mode (ExportMode): Mode to export the model. Since this method is used by OpenVINO export as well, we
-            need to pass the export mode so that the right export path is created.
-            Defaults to ``ExportMode.ONNX``.
+        export_type (ExportType): Mode to export the model. Since this method is used by OpenVINO export as well, we
+            need to pass the export type so that the right export path is created.
+            Defaults to ``ExportType.ONNX``.
 
     Returns:
         Path: Path to the exported onnx model.
@@ -161,7 +161,7 @@ def export_to_onnx(
         ...     task="segmentation",
         ... )
     """
-    export_path = _create_export_path(export_path, export_mode)
+    export_path = _create_export_path(export_path, export_type)
     _write_metadata_to_json(export_path, transform, model, task)
     onnx_path = export_path / "model.onnx"
     torch.onnx.export(
@@ -239,7 +239,7 @@ def export_to_openvino(
         ... )
 
     """
-    model_path = export_to_onnx(model, input_size, export_path, transform, task, ExportMode.OPENVINO)
+    model_path = export_to_onnx(model, input_size, export_path, transform, task, ExportType.OPENVINO)
     ov_model_path = model_path.with_suffix(".xml")
     ov_args = {} if ov_args is None else ov_args
     if convert_model is not None and serialize is not None:
@@ -379,17 +379,17 @@ def _get_transform_dict(
     return transform
 
 
-def _create_export_path(export_root: str | Path, export_mode: ExportMode) -> Path:
+def _create_export_path(export_root: str | Path, export_type: ExportType) -> Path:
     """Create export directory.
 
     Args:
         export_root (str | Path): Path to the root folder of the exported model.
-        export_mode (ExportMode): Mode to export the model. Torch, ONNX or OpenVINO.
+        export_type (ExportType): Mode to export the model. Torch, ONNX or OpenVINO.
 
     Returns:
         Path: Path to the export directory.
     """
-    export_path = Path(export_root) / "weights" / export_mode.value
+    export_path = Path(export_root) / "weights" / export_type.value
     export_path.mkdir(parents=True, exist_ok=True)
     return export_path
 

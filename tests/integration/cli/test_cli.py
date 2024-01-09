@@ -13,7 +13,7 @@ import pytest
 import torch
 
 from anomalib.cli import AnomalibCLI
-from anomalib.deploy.export import ExportMode
+from anomalib.deploy.export import ExportType
 from anomalib.utils.types import TaskType
 
 
@@ -153,25 +153,25 @@ class TestCLI:
         )
         torch.cuda.empty_cache()
 
-    @pytest.mark.parametrize("export_mode", [ExportMode.TORCH, ExportMode.ONNX, ExportMode.OPENVINO])
+    @pytest.mark.parametrize("export_type", [ExportType.TORCH, ExportType.ONNX, ExportType.OPENVINO])
     def test_export(
         self,
         dataset_path: Path,
         project_path: Path,
-        export_mode: ExportMode,
+        export_type: ExportType,
     ) -> None:
         """Test the export method of the CLI.
 
         Args:
             dataset_path (Path): Root of the synthetic/original dataset.
             project_path (Path): Path to temporary project folder.
-            export_mode (ExportMode): Export mode.
+            export_type (ExportType): Export type.
         """
         AnomalibCLI(
             args=[
                 "export",
-                "--export_mode",
-                export_mode,
+                "--export_type",
+                export_type,
                 *self._get_common_cli_args(dataset_path, project_path),
                 "--input_size",
                 "[256, 256]",
