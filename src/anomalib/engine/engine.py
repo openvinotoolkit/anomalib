@@ -201,7 +201,7 @@ class Engine:
 
         if self.visualization is not None:
             image_save_path = self.visualization.pop("image_save_path", None)
-            if image_save_path is None:
+            if image_save_path is None or image_save_path == "":
                 image_save_path = self.trainer.default_root_dir + "/images"
             _callbacks += get_visualization_callbacks(
                 task=self.task,
