@@ -106,52 +106,7 @@ This could be done in two ways:
 - Use the synthetic anomaly generation feature to create abnormal images from
   normal images, and perform the validation and test steps.
 
-#### Without Validation and Testing
-
-We will create a custom datamodule with only normal images and train an
-unsupervised model on this dataset. We will skip the validation and test steps
-as we do not have abnormal images to validate and test the model on. Please note that Anomalib will not be able to compute the normalization statistics or adaptive threshold values in this case. When training a model without anomalous validation images it is recommended to disable normalization and use a manual threshold.
-
-:::::{dropdown} Code Syntax
-:icon: code
-
-::::{tab-set}
-:::{tab-item} API
-:sync: label-1
-
-We could run the following python code to create the custom datamodule:
-
-```{literalinclude} ../../../../snippets/data/image/folder/classification/normal.txt
-:language: python
-```
-
-As can be seen above, we need to specify that we only have normal images in our
-dataset by setting the `val_split_mode` and `test_split_mode` arguments to
-`NONE`. The [Folder](../../reference/data/image/folder.md) datamodule will
-create training dataset and dataloader for us.
-
-:::
-
-:::{tab-item} CLI
-:sync: label-2
-
-Here is the dataset config to create the same custom datamodule with only normal
-images. We specify the `val_split_mode` and `test_split_mode` arguments to
-`NONE` to tell anomalib that we only have normal images in our dataset.
-
-```{literalinclude} ../../../../snippets/config/data/image/folder/classification/cli/normal.yaml
-:language: yaml
-```
-
-Assume that we have saved the above config file as `normal.yaml`. We could run the following CLI command to train a Patchcore model on above dataset:
-
-```bash
-anomalib train --data normal.yaml --model anomalib.models.Patchcore
-```
-
-:::
-::::
-:::::
+For now we will focus on the second approach.
 
 #### With Validation and Testing via Synthetic Anomalies
 
@@ -296,7 +251,7 @@ but would like to train a segmentation model. This could be done in two ways:
 - Use the synthetic anomaly generation feature to create abnormal
   images from normal images, and perform the validation and test steps.
 
-We will show how to do both.
+For now we will focus on the second approach.
 
 #### Without Validation and Testing
 
