@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 class _VisualizationCallback(Callback):
     def __init__(
         self,
-        generators: BaseVisualizer | list[BaseVisualizer],
+        visualizers: BaseVisualizer | list[BaseVisualizer],
         save: bool = False,
         save_root: Path | None = None,
         log: bool = False,
@@ -38,25 +38,25 @@ class _VisualizationCallback(Callback):
         """Callback for visualization that is used internally by the Engine.
 
         Args:
-            generators (BaseVisualizationGenerator | list[BaseVisualizationGenerator]):
-                Generator objects that are used for computing the visualizations. Defaults to None.
+            visualizers (BaseVisualizer | list[BaseVisualizer]):
+                Visualizer objects that are used for computing the visualizations. Defaults to None.
             save (bool, optional): Save the image. Defaults to False.
             save_root (Path | None, optional): The path to save the images. Defaults to None.
             log (bool, optional): Log the images into the loggers. Defaults to False.
             show (bool, optional): Show the images. Defaults to False.
 
         Example:
-            >>> generators = [ImageVisualizationGenerator(), MetricsVisualizationGenerator()]
+            >>> visualizers = [ImageVisualizer(), MetricsVisualizer()]
             >>> visualization_callback = _VisualizationCallback(
-            ... generators=generators,
+            ... visualizers=visualizers,
             ... save=True,
             ... save_root="results/images"
             ... )
 
             CLI
-            $ anomalib fit --model Padim --data MVTec \
-                --visualization.generators ImageVisualizationGenerator \
-                --visualization.generators+=MetricsVisualizationGenerator
+            $ anomalib train --model Padim --data MVTec \
+                --visualization.visualizers ImageVisualizer \
+                --visualization.visualizers+=MetricsVisualizer
 
         Raises:
             ValueError: Incase `save_root` is None and `save` is True.
@@ -68,7 +68,7 @@ class _VisualizationCallback(Callback):
         self.save_root: Path = save_root if save_root is not None else Path()  # need this check for mypy
         self.log = log
         self.show = show
-        self.generators = generators if isinstance(generators, list) else [generators]
+        self.generators = visualizers if isinstance(visualizers, list) else [visualizers]
 
     def on_test_batch_end(
         self,

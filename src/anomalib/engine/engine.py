@@ -133,7 +133,7 @@ class Engine:
         task: TaskType = TaskType.SEGMENTATION,
         image_metrics: str | list[str] | None = None,
         pixel_metrics: str | list[str] | None = None,
-        visualization_generators: BaseVisualizer | list[BaseVisualizer] | None = None,
+        visualizers: BaseVisualizer | list[BaseVisualizer] | None = None,
         save_image: bool = False,
         log_image: bool = False,
         show_image: bool = False,
@@ -149,7 +149,7 @@ class Engine:
         self.image_metric_names = image_metrics
         self.pixel_metric_names = pixel_metrics
 
-        self.visualization_generators = visualization_generators
+        self.visualizers = visualizers
         self._setup_generators()
         self.save_image = save_image
         self.log_image = log_image
@@ -174,18 +174,18 @@ class Engine:
 
     def _setup_generators(self) -> None:
         """Override the task in generators."""
-        if self.visualization_generators:
-            generators = (
-                self.visualization_generators
-                if isinstance(self.visualization_generators, list)
+        if self.visualizers:
+            visualizers = (
+                self.visualizers
+                if isinstance(self.visualizers, list)
                 else [
-                    self.visualization_generators,
+                    self.visualizers,
                 ]
             )
-            for generator in generators:
-                if hasattr(generator, "task") and generator.task != self.task:
-                    logger.info(f"Overriding task of {generator} to {self.task}")
-                    generator.task = self.task
+            for visualizer in visualizers:
+                if hasattr(visualizer, "task") and visualizer.task != self.task:
+                    logger.info(f"Overriding task of {visualizer} to {self.task}")
+                    visualizer.task = self.task
 
     def _setup_trainer(self, model: AnomalyModule) -> None:
         """Instantiate the trainer based on the model parameters."""
@@ -225,11 +225,11 @@ class Engine:
         _callbacks.append(_ThresholdCallback(self.threshold))
         _callbacks.append(_MetricsCallback(self.task, self.image_metric_names, self.pixel_metric_names))
 
-        if self.visualization_generators is not None:
+        if self.visualizers is not None:
             image_save_path = Path(self.trainer.default_root_dir) / "images"
             _callbacks.append(
                 _VisualizationCallback(
-                    generators=self.visualization_generators,
+                    visualizers=self.visualizers,
                     save=self.save_image,
                     save_root=image_save_path,
                     log=self.log_image,
