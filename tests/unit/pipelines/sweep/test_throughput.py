@@ -10,7 +10,7 @@ import albumentations as A  # noqa: N812
 from albumentations.pytorch import ToTensorV2
 
 from anomalib.data.image.folder import FolderDataset
-from anomalib.deploy import ExportMode
+from anomalib.deploy import ExportType
 from anomalib.engine import Engine
 from anomalib.models import Padim
 from anomalib.pipelines.sweep.helpers import get_openvino_throughput, get_torch_throughput
@@ -38,7 +38,7 @@ def test_torch_throughput(
     dataset.setup()
     engine.export(
         model=model,
-        export_mode=ExportMode.TORCH,
+        export_type=ExportType.TORCH,
         dataset=dataset,
         export_path=_ckpt_path.parent.parent,
     )
@@ -66,7 +66,7 @@ def test_openvino_throughput(
     dataset.setup()
     engine.export(
         model=model,
-        export_mode=ExportMode.OPENVINO,
+        export_type=ExportType.OPENVINO,
         dataset=dataset,
         input_size=(256, 256),
         export_path=_ckpt_path.parent.parent,

@@ -21,7 +21,7 @@ from .base_inferencer import Inferencer
 logger = logging.getLogger("anomalib")
 
 if find_spec("openvino") is not None:
-    from openvino.runtime import Core
+    import openvino.runtime as ov
 
     if TYPE_CHECKING:
         from openvino.runtime import CompiledModel
@@ -37,11 +37,12 @@ class OpenVINOInferencer(Inferencer):
         metadata (str | Path | dict, optional): Path to metadata file or a dict object defining the
             metadata.
             Defaults to ``None``.
-        device (str | None, optional): Device to run the inference on.
-            Defaults to ``CPU``.
+        device (str | None, optional): Device to run the inference on (AUTO, CPU, GPU, NPU).
+            Defaults to ``AUTO``.
         task (TaskType | None, optional): Task type.
             Defaults to ``None``.
-
+        config (dict | None, optional): Configuration parameters for the inference
+            Defaults to ``None``.
 
     Examples:
         Assume that we have an OpenVINO IR model and metadata files in the following structure:
@@ -89,7 +90,7 @@ class OpenVINOInferencer(Inferencer):
         self,
         path: str | Path | tuple[bytes, bytes],
         metadata: str | Path | dict | None = None,
-        device: str | None = "CPU",
+        device: str | None = "AUTO",
         task: str | None = None,
         config: dict | None = None,
     ) -> None:
@@ -112,11 +113,10 @@ class OpenVINOInferencer(Inferencer):
             [tuple[str, str, ExecutableNetwork]]: Input and Output blob names
                 together with the Executable network.
         """
-        ie_core = Core()
+        core = ov.Core()
         # If tuple of bytes is passed
-
         if isinstance(path, tuple):
-            model = ie_core.read_model(model=path[0], weights=path[1], init_from_buffer=True)
+            model = core.read_model(model=path[0], weights=path[1])
         else:
             path = path if isinstance(path, Path) else Path(path)
             if path.suffix in (".bin", ".xml"):
@@ -124,18 +124,18 @@ class OpenVINOInferencer(Inferencer):
                     bin_path, xml_path = path, path.with_suffix(".xml")
                 elif path.suffix == ".xml":
                     xml_path, bin_path = path, path.with_suffix(".bin")
-                model = ie_core.read_model(xml_path, bin_path)
+                model = core.read_model(xml_path, bin_path)
             elif path.suffix == ".onnx":
-                model = ie_core.read_model(path)
+                model = core.read_model(path)
             else:
                 msg = f"Path must be .onnx, .bin or .xml file. Got {path.suffix}"
                 raise ValueError(msg)
         # Create cache folder
         cache_folder = Path("cache")
         cache_folder.mkdir(exist_ok=True)
-        ie_core.set_property({"CACHE_DIR": cache_folder})
+        core.set_property({"CACHE_DIR": cache_folder})
 
-        compile_model = ie_core.compile_model(model=model, device_name=self.device, config=self.config)
+        compile_model = core.compile_model(model=model, device_name=self.device, config=self.config)
 
         input_blob = compile_model.input(0)
         output_blob = compile_model.output(0)
@@ -143,7 +143,7 @@ class OpenVINOInferencer(Inferencer):
         return input_blob, output_blob, compile_model
 
     def pre_process(self, image: np.ndarray) -> np.ndarray:
-        """Pre process the input image by applying transformations.
+        """Pre-process the input image by applying transformations.
 
         Args:
             image (np.ndarray): Input image.
@@ -178,8 +178,8 @@ class OpenVINOInferencer(Inferencer):
 
         Args:
             predictions (np.ndarray): Raw output predicted by the model.
-            metadata (Dict, optional): Meta data. Post-processing step sometimes requires
-                additional meta data such as image shape. This variable comprises such info.
+            metadata (Dict, optional): Metadata. Post-processing step sometimes requires
+                additional metadata such as image shape. This variable comprises such info.
                 Defaults to None.
 
         Returns:
