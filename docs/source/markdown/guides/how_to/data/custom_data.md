@@ -74,7 +74,7 @@ where we train a Patchcore model on this custom dataset with default model param
 :::{tab-item} CLI
 :sync: label-2
 
-Here is the CLI command to create the same custom datamodule:
+Here is the dataset config to create the same custom datamodule:
 
 ```{literalinclude} ../../../../snippets/config/data/image/folder/classification/cli/default.yaml
 :language: yaml
