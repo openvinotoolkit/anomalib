@@ -141,7 +141,7 @@ class AnomalibCLI(LightningCLI):
         parser.add_argument("--logging.log_graph", type=bool, help="Log the model to the logger", default=False)
         if hasattr(parser, "subcommand") and parser.subcommand != "predict":  # Predict also accepts str and Path inputs
             parser.link_arguments("data.init_args.image_size", "model.init_args.input_size")
-        parser.link_arguments("task", "data.init_args.task")
+            parser.link_arguments("task", "data.init_args.task")
         parser.add_argument(
             "--results_dir.path",
             type=Path,
@@ -172,16 +172,15 @@ class AnomalibCLI(LightningCLI):
         self.add_default_arguments_to_parser(parser)
         self._add_trainer_arguments_to_parser(parser)
         parser.add_lightning_class_args(AnomalyModule, "model", subclass_mode=True)
-        parser.add_argument("--ckpt_path", type=str, required=True, help="Path to model weights")
-        parser.add_subclass_arguments(
-            (AnomalibDataModule, DataLoader, Dataset, str, Path),
-            "data",
+        parser.add_argument(
+            "--data",
+            type=Dataset | AnomalibDataModule | DataLoader | str | Path,
             required=True,
         )
         added = parser.add_method_arguments(
             Engine,
             "predict",
-            skip={"model", "dataloaders", "datamodule", "dataset", "ckpt_path"},
+            skip={"model", "dataloaders", "datamodule", "dataset"},
         )
         self._subcommand_method_arguments["predict"] = added
         self.add_arguments_to_parser(parser)
@@ -218,7 +217,7 @@ class AnomalibCLI(LightningCLI):
         subcommand = self.config["subcommand"]
         if subcommand in (*self.subcommands(), "train", "predict"):
             if self.config["subcommand"] == "predict" and isinstance(self.config["predict"]["data"], str | Path):
-                self.config["predict"]["data"] = self._set_predict_dataloader(self.config["predict"]["data"])
+                self.config["predict"]["data"] = self._set_predict_dataloader_namespace(self.config["predict"]["data"])
             self.config[subcommand] = update_config(self.config[subcommand])
 
     def instantiate_classes(self) -> None:
@@ -324,7 +323,7 @@ class AnomalibCLI(LightningCLI):
         return self.engine.train
 
     @property
-    def export(self) -> Callable[..., None]:
+    def export(self) -> Callable[..., Path | None]:
         """Export the model using engine's export method."""
         return self.engine.export
 

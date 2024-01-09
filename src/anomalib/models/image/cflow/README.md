@@ -1,4 +1,4 @@
-# Real-Time Unsupervised Anomaly Detection via Conditional Normalizing Flows
+# CFLOW-AD: Real-Time Unsupervised Anomaly Detection with Localization via Conditional Normalizing Flows
 
 This is the implementation of the [CFLOW-AD](https://arxiv.org/pdf/2107.12571v1.pdf) paper. This code is modified form of the [official repository](https://github.com/gudovskiy/cflow-ad).
 
