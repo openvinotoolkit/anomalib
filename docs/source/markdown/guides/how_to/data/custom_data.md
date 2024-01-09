@@ -10,7 +10,7 @@ If not, please refer to the installation section.
 ```
 
 ```{note}
-We will use our [hazelnut_toy](https://github.com/openvinotoolkit/anomalib/blob/main/docs/source/data/hazelnut_toy.zip) dataset to show the capabilities of the [Folder](../../reference/data/image/folder.md)
+We will use our [hazelnut_toy](https://github.com/openvinotoolkit/anomalib/releases/download/hazelnut_toy_dataset/hazelnut_toy.zip) dataset to show the capabilities of the [Folder](../../reference/data/image/folder.md)
 dataset, but you can use any dataset you want.
 ```
 
