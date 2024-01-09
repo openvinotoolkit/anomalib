@@ -29,8 +29,18 @@ if try_import("openvino"):
     from openvino.tools.mo.convert import convert_model
 
 
-class ExportMode(str, Enum):
-    """Model export mode."""
+class ExportType(str, Enum):
+    """Model export type.
+
+    Examples:
+        >>> from anomalib.deploy import ExportType
+        >>> ExportType.ONNX
+        'onnx'
+        >>> ExportType.OPENVINO
+        'openvino'
+        >>> ExportType.TORCH
+        'torch'
+    """
 
     ONNX = "onnx"
     OPENVINO = "openvino"
@@ -42,23 +52,55 @@ def export_to_torch(
     export_path: Path | str,
     transform: dict[str, Any] | AnomalibDataset | AnomalibDataModule | A.Compose,
     task: TaskType | None = None,
-) -> None:
+) -> Path:
     """Export AnomalibModel to torch.
 
     Args:
-    model (AnomalyModule): Model to export.
-    export_path (Path): Path to the output folder.
-    transform (dict[str, Any] | AnomalibDataset | AnomalibDataModule | A.Compose): Data transforms (augmentations) used
-        for the model. When using dict, ensure that the transform dict is in the format required by Albumentations.
-    task (TaskType | None): Task type should be provided if transforms is of type dict or A.Compose object.
-        Defaults to None.
+        model (AnomalyModule): Model to export.
+        export_path (Path): Path to the output folder.
+        transform (dict[str, Any] | AnomalibDataset | AnomalibDataModule | A.Compose): Data transforms (augmentations)
+            used for the model. When using ``dict``, ensure that the transform dict is in the format required by
+            Albumentations.
+        task (TaskType | None): Task type should be provided if transforms is of type dict or A.Compose object.
+            Defaults to ``None``.
+
+    Returns:
+        Path: Path to the exported pytorch model.
+
+    Examples:
+        Assume that we have a model to train and we want to export it to torch format.
+
+        >>> from anomalib.data import Visa
+        >>> from anomalib.models import Patchcore
+        >>> from anomalib.engine import Engine
+        ...
+        >>> datamodule = Visa()
+        >>> model = Patchcore()
+        >>> engine = Engine()
+        ...
+        >>> engine.fit(model, datamodule)
+
+        Now that we have a model trained, we can export it to torch format.
+
+        >>> from anomalib.deploy import export_to_torch
+        ...
+        >>> export_to_torch(
+        ...     model=model,
+        ...     export_path="path/to/export",
+        ...     transform=datamodule.test_data.transform,
+        ...     task=datamodule.test_data.task,
+        ... )
+
+
     """
-    export_path = _create_export_path(export_path, ExportMode.TORCH)
+    export_path = _create_export_path(export_path, ExportType.TORCH)
     metadata = get_metadata(task=task, transform=transform, model=model)
+    pt_model_path = export_path / "model.pt"
     torch.save(
         obj={"model": model.model, "metadata": metadata},
-        f=export_path / "model.pt",
+        f=pt_model_path,
     )
+    return pt_model_path
 
 
 def export_to_onnx(
@@ -67,7 +109,7 @@ def export_to_onnx(
     export_path: Path | str,
     transform: dict[str, Any] | AnomalibDataset | AnomalibDataModule | A.Compose,
     task: TaskType | None = None,
-    export_mode: ExportMode = ExportMode.ONNX,
+    export_type: ExportType = ExportType.ONNX,
 ) -> Path:
     """Export model to onnx.
 
@@ -79,14 +121,47 @@ def export_to_onnx(
             used for the model. When using dict, ensure that the transform dict is in the format required by
             Albumentations.
         task (TaskType | None): Task type should be provided if transforms is of type dict or A.Compose object.
-            Defaults to None.
-        export_mode (ExportMode): Mode to export the model. Since this method is used by OpenVINO export as well, we
-            need to pass the export mode so that the right export path is created. Defaults to ExportMode.ONNX.
+            Defaults to ``None``.
+        export_type (ExportType): Mode to export the model. Since this method is used by OpenVINO export as well, we
+            need to pass the export type so that the right export path is created.
+            Defaults to ``ExportType.ONNX``.
 
     Returns:
         Path: Path to the exported onnx model.
+
+    Examples:
+        Export the Lightning Model to ONNX:
+
+        >>> from anomalib.models import Patchcore
+        >>> from anomalib.data import Visa
+        >>> from anomalib.deploy import export_to_onnx
+        ...
+        >>> datamodule = Visa()
+        >>> model = Patchcore()
+        ...
+        >>> export_to_onnx(
+        ...     model=model,
+        ...     input_size=(224, 224),
+        ...     export_path="path/to/export",
+        ...     transform=datamodule.test_data.transform,
+        ...     task=datamodule.test_data.task
+        ... )
+
+        Using Custom Transforms:
+        This example shows how to use a custom ``Compose`` object for the ``transform`` argument.
+
+        >>> import albumentations as A
+        >>> transform = A.Compose([A.Resize(224, 224), A.pytorch.ToTensorV2()])
+        ...
+        >>> export_to_onnx(
+        ...     model=model,
+        ...     input_size=(224, 224),
+        ...     export_path="path/to/export",
+        ...     transform=transform,
+        ...     task="segmentation",
+        ... )
     """
-    export_path = _create_export_path(export_path, export_mode)
+    export_path = _create_export_path(export_path, export_type)
     _write_metadata_to_json(export_path, transform, model, task)
     onnx_path = export_path / "model.onnx"
     torch.onnx.export(
@@ -107,9 +182,9 @@ def export_to_openvino(
     model: AnomalyModule,
     input_size: tuple[int, int],
     transform: dict[str, Any] | AnomalibDataset | AnomalibDataModule | A.Compose,
-    mo_args: dict[str, Any] | None = None,
+    ov_args: dict[str, Any] | None = None,
     task: TaskType | None = None,
-) -> None:
+) -> Path:
     """Convert onnx model to OpenVINO IR.
 
     Args:
@@ -119,20 +194,61 @@ def export_to_openvino(
         transform (dict[str, Any] | AnomalibDataset | AnomalibDataModule | A.Compose): Data transforms (augmentations)
             used for the model. When using dict, ensure that the transform dict is in the format required by
             Albumentations.
-        mo_args: Model optimizer arguments for OpenVINO model conversion.
+        ov_args: Model optimizer arguments for OpenVINO model conversion.
+            Defaults to ``None``.
         task (TaskType | None): Task type should be provided if transforms is of type dict or A.Compose object.
+            Defaults to ``None``.
+
+    Returns:
+        Path: Path to the exported onnx model.
 
     Raises:
         ModuleNotFoundError: If OpenVINO is not installed.
+
+    Examples:
+        Export the Lightning Model to OpenVINO IR:
+        This example demonstrates how to export the Lightning Model to OpenVINO IR.
+
+        >>> from anomalib.models import Patchcore
+        >>> from anomalib.data import Visa
+        >>> from anomalib.deploy import export_to_openvino
+        ...
+        >>> datamodule = Visa()
+        >>> model = Patchcore()
+        ...
+        >>> export_to_openvino(
+        ...     export_path="path/to/export",
+        ...     model=model,
+        ...     input_size=(224, 224),
+        ...     transform=datamodule.test_data.transform,
+        ...     task=datamodule.test_data.task
+        ... )
+
+        Using Custom Transforms:
+        This example shows how to use a custom ``Compose`` object for the ``transform`` argument.
+
+        >>> import albumentations as A
+        >>> transform = A.Compose([A.Resize(224, 224), A.pytorch.ToTensorV2()])
+        ...
+        >>> export_to_openvino(
+        ...     export_path="path/to/export",
+        ...     model=model,
+        ...     input_size=(224, 224),
+        ...     transform=transform,
+        ...     task="segmentation",
+        ... )
+
     """
-    model_path = export_to_onnx(model, input_size, export_path, transform, task, ExportMode.OPENVINO)
-    mo_args = {} if mo_args is None else mo_args
+    model_path = export_to_onnx(model, input_size, export_path, transform, task, ExportType.OPENVINO)
+    ov_model_path = model_path.with_suffix(".xml")
+    ov_args = {} if ov_args is None else ov_args
     if convert_model is not None and serialize is not None:
-        model = convert_model(input_model=str(model_path), output_dir=str(model_path.parent), **mo_args)
-        serialize(model, model_path.with_suffix(".xml"))
-    else:
-        logger.exception("Could not find OpenVINO methods. Please check OpenVINO installation.")
-        raise ModuleNotFoundError
+        model = convert_model(model_path, **ov_args)
+        serialize(model, ov_model_path)
+        return ov_model_path
+
+    logger.exception("Could not find OpenVINO methods. Please check OpenVINO installation.")
+    raise ModuleNotFoundError
 
 
 def get_metadata(
@@ -263,17 +379,17 @@ def _get_transform_dict(
     return transform
 
 
-def _create_export_path(export_root: str | Path, export_mode: ExportMode) -> Path:
+def _create_export_path(export_root: str | Path, export_type: ExportType) -> Path:
     """Create export directory.
 
     Args:
         export_root (str | Path): Path to the root folder of the exported model.
-        export_mode (ExportMode): Mode to export the model. Torch, ONNX or OpenVINO.
+        export_type (ExportType): Mode to export the model. Torch, ONNX or OpenVINO.
 
     Returns:
         Path: Path to the export directory.
     """
-    export_path = Path(export_root) / "weights" / export_mode.value
+    export_path = Path(export_root) / "weights" / export_type.value
     export_path.mkdir(parents=True, exist_ok=True)
     return export_path
 

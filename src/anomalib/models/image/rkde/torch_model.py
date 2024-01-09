@@ -22,15 +22,23 @@ class RkdeModel(nn.Module):
 
     Args:
         roi_stage (RoiStage, optional): Processing stage from which rois are extracted.
+            Defaults to ``RoiStage.RCNN``.
         roi_score_threshold (float, optional): Mimumum confidence score for the region proposals.
+            Defaults to ``0.001``.
         min_size (int, optional): Minimum size in pixels for the region proposals.
+            Defaults to ``25``.
         iou_threshold (float, optional): Intersection-Over-Union threshold used during NMS.
+            Defaults to ``0.3``.
         max_detections_per_image (int, optional): Maximum number of region proposals per image.
-        n_pca_components (int, optional): Number of PCA components. Defaults to 16.
+            Defaults to ``100``.
+        n_pca_components (int, optional): Number of PCA components.
+            Defaults to ``16``.
         feature_scaling_method (FeatureScalingMethod, optional): Scaling method applied to features before passing to
             KDE. Options are `norm` (normalize to unit vector length) and `scale` (scale to max length observed in
             training).
-        max_training_points (int, optional): Maximum number of training points to fit the KDE model. Defaults to 40000.
+            Defaults to ``FeatureScalingMethod.SCALE``.
+        max_training_points (int, optional): Maximum number of training points to fit the KDE model.
+            Defaults to ``40000``.
     """
 
     def __init__(

@@ -13,7 +13,39 @@ from anomalib.utils.cv import connected_components_cpu, connected_components_gpu
 
 
 class PRO(Metric):
-    """Per-Region Overlap (PRO) Score."""
+    """Per-Region Overlap (PRO) Score.
+
+    This metric computes the macro average of the per-region overlap between the
+    predicted anomaly masks and the ground truth masks.
+
+    Args:
+        threshold (float): Threshold used to binarize the predictions.
+            Defaults to ``0.5``.
+        kwargs: Additional arguments to the TorchMetrics base class.
+
+    Example:
+        Import the metric from the package:
+
+        >>> import torch
+        >>> from anomalib.metrics import PRO
+
+        Create random ``preds`` and ``labels`` tensors:
+
+        >>> labels = torch.randint(low=0, high=2, size=(1, 10, 5), dtype=torch.float32)
+        >>> preds = torch.rand_like(labels)
+
+        Compute the PRO score for labels and preds:
+
+        >>> pro = PRO(threshold=0.5)
+        >>> pro.update(preds, labels)
+        >>> pro.compute()
+        tensor(0.5433)
+
+        .. note::
+            Note that the example above shows random predictions and labels.
+            Therefore, the PRO score above may not be reproducible.
+
+    """
 
     target: list[torch.Tensor]
     preds: list[torch.Tensor]
@@ -26,12 +58,29 @@ class PRO(Metric):
         self.add_state("target", default=[], dist_reduce_fx="cat")
 
     def update(self, predictions: torch.Tensor, targets: torch.Tensor) -> None:
-        """Compute the PRO score for the current batch."""
+        """Compute the PRO score for the current batch.
+
+        Args:
+            predictions (torch.Tensor): Predicted anomaly masks (Bx1xHxW)
+            targets (torch.Tensor): Ground truth anomaly masks (Bx1xHxW)
+
+        Example:
+            To update the metric state for the current batch, use the ``update`` method:
+
+            >>> pro.update(preds, labels)
+        """
         self.target.append(targets)
         self.preds.append(predictions)
 
     def compute(self) -> torch.Tensor:
-        """Compute the macro average of the PRO score across all regions in all batches."""
+        """Compute the macro average of the PRO score across all regions in all batches.
+
+        Example:
+            To compute the metric based on the state accumulated from multiple batches, use the ``compute`` method:
+
+            >>> pro.compute()
+            tensor(0.5433)
+        """
         target = dim_zero_cat(self.target)
         preds = dim_zero_cat(self.preds)
 

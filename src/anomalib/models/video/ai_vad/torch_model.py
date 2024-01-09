@@ -21,21 +21,35 @@ class AiVadModel(nn.Module):
 
     Args:
         box_score_thresh (float): Confidence threshold for region extraction stage.
+            Defaults to ``0.8``.
         persons_only (bool): When enabled, only regions labeled as person are included.
+            Defaults to ``False``.
         min_bbox_area (int): Minimum bounding box area. Regions with a surface area lower than this value are excluded.
+            Defaults to ``100``.
         max_bbox_overlap (float): Maximum allowed overlap between bounding boxes.
+            Defaults to ``0.65``.
         enable_foreground_detections (bool): Add additional foreground detections based on pixel difference between
             consecutive frames.
+            Defaults to ``True``.
         foreground_kernel_size (int): Gaussian kernel size used in foreground detection.
+            Defaults to ``3``.
         foreground_binary_threshold (int): Value between 0 and 255 which acts as binary threshold in foreground
             detection.
+            Defaults to ``18``.
         n_velocity_bins (int): Number of discrete bins used for velocity histogram features.
+            Defaults to ``8``.
         use_velocity_features (bool): Flag indicating if velocity features should be used.
+            Defaults to ``True``.
         use_pose_features (bool): Flag indicating if pose features should be used.
+            Defaults to ``True``.
         use_deep_features (bool): Flag indicating if deep features should be used.
+            Defaults to ``True``.
         n_components_velocity (int): Number of components used by GMM density estimation for velocity features.
+            Defaults to ``5``.
         n_neighbors_pose (int): Number of neighbors used in KNN density estimation for pose features.
+            Defaults to ``1``.
         n_neighbors_deep (int): Number of neighbors used in KNN density estimation for deep features.
+            Defaults to ``1``.
     """
 
     def __init__(

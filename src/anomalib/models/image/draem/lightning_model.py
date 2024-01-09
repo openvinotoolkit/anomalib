@@ -27,8 +27,13 @@ class Draem(AnomalyModule):
     """DRÆM: A discriminatively trained reconstruction embedding for surface anomaly detection.
 
     Args:
+        enable_sspcab (bool): Enable SSPCAB training.
+            Defaults to ``False``.
+        sspcab_lambda (float): SSPCAB loss weight.
+            Defaults to ``0.1``.
         anomaly_source_path (str | None): Path to folder that contains the anomaly source images. Random noise will
             be used if left empty.
+            Defaults to ``None``.
     """
 
     def __init__(
@@ -57,7 +62,6 @@ class Draem(AnomalyModule):
             """Retrieve the activations.
 
             Args:
-            ----
                 name (str): Identifier for the retrieved activations.
             """
 
@@ -65,7 +69,6 @@ class Draem(AnomalyModule):
                 """Create hook for retrieving the activations.
 
                 Args:
-                ----
                     _: Placeholder for the module input.
                     __: Placeholder for the module output.
                     output (torch.Tensor): The output tensor of the module.

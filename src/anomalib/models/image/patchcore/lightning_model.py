@@ -25,12 +25,17 @@ class Patchcore(MemoryBankMixin, AnomalyModule):
 
     Args:
         input_size (tuple[int, int]): Size of the model input.
+            Defaults to ``(224, 224)``.
         backbone (str): Backbone CNN network
+            Defaults to ``wide_resnet50_2``.
         layers (list[str]): Layers to extract features from the backbone CNN
+            Defaults to ``["layer2", "layer3"]``.
         pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.
+            Defaults to ``True``.
         coreset_sampling_ratio (float, optional): Coreset sampling ratio to subsample embedding.
-            Defaults to 0.1.
-        num_neighbors (int, optional): Number of nearest neighbors. Defaults to 9.
+            Defaults to ``0.1``.
+        num_neighbors (int, optional): Number of nearest neighbors.
+            Defaults to ``9``.
     """
 
     def __init__(

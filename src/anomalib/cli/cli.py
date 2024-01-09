@@ -5,21 +5,25 @@
 
 import logging
 from collections.abc import Callable
+from inspect import signature
 from pathlib import Path
 from typing import Any
 
 import lightning.pytorch as pl
-from jsonargparse import ActionConfigFile
+from jsonargparse import ActionConfigFile, Namespace
 from lightning.pytorch import Trainer
 from lightning.pytorch.cli import ArgsType, LightningArgumentParser, LightningCLI, SaveConfigCallback
 from lightning.pytorch.utilities.types import _EVALUATE_OUTPUT, _PREDICT_OUTPUT
 from rich import traceback
+from torch.utils.data import DataLoader, Dataset
 
+from anomalib import __version__
 from anomalib.callbacks import get_callbacks
 from anomalib.callbacks.normalization import get_normalization_callback
 from anomalib.cli.utils import CustomHelpFormatter
 from anomalib.cli.utils.openvino import add_openvino_export_arguments
 from anomalib.data import AnomalibDataModule, AnomalibDataset
+from anomalib.data.inference import InferenceDataset
 from anomalib.engine import Engine
 from anomalib.loggers import configure_logger
 from anomalib.metrics.threshold import BaseThreshold
@@ -40,11 +44,11 @@ class AnomalibCLI(LightningCLI):
     The advantage of this tool is its flexibility to configure the pipeline
     from both the CLI and a configuration file (.yaml or .json). It is even
     possible to use both the CLI and a configuration file simultaneously.
-    For more details, the reader could refer to PyTorch Lightning CLI documentation.
+    For more details, the reader could refer to PyTorch Lightning CLI
+    documentation.
 
-
-    ``save_config_kwargs`` is set to overwrite=True so that the SaveConfigCallback overwrites the config if it already
-    exists.
+    ``save_config_kwargs`` is set to ``overwrite=True`` so that the
+    ``SaveConfigCallback`` overwrites the config if it already exists.
     """
 
     def __init__(
@@ -78,7 +82,7 @@ class AnomalibCLI(LightningCLI):
 
     def init_parser(self, **kwargs) -> LightningArgumentParser:
         """Method that instantiates the argument parser."""
-        kwargs.setdefault("dump_header", [f"lightning.pytorch=={pl.__version__}"])
+        kwargs.setdefault("dump_header", [f"lightning.pytorch=={pl.__version__},anomalib=={__version__}"])
         parser = LightningArgumentParser(formatter_class=CustomHelpFormatter, **kwargs)
         parser.add_argument(
             "-c",
@@ -89,13 +93,19 @@ class AnomalibCLI(LightningCLI):
         return parser
 
     @staticmethod
+    def subcommands() -> dict[str, set[str]]:
+        """Skip predict subcommand as it is added later."""
+        return {key: value for key, value in LightningCLI.subcommands().items() if key != "predict"}
+
+    @staticmethod
     def anomalib_subcommands() -> dict[str, dict[str, str]]:
         """Return a dictionary of subcommands and their description."""
         return {
+            "train": {"description": "Fit the model and then call test on the trained model."},
+            "predict": {"description": "Run inference on a model."},
             "export": {"description": "Export the model to ONNX or OpenVINO format."},
             "benchmark": {"description": "Run benchmarking script"},
             "hpo": {"description": "Run Hyperparameter Optimization"},
-            "train": {"description": "Fit the model and then call test on the trained model."},
         }
 
     def _add_subcommands(self, parser: LightningArgumentParser, **kwargs) -> None:
@@ -104,9 +114,10 @@ class AnomalibCLI(LightningCLI):
         super()._add_subcommands(parser, **kwargs)
         # Add  export, benchmark and hpo
         for subcommand in self.anomalib_subcommands():
-            sub_parser = LightningArgumentParser(formatter_class=CustomHelpFormatter)
+            sub_parser = self.init_parser(**kwargs)
+
             self._subcommand_parsers[subcommand] = sub_parser
-            self.parser._subcommands_action.add_subcommand(  # noqa: SLF001
+            parser._subcommands_action.add_subcommand(  # noqa: SLF001
                 subcommand,
                 sub_parser,
                 help=self.anomalib_subcommands()[subcommand]["description"],
@@ -117,10 +128,9 @@ class AnomalibCLI(LightningCLI):
     def add_arguments_to_parser(self, parser: LightningArgumentParser) -> None:
         """Extend trainer's arguments to add engine arguments.
 
-        Note:
-        ----
-            Since ``Engine`` parameters are manually added, any change to the ``Engine`` class should be reflected
-            manually.
+        .. note::
+            Since ``Engine`` parameters are manually added, any change to the
+            ``Engine`` class should be reflected manually.
         """
         parser.add_function_arguments(get_normalization_callback, "normalization")
         # visualization takes task from the project
@@ -138,8 +148,9 @@ class AnomalibCLI(LightningCLI):
         parser.add_argument("--metrics.pixel", type=list[str] | str | None, default=None, required=False)
         parser.add_argument("--metrics.threshold", type=BaseThreshold, default="F1AdaptiveThreshold")
         parser.add_argument("--logging.log_graph", type=bool, help="Log the model to the logger", default=False)
-        parser.link_arguments("data.init_args.image_size", "model.init_args.input_size")
-        parser.link_arguments("task", "data.init_args.task")
+        if hasattr(parser, "subcommand") and parser.subcommand != "predict":  # Predict also accepts str and Path inputs
+            parser.link_arguments("data.init_args.image_size", "model.init_args.input_size")
+            parser.link_arguments("task", "data.init_args.task")
         parser.add_argument(
             "--results_dir.path",
             type=Path,
@@ -153,37 +164,40 @@ class AnomalibCLI(LightningCLI):
 
     def add_train_arguments(self, parser: LightningArgumentParser) -> None:
         """Add train arguments to the parser."""
-        parser.add_argument(
-            "-c",
-            "--config",
-            action=ActionConfigFile,
-            help="Path to a configuration file in json or yaml format.",
-        )
-        parser.add_lightning_class_args(self.trainer_class, "trainer")
+        self.add_default_arguments_to_parser(parser)
+        self._add_trainer_arguments_to_parser(parser)
         parser.add_lightning_class_args(AnomalyModule, "model", subclass_mode=True)
         parser.add_subclass_arguments(AnomalibDataModule, "data")
-        trainer_defaults = {"trainer." + k: v for k, v in self.trainer_defaults.items() if k != "callbacks"}
-        parser.set_defaults(trainer_defaults)
+        self.add_arguments_to_parser(parser)
         added = parser.add_method_arguments(
             Engine,
             "train",
             skip={"model", "datamodule", "val_dataloaders", "test_dataloaders", "train_dataloaders"},
         )
         self._subcommand_method_arguments["train"] = added
-        self.add_arguments_to_parser(parser)
+
+    def add_predict_arguments(self, parser: LightningArgumentParser) -> None:
+        """Add predict arguments to the parser."""
         self.add_default_arguments_to_parser(parser)
+        self._add_trainer_arguments_to_parser(parser)
+        parser.add_lightning_class_args(AnomalyModule, "model", subclass_mode=True)
+        parser.add_argument(
+            "--data",
+            type=Dataset | AnomalibDataModule | DataLoader | str | Path,
+            required=True,
+        )
+        added = parser.add_method_arguments(
+            Engine,
+            "predict",
+            skip={"model", "dataloaders", "datamodule", "dataset"},
+        )
+        self._subcommand_method_arguments["predict"] = added
+        self.add_arguments_to_parser(parser)
 
     def add_export_arguments(self, parser: LightningArgumentParser) -> None:
         """Add export arguments to the parser."""
-        parser.add_argument(
-            "-c",
-            "--config",
-            action=ActionConfigFile,
-            help="Path to a configuration file in json or yaml format.",
-        )
-        parser.add_lightning_class_args(self.trainer_class, "trainer")
-        trainer_defaults = {"trainer." + k: v for k, v in self.trainer_defaults.items() if k != "callbacks"}
-        parser.set_defaults(trainer_defaults)
+        self.add_default_arguments_to_parser(parser)
+        self._add_trainer_arguments_to_parser(parser)
         parser.add_lightning_class_args(AnomalyModule, "model", subclass_mode=True)
         parser.add_subclass_arguments((AnomalibDataModule, AnomalibDataset), "data")
         added = parser.add_method_arguments(
@@ -194,20 +208,25 @@ class AnomalibCLI(LightningCLI):
         self._subcommand_method_arguments["export"] = added
         add_openvino_export_arguments(parser)
         self.add_arguments_to_parser(parser)
-        self.add_default_arguments_to_parser(parser)
 
     def add_hpo_arguments(self, parser: LightningArgumentParser) -> None:
         """Add hyperparameter optimization arguments."""
         parser = get_hpo_parser(parser)
 
     def add_benchmark_arguments(self, parser: LightningArgumentParser) -> None:
-        """Add benchmark arguments to the parser."""
-        parser.add_argument("--config", type=Path, help="Path to the benchmark config.", required=True)
+        """Add benchmark arguments to the parser.
+
+        Example:
+            $ anomalib benchmark --benchmark_config tools/benchmarking/benchmark_params.yaml
+        """
+        parser.add_argument("--benchmark_config", type=Path, help="Path to the benchmark config.", required=True)
 
     def before_instantiate_classes(self) -> None:
         """Modify the configuration to properly instantiate classes and sets up tiler."""
         subcommand = self.config["subcommand"]
-        if subcommand in (*self.subcommands(), "train"):
+        if subcommand in (*self.subcommands(), "train", "predict"):
+            if self.config["subcommand"] == "predict" and isinstance(self.config["predict"]["data"], str | Path):
+                self.config["predict"]["data"] = self._set_predict_dataloader_namespace(self.config["predict"]["data"])
             self.config[subcommand] = update_config(self.config[subcommand])
 
     def instantiate_classes(self) -> None:
@@ -217,7 +236,7 @@ class AnomalibCLI(LightningCLI):
         But for subcommands we do not want to instantiate any trainer specific classes such as datamodule, model, etc
         This is because the subcommand is responsible for instantiating and executing code based on the passed config
         """
-        if self.config["subcommand"] not in self.anomalib_subcommands():
+        if self.config["subcommand"] in (*self.subcommands(), "predict"):  # trainer commands
             # since all classes are instantiated, the LightningCLI also creates an unused ``Trainer`` object.
             # the minor change here is that engine is instantiated instead of trainer
             self.config_init = self.parser.instantiate_classes(self.config)
@@ -238,9 +257,10 @@ class AnomalibCLI(LightningCLI):
     def instantiate_engine(self) -> Engine:
         """Instantiate the engine.
 
-        Note:
-            Most of the code in this method is taken from LightningCLI's ``instantiate_trainer`` method.
-            Refer to that method for more details.
+        .. note::
+            Most of the code in this method is taken from ``LightningCLI``'s
+            ``instantiate_trainer`` method. Refer to that method for more
+            details.
         """
         extra_callbacks = [self._get(self.config_init, c) for c in self._parser(self.subcommand).callback_keys]
         engine_args = {
@@ -285,9 +305,10 @@ class AnomalibCLI(LightningCLI):
     def _run_subcommand(self, subcommand: str) -> None:
         """Run subcommand depending on the subcommand.
 
-        This overrides the original ``_run_subcommand`` to run the ``Engine`` method rather than the ``Train`` method
+        This overrides the original ``_run_subcommand`` to run the ``Engine``
+        method rather than the ``Train`` method.
         """
-        if self.config["subcommand"] in (*self.subcommands(), "train", "export"):
+        if self.config["subcommand"] in (*self.subcommands(), "train", "export", "predict"):
             fn = getattr(self.engine, subcommand)
             fn_kwargs = self._prepare_subcommand_kwargs(subcommand)
             fn(**fn_kwargs)
@@ -321,7 +342,7 @@ class AnomalibCLI(LightningCLI):
         return self.engine.train
 
     @property
-    def export(self) -> Callable[..., None]:
+    def export(self) -> Callable[..., Path | None]:
         """Export the model using engine's export method."""
         return self.engine.export
 
@@ -339,7 +360,34 @@ class AnomalibCLI(LightningCLI):
     def benchmark(self) -> None:
         """Run benchmark subcommand."""
         config = self.config["benchmark"]
-        distribute(config.config)
+        distribute(config.benchmark_config)
+
+    def _add_trainer_arguments_to_parser(self, parser: LightningArgumentParser) -> None:
+        """Add trainer arguments to the parser."""
+        parser.add_lightning_class_args(Trainer, "trainer")
+        trainer_defaults = {"trainer." + k: v for k, v in self.trainer_defaults.items() if k != "callbacks"}
+        parser.set_defaults(trainer_defaults)
+
+    def _set_predict_dataloader_namespace(self, data_path: str | Path | Namespace) -> Namespace:
+        """Set the predict dataloader namespace.
+
+        If the argument is of type str or Path, then it is assumed to be the path to the prediction data and is
+        assigned to InferenceDataset.
+
+        Args:
+            data_path (str | Path | Namespace): Path to the data.
+
+        Returns:
+            Namespace: Namespace containing the predict dataloader.
+        """
+        if isinstance(data_path, str | Path):
+            init_args = {key: value.default for key, value in signature(InferenceDataset).parameters.items()}
+            init_args["path"] = data_path
+            data_path = Namespace(
+                class_path="anomalib.data.inference.InferenceDataset",
+                init_args=Namespace(init_args),
+            )
+        return data_path
 
 
 def main() -> None:

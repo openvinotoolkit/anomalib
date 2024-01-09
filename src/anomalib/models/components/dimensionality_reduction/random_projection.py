@@ -21,9 +21,32 @@ class SparseRandomProjection:
 
     Args:
         eps (float, optional): Minimum distortion rate parameter for calculating
-            Johnson-Lindenstrauss minimum dimensions. Defaults to 0.1.
+            Johnson-Lindenstrauss minimum dimensions.
+            Defaults to ``0.1``.
         random_state (int | None, optional): Uses the seed to set the random
-            state for sample_without_replacement function. Defaults to None.
+            state for sample_without_replacement function.
+            Defaults to ``None``.
+
+    Example:
+        To fit and transform the embedding tensor, use the following code:
+
+        .. code-block:: python
+
+            import torch
+            from anomalib.models.components import SparseRandomProjection
+
+            sparse_embedding = torch.rand(1000, 5).cuda()
+            model = SparseRandomProjection(eps=0.1)
+
+        Fit the model and transform the embedding tensor:
+
+        .. code-block:: python
+
+            model.fit(sparse_embedding)
+            projected_embedding = model.transform(sparse_embedding)
+
+            print(projected_embedding.shape)
+            # Output: torch.Size([1000, 5920])
     """
 
     def __init__(self, eps: float = 0.1, random_state: int | None = None) -> None:
@@ -76,7 +99,7 @@ class SparseRandomProjection:
 
         return components
 
-    def johnson_lindenstrauss_min_dim(self, n_samples: int, eps: float = 0.1) -> int | np.integer:
+    def _johnson_lindenstrauss_min_dim(self, n_samples: int, eps: float = 0.1) -> int | np.integer:
         """Find a 'safe' number of components to randomly project to.
 
         Ref eqn 2.1 https://cseweb.ucsd.edu/~dasgupta/papers/jl.pdf
@@ -96,13 +119,14 @@ class SparseRandomProjection:
 
         Returns:
             (SparseRandomProjection): Return self to be used as
-            >>> generator = SparseRandomProjection()
-            >>> generator = generator.fit()
+
+            >>> model = SparseRandomProjection()
+            >>> model = model.fit()
         """
         n_samples, n_features = embedding.shape
         device = embedding.device
 
-        self.n_components = self.johnson_lindenstrauss_min_dim(n_samples=n_samples, eps=self.eps)
+        self.n_components = self._johnson_lindenstrauss_min_dim(n_samples=n_samples, eps=self.eps)
 
         # Generate projection matrix
         # torch can't multiply directly on sparse matrix and moving sparse matrix to cuda throws error
@@ -122,6 +146,11 @@ class SparseRandomProjection:
         Returns:
             projected_embedding (torch.Tensor): Sparse matrix of shape
                 (n_samples, n_components) Projected array.
+
+        Example:
+            >>> projected_embedding = model.transform(embedding)
+            >>> projected_embedding.shape
+            torch.Size([1000, 5920])
         """
         if self.sparse_random_matrix is None:
             msg = "`fit()` has not been called on SparseRandomProjection yet."

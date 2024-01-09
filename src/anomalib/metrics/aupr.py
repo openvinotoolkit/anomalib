@@ -14,7 +14,34 @@ from .plotting_utils import plot_figure
 
 
 class AUPR(PrecisionRecallCurve):
-    """Area under the PR curve."""
+    """Area under the PR curve.
+
+    This metric computes the area under the precision-recall curve.
+
+    Args:
+        kwargs: Additional arguments to the TorchMetrics base class.
+
+    Examples:
+        To compute the metric for a set of predictions and ground truth targets:
+
+        >>> true = torch.tensor([0, 1, 1, 1, 0, 0, 0, 0, 1, 1])
+        >>> pred = torch.tensor([0.59, 0.35, 0.72, 0.33, 0.73, 0.81, 0.30, 0.05, 0.04, 0.48])
+
+        >>> metric = AUPR()
+        >>> metric(pred, true)
+        tensor(0.4899)
+
+        It is also possible to update the metric state incrementally within batches:
+
+        >>> for batch in dataloader:
+        ...     # Compute prediction and target tensors
+        ...     metric.update(pred, true)
+        >>> metric.compute()
+
+        Once the metric has been computed, we can plot the PR curve:
+
+        >>> figure, title = metric.generate_figure()
+    """
 
     def compute(self) -> torch.Tensor:
         """First compute PR curve, then compute area under the curve.

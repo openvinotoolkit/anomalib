@@ -19,11 +19,12 @@ from .base import ImageLoggerBase
 class AnomalibCometLogger(ImageLoggerBase, CometLogger):
     """Logger for comet.
 
-    Adds interface for `add_image` in the logger rather than calling the experiment object.
+    Adds interface for ``add_image`` in the logger rather than calling the
+    experiment object.
 
-    Note:
-    ----
-        Same as the CometLogger provided by PyTorch Lightning and the doc string is reproduced below.
+    .. note::
+        Same as the CometLogger provided by PyTorch Lightning and the doc string
+        is reproduced below.
 
     Track your parameters, metrics, source code and more using
     `Comet <https://www.comet.com/site/products/ml-experiment-tracking/?utm_source=anomalib&utm_medium=referral>`_.
@@ -34,28 +35,41 @@ class AnomalibCometLogger(ImageLoggerBase, CometLogger):
 
         pip install comet-ml
 
-    Comet requires either an API Key (online mode) or a local directory path (offline mode).
+    Comet requires either an API Key (online mode) or a local directory path
+    (offline mode).
 
     Args:
-        api_key: Required in online mode. API key, found on Comet.ml. If not given, this
-            will be loaded from the environment variable COMET_API_KEY or ~/.comet.config
-            if either exists.
-        save_dir: Required in offline mode. The path for the directory to save local
-            comet logs. If given, this also sets the directory for saving checkpoints.
+        api_key: Required in online mode. API key, found on Comet.ml. If not
+            given, this will be loaded from the environment variable
+            COMET_API_KEY or ~/.comet.config if either exists.
+            Defaults to ``None``.
+        save_dir: Required in offline mode. The path for the directory to save
+            local comet logs. If given, this also sets the directory for saving
+            checkpoints.
+            Defaults to ``None``.
         project_name: Optional. Send your experiment to a specific project.
             Otherwise will be sent to Uncategorized Experiments.
-            If the project name does not already exist, Comet.ml will create a new project.
+            If the project name does not already exist, Comet.ml will create a
+            new project.
+            Defaults to ``None``.
         rest_api_key: Optional. Rest API key found in Comet.ml settings.
             This is used to determine version number
-        experiment_name: Optional. String representing the name for this particular experiment on Comet.ml.
+            Defaults to ``None``.
+        experiment_name: Optional. String representing the name for this
+            particular experiment on Comet.ml.
+            Defaults to ``None``.
         experiment_key: Optional. If set, restores from existing experiment.
+            Defaults to ``None``.
         offline: If api_key and save_dir are both given, this determines whether
-            the experiment will be in online or offline mode. This is useful if you use
-            save_dir to control the checkpoints directory and have a ~/.comet.config
-            file but still want to run offline experiments.
+            the experiment will be in online or offline mode. This is useful if
+            you use save_dir to control the checkpoints directory and have a
+            ~/.comet.config file but still want to run offline experiments.
+            Defaults to ``None``.
         prefix: A string to put at the beginning of metric keys.
+            Defaults to ``""``.
         kwargs: Additional arguments like `workspace`, `log_code`, etc. used by
-            :class:`CometExperiment` can be passed as keyword arguments in this logger.
+            :class:`CometExperiment` can be passed as keyword arguments in this
+            logger.
 
     Raises:
         ModuleNotFoundError:
@@ -66,6 +80,7 @@ class AnomalibCometLogger(ImageLoggerBase, CometLogger):
     Example:
         >>> from anomalib.loggers import AnomalibCometLogger
         >>> from anomalib.engine import Engine
+        ...
         >>> comet_logger = AnomalibCometLogger()
         >>> engine =  Engine(logger=comet_logger)
 
@@ -103,8 +118,9 @@ class AnomalibCometLogger(ImageLoggerBase, CometLogger):
         """Interface to add image to comet logger.
 
         Args:
-            image (np.ndarray | Figure): Image to log
+            image (np.ndarray | Figure): Image to log.
             name (str | None): The tag of the image
+                Defaults to ``None``.
             kwargs: Accepts only `global_step` (int). The step at which to log the image.
         """
         if "global_step" not in kwargs:

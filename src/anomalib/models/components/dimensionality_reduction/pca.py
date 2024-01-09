@@ -15,6 +15,26 @@ class PCA(DynamicBufferModule):
     Args:
         n_components (float): Number of components. Can be either integer number of components
           or a ratio between 0-1.
+
+    Example:
+        >>> import torch
+        >>> from anomalib.models.components import PCA
+
+        Create a PCA model with 2 components:
+
+        >>> pca = PCA(n_components=2)
+
+        Create a random embedding and fit a PCA model.
+
+        >>> embedding = torch.rand(1000, 5).cuda()
+        >>> pca = PCA(n_components=2)
+        >>> pca.fit(embedding)
+
+        Apply transformation:
+
+        >>> transformed = pca.transform(embedding)
+        >>> transformed.shape
+        torch.Size([1000, 2])
     """
 
     def __init__(self, n_components: int | float) -> None:
@@ -35,6 +55,14 @@ class PCA(DynamicBufferModule):
 
         Args:
           dataset (torch.Tensor): Input dataset to fit the model.
+
+        Example:
+            >>> pca.fit(embedding)
+            >>> pca.singular_vectors
+            tensor([9.6053, 9.2763], device='cuda:0')
+
+            >>> pca.mean
+            tensor([0.4859, 0.4959, 0.4906, 0.5010, 0.5042], device='cuda:0')
         """
         mean = dataset.mean(dim=0)
         dataset -= mean
@@ -57,10 +85,16 @@ class PCA(DynamicBufferModule):
         """Fit and transform PCA to dataset.
 
         Args:
-          dataset (torch.Tensor): Dataset to which the PCA if fit and transformed
+            dataset (torch.Tensor): Dataset to which the PCA if fit and transformed
 
         Returns:
-          Transformed dataset
+            Transformed dataset
+
+        Example:
+            >>> pca.fit_transform(embedding)
+            >>> transformed_embedding = pca.fit_transform(embedding)
+            >>> transformed_embedding.shape
+            torch.Size([1000, 2])
         """
         mean = dataset.mean(dim=0)
         dataset -= mean
@@ -77,10 +111,20 @@ class PCA(DynamicBufferModule):
         """Transform the features based on singular vectors calculated earlier.
 
         Args:
-          features (torch.Tensor): Input features
+            features (torch.Tensor): Input features
 
         Returns:
-          Transformed features
+            Transformed features
+
+        Example:
+            >>> pca.transform(embedding)
+            >>> transformed_embedding = pca.transform(embedding)
+
+            >>> embedding.shape
+            torch.Size([1000, 5])
+            #
+            >>> transformed_embedding.shape
+            torch.Size([1000, 2])
         """
         features -= self.mean
         return torch.matmul(features, self.singular_vectors)
@@ -89,9 +133,15 @@ class PCA(DynamicBufferModule):
         """Inverses the transformed features.
 
         Args:
-          features (torch.Tensor): Transformed features
+            features (torch.Tensor): Transformed features
 
-        Returns: Inverse features
+        Returns:
+            Inverse features
+
+        Example:
+            >>> inverse_embedding = pca.inverse_transform(transformed_embedding)
+            >>> inverse_embedding.shape
+            torch.Size([1000, 5])
         """
         return torch.matmul(features, self.singular_vectors.transpose(-2, -1))
 
@@ -99,9 +149,13 @@ class PCA(DynamicBufferModule):
         """Transform the features.
 
         Args:
-          features (torch.Tensor): Input features
+            features (torch.Tensor): Input features
 
         Returns:
-          Transformed features
+            Transformed features
+
+        Example:
+            >>> pca(embedding).shape
+            torch.Size([1000, 2])
         """
         return self.transform(features)

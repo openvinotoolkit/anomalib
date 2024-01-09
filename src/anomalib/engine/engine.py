@@ -13,14 +13,15 @@ from lightning.pytorch.trainer import Trainer
 from lightning.pytorch.trainer.connectors.callback_connector import _CallbackConnector
 from lightning.pytorch.utilities.types import _EVALUATE_OUTPUT, _PREDICT_OUTPUT, EVAL_DATALOADERS, TRAIN_DATALOADERS
 from omegaconf import DictConfig, ListConfig
+from torch.utils.data import DataLoader, Dataset
 
 from anomalib.callbacks.metrics import _MetricsCallback
 from anomalib.callbacks.normalization import get_normalization_callback
 from anomalib.callbacks.post_processor import _PostProcessorCallback
 from anomalib.callbacks.thresholding import _ThresholdCallback
 from anomalib.callbacks.visualizer import _VisualizationCallback
-from anomalib.data import AnomalibDataModule, AnomalibDataset
-from anomalib.deploy.export import ExportMode, export_to_onnx, export_to_openvino, export_to_torch
+from anomalib.data import AnomalibDataModule, AnomalibDataset, InferenceDataset
+from anomalib.deploy.export import ExportType, export_to_onnx, export_to_openvino, export_to_torch
 from anomalib.metrics.threshold import BaseThreshold
 from anomalib.models import AnomalyModule
 from anomalib.utils.normalization import NormalizationMethod
@@ -98,8 +99,10 @@ class _TrainerArgumentsCache:
 class Engine:
     """Anomalib Engine.
 
-    Note:
-        Refer to PyTorch Lightning's Trainer for a list of parameters for details on other Trainer parameters.
+    .. note::
+
+        Refer to PyTorch Lightning's Trainer for a list of parameters for
+        details on other Trainer parameters.
 
     Args:
         callbacks (list[Callback]): Add a callback or list of callbacks.
@@ -322,7 +325,7 @@ class Engine:
         """
         if model:
             self._setup_trainer(model)
-            self._setup_dataset_task(dataloaders)
+        self._setup_dataset_task(dataloaders)
         return self.trainer.validate(model, dataloaders, ckpt_path, verbose, datamodule)
 
     def test(
@@ -375,14 +378,14 @@ class Engine:
         """
         if model:
             self._setup_trainer(model)
-            self._setup_dataset_task(dataloaders)
+        self._setup_dataset_task(dataloaders)
         return self.trainer.test(model, dataloaders, ckpt_path, verbose, datamodule)
 
     def predict(
         self,
         model: AnomalyModule | None = None,
         dataloaders: EVAL_DATALOADERS | AnomalibDataModule | None = None,
-        datamodule: AnomalibDataModule | None = None,
+        datamodule: AnomalibDataModule | Dataset | InferenceDataset | None = None,
         return_predictions: bool | None = None,
         ckpt_path: str | None = None,
     ) -> _PREDICT_OUTPUT | None:
@@ -398,6 +401,7 @@ class Engine:
             datamodule (AnomalibDataModule | None, optional):
                 A :class:`~lightning.pytorch.core.datamodule.AnomalibDataModule` that defines
                 the :class:`~lightning.pytorch.core.hooks.DataHooks.predict_dataloader` hook.
+                The datamodule can also be a dataset that will be wrapped in a torch Dataloader.
                 Defaults to None.
             return_predictions (bool | None, optional):
                 Whether to return predictions.
@@ -417,10 +421,13 @@ class Engine:
             1. you can pick a model.
                 ```python
                 anomalib predict --model anomalib.models.Padim
+                anomalib predict --model Padim \
+                                 --data datasets/MVTec/bottle/test/broken_large
                 ```
             2. Of course, you can override the various values with commands.
                 ```python
-                anomalib predict --model anomalib.models.Padim --data <CONFIG | CLASS_PATH_OR_NAME>
+                anomalib predict --model anomalib.models.Padim \
+                                 --data <CONFIG | CLASS_PATH_OR_NAME>
                 ```
             4. If you have a ready configuration file, run it like this.
                 ```python
@@ -429,7 +436,26 @@ class Engine:
         """
         if model:
             self._setup_trainer(model)
-            self._setup_dataset_task(dataloaders, datamodule)
+
+        if not ckpt_path:
+            logger.warning("ckpt_path is not provided. Model weights will not be loaded.")
+
+        # Handle the instance when a dataset is passed to the predict method
+        if datamodule is not None and isinstance(datamodule, Dataset):
+            dataloader = DataLoader(datamodule)
+            datamodule = None
+            if dataloaders is None:
+                dataloaders = dataloader
+            elif isinstance(dataloaders, DataLoader):
+                dataloaders = [dataloaders, dataloader]
+            elif isinstance(dataloaders, list):  # dataloader is a list
+                dataloaders.append(dataloader)
+            else:
+                msg = f"Unknown type for dataloaders {type(dataloaders)}"
+                raise TypeError(msg)
+
+        self._setup_dataset_task(dataloaders, datamodule)
+
         return self.trainer.predict(model, dataloaders, datamodule, return_predictions, ckpt_path)
 
     def train(
@@ -479,20 +505,20 @@ class Engine:
     def export(
         self,
         model: AnomalyModule,
-        export_mode: ExportMode,
+        export_type: ExportType,
         export_path: str | Path | None = None,
         transform: dict[str, Any] | A.Compose | str | Path | None = None,
         datamodule: AnomalibDataModule | None = None,
         dataset: AnomalibDataset | None = None,
         input_size: tuple[int, int] | None = None,
-        mo_args: dict[str, Any] | None = None,
+        ov_args: dict[str, Any] | None = None,
         ckpt_path: str | None = None,
-    ) -> None:
+    ) -> Path | None:
         """Export the model in the specified format.
 
         Args:
             model (AnomalyModule): Trained model.
-            export_mode (ExportMode): Export mode.
+            export_type (ExportType): Export type.
             export_path (str | Path | None, optional): Path to the output directory. If it is not set, the model is
                 exported to trainer.default_root_dir. Defaults to None.
             transform (dict[str, Any] | A.Compose | str | Path | None, optional): Transform config. Can either be a
@@ -505,9 +531,12 @@ class Engine:
                  is optional. Defaults to None.
             input_size (tuple[int, int] | None, optional): This is required only if the model is exported to ONNX and
                 OpenVINO format. Defaults to None.
-            mo_args (dict[str, Any] | None, optional): This is optional and used only for OpenVINO's model optimizer.
+            ov_args (dict[str, Any] | None, optional): This is optional and used only for OpenVINO's model optimizer.
                 Defaults to None.
             ckpt_path (str | None): Checkpoint path. If provided, the model will be loaded from this path.
+
+        Returns:
+            Path: Path to the exported model.
 
         Raises:
             ValueError: If Dataset, Datamodule, and transform are not provided.
@@ -535,28 +564,30 @@ class Engine:
             logger.exception(f"Unknown type {type(transform)} for transform.")
             raise TypeError
 
-        if export_mode in (ExportMode.OPENVINO, ExportMode.ONNX):
-            assert input_size is not None, "input_size must be provided for OpenVINO and ONNX export modes."
         if export_path is None:
             export_path = Path(self.trainer.default_root_dir)
-        if export_mode == ExportMode.TORCH:
-            export_to_torch(model=model, export_path=export_path, transform=transform, task=self.task)
-        elif export_mode == ExportMode.ONNX:
-            assert input_size is not None, "input_size must be provided for ONNX export mode."
-            export_to_onnx(
+
+        if export_type == ExportType.TORCH:
+            return export_to_torch(model=model, export_path=export_path, transform=transform, task=self.task)
+        if export_type == ExportType.ONNX:
+            assert input_size is not None, "input_size must be provided for ONNX export type."
+            return export_to_onnx(
                 model=model,
                 input_size=input_size,
                 export_path=export_path,
                 transform=transform,
                 task=self.task,
             )
-        else:
-            assert input_size is not None, "input_size must be provided for OpenVINO export mode."
-            export_to_openvino(
+        if export_type == ExportType.OPENVINO:
+            assert input_size is not None, "input_size must be provided for OpenVINO export type."
+            return export_to_openvino(
                 model=model,
                 input_size=input_size,
                 export_path=export_path,
                 transform=transform,
                 task=self.task,
-                mo_args=mo_args,
+                ov_args=ov_args,
             )
+
+        logging.error(f"Export type {export_type} is not supported yet.")
+        return None

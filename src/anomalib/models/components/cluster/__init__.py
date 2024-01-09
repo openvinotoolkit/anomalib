@@ -3,6 +3,7 @@
 # Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from .gmm import GaussianMixture
 from .kmeans import KMeans
 
-__all__ = ["KMeans"]
+__all__ = ["GaussianMixture", "KMeans"]

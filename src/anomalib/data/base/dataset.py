@@ -56,6 +56,7 @@ class AnomalibDataset(Dataset, ABC):
         Args:
             indices (Sequence[int]): Indices at which the dataset is to be subsampled.
             inplace (bool): When true, the subsampling will be performed on the instance itself.
+                Defaults to ``False``.
         """
         assert len(set(indices)) == len(indices), "No duplicates allowed in indices."
         dataset = self if inplace else copy.deepcopy(self)
@@ -109,8 +110,8 @@ class AnomalibDataset(Dataset, ABC):
             index (int): Index to get the item.
 
         Returns:
-            dict[str, str | torch.Tensor]: Dict of image tensor during training.
-                Otherwise, Dict containing image path, target path, image tensor, label and transformed bounding box.
+            dict[str, str | torch.Tensor]: Dict of image tensor during training. Otherwise, Dict containing image path,
+                target path, image tensor, label and transformed bounding box.
         """
         image_path = self._samples.iloc[index].image_path
         mask_path = self._samples.iloc[index].mask_path
@@ -145,7 +146,14 @@ class AnomalibDataset(Dataset, ABC):
         return item
 
     def __add__(self, other_dataset: "AnomalibDataset") -> "AnomalibDataset":
-        """Concatenate this dataset with another dataset."""
+        """Concatenate this dataset with another dataset.
+
+        Args:
+            other_dataset (AnomalibDataset): Dataset to concatenate with.
+
+        Returns:
+            AnomalibDataset: Concatenated dataset.
+        """
         assert isinstance(other_dataset, self.__class__), "Cannot concatenate datasets that are not of the same type."
         assert self.is_setup, "Cannot concatenate uninitialized datasets. Call setup first."
         assert other_dataset.is_setup, "Cannot concatenate uninitialized datasets. Call setup first."
@@ -165,17 +173,22 @@ class AnomalibDataset(Dataset, ABC):
 
         This method should return a dataframe that contains the information needed by the dataloader to load each of
         the dataset items into memory.
-        The dataframe must at least contain the following columns:
-            split: the subset to which the dataset item is assigned.
-            image_path: path to file system location where the image is stored.
-            label_index: index of the anomaly label, typically 0 for "normal" and 1 for "anomalous".
-            mask_path (if task == "segmentation"): path to the ground truth masks (for the anomalous images only).
 
-        Example:
-            |---|-------------------|-----------|-------------|------------------|-------|
+        The DataFrame must, at least, include the following columns:
+            - `split` (str): The subset to which the dataset item is assigned (e.g., 'train', 'test').
+            - `image_path` (str): Path to the file system location where the image is stored.
+            - `label_index` (int): Index of the anomaly label, typically 0 for 'normal' and 1 for 'anomalous'.
+            - `mask_path` (str, optional): Path to the ground truth masks (for the anomalous images only).
+            Required if task is 'segmentation'.
+
+        Example DataFrame:
+            +---+-------------------+-----------+-------------+------------------+-------+
             |   | image_path        | label     | label_index | mask_path        | split |
-            |---|-------------------|-----------|-------------|------------------|-------|
+            +---+-------------------+-----------+-------------+------------------+-------+
             | 0 | path/to/image.png | anomalous | 1           | path/to/mask.png | train |
-            |---|-------------------|-----------|-------------|------------------|-------|
+            +---+-------------------+-----------+-------------+------------------+-------+
+
+        Note:
+            The example above is illustrative and may need to be adjusted based on the specific dataset structure.
         """
         raise NotImplementedError

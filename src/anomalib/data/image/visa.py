@@ -76,9 +76,56 @@ class VisaDataset(AnomalibDataset):
     Args:
         task (TaskType): Task type, ``classification``, ``detection`` or ``segmentation``
         transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
-        split (str | Split | None): Split of the dataset, usually Split.TRAIN or Split.TEST
         root (str | Path): Path to the root of the dataset
         category (str): Sub-category of the dataset, e.g. 'candle'
+        split (str | Split | None): Split of the dataset, usually Split.TRAIN or Split.TEST
+            Defaults to ``None``.
+
+    Examples:
+        To create a Visa dataset for classification:
+
+        .. code-block:: python
+
+            from anomalib.data.image.visa import VisaDataset
+            from anomalib.data.utils.transforms import get_transforms
+
+            transform = get_transforms(image_size=256)
+            dataset = VisaDataset(
+                task="classification",
+                transform=transform,
+                split="train",
+                root="./datasets/visa/visa_pytorch/",
+                category="candle",
+            )
+            dataset.setup()
+            dataset[0].keys()
+
+            # Output
+            dict_keys(['image_path', 'label', 'image'])
+
+        If you want to use the dataset for segmentation, you can use the same
+        code as above, with the task set to ``segmentation``. The dataset will
+        then have a ``mask`` key in the output dictionary.
+
+        .. code-block:: python
+
+            from anomalib.data.image.visa import VisaDataset
+            from anomalib.data.utils.transforms import get_transforms
+
+            transform = get_transforms(image_size=256)
+            dataset = VisaDataset(
+                task="segmentation",
+                transform=transform,
+                split="train",
+                root="./datasets/visa/visa_pytorch/",
+                category="candle",
+            )
+            dataset.setup()
+            dataset[0].keys()
+
+            # Output
+            dict_keys(['image_path', 'label', 'image', 'mask_path', 'mask'])
+
     """
 
     def __init__(
@@ -103,27 +150,40 @@ class Visa(AnomalibDataModule):
 
     Args:
         root (Path | str): Path to the root of the dataset
-        category (str): Category of the MVTec dataset (e.g. "bottle" or "cable").
+            Defaults to ``"./datasets/visa"``.
+        category (str): Category of the Visa dataset such as ``candle``.
+            Defaults to ``"candle"``.
         image_size (int | tuple[int, int] | None, optional): Size of the input image.
-            Defaults to None.
+            Defaults to ``(256, 256)``.
         center_crop (int | tuple[int, int] | None, optional): When provided, the images will be center-cropped
             to the provided dimensions.
-        normalize (bool): When True, the images will be normalized to the ImageNet statistics.
-        train_batch_size (int, optional): Training batch size. Defaults to 32.
-        eval_batch_size (int, optional): Test batch size. Defaults to 32.
-        num_workers (int, optional): Number of workers. Defaults to 8.
+            Defaults to ``None``.
+        normalization (InputNormalizationMethod | str): Normalization method to be applied to the input images.
+            Defaults to ``InputNormalizationMethod.IMAGENET``.
+        train_batch_size (int, optional): Training batch size.
+            Defaults to ``32``.
+        eval_batch_size (int, optional): Test batch size.
+            Defaults to ``32``.
+        num_workers (int, optional): Number of workers.
+            Defaults to ``8``.
         task (TaskType): Task type, 'classification', 'detection' or 'segmentation'
+            Defaults to ``TaskType.SEGMENTATION``.
         transform_config_train (str | A.Compose | None, optional): Config for pre-processing
             during training.
-            Defaults to None.
+            Defaults to ``None``.
         transform_config_val (str | A.Compose | None, optional): Config for pre-processing
             during validation.
-            Defaults to None.
+            Defaults to ``None``.
         test_split_mode (TestSplitMode): Setting that determines how the testing subset is obtained.
+            Defaults to ``TestSplitMode.FROM_DIR``.
         test_split_ratio (float): Fraction of images from the train set that will be reserved for testing.
+            Defaults to ``0.2``.
         val_split_mode (ValSplitMode): Setting that determines how the validation subset is obtained.
+            Defaults to ``ValSplitMode.SAME_AS_TEST``.
         val_split_ratio (float): Fraction of train or test images that will be reserved for validation.
+            Defatuls to ``0.5``.
         seed (int | None, optional): Seed which may be set to a fixed value for reproducibility.
+            Defaults to ``None``.
     """
 
     def __init__(
@@ -132,7 +192,7 @@ class Visa(AnomalibDataModule):
         category: str = "capsules",
         image_size: int | tuple[int, int] = (256, 256),
         center_crop: int | tuple[int, int] | None = None,
-        normalization: str | InputNormalizationMethod = InputNormalizationMethod.IMAGENET,
+        normalization: InputNormalizationMethod | str = InputNormalizationMethod.IMAGENET,
         train_batch_size: int = 32,
         eval_batch_size: int = 32,
         num_workers: int = 8,
@@ -189,7 +249,62 @@ class Visa(AnomalibDataModule):
         )
 
     def prepare_data(self) -> None:
-        """Download the dataset if not available."""
+        """Download the dataset if not available.
+
+        This method checks if the specified dataset is available in the file system.
+        If not, it downloads and extracts the dataset into the appropriate directory.
+
+        Example:
+            Assume the dataset is not available on the file system.
+            Here's how the directory structure looks before and after calling the
+            `prepare_data` method:
+
+            Before:
+
+            .. code-block:: bash
+
+                $ tree datasets
+                datasets
+                ├── dataset1
+                └── dataset2
+
+            Calling the method:
+
+            .. code-block:: python
+
+                >> datamodule = Visa()
+                >> datamodule.prepare_data()
+
+            After:
+
+            .. code-block:: bash
+
+                $ tree datasets
+                datasets
+                ├── dataset1
+                ├── dataset2
+                └── visa
+                    ├── candle
+                    ├── ...
+                    ├── pipe_fryum
+                    │   ├── Data
+                    │   └── image_anno.csv
+                    ├── split_csv
+                    │   ├── 1cls.csv
+                    │   ├── 2cls_fewshot.csv
+                    │   └── 2cls_highshot.csv
+                    ├── VisA_20220922.tar
+                    └── visa_pytorch
+                        ├── candle
+                        ├── ...
+                        ├── pcb4
+                        └── pipe_fryum
+
+            ``prepare_data`` ensures that the dataset is converted to MVTec
+            format. ``visa_pytorch`` is the directory that contains the dataset
+            in the MVTec format. ``visa`` is the directory that contains the
+            original dataset.
+        """
         if (self.split_root / self.category).is_dir():
             # dataset is available, and split has been applied
             logger.info("Found the dataset and train/test split.")

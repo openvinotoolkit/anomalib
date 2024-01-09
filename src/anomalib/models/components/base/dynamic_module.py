@@ -9,7 +9,7 @@ import torch
 from torch import nn
 
 
-class DynamicBufferModule(ABC, nn.Module):
+class DynamicBufferModule(nn.Module, ABC):
     """Torch module that allows loading variables from the state dict even in the case of shape mismatch."""
 
     def get_tensor_attribute(self, attribute_name: str) -> torch.Tensor:
