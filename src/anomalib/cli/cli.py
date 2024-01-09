@@ -365,7 +365,7 @@ class AnomalibCLI(LightningCLI):
             init_args = {key: value.default for key, value in signature(PredictDataset).parameters.items()}
             init_args["path"] = data_path
             data_path = Namespace(
-                class_path="anomalib.data.inference.PredictDataset",
+                class_path="anomalib.data.predict.PredictDataset",
                 init_args=Namespace(init_args),
             )
         return data_path
