@@ -135,7 +135,7 @@ create training dataset and dataloader for us.
 :::{tab-item} CLI
 :sync: label-2
 
-Here is the CLI command to create the same custom datamodule with only normal
+Here is the dataset config to create the same custom datamodule with only normal
 images. We specify the `val_split_mode` and `test_split_mode` arguments to
 `NONE` to tell anomalib that we only have normal images in our dataset.
 
