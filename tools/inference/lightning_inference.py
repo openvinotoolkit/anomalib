@@ -57,19 +57,17 @@ def infer(args: Namespace) -> None:
         visualization["image_save_path"] = args.output
 
     callbacks = None if not hasattr(args, "callbacks") else args.callbacks
-    engine = Engine(callbacks=callbacks, visualization=visualization)
+    engine = Engine(callbacks=callbacks, visualization=visualization, devices=1)
+    model = get_model(args.model)
 
     # create the dataset
     dataset = InferenceDataset(**args.data)
     dataloader = DataLoader(dataset)
 
-    # generate predictions
-    model = get_model(args.model)
     engine.predict(model=model, dataloaders=[dataloader], ckpt_path=args.ckpt_path)
 
 
 if __name__ == "__main__":
     parser = get_parser()
-    config = parser.parse_args()
-    args = parser.instantiate_classes(config)
+    args = parser.parse_args()
     infer(args)

@@ -6,7 +6,6 @@
 from enum import Enum
 from pathlib import Path
 
-from jsonargparse import ActionConfigFile
 from lightning.pytorch.cli import LightningArgumentParser
 from omegaconf import OmegaConf
 
@@ -44,12 +43,6 @@ def get_hpo_parser(
         type=str,
         required=False,
         help="Username or workspace where you want to send your runs to. If not set, the default workspace is used.",
-    )
-    parser.add_argument(
-        "-c",
-        "--config",
-        action=ActionConfigFile,
-        help="Path to a configuration file in json or yaml format.",
     )
 
     return parser

@@ -112,8 +112,8 @@ class Visualizer:
 
             image_result = ImageResult(
                 image=image,
-                pred_score=batch["pred_scores"][i].cpu().numpy().item(),
-                pred_label=batch["pred_labels"][i].cpu().numpy().item(),
+                pred_score=batch["pred_scores"][i].cpu().numpy().item() if "pred_scores" in batch else None,
+                pred_label=batch["pred_labels"][i].cpu().numpy().item() if "pred_labels" in batch else None,
                 anomaly_map=batch["anomaly_maps"][i].cpu().numpy() if "anomaly_maps" in batch else None,
                 pred_mask=batch["pred_masks"][i].squeeze().int().cpu().numpy() if "pred_masks" in batch else None,
                 gt_mask=batch["mask"][i].squeeze().int().cpu().numpy() if "mask" in batch else None,
