@@ -21,6 +21,7 @@ from torch.utils.data import DataLoader
 from torchvision.datasets import ImageFolder
 
 from anomalib.data.utils import DownloadInfo, download_and_extract
+from anomalib.enums import LearningType
 from anomalib.models.components import AnomalyModule
 
 from .torch_model import EfficientAdModel, EfficientAdModelSize, reduce_tensor_elems
@@ -298,3 +299,12 @@ class EfficientAd(AnomalyModule):
     def trainer_arguments(self) -> dict[str, Any]:
         """Return EfficientAD trainer arguments."""
         return {"gradient_clip_val": 0, "num_sanity_val_steps": 0}
+
+    @property
+    def learning_type(self) -> LearningType:
+        """Return the learning type of the model.
+
+        Returns:
+            LearningType: Learning type of the model.
+        """
+        return LearningType.ONE_CLASS

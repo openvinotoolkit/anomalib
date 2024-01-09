@@ -24,7 +24,7 @@ from anomalib.data.utils import (
     get_transforms,
 )
 from anomalib.data.utils.path import _prepare_files_labels, _resolve_path
-from anomalib.utils.types import TaskType
+from anomalib.enums import TaskType
 
 
 def make_folder_dataset(

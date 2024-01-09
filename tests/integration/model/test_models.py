@@ -16,8 +16,8 @@ from torch.utils.data import DataLoader
 from anomalib.data import AnomalibDataModule, InferenceDataset, MVTec, UCSDped
 from anomalib.deploy.export import ExportType
 from anomalib.engine import Engine
+from anomalib.enums import TaskType
 from anomalib.models import AnomalyModule, get_available_models, get_model
-from anomalib.utils.types import TaskType
 
 
 def models() -> set[str]:

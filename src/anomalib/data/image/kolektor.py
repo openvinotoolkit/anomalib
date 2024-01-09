@@ -34,7 +34,7 @@ from anomalib.data.utils import (
     download_and_extract,
     get_transforms,
 )
-from anomalib.utils.types import TaskType
+from anomalib.enums import TaskType
 
 __all__ = ["Kolektor", "KolektorDataset", "make_kolektor_dataset"]
 

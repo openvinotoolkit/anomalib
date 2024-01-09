@@ -14,7 +14,7 @@ import torch
 
 from anomalib.cli import AnomalibCLI
 from anomalib.deploy.export import ExportType
-from anomalib.utils.types import TaskType
+from anomalib.enums import TaskType
 
 
 class TestCLI:

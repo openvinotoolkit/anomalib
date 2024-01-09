@@ -15,6 +15,7 @@ from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torch import nn
 
 from anomalib.data.utils import Augmenter
+from anomalib.enums import LearningType
 from anomalib.models.components import AnomalyModule
 
 from .loss import DraemLoss
@@ -138,3 +139,12 @@ class Draem(AnomalyModule):
     def configure_optimizers(self) -> torch.optim.Optimizer:
         """Configure the Adam optimizer."""
         return torch.optim.Adam(params=self.model.parameters(), lr=0.0001)
+
+    @property
+    def learning_type(self) -> LearningType:
+        """Return the learning type of the model.
+
+        Returns:
+            LearningType: Learning type of the model.
+        """
+        return LearningType.ONE_CLASS

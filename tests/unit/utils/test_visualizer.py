@@ -14,8 +14,8 @@ from torch.utils.data import DataLoader
 from anomalib.data import MVTec
 from anomalib.data.inference import InferenceDataset
 from anomalib.engine import Engine
+from anomalib.enums import TaskType
 from anomalib.models import get_model
-from anomalib.utils.types import TaskType
 from anomalib.utils.visualization import ImageGrid
 
 

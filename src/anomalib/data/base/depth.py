@@ -10,7 +10,7 @@ import torch
 
 from anomalib.data.base.dataset import AnomalibDataset
 from anomalib.data.utils import masks_to_boxes, read_depth_image, read_image
-from anomalib.utils.types import TaskType
+from anomalib.enums import TaskType
 
 
 class AnomalibDepthDataset(AnomalibDataset, ABC):

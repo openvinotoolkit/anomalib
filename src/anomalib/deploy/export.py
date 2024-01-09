@@ -15,9 +15,9 @@ import numpy as np
 import torch
 
 from anomalib.data import AnomalibDataModule, AnomalibDataset
+from anomalib.enums import TaskType
 from anomalib.models.components import AnomalyModule
 from anomalib.utils.exceptions import try_import
-from anomalib.utils.types import TaskType
 
 if TYPE_CHECKING:
     from torch.types import Number

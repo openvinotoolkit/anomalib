@@ -25,13 +25,13 @@ from anomalib.cli.utils.openvino import add_openvino_export_arguments
 from anomalib.data import AnomalibDataModule, AnomalibDataset
 from anomalib.data.inference import InferenceDataset
 from anomalib.engine import Engine
+from anomalib.enums import TaskType
 from anomalib.loggers import configure_logger
 from anomalib.metrics.threshold import BaseThreshold
 from anomalib.models import AnomalyModule
 from anomalib.pipelines.benchmarking import distribute
 from anomalib.pipelines.hpo import Sweep, get_hpo_parser
 from anomalib.utils.config import update_config
-from anomalib.utils.types import TaskType
 
 traceback.install()
 logger = logging.getLogger("anomalib.cli")

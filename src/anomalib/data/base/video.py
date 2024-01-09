@@ -13,7 +13,7 @@ from anomalib.data.base.datamodule import AnomalibDataModule
 from anomalib.data.base.dataset import AnomalibDataset
 from anomalib.data.utils import ValSplitMode, masks_to_boxes
 from anomalib.data.utils.video import ClipsIndexer
-from anomalib.utils.types import TaskType
+from anomalib.enums import TaskType
 
 if TYPE_CHECKING:
     from collections.abc import Callable

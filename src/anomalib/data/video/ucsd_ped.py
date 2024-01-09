@@ -27,7 +27,7 @@ from anomalib.data.utils import (
     read_image,
 )
 from anomalib.data.utils.video import ClipsIndexer
-from anomalib.utils.types import TaskType
+from anomalib.enums import TaskType
 
 if TYPE_CHECKING:
     from collections.abc import Callable

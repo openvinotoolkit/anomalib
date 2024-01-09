@@ -16,13 +16,13 @@ import numpy as np
 from skimage.segmentation import mark_boundaries
 
 from anomalib.data.utils import read_image
+from anomalib.enums import TaskType
 from anomalib.utils.post_processing import (
     add_anomalous_label,
     add_normal_label,
     draw_boxes,
     superimpose_anomaly_map,
 )
-from anomalib.utils.types import TaskType
 
 
 @dataclass

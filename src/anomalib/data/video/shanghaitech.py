@@ -37,7 +37,7 @@ from anomalib.data.utils import (
     read_image,
 )
 from anomalib.data.utils.video import ClipsIndexer, convert_video
-from anomalib.utils.types import TaskType
+from anomalib.enums import TaskType
 
 logger = logging.getLogger(__name__)
 
