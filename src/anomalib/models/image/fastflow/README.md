@@ -85,7 +85,7 @@ All results gathered with seed `0`.
 | Transistor |   0.779   |     0.854     | 0.873 | 0.909 |
 | Wood       |   0.983   |     0.968     | 0.944 | 0.967 |
 | Zipper     |   0.921   |     0.975     | 0.958 | 0.933 |
-| Average    |   0.916   |    0.947      | 0.906 | 0.911 |
+| Average    |   0.916   |     0.947     | 0.906 | 0.911 |
 
 ### Pixel F1 Score
 

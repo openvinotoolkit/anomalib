@@ -14,13 +14,14 @@ from lightning.pytorch.trainer import Trainer
 from lightning.pytorch.trainer.connectors.callback_connector import _CallbackConnector
 from lightning.pytorch.utilities.types import _EVALUATE_OUTPUT, _PREDICT_OUTPUT, EVAL_DATALOADERS, TRAIN_DATALOADERS
 from omegaconf import DictConfig, ListConfig
+from torch.utils.data import DataLoader, Dataset
 
 from anomalib.callbacks import get_visualization_callbacks
 from anomalib.callbacks.metrics import _MetricsCallback
 from anomalib.callbacks.normalization import get_normalization_callback
 from anomalib.callbacks.post_processor import _PostProcessorCallback
 from anomalib.callbacks.thresholding import _ThresholdCallback
-from anomalib.data import AnomalibDataModule, AnomalibDataset
+from anomalib.data import AnomalibDataModule, AnomalibDataset, InferenceDataset
 from anomalib.deploy.export import ExportType, export_to_onnx, export_to_openvino, export_to_torch
 from anomalib.metrics.threshold import BaseThreshold
 from anomalib.models import AnomalyModule
@@ -296,7 +297,7 @@ class Engine:
         """
         if model:
             self._setup_trainer(model)
-            self._setup_dataset_task(dataloaders)
+        self._setup_dataset_task(dataloaders)
         return self.trainer.validate(model, dataloaders, ckpt_path, verbose, datamodule)
 
     def test(
@@ -349,14 +350,14 @@ class Engine:
         """
         if model:
             self._setup_trainer(model)
-            self._setup_dataset_task(dataloaders)
+        self._setup_dataset_task(dataloaders)
         return self.trainer.test(model, dataloaders, ckpt_path, verbose, datamodule)
 
     def predict(
         self,
         model: AnomalyModule | None = None,
         dataloaders: EVAL_DATALOADERS | AnomalibDataModule | None = None,
-        datamodule: AnomalibDataModule | None = None,
+        datamodule: AnomalibDataModule | Dataset | InferenceDataset | None = None,
         return_predictions: bool | None = None,
         ckpt_path: str | None = None,
     ) -> _PREDICT_OUTPUT | None:
@@ -372,6 +373,7 @@ class Engine:
             datamodule (AnomalibDataModule | None, optional):
                 A :class:`~lightning.pytorch.core.datamodule.AnomalibDataModule` that defines
                 the :class:`~lightning.pytorch.core.hooks.DataHooks.predict_dataloader` hook.
+                The datamodule can also be a dataset that will be wrapped in a torch Dataloader.
                 Defaults to None.
             return_predictions (bool | None, optional):
                 Whether to return predictions.
@@ -391,10 +393,13 @@ class Engine:
             1. you can pick a model.
                 ```python
                 anomalib predict --model anomalib.models.Padim
+                anomalib predict --model Padim \
+                                 --data datasets/MVTec/bottle/test/broken_large
                 ```
             2. Of course, you can override the various values with commands.
                 ```python
-                anomalib predict --model anomalib.models.Padim --data <CONFIG | CLASS_PATH_OR_NAME>
+                anomalib predict --model anomalib.models.Padim \
+                                 --data <CONFIG | CLASS_PATH_OR_NAME>
                 ```
             4. If you have a ready configuration file, run it like this.
                 ```python
@@ -403,7 +408,26 @@ class Engine:
         """
         if model:
             self._setup_trainer(model)
-            self._setup_dataset_task(dataloaders, datamodule)
+
+        if not ckpt_path:
+            logger.warning("ckpt_path is not provided. Model weights will not be loaded.")
+
+        # Handle the instance when a dataset is passed to the predict method
+        if datamodule is not None and isinstance(datamodule, Dataset):
+            dataloader = DataLoader(datamodule)
+            datamodule = None
+            if dataloaders is None:
+                dataloaders = dataloader
+            elif isinstance(dataloaders, DataLoader):
+                dataloaders = [dataloaders, dataloader]
+            elif isinstance(dataloaders, list):  # dataloader is a list
+                dataloaders.append(dataloader)
+            else:
+                msg = f"Unknown type for dataloaders {type(dataloaders)}"
+                raise TypeError(msg)
+
+        self._setup_dataset_task(dataloaders, datamodule)
+
         return self.trainer.predict(model, dataloaders, datamodule, return_predictions, ckpt_path)
 
     def train(

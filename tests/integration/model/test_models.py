@@ -11,15 +11,17 @@ from pathlib import Path
 
 import pytest
 from lightning.pytorch.callbacks import ModelCheckpoint
+from torch.utils.data import DataLoader
 
-from anomalib.data import AnomalibDataModule, MVTec, UCSDped
+from anomalib.data import AnomalibDataModule, InferenceDataset, MVTec, UCSDped
+from anomalib.deploy.export import ExportType
 from anomalib.engine import Engine
 from anomalib.models import AnomalyModule, get_available_models, get_model
 from anomalib.utils.types import TaskType
 
 
-def models() -> list[str]:
-    """Return all available models except ai_vad."""
+def models() -> set[str]:
+    """Return all available models."""
     return get_available_models()
 
 
@@ -57,6 +59,94 @@ class TestAPI:
             project_path=project_path,
         )
         engine.test(model=model, datamodule=dataset, ckpt_path=f"{project_path}/{model_name}/dummy/weights/last.ckpt")
+
+    @pytest.mark.parametrize("model_name", models())
+    def test_train(self, model_name: str, dataset_path: Path, project_path: Path) -> None:
+        """Train model from checkpoint.
+
+        Args:
+            model_name (str): Name of the model.
+            dataset_path (Path): Root to dataset from fixture.
+            project_path (Path): Path to temporary project folder from fixture.
+        """
+        model, dataset, engine = self._get_objects(
+            model_name=model_name,
+            dataset_path=dataset_path,
+            project_path=project_path,
+        )
+        engine.train(model=model, datamodule=dataset, ckpt_path=f"{project_path}/{model_name}/dummy/weights/last.ckpt")
+
+    @pytest.mark.parametrize("model_name", models())
+    def test_validate(self, model_name: str, dataset_path: Path, project_path: Path) -> None:
+        """Validate model from checkpoint.
+
+        Args:
+            model_name (str): Name of the model.
+            dataset_path (Path): Root to dataset from fixture.
+            project_path (Path): Path to temporary project folder from fixture.
+        """
+        model, dataset, engine = self._get_objects(
+            model_name=model_name,
+            dataset_path=dataset_path,
+            project_path=project_path,
+        )
+        engine.validate(
+            model=model,
+            datamodule=dataset,
+            ckpt_path=f"{project_path}/{model_name}/dummy/weights/last.ckpt",
+        )
+
+    @pytest.mark.parametrize("model_name", models())
+    def test_predict(self, model_name: str, dataset_path: Path, project_path: Path) -> None:
+        """Predict using model from checkpoint.
+
+        Args:
+            model_name (str): Name of the model.
+            dataset_path (Path): Root to dataset from fixture.
+            project_path (Path): Path to temporary project folder from fixture.
+        """
+        model, _dataloader, engine = self._get_objects(
+            model_name=model_name,
+            dataset_path=dataset_path,
+            project_path=project_path,
+        )
+        if model_name == "ai_vad":
+            dataloader = _dataloader
+        else:
+            dataloader = DataLoader(InferenceDataset(dataset_path / "mvtec" / "dummy" / "test"))
+        engine.predict(
+            model=model,
+            dataloaders=dataloader,
+            ckpt_path=f"{project_path}/{model_name}/dummy/weights/last.ckpt",
+        )
+
+    @pytest.mark.parametrize("model_name", models())
+    def test_export(self, model_name: str, dataset_path: Path, project_path: Path) -> None:
+        """Export model from checkpoint.
+
+        Args:
+            model_name (str): Name of the model.
+            dataset_path (Path): Root to dataset from fixture.
+            project_path (Path): Path to temporary project folder from fixture.
+        """
+        if model_name == "reverse_distillation":
+            # TODO(ashwinvaidya17): Restore this test after fixing reverse distillation
+            # https://github.com/openvinotoolkit/anomalib/issues/1513
+            pytest.skip("Reverse distillation fails to convert to ONNX")
+        elif model_name == "ai_vad":
+            pytest.skip("Export fails for video models.")
+        model, dataset, engine = self._get_objects(
+            model_name=model_name,
+            dataset_path=dataset_path,
+            project_path=project_path,
+        )
+        engine.export(
+            model=model,
+            datamodule=dataset,
+            ckpt_path=f"{project_path}/{model_name}/dummy/weights/last.ckpt",
+            export_type=ExportType.ONNX,
+            input_size=(256, 256),
+        )
 
     def _get_objects(
         self,
