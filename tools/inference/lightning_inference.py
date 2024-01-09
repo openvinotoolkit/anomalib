@@ -8,7 +8,7 @@ from lightning.pytorch.callbacks import Callback
 from lightning.pytorch.cli import LightningArgumentParser
 from torch.utils.data import DataLoader
 
-from anomalib.data.inference import PredictDataset
+from anomalib.data import PredictDataset
 from anomalib.engine import Engine
 from anomalib.models import AnomalyModule, get_model
 
