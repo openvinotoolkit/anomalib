@@ -144,7 +144,7 @@ class TestAPI:
             model=model,
             datamodule=dataset,
             ckpt_path=f"{project_path}/{model_name}/dummy/weights/last.ckpt",
-            export_mode=ExportType.ONNX,
+            export_type=ExportType.ONNX,
             input_size=(256, 256),
         )
 
