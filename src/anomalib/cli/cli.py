@@ -32,7 +32,7 @@ from anomalib.pipelines.benchmarking import distribute
 from anomalib.pipelines.hpo import Sweep, get_hpo_parser
 from anomalib.utils.config import update_config
 from anomalib.utils.types import TaskType
-from anomalib.utils.visualization.base import BaseVisualizationGenerator
+from anomalib.utils.visualization.base import BaseVisualizer
 
 traceback.install()
 logger = logging.getLogger("anomalib.cli")
@@ -135,8 +135,8 @@ class AnomalibCLI(LightningCLI):
         parser.add_function_arguments(get_normalization_callback, "normalization")
         # visualization takes task from the project
         parser.add_argument(
-            "--visualization.generators",
-            type=BaseVisualizationGenerator | list[BaseVisualizationGenerator] | None,
+            "--visualization.visualizers",
+            type=BaseVisualizer | list[BaseVisualizer] | None,
             default=None,
         )
         parser.add_argument("--visualization.save", type=bool, default=False)
@@ -296,7 +296,7 @@ class AnomalibCLI(LightningCLI):
         """Return visualization parameters."""
         subcommand = self.config.subcommand
         return {
-            "visualization_generators": self.config_init[subcommand].visualization.generators,
+            "visualizers": self.config_init[subcommand].visualization.visualizers,
             "save_image": self.config[subcommand].visualization.save,
             "log_image": self.config[subcommand].visualization.log,
             "show_image": self.config[subcommand].visualization.show,

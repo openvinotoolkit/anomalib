@@ -13,14 +13,14 @@ from typing import Any, cast
 from lightning.pytorch import Callback, Trainer
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 
+from anomalib.data.utils.image import save_image, show_image
 from anomalib.loggers import AnomalibWandbLogger
 from anomalib.loggers.base import ImageLoggerBase
 from anomalib.models import AnomalyModule
 from anomalib.utils.visualization import (
-    BaseVisualizationGenerator,
+    BaseVisualizer,
     GeneratorResult,
     VisualizationStep,
-    Visualizer,
 )
 
 logger = logging.getLogger(__name__)
@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 class _VisualizationCallback(Callback):
     def __init__(
         self,
-        generators: BaseVisualizationGenerator | list[BaseVisualizationGenerator],
+        generators: BaseVisualizer | list[BaseVisualizer],
         save: bool = False,
         save_root: Path | None = None,
         log: bool = False,
@@ -61,7 +61,6 @@ class _VisualizationCallback(Callback):
         Raises:
             ValueError: Incase `save_root` is None and `save` is True.
         """
-        self.visualizer = Visualizer()
         self.save = save
         if save and save_root is None:
             msg = "`save_root` must be provided if save is True"
@@ -93,9 +92,9 @@ class _VisualizationCallback(Callback):
                     if self.save or self.show:
                         assert result.file_name is not None, "File name is None"
                         if self.save:
-                            self.visualizer.save(image=result.image, file_path=self.save_root / result.file_name)
+                            save_image(image=result.image, file_path=self.save_root / result.file_name)
                         if self.show:
-                            self.visualizer.show(image=result.image, title=str(self.save_root / result.file_name))
+                            show_image(image=result.image, title=str(self.save_root / result.file_name))
                     if self.log:
                         self._add_to_logger(result, pl_module, trainer)
 

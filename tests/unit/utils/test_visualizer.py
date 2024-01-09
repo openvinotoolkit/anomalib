@@ -16,7 +16,7 @@ from anomalib.data.inference import InferenceDataset
 from anomalib.engine import Engine
 from anomalib.models import get_model
 from anomalib.utils.types import TaskType
-from anomalib.utils.visualization.image import ImageVisualizationGenerator, VisualizationMode, _ImageGrid
+from anomalib.utils.visualization.image import ImageVisualizer, VisualizationMode, _ImageGrid
 
 
 def test_visualize_fully_defected_masks() -> None:
@@ -55,7 +55,7 @@ class TestVisualizer:
         engine = Engine(
             default_root_dir=project_path,
             fast_dev_run=True,
-            visualization_generators=ImageVisualizationGenerator(mode=mode),
+            visualization_generators=ImageVisualizer(mode=mode),
             save_image=True,
             devices=1,
             task=task,

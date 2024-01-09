@@ -12,8 +12,9 @@ from argparse import ArgumentParser, Namespace
 from pathlib import Path
 
 from anomalib.data.utils import generate_output_image_filename, get_image_filenames, read_image
+from anomalib.data.utils.image import save_image, show_image
 from anomalib.deploy import OpenVINOInferencer
-from anomalib.utils.visualization import Visualizer
+from anomalib.utils.visualization import ImageVisualizer
 
 logger = logging.getLogger(__name__)
 
@@ -73,7 +74,7 @@ def infer(args: Namespace) -> None:
     """
     # Get the inferencer.
     inferencer = OpenVINOInferencer(path=args.weights, metadata=args.metadata, device=args.device)
-    visualizer = Visualizer(mode=args.visualization_mode, task=args.task)
+    visualizer = ImageVisualizer(mode=args.visualization_mode, task=args.task)
 
     filenames = get_image_filenames(path=args.input)
     for filename in filenames:
@@ -87,11 +88,11 @@ def infer(args: Namespace) -> None:
 
         if args.output:
             file_path = generate_output_image_filename(input_path=filename, output_path=args.output)
-            visualizer.save(file_path=file_path, image=output)
+            save_image(file_path=file_path, image=output)
 
         # Show the image in case the flag is set by the user.
         if args.show:
-            visualizer.show(title="Output Image", image=output)
+            show_image(title="Output Image", image=output)
 
 
 if __name__ == "__main__":

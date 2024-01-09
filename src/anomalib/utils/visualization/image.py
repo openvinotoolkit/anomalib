@@ -23,7 +23,7 @@ from anomalib.utils.post_processing import (
 )
 from anomalib.utils.types import TaskType
 
-from .base import BaseVisualizationGenerator, GeneratorResult, VisualizationStep
+from .base import BaseVisualizer, GeneratorResult, VisualizationStep
 
 
 class VisualizationMode(str, Enum):
@@ -69,7 +69,7 @@ class ImageResult:
             self.anomalous_boxes = self.pred_boxes[self.box_labels.astype(bool)]
 
 
-class ImageVisualizationGenerator(BaseVisualizationGenerator):
+class ImageVisualizer(BaseVisualizer):
     """Image/video generator."""
 
     def __init__(
@@ -130,9 +130,9 @@ class ImageVisualizationGenerator(BaseVisualizationGenerator):
                 pred_boxes=batch["pred_boxes"][i].cpu().numpy() if "pred_boxes" in batch else None,
                 box_labels=batch["box_labels"][i].cpu().numpy() if "box_labels" in batch else None,
             )
-            yield GeneratorResult(image=self._visualize_image(image_result), file_name=file_name)
+            yield GeneratorResult(image=self.visualize_image(image_result), file_name=file_name)
 
-    def _visualize_image(self, image_result: ImageResult) -> np.ndarray:
+    def visualize_image(self, image_result: ImageResult) -> np.ndarray:
         """Generate the visualization for an image.
 
         Args:

@@ -27,7 +27,7 @@ from anomalib.models import AnomalyModule
 from anomalib.utils.normalization import NormalizationMethod
 from anomalib.utils.types import TaskType
 from anomalib.utils.visualization import (
-    BaseVisualizationGenerator,
+    BaseVisualizer,
 )
 
 logger = logging.getLogger(__name__)
@@ -133,7 +133,7 @@ class Engine:
         task: TaskType = TaskType.SEGMENTATION,
         image_metrics: str | list[str] | None = None,
         pixel_metrics: str | list[str] | None = None,
-        visualization_generators: BaseVisualizationGenerator | list[BaseVisualizationGenerator] | None = None,
+        visualization_generators: BaseVisualizer | list[BaseVisualizer] | None = None,
         save_image: bool = False,
         log_image: bool = False,
         show_image: bool = False,

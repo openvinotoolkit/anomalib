@@ -27,7 +27,7 @@ class VisualizationStep(str, Enum):
     STAGE_END = "stage_end"
 
 
-class BaseVisualizationGenerator(ABC):
+class BaseVisualizer(ABC):
     """Base visualization generator."""
 
     def __init__(self, visualize_on: VisualizationStep) -> None:

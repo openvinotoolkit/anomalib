@@ -6,13 +6,13 @@
 from collections.abc import Iterator
 from typing import TYPE_CHECKING
 
-from .base import BaseVisualizationGenerator, GeneratorResult, VisualizationStep
+from .base import BaseVisualizer, GeneratorResult, VisualizationStep
 
 if TYPE_CHECKING:
     from anomalib.models import AnomalyModule
 
 
-class MetricsVisualizationGenerator(BaseVisualizationGenerator):
+class MetricsVisualizer(BaseVisualizer):
     """Generate metric plots."""
 
     def __init__(self) -> None:

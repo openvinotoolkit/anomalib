@@ -1,16 +1,14 @@
 """Visualization utils."""
 
-from .base import BaseVisualizationGenerator, GeneratorResult, VisualizationStep
-from .image import ImageResult, ImageVisualizationGenerator
-from .metrics import MetricsVisualizationGenerator
-from .visualizer import Visualizer
+from .base import BaseVisualizer, GeneratorResult, VisualizationStep
+from .image import ImageResult, ImageVisualizer
+from .metrics import MetricsVisualizer
 
 __all__ = [
-    "BaseVisualizationGenerator",
+    "BaseVisualizer",
     "ImageResult",
-    "ImageVisualizationGenerator",
+    "ImageVisualizer",
     "GeneratorResult",
-    "MetricsVisualizationGenerator",
-    "Visualizer",
+    "MetricsVisualizer",
     "VisualizationStep",
 ]

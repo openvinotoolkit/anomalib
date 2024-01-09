@@ -13,6 +13,7 @@ import cv2
 import numpy as np
 import tifffile as tiff
 import torch
+from matplotlib.figure import Figure
 from torch.nn import functional as F  # noqa: N812
 from torchvision.datasets.folder import IMG_EXTENSIONS
 
@@ -243,3 +244,47 @@ def pad_nextpow2(batch: torch.Tensor) -> torch.Tensor:
     padding_w = [math.ceil((l_dim - batch.shape[-2]) / 2), math.floor((l_dim - batch.shape[-2]) / 2)]
     padding_h = [math.ceil((l_dim - batch.shape[-1]) / 2), math.floor((l_dim - batch.shape[-1]) / 2)]
     return F.pad(batch, pad=[*padding_h, *padding_w])
+
+
+def show_image(image: np.ndarray | Figure, title: str = "Image") -> None:
+    """Show an image on the screen.
+
+    Args:
+        image (np.ndarray | Figure): Image that will be shown in the window.
+        title (str, optional): Title that will be given to that window. Defaults to "Image".
+    """
+    if isinstance(image, Figure):
+        image = figure_to_array(image)
+    image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+    cv2.imshow(title, image)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+
+
+def save_image(file_path: Path, image: np.ndarray | Figure) -> None:
+    """Save an image to the file system.
+
+    Args:
+        file_path (Path): Path to which the image will be saved.
+        image (np.ndarray | Figure): Image that will be saved to the file system.
+    """
+    if isinstance(image, Figure):
+        image = figure_to_array(image)
+    file_path.parent.mkdir(parents=True, exist_ok=True)
+    image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+    cv2.imwrite(str(file_path), image)
+
+
+def figure_to_array(fig: Figure) -> np.ndarray:
+    """Convert a matplotlib figure to a numpy array.
+
+    Args:
+        fig (Figure): Matplotlib figure.
+
+    Returns:
+        np.ndarray: Numpy array containing the image.
+    """
+    fig.canvas.draw()
+    # convert figure to np.ndarray for saving via visualizer
+    img = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
+    return img.reshape(fig.canvas.get_width_height()[::-1] + (3,))
