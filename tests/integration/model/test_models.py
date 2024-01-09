@@ -14,7 +14,7 @@ from lightning.pytorch.callbacks import ModelCheckpoint
 from torch.utils.data import DataLoader
 
 from anomalib.data import AnomalibDataModule, InferenceDataset, MVTec, UCSDped
-from anomalib.deploy.export import ExportMode
+from anomalib.deploy.export import ExportType
 from anomalib.engine import Engine
 from anomalib.models import AnomalyModule, get_available_models, get_model
 from anomalib.utils.types import TaskType
@@ -144,7 +144,7 @@ class TestAPI:
             model=model,
             datamodule=dataset,
             ckpt_path=f"{project_path}/{model_name}/dummy/weights/last.ckpt",
-            export_mode=ExportMode.ONNX,
+            export_mode=ExportType.ONNX,
             input_size=(256, 256),
         )
 
