@@ -16,7 +16,7 @@ from lightning.pytorch.utilities.types import _EVALUATE_OUTPUT, _PREDICT_OUTPUT,
 from omegaconf import DictConfig, ListConfig
 from torch.utils.data import DataLoader, Dataset
 
-from anomalib import TaskType
+from anomalib import LearningType, TaskType
 from anomalib.callbacks import get_visualization_callbacks
 from anomalib.callbacks.metrics import _MetricsCallback
 from anomalib.callbacks.normalization import get_normalization_callback
@@ -251,6 +251,10 @@ class Engine:
         """
         self._setup_trainer(model)
         self._setup_dataset_task(train_dataloaders, val_dataloaders, datamodule)
+        if model.learning_type in [LearningType.ZERO_SHOT, LearningType.FEW_SHOT]:
+            # if the model is zero-shot or few-shot, we only need to run validate for normalization and thresholding
+            self.trainer.validate(model, val_dataloaders, datamodule=datamodule, ckpt_path=ckpt_path)
+            return
         self.trainer.fit(model, train_dataloaders, val_dataloaders, datamodule, ckpt_path)
 
     def validate(
@@ -351,7 +355,7 @@ class Engine:
         if model:
             self._setup_trainer(model)
         self._setup_dataset_task(dataloaders)
-        if ckpt_path is None:
+        if model and model.learning_type in [LearningType.ZERO_SHOT, LearningType.FEW_SHOT] and ckpt_path is None:
             # if no checkpoint patch is provided, we're running test on an untrained model.
             # in this case, we need to run validate first for normalization and thresholding
             self.trainer.validate(model, dataloaders, None, verbose=False, datamodule=datamodule)
