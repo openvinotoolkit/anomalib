@@ -23,7 +23,7 @@ from anomalib.callbacks.normalization import get_normalization_callback
 from anomalib.cli.utils import CustomHelpFormatter
 from anomalib.cli.utils.openvino import add_openvino_export_arguments
 from anomalib.data import AnomalibDataModule, AnomalibDataset
-from anomalib.data.inference import InferenceDataset
+from anomalib.data.predict import PredictDataset
 from anomalib.engine import Engine
 from anomalib.loggers import configure_logger
 from anomalib.metrics.threshold import BaseThreshold
@@ -353,7 +353,7 @@ class AnomalibCLI(LightningCLI):
         """Set the predict dataloader namespace.
 
         If the argument is of type str or Path, then it is assumed to be the path to the prediction data and is
-        assigned to InferenceDataset.
+        assigned to PredictDataset.
 
         Args:
             data_path (str | Path | Namespace): Path to the data.
@@ -362,10 +362,10 @@ class AnomalibCLI(LightningCLI):
             Namespace: Namespace containing the predict dataloader.
         """
         if isinstance(data_path, str | Path):
-            init_args = {key: value.default for key, value in signature(InferenceDataset).parameters.items()}
+            init_args = {key: value.default for key, value in signature(PredictDataset).parameters.items()}
             init_args["path"] = data_path
             data_path = Namespace(
-                class_path="anomalib.data.inference.InferenceDataset",
+                class_path="anomalib.data.predict.PredictDataset",
                 init_args=Namespace(init_args),
             )
         return data_path
