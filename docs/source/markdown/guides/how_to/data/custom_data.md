@@ -110,10 +110,15 @@ For now we will focus on the second approach.
 
 #### With Validation and Testing via Synthetic Anomalies
 
-We could use the synthetic anomaly generation feature again to create abnormal
-images from normal images. We could then use the
+If we want to check the performance of the model, we will need to have abnormal
+images to validate and test the model on. During the validation stage,
+these anomalous images are used to normalize the anomaly scores and find the
+best threshold that separates normal and abnormal images.
+
+Anomalib provides synthetic anomaly generation capabilities to create abnormal
+images from normal images so we could check the performance. We could use the
 [Folder](../../reference/data/image/folder.md) datamodule to train a model on
-this dataset. Here is the python code to create the custom datamodule:
+this dataset.
 
 :::::{dropdown} Code Syntax
 :icon: code
@@ -253,64 +258,12 @@ but would like to train a segmentation model. This could be done in two ways:
 
 For now we will focus on the second approach.
 
-#### Without Validation and Testing
-
-Here we will create a custom datamodule with only normal images and train an
-unsupervised model on this dataset. We will skip the validation and test steps
-as we do not have abnormal images to validate and test the model on.
-
-:::::{dropdown} Code Syntax
-:icon: code
-
-::::{tab-set}
-:::{tab-item} API
-:sync: label-1
-
-We could run the following python code to create the custom datamodule:
-
-```{literalinclude} ../../../../snippets/data/image/folder/segmentation/normal.txt
-:language: python
-```
-
-As can be seen above, we need to specify that we only have normal images in our
-dataset by setting the `val_split_mode` and `test_split_mode` arguments to
-`NONE`. The [Folder](../../reference/data/image/folder.md) datamodule will
-create training dataset and dataloader for us.
-
-:::
-
-:::{tab-item} CLI
-:sync: label-2
-
-Here is the CLI command to create the same custom datamodule with only normal
-images. We specify the `val_split_mode` and `test_split_mode` arguments to
-`NONE` to tell anomalib that we only have normal images in our dataset.
-
-```{literalinclude} ../../../../snippets/config/data/image/folder/segmentation/cli/normal.yaml
-:language: yaml
-```
-
-Assume that we have saved the above config file as `normal.yaml`. We could run the following CLI command to train a Patchcore model on above dataset:
-
-```bash
-anomalib train --data normal.yaml --model anomalib.models.Patchcore
-```
-
-:::
-::::
-:::::
-
 #### With Validation and Testing via Synthetic Anomalies
 
-If we want to check the performance of the model, we will need to have abnormal
-images to validate and test the model on. During the validation stage,
-these anomalous images are used to normalize the anomaly scores and find the
-best threshold that separates normal and abnormal images.
-
-Anomalib provides synthetic anomaly generation capabilities to create abnormal
-images from normal images so we could check the performance. We could use the
+We could use the synthetic anomaly generation feature again to create abnormal
+images from normal images. We could then use the
 [Folder](../../reference/data/image/folder.md) datamodule to train a model on
-this dataset.
+this dataset. Here is the python code to create the custom datamodule:
 
 :::::{dropdown} Code Syntax
 :icon: code
