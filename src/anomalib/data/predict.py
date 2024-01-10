@@ -13,7 +13,7 @@ from torch.utils.data.dataset import Dataset
 from anomalib.data.utils import get_image_filenames, get_transforms, read_image
 
 
-class InferenceDataset(Dataset):
+class PredictDataset(Dataset):
     """Inference Dataset to perform prediction.
 
     Args:

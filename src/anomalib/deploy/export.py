@@ -49,7 +49,7 @@ class ExportType(str, Enum):
 
 def export_to_torch(
     model: AnomalyModule,
-    export_path: Path | str,
+    export_root: Path | str,
     transform: dict[str, Any] | AnomalibDataset | AnomalibDataModule | A.Compose,
     task: TaskType | None = None,
 ) -> Path:
@@ -57,7 +57,7 @@ def export_to_torch(
 
     Args:
         model (AnomalyModule): Model to export.
-        export_path (Path): Path to the output folder.
+        export_root (Path): Path to the output folder.
         transform (dict[str, Any] | AnomalibDataset | AnomalibDataModule | A.Compose): Data transforms (augmentations)
             used for the model. When using ``dict``, ensure that the transform dict is in the format required by
             Albumentations.
@@ -86,16 +86,16 @@ def export_to_torch(
         ...
         >>> export_to_torch(
         ...     model=model,
-        ...     export_path="path/to/export",
+        ...     export_root="path/to/export",
         ...     transform=datamodule.test_data.transform,
         ...     task=datamodule.test_data.task,
         ... )
 
 
     """
-    export_path = _create_export_path(export_path, ExportType.TORCH)
+    export_root = _create_export_root(export_root, ExportType.TORCH)
     metadata = get_metadata(task=task, transform=transform, model=model)
-    pt_model_path = export_path / "model.pt"
+    pt_model_path = export_root / "model.pt"
     torch.save(
         obj={"model": model.model, "metadata": metadata},
         f=pt_model_path,
@@ -106,7 +106,7 @@ def export_to_torch(
 def export_to_onnx(
     model: AnomalyModule,
     input_size: tuple[int, int],
-    export_path: Path | str,
+    export_root: Path | str,
     transform: dict[str, Any] | AnomalibDataset | AnomalibDataModule | A.Compose,
     task: TaskType | None = None,
     export_type: ExportType = ExportType.ONNX,
@@ -116,7 +116,7 @@ def export_to_onnx(
     Args:
         model (AnomalyModule): Model to export.
         input_size (list[int] | tuple[int, int]): Image size used as the input for onnx converter.
-        export_path (Path): Path to the root folder of the exported model.
+        export_root (Path): Path to the root folder of the exported model.
         transform (dict[str, Any] | AnomalibDataset | AnomalibDataModule | A.Compose): Data transforms (augmentations)
             used for the model. When using dict, ensure that the transform dict is in the format required by
             Albumentations.
@@ -142,7 +142,7 @@ def export_to_onnx(
         >>> export_to_onnx(
         ...     model=model,
         ...     input_size=(224, 224),
-        ...     export_path="path/to/export",
+        ...     export_root="path/to/export",
         ...     transform=datamodule.test_data.transform,
         ...     task=datamodule.test_data.task
         ... )
@@ -156,14 +156,14 @@ def export_to_onnx(
         >>> export_to_onnx(
         ...     model=model,
         ...     input_size=(224, 224),
-        ...     export_path="path/to/export",
+        ...     export_root="path/to/export",
         ...     transform=transform,
         ...     task="segmentation",
         ... )
     """
-    export_path = _create_export_path(export_path, export_type)
-    _write_metadata_to_json(export_path, transform, model, task)
-    onnx_path = export_path / "model.onnx"
+    export_root = _create_export_root(export_root, export_type)
+    _write_metadata_to_json(export_root, transform, model, task)
+    onnx_path = export_root / "model.onnx"
     torch.onnx.export(
         model.model,
         torch.zeros((1, 3, *input_size)).to(model.device),
@@ -178,7 +178,7 @@ def export_to_onnx(
 
 
 def export_to_openvino(
-    export_path: Path | str,
+    export_root: Path | str,
     model: AnomalyModule,
     input_size: tuple[int, int],
     transform: dict[str, Any] | AnomalibDataset | AnomalibDataModule | A.Compose,
@@ -188,7 +188,7 @@ def export_to_openvino(
     """Convert onnx model to OpenVINO IR.
 
     Args:
-        export_path (Path): Path to the export folder.
+        export_root (Path): Path to the export folder.
         model (AnomalyModule): AnomalyModule to export.
         input_size (tuple[int, int]): Input size of the model. Used for adding metadata to the IR.
         transform (dict[str, Any] | AnomalibDataset | AnomalibDataModule | A.Compose): Data transforms (augmentations)
@@ -217,7 +217,7 @@ def export_to_openvino(
         >>> model = Patchcore()
         ...
         >>> export_to_openvino(
-        ...     export_path="path/to/export",
+        ...     export_root="path/to/export",
         ...     model=model,
         ...     input_size=(224, 224),
         ...     transform=datamodule.test_data.transform,
@@ -231,7 +231,7 @@ def export_to_openvino(
         >>> transform = A.Compose([A.Resize(224, 224), A.pytorch.ToTensorV2()])
         ...
         >>> export_to_openvino(
-        ...     export_path="path/to/export",
+        ...     export_root="path/to/export",
         ...     model=model,
         ...     input_size=(224, 224),
         ...     transform=transform,
@@ -239,7 +239,7 @@ def export_to_openvino(
         ... )
 
     """
-    model_path = export_to_onnx(model, input_size, export_path, transform, task, ExportType.OPENVINO)
+    model_path = export_to_onnx(model, input_size, export_root, transform, task, ExportType.OPENVINO)
     ov_model_path = model_path.with_suffix(".xml")
     ov_args = {} if ov_args is None else ov_args
     if convert_model is not None and serialize is not None:
@@ -379,7 +379,7 @@ def _get_transform_dict(
     return transform
 
 
-def _create_export_path(export_root: str | Path, export_type: ExportType) -> Path:
+def _create_export_root(export_root: str | Path, export_type: ExportType) -> Path:
     """Create export directory.
 
     Args:
@@ -389,13 +389,13 @@ def _create_export_path(export_root: str | Path, export_type: ExportType) -> Pat
     Returns:
         Path: Path to the export directory.
     """
-    export_path = Path(export_root) / "weights" / export_type.value
-    export_path.mkdir(parents=True, exist_ok=True)
-    return export_path
+    export_root = Path(export_root) / "weights" / export_type.value
+    export_root.mkdir(parents=True, exist_ok=True)
+    return export_root
 
 
 def _write_metadata_to_json(
-    export_path: Path,
+    export_root: Path,
     transform: dict[str, Any] | AnomalibDataset | AnomalibDataModule | A.Compose,
     model: AnomalyModule,
     task: TaskType | None = None,
@@ -403,7 +403,7 @@ def _write_metadata_to_json(
     """Write metadata to json file.
 
     Args:
-        export_path (Path): Path to the exported model.
+        export_root (Path): Path to the exported model.
         transform (dict[str, Any] | AnomalibDataset | AnomalibDataModule | A.Compose): Data transforms (augmentations)
             used for the model.
         model (AnomalyModule): AnomalyModule to export.
@@ -411,5 +411,5 @@ def _write_metadata_to_json(
             Defaults to None.
     """
     metadata = get_metadata(task=task, transform=transform, model=model)
-    with (export_path / "metadata.json").open("w", encoding="utf-8") as metadata_file:
+    with (export_root / "metadata.json").open("w", encoding="utf-8") as metadata_file:
         json.dump(metadata, metadata_file, ensure_ascii=False, indent=4)

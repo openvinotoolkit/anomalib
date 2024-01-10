@@ -40,7 +40,7 @@ def test_torch_throughput(
         model=model,
         export_type=ExportType.TORCH,
         dataset=dataset,
-        export_path=_ckpt_path.parent.parent,
+        export_root=_ckpt_path.parent.parent,
     )
 
     # run procedure using torch inferencer
@@ -69,7 +69,7 @@ def test_openvino_throughput(
         export_type=ExportType.OPENVINO,
         dataset=dataset,
         input_size=(256, 256),
-        export_path=_ckpt_path.parent.parent,
+        export_root=_ckpt_path.parent.parent,
     )
 
     # run procedure using openvino inferencer

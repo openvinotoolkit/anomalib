@@ -8,7 +8,7 @@ from lightning.pytorch.callbacks import Callback
 from lightning.pytorch.cli import LightningArgumentParser
 from torch.utils.data import DataLoader
 
-from anomalib.data.inference import InferenceDataset
+from anomalib.data import PredictDataset
 from anomalib.engine import Engine
 from anomalib.models import AnomalyModule, get_model
 
@@ -23,7 +23,7 @@ def get_parser() -> LightningArgumentParser:
     parser.add_lightning_class_args(AnomalyModule, "model", subclass_mode=True)
     parser.add_lightning_class_args(Callback, "--callbacks", subclass_mode=True, required=False)
     parser.add_argument("--ckpt_path", type=str, required=True, help="Path to model weights")
-    parser.add_class_arguments(InferenceDataset, "--data", instantiate=False)
+    parser.add_class_arguments(PredictDataset, "--data", instantiate=False)
     parser.add_argument("--output", type=str, required=False, help="Path to save the output image(s).")
     parser.add_argument(
         "--visualization_mode",
@@ -61,7 +61,7 @@ def infer(args: Namespace) -> None:
     model = get_model(args.model)
 
     # create the dataset
-    dataset = InferenceDataset(**args.data)
+    dataset = PredictDataset(**args.data)
     dataloader = DataLoader(dataset)
 
     engine.predict(model=model, dataloaders=[dataloader], ckpt_path=args.ckpt_path)

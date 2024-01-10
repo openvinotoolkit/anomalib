@@ -13,7 +13,7 @@ from .visualizer_metric import MetricVisualizerCallback
 
 def get_visualization_callbacks(
     task: TaskType,
-    image_save_path: str = "./results",
+    image_save_path: str = "",
     mode: VisualizationMode = VisualizationMode.FULL,
     inputs_are_normalized: bool = True,
     show_images: bool = False,
