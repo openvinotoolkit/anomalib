@@ -11,6 +11,7 @@ from torch.utils.data import DataLoader
 from anomalib.data.inference import InferenceDataset
 from anomalib.engine import Engine
 from anomalib.models import AnomalyModule, get_model
+from anomalib.utils.visualization import ImageVisualizer
 
 
 def get_parser() -> LightningArgumentParser:
@@ -51,13 +52,17 @@ def get_parser() -> LightningArgumentParser:
 
 def infer(args: Namespace) -> None:
     """Run inference."""
-    visualization = {"show_images": args.show, "mode": args.visualization_mode, "save_images": False}
-    if args.output:  # overwrite save path
-        visualization["save_images"] = True
-        visualization["image_save_path"] = args.output
+    save_images = bool(args.output)
 
     callbacks = None if not hasattr(args, "callbacks") else args.callbacks
-    engine = Engine(callbacks=callbacks, visualization=visualization, devices=1)
+    engine = Engine(
+        default_root_dir=args.output,
+        callbacks=callbacks,
+        show_image=args.show,
+        visualizers=ImageVisualizer(mode=args.visualization_mode),
+        save_image=save_images,
+        devices=1,
+    )
     model = get_model(args.model)
 
     # create the dataset
