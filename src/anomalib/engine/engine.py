@@ -20,7 +20,7 @@ from anomalib.callbacks.normalization import get_normalization_callback
 from anomalib.callbacks.post_processor import _PostProcessorCallback
 from anomalib.callbacks.thresholding import _ThresholdCallback
 from anomalib.callbacks.visualizer import _VisualizationCallback
-from anomalib.data import AnomalibDataModule, AnomalibDataset, InferenceDataset
+from anomalib.data import AnomalibDataModule, AnomalibDataset, PredictDataset
 from anomalib.deploy.export import ExportType, export_to_onnx, export_to_openvino, export_to_torch
 from anomalib.metrics.threshold import BaseThreshold
 from anomalib.models import AnomalyModule
@@ -385,7 +385,7 @@ class Engine:
         self,
         model: AnomalyModule | None = None,
         dataloaders: EVAL_DATALOADERS | AnomalibDataModule | None = None,
-        datamodule: AnomalibDataModule | Dataset | InferenceDataset | None = None,
+        datamodule: AnomalibDataModule | Dataset | PredictDataset | None = None,
         return_predictions: bool | None = None,
         ckpt_path: str | None = None,
     ) -> _PREDICT_OUTPUT | None:
@@ -506,7 +506,7 @@ class Engine:
         self,
         model: AnomalyModule,
         export_type: ExportType,
-        export_path: str | Path | None = None,
+        export_root: str | Path | None = None,
         transform: dict[str, Any] | A.Compose | str | Path | None = None,
         datamodule: AnomalibDataModule | None = None,
         dataset: AnomalibDataset | None = None,
@@ -519,7 +519,7 @@ class Engine:
         Args:
             model (AnomalyModule): Trained model.
             export_type (ExportType): Export type.
-            export_path (str | Path | None, optional): Path to the output directory. If it is not set, the model is
+            export_root (str | Path | None, optional): Path to the output directory. If it is not set, the model is
                 exported to trainer.default_root_dir. Defaults to None.
             transform (dict[str, Any] | A.Compose | str | Path | None, optional): Transform config. Can either be a
                 path to a file containing the transform config or can be an object. The file or object should follow
@@ -564,30 +564,39 @@ class Engine:
             logger.exception(f"Unknown type {type(transform)} for transform.")
             raise TypeError
 
-        if export_path is None:
-            export_path = Path(self.trainer.default_root_dir)
+        if export_root is None:
+            export_root = Path(self.trainer.default_root_dir)
 
+        exported_model_path: Path | None = None
         if export_type == ExportType.TORCH:
-            return export_to_torch(model=model, export_path=export_path, transform=transform, task=self.task)
-        if export_type == ExportType.ONNX:
-            assert input_size is not None, "input_size must be provided for ONNX export type."
-            return export_to_onnx(
+            exported_model_path = export_to_torch(
                 model=model,
-                input_size=input_size,
-                export_path=export_path,
+                export_root=export_root,
                 transform=transform,
                 task=self.task,
             )
-        if export_type == ExportType.OPENVINO:
-            assert input_size is not None, "input_size must be provided for OpenVINO export type."
-            return export_to_openvino(
+        elif export_type == ExportType.ONNX:
+            assert input_size is not None, "input_size must be provided for ONNX export type."
+            exported_model_path = export_to_onnx(
                 model=model,
                 input_size=input_size,
-                export_path=export_path,
+                export_root=export_root,
+                transform=transform,
+                task=self.task,
+            )
+        elif export_type == ExportType.OPENVINO:
+            assert input_size is not None, "input_size must be provided for OpenVINO export type."
+            exported_model_path = export_to_openvino(
+                model=model,
+                input_size=input_size,
+                export_root=export_root,
                 transform=transform,
                 task=self.task,
                 ov_args=ov_args,
             )
+        else:
+            logging.error(f"Export type {export_type} is not supported yet.")
 
-        logging.error(f"Export type {export_type} is not supported yet.")
-        return None
+        if exported_model_path:
+            logging.info(f"Exported to {exported_model_path}")
+        return exported_model_path
