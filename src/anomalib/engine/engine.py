@@ -539,9 +539,9 @@ class Engine:
         if export_root is None:
             export_root = Path(self.trainer.default_root_dir)
 
-        final_export_path: Path | None = None
+        exported_model_path: Path | None = None
         if export_type == ExportType.TORCH:
-            final_export_path = export_to_torch(
+            exported_model_path = export_to_torch(
                 model=model,
                 export_root=export_root,
                 transform=transform,
@@ -549,7 +549,7 @@ class Engine:
             )
         elif export_type == ExportType.ONNX:
             assert input_size is not None, "input_size must be provided for ONNX export type."
-            final_export_path = export_to_onnx(
+            exported_model_path = export_to_onnx(
                 model=model,
                 input_size=input_size,
                 export_root=export_root,
@@ -558,7 +558,7 @@ class Engine:
             )
         elif export_type == ExportType.OPENVINO:
             assert input_size is not None, "input_size must be provided for OpenVINO export type."
-            final_export_path = export_to_openvino(
+            exported_model_path = export_to_openvino(
                 model=model,
                 input_size=input_size,
                 export_root=export_root,
@@ -569,6 +569,6 @@ class Engine:
         else:
             logging.error(f"Export type {export_type} is not supported yet.")
 
-        if final_export_path:
-            logging.info(f"Exported to {final_export_path}")
-        return final_export_path
+        if exported_model_path:
+            logging.info(f"Exported to {exported_model_path}")
+        return exported_model_path
