@@ -17,7 +17,7 @@ from lightning.pytorch.utilities.types import _EVALUATE_OUTPUT, _PREDICT_OUTPUT
 from rich import traceback
 from torch.utils.data import DataLoader, Dataset
 
-from anomalib import __version__
+from anomalib import TaskType, __version__
 from anomalib.callbacks import get_callbacks, get_visualization_callbacks
 from anomalib.callbacks.normalization import get_normalization_callback
 from anomalib.cli.utils import CustomHelpFormatter
@@ -25,7 +25,6 @@ from anomalib.cli.utils.openvino import add_openvino_export_arguments
 from anomalib.data import AnomalibDataModule, AnomalibDataset
 from anomalib.data.inference import InferenceDataset
 from anomalib.engine import Engine
-from anomalib.enums import TaskType
 from anomalib.loggers import configure_logger
 from anomalib.metrics.threshold import BaseThreshold
 from anomalib.models import AnomalyModule

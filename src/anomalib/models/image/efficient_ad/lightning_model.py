@@ -20,8 +20,8 @@ from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torch.utils.data import DataLoader
 from torchvision.datasets import ImageFolder
 
+from anomalib import LearningType
 from anomalib.data.utils import DownloadInfo, download_and_extract
-from anomalib.enums import LearningType
 from anomalib.models.components import AnomalyModule
 
 from .torch_model import EfficientAdModel, EfficientAdModelSize, reduce_tensor_elems

@@ -12,9 +12,9 @@ from pathlib import Path
 import pytest
 import torch
 
+from anomalib import TaskType
 from anomalib.cli import AnomalibCLI
 from anomalib.deploy.export import ExportType
-from anomalib.enums import TaskType
 
 
 class TestCLI:

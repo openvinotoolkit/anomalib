@@ -9,7 +9,7 @@ from typing import Any
 import torch
 from torch import nn
 
-from anomalib.enums import LearningType
+from anomalib import LearningType
 from anomalib.models.components import AnomalyModule
 
 

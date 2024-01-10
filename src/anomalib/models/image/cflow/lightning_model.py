@@ -21,7 +21,7 @@ from torch import optim
 from torch.nn import functional as F  # noqa: N812
 from torch.optim import Optimizer
 
-from anomalib.enums import LearningType
+from anomalib import LearningType
 from anomalib.models.components import AnomalyModule
 
 from .torch_model import CflowModel

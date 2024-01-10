@@ -14,7 +14,7 @@ import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torch import nn
 
-from anomalib.enums import LearningType
+from anomalib import LearningType
 from anomalib.metrics.threshold import BaseThreshold
 
 if TYPE_CHECKING:

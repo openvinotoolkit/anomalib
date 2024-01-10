@@ -14,8 +14,8 @@ import albumentations as A  # noqa: N812
 import numpy as np
 import torch
 
+from anomalib import TaskType
 from anomalib.data import AnomalibDataModule, AnomalibDataset
-from anomalib.enums import TaskType
 from anomalib.models.components import AnomalyModule
 from anomalib.utils.exceptions import try_import
 

@@ -8,9 +8,9 @@ from pathlib import Path
 
 import pytest
 
+from anomalib import TaskType
 from anomalib.data import MVTec
 from anomalib.engine import Engine
-from anomalib.enums import TaskType
 from anomalib.loggers import AnomalibTensorBoardLogger
 
 from .dummy_lightning_model import DummyModule

@@ -11,8 +11,8 @@ from pathlib import Path
 
 import pytest
 
+from anomalib import TaskType
 from anomalib.deploy import export_to_openvino
-from anomalib.enums import TaskType
 from anomalib.models import Padim
 
 sys.path.append("tools/inference")

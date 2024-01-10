@@ -9,10 +9,10 @@ from pathlib import Path
 import albumentations as A  # noqa: N812
 from albumentations.pytorch import ToTensorV2
 
+from anomalib import TaskType
 from anomalib.data.image.folder import FolderDataset
 from anomalib.deploy import ExportType
 from anomalib.engine import Engine
-from anomalib.enums import TaskType
 from anomalib.models import Padim
 from anomalib.pipelines.sweep.helpers import get_openvino_throughput, get_torch_throughput
 
