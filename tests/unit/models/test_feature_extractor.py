@@ -9,7 +9,7 @@ from torchvision.models.efficientnet import EfficientNet_B5_Weights
 
 from anomalib.models.components.feature_extractors import (
     BackboneParams,
-    FeatureExtractor,
+    TimmFeatureExtractor,
     TorchFXFeatureExtractor,
     dryrun_find_featuremap_dims,
 )
@@ -29,7 +29,7 @@ class TestFeatureExtractor:
     def test_timm_feature_extraction(self, backbone: str, pretrained: bool) -> None:
         """Test if the feature extractor can be instantiated and if the output is as expected."""
         layers = ["layer1", "layer2", "layer3"]
-        model = FeatureExtractor(backbone=backbone, layers=layers, pre_trained=pretrained)
+        model = TimmFeatureExtractor(backbone=backbone, layers=layers, pre_trained=pretrained)
         test_input = torch.rand((32, 3, 256, 256))
         features = model(test_input)
 
@@ -109,7 +109,7 @@ class TestFeatureExtractor:
 def test_dryrun_find_featuremap_dims(backbone: str, input_size: tuple[int, int]) -> None:
     """Use the function and check the expected output format."""
     layers = ["layer1", "layer2", "layer3"]
-    model = FeatureExtractor(backbone=backbone, layers=layers, pre_trained=True)
+    model = TimmFeatureExtractor(backbone=backbone, layers=layers, pre_trained=True)
     mapping = dryrun_find_featuremap_dims(model, input_size, layers)
     for lay in layers:
         layer_mapping = mapping[lay]

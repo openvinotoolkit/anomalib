@@ -11,8 +11,7 @@ import pytest
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from torch.utils.data import DataLoader
 
-from anomalib.data import MVTec
-from anomalib.data.inference import InferenceDataset
+from anomalib.data import MVTec, PredictDataset
 from anomalib.engine import Engine
 from anomalib.models import get_model
 from anomalib.utils.types import TaskType
@@ -62,6 +61,6 @@ class TestVisualizer:
         datamodule = MVTec(root=dataset_path / "mvtec", category="dummy", task=task)
         engine.test(model=model, datamodule=datamodule, ckpt_path=str(_ckpt_path))
 
-        dataset = InferenceDataset(path=dataset_path / "mvtec" / "dummy" / "test")
+        dataset = PredictDataset(path=dataset_path / "mvtec" / "dummy" / "test")
         datamodule = DataLoader(dataset)
         engine.predict(model=model, dataloaders=datamodule, ckpt_path=str(_ckpt_path))

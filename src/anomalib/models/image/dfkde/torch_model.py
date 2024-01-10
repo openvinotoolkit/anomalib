@@ -11,7 +11,7 @@ import torch
 from torch import nn
 from torch.nn import functional as F  # noqa: N812
 
-from anomalib.models.components import FeatureExtractor
+from anomalib.models.components import TimmFeatureExtractor
 from anomalib.models.components.classification import FeatureScalingMethod, KDEClassifier
 
 logger = logging.getLogger(__name__)
@@ -44,7 +44,7 @@ class DfkdeModel(nn.Module):
     ) -> None:
         super().__init__()
 
-        self.feature_extractor = FeatureExtractor(backbone=backbone, pre_trained=pre_trained, layers=layers).eval()
+        self.feature_extractor = TimmFeatureExtractor(backbone=backbone, pre_trained=pre_trained, layers=layers).eval()
 
         self.classifier = KDEClassifier(
             n_pca_components=n_pca_components,

@@ -11,7 +11,7 @@ import pytest
 import torch
 
 from anomalib.data import MVTec
-from anomalib.deploy import ExportMode, OpenVINOInferencer, TorchInferencer
+from anomalib.deploy import ExportType, OpenVINOInferencer, TorchInferencer
 from anomalib.engine import Engine
 from anomalib.models import Padim
 from anomalib.utils.types import TaskType
@@ -66,19 +66,19 @@ def test_torch_inference(task: TaskType, ckpt_path: Callable[[str], Path], datas
     """
     model = Padim()
     engine = Engine(task=task)
-    export_path = ckpt_path("Padim").parent.parent
+    export_root = ckpt_path("Padim").parent.parent
     datamodule = MVTec(root=dataset_path / "mvtec", category="dummy")
     engine.export(
         model=model,
-        export_mode=ExportMode.TORCH,
+        export_type=ExportType.TORCH,
         input_size=(256, 256),
-        export_path=export_path,
+        export_root=export_root,
         datamodule=datamodule,
         ckpt_path=str(ckpt_path("Padim")),
     )
     # Test torch inferencer
     torch_inferencer = TorchInferencer(
-        path=export_path / "weights" / "torch" / "model.pt",
+        path=export_root / "weights" / "torch" / "model.pt",
         device="cpu",
     )
     torch_dataloader = _MockImageLoader([256, 256], total_count=1)
@@ -108,21 +108,21 @@ def test_openvino_inference(task: TaskType, ckpt_path: Callable[[str], Path], da
     """
     model = Padim()
     engine = Engine(task=task)
-    export_path = ckpt_path("Padim").parent.parent
+    export_dir = ckpt_path("Padim").parent.parent
     datamodule = MVTec(root=dataset_path / "mvtec", category="dummy")
-    engine.export(
+    exported_xml_file_path = engine.export(
         model=model,
-        export_mode=ExportMode.OPENVINO,
+        export_type=ExportType.OPENVINO,
         input_size=(256, 256),
-        export_path=export_path,
+        export_root=export_dir,
         datamodule=datamodule,
         ckpt_path=str(ckpt_path("Padim")),
     )
 
     # Test OpenVINO inferencer
     openvino_inferencer = OpenVINOInferencer(
-        export_path / "weights/openvino/model.xml",
-        export_path / "weights/openvino/metadata.json",
+        exported_xml_file_path,
+        exported_xml_file_path.parent / "metadata.json",
     )
     openvino_dataloader = _MockImageLoader([256, 256], total_count=1)
     for image in openvino_dataloader():

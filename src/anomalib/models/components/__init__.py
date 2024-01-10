@@ -5,7 +5,7 @@
 
 from .base import AnomalyModule, DynamicBufferModule, MemoryBankMixin
 from .dimensionality_reduction import PCA, SparseRandomProjection
-from .feature_extractors import FeatureExtractor, TimmFeatureExtractor, TorchFXFeatureExtractor
+from .feature_extractors import TimmFeatureExtractor, TorchFXFeatureExtractor
 from .filters import GaussianBlur2d
 from .sampling import KCenterGreedy
 from .stats import GaussianKDE, MultiVariateGaussian
@@ -14,7 +14,6 @@ __all__ = [
     "AnomalyModule",
     "DynamicBufferModule",
     "MemoryBankMixin",
-    "FeatureExtractor",
     "GaussianKDE",
     "GaussianBlur2d",
     "KCenterGreedy",
