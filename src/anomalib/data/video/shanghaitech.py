@@ -25,6 +25,7 @@ import pandas as pd
 import torch
 from pandas import DataFrame
 
+from anomalib import TaskType
 from anomalib.data.base import AnomalibVideoDataModule, AnomalibVideoDataset
 from anomalib.data.base.video import VideoTargetFrame
 from anomalib.data.utils import (
@@ -37,7 +38,6 @@ from anomalib.data.utils import (
     read_image,
 )
 from anomalib.data.utils.video import ClipsIndexer, convert_video
-from anomalib.utils.types import TaskType
 
 logger = logging.getLogger(__name__)
 

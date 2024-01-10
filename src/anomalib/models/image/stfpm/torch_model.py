@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 import torch
 from torch import nn
 
-from anomalib.models.components import FeatureExtractor
+from anomalib.models.components import TimmFeatureExtractor
 
 from .anomaly_map import AnomalyMapGenerator
 
@@ -38,8 +38,8 @@ class STFPMModel(nn.Module):
         self.tiler: Tiler | None = None
 
         self.backbone = backbone
-        self.teacher_model = FeatureExtractor(backbone=self.backbone, pre_trained=True, layers=layers)
-        self.student_model = FeatureExtractor(
+        self.teacher_model = TimmFeatureExtractor(backbone=self.backbone, pre_trained=True, layers=layers)
+        self.student_model = TimmFeatureExtractor(
             backbone=self.backbone,
             pre_trained=False,
             layers=layers,

@@ -11,9 +11,9 @@ from pathlib import Path
 
 import pytest
 
+from anomalib import TaskType
 from anomalib.deploy import export_to_openvino
 from anomalib.models import Padim
-from anomalib.utils.types import TaskType
 
 sys.path.append("tools/inference")
 
@@ -45,7 +45,7 @@ class TestOpenVINOInferenceEntrypoint:
 
         # export OpenVINO model
         export_to_openvino(
-            export_path=_ckpt_path.parent.parent,
+            export_root=_ckpt_path.parent.parent,
             model=model,
             input_size=(256, 256),
             transform=transforms_config,

@@ -6,8 +6,8 @@ This script extracts features from a CNN network
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 import logging
+from collections.abc import Sequence
 
 import timm
 import torch
@@ -44,7 +44,13 @@ class TimmFeatureExtractor(nn.Module):
             # Output: [torch.Size([32, 64, 64, 64]), torch.Size([32, 128, 32, 32]), torch.Size([32, 256, 16, 16])]
     """
 
-    def __init__(self, backbone: str, layers: list[str], pre_trained: bool = True, requires_grad: bool = False) -> None:
+    def __init__(
+        self,
+        backbone: str,
+        layers: Sequence[str],
+        pre_trained: bool = True,
+        requires_grad: bool = False,
+    ) -> None:
         super().__init__()
 
         # Extract backbone-name and weight-URI from the backbone string.
@@ -57,7 +63,7 @@ class TimmFeatureExtractor(nn.Module):
             pretrained_cfg = None
 
         self.backbone = backbone
-        self.layers = layers
+        self.layers = list(layers)
         self.idx = self._map_layer_to_idx()
         self.requires_grad = requires_grad
         self.feature_extractor = timm.create_model(
@@ -124,18 +130,3 @@ class TimmFeatureExtractor(nn.Module):
             with torch.no_grad():
                 features = dict(zip(self.layers, self.feature_extractor(inputs), strict=True))
         return features
-
-
-class FeatureExtractor(TimmFeatureExtractor):
-    """Compatibility wrapper for the old FeatureExtractor class.
-
-    .. deprecated:: 1.0.0
-        Use :class:`anomalib.models.components.feature_extractors.TimmFeatureExtractor` instead
-    """
-
-    def __init__(self, *args, **kwargs) -> None:
-        logger.warning(
-            "FeatureExtractor is deprecated. Use TimmFeatureExtractor instead."
-            " Both FeatureExtractor and TimmFeatureExtractor will be removed in a future release.",
-        )
-        super().__init__(*args, **kwargs)

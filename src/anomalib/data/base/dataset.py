@@ -18,8 +18,8 @@ import torch
 from pandas import DataFrame
 from torch.utils.data import Dataset
 
+from anomalib import TaskType
 from anomalib.data.utils import masks_to_boxes, read_image
-from anomalib.utils.types import TaskType
 
 _EXPECTED_COLUMNS_CLASSIFICATION = ["image_path", "split"]
 _EXPECTED_COLUMNS_SEGMENTATION = [*_EXPECTED_COLUMNS_CLASSIFICATION, "mask_path"]

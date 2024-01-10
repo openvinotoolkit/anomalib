@@ -1,5 +1,5 @@
 comet-ml>=3.31.7
-gradio>=2.9.4,<4
+gradio>=4
 tensorboard
 wandb==0.12.17
 GitPython

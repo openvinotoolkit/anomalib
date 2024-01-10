@@ -16,7 +16,7 @@ Learn more about how to use the different backbones as feature extractors.
 ::::
 
 ```{toctree}
-:caption: Data
+:caption: Model Tutorials
 :hidden:
 
 ./feature_extractors

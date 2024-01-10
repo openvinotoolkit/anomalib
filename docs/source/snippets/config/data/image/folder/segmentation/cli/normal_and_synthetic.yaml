@@ -1,0 +1,16 @@
+class_path: anomalib.data.Folder
+init_args:
+  root: "datasets/hazelnut_toy"
+  normal_dir: "good"
+  normalization: imagenet
+  train_batch_size: 32
+  eval_batch_size: 32
+  num_workers: 8
+  task: SEGMENTATION
+  transform_config_train: null
+  transform_config_eval: null
+  test_split_mode: SYNTHETIC
+  test_split_ratio: 0.2
+  val_split_mode: SAME_AS_TEST
+  val_split_ratio: 0.5
+  seed: null

@@ -5,7 +5,7 @@
 
 import pytest
 
-from anomalib.utils.types import TaskType
+from anomalib import TaskType
 
 
 @pytest.fixture(params=[TaskType.CLASSIFICATION, TaskType.DETECTION, TaskType.SEGMENTATION])

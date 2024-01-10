@@ -1,0 +1,9 @@
+# Access the datasets
+train_dataset = datamodule.train_data
+val_dataset = datamodule.val_data
+test_dataset = datamodule.test_data
+
+# Access the dataloaders
+train_dataloader = datamodule.train_dataloader()
+val_dataloader = datamodule.val_dataloader()
+test_dataloader = datamodule.test_dataloader()
