@@ -11,9 +11,7 @@ from argparse import ArgumentParser
 from importlib import import_module
 from pathlib import Path
 
-import gradio as gr
-import gradio.inputs
-import gradio.outputs
+import gradio
 import numpy as np
 
 from anomalib.deploy import Inferencer
@@ -101,22 +99,18 @@ if __name__ == "__main__":
     args = get_parser().parse_args()
     gradio_inferencer = get_inferencer(args.weights, args.metadata)
 
-    interface = gr.Interface(
+    interface = gradio.Interface(
         fn=lambda image: infer(image, gradio_inferencer),
-        inputs=[
-            gradio.inputs.Image(
-                shape=None,
-                image_mode="RGB",
-                source="upload",
-                tool="editor",
-                type="numpy",
-                label="Image",
-            ),
-        ],
+        inputs=gradio.Image(
+            image_mode="RGB",
+            sources=["upload", "webcam"],
+            type="numpy",
+            label="Image",
+        ),
         outputs=[
-            gradio.outputs.Image(type="numpy", label="Predicted Heat Map"),
-            gradio.outputs.Image(type="numpy", label="Predicted Mask"),
-            gradio.outputs.Image(type="numpy", label="Segmentation Result"),
+            gradio.Image(type="numpy", label="Predicted Heat Map"),
+            gradio.Image(type="numpy", label="Predicted Mask"),
+            gradio.Image(type="numpy", label="Segmentation Result"),
         ],
         title="Anomalib",
         description="Anomalib Gradio",
