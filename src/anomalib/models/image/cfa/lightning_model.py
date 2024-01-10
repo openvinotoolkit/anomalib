@@ -15,6 +15,7 @@ from typing import Any
 import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 
+from anomalib import LearningType
 from anomalib.models.components import AnomalyModule
 
 from .loss import CfaLoss
@@ -139,3 +140,12 @@ class Cfa(AnomalyModule):
             weight_decay=5e-4,
             amsgrad=True,
         )
+
+    @property
+    def learning_type(self) -> LearningType:
+        """Return the learning type of the model.
+
+        Returns:
+            LearningType: Learning type of the model.
+        """
+        return LearningType.ONE_CLASS

@@ -17,7 +17,7 @@ from lightning.pytorch.utilities.types import _EVALUATE_OUTPUT, _PREDICT_OUTPUT
 from rich import traceback
 from torch.utils.data import DataLoader, Dataset
 
-from anomalib import __version__
+from anomalib import TaskType, __version__
 from anomalib.callbacks import get_callbacks, get_visualization_callbacks
 from anomalib.callbacks.normalization import get_normalization_callback
 from anomalib.cli.utils import CustomHelpFormatter
@@ -31,7 +31,6 @@ from anomalib.models import AnomalyModule
 from anomalib.pipelines.benchmarking import distribute
 from anomalib.pipelines.hpo import Sweep, get_hpo_parser
 from anomalib.utils.config import update_config
-from anomalib.utils.types import TaskType
 
 traceback.install()
 logger = logging.getLogger("anomalib.cli")

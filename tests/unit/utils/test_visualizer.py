@@ -11,10 +11,10 @@ import pytest
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from torch.utils.data import DataLoader
 
+from anomalib import TaskType
 from anomalib.data import MVTec, PredictDataset
 from anomalib.engine import Engine
 from anomalib.models import get_model
-from anomalib.utils.types import TaskType
 from anomalib.utils.visualization import ImageGrid
 
 

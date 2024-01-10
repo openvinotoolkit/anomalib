@@ -21,6 +21,7 @@ from torch import optim
 from torch.nn import functional as F  # noqa: N812
 from torch.optim import Optimizer
 
+from anomalib import LearningType
 from anomalib.models.components import AnomalyModule
 
 from .torch_model import CflowModel
@@ -204,3 +205,12 @@ class Cflow(AnomalyModule):
     def trainer_arguments(self) -> dict[str, Any]:
         """C-FLOW specific trainer arguments."""
         return {"gradient_clip_val": 0, "num_sanity_val_steps": 0}
+
+    @property
+    def learning_type(self) -> LearningType:
+        """Return the learning type of the model.
+
+        Returns:
+            LearningType: Learning type of the model.
+        """
+        return LearningType.ONE_CLASS

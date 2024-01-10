@@ -11,9 +11,9 @@ from pathlib import Path
 
 import pytest
 
+from anomalib import TaskType
 from anomalib.deploy import export_to_torch
 from anomalib.models import Padim
-from anomalib.utils.types import TaskType
 
 sys.path.append("tools/inference")
 

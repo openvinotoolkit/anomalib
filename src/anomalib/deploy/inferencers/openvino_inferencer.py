@@ -14,7 +14,7 @@ import cv2
 import numpy as np
 from omegaconf import DictConfig
 
-from anomalib.utils.types import TaskType
+from anomalib import TaskType
 
 from .base_inferencer import Inferencer
 

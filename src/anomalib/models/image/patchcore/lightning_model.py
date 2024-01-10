@@ -13,6 +13,7 @@ from typing import Any
 import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 
+from anomalib import LearningType
 from anomalib.models.components import AnomalyModule, MemoryBankMixin
 
 from .torch_model import PatchcoreModel
@@ -120,3 +121,12 @@ class Patchcore(MemoryBankMixin, AnomalyModule):
     def trainer_arguments(self) -> dict[str, Any]:
         """Return Patchcore trainer arguments."""
         return {"gradient_clip_val": 0, "max_epochs": 1, "num_sanity_val_steps": 0}
+
+    @property
+    def learning_type(self) -> LearningType:
+        """Return the learning type of the model.
+
+        Returns:
+            LearningType: Learning type of the model.
+        """
+        return LearningType.ONE_CLASS

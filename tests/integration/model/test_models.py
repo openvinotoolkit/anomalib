@@ -13,11 +13,11 @@ import pytest
 from lightning.pytorch.callbacks import ModelCheckpoint
 from torch.utils.data import DataLoader
 
+from anomalib import TaskType
 from anomalib.data import AnomalibDataModule, MVTec, PredictDataset, UCSDped
 from anomalib.deploy.export import ExportType
 from anomalib.engine import Engine
 from anomalib.models import AnomalyModule, get_available_models, get_model
-from anomalib.utils.types import TaskType
 
 
 def models() -> set[str]:
