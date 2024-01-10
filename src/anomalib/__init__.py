@@ -5,6 +5,8 @@
 
 from enum import Enum
 
+__version__ = "1.0.0"
+
 
 class LearningType(str, Enum):
     """Learning type defining how the model learns from the dataset samples."""
@@ -20,6 +22,3 @@ class TaskType(str, Enum):
     CLASSIFICATION = "classification"
     DETECTION = "detection"
     SEGMENTATION = "segmentation"
-
-
-__version__ = "1.0.0"
