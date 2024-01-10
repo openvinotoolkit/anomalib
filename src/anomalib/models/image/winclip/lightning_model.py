@@ -16,7 +16,7 @@ import torch
 from torch.utils.data import DataLoader
 from torchvision.transforms import Compose, ToPILImage
 
-from anomalib.data.inference import InferenceDataset
+from anomalib.data.predict import PredictDataset
 from anomalib.models.components import AnomalyModule
 
 from .torch_model import WinClipModel
@@ -74,7 +74,7 @@ class WinClip(AnomalyModule):
         if self.k_shot:
             if self.few_shot_source:
                 logger.info("Loading reference images from %s", self.few_shot_source)
-                reference_dataset = InferenceDataset(self.few_shot_source, transform=self.transform)
+                reference_dataset = PredictDataset(self.few_shot_source, transform=self.transform)
                 dataloader = DataLoader(reference_dataset, batch_size=1, shuffle=False)
             else:
                 logger.info("Collecting reference images from training dataset")
