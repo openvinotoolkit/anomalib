@@ -126,7 +126,7 @@ class AnomalyModule(pl.LightningModule, ABC):
 
         return super()._save_to_state_dict(destination, prefix, keep_vars)
 
-    def load_state_dict(self, state_dict: OrderedDict[str, Any], strict: bool = True) -> Any:  # noqa: ANN401
+    def load_state_dict(self, state_dict: OrderedDict[str, Any], strict: bool = False) -> Any:  # noqa: ANN401
         """Initialize auxiliary object."""
         if "image_threshold_class" in state_dict:
             self.image_threshold = self._get_instance(state_dict, "image_threshold_class")

@@ -161,3 +161,11 @@ class WinClip(AnomalyModule):
         set to ``LearningType.FEW_SHOT`` when ``k_shot`` is greater than zero and ``LearningType.ZERO_SHOT`` otherwise.
         """
         return LearningType.FEW_SHOT if self.k_shot else LearningType.ZERO_SHOT
+
+    def state_dict(self) -> dict:
+        """Return the state dict of the model."""
+        state_dict = super().state_dict()
+        remove_keys = [key for key in state_dict if key.startswith("model.")]
+        for key in remove_keys:
+            state_dict.pop(key)
+        return state_dict
