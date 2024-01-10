@@ -16,6 +16,7 @@ import torch
 from torch.utils.data import DataLoader
 from torchvision.transforms import Compose, ToPILImage
 
+from anomalib import LearningType
 from anomalib.data.predict import PredictDataset
 from anomalib.models.components import AnomalyModule
 
@@ -159,3 +160,12 @@ class WinClip(AnomalyModule):
         transforms = copy(self.model.transform.transforms)
         transforms.insert(0, ToPILImage())
         return Compose(transforms)
+
+    @property
+    def learning_type(self) -> LearningType:
+        """The learning type of the model.
+
+        WinCLIP is a zero-/few-shot model, depending on the user configuration. Therefore, the learning type is
+        set to ``LearningType.FEW_SHOT`` when ``k_shot`` is greater than zero and ``LearningType.ZERO_SHOT`` otherwise.
+        """
+        return LearningType.FEW_SHOT if self.k_shot else LearningType.ZERO_SHOT
