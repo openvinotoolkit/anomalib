@@ -1,31 +1,23 @@
-## Description
+## 📝 Description
 
-Provide a summary of the modification as well as the issue that has been resolved.
+Provide a clear summary of the changes and the issue that has been addressed.
 
-- Fixes # (issue)
+🛠️ Fixes # (issue number)
 
-## Changes
+## ✨ Changes
 
-<details>
-<summary>Describe the changes you made</summary>
+Select what type of change your PR is:
 
-- [ ] Bug fix (non-breaking change which fixes an issue)
-- [ ] Refactor (non-breaking change which refactors the code base)
-- [ ] New feature (non-breaking change which adds functionality)
-- [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
-- [ ] Documentation update
+- [ ] 🐞 Bug fix (non-breaking change which fixes an issue)
+- [ ] 🔨 Refactor (non-breaking change which refactors the code base)
+- [ ] 🚀 New feature (non-breaking change which adds functionality)
+- [ ] 💥 Breaking change (fix or feature that would cause existing functionality to not work as expected)
+- [ ] 📚 Documentation update
 
-</details>
+## ✅ Checklist
 
-## Checklist
+Before you submit your pull request, please make sure you have completed the following steps:
 
-<details>
-<summary>Ensure that you followed the following</summary>
-
-- [ ] I have added a summary of my changes to the [CHANGELOG](https://github.com/openvinotoolkit/anomalib/blob/main/CHANGELOG.md) (not for minor changes, docs and tests).
-- [ ] I have performed a self-review of my code
-- [ ] I have commented my code, particularly in hard-to-understand areas (If applicable)
-- [ ] I have made corresponding changes to the documentation (If applicable)
-- [ ] I have added tests that prove my fix is effective or that my feature works (If applicable)
-
-</details>
+- [ ] 📋 I have summarized my changes in the [CHANGELOG](https://github.com/openvinotoolkit/anomalib/blob/main/CHANGELOG.md) and followed the guidelines for my type of change (skip for minor changes, documentation updates, and test enhancements).
+- [ ] 📚 I have made the necessary updates to the documentation (if applicable).
+- [ ] 🧪 I have written tests that support my changes and prove that my fix is effective or my feature works (if applicable).
