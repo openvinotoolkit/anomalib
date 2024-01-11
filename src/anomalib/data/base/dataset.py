@@ -128,6 +128,7 @@ class AnomalibDataset(Dataset, ABC):
             # Therefore, create empty mask for Normal (0) images.
 
             mask = np.zeros(shape=image.shape[:2]) if label_index == 0 else cv2.imread(mask_path, flags=0) / 255.0
+            mask = mask.astype(np.single)
 
             transformed = self.transform(image=image, mask=mask)
 
