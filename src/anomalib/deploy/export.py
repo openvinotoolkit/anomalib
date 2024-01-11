@@ -90,8 +90,6 @@ def export_to_torch(
         ...     transform=datamodule.test_data.transform,
         ...     task=datamodule.test_data.task,
         ... )
-
-
     """
     export_root = _create_export_root(export_root, ExportType.TORCH)
     metadata = get_metadata(task=task, transform=transform, model=model)
@@ -205,6 +203,9 @@ def export_to_openvino(
     Raises:
         ModuleNotFoundError: If OpenVINO is not installed.
 
+    Returns:
+        Path: Path to the exported OpenVINO IR.
+
     Examples:
         Export the Lightning Model to OpenVINO IR:
         This example demonstrates how to export the Lightning Model to OpenVINO IR.
@@ -245,10 +246,10 @@ def export_to_openvino(
     if convert_model is not None and serialize is not None:
         model = convert_model(model_path, **ov_args)
         serialize(model, ov_model_path)
-        return ov_model_path
-
-    logger.exception("Could not find OpenVINO methods. Please check OpenVINO installation.")
-    raise ModuleNotFoundError
+    else:
+        logger.exception("Could not find OpenVINO methods. Please check OpenVINO installation.")
+        raise ModuleNotFoundError
+    return ov_model_path
 
 
 def get_metadata(
