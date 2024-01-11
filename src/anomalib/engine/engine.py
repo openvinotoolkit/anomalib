@@ -13,18 +13,17 @@ from lightning.pytorch.callbacks import Callback
 from lightning.pytorch.trainer import Trainer
 from lightning.pytorch.trainer.connectors.callback_connector import _CallbackConnector
 from lightning.pytorch.utilities.types import _EVALUATE_OUTPUT, _PREDICT_OUTPUT, EVAL_DATALOADERS, TRAIN_DATALOADERS
-from omegaconf import DictConfig, ListConfig
+from omegaconf import DictConfig
 from torch.utils.data import DataLoader, Dataset
 
 from anomalib import TaskType
 from anomalib.callbacks import get_visualization_callbacks
 from anomalib.callbacks.metrics import _MetricsCallback
-from anomalib.callbacks.normalization import get_normalization_callback
+from anomalib.callbacks.normalization import NORMALIZATION_TYPE, get_normalization_callback
 from anomalib.callbacks.post_processor import _PostProcessorCallback
-from anomalib.callbacks.thresholding import _ThresholdCallback
+from anomalib.callbacks.thresholding import _THRESHOLD_TYPE, _ThresholdCallback
 from anomalib.data import AnomalibDataModule, AnomalibDataset, PredictDataset
 from anomalib.deploy.export import ExportType, export_to_onnx, export_to_openvino, export_to_torch
-from anomalib.metrics.threshold import BaseThreshold
 from anomalib.models import AnomalyModule
 from anomalib.utils.normalization import NormalizationMethod
 
@@ -104,9 +103,9 @@ class Engine:
 
     Args:
         callbacks (list[Callback]): Add a callback or list of callbacks.
-        normalization (NormalizationMethod | DictConfig | Callback | str, optional): Normalization method.
+        normalization (NORMALIZATION_TYPE, optional): Normalization method.
             Defaults to NormalizationMethod.MIN_MAX.
-        threshold (BaseThreshold | tuple[BaseThreshold, BaseThreshold] | DictConfig | ListConfig | str, optional):
+        threshold (_THRESHOLD_TYPE, optional):
             Thresholding method. Defaults to "F1AdaptiveThreshold".
         task (TaskType, optional): Task type. Defaults to TaskType.SEGMENTATION.
         image_metrics (str | list[str] | None, optional): Image metrics to be used for evaluation.
@@ -120,13 +119,8 @@ class Engine:
     def __init__(
         self,
         callbacks: list[Callback] | None = None,
-        normalization: NormalizationMethod | DictConfig | Callback | str = NormalizationMethod.MIN_MAX,
-        threshold: BaseThreshold
-        | tuple[BaseThreshold, BaseThreshold]
-        | DictConfig
-        | ListConfig
-        | list[dict[str, str | float]]
-        | str = "F1AdaptiveThreshold",
+        normalization: NORMALIZATION_TYPE = NormalizationMethod.MIN_MAX,
+        threshold: _THRESHOLD_TYPE = "F1AdaptiveThreshold",
         task: TaskType = TaskType.SEGMENTATION,
         image_metrics: str | list[str] | None = None,
         pixel_metrics: str | list[str] | None = None,
@@ -472,7 +466,7 @@ class Engine:
         self._setup_trainer(model)
         self._setup_dataset_task(train_dataloaders, val_dataloaders, test_dataloaders, datamodule)
         self.trainer.fit(model, train_dataloaders, val_dataloaders, datamodule, ckpt_path)
-        self.trainer.test(model, test_dataloaders, ckpt_path=ckpt_path, datamodule=datamodule)
+        return self.trainer.test(model, test_dataloaders, ckpt_path=ckpt_path, datamodule=datamodule)
 
     def export(
         self,

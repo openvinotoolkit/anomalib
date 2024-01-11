@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import importlib
-from typing import Any
+from typing import Any, TypeAlias
 
 import torch
 from lightning.pytorch import Callback, Trainer
@@ -13,6 +13,10 @@ from omegaconf import DictConfig, ListConfig
 
 from anomalib.metrics.threshold import BaseThreshold
 from anomalib.models import AnomalyModule
+
+_THRESHOLD_TYPE: TypeAlias = (
+    BaseThreshold | tuple[BaseThreshold, BaseThreshold] | DictConfig | ListConfig | list[dict[str, str | float]] | str
+)
 
 
 class _ThresholdCallback(Callback):
@@ -23,12 +27,7 @@ class _ThresholdCallback(Callback):
 
     def __init__(
         self,
-        threshold: BaseThreshold
-        | tuple[BaseThreshold, BaseThreshold]
-        | DictConfig
-        | ListConfig
-        | list[dict[str, str | float]]
-        | str = "F1AdaptiveThreshold",
+        threshold: _THRESHOLD_TYPE = "F1AdaptiveThreshold",
     ) -> None:
         super().__init__()
         self._initialize_thresholds(threshold)
@@ -66,18 +65,12 @@ class _ThresholdCallback(Callback):
 
     def _initialize_thresholds(
         self,
-        threshold: BaseThreshold
-        | tuple[BaseThreshold, BaseThreshold]
-        | DictConfig
-        | ListConfig
-        | str
-        | list[dict[str, str | float]],
+        threshold: _THRESHOLD_TYPE,
     ) -> None:
         """Initialize ``self.image_threshold`` and ``self.pixel_threshold``.
 
         Args:
-            threshold (BaseThreshold | tuple[BaseThreshold, BaseThreshold] | DictConfig | ListConfig | str):
-                Threshold configuration
+            threshold (_THRESHOLD_TYPE): Threshold configuration
 
         Example:
             >>> _initialize_thresholds(F1AdaptiveThreshold())

@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import importlib
+from typing import TypeAlias
 
 from lightning.pytorch import Callback
 from omegaconf import DictConfig
@@ -13,9 +14,11 @@ from anomalib.utils.normalization import NormalizationMethod
 from .cdf_normalization import _CdfNormalizationCallback
 from .min_max_normalization import _MinMaxNormalizationCallback
 
+NORMALIZATION_TYPE: TypeAlias = NormalizationMethod | DictConfig | Callback | str
+
 
 def get_normalization_callback(
-    normalization_method: NormalizationMethod | DictConfig | Callback | str = NormalizationMethod.MIN_MAX,
+    normalization_method: NORMALIZATION_TYPE = NormalizationMethod.MIN_MAX,
 ) -> Callback | None:
     """Return normalization object.
 

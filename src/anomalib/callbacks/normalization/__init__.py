@@ -9,6 +9,11 @@ Note: These callbacks are used within the Engine.
 
 from .cdf_normalization import _CdfNormalizationCallback
 from .min_max_normalization import _MinMaxNormalizationCallback
-from .utils import get_normalization_callback
+from .utils import NORMALIZATION_TYPE, get_normalization_callback
 
-__all__ = ["get_normalization_callback", "_CdfNormalizationCallback", "_MinMaxNormalizationCallback"]
+__all__ = [
+    "get_normalization_callback",
+    "_CdfNormalizationCallback",
+    "_MinMaxNormalizationCallback",
+    "NORMALIZATION_TYPE",
+]
