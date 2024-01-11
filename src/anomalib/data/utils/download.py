@@ -305,8 +305,8 @@ def download_and_extract(root: Path, info: DownloadInfo) -> None:
             logger.info("Checking the hash of the downloaded file.")
             hash_check(downloaded_file_path, info.checksum)
         else:
-            raise RuntimeError(f"Invalid URL to download dataset. Supported 'http://' or 'https://' "
-                               f"but '{info.url}' is requested")
+            msg = f"Invalid URL to download dataset. Supported 'http://' or 'https://' but '{info.url}' is requested"
+            raise RuntimeError(msg)
 
     extract(downloaded_file_path, root)
 
