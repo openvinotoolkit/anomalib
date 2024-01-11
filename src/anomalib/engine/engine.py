@@ -254,8 +254,8 @@ class Engine:
         if model.learning_type in [LearningType.ZERO_SHOT, LearningType.FEW_SHOT]:
             # if the model is zero-shot or few-shot, we only need to run validate for normalization and thresholding
             self.trainer.validate(model, val_dataloaders, datamodule=datamodule, ckpt_path=ckpt_path)
-            return
-        self.trainer.fit(model, train_dataloaders, val_dataloaders, datamodule, ckpt_path)
+        else:
+            self.trainer.fit(model, train_dataloaders, val_dataloaders, datamodule, ckpt_path)
 
     def validate(
         self,
@@ -479,7 +479,11 @@ class Engine:
         """
         self._setup_trainer(model)
         self._setup_dataset_task(train_dataloaders, val_dataloaders, test_dataloaders, datamodule)
-        self.trainer.fit(model, train_dataloaders, val_dataloaders, datamodule, ckpt_path)
+        if model.learning_type in [LearningType.ZERO_SHOT, LearningType.FEW_SHOT]:
+            # if the model is zero-shot or few-shot, we only need to run validate for normalization and thresholding
+            self.trainer.validate(model, val_dataloaders, None, verbose=False, datamodule=datamodule)
+        else:
+            self.trainer.fit(model, train_dataloaders, val_dataloaders, datamodule, ckpt_path)
         self.trainer.test(model, test_dataloaders, ckpt_path=ckpt_path, datamodule=datamodule)
 
     def export(
