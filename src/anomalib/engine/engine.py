@@ -23,6 +23,7 @@ from anomalib.callbacks.normalization import get_normalization_callback
 from anomalib.callbacks.post_processor import _PostProcessorCallback
 from anomalib.callbacks.thresholding import _ThresholdCallback
 from anomalib.data import AnomalibDataModule, AnomalibDataset, PredictDataset
+from anomalib.data.utils import TestSplitMode
 from anomalib.deploy.export import ExportType, export_to_onnx, export_to_openvino, export_to_torch
 from anomalib.metrics.threshold import BaseThreshold
 from anomalib.models import AnomalyModule
@@ -442,7 +443,7 @@ class Engine:
         test_dataloaders: EVAL_DATALOADERS | None = None,
         datamodule: AnomalibDataModule | None = None,
         ckpt_path: str | None = None,
-    ) -> _EVALUATE_OUTPUT:
+    ) -> _EVALUATE_OUTPUT | None:
         """Fits the model and then calls test on it.
 
         Args:
@@ -458,6 +459,9 @@ class Engine:
                 Defaults to None.
             ckpt_path (str | None, optional): Checkpoint path. If provided, the model will be loaded from this path.
                 Defaults to None.
+
+        Returns:
+            _EVALUATE_OUTPUT | None: A List of dictionaries containing the test results. 1 dict per dataloader.
 
         CLI Usage:
             1. you can pick a model, and you can run through the MVTec dataset.
@@ -476,7 +480,11 @@ class Engine:
         self._setup_trainer(model)
         self._setup_dataset_task(train_dataloaders, val_dataloaders, test_dataloaders, datamodule)
         self.trainer.fit(model, train_dataloaders, val_dataloaders, datamodule, ckpt_path)
-        self.trainer.test(model, test_dataloaders, ckpt_path=ckpt_path, datamodule=datamodule)
+
+        if datamodule is not None and datamodule.test_split_mode == TestSplitMode.NONE:
+            logger.info("No test set provided. Skipping test stage.")
+            return None
+        return self.trainer.test(model, test_dataloaders, ckpt_path=ckpt_path, datamodule=datamodule)
 
     def export(
         self,
