@@ -124,13 +124,6 @@ class WinClip(AnomalyModule):
         """WinCLIP doesn't require optimization, therefore returns no optimizers."""
         return
 
-    def training_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> None:
-        """Training Step of WinCLIP.
-
-        Since WinCLIP is a zero-/few-shot model, there is no training step.
-        """
-        del batch, args, kwargs
-
     def validation_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> dict:
         """Validation Step of WinCLIP."""
         del args, kwargs  # These variables are not used.
