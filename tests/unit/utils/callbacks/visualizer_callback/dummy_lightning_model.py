@@ -9,6 +9,7 @@ from typing import Any
 import torch
 from torch import nn
 
+from anomalib import LearningType
 from anomalib.models.components import AnomalyModule
 
 
@@ -50,3 +51,8 @@ class DummyModule(AnomalyModule):
     def trainer_arguments(self) -> dict[str, Any]:
         """Does not require anything specific."""
         return {}
+
+    @property
+    def learning_type(self) -> LearningType:
+        """Returns the learning type."""
+        return LearningType.ZERO_SHOT

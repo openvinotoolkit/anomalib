@@ -14,6 +14,7 @@ import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torch import nn
 
+from anomalib import LearningType
 from anomalib.metrics.threshold import BaseThreshold
 
 if TYPE_CHECKING:
@@ -141,3 +142,8 @@ class AnomalyModule(pl.LightningModule, ABC):
         class_path = state_dict.pop(dict_key)
         module = importlib.import_module(".".join(class_path.split(".")[:-1]))
         return getattr(module, class_path.split(".")[-1])()
+
+    @abstractproperty
+    def learning_type(self) -> LearningType:
+        """Learning type of the model."""
+        raise NotImplementedError

@@ -24,6 +24,7 @@ from cv2 import imread
 from pandas import DataFrame
 from sklearn.model_selection import train_test_split
 
+from anomalib import TaskType
 from anomalib.data.base import AnomalibDataModule, AnomalibDataset
 from anomalib.data.utils import (
     DownloadInfo,
@@ -34,7 +35,6 @@ from anomalib.data.utils import (
     download_and_extract,
     get_transforms,
 )
-from anomalib.utils.types import TaskType
 
 __all__ = ["Kolektor", "KolektorDataset", "make_kolektor_dataset"]
 
@@ -217,7 +217,7 @@ class Kolektor(AnomalibDataModule):
         center_crop (int | tuple[int, int] | None, optional): When provided, the images will be center-cropped
             to the provided dimensions.
             Defaults to ``None``.
-        normalization (str | InputNormalizationMethod): Normalization method to apply to the input images.
+        normalization (InputNormalizationMethod | str): Normalization method to apply to the input images.
             Defaults to ``InputNormalizationMethod.IMAGENET``.
         train_batch_size (int, optional): Training batch size.
             Defaults to ``32``.
@@ -249,7 +249,7 @@ class Kolektor(AnomalibDataModule):
         root: Path | str = "./datasets/kolektor",
         image_size: int | tuple[int, int] = (256, 256),
         center_crop: int | tuple[int, int] | None = None,
-        normalization: str | InputNormalizationMethod = InputNormalizationMethod.IMAGENET,
+        normalization: InputNormalizationMethod | str = InputNormalizationMethod.IMAGENET,
         train_batch_size: int = 32,
         eval_batch_size: int = 32,
         num_workers: int = 8,

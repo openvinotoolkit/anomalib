@@ -209,3 +209,7 @@ class AnomalibDataModule(LightningDataModule, ABC):
             num_workers=self.num_workers,
             collate_fn=collate_fn,
         )
+
+    def predict_dataloader(self) -> EVAL_DATALOADERS:
+        """Use the test dataloader for inference unless overridden."""
+        return self.test_dataloader()

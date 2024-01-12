@@ -15,6 +15,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from skimage.segmentation import mark_boundaries
 
+from anomalib import TaskType
 from anomalib.data.utils import read_image
 from anomalib.utils.post_processing import (
     add_anomalous_label,
@@ -22,7 +23,6 @@ from anomalib.utils.post_processing import (
     draw_boxes,
     superimpose_anomaly_map,
 )
-from anomalib.utils.types import TaskType
 
 
 @dataclass
@@ -112,8 +112,8 @@ class Visualizer:
 
             image_result = ImageResult(
                 image=image,
-                pred_score=batch["pred_scores"][i].cpu().numpy().item(),
-                pred_label=batch["pred_labels"][i].cpu().numpy().item(),
+                pred_score=batch["pred_scores"][i].cpu().numpy().item() if "pred_scores" in batch else None,
+                pred_label=batch["pred_labels"][i].cpu().numpy().item() if "pred_labels" in batch else None,
                 anomaly_map=batch["anomaly_maps"][i].cpu().numpy() if "anomaly_maps" in batch else None,
                 pred_mask=batch["pred_masks"][i].squeeze().int().cpu().numpy() if "pred_masks" in batch else None,
                 gt_mask=batch["mask"][i].squeeze().int().cpu().numpy() if "mask" in batch else None,

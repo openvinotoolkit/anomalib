@@ -1,0 +1,11 @@
+i, train_data = next(enumerate(datamodule.train_dataloader()))
+print(train_data.keys())
+# dict_keys(['image_path', 'label', 'image', 'mask_path', 'mask'])
+
+i, val_data = next(enumerate(datamodule.val_dataloader()))
+print(val_data.keys())
+# dict_keys(['image_path', 'label', 'image', 'mask_path', 'mask'])
+
+i, test_data = next(enumerate(datamodule.test_dataloader()))
+print(test_data.keys())
+# dict_keys(['image_path', 'label', 'image', 'mask_path', 'mask'])

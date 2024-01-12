@@ -3,7 +3,7 @@
 # Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from anomalib.utils.types import TaskType
+from anomalib import TaskType
 from anomalib.utils.visualization import VisualizationMode
 
 from .visualizer_base import BaseVisualizerCallback
@@ -13,7 +13,7 @@ from .visualizer_metric import MetricVisualizerCallback
 
 def get_visualization_callbacks(
     task: TaskType,
-    image_save_path: str = "./results",
+    image_save_path: str = "",
     mode: VisualizationMode = VisualizationMode.FULL,
     inputs_are_normalized: bool = True,
     show_images: bool = False,

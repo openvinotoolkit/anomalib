@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 import torch
 from torch import nn
 
-from anomalib.models.components import FeatureExtractor
+from anomalib.models.components import TimmFeatureExtractor
 
 from .anomaly_map import AnomalyMapGenerationMode, AnomalyMapGenerator
 from .components import get_bottleneck_layer, get_decoder
@@ -46,7 +46,7 @@ class ReverseDistillationModel(nn.Module):
         self.tiler: Tiler | None = None
 
         encoder_backbone = backbone
-        self.encoder = FeatureExtractor(backbone=encoder_backbone, pre_trained=pre_trained, layers=layers)
+        self.encoder = TimmFeatureExtractor(backbone=encoder_backbone, pre_trained=pre_trained, layers=layers)
         self.bottleneck = get_bottleneck_layer(backbone)
         self.decoder = get_decoder(backbone)
 

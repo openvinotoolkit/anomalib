@@ -13,6 +13,7 @@ from typing import Any
 import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 
+from anomalib import LearningType
 from anomalib.models.components import AnomalyModule
 
 from .loss import CsFlowLoss
@@ -112,3 +113,12 @@ class Csflow(AnomalyModule):
             weight_decay=1e-5,
             betas=(0.5, 0.9),
         )
+
+    @property
+    def learning_type(self) -> LearningType:
+        """Return the learning type of the model.
+
+        Returns:
+            LearningType: Learning type of the model.
+        """
+        return LearningType.ONE_CLASS

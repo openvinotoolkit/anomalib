@@ -10,7 +10,7 @@ import einops
 import torch
 from torch import nn
 
-from anomalib.models.components import FeatureExtractor
+from anomalib.models.components import TimmFeatureExtractor
 
 from .anomaly_map import AnomalyMapGenerator
 from .utils import cflow_head, get_logp, positional_encoding_2d
@@ -60,7 +60,7 @@ class CflowModel(nn.Module):
         self.dec_arch = decoder
         self.pool_layers = layers
 
-        self.encoder = FeatureExtractor(backbone=self.backbone, layers=self.pool_layers, pre_trained=pre_trained)
+        self.encoder = TimmFeatureExtractor(backbone=self.backbone, layers=self.pool_layers, pre_trained=pre_trained)
         self.pool_dims = self.encoder.out_dims
         self.decoders = nn.ModuleList(
             [
