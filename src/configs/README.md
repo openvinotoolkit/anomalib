@@ -15,6 +15,7 @@ configs/
 │   ├── kolektor.yaml
 │   ├── mvtec_3d.yaml
 │   ├── mvtec.yaml
+│   ├── mvtec_loco.yaml
 │   ├── shanghaitec.yaml
 │   ├── ucsd_ped.yaml
 │   └── visa.yaml
