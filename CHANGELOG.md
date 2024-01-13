@@ -8,6 +8,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+- Add support for MVTec LOCO AD dataset by @willyfh in https://github.com/openvinotoolkit/anomalib/pull/1635
+
 ### Changed
 
 - Changed default inference device to AUTO in https://github.com/openvinotoolkit/anomalib/pull/1534
