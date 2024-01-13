@@ -105,7 +105,7 @@ def _merge_gt_mask(
 
         # Define the path for the new merged mask
         _, anomaly_dir, image_filename = mask_path.parts[-3:]
-        new_mask_path = root / Path(gt_merged_dir) / anomaly_dir / (image_filename + ".png")
+        new_mask_path = root / gt_merged_dir / anomaly_dir / (image_filename + ".png")
 
         # Create the necessary directories if they do not exist
         new_mask_path.parent.mkdir(parents=True, exist_ok=True)
