@@ -77,32 +77,29 @@ class TimmFeatureExtractor(nn.Module):
         self.out_dims = self.feature_extractor.feature_info.channels()
         self._features = {layer: torch.empty(0) for layer in self.layers}
 
-    def _map_layer_to_idx(self, offset: int = 3) -> list[int]:
+    def _map_layer_to_idx(self) -> list[int]:
         """Map set of layer names to indices of model.
-
-        Args:
-            offset (int, optional): `timm` ignores the first few layers when indexing.
-                Please update offset based on need.
-                Defaults to 3.
 
         Returns:
             list[int]: Feature map extracted from the CNN.
         """
         idx = []
-        features = timm.create_model(
+        model = timm.create_model(
             self.backbone,
             pretrained=False,
-            features_only=False,
+            features_only=True,
             exportable=True,
         )
-        for i in self.layers:
+        # model.feature_info.info returns list of dicts containing info, inside which "module" contains layer name
+        layer_names = [info["module"] for info in model.feature_info.info]
+        for layer in self.layers:
             try:
-                idx.append(list(dict(features.named_children()).keys()).index(i) - offset)
+                idx.append(layer_names.index(layer))
             except ValueError:  # noqa: PERF203
-                msg = f"Layer {i} not found in model {self.backbone}"
+                msg = f"Layer {layer} not found in model {self.backbone}. Available layers: {layer_names}"
                 logger.warning(msg)
                 # Remove unfound key from layer dict
-                self.layers.remove(i)
+                self.layers.remove(layer)
 
         return idx
 
