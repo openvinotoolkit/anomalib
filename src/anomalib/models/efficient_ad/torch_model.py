@@ -6,8 +6,8 @@
 from __future__ import annotations
 
 import logging
-import random
 import math
+import random
 from enum import Enum
 
 import torch
@@ -148,7 +148,7 @@ class Decoder(nn.Module):
     def __init__(self, out_channels, padding, img_size, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.img_size = img_size
-	# use ceil to match output shape of PDN
+        # use ceil to match output shape of PDN
         self.last_upsample = (
             math.ceil(img_size[0] / 4) if padding else math.ceil(img_size[0] / 4) - 8,
             math.ceil(img_size[1] / 4) if padding else math.ceil(img_size[1] / 4) - 8,
