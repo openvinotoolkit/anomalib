@@ -216,6 +216,7 @@ class DummyDatasetGenerator(ContextDecorator):
         data_format: DataFormat | str,
         root: Path | str | None = None,
         num_train: int = 5,
+        num_val: int = 5,
         num_test: int = 5,
         seed: int | None = None,
     ) -> None:
@@ -230,6 +231,7 @@ class DummyDatasetGenerator(ContextDecorator):
         self.root = Path(mkdtemp() if root is None else root)
         self.dataset_root = self.root / self.data_format.value
         self.num_train = num_train
+        self.num_val = num_val
         self.num_test = num_test
         self.rng = np.random.default_rng(seed)
 
@@ -298,6 +300,7 @@ class DummyImageDatasetGenerator(DummyDatasetGenerator):
         normal_category: str = "good",
         abnormal_category: str = "bad",
         num_train: int = 5,
+        num_val: int = 5,
         num_test: int = 5,
         image_shape: tuple[int, int] = (256, 256),
         num_channels: int = 3,
@@ -308,6 +311,7 @@ class DummyImageDatasetGenerator(DummyDatasetGenerator):
             data_format=data_format,
             root=root,
             num_train=num_train,
+            num_val=num_val,
             num_test=num_test,
             seed=seed,
         )
@@ -388,6 +392,40 @@ class DummyImageDatasetGenerator(DummyDatasetGenerator):
                         self.image_generator.save_image(filename=filename, image=img_as_ubyte(mask))
                     else:
                         self.image_generator.save_image(filename=filename, image=image)
+
+    def _generate_dummy_mvtec_loco_dataset(self) -> None:
+        """Generates dummy MVTec LOCO AD dataset in a temporary directory using the same convention as MVTec LOCO AD."""
+        # MVTec LOCO has multiple subcategories within the dataset.
+        dataset_category = "dummy"
+
+        extension = ".png"
+
+        # Create normal images.
+        for split in ("train", "validation", "test"):
+            path = self.dataset_root / dataset_category / split / "good"
+            if split == "train":
+                num_images = self.num_train
+            elif split == "val":
+                num_images = self.num_val
+            else:
+                num_images = self.num_test
+            for i in range(num_images):
+                label = LabelName.NORMAL
+                image_filename = path / f"{i:03}{extension}"
+                self.image_generator.generate_image(label=label, image_filename=image_filename)
+
+        # Create abnormal test images and masks.
+        for abnormal_dir in ("logical_anomalies", "structural_anomalies"):
+            path = self.dataset_root / dataset_category / "test" / abnormal_dir
+            mask_path = self.dataset_root / dataset_category / "ground_truth" / abnormal_dir
+
+            for i in range(self.num_test):
+                label = LabelName.ABNORMAL
+                image_filename = path / f"{i:03}{extension}"
+                # Here, only one ground-truth mask for each abnormal image is generated
+                # the structure follows the same convention as MVTec LOCO AD, e.g., image_filename/000.png
+                mask_filename = mask_path / f"{i:03}/000{extension}"
+                self.image_generator.generate_image(label, image_filename, mask_filename)
 
     def _generate_dummy_kolektor_dataset(self) -> None:
         """Generate dummy Kolektor dataset in directory using the same convention as Kolektor AD."""
