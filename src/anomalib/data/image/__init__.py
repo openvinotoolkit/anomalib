@@ -13,6 +13,7 @@ from .btech import BTech
 from .folder import Folder
 from .kolektor import Kolektor
 from .mvtec import MVTec
+from .mvtec_loco import MVTecLoco
 from .visa import Visa
 
 
@@ -21,6 +22,7 @@ class ImageDataFormat(str, Enum):
 
     MVTEC = "mvtec"
     MVTEC_3D = "mvtec_3d"
+    MVTEC_LOCO = "mvtec_loco"
     BTECH = "btech"
     KOLEKTOR = "kolektor"
     FOLDER = "folder"
@@ -28,4 +30,4 @@ class ImageDataFormat(str, Enum):
     VISA = "visa"
 
 
-__all__ = ["BTech", "Folder", "Kolektor", "MVTec", "Visa"]
+__all__ = ["BTech", "Folder", "Kolektor", "MVTec", "MVTecLoco", "Visa"]
