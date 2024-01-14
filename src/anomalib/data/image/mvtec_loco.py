@@ -100,8 +100,11 @@ def _merge_gt_mask(
                     merged_mask = np.zeros_like(mask)
                 merged_mask = np.maximum(merged_mask, mask)
 
+        if merged_mask is None:
+            continue
+
         # Binarize masks
-        merged_mask = np.minimum(merged_mask, 255)
+        merged_mask = np.where(merged_mask > 0, 255, 0)
 
         # Define the path for the new merged mask
         _, anomaly_dir, image_filename = mask_path.parts[-3:]
