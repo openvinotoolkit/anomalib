@@ -134,7 +134,7 @@ def make_mvtec_loco_dataset(
     +---+---------------+-------+---------+---------------+---------------------------------------+-------------+
     |   | path          | split | label   | image_path    | mask_path                             | label_index |
     +===+===============+=======+=========+===============+=======================================+=============+
-    | 0 | datasets/name | test  | defect  | filename.png  | path/to/merged_masks/filename.png      | 1           |
+    | 0 | datasets/name | test  | defect  | filename.png  | path/to/merged_masks/filename.png     | 1           |
     +---+---------------+-------+---------+---------------+---------------------------------------+-------------+
 
     Note: the final image_path is converted to full path by combining it with the path, split, and label columns
