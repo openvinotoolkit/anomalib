@@ -19,13 +19,14 @@ from torch.utils.data import DataLoader, Dataset
 from anomalib import TaskType
 from anomalib.callbacks import get_visualization_callbacks
 from anomalib.callbacks.metrics import _MetricsCallback
-from anomalib.callbacks.normalization import NORMALIZATION_TYPE, get_normalization_callback
+from anomalib.callbacks.normalization import get_normalization_callback
 from anomalib.callbacks.post_processor import _PostProcessorCallback
-from anomalib.callbacks.thresholding import _THRESHOLD_TYPE, _ThresholdCallback
+from anomalib.callbacks.thresholding import _ThresholdCallback
 from anomalib.data import AnomalibDataModule, AnomalibDataset, PredictDataset
 from anomalib.deploy.export import ExportType, export_to_onnx, export_to_openvino, export_to_torch
 from anomalib.models import AnomalyModule
 from anomalib.utils.normalization import NormalizationMethod
+from anomalib.utils.types import NORMALIZATION, THRESHOLD
 
 logger = logging.getLogger(__name__)
 
@@ -103,9 +104,9 @@ class Engine:
 
     Args:
         callbacks (list[Callback]): Add a callback or list of callbacks.
-        normalization (NORMALIZATION_TYPE, optional): Normalization method.
+        normalization (NORMALIZATION, optional): Normalization method.
             Defaults to NormalizationMethod.MIN_MAX.
-        threshold (_THRESHOLD_TYPE, optional):
+        threshold (THRESHOLD, optional):
             Thresholding method. Defaults to "F1AdaptiveThreshold".
         task (TaskType, optional): Task type. Defaults to TaskType.SEGMENTATION.
         image_metrics (str | list[str] | None, optional): Image metrics to be used for evaluation.
@@ -119,8 +120,8 @@ class Engine:
     def __init__(
         self,
         callbacks: list[Callback] | None = None,
-        normalization: NORMALIZATION_TYPE = NormalizationMethod.MIN_MAX,
-        threshold: _THRESHOLD_TYPE = "F1AdaptiveThreshold",
+        normalization: NORMALIZATION = NormalizationMethod.MIN_MAX,
+        threshold: THRESHOLD = "F1AdaptiveThreshold",
         task: TaskType = TaskType.SEGMENTATION,
         image_metrics: str | list[str] | None = None,
         pixel_metrics: str | list[str] | None = None,
