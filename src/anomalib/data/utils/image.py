@@ -134,12 +134,6 @@ def generate_output_image_filename(input_path: str | Path, output_path: str | Pa
     else:
         output_image_filename = output_path
 
-    output_image_filename = (
-        output_path / input_path.parent.name / input_path.name if output_path.is_dir() else output_path
-    )
-
-    # This new ``file_path`` might contain a directory path yet to be created.
-    # Create the parent directory to avoid such cases.
     output_image_filename.parent.mkdir(parents=True, exist_ok=True)
 
     return output_image_filename
