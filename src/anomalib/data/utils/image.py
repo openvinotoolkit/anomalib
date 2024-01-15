@@ -65,8 +65,10 @@ def duplicate_filename(path: str | Path) -> Path:
     Returns:
         Path: Duplicated output path.
     """
-    if isinstance(path, str):
-        path = Path(path)
+    path = Path(path)
+
+    if not path.exists():
+        return path
 
     i = 0
     while True:
