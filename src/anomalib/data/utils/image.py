@@ -117,7 +117,7 @@ def generate_output_image_filename(input_path: str | Path, output_path: str | Pa
     input_path = Path(input_path)
     output_path = Path(output_path)
 
-    # This function expects an ``input_path`` that is a file. This is to check if output_path
+    # Input validation: Check if input_path is a valid directory or file
     if input_path.is_file() is False:
         msg = "input_path is expected to be a file to generate a proper output filename."
         raise ValueError(msg)
