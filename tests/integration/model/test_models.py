@@ -22,8 +22,7 @@ from anomalib.models import AnomalyModule, get_available_models, get_model
 
 def models() -> list[str]:
     """Return all available models."""
-    # skip winclip because we don't have a test design for zero-shot yet
-    return [model for model in get_available_models() if model != "win_clip"]
+    return get_available_models()
 
 
 class TestAPI:
@@ -188,6 +187,8 @@ class TestAPI:
         if model_name == "ai_vad":
             # aivad expects UCSD dataset
             dataset = UCSDped(root=dataset_path / "ucsdped", category="dummy", task=task_type)
+        elif model_name == "win_clip":
+            dataset = MVTec(root=dataset_path / "mvtec", category="dummy", image_size=240, task=task_type)
         else:
             # EfficientAd requires that the batch size be lesser than the number of images in the dataset.
             # This is so that the LR step size is not 0.
