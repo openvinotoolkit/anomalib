@@ -29,10 +29,8 @@ def get_image_filenames(path: str | Path) -> list[Path]:
         list[Path]: List of image filenames
 
     """
+    path = Path(path).resolve()
     image_filenames: list[Path]
-
-    if isinstance(path, str):
-        path = Path(path)
 
     if path.is_file() and path.suffix in IMG_EXTENSIONS:
         image_filenames = [path]
@@ -114,11 +112,8 @@ def generate_output_image_filename(input_path: str | Path, output_path: str | Pa
     Returns:
         Path: The output filename to save the output predictions from the inferencer.
     """
-    if isinstance(input_path, str):
-        input_path = Path(input_path)
-
-    if isinstance(output_path, str):
-        output_path = Path(output_path)
+    input_path = Path(input_path)
+    output_path = Path(output_path)
 
     # This function expects an ``input_path`` that is a file. This is to check if output_path
     if input_path.is_file() is False:
@@ -128,18 +123,24 @@ def generate_output_image_filename(input_path: str | Path, output_path: str | Pa
     # If the output is a directory, then add parent directory name
     # and filename to the path. This is to ensure we do not overwrite
     # images and organize based on the categories.
-    file_path = output_path / input_path.parent.name / input_path.name if output_path.is_dir() else output_path
+    if output_path.is_dir():
+        output_image_filename = output_path / input_path.parent.name / input_path.name
+    elif output_path.is_file() and output_path.exists():
+        msg = f"{output_path} already exists. Renaming the file to avoid overwriting."
+        logger.warning(msg)
+        output_image_filename = duplicate_filename(output_path)
+    else:
+        output_image_filename = output_path
+
+    output_image_filename = (
+        output_path / input_path.parent.name / input_path.name if output_path.is_dir() else output_path
+    )
 
     # This new ``file_path`` might contain a directory path yet to be created.
     # Create the parent directory to avoid such cases.
-    file_path.parent.mkdir(parents=True, exist_ok=True)
+    output_image_filename.parent.mkdir(parents=True, exist_ok=True)
 
-    if file_path.is_file():
-        msg = f"{output_path} already exists. Renaming the file to avoid overwriting."
-        logger.warning(msg)
-        file_path = duplicate_filename(file_path)
-
-    return file_path
+    return output_image_filename
 
 
 def get_image_height_and_width(image_size: int | Sequence[int]) -> tuple[int, int]:
