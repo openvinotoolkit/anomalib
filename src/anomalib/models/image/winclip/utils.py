@@ -116,7 +116,7 @@ def harmonic_aggregation(window_scores: torch.Tensor, output_size: tuple, masks:
 
     Examples:
         >>> # example for a 3x3 patch grid with 4 sliding windows of size 2x2
-        >>> window_scores = scores = torch.tensor([[1.0, 0.75, 0.5, 0.25]])
+        >>> window_scores = torch.tensor([[1.0, 0.75, 0.5, 0.25]])
         >>> output_size = (3, 3)
         >>> masks = torch.Tensor([[1,2,4,5],
                                   [2,3,5,6],
