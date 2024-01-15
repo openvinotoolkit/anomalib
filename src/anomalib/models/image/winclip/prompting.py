@@ -45,7 +45,7 @@ TEMPLATES = [
 ]
 
 
-def create_prompt_ensemble(class_name: str) -> tuple[list[str], list[str]]:
+def create_prompt_ensemble(class_name: str = "object") -> tuple[list[str], list[str]]:
     """Create prompt ensemble for WinCLIP.
 
     All combinations of states and templates are generated for both normal and anomalous prompts.
