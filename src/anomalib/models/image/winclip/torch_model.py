@@ -129,7 +129,7 @@ class WinClipModel(nn.Module):
 
         # prepend zero index for class embeddings
         class_index = torch.zeros(1, n_masks, dtype=int).to(device)
-        masks = torch.cat((class_index, masks.to(device))).T
+        masks = torch.cat((class_index, masks.to(device) + 1)).T  # +1 to account for class index
         # apply masks to feature map
         masked = torch.cat([torch.index_select(feature_map, 1, mask) for mask in masks])
 

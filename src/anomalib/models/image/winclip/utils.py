@@ -118,10 +118,10 @@ def harmonic_aggregation(window_scores: torch.Tensor, output_size: tuple, masks:
         >>> # example for a 3x3 patch grid with 4 sliding windows of size 2x2
         >>> window_scores = torch.tensor([[1.0, 0.75, 0.5, 0.25]])
         >>> output_size = (3, 3)
-        >>> masks = torch.Tensor([[1,2,4,5],
-                                  [2,3,5,6],
-                                  [4,5,7,8],
-                                  [5,6,8,9]])
+        >>> masks = torch.Tensor([[0,1,3,4],
+                                  [1,2,4,5],
+                                  [3,4,6,7],
+                                  [4,5,7,8]])
         >>> harmonic_aggregation(window_scores, output_size, masks)
         tensor([[[1.0000, 0.8571, 0.7500],
                  [0.6667, 0.4800, 0.3750],
@@ -132,7 +132,7 @@ def harmonic_aggregation(window_scores: torch.Tensor, output_size: tuple, masks:
 
     scores = []
     for idx in range(height * width):
-        patch_mask = torch.any(masks == idx + 1, dim=0)  # boolean tensor indicating which masks contain the patch
+        patch_mask = torch.any(masks == idx, dim=0)  # boolean tensor indicating which masks contain the patch
         scores.append(sum(patch_mask) / (1 / window_scores.T[patch_mask]).sum(dim=0))
 
     return torch.stack(scores).T.reshape(batch_size, height, width).nan_to_num(posinf=0.0)
@@ -185,24 +185,24 @@ def make_masks(grid_size: tuple[int, int], kernel_size: int, stride: int = 1) ->
 
     Examples:
         >>> make_masks((3, 3), 2)
-        tensor([[1, 2, 4, 5],
-                [2, 3, 5, 6],
-                [4, 5, 7, 8],
-                [5, 6, 8, 9]])
+        tensor([[0, 1, 3, 4],
+                [1, 2, 4, 5],
+                [3, 4, 6, 7],
+                [4, 5, 7, 8]], dtype=torch.int32)
 
         >>> make_masks((4, 4), 2)
-        tensor([[ 1,  2,  3,  5,  6,  7,  9, 10, 11],
-                [ 2,  3,  4,  6,  7,  8, 10, 11, 12],
-                [ 5,  6,  7,  9, 10, 11, 13, 14, 15],
-                [ 6,  7,  8, 10, 11, 12, 14, 15, 16]])
+        tensor([[ 0,  1,  2,  4,  5,  6,  8,  9, 10],
+                [ 1,  2,  3,  5,  6,  7,  9, 10, 11],
+                [ 4,  5,  6,  8,  9, 10, 12, 13, 14],
+                [ 5,  6,  7,  9, 10, 11, 13, 14, 15]], dtype=torch.int32)
 
         >>> make_masks((4, 4), 2, stride=2)
-        tensor([[ 1,  3,  9, 11],
-                [ 2,  4, 10, 12],
-                [ 5,  7, 13, 15],
-                [ 6,  8, 14, 16]])
+        tensor([[ 0,  2,  8, 10],
+                [ 1,  3,  9, 11],
+                [ 4,  6, 12, 14],
+                [ 5,  7, 13, 15]], dtype=torch.int32)
     """
     height, width = grid_size
-    grid = torch.arange(1, height * width + 1).reshape(1, 1, height, width)
+    grid = torch.arange(height * width).reshape(1, 1, height, width)
     masks = nn.functional.unfold(grid.float(), kernel_size=kernel_size, stride=stride).int()
     return masks.squeeze()
