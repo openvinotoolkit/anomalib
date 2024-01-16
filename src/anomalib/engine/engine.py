@@ -1,6 +1,6 @@
 """Implements custom trainer for Anomalib."""
 
-# Copyright (C) 2023 Intel Corporation
+# Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
@@ -20,6 +20,7 @@ from anomalib import LearningType, TaskType
 from anomalib.callbacks import get_visualization_callbacks
 from anomalib.callbacks.metrics import _MetricsCallback
 from anomalib.callbacks.normalization import get_normalization_callback
+from anomalib.callbacks.normalization.base import NormalizationCallback
 from anomalib.callbacks.post_processor import _PostProcessorCallback
 from anomalib.callbacks.thresholding import _ThresholdCallback
 from anomalib.data import AnomalibDataModule, AnomalibDataset, PredictDataset
@@ -161,6 +162,40 @@ class Engine:
             raise UnassignedError(msg)
         return self._trainer
 
+    @property
+    def normalization_callback(self) -> NormalizationCallback | None:
+        """The ``NormalizationCallback`` callback in the trainer.callbacks list, or ``None`` if it doesn't exist.
+
+        Returns:
+            Optional[_MinMaxNormalizationCallback]: Normalization callback, if available.
+
+        Raises:
+            ValueError: If there are multiple normalization callbacks.
+        """
+        callbacks = [callback for callback in self.trainer.callbacks if isinstance(callback, NormalizationCallback)]
+        if len(callbacks) > 1:
+            msg = "Trainer can only have one normalization callback but multiple found: {}. Please check your \
+                configuration. Exiting to avoid unexpected behavior.".format(callbacks)
+            raise ValueError(msg)
+        return callbacks[0] if len(callbacks) > 0 else None
+
+    @property
+    def threshold_callback(self) -> _ThresholdCallback | None:
+        """The ``ThresholdCallback`` callback in the trainer.callbacks list, or ``None`` if it doesn't exist.
+
+        Returns:
+            Optional[_ThresholdCallback]: Threshold callback, if available.
+
+        Raises:
+            ValueError: If there are multiple threshold callbacks.
+        """
+        callbacks = [callback for callback in self.trainer.callbacks if isinstance(callback, _ThresholdCallback)]
+        if len(callbacks) > 1:
+            msg = f"Trainer can only have one thresholding callback but multiple found: {callbacks}. Please check your \
+                configuration. Exiting to avoid unexpected behavior."
+            raise ValueError(msg)
+        return callbacks[0] if len(callbacks) > 0 else None
+
     def _setup_trainer(self, model: AnomalyModule) -> None:
         """Instantiate the trainer based on the model parameters."""
         if self._cache.requires_update(model) or self._trainer is None:
@@ -212,6 +247,45 @@ class Engine:
         self.trainer.callbacks = _CallbackConnector._reorder_callbacks(  # noqa: SLF001
             self.trainer.callbacks + _callbacks,
         )
+
+    def _should_run_validation(
+        self,
+        model: AnomalyModule | None,
+        dataloaders: EVAL_DATALOADERS | AnomalibDataModule | None,
+        datamodule: AnomalibDataModule | None,
+        ckpt_path: str | None,
+    ) -> bool:
+        """Check if we need to run validation to collect normalization statistics and thresholds.
+
+        If a checkpoint path is provided, we don't need to run validation because we can load the model from the
+        checkpoint and use the normalization metrics and thresholds from the checkpoint.
+
+        We need to run validation if the model is configured with normalization enabled, but no normalization metrics
+        have been collected yet. Similarly, we need to run validation if the model is configured with adaptive
+        thresholding enabled, but no thresholds have been computed yet.
+
+        We can only run validation if we have validation data available, so we check if the dataloaders or datamodule
+        are available. If neither is available, we can't run validation.
+
+        Args:
+            model (AnomalyModule): Model passed to the entrypoint.
+            dataloaders (EVAL_DATALOADERS | AnomalibDataModule | None): Dataloaders passed to the entrypoint.
+            datamodule (AnomalibDataModule | None): Lightning datamodule passed to the entrypoint.
+            ckpt_path (str | None): Checkpoint path passed to the entrypoint.
+
+        Returns:
+            bool: Whether it is needed to run a validation sequence.
+        """
+        if model is None:
+            return False
+        # check if a checkpoint path is provided
+        if ckpt_path is not None:
+            return False
+        # check if the model needs to be validated
+        needs_normalization = self.normalization_callback is not None and not hasattr(model, "normalization_metrics")
+        needs_thresholding = self.threshold_callback is not None and not hasattr(model, "image_threshold")
+        # check if the model can be validated (i.e. validation data is available)
+        return (needs_normalization or needs_thresholding) and (dataloaders is not None or datamodule is not None)
 
     def fit(
         self,
@@ -314,6 +388,9 @@ class Engine:
     ) -> _EVALUATE_OUTPUT:
         """Test the model using the trainer.
 
+        Sets up the trainer and the dataset task if not already set up. Then validates the model if needed and
+        finally tests the model.
+
         Args:
             model (AnomalyModule | None, optional):
                 The model to be tested.
@@ -338,6 +415,30 @@ class Engine:
         Returns:
             _EVALUATE_OUTPUT: A List of dictionaries containing the test results. 1 dict per dataloader.
 
+        Examples:
+            # fit and test a one-class model
+            >>> from anomalib.engine import Engine
+            >>> from anomalib.models import Padim
+            >>> from anomalib.data import MVTec
+            >>> engine = Engine()
+            >>> model = Padim()
+            >>> datamodule = MVTec()
+            >>> model.learning_type
+            <LearningType.ONE_CLASS: 'one_class'>
+            >>> engine.fit(model, datamodule=datamodule)
+            >>> engine.test(model, datamodule=datamodule)
+
+            # Test a zero-shot model
+            >>> from anomalib.engine import Engine
+            >>> from anomalib.models import Padim
+            >>> from anomalib.data import MVTec
+            >>> engine = Engine()
+            >>> model = Padim()
+            >>> datamodule = MVTec(image_size=240, normalization="clip")
+            >>> model.learning_type
+            <LearningType.ZERO_SHOT: 'zero_shot'>
+            >>> engine.test(model, datamodule=datamodule)
+
         CLI Usage:
             1. you can pick a model.
                 ```python
@@ -355,9 +456,8 @@ class Engine:
         if model:
             self._setup_trainer(model)
         self._setup_dataset_task(dataloaders)
-        if model and model.learning_type in [LearningType.ZERO_SHOT, LearningType.FEW_SHOT] and ckpt_path is None:
-            # if no checkpoint patch is provided, we're running test on an untrained model.
-            # in this case, we need to run validate first for normalization and thresholding
+        if self._should_run_validation(model or self.trainer.model, dataloaders, datamodule, ckpt_path):
+            logger.info("Running validation before testing to collect normalization metrics and/or thresholds.")
             self.trainer.validate(model, dataloaders, None, verbose=False, datamodule=datamodule)
         return self.trainer.test(model, dataloaders, ckpt_path, verbose, datamodule)
 
@@ -370,6 +470,9 @@ class Engine:
         ckpt_path: str | None = None,
     ) -> _PREDICT_OUTPUT | None:
         """Predict using the model using the trainer.
+
+        Sets up the trainer and the dataset task if not already set up. Then validates the model if needed and a
+        validation dataloader is available. Finally, predicts using the model.
 
         Args:
             model (AnomalyModule | None, optional):
@@ -435,6 +538,16 @@ class Engine:
                 raise TypeError(msg)
 
         self._setup_dataset_task(dataloaders, datamodule)
+
+        if self._should_run_validation(model, None, datamodule, ckpt_path):
+            logger.info("Running validation before predicting to collect normalization metrics and/or thresholds.")
+            self.trainer.validate(
+                model or self.trainer.model,
+                dataloaders=None,
+                ckpt_path=None,
+                verbose=False,
+                datamodule=datamodule,
+            )
 
         return self.trainer.predict(model, dataloaders, datamodule, return_predictions, ckpt_path)
 
