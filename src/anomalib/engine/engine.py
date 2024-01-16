@@ -134,6 +134,8 @@ class Engine:
         visualization: DictConfig | dict[str, Any] | Namespace | None = None,
         **kwargs,
     ) -> None:
+        # TODO(av): Add model argument to engine constructor
+        # https://github.com/openvinotoolkit/anomalib/issues/1639
         if callbacks is None:
             callbacks = []
 
@@ -161,6 +163,21 @@ class Engine:
             msg = "``self.trainer`` is not assigned yet."
             raise UnassignedError(msg)
         return self._trainer
+
+    @property
+    def model(self) -> AnomalyModule:
+        """Property to get the model.
+
+        Raises:
+            UnassignedError: When the model is not assigned yet.
+
+        Returns:
+            AnomalyModule: Anomaly model.
+        """
+        if not self.trainer.model:
+            msg = "Trainer does not have a model assigned yet."
+            raise UnassignedError(msg)
+        return self.trainer.model
 
     @property
     def normalization_callback(self) -> NormalizationCallback | None:
@@ -456,11 +473,13 @@ class Engine:
         if model:
             self._setup_trainer(model)
         self._setup_dataset_task(dataloaders)
-        if self._should_run_validation(model or self.trainer.model, dataloaders, datamodule, ckpt_path):
+        if self._should_run_validation(model or self.model, dataloaders, datamodule, ckpt_path):
             logger.info("Running validation before testing to collect normalization metrics and/or thresholds.")
             self.trainer.validate(model, dataloaders, None, verbose=False, datamodule=datamodule)
         return self.trainer.test(model, dataloaders, ckpt_path, verbose, datamodule)
 
+    # TODO(av): revisit typing of data args
+    # https://github.com/openvinotoolkit/anomalib/issues/1638
     def predict(
         self,
         model: AnomalyModule | None = None,
@@ -539,10 +558,10 @@ class Engine:
 
         self._setup_dataset_task(dataloaders, datamodule)
 
-        if self._should_run_validation(model, None, datamodule, ckpt_path):
+        if self._should_run_validation(model or self.model, None, datamodule, ckpt_path):
             logger.info("Running validation before predicting to collect normalization metrics and/or thresholds.")
             self.trainer.validate(
-                model or self.trainer.model,
+                model,
                 dataloaders=None,
                 ckpt_path=None,
                 verbose=False,
