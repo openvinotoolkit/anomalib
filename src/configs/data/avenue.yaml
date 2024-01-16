@@ -4,7 +4,7 @@ init_args:
   gt_dir: ./datasets/avenue/masks
   clip_length_in_frames: 1
   frames_between_clips: 1
-  target_frame: LAST
+  target_frame: last
   image_size: [256, 256]
   center_crop: null
   normalization: imagenet

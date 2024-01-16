@@ -4,7 +4,7 @@ init_args:
   category: "UCSDped2"
   clip_length_in_frames: 2
   frames_between_clips: 10
-  target_frame: LAST
+  target_frame: last
   image_size: [256, 256]
   center_crop: null
   normalization: imagenet
