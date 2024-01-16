@@ -267,7 +267,7 @@ class Engine:
 
     def _should_run_validation(
         self,
-        model: AnomalyModule | None,
+        model: AnomalyModule,
         dataloaders: EVAL_DATALOADERS | AnomalibDataModule | None,
         datamodule: AnomalibDataModule | None,
         ckpt_path: str | None,
@@ -293,7 +293,8 @@ class Engine:
         Returns:
             bool: Whether it is needed to run a validation sequence.
         """
-        if model is None:
+        # validation before predict is only necessary for zero-/few-shot models
+        if model.learning_type not in [LearningType.ZERO_SHOT, LearningType.FEW_SHOT]:
             return False
         # check if a checkpoint path is provided
         if ckpt_path is not None:
@@ -340,6 +341,8 @@ class Engine:
                 anomalib fit --config <config_file_path>
                 ```
         """
+        assert model is not None or self.model is not None, "`Engine.test()` requires an `AnomalyModule` when it \
+            hasn't been passed in a previous run."
         self._setup_trainer(model)
         self._setup_dataset_task(train_dataloaders, val_dataloaders, datamodule)
         if model.learning_type in [LearningType.ZERO_SHOT, LearningType.FEW_SHOT]:
@@ -536,6 +539,8 @@ class Engine:
                 anomalib predict --config <config_file_path> --return_predictions
                 ```
         """
+        assert model is not None or self.model is not None, "`Engine.predict()` requires an `AnomalyModule` when it \
+            hasn't been passed in a previous run."
         if model:
             self._setup_trainer(model)
 
