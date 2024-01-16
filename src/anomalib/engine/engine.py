@@ -472,7 +472,7 @@ class Engine:
                 ```
         """
         assert (
-            model is not None or self.model is not None
+            model or self.model
         ), "`Engine.test()` requires an `AnomalyModule` when it hasn't been passed in a previous run."
         if model:
             self._setup_trainer(model)
@@ -541,7 +541,7 @@ class Engine:
                 ```
         """
         assert (
-            model is not None or self.model is not None
+            model or self.model
         ), "`Engine.predict()` requires an `AnomalyModule` when it hasn't been passed in a previous run."
         if model:
             self._setup_trainer(model)
