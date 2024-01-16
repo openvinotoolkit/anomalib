@@ -177,7 +177,7 @@ class Engine:
         if not self.trainer.model:
             msg = "Trainer does not have a model assigned yet."
             raise UnassignedError(msg)
-        return self.trainer.model
+        return self.trainer.lightning_module
 
     @property
     def normalization_callback(self) -> NormalizationCallback | None:
