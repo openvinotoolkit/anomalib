@@ -1,6 +1,6 @@
 """Image Utils."""
 
-# Copyright (C) 2022 Intel Corporation
+# Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 
@@ -11,7 +11,6 @@ from pathlib import Path
 
 import cv2
 import numpy as np
-import tifffile as tiff
 import torch
 from torch.nn import functional as F  # noqa: N812
 from torchvision.datasets.folder import IMG_EXTENSIONS
@@ -19,28 +18,148 @@ from torchvision.datasets.folder import IMG_EXTENSIONS
 logger = logging.getLogger(__name__)
 
 
-def get_image_filenames(path: str | Path) -> list[Path]:
+def is_image_file(filename: str | Path) -> bool:
+    """Check if the filename is an image file.
+
+    Args:
+        filename (str | Path): Filename to check.
+
+    Returns:
+        bool: True if the filename is an image file.
+
+    Examples:
+        Assume that we have the following files in the directory:
+        $ ls
+        000.png  001.jpg  002.JPEG  003.tiff  004.png  005.png
+
+        >>> is_image_file("000.png")
+        True
+
+        >>> is_image_file("002.JPEG")
+        True
+
+        >>> is_image_file("009.tiff")
+        False
+    """
+    filename = Path(filename)
+    return filename.suffix.lower() in IMG_EXTENSIONS
+
+
+def get_image_filename(filename: str | Path) -> Path:
+    """Get image filename.
+
+    Args:
+        filename (str | Path): Filename to check.
+
+    Returns:
+        Path: Image filename.
+
+    Examples:
+        Assume that we have the following files in the directory:
+        $ ls
+        000.png  001.jpg  002.JPEG  003.tiff  004.png  005.txt
+
+        >>> get_image_filename("000.png")
+        PosixPath('000.png')
+
+        >>> get_image_filename("001.jpg")
+        PosixPath('001.jpg')
+
+        >>> get_image_filename("009.tiff")
+        Traceback (most recent call last):
+        File "<string>", line 1, in <module>
+        File "<string>", line 18, in get_image_filename
+        FileNotFoundError: File not found: 009.tiff
+
+        >>> get_image_filename("005.txt")
+        Traceback (most recent call last):
+        File "<string>", line 1, in <module>
+        File "<string>", line 18, in get_image_filename
+        ValueError: ``filename`` is not an image file. 005.txt
+    """
+    filename = Path(filename)
+
+    if not filename.exists():
+        msg = f"File not found: {filename}"
+        raise FileNotFoundError(msg)
+
+    if not is_image_file(filename):
+        msg = f"``filename`` is not an image file: {filename}"
+        raise ValueError(msg)
+    return filename
+
+
+def get_image_filenames_from_dir(path: str | Path) -> list[Path]:
+    """Get image filenames from directory.
+
+    Args:
+        path (str | Path): Path to image directory.
+
+    Raises:
+        ValueError: When ``path`` is not a directory.
+
+    Returns:
+        list[Path]: Image filenames.
+
+    Examples:
+        Assume that we have the following files in the directory:
+        $ ls
+        000.png  001.jpg  002.JPEG  003.tiff  004.png  005.png
+
+        >>> get_image_filenames_from_dir(".")
+        [PosixPath('000.png'), PosixPath('001.jpg'), PosixPath('002.JPEG'),
+        PosixPath('003.tiff'), PosixPath('004.png'), PosixPath('005.png')]
+
+        >>> get_image_filenames_from_dir("009.tiff")
+        Traceback (most recent call last):
+        File "<string>", line 1, in <module>
+        File "<string>", line 18, in get_image_filenames_from_dir
+        ValueError: ``path`` is not a directory: 009.tiff
+    """
+    path = Path(path)
+    if not path.is_dir():
+        msg = f"Path is not a directory: {path}"
+        raise ValueError(msg)
+
+    image_filenames = [get_image_filename(f) for f in path.glob("**/*")]
+
+    if not image_filenames:
+        msg = f"Found 0 images in {path}"
+        raise ValueError(msg)
+
+    return image_filenames
+
+
+def get_image_filenames(path: str | Path, base_dir: str | Path | None = None) -> list[Path]:
     """Get image filenames.
 
     Args:
         path (str | Path): Path to image or image-folder.
+        base_dir (Path): Base directory to restrict file access.
 
     Returns:
         list[Path]: List of image filenames
 
     """
-    path = Path(path).resolve()
-    image_filenames: list[Path]
+    path = Path(path).expanduser().resolve()
+    base_dir = Path(base_dir).expanduser().resolve() if base_dir else path
 
-    if path.is_file() and path.suffix in IMG_EXTENSIONS:
-        image_filenames = [path]
-
-    if path.is_dir():
-        image_filenames = [p for p in path.glob("**/*") if p.suffix in IMG_EXTENSIONS]
-
-    if not image_filenames:
-        msg = f"Found 0 images in {path}"
+    # Ensure the resolved path is within the base directory
+    # This is for security reasons to avoid accessing files outside the base directory.
+    if not path.is_relative_to(base_dir):
+        msg = "Access denied: Path is outside the allowed directory"
         raise ValueError(msg)
+
+    # Get image filenames from file or directory.
+    image_filenames: list[Path] = []
+
+    if path.is_file():
+        image_filenames = [get_image_filename(path)]
+    elif path.is_dir():
+        image_filenames = get_image_filenames_from_dir(path)
+    else:
+        msg = "Path is not a file or directory"
+        raise FileNotFoundError(msg)
 
     return image_filenames
 
