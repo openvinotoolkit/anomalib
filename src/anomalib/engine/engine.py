@@ -341,8 +341,6 @@ class Engine:
                 anomalib fit --config <config_file_path>
                 ```
         """
-        assert model is not None or self.model is not None, "`Engine.test()` requires an `AnomalyModule` when it \
-            hasn't been passed in a previous run."
         self._setup_trainer(model)
         self._setup_dataset_task(train_dataloaders, val_dataloaders, datamodule)
         if model.learning_type in [LearningType.ZERO_SHOT, LearningType.FEW_SHOT]:
@@ -473,6 +471,9 @@ class Engine:
                 anomalib test --config <config_file_path>
                 ```
         """
+        assert (
+            model is not None or self.model is not None
+        ), "`Engine.test()` requires an `AnomalyModule` when it hasn't been passed in a previous run."
         if model:
             self._setup_trainer(model)
         self._setup_dataset_task(dataloaders)
@@ -539,8 +540,9 @@ class Engine:
                 anomalib predict --config <config_file_path> --return_predictions
                 ```
         """
-        assert model is not None or self.model is not None, "`Engine.predict()` requires an `AnomalyModule` when it \
-            hasn't been passed in a previous run."
+        assert (
+            model is not None or self.model is not None
+        ), "`Engine.predict()` requires an `AnomalyModule` when it hasn't been passed in a previous run."
         if model:
             self._setup_trainer(model)
 
