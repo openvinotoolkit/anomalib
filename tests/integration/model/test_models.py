@@ -128,6 +128,8 @@ class TestAPI:
             # TODO(ashwinvaidya17): Restore this test after fixing reverse distillation
             # https://github.com/openvinotoolkit/anomalib/issues/1513
             pytest.skip("Reverse distillation fails to convert to ONNX")
+        elif model_name == "win_clip":
+            pytest.skip("WinCLIP fails to export to ONNX.")
         elif model_name == "ai_vad":
             pytest.skip("Export fails for video models.")
         model, dataset, engine = self._get_objects(
