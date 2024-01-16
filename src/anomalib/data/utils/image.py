@@ -28,10 +28,6 @@ def is_image_file(filename: str | Path) -> bool:
         bool: True if the filename is an image file.
 
     Examples:
-        Assume that we have the following files in the directory:
-        $ ls
-        000.png  001.jpg  002.JPEG  003.tiff  004.png  005.png
-
         >>> is_image_file("000.png")
         True
 
@@ -39,7 +35,7 @@ def is_image_file(filename: str | Path) -> bool:
         True
 
         >>> is_image_file("009.tiff")
-        False
+        True
     """
     filename = Path(filename)
     return filename.suffix.lower() in IMG_EXTENSIONS
