@@ -10,10 +10,10 @@ Tests the models using API. The weight paths from the trained models are used fo
 from pathlib import Path
 
 import pytest
-from lightning.pytorch.callbacks import ModelCheckpoint
 from torch.utils.data import DataLoader
 
 from anomalib import TaskType
+from anomalib.callbacks import ModelCheckpoint
 from anomalib.data import AnomalibDataModule, MVTec, PredictDataset, UCSDped
 from anomalib.deploy.export import ExportType
 from anomalib.engine import Engine
