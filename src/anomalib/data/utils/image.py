@@ -11,6 +11,7 @@ from pathlib import Path
 
 import cv2
 import numpy as np
+import tifffile as tiff
 import torch
 from torch.nn import functional as F  # noqa: N812
 from torchvision.datasets.folder import IMG_EXTENSIONS
@@ -138,7 +139,7 @@ def get_image_filenames(path: str | Path, base_dir: str | Path | None = None) ->
 
     """
     path = Path(path).expanduser().resolve()
-    base_dir = Path(base_dir).expanduser().resolve() if base_dir else path
+    base_dir = Path(base_dir).expanduser().resolve() if base_dir else Path.home()
 
     # Ensure the resolved path is within the base directory
     # This is for security reasons to avoid accessing files outside the base directory.
