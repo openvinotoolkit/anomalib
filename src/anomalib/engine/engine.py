@@ -134,7 +134,7 @@ class Engine:
         visualization: DictConfig | dict[str, Any] | Namespace | None = None,
         **kwargs,
     ) -> None:
-        # TODO(av): Add model argument to engine constructor
+        # TODO(ashwinvaidya17): Add model argument to engine constructor
         # https://github.com/openvinotoolkit/anomalib/issues/1639
         if callbacks is None:
             callbacks = []
@@ -478,7 +478,7 @@ class Engine:
             self.trainer.validate(model, dataloaders, None, verbose=False, datamodule=datamodule)
         return self.trainer.test(model, dataloaders, ckpt_path, verbose, datamodule)
 
-    # TODO(av): revisit typing of data args
+    # TODO(ashwinvaidya17): revisit typing of data args
     # https://github.com/openvinotoolkit/anomalib/issues/1638
     def predict(
         self,
