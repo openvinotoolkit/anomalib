@@ -10,11 +10,10 @@ Tests the models using API. The weight paths from the trained models are used fo
 from pathlib import Path
 
 import pytest
-from torch.utils.data import DataLoader
 
 from anomalib import TaskType
 from anomalib.callbacks import ModelCheckpoint
-from anomalib.data import AnomalibDataModule, MVTec, PredictDataset, UCSDped
+from anomalib.data import AnomalibDataModule, MVTec, UCSDped
 from anomalib.deploy.export import ExportType
 from anomalib.engine import Engine
 from anomalib.models import AnomalyModule, get_available_models, get_model
@@ -105,19 +104,15 @@ class TestAPI:
             dataset_path (Path): Root to dataset from fixture.
             project_path (Path): Path to temporary project folder from fixture.
         """
-        model, _dataloader, engine = self._get_objects(
+        model, datamodule, engine = self._get_objects(
             model_name=model_name,
             dataset_path=dataset_path,
             project_path=project_path,
         )
-        if model_name == "ai_vad":
-            dataloader = _dataloader
-        else:
-            dataloader = DataLoader(PredictDataset(dataset_path / "mvtec" / "dummy" / "test"))
         engine.predict(
             model=model,
-            dataloaders=dataloader,
             ckpt_path=f"{project_path}/{model_name}/dummy/weights/last.ckpt",
+            datamodule=datamodule,
         )
 
     @pytest.mark.parametrize("model_name", models())
