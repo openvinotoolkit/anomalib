@@ -219,6 +219,8 @@ class Engine:
             self._cache.update(model)
             self._trainer = Trainer(**self._cache.args)
             # Callbacks need to be setup later as they depend on default_root_dir from the trainer
+            # TODO(djdameln): set up callbacks before instantiating trainer
+            # https://github.com/openvinotoolkit/anomalib/issues/1642
             self._setup_anomalib_callbacks()
 
     def _setup_dataset_task(
