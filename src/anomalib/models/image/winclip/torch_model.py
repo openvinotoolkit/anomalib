@@ -127,12 +127,12 @@ class WinClipModel(DynamicBufferModule, BufferListMixin, nn.Module):
         # update class name and text embeddings
         self.class_name = class_name or self.class_name
         if self.class_name is not None:
-            self.collect_text_embeddings(self.class_name)
+            self._collect_text_embeddings(self.class_name)
         # update reference images, k_shot and visual embeddings
         self.reference_images = reference_images if reference_images is not None else self.reference_images
         if self.reference_images is not None:
             self.k_shot = self.reference_images.shape[0]  # update k_shot based on number of reference images
-            self.collect_visual_embeddings(self.reference_images)
+            self._collect_visual_embeddings(self.reference_images)
 
     def encode_image(self, batch: torch.Tensor) -> tuple[torch.Tensor, list[torch.Tensor], torch.Tensor]:
         """Encode the batch of images to obtain image embeddings, window embeddings, and patch embeddings.
@@ -317,7 +317,7 @@ class WinClipModel(DynamicBufferModule, BufferListMixin, nn.Module):
 
         return torch.stack(multi_scale_scores).mean(dim=0)
 
-    def collect_text_embeddings(self, class_name: str) -> None:
+    def _collect_text_embeddings(self, class_name: str) -> None:
         """Collect text embeddings for the object class using a compositional prompt ensemble.
 
         First, an ensemble of normal and anomalous prompts is created based on the name of the object class. The
@@ -344,7 +344,7 @@ class WinClipModel(DynamicBufferModule, BufferListMixin, nn.Module):
         text_embeddings = torch.cat((normal_embeddings, anomalous_embeddings))
         self._text_embeddings = text_embeddings
 
-    def collect_visual_embeddings(self, images: torch.Tensor) -> None:
+    def _collect_visual_embeddings(self, images: torch.Tensor) -> None:
         """Collect visual embeddings based on a set of normal reference images.
 
         Args:
