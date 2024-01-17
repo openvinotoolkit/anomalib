@@ -124,16 +124,16 @@ class TestAPI:
             dataset_path (Path): Root to dataset from fixture.
             project_path (Path): Path to temporary project folder from fixture.
         """
+        input_size = (256, 256)
         if model_name == "reverse_distillation":
             # TODO(ashwinvaidya17): Restore this test after fixing reverse distillation
             # https://github.com/openvinotoolkit/anomalib/issues/1513
             pytest.skip("Reverse distillation fails to convert to ONNX")
-        elif model_name == "win_clip":
-            # TODO(djdameln): Enable exporting of WinCLIP model
-            # https://github.com/openvinotoolkit/anomalib/issues/1641
-            pytest.skip("Export not yet supported for WinCLIP.")
         elif model_name == "ai_vad":
             pytest.skip("Export fails for video models.")
+        elif model_name == "win_clip":
+            input_size = (240, 240)
+
         model, dataset, engine = self._get_objects(
             model_name=model_name,
             dataset_path=dataset_path,
@@ -144,7 +144,7 @@ class TestAPI:
             datamodule=dataset,
             ckpt_path=f"{project_path}/{model_name}/dummy/weights/last.ckpt",
             export_type=ExportType.ONNX,
-            input_size=(256, 256),
+            input_size=input_size,
         )
 
     def _get_objects(
