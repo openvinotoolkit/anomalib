@@ -68,7 +68,7 @@ class WinClipModel(DynamicBufferModule, BufferListMixin, nn.Module):
         self.grid_size = self.clip.visual.grid_size
 
         # register buffers
-        self.register_bufferlist("masks", self.generate_masks(), persistent=False)  # no need to save masks
+        self.register_bufferlist("masks", self._generate_masks(), persistent=False)  # no need to save masks
         self.register_buffer("_text_embeddings", torch.empty(0))
         self.register_bufferlist("_visual_embeddings", [torch.empty(0) for _ in self.scales])
         self.register_buffer("_patch_embeddings", torch.empty(0))
@@ -353,7 +353,7 @@ class WinClipModel(DynamicBufferModule, BufferListMixin, nn.Module):
         with torch.no_grad():
             _, self._visual_embeddings, self._patch_embeddings = self.encode_image(images)
 
-    def generate_masks(self) -> list[torch.Tensor]:
+    def _generate_masks(self) -> list[torch.Tensor]:
         """Prepare a set of masks that operate as multi-scale sliding windows.
 
         For each of the scales, a set of masks is created that select patches from the feature map. Each mask represents
