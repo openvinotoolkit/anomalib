@@ -4,13 +4,16 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from collections.abc import Callable
+from copy import copy
 
 import open_clip
 import torch
 from open_clip.tokenizer import tokenize
-from open_clip.transform import PreprocessCfg
 from torch import nn
 from torch.nn.modules.linear import Identity
+from torchvision.transforms import Compose, ToPILImage
+
+from anomalib.models.components import BufferListMixin, DynamicBufferModule
 
 from .prompting import create_prompt_ensemble
 from .utils import class_scores, harmonic_aggregation, make_masks, visual_association_score
@@ -20,7 +23,7 @@ PRETRAINED = "laion400m_e31"
 TEMPERATURE = 0.07  # temperature hyperparameter from the clip paper
 
 
-class WinClipModel(nn.Module):
+class WinClipModel(DynamicBufferModule, BufferListMixin, nn.Module):
     """PyTorch module that implements the WinClip model for image anomaly detection.
 
     Args:
@@ -40,25 +43,94 @@ class WinClipModel(nn.Module):
         patch_embeddings (torch.Tensor | None): The patch embeddings for the reference images.
     """
 
-    def __init__(self, k_shot: int = 0, scales: tuple = (2, 3)) -> None:
+    def __init__(
+        self,
+        class_name: str | None = None,
+        reference_images: torch.Tensor | None = None,
+        scales: tuple = (2, 3),
+        apply_transform: bool = True,
+    ) -> None:
         super().__init__()
         self.backbone = BACKBONE
         self.pretrained = PRETRAINED
         self.temperature = TEMPERATURE
-        self.k_shot = k_shot
+        self.class_name = class_name
+        self.reference_images = reference_images
         self.scales = scales
+        self.apply_transform = apply_transform
+        self.k_shot = 0
 
         # initialize CLIP model
-        self.clip, _, self.transform = open_clip.create_model_and_transforms(self.backbone, pretrained=self.pretrained)
-        self._preprocess_cfg = self.clip.visual.preprocess_cfg
-        self._preprocess_config = PreprocessCfg(**self.clip.visual.preprocess_cfg)
+        self.clip, _, self._transform = open_clip.create_model_and_transforms(self.backbone, pretrained=self.pretrained)
         self.clip.visual.output_tokens = True
         self.grid_size = self.clip.visual.grid_size
 
-        self.masks: list[torch.Tensor]
-        self.text_embeddings: torch.Tensor
-        self.visual_embeddings: list[torch.Tensor]
-        self.patch_embeddings: torch.Tensor
+        # register buffers
+        self.register_bufferlist("masks", self.generate_masks(), persistent=False)  # no need to save masks
+        self.register_buffer("_text_embeddings", None)
+        self.register_bufferlist("_visual_embeddings", [None for _ in self.scales])
+        self.register_buffer("_patch_embeddings", None)
+
+        # annotation
+        self._text_embeddings: torch.Tensor | None
+        self._visual_embeddings: list[torch.Tensor] | None
+        self._patch_embeddings: torch.Tensor | None
+
+        # setup
+        self.setup(class_name, reference_images)
+
+    def setup(self, class_name: str | None = None, reference_images: torch.Tensor | None = None) -> None:
+        """Setup WinCLIP.
+
+        WinCLIP's setup stage consists of collecting the text and visual embeddings used during inference. The
+        following steps are performed, depending on the arguments passed to the model:
+        - Collect text embeddings for zero-shot inference.
+        - Collect reference images for few-shot inference.
+        The k_shot attribute is updated based on the number of reference images.
+
+        The setup method is called internally by the constructor. However, it can also be called manually to update the
+        text and visual embeddings after the model has been initialized.
+
+        Args:
+            class_name (str): The name of the object class used in the prompt ensemble.
+            reference_images (torch.Tensor): Tensor of shape ``(batch_size, C, H, W)`` containing the reference images.
+
+        Examples:
+            >>> model = WinClipModel()
+            >>> model.setup("transistor")
+            >>> model.text_embeddings.shape
+            torch.Size([2, 640])
+
+            >>> ref_images = torch.rand(2, 3, 240, 240)
+            >>> model = WinClipModel()
+            >>> model.setup("transistor", ref_images)
+            >>> model.k_shot
+            2
+            >>> model.visual_embeddings[0].shape
+            torch.Size([2, 196, 640])
+
+            >>> model = WinClipModel("transistor")
+            >>> model.k_shot
+            0
+            >>> model.setup(reference_images=ref_images)
+            >>> model.k_shot
+            2
+
+            >>> model = WinClipModel(class_name="transistor", reference_images=ref_images)
+            >>> model.text_embeddings.shape
+            torch.Size([2, 640])
+            >>> model.visual_embeddings[0].shape
+            torch.Size([2, 196, 640])
+        """
+        # update class name and text embeddings
+        self.class_name = class_name or self.class_name
+        if self.class_name is not None:
+            self.collect_text_embeddings(self.class_name)
+        # update reference images, k_shot and visual embeddings
+        self.reference_images = reference_images if reference_images is not None else self.reference_images
+        if self.reference_images is not None:
+            self.k_shot = self.reference_images.shape[0]  # update k_shot based on number of reference images
+            self.collect_visual_embeddings(self.reference_images)
 
     def encode_image(self, batch: torch.Tensor) -> tuple[torch.Tensor, list[torch.Tensor], torch.Tensor]:
         """Encode the batch of images to obtain image embeddings, window embeddings, and patch embeddings.
@@ -86,7 +158,10 @@ class WinClipModel(nn.Module):
             >>> patch_embeddings.shape
             torch.Size([1, 225, 896])
         """
-        assert isinstance(self.masks, list), "Masks have not been prepared. Call prepare_masks before inference."
+        # apply transform if needed
+        if self.apply_transform:
+            batch = self.transform(batch)
+
         # register hook to retrieve intermediate feature map
         outputs = {}
 
@@ -197,7 +272,6 @@ class WinClipModel(nn.Module):
         Returns:
             torch.Tensor: Tensor of shape ``(batch_size, H, W)`` representing the 0-shot scores for each patch location.
         """
-        assert isinstance(self.masks, list), "Masks have not been prepared. Call prepare_masks before inference."
         # image scores are added to represent the full image scale
         multi_scale_scores = [image_scores.view(-1, 1, 1).repeat(1, self.grid_size[0], self.grid_size[1])]
         # add aggregated scores for each scale
@@ -228,12 +302,6 @@ class WinClipModel(nn.Module):
             torch.Tensor: Tensor of shape ``(batch_size, H, W)`` representing the few-shot scores for each patch
                 location.
         """
-        assert isinstance(
-            self.visual_embeddings,
-            list,
-        ), "Visual embeddings have not been prepared. Call collect_visual_embeddings before inference."
-        assert isinstance(self.masks, list), "Masks have not been prepared. Call prepare_masks before inference."
-
         multi_scale_scores = [
             visual_association_score(patch_embeddings, self.patch_embeddings).reshape((-1, *self.grid_size)),
         ]
@@ -248,7 +316,7 @@ class WinClipModel(nn.Module):
 
         return torch.stack(multi_scale_scores).mean(dim=0)
 
-    def collect_text_embeddings(self, class_name: str, device: torch.device | None = None) -> None:
+    def collect_text_embeddings(self, class_name: str) -> None:
         """Collect text embeddings for the object class using a compositional prompt ensemble.
 
         First, an ensemble of normal and anomalous prompts is created based on the name of the object class. The
@@ -275,22 +343,20 @@ class WinClipModel(nn.Module):
         anomalous_embeddings = torch.mean(anomalous_embeddings, dim=0, keepdim=True)
         # concatenate and store
         text_embeddings = torch.cat((normal_embeddings, anomalous_embeddings))
-        self.text_embeddings = text_embeddings.to(device)
+        self._text_embeddings = text_embeddings
 
-    def collect_visual_embeddings(self, images: torch.Tensor, device: torch.device | None = None) -> None:
+    def collect_visual_embeddings(self, images: torch.Tensor) -> None:
         """Collect visual embeddings based on a set of normal reference images.
 
         Args:
-            images (torch.Tensor): Tensor of shape ``(batch_size, C, H, W)`` containing the reference images.
+            images (torch.Tensor): Tensor of shape ``(K, C, H, W)`` containing the reference images.
             device (torch.device | None, optional): The device on which the embeddings should be stored.
                 Defaults to None.
         """
         with torch.no_grad():
-            _, window_embeddings, patch_embeddings = self.encode_image(images)
-        self.visual_embeddings = [window.to(device) for window in window_embeddings]
-        self.patch_embeddings = patch_embeddings.to(device)
+            _, self._visual_embeddings, self._patch_embeddings = self.encode_image(images)
 
-    def prepare_masks(self, device: torch.device | None = None) -> None:
+    def generate_masks(self) -> list[torch.Tensor]:
         """Prepare a set of masks that operate as multi-scale sliding windows.
 
         For each of the scales, a set of masks is created that select patches from the feature map. Each mask represents
@@ -300,4 +366,39 @@ class WinClipModel(nn.Module):
             device (torch.device | None, optional): The device on which the masks should be stored.
                 Defaults to None.
         """
-        self.masks = [make_masks(self.grid_size, scale, 1).to(device) for scale in self.scales]
+        return [make_masks(self.grid_size, scale, 1) for scale in self.scales]
+
+    @property
+    def transform(self) -> Compose:
+        """The transform used by the model.
+
+        To obtain the transforms, we retrieve the transforms from the clip backbone. Since the original transforms are
+        intended for PIL images, we prepend a ToPILImage transform to the list of transforms.
+        """
+        transforms = copy(self._transform.transforms)
+        transforms.insert(0, ToPILImage())
+        return Compose(transforms)
+
+    @property
+    def text_embeddings(self) -> torch.Tensor:
+        """The text embeddings used by the model."""
+        if self._text_embeddings is None:
+            msg = "Text embeddings have not been collected. Pass a class name to the model using ``setup``."
+            raise RuntimeError(msg)
+        return self._text_embeddings
+
+    @property
+    def visual_embeddings(self) -> list[torch.Tensor]:
+        """The visual embeddings used by the model."""
+        if self._visual_embeddings is None:
+            msg = "Visual embeddings have not been collected. Pass some reference images to the model using ``setup``."
+            raise RuntimeError(msg)
+        return self._visual_embeddings
+
+    @property
+    def patch_embeddings(self) -> torch.Tensor:
+        """The patch embeddings used by the model."""
+        if self._patch_embeddings is None:
+            msg = "Patch embeddings have not been collected. Pass some reference images to the model using ``setup``."
+            raise RuntimeError(msg)
+        return self._patch_embeddings

@@ -9,12 +9,10 @@ Paper https://arxiv.org/abs/2303.14814
 from __future__ import annotations
 
 import logging
-from copy import copy
 from pathlib import Path
 
 import torch
 from torch.utils.data import DataLoader
-from torchvision.transforms import Compose, ToPILImage
 
 from anomalib import LearningType
 from anomalib.data.predict import PredictDataset
@@ -49,7 +47,7 @@ class WinClip(AnomalyModule):
         few_shot_source: Path | str | None = None,
     ) -> None:
         super().__init__()
-        self.model = WinClipModel(k_shot=k_shot, scales=scales)
+        self.model = WinClipModel(scales=scales, apply_transform=False)
         self.class_name = class_name
         self.k_shot = k_shot
         self.few_shot_source = Path(few_shot_source) if few_shot_source else None
@@ -58,7 +56,6 @@ class WinClip(AnomalyModule):
         """Setup WinCLIP.
 
         - Set the class name used in the prompt ensemble.
-        - Prepare the mask locations for the sliding-window approach.
         - Collect text embeddings for zero-shot inference.
         - Collect reference images for few-shot inference.
 
@@ -68,23 +65,26 @@ class WinClip(AnomalyModule):
             stage (str): The stage in which the setup is called. Usually ``"fit"``, ``"test"`` or ``predict``.
         """
         del stage
-        self._set_class_name()
-        self.model.prepare_masks(device=self.device)
-        self.model.collect_text_embeddings(self.class_name, device=self.device)
+        # get class name
+        self.class_name = self._get_class_name()
+        ref_images = None
 
+        # get reference images
         if self.k_shot:
             if self.few_shot_source:
                 logger.info("Loading reference images from %s", self.few_shot_source)
-                reference_dataset = PredictDataset(self.few_shot_source, transform=self.transform)
+                reference_dataset = PredictDataset(self.few_shot_source, transform=self.model.transform)
                 dataloader = DataLoader(reference_dataset, batch_size=1, shuffle=False)
             else:
                 logger.info("Collecting reference images from training dataset")
                 dataloader = self.trainer.datamodule.train_dataloader()
 
             ref_images = self.collect_reference_images(dataloader)
-            self.model.collect_visual_embeddings(ref_images, device=self.device)
 
-    def _set_class_name(self) -> None:
+        # call setup to initialize the model
+        self.model.setup(self.class_name, ref_images)
+
+    def _get_class_name(self) -> str:
         """Set the class name used in the prompt ensemble.
 
         - When a class name is provided by the user, it is used.
@@ -93,14 +93,13 @@ class WinClip(AnomalyModule):
             class name "object" is used.
         """
         if self.class_name is not None:
-            logger.info("Using class name: %s", self.class_name)
-            return
+            logger.info("Using class name from init args: %s", self.class_name)
+            return self.class_name
         if hasattr(self, "trainer") and hasattr(self.trainer.datamodule, "category"):
             logger.info("No class name provided, using category from datamodule: %s", self.trainer.datamodule.category)
-            self.class_name = self.trainer.datamodule.category
-        else:
-            logger.info("No class name provided and no category name found in datamodule using default: object")
-            self.class_name = "object"
+            return self.trainer.datamodule.category
+        logger.info("No class name provided and no category name found in datamodule using default: object")
+        return "object"
 
     def collect_reference_images(self, dataloader: DataLoader) -> torch.Tensor:
         """Collect reference images for few-shot inference.
@@ -136,17 +135,6 @@ class WinClip(AnomalyModule):
         return {}
 
     @property
-    def transform(self) -> None:
-        """The transform used by the model.
-
-        To obtain the transforms, we retrieve the transforms from the clip backbone. Since the original transforms are
-        intended for PIL images, we prepend a ToPILImage transform to the list of transforms.
-        """
-        transforms = copy(self.model.transform.transforms)
-        transforms.insert(0, ToPILImage())
-        return Compose(transforms)
-
-    @property
     def learning_type(self) -> LearningType:
         """The learning type of the model.
 
@@ -158,7 +146,7 @@ class WinClip(AnomalyModule):
     def state_dict(self) -> dict:
         """Return the state dict of the model."""
         state_dict = super().state_dict()
-        remove_keys = [key for key in state_dict if key.startswith("model.")]
+        remove_keys = [key for key in state_dict if key.startswith("model.clip.")]
         for key in remove_keys:
             state_dict.pop(key)
         return state_dict
