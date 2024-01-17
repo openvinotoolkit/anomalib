@@ -53,8 +53,11 @@ def get_image_filename(filename: str | Path) -> Path:
 
     Examples:
         Assume that we have the following files in the directory:
-        $ ls
-        000.png  001.jpg  002.JPEG  003.tiff  004.png  005.txt
+
+        .. code-block:: bash
+
+            $ ls
+            000.png  001.jpg  002.JPEG  003.tiff  004.png  005.txt
 
         >>> get_image_filename("000.png")
         PosixPath('000.png')
@@ -135,8 +138,43 @@ def get_image_filenames(path: str | Path, base_dir: str | Path | None = None) ->
         base_dir (Path): Base directory to restrict file access.
 
     Returns:
-        list[Path]: List of image filenames
+        list[Path]: List of image filenames.
 
+    Examples:
+        Assume that we have the following files in the directory:
+
+        .. code-block:: bash
+
+            $ tree images
+            images
+            ├── bad
+            │   ├── 003.png
+            │   └── 004.jpg
+            └── good
+                ├── 000.png
+                └── 001.tiff
+
+        We can get the image filenames with various ways:
+
+        >>> get_image_filenames("images/bad/003.png")
+        PosixPath('/home/sakcay/Projects/anomalib/images/bad/003.png')]
+
+        It is possible to recursively get the image filenames from a directory:
+
+        >>> get_image_filenames("images")
+        [PosixPath('/home/sakcay/Projects/anomalib/images/bad/003.png'),
+        PosixPath('/home/sakcay/Projects/anomalib/images/bad/004.jpg'),
+        PosixPath('/home/sakcay/Projects/anomalib/images/good/001.tiff'),
+        PosixPath('/home/sakcay/Projects/anomalib/images/good/000.png')]
+
+        If we want to restrict the file access to a specific directory,
+        we can use ``base_dir`` argument.
+
+        >>> get_image_filenames("images", base_dir="images/bad")
+        Traceback (most recent call last):
+        File "<string>", line 1, in <module>
+        File "<string>", line 18, in get_image_filenames
+        ValueError: Access denied: Path is outside the allowed directory.
     """
     path = Path(path).expanduser().resolve()
     base_dir = Path(base_dir).expanduser().resolve() if base_dir else Path.home()
