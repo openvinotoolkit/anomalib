@@ -173,7 +173,7 @@ dataset:
   normal_test_dir: null # name of the folder containing normal test images.
   task: segmentation # classification or segmentation
   mask: <path/to/mask/annotations> #optional
-  extensions: null
+  extensions: null # .ext or [.ext1, .ext2, ...]
   split_ratio: 0.2 # ratio of the normal images that will be used to create a test split
   image_size: 256
   train_batch_size: 32
