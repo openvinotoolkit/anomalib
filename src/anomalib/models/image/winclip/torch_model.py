@@ -31,6 +31,8 @@ class WinClipModel(DynamicBufferModule, BufferListMixin, nn.Module):
             Defaults to ``0``.
         scales (tuple[int], optional): The scales of the sliding windows used for multi-scale anomaly detection.
             Defaults to ``(2, 3)``.
+        apply_transform (bool, optional): Whether to apply the default CLIP transform to the input images.
+            Defaults to ``False``.
 
     Attributes:
         clip (CLIP): The CLIP model used for image and text encoding.
@@ -48,7 +50,7 @@ class WinClipModel(DynamicBufferModule, BufferListMixin, nn.Module):
         class_name: str | None = None,
         reference_images: torch.Tensor | None = None,
         scales: tuple = (2, 3),
-        apply_transform: bool = True,
+        apply_transform: bool = False,
     ) -> None:
         super().__init__()
         self.backbone = BACKBONE
@@ -160,7 +162,7 @@ class WinClipModel(DynamicBufferModule, BufferListMixin, nn.Module):
         """
         # apply transform if needed
         if self.apply_transform:
-            batch = self.transform(batch)
+            batch = torch.stack([self.transform(image) for image in batch])
 
         # register hook to retrieve intermediate feature map
         outputs = {}
