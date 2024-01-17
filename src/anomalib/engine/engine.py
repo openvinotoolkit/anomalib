@@ -673,7 +673,7 @@ class Engine:
         self._setup_trainer(model)
         self._setup_dataset_task(datamodule, dataset)
         if ckpt_path:
-            model = model.__class__.load_from_checkpoint(ckpt_path, strict=False)
+            model = model.__class__.load_from_checkpoint(ckpt_path)
 
         if transform is None:
             if datamodule:

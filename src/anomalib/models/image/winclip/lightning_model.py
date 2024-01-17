@@ -39,6 +39,8 @@ class WinClip(AnomalyModule):
             Defaults to ``None``.
     """
 
+    EXCLUDE_FROM_STATE_DICT = frozenset({"model.clip"})
+
     def __init__(
         self,
         class_name: str | None = None,
@@ -142,11 +144,3 @@ class WinClip(AnomalyModule):
         set to ``LearningType.FEW_SHOT`` when ``k_shot`` is greater than zero and ``LearningType.ZERO_SHOT`` otherwise.
         """
         return LearningType.FEW_SHOT if self.k_shot else LearningType.ZERO_SHOT
-
-    def state_dict(self) -> dict:
-        """Return the state dict of the model."""
-        state_dict = super().state_dict()
-        remove_keys = [key for key in state_dict if key.startswith("model.clip.")]
-        for key in remove_keys:
-            state_dict.pop(key)
-        return state_dict

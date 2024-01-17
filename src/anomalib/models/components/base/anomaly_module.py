@@ -32,6 +32,8 @@ class AnomalyModule(pl.LightningModule, ABC):
     Acts as a base class for all the Anomaly Modules in the library.
     """
 
+    EXCLUDE_FROM_STATE_DICT: frozenset[str]  # these keys will be excluded from the state dict to reduce the size
+
     def __init__(self) -> None:
         super().__init__()
         logger.info("Initializing %s model.", self.__class__.__name__)
@@ -114,20 +116,46 @@ class AnomalyModule(pl.LightningModule, ABC):
         raise NotImplementedError
 
     def _save_to_state_dict(self, destination: OrderedDict, prefix: str, keep_vars: bool) -> None:
-        destination[
-            "image_threshold_class"
-        ] = f"{self.image_threshold.__class__.__module__}.{self.image_threshold.__class__.__name__}"
-        destination[
-            "pixel_threshold_class"
-        ] = f"{self.pixel_threshold.__class__.__module__}.{self.pixel_threshold.__class__.__name__}"
+        if hasattr(self, "image_threshold"):
+            destination[
+                "image_threshold_class"
+            ] = f"{self.image_threshold.__class__.__module__}.{self.image_threshold.__class__.__name__}"
+        if hasattr(self, "pixel_threshold"):
+            destination[
+                "pixel_threshold_class"
+            ] = f"{self.pixel_threshold.__class__.__module__}.{self.pixel_threshold.__class__.__name__}"
         if hasattr(self, "normalization_metrics"):
             normalization_class = self.normalization_metrics.__class__
             destination["normalization_class"] = f"{normalization_class.__module__}.{normalization_class.__name__}"
 
         return super()._save_to_state_dict(destination, prefix, keep_vars)
 
-    def load_state_dict(self, state_dict: OrderedDict[str, Any], strict: bool = False) -> Any:  # noqa: ANN401
-        """Initialize auxiliary object."""
+    def state_dict(self) -> OrderedDict[str, Any]:
+        """Return the state dict of the model.
+
+        Before returning the state dict, we remove the parameters of the frozen backbone to reduce the size of the
+        checkpoint.
+        """
+        state_dict = super().state_dict()
+        for pattern in self.EXCLUDE_FROM_STATE_DICT:
+            remove_keys = [key for key in state_dict if key.startswith(pattern)]
+            for key in remove_keys:
+                state_dict.pop(key)
+        return state_dict
+
+    def load_state_dict(self, state_dict: OrderedDict[str, Any], strict: bool = True) -> Any:  # noqa: ANN401
+        """Load the state dict of the model.
+
+        Before loading the state dict, we restore the parameters of the frozen backbone to ensure that the model
+        is loaded correctly. We also restore the auxiliary objects like threshold classes and normalization metrics.
+        """
+        # restore the parameters of the excluded modules, if any
+        full_dict = super().state_dict()
+        for pattern in self.EXCLUDE_FROM_STATE_DICT:
+            restore_dict = {key: value for key, value in full_dict.items() if key.startswith(pattern)}
+            state_dict.update(restore_dict)
+
+        # set the auxiliary objects
         if "image_threshold_class" in state_dict:
             self.image_threshold = self._get_instance(state_dict, "image_threshold_class")
         if "pixel_threshold_class" in state_dict:
