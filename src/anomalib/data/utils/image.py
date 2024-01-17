@@ -118,7 +118,7 @@ def get_image_filenames_from_dir(path: str | Path) -> list[Path]:
         msg = f"Path is not a directory: {path}"
         raise ValueError(msg)
 
-    image_filenames = [get_image_filename(f) for f in path.glob("**/*")]
+    image_filenames = [get_image_filename(f) for f in path.glob("**/*") if is_image_file(f)]
 
     if not image_filenames:
         msg = f"Found 0 images in {path}"
