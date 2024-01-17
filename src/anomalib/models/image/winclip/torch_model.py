@@ -69,14 +69,14 @@ class WinClipModel(DynamicBufferModule, BufferListMixin, nn.Module):
 
         # register buffers
         self.register_bufferlist("masks", self.generate_masks(), persistent=False)  # no need to save masks
-        self.register_buffer("_text_embeddings", None)
-        self.register_bufferlist("_visual_embeddings", [None for _ in self.scales])
-        self.register_buffer("_patch_embeddings", None)
+        self.register_buffer("_text_embeddings", torch.empty(0))
+        self.register_bufferlist("_visual_embeddings", [torch.empty(0) for _ in self.scales])
+        self.register_buffer("_patch_embeddings", torch.empty(0))
 
         # annotation
-        self._text_embeddings: torch.Tensor | None
-        self._visual_embeddings: list[torch.Tensor] | None
-        self._patch_embeddings: torch.Tensor | None
+        self._text_embeddings: torch.Tensor
+        self._visual_embeddings: list[torch.Tensor]
+        self._patch_embeddings: torch.Tensor
 
         # setup
         self.setup(class_name, reference_images)
@@ -384,7 +384,7 @@ class WinClipModel(DynamicBufferModule, BufferListMixin, nn.Module):
     @property
     def text_embeddings(self) -> torch.Tensor:
         """The text embeddings used by the model."""
-        if self._text_embeddings is None:
+        if self._text_embeddings.numel() == 0:
             msg = "Text embeddings have not been collected. Pass a class name to the model using ``setup``."
             raise RuntimeError(msg)
         return self._text_embeddings
@@ -392,7 +392,7 @@ class WinClipModel(DynamicBufferModule, BufferListMixin, nn.Module):
     @property
     def visual_embeddings(self) -> list[torch.Tensor]:
         """The visual embeddings used by the model."""
-        if self._visual_embeddings is None:
+        if self._visual_embeddings[0].numel() == 0:
             msg = "Visual embeddings have not been collected. Pass some reference images to the model using ``setup``."
             raise RuntimeError(msg)
         return self._visual_embeddings
@@ -400,7 +400,7 @@ class WinClipModel(DynamicBufferModule, BufferListMixin, nn.Module):
     @property
     def patch_embeddings(self) -> torch.Tensor:
         """The patch embeddings used by the model."""
-        if self._patch_embeddings is None:
+        if self._patch_embeddings.numel() == 0:
             msg = "Patch embeddings have not been collected. Pass some reference images to the model using ``setup``."
             raise RuntimeError(msg)
         return self._patch_embeddings
