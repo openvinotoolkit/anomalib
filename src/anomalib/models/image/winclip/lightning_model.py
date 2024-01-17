@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
+from typing import TYPE_CHECKING, Any
 
 import torch
 from torch.utils.data import DataLoader
@@ -19,6 +20,9 @@ from anomalib.data.predict import PredictDataset
 from anomalib.models.components import AnomalyModule
 
 from .torch_model import WinClipModel
+
+if TYPE_CHECKING:
+    from collections import OrderedDict
 
 logger = logging.getLogger(__name__)
 
@@ -144,3 +148,29 @@ class WinClip(AnomalyModule):
         set to ``LearningType.FEW_SHOT`` when ``k_shot`` is greater than zero and ``LearningType.ZERO_SHOT`` otherwise.
         """
         return LearningType.FEW_SHOT if self.k_shot else LearningType.ZERO_SHOT
+
+    def state_dict(self) -> OrderedDict[str, Any]:
+        """Return the state dict of the model.
+
+        Before returning the state dict, we remove the parameters of the frozen backbone to reduce the size of the
+        checkpoint.
+        """
+        state_dict = super().state_dict()
+        for pattern in self.EXCLUDE_FROM_STATE_DICT:
+            remove_keys = [key for key in state_dict if key.startswith(pattern)]
+            for key in remove_keys:
+                state_dict.pop(key)
+        return state_dict
+
+    def load_state_dict(self, state_dict: OrderedDict[str, Any], strict: bool = True) -> Any:  # noqa: ANN401
+        """Load the state dict of the model.
+
+        Before loading the state dict, we restore the parameters of the frozen backbone to ensure that the model
+        is loaded correctly. We also restore the auxiliary objects like threshold classes and normalization metrics.
+        """
+        # restore the parameters of the excluded modules, if any
+        full_dict = super().state_dict()
+        for pattern in self.EXCLUDE_FROM_STATE_DICT:
+            restore_dict = {key: value for key, value in full_dict.items() if key.startswith(pattern)}
+            state_dict.update(restore_dict)
+        return super().load_state_dict(state_dict, strict)
