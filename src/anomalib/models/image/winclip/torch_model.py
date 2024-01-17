@@ -202,11 +202,10 @@ class WinClipModel(DynamicBufferModule, BufferListMixin, nn.Module):
         """
         batch_size = feature_map.shape[0]
         n_masks = masks.shape[1]
-        device = feature_map.device
 
         # prepend zero index for class embeddings
-        class_index = torch.zeros(1, n_masks, dtype=int).to(device)
-        masks = torch.cat((class_index, masks.to(device) + 1)).T  # +1 to account for class index
+        class_index = torch.zeros(1, n_masks, dtype=int).to(feature_map.device)
+        masks = torch.cat((class_index, masks + 1)).T  # +1 to account for class index
         # apply masks to feature map
         masked = torch.cat([torch.index_select(feature_map, 1, mask) for mask in masks])
 
@@ -328,8 +327,6 @@ class WinClipModel(DynamicBufferModule, BufferListMixin, nn.Module):
 
         Args:
             class_name (str): The name of the object class used in the prompt ensemble.
-            device (torch.device | None, optional): The device on which the embeddings should be stored.
-                Defaults to None.
         """
         # collect prompt ensemble
         normal_prompts, anomalous_prompts = create_prompt_ensemble(class_name)
@@ -352,8 +349,6 @@ class WinClipModel(DynamicBufferModule, BufferListMixin, nn.Module):
 
         Args:
             images (torch.Tensor): Tensor of shape ``(K, C, H, W)`` containing the reference images.
-            device (torch.device | None, optional): The device on which the embeddings should be stored.
-                Defaults to None.
         """
         with torch.no_grad():
             _, self._visual_embeddings, self._patch_embeddings = self.encode_image(images)
@@ -364,9 +359,9 @@ class WinClipModel(DynamicBufferModule, BufferListMixin, nn.Module):
         For each of the scales, a set of masks is created that select patches from the feature map. Each mask represents
         a sliding window location in the pixel domain. The masks are stored in the model to be used during inference.
 
-        Args:
-            device (torch.device | None, optional): The device on which the masks should be stored.
-                Defaults to None.
+        Returns:
+            list[torch.Tensor]: A list of tensors of shape ``(n_patches_per_mask, n_masks)`` representing the sliding
+                window locations for each scale.
         """
         return [make_masks(self.grid_size, scale, 1) for scale in self.scales]
 
