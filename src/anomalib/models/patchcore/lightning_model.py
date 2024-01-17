@@ -135,3 +135,9 @@ class PatchcoreLightning(Patchcore):
         )
         self.hparams: DictConfig | ListConfig  # type: ignore
         self.save_hyperparameters(hparams)
+
+        # check if PatchCore is trained for one epoch, as in their paper: https://arxiv.org/pdf/2106.08265.pdf
+        if self.hparams.trainer.max_epochs != 1:
+            raise ValueError(
+                f"trainer.max_epochs for PatchCore should be set to 1 instead of {self.hparams.trainer.max_epochs}"
+            )

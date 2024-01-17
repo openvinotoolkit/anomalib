@@ -80,7 +80,7 @@ trainer:
   check_val_every_n_epoch: 1 # Don't validate before extracting features.
   fast_dev_run: false
   accumulate_grad_batches: 1
-  max_epochs: 1
+  max_epochs:  1 # PatchCore must be trained for 1 epoch
   min_epochs: null
   max_steps: -1
   min_steps: null
