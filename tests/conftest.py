@@ -24,7 +24,13 @@ def _dataset_names() -> list[str]:
 @pytest.fixture(scope="session")
 def project_path() -> Generator[Path, None, None]:
     """Return a temporary directory path that is used as the project directory for the entire test."""
-    with TemporaryDirectory() as project_path:
+    # Get the root directory of the project
+    # We want to create the temporary directory in the root directory of the project.
+    # This is useful in terms of accessing the test files in the project directory.
+    # This tmp directory will be deleted after all the tests are run.
+    tmp_dir = Path(__file__).parent.parent
+
+    with TemporaryDirectory(dir=tmp_dir) as project_path:
         yield Path(project_path)
 
 
