@@ -6,11 +6,10 @@ Paper https://arxiv.org/abs/2303.14814
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
-
 import logging
+from collections import OrderedDict
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import torch
 from torch.utils.data import DataLoader
@@ -20,9 +19,6 @@ from anomalib.data.predict import PredictDataset
 from anomalib.models.components import AnomalyModule
 
 from .torch_model import WinClipModel
-
-if TYPE_CHECKING:
-    from collections import OrderedDict
 
 logger = logging.getLogger(__name__)
 
