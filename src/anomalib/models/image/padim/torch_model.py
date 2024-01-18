@@ -11,7 +11,7 @@ import torch
 from torch import nn
 from torch.nn import functional as F  # noqa: N812
 
-from anomalib.models.components import FeatureExtractor, MultiVariateGaussian
+from anomalib.models.components import MultiVariateGaussian, TimmFeatureExtractor
 from anomalib.models.components.feature_extractors import dryrun_find_featuremap_dims
 
 from .anomaly_map import AnomalyMapGenerator
@@ -27,7 +27,7 @@ _N_FEATURES_DEFAULTS = {
 
 
 def _deduce_dims(
-    feature_extractor: FeatureExtractor,
+    feature_extractor: TimmFeatureExtractor,
     input_size: tuple[int, int],
     layers: list[str],
 ) -> tuple[int, int]:
@@ -79,7 +79,7 @@ class PadimModel(nn.Module):
 
         self.backbone = backbone
         self.layers = layers
-        self.feature_extractor = FeatureExtractor(backbone=self.backbone, layers=layers, pre_trained=pre_trained)
+        self.feature_extractor = TimmFeatureExtractor(backbone=self.backbone, layers=layers, pre_trained=pre_trained)
         self.n_features_original, self.n_patches = _deduce_dims(self.feature_extractor, input_size, self.layers)
 
         n_features = n_features or _N_FEATURES_DEFAULTS.get(self.backbone)

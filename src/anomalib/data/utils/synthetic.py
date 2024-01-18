@@ -20,9 +20,9 @@ import pandas as pd
 from albumentations.pytorch import ToTensorV2
 from pandas import DataFrame, Series
 
+from anomalib import TaskType
 from anomalib.data.base.dataset import AnomalibDataset
 from anomalib.data.utils import Augmenter, Split, read_image
-from anomalib.utils.types import TaskType
 
 logger = logging.getLogger(__name__)
 

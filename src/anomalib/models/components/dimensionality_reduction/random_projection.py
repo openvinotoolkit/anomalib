@@ -77,7 +77,7 @@ class SparseRandomProjection:
 
         else:
             # Sparse matrix is not being generated here as it is stored as dense anyways
-            components = torch.zeros((self.n_components, n_features), dtype=torch.float64)
+            components = torch.zeros((self.n_components, n_features), dtype=torch.float32)
             for i in range(self.n_components):
                 # find the indices of the non-zero components for row i
                 nnz_idx = torch.distributions.Binomial(total_count=n_features, probs=density).sample()
@@ -89,11 +89,11 @@ class SparseRandomProjection:
                         n_samples=nnz_idx,
                         random_state=self.random_state,
                     ),
-                    dtype=torch.int64,
+                    dtype=torch.int32,
                 )
                 data = torch.distributions.Binomial(total_count=1, probs=0.5).sample(sample_shape=c_idx.size()) * 2 - 1
                 # assign data to only those columns
-                components[i, c_idx] = data.double()
+                components[i, c_idx] = data
 
             components *= np.sqrt(1 / density) / np.sqrt(self.n_components)
 

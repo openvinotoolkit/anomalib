@@ -120,7 +120,7 @@ def get_single_model_metrics(
 
         export_to_torch(
             model=model,
-            export_path=Path(project_path),
+            export_root=Path(project_path),
             transform=engine.trainer.datamodule.test_data.transform,
             task=engine.trainer.datamodule.test_data.task,
         )
@@ -139,7 +139,7 @@ def get_single_model_metrics(
             else:
                 input_size = model_config.data.init_args.image_size
             export_to_openvino(
-                export_path=Path(project_path),
+                export_root=Path(project_path),
                 model=model,
                 input_size=input_size,
                 transform=engine.trainer.datamodule.test_data.transform,

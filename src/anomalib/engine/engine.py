@@ -16,17 +16,17 @@ from lightning.pytorch.utilities.types import _EVALUATE_OUTPUT, _PREDICT_OUTPUT,
 from omegaconf import DictConfig, ListConfig
 from torch.utils.data import DataLoader, Dataset
 
+from anomalib import TaskType
 from anomalib.callbacks import get_visualization_callbacks
 from anomalib.callbacks.metrics import _MetricsCallback
 from anomalib.callbacks.normalization import get_normalization_callback
 from anomalib.callbacks.post_processor import _PostProcessorCallback
 from anomalib.callbacks.thresholding import _ThresholdCallback
-from anomalib.data import AnomalibDataModule, AnomalibDataset, InferenceDataset
+from anomalib.data import AnomalibDataModule, AnomalibDataset, PredictDataset
 from anomalib.deploy.export import ExportType, export_to_onnx, export_to_openvino, export_to_torch
 from anomalib.metrics.threshold import BaseThreshold
 from anomalib.models import AnomalyModule
 from anomalib.utils.normalization import NormalizationMethod
-from anomalib.utils.types import TaskType
 
 logger = logging.getLogger(__name__)
 
@@ -201,7 +201,7 @@ class Engine:
 
         if self.visualization is not None:
             image_save_path = self.visualization.pop("image_save_path", None)
-            if image_save_path is None:
+            if image_save_path is None or image_save_path == "":
                 image_save_path = self.trainer.default_root_dir + "/images"
             _callbacks += get_visualization_callbacks(
                 task=self.task,
@@ -357,7 +357,7 @@ class Engine:
         self,
         model: AnomalyModule | None = None,
         dataloaders: EVAL_DATALOADERS | AnomalibDataModule | None = None,
-        datamodule: AnomalibDataModule | Dataset | InferenceDataset | None = None,
+        datamodule: AnomalibDataModule | Dataset | PredictDataset | None = None,
         return_predictions: bool | None = None,
         ckpt_path: str | None = None,
     ) -> _PREDICT_OUTPUT | None:
@@ -404,6 +404,10 @@ class Engine:
             4. If you have a ready configuration file, run it like this.
                 ```python
                 anomalib predict --config <config_file_path> --return_predictions
+                ```
+            5. You can also point to a folder with image or a single image instead of passing a dataset.
+                ```python
+                anomalib predict --model Padim --data <PATH_TO_IMAGE_OR_FOLDER> --ckpt_path <PATH_TO_CHECKPOINT>
                 ```
         """
         if model:
@@ -462,11 +466,11 @@ class Engine:
                 ```
             2. Of course, you can override the various values with commands.
                 ```python
-                anomalib test --model anomalib.models.Padim --data <CONFIG | CLASS_PATH_OR_NAME> --trainer.max_epochs 3
+                anomalib train --model anomalib.models.Padim --data <CONFIG | CLASS_PATH_OR_NAME> --trainer.max_epochs 3
                 ```
             4. If you have a ready configuration file, run it like this.
                 ```python
-                anomalib test --config <config_file_path>
+                anomalib train --config <config_file_path>
                 ```
         """
         self._setup_trainer(model)
@@ -478,7 +482,7 @@ class Engine:
         self,
         model: AnomalyModule,
         export_type: ExportType,
-        export_path: str | Path | None = None,
+        export_root: str | Path | None = None,
         transform: dict[str, Any] | A.Compose | str | Path | None = None,
         datamodule: AnomalibDataModule | None = None,
         dataset: AnomalibDataset | None = None,
@@ -486,12 +490,12 @@ class Engine:
         ov_args: dict[str, Any] | None = None,
         ckpt_path: str | None = None,
     ) -> Path | None:
-        """Export the model in the specified format.
+        """Export the model in PyTorch, ONNX or OpenVINO format.
 
         Args:
             model (AnomalyModule): Trained model.
             export_type (ExportType): Export type.
-            export_path (str | Path | None, optional): Path to the output directory. If it is not set, the model is
+            export_root (str | Path | None, optional): Path to the output directory. If it is not set, the model is
                 exported to trainer.default_root_dir. Defaults to None.
             transform (dict[str, Any] | A.Compose | str | Path | None, optional): Transform config. Can either be a
                 path to a file containing the transform config or can be an object. The file or object should follow
@@ -515,7 +519,23 @@ class Engine:
             TypeError: If path to the transform file is not a string or Path.
 
         CLI Usage:
-            TODO(ashwinvaidya17)
+            1. To export as a torch ``.pt`` file you can run the following command.
+                ```python
+                anomalib export --model Padim --export_mode TORCH --data MVTec
+                ```
+            2. To export as an ONNX ``.onnx`` file you can run the following command.
+                ```python
+                anomalib export --model Padim --export_mode ONNX --data Visa --input_size "[256,256]"
+                ```
+            3. To export as an OpenVINO ``.xml`` and ``.bin`` file you can run the following command.
+                ```python
+                anomalib export --model Padim --export_mode OPENVINO --data Visa --input_size "[256,256]"
+                ```
+            4. You can also overrride OpenVINO model optimizer by adding the ``--mo_args.<key>`` arguments.
+                ```python
+                anomalib export --model Padim --export_mode OPENVINO --data Visa --input_size "[256,256]" \
+                    --mo_args.compress_to_fp16 False
+                ```
         """
         self._setup_trainer(model)
         self._setup_dataset_task(datamodule, dataset)
@@ -536,30 +556,39 @@ class Engine:
             logger.exception(f"Unknown type {type(transform)} for transform.")
             raise TypeError
 
-        if export_path is None:
-            export_path = Path(self.trainer.default_root_dir)
+        if export_root is None:
+            export_root = Path(self.trainer.default_root_dir)
 
+        exported_model_path: Path | None = None
         if export_type == ExportType.TORCH:
-            return export_to_torch(model=model, export_path=export_path, transform=transform, task=self.task)
-        if export_type == ExportType.ONNX:
-            assert input_size is not None, "input_size must be provided for ONNX export type."
-            return export_to_onnx(
+            exported_model_path = export_to_torch(
                 model=model,
-                input_size=input_size,
-                export_path=export_path,
+                export_root=export_root,
                 transform=transform,
                 task=self.task,
             )
-        if export_type == ExportType.OPENVINO:
-            assert input_size is not None, "input_size must be provided for OpenVINO export type."
-            return export_to_openvino(
+        elif export_type == ExportType.ONNX:
+            assert input_size is not None, "input_size must be provided for ONNX export."
+            exported_model_path = export_to_onnx(
                 model=model,
                 input_size=input_size,
-                export_path=export_path,
+                export_root=export_root,
+                transform=transform,
+                task=self.task,
+            )
+        elif export_type == ExportType.OPENVINO:
+            assert input_size is not None, "input_size must be provided for OpenVINO export."
+            exported_model_path = export_to_openvino(
+                model=model,
+                input_size=input_size,
+                export_root=export_root,
                 transform=transform,
                 task=self.task,
                 ov_args=ov_args,
             )
+        else:
+            logging.error(f"Export type {export_type} is not supported yet.")
 
-        logging.error(f"Export type {export_type} is not supported yet.")
-        return None
+        if exported_model_path:
+            logging.info(f"Exported model to {exported_model_path}")
+        return exported_model_path

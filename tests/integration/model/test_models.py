@@ -13,11 +13,11 @@ import pytest
 from lightning.pytorch.callbacks import ModelCheckpoint
 from torch.utils.data import DataLoader
 
-from anomalib.data import AnomalibDataModule, InferenceDataset, MVTec, UCSDped
+from anomalib import TaskType
+from anomalib.data import AnomalibDataModule, MVTec, PredictDataset, UCSDped
 from anomalib.deploy.export import ExportType
 from anomalib.engine import Engine
 from anomalib.models import AnomalyModule, get_available_models, get_model
-from anomalib.utils.types import TaskType
 
 
 def models() -> set[str]:
@@ -113,7 +113,7 @@ class TestAPI:
         if model_name == "ai_vad":
             dataloader = _dataloader
         else:
-            dataloader = DataLoader(InferenceDataset(dataset_path / "mvtec" / "dummy" / "test"))
+            dataloader = DataLoader(PredictDataset(dataset_path / "mvtec" / "dummy" / "test"))
         engine.predict(
             model=model,
             dataloaders=dataloader,

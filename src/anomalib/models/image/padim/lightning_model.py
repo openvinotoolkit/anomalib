@@ -12,6 +12,7 @@ import logging
 import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 
+from anomalib import LearningType
 from anomalib.models.components import AnomalyModule, MemoryBankMixin
 
 from .torch_model import PadimModel
@@ -118,3 +119,12 @@ class Padim(MemoryBankMixin, AnomalyModule):
         Since we need to run training epoch before validation, we also set the sanity steps to 0
         """
         return {"max_epochs": 1, "val_check_interval": 1.0, "num_sanity_val_steps": 0}
+
+    @property
+    def learning_type(self) -> LearningType:
+        """Return the learning type of the model.
+
+        Returns:
+            LearningType: Learning type of the model.
+        """
+        return LearningType.ONE_CLASS

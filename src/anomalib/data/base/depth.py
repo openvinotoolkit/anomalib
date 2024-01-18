@@ -9,9 +9,9 @@ from PIL import Image
 from torchvision.transforms.functional import to_tensor
 from torchvision.tv_tensors import Mask
 
+from anomalib import TaskType
 from anomalib.data.base.dataset import AnomalibDataset
 from anomalib.data.utils import masks_to_boxes, read_depth_image
-from anomalib.utils.types import TaskType
 
 
 class AnomalibDepthDataset(AnomalibDataset, ABC):

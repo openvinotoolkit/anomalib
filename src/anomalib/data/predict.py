@@ -15,7 +15,7 @@ from torchvision.transforms.functional import to_tensor
 from anomalib.data.utils import get_image_filenames, get_transforms
 
 
-class InferenceDataset(Dataset):
+class PredictDataset(Dataset):
     """Inference Dataset to perform prediction.
 
     Args:

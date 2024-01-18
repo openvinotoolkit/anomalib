@@ -10,7 +10,7 @@ import torch
 from torch import nn
 from torch.nn import functional as F  # noqa: N812
 
-from anomalib.models.components import PCA, DynamicBufferModule, FeatureExtractor
+from anomalib.models.components import PCA, DynamicBufferModule, TimmFeatureExtractor
 
 
 class SingleClassGaussian(DynamicBufferModule):
@@ -105,7 +105,7 @@ class DFMModel(nn.Module):
         self.score_type = score_type
         self.layer = layer
         self.input_size = input_size if isinstance(input_size, tuple) else tuple(input_size)
-        self.feature_extractor = FeatureExtractor(
+        self.feature_extractor = TimmFeatureExtractor(
             backbone=self.backbone,
             pre_trained=pre_trained,
             layers=[layer],

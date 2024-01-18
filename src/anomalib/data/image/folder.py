@@ -13,6 +13,7 @@ from pathlib import Path
 import albumentations as A  # noqa: N812
 from pandas import DataFrame
 
+from anomalib import TaskType
 from anomalib.data.base import AnomalibDataModule, AnomalibDataset
 from anomalib.data.utils import (
     DirType,
@@ -24,7 +25,6 @@ from anomalib.data.utils import (
     get_transforms,
 )
 from anomalib.data.utils.path import _prepare_files_labels, _resolve_path
-from anomalib.utils.types import TaskType
 
 
 def make_folder_dataset(

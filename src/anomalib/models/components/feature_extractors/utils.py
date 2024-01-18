@@ -4,11 +4,11 @@
 import torch
 from torch.fx.graph_module import GraphModule
 
-from .timm import FeatureExtractor
+from .timm import TimmFeatureExtractor
 
 
 def dryrun_find_featuremap_dims(
-    feature_extractor: FeatureExtractor | GraphModule,
+    feature_extractor: TimmFeatureExtractor | GraphModule,
     input_size: tuple[int, int],
     layers: list[str],
 ) -> dict[str, dict[str, int | tuple[int, int]]]:

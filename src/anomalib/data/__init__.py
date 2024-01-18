@@ -16,7 +16,7 @@ from anomalib.utils.config import to_tuple
 from .base import AnomalibDataModule, AnomalibDataset
 from .depth import DepthDataFormat, Folder3D, MVTec3D
 from .image import BTech, Folder, ImageDataFormat, Kolektor, MVTec, Visa
-from .inference import InferenceDataset
+from .predict import PredictDataset
 from .video import Avenue, ShanghaiTech, UCSDped, VideoDataFormat
 
 logger = logging.getLogger(__name__)
@@ -58,7 +58,7 @@ __all__ = [
     "BTech",
     "Folder",
     "Folder3D",
-    "InferenceDataset",
+    "PredictDataset",
     "Kolektor",
     "MVTec",
     "MVTec3D",

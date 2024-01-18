@@ -11,9 +11,9 @@ from pathlib import Path
 
 import pytest
 
+from anomalib import TaskType
 from anomalib.deploy import export_to_torch
 from anomalib.models import Padim
-from anomalib.utils.types import TaskType
 
 sys.path.append("tools/inference")
 
@@ -45,7 +45,7 @@ class TestTorchInferenceEntrypoint:
         model = Padim.load_from_checkpoint(_ckpt_path)
         export_to_torch(
             model=model,
-            export_path=_ckpt_path.parent.parent,
+            export_root=_ckpt_path.parent.parent,
             transform=transforms_config,
             task=TaskType.SEGMENTATION,
         )

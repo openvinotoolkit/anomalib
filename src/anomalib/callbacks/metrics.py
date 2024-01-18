@@ -12,9 +12,9 @@ import torch
 from lightning.pytorch import Callback, Trainer
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 
+from anomalib import TaskType
 from anomalib.metrics import AnomalibMetricCollection, create_metric_collection
 from anomalib.models import AnomalyModule
-from anomalib.utils.types import TaskType
 
 logger = logging.getLogger(__name__)
 
