@@ -349,12 +349,18 @@ class EfficientAdModel(nn.Module):
         transform_function = np.random.default_rng().choice(transform_functions)
         return transform_function(image, coefficient)
 
-    def forward(self, batch: torch.Tensor, batch_imagenet: torch.Tensor | None = None) -> torch.Tensor | dict:
+    def forward(
+        self,
+        batch: torch.Tensor,
+        batch_imagenet: torch.Tensor | None = None,
+        normalize: bool = True,
+    ) -> torch.Tensor | dict:
         """Perform the forward-pass of the EfficientAd models.
 
         Args:
             batch (torch.Tensor): Input images.
             batch_imagenet (torch.Tensor): ImageNet batch. Defaults to None.
+            normalize (bool): Normalize anomaly maps or not
 
         Returns:
             Tensor: Predictions
@@ -411,7 +417,7 @@ class EfficientAdModel(nn.Module):
         map_st = F.interpolate(map_st, size=(self.input_size[0], self.input_size[1]), mode="bilinear")
         map_stae = F.interpolate(map_stae, size=(self.input_size[0], self.input_size[1]), mode="bilinear")
 
-        if self.is_set(self.quantiles):
+        if self.is_set(self.quantiles) and normalize:
             map_st = 0.1 * (map_st - self.quantiles["qa_st"]) / (self.quantiles["qb_st"] - self.quantiles["qa_st"])
             map_stae = 0.1 * (map_stae - self.quantiles["qa_ae"]) / (self.quantiles["qb_ae"] - self.quantiles["qa_ae"])
 

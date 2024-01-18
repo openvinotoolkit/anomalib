@@ -43,6 +43,7 @@ __all__ = [
     "Dfkde",
     "Dfm",
     "Draem",
+    "Dsr",
     "EfficientAd",
     "Fastflow",
     "Ganomaly",
@@ -51,6 +52,7 @@ __all__ = [
     "ReverseDistillation",
     "Rkde",
     "Stfpm",
+    "Uflow",
     "AiVad",
 ]
 

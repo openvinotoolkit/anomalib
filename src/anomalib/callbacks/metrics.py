@@ -35,7 +35,7 @@ class _MetricsCallback(Callback):
     these to the lightning module.
 
     Args:
-        task (TaskType): Task type of the current run.
+        task (TaskType | str): Task type of the current run.
         image_metrics (list[str] | str | None): List of image-level metrics.
         pixel_metrics (list[str] | str | None): List of pixel-level metrics.
         device (str): Whether to compute metrics on cpu or gpu. Defaults to cpu.
@@ -43,13 +43,13 @@ class _MetricsCallback(Callback):
 
     def __init__(
         self,
-        task: TaskType = TaskType.SEGMENTATION,
+        task: TaskType | str = TaskType.SEGMENTATION,
         image_metrics: list[str] | str | None = None,
         pixel_metrics: list[str] | str | None = None,
         device: Device = Device.CPU,
     ) -> None:
         super().__init__()
-        self.task = task
+        self.task = TaskType(task)
         self.image_metric_names = image_metrics
         self.pixel_metric_names = pixel_metrics
         self.device = device
@@ -90,7 +90,13 @@ class _MetricsCallback(Callback):
 
         if isinstance(pl_module, AnomalyModule):
             pl_module.image_metrics = create_metric_collection(image_metric_names, "image_")
-            pl_module.pixel_metrics = create_metric_collection(pixel_metric_names, "pixel_")
+            if hasattr(pl_module, "pixel_metrics"):  # incase metrics are loaded from model checkpoint
+                new_metrics = create_metric_collection(pixel_metric_names, "pixel_")
+                for name in new_metrics:
+                    if name not in pl_module.pixel_metrics:
+                        pl_module.pixel_metrics.add_metrics(new_metrics[name.split("_")[1]])
+            else:
+                pl_module.pixel_metrics = create_metric_collection(pixel_metric_names, "pixel_")
             self._set_threshold(pl_module)
 
     def on_validation_epoch_start(
