@@ -156,6 +156,19 @@ class AnomalyModule(pl.LightningModule, ABC):
         self._collect_outputs(self.image_metrics, self.pixel_metrics, outputs)
         self._log_metrics()
 
+    def on_predict_batch_end(self, outputs: Any | None, batch: Any, batch_idx: int, dataloader_idx: int) -> None:
+        """Called in the predict loop after the batch.
+
+        Args:
+            outputs: The outputs of predict_step_end(predict_step(x))
+            batch: The batched data as it is returned by the test DataLoader.
+            batch_idx: the index of the batch
+            dataloader_idx: the index of the dataloader
+        """
+        del batch, batch_idx, dataloader_idx  # These variables are not used.
+
+        self._outputs_to_cpu(outputs)
+
     def _compute_adaptive_threshold(self, outputs: EPOCH_OUTPUT) -> None:
         self.image_threshold.reset()
         self.pixel_threshold.reset()

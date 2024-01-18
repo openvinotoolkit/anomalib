@@ -92,6 +92,9 @@ class AnomalibDataModule(LightningDataModule, ABC):
 
         self._samples: DataFrame | None = None
 
+        # custom function used to collate batch from dataloader before it is passed to trainer
+        self.collate_fn = collate_fn
+
     def setup(self, stage: str | None = None) -> None:
         """Setup train, validation and test data.
 
@@ -177,7 +180,11 @@ class AnomalibDataModule(LightningDataModule, ABC):
     def train_dataloader(self) -> TRAIN_DATALOADERS:
         """Get train dataloader."""
         return DataLoader(
-            dataset=self.train_data, shuffle=True, batch_size=self.train_batch_size, num_workers=self.num_workers
+            dataset=self.train_data,
+            shuffle=True,
+            batch_size=self.train_batch_size,
+            num_workers=self.num_workers,
+            collate_fn=self.collate_fn,
         )
 
     def val_dataloader(self) -> EVAL_DATALOADERS:
@@ -187,7 +194,7 @@ class AnomalibDataModule(LightningDataModule, ABC):
             shuffle=False,
             batch_size=self.eval_batch_size,
             num_workers=self.num_workers,
-            collate_fn=collate_fn,
+            collate_fn=self.collate_fn,
         )
 
     def test_dataloader(self) -> EVAL_DATALOADERS:
@@ -197,5 +204,15 @@ class AnomalibDataModule(LightningDataModule, ABC):
             shuffle=False,
             batch_size=self.eval_batch_size,
             num_workers=self.num_workers,
-            collate_fn=collate_fn,
+            collate_fn=self.collate_fn,
+        )
+
+    def predict_dataloader(self) -> EVAL_DATALOADERS:
+        """Get predict datalaoder (same as test)"""
+        return DataLoader(
+            dataset=self.test_data,
+            shuffle=False,
+            batch_size=self.eval_batch_size,
+            num_workers=self.num_workers,
+            collate_fn=self.collate_fn,
         )
