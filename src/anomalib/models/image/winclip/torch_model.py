@@ -27,8 +27,10 @@ class WinClipModel(DynamicBufferModule, BufferListMixin, nn.Module):
     """PyTorch module that implements the WinClip model for image anomaly detection.
 
     Args:
-        k_shot (int, optional): The number of reference images used for few-shot anomaly detection.
-            Defaults to ``0``.
+        class_name (str, optional): The name of the object class used in the prompt ensemble.
+            Defaults to ``None``.
+        reference_images (torch.Tensor, optional): Tensor of shape ``(K, C, H, W)`` containing the reference images.
+            Defaults to ``None``.
         scales (tuple[int], optional): The scales of the sliding windows used for multi-scale anomaly detection.
             Defaults to ``(2, 3)``.
         apply_transform (bool, optional): Whether to apply the default CLIP transform to the input images.
@@ -40,9 +42,9 @@ class WinClipModel(DynamicBufferModule, BufferListMixin, nn.Module):
         k_shot (int): The number of reference images used for few-shot anomaly detection.
         scales (tuple[int]): The scales of the sliding windows used for multi-scale anomaly detection.
         masks (list[torch.Tensor] | None): The masks representing the sliding window locations.
-        text_embeddings (torch.Tensor | None): The text embeddings for the compositional prompt ensemble.
-        visual_embeddings (list[torch.Tensor] | None): The multi-scale embeddings for the reference images.
-        patch_embeddings (torch.Tensor | None): The patch embeddings for the reference images.
+        _text_embeddings (torch.Tensor | None): The text embeddings for the compositional prompt ensemble.
+        _visual_embeddings (list[torch.Tensor] | None): The multi-scale embeddings for the reference images.
+        _patch_embeddings (torch.Tensor | None): The patch embeddings for the reference images.
     """
 
     def __init__(
@@ -72,11 +74,6 @@ class WinClipModel(DynamicBufferModule, BufferListMixin, nn.Module):
         self.register_buffer("_text_embeddings", torch.empty(0))
         self.register_bufferlist("_visual_embeddings", [torch.empty(0) for _ in self.scales])
         self.register_buffer("_patch_embeddings", torch.empty(0))
-
-        # annotation
-        self._text_embeddings: torch.Tensor
-        self._visual_embeddings: list[torch.Tensor]
-        self._patch_embeddings: torch.Tensor
 
         # setup
         self.setup(class_name, reference_images)
