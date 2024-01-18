@@ -7,14 +7,15 @@ from collections import OrderedDict
 from itertools import chain
 from pathlib import Path
 
+import lightning.pytorch as pl
 import pytest
-import pytorch_lightning as pl
 import torch
 from omegaconf import DictConfig, OmegaConf
 
 from anomalib import LearningType
 from anomalib.callbacks.metrics import _MetricsCallback
 from anomalib.metrics import AnomalibMetricCollection
+from anomalib.metrics.threshold import F1AdaptiveThreshold
 from anomalib.models.components import AnomalyModule
 
 
@@ -24,6 +25,8 @@ class _DummyAnomalyModule(AnomalyModule):
         self.task = "segmentation"
         self.mode = "full"
         self.callbacks = []
+        self.image_threshold = F1AdaptiveThreshold()
+        self.pixel_threshold = F1AdaptiveThreshold()
 
     def test_step(self, **_kwdargs) -> None:
         return None
@@ -55,7 +58,7 @@ def config_from_yaml(request: "pytest.FixtureRequest") -> DictConfig:
 
 @pytest.mark.parametrize(
     "config_from_yaml",
-    [("data/config-good-00.yaml",), ("data/config-good-01.yaml",)],
+    ["data/config-good-00.yaml", "data/config-good-01.yaml"],
     indirect=["config_from_yaml"],
 )
 def test_metric_collection_configuration_callback(config_from_yaml: str, tmpdir: str) -> None:
@@ -113,14 +116,14 @@ def test_metric_collection_configuration_deserialzation_callback(
         {
             "image_metrics." + k: torch.tensor(1.0)
             for k, v in saved_config_from_yaml_res.metrics.image.items()
-            if v["class_path"].startswith("anomalib.utils.metrics")
+            if v["class_path"].startswith("anomalib.metrics")
         },
     )
     saved_pixel_state_dict = OrderedDict(
         {
             "pixel_metrics." + k: torch.tensor(1.0)
             for k, v in saved_config_from_yaml_res.metrics.pixel.items()
-            if v["class_path"].startswith("anomalib.utils.metrics")
+            if v["class_path"].startswith("anomalib.metrics")
         },
     )
 

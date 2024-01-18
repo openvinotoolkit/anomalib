@@ -94,7 +94,7 @@ class _MetricsCallback(Callback):
                 new_metrics = create_metric_collection(pixel_metric_names, "pixel_")
                 for name in new_metrics:
                     if name not in pl_module.pixel_metrics:
-                        pl_module.pixel_metrics.add_metrics(new_metrics[name.split("_")[1]])
+                        pl_module.pixel_metrics.add_metrics(new_metrics[name])
             else:
                 pl_module.pixel_metrics = create_metric_collection(pixel_metric_names, "pixel_")
             self._set_threshold(pl_module)
