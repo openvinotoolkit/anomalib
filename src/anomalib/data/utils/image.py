@@ -37,6 +37,9 @@ def is_image_file(filename: str | Path) -> bool:
 
         >>> is_image_file("009.tiff")
         True
+
+        >>> is_image_file("002.avi")
+        False
     """
     filename = Path(filename)
     return filename.suffix.lower() in IMG_EXTENSIONS
