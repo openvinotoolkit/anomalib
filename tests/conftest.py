@@ -30,7 +30,7 @@ def project_path() -> Generator[Path, None, None]:
 
     # Create the temporary directory in the root directory of the project.
     # This is to access the test files in the project directory.
-    tmp_dir = root_dir / ".tmp"
+    tmp_dir = root_dir / "tmp"
     tmp_dir.mkdir(exist_ok=True)
 
     with TemporaryDirectory(dir=tmp_dir) as project_path:
