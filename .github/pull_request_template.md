@@ -1,8 +1,7 @@
 ## 📝 Description
 
-Provide a clear summary of the changes and the issue that has been addressed.
-
-🛠️ Fixes # (issue number)
+- Provide a clear summary of the changes and the issue that has been addressed.
+- 🛠️ Fixes # (issue number)
 
 ## ✨ Changes
 
