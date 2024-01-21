@@ -19,6 +19,7 @@ from .auroc import AUROC
 from .collection import AnomalibMetricCollection
 from .min_max import MinMax
 from .pro import PRO
+from .spro import sPRO
 from .threshold import F1AdaptiveThreshold, ManualThreshold
 
 __all__ = [
@@ -30,6 +31,7 @@ __all__ = [
     "ManualThreshold",
     "MinMax",
     "PRO",
+    "sPRO",
 ]
 
 logger = logging.getLogger(__name__)
