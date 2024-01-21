@@ -338,9 +338,9 @@ class MVTecLocoDataset(AnomalibDataset):
     def __getitem__(self, index: int) -> dict[str, str | torch.Tensor]:
         """Get dataset item for the index ``index``.
 
-        The implementation of this method is mostly based on the parent's class implementation, with some different as follows:
+        This method is mostly based on the super class implementation, with some different as follows:
             - Using 'torch.where' to make sure the 'mask' in the return item is binarized
-            - An additional 'masks' is added to pass the non-binary masks with original size for the sPRO metric calculation
+            - An additional 'masks' is added, the non-binary masks with original size for the sPRO metric calculation
         Args:
             index (int): Index to get the item.
 
