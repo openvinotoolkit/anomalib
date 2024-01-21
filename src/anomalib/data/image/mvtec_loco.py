@@ -16,9 +16,11 @@ References:
       in: International Journal of Computer Vision (IJCV) 130, 947-969, 2022, DOI: 10.1007/s11263-022-01578-9
 """
 
+import json
 import logging
 from collections.abc import Sequence
 from pathlib import Path
+from typing import Any
 
 import albumentations as A  # noqa: N812
 import cv2
@@ -62,6 +64,41 @@ CATEGORIES = (
 )
 
 GT_MERGED_DIR = "ground_truth_merged"
+
+SATURATION_CONFIG_FILENAME = "defects_config.json"
+
+
+def load_saturation_config(config_path: str | Path) -> dict[int, Any]:
+    """Load saturation configurations from a JSON file.
+
+    Args:
+        config_path (str | Path): Path to the saturation configuration file.
+
+    Returns:
+        Dict: A dictionary with pixel values as keys and the corresponding configurations as values.
+
+    Example JSON format in the file:
+    [
+        {
+            "defect_name": "1_additional_pushpin",
+            "pixel_value": 255,
+            "saturation_threshold": 6300,
+            "relative_saturation": false
+        },
+        {
+            "defect_name": "2_additional_pushpins",
+            "pixel_value": 254,
+            "saturation_threshold": 12600,
+            "relative_saturation": false
+        },
+        ...
+    ]
+    """
+    with Path.open(Path(config_path)) as file:
+        configs = json.load(file)
+
+    # Create a dictionary with pixel values as keys
+    return {conf["pixel_value"]: conf for conf in configs}
 
 
 def _merge_gt_mask(
@@ -448,9 +485,10 @@ class MVTecLoco(AnomalibDataModule):
             val_split_ratio=val_split_ratio,
             seed=seed,
         )
-
+        self.saturation_config: dict[int, Any]
         self.root = Path(root)
         self.category = Path(category)
+        self.saturation_config = {}
 
         transform_train = get_transforms(
             config=transform_config_train,
@@ -533,7 +571,7 @@ class MVTecLoco(AnomalibDataModule):
             download_and_extract(self.root, DOWNLOAD_INFO)
 
     def _setup(self, _stage: str | None = None) -> None:
-        """Set up the datasets and perform dynamic subset splitting.
+        """Set up the datasets, configs, and perform dynamic subset splitting.
 
         This method overrides the parent class's method to also setup the val dataset.
         The MVTec LOCO dataset provides an independent validation subset.
@@ -548,3 +586,6 @@ class MVTecLoco(AnomalibDataModule):
 
         self._create_test_split()
         self._create_val_split()
+
+        saturation_path = self.root / self.category / SATURATION_CONFIG_FILENAME
+        self.saturation_config = load_saturation_config(saturation_path)
