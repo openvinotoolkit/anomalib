@@ -180,7 +180,11 @@ class _MetricsCallback(Callback):
         image_metric.update(output["pred_scores"], output["label"].int())
         if "mask" in output and "anomaly_maps" in output:
             pixel_metric.to(self.device)
-            pixel_metric.update(torch.squeeze(output["anomaly_maps"]), torch.squeeze(output["mask"].int()))
+            pixel_metric.update(
+                torch.squeeze(output["anomaly_maps"]),
+                torch.squeeze(output["mask"].int()),
+                masks=torch.squeeze(output["masks"]) if "masks" in output else None,
+            )
 
     def _outputs_to_device(self, output: STEP_OUTPUT) -> STEP_OUTPUT | dict[str, Any]:
         if isinstance(output, dict):
