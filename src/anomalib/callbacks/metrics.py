@@ -67,8 +67,7 @@ class _MetricsCallback(Callback):
             pl_module (AnomalyModule): Anomalib Model that inherits pl LightningModule.
             stage (str | None, optional): fit, validate, test or predict. Defaults to None.
         """
-        del trainer, stage  # These variables are not used.
-
+        del stage  # this variable is not used.
         image_metric_names = [] if self.image_metric_names is None else self.image_metric_names
         if isinstance(image_metric_names, str):
             image_metric_names = [image_metric_names]
@@ -92,6 +91,8 @@ class _MetricsCallback(Callback):
             pl_module.image_metrics = create_metric_collection(image_metric_names, "image_")
             pl_module.pixel_metrics = create_metric_collection(pixel_metric_names, "pixel_")
             self._set_threshold(pl_module)
+            if hasattr(trainer.datamodule, "saturation_config"):
+                self._set_saturation_config(pl_module, trainer.datamodule.saturation_config)
 
     def on_validation_epoch_start(
         self,
@@ -165,6 +166,9 @@ class _MetricsCallback(Callback):
     def _set_threshold(self, pl_module: AnomalyModule) -> None:
         pl_module.image_metrics.set_threshold(pl_module.image_threshold.value.item())
         pl_module.pixel_metrics.set_threshold(pl_module.pixel_threshold.value.item())
+
+    def _set_saturation_config(self, pl_module: AnomalyModule, saturation_config: dict[int, Any]) -> None:
+        pl_module.pixel_metrics.set_saturation_config(saturation_config)
 
     def _update_metrics(
         self,
