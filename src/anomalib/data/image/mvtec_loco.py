@@ -23,6 +23,7 @@ from pathlib import Path
 import albumentations as A  # noqa: N812
 import cv2
 import numpy as np
+import torch
 from pandas import DataFrame
 
 from anomalib import TaskType
@@ -36,6 +37,8 @@ from anomalib.data.utils import (
     ValSplitMode,
     download_and_extract,
     get_transforms,
+    masks_to_boxes,
+    read_image,
 )
 
 logger = logging.getLogger(__name__)
@@ -294,6 +297,54 @@ class MVTecLocoDataset(AnomalibDataset):
             extensions=IMG_EXTENSIONS,
             gt_merged_dir=GT_MERGED_DIR,
         )
+
+    def __getitem__(self, index: int) -> dict[str, str | torch.Tensor]:
+        """Get dataset item for the index ``index``.
+
+        The implementation of this method is mostly based on the parent's class implementation, with some different as follows:
+            - Using 'torch.where' to make sure the 'mask' in the return item is binarized
+            - An additional 'masks' is added to pass the non-binary masks with original size for the sPRO metric calculation
+        Args:
+            index (int): Index to get the item.
+
+        Returns:
+            dict[str, str | torch.Tensor]: Dict of image tensor during training. Otherwise, Dict containing image path,
+                target path, image tensor, label and transformed bounding box.
+        """
+        image_path = self._samples.iloc[index].image_path
+        mask_path = self._samples.iloc[index].mask_path
+        label_index = self._samples.iloc[index].label_index
+
+        image = read_image(image_path)
+        item = {"image_path": image_path, "label": label_index}
+
+        if self.task == TaskType.CLASSIFICATION:
+            transformed = self.transform(image=image)
+            item["image"] = transformed["image"]
+        elif self.task in (TaskType.DETECTION, TaskType.SEGMENTATION):
+            # Only Anomalous (1) images have masks in anomaly datasets
+            # Therefore, create empty mask for Normal (0) images.
+            mask = np.zeros(shape=image.shape[:2]) if label_index == 0 else cv2.imread(mask_path, flags=0)
+            mask = mask.astype(np.single)
+
+            transformed = self.transform(image=image, mask=mask)
+
+            item["image"] = transformed["image"]
+            item["mask_path"] = mask_path
+            # transform and binarize the mask
+            item["mask"] = torch.where(transformed["mask"] > 0, torch.tensor(1.0), torch.tensor(0.0))
+            # The non-binary masks with the original size for saturation based metrics calculation
+            item["masks"] = torch.tensor(mask)
+
+            if self.task == TaskType.DETECTION:
+                # create boxes from masks for detection task
+                boxes, _ = masks_to_boxes(item["mask"])
+                item["boxes"] = boxes[0]
+        else:
+            msg = f"Unknown task type: {self.task}"
+            raise ValueError(msg)
+
+        return item
 
 
 class MVTecLoco(AnomalibDataModule):
