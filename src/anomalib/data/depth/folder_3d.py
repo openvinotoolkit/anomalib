@@ -23,7 +23,7 @@ from anomalib.data.utils import (
     ValSplitMode,
     get_transforms,
 )
-from anomalib.data.utils.path import _prepare_files_labels, resolve_path
+from anomalib.data.utils.path import _prepare_files_labels, validate_and_resolve_path
 
 
 def make_folder3d_dataset(
@@ -68,13 +68,13 @@ def make_folder3d_dataset(
     Returns:
         DataFrame: an output dataframe containing samples for the requested split (ie., train or test)
     """
-    normal_dir = resolve_path(normal_dir, root)
-    abnormal_dir = resolve_path(abnormal_dir, root) if abnormal_dir is not None else None
-    normal_test_dir = resolve_path(normal_test_dir, root) if normal_test_dir is not None else None
-    mask_dir = resolve_path(mask_dir, root) if mask_dir is not None else None
-    normal_depth_dir = resolve_path(normal_depth_dir, root) if normal_depth_dir is not None else None
-    abnormal_depth_dir = resolve_path(abnormal_depth_dir, root) if abnormal_depth_dir is not None else None
-    normal_test_depth_dir = resolve_path(normal_test_depth_dir, root) if normal_test_depth_dir is not None else None
+    normal_dir = validate_and_resolve_path(normal_dir, root)
+    abnormal_dir = validate_and_resolve_path(abnormal_dir, root) if abnormal_dir else None
+    normal_test_dir = validate_and_resolve_path(normal_test_dir, root) if normal_test_dir else None
+    mask_dir = validate_and_resolve_path(mask_dir, root) if mask_dir else None
+    normal_depth_dir = validate_and_resolve_path(normal_depth_dir, root) if normal_depth_dir else None
+    abnormal_depth_dir = validate_and_resolve_path(abnormal_depth_dir, root) if abnormal_depth_dir else None
+    normal_test_depth_dir = validate_and_resolve_path(normal_test_depth_dir, root) if normal_test_depth_dir else None
 
     assert normal_dir.is_dir(), "A folder location must be provided in normal_dir."
 
@@ -117,7 +117,7 @@ def make_folder3d_dataset(
     samples.label_index = samples.label_index.astype("Int64")
 
     # If a path to mask is provided, add it to the sample dataframe.
-    if normal_depth_dir is not None:
+    if normal_depth_dir:
         samples.loc[samples.label == DirType.NORMAL, "depth_path"] = samples.loc[
             samples.label == DirType.NORMAL_DEPTH
         ].image_path.to_numpy()
@@ -125,7 +125,7 @@ def make_folder3d_dataset(
             samples.label == DirType.ABNORMAL_DEPTH
         ].image_path.to_numpy()
 
-        if normal_test_dir is not None:
+        if normal_test_dir:
             samples.loc[samples.label == DirType.NORMAL_TEST, "depth_path"] = samples.loc[
                 samples.label == DirType.NORMAL_TEST_DEPTH
             ].image_path.to_numpy()
@@ -146,7 +146,7 @@ def make_folder3d_dataset(
         samples = samples.astype({"depth_path": "str"})
 
     # If a path to mask is provided, add it to the sample dataframe.
-    if mask_dir is not None and abnormal_dir is not None:
+    if mask_dir and abnormal_dir:
         samples.loc[samples.label == DirType.ABNORMAL, "mask_path"] = samples.loc[
             samples.label == DirType.MASK
         ].image_path.to_numpy()

@@ -15,7 +15,14 @@ from .image import (
     read_image,
 )
 from .label import LabelName
-from .path import DirType, _check_and_convert_path, _prepare_files_labels, resolve_path
+from .path import (
+    DirType,
+    _check_and_convert_path,
+    _prepare_files_labels,
+    resolve_path,
+    validate_and_resolve_path,
+    validate_path,
+)
 from .split import Split, TestSplitMode, ValSplitMode, concatenate_datasets, random_split, split_by_label
 from .transforms import InputNormalizationMethod, get_transforms
 
@@ -45,4 +52,6 @@ __all__ = [
     "_check_and_convert_path",
     "_prepare_files_labels",
     "resolve_path",
+    "validate_path",
+    "validate_and_resolve_path",
 ]

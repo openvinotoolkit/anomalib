@@ -38,6 +38,7 @@ from anomalib.data.utils import (
     ValSplitMode,
     download_and_extract,
     get_transforms,
+    validate_path,
 )
 
 logger = logging.getLogger(__name__)
@@ -102,7 +103,7 @@ def make_mvtec_3d_dataset(
     if extensions is None:
         extensions = IMG_EXTENSIONS
 
-    root = Path(root)
+    root = validate_path(root)
     samples_list = [(str(root),) + f.parts[-4:] for f in root.glob(r"**/*") if f.suffix in extensions]
     if not samples_list:
         msg = f"Found 0 images in {root}"
