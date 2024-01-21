@@ -126,7 +126,7 @@ def spro_score(predictions: torch.Tensor, targets: torch.Tensor,
             if len(saturation_config) > 0:
                 # Adjust saturation threshold based on configuration
                 saturation_per_label = saturation_config[label.int().item()]
-                saturation_threshold = torch.minimum(saturation_per_label["saturation_threshold"], defect_areas)
+                saturation_threshold = torch.minimum(torch.tensor(saturation_per_label["saturation_threshold"]), defect_areas)
                 if saturation_per_label["relative_saturation"]:
                     saturation_threshold *= defect_areas
             else:
