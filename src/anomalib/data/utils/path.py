@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
+import os
 from enum import Enum
 from pathlib import Path
 
@@ -77,7 +78,7 @@ def _prepare_files_labels(
     return filenames, labels
 
 
-def _resolve_path(folder: str | Path, root: str | Path | None = None) -> Path:
+def resolve_path(folder: str | Path, root: str | Path | None = None) -> Path:
     """Combine root and folder and returns the absolute path.
 
     This allows users to pass either a root directory and relative paths, or absolute paths to each of the
@@ -98,3 +99,96 @@ def _resolve_path(folder: str | Path, root: str | Path | None = None) -> Path:
         # root provided; prepend root and return absolute path
         path = (Path(root) / folder).resolve()
     return path
+
+
+def validate_path(path: str | Path, base_dir: str | Path | None = None) -> Path:
+    """Validate the path.
+
+    Args:
+        path (str | Path): Path to validate.
+        base_dir (str | Path): Base directory to restrict file access.
+
+    Returns:
+        Path: Validated path.
+
+    Examples:
+        >>> validate_path("./datasets/MVTec/bottle/train/good/000.png")
+        PosixPath('/abs/path/to/anomalib/datasets/MVTec/bottle/train/good/000.png')
+
+        >>> validate_path("./datasets/MVTec/bottle/train/good/000.png", base_dir="./datasets/MVTec")
+        PosixPath('/abs/path/to/anomalib/datasets/MVTec/bottle/train/good/000.png')
+
+        Path to an outside file/directory should raise ValueError:
+
+        >>> validate_path("/usr/local/lib")
+        Traceback (most recent call last):
+        File "<string>", line 1, in <module>
+        File "<string>", line 18, in validate_path
+        ValueError: Access denied: Path is outside the allowed directory
+
+        Path to a non-existing file should raise FileNotFoundError:
+
+        >>> validate_path("/path/to/unexisting/file")
+        Traceback (most recent call last):
+        File "<string>", line 1, in <module>
+        File "<string>", line 18, in validate_path
+        FileNotFoundError: Path does not exist: /path/to/unexisting/file
+
+        Accessing a file without read permission should raise PermissionError:
+
+        .. note::
+
+            Note that, we are using ``/usr/local/bin`` directory as an example here.
+            If this directory does not exist on your system, this will raise
+            ``FileNotFoundError`` instead of ``PermissionError``. You could change
+            the directory to any directory that you do not have read permission.
+
+        >>> validate_path("/bin/bash", base_dir="/bin/")
+        Traceback (most recent call last):
+        File "<string>", line 1, in <module>
+        File "<string>", line 18, in validate_path
+        PermissionError: Read permission denied for the file: /usr/local/bin
+
+    """
+    # Check if the path is of an appropriate type
+    if not isinstance(path, str | Path):
+        raise TypeError("Expected str, bytes or os.PathLike object, not " + type(path).__name__)
+
+    # Sanitize paths
+    path = Path(path).resolve()
+    base_dir = Path(base_dir).resolve() if base_dir else Path.home()
+
+    # Check if the resolved path is within the base directory
+    if not str(path).startswith(str(base_dir)):
+        msg = "Access denied: Path is outside the allowed directory"
+        raise ValueError(msg)
+
+    # Check if the path exists
+    if not path.exists():
+        msg = f"Path does not exist: {path}"
+        raise FileNotFoundError(msg)
+
+    # Check the read and execute permissions
+    if not (os.access(path, os.R_OK) or os.access(path, os.X_OK)):
+        msg = f"Read or execute permissions denied for the directory: {path}"
+        raise PermissionError(msg)
+
+    return path
+
+
+def validate_and_resolve_path(
+    folder: str | Path,
+    root: str | Path | None = None,
+    base_dir: str | Path | None = None,
+) -> Path:
+    """Validate and resolve the path.
+
+    Args:
+        folder (str | Path): Folder location containing image or mask data.
+        root (str | Path | None): Root directory for the dataset.
+        base_dir (str | Path | None): Base directory to restrict file access.
+
+    Returns:
+        Path: Validated and resolved path.
+    """
+    return validate_path(resolve_path(folder, root), base_dir)

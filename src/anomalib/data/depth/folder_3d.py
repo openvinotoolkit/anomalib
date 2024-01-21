@@ -23,7 +23,7 @@ from anomalib.data.utils import (
     ValSplitMode,
     get_transforms,
 )
-from anomalib.data.utils.path import _prepare_files_labels, _resolve_path
+from anomalib.data.utils.path import _prepare_files_labels, resolve_path
 
 
 def make_folder3d_dataset(
@@ -68,13 +68,13 @@ def make_folder3d_dataset(
     Returns:
         DataFrame: an output dataframe containing samples for the requested split (ie., train or test)
     """
-    normal_dir = _resolve_path(normal_dir, root)
-    abnormal_dir = _resolve_path(abnormal_dir, root) if abnormal_dir is not None else None
-    normal_test_dir = _resolve_path(normal_test_dir, root) if normal_test_dir is not None else None
-    mask_dir = _resolve_path(mask_dir, root) if mask_dir is not None else None
-    normal_depth_dir = _resolve_path(normal_depth_dir, root) if normal_depth_dir is not None else None
-    abnormal_depth_dir = _resolve_path(abnormal_depth_dir, root) if abnormal_depth_dir is not None else None
-    normal_test_depth_dir = _resolve_path(normal_test_depth_dir, root) if normal_test_depth_dir is not None else None
+    normal_dir = resolve_path(normal_dir, root)
+    abnormal_dir = resolve_path(abnormal_dir, root) if abnormal_dir is not None else None
+    normal_test_dir = resolve_path(normal_test_dir, root) if normal_test_dir is not None else None
+    mask_dir = resolve_path(mask_dir, root) if mask_dir is not None else None
+    normal_depth_dir = resolve_path(normal_depth_dir, root) if normal_depth_dir is not None else None
+    abnormal_depth_dir = resolve_path(abnormal_depth_dir, root) if abnormal_depth_dir is not None else None
+    normal_test_depth_dir = resolve_path(normal_test_depth_dir, root) if normal_test_depth_dir is not None else None
 
     assert normal_dir.is_dir(), "A folder location must be provided in normal_dir."
 
