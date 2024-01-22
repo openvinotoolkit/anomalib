@@ -78,14 +78,14 @@ class Dsr(AnomalyModule):
             self.trainer.max_steps // len(self.trainer.datamodule.train_dataloader()),
             self.trainer.max_epochs,
         )
-        self.second_phase = int(num_steps * self.model.upsampling_train_ratio)
+        self.second_phase = int(num_steps * self.upsampling_train_ratio)
         anneal = int(0.8 * self.second_phase)
         optimizer_d = torch.optim.Adam(
             params=list(self.model.image_reconstruction_network.parameters())
             + list(self.model.subspace_restriction_module_hi.parameters())
             + list(self.model.subspace_restriction_module_lo.parameters())
             + list(self.model.anomaly_detection_module.parameters()),
-            lr=self.hparams.model.lr,
+            lr=0.0002,
         )
         scheduler_d = torch.optim.lr_scheduler.StepLR(optimizer_d, anneal, gamma=0.1)
 

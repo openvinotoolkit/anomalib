@@ -15,13 +15,12 @@ from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torch import nn
 
 from anomalib import LearningType
+from anomalib.metrics import AnomalibMetricCollection
 from anomalib.metrics.threshold import BaseThreshold
 
 if TYPE_CHECKING:
     from lightning.pytorch.callbacks import Callback
     from torchmetrics import Metric
-
-    from anomalib.metrics import AnomalibMetricCollection
 
 
 logger = logging.getLogger(__name__)
@@ -154,6 +153,8 @@ class AnomalyModule(pl.LightningModule, ABC):
         """
         metric_keys = [key for key in state_dict if key.startswith(f"{name}_metrics")]
         if any(metric_keys):
+            if not hasattr(self, f"{name}_metrics"):
+                setattr(self, f"{name}_metrics", AnomalibMetricCollection([], prefix=name))
             metrics = getattr(self, f"{name}_metrics")
             for key in metric_keys:
                 class_name = key.split(".")[1]

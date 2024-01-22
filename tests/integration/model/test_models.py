@@ -113,7 +113,12 @@ class TestAPI:
         if model_name == "ai_vad":
             dataloader = _dataloader
         else:
-            dataloader = DataLoader(PredictDataset(dataset_path / "mvtec" / "dummy" / "test"))
+            dataloader = DataLoader(
+                PredictDataset(
+                    dataset_path / "mvtec" / "dummy" / "test",
+                    image_size=(448, 448) if model_name == "uflow" else (256, 256),
+                ),
+            )
         engine.predict(
             model=model,
             dataloaders=dataloader,
@@ -145,7 +150,7 @@ class TestAPI:
             datamodule=dataset,
             ckpt_path=f"{project_path}/{model_name}/dummy/weights/last.ckpt",
             export_type=ExportType.ONNX,
-            input_size=(256, 256),
+            input_size=(448, 448) if model_name == "uflow" else (256, 256),
         )
 
     def _get_objects(
@@ -190,7 +195,14 @@ class TestAPI:
         else:
             # EfficientAd requires that the batch size be lesser than the number of images in the dataset.
             # This is so that the LR step size is not 0.
-            dataset = MVTec(root=dataset_path / "mvtec", category="dummy", task=task_type, train_batch_size=2)
+            image_size = (448, 448) if model_name == "uflow" else (256, 256)
+            dataset = MVTec(
+                root=dataset_path / "mvtec",
+                category="dummy",
+                task=task_type,
+                train_batch_size=2,
+                image_size=image_size,
+            )
 
         model = get_model(model_name, **extra_args)
         engine = Engine(
