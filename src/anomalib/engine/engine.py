@@ -441,12 +441,12 @@ class Engine:
 
         Examples:
             # fit and test a one-class model
-            >>> from anomalib.data import MVTec            
-            >>> from anomalib.models import Padim            
+            >>> from anomalib.data import MVTec
+            >>> from anomalib.models import Padim
             >>> from anomalib.engine import Engine
 
             >>> datamodule = MVTec()
-            >>> model = Padim()            
+            >>> model = Padim()
             >>> model.learning_type
             <LearningType.ONE_CLASS: 'one_class'>
 
@@ -456,15 +456,15 @@ class Engine:
 
             # Test a zero-shot model
             >>> from anomalib.data import MVTec
-            >>> from anomalib.models import Padim            
+            >>> from anomalib.models import Padim
             >>> from anomalib.engine import Engine
-  
+
             >>> datamodule = MVTec(image_size=240, normalization="clip")
-            >>> model = Padim()            
+            >>> model = Padim()
             >>> model.learning_type
             <LearningType.ZERO_SHOT: 'zero_shot'>
-            
-            >>> engine = Engine()            
+
+            >>> engine = Engine()
             >>> engine.test(model, datamodule=datamodule)
 
         CLI Usage:
@@ -481,11 +481,11 @@ class Engine:
                 anomalib test --config <config_file_path>
                 ```
         """
-        assert (
-            model or self.model
-        ), "`Engine.test()` requires an `AnomalyModule` when it hasn't been passed in a previous run."
         if model:
             self._setup_trainer(model)
+        elif not self.model:
+            msg = "`Engine.test()` requires an `AnomalyModule` when it hasn't been passed in a previous run."
+            raise RuntimeError(msg)
         self._setup_dataset_task(dataloaders)
         if self._should_run_validation(model or self.model, dataloaders, datamodule, ckpt_path):
             logger.info("Running validation before testing to collect normalization metrics and/or thresholds.")
