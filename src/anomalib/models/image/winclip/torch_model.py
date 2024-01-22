@@ -70,9 +70,9 @@ class WinClipModel(DynamicBufferModule, BufferListMixin, nn.Module):
         self.grid_size = self.clip.visual.grid_size
 
         # register buffers
-        self.register_bufferlist("masks", self._generate_masks(), persistent=False)  # no need to save masks
+        self.register_buffer_list("masks", self._generate_masks(), persistent=False)  # no need to save masks
         self.register_buffer("_text_embeddings", torch.empty(0))
-        self.register_bufferlist("_visual_embeddings", [torch.empty(0) for _ in self.scales])
+        self.register_buffer_list("_visual_embeddings", [torch.empty(0) for _ in self.scales])
         self.register_buffer("_patch_embeddings", torch.empty(0))
 
         # setup
