@@ -101,6 +101,13 @@ Region-Based Kernel Density Estimation (RKDE)
 
 Student-Teacher Feature Pyramid Matching for Unsupervised Anomaly Detection
 :::
+
+:::{grid-item-card} {material-regular}`model_training;1.5em` WinCLIP
+:link: ./winclip
+:link-type: doc
+
+WinCLIP: Zero-/Few-Shot Anomaly Classification and Segmentation
+:::
 ::::
 
 ```{toctree}
@@ -121,4 +128,5 @@ Student-Teacher Feature Pyramid Matching for Unsupervised Anomaly Detection
 ./reverse_distillation
 ./rkde
 ./stfpm
+./winclip
 ```

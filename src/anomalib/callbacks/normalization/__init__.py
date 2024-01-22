@@ -3,9 +3,8 @@
 Note: These callbacks are used within the Engine.
 """
 
-# Copyright (C) 2023 Intel Corporation
+# Copyright (C) 2023-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
-
 
 from .cdf_normalization import _CdfNormalizationCallback
 from .min_max_normalization import _MinMaxNormalizationCallback

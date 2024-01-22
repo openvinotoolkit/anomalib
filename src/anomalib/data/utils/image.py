@@ -130,7 +130,7 @@ def get_image_filenames_from_dir(path: str | Path) -> list[Path]:
         msg = f"Found 0 images in {path}"
         raise ValueError(msg)
 
-    return image_filenames
+    return sorted(image_filenames)
 
 
 def get_image_filenames(path: str | Path, base_dir: str | Path | None = None) -> list[Path]:
