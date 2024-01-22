@@ -455,14 +455,16 @@ class Engine:
             >>> engine.test(model, datamodule=datamodule)
 
             # Test a zero-shot model
-            >>> from anomalib.engine import Engine
-            >>> from anomalib.models import Padim
             >>> from anomalib.data import MVTec
-            >>> engine = Engine()
-            >>> model = Padim()
+            >>> from anomalib.models import Padim            
+            >>> from anomalib.engine import Engine
+  
             >>> datamodule = MVTec(image_size=240, normalization="clip")
+            >>> model = Padim()            
             >>> model.learning_type
             <LearningType.ZERO_SHOT: 'zero_shot'>
+            
+            >>> engine = Engine()            
             >>> engine.test(model, datamodule=datamodule)
 
         CLI Usage:
