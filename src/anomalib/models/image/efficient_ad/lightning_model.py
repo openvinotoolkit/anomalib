@@ -241,8 +241,8 @@ class EfficientAd(AnomalyModule):
             weight_decay=self.weight_decay,
         )
         num_steps = min(
-            self.trainer.max_steps // len(self.trainer.datamodule.train_dataloader()),
-            self.trainer.max_epochs,
+            self.trainer.max_steps,
+            self.trainer.max_epochs * len(self.trainer.datamodule.train_dataloader()),
         )
         scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=int(0.95 * num_steps), gamma=0.1)
         return {"optimizer": optimizer, "lr_scheduler": scheduler}
@@ -307,7 +307,7 @@ class EfficientAd(AnomalyModule):
     @property
     def trainer_arguments(self) -> dict[str, Any]:
         """Return EfficientAD trainer arguments."""
-        return {"gradient_clip_val": 0, "num_sanity_val_steps": 0}
+        return {"num_sanity_val_steps": 0}
 
     @property
     def learning_type(self) -> LearningType:

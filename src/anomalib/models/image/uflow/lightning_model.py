@@ -6,6 +6,7 @@ https://arxiv.org/pdf/2211.12353.pdf
 # Copyright (C) 2023-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from typing import Any
 
 import torch
 from lightning.pytorch.core.optimizer import LightningOptimizer
@@ -13,6 +14,7 @@ from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torch import Tensor
 from torch.optim.lr_scheduler import LRScheduler
 
+from anomalib import LearningType
 from anomalib.models.components import AnomalyModule
 
 from .loss import UFlowLoss
@@ -84,3 +86,17 @@ class Uflow(AnomalyModule):
             total_iters=25000,
         )
         return [optimizer], [scheduler]
+
+    @property
+    def trainer_arguments(self) -> dict[str, Any]:
+        """Return EfficientAD trainer arguments."""
+        return {"num_sanity_val_steps": 0}
+
+    @property
+    def learning_type(self) -> LearningType:
+        """Return the learning type of the model.
+
+        Returns:
+            LearningType: Learning type of the model.
+        """
+        return LearningType.ONE_CLASS

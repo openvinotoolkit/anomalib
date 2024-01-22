@@ -8,11 +8,13 @@ Paper https://link.springer.com/chapter/10.1007/978-3-031-19821-2_31
 
 import logging
 from pathlib import Path
+from typing import Any
 
 import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torch import Tensor
 
+from anomalib import LearningType
 from anomalib.data.utils import DownloadInfo, download_and_extract
 from anomalib.data.utils.augmenter import Augmenter
 from anomalib.models.components import AnomalyModule
@@ -176,3 +178,17 @@ class Dsr(AnomalyModule):
         batch["anomaly_maps"] = model_outputs["anomaly_map"]
         batch["pred_scores"] = model_outputs["pred_score"]
         return batch
+
+    @property
+    def trainer_arguments(self) -> dict[str, Any]:
+        """Required trainer arguments."""
+        return {"num_sanity_val_steps": 0}
+
+    @property
+    def learning_type(self) -> LearningType:
+        """Return the learning type of the model.
+
+        Returns:
+            LearningType: Learning type of the model.
+        """
+        return LearningType.ONE_CLASS
