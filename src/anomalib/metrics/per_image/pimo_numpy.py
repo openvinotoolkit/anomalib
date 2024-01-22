@@ -25,7 +25,13 @@ So far there is only one shared FPR metric implemented but others will be added 
 author: jpcbertoldo
 """
 
-# Copyright (C) 2022 Intel Corporation
+# Original Code
+# Copyright (c) 2024 @jpcbertoldo
+# https://github.com/jpcbertoldo/aupimo
+# SPDX-License-Identifier: MIT
+#
+# Modified
+# Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
