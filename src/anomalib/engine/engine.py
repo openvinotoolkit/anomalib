@@ -191,8 +191,10 @@ class Engine:
         """
         callbacks = [callback for callback in self.trainer.callbacks if isinstance(callback, NormalizationCallback)]
         if len(callbacks) > 1:
-            msg = "Trainer can only have one normalization callback but multiple found: {}. Please check your \
-                configuration. Exiting to avoid unexpected behavior.".format(callbacks)
+            msg = (
+                f"Trainer can only have one normalization callback but multiple found: {callbacks}. "
+                "Please check your configuration. Exiting to avoid unexpected behavior."
+            )
             raise ValueError(msg)
         return callbacks[0] if len(callbacks) > 0 else None
 
