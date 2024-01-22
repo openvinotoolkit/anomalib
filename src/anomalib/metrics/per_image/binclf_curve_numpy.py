@@ -102,7 +102,7 @@ def _validate_gts_batch(gts_batch: ndarray) -> None:
 
 
 def _binclf_one_curve_python(scores: ndarray, gts: ndarray, threshs: ndarray) -> ndarray:
-    """ONE binary classification matrix at each threshold (PYTHON implementation).
+    """One binary classification matrix at each threshold (PYTHON implementation).
 
     In the case where the thresholds are given (i.e. not considering all possible thresholds based on the scores),
     this weird-looking function is faster than the two options in `torchmetrics` on the CPU:
@@ -111,7 +111,7 @@ def _binclf_one_curve_python(scores: ndarray, gts: ndarray, threshs: ndarray) ->
 
     (both in module `torchmetrics.functional.classification.precision_recall_curve` in `torchmetrics==1.1.0`).
 
-    ATTENTION: VALIDATION IS NOT DONE HERE. Make sure to validate the arguments before calling this function.
+    Note: VALIDATION IS NOT DONE HERE. Make sure to validate the arguments before calling this function.
 
     Args:
         scores (ndarray): Anomaly scores (D,).
@@ -178,7 +178,7 @@ def _binclf_one_curve_python(scores: ndarray, gts: ndarray, threshs: ndarray) ->
 
 _binclf_multiple_curves_python = np.vectorize(_binclf_one_curve_python, signature="(n),(n),(k)->(k,2,2)")
 _binclf_multiple_curves_python.__doc__ = """
-MULTIPLE binary classification matrix at each threshold (PYTHON implementation).
+Multiple binary classification matrix at each threshold (PYTHON implementation).
 vectorized version of `_binclf_one_curve_python` (see above)
 """
 
