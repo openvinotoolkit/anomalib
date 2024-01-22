@@ -24,7 +24,7 @@ from anomalib.data.utils import (
     ValSplitMode,
     get_transforms,
 )
-from anomalib.data.utils.path import _prepare_files_labels, resolve_path
+from anomalib.data.utils.path import _prepare_files_labels, validate_and_resolve_path
 
 
 def make_folder_dataset(
@@ -96,8 +96,8 @@ def make_folder_dataset(
             list[Path]: The result of path replaced by Sequence[str | Path].
         """
         if isinstance(path, Sequence) and not isinstance(path, str):
-            return [resolve_path(dir_path, root) for dir_path in path]
-        return [resolve_path(path, root)] if path is not None else []
+            return [validate_and_resolve_path(dir_path, root) for dir_path in path]
+        return [validate_and_resolve_path(path, root)] if path is not None else []
 
     # All paths are changed to the List[Path] type and used.
     normal_dir = _resolve_path_and_convert_to_list(normal_dir)

@@ -38,6 +38,7 @@ from anomalib.data.utils import (
     ValSplitMode,
     download_and_extract,
     get_transforms,
+    validate_path,
 )
 from anomalib.data.utils.video import ClipsIndexer
 
@@ -86,7 +87,9 @@ def make_avenue_dataset(root: Path, gt_dir: Path, split: Split | str | None = No
     Returns:
         DataFrame: an output dataframe containing samples for the requested split (ie., train or test)
     """
-    samples_list = [(str(root),) + filename.parts[-2:] for filename in Path(root).glob("**/*.avi")]
+    root = validate_path(root)
+
+    samples_list = [(str(root),) + filename.parts[-2:] for filename in root.glob("**/*.avi")]
     samples = DataFrame(samples_list, columns=["root", "folder", "image_path"])
 
     samples.loc[samples.folder == "testing_videos", "mask_path"] = (

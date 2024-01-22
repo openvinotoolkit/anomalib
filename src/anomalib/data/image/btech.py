@@ -30,6 +30,7 @@ from anomalib.data.utils import (
     ValSplitMode,
     download_and_extract,
     get_transforms,
+    validate_path,
 )
 
 logger = logging.getLogger(__name__)
@@ -79,6 +80,8 @@ def make_btech_dataset(path: Path, split: str | Split | None = None) -> DataFram
     Returns:
         DataFrame: an output dataframe containing samples for the requested split (ie., train or test)
     """
+    path = validate_path(path)
+
     samples_list = [
         (str(path),) + filename.parts[-3:] for filename in path.glob("**/*") if filename.suffix in (".bmp", ".png")
     ]

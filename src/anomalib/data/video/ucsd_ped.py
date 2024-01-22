@@ -26,6 +26,7 @@ from anomalib.data.utils import (
     download_and_extract,
     get_transforms,
     read_image,
+    validate_path,
 )
 from anomalib.data.utils.video import ClipsIndexer
 
@@ -73,6 +74,7 @@ def make_ucsd_dataset(path: Path, split: str | Split | None = None) -> DataFrame
     Returns:
         DataFrame: an output dataframe containing samples for the requested split (ie., train or test)
     """
+    path = validate_path(path)
     folders = [filename for filename in sorted(path.glob("*/*")) if filename.is_dir()]
     folders = [folder for folder in folders if list(folder.glob("*.tif"))]
 
