@@ -101,6 +101,25 @@ def resolve_path(folder: str | Path, root: str | Path | None = None) -> Path:
     return path
 
 
+def contains_null_bytes(path: str | Path) -> bool:
+    r"""Check if the path contains null bytes.
+
+    Args:
+        path (str | Path): Path to check.
+
+    Returns:
+        bool: True if the path contains null bytes, False otherwise.
+
+    Examples:
+        >>> contains_null_bytes("./datasets/MVTec/bottle/train/good/000.png")
+        False
+
+        >>> contains_null_bytes("./datasets/MVTec/bottle/train/good/000.png\0")
+        True
+    """
+    return "\0" in str(path)
+
+
 def validate_path(path: str | Path, base_dir: str | Path | None = None) -> Path:
     """Validate the path.
 
@@ -153,6 +172,10 @@ def validate_path(path: str | Path, base_dir: str | Path | None = None) -> Path:
     # Check if the path is of an appropriate type
     if not isinstance(path, str | Path):
         raise TypeError("Expected str, bytes or os.PathLike object, not " + type(path).__name__)
+
+    if contains_null_bytes(path):
+        msg = f"Path contains null bytes: {path}"
+        raise ValueError(msg)
 
     # Sanitize paths
     path = Path(path).resolve()
