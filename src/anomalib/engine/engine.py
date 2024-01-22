@@ -184,7 +184,7 @@ class Engine:
         """The ``NormalizationCallback`` callback in the trainer.callbacks list, or ``None`` if it doesn't exist.
 
         Returns:
-            Optional[_MinMaxNormalizationCallback]: Normalization callback, if available.
+            NormalizationCallback | None: Normalization callback, if available.
 
         Raises:
             ValueError: If there are multiple normalization callbacks.
@@ -201,7 +201,7 @@ class Engine:
         """The ``ThresholdCallback`` callback in the trainer.callbacks list, or ``None`` if it doesn't exist.
 
         Returns:
-            Optional[_ThresholdCallback]: Threshold callback, if available.
+            _ThresholdCallback | None: Threshold callback, if available.
 
         Raises:
             ValueError: If there are multiple threshold callbacks.
