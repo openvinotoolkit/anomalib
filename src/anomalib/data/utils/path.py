@@ -5,6 +5,7 @@
 
 
 import os
+import re
 from enum import Enum
 from pathlib import Path
 
@@ -101,23 +102,45 @@ def resolve_path(folder: str | Path, root: str | Path | None = None) -> Path:
     return path
 
 
-def contains_null_bytes(path: str | Path) -> bool:
-    r"""Check if the path contains null bytes.
+def is_path_too_long(path: str | Path, max_length: int = 512) -> bool:
+    r"""Check if the path contains too long input.
+
+    Args:
+        path (str | Path): Path to check.
+        max_length (int): Maximum length a path can be before it is considered too long.
+            Defaults to ``512``.
+
+    Returns:
+        bool: True if the path contains too long input, False otherwise.
+
+    Examples:
+        >>> contains_too_long_input("./datasets/MVTec/bottle/train/good/000.png")
+        False
+
+        >>> contains_too_long_input("./datasets/MVTec/bottle/train/good/000.png" + "a" * 4096)
+        True
+    """
+    return len(str(path)) > max_length
+
+
+def contains_non_printable_characters(path: str | Path) -> bool:
+    r"""Check if the path contains non-printable characters.
 
     Args:
         path (str | Path): Path to check.
 
     Returns:
-        bool: True if the path contains null bytes, False otherwise.
+        bool: True if the path contains non-printable characters, False otherwise.
 
     Examples:
-        >>> contains_null_bytes("./datasets/MVTec/bottle/train/good/000.png")
+        >>> contains_non_printable_characters("./datasets/MVTec/bottle/train/good/000.png")
         False
 
-        >>> contains_null_bytes("./datasets/MVTec/bottle/train/good/000.png\0")
+        >>> contains_non_printable_characters("./datasets/MVTec/bottle/train/good/000.png\0")
         True
     """
-    return "\0" in str(path)
+    printable_pattern = re.compile(r"^[\x20-\x7E]+$")
+    return not printable_pattern.match(str(path))
 
 
 def validate_path(path: str | Path, base_dir: str | Path | None = None) -> Path:
@@ -173,8 +196,14 @@ def validate_path(path: str | Path, base_dir: str | Path | None = None) -> Path:
     if not isinstance(path, str | Path):
         raise TypeError("Expected str, bytes or os.PathLike object, not " + type(path).__name__)
 
-    if contains_null_bytes(path):
-        msg = f"Path contains null bytes: {path}"
+    # Check if the path is too long
+    if is_path_too_long(path):
+        msg = f"Path is too long: {path}"
+        raise ValueError(msg)
+
+    # Check if the path contains non-printable characters
+    if contains_non_printable_characters(path):
+        msg = f"Path contains non-printable characters: {path}"
         raise ValueError(msg)
 
     # Sanitize paths

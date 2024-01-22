@@ -19,6 +19,16 @@ class TestValidatePath:
         with pytest.raises(TypeError, match=r"Expected str, bytes or os.PathLike object, not*"):
             validate_path(123)
 
+    def test_is_path_too_long(self) -> None:
+        """Test ``validate_path`` raises ValueError for a path that is too long."""
+        with pytest.raises(ValueError, match=r"Path is too long: *"):
+            validate_path("/" * 1000)
+
+    def test_contains_non_printable_characters(self) -> None:
+        """Test ``validate_path`` raises ValueError for a path that contains non-printable characters."""
+        with pytest.raises(ValueError, match=r"Path contains non-printable characters: *"):
+            validate_path("/\x00")
+
     def test_existing_file_within_base_dir(self, dataset_path: Path) -> None:
         """Test ``validate_path`` returns the validated path for an existing file within the base directory."""
         file_path = dataset_path / "mvtec/dummy/train/good/000.png"
