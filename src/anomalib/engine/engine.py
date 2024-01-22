@@ -210,8 +210,10 @@ class Engine:
         """
         callbacks = [callback for callback in self.trainer.callbacks if isinstance(callback, _ThresholdCallback)]
         if len(callbacks) > 1:
-            msg = f"Trainer can only have one thresholding callback but multiple found: {callbacks}. Please check your \
-                configuration. Exiting to avoid unexpected behavior."
+            msg = (
+                f"Trainer can only have one thresholding callback but multiple found: {callbacks}. "
+                "Please check your configuration. Exiting to avoid unexpected behavior."
+            )
             raise ValueError(msg)
         return callbacks[0] if len(callbacks) > 0 else None
 
