@@ -54,14 +54,14 @@ class TestValidatePath:
             with file_path.open("w") as f:
                 f.write("test")
             file_path.chmod(0o222)  # Remove read permission
-            with pytest.raises(PermissionError, match=r"Read permission denied for the file:"):
+            with pytest.raises(PermissionError, match=r"Read or execute permissions denied for the path:*"):
                 validate_path(file_path, base_dir=Path(tmp_dir))
 
     def test_no_read_execute_permission(self) -> None:
         """Test ``validate_path`` raises PermissionError for a directory without read and execute permission."""
         with TemporaryDirectory() as tmp_dir:
             Path(tmp_dir).chmod(0o222)  # Remove read and execute permission
-            with pytest.raises(PermissionError, match=r"Read or execute permissions denied for the directory:"):
+            with pytest.raises(PermissionError, match=r"Read or execute permissions denied for the path:*"):
                 validate_path(tmp_dir, base_dir=Path(tmp_dir))
 
 

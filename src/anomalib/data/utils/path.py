@@ -193,7 +193,7 @@ def validate_path(path: str | Path, base_dir: str | Path | None = None) -> Path:
 
     # Check the read and execute permissions
     if not (os.access(path, os.R_OK) or os.access(path, os.X_OK)):
-        msg = f"Read or execute permissions denied for the directory: {path}"
+        msg = f"Read or execute permissions denied for the path: {path}"
         raise PermissionError(msg)
 
     return path
