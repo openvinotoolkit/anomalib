@@ -5,7 +5,13 @@
 author: jpcbertoldo
 """
 
-# Copyright (C) 2022 Intel Corporation
+# Original Code
+# Copyright (c) 2024 @jpcbertoldo
+# https://github.com/jpcbertoldo/aupimo
+# SPDX-License-Identifier: MIT
+#
+# Modified
+# Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 from __future__ import annotations
