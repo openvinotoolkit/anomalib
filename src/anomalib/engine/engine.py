@@ -441,14 +441,16 @@ class Engine:
 
         Examples:
             # fit and test a one-class model
+            >>> from anomalib.data import MVTec            
+            >>> from anomalib.models import Padim            
             >>> from anomalib.engine import Engine
-            >>> from anomalib.models import Padim
-            >>> from anomalib.data import MVTec
-            >>> engine = Engine()
-            >>> model = Padim()
+
             >>> datamodule = MVTec()
+            >>> model = Padim()            
             >>> model.learning_type
             <LearningType.ONE_CLASS: 'one_class'>
+
+            >>> engine = Engine()
             >>> engine.fit(model, datamodule=datamodule)
             >>> engine.test(model, datamodule=datamodule)
 
