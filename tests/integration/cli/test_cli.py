@@ -213,7 +213,7 @@ class TestCLI:
             TaskType.SEGMENTATION,
             "--trainer.max_epochs",
             "1",
-            "--trainer.callbacks+=ModelCheckpoint",
+            "--trainer.callbacks+=anomalib.callbacks.ModelCheckpoint",
             "--trainer.callbacks.dirpath",
             f"{project_path}/padim/dummy/weights",
             "--trainer.callbacks.monitor",

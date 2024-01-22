@@ -21,6 +21,7 @@ class InputNormalizationMethod(str, Enum):
 
     NONE = "none"  # no normalization applied
     IMAGENET = "imagenet"  # normalization to ImageNet statistics
+    CLIP = "clip"  # normalization to CLIP statistics
 
 
 def get_transforms(
@@ -151,6 +152,10 @@ def get_transforms(
         # add normalize transform
         if normalization == InputNormalizationMethod.IMAGENET:
             transforms_list.append(A.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)))
+        elif normalization == InputNormalizationMethod.CLIP:
+            transforms_list.append(
+                A.Normalize(mean=(0.48145466, 0.4578275, 0.40821073), std=(0.26862954, 0.26130258, 0.27577711)),
+            )
         elif normalization == InputNormalizationMethod.NONE:
             transforms_list.append(A.ToFloat(max_value=255))
         else:

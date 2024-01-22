@@ -9,6 +9,8 @@ import torch
 from torch import nn
 
 
+# TODO(djdameln): rename this class to DynamicBufferMixin
+# https://github.com/openvinotoolkit/anomalib/issues/1649
 class DynamicBufferModule(nn.Module, ABC):
     """Torch module that allows loading variables from the state dict even in the case of shape mismatch."""
 

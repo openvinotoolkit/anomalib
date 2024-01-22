@@ -166,7 +166,7 @@ def export_to_onnx(
         model.model,
         torch.zeros((1, 3, *input_size)).to(model.device),
         str(onnx_path),
-        opset_version=11,
+        opset_version=14,
         dynamic_axes={"input": {0: "batch_size"}, "output": {0: "batch_size"}},
         input_names=["input"],
         output_names=["output"],
