@@ -15,11 +15,11 @@ from numpy import ndarray
 
 @numba.jit(nopython=True)
 def binclf_one_curve_numba(scores: ndarray, gts: ndarray, threshs: ndarray) -> ndarray:
-    """ONE binary classification matrix at each threshold (NUMBA implementation).
+    """One binary classification matrix at each threshold (NUMBA implementation).
 
     This does the same as `_binclf_one_curve_python` but with numba using just-in-time compilation.
 
-    ATTENTION: VALIDATION IS NOT DONE HERE. Make sure to validate the arguments before calling this function.
+    Note: VALIDATION IS NOT DONE HERE! Make sure to validate the arguments before calling this function.
 
     Args:
         scores (ndarray): Anomaly scores (D,).
@@ -86,12 +86,12 @@ def binclf_one_curve_numba(scores: ndarray, gts: ndarray, threshs: ndarray) -> n
 
 @numba.jit(nopython=True, parallel=True)
 def binclf_multiple_curves_numba(scores_batch: ndarray, gts_batch: ndarray, threshs: ndarray) -> ndarray:
-    """MULTIPLE binary classification matrix at each threshold (NUMBA implementation).
+    """Multiple binary classification matrix at each threshold (NUMBA implementation).
 
     This does the same as `_binclf_multiple_curves_python` but with numba,
     using parallelization and just-in-time compilation.
 
-    ATTENTION: VALIDATION IS NOT DONE HERE. Make sure to validate the arguments before calling this function.
+    Note: VALIDATION IS NOT DONE HERE. Make sure to validate the arguments before calling this function.
 
     Args:
         scores_batch (ndarray): Anomaly scores (N, D,).
