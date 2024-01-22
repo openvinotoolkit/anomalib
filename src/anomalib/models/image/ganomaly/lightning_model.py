@@ -14,6 +14,7 @@ import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torch import optim
 
+from anomalib import LearningType
 from anomalib.models.components import AnomalyModule
 
 from .loss import DiscriminatorLoss, GeneratorLoss
@@ -239,3 +240,12 @@ class Ganomaly(AnomalyModule):
     def trainer_arguments(self) -> dict[str, Any]:
         """Return GANomaly trainer arguments."""
         return {"gradient_clip_val": 0, "num_sanity_val_steps": 0}
+
+    @property
+    def learning_type(self) -> LearningType:
+        """Return the learning type of the model.
+
+        Returns:
+            LearningType: Learning type of the model.
+        """
+        return LearningType.ONE_CLASS

@@ -14,6 +14,7 @@ import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torch import nn
 
+from anomalib import LearningType
 from anomalib.metrics.threshold import BaseThreshold
 
 if TYPE_CHECKING:
@@ -113,12 +114,14 @@ class AnomalyModule(pl.LightningModule, ABC):
         raise NotImplementedError
 
     def _save_to_state_dict(self, destination: OrderedDict, prefix: str, keep_vars: bool) -> None:
-        destination[
-            "image_threshold_class"
-        ] = f"{self.image_threshold.__class__.__module__}.{self.image_threshold.__class__.__name__}"
-        destination[
-            "pixel_threshold_class"
-        ] = f"{self.pixel_threshold.__class__.__module__}.{self.pixel_threshold.__class__.__name__}"
+        if hasattr(self, "image_threshold"):
+            destination[
+                "image_threshold_class"
+            ] = f"{self.image_threshold.__class__.__module__}.{self.image_threshold.__class__.__name__}"
+        if hasattr(self, "pixel_threshold"):
+            destination[
+                "pixel_threshold_class"
+            ] = f"{self.pixel_threshold.__class__.__module__}.{self.pixel_threshold.__class__.__name__}"
         if hasattr(self, "normalization_metrics"):
             normalization_class = self.normalization_metrics.__class__
             destination["normalization_class"] = f"{normalization_class.__module__}.{normalization_class.__name__}"
@@ -141,3 +144,8 @@ class AnomalyModule(pl.LightningModule, ABC):
         class_path = state_dict.pop(dict_key)
         module = importlib.import_module(".".join(class_path.split(".")[:-1]))
         return getattr(module, class_path.split(".")[-1])()
+
+    @abstractproperty
+    def learning_type(self) -> LearningType:
+        """Learning type of the model."""
+        raise NotImplementedError

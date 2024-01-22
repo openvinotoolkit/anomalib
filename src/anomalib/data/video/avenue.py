@@ -28,6 +28,7 @@ import numpy as np
 import scipy.io
 from pandas import DataFrame
 
+from anomalib import TaskType
 from anomalib.data.base import AnomalibVideoDataModule, AnomalibVideoDataset
 from anomalib.data.base.video import VideoTargetFrame
 from anomalib.data.utils import (
@@ -39,7 +40,6 @@ from anomalib.data.utils import (
     get_transforms,
 )
 from anomalib.data.utils.video import ClipsIndexer
-from anomalib.utils.types import TaskType
 
 if TYPE_CHECKING:
     from collections.abc import Callable

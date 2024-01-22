@@ -11,10 +11,10 @@ import lightning.pytorch as pl
 import numpy as np
 from lightning.pytorch import Callback
 
+from anomalib import TaskType
 from anomalib.loggers import AnomalibWandbLogger
 from anomalib.loggers.base import ImageLoggerBase
 from anomalib.models.components import AnomalyModule
-from anomalib.utils.types import TaskType
 from anomalib.utils.visualization import VisualizationMode, Visualizer
 
 

@@ -294,14 +294,19 @@ def download_and_extract(root: Path, info: DownloadInfo) -> None:
         logger.info("Existing dataset archive found. Skipping download stage.")
     else:
         logger.info("Downloading the %s dataset.", info.name)
-        with DownloadProgressBar(unit="B", unit_scale=True, miniters=1, desc=info.name) as progress_bar:
-            urlretrieve(  # noqa: S310
-                url=f"{info.url}",
-                filename=downloaded_file_path,
-                reporthook=progress_bar.update_to,
-            )
-        logger.info("Checking the hash of the downloaded file.")
-        hash_check(downloaded_file_path, info.checksum)
+        # audit url. allowing only http:// or https://
+        if info.url.startswith("http://") or info.url.startswith("https://"):
+            with DownloadProgressBar(unit="B", unit_scale=True, miniters=1, desc=info.name) as progress_bar:
+                urlretrieve(  # noqa: S310  # nosec B310
+                    url=f"{info.url}",
+                    filename=downloaded_file_path,
+                    reporthook=progress_bar.update_to,
+                )
+            logger.info("Checking the hash of the downloaded file.")
+            hash_check(downloaded_file_path, info.checksum)
+        else:
+            msg = f"Invalid URL to download dataset. Supported 'http://' or 'https://' but '{info.url}' is requested"
+            raise RuntimeError(msg)
 
     extract(downloaded_file_path, root)
 

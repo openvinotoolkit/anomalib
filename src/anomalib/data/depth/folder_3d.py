@@ -12,6 +12,7 @@ from pathlib import Path
 import albumentations as A  # noqa: N812
 from pandas import DataFrame, isna
 
+from anomalib import TaskType
 from anomalib.data.base import AnomalibDataModule, AnomalibDepthDataset
 from anomalib.data.utils import (
     DirType,
@@ -23,7 +24,6 @@ from anomalib.data.utils import (
     get_transforms,
 )
 from anomalib.data.utils.path import _prepare_files_labels, _resolve_path
-from anomalib.utils.types import TaskType
 
 
 def make_folder3d_dataset(
@@ -295,7 +295,7 @@ class Folder3D(AnomalibDataModule):
         center_crop (int | tuple[int, int] | None, optional): When provided, the images will be center-cropped to the
             provided dimensions.
             Defaults to ``None``.
-        normalization (str | InputNormalizationMethod): Normalization method to apply to the input images.
+        normalization (InputNormalizationMethod | str): Normalization method to apply to the input images.
             Defaults to ``InputNormalizationMethod.IMAGENET``.
         train_batch_size (int, optional): Training batch size.
             Defaults to ``32``.
@@ -334,7 +334,7 @@ class Folder3D(AnomalibDataModule):
         extensions: tuple[str] | None = None,
         image_size: int | tuple[int, int] = (256, 256),
         center_crop: int | tuple[int, int] | None = None,
-        normalization: str | InputNormalizationMethod = InputNormalizationMethod.IMAGENET,
+        normalization: InputNormalizationMethod | str = InputNormalizationMethod.IMAGENET,
         train_batch_size: int = 32,
         eval_batch_size: int = 32,
         num_workers: int = 8,

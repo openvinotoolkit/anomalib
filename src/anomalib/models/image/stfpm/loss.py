@@ -13,13 +13,13 @@ class STFPMLoss(nn.Module):
     """Feature Pyramid Loss This class implmenents the feature pyramid loss function proposed in STFPM paper.
 
     Example:
-        >>> from anomalib.models.components.feature_extractors import FeatureExtractor
+        >>> from anomalib.models.components.feature_extractors import TimmFeatureExtractor
         >>> from anomalib.models.stfpm.loss import STFPMLoss
         >>> from torchvision.models import resnet18
 
         >>> layers = ['layer1', 'layer2', 'layer3']
-        >>> teacher_model = FeatureExtractor(model=resnet18(pretrained=True), layers=layers)
-        >>> student_model = FeatureExtractor(model=resnet18(pretrained=False), layers=layers)
+        >>> teacher_model = TimmFeatureExtractor(model=resnet18(pretrained=True), layers=layers)
+        >>> student_model = TimmFeatureExtractor(model=resnet18(pretrained=False), layers=layers)
         >>> loss = Loss()
 
         >>> inp = torch.rand((4, 3, 256, 256))

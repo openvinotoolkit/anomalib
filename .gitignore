@@ -2,9 +2,11 @@
 datasets
 pre_trained
 !anomalib/datasets
-!tests/pre_merge/datasets
 results
 !anomalib/core/results
+
+# Test-related files and directories
+tmp*
 
 # Jupyter Notebooks
 notebooks/500_use_cases/501_dobot/

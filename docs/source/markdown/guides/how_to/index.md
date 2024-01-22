@@ -13,6 +13,8 @@ This section is under construction 🚧
 :gutter: 1
 
 :::{grid-item-card} {octicon}`database` Data
+:link: ./data/index
+:link-type: doc
 
 Learn more about anomalib datamodules.
 :::
@@ -65,5 +67,6 @@ Learn more about anomalib hpo, sweep and benchmarking pipelines
 :caption: Data
 :hidden:
 
+./data/index
 ./models/index
 ```

@@ -77,7 +77,8 @@ class _PostProcessorCallback(Callback):
         pl_module: AnomalyModule,
         outputs: dict[str, Any],
     ) -> None:
-        outputs["pred_labels"] = outputs["pred_scores"] >= pl_module.image_threshold.value
+        if "pred_scores" in outputs:
+            outputs["pred_labels"] = outputs["pred_scores"] >= pl_module.image_threshold.value
         if "anomaly_maps" in outputs:
             outputs["pred_masks"] = outputs["anomaly_maps"] >= pl_module.pixel_threshold.value
             if "pred_boxes" not in outputs:
@@ -104,7 +105,7 @@ class _PostProcessorCallback(Callback):
                     .max(dim=1)
                     .values
                 )
-            elif "pred_scores" not in outputs and "box_scores" in outputs:
+            elif "pred_scores" not in outputs and "box_scores" in outputs and "label" in outputs:
                 # infer image score from bbox confidence scores
                 outputs["pred_scores"] = torch.zeros_like(outputs["label"]).float()
                 for idx, (boxes, scores) in enumerate(zip(outputs["pred_boxes"], outputs["box_scores"], strict=True)):
@@ -114,9 +115,11 @@ class _PostProcessorCallback(Callback):
             if "pred_boxes" in outputs and "anomaly_maps" not in outputs:
                 # create anomaly maps from bbox predictions for thresholding and evaluation
                 image_size: tuple[int, int] = outputs["image"].shape[-2:]
-                true_boxes: list[torch.Tensor] = outputs["boxes"]
                 pred_boxes: torch.Tensor = outputs["pred_boxes"]
                 box_scores: torch.Tensor = outputs["box_scores"]
 
                 outputs["anomaly_maps"] = boxes_to_anomaly_maps(pred_boxes, box_scores, image_size)
-                outputs["mask"] = boxes_to_masks(true_boxes, image_size)
+
+                if "boxes" in outputs:
+                    true_boxes: list[torch.Tensor] = outputs["boxes"]
+                    outputs["mask"] = boxes_to_masks(true_boxes, image_size)

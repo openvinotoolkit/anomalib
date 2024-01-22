@@ -9,11 +9,11 @@ import albumentations as A  # noqa: N812
 import torch
 from pandas import DataFrame
 
+from anomalib import TaskType
 from anomalib.data.base.datamodule import AnomalibDataModule
 from anomalib.data.base.dataset import AnomalibDataset
 from anomalib.data.utils import ValSplitMode, masks_to_boxes
 from anomalib.data.utils.video import ClipsIndexer
-from anomalib.utils.types import TaskType
 
 if TYPE_CHECKING:
     from collections.abc import Callable

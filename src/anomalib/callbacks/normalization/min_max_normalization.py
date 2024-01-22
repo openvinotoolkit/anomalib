@@ -1,21 +1,23 @@
 """Anomaly Score Normalization Callback that uses min-max normalization."""
 
-# Copyright (C) 2022 Intel Corporation
+# Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 
 from typing import Any
 
 import torch
-from lightning.pytorch import Callback, Trainer
+from lightning.pytorch import Trainer
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 
 from anomalib.metrics import MinMax
 from anomalib.models.components import AnomalyModule
 from anomalib.utils.normalization.min_max import normalize
 
+from .base import NormalizationCallback
 
-class _MinMaxNormalizationCallback(Callback):
+
+class _MinMaxNormalizationCallback(NormalizationCallback):
     """Callback that normalizes the image-level and pixel-level anomaly scores using min-max normalization.
 
     Note: This callback is set within the Engine.
@@ -97,7 +99,8 @@ class _MinMaxNormalizationCallback(Callback):
         image_threshold = pl_module.image_threshold.value.cpu()
         pixel_threshold = pl_module.pixel_threshold.value.cpu()
         stats = pl_module.normalization_metrics.cpu()
-        outputs["pred_scores"] = normalize(outputs["pred_scores"], image_threshold, stats.min, stats.max)
+        if "pred_scores" in outputs:
+            outputs["pred_scores"] = normalize(outputs["pred_scores"], image_threshold, stats.min, stats.max)
         if "anomaly_maps" in outputs:
             outputs["anomaly_maps"] = normalize(outputs["anomaly_maps"], pixel_threshold, stats.min, stats.max)
         if "box_scores" in outputs:

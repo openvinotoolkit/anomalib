@@ -17,6 +17,7 @@ from .patchcore import Patchcore
 from .reverse_distillation import ReverseDistillation
 from .rkde import Rkde
 from .stfpm import Stfpm
+from .winclip import WinClip
 
 __all__ = [
     "Cfa",
@@ -33,4 +34,5 @@ __all__ = [
     "ReverseDistillation",
     "Rkde",
     "Stfpm",
+    "WinClip",
 ]

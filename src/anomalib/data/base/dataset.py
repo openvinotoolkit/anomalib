@@ -18,8 +18,8 @@ import torch
 from pandas import DataFrame
 from torch.utils.data import Dataset
 
+from anomalib import TaskType
 from anomalib.data.utils import masks_to_boxes, read_image
-from anomalib.utils.types import TaskType
 
 _EXPECTED_COLUMNS_CLASSIFICATION = ["image_path", "split"]
 _EXPECTED_COLUMNS_SEGMENTATION = [*_EXPECTED_COLUMNS_CLASSIFICATION, "mask_path"]
@@ -128,6 +128,7 @@ class AnomalibDataset(Dataset, ABC):
             # Therefore, create empty mask for Normal (0) images.
 
             mask = np.zeros(shape=image.shape[:2]) if label_index == 0 else cv2.imread(mask_path, flags=0) / 255.0
+            mask = mask.astype(np.single)
 
             transformed = self.transform(image=image, mask=mask)
 
