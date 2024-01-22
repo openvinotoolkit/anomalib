@@ -12,6 +12,38 @@ class BufferListMixin(nn.Module):
     """Buffer List Mixin.
 
     This mixin is used to allow registering a list of tensors as buffers in a pytorch module.
+
+    Example:
+        >>> class MyModule(BufferListMixin, nn.Module):
+        ...     def __init__(self):
+        ...         super().__init__()
+        ...         tensor_list = [torch.ones(3) * i for i in range(3)]
+        ...         self.register_bufferlist("my_bufferlist", tensor_list)
+        >>> module = MyModule()
+        >>> # The bufferlist can be accessed as a regular attribute
+        >>> module.my_bufferlist
+        [
+            tensor([0., 0., 0.]),
+            tensor([1., 1., 1.]),
+            tensor([2., 2., 2.])
+        ]
+        >>> # We can update the bufferlist at any time
+        >>> new_tensor_list = [torch.ones(3) * i + 10 for i in range(3)]
+        >>> module.register_bufferlist("my_bufferlist", new_tensor_list)
+        >>> module.my_bufferlist
+        [
+            tensor([10., 10., 10.]),
+            tensor([11., 11., 11.]),
+            tensor([12., 12., 12.])
+        ]
+        >>> # Move to GPU. Since the tensors are registered as buffers, device placement is handled automatically
+        >>> module.cuda()
+        >>> module.my_bufferlist
+        [
+            tensor([10., 10., 10.], device='cuda:0'),
+            tensor([11., 11., 11.], device='cuda:0'),
+            tensor([12., 12., 12.], device='cuda:0')
+        ]
     """
 
     def register_bufferlist(self, name: str, values: list[torch.Tensor], persistent: bool = True, **kwargs) -> None:
@@ -26,38 +58,6 @@ class BufferListMixin(nn.Module):
             persistent (bool, optional): Whether the buffers should be saved as part of the module state_dict.
                 Defaults to True.
             **kwargs: Additional keyword arguments to pass to `torch.nn.Module.register_buffer`.
-
-        Example:
-            >>> class MyModule(BufferListMixin, nn.Module):
-            ...     def __init__(self):
-            ...         super().__init__()
-            ...         tensor_list = [torch.ones(3) * i for i in range(3)]
-            ...         self.register_bufferlist("my_bufferlist", tensor_list)
-            >>> module = MyModule()
-            >>> # The bufferlist can be accessed as a regular attribute
-            >>> module.my_bufferlist
-            [
-                tensor([0., 0., 0.]),
-                tensor([1., 1., 1.]),
-                tensor([2., 2., 2.])
-            ]
-            >>> # We can update the bufferlist at any time
-            >>> new_tensor_list = [torch.ones(3) * i + 10 for i in range(3)]
-            >>> module.register_bufferlist("my_bufferlist", new_tensor_list)
-            >>> module.my_bufferlist
-            [
-                tensor([10., 10., 10.]),
-                tensor([11., 11., 11.]),
-                tensor([12., 12., 12.])
-            ]
-            >>> # Move to GPU. Since the tensors are registered as buffers, device placement is handled automatically
-            >>> module.cuda()
-            >>> module.my_bufferlist
-            [
-                tensor([10., 10., 10.], device='cuda:0'),
-                tensor([11., 11., 11.], device='cuda:0'),
-                tensor([12., 12., 12.], device='cuda:0')
-            ]
         """
         for i, value in enumerate(values):
             self.register_buffer(f"_{name}_{i}", value, persistent=persistent, **kwargs)
