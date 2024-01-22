@@ -61,14 +61,16 @@ class Dsr(AnomalyModule):
 
     def configure_optimizers(
         self,
-    ) -> tuple[dict[str, torch.optim.Optimizer | torch.optim.LRScheduler], dict[str, torch.optim.Optimizer]]:
+    ) -> tuple[
+        dict[str, torch.optim.Optimizer | torch.optim.lr_scheduler.LRScheduler],
+        dict[str, torch.optim.Optimizer],
+    ]:
         """Configure the Adam optimizer for training phases 2 and 3.
 
         Does not train the discrete model (phase 1)
 
         Returns:
-            dict[str, torch.optim.Optimizer | torch.optim.LRScheduler]: Dictionary of optimizers
-        (the first one having a schedule)
+            dict[str, torch.optim.Optimizer | torch.optim.lr_scheduler.LRScheduler]: Dictionary of optimizers
         """
         num_steps = max(
             self.trainer.max_steps // len(self.trainer.datamodule.train_dataloader()),
