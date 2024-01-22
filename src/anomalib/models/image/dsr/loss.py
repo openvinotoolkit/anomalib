@@ -1,6 +1,6 @@
 """Loss function for the DSR model implementation."""
 
-# Copyright (C) 2023 Intel Corporation
+# Copyright (C) 2023-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 from kornia.losses import FocalLoss
@@ -71,11 +71,10 @@ class DsrThirdStageLoss(nn.Module):
         """Compute the loss over a batch for the DSR model.
 
         Args:
-            gen_mask (Tensor): Computed anomaly map
-            anomaly_mask (Tensor): Ground truth anomaly map
+            pred_mask (Tensor): Computed anomaly map
+            true_mask (Tensor): Ground truth anomaly map
 
         Returns:
             Tensor: Total loss
         """
-        focal_loss = self.focal_loss(pred_mask, true_mask.squeeze(1).long())
-        return focal_loss
+        return self.focal_loss(pred_mask, true_mask.squeeze(1).long())

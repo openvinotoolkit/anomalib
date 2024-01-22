@@ -28,6 +28,7 @@ from .image import (
     ReverseDistillation,
     Rkde,
     Stfpm,
+    Uflow,
 )
 from .video import AiVad
 

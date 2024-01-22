@@ -1,6 +1,13 @@
-import torch.nn as nn
+"""U-Flow torch model."""
+
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+
+import torch
 from FrEIA import framework as ff
 from FrEIA import modules as fm
+from torch import nn
 
 from anomalib.models.components.flow import AllInOneBlock
 
@@ -9,22 +16,22 @@ from .feature_extraction import get_feature_extractor
 
 
 class AffineCouplingSubnet:
-    """
-    Class for building the Affine Coupling subnet.
+    """Class for building the Affine Coupling subnet.
+
     It is passed as an argument to the `AllInOneBlock` module.
+
+    Args:
+        kernel_size (int): Kernel size.
+        subnet_channels_ratio (float): Subnet channels ratio.
     """
 
-    def __init__(self, kernel_size: int, subnet_channels_ratio: float):
-        """
-        Args:
-            kernel_size (int): Kernel size.
-            subnet_channels_ratio (float): Subnet channels ratio.
-        """
+    def __init__(self, kernel_size: int, subnet_channels_ratio: float) -> None:
         self.kernel_size = kernel_size
         self.subnet_channels_ratio = subnet_channels_ratio
 
     def __call__(self, in_channels: int, out_channels: int) -> nn.Sequential:
-        """
+        """Return AffineCouplingSubnet network.
+
         Args:
             in_channels (int): Input channels.
             out_channels (int): Output channels.
@@ -41,6 +48,17 @@ class AffineCouplingSubnet:
 
 
 class UflowModel(nn.Module):
+    """U-Flow model.
+
+    Args:
+        input_size (tuple[int, int]): Input image size.
+        flow_steps (int): Number of flow steps.
+        backbone (str): Backbone name.
+        affine_clamp (float): Affine clamp.
+        affine_subnet_channels_ratio (float): Affine subnet channels ratio.
+        permute_soft (bool): Whether to use soft permutation.
+    """
+
     def __init__(
         self,
         input_size: tuple[int, int] = (448, 448),
@@ -50,15 +68,6 @@ class UflowModel(nn.Module):
         affine_subnet_channels_ratio: float = 1.0,
         permute_soft: bool = False,
     ) -> None:
-        """
-        Args:
-            input_size (tuple[int, int]): Input image size.
-            flow_steps (int): Number of flow steps.
-            backbone (str): Backbone name.
-            affine_clamp (float): Affine clamp.
-            affine_subnet_channels_ratio (float): Affine subnet channels ratio.
-            permute_soft (bool): Whether to use soft permutation.
-        """
         super().__init__()
 
         self.input_size = input_size
@@ -71,8 +80,8 @@ class UflowModel(nn.Module):
         self.anomaly_map_generator = AnomalyMapGenerator(input_size)
 
     def build_flow(self, flow_steps: int) -> ff.GraphINN:
-        """
-        Build the flow model.
+        """Build the flow model.
+
         First we start with the input nodes, which have to match the feature extractor output.
         Then, we build the U-Shaped flow. Starting from the bottom (the coarsest scale), the flow is built as follows:
             1. Pass the input through a Flow Stage (`build_flow_stage`).
@@ -88,11 +97,18 @@ class UflowModel(nn.Module):
             ff.GraphINN: Flow model.
         """
         input_nodes = []
-        for channel, s_factor in zip(self.feature_extractor.channels, self.feature_extractor.scale_factors):
+        for channel, s_factor in zip(
+            self.feature_extractor.channels,
+            self.feature_extractor.scale_factors,
+            strict=True,
+        ):
             input_nodes.append(
                 ff.InputNode(
-                    channel, self.input_size[0] // s_factor, self.input_size[1] // s_factor, name=f"cond_{channel}"
-                )
+                    channel,
+                    self.input_size[0] // s_factor,
+                    self.input_size[1] // s_factor,
+                    name=f"cond_{channel}",
+                ),
             )
 
         nodes, output_nodes = [], []
@@ -122,8 +138,8 @@ class UflowModel(nn.Module):
         return ff.GraphINN(input_nodes + nodes + output_nodes[::-1])
 
     def build_flow_stage(self, in_node: ff.Node, flow_steps: int, condition_node: ff.Node = None) -> list[ff.Node]:
-        """
-        Build a flow stage, which is a sequence of flow steps.
+        """Build a flow stage, which is a sequence of flow steps.
+
         Each flow stage is essentially a sequence of `flow_steps` Glow blocks (`AllInOneBlock`).
 
         Args:
@@ -134,7 +150,6 @@ class UflowModel(nn.Module):
         Returns:
             List[ff.Node]: List of flow steps.
         """
-
         flow_size = in_node.output_dims[0][-1]
         nodes = []
         for step in range(flow_steps):
@@ -144,28 +159,30 @@ class UflowModel(nn.Module):
                     AllInOneBlock,
                     module_args={
                         "subnet_constructor": AffineCouplingSubnet(
-                            3 if step % 2 == 0 else 1, self.affine_subnet_channels_ratio
+                            3 if step % 2 == 0 else 1,
+                            self.affine_subnet_channels_ratio,
                         ),
                         "affine_clamping": self.affine_clamp,
                         "permute_soft": self.permute_soft,
                     },
                     conditions=condition_node,
                     name=f"flow{flow_size}_step{step}",
-                )
+                ),
             )
             in_node = nodes[-1]
         return nodes
 
-    def forward(self, image):
+    def forward(self, image: torch.Tensor) -> torch.Tensor:
+        """Return anomaly map."""
         features = self.feature_extractor(image)
         z, ljd = self.encode(features)
 
         if self.training:
             return z, ljd
-        else:
-            return self.anomaly_map_generator(z)
+        return self.anomaly_map_generator(z)
 
-    def encode(self, features):
+    def encode(self, features: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        """Return"""
         z, ljd = self.flow(features, rev=False)
         if len(self.feature_extractor.scales) == 1:
             z = [z]

@@ -9,6 +9,7 @@ from .csflow import Csflow
 from .dfkde import Dfkde
 from .dfm import Dfm
 from .draem import Draem
+from .dsr import Dsr
 from .efficient_ad import EfficientAd
 from .fastflow import Fastflow
 from .ganomaly import Ganomaly
@@ -17,6 +18,7 @@ from .patchcore import Patchcore
 from .reverse_distillation import ReverseDistillation
 from .rkde import Rkde
 from .stfpm import Stfpm
+from .uflow import Uflow
 
 __all__ = [
     "Cfa",
@@ -25,6 +27,7 @@ __all__ = [
     "Dfkde",
     "Dfm",
     "Draem",
+    "Dsr",
     "EfficientAd",
     "Fastflow",
     "Ganomaly",
@@ -33,4 +36,5 @@ __all__ = [
     "ReverseDistillation",
     "Rkde",
     "Stfpm",
+    "Uflow",
 ]

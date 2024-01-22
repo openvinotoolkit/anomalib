@@ -4,8 +4,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-from typing import List
-
 import imgaug.augmenters as iaa
 import numpy as np
 import torch
@@ -15,9 +13,10 @@ from anomalib.data.utils.generators.perlin import _rand_perlin_2d_np
 
 
 class DsrAnomalyGenerator(nn.Module):
-    """Anomaly generator of the DSR model. The anomaly is generated using a Perlin
-    noise generator on the two quantized representations of an image. This generator
-    is only used during the second phase of training! The third phase requires generating
+    """Anomaly generator of the DSR model.
+
+    The anomaly is generated using a Perlin noise generator on the two quantized representations of an image.
+    This generator is only used during the second phase of training! The third phase requires generating
     smudges over the input images.
 
     Args:
@@ -27,7 +26,7 @@ class DsrAnomalyGenerator(nn.Module):
     def __init__(
         self,
         p_anomalous: float = 0.5,
-    ):
+    ) -> None:
         super().__init__()
 
         self.p_anomalous = p_anomalous
@@ -52,9 +51,8 @@ class DsrAnomalyGenerator(nn.Module):
         perlin_noise_np = self.rot(image=perlin_noise_np)
         mask = np.where(perlin_noise_np > threshold, np.ones_like(perlin_noise_np), np.zeros_like(perlin_noise_np))
         mask = np.expand_dims(mask, axis=2).astype(np.float32)
-        mask = torch.from_numpy(mask)
 
-        return mask
+        return torch.from_numpy(mask)
 
     def augment_batch(self, batch: Tensor) -> Tensor:
         """Generate anomalous augmentations for a batch of input images.
@@ -68,7 +66,7 @@ class DsrAnomalyGenerator(nn.Module):
         batch_size, _, height, width = batch.shape
 
         # Collect perturbations
-        masks_list: List[Tensor] = []
+        masks_list: list[Tensor] = []
         for _ in range(batch_size):
             if torch.rand(1) > self.p_anomalous:  # include normal samples
                 masks_list.append(torch.zeros((1, height, width)))
@@ -76,6 +74,4 @@ class DsrAnomalyGenerator(nn.Module):
                 mask = self.generate_anomaly(height, width)
                 masks_list.append(mask.permute((2, 0, 1)))
 
-        masks = torch.stack(masks_list).to(batch.device)
-
-        return masks
+        return torch.stack(masks_list).to(batch.device)

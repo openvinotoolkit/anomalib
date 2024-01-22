@@ -1,4 +1,4 @@
-"""DSR – A Dual Subspace Re-Projection Network for Surface Anomaly Detection
+"""DSR - A Dual Subspace Re-Projection Network for Surface Anomaly Detection.
 
 Paper https://link.springer.com/chapter/10.1007/978-3-031-19821-2_31
 """
@@ -6,45 +6,43 @@ Paper https://link.springer.com/chapter/10.1007/978-3-031-19821-2_31
 # Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
-
 import logging
 from pathlib import Path
 
 import torch
-from omegaconf import DictConfig, ListConfig
-from pytorch_lightning.utilities.types import STEP_OUTPUT
+from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torch import Tensor
 
 from anomalib.data.utils import DownloadInfo, download_and_extract
 from anomalib.data.utils.augmenter import Augmenter
 from anomalib.models.components import AnomalyModule
-from anomalib.models.dsr.anomaly_generator import DsrAnomalyGenerator
-from anomalib.models.dsr.loss import DsrSecondStageLoss, DsrThirdStageLoss
-from anomalib.models.dsr.torch_model import DsrModel
+from anomalib.models.image.dsr.anomaly_generator import DsrAnomalyGenerator
+from anomalib.models.image.dsr.loss import DsrSecondStageLoss, DsrThirdStageLoss
+from anomalib.models.image.dsr.torch_model import DsrModel
 
-__all__ = ["Dsr", "DsrLightning"]
+__all__ = ["Dsr"]
 
 logger = logging.getLogger(__name__)
 
 WEIGHTS_DOWNLOAD_INFO = DownloadInfo(
     name="vq_model_pretrained_128_4096.pckl",
     url="https://github.com/openvinotoolkit/anomalib/releases/download/dsr_pretrained_weights/dsr_vq_model_pretrained.zip",
-    hash="927f6b40841a7c885d12217c922b2bba",
+    checksum="927f6b40841a7c885d12217c922b2bba",
 )
 
 
 class Dsr(AnomalyModule):
-    """DSR: A Dual Subspace Re-Projection Network for Surface Anomaly Detection
+    """DSR: A Dual Subspace Re-Projection Network for Surface Anomaly Detection.
 
     Args:
         latent_anomaly_strength (float, optional): Strength of the generated anomalies in the latent space.
     """
 
-    def __init__(self, latent_anomaly_strength: float = 0.2) -> None:
+    def __init__(self, latent_anomaly_strength: float = 0.2, upsampling_train_ratio: float = 0.7) -> None:
         super().__init__()
 
         self.automatic_optimization = False
+        self.upsampling_train_ratio = upsampling_train_ratio
 
         self.quantized_anomaly_generator = DsrAnomalyGenerator()
         self.perlin_generator = Augmenter()
@@ -55,6 +53,7 @@ class Dsr(AnomalyModule):
         self.second_phase: int
 
     def prepare_pretrained_model(self) -> Path:
+        """Download pre-trained models if they don't exist."""
         pretrained_models_dir = Path("./pre_trained/")
         if not (pretrained_models_dir / "vq_model_pretrained_128_4096.pckl").is_file():
             download_and_extract(pretrained_models_dir, WEIGHTS_DOWNLOAD_INFO)
@@ -63,17 +62,19 @@ class Dsr(AnomalyModule):
     def configure_optimizers(
         self,
     ) -> tuple[dict[str, torch.optim.Optimizer | torch.optim.LRScheduler], dict[str, torch.optim.Optimizer]]:
-        """Configure the Adam optimizer for training phases 2 and 3. Does not train the discrete
-        model (phase 1)
+        """Configure the Adam optimizer for training phases 2 and 3.
+
+        Does not train the discrete model (phase 1)
 
         Returns:
             dict[str, torch.optim.Optimizer | torch.optim.LRScheduler]: Dictionary of optimizers
         (the first one having a schedule)
         """
         num_steps = max(
-            self.trainer.max_steps // len(self.trainer.datamodule.train_dataloader()), self.trainer.max_epochs
+            self.trainer.max_steps // len(self.trainer.datamodule.train_dataloader()),
+            self.trainer.max_epochs,
         )
-        self.second_phase = int(num_steps * self.hparams.model.upsampling_train_ratio)
+        self.second_phase = int(num_steps * self.model.upsampling_train_ratio)
         anneal = int(0.8 * self.second_phase)
         optimizer_d = torch.optim.Adam(
             params=list(self.model.image_reconstruction_network.parameters())
@@ -84,7 +85,7 @@ class Dsr(AnomalyModule):
         )
         scheduler_d = torch.optim.lr_scheduler.StepLR(optimizer_d, anneal, gamma=0.1)
 
-        optimizer_u = torch.optim.Adam(params=self.model.upsampling_module.parameters(), lr=self.hparams.model.lr)
+        optimizer_u = torch.optim.Adam(params=self.model.upsampling_module.parameters(), lr=0.0002)
 
         return ({"optimizer": optimizer_d, "lr_scheduler": scheduler_d}, {"optimizer": optimizer_u})
 
@@ -155,10 +156,14 @@ class Dsr(AnomalyModule):
         return {"loss": loss}
 
     def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
-        """Validation step of DSR. The Softmax predictions of the anomalous class are used as anomaly map.
+        """Validation step of DSR.
+
+        The Softmax predictions of the anomalous class are used as anomaly map.
 
         Args:
             batch (dict[str, str | Tensor]): Batch of input images
+            *args: unused
+            **kwargs: unused
 
         Returns:
             STEP_OUTPUT: Dictionary to which predicted anomaly maps have been added.
@@ -169,16 +174,3 @@ class Dsr(AnomalyModule):
         batch["anomaly_maps"] = model_outputs["anomaly_map"]
         batch["pred_scores"] = model_outputs["pred_score"]
         return batch
-
-
-class DsrLightning(Dsr):
-    """DSR: A Dual Subspace Re-Projection Network for Surface Anomaly Detection
-
-    Args:
-        hparams (DictConfig | ListConfig): Model parameters
-    """
-
-    def __init__(self, hparams: DictConfig | ListConfig) -> None:
-        super().__init__(latent_anomaly_strength=hparams.model.latent_anomaly_strength)
-        self.hparams: DictConfig | ListConfig  # type: ignore
-        self.save_hyperparameters(hparams)
