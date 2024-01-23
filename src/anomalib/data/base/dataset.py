@@ -16,7 +16,6 @@ import torch
 from pandas import DataFrame
 from PIL import Image
 from torch.utils.data import Dataset
-from torchvision.io import read_image
 from torchvision.transforms.functional import to_tensor
 from torchvision.tv_tensors import Mask
 
@@ -119,7 +118,7 @@ class AnomalibDataset(Dataset, ABC):
         mask_path = self._samples.iloc[index].mask_path
         label_index = self._samples.iloc[index].label_index
 
-        image = read_image(image_path)
+        image = to_tensor(Image.open(image_path))
         item = {"image_path": image_path, "label": label_index}
 
         if self.task == TaskType.CLASSIFICATION:
