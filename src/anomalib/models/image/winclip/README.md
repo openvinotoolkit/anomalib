@@ -74,3 +74,7 @@ Coming soon...
 | 4-shot         |       |        |       |         |       |       |        |       |         |          |           |       |       |            |            |        | -->
 
 <!-- ### Sample Results -->
+
+## Attribution
+
+The implementation of the torch model was inspired by https://github.com/zqhang/WinCLIP-pytorch and https://github.com/caoyunkang/WinClip.
