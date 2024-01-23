@@ -5,6 +5,7 @@
 
 
 import logging
+import math
 from enum import Enum
 
 import numpy as np
@@ -181,9 +182,10 @@ class Decoder(nn.Module):
     def __init__(self, out_channels: int, padding: int, img_size: tuple[int, int], *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.img_size = img_size
+        # use ceil to match output shape of PDN
         self.last_upsample = (
-            int(img_size[0] / 4) if padding else int(img_size[0] / 4) - 8,
-            int(img_size[1] / 4) if padding else int(img_size[1] / 4) - 8,
+            math.ceil(img_size[0] / 4) if padding else math.ceil(img_size[0] / 4) - 8,
+            math.ceil(img_size[1] / 4) if padding else math.ceil(img_size[1] / 4) - 8,
         )
         self.deconv1 = nn.Conv2d(64, 64, kernel_size=4, stride=1, padding=2)
         self.deconv2 = nn.Conv2d(64, 64, kernel_size=4, stride=1, padding=2)
@@ -209,22 +211,22 @@ class Decoder(nn.Module):
         Returns:
             torch.Tensor: Output from the network.
         """
-        x = F.interpolate(x, size=(int(self.img_size[0] / 64) - 1, int(self.img_size[1] / 64) - 1), mode="bilinear")
+        x = F.interpolate(x, size=(self.img_size[0] // 64 - 1, self.img_size[1] // 64 - 1), mode="bilinear")
         x = F.relu(self.deconv1(x))
         x = self.dropout1(x)
-        x = F.interpolate(x, size=(int(self.img_size[0] / 32), int(self.img_size[1] / 32)), mode="bilinear")
+        x = F.interpolate(x, size=(self.img_size[0] // 32, self.img_size[1] // 32), mode="bilinear")
         x = F.relu(self.deconv2(x))
         x = self.dropout2(x)
-        x = F.interpolate(x, size=(int(self.img_size[0] / 16) - 1, int(self.img_size[1] / 16) - 1), mode="bilinear")
+        x = F.interpolate(x, size=(self.img_size[0] // 16 - 1, self.img_size[1] // 16 - 1), mode="bilinear")
         x = F.relu(self.deconv3(x))
         x = self.dropout3(x)
-        x = F.interpolate(x, size=(int(self.img_size[0] / 8), int(self.img_size[1] / 8)), mode="bilinear")
+        x = F.interpolate(x, size=(self.img_size[0] // 8, self.img_size[1] // 8), mode="bilinear")
         x = F.relu(self.deconv4(x))
         x = self.dropout4(x)
-        x = F.interpolate(x, size=(int(self.img_size[0] / 4) - 1, int(self.img_size[1] / 4) - 1), mode="bilinear")
+        x = F.interpolate(x, size=(self.img_size[0] // 4 - 1, self.img_size[1] // 4 - 1), mode="bilinear")
         x = F.relu(self.deconv5(x))
         x = self.dropout5(x)
-        x = F.interpolate(x, size=(int(self.img_size[0] / 2) - 1, int(self.img_size[1] / 2) - 1), mode="bilinear")
+        x = F.interpolate(x, size=(self.img_size[0] // 2 - 1, self.img_size[1] // 2 - 1), mode="bilinear")
         x = F.relu(self.deconv6(x))
         x = self.dropout6(x)
         x = F.interpolate(x, size=self.last_upsample, mode="bilinear")
