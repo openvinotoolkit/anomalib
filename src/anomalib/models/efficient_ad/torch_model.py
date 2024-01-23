@@ -221,9 +221,7 @@ class EfficientAdModel(nn.Module):
         pretrained_models_dir (str): path to the pretrained model weights
         input_size (tuple): size of input images
         model_size (str): size of student and teacher model
-        padding (bool): use padding in convoluional layers
-        pad_maps (bool): relevant if padding is set to False. In this case, pad_maps = True pads the
-            output anomaly maps so that their size matches the size in the padding = True case.
+        padding (bool): use padding in convoluional layers of the student/teacher architecture
         device (str): which device the model should be loaded on
     """
 
@@ -233,11 +231,10 @@ class EfficientAdModel(nn.Module):
         input_size: tuple[int, int],
         model_size: EfficientAdModelSize = EfficientAdModelSize.S,
         padding=False,
-        pad_maps=True,
     ) -> None:
         super().__init__()
 
-        self.pad_maps = pad_maps
+        self.padding = padding
         self.teacher: PDN_M | PDN_S
         self.student: PDN_M | PDN_S
 
@@ -343,9 +340,13 @@ class EfficientAdModel(nn.Module):
                 (ae_output - student_output[:, self.teacher_out_channels :]) ** 2, dim=1, keepdim=True
             )
 
-            if self.pad_maps:
+            if not self.padding:
+                # when the teacher/student architecture does not use padding, the output anomaly maps
+                # are smaller than if they had it, so the maps are misaligned. To fix this, we pad
+                # score maps by 4 pixels on each side. See github.com/openvinotoolkit/anomalib/discussions/1368
                 map_st = F.pad(map_st, (4, 4, 4, 4))
                 map_stae = F.pad(map_stae, (4, 4, 4, 4))
+
             map_st = F.interpolate(map_st, size=(self.input_size[0], self.input_size[1]), mode="bilinear")
             map_stae = F.interpolate(map_stae, size=(self.input_size[0], self.input_size[1]), mode="bilinear")
 
