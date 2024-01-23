@@ -14,3 +14,4 @@ setuptools>=41.0.0
 timm>=0.5.4,<=0.6.13
 torchmetrics==0.10.3
 rich-argparse
+open-clip-torch>=2.23.0

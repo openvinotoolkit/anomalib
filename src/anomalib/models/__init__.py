@@ -29,6 +29,7 @@ from .image import (
     Rkde,
     Stfpm,
     Uflow,
+    WinClip,
 )
 from .video import AiVad
 
@@ -55,6 +56,7 @@ __all__ = [
     "Stfpm",
     "Uflow",
     "AiVad",
+    "WinClip",
 ]
 
 logger = logging.getLogger(__name__)

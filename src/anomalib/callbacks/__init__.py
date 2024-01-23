@@ -10,9 +10,10 @@ from pathlib import Path
 
 import yaml
 from jsonargparse import Namespace
-from lightning.pytorch.callbacks import Callback, ModelCheckpoint
+from lightning.pytorch.callbacks import Callback
 from omegaconf import DictConfig, ListConfig, OmegaConf
 
+from .checkpoint import ModelCheckpoint
 from .graph import GraphLogger
 from .model_loader import LoadModelCallback
 from .tiler_configuration import TilerConfigurationCallback

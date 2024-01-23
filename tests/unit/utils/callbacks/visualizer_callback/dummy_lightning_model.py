@@ -31,6 +31,11 @@ class DummyModule(AnomalyModule):
         self.mode = "full"
         self.dataset_path = dataset_path
 
+    def validation_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> dict:
+        """Only used to avoid NotImplementedError."""
+        del batch
+        return self.test_step(*args, **kwargs)
+
     def test_step(self, *_, **__) -> dict:
         """Only used to trigger on_test_epoch_end."""
         self.log(name="loss", value=0.0, prog_bar=True)

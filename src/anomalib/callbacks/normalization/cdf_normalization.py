@@ -1,13 +1,13 @@
 """Anomaly Score Normalization Callback."""
 
-# Copyright (C) 2022 Intel Corporation
+# Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 
 import logging
 from typing import TYPE_CHECKING, Any
 
-from lightning.pytorch import Callback, Trainer
+from lightning.pytorch import Trainer
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 
 from anomalib.callbacks.post_processor import _PostProcessorCallback
@@ -15,13 +15,15 @@ from anomalib.metrics import AnomalyScoreDistribution
 from anomalib.models.components import AnomalyModule
 from anomalib.utils.normalization.cdf import normalize, standardize
 
+from .base import NormalizationCallback
+
 if TYPE_CHECKING:
     from torch.distributions import LogNormal
 
 logger = logging.getLogger(__name__)
 
 
-class _CdfNormalizationCallback(Callback):
+class _CdfNormalizationCallback(NormalizationCallback):
     """Callback that standardizes the image-level and pixel-level anomaly scores.
 
     Note: This callback is set within the Engine.

@@ -10,17 +10,16 @@ Tests the models using API. The weight paths from the trained models are used fo
 from pathlib import Path
 
 import pytest
-from lightning.pytorch.callbacks import ModelCheckpoint
-from torch.utils.data import DataLoader
 
 from anomalib import TaskType
-from anomalib.data import AnomalibDataModule, MVTec, PredictDataset, UCSDped
+from anomalib.callbacks import ModelCheckpoint
+from anomalib.data import AnomalibDataModule, MVTec, UCSDped
 from anomalib.deploy.export import ExportType
 from anomalib.engine import Engine
 from anomalib.models import AnomalyModule, get_available_models, get_model
 
 
-def models() -> set[str]:
+def models() -> list[str]:
     """Return all available models."""
     return get_available_models()
 
@@ -105,24 +104,15 @@ class TestAPI:
             dataset_path (Path): Root to dataset from fixture.
             project_path (Path): Path to temporary project folder from fixture.
         """
-        model, _dataloader, engine = self._get_objects(
+        model, datamodule, engine = self._get_objects(
             model_name=model_name,
             dataset_path=dataset_path,
             project_path=project_path,
         )
-        if model_name == "ai_vad":
-            dataloader = _dataloader
-        else:
-            dataloader = DataLoader(
-                PredictDataset(
-                    dataset_path / "mvtec" / "dummy" / "test",
-                    image_size=(448, 448) if model_name == "uflow" else (256, 256),
-                ),
-            )
         engine.predict(
             model=model,
-            dataloaders=dataloader,
             ckpt_path=f"{project_path}/{model_name}/dummy/weights/last.ckpt",
+            datamodule=datamodule,
         )
 
     @pytest.mark.parametrize("model_name", models())
@@ -134,12 +124,18 @@ class TestAPI:
             dataset_path (Path): Root to dataset from fixture.
             project_path (Path): Path to temporary project folder from fixture.
         """
+        input_size = (256, 256)
         if model_name == "reverse_distillation":
             # TODO(ashwinvaidya17): Restore this test after fixing reverse distillation
             # https://github.com/openvinotoolkit/anomalib/issues/1513
             pytest.skip("Reverse distillation fails to convert to ONNX")
         elif model_name == "ai_vad":
             pytest.skip("Export fails for video models.")
+        elif model_name == "win_clip":
+            input_size = (240, 240)
+        elif model_name == "uflow":
+            input_size = (448, 448)
+
         model, dataset, engine = self._get_objects(
             model_name=model_name,
             dataset_path=dataset_path,
@@ -150,7 +146,7 @@ class TestAPI:
             datamodule=dataset,
             ckpt_path=f"{project_path}/{model_name}/dummy/weights/last.ckpt",
             export_type=ExportType.ONNX,
-            input_size=(448, 448) if model_name == "uflow" else (256, 256),
+            input_size=input_size,
         )
 
     def _get_objects(
@@ -192,6 +188,8 @@ class TestAPI:
         if model_name == "ai_vad":
             # aivad expects UCSD dataset
             dataset = UCSDped(root=dataset_path / "ucsdped", category="dummy", task=task_type)
+        elif model_name == "win_clip":
+            dataset = MVTec(root=dataset_path / "mvtec", category="dummy", image_size=240, task=task_type)
         else:
             # EfficientAd requires that the batch size be lesser than the number of images in the dataset.
             # This is so that the LR step size is not 0.
