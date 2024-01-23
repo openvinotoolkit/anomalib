@@ -5,7 +5,7 @@ metrics:
       init_args:
         compute_on_cpu: true
     AUROC:
-      class_path: anomalib.utils.metrics.AUROC
+      class_path: anomalib.metrics.AUROC
       init_args:
         compute_on_cpu: true
   image:
@@ -14,6 +14,6 @@ metrics:
       init_args:
         compute_on_cpu: true
     AUROC:
-      class_path: anomalib.utils.metrics.AUROC
+      class_path: anomalib.metrics.AUROC
       init_args:
         compute_on_cpu: true
