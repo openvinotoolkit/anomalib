@@ -155,6 +155,8 @@ class EfficientAd(AnomalyModule):
 
         Adapted from https://math.stackexchange.com/a/2148949
 
+        Adapted from https://math.stackexchange.com/a/2148949
+
         Args:
             dataloader (DataLoader): Dataloader of the respective dataset.
 
