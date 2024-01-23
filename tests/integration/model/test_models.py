@@ -133,6 +133,8 @@ class TestAPI:
             pytest.skip("Export fails for video models.")
         elif model_name == "win_clip":
             input_size = (240, 240)
+        elif model_name == "uflow":
+            input_size = (448, 448)
 
         model, dataset, engine = self._get_objects(
             model_name=model_name,
@@ -191,7 +193,14 @@ class TestAPI:
         else:
             # EfficientAd requires that the batch size be lesser than the number of images in the dataset.
             # This is so that the LR step size is not 0.
-            dataset = MVTec(root=dataset_path / "mvtec", category="dummy", task=task_type, train_batch_size=2)
+            image_size = (448, 448) if model_name == "uflow" else (256, 256)
+            dataset = MVTec(
+                root=dataset_path / "mvtec",
+                category="dummy",
+                task=task_type,
+                train_batch_size=2,
+                image_size=image_size,
+            )
 
         model = get_model(model_name, **extra_args)
         engine = Engine(
