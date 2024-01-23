@@ -11,7 +11,7 @@ from pytorch_lightning import Trainer
 from anomalib.data import get_datamodule
 from anomalib.models import get_model
 from anomalib.utils.callbacks import get_callbacks
-from anomalib.utils.metrics import AnomalyScoreThreshold
+from anomalib.utils.metrics import AnomalyScoreThreshold, AnomalyScoreMeanVarThreshold
 from tests.helpers.config import get_test_configurable_parameters
 
 
@@ -30,6 +30,22 @@ def test_adaptive_threshold(labels, preds, target_threshold):
     threshold_value = adaptive_threshold.compute()
 
     assert threshold_value == target_threshold
+
+
+@pytest.mark.parametrize(
+    ["labels", "preds", "target_threshold"],
+    [
+        (torch.Tensor([0, 0, 0, 1, 1]), torch.Tensor([2.3, 1.6, 2.6, 7.9, 3.3]), 3.7913),
+        (torch.Tensor([1, 0, 0, 0]), torch.Tensor([4.0, 3.0, 2.0, 1.0]), 2.6291),
+    ],
+)
+def test_meanvar_threshold(labels, preds, target_threshold):
+    """Test if the meanvar threshold computation returns the desired value."""
+
+    meanvar_threshold = AnomalyScoreMeanVarThreshold(default_value=0.5)
+    meanvar_threshold.update(preds, labels)
+    threshold_value = meanvar_threshold.compute().item()
+    assert round(threshold_value, 4) == target_threshold
 
 
 def test_manual_threshold():

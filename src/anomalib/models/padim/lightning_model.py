@@ -42,8 +42,9 @@ class Padim(AnomalyModule):
         backbone: str,
         pre_trained: bool = True,
         n_features: int | None = None,
+        **kwargs,
     ) -> None:
-        super().__init__()
+        super().__init__(**kwargs)
 
         self.layers = layers
         self.model: PadimModel = PadimModel(
@@ -126,6 +127,7 @@ class PadimLightning(Padim):
             backbone=hparams.model.backbone,
             pre_trained=hparams.model.pre_trained,
             n_features=hparams.model.n_features if "n_features" in hparams.model else None,
+            threshold=hparams.metrics.threshold,
         )
         self.hparams: DictConfig | ListConfig  # type: ignore
         self.save_hyperparameters(hparams)

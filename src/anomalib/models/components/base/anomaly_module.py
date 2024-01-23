@@ -23,11 +23,17 @@ from anomalib.post_processing import ThresholdMethod
 from anomalib.utils.metrics import (
     AnomalibMetricCollection,
     AnomalyScoreDistribution,
+    AnomalyScoreMeanVarThreshold,
     AnomalyScoreThreshold,
     MinMax,
 )
 
 logger = logging.getLogger(__name__)
+
+MethodToThrehsoldMapping = {
+    ThresholdMethod.ADAPTIVE: AnomalyScoreThreshold,
+    ThresholdMethod.MEANVAR: AnomalyScoreMeanVarThreshold,
+}
 
 
 class AnomalyModule(pl.LightningModule, ABC):
@@ -36,7 +42,7 @@ class AnomalyModule(pl.LightningModule, ABC):
     Acts as a base class for all the Anomaly Modules in the library.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, **kwargs) -> None:
         super().__init__()
         logger.info("Initializing %s model.", self.__class__.__name__)
 
@@ -46,8 +52,14 @@ class AnomalyModule(pl.LightningModule, ABC):
         self.callbacks: list[Callback]
 
         self.threshold_method: ThresholdMethod
-        self.image_threshold = AnomalyScoreThreshold().cpu()
-        self.pixel_threshold = AnomalyScoreThreshold().cpu()
+
+        threshold_config = kwargs.pop("threshold", {})
+        self.image_threshold = MethodToThrehsoldMapping.get(threshold_config.method, AnomalyScoreThreshold)(
+            **threshold_config
+        ).cpu()
+        self.pixel_threshold = MethodToThrehsoldMapping.get(threshold_config.method, AnomalyScoreThreshold)(
+            **threshold_config
+        ).cpu()
 
         self.normalization_metrics: Metric
 
@@ -143,6 +155,8 @@ class AnomalyModule(pl.LightningModule, ABC):
           outputs: Batch of outputs from the validation step
         """
         if self.threshold_method == ThresholdMethod.ADAPTIVE:
+            self._compute_adaptive_threshold(outputs)
+        if self.threshold_method == ThresholdMethod.MEANVAR:
             self._compute_adaptive_threshold(outputs)
         self._collect_outputs(self.image_metrics, self.pixel_metrics, outputs)
         self._log_metrics()

@@ -153,6 +153,9 @@ class AnomalibDataModule(LightningDataModule, ABC):
         elif self.val_split_mode == ValSplitMode.SAME_AS_TEST:
             # equal to test set
             self.val_data = self.test_data
+        elif self.val_split_mode == ValSplitMode.SAME_AS_TRAIN:
+            # equal to train set, this is only for AnomalyScoreMeanVarThreshold
+            self.val_data = self.train_data
         elif self.val_split_mode == ValSplitMode.SYNTHETIC:
             # converted from random training sample
             self.train_data, normal_val_data = random_split(self.train_data, self.val_split_ratio, seed=self.seed)

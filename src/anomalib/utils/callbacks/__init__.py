@@ -81,10 +81,19 @@ def get_callbacks(config: DictConfig | ListConfig) -> list[Callback]:
     pixel_threshold = (
         config.metrics.threshold.manual_pixel if "manual_pixel" in config.metrics.threshold.keys() else None
     )
+
+    std_dev_ratio = (
+        config.metrics.threshold.std_dev_ratio if "std_dev_ratio" in config.metrics.threshold.keys() else None
+    )
+
+    meanvar_mode = config.metrics.threshold.meanvar_mode if "meanvar_mode" in config.metrics.threshold.keys() else None
+
     post_processing_callback = PostProcessingConfigurationCallback(
         threshold_method=config.metrics.threshold.method,
         manual_image_threshold=image_threshold,
         manual_pixel_threshold=pixel_threshold,
+        std_dev_ratio=std_dev_ratio,
+        meanvar_mode=meanvar_mode,
     )
     callbacks.append(post_processing_callback)
 
