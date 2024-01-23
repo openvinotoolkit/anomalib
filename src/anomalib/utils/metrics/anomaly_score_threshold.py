@@ -56,7 +56,6 @@ class AnomalyScoreThreshold(PrecisionRecallCurve):
         if thresholds.dim() == 0:
             # special case where recall is 1.0 even for the highest threshold.
             # In this case 'thresholds' will be scalar.
-            self.value = thresholds
-        else:
-            self.value = thresholds[torch.argmax(f1_score)]
-        return self.value
+            return thresholds
+
+        return thresholds[torch.argmax(f1_score)]
