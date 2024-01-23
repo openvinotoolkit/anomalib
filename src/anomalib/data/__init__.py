@@ -13,6 +13,7 @@ from omegaconf import DictConfig, ListConfig
 from .avenue import Avenue
 from .base import AnomalibDataModule, AnomalibDataset
 from .btech import BTech
+from .csv import CSV
 from .folder import Folder
 from .folder_3d import Folder3D
 from .inference import InferenceDataset
@@ -34,6 +35,7 @@ class DataFormat(str, Enum):
     BTECH = "btech"
     FOLDER = "folder"
     FOLDER_3D = "folder_3d"
+    CSV = "csv"
     UCSDPED = "ucsdped"
     AVENUE = "avenue"
     VISA = "visa"
@@ -145,6 +147,25 @@ def get_datamodule(config: DictConfig | ListConfig) -> AnomalibDataModule:
             normal_test_dir=config.dataset.normal_test_dir,
             normal_test_depth_dir=config.dataset.normal_test_depth_dir,
             mask_dir=config.dataset.mask_dir,
+            extensions=config.dataset.extensions,
+            image_size=(config.dataset.image_size[0], config.dataset.image_size[1]),
+            center_crop=center_crop,
+            normalization=config.dataset.normalization,
+            train_batch_size=config.dataset.train_batch_size,
+            eval_batch_size=config.dataset.eval_batch_size,
+            num_workers=config.dataset.num_workers,
+            transform_config_train=config.dataset.transform_config.train,
+            transform_config_eval=config.dataset.transform_config.eval,
+            test_split_mode=config.dataset.test_split_mode,
+            test_split_ratio=config.dataset.test_split_ratio,
+            val_split_mode=config.dataset.val_split_mode,
+            val_split_ratio=config.dataset.val_split_ratio,
+        )
+    elif config.dataset.format.lower() == DataFormat.CSV:
+        datamodule = CSV(
+            root=config.dataset.root,
+            csv_file=config.dataset.csv_file,
+            task=config.dataset.task,
             extensions=config.dataset.extensions,
             image_size=(config.dataset.image_size[0], config.dataset.image_size[1]),
             center_crop=center_crop,

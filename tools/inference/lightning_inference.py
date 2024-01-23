@@ -75,7 +75,10 @@ def infer(args: Namespace):
 
     # create the dataset
     dataset = InferenceDataset(
-        args.input, image_size=tuple(config.dataset.image_size), transform=transform  # type: ignore
+        args.input,
+        config.dataset.root,
+        image_size=tuple(config.dataset.image_size),  # type: ignore
+        transform=transform,
     )
     dataloader = DataLoader(dataset)
 
