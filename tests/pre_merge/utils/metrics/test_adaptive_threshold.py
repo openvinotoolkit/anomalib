@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 import random
 
+import numpy as np
 import pytest
 import torch
 from pytorch_lightning import Trainer
@@ -11,7 +12,7 @@ from pytorch_lightning import Trainer
 from anomalib.data import get_datamodule
 from anomalib.models import get_model
 from anomalib.utils.callbacks import get_callbacks
-from anomalib.utils.metrics import AnomalyScoreThreshold
+from anomalib.utils.metrics import AnomalyScoreThreshold, AnomalyScoreGaussianMixtureThreshold
 from tests.helpers.config import get_test_configurable_parameters
 
 
@@ -30,6 +31,33 @@ def test_adaptive_threshold(labels, preds, target_threshold):
     threshold_value = adaptive_threshold.compute()
 
     assert threshold_value == target_threshold
+
+
+@pytest.mark.parametrize(
+    ["labels", "preds", "anomalous_rate", "target_threshold"],
+    [
+        (
+            torch.Tensor([0, 0, 0, 1, 1, 1, 1]),
+            torch.Tensor([2.3, 1.6, 2.6, 7.9, 6.3, 8.1, 7.8]),
+            None,
+            4.1595,
+        ),  # standard case
+        (
+            torch.Tensor([0, 0, 0, 1, 1, 1, 1]),
+            torch.Tensor([2.3, 1.6, 2.6, 7.9, 6.3, 8.1, 7.8]),
+            0.1,
+            4.2962,
+        ),  # standard case with specified anomalous rate
+        (torch.Tensor([1, 0, 0, 0]), torch.Tensor([4, 3, 2, 1]), None, 4),  # fallback to AnomalyScoreThreshold
+    ],
+)
+def test_gaussian_mixture_threshold(labels, preds, anomalous_rate, target_threshold):
+    """Test if the gaussian mxiture threshold computation returns the desired value."""
+
+    adaptive_threshold = AnomalyScoreGaussianMixtureThreshold(anomalous_rate=anomalous_rate, n_components=1)
+    adaptive_threshold.update(preds, labels)
+    threshold_value = adaptive_threshold.compute()
+    assert np.allclose(threshold_value, target_threshold, atol=1e-3)
 
 
 def test_manual_threshold():

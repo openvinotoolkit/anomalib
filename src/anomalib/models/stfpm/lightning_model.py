@@ -98,6 +98,7 @@ class StfpmLightning(Stfpm):
         )
         self.hparams: DictConfig | ListConfig  # type: ignore
         self.save_hyperparameters(hparams)
+        self.image_threshold, self.pixel_threshold = self.configure_thresholds(hparams.metrics.threshold)
 
     def configure_callbacks(self) -> list[EarlyStopping]:
         """Configure model-specific callbacks.

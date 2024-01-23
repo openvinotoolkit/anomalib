@@ -16,6 +16,7 @@ from omegaconf import DictConfig, ListConfig, OmegaConf
 from pytorch_lightning.callbacks import Callback, ModelCheckpoint
 
 from anomalib.deploy import ExportMode
+from anomalib.utils.metrics import AnomalyScoreGaussianMixtureThreshold
 
 from .cdf_normalization import CdfNormalizationCallback
 from .graph import GraphLogger
@@ -81,10 +82,35 @@ def get_callbacks(config: DictConfig | ListConfig) -> list[Callback]:
     pixel_threshold = (
         config.metrics.threshold.manual_pixel if "manual_pixel" in config.metrics.threshold.keys() else None
     )
+    # For Gaussian Mixture Estimation of threshold.
+    image_anomalous_rate = (
+        config.metrics.threshold.image_anomalous_rate
+        if "image_anomalous_rate" in config.metrics.threshold.keys()
+        else AnomalyScoreGaussianMixtureThreshold.DEFAULT_ANOMALOUS_RATE
+    )
+    pixel_anomalous_rate = (
+        config.metrics.threshold.pixel_anomalous_rate
+        if "pixel_anomalous_rate" in config.metrics.threshold.keys()
+        else AnomalyScoreGaussianMixtureThreshold.DEFAULT_ANOMALOUS_RATE
+    )
+    image_n_components = (
+        config.metrics.threshold.image_n_components
+        if "image_n_components" in config.metrics.threshold.keys()
+        else AnomalyScoreGaussianMixtureThreshold.DEFAULT_N_COMPONENTS
+    )
+    pixel_n_components = (
+        config.metrics.threshold.pixel_n_components
+        if "pixel_n_components" in config.metrics.threshold.keys()
+        else AnomalyScoreGaussianMixtureThreshold.DEFAULT_N_COMPONENTS
+    )
     post_processing_callback = PostProcessingConfigurationCallback(
         threshold_method=config.metrics.threshold.method,
         manual_image_threshold=image_threshold,
         manual_pixel_threshold=pixel_threshold,
+        image_anomalous_rate=image_anomalous_rate,
+        pixel_anomalous_rate=pixel_anomalous_rate,
+        image_n_components=image_n_components,
+        pixel_n_components=pixel_n_components,
     )
     callbacks.append(post_processing_callback)
 

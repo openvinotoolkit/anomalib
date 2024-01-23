@@ -28,6 +28,7 @@ from anomalib.utils.callbacks import (
     add_visualizer_callback,
 )
 from anomalib.utils.loggers import configure_logger
+from anomalib.utils.metrics import AnomalyScoreGaussianMixtureThreshold
 
 logger = logging.getLogger("anomalib.cli")
 
@@ -68,6 +69,10 @@ class AnomalibCLI(LightningCLI):
                 "post_processing.threshold_method": "adaptive",
                 "post_processing.manual_image_threshold": None,
                 "post_processing.manual_pixel_threshold": None,
+                "post_processing.image_anomalous_rate": AnomalyScoreGaussianMixtureThreshold.DEFAULT_ANOMALOUS_RATE,
+                "post_processing.pixel_anomalous_rate": AnomalyScoreGaussianMixtureThreshold.DEFAULT_ANOMALOUS_RATE,
+                "post_processing.image_n_components": AnomalyScoreGaussianMixtureThreshold.DEFAULT_N_COMPONENTS,
+                "post_processing.pixel_n_components": AnomalyScoreGaussianMixtureThreshold.DEFAULT_N_COMPONENTS,
             }
         )
 

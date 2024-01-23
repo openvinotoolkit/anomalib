@@ -13,16 +13,18 @@ from warnings import warn
 
 import pytorch_lightning as pl
 import torch
+from omegaconf import DictConfig
 from pytorch_lightning.callbacks import Callback
 from pytorch_lightning.utilities.types import EPOCH_OUTPUT, STEP_OUTPUT
 from torch import Tensor, nn
 from torchmetrics import Metric
 
 from anomalib.data.utils import boxes_to_anomaly_maps, boxes_to_masks, masks_to_boxes
-from anomalib.post_processing import ThresholdMethod
+from anomalib.post_processing import ADAPTIVE_THRESHOLD_METHOD_MAP, ThresholdMethod
 from anomalib.utils.metrics import (
     AnomalibMetricCollection,
     AnomalyScoreDistribution,
+    AnomalyScoreGaussianMixtureThreshold,
     AnomalyScoreThreshold,
     MinMax,
 )
@@ -46,8 +48,8 @@ class AnomalyModule(pl.LightningModule, ABC):
         self.callbacks: list[Callback]
 
         self.threshold_method: ThresholdMethod
-        self.image_threshold = AnomalyScoreThreshold().cpu()
-        self.pixel_threshold = AnomalyScoreThreshold().cpu()
+        self.image_threshold: AnomalyScoreThreshold
+        self.pixel_threshold: AnomalyScoreThreshold
 
         self.normalization_metrics: Metric
 
@@ -142,7 +144,7 @@ class AnomalyModule(pl.LightningModule, ABC):
         Args:
           outputs: Batch of outputs from the validation step
         """
-        if self.threshold_method == ThresholdMethod.ADAPTIVE:
+        if self.threshold_method in ADAPTIVE_THRESHOLD_METHOD_MAP:
             self._compute_adaptive_threshold(outputs)
         self._collect_outputs(self.image_metrics, self.pixel_metrics, outputs)
         self._log_metrics()
@@ -270,3 +272,38 @@ class AnomalyModule(pl.LightningModule, ABC):
         # Used to load metrics if there is any related data in state_dict
         self._load_metrics(state_dict)
         return super().load_state_dict(state_dict, strict=strict)
+
+    def configure_thresholds(self, threshold_config: DictConfig) -> list[AnomalyScoreThreshold]:
+        """Configure image and pixel thresholds that determine the prediction labels given scores.
+
+        Args:
+          threshold_config (DictConfig): The configuration of threshold.
+
+        Returns:
+          The image threshold and pixel threshold.
+        """
+        image_threshold: AnomalyScoreThreshold
+        pixel_threshold: AnomalyScoreThreshold
+        if threshold_config.method == ThresholdMethod.GAUSSIAN_MIXTURE:
+            image_anomalous_rate = threshold_config.get(
+                "image_anomalous_rate", AnomalyScoreGaussianMixtureThreshold.DEFAULT_ANOMALOUS_RATE
+            )
+            pixel_anomalous_rate = threshold_config.get(
+                "pixel_anomalous_rate", AnomalyScoreGaussianMixtureThreshold.DEFAULT_ANOMALOUS_RATE
+            )
+            image_n_components = threshold_config.get(
+                "image_n_components", AnomalyScoreGaussianMixtureThreshold.DEFAULT_N_COMPONENTS
+            )
+            pixel_n_components = threshold_config.get(
+                "pixel_n_components", AnomalyScoreGaussianMixtureThreshold.DEFAULT_N_COMPONENTS
+            )
+            image_threshold = AnomalyScoreGaussianMixtureThreshold(
+                anomalous_rate=image_anomalous_rate, n_components=image_n_components
+            ).cpu()
+            pixel_threshold = AnomalyScoreGaussianMixtureThreshold(
+                anomalous_rate=pixel_anomalous_rate, n_components=pixel_n_components
+            ).cpu()
+        else:
+            image_threshold = AnomalyScoreThreshold().cpu()
+            pixel_threshold = AnomalyScoreThreshold().cpu()
+        return [image_threshold, pixel_threshold]
