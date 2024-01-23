@@ -77,12 +77,12 @@ class AnomalyMapGenerator(nn.Module):
         distributed. Then, the detection is based on the concentration of candidate pixels.
 
         Args:
-            z: List of latent variables from the UFlow model. Each element is a tensor of shape
-            (N, Cl, Hl, Wl), where N is the batch size, Cl is the number of channels, and Hl and Wl are the height and
-            width of the latent variables, respectively, for each scale l.
-            window_size (int): Window size for the binomial test.
-            binomial_probability_thr: Probability threshold for the binomial test.
-            high_precision: Whether to use high precision for the binomial test.
+            z (list[torch.Tensor]): List of latent variables from the UFlow model. Each element is a tensor of shape
+                (N, Cl, Hl, Wl), where N is the batch size, Cl is the number of channels, and Hl and Wl are the height
+                and width of the latent variables, respectively, for each scale l.
+            window_size (int): Window size for the binomial test. Defaults to 7.
+            binomial_probability_thr (float): Probability threshold for the binomial test. Defaults to 0.5
+            high_precision (bool): Whether to use high precision for the binomial test. Defaults to False.
 
         Returns:
             Anomaly mask. Tensor of shape (N, 1, H, W), where N is the batch size, and H and W are the height and

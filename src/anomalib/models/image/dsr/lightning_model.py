@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Any
 
 import torch
-from lightning.pytorch.utilities.types import STEP_OUTPUT
+from lightning.pytorch.utilities.types import STEP_OUTPUT, OptimizerLRScheduler
 from torch import Tensor
 
 from anomalib import LearningType
@@ -37,7 +37,8 @@ class Dsr(AnomalyModule):
     """DSR: A Dual Subspace Re-Projection Network for Surface Anomaly Detection.
 
     Args:
-        latent_anomaly_strength (float, optional): Strength of the generated anomalies in the latent space.
+        latent_anomaly_strength (float): Strength of the generated anomalies in the latent space. Defaults to 0.2
+        upsampling_train_ratio (float): Ratio of training steps for the upsampling module. Defaults to 0.7
     """
 
     def __init__(self, latent_anomaly_strength: float = 0.2, upsampling_train_ratio: float = 0.7) -> None:
@@ -63,10 +64,7 @@ class Dsr(AnomalyModule):
 
     def configure_optimizers(
         self,
-    ) -> tuple[
-        dict[str, torch.optim.Optimizer | torch.optim.lr_scheduler.LRScheduler],
-        dict[str, torch.optim.Optimizer],
-    ]:
+    ) -> OptimizerLRScheduler:
         """Configure the Adam optimizer for training phases 2 and 3.
 
         Does not train the discrete model (phase 1)
