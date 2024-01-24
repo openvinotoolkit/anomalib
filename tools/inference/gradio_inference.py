@@ -3,18 +3,15 @@
 This script provide a gradio web interface
 """
 
-# Copyright (C) 2022 Intel Corporation
+# Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
 from argparse import ArgumentParser
 from importlib import import_module
 from pathlib import Path
 
-import gradio as gr
-import gradio.inputs
-import gradio.outputs
+import gradio
 import numpy as np
 
 from anomalib.deploy import Inferencer
@@ -24,7 +21,6 @@ def get_parser() -> ArgumentParser:
     """Get command line arguments.
 
     Example:
-
         Example for Torch Inference.
         >>> python tools/inference/gradio_inference.py  \
         ...     --weights ./results/padim/mvtec/bottle/weights/torch/model.pt
@@ -53,27 +49,31 @@ def get_inferencer(weight_path: Path, metadata: Path | None = None) -> Inference
     Returns:
         Inferencer: Torch or OpenVINO inferencer.
     """
-
     # Get the inferencer. We use .ckpt extension for Torch models and (onnx, bin)
     # for the openvino models.
     extension = weight_path.suffix
     inferencer: Inferencer
     module = import_module("anomalib.deploy")
     if extension in (".pt", ".pth", ".ckpt"):
-        torch_inferencer = getattr(module, "TorchInferencer")
+        torch_inferencer = module.TorchInferencer
         inferencer = torch_inferencer(path=weight_path)
 
     elif extension in (".onnx", ".bin", ".xml"):
         if metadata is None:
-            raise ValueError("When using OpenVINO Inferencer, the following arguments are required: --metadata")
+            msg = "When using OpenVINO Inferencer, the following arguments are required: --metadata"
+            raise ValueError(msg)
 
-        openvino_inferencer = getattr(module, "OpenVINOInferencer")
+        openvino_inferencer = module.OpenVINOInferencer
         inferencer = openvino_inferencer(path=weight_path, metadata=metadata)
 
     else:
+        msg = (
+            "Model extension is not supported. "
+            "Torch Inferencer exptects a .ckpt file,OpenVINO Inferencer expects either .onnx, .bin or .xml file. "
+            f"Got {extension}"
+        )
         raise ValueError(
-            f"Model extension is not supported. Torch Inferencer exptects a .ckpt file,"
-            f"OpenVINO Inferencer expects either .onnx, .bin or .xml file. Got {extension}"
+            msg,
         )
 
     return inferencer
@@ -99,17 +99,18 @@ if __name__ == "__main__":
     args = get_parser().parse_args()
     gradio_inferencer = get_inferencer(args.weights, args.metadata)
 
-    interface = gr.Interface(
+    interface = gradio.Interface(
         fn=lambda image: infer(image, gradio_inferencer),
-        inputs=[
-            gradio.inputs.Image(
-                shape=None, image_mode="RGB", source="upload", tool="editor", type="numpy", label="Image"
-            ),
-        ],
+        inputs=gradio.Image(
+            image_mode="RGB",
+            sources=["upload", "webcam"],
+            type="numpy",
+            label="Image",
+        ),
         outputs=[
-            gradio.outputs.Image(type="numpy", label="Predicted Heat Map"),
-            gradio.outputs.Image(type="numpy", label="Predicted Mask"),
-            gradio.outputs.Image(type="numpy", label="Segmentation Result"),
+            gradio.Image(type="numpy", label="Predicted Heat Map"),
+            gradio.Image(type="numpy", label="Predicted Mask"),
+            gradio.Image(type="numpy", label="Segmentation Result"),
         ],
         title="Anomalib",
         description="Anomalib Gradio",

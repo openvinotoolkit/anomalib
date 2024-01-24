@@ -1,106 +1,64 @@
-# Configuration file for the Sphinx documentation builder.
-#
-# This file only contains a selection of the most common options. For a full
-# list see the documentation:
-# https://www.sphinx-doc.org/en/master/usage/configuration.html
+"""Configuration file for the Sphinx documentation builder.
 
-# -- Path setup --------------------------------------------------------------
+For the full list of built-in configuration values, see the documentation:
+https://www.sphinx-doc.org/en/master/usage/configuration.html
 
-# If extensions (or modules to document with autodoc) are in another directory,
-# add these directories to sys.path here. If the directory is relative to the
-# documentation root, use os.path.abspath to make it absolute, like shown here.
-#
+-- Project information -----------------------------------------------------
+https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
+"""
 
-# Copyright (C) 2022 Intel Corporation
-# SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
 
-import os
 import sys
+from pathlib import Path
 
-sys.path.insert(0, os.path.abspath("../.."))
+# Define the path to your module using Path
+module_path = Path(__file__).parent.parent / "src"
 
-import anomalib  # noqa
+# Insert the path to sys.path
+sys.path.insert(0, str(module_path.resolve()))
 
-# -- Project information -----------------------------------------------------
-
-PROJECT = "Anomalib"
-COPYRIGHT = "2021, Anomalib Contributors"
-AUTHOR = "Anomalib Contributors"
-VERSION = anomalib.__version__
-
+project = "Anomalib"
+copyright = "2023, Intel OpenVINO"  # noqa: A001
+author = "Intel OpenVINO"
+release = "2022"
 
 # -- General configuration ---------------------------------------------------
+# https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
-# Add any Sphinx extension module names here, as strings. They can be
-# extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
-# ones.
+
 extensions = [
-    "nbsphinx",
     "sphinx.ext.autodoc",
-    "sphinx.ext.autosummary",
-    "sphinx.ext.viewcode",
-    "sphinx.ext.napoleon",
-    "sphinxemoji.sphinxemoji",
-    "sphinx.ext.autosectionlabel",
+    "sphinx.ext.mathjax",
+    "sphinx_design",
     "myst_parser",
+    "nbsphinx",
+    "sphinx.ext.napoleon",
+    "sphinx_autodoc_typehints",
+    "sphinx_copybutton",
 ]
 
-autosummary_generate = True
-autodoc_member_order = "groupwise"
-autoclass_content = "both"
-
-autodoc_default_options = {
-    "members": True,
-    "methods": True,
-    "special-members": "__call__",
-    "exclude-members": "_abc_impl",
-    "show-inheritance": True,
-}
-
-myst_enable_extensions = ["colon_fence"]
-
-# Add any paths that contain templates here, relative to this directory.
+myst_enable_extensions = [
+    "colon_fence",
+    # other MyST extensions...
+]
+nbsphinx_allow_errors = True
 templates_path = ["_templates"]
+exclude_patterns: list[str] = []
 
-# List of patterns, relative to source directory, that match files and
-# directories to ignore when looking for source files.
-# This pattern also affects html_static_path and html_extra_path.
-# exclude_patterns = []
+# Automatic exclusion of prompts from the copies
+# https://sphinx-copybutton.readthedocs.io/en/latest/use.html#automatic-exclusion-of-prompts-from-the-copies
+copybutton_exclude = ".linenos, .gp, .go"
 
+# -- Options for HTML output -------------------------------------------------
+# https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
-# -- Options for HTML output ------------------------------------------------- #
-# The theme to use for HTML and HTML Help pages.  See the documentation for
-# a list of builtin themes.
-#
-# Add any paths that contain custom static files (such as style sheets) here,
-# relative to this directory. They are copied after the builtin static files,
-# so a file named "default.css" will overwrite the builtin "default.css".
-html_favicon = "images/logos/anomalib-favicon.png"
-html_title = f"{PROJECT} v{VERSION}"
-html_theme = "furo"
+html_theme = "sphinx_book_theme"
+html_logo = "_static/images/logos/anomalib-icon.png"
+html_favicon = "_static/images/logos/anomalib-favicon.png"
 html_static_path = ["_static"]
-html_logo = "images/logos/anomalib-icon.png"
 html_theme_options = {
-    "sidebar_hide_name": True,
+    "logo": {
+        "text": "Anomalib",
+    },
 }
-
-# Sphinx will add “permalinks” for each heading and description environment as paragraph signs that
-#  become visible when the mouse hovers over them.
-# This value determines the text for the permalink; it defaults to "¶". Set it to None or the empty
-#  string to disable permalinks.
-# https://www.sphinx-doc.org/en/master/usage/configuration.html#confval-html_add_permalinks
-html_permalinks = True
-html_permalinks_icon = "¶"
-
-# True to prefix each section label with the name of the document it is in, followed by a colon.
-#  For example, index:Introduction for a section called Introduction that appears in document index.rst.
-#  Useful for avoiding ambiguity when the same section heading appears in different documents.
-# http://www.sphinx-doc.org/en/master/usage/extensions/autosectionlabel.html
-autosectionlabel_prefix_document = True
-autosectionlabel_maxdepth = 2
-
-
-# Add any paths that contain custom static files (such as style sheets) here,
-# relative to this directory. They are copied after the builtin static files,
-# so a file named "default.css" will overwrite the builtin "default.css".
-# html_static_path = ["_static"]

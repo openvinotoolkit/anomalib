@@ -1,0 +1,12 @@
+model:
+  class_path: anomalib.models.Dfkde
+  init_args:
+    layers:
+      - layer4
+    backbone: resnet18
+    pre_trained: true
+    n_pca_components: 16
+    feature_scaling_method: SCALE
+    max_training_points: 40000
+
+task: CLASSIFICATION

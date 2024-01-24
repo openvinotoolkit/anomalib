@@ -1,9 +1,8 @@
 """Path Utils."""
 
-# Copyright (C) 2022 Intel Corporation
+# Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
 from enum import Enum
 from pathlib import Path
@@ -38,7 +37,9 @@ def _check_and_convert_path(path: str | Path) -> Path:
 
 
 def _prepare_files_labels(
-    path: str | Path, path_type: str, extensions: tuple[str, ...] | None = None
+    path: str | Path,
+    path_type: str,
+    extensions: tuple[str, ...] | None = None,
 ) -> tuple[list, list]:
     """Return a list of filenames and list corresponding labels.
 
@@ -59,7 +60,8 @@ def _prepare_files_labels(
         extensions = (extensions,)
 
     if not all(extension.startswith(".") for extension in extensions):
-        raise RuntimeError(f"All extensions {extensions} must start with the dot")
+        msg = f"All extensions {extensions} must start with the dot"
+        raise RuntimeError(msg)
 
     filenames = [
         f
@@ -67,7 +69,8 @@ def _prepare_files_labels(
         if f.suffix in extensions and not f.is_dir() and not any(part.startswith(".") for part in f.parts)
     ]
     if not filenames:
-        raise RuntimeError(f"Found 0 {path_type} images in {path} with extensions {extensions}")
+        msg = f"Found 0 {path_type} images in {path} with extensions {extensions}"
+        raise RuntimeError(msg)
 
     labels = [path_type] * len(filenames)
 
@@ -75,7 +78,7 @@ def _prepare_files_labels(
 
 
 def _resolve_path(folder: str | Path, root: str | Path | None = None) -> Path:
-    """Combines root and folder and returns the absolute path.
+    """Combine root and folder and returns the absolute path.
 
     This allows users to pass either a root directory and relative paths, or absolute paths to each of the
     image sources. This function makes sure that the samples dataframe always contains absolute paths.
@@ -86,7 +89,6 @@ def _resolve_path(folder: str | Path, root: str | Path | None = None) -> Path:
     """
     folder = Path(folder)
     if folder.is_absolute():
-        # path is absolute; return unmodified
         path = folder
     # path is relative.
     elif root is None:
