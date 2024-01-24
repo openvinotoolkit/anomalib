@@ -1,6 +1,6 @@
 """Container to hold manual threshold values for image and pixel metrics."""
 
-# Copyright (C) 2023 Intel Corporation
+# Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 

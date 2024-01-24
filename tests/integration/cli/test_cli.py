@@ -3,7 +3,7 @@
 This just checks if one of the model works end-to-end. The rest of the models are checked using the API.
 """
 
-# Copyright (C) 2023 Intel Corporation
+# Copyright (C) 2023-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 

@@ -4,7 +4,7 @@ This script performs OpenVINO inference by reading a model from
 file system, and show the visualization results.
 """
 
-# Copyright (C) 2022 Intel Corporation
+# Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 import logging

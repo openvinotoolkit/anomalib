@@ -6,7 +6,7 @@ For more details, see the paper: `Real-Time Unsupervised Anomaly Detection via
 Conditional Normalizing Flows <https://arxiv.org/pdf/2107.12571v1.pdf>`_.
 """
 
-# Copyright (C) 2022 Intel Corporation
+# Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 __all__ = ["Cflow"]

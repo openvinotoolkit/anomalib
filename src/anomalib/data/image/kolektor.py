@@ -14,6 +14,8 @@ Reference:
     for surface-defect detection." Journal of Intelligent Manufacturing 31, no. 3 (2020): 759-776.
 """
 
+# Copyright (C) 2023-2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
 
 import logging
 from pathlib import Path

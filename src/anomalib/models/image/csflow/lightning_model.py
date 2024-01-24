@@ -3,7 +3,7 @@
 https://arxiv.org/pdf/2110.02855.pdf
 """
 
-# Copyright (C) 2022 Intel Corporation
+# Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 

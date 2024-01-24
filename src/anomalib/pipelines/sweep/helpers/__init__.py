@@ -1,6 +1,6 @@
 """Helpers for benchmarking and hyperparameter optimization."""
 
-# Copyright (C) 2022 Intel Corporation
+# Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 from .inference import get_openvino_throughput, get_torch_throughput

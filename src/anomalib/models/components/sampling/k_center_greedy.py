@@ -4,6 +4,8 @@ Returns points that minimizes the maximum distance of any point to a center.
 - https://arxiv.org/abs/1708.00489
 """
 
+# Copyright (C) 2022-2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
 
 import torch
 from rich.progress import track

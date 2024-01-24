@@ -3,7 +3,7 @@
 Paper https://link.springer.com/chapter/10.1007/978-3-031-19821-2_31
 """
 
-# Copyright (C) 2023 Intel Corporation
+# Copyright (C) 2023-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 import logging

@@ -1,17 +1,13 @@
 """Test PRO metric."""
 
-# Copyright (C) 2023 Intel Corporation
+# Copyright (C) 2023-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 import torch
 from torchvision.transforms import RandomAffine
 
 from anomalib.data.utils import random_2d_perlin
-from anomalib.metrics.pro import (
-    PRO,
-    connected_components_cpu,
-    connected_components_gpu,
-)
+from anomalib.metrics.pro import PRO, connected_components_cpu, connected_components_gpu
 
 
 def test_pro() -> None:

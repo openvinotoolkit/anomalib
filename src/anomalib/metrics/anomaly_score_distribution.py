@@ -1,6 +1,6 @@
 """Module that computes the parameters of the normal data distribution of the training set."""
 
-# Copyright (C) 2022 Intel Corporation
+# Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 

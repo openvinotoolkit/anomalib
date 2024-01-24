@@ -1,6 +1,6 @@
 """Region Based Anomaly Detection With Real-Time Training and Analysis."""
 
-# Copyright (C) 2022 Intel Corporation
+# Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 

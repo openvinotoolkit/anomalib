@@ -1,7 +1,8 @@
 """Benchmark all the algorithms in the repo."""
 
-# Copyright (C) 2023 Intel Corporation
+# Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
+
 from argparse import ArgumentParser
 from pathlib import Path
 

@@ -3,7 +3,7 @@
 Tests the models using API. The weight paths from the trained models are used for the rest of the tests.
 """
 
-# Copyright (C) 2023 Intel Corporation
+# Copyright (C) 2023-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 

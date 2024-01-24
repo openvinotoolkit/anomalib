@@ -10,7 +10,7 @@ Reference:
     IEEE Conference on Computer Vision and Pattern Recognition (CVPR). 2018.
 """
 
-# Copyright (C) 2023 Intel Corporation
+# Copyright (C) 2023-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 

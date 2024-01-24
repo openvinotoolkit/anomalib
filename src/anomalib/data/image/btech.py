@@ -6,7 +6,7 @@ If the dataset is not on the file system, the script downloads and
 extracts the dataset and create PyTorch data objects.
 """
 
-# Copyright (C) 2022 Intel Corporation
+# Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 import logging

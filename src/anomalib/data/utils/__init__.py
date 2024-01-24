@@ -1,6 +1,6 @@
 """Helper utilities for data."""
 
-# Copyright (C) 2022 Intel Corporation
+# Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 from .augmenter import Augmenter
@@ -16,14 +16,7 @@ from .image import (
 )
 from .label import LabelName
 from .path import DirType, _check_and_convert_path, _prepare_files_labels, _resolve_path
-from .split import (
-    Split,
-    TestSplitMode,
-    ValSplitMode,
-    concatenate_datasets,
-    random_split,
-    split_by_label,
-)
+from .split import Split, TestSplitMode, ValSplitMode, concatenate_datasets, random_split, split_by_label
 from .transforms import InputNormalizationMethod, get_transforms
 
 __all__ = [

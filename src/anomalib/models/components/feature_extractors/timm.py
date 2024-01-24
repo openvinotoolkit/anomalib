@@ -3,7 +3,7 @@
 This script extracts features from a CNN network
 """
 
-# Copyright (C) 2022 Intel Corporation
+# Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 import logging

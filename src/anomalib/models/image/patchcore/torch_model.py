@@ -1,6 +1,6 @@
 """PyTorch model for the PatchCore model implementation."""
 
-# Copyright (C) 2022 Intel Corporation
+# Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 from collections.abc import Sequence
