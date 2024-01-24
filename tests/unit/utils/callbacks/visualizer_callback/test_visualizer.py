@@ -1,6 +1,6 @@
 """Test visualizer callback."""
 
-# Copyright (C) 2023 Intel Corporation
+# Copyright (C) 2023-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 import tempfile
@@ -29,6 +29,7 @@ def test_add_images(task: TaskType, dataset_path: Path) -> None:
             task=task,
             limit_test_batches=1,
             visualization={"log_images": True},
+            accelerator="cpu",
         )
         engine.test(model=model, datamodule=MVTec(root=dataset_path / "mvtec", category="dummy"))
         # test if images are logged

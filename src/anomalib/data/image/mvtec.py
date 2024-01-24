@@ -22,7 +22,7 @@ References:
       9584-9592, 2019, DOI: 10.1109/CVPR.2019.00982.
 """
 
-# Copyright (C) 2022 Intel Corporation
+# Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 

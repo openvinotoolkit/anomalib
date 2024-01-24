@@ -1,5 +1,7 @@
 """Gaussian blurring via pytorch."""
 
+# Copyright (C) 2022-2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
 
 import torch
 from kornia.filters import get_gaussian_kernel2d

@@ -28,6 +28,8 @@ from .image import (
     ReverseDistillation,
     Rkde,
     Stfpm,
+    Uflow,
+    WinClip,
 )
 from .video import AiVad
 
@@ -43,6 +45,7 @@ __all__ = [
     "Dfkde",
     "Dfm",
     "Draem",
+    "Dsr",
     "EfficientAd",
     "Fastflow",
     "Ganomaly",
@@ -51,7 +54,9 @@ __all__ = [
     "ReverseDistillation",
     "Rkde",
     "Stfpm",
+    "Uflow",
     "AiVad",
+    "WinClip",
 ]
 
 logger = logging.getLogger(__name__)

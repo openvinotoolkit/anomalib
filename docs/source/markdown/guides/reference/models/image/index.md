@@ -46,6 +46,13 @@ Probabilistic Modeling of Deep Features for Out-of-Distribution and Adversarial 
 DRÆM – A discriminatively trained reconstruction embedding for surface anomaly detection
 :::
 
+:::{grid-item-card} {material-regular}`model_training;1.5em` DSR
+:link: ./dsr
+:link-type: doc
+
+DSR – A Dual Subspace Re-Projection Network for Surface Anomaly Detection
+:::
+
 :::{grid-item-card} {material-regular}`model_training;1.5em` Efficient AD
 :link: ./efficient_ad
 :link-type: doc
@@ -101,6 +108,18 @@ Region-Based Kernel Density Estimation (RKDE)
 
 Student-Teacher Feature Pyramid Matching for Unsupervised Anomaly Detection
 :::
+
+:::{grid-item-card} {material-regular}`model_training;1.5em` U-Flow
+:link: ./uflow
+:link-type: doc
+
+U-Flow: A U-shaped Normalizing Flow for Anomaly Detection with Unsupervised Threshold
+:::{grid-item-card} {material-regular}`model_training;1.5em` WinCLIP
+:link: ./winclip
+:link-type: doc
+
+WinCLIP: Zero-/Few-Shot Anomaly Classification and Segmentation
+:::
 ::::
 
 ```{toctree}
@@ -121,4 +140,5 @@ Student-Teacher Feature Pyramid Matching for Unsupervised Anomaly Detection
 ./reverse_distillation
 ./rkde
 ./stfpm
+./winclip
 ```

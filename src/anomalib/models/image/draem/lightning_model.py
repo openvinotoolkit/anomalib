@@ -3,7 +3,7 @@
 Paper https://arxiv.org/abs/2108.07610
 """
 
-# Copyright (C) 2022 Intel Corporation
+# Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 
@@ -42,10 +42,11 @@ class Draem(AnomalyModule):
         enable_sspcab: bool = False,
         sspcab_lambda: float = 0.1,
         anomaly_source_path: str | None = None,
+        beta: float | tuple[float, float] = (0.1, 1.0),
     ) -> None:
         super().__init__()
 
-        self.augmenter = Augmenter(anomaly_source_path)
+        self.augmenter = Augmenter(anomaly_source_path, beta=beta)
         self.model = DraemModel(sspcab=enable_sspcab)
         self.loss = DraemLoss()
         self.sspcab = enable_sspcab
@@ -138,7 +139,9 @@ class Draem(AnomalyModule):
 
     def configure_optimizers(self) -> torch.optim.Optimizer:
         """Configure the Adam optimizer."""
-        return torch.optim.Adam(params=self.model.parameters(), lr=0.0001)
+        optimizer = torch.optim.Adam(params=self.model.parameters(), lr=0.0001)
+        scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[400, 600], gamma=0.1)
+        return [optimizer], [scheduler]
 
     @property
     def learning_type(self) -> LearningType:

@@ -1,6 +1,6 @@
 """Dynamic Buffer Module."""
 
-# Copyright (C) 2022 Intel Corporation
+# Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 from abc import ABC
@@ -9,6 +9,8 @@ import torch
 from torch import nn
 
 
+# TODO(djdameln): rename this class to DynamicBufferMixin
+# https://github.com/openvinotoolkit/anomalib/issues/1649
 class DynamicBufferModule(nn.Module, ABC):
     """Torch module that allows loading variables from the state dict even in the case of shape mismatch."""
 

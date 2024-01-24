@@ -1,6 +1,6 @@
 """Dummy model that is used to test teh visualizer callback."""
 
-# Copyright (C) 2023 Intel Corporation
+# Copyright (C) 2023-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 from pathlib import Path
@@ -30,6 +30,11 @@ class DummyModule(AnomalyModule):
         self.task = "segmentation"
         self.mode = "full"
         self.dataset_path = dataset_path
+
+    def validation_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> dict:
+        """Only used to avoid NotImplementedError."""
+        del batch
+        return self.test_step(*args, **kwargs)
 
     def test_step(self, *_, **__) -> dict:
         """Only used to trigger on_test_epoch_end."""

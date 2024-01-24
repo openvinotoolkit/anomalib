@@ -1,6 +1,6 @@
 """Anomaly Visualization."""
 
-# Copyright (C) 2022 Intel Corporation
+# Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 
@@ -17,12 +17,7 @@ from skimage.segmentation import mark_boundaries
 
 from anomalib import TaskType
 from anomalib.data.utils import read_image
-from anomalib.utils.post_processing import (
-    add_anomalous_label,
-    add_normal_label,
-    draw_boxes,
-    superimpose_anomaly_map,
-)
+from anomalib.utils.post_processing import add_anomalous_label, add_normal_label, draw_boxes, superimpose_anomaly_map
 
 
 @dataclass
