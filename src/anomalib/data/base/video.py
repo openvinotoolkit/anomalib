@@ -1,21 +1,22 @@
 """Base Video Dataset."""
 
-from __future__ import annotations
 
 from abc import ABC
 from enum import Enum
-from typing import Callable
+from typing import TYPE_CHECKING, Any
 
-import albumentations as A
+import albumentations as A  # noqa: N812
 import torch
 from pandas import DataFrame
-from torch import Tensor
 
+from anomalib import TaskType
 from anomalib.data.base.datamodule import AnomalibDataModule
 from anomalib.data.base.dataset import AnomalibDataset
-from anomalib.data.task_type import TaskType
 from anomalib.data.utils import ValSplitMode, masks_to_boxes
 from anomalib.data.utils.video import ClipsIndexer
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 
 class VideoTargetFrame(str, Enum):
@@ -38,7 +39,8 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
         transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
         clip_length_in_frames (int): Number of video frames in each clip.
         frames_between_clips (int): Number of frames between each consecutive video clip.
-        target_frame (VideoTargetFrame): Specifies the target frame in the video clip, used for ground truth retrieval
+        target_frame (VideoTargetFrame): Specifies the target frame in the video clip, used for ground truth retrieval.
+            Defaults to ``VideoTargetFrame.LAST``.
     """
 
     def __init__(
@@ -47,7 +49,7 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
         transform: A.Compose,
         clip_length_in_frames: int,
         frames_between_clips: int,
-        target_frame=VideoTargetFrame.LAST,
+        target_frame: VideoTargetFrame = VideoTargetFrame.LAST,
     ) -> None:
         super().__init__(task, transform)
 
@@ -71,9 +73,16 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
         return super().samples
 
     @samples.setter
-    def samples(self, samples):
-        """Overwrite samples and re-index subvideos."""
-        super(AnomalibVideoDataset, self.__class__).samples.fset(self, samples)
+    def samples(self, samples: DataFrame) -> None:
+        """Overwrite samples and re-index subvideos.
+
+        Args:
+            samples (DataFrame): DataFrame with new samples.
+
+        Raises:
+            ValueError: If the indexer class is not set.
+        """
+        super(AnomalibVideoDataset, self.__class__).samples.fset(self, samples)  # type: ignore[attr-defined]
         self._setup_clips()
 
     def _setup_clips(self) -> None:
@@ -89,7 +98,18 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
             frames_between_clips=self.frames_between_clips,
         )
 
-    def _select_targets(self, item):
+    def _select_targets(self, item: dict[str, Any]) -> dict[str, Any]:
+        """Select the target frame from the clip.
+
+        Args:
+            item (dict[str, Any]): Item containing the clip information.
+
+        Raises:
+            ValueError: If the target frame is not one of the supported options.
+
+        Returns:
+            dict[str, Any]: Selected item from the clip.
+        """
         if self.target_frame == VideoTargetFrame.FIRST:
             idx = 0
         elif self.target_frame == VideoTargetFrame.LAST:
@@ -97,7 +117,8 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
         elif self.target_frame == VideoTargetFrame.MID:
             idx = int(self.clip_length_in_frames / 2)
         else:
-            raise ValueError(f"Unknown video target frame: {self.target_frame}")
+            msg = f"Unknown video target frame: {self.target_frame}"
+            raise ValueError(msg)
 
         if item.get("mask") is not None:
             item["mask"] = item["mask"][idx, ...]
@@ -111,8 +132,15 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
             item["frames"] = item["frames"][idx]
         return item
 
-    def __getitem__(self, index: int) -> dict[str, str | Tensor]:
-        """Return mask, clip and file system information."""
+    def __getitem__(self, index: int) -> dict[str, str | torch.Tensor]:
+        """Get the dataset item for the index ``index``.
+
+        Args:
+            index (int): Index of the item to be returned.
+
+        Returns:
+            dict[str, str | torch.Tensor]: Dictionary containing the mask, clip and file system information.
+        """
         assert isinstance(self.indexer, ClipsIndexer)
 
         item = self.indexer.get_item(index)
@@ -122,18 +150,19 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
         # apply transforms
         if "mask" in item and item["mask"] is not None:
             processed_frames = [
-                self.transform(image=frame.numpy(), mask=mask) for frame, mask in zip(item["image"], item["mask"])
+                self.transform(image=frame.numpy(), mask=mask)
+                for frame, mask in zip(item["image"], item["mask"], strict=True)
             ]
             item["image"] = torch.stack([item["image"] for item in processed_frames]).squeeze(0)
             mask = torch.as_tensor(item["mask"])
             item["mask"] = torch.stack([item["mask"] for item in processed_frames]).squeeze(0)
-            item["label"] = Tensor([1 in frame for frame in mask]).int().squeeze(0)
+            item["label"] = torch.Tensor([1 in frame for frame in mask]).int().squeeze(0)
             if self.task == TaskType.DETECTION:
                 item["boxes"], _ = masks_to_boxes(item["mask"])
                 item["boxes"] = item["boxes"][0] if len(item["boxes"]) == 1 else item["boxes"]
         else:
             item["image"] = torch.stack(
-                [self.transform(image=frame.numpy())["image"] for frame in item["image"]]
+                [self.transform(image=frame.numpy())["image"] for frame in item["image"]],
             ).squeeze(0)
 
         # include only target frame in gt
@@ -163,6 +192,7 @@ class AnomalibVideoDataModule(AnomalibDataModule):
         self.test_data.setup()
 
         if self.val_split_mode == ValSplitMode.SYNTHETIC:
-            raise ValueError(f"Val split mode {self.test_split_mode} not supported for video datasets.")
+            msg = f"Val split mode {self.test_split_mode} not supported for video datasets."
+            raise ValueError(msg)
 
         self._create_val_split()
