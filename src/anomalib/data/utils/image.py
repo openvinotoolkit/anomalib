@@ -16,6 +16,8 @@ import torch
 from torch.nn import functional as F  # noqa: N812
 from torchvision.datasets.folder import IMG_EXTENSIONS
 
+from anomalib.data.utils.path import validate_path
+
 logger = logging.getLogger(__name__)
 
 
@@ -179,16 +181,7 @@ def get_image_filenames(path: str | Path, base_dir: str | Path | None = None) ->
         File "<string>", line 18, in get_image_filenames
         ValueError: Access denied: Path is outside the allowed directory.
     """
-    path = Path(path).expanduser().resolve()
-    base_dir = Path(base_dir).expanduser().resolve() if base_dir else Path.home()
-
-    # Ensure the resolved path is within the base directory
-    # This is for security reasons to avoid accessing files outside the base directory.
-    if not path.is_relative_to(base_dir):
-        msg = "Access denied: Path is outside the allowed directory"
-        raise ValueError(msg)
-
-    # Get image filenames from file or directory.
+    path = validate_path(path, base_dir)
     image_filenames: list[Path] = []
 
     if path.is_file():

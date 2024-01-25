@@ -1,4 +1,7 @@
-"""Region Based Anomaly Detection With Real-Time Training and Analysis."""
+"""Region Based Anomaly Detection With Real-Time Training and Analysis.
+
+https://ieeexplore.ieee.org/abstract/document/8999287
+"""
 
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
