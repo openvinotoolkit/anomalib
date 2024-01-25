@@ -36,6 +36,7 @@ from anomalib.data.utils import (
     ValSplitMode,
     download_and_extract,
     get_transforms,
+    validate_path,
 )
 
 __all__ = ["Kolektor", "KolektorDataset", "make_kolektor_dataset"]
@@ -117,7 +118,7 @@ def make_kolektor_dataset(
            3   KolektorSDD   kos01  test  Good  KolektorSDD/kos01/Part3.jpg  KolektorSDD/kos01/Part3_label.bmp  0
            4   KolektorSDD   kos01  train Good  KolektorSDD/kos01/Part4.jpg  KolektorSDD/kos01/Part4_label.bmp  0
     """
-    root = Path(root)
+    root = validate_path(root)
 
     # Get list of images and masks
     samples_list = [(str(root),) + f.parts[-2:] for f in root.glob(r"**/*") if f.suffix == ".jpg"]

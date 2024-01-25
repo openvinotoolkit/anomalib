@@ -33,8 +33,11 @@ def project_path() -> Generator[Path, None, None]:
     tmp_dir = root_dir / "tmp"
     tmp_dir.mkdir(exist_ok=True)
 
-    with TemporaryDirectory(dir=tmp_dir) as project_path:
-        yield Path(project_path)
+    with TemporaryDirectory(dir=tmp_dir) as tmp_sub_dir:
+        project_path = Path(tmp_sub_dir)
+        # Restrict permissions (read and write for owner only)
+        project_path.chmod(0o700)
+        yield project_path
 
     # Clean up the temporary directory.
     shutil.rmtree(tmp_dir)

@@ -36,6 +36,7 @@ from anomalib.data.utils import (
     download_and_extract,
     get_transforms,
     read_image,
+    validate_path,
 )
 from anomalib.data.utils.video import ClipsIndexer, convert_video
 
@@ -78,7 +79,8 @@ def make_shanghaitech_dataset(root: Path, scene: int, split: Split | str | None 
     scene_prefix = str(scene).zfill(2)
 
     # get paths to training videos
-    train_root = Path(root) / "training/converted_videos"
+    root = validate_path(root)
+    train_root = root / "training/converted_videos"
     train_list = [(str(train_root),) + filename.parts[-2:] for filename in train_root.glob(f"{scene_prefix}_*.avi")]
     train_samples = DataFrame(train_list, columns=["root", "folder", "image_path"])
     train_samples["split"] = "train"
