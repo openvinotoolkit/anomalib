@@ -143,12 +143,13 @@ def contains_non_printable_characters(path: str | Path) -> bool:
     return not printable_pattern.match(str(path))
 
 
-def validate_path(path: str | Path, base_dir: str | Path | None = None) -> Path:
+def validate_path(path: str | Path, base_dir: str | Path | None = None, should_exist: bool = True) -> Path:
     """Validate the path.
 
     Args:
         path (str | Path): Path to validate.
         base_dir (str | Path): Base directory to restrict file access.
+        should_exist (bool): If True, do not raise an exception if the path does not exist.
 
     Returns:
         Path: Validated path.
@@ -215,15 +216,18 @@ def validate_path(path: str | Path, base_dir: str | Path | None = None) -> Path:
         msg = "Access denied: Path is outside the allowed directory"
         raise ValueError(msg)
 
-    # Check if the path exists
-    if not path.exists():
-        msg = f"Path does not exist: {path}"
-        raise FileNotFoundError(msg)
+    # In case path ``should_exist``, the path is valid, and should be
+    # checked for read and execute permissions.
+    if should_exist:
+        # Check if the path exists
+        if not path.exists():
+            msg = f"Path does not exist: {path}"
+            raise FileNotFoundError(msg)
 
-    # Check the read and execute permissions
-    if not (os.access(path, os.R_OK) or os.access(path, os.X_OK)):
-        msg = f"Read or execute permissions denied for the path: {path}"
-        raise PermissionError(msg)
+        # Check the read and execute permissions
+        if not (os.access(path, os.R_OK) or os.access(path, os.X_OK)):
+            msg = f"Read or execute permissions denied for the path: {path}"
+            raise PermissionError(msg)
 
     return path
 
