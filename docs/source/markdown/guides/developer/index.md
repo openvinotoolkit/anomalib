@@ -12,7 +12,7 @@ First, fork the Anomalib repository by following the GitHub documentation on [fo
 
 ### {octicon}`gear` Set Up Your Development Environment
 
-Set up your development environment to start contributing. This involves installing the required dependencies and setting up pre-commit hooks for code quality checks.
+Set up your development environment to start contributing. This involves installing the required dependencies and setting up pre-commit hooks for code quality checks. Note that this guide assumes you are using [Conda](https://docs.conda.io/en/latest/) for package management. However, the steps are similar for other package managers.
 
 :::{dropdown} Development Environment Setup Instructions
 :icon: gear
@@ -42,7 +42,9 @@ Set up your development environment to start contributing. This involves install
    pre-commit install
    ```
 
-   Pre-commit hooks help ensure code quality and consistency. To manually run pre-commit checks:
+   Pre-commit hooks help ensure code quality and consistency. After each commit,
+   `pre-commit` will automatically run the configured checks for the changed file.
+   If you would like to manually run the checks for all files, use:
 
    ```bash
    pre-commit run --all-files
