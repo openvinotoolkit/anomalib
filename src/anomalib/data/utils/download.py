@@ -234,16 +234,25 @@ def safe_extract(tar_file: TarFile, root: Path, members: list[TarInfo]) -> None:
 
 
 def hash_check(file_path: Path, expected_hash: str) -> None:
-    """Raise assert error if hash does not match the calculated hash of the file.
+    """Raise value error if hash does not match the calculated hash of the file.
 
     Args:
         file_path (Path): Path to file.
         expected_hash (str): Expected hash of the file.
     """
-    with file_path.open("rb") as hash_file:
-        assert (
-            hashlib.new(name="md5", data=hash_file.read(), usedforsecurity=False).hexdigest() == expected_hash
-        ), f"Downloaded file {file_path} does not match the required hash."
+    hashlib_sha256 = hashlib.sha256()
+    with file_path.open("rb") as file:
+        # Read the file in chunks to avoid loading it all into memory
+        for chunk in iter(lambda: file.read(4096), b""):
+            hashlib_sha256.update(chunk)
+
+    calculated_hash = hashlib_sha256.hexdigest()
+    if calculated_hash != expected_hash:
+        msg = (
+            f"Calculated hash {calculated_hash} of downloaded file {file_path} does not match the required hash "
+            f"{expected_hash}."
+        )
+        raise ValueError(msg)
 
 
 def extract(file_name: Path, root: Path) -> None:
