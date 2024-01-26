@@ -264,8 +264,8 @@ def generate_output_image_filename(input_path: str | Path, output_path: str | Pa
     Returns:
         Path: The output filename to save the output predictions from the inferencer.
     """
-    input_path = Path(input_path)
-    output_path = Path(output_path)
+    input_path = validate_path(input_path)
+    output_path = validate_path(output_path, should_exist=False)
 
     # Input validation: Check if input_path is a valid directory or file
     if input_path.is_file() is False:
