@@ -41,8 +41,8 @@ class _VisualizationCallback(Callback):
         >>> visualizers = [ImageVisualizer(), MetricsVisualizer()]
         >>> visualization_callback = _VisualizationCallback(
         ... visualizers=visualizers,
-        ...     save=True,
-        ...     root="results/images"
+        ...   save=True,
+        ...   root="results/images"
         ... )
 
         CLI

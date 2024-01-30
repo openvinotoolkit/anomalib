@@ -58,7 +58,7 @@ def infer(args: Namespace) -> None:
     engine = Engine(
         default_root_dir=args.output,
         callbacks=callbacks,
-        visualization=ImageVisualizer(mode=args.visualization_mode),
+        visualizers=ImageVisualizer(mode=args.visualization_mode),
         save_image=save_images,
         devices=1,
     )

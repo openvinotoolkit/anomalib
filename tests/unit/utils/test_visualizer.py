@@ -54,7 +54,7 @@ class TestVisualizer:
         engine = Engine(
             default_root_dir=project_path,
             fast_dev_run=True,
-            visualization=ImageVisualizer(mode=mode),
+            visualizers=ImageVisualizer(mode=mode),
             save_image=True,
             devices=1,
             task=task,
