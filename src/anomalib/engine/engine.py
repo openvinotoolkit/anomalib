@@ -150,7 +150,7 @@ class Engine:
         self.image_metric_names = image_metrics
         self.pixel_metric_names = pixel_metrics
         self.visualizers = visualizers
-        self._setup_generators()
+
         self.save_image = save_image
         self.log_image = log_image
         self.show_image = show_image
@@ -172,8 +172,20 @@ class Engine:
             raise UnassignedError(msg)
         return self._trainer
 
-    def _setup_generators(self) -> None:
-        """Override the task in generators."""
+    @property
+    def visualizers(self) -> BaseVisualizer | list[BaseVisualizer] | None:
+        """Get visualization generators."""
+        return self._visualizers
+
+    @visualizers.setter
+    def visualizers(self, visualizers: BaseVisualizer | list[BaseVisualizer] | None) -> None:
+        """Set the visualizers.
+
+        Args:
+            visualizers (BaseVisualizer | list[BaseVisualizer] | None): Visualizers to be used for visualization.
+        """
+        self._visualizers = visualizers
+        # override the task in the visualizers if it is not the same as the task of the engine
         if self.visualizers:
             visualizers = (
                 self.visualizers
