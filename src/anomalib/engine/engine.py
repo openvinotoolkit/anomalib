@@ -8,7 +8,6 @@ from pathlib import Path
 from typing import Any
 
 import albumentations as A  # noqa: N812
-from jsonargparse import Namespace
 from lightning.pytorch.callbacks import Callback
 from lightning.pytorch.trainer import Trainer
 from lightning.pytorch.trainer.connectors.callback_connector import _CallbackConnector
@@ -17,17 +16,18 @@ from omegaconf import DictConfig, ListConfig
 from torch.utils.data import DataLoader, Dataset
 
 from anomalib import LearningType, TaskType
-from anomalib.callbacks import get_visualization_callbacks
 from anomalib.callbacks.metrics import _MetricsCallback
 from anomalib.callbacks.normalization import get_normalization_callback
 from anomalib.callbacks.normalization.base import NormalizationCallback
 from anomalib.callbacks.post_processor import _PostProcessorCallback
 from anomalib.callbacks.thresholding import _ThresholdCallback
+from anomalib.callbacks.visualizer import _VisualizationCallback
 from anomalib.data import AnomalibDataModule, AnomalibDataset, PredictDataset
 from anomalib.deploy.export import ExportType, export_to_onnx, export_to_openvino, export_to_torch
 from anomalib.metrics.threshold import BaseThreshold
 from anomalib.models import AnomalyModule
 from anomalib.utils.normalization import NormalizationMethod
+from anomalib.utils.visualization import BaseVisualizer
 
 logger = logging.getLogger(__name__)
 
@@ -114,7 +114,8 @@ class Engine:
             Defaults to None.
         pixel_metrics (str | list[str] | None, optional): Pixel metrics to be used for evaluation.
             Defaults to None.
-        visualization (DictConfig | None, optional): Visualization parameters. Defaults to None.
+        visualization_handlers (BaseVisualizationGenerator | list[BaseVisualizationGenerator] | None):
+            Visualization parameters. Defaults to None.
         **kwargs: PyTorch Lightning Trainer arguments.
     """
 
@@ -131,7 +132,10 @@ class Engine:
         task: TaskType = TaskType.SEGMENTATION,
         image_metrics: str | list[str] | None = None,
         pixel_metrics: str | list[str] | None = None,
-        visualization: DictConfig | dict[str, Any] | Namespace | None = None,
+        visualizers: BaseVisualizer | list[BaseVisualizer] | None = None,
+        save_image: bool = False,
+        log_image: bool = False,
+        show_image: bool = False,
         **kwargs,
     ) -> None:
         # TODO(ashwinvaidya17): Add model argument to engine constructor
@@ -145,7 +149,11 @@ class Engine:
         self.task = task
         self.image_metric_names = image_metrics
         self.pixel_metric_names = pixel_metrics
-        self.visualization = visualization
+        self.visualizers = visualizers
+        self._setup_generators()
+        self.save_image = save_image
+        self.log_image = log_image
+        self.show_image = show_image
 
         self._trainer: Trainer | None = None
 
@@ -163,6 +171,21 @@ class Engine:
             msg = "``self.trainer`` is not assigned yet."
             raise UnassignedError(msg)
         return self._trainer
+
+    def _setup_generators(self) -> None:
+        """Override the task in generators."""
+        if self.visualizers:
+            visualizers = (
+                self.visualizers
+                if isinstance(self.visualizers, list)
+                else [
+                    self.visualizers,
+                ]
+            )
+            for visualizer in visualizers:
+                if hasattr(visualizer, "task") and visualizer.task != self.task:
+                    logger.info(f"Overriding task of {visualizer} to {self.task}")
+                    visualizer.task = self.task
 
     @property
     def model(self) -> AnomalyModule:
@@ -257,14 +280,16 @@ class Engine:
         _callbacks.append(_ThresholdCallback(self.threshold))
         _callbacks.append(_MetricsCallback(self.task, self.image_metric_names, self.pixel_metric_names))
 
-        if self.visualization is not None:
-            image_save_path = self.visualization.pop("image_save_path", None)
-            if image_save_path is None or image_save_path == "":
-                image_save_path = self.trainer.default_root_dir + "/images"
-            _callbacks += get_visualization_callbacks(
-                task=self.task,
-                image_save_path=image_save_path,
-                **self.visualization,
+        if self.visualizers is not None:
+            image_save_path = Path(self.trainer.default_root_dir) / "images"
+            _callbacks.append(
+                _VisualizationCallback(
+                    visualizers=self.visualizers,
+                    save=self.save_image,
+                    root=image_save_path,
+                    log=self.log_image,
+                    show=self.show_image,
+                ),
             )
 
         self.trainer.callbacks = _CallbackConnector._reorder_callbacks(  # noqa: SLF001
