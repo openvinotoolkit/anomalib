@@ -29,7 +29,7 @@ def test_add_images(task: TaskType, dataset_path: Path) -> None:
             default_root_dir=dir_loc,
             task=task,
             limit_test_batches=1,
-            log_image=True,
+            save_image=True,
             visualizers=ImageVisualizer(),
             accelerator="cpu",
         )

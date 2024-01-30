@@ -83,11 +83,11 @@ class ImageVisualizer(BaseVisualizer):
 
     def generate(self, **kwargs) -> Iterator[GeneratorResult]:
         """Generate images and return them as an iterator."""
-        batch = kwargs.get("batch", None)
-        if batch is None:
-            msg = "Batch must be provided to generate images."
+        outputs = kwargs.get("outputs", None)
+        if outputs is None:
+            msg = "Outputs must be provided to generate images."
             raise ValueError(msg)
-        return self._visualize_batch(batch)
+        return self._visualize_batch(outputs)
 
     def _visualize_batch(self, batch: dict) -> Iterator[GeneratorResult]:
         """Yield a visualization result for each item in the batch.
