@@ -140,5 +140,6 @@ WinCLIP: Zero-/Few-Shot Anomaly Classification and Segmentation
 ./reverse_distillation
 ./rkde
 ./stfpm
+./uflow
 ./winclip
 ```
