@@ -14,7 +14,11 @@ import numpy as np
 
 @dataclass
 class GeneratorResult:
-    """Generator result."""
+    """Generator result.
+
+    All visualization generators are expected to return this object.
+    It is to ensure that the result is consistent across all generators.
+    """
 
     image: np.ndarray
     file_name: str | Path | None = None

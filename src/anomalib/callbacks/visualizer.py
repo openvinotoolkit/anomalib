@@ -95,7 +95,7 @@ class _VisualizationCallback(Callback):
                 ):
                     if self.save:
                         if result.file_name is None:
-                            msg = "File name is None"
+                            msg = "``save`` is set to ``True`` but file name is ``None``"
                             raise ValueError(msg)
                         save_image(image=result.image, root=self.root, filename=result.file_name)
                     if self.show:
@@ -109,7 +109,7 @@ class _VisualizationCallback(Callback):
                 for result in generator(trainer=trainer, pl_module=pl_module):
                     if self.save:
                         if result.file_name is None:
-                            msg = "File name is None"
+                            msg = "``save`` is set to ``True`` but file name is ``None``"
                             raise ValueError(msg)
                         save_image(image=result.image, root=self.root, filename=result.file_name)
                     if self.show:
