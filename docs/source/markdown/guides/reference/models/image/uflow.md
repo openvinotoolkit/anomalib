@@ -15,7 +15,7 @@ The method consists of three phases.
 ## Architecture
 
 ```{eval-rst}
-.. image:: ../../images/uflow/diagram.png
+.. image:: ../../../../../images/uflow/diagram.png
     :alt: U-Flow Architecture
 ```
 
