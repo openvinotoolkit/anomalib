@@ -12,6 +12,7 @@ pandas>=1.1.0
 lightning
 setuptools>=41.0.0
 timm>=0.5.4,<=0.6.13
+torch>=2,<2.2.0 # rkde export fails even with ONNX 17 (latest) with torch 2.2.0. TODO(ashwinvaidya17): revisit
 torchmetrics==0.10.3
 rich-argparse
 open-clip-torch>=2.23.0
