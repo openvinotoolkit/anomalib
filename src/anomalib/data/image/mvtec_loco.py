@@ -340,7 +340,7 @@ class MVTecLocoDataset(AnomalibDataset):
 
         This method is mostly based on the super class implementation, with some different as follows:
             - Using 'torch.where' to make sure the 'mask' in the return item is binarized
-            - An additional 'masks' is added, the non-binary masks with original size for the sPRO metric calculation
+            - An additional 'masks' is added, the non-binary masks with original size for the SPRO metric calculation
         Args:
             index (int): Index to get the item.
 
