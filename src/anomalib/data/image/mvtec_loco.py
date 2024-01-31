@@ -68,14 +68,15 @@ GT_MERGED_DIR = "ground_truth_merged"
 SATURATION_CONFIG_FILENAME = "defects_config.json"
 
 
-def load_saturation_config(config_path: str | Path) -> dict[int, Any]:
+def load_saturation_config(config_path: str | Path) -> dict[int, Any] | None:
     """Load saturation configurations from a JSON file.
 
     Args:
         config_path (str | Path): Path to the saturation configuration file.
 
     Returns:
-        Dict: A dictionary with pixel values as keys and the corresponding configurations as values.
+        Dict |None: A dictionary with pixel values as keys and the corresponding configurations as values.
+                    Return None if the config file is not found.
 
     Example JSON format in the file:
     [
@@ -94,11 +95,15 @@ def load_saturation_config(config_path: str | Path) -> dict[int, Any]:
         ...
     ]
     """
-    with Path.open(Path(config_path)) as file:
-        configs = json.load(file)
+    try:
+        with Path.open(Path(config_path)) as file:
+            configs = json.load(file)
 
-    # Create a dictionary with pixel values as keys
-    return {conf["pixel_value"]: conf for conf in configs}
+        # Create a dictionary with pixel values as keys
+        return {conf["pixel_value"]: conf for conf in configs}
+    except FileNotFoundError:
+        logger.warning("The saturation config file %s does not exist. Returning None.", config_path)
+        return None
 
 
 def _merge_gt_mask(
@@ -485,7 +490,7 @@ class MVTecLoco(AnomalibDataModule):
             val_split_ratio=val_split_ratio,
             seed=seed,
         )
-        self.saturation_config: dict[int, Any]
+        self.saturation_config: dict[int, Any] | None
         self.root = Path(root)
         self.category = Path(category)
         self.saturation_config = {}
