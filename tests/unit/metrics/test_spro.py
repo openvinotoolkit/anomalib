@@ -4,22 +4,23 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import torch
+
 from anomalib.metrics.spro import SPRO
 
+
 def test_spro() -> None:
-    """Checks if SPRO metric computes the score utilizing the given saturation configs"""
-    
+    """Checks if SPRO metric computes the score utilizing the given saturation configs."""
     saturation_config = {
         255: {
-                'saturation_threshold': 10,
-                'relative_saturation': False
-            },
+            "saturation_threshold": 10,
+            "relative_saturation": False,
+        },
         254: {
-                'saturation_threshold': 0.5,
-                'relative_saturation': True
-            }
-        }
-    
+            "saturation_threshold": 0.5,
+            "relative_saturation": True,
+        },
+    }
+
     masks = torch.Tensor(
         [
             [
@@ -41,8 +42,7 @@ def test_spro() -> None:
                 [0, 0, 0, 0, 0],
                 [1, 1, 1, 1, 1],
                 [0, 0, 0, 0, 0],
-            ]
-            
+            ],
         ],
     )
 
