@@ -8,7 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
-- Add support for MVTec LOCO AD dataset by @willyfh in https://github.com/openvinotoolkit/anomalib/pull/1635
+- Add support for MVTec LOCO AD dataset and sPRO metric by @willyfh in https://github.com/openvinotoolkit/anomalib/pull/1686
 
 ### Changed
 
