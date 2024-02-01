@@ -15,26 +15,26 @@ The method consists of three phases.
 ## Architecture
 
 ```{eval-rst}
-.. image:: ../../images/uflow/diagram.png
+.. image:: ../../../../../images/uflow/diagram.png
     :alt: U-Flow Architecture
 ```
 
 ```{eval-rst}
-.. automodule:: anomalib.models.uflow.torch_model
+.. automodule:: anomalib.models.image.uflow.torch_model
    :members:
    :undoc-members:
    :show-inheritance:
 ```
 
 ```{eval-rst}
-.. automodule:: anomalib.models.uflow.lightning_model
+.. automodule:: anomalib.models.image.uflow.lightning_model
    :members:
    :undoc-members:
    :show-inheritance:
 ```
 
 ```{eval-rst}
-.. automodule:: anomalib.models.uflow.anomaly_map
+.. automodule:: anomalib.models.image.uflow.anomaly_map
    :members:
    :undoc-members:
    :show-inheritance:
