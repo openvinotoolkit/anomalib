@@ -41,6 +41,7 @@ from anomalib.data.utils import (
     get_transforms,
     masks_to_boxes,
     read_image,
+    validate_path,
 )
 
 logger = logging.getLogger(__name__)
@@ -96,9 +97,9 @@ def load_saturation_config(config_path: str | Path) -> dict[int, Any] | None:
     ]
     """
     try:
-        with Path.open(Path(config_path)) as file:
+        config_path = validate_path(config_path)
+        with Path.open(config_path) as file:
             configs = json.load(file)
-
         # Create a dictionary with pixel values as keys
         return {conf["pixel_value"]: conf for conf in configs}
     except FileNotFoundError:
@@ -205,7 +206,7 @@ def make_mvtec_loco_dataset(
         >>> path = root / category
         >>> samples = make_mvtec_loco_dataset(path, split='test')
     """
-    root = Path(root)
+    root = validate_path(root)
     gt_merged_dir = Path(gt_merged_dir)
 
     # assert the directory to store the merged ground-truth masks is different than the original gt directory
