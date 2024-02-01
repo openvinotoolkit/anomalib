@@ -19,6 +19,8 @@ from jsonargparse import Namespace
 from jsonargparse import Path as JSONArgparsePath
 from omegaconf import DictConfig, ListConfig, OmegaConf
 
+from anomalib.data.utils import ValSplitMode
+
 logger = logging.getLogger(__name__)
 
 
@@ -122,6 +124,7 @@ def update_config(config: DictConfig | ListConfig | Namespace) -> DictConfig | L
     config.results_dir.path = str(project_path)
 
     config = _update_nncf_config(config)
+    config = _update_val_config(config)
 
     # write the original config for eventual debug (modified config at the end of the function)
     (project_path / "config_original.yaml").write_text(to_yaml(config_original))
@@ -211,6 +214,21 @@ def _update_nncf_config(config: DictConfig | ListConfig) -> DictConfig | ListCon
         config.optimization.nncf.input_info.sample_size = [1, 3, *sample_size]
         if config.optimization.nncf.apply and "update_config" in config.optimization.nncf:
             return OmegaConf.merge(config, config.optimization.nncf.update_config)
+    return config
+
+
+def _update_val_config(config: DictConfig | ListConfig) -> DictConfig | ListConfig:
+    """Skip validation if `val_split_mode` is set to 'none'.
+
+    Args:
+        config (DictConfig | ListConfig): Configurable parameters of the current run.
+
+    Returns:
+        DictConfig | ListConfig: Updated configurable parameters in DictConfig object.
+    """
+    if config.data.init_args.val_split_mode == ValSplitMode.NONE and config.trainer.limit_val_batches != 0.0:
+        logger.warning("Running without validation set. Setting trainer.limit_val_batches to 0.")
+        config.trainer.limit_val_batches = 0.0
     return config
 
 
