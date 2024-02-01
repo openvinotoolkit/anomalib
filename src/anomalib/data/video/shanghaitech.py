@@ -2,12 +2,16 @@
 
 Description:
     This module contains PyTorch Dataset and PyTorch
-        Lightning DataModule for the ShanghaiTech Campus dataset.
+    Lightning DataModule for the ShanghaiTech Campus dataset.
     If the dataset is not on the file system, the DataModule class downloads and
-        extracts the dataset and converts video files to a format that is readable by pyav.
+    extracts the dataset and converts video files to a format that is readable by pyav.
+
+License:
+    ShanghaiTech Campus Dataset is released under the BSD 2-Clause License.
+
 Reference:
     - W. Liu and W. Luo, D. Lian and S. Gao. "Future Frame Prediction for Anomaly Detection -- A New Baseline."
-    IEEE Conference on Computer Vision and Pattern Recognition (CVPR). 2018.
+      IEEE Conference on Computer Vision and Pattern Recognition (CVPR). 2018.
 """
 
 # Copyright (C) 2023-2024 Intel Corporation
