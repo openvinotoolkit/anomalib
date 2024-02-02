@@ -11,15 +11,16 @@ from collections.abc import Sequence
 from pathlib import Path
 
 import albumentations as A  # noqa: N812
-import cv2
-import numpy as np
 import pandas as pd
 import torch
 from pandas import DataFrame
+from PIL import Image
 from torch.utils.data import Dataset
+from torchvision.transforms.functional import to_tensor
+from torchvision.tv_tensors import Mask
 
 from anomalib import TaskType
-from anomalib.data.utils import masks_to_boxes, read_image
+from anomalib.data.utils import masks_to_boxes
 
 _EXPECTED_COLUMNS_CLASSIFICATION = ["image_path", "split"]
 _EXPECTED_COLUMNS_SEGMENTATION = [*_EXPECTED_COLUMNS_CLASSIFICATION, "mask_path"]
@@ -117,24 +118,21 @@ class AnomalibDataset(Dataset, ABC):
         mask_path = self._samples.iloc[index].mask_path
         label_index = self._samples.iloc[index].label_index
 
-        image = read_image(image_path)
+        image = to_tensor(Image.open(image_path))
         item = {"image_path": image_path, "label": label_index}
 
         if self.task == TaskType.CLASSIFICATION:
-            transformed = self.transform(image=image)
-            item["image"] = transformed["image"]
+            item["image"] = self.transform(image)
         elif self.task in (TaskType.DETECTION, TaskType.SEGMENTATION):
             # Only Anomalous (1) images have masks in anomaly datasets
             # Therefore, create empty mask for Normal (0) images.
-
-            mask = np.zeros(shape=image.shape[:2]) if label_index == 0 else cv2.imread(mask_path, flags=0) / 255.0
-            mask = mask.astype(np.single)
-
-            transformed = self.transform(image=image, mask=mask)
-
-            item["image"] = transformed["image"]
+            mask = (
+                Mask(torch.zeros(image.shape[-2:]))
+                if label_index == 0
+                else Mask(to_tensor(Image.open(mask_path)).squeeze())
+            )
+            item["image"], item["mask"] = self.transform(image, mask)
             item["mask_path"] = mask_path
-            item["mask"] = transformed["mask"]
 
             if self.task == TaskType.DETECTION:
                 # create boxes from masks for detection task

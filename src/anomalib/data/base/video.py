@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any
 import albumentations as A  # noqa: N812
 import torch
 from pandas import DataFrame
+from torchvision.tv_tensors import Mask
 
 from anomalib import TaskType
 from anomalib.data.base.datamodule import AnomalibDataModule
@@ -148,22 +149,14 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
         item["original_image"] = item["image"].to(torch.uint8)
 
         # apply transforms
-        if "mask" in item and item["mask"] is not None:
-            processed_frames = [
-                self.transform(image=frame.numpy(), mask=mask)
-                for frame, mask in zip(item["image"], item["mask"], strict=True)
-            ]
-            item["image"] = torch.stack([item["image"] for item in processed_frames]).squeeze(0)
-            mask = torch.as_tensor(item["mask"])
-            item["mask"] = torch.stack([item["mask"] for item in processed_frames]).squeeze(0)
-            item["label"] = torch.Tensor([1 in frame for frame in mask]).int().squeeze(0)
+        if item.get("mask") is not None:
+            item["image"], item["mask"] = self.transform(item["image"], Mask(item["mask"]))
+            item["label"] = torch.Tensor([1 in frame for frame in item["mask"]]).int().squeeze(0)
             if self.task == TaskType.DETECTION:
                 item["boxes"], _ = masks_to_boxes(item["mask"])
                 item["boxes"] = item["boxes"][0] if len(item["boxes"]) == 1 else item["boxes"]
         else:
-            item["image"] = torch.stack(
-                [self.transform(image=frame.numpy())["image"] for frame in item["image"]],
-            ).squeeze(0)
+            item["image"] = self.transform(item["image"])
 
         # include only target frame in gt
         if self.clip_length_in_frames > 1 and self.target_frame != VideoTargetFrame.ALL:

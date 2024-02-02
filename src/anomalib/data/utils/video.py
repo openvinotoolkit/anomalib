@@ -60,7 +60,7 @@ class ClipsIndexer(VideoClips, ABC):
         clip_pts = self.clips[video_idx][clip_idx]
 
         return {
-            "image": clip,
+            "image": clip.permute(0, 3, 1, 2) / 255,
             "mask": self.get_mask(idx),
             "video_path": video_path,
             "frames": clip_pts,

@@ -8,9 +8,11 @@ from pathlib import Path
 from typing import Any
 
 import albumentations as A  # noqa: N812
+from PIL import Image
 from torch.utils.data.dataset import Dataset
+from torchvision.transforms.functional import to_tensor
 
-from anomalib.data.utils import get_image_filenames, get_transforms, read_image
+from anomalib.data.utils import get_image_filenames, get_transforms
 
 
 class PredictDataset(Dataset):
@@ -46,8 +48,8 @@ class PredictDataset(Dataset):
     def __getitem__(self, index: int) -> dict[str, Any]:
         """Get the image based on the `index`."""
         image_filename = self.image_filenames[index]
-        image = read_image(path=image_filename)
-        pre_processed = self.transform(image=image)
+        image = to_tensor(Image.open(image_filename))
+        pre_processed = {"image": self.transform(image)}
         pre_processed["image_path"] = str(image_filename)
 
         return pre_processed
