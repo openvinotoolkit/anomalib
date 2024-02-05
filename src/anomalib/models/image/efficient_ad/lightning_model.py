@@ -242,7 +242,8 @@ class EfficientAd(AnomalyModule):
         )
 
         if self.trainer.max_epochs < 0 and self.trainer.max_steps < 0:
-            raise ValueError("A finite number of steps or epochs must be defined")
+            msg = "A finite number of steps or epochs must be defined"
+            raise ValueError(msg)
 
         # lightning stops training when either 'max_steps' or 'max_epochs' is reached (earliest),
         # so actual training steps need to be determined here
