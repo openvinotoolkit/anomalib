@@ -330,7 +330,7 @@ class MVTecLocoDataset(AnomalibDataset):
     ) -> None:
         super().__init__(task=task, transform=transform)
 
-        self.root_category = Path(root) / Path(category)
+        self.root_category = Path(root) / category
         self.split = split
 
     def _setup(self) -> None:
