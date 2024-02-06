@@ -76,8 +76,8 @@ def load_saturation_config(config_path: str | Path) -> dict[int, Any] | None:
         config_path (str | Path): Path to the saturation configuration file.
 
     Returns:
-        Dict |None: A dictionary with pixel values as keys and the corresponding configurations as values.
-                    Return None if the config file is not found.
+        Dict | None: A dictionary with pixel values as keys and the corresponding configurations as values.
+            Return None if the config file is not found.
 
     Example JSON format in the file:
     [
