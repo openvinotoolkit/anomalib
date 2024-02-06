@@ -409,6 +409,7 @@ class DummyImageDatasetGenerator(DummyDatasetGenerator):
                 num_images = self.num_val
             else:
                 num_images = self.num_test
+            
             for i in range(num_images):
                 label = LabelName.NORMAL
                 image_filename = path / f"{i:03}{extension}"
