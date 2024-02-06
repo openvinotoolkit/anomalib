@@ -67,8 +67,7 @@ class _MetricsCallback(Callback):
             pl_module (AnomalyModule): Anomalib Model that inherits pl LightningModule.
             stage (str | None, optional): fit, validate, test or predict. Defaults to None.
         """
-        del trainer, stage  # These variables are not used.
-
+        del stage  # this variable is not used.
         image_metric_names = [] if self.image_metric_names is None else self.image_metric_names
         if isinstance(image_metric_names, str):
             image_metric_names = [image_metric_names]
@@ -98,6 +97,8 @@ class _MetricsCallback(Callback):
             else:
                 pl_module.pixel_metrics = create_metric_collection(pixel_metric_names, "pixel_")
             self._set_threshold(pl_module)
+            if hasattr(trainer.datamodule, "saturation_config"):
+                self._set_saturation_config(pl_module, trainer.datamodule.saturation_config)
 
     def on_validation_epoch_start(
         self,
@@ -172,6 +173,9 @@ class _MetricsCallback(Callback):
         pl_module.image_metrics.set_threshold(pl_module.image_threshold.value.item())
         pl_module.pixel_metrics.set_threshold(pl_module.pixel_threshold.value.item())
 
+    def _set_saturation_config(self, pl_module: AnomalyModule, saturation_config: dict[int, Any]) -> None:
+        pl_module.pixel_metrics.set_saturation_config(saturation_config)
+
     def _update_metrics(
         self,
         image_metric: AnomalibMetricCollection,
@@ -182,7 +186,11 @@ class _MetricsCallback(Callback):
         image_metric.update(output["pred_scores"], output["label"].int())
         if "mask" in output and "anomaly_maps" in output:
             pixel_metric.to(self.device)
-            pixel_metric.update(torch.squeeze(output["anomaly_maps"]), torch.squeeze(output["mask"].int()))
+            pixel_metric.update(
+                torch.squeeze(output["anomaly_maps"]),
+                torch.squeeze(output["mask"].int()),
+                masks=torch.squeeze(output["masks"]) if "masks" in output else None,
+            )
 
     def _outputs_to_device(self, output: STEP_OUTPUT) -> STEP_OUTPUT | dict[str, Any]:
         if isinstance(output, dict):

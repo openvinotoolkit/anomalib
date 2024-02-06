@@ -30,6 +30,13 @@ Learn more about Kolektor dataset.
 Learn more about MVTec 2D dataset
 :::
 
+:::{grid-item-card} MVTec LOCO
+:link: ./mvtec_loco
+:link-type: doc
+
+Learn more about MVTec LOCO dataset
+:::
+
 :::{grid-item-card} Visa
 :link: ./visa
 :link-type: doc
@@ -47,5 +54,6 @@ Learn more about Visa dataset.
 ./folder
 ./kolektor
 ./mvtec
+./mvtec_loco
 ./visa
 ```
