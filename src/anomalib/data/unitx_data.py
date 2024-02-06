@@ -286,15 +286,21 @@ class UnitXPerDefect(AnomalibDataModule):
         )
 
         self.train_data = UnitXPerDefectDataset(
-            task=task, transform=transform_train, split=Split.TRAIN, root=root,
+            task=task, 
+            transform=transform_train, 
+            split=Split.VAL, 
+            root=root,
             exclude_labels=exclude_labels,
             exclude_asset_ids=exclude_asset_ids,
-            )
+        )
 
         self.test_data = UnitXPerDefectDataset(
-            task=task, transform=transform_eval, split=Split.TRAIN, root=root,
+            task=task, 
+            transform=transform_eval, 
+            split=Split.TRAIN, 
+            root=root,
             exclude_labels=[],
             exclude_asset_ids=exclude_asset_ids,
-            )
+        )
 
         self.val_data = self.test_data
