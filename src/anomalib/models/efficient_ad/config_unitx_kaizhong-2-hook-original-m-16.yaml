@@ -1,9 +1,8 @@
 dataset:
   name: unitx
   format: unitx
+  path: /home/sota/datasets//kaizhong-2-hook-relabel-preprocessed
   # path: /home/sota/datasets/SAFT_Shells_Top
-  path: /home/sota/datasets/kaizhong-2-hook-relabel-preprocessed
-  # category: bottle
   exclude_labels: [
     "NG钩上面脏",
     "NG钩上黑皮",
@@ -23,38 +22,29 @@ dataset:
   train_batch_size: 1
   eval_batch_size: 1
   num_workers: 4
-  image_size: [416, 896]
+  image_size: [416, 896] # dimensions to which images are resized (mandatory)
   # image_size: 256 # dimensions to which images are resized (mandatory)
-  #[TODO]image_size: 512 # dimensions to which images are resized (mandatory)
   center_crop: null # dimensions to which images are center-cropped after resizing (optional)
-  # normalization: imagenet # data distribution to which the images will be normalized: [none, imagenet]
   normalization: none # data distribution to which the images will be normalized: [none, imagenet]
   transform_config:
     train: null
     eval: null
   test_split_mode: from_dir # options: [from_dir, synthetic]
-  # test_split_ratio: 0.2 # fraction of train images held out testing (usage depends on test_split_mode)
   test_split_ratio: null # fraction of train images held out testing (usage depends on test_split_mode)
   val_split_mode: same_as_test # options: [same_as_test, from_test, synthetic]
-  # val_split_ratio: 0.5 # fraction of train/test images held out for validation (usage depends on val_split_mode)
   val_split_ratio: null # fraction of train/test images held out for validation (usage depends on val_split_mode)
-  tiling:
-    apply: false
-    tile_size: null
-    stride: null
-    remove_border_count: 0
-    use_random_tiling: False
-    random_tile_count: 16
 
 model:
-  name: padim
-  backbone: resnet18
-  pre_trained: true
-  layers:
-    - layer1
-    - layer2
-    - layer3
-  normalization_method: min_max # options: [none, min_max, cdf]
+  name: efficient_ad
+  teacher_out_channels: 384
+  # model_size: small # options: [small, medium]
+  model_size: pdn_m_16 # options: [small, medium]
+  lr: 0.0001
+  weight_decay: 0.00001
+  padding: false
+  pad_maps: true # relevant for "padding: false", see EfficientAd in lightning_model.py
+  # generic params
+  normalization_method: min_max # options: [null, min_max, cdf]
 
 metrics:
   image:
@@ -71,22 +61,20 @@ metrics:
 visualization:
   show_images: False # show images on the screen
   save_images: True # save images to the file system
-  log_images: True # log images to the available loggers (if any)
+  log_images: False # log images to the available loggers (if any)
   image_save_path: null # path to which images will be saved
   mode: full # options: ["full", "simple"]
 
 project:
   seed: 42
-  path: /home/sota/unitx_repos/anomalib/results/kaizhong-2-hook-padim-resize416_896
+  path: /home/sota/unitx_repos/anomalib/results/kaizhong-2-hook-efficient_ad-resize416_896-pdn_m_16_epoch300_custom-auto-encoder
 
 logging:
   logger: ['tensorboard'] # options: [comet, tensorboard, wandb, csv] or combinations.
   log_graph: false # Logs the model graph to respective logger.
 
 optimization:
-  # export_mode: null # options: torch, onnx, openvino
   export_mode: torch # options: torch, onnx, openvino
-
 # PL Trainer Args. Don't add extra parameter here.
 trainer:
   enable_checkpointing: true
@@ -98,13 +86,13 @@ trainer:
   enable_progress_bar: true
   overfit_batches: 0.0
   track_grad_norm: -1
-  check_val_every_n_epoch: 1 # Don't validate before extracting features.
+  check_val_every_n_epoch: 1
   fast_dev_run: false
+  # fast_dev_run: true
   accumulate_grad_batches: 1
-  max_epochs: 150
+  max_epochs: 300
   # max_epochs: 1
   min_epochs: null
-  # max_steps: -1
   max_steps: 70000
   min_steps: null
   max_time: null
@@ -112,7 +100,7 @@ trainer:
   limit_val_batches: 1.0
   limit_test_batches: 1.0
   limit_predict_batches: 1.0
-  val_check_interval: 1.0 # Don't validate before extracting features.
+  val_check_interval: 1.0
   log_every_n_steps: 50
   accelerator: auto # <"cpu", "gpu", "tpu", "ipu", "hpu", "auto">
   strategy: null

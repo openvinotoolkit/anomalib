@@ -23,6 +23,7 @@ dataset:
   train_batch_size: 1
   eval_batch_size: 1
   num_workers: 4
+  # image_size: [416, 896]
   image_size: 256 # dimensions to which images are resized (mandatory)
   center_crop: null # dimensions to which images are center-cropped after resizing (optional)
   # normalization: imagenet # data distribution to which the images will be normalized: [none, imagenet]
@@ -77,7 +78,7 @@ visualization:
 
 project:
   seed: 42
-  path: /home/sota/unitx_repos/anomalib/results/kaizhong-2-hook-draem-resize256
+  path: /home/sota/unitx_repos/anomalib/results/kaizhong-2-hook-draem-resize416_896
 
 logging:
   logger: ['tensorboard'] # options: [comet, tensorboard, wandb, csv] or combinations.

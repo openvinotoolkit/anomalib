@@ -78,13 +78,15 @@ class EfficientAd(AnomalyModule):
     ) -> None:
         super().__init__()
 
-        self.model_size = model_size
+        self.model_size = "medium" if model_size.startswith("pdn_m") else model_size
+
         self.model: EfficientAdModel = EfficientAdModel(
             teacher_out_channels=teacher_out_channels,
             input_size=image_size,
-            model_size=model_size,
+            model_size=self.model_size, # "small" or "medium"
             padding=padding,
             pad_maps=pad_maps,
+            special_model_size = model_size,
         )
         self.batch_size = batch_size
         self.image_size = image_size
@@ -102,7 +104,7 @@ class EfficientAd(AnomalyModule):
             pretrained_models_dir / "efficientad_pretrained_weights" / f"pretrained_teacher_{self.model_size}.pth"
         )
         logger.info(f"Load pretrained teacher model from {teacher_path}")
-        self.model.teacher.load_state_dict(torch.load(teacher_path, map_location=torch.device(self.device)))
+        self.model.teacher.load_state_dict(torch.load(teacher_path, map_location=torch.device(self.device)), strict=False)
 
     def prepare_imagenette_data(self) -> None:
         self.data_transforms_imagenet = A.Compose(

@@ -12,6 +12,7 @@ from enum import Enum
 import torch
 import torch.nn.functional as F
 from torch import Tensor, nn
+import torchvision
 from torchvision import transforms
 
 logger = logging.getLogger(__name__)
@@ -22,6 +23,19 @@ def imagenet_norm_batch(x):
     std = torch.tensor([0.229, 0.224, 0.225])[None, :, None, None].to(x.device)
     x_norm = (x - mean) / std
     return x_norm
+
+
+def create_pdn_model(model_type: str, out_channels: int, padding: bool = False):
+    model_type_map = {
+        "PDN_M_16": lambda out_channels, padding: PDN_M_16(out_channels, padding),
+        "PDN_M_33": lambda out_channels, padding: PDN_M_33(out_channels, padding),
+        "PDN_M_68": lambda out_channels, padding: PDN_M_68(out_channels, padding),
+        "PDN_M_128": lambda out_channels, padding: PDN_M_128(out_channels, padding),
+        "PDN_M_256": lambda out_channels, padding: PDN_M_256(out_channels, padding),
+    }
+    if model_type not in model_type_map:
+        raise ValueError(f"Unknown model type {model_type}")
+    return model_type_map[model_type](out_channels, padding)
 
 
 def reduce_tensor_elems(tensor: torch.Tensor, m=2**24) -> torch.Tensor:
@@ -52,6 +66,16 @@ class EfficientAdModelSize(str, Enum):
 
     M = "medium"
     S = "small"
+    PDN_M_16 = "pdn_m_16"
+    PDN_M_16_DEFORM = "pdn_m_16_deform"
+    PDN_M_33 = "pdn_m_33"
+    PDN_M_33_DEFORM = "pdn_m_33_deform"
+    PDN_M_68 = "pdn_m_68"
+    PDN_M_68_DEFORM = "pdn_m_68_deform"
+    PDN_M_128 = "pdn_m_128"
+    PDN_M_128_DEFORM = "pdn_m_128_deform"
+    PDN_M_256 = "pdn_m_256"
+    PDN_M_256_DEFORM = "pdn_m_256_deform"
 
 
 class PDN_S(nn.Module):
@@ -89,21 +113,38 @@ class PDN_M(nn.Module):
         out_channels (int): number of convolution output channels
     """
 
-    def __init__(self, out_channels: int, padding: bool = False) -> None:
+    def __init__(self, out_channels: int, padding: bool = False, from_other_network=False, use_deform=False) -> None:
         super().__init__()
         pad_mult = 1 if padding else 0
-        self.conv1 = nn.Conv2d(3, 256, kernel_size=4, stride=1, padding=3 * pad_mult)
+        self.from_other_network = from_other_network
+
+        if self.from_other_network:
+            self.conv1_ = nn.Conv2d(256, 256, kernel_size=4, stride=1, padding=3 * pad_mult)
+        else:
+            self.conv1 = nn.Conv2d(3, 256, kernel_size=4, stride=1, padding=3 * pad_mult)
+
         self.conv2 = nn.Conv2d(256, 512, kernel_size=4, stride=1, padding=3 * pad_mult)
         self.conv3 = nn.Conv2d(512, 512, kernel_size=1, stride=1, padding=0 * pad_mult)
-        self.conv4 = nn.Conv2d(512, 512, kernel_size=3, stride=1, padding=1 * pad_mult)
-        self.conv5 = nn.Conv2d(512, out_channels, kernel_size=4, stride=1, padding=0 * pad_mult)
+
+        if use_deform:
+            self.conv4 = DeformableConv2d(512, 512, kernel_size=3, stride=1, padding=1 * pad_mult)
+            self.conv5 = DeformableConv2d(512, out_channels, kernel_size=4, stride=1, padding=0 * pad_mult)
+        else:
+            self.conv4 = nn.Conv2d(512, 512, kernel_size=3, stride=1, padding=1 * pad_mult)
+            self.conv5 = nn.Conv2d(512, out_channels, kernel_size=4, stride=1, padding=0 * pad_mult)
+
         self.conv6 = nn.Conv2d(out_channels, out_channels, kernel_size=1, stride=1, padding=0 * pad_mult)
+
         self.avgpool1 = nn.AvgPool2d(kernel_size=2, stride=2, padding=1 * pad_mult)
         self.avgpool2 = nn.AvgPool2d(kernel_size=2, stride=2, padding=1 * pad_mult)
 
     def forward(self, x):
-        x = imagenet_norm_batch(x)
-        x = F.relu(self.conv1(x))
+        if self.from_other_network:
+            x = F.relu(self.conv1_(x))
+        else:
+            x = imagenet_norm_batch(x)
+            x = F.relu(self.conv1(x))
+
         x = self.avgpool1(x)
         x = F.relu(self.conv2(x))
         x = self.avgpool2(x)
@@ -112,6 +153,132 @@ class PDN_M(nn.Module):
         x = F.relu(self.conv5(x))
         x = self.conv6(x)
         return x
+
+
+class PDN_M_16(nn.Module):
+    def __init__(self, out_channels: int, padding: bool = False) -> None:
+        super().__init__()
+        self.m_16_conv1 = nn.Conv2d(3, 512, kernel_size=3, stride=1, padding=0)
+        self.m_16_conv2 = nn.Conv2d(512, 512, kernel_size=3, stride=1, padding=0)
+        self.m_16_conv3 = nn.Conv2d(512, 512, kernel_size=3, stride=1, padding=0)
+        self.m_16_conv4 = nn.Conv2d(512, out_channels, kernel_size=3, stride=1, padding=0)
+        self.m_16_avgpool1 = nn.AvgPool2d(kernel_size=2, stride=2, padding=0)
+
+    def forward(self, x):
+        x = imagenet_norm_batch(x) # size: 16
+        x = F.relu(self.m_16_conv1(x)) # size: 14
+        x = self.m_16_avgpool1(x) # size: 7
+        x = F.relu(self.m_16_conv2(x)) # size: 5
+        x = F.relu(self.m_16_conv3(x)) # size: 3
+        x = F.relu(self.m_16_conv4(x)) # size: 1
+        return x
+
+
+class PDN_M_33_Base(PDN_M):
+    """Copy of the base class PDN_M"""
+    pass
+
+
+class PDN_M_33(PDN_M_33_Base):
+    """Copy of the base class PDN_M"""
+    def __init__(self, out_channels: int, padding: bool = False) -> None:
+        super().__init__(out_channels, padding, use_deform=False)
+
+
+class PDN_M_33_Deform(PDN_M_33_Base):
+    """Copy of the base class PDN_M"""
+    def __init__(self, out_channels: int, padding: bool = False) -> None:
+        super().__init__(out_channels, padding, use_deform=True)
+
+
+class PDN_M_68_Base(PDN_M_33_Base):
+    def __init__(self, out_channels: int, padding: bool = False, use_deform: bool = False) -> None:
+        super().__init__(out_channels, padding, from_other_network=True, use_deform=use_deform)
+        self.m_68_conv1 = nn.Conv2d(3, 256, kernel_size=3, stride=1, padding=0)
+        self.m_68_avgpool1 = nn.AvgPool2d(kernel_size=2, stride=2, padding=0)
+        self.apply(self._init_weights)
+
+    def _init_weights(self, m: nn.Module) -> None:
+        if isinstance(m, nn.Conv2d):
+            nn.init.kaiming_normal_(m.weight, mode="fan_out", nonlinearity="relu")
+        elif isinstance(m, nn.BatchNorm2d):
+            nn.init.constant_(m.weight, 1)
+            nn.init.constant_(m.bias, 0)
+
+    def forward(self, x):
+        x = imagenet_norm_batch(x)
+        x = F.relu(self.m_68_conv1(x))
+        x = self.m_68_avgpool1(x)
+        x = super().forward(x)
+        return x
+
+class PDN_M_68(PDN_M_68_Base):
+    def __init__(self, out_channels: int, padding: bool = False) -> None:
+        super().__init__(out_channels, padding, use_deform=False)
+
+class PDN_M_68_Deform(PDN_M_68_Base):
+    def __init__(self, out_channels: int, padding: bool = False) -> None:
+        super().__init__(out_channels, padding, use_deform=True)
+
+
+class PDN_M_128_Base(PDN_M_33_Base):
+    def __init__(self, out_channels: int, padding: bool = False, use_deform: bool = False) -> None:
+        super().__init__(out_channels, padding, from_other_network=True, use_deform=use_deform)
+        self.m_128_conv1 = nn.Conv2d(3, 128, kernel_size=3, stride=1, padding=1)
+        self.m_128_conv2 = nn.Conv2d(128, 256, kernel_size=3, stride=1, padding=2) # use padding=2
+        self.m_128_avgpool1 = nn.AvgPool2d(kernel_size=2, stride=2, padding=0)
+        self.m_128_avgpool2 = nn.AvgPool2d(kernel_size=2, stride=2, padding=0)
+
+    def forward(self, x):
+        x = imagenet_norm_batch(x) # size: 128
+        x = F.relu(self.m_128_conv1(x)) # size: 128
+        x = self.m_128_avgpool1(x) # size: 64
+        x = F.relu(self.m_128_conv2(x)) # size: 66
+        x = self.m_128_avgpool2(x) # size: 33
+        x = super().forward(x)
+        return x
+
+
+class PDN_M_128(PDN_M_128_Base):
+    def __init__(self, out_channels: int, padding: bool = False) -> None:
+        super().__init__(out_channels, padding, use_deform=False)
+
+
+class PDN_M_128_Deform(PDN_M_128_Base):
+    def __init__(self, out_channels: int, padding: bool = False) -> None:
+        super().__init__(out_channels, padding, use_deform=True)
+
+
+class PDN_M_256_Base(PDN_M_33_Base):
+    def __init__(self, out_channels: int, padding: bool = False, use_deform: bool = False) -> None:
+        super().__init__(out_channels, padding, from_other_network=True, use_deform=use_deform)
+        self.m_256_conv1 = nn.Conv2d(3, 128, kernel_size=3, stride=1, padding=1)
+        self.m_256_conv2 = nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=1)
+        self.m_256_conv3 = nn.Conv2d(128, 256, kernel_size=3, stride=1, padding=2) # use padding=2
+        self.m_256_avgpool1 = nn.AvgPool2d(kernel_size=2, stride=2, padding=0)
+        self.m_256_avgpool2 = nn.AvgPool2d(kernel_size=2, stride=2, padding=0)
+        self.m_256_avgpool3 = nn.AvgPool2d(kernel_size=2, stride=2, padding=0)
+
+    def forward(self, x):
+        x = imagenet_norm_batch(x) # size: 256
+        x = F.relu(self.m_256_conv1(x)) # size: 256
+        x = self.m_256_avgpool1(x) # size: 128
+        x = F.relu(self.m_256_conv2(x)) # size: 128
+        x = self.m_256_avgpool2(x) # size: 64
+        x = F.relu(self.m_256_conv3(x)) # size: 66
+        x = self.m_256_avgpool3(x) # size: 33
+        x = super().forward(x)
+        return x
+
+
+class PDN_M_256(PDN_M_256_Base):
+    def __init__(self, out_channels: int, padding: bool = False) -> None:
+        super().__init__(out_channels, padding, use_deform=False)
+
+
+class PDN_M_256_Deform(PDN_M_256_Base):
+    def __init__(self, out_channels: int, padding: bool = False) -> None:
+        super().__init__(out_channels, padding, use_deform=True)
 
 
 class Encoder(nn.Module):
@@ -144,13 +311,51 @@ class Decoder(nn.Module):
         img_size (tuple): size of input images
     """
 
-    def __init__(self, out_channels, padding, img_size, *args, **kwargs) -> None:
+    def __init__(self, out_channels, padding, img_size, special_model_size, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.img_size = img_size
-        self.last_upsample = (
-            int(img_size[0] / 4) if padding else int(img_size[0] / 4) - 8,
-            int(img_size[1] / 4) if padding else int(img_size[1] / 4) - 8,
-        )
+
+
+        if (
+            special_model_size == EfficientAdModelSize.PDN_M_33
+            or special_model_size == EfficientAdModelSize.PDN_M_33_DEFORM
+        ):
+            self.last_upsample = (
+                int(img_size[0] / 4) if padding else int(img_size[0] / 4) - 8, # 256,551
+                int(img_size[1] / 4) if padding else int(img_size[1] / 4) - 7, # 256,551
+            )
+        elif special_model_size == EfficientAdModelSize.PDN_M_68:
+            self.last_upsample = (
+                int(img_size[0] / 4) if padding else int(img_size[0] / 8) - 8, # 256,551
+                int(img_size[1] / 4) if padding else int(img_size[1] / 8) - 7, # 256,551
+            )
+        elif special_model_size == EfficientAdModelSize.PDN_M_68_DEFORM:
+            self.last_upsample = (
+                int(img_size[0] / 4) if padding else int(img_size[0] / 8) - 8, # 416, 896
+                int(img_size[1] / 4) if padding else int(img_size[1] / 8) - 8, # 416, 896
+            )
+
+        elif special_model_size == EfficientAdModelSize.PDN_M_128:
+            self.last_upsample = (
+                int(img_size[0] / 4) if padding else int(img_size[0] / 16) - 7, # 256,551
+                int(img_size[1] / 4) if padding else int(img_size[1] / 16) - 7, # 256,551
+            )
+        elif special_model_size == EfficientAdModelSize.PDN_M_128_DEFORM:
+            self.last_upsample = (
+                int(img_size[0] / 4) if padding else int(img_size[0] / 16) - 7, # 416, 896
+                int(img_size[1] / 4) if padding else int(img_size[1] / 16) - 7, # 416, 896
+            )
+        elif special_model_size == EfficientAdModelSize.PDN_M_256:
+            self.last_upsample = (
+                int(img_size[0] / 4) if padding else int(img_size[0] / 32) - 7,
+                int(img_size[1] / 4) if padding else int(img_size[1] / 32) - 7,
+            )
+        elif special_model_size == EfficientAdModelSize.PDN_M_256_DEFORM:
+            self.last_upsample = (
+                int(img_size[0] / 4) if padding else int(img_size[0] / 32) - 7,
+                int(img_size[1] / 4) if padding else int(img_size[1] / 32) - 7,
+            )
+
         self.deconv1 = nn.Conv2d(64, 64, kernel_size=4, stride=1, padding=2)
         self.deconv2 = nn.Conv2d(64, 64, kernel_size=4, stride=1, padding=2)
         self.deconv3 = nn.Conv2d(64, 64, kernel_size=4, stride=1, padding=2)
@@ -200,9 +405,14 @@ class AutoEncoder(nn.Module):
     """
 
     def __init__(self, out_channels, padding, img_size, *args, **kwargs) -> None:
+
+        # exclude special_model_size from kwargs
+        special_model_size = kwargs.get("special_model_size", None)
+        kwargs = {k: v for k, v in kwargs.items() if k != "special_model_size"}
+
         super().__init__(*args, **kwargs)
         self.encoder = Encoder()
-        self.decoder = Decoder(out_channels, padding, img_size)
+        self.decoder = Decoder(out_channels, padding, img_size, special_model_size)
 
     def forward(self, x):
         x = imagenet_norm_batch(x)
@@ -232,6 +442,7 @@ class EfficientAdModel(nn.Module):
         model_size: EfficientAdModelSize = EfficientAdModelSize.S,
         padding=False,
         pad_maps=True,
+        special_model_size = None,
     ) -> None:
         super().__init__()
 
@@ -239,7 +450,43 @@ class EfficientAdModel(nn.Module):
         self.teacher: PDN_M | PDN_S
         self.student: PDN_M | PDN_S
 
-        if model_size == EfficientAdModelSize.M:
+        if special_model_size == EfficientAdModelSize.PDN_M_16:
+            self.teacher = PDN_M_16(out_channels=teacher_out_channels, padding=False).eval()
+            self.student = PDN_M_16(out_channels=teacher_out_channels * 2, padding=False)
+
+        elif special_model_size == EfficientAdModelSize.PDN_M_33:
+            self.teacher = PDN_M_33(out_channels=teacher_out_channels, padding=False).eval()
+            self.student = PDN_M_33(out_channels=teacher_out_channels * 2, padding=False)
+
+        elif special_model_size == EfficientAdModelSize.PDN_M_33_DEFORM:
+            self.teacher = PDN_M_33_Deform(out_channels=teacher_out_channels, padding=False).eval()
+            self.student = PDN_M_33_Deform(out_channels=teacher_out_channels * 2, padding=False)
+
+        elif special_model_size == EfficientAdModelSize.PDN_M_68:
+            self.teacher = PDN_M_68(out_channels=teacher_out_channels, padding=False).eval()
+            self.student = PDN_M_68(out_channels=teacher_out_channels * 2, padding=False)
+
+        elif special_model_size == EfficientAdModelSize.PDN_M_68_DEFORM:
+            self.teacher = PDN_M_68_Deform(out_channels=teacher_out_channels, padding=False).eval()
+            self.student = PDN_M_68_Deform(out_channels=teacher_out_channels * 2, padding=False)
+
+        elif special_model_size == EfficientAdModelSize.PDN_M_128:
+            self.teacher = PDN_M_128(out_channels=teacher_out_channels, padding=False).eval()
+            self.student = PDN_M_128(out_channels=teacher_out_channels * 2, padding=False)
+
+        elif special_model_size == EfficientAdModelSize.PDN_M_128_DEFORM:
+            self.teacher = PDN_M_128_Deform(out_channels=teacher_out_channels, padding=False).eval()
+            self.student = PDN_M_128_Deform(out_channels=teacher_out_channels * 2, padding=False)
+
+        elif special_model_size == EfficientAdModelSize.PDN_M_256:
+            self.teacher = PDN_M_256(out_channels=teacher_out_channels, padding=False).eval()
+            self.student = PDN_M_256(out_channels=teacher_out_channels * 2, padding=False)
+
+        elif special_model_size == EfficientAdModelSize.PDN_M_256_DEFORM:
+            self.teacher = PDN_M_256_Deform(out_channels=teacher_out_channels, padding=False).eval()
+            self.student = PDN_M_256_Deform(out_channels=teacher_out_channels * 2, padding=False)
+
+        elif model_size == EfficientAdModelSize.M:
             self.teacher = PDN_M(out_channels=teacher_out_channels, padding=padding).eval()
             self.student = PDN_M(out_channels=teacher_out_channels * 2, padding=padding)
 
@@ -250,7 +497,7 @@ class EfficientAdModel(nn.Module):
         else:
             raise ValueError(f"Unknown model size {model_size}")
 
-        self.ae: AutoEncoder = AutoEncoder(out_channels=teacher_out_channels, padding=padding, img_size=input_size)
+        self.ae: AutoEncoder = AutoEncoder(out_channels=teacher_out_channels, padding=padding, img_size=input_size, special_model_size=special_model_size)
         self.teacher_out_channels: int = teacher_out_channels
         self.input_size: tuple[int, int] = input_size
 
@@ -302,6 +549,7 @@ class EfficientAdModel(nn.Module):
                 teacher_output = (teacher_output - self.mean_std["mean"]) / self.mean_std["std"]
 
         student_output = self.student(batch)
+
         distance_st = torch.pow(teacher_output - student_output[:, : self.teacher_out_channels, :, :], 2)
 
         if self.training:
@@ -354,3 +602,69 @@ class EfficientAdModel(nn.Module):
 
             map_combined = 0.5 * map_st + 0.5 * map_stae
             return {"anomaly_map": map_combined, "map_st": map_st, "map_ae": map_stae}
+
+
+class DeformableConv2d(nn.Module):
+    def __init__(self,
+                 in_channels,
+                 out_channels,
+                 kernel_size=3,
+                 stride=1,
+                 padding=1,
+                 dilation=1,
+                 bias=False):
+        super(DeformableConv2d, self).__init__()
+
+        assert type(kernel_size) == tuple or type(kernel_size) == int
+
+        kernel_size = kernel_size if type(kernel_size) == tuple else (kernel_size, kernel_size)
+        self.stride = stride if type(stride) == tuple else (stride, stride)
+        self.padding = padding
+        self.dilation = dilation
+
+        self.offset_conv = nn.Conv2d(in_channels,
+                                     2 * kernel_size[0] * kernel_size[1],
+                                     kernel_size=kernel_size,
+                                     stride=stride,
+                                     padding=self.padding,
+                                     dilation=self.dilation,
+                                     bias=True)
+
+        nn.init.constant_(self.offset_conv.weight, 0.)
+        nn.init.constant_(self.offset_conv.bias, 0.)
+
+        self.modulator_conv = nn.Conv2d(in_channels,
+                                        1 * kernel_size[0] * kernel_size[1],
+                                        kernel_size=kernel_size,
+                                        stride=stride,
+                                        padding=self.padding,
+                                        dilation=self.dilation,
+                                        bias=True)
+
+        nn.init.constant_(self.modulator_conv.weight, 0.)
+        nn.init.constant_(self.modulator_conv.bias, 0.)
+
+        self.regular_conv = nn.Conv2d(in_channels=in_channels,
+                                      out_channels=out_channels,
+                                      kernel_size=kernel_size,
+                                      stride=stride,
+                                      padding=self.padding,
+                                      dilation=self.dilation,
+                                      bias=bias)
+
+    def forward(self, x):
+        # h, w = x.shape[2:]
+        # max_offset = max(h, w)/4.
+
+        offset = self.offset_conv(x)  # .clamp(-max_offset, max_offset)
+        modulator = 2. * torch.sigmoid(self.modulator_conv(x))
+        # op = (n - (k * d - 1) + 2p / s)
+        x = torchvision.ops.deform_conv2d(input=x,
+                                          offset=offset,
+                                          weight=self.regular_conv.weight,
+                                          bias=self.regular_conv.bias,
+                                          padding=self.padding,
+                                          mask=modulator,
+                                          stride=self.stride,
+                                          dilation=self.dilation)
+        return x
