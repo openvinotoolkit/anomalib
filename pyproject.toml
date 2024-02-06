@@ -139,6 +139,7 @@ max-complexity = 15
 [tool.ruff.pydocstyle]
 convention = "google"
 
+
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # MYPY CONFIGURATION.                                                         #
 [tool.mypy]
@@ -150,6 +151,12 @@ show_error_codes = true
 module = ["torch.*", "wandb.*"]
 follow_imports = "skip"
 follow_imports_for_stubs = true
+
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+# BANDIT CONFIGURATION                                                        #
+[tool.bandit]
+skips = ["B101"]
 
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
