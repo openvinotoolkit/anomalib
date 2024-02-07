@@ -4,9 +4,6 @@ This section contains information for developers who want to contribute to Anoma
 
 ::::{grid} 1
 
-<!-- :margin: 1 1 0 0 -->
-<!-- :gutter: 2 -->
-
 :::{grid-item-card} {octicon}`book` Anomalib Software Design Document.
 :link: ./sdd
 :link-type: doc
@@ -21,6 +18,13 @@ Learn more about the architecture, components, and design decisions of Anomalib.
 Learn how to contribute to Anomalib.
 :::
 
+:::{grid-item-card} {octicon}`code-review` Code Review Checklist.
+:link: ./code_review_checklist
+:link-type: doc
+
+Learn the criteria for reviewing code.
+:::
+
 ::::
 
 ```{toctree}
@@ -29,4 +33,5 @@ Learn how to contribute to Anomalib.
 
 ./sdd
 ./contributing
+./code_review_checklist
 ```
