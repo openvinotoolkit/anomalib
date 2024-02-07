@@ -131,6 +131,7 @@ class AnomalibDataset(Dataset, ABC):
                 mask = np.zeros(shape=image.shape[:2])
             elif mask_path.endswith('.npy'):
                 mask = np.load(mask_path)
+                mask = mask.astype(np.float32)
                 if np.max(mask) == 255:
                     mask = mask / 255.0
             else:
