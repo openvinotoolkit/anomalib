@@ -33,6 +33,14 @@ repos:
         additional_dependencies: [types-PyYAML]
         exclude: "tests"
 
+  # add bandit for security checks
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.7.7
+    hooks:
+      - id: bandit
+        args: ["-c", "pyproject.toml"]
+        additional_dependencies: ["bandit[toml]"]
+
   # notebooks.
   - repo: https://github.com/nbQA-dev/nbQA
     rev: 1.7.0

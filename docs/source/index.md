@@ -100,3 +100,11 @@ markdown/guides/how_to/index
 markdown/guides/topic/index
 markdown/guides/developer/index
 ```
+
+```{toctree}
+:caption: Announcements
+:hidden:
+
+markdown/announcements/recognition
+markdown/announcements/engagement
+```
