@@ -12,12 +12,14 @@ from typing import Any
 import torchmetrics
 from omegaconf import DictConfig, ListConfig
 
+from . import per_image
 from .anomaly_score_distribution import AnomalyScoreDistribution
 from .aupr import AUPR
 from .aupro import AUPRO
 from .auroc import AUROC
 from .collection import AnomalibMetricCollection
 from .min_max import MinMax
+from .per_image import AUPIMO, PIMO, aupimo_scores, pimo_curves
 from .pro import PRO
 from .threshold import F1AdaptiveThreshold, ManualThreshold
 
@@ -30,6 +32,11 @@ __all__ = [
     "ManualThreshold",
     "MinMax",
     "PRO",
+    "per_image",
+    "pimo_curves",
+    "aupimo_scores",
+    "PIMO",
+    "AUPIMO",
 ]
 
 logger = logging.getLogger(__name__)
