@@ -118,12 +118,6 @@ def update_config(config: DictConfig | ListConfig | Namespace) -> DictConfig | L
     (project_path / "weights").mkdir(parents=True, exist_ok=True)
     (project_path / "images").mkdir(parents=True, exist_ok=True)
 
-    # set visualizer path
-    if "visualization" in config and (
-        config.visualization.image_save_path == "" or config.visualization.image_save_path is None
-    ):
-        config.visualization.image_save_path = str(project_path / "images")
-
     config.trainer.default_root_dir = str(project_path)
     config.results_dir.path = str(project_path)
 

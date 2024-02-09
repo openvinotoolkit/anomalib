@@ -3,7 +3,7 @@
 Description:
     This script contains PyTorch Dataset, Dataloader and PyTorch Lightning DataModule for the MVTec 3D-AD dataset.
     If the dataset is not on the file system, the script downloads and extracts the dataset and create PyTorch data
-        objects.
+    objects.
 
 License:
     MVTec 3D-AD dataset is released under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International
@@ -68,6 +68,7 @@ def make_mvtec_3d_dataset(
     - `path/to/dataset/ground_truth/category/mask_filename.png`
 
     This function creates a DataFrame to store the parsed information. The DataFrame follows this format:
+
     +---+---------------+-------+---------+---------------+---------------------------------------+-------------+
     |   | path          | split | label   | image_path    | mask_path                             | label_index |
     +---+---------------+-------+---------+---------------+---------------------------------------+-------------+
