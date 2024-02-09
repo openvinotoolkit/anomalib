@@ -52,7 +52,6 @@ Get started with anomalib in 15 minutes.
 ## {octicon}`book` Guides
 
 ::::{grid}
-:margin: 1 1 0 0
 :gutter: 1
 
 :::{grid-item-card} {octicon}`codescan` Reference Guide
@@ -62,18 +61,25 @@ Get started with anomalib in 15 minutes.
 Learn more about anomalib API and CLI.
 :::
 
-:::{grid-item-card} {octicon}`question` How-To Guides
+:::{grid-item-card} {octicon}`question` How-To Guide
 :link: markdown/guides/how_to/index
 :link-type: doc
 
 Learn how to use anomalib for your anomaly detection tasks.
 :::
 
-:::{grid-item-card} {octicon}`telescope` Topic Guides
+:::{grid-item-card} {octicon}`telescope` Topic Guide
 :link: markdown/guides/topic/index
 :link-type: doc
 
 Learn more about the internals of anomalib.
+:::
+
+:::{grid-item-card} {octicon}`code` Developer Guide
+:link: markdown/guides/developer/index
+:link-type: doc
+
+Learn how to develop and contribute to anomalib.
 :::
 
 ::::
@@ -92,4 +98,13 @@ markdown/get_started/anomalib
 markdown/guides/reference/index
 markdown/guides/how_to/index
 markdown/guides/topic/index
+markdown/guides/developer/index
+```
+
+```{toctree}
+:caption: Announcements
+:hidden:
+
+markdown/announcements/recognition
+markdown/announcements/engagement
 ```

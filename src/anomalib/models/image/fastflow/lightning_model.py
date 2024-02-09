@@ -1,4 +1,7 @@
-"""FastFlow Lightning Model Implementation."""
+"""FastFlow Lightning Model Implementation.
+
+https://arxiv.org/abs/2111.07677
+"""
 
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0

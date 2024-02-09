@@ -132,6 +132,7 @@ WinCLIP: Zero-/Few-Shot Anomaly Classification and Segmentation
 ./dfkde
 ./dfm
 ./draem
+./dsr
 ./efficient_ad
 ./fastflow
 ./ganomaly
@@ -140,5 +141,6 @@ WinCLIP: Zero-/Few-Shot Anomaly Classification and Segmentation
 ./reverse_distillation
 ./rkde
 ./stfpm
+./uflow
 ./winclip
 ```
