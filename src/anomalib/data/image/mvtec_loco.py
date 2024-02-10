@@ -257,15 +257,24 @@ def make_mvtec_loco_dataset(
         "mask_path",
     ] = mask_samples.image_path.to_numpy()
 
-    # assert that the right mask files are associated with the right test images
+    # validate that the right mask files are associated with the right test images
     if len(samples.loc[samples.label_index == LabelName.ABNORMAL]):
-        assert (
-            samples.loc[samples.label_index == LabelName.ABNORMAL]
-            .apply(lambda x: Path(x.image_path).stem in Path(x.mask_path).stem, axis=1)
-            .all()
-        ), f"Mismatch between anomalous images and ground truth masks. Make sure the mask files in '{gt_merged_dir!s}' \
-                folder follow the same naming convention as the anomalous images in the dataset (e.g. image: \
-                '000.png', mask: '000.png')."
+        image_stems = samples.loc[samples.label_index == LabelName.ABNORMAL]["image_path"].apply(lambda x: Path(x).stem)
+        mask_parent_stems = samples.loc[samples.label_index == LabelName.ABNORMAL]["mask_path"].apply(
+            lambda x: {Path(mask_path).parent.stem for mask_path in x},
+        )
+
+        if not all(
+            next(iter(mask_stems)) == image_stem
+            for image_stem, mask_stems in zip(image_stems, mask_parent_stems, strict=True)
+        ):
+            error_message = (
+                "Mismatch between anomalous images and ground truth masks. "
+                "Make sure the parent folder of the mask files in 'ground_truth' folder "
+                "follows the same naming convention as the anomalous images in the dataset "
+                "(e.g., image: '005.png', mask: '005/000.png')."
+            )
+            raise ValueError(error_message)
 
     if split:
         samples = samples[samples.split == split].reset_index(drop=True)
@@ -582,9 +591,9 @@ class MVTecLoco(AnomalibDataModule):
         This method overrides the parent class's method to also setup the val dataset.
         The MVTec LOCO dataset provides an independent validation subset.
         """
-        assert self.train_data is not None
-        assert self.val_data is not None
-        assert self.test_data is not None
+        if self.train_data is None or self.val_data is None or self.test_data is None:
+            error_message = "train_data, val_data, and test_data must all be provided"
+            raise ValueError(error_message)
 
         self.train_data.setup()
         self.val_data.setup()
