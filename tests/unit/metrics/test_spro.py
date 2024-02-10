@@ -21,35 +21,35 @@ def test_spro() -> None:
         },
     }
 
-    masks = torch.Tensor(
-        [
+    masks = [
+        torch.Tensor(
             [
-                [0, 0, 0, 0, 0],
-                [1, 1, 1, 1, 1],
-                [0, 0, 0, 0, 0],
-                [1, 1, 1, 1, 1],
-                [0, 0, 0, 0, 0],
-                [1, 1, 1, 1, 1],
-                [0, 0, 0, 0, 0],
-                [1, 1, 1, 1, 1],
+                [
+                    [0, 0, 0, 0, 0],
+                    [1, 1, 1, 1, 1],
+                    [0, 0, 0, 0, 0],
+                    [1, 1, 1, 1, 1],
+                    [0, 0, 0, 0, 0],
+                    [1, 1, 1, 1, 1],
+                    [0, 0, 0, 0, 0],
+                    [1, 1, 1, 1, 1],
+                ],
+                [
+                    [1, 1, 1, 1, 1],
+                    [0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0],
+                    [1, 1, 1, 1, 1],
+                    [0, 0, 0, 0, 0],
+                ],
             ],
-            [
-                [1, 1, 1, 1, 1],
-                [0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0],
-                [1, 1, 1, 1, 1],
-                [0, 0, 0, 0, 0],
-            ],
-        ],
-    )
+        ),
+    ]
 
-    masks[0] *= 255
-    masks[1] *= 254
-    # merge the multi-mask and add batch dim
-    merged_masks = (masks[0] + masks[1]).unsqueeze(0)
+    masks[0][0] *= 255
+    masks[0][1] *= 254
 
     preds = (torch.arange(8) / 10) + 0.05
     # metrics receive squeezed predictions (N, H, W)
@@ -61,10 +61,10 @@ def test_spro() -> None:
     for threshold, target, target_wo_saturation in zip(thresholds, targets, targets_wo_saturation, strict=True):
         # test using saturation_cofig
         spro = SPRO(threshold=threshold, saturation_config=saturation_config)
-        spro.update(preds, None, merged_masks)
+        spro.update(preds, masks)
         assert spro.compute() == target
 
         # test without saturation_config
         spro_wo_saturaton = SPRO(threshold=threshold)
-        spro_wo_saturaton.update(preds, None, merged_masks)
+        spro_wo_saturaton.update(preds, masks)
         assert spro_wo_saturaton.compute() == target_wo_saturation
