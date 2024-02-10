@@ -77,7 +77,6 @@ class EfficientAdModelSize(str, Enum):
     PDN_M_33_DEFORM_1_2 = "pdn_m_33_deform_1_2"
     PDN_M_33_DEFORM_2_4 = "pdn_m_33_deform_2_4"
     PDN_M_33_DEFORM_4_5 = "pdn_m_33_deform_4_5"
-
     PDN_M_68 = "pdn_m_68"
     PDN_M_68_DEFORM = "pdn_m_68_deform"
 
@@ -394,6 +393,15 @@ class Decoder(nn.Module):
                 int(img_size[1] / 4) if padding else int(img_size[1] / 4) - 8, # 186, 404
             )
 
+        elif (
+            special_model_size == EfficientAdModelSize.PDN_M_33_DEFORM_1_2
+            or special_model_size == EfficientAdModelSize.PDN_M_33_DEFORM_2_4
+            or special_model_size == EfficientAdModelSize.PDN_M_33_DEFORM_4_5
+        ):
+            self.last_upsample = (
+                int(img_size[0] / 4) if padding else int(img_size[0] / 4) - 8, # 256, 256
+                int(img_size[1] / 4) if padding else int(img_size[1] / 4) - 8, # 256, 256
+            )
         elif (
             special_model_size == EfficientAdModelSize.PDN_M_33_DEFORM_1_2
             or special_model_size == EfficientAdModelSize.PDN_M_33_DEFORM_2_4
