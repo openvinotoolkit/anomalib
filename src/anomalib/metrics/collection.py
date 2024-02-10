@@ -15,7 +15,6 @@ class AnomalibMetricCollection(MetricCollection):
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        self._saturation_config: dict
         self._update_called = False
         self._threshold = 0.5
 
@@ -28,7 +27,6 @@ class AnomalibMetricCollection(MetricCollection):
 
     def set_saturation_config(self, saturation_config: dict) -> None:
         """Update the saturation config values for all metrics that have the saturation config attribute."""
-        self._saturation_config = saturation_config
         for name, metric in self.items():
             if hasattr(metric, "saturation_config"):
                 metric.saturation_config = saturation_config
