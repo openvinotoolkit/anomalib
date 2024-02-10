@@ -64,8 +64,6 @@ CATEGORIES = (
     "splicing_connectors",
 )
 
-GT_MERGED_DIR = "ground_truth_merged"
-
 SATURATION_CONFIG_FILENAME = "defects_config.json"
 
 
@@ -107,64 +105,10 @@ def load_saturation_config(config_path: str | Path) -> dict[int, Any] | None:
         return None
 
 
-def _merge_gt_mask(
-    root: str | Path,
-    extensions: Sequence[str] = IMG_EXTENSIONS,
-    gt_merged_dir: str | Path = GT_MERGED_DIR,
-) -> None:
-    """Merges ground truth masks within specified directories and saves the merged masks.
-
-    Args:
-        root (str | Path): Root directory containing the 'ground_truth' folder.
-        extensions (Sequence[str]): Allowed file extensions for ground truth masks.
-                                    Default is IMG_EXTENSIONS.
-        gt_merged_dir (str | Path]): Directory where merged masks will be saved.
-                                     Default is GT_MERGED_DIR.
-
-    Returns:
-        None
-
-    Example:
-        >>> _merge_gt_mask('path/to/breakfast_box/')
-
-        This function reads ground truth masks from the specified directories, merges them into
-        a single mask for each corresponding images (e.g. merge 059/000.png and 059/001.png into 059.png),
-        and saves the merged masks in the default GT_MERGED_DIR directory.
-
-        Note: The merged masks are saved with the same filename structure as the corresponding anomalous image files.
-    """
-    root = Path(root)
-    gt_mask_paths = {f.parent for f in root.glob("ground_truth/**/*") if f.suffix in extensions}
-
-    for mask_path in gt_mask_paths:
-        # Merge each mask inside mask_path into a single mask
-        merged_mask = None
-        for mask_file in mask_path.glob("*"):
-            if mask_file.suffix in extensions:
-                mask = cv2.imread(str(mask_file), cv2.IMREAD_UNCHANGED)
-                if merged_mask is None:
-                    merged_mask = np.zeros_like(mask)
-                merged_mask += mask
-
-        if merged_mask is None:
-            continue
-
-        # Define the path for the new merged mask
-        _, anomaly_dir, image_filename = mask_path.parts[-3:]
-        new_mask_path = root / gt_merged_dir / anomaly_dir / (image_filename + ".png")
-
-        # Create the necessary directories if they do not exist
-        new_mask_path.parent.mkdir(parents=True, exist_ok=True)
-
-        # Save the merged mask
-        cv2.imwrite(str(new_mask_path), merged_mask)
-
-
 def make_mvtec_loco_dataset(
     root: str | Path,
     split: str | Split | None = None,
     extensions: Sequence[str] = IMG_EXTENSIONS,
-    gt_merged_dir: str | Path = GT_MERGED_DIR,
 ) -> DataFrame:
     """Create MVTec LOCO AD samples by parsing the original MVTec LOCO AD data file structure.
 
@@ -174,17 +118,13 @@ def make_mvtec_loco_dataset(
 
     where there can be multiple ground-truth masks for the corresponding anomalous images.
 
-    This function first merges the multiple ground-truth-masks by executing _merge_gt_mask(),
-    it then creates a dataframe to store the parsed information based on the following format:
+    This function creates a dataframe to store the parsed information based on the following format:
 
-    +---+---------------+-------+---------+---------------+---------------------------------------+-------------+
-    |   | path          | split | label   | image_path    | mask_path                             | label_index |
+    +---+---------------+-------+---------+-------------------------+-----------------------------+-------------+
+    |   | path          | split | label   | image_path              | mask_path                  | label_index |
     +===+===============+=======+=========+===============+=======================================+=============+
-    | 0 | datasets/name | test  | defect  | filename.png  | path/to/merged_masks/filename.png     | 1           |
-    +---+---------------+-------+---------+---------------+---------------------------------------+-------------+
-
-    Note: the final image_path is converted to full path by combining it with the path, split, and label columns
-    Example, datasets/name/test/defect/filename.png
+    | 0 | datasets/name | test  | defect  | path/to/image/file.png  | [path/to/masks/file.png]    | 1           |
+    +---+---------------+-------+---------+-------------------------+-----------------------------+-------------+
 
     Args:
         root (str | Path): Path to dataset
@@ -192,8 +132,6 @@ def make_mvtec_loco_dataset(
             Defaults to ``None``.
         extensions (Sequence[str]): List of file extensions to be included in the dataset.
             Defaults to ``None``.
-        gt_merged_dir (str | Path]): Directory where merged masks will be saved.
-                                             Default is GT_MERGED_DIR.
 
     Returns:
         DataFrame: an output dataframe containing the samples of the dataset.
@@ -207,36 +145,27 @@ def make_mvtec_loco_dataset(
         >>> samples = make_mvtec_loco_dataset(path, split='test')
     """
     root = validate_path(root)
-    gt_merged_dir = Path(gt_merged_dir)
-
-    # assert the directory to store the merged ground-truth masks is different than the original gt directory
-    assert gt_merged_dir != "ground_truth"
-
-    # Merge ground-truth masks for each corresponding images and store into the 'gt_merged_dir' folder
-    if (root / gt_merged_dir).is_dir():
-        logger.info(f"Found the directory of the merged ground-truth masks: {root / gt_merged_dir!s}")
-    else:
-        logger.info("Merging the multiple ground-truth masks for each corresponding images.")
-        _merge_gt_mask(root, gt_merged_dir=gt_merged_dir)
 
     # Retrieve the image and mask files
     samples_list = []
     for f in root.glob("**/*"):
         if f.suffix in extensions:
             parts = f.parts
-            # Ignore original 'ground_truth' folder because the 'gt_merged_dir' is used instead
+            # 'ground_truth' and non 'ground_truth' path have a different structure
             if "ground_truth" not in parts:
-                split_folder, label_folder, image_path = parts[-3:]
-                samples_list.append((str(root), split_folder, label_folder, image_path))
+                split_folder, label_folder, image_file = parts[-3:]
+                image_path = f"{root}/{split_folder}/{label_folder}/{image_file}"
+                samples_list.append((str(root), split_folder, label_folder, "", image_path))
+            else:
+                split_folder, label_folder, image_folder, image_file = parts[-4:]
+                image_path = f"{root}/{split_folder}/{label_folder}/{image_folder}/{image_file}"
+                samples_list.append((str(root), split_folder, label_folder, image_folder, image_path))
 
     if not samples_list:
         msg = f"Found 0 images in {root}"
         raise RuntimeError(msg)
 
-    samples = DataFrame(samples_list, columns=["path", "split", "label", "image_path"])
-
-    # Modify image_path column by converting to absolute path
-    samples["image_path"] = samples.path + "/" + samples.split + "/" + samples.label + "/" + samples.image_path
+    samples = DataFrame(samples_list, columns=["path", "split", "label", "image_folder", "image_path"])
 
     # Replace validation to Split.VAL.value in the split column
     samples["split"] = samples["split"].replace("validation", Split.VAL.value)
@@ -246,16 +175,24 @@ def make_mvtec_loco_dataset(
     samples.loc[(samples.label != "good"), "label_index"] = LabelName.ABNORMAL
     samples.label_index = samples.label_index.astype(int)
 
-    # separate masks from samples
-    mask_samples = samples.loc[samples.split == str(gt_merged_dir)].sort_values(by="image_path", ignore_index=True)
-    samples = samples[samples.split != str(gt_merged_dir)].sort_values(by="image_path", ignore_index=True)
+    # separate ground-truth masks from samples
+    mask_samples = samples.loc[samples.split == "ground_truth"].sort_values(by="image_path", ignore_index=True)
+    samples = samples[samples.split != "ground_truth"].sort_values(by="image_path", ignore_index=True)
+
+    # Group masks and aggregate the path into a list
+    mask_samples = (
+        mask_samples.groupby(["path", "split", "label", "image_folder"])["image_path"]
+        .agg(list)
+        .reset_index()
+        .rename(columns={"image_path": "mask_path"})
+    )
 
     # assign mask paths to anomalous test images
     samples["mask_path"] = ""
     samples.loc[
         (samples.split == "test") & (samples.label_index == LabelName.ABNORMAL),
         "mask_path",
-    ] = mask_samples.image_path.to_numpy()
+    ] = mask_samples.mask_path.to_numpy()
 
     # validate that the right mask files are associated with the right test images
     if len(samples.loc[samples.label_index == LabelName.ABNORMAL]):
@@ -347,7 +284,6 @@ class MVTecLocoDataset(AnomalibDataset):
             self.root_category,
             split=self.split,
             extensions=IMG_EXTENSIONS,
-            gt_merged_dir=GT_MERGED_DIR,
         )
 
     def __getitem__(self, index: int) -> dict[str, str | torch.Tensor]:
@@ -376,17 +312,29 @@ class MVTecLocoDataset(AnomalibDataset):
         elif self.task in (TaskType.DETECTION, TaskType.SEGMENTATION):
             # Only Anomalous (1) images have masks in anomaly datasets
             # Therefore, create empty mask for Normal (0) images.
-            mask = np.zeros(shape=image.shape[:2]) if label_index == 0 else cv2.imread(mask_path, flags=0)
+            if label_index == LabelName.ABNORMAL:
+                # Read and stack masks
+                masks = np.stack([cv2.imread(mask_path, flags=0) for mask_path in mask_path])
+
+                # Merge masks and create binary mask
+                mask = np.max(masks, axis=0)
+                mask = np.where(mask > 0, 1, 0)
+            else:
+                # create empty mask for Normal (0) images.
+                mask = np.zeros(shape=image.shape[:2])
+                masks = np.expand_dims(mask, axis=0)
+
             mask = mask.astype(np.single)
+            masks = masks.astype(np.single)
 
             transformed = self.transform(image=image, mask=mask)
 
             item["image"] = transformed["image"]
             item["mask_path"] = mask_path
             # transform and binarize the mask
-            item["mask"] = torch.where(transformed["mask"] > 0, torch.tensor(1.0), torch.tensor(0.0))
-            # The non-binary masks with the original size for saturation based metrics calculation
-            item["masks"] = torch.tensor(mask)
+            item["mask"] = transformed["mask"]
+            # List of masks with the original size for saturation based metrics calculation
+            item["masks"] = torch.tensor(masks)
 
             if self.task == TaskType.DETECTION:
                 # create boxes from masks for detection task
