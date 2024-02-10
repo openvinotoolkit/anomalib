@@ -8,6 +8,7 @@ from __future__ import annotations
 import logging
 import random
 from enum import Enum
+from typing import Optional
 
 import torch
 import torch.nn.functional as F
@@ -68,12 +69,21 @@ class EfficientAdModelSize(str, Enum):
     S = "small"
     PDN_M_16 = "pdn_m_16"
     PDN_M_16_DEFORM = "pdn_m_16_deform"
+
     PDN_M_33 = "pdn_m_33"
+    PDN_M_33_size_119_256 = "pdn_m_33_size_119_256"
+    PDN_M_33_size_186_404 = "pdn_m_33_size_186_404"
     PDN_M_33_DEFORM = "pdn_m_33_deform"
+    PDN_M_33_DEFORM_1_2 = "pdn_m_33_deform_1_2"
+    PDN_M_33_DEFORM_2_4 = "pdn_m_33_deform_2_4"
+    PDN_M_33_DEFORM_4_5 = "pdn_m_33_deform_4_5"
+
     PDN_M_68 = "pdn_m_68"
     PDN_M_68_DEFORM = "pdn_m_68_deform"
+
     PDN_M_128 = "pdn_m_128"
     PDN_M_128_DEFORM = "pdn_m_128_deform"
+
     PDN_M_256 = "pdn_m_256"
     PDN_M_256_DEFORM = "pdn_m_256_deform"
 
@@ -113,24 +123,43 @@ class PDN_M(nn.Module):
         out_channels (int): number of convolution output channels
     """
 
-    def __init__(self, out_channels: int, padding: bool = False, from_other_network=False, use_deform=False) -> None:
+    def __init__(
+        self,
+        out_channels: int,
+        padding: bool = False,
+        from_other_network=False,
+        deform_case : Optional[str] = None, # e.g. "1_2" means 1st and 2nd layer are deform conv
+    ) -> None:
         super().__init__()
         pad_mult = 1 if padding else 0
         self.from_other_network = from_other_network
 
         if self.from_other_network:
-            self.conv1_ = nn.Conv2d(256, 256, kernel_size=4, stride=1, padding=3 * pad_mult)
+            if deform_case == "1_2":
+                self.conv1_ = DeformableConv2d(256, 256, kernel_size=4, stride=1, padding=3 * pad_mult)
+            else:
+                self.conv1_ = nn.Conv2d(256, 256, kernel_size=4, stride=1, padding=3 * pad_mult)
         else:
-            self.conv1 = nn.Conv2d(3, 256, kernel_size=4, stride=1, padding=3 * pad_mult)
+            if deform_case == "1_2":
+                self.conv1 = DeformableConv2d(3, 256, kernel_size=4, stride=1, padding=3 * pad_mult)
+            else:
+                self.conv1 = nn.Conv2d(3, 256, kernel_size=4, stride=1, padding=3 * pad_mult)
 
-        self.conv2 = nn.Conv2d(256, 512, kernel_size=4, stride=1, padding=3 * pad_mult)
+        if deform_case in ["1_2", "2_4"]:
+            self.conv2 = DeformableConv2d(256, 512, kernel_size=4, stride=1, padding=3 * pad_mult)
+        else:
+            self.conv2 = nn.Conv2d(256, 512, kernel_size=4, stride=1, padding=3 * pad_mult)
+
         self.conv3 = nn.Conv2d(512, 512, kernel_size=1, stride=1, padding=0 * pad_mult)
 
-        if use_deform:
+        if deform_case in ["2_4", "4_5"]:
             self.conv4 = DeformableConv2d(512, 512, kernel_size=3, stride=1, padding=1 * pad_mult)
-            self.conv5 = DeformableConv2d(512, out_channels, kernel_size=4, stride=1, padding=0 * pad_mult)
         else:
             self.conv4 = nn.Conv2d(512, 512, kernel_size=3, stride=1, padding=1 * pad_mult)
+
+        if deform_case == "4_5":
+            self.conv5 = DeformableConv2d(512, out_channels, kernel_size=4, stride=1, padding=0 * pad_mult)
+        else:
             self.conv5 = nn.Conv2d(512, out_channels, kernel_size=4, stride=1, padding=0 * pad_mult)
 
         self.conv6 = nn.Conv2d(out_channels, out_channels, kernel_size=1, stride=1, padding=0 * pad_mult)
@@ -182,18 +211,36 @@ class PDN_M_33_Base(PDN_M):
 class PDN_M_33(PDN_M_33_Base):
     """Copy of the base class PDN_M"""
     def __init__(self, out_channels: int, padding: bool = False) -> None:
-        super().__init__(out_channels, padding, use_deform=False)
+        super().__init__(out_channels, padding, deform_case=None)
 
 
 class PDN_M_33_Deform(PDN_M_33_Base):
     """Copy of the base class PDN_M"""
     def __init__(self, out_channels: int, padding: bool = False) -> None:
-        super().__init__(out_channels, padding, use_deform=True)
+        super().__init__(out_channels, padding, deform_case=None)
+
+
+class PDN_M_33_Deform_1_2(PDN_M_33_Base):
+    """Copy of the base class PDN_M"""
+    def __init__(self, out_channels: int, padding: bool = False) -> None:
+        super().__init__(out_channels, padding, deform_case="1_2")
+
+
+class PDN_M_33_Deform_2_4(PDN_M_33_Base):
+    """Copy of the base class PDN_M"""
+    def __init__(self, out_channels: int, padding: bool = False) -> None:
+        super().__init__(out_channels, padding, deform_case="2_4")
+
+
+class PDN_M_33_Deform_4_5(PDN_M_33_Base):
+    """Copy of the base class PDN_M"""
+    def __init__(self, out_channels: int, padding: bool = False) -> None:
+        super().__init__(out_channels, padding, deform_case="4_5")
 
 
 class PDN_M_68_Base(PDN_M_33_Base):
-    def __init__(self, out_channels: int, padding: bool = False, use_deform: bool = False) -> None:
-        super().__init__(out_channels, padding, from_other_network=True, use_deform=use_deform)
+    def __init__(self, out_channels: int, padding: bool = False) -> None:
+        super().__init__(out_channels, padding, from_other_network=True)
         self.m_68_conv1 = nn.Conv2d(3, 256, kernel_size=3, stride=1, padding=0)
         self.m_68_avgpool1 = nn.AvgPool2d(kernel_size=2, stride=2, padding=0)
         self.apply(self._init_weights)
@@ -214,16 +261,16 @@ class PDN_M_68_Base(PDN_M_33_Base):
 
 class PDN_M_68(PDN_M_68_Base):
     def __init__(self, out_channels: int, padding: bool = False) -> None:
-        super().__init__(out_channels, padding, use_deform=False)
+        super().__init__(out_channels, padding)
 
 class PDN_M_68_Deform(PDN_M_68_Base):
     def __init__(self, out_channels: int, padding: bool = False) -> None:
-        super().__init__(out_channels, padding, use_deform=True)
+        super().__init__(out_channels, padding)
 
 
 class PDN_M_128_Base(PDN_M_33_Base):
-    def __init__(self, out_channels: int, padding: bool = False, use_deform: bool = False) -> None:
-        super().__init__(out_channels, padding, from_other_network=True, use_deform=use_deform)
+    def __init__(self, out_channels: int, padding: bool = False) -> None:
+        super().__init__(out_channels, padding, from_other_network=True)
         self.m_128_conv1 = nn.Conv2d(3, 128, kernel_size=3, stride=1, padding=1)
         self.m_128_conv2 = nn.Conv2d(128, 256, kernel_size=3, stride=1, padding=2) # use padding=2
         self.m_128_avgpool1 = nn.AvgPool2d(kernel_size=2, stride=2, padding=0)
@@ -241,12 +288,12 @@ class PDN_M_128_Base(PDN_M_33_Base):
 
 class PDN_M_128(PDN_M_128_Base):
     def __init__(self, out_channels: int, padding: bool = False) -> None:
-        super().__init__(out_channels, padding, use_deform=False)
+        super().__init__(out_channels, padding)
 
 
 class PDN_M_128_Deform(PDN_M_128_Base):
     def __init__(self, out_channels: int, padding: bool = False) -> None:
-        super().__init__(out_channels, padding, use_deform=True)
+        super().__init__(out_channels, padding)
 
 
 class PDN_M_256_Base(PDN_M_33_Base):
@@ -299,6 +346,13 @@ class Encoder(nn.Module):
         x = F.relu(self.enconv3(x))
         x = F.relu(self.enconv4(x))
         x = F.relu(self.enconv5(x))
+
+        # pad zeros to (c, h, w) to (c, 8, 8) if h < 8 or w < 8
+        if x.shape[-2] < 8 or x.shape[-1] < 8:
+            pad_h = max(8 - x.shape[-2], 0)
+            pad_w = max(8 - x.shape[-1], 0)
+            x = F.pad(x, (0, pad_w, 0, pad_h))
+
         x = self.enconv6(x)
         return x
 
@@ -316,13 +370,38 @@ class Decoder(nn.Module):
         self.img_size = img_size
 
 
-        if (
-            special_model_size == EfficientAdModelSize.PDN_M_33
-            or special_model_size == EfficientAdModelSize.PDN_M_33_DEFORM
+        # if (
+        #     special_model_size == EfficientAdModelSize.M
+        #     or special_model_size == EfficientAdModelSize.PDN_M_33
+        # ):
+        #     # self.last_upsample = (
+        #     #     int(img_size[0] / 4) if padding else int(img_size[0] / 4) - 8, # 256,551
+        #     #     int(img_size[1] / 4) if padding else int(img_size[1] / 4) - 7, # 256,551
+        #     # )
+        #     self.last_upsample = (
+        #         int(img_size[0] / 4) if padding else int(img_size[0] / 4) - 7, # 119, 256
+        #         int(img_size[1] / 4) if padding else int(img_size[1] / 4) - 8, # 119, 256
+        #     )
+
+        if special_model_size == EfficientAdModelSize.PDN_M_33_size_119_256:
+            self.last_upsample = (
+                int(img_size[0] / 4) if padding else int(img_size[0] / 4) - 7, # 119, 256
+                int(img_size[1] / 4) if padding else int(img_size[1] / 4) - 8, # 119, 256
+            )
+        if special_model_size == EfficientAdModelSize.PDN_M_33_size_186_404:
+            self.last_upsample = (
+                int(img_size[0] / 4) if padding else int(img_size[0] / 4) - 7, # 186, 404
+                int(img_size[1] / 4) if padding else int(img_size[1] / 4) - 8, # 186, 404
+            )
+
+        elif (
+            special_model_size == EfficientAdModelSize.PDN_M_33_DEFORM_1_2
+            or special_model_size == EfficientAdModelSize.PDN_M_33_DEFORM_2_4
+            or special_model_size == EfficientAdModelSize.PDN_M_33_DEFORM_4_5
         ):
             self.last_upsample = (
-                int(img_size[0] / 4) if padding else int(img_size[0] / 4) - 8, # 256,551
-                int(img_size[1] / 4) if padding else int(img_size[1] / 4) - 7, # 256,551
+                int(img_size[0] / 4) if padding else int(img_size[0] / 4) - 8, # 256, 256
+                int(img_size[1] / 4) if padding else int(img_size[1] / 4) - 8, # 256, 256
             )
         elif special_model_size == EfficientAdModelSize.PDN_M_68:
             self.last_upsample = (
@@ -372,7 +451,9 @@ class Decoder(nn.Module):
         self.dropout6 = nn.Dropout(p=0.2)
 
     def forward(self, x):
-        x = F.interpolate(x, size=(int(self.img_size[0] / 64) - 1, int(self.img_size[1] / 64) - 1), mode="bilinear")
+
+
+        x = F.interpolate(x, size=(max(1, int(self.img_size[0] / 64) - 1), max(1, int(self.img_size[1] / 64) - 1)), mode="bilinear")
         x = F.relu(self.deconv1(x))
         x = self.dropout1(x)
         x = F.interpolate(x, size=(int(self.img_size[0] / 32), int(self.img_size[1] / 32)), mode="bilinear")
@@ -462,6 +543,18 @@ class EfficientAdModel(nn.Module):
             self.teacher = PDN_M_33_Deform(out_channels=teacher_out_channels, padding=False).eval()
             self.student = PDN_M_33_Deform(out_channels=teacher_out_channels * 2, padding=False)
 
+        elif special_model_size == EfficientAdModelSize.PDN_M_33_DEFORM_1_2:
+            self.teacher = PDN_M_33_Deform_1_2(out_channels=teacher_out_channels, padding=False).eval()
+            self.student = PDN_M_33_Deform_1_2(out_channels=teacher_out_channels * 2, padding=False)
+
+        elif special_model_size == EfficientAdModelSize.PDN_M_33_DEFORM_2_4:
+            self.teacher = PDN_M_33_Deform_2_4(out_channels=teacher_out_channels, padding=False).eval()
+            self.student = PDN_M_33_Deform_2_4(out_channels=teacher_out_channels * 2, padding=False)
+
+        elif special_model_size == EfficientAdModelSize.PDN_M_33_DEFORM_4_5:
+            self.teacher = PDN_M_33_Deform_4_5(out_channels=teacher_out_channels, padding=False).eval()
+            self.student = PDN_M_33_Deform_4_5(out_channels=teacher_out_channels * 2, padding=False)
+
         elif special_model_size == EfficientAdModelSize.PDN_M_68:
             self.teacher = PDN_M_68(out_channels=teacher_out_channels, padding=False).eval()
             self.student = PDN_M_68(out_channels=teacher_out_channels * 2, padding=False)
@@ -486,11 +579,21 @@ class EfficientAdModel(nn.Module):
             self.teacher = PDN_M_256_Deform(out_channels=teacher_out_channels, padding=False).eval()
             self.student = PDN_M_256_Deform(out_channels=teacher_out_channels * 2, padding=False)
 
+        elif special_model_size == EfficientAdModelSize.PDN_M_33_size_119_256:
+            self.teacher = PDN_M(out_channels=teacher_out_channels, padding=padding).eval()
+            self.student = PDN_M(out_channels=teacher_out_channels * 2, padding=padding)
+
+        elif special_model_size == EfficientAdModelSize.PDN_M_33_size_186_404:
+            self.teacher = PDN_M(out_channels=teacher_out_channels, padding=padding).eval()
+            self.student = PDN_M(out_channels=teacher_out_channels * 2, padding=padding)
+
         elif model_size == EfficientAdModelSize.M:
+            special_model_size = EfficientAdModelSize.M
             self.teacher = PDN_M(out_channels=teacher_out_channels, padding=padding).eval()
             self.student = PDN_M(out_channels=teacher_out_channels * 2, padding=padding)
 
         elif model_size == EfficientAdModelSize.S:
+            special_model_size = EfficientAdModelSize.S
             self.teacher = PDN_S(out_channels=teacher_out_channels, padding=padding).eval()
             self.student = PDN_S(out_channels=teacher_out_channels * 2, padding=padding)
 
