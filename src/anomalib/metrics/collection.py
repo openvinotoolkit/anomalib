@@ -18,7 +18,6 @@ class AnomalibMetricCollection(MetricCollection):
         self._saturation_config: dict
         self._update_called = False
         self._threshold = 0.5
-        self._saturation_config = {}
 
     def set_threshold(self, threshold_value: float) -> None:
         """Update the threshold value for all metrics that have the threshold attribute."""
@@ -35,9 +34,13 @@ class AnomalibMetricCollection(MetricCollection):
                 metric.saturation_config = saturation_config
             else:
                 logger.warning(
-                    f"Metric {name} may not be suitable for a dataset with the region separated"
+                    f"Metric {name} may not be suitable for a dataset with the region separated "
                     "in multiple ground-truth masks.",
                 )
+
+    def set_update_called(self, val: bool) -> None:
+        """Set the flag indicating whether the update method has been called."""
+        self._update_called = val
 
     def update(self, *args, **kwargs) -> None:
         """Add data to the metrics."""

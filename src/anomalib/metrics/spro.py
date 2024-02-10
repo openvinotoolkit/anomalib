@@ -7,7 +7,6 @@ import logging
 
 import torch
 from torchmetrics import Metric
-from torchmetrics.utilities.data import dim_zero_cat
 
 logger = logging.getLogger(__name__)
 
@@ -34,13 +33,14 @@ class SPRO(Metric):
 
         Create random ``preds`` and ``labels`` tensors:
 
-        >>> labels = torch.randint(low=0, high=2, size=(1, 10, 5), dtype=torch.float32)
-        >>> preds = torch.rand_like(labels)
+        >>> labels = torch.randint(low=0, high=2, size=(2, 10, 5), dtype=torch.float32)
+        >>> labels = [labels]
+        >>> preds = torch.rand_like(labels[0][:1])
 
         Compute the SPRO score for labels and preds:
 
         >>> spro = SPRO(threshold=0.5)
-        >>> spro.update(preds, _, labels)
+        >>> spro.update(preds, labels)
         >>> spro.compute()
         tensor(0.6333)
 
@@ -57,25 +57,30 @@ class SPRO(Metric):
         super().__init__(**kwargs)
         self.threshold = threshold
         self.saturation_config = saturation_config
-        self.add_state("preds", default=[], dist_reduce_fx="cat")
-        self.add_state("targets", default=[], dist_reduce_fx="cat")
+        self.add_state("score", default=torch.tensor(0.0), dist_reduce_fx="sum")
+        self.add_state("total", default=torch.tensor(0), dist_reduce_fx="sum")
 
-    def update(self, predictions: torch.Tensor, _: torch.Tensor, masks: torch.Tensor) -> None:
+    def update(self, predictions: torch.Tensor, masks: list[torch.Tensor]) -> None:
         """Compute the SPRO score for the current batch.
 
         Args:
-            predictions (torch.Tensor): Predicted anomaly masks
-            _ (torch.Tensor): Unused argument, but needed for different metrics within the same AnomalibMetricCollection
-            masks (torch.Tensor): Ground truth anomaly masks with non-binary values and, original height and width
+            predictions (torch.Tensor): Predicted anomaly masks.
+            masks (list[torch.Tensor]): Ground truth anomaly masks with original height and width. Each element in the
+                list is a tensor list of masks for the corresponding image.
 
         Example:
             To update the metric state for the current batch, use the ``update`` method:
 
-            >>> spro.update(preds, _, labels)
+            >>> spro.update(preds, labels)
         """
-        assert masks is not None
-        self.targets.append(masks)
-        self.preds.append(predictions)
+        score, total = spro_score(
+            predictions,
+            masks,
+            threshold=self.threshold,
+            saturation_config=self.saturation_config,
+        )
+        self.score += score
+        self.total += total
 
     def compute(self) -> torch.Tensor:
         """Compute the macro average of the SPRO score across all masks in all batches.
@@ -86,9 +91,9 @@ class SPRO(Metric):
             >>> spro.compute()
             tensor(0.5433)
         """
-        targets = dim_zero_cat(self.targets)
-        preds = dim_zero_cat(self.preds)
-        return spro_score(preds, targets, threshold=self.threshold, saturation_config=self.saturation_config)
+        if self.total == 0:  # only background/normal images
+            return torch.Tensor([1.0])
+        return self.score / self.total
 
 
 def spro_score(
@@ -100,7 +105,7 @@ def spro_score(
     """Calculate the SPRO score for a batch of predictions.
 
     Args:
-        predictions (torch.Tensor): Predicted anomaly masks
+        predictions (torch.Tensor): Predicted anomaly masks.
         targets: (torch.Tensor): Ground truth anomaly masks with non-binary values and, original height and width
         threshold (float): When predictions are passed as float, the threshold is used to binarize the predictions.
         saturation_config (dict): Saturations configuration for each label (pixel value) as the keys.
@@ -110,22 +115,28 @@ def spro_score(
     Returns:
         torch.Tensor: Scalar value representing the average SPRO score for the input batch.
     """
-    predictions = torch.nn.functional.interpolate(predictions.unsqueeze(1), targets.shape[1:])
+    # Add batch dim if not exist
+    if len(predictions.shape) == 2:
+        predictions = predictions.unsqueeze(0)
+
+    # Resize the prediction to have the same size as the target mask
+    predictions = torch.nn.functional.interpolate(predictions.unsqueeze(1), targets[0].shape[-2:])
 
     # Apply threshold to binary predictions
     if predictions.dtype == torch.float:
         predictions = predictions > threshold
 
     score = torch.tensor(0.0)
-    m = 0
+    total = 0
     # Iterate for each image in the batch
     for i, target in enumerate(targets):
-        unique_labels = torch.unique(target)
-
         # Iterate for each ground-truth mask per image
-        for label in unique_labels[1:]:
+        for mask in target:
+            label = torch.max(mask)
+            if label == 0:  # Skip if only normal/background
+                continue
             # Calculate true positive
-            target_per_label = target == label
+            target_per_label = mask == label
             true_pos = torch.sum(predictions[i] & target_per_label)
 
             # Calculate the areas of the ground-truth
@@ -150,9 +161,5 @@ def spro_score(
 
             # Update score with minimum of true_pos/saturation_threshold and 1.0
             score += torch.minimum(true_pos / saturation_threshold, torch.tensor(1.0))
-            m += 1
-
-    # If there are only backgrounds
-    if m == 0:
-        return torch.tensor(1.0)
-    return score / m
+            total += 1
+    return score, total
