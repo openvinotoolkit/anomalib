@@ -50,9 +50,6 @@ class SPRO(Metric):
 
     """
 
-    targets: list[torch.Tensor]
-    preds: list[torch.Tensor]
-
     def __init__(self, threshold: float = 0.5, saturation_config: dict | None = None, **kwargs) -> None:
         super().__init__(**kwargs)
         self.threshold = threshold
