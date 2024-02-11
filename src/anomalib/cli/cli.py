@@ -143,7 +143,12 @@ class AnomalibCLI(LightningCLI):
         parser.add_argument("--visualization.show", type=bool, default=False)
         parser.add_argument("--task", type=TaskType, default=TaskType.SEGMENTATION)
         parser.add_argument("--metrics.image", type=list[str] | str | None, default=["F1Score", "AUROC"])
-        parser.add_argument("--metrics.pixel", type=list[str] | str | None, default=None, required=False)
+        parser.add_argument(
+            "--metrics.pixel",
+            type=list[str] | str | dict[str, dict[str, Any]] | None,
+            default=None,
+            required=False,
+        )
         parser.add_argument("--metrics.threshold", type=BaseThreshold, default="F1AdaptiveThreshold")
         parser.add_argument("--logging.log_graph", type=bool, help="Log the model to the logger", default=False)
         if hasattr(parser, "subcommand") and parser.subcommand != "predict":  # Predict also accepts str and Path inputs

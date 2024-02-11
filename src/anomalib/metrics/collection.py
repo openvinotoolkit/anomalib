@@ -25,17 +25,6 @@ class AnomalibMetricCollection(MetricCollection):
             if hasattr(metric, "threshold"):
                 metric.threshold = threshold_value
 
-    def set_saturation_config(self, saturation_config: dict) -> None:
-        """Update the saturation config values for all metrics that have the saturation config attribute."""
-        for name, metric in self.items():
-            if hasattr(metric, "saturation_config"):
-                metric.saturation_config = saturation_config
-            else:
-                logger.warning(
-                    f"Metric {name} may not be suitable for a dataset with the region separated "
-                    "in multiple ground-truth masks.",
-                )
-
     def set_update_called(self, val: bool) -> None:
         """Set the flag indicating whether the update method has been called."""
         self._update_called = val

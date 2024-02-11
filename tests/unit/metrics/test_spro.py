@@ -3,6 +3,10 @@
 # Copyright (C) 2023-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+import json
+import pathlib
+import tempfile
+
 import torch
 
 from anomalib.metrics.spro import SPRO
@@ -10,16 +14,22 @@ from anomalib.metrics.spro import SPRO
 
 def test_spro() -> None:
     """Checks if SPRO metric computes the score utilizing the given saturation configs."""
-    saturation_config = {
-        255: {
+    saturation_config = [
+        {
+            "pixel_value": 255,
             "saturation_threshold": 10,
             "relative_saturation": False,
         },
-        254: {
+        {
+            "pixel_value": 254,
             "saturation_threshold": 0.5,
             "relative_saturation": True,
         },
-    }
+    ]
+
+    with tempfile.NamedTemporaryFile(suffix=".json", mode="w", delete=False) as f:
+        json.dump(saturation_config, f)
+        saturation_config_json = f.name
 
     masks = [
         torch.Tensor(
@@ -60,7 +70,7 @@ def test_spro() -> None:
     targets_wo_saturation = [1.0, 0.625, 0.5, 0.375, 0.0, 0.0]
     for threshold, target, target_wo_saturation in zip(thresholds, targets, targets_wo_saturation, strict=True):
         # test using saturation_cofig
-        spro = SPRO(threshold=threshold, saturation_config=saturation_config)
+        spro = SPRO(threshold=threshold, saturation_config=saturation_config_json)
         spro.update(preds, masks)
         assert spro.compute() == target
 
@@ -68,3 +78,6 @@ def test_spro() -> None:
         spro_wo_saturaton = SPRO(threshold=threshold)
         spro_wo_saturaton.update(preds, masks)
         assert spro_wo_saturaton.compute() == target_wo_saturation
+
+    # Remove the temporary config file
+    pathlib.Path(saturation_config_json).unlink()

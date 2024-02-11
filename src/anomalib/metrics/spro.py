@@ -3,10 +3,15 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+import json
 import logging
+from pathlib import Path
+from typing import Any
 
 import torch
 from torchmetrics import Metric
+
+from anomalib.data.utils import validate_path
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +25,7 @@ class SPRO(Metric):
     Args:
         threshold (float): Threshold used to binarize the predictions.
             Defaults to ``0.5``.
-        saturation_config (dict): Saturations configuration for each label (pixel value) as the keys.
+        saturation_config (str | Path): Path to the saturation configuration file.
             Defaults: ``None`` (which the score is equivalent to PRO metric, but with the 'region' are
             separated by mask files.
         kwargs: Additional arguments to the TorchMetrics base class.
@@ -50,10 +55,15 @@ class SPRO(Metric):
 
     """
 
-    def __init__(self, threshold: float = 0.5, saturation_config: dict | None = None, **kwargs) -> None:
+    def __init__(self, threshold: float = 0.5, saturation_config: str | Path | None = None, **kwargs) -> None:
         super().__init__(**kwargs)
         self.threshold = threshold
-        self.saturation_config = saturation_config
+        self.saturation_config = load_saturation_config(saturation_config) if saturation_config is not None else None
+        if self.saturation_config is None:
+            logger.warning(
+                "The saturation_config attribute is empty, the threshold is set to the defect area."
+                "This is equivalent to PRO metric but with the 'region' are separated by mask files",
+            )
         self.add_state("score", default=torch.tensor(0.0), dist_reduce_fx="sum")
         self.add_state("total", default=torch.tensor(0), dist_reduce_fx="sum")
 
@@ -158,13 +168,47 @@ def spro_score(
                     saturation_threshold = defect_area
             else:
                 # Handle case when saturation_config is empty
-                logger.warning(
-                    "The saturation_config attribute is empty, the threshold is set to the defect area."
-                    "This is equivalent to PRO metric but with the 'region' are separated by mask files",
-                )
                 saturation_threshold = defect_area
 
             # Update score with minimum of true_pos/saturation_threshold and 1.0
             score += torch.minimum(true_pos / saturation_threshold, torch.tensor(1.0))
             total += 1
     return score, total
+
+
+def load_saturation_config(config_path: str | Path) -> dict[int, Any] | None:
+    """Load saturation configurations from a JSON file.
+
+    Args:
+        config_path (str | Path): Path to the saturation configuration file.
+
+    Returns:
+        Dict | None: A dictionary with pixel values as keys and the corresponding configurations as values.
+            Return None if the config file is not found.
+
+    Example JSON format in the config file of MVTec LOCO dataset:
+    [
+        {
+            "defect_name": "1_additional_pushpin",
+            "pixel_value": 255,
+            "saturation_threshold": 6300,
+            "relative_saturation": false
+        },
+        {
+            "defect_name": "2_additional_pushpins",
+            "pixel_value": 254,
+            "saturation_threshold": 12600,
+            "relative_saturation": false
+        },
+        ...
+    ]
+    """
+    try:
+        config_path = validate_path(config_path)
+        with Path.open(config_path) as file:
+            configs = json.load(file)
+        # Create a dictionary with pixel values as keys
+        return {conf["pixel_value"]: conf for conf in configs}
+    except FileNotFoundError:
+        logger.warning("The saturation config file %s does not exist. Returning None.", config_path)
+        return None

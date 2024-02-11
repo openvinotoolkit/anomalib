@@ -67,7 +67,7 @@ class _MetricsCallback(Callback):
             pl_module (AnomalyModule): Anomalib Model that inherits pl LightningModule.
             stage (str | None, optional): fit, validate, test or predict. Defaults to None.
         """
-        del stage  # this variable is not used.
+        del stage, trainer  # this variable is not used.
         image_metric_names = [] if self.image_metric_names is None else self.image_metric_names
         if isinstance(image_metric_names, str):
             image_metric_names = [image_metric_names]
@@ -97,8 +97,6 @@ class _MetricsCallback(Callback):
             else:
                 pl_module.pixel_metrics = create_metric_collection(pixel_metric_names, "pixel_")
             self._set_threshold(pl_module)
-            if hasattr(trainer.datamodule, "saturation_config"):
-                self._set_saturation_config(pl_module, trainer.datamodule.saturation_config)
 
     def on_validation_epoch_start(
         self,
@@ -173,9 +171,6 @@ class _MetricsCallback(Callback):
         pl_module.image_metrics.set_threshold(pl_module.image_threshold.value.item())
         pl_module.pixel_metrics.set_threshold(pl_module.pixel_threshold.value.item())
 
-    def _set_saturation_config(self, pl_module: AnomalyModule, saturation_config: dict[int, Any]) -> None:
-        pl_module.pixel_metrics.set_saturation_config(saturation_config)
-
     def _update_metrics(
         self,
         image_metric: AnomalibMetricCollection,
@@ -205,10 +200,14 @@ class _MetricsCallback(Callback):
     def _update_pixel_metrics(self, pixel_metric: AnomalibMetricCollection, output: STEP_OUTPUT) -> None:
         """Handle metric updates when the SPRO metric is used alongside other pixel-level metrics."""
         update = False
-        for metric in pixel_metric.values(copy_state=False):
+        for name, metric in pixel_metric.items(copy_state=False):
             if isinstance(metric, SPRO):
                 metric.update(torch.squeeze(output["anomaly_maps"]), output["masks"])
             else:
+                logger.warning(
+                    f"Metric {name} may not be suitable for a dataset with the region separated "
+                    "in multiple ground-truth masks.",
+                )
                 metric.update(torch.squeeze(output["anomaly_maps"]), torch.squeeze(output["mask"].int()))
             update = True
         pixel_metric.set_update_called(update)

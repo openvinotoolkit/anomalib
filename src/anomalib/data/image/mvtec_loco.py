@@ -16,11 +16,9 @@ References:
       in: International Journal of Computer Vision (IJCV) 130, 947-969, 2022, DOI: 10.1007/s11263-022-01578-9
 """
 
-import json
 import logging
 from collections.abc import Sequence
 from pathlib import Path
-from typing import Any
 
 import albumentations as A  # noqa: N812
 import cv2
@@ -63,46 +61,6 @@ CATEGORIES = (
     "screw_bag",
     "splicing_connectors",
 )
-
-SATURATION_CONFIG_FILENAME = "defects_config.json"
-
-
-def load_saturation_config(config_path: str | Path) -> dict[int, Any] | None:
-    """Load saturation configurations from a JSON file.
-
-    Args:
-        config_path (str | Path): Path to the saturation configuration file.
-
-    Returns:
-        Dict | None: A dictionary with pixel values as keys and the corresponding configurations as values.
-            Return None if the config file is not found.
-
-    Example JSON format in the file:
-    [
-        {
-            "defect_name": "1_additional_pushpin",
-            "pixel_value": 255,
-            "saturation_threshold": 6300,
-            "relative_saturation": false
-        },
-        {
-            "defect_name": "2_additional_pushpins",
-            "pixel_value": 254,
-            "saturation_threshold": 12600,
-            "relative_saturation": false
-        },
-        ...
-    ]
-    """
-    try:
-        config_path = validate_path(config_path)
-        with Path.open(config_path) as file:
-            configs = json.load(file)
-        # Create a dictionary with pixel values as keys
-        return {conf["pixel_value"]: conf for conf in configs}
-    except FileNotFoundError:
-        logger.warning("The saturation config file %s does not exist. Returning None.", config_path)
-        return None
 
 
 def make_mvtec_loco_dataset(
@@ -448,10 +406,8 @@ class MVTecLoco(AnomalibDataModule):
             val_split_ratio=val_split_ratio,
             seed=seed,
         )
-        self.saturation_config: dict[int, Any] | None
         self.root = Path(root)
         self.category = Path(category)
-        self.saturation_config = {}
 
         transform_train = get_transforms(
             config=transform_config_train,
@@ -549,6 +505,3 @@ class MVTecLoco(AnomalibDataModule):
 
         self._create_test_split()
         self._create_val_split()
-
-        saturation_path = self.root / self.category / SATURATION_CONFIG_FILENAME
-        self.saturation_config = load_saturation_config(saturation_path)
