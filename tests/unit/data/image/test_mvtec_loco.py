@@ -30,3 +30,10 @@ class TestMVTecLoco(_TestAnomalibImageDatamodule):
         _datamodule.setup()
 
         return _datamodule
+
+    def test_mask_is_binary(self, datamodule: MVTecLoco) -> None:
+        """Test if the mask tensor is binary."""
+        if datamodule.test_data.task in (TaskType.DETECTION, TaskType.SEGMENTATION):
+            mask_tensor = datamodule.test_data[0]["mask"]
+            is_binary = (mask_tensor.eq(0) | mask_tensor.eq(1)).all()
+            assert is_binary.item() is True
