@@ -137,25 +137,32 @@ def spro_score(
             target_per_label = mask == label
             true_pos = torch.sum(predictions[i] & target_per_label)
 
-            # Calculate the areas of the ground-truth
-            defect_areas = torch.sum(target_per_label)
+            # Calculate the anomalous area of the ground-truth
+            defect_area = torch.sum(target_per_label)
 
             if saturation_config is not None:
                 # Adjust saturation threshold based on configuration
                 saturation_per_label = saturation_config[label.int().item()]
-                saturation_threshold = torch.minimum(
-                    torch.tensor(saturation_per_label["saturation_threshold"]),
-                    defect_areas,
-                )
+                saturation_threshold = saturation_per_label["saturation_threshold"]
+
                 if saturation_per_label["relative_saturation"]:
-                    saturation_threshold *= defect_areas
+                    saturation_threshold *= defect_area
+
+                # Check if threshold is larger than defect area
+                if saturation_threshold > defect_area:
+                    warning_msg = (
+                        f"Saturation threshold for label {label.int().item()} is larger than defect area. "
+                        "Setting it to defect area."
+                    )
+                    logger.warning(warning_msg)
+                    saturation_threshold = defect_area
             else:
                 # Handle case when saturation_config is empty
                 logger.warning(
-                    "The saturation_config attribute is empty, the threshold is set to the defect areas."
+                    "The saturation_config attribute is empty, the threshold is set to the defect area."
                     "This is equivalent to PRO metric but with the 'region' are separated by mask files",
                 )
-                saturation_threshold = defect_areas
+                saturation_threshold = defect_area
 
             # Update score with minimum of true_pos/saturation_threshold and 1.0
             score += torch.minimum(true_pos / saturation_threshold, torch.tensor(1.0))
