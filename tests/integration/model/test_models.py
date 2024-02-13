@@ -24,6 +24,11 @@ def models() -> list[str]:
     return get_available_models()
 
 
+def export_types() -> list[ExportType]:
+    """Return all available export frameworks."""
+    return list(ExportType)
+
+
 class TestAPI:
     """Do sanity check on all models."""
 
@@ -116,11 +121,19 @@ class TestAPI:
         )
 
     @pytest.mark.parametrize("model_name", models())
-    def test_export(self, model_name: str, dataset_path: Path, project_path: Path) -> None:
+    @pytest.mark.parametrize("export_type", export_types())
+    def test_export(
+        self,
+        model_name: str,
+        export_type: ExportType,
+        dataset_path: Path,
+        project_path: Path,
+    ) -> None:
         """Export model from checkpoint.
 
         Args:
             model_name (str): Name of the model.
+            export_type (ExportType): Framework to export to.
             dataset_path (Path): Root to dataset from fixture.
             project_path (Path): Path to temporary project folder from fixture.
         """
@@ -145,7 +158,7 @@ class TestAPI:
             model=model,
             datamodule=dataset,
             ckpt_path=f"{project_path}/{model_name}/dummy/weights/last.ckpt",
-            export_type=ExportType.ONNX,
+            export_type=export_type,
             input_size=input_size,
         )
 
