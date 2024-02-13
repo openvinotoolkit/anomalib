@@ -142,7 +142,6 @@ class ConfigAdapter:
         init_args = overwrite_args(
             init_args,
             self.old_config["dataset"],
-            excluded_keys=["name", "early_stopping", "normalization_method"],
         )
 
         # Input size is a list in the old config, convert it to a tuple
