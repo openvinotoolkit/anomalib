@@ -264,6 +264,7 @@ class Engine:
 
     def _setup_dataset_task(
         self,
+        transform,
         *dataloaders: EVAL_DATALOADERS | TRAIN_DATALOADERS | AnomalibDataModule | None,
     ) -> None:
         """Override the dataloader task with the task passed to the Engine.
@@ -281,6 +282,27 @@ class Engine:
                                 f"Overriding task from {data.task} with {self.task} for {dataloader.__class__}",
                             )
                             data.task = self.task
+                        if data.transform is None:
+                            logger.info(
+                                f"Using default model transforms.",
+                            )
+                            data.transform = transform
+
+    def _setup_transform(
+        self,
+        transform,
+        *dataloaders: EVAL_DATALOADERS | TRAIN_DATALOADERS | AnomalibDataModule | None,
+    ) -> None:
+        for dataloader in dataloaders:
+            if dataloader is not None and isinstance(dataloader, AnomalibDataModule):
+                for attribute in ("train_data", "val_data", "test_data"):
+                    if hasattr(dataloader, attribute):
+                        data: AnomalibDataset = getattr(dataloader, attribute)
+                        if data.transform is None:
+                            logger.info(
+                                f"Using default model transforms.",
+                            )
+                            data.transform = transform
 
     def _setup_anomalib_callbacks(self) -> None:
         """Set up callbacks for the trainer."""
@@ -385,7 +407,7 @@ class Engine:
                 ```
         """
         self._setup_trainer(model)
-        self._setup_dataset_task(train_dataloaders, val_dataloaders, datamodule)
+        self._setup_dataset_task(model.transform, train_dataloaders, val_dataloaders, datamodule)
         if model.learning_type in [LearningType.ZERO_SHOT, LearningType.FEW_SHOT]:
             # if the model is zero-shot or few-shot, we only need to run validate for normalization and thresholding
             self.trainer.validate(model, val_dataloaders, datamodule=datamodule, ckpt_path=ckpt_path)
@@ -668,7 +690,7 @@ class Engine:
                 ```
         """
         self._setup_trainer(model)
-        self._setup_dataset_task(train_dataloaders, val_dataloaders, test_dataloaders, datamodule)
+        self._setup_dataset_task(model.transform, train_dataloaders, val_dataloaders, test_dataloaders, datamodule)
         if model.learning_type in [LearningType.ZERO_SHOT, LearningType.FEW_SHOT]:
             # if the model is zero-shot or few-shot, we only need to run validate for normalization and thresholding
             self.trainer.validate(model, val_dataloaders, None, verbose=False, datamodule=datamodule)

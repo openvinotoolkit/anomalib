@@ -320,8 +320,10 @@ class MVTec(AnomalibDataModule):
         eval_batch_size: int = 32,
         num_workers: int = 8,
         task: TaskType = TaskType.SEGMENTATION,
-        transform_config_train: str | A.Compose | None = None,
-        transform_config_eval: str | A.Compose | None = None,
+        # transform_config_train: str | A.Compose | None = None,
+        # transform_config_eval: str | A.Compose | None = None,
+        transform_train = None,
+        transform_eval = None,
         test_split_mode: TestSplitMode = TestSplitMode.FROM_DIR,
         test_split_ratio: float = 0.2,
         val_split_mode: ValSplitMode = ValSplitMode.SAME_AS_TEST,
@@ -342,18 +344,18 @@ class MVTec(AnomalibDataModule):
         self.root = Path(root)
         self.category = Path(category)
 
-        transform_train = get_transforms(
-            config=transform_config_train,
-            image_size=image_size,
-            center_crop=center_crop,
-            normalization=InputNormalizationMethod(normalization),
-        )
-        transform_eval = get_transforms(
-            config=transform_config_eval,
-            image_size=image_size,
-            center_crop=center_crop,
-            normalization=InputNormalizationMethod(normalization),
-        )
+        # transform_train = get_transforms(
+        #     config=transform_config_train,
+        #     image_size=image_size,
+        #     center_crop=center_crop,
+        #     normalization=InputNormalizationMethod(normalization),
+        # )
+        # transform_eval = get_transforms(
+        #     config=transform_config_eval,
+        #     image_size=image_size,
+        #     center_crop=center_crop,
+        #     normalization=InputNormalizationMethod(normalization),
+        # )
 
         self.train_data = MVTecDataset(
             task=task,

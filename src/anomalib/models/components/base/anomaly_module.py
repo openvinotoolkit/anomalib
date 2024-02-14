@@ -18,6 +18,8 @@ from anomalib import LearningType
 from anomalib.metrics import AnomalibMetricCollection
 from anomalib.metrics.threshold import BaseThreshold
 
+from torchvision.transforms.v2 import Compose
+
 if TYPE_CHECKING:
     from lightning.pytorch.callbacks import Callback
     from torchmetrics import Metric
@@ -178,4 +180,9 @@ class AnomalyModule(pl.LightningModule, ABC):
     @abstractproperty
     def learning_type(self) -> LearningType:
         """Learning type of the model."""
+        raise NotImplementedError
+
+    @abstractproperty
+    def transform(self) -> Compose:
+        """Default transforms."""
         raise NotImplementedError
