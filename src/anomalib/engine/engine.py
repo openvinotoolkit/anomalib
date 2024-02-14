@@ -121,7 +121,7 @@ class Engine:
         callbacks: list[Callback] | None = None,
         normalization: NORMALIZATION = NormalizationMethod.MIN_MAX,
         threshold: THRESHOLD = "F1AdaptiveThreshold",
-        task: TaskType = TaskType.SEGMENTATION,
+        task: TaskType | str = TaskType.SEGMENTATION,
         image_metrics: str | list[str] | None = None,
         pixel_metrics: str | list[str] | None = None,
         visualizers: BaseVisualizer | list[BaseVisualizer] | None = None,
@@ -138,7 +138,7 @@ class Engine:
         self._cache = _TrainerArgumentsCache(callbacks=[*callbacks], **kwargs)
         self.normalization = normalization
         self.threshold = threshold
-        self.task = task
+        self.task = TaskType(task)
         self.image_metric_names = image_metrics
         self.pixel_metric_names = pixel_metrics
         self.visualizers = visualizers
