@@ -1,8 +1,7 @@
-"""Anomaly Visualization."""
+"""Image/video generator."""
 
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
-
 
 from collections.abc import Iterator
 from dataclasses import dataclass, field
@@ -17,7 +16,21 @@ from skimage.segmentation import mark_boundaries
 
 from anomalib import TaskType
 from anomalib.data.utils import read_image
-from anomalib.utils.post_processing import add_anomalous_label, add_normal_label, draw_boxes, superimpose_anomaly_map
+from anomalib.utils.post_processing import (
+    add_anomalous_label,
+    add_normal_label,
+    draw_boxes,
+    superimpose_anomaly_map,
+)
+
+from .base import BaseVisualizer, GeneratorResult, VisualizationStep
+
+
+class VisualizationMode(str, Enum):
+    """Type of visualization mode."""
+
+    FULL = "full"
+    SIMPLE = "simple"
 
 
 @dataclass
@@ -56,34 +69,27 @@ class ImageResult:
             self.anomalous_boxes = self.pred_boxes[self.box_labels.astype(bool)]
 
 
-class VisualizationMode(str, Enum):
-    """Type of visualization mode."""
+class ImageVisualizer(BaseVisualizer):
+    """Image/video generator."""
 
-    FULL = "full"
-    SIMPLE = "simple"
-
-
-class Visualizer:
-    """Class that handles the logic of composing the visualizations.
-
-    Args:
-        mode (VisualizationMode): visualization mode, either "full" or "simple"
-        task (TaskType): task type "segmentation", "detection" or "classification"
-    """
-
-    def __init__(self, mode: VisualizationMode, task: TaskType) -> None:
-        if mode not in (VisualizationMode.FULL, VisualizationMode.SIMPLE):
-            msg = f"Unknown visualization mode: {mode}. Please choose one of ['full', 'simple']"
-            raise ValueError(msg)
+    def __init__(
+        self,
+        mode: VisualizationMode = VisualizationMode.FULL,
+        task: TaskType = TaskType.CLASSIFICATION,
+    ) -> None:
+        super().__init__(VisualizationStep.BATCH)
         self.mode = mode
-        if task not in (TaskType.CLASSIFICATION, TaskType.DETECTION, TaskType.SEGMENTATION):
-            msg = f"Unknown task type: {mode}. Please choose one of ['classification', 'detection', 'segmentation']"
-            raise ValueError(
-                msg,
-            )
         self.task = task
 
-    def visualize_batch(self, batch: dict) -> Iterator[np.ndarray]:
+    def generate(self, **kwargs) -> Iterator[GeneratorResult]:
+        """Generate images and return them as an iterator."""
+        outputs = kwargs.get("outputs", None)
+        if outputs is None:
+            msg = "Outputs must be provided to generate images."
+            raise ValueError(msg)
+        return self._visualize_batch(outputs)
+
+    def _visualize_batch(self, batch: dict) -> Iterator[GeneratorResult]:
         """Yield a visualization result for each item in the batch.
 
         Args:
@@ -105,6 +111,14 @@ class Visualizer:
                 msg = "Batch must have either 'image_path' or 'video_path' defined."
                 raise KeyError(msg)
 
+            file_name = None
+            if "image_path" in batch:
+                file_name = Path(batch["image_path"][i])
+            elif "video_path" in batch:
+                zero_fill = int(np.log10(batch["last_frame"][i])) + 1
+                suffix = f"{str(batch['frames'][i].int().item()).zfill(zero_fill)}.png"
+                file_name = Path(batch["video_path"][i]) / suffix
+
             image_result = ImageResult(
                 image=image,
                 pred_score=batch["pred_scores"][i].cpu().numpy().item() if "pred_scores" in batch else None,
@@ -116,7 +130,7 @@ class Visualizer:
                 pred_boxes=batch["pred_boxes"][i].cpu().numpy() if "pred_boxes" in batch else None,
                 box_labels=batch["box_labels"][i].cpu().numpy() if "box_labels" in batch else None,
             )
-            yield self.visualize_image(image_result)
+            yield GeneratorResult(image=self.visualize_image(image_result), file_name=file_name)
 
     def visualize_image(self, image_result: ImageResult) -> np.ndarray:
         """Generate the visualization for an image.
@@ -147,37 +161,37 @@ class Visualizer:
         Returns:
             An image showing the full set of visualizations for the input image.
         """
-        visualization = ImageGrid()
+        image_grid = _ImageGrid()
         if self.task == TaskType.DETECTION:
             assert image_result.pred_boxes is not None
-            visualization.add_image(image_result.image, "Image")
+            image_grid.add_image(image_result.image, "Image")
             if image_result.gt_boxes is not None:
                 gt_image = draw_boxes(np.copy(image_result.image), image_result.gt_boxes, color=(255, 0, 0))
-                visualization.add_image(image=gt_image, color_map="gray", title="Ground Truth")
+                image_grid.add_image(image=gt_image, color_map="gray", title="Ground Truth")
             else:
-                visualization.add_image(image_result.image, "Image")
+                image_grid.add_image(image_result.image, "Image")
             pred_image = draw_boxes(np.copy(image_result.image), image_result.normal_boxes, color=(0, 255, 0))
             pred_image = draw_boxes(pred_image, image_result.anomalous_boxes, color=(255, 0, 0))
-            visualization.add_image(pred_image, "Predictions")
+            image_grid.add_image(pred_image, "Predictions")
         if self.task == TaskType.SEGMENTATION:
             assert image_result.pred_mask is not None
-            visualization.add_image(image_result.image, "Image")
+            image_grid.add_image(image_result.image, "Image")
             if image_result.gt_mask is not None:
-                visualization.add_image(image=image_result.gt_mask, color_map="gray", title="Ground Truth")
-            visualization.add_image(image_result.heat_map, "Predicted Heat Map")
-            visualization.add_image(image=image_result.pred_mask, color_map="gray", title="Predicted Mask")
-            visualization.add_image(image=image_result.segmentations, title="Segmentation Result")
+                image_grid.add_image(image=image_result.gt_mask, color_map="gray", title="Ground Truth")
+            image_grid.add_image(image_result.heat_map, "Predicted Heat Map")
+            image_grid.add_image(image=image_result.pred_mask, color_map="gray", title="Predicted Mask")
+            image_grid.add_image(image=image_result.segmentations, title="Segmentation Result")
         elif self.task == TaskType.CLASSIFICATION:
-            visualization.add_image(image_result.image, title="Image")
+            image_grid.add_image(image_result.image, title="Image")
             if hasattr(image_result, "heat_map"):
-                visualization.add_image(image_result.heat_map, "Predicted Heat Map")
+                image_grid.add_image(image_result.heat_map, "Predicted Heat Map")
             if image_result.pred_label:
                 image_classified = add_anomalous_label(image_result.image, image_result.pred_score)
             else:
                 image_classified = add_normal_label(image_result.image, 1 - image_result.pred_score)
-            visualization.add_image(image=image_classified, title="Prediction")
+            image_grid.add_image(image=image_classified, title="Prediction")
 
-        return visualization.generate()
+        return image_grid.generate()
 
     def _visualize_simple(self, image_result: ImageResult) -> np.ndarray:
         """Generate a simple visualization for an image.
@@ -217,34 +231,8 @@ class Visualizer:
         msg = f"Unknown task type: {self.task}"
         raise ValueError(msg)
 
-    @staticmethod
-    def show(title: str, image: np.ndarray, delay: int = 0) -> None:
-        """Show an image on the screen.
 
-        Args:
-            title (str): Title that will be given to the window showing the image.
-            image (np.ndarray): Image that will be shown in the window.
-            delay (int): Delay in milliseconds to wait for keystroke. 0 for infinite.
-        """
-        image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
-        cv2.imshow(title, image)
-        cv2.waitKey(delay)
-        cv2.destroyAllWindows()
-
-    @staticmethod
-    def save(file_path: Path, image: np.ndarray) -> None:
-        """Save an image to the file system.
-
-        Args:
-            file_path (Path): Path to which the image will be saved.
-            image (np.ndarray): Image that will be saved to the file system.
-        """
-        file_path.parent.mkdir(parents=True, exist_ok=True)
-        image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
-        cv2.imwrite(str(file_path), image)
-
-
-class ImageGrid:
+class _ImageGrid:
     """Helper class that compiles multiple images into a grid using subplots.
 
     Individual images can be added with the `add_image` method. When all images have been added, the `generate` method

@@ -101,6 +101,6 @@ class NNCFCallback(Callback):
         self.nncf_ctrl.export_model(onnx_path)
 
         optimize_command = ["mo", "--input_model", onnx_path, "--output_dir", self.export_dir]
-        # TODO(samet-akcay): Check if mo can be donw via python API
+        # TODO(samet-akcay): Check if mo can be done via python API
         # CVS-122665
-        subprocess.run(optimize_command, check=True)  # noqa: S603
+        subprocess.run(optimize_command, check=True)  # noqa: S603  # nosec B603
