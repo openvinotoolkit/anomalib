@@ -18,4 +18,4 @@ model:
     n_neighbors_pose: 1
     n_neighbors_deep: 1
 
-task: DETECTION
+task: detection
