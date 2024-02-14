@@ -12,7 +12,6 @@ from lightning.pytorch.callbacks import Callback
 from lightning.pytorch.trainer import Trainer
 from lightning.pytorch.trainer.connectors.callback_connector import _CallbackConnector
 from lightning.pytorch.utilities.types import _EVALUATE_OUTPUT, _PREDICT_OUTPUT, EVAL_DATALOADERS, TRAIN_DATALOADERS
-from omegaconf import DictConfig, ListConfig
 from torch.utils.data import DataLoader, Dataset
 
 from anomalib import LearningType, TaskType
@@ -24,9 +23,9 @@ from anomalib.callbacks.thresholding import _ThresholdCallback
 from anomalib.callbacks.visualizer import _VisualizationCallback
 from anomalib.data import AnomalibDataModule, AnomalibDataset, PredictDataset
 from anomalib.deploy.export import ExportType, export_to_onnx, export_to_openvino, export_to_torch
-from anomalib.metrics.threshold import BaseThreshold
 from anomalib.models import AnomalyModule
 from anomalib.utils.normalization import NormalizationMethod
+from anomalib.utils.types import NORMALIZATION, THRESHOLD
 from anomalib.utils.visualization import BaseVisualizer
 
 logger = logging.getLogger(__name__)
@@ -34,8 +33,6 @@ logger = logging.getLogger(__name__)
 
 class UnassignedError(Exception):
     """Unassigned error."""
-
-    ...
 
 
 class _TrainerArgumentsCache:
@@ -105,9 +102,9 @@ class Engine:
 
     Args:
         callbacks (list[Callback]): Add a callback or list of callbacks.
-        normalization (NormalizationMethod | DictConfig | Callback | str, optional): Normalization method.
+        normalization (NORMALIZATION, optional): Normalization method.
             Defaults to NormalizationMethod.MIN_MAX.
-        threshold (BaseThreshold | tuple[BaseThreshold, BaseThreshold] | DictConfig | ListConfig | str, optional):
+        threshold (THRESHOLD):
             Thresholding method. Defaults to "F1AdaptiveThreshold".
         task (TaskType, optional): Task type. Defaults to TaskType.SEGMENTATION.
         image_metrics (str | list[str] | None, optional): Image metrics to be used for evaluation.
@@ -122,13 +119,8 @@ class Engine:
     def __init__(
         self,
         callbacks: list[Callback] | None = None,
-        normalization: NormalizationMethod | DictConfig | Callback | str = NormalizationMethod.MIN_MAX,
-        threshold: BaseThreshold
-        | tuple[BaseThreshold, BaseThreshold]
-        | DictConfig
-        | ListConfig
-        | list[dict[str, str | float]]
-        | str = "F1AdaptiveThreshold",
+        normalization: NORMALIZATION = NormalizationMethod.MIN_MAX,
+        threshold: THRESHOLD = "F1AdaptiveThreshold",
         task: TaskType = TaskType.SEGMENTATION,
         image_metrics: str | list[str] | None = None,
         pixel_metrics: str | list[str] | None = None,
