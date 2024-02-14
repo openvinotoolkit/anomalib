@@ -35,8 +35,6 @@ logger = logging.getLogger(__name__)
 class UnassignedError(Exception):
     """Unassigned error."""
 
-    ...
-
 
 class _TrainerArgumentsCache:
     """Cache arguments.
@@ -128,7 +126,7 @@ class Engine:
         | ListConfig
         | list[dict[str, str | float]]
         | str = "F1AdaptiveThreshold",
-        task: TaskType = TaskType.SEGMENTATION,
+        task: TaskType | str = TaskType.SEGMENTATION,
         image_metrics: str | list[str] | None = None,
         pixel_metrics: str | list[str] | None = None,
         visualization: DictConfig | dict[str, Any] | Namespace | None = None,
@@ -142,7 +140,7 @@ class Engine:
         self._cache = _TrainerArgumentsCache(callbacks=[*callbacks], **kwargs)
         self.normalization = normalization
         self.threshold = threshold
-        self.task = task
+        self.task = TaskType(task)
         self.image_metric_names = image_metrics
         self.pixel_metric_names = pixel_metrics
         self.visualization = visualization

@@ -10,4 +10,4 @@ model:
     feature_scaling_method: SCALE
     max_training_points: 40000
 
-task: DETECTION
+task: detection
