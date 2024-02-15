@@ -151,8 +151,9 @@ class OpenVINOInferencer(Inferencer):
         Returns:
             np.ndarray: pre-processed image.
         """
-        transform = A.from_dict(self.metadata["transform"])
-        processed_image = transform(image=image)["image"]
+        # transform = A.from_dict(self.metadata["transform"])
+        # processed_image = transform(image=image)["image"]
+        processed_image = image
 
         if len(processed_image.shape) == 3:
             processed_image = np.expand_dims(processed_image, axis=0)

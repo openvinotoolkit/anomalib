@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING, Any
 import albumentations as A  # noqa: N812
 import numpy as np
 import torch
+from torch import nn
 
 from anomalib import TaskType
 from anomalib.data import AnomalibDataModule, AnomalibDataset
@@ -45,6 +46,18 @@ class ExportType(str, Enum):
     ONNX = "onnx"
     OPENVINO = "openvino"
     TORCH = "torch"
+
+
+class InferenceModel(nn.Module):
+
+    def __init__(self, model, transform):
+        super().__init__()
+        self.model = model
+        self.transform = transform
+
+    def forward(self, batch):
+        batch = self.transform(batch)
+        return self.model(batch)
 
 
 def export_to_torch(
@@ -91,11 +104,14 @@ def export_to_torch(
         ...     task=datamodule.test_data.task,
         ... )
     """
+    torch_model = model.model
+    transform = model.transform
+    inference_model = InferenceModel(model=torch_model, transform=transform)
     export_root = _create_export_root(export_root, ExportType.TORCH)
     metadata = get_metadata(task=task, transform=transform, model=model)
     pt_model_path = export_root / "model.pt"
     torch.save(
-        obj={"model": model.model, "metadata": metadata},
+        obj={"model": inference_model, "metadata": metadata},
         f=pt_model_path,
     )
     return pt_model_path
@@ -159,15 +175,18 @@ def export_to_onnx(
         ...     task="segmentation",
         ... )
     """
+    torch_model = model.model
+    transform = model.transform
+    inference_model = InferenceModel(model=torch_model, transform=transform)
     export_root = _create_export_root(export_root, export_type)
     _write_metadata_to_json(export_root, transform, model, task)
     onnx_path = export_root / "model.onnx"
     torch.onnx.export(
-        model.model,
-        torch.zeros((1, 3, *input_size)).to(model.device),
+        inference_model,
+        torch.zeros((1, 3, 1, 1)).to(model.device),
         str(onnx_path),
         opset_version=14,
-        dynamic_axes={"input": {0: "batch_size"}, "output": {0: "batch_size"}},
+        dynamic_axes={"input": {0: "batch_size", 2: "height", 3: "weight"}, "output": {0: "batch_size"}},
         input_names=["input"],
         output_names=["output"],
     )
@@ -270,10 +289,9 @@ def get_metadata(
     Returns:
         dict[str, Any]: Metadata for the exported model.
     """
-    transform = _get_transform_dict(transform)
-    task = _get_task(task=task, transform=transform)
+    task = _get_task(task=task)
 
-    data_metadata = {"task": task, "transform": transform}
+    data_metadata = {"task": task}
     model_metadata = _get_model_metadata(model)
     metadata = {**data_metadata, **model_metadata}
 
@@ -311,7 +329,6 @@ def _get_model_metadata(model: AnomalyModule) -> dict[str, torch.Tensor]:
 
 
 def _get_task(
-    transform: dict[str, Any] | AnomalibDataset | AnomalibDataModule | A.Compose,
     task: TaskType | None = None,
 ) -> TaskType:
     """Get task from transform or task.
@@ -328,14 +345,6 @@ def _get_task(
         TaskType: Task type.
     """
     _task = task
-    if _task is None:
-        if isinstance(transform, AnomalibDataset):
-            _task = transform.task
-        elif isinstance(transform, AnomalibDataModule):
-            _task = transform.test_data.task
-        else:
-            logging.error(f"Task should be provided when passing transform of type {type(transform)}")
-            raise ValueError
     return _task
 
 
