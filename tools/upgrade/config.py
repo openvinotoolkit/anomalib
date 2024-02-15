@@ -114,10 +114,11 @@ def overwrite_args(
 class ConfigAdapter:
     """Class responsible for migrating configuration data."""
 
-    def __init__(self, config_path: str | Path) -> None:
-        self.old_config = self.safe_load(config_path)
+    def __init__(self, config: str | Path | dict[str, Any]) -> None:
+        self.old_config = self.safe_load(config) if isinstance(config, str | Path) else config
 
-    def safe_load(self, path: str | Path) -> dict:
+    @staticmethod
+    def safe_load(path: str | Path) -> dict:
         """Load a yaml file and return the content as a dictionary."""
         with Path(path).open("r") as f:
             return yaml.safe_load(f)
@@ -146,11 +147,6 @@ class ConfigAdapter:
 
         # Input size is a list in the old config, convert it to a tuple
         init_args["image_size"] = to_tuple(init_args["image_size"])
-
-        # Enum-based configs are to be converted to uppercase
-        init_args["task"] = init_args["task"].upper()
-        init_args["test_split_mode"] = init_args["test_split_mode"].upper()
-        init_args["val_split_mode"] = init_args["val_split_mode"].upper()
 
         return {
             "data": {
@@ -183,7 +179,7 @@ class ConfigAdapter:
 
     def upgrade_normalization_config(self) -> dict[str, Any]:
         """Upgrade the normalization config to v1 format."""
-        return {"normalization": {"normalization_method": self.old_config["model"]["normalization_method"].upper()}}
+        return {"normalization": {"normalization_method": self.old_config["model"]["normalization_method"]}}
 
     def upgrade_metrics_config(self) -> dict[str, Any]:
         """Upgrade the metrics config to v1 format, with streamlined logic."""
@@ -259,7 +255,7 @@ class ConfigAdapter:
 
     def add_task_config(self) -> dict[str, str]:
         """Create task field in v1 config."""
-        return {"task": self.old_config["dataset"]["task"].upper()}
+        return {"task": self.old_config["dataset"]["task"]}
 
     def upgrade_trainer_config(self) -> dict[str, Any]:
         """Upgrade Trainer config to v1 format."""
@@ -280,10 +276,10 @@ class ConfigAdapter:
             if "metric" in early_stopping_config["init_args"]:
                 early_stopping_config["init_args"]["monitor"] = early_stopping_config["init_args"].pop("metric")
 
-        if init_args["callbacks"] is None:
-            init_args["callbacks"] = [early_stopping_config]
-        else:
-            init_args["callbacks"].append(early_stopping_config)
+            if init_args["callbacks"] is None:
+                init_args["callbacks"] = [early_stopping_config]
+            else:
+                init_args["callbacks"].append(early_stopping_config)
 
         return {"trainer": init_args}
 
@@ -305,7 +301,8 @@ class ConfigAdapter:
 
         return new_config
 
-    def save_config(self, config: dict, path: str | Path) -> None:
+    @staticmethod
+    def save_config(config: dict, path: str | Path) -> None:
         """Save the given configuration dictionary to a YAML file.
 
         Args:
@@ -319,19 +316,8 @@ class ConfigAdapter:
             yaml.safe_dump(config, file, sort_keys=False)
 
 
-def main(old_config_path: Path, new_config_path: Path) -> None:
-    """Upgrade Anomalib configuration file from v0.* to v1.* format.
-
-    Args:
-        old_config_path (Path): Path to the old configuration file.
-        new_config_path (Path): Path to the new configuration file.
-    """
-    config_adapter = ConfigAdapter(config_path=old_config_path)
-    new_config = config_adapter.upgrade_all()
-    config_adapter.save_config(new_config, new_config_path)
-
-
-if __name__ == "__main__":
+def get_args() -> argparse.Namespace:
+    """Get the command line arguments."""
     # Set up the argument parser
     parser = argparse.ArgumentParser(description="Upgrade configuration files from v0.* format to v1.* format.")
     parser.add_argument("-i", "--input_config", type=Path, required=True, help="Path to the old configuration file.")
@@ -345,5 +331,21 @@ if __name__ == "__main__":
         msg = f"The specified old configuration file does not exist: {args.input_config}"
         raise FileNotFoundError(msg)
 
-    # Upgrade the configuration file
-    main(args.input_config, args.output_config)
+    return args
+
+
+def upgrade(old_config_path: Path, new_config_path: Path) -> None:
+    """Upgrade Anomalib configuration file from v0.* to v1.* format.
+
+    Args:
+        old_config_path (Path): Path to the old configuration file.
+        new_config_path (Path): Path to the new configuration file.
+    """
+    config_adapter = ConfigAdapter(config=old_config_path)
+    new_config = config_adapter.upgrade_all()
+    config_adapter.save_config(new_config, new_config_path)
+
+
+if __name__ == "__main__":
+    args = get_args()
+    upgrade(args.input_config, args.output_config)
