@@ -76,7 +76,7 @@ class PadimModel(nn.Module):
     ) -> None:
         super().__init__()
         self.tiler: Tiler | None = None
-
+        self.input_size = input_size
         self.backbone = backbone
         self.layers = layers
         self.feature_extractor = TimmFeatureExtractor(backbone=self.backbone, layers=layers, pre_trained=pre_trained)

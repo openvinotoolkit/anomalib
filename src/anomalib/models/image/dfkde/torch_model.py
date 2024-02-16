@@ -45,7 +45,7 @@ class DfkdeModel(nn.Module):
         super().__init__()
 
         self.feature_extractor = TimmFeatureExtractor(backbone=backbone, pre_trained=pre_trained, layers=layers).eval()
-
+        self.input_size = self.feature_extractor.input_size
         self.classifier = KDEClassifier(
             n_pca_components=n_pca_components,
             feature_scaling_method=feature_scaling_method,

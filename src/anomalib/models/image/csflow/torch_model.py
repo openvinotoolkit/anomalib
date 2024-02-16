@@ -559,17 +559,20 @@ class CsFlowModel(nn.Module):
         num_channels: int = 3,
     ) -> None:
         super().__init__()
-        self.input_dims = (num_channels, *input_size)
+        self.input_size = input_size
         self.clamp = clamp
         self.cross_conv_hidden_channels = cross_conv_hidden_channels
         self.feature_extractor = MultiScaleFeatureExtractor(n_scales=3, input_size=input_size)
         self.graph = CrossScaleFlow(
-            input_dims=self.input_dims,
+            input_dims=(num_channels, *input_size),
             n_coupling_blocks=n_coupling_blocks,
             clamp=clamp,
             cross_conv_hidden_channels=cross_conv_hidden_channels,
         )
-        self.anomaly_map_generator = AnomalyMapGenerator(input_dims=self.input_dims, mode=AnomalyMapMode.ALL)
+        self.anomaly_map_generator = AnomalyMapGenerator(
+            input_dims=(num_channels, *input_size),
+            mode=AnomalyMapMode.ALL,
+        )
 
     def forward(self, images: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         """Forward method of the model.

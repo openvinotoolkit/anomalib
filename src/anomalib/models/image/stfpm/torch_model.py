@@ -37,6 +37,7 @@ class STFPMModel(nn.Module):
         super().__init__()
         self.tiler: Tiler | None = None
 
+        self.input_size = input_size
         self.backbone = backbone
         self.teacher_model = TimmFeatureExtractor(backbone=self.backbone, pre_trained=True, layers=layers)
         self.student_model = TimmFeatureExtractor(

@@ -24,10 +24,6 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger("anomalib")
 
-if try_import("openvino"):
-    from openvino.runtime import serialize
-    from openvino.tools.mo.convert import convert_model
-
 
 class ExportType(str, Enum):
     """Model export type.
@@ -103,9 +99,9 @@ def export_to_torch(
 
 def export_to_onnx(
     model: AnomalyModule,
-    input_size: tuple[int, int],
     export_root: Path | str,
     transform: dict[str, Any] | AnomalibDataset | AnomalibDataModule | A.Compose,
+    input_size: tuple[int, int] | None = None,
     task: TaskType | None = None,
     export_type: ExportType = ExportType.ONNX,
 ) -> Path:
@@ -113,11 +109,13 @@ def export_to_onnx(
 
     Args:
         model (AnomalyModule): Model to export.
-        input_size (list[int] | tuple[int, int]): Image size used as the input for onnx converter.
         export_root (Path): Path to the root folder of the exported model.
         transform (dict[str, Any] | AnomalibDataset | AnomalibDataModule | A.Compose): Data transforms (augmentations)
             used for the model. When using dict, ensure that the transform dict is in the format required by
             Albumentations.
+        input_size (list[int] | tuple[int, int]): Image size used as the input for onnx converter. If None, input size
+            will be got from the model.
+            Defaults to ``None``.
         task (TaskType | None): Task type should be provided if transforms is of type dict or A.Compose object.
             Defaults to ``None``.
         export_type (ExportType): Mode to export the model. Since this method is used by OpenVINO export as well, we
@@ -159,6 +157,12 @@ def export_to_onnx(
         ...     task="segmentation",
         ... )
     """
+    if input_size is None:
+        if not hasattr(model.model, "input_size"):
+            msg = "input_size must be provided to export this model."
+            raise RuntimeError(msg)
+        input_size = model.model.input_size
+
     export_root = _create_export_root(export_root, export_type)
     _write_metadata_to_json(export_root, transform, model, task)
     onnx_path = export_root / "model.onnx"
@@ -176,10 +180,10 @@ def export_to_onnx(
 
 
 def export_to_openvino(
-    export_root: Path | str,
     model: AnomalyModule,
-    input_size: tuple[int, int],
+    export_root: Path | str,
     transform: dict[str, Any] | AnomalibDataset | AnomalibDataModule | A.Compose,
+    input_size: tuple[int, int] | None = None,
     ov_args: dict[str, Any] | None = None,
     task: TaskType | None = None,
 ) -> Path:
@@ -188,10 +192,12 @@ def export_to_openvino(
     Args:
         export_root (Path): Path to the export folder.
         model (AnomalyModule): AnomalyModule to export.
-        input_size (tuple[int, int]): Input size of the model. Used for adding metadata to the IR.
         transform (dict[str, Any] | AnomalibDataset | AnomalibDataModule | A.Compose): Data transforms (augmentations)
             used for the model. When using dict, ensure that the transform dict is in the format required by
             Albumentations.
+        input_size (tuple[int, int]): Input size of the model. Used for adding metadata to the IR. If None, input size
+            will be got from the model.
+            Defaults to ``None``.
         ov_args: Model optimizer arguments for OpenVINO model conversion.
             Defaults to ``None``.
         task (TaskType | None): Task type should be provided if transforms is of type dict or A.Compose object.
@@ -218,8 +224,8 @@ def export_to_openvino(
         >>> model = Patchcore()
         ...
         >>> export_to_openvino(
-        ...     export_root="path/to/export",
         ...     model=model,
+        ...     export_root="path/to/export",
         ...     input_size=(224, 224),
         ...     transform=datamodule.test_data.transform,
         ...     task=datamodule.test_data.task
@@ -232,23 +238,29 @@ def export_to_openvino(
         >>> transform = A.Compose([A.Resize(224, 224), A.pytorch.ToTensorV2()])
         ...
         >>> export_to_openvino(
-        ...     export_root="path/to/export",
         ...     model=model,
+        ...     export_root="path/to/export",
         ...     input_size=(224, 224),
         ...     transform=transform,
         ...     task="segmentation",
         ... )
 
     """
-    model_path = export_to_onnx(model, input_size, export_root, transform, task, ExportType.OPENVINO)
+    if not try_import("openvino"):
+        logger.exception("Could not find OpenVINO. Please check OpenVINO installation.")
+        raise ModuleNotFoundError
+
+    import openvino as ov
+
+    model_path = export_to_onnx(model, export_root, transform, input_size, task, ExportType.OPENVINO)
     ov_model_path = model_path.with_suffix(".xml")
     ov_args = {} if ov_args is None else ov_args
-    if convert_model is not None and serialize is not None:
-        model = convert_model(model_path, **ov_args)
-        serialize(model, ov_model_path)
-    else:
-        logger.exception("Could not find OpenVINO methods. Please check OpenVINO installation.")
-        raise ModuleNotFoundError
+    # fp16 compression is enabled by default
+    compress_to_fp16 = ov_args.get("compress_to_fp16", True)
+
+    model = ov.convert_model(model_path, **ov_args)
+    ov.save_model(model, ov_model_path, compress_fp16=compress_to_fp16)
+
     return ov_model_path
 
 

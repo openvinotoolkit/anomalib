@@ -333,6 +333,7 @@ class GanomalyModel(nn.Module):
             n_features=n_features,
             extra_layers=extra_layers,
         )
+        self.input_size = input_size
         self.weights_init(self.generator)
         self.weights_init(self.discriminator)
 
