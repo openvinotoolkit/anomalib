@@ -6,7 +6,9 @@
 import argparse
 import re
 import sys
+from typing import TypeVar
 
+import docstring_parser
 from jsonargparse import DefaultHelpFormatter
 from rich.markdown import Markdown
 from rich.panel import Panel
@@ -32,6 +34,21 @@ try:
     }
 except ImportError:
     print("To use other subcommand using `anomalib install`")
+
+
+def get_short_docstring(component: TypeVar) -> str:
+    """Get the short description from the docstring.
+
+    Args:
+        component (TypeVar): The component to get the docstring from
+
+    Returns:
+        str: The short description
+    """
+    if component.__doc__ is None:
+        return ""
+    docstring = docstring_parser.parse(component.__doc__)
+    return docstring.short_description
 
 
 def pre_parse_arguments() -> dict:
