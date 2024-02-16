@@ -12,21 +12,26 @@ from rich.markdown import Markdown
 from rich.panel import Panel
 from rich_argparse import RichHelpFormatter
 
-from anomalib.engine import Engine
-
 REQUIRED_ARGUMENTS = {
+    "train": {"model", "model.help", "data", "data.help", "ckpt_path", "config"},
     "fit": {"model", "model.help", "data", "data.help", "ckpt_path", "config"},
     "validate": {"model", "model.help", "data", "data.help", "ckpt_path", "config"},
     "test": {"model", "model.help", "data", "data.help", "ckpt_path", "config"},
     "predict": {"model", "model.help", "data", "data.help", "ckpt_path", "config"},
 }
 
-DOCSTRING_USAGE = {
-    "fit": Engine.fit,
-    "validate": Engine.validate,
-    "test": Engine.test,
-    "predict": Engine.predict,
-}
+try:
+    from anomalib.engine import Engine
+
+    DOCSTRING_USAGE = {
+        "train": Engine.train,
+        "fit": Engine.fit,
+        "validate": Engine.validate,
+        "test": Engine.test,
+        "predict": Engine.predict,
+    }
+except ImportError:
+    print("To use other subcommand using `anomalib install`")
 
 
 def pre_parse_arguments() -> dict:

@@ -30,7 +30,7 @@ repos:
     rev: "v1.7.0"
     hooks:
       - id: mypy
-        additional_dependencies: [types-PyYAML]
+        additional_dependencies: [types-PyYAML, types-setuptools]
         exclude: "tests"
 
   # add bandit for security checks
