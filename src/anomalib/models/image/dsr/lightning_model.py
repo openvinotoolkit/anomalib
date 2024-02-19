@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 WEIGHTS_DOWNLOAD_INFO = DownloadInfo(
     name="vq_model_pretrained_128_4096.pckl",
     url="https://github.com/openvinotoolkit/anomalib/releases/download/dsr_pretrained_weights/dsr_vq_model_pretrained.zip",
-    checksum="927f6b40841a7c885d12217c922b2bba",
+    hashsum="927f6b40841a7c885d12217c922b2bba",
 )
 
 

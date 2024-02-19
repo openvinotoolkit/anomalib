@@ -31,13 +31,13 @@ logger = logging.getLogger(__name__)
 IMAGENETTE_DOWNLOAD_INFO = DownloadInfo(
     name="imagenette2.tgz",
     url="https://s3.amazonaws.com/fast-ai-imageclas/imagenette2.tgz",
-    checksum="fe2fc210e6bb7c5664d602c3cd71e612",
+    hashsum="fe2fc210e6bb7c5664d602c3cd71e612",
 )
 
 WEIGHTS_DOWNLOAD_INFO = DownloadInfo(
     name="efficientad_pretrained_weights.zip",
     url="https://github.com/openvinotoolkit/anomalib/releases/download/efficientad_pretrained_weights/efficientad_pretrained_weights.zip",
-    checksum="ec6113d728969cd233271eeed7d692f2",
+    hashsum="ec6113d728969cd233271eeed7d692f2",
 )
 
 

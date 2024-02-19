@@ -38,7 +38,7 @@ logger = logging.getLogger(__name__)
 DOWNLOAD_INFO = DownloadInfo(
     name="btech",
     url="https://avires.dimi.uniud.it/papers/btad/btad.zip",
-    checksum="c1fa4d56ac50dd50908ce04e81037a8e",
+    hashsum="c1fa4d56ac50dd50908ce04e81037a8e",
 )
 
 CATEGORIES = ("01", "02", "03")

@@ -50,12 +50,12 @@ logger = logging.getLogger(__name__)
 DATASET_DOWNLOAD_INFO = DownloadInfo(
     name="Avenue Dataset",
     url="http://www.cse.cuhk.edu.hk/leojia/projects/detectabnormal/Avenue_Dataset.zip",
-    checksum="b7a34b212ecdd30efbd989a6dcb1aceb",
+    hashsum="b7a34b212ecdd30efbd989a6dcb1aceb",
 )
 ANNOTATIONS_DOWNLOAD_INFO = DownloadInfo(
     name="Avenue Annotations",
     url="http://www.cse.cuhk.edu.hk/leojia/projects/detectabnormal/ground_truth_demo.zip",
-    checksum="e8e3bff99195b6b511534083b9dbe1f5",
+    hashsum="e8e3bff99195b6b511534083b9dbe1f5",
 )
 
 
