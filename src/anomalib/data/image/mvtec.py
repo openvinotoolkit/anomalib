@@ -43,7 +43,6 @@ from anomalib.data.utils import (
     TestSplitMode,
     ValSplitMode,
     download_and_extract,
-    get_transforms,
     validate_path,
 )
 
@@ -322,8 +321,8 @@ class MVTec(AnomalibDataModule):
         task: TaskType = TaskType.SEGMENTATION,
         # transform_config_train: str | A.Compose | None = None,
         # transform_config_eval: str | A.Compose | None = None,
-        transform_train = None,
-        transform_eval = None,
+        transform_train=None,
+        transform_eval=None,
         test_split_mode: TestSplitMode = TestSplitMode.FROM_DIR,
         test_split_ratio: float = 0.2,
         val_split_mode: ValSplitMode = ValSplitMode.SAME_AS_TEST,

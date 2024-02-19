@@ -11,7 +11,7 @@ import logging
 
 import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
-from torchvision.transforms.v2 import Compose, Resize, Normalize
+from torchvision.transforms.v2 import Compose, Normalize, Resize
 
 from anomalib import LearningType
 from anomalib.models.components import AnomalyModule, MemoryBankMixin
@@ -137,6 +137,6 @@ class Padim(MemoryBankMixin, AnomalyModule):
             [
                 Resize(self.input_size),
                 Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-            ]
+            ],
         )
         return transform

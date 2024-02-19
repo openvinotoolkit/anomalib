@@ -12,12 +12,12 @@ from argparse import ArgumentParser, Namespace
 from pathlib import Path
 
 import torch
+from torchvision.io import read_image
 
 from anomalib.data.utils import generate_output_image_filename, get_image_filenames
 from anomalib.data.utils.image import save_image, show_image
 from anomalib.deploy import TorchInferencer
 from anomalib.utils.visualization import ImageVisualizer
-from torchvision.io import read_image
 
 logger = logging.getLogger(__name__)
 

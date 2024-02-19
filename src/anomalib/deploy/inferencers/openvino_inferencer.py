@@ -9,16 +9,15 @@ from importlib.util import find_spec
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-import albumentations as A  # noqa: N812
 import cv2
 import numpy as np
 from omegaconf import DictConfig
 from PIL import Image
 
 from anomalib import TaskType
+from anomalib.utils.visualization import ImageResult
 
 from .base_inferencer import Inferencer
-from anomalib.utils.visualization import ImageResult
 
 logger = logging.getLogger("anomalib")
 

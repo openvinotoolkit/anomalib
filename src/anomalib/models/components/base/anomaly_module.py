@@ -13,12 +13,11 @@ import lightning.pytorch as pl
 import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torch import nn
+from torchvision.transforms.v2 import Compose
 
 from anomalib import LearningType
 from anomalib.metrics import AnomalibMetricCollection
 from anomalib.metrics.threshold import BaseThreshold
-
-from torchvision.transforms.v2 import Compose
 
 if TYPE_CHECKING:
     from lightning.pytorch.callbacks import Callback

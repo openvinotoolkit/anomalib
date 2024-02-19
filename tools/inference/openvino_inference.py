@@ -11,12 +11,13 @@ import logging
 from argparse import ArgumentParser, Namespace
 from pathlib import Path
 
+import numpy as np
+from PIL import Image
+
 from anomalib.data.utils import generate_output_image_filename, get_image_filenames
 from anomalib.data.utils.image import save_image, show_image
 from anomalib.deploy import OpenVINOInferencer
 from anomalib.utils.visualization import ImageVisualizer
-from PIL import Image
-import numpy as np
 
 logger = logging.getLogger(__name__)
 

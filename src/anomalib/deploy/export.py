@@ -49,7 +49,6 @@ class ExportType(str, Enum):
 
 
 class InferenceModel(nn.Module):
-
     def __init__(self, model, transform):
         super().__init__()
         self.model = model

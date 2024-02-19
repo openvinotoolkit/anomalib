@@ -8,19 +8,18 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
-import albumentations as A  # noqa: N812
 import cv2
 import numpy as np
 import torch
 from omegaconf import DictConfig
 from torch import nn
+from torchvision.io import read_image
 
 from anomalib import TaskType
 from anomalib.data.utils.boxes import masks_to_boxes
+from anomalib.utils.visualization import ImageResult
 
 from .base_inferencer import Inferencer
-from anomalib.utils.visualization import ImageResult
-from torchvision.io import read_image
 
 
 class TorchInferencer(Inferencer):
@@ -208,7 +207,6 @@ class TorchInferencer(Inferencer):
         Returns:
             Tensor: pre-processed image.
         """
-
         if len(image) == 3:
             image = image.unsqueeze(0)
 

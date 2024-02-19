@@ -284,7 +284,7 @@ class Engine:
                             data.task = self.task
                         if data.transform is None:
                             logger.info(
-                                f"Using default model transforms.",
+                                "Using default model transforms.",
                             )
                             data.transform = transform
 
@@ -300,7 +300,7 @@ class Engine:
                         data: AnomalibDataset = getattr(dataloader, attribute)
                         if data.transform is None:
                             logger.info(
-                                f"Using default model transforms.",
+                                "Using default model transforms.",
                             )
                             data.transform = transform
 
