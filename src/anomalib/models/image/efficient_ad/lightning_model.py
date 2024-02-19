@@ -31,13 +31,13 @@ logger = logging.getLogger(__name__)
 IMAGENETTE_DOWNLOAD_INFO = DownloadInfo(
     name="imagenette2.tgz",
     url="https://s3.amazonaws.com/fast-ai-imageclas/imagenette2.tgz",
-    hashsum="fe2fc210e6bb7c5664d602c3cd71e612",
+    hashsum="6cbfac238434d89fe99e651496f0812ebc7a10fa62bd42d6874042bf01de4efd",
 )
 
 WEIGHTS_DOWNLOAD_INFO = DownloadInfo(
     name="efficientad_pretrained_weights.zip",
     url="https://github.com/openvinotoolkit/anomalib/releases/download/efficientad_pretrained_weights/efficientad_pretrained_weights.zip",
-    hashsum="ec6113d728969cd233271eeed7d692f2",
+    hashsum="c09aeaa2b33f244b3261a5efdaeae8f8284a949470a4c5a526c61275fe62684a",
 )
 
 
@@ -171,8 +171,8 @@ class EfficientAd(AnomalyModule):
             if not arrays_defined:
                 _, num_channels, _, _ = y.shape
                 n = torch.zeros((num_channels,), dtype=torch.int64, device=y.device)
-                chanel_sum = torch.zeros((num_channels,), dtype=torch.float64, device=y.device)
-                chanel_sum_sqr = torch.zeros((num_channels,), dtype=torch.float64, device=y.device)
+                chanel_sum = torch.zeros((num_channels,), dtype=torch.float32, device=y.device)
+                chanel_sum_sqr = torch.zeros((num_channels,), dtype=torch.float32, device=y.device)
                 arrays_defined = True
 
             n += y[:, 0].numel()
