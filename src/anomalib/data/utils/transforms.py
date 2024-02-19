@@ -120,7 +120,7 @@ def get_transforms(
         # load transforms from config file
         elif isinstance(config, str):
             logger.info("Reading transforms from Albumentations config file: %s.", config)
-            transforms = A.load(filepath=config, data_format="yaml")
+            transforms = A.load(filepath_or_buffer=config, data_format="yaml")
         elif isinstance(config, A.Compose):
             logger.info("Transforms loaded from Albumentations Compose object")
             transforms = config
