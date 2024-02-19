@@ -15,7 +15,6 @@ from omegaconf import DictConfig, OmegaConf
 from skimage.morphology import dilation
 from skimage.segmentation import find_boundaries
 
-from anomalib.data.utils import read_image
 from anomalib.utils.normalization.cdf import normalize as normalize_cdf
 from anomalib.utils.normalization.cdf import standardize
 from anomalib.utils.normalization.min_max import normalize as normalize_min_max
