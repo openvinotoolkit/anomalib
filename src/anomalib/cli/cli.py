@@ -1,6 +1,6 @@
 """Anomalib CLI."""
 
-# Copyright (C) 2023 Intel Corporation
+# Copyright (C) 2023-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
@@ -18,7 +18,7 @@ from rich import traceback
 from torch.utils.data import DataLoader, Dataset
 
 from anomalib import TaskType, __version__
-from anomalib.callbacks import get_callbacks, get_visualization_callbacks
+from anomalib.callbacks import get_callbacks
 from anomalib.callbacks.normalization import get_normalization_callback
 from anomalib.cli.utils import CustomHelpFormatter
 from anomalib.cli.utils.openvino import add_openvino_export_arguments
@@ -28,9 +28,8 @@ from anomalib.engine import Engine
 from anomalib.loggers import configure_logger
 from anomalib.metrics.threshold import BaseThreshold
 from anomalib.models import AnomalyModule
-from anomalib.pipelines.benchmarking import distribute
-from anomalib.pipelines.hpo import Sweep, get_hpo_parser
 from anomalib.utils.config import update_config
+from anomalib.utils.visualization.base import BaseVisualizer
 
 traceback.install()
 logger = logging.getLogger("anomalib.cli")
@@ -102,15 +101,13 @@ class AnomalibCLI(LightningCLI):
             "train": {"description": "Fit the model and then call test on the trained model."},
             "predict": {"description": "Run inference on a model."},
             "export": {"description": "Export the model to ONNX or OpenVINO format."},
-            "benchmark": {"description": "Run benchmarking script"},
-            "hpo": {"description": "Run Hyperparameter Optimization"},
         }
 
     def _add_subcommands(self, parser: LightningArgumentParser, **kwargs) -> None:
         """Initialize base subcommands and add anomalib specific on top of it."""
         # Initializes fit, validate, test, predict and tune
         super()._add_subcommands(parser, **kwargs)
-        # Add  export, benchmark and hpo
+        # Add  anomalib subcommands
         for subcommand in self.anomalib_subcommands():
             sub_parser = self.init_parser(**kwargs)
 
@@ -132,11 +129,18 @@ class AnomalibCLI(LightningCLI):
         """
         parser.add_function_arguments(get_normalization_callback, "normalization")
         # visualization takes task from the project
-        parser.add_function_arguments(get_visualization_callbacks, "visualization", skip={"task"})
+        parser.add_argument(
+            "--visualization.visualizers",
+            type=BaseVisualizer | list[BaseVisualizer] | None,
+            default=None,
+        )
+        parser.add_argument("--visualization.save", type=bool, default=False)
+        parser.add_argument("--visualization.log", type=bool, default=False)
+        parser.add_argument("--visualization.show", type=bool, default=False)
         parser.add_argument("--task", type=TaskType, default=TaskType.SEGMENTATION)
         parser.add_argument("--metrics.image", type=list[str] | str | None, default=["F1Score", "AUROC"])
         parser.add_argument("--metrics.pixel", type=list[str] | str | None, default=None, required=False)
-        parser.add_argument("--metrics.threshold", type=BaseThreshold, default="F1AdaptiveThreshold")
+        parser.add_argument("--metrics.threshold", type=BaseThreshold | str, default="F1AdaptiveThreshold")
         parser.add_argument("--logging.log_graph", type=bool, help="Log the model to the logger", default=False)
         if hasattr(parser, "subcommand") and parser.subcommand != "predict":  # Predict also accepts str and Path inputs
             parser.link_arguments("data.init_args.image_size", "model.init_args.input_size")
@@ -199,18 +203,6 @@ class AnomalibCLI(LightningCLI):
         add_openvino_export_arguments(parser)
         self.add_arguments_to_parser(parser)
 
-    def add_hpo_arguments(self, parser: LightningArgumentParser) -> None:
-        """Add hyperparameter optimization arguments."""
-        parser = get_hpo_parser(parser)
-
-    def add_benchmark_arguments(self, parser: LightningArgumentParser) -> None:
-        """Add benchmark arguments to the parser.
-
-        Example:
-            $ anomalib benchmark --benchmark_config tools/benchmarking/benchmark_params.yaml
-        """
-        parser.add_argument("--benchmark_config", type=Path, help="Path to the benchmark config.", required=True)
-
     def before_instantiate_classes(self) -> None:
         """Modify the configuration to properly instantiate classes and sets up tiler."""
         subcommand = self.config["subcommand"]
@@ -259,7 +251,7 @@ class AnomalibCLI(LightningCLI):
             "task": self._get(self.config_init, "task"),
             "image_metrics": self._get(self.config_init, "metrics.image"),
             "pixel_metrics": self._get(self.config_init, "metrics.pixel"),
-            "visualization": self._get(self.config_init, "visualization"),
+            **self._get_visualization_parameters(),
         }
         trainer_config = {**self._get(self.config_init, "trainer", default={}), **engine_args}
         key = "callbacks"
@@ -281,6 +273,16 @@ class AnomalibCLI(LightningCLI):
                 trainer_config[key].append(config_callback)
         trainer_config[key].extend(get_callbacks(self.config[self.subcommand]))
         return Engine(**trainer_config)
+
+    def _get_visualization_parameters(self) -> dict[str, Any]:
+        """Return visualization parameters."""
+        subcommand = self.config.subcommand
+        return {
+            "visualizers": self.config_init[subcommand].visualization.visualizers,
+            "save_image": self.config[subcommand].visualization.save,
+            "log_image": self.config[subcommand].visualization.log,
+            "show_image": self.config[subcommand].visualization.show,
+        }
 
     def _run_subcommand(self, subcommand: str) -> None:
         """Run subcommand depending on the subcommand.
@@ -325,22 +327,6 @@ class AnomalibCLI(LightningCLI):
     def export(self) -> Callable[..., Path | None]:
         """Export the model using engine's export method."""
         return self.engine.export
-
-    def hpo(self) -> None:
-        """Run hpo subcommand."""
-        config = self.config["hpo"]
-        sweep = Sweep(
-            project=config.project,
-            sweep_config=config.sweep_config,
-            backend=config.backend,
-            entity=config.entity,
-        )
-        sweep.run()
-
-    def benchmark(self) -> None:
-        """Run benchmark subcommand."""
-        config = self.config["benchmark"]
-        distribute(config.benchmark_config)
 
     def _add_trainer_arguments_to_parser(self, parser: LightningArgumentParser) -> None:
         """Add trainer arguments to the parser."""

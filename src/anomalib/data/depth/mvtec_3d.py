@@ -3,7 +3,7 @@
 Description:
     This script contains PyTorch Dataset, Dataloader and PyTorch Lightning DataModule for the MVTec 3D-AD dataset.
     If the dataset is not on the file system, the script downloads and extracts the dataset and create PyTorch data
-        objects.
+    objects.
 
 License:
     MVTec 3D-AD dataset is released under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International
@@ -68,6 +68,7 @@ def make_mvtec_3d_dataset(
     - `path/to/dataset/ground_truth/category/mask_filename.png`
 
     This function creates a DataFrame to store the parsed information. The DataFrame follows this format:
+
     +---+---------------+-------+---------+---------------+---------------------------------------+-------------+
     |   | path          | split | label   | image_path    | mask_path                             | label_index |
     +---+---------------+-------+---------+---------------+---------------------------------------+-------------+
@@ -250,12 +251,12 @@ class MVTec3D(AnomalibDataModule):
         train_batch_size: int = 32,
         eval_batch_size: int = 32,
         num_workers: int = 8,
-        task: TaskType = TaskType.SEGMENTATION,
+        task: TaskType | str = TaskType.SEGMENTATION,
         transform_config_train: str | A.Compose | None = None,
         transform_config_eval: str | A.Compose | None = None,
-        test_split_mode: TestSplitMode = TestSplitMode.FROM_DIR,
+        test_split_mode: TestSplitMode | str = TestSplitMode.FROM_DIR,
         test_split_ratio: float = 0.2,
-        val_split_mode: ValSplitMode = ValSplitMode.SAME_AS_TEST,
+        val_split_mode: ValSplitMode | str = ValSplitMode.SAME_AS_TEST,
         val_split_ratio: float = 0.5,
         seed: int | None = None,
     ) -> None:
@@ -272,6 +273,7 @@ class MVTec3D(AnomalibDataModule):
 
         self.root = Path(root)
         self.category = Path(category)
+        task = TaskType(task)
 
         transform_train = get_transforms(
             config=transform_config_train,

@@ -5,4 +5,4 @@ init_args:
   normalization: imagenet
   val_split_mode: NONE
   test_split_mode: NONE
-  task: CLASSIFICATION
+  task: classification

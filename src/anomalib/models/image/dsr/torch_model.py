@@ -98,6 +98,7 @@ class DsrModel(nn.Module):
             If not training phase 2, should be None.
 
         Returns:
+            dict[str, torch.Tensor]:
             If testing:
                 - "anomaly_map": Upsampled anomaly map
                 - "pred_score": Image score
@@ -1168,6 +1169,7 @@ class DiscreteLatentModel(nn.Module):
             anom_str_hi (torch.Tensor | None): Strength of generated anomaly hi.
 
         Returns:
+            dict[str, torch.Tensor]:
             If generating an anomaly mask:
                 - General object decoder-decoded anomalous image
                 - Reshaped ground truth anomaly map

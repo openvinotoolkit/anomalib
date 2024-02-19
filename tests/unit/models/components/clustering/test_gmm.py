@@ -16,8 +16,8 @@ def test_fit_and_predict() -> None:
     # Create some synthetic data
     data = torch.cat(
         [
-            torch.randn(100, 2) + torch.tensor([2.0, 2.0]),
-            torch.randn(100, 2) + torch.tensor([-2.0, -2.0]),
+            torch.randn(100, 2) + torch.tensor([10.0, 10.0]),
+            torch.randn(100, 2) + torch.tensor([-10.0, -10.0]),
         ],
     )
 

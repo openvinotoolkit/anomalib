@@ -1,4 +1,7 @@
-"""DFM: Deep Feature Modeling."""
+"""DFM: Deep Feature Modeling.
+
+https://arxiv.org/abs/1909.11786
+"""
 
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0

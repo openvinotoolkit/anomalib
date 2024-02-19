@@ -329,8 +329,8 @@ class Avenue(AnomalibVideoDataModule):
         gt_dir: Path | str = "./datasets/avenue/ground_truth_demo",
         clip_length_in_frames: int = 2,
         frames_between_clips: int = 1,
-        target_frame: VideoTargetFrame = VideoTargetFrame.LAST,
-        task: TaskType = TaskType.SEGMENTATION,
+        target_frame: VideoTargetFrame | str = VideoTargetFrame.LAST,
+        task: TaskType | str = TaskType.SEGMENTATION,
         image_size: int | tuple[int, int] = (256, 256),
         center_crop: int | tuple[int, int] | None = None,
         normalization: InputNormalizationMethod | str = InputNormalizationMethod.IMAGENET,
@@ -339,7 +339,7 @@ class Avenue(AnomalibVideoDataModule):
         num_workers: int = 8,
         transform_config_train: str | A.Compose | None = None,
         transform_config_eval: str | A.Compose | None = None,
-        val_split_mode: ValSplitMode = ValSplitMode.SAME_AS_TEST,
+        val_split_mode: ValSplitMode | str = ValSplitMode.SAME_AS_TEST,
         val_split_ratio: float = 0.5,
         seed: int | None = None,
     ) -> None:
@@ -369,22 +369,22 @@ class Avenue(AnomalibVideoDataModule):
         )
 
         self.train_data = AvenueDataset(
-            task=task,
+            task=TaskType(task),
             transform=transform_train,
             clip_length_in_frames=clip_length_in_frames,
             frames_between_clips=frames_between_clips,
-            target_frame=target_frame,
+            target_frame=VideoTargetFrame(target_frame),
             root=root,
             gt_dir=gt_dir,
             split=Split.TRAIN,
         )
 
         self.test_data = AvenueDataset(
-            task=task,
+            task=TaskType(task),
             transform=transform_eval,
             clip_length_in_frames=clip_length_in_frames,
             frames_between_clips=frames_between_clips,
-            target_frame=target_frame,
+            target_frame=VideoTargetFrame(target_frame),
             root=root,
             gt_dir=gt_dir,
             split=Split.TEST,
