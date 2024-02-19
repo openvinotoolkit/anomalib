@@ -104,9 +104,8 @@ def export_to_torch(
         ...     task=datamodule.test_data.task,
         ... )
     """
-    torch_model = model.model
     transform = model.transform
-    inference_model = InferenceModel(model=torch_model, transform=transform)
+    inference_model = InferenceModel(model=model.model, transform=transform)
     export_root = _create_export_root(export_root, ExportType.TORCH)
     metadata = get_metadata(task=task, transform=transform, model=model)
     pt_model_path = export_root / "model.pt"

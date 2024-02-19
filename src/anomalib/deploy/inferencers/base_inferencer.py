@@ -49,46 +49,6 @@ class Inferencer(ABC):
         """Post-Process."""
         raise NotImplementedError
 
-    def predict(
-        self,
-        image: str | Path | np.ndarray,
-        metadata: dict[str, Any] | None = None,
-    ) -> ImageResult:
-        """Perform a prediction for a given input image.
-
-        The main workflow is (i) pre-processing, (ii) forward-pass, (iii) post-process.
-
-        Args:
-            image (Union[str, np.ndarray]): Input image whose output is to be predicted.
-                It could be either a path to image or numpy array itself.
-
-            metadata: Metadata information such as shape, threshold.
-
-        Returns:
-            ImageResult: Prediction results to be visualized.
-        """
-        if metadata is None:
-            metadata = self.metadata if hasattr(self, "metadata") else {}
-        if isinstance(image, str | Path):
-            image_arr: np.ndarray = read_image(image)
-        else:  # image is already a numpy array. Kept for mypy compatibility.
-            image_arr = image
-        metadata["image_shape"] = image_arr.shape[:2]
-
-        processed_image = self.pre_process(image_arr)
-        predictions = self.forward(processed_image)
-        output = self.post_process(predictions, metadata=metadata)
-
-        return ImageResult(
-            image=image_arr,
-            pred_score=output["pred_score"],
-            pred_label=output["pred_label"],
-            anomaly_map=output["anomaly_map"],
-            pred_mask=output["pred_mask"],
-            pred_boxes=output["pred_boxes"],
-            box_labels=output["box_labels"],
-        )
-
     @staticmethod
     def _superimpose_segmentation_mask(metadata: dict, anomaly_map: np.ndarray, image: np.ndarray) -> np.ndarray:
         """Superimpose segmentation mask on top of image.
