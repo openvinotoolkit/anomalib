@@ -172,6 +172,8 @@ def export_to_onnx(
         ...     task="segmentation",
         ... )
     """
+    # TODO(djdameln): Move export functionality to anomaly module
+    # https://github.com/openvinotoolkit/anomalib/issues/1752
     transform = transform or model.transform
     inference_model = InferenceModel(model=model.model, transform=transform)
     export_root = _create_export_root(export_root, export_type)
