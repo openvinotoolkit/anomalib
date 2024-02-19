@@ -48,6 +48,11 @@ class Inferencer(ABC):
         """Post-Process."""
         raise NotImplementedError
 
+    @abstractmethod
+    def predict(self, image: str | Path | np.ndarray | torch.Tensor) -> ImageResult:
+        """Predict."""
+        raise NotImplementedError
+
     @staticmethod
     def _superimpose_segmentation_mask(metadata: dict, anomaly_map: np.ndarray, image: np.ndarray) -> np.ndarray:
         """Superimpose segmentation mask on top of image.

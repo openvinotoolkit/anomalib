@@ -133,10 +133,10 @@ class Padim(MemoryBankMixin, AnomalyModule):
 
     @property
     def transform(self) -> Compose:
-        transform = Compose(
+        """Default transform for Padim."""
+        return Compose(
             [
                 Resize(self.input_size),
                 Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
             ],
         )
-        return transform

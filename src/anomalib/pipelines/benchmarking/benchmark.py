@@ -134,14 +134,9 @@ def get_single_model_metrics(
         # Get OpenVINO metrics
         openvino_throughput = float("nan")
         if openvino_metrics:
-            if "input_size" in model_config.model.init_args:
-                input_size = model_config.model.init_args.input_size
-            else:
-                input_size = model_config.data.init_args.image_size
             export_to_openvino(
                 export_root=Path(project_path),
                 model=model,
-                input_size=input_size,
                 transform=engine.trainer.datamodule.test_data.transform,
                 ov_args={},
                 task=engine.trainer.datamodule.test_data.task,

@@ -50,6 +50,8 @@ class AnomalyModule(pl.LightningModule, ABC):
         self.image_metrics: AnomalibMetricCollection
         self.pixel_metrics: AnomalibMetricCollection
 
+        self._transform: Compose | None = None
+
     def forward(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> Any:  # noqa: ANN401
         """Perform the forward-pass by passing input tensor to the module.
 
@@ -182,6 +184,6 @@ class AnomalyModule(pl.LightningModule, ABC):
         raise NotImplementedError
 
     @abstractproperty
-    def transform(self) -> Compose:
+    def default_transform(self) -> Compose:
         """Default transforms."""
         raise NotImplementedError

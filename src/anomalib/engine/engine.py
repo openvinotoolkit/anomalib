@@ -7,13 +7,13 @@ import logging
 from pathlib import Path
 from typing import Any
 
-import albumentations as A  # noqa: N812
 from lightning.pytorch.callbacks import Callback
 from lightning.pytorch.trainer import Trainer
 from lightning.pytorch.trainer.connectors.callback_connector import _CallbackConnector
 from lightning.pytorch.utilities.types import _EVALUATE_OUTPUT, _PREDICT_OUTPUT, EVAL_DATALOADERS, TRAIN_DATALOADERS
 from omegaconf import DictConfig, ListConfig
 from torch.utils.data import DataLoader, Dataset
+from torchvision.transforms.v2 import Compose
 
 from anomalib import LearningType, TaskType
 from anomalib.callbacks.metrics import _MetricsCallback
@@ -264,12 +264,13 @@ class Engine:
 
     def _setup_dataset_task(
         self,
-        transform,
+        transform: Compose,
         *dataloaders: EVAL_DATALOADERS | TRAIN_DATALOADERS | AnomalibDataModule | None,
     ) -> None:
         """Override the dataloader task with the task passed to the Engine.
 
         Args:
+            transform (Compose): Transform to be used for the dataloaders.
             dataloaders (TRAIN_DATALOADERS | EVAL_DATALOADERS): Dataloaders to be used for training or evaluation.
         """
         for dataloader in dataloaders:
@@ -290,7 +291,7 @@ class Engine:
 
     def _setup_transform(
         self,
-        transform,
+        transform: Compose,
         *dataloaders: EVAL_DATALOADERS | TRAIN_DATALOADERS | AnomalibDataModule | None,
     ) -> None:
         for dataloader in dataloaders:
@@ -703,7 +704,7 @@ class Engine:
         model: AnomalyModule,
         export_type: ExportType,
         export_root: str | Path | None = None,
-        transform: dict[str, Any] | A.Compose | str | Path | None = None,
+        transform: Compose | None = None,
         datamodule: AnomalibDataModule | None = None,
         dataset: AnomalibDataset | None = None,
         input_size: tuple[int, int] | None = None,
@@ -717,14 +718,12 @@ class Engine:
             export_type (ExportType): Export type.
             export_root (str | Path | None, optional): Path to the output directory. If it is not set, the model is
                 exported to trainer.default_root_dir. Defaults to None.
-            transform (dict[str, Any] | A.Compose | str | Path | None, optional): Transform config. Can either be a
-                path to a file containing the transform config or can be an object. The file or object should follow
-                Albumentation's format. If not provided, it takes the transform from datamodule or dataset. Datamodule
-                or Dataset should be provided if transforms is not set. Defaults to None.
+            transform (Compose | None, optional): Input transform to include in the exported model. If not provided,
+                the engine will try to use the transform from the datamodule or dataset. Defaults to None.
             datamodule (AnomalibDataModule | None, optional): Datamodule from which transforms is loaded.
-                This optional. Defaults to None.
+                Will be ignored in transform is provided. Defaults to None.
             dataset (AnomalibDataset | None, optional): Dataset from which the transforms is loaded.
-                 is optional. Defaults to None.
+                 Will be ignored if transform or datamodule is provided. Defaults to None.
             input_size (tuple[int, int] | None, optional): This is required only if the model is exported to ONNX and
                 OpenVINO format. Defaults to None.
             ov_args (dict[str, Any] | None, optional): This is optional and used only for OpenVINO's model optimizer.
@@ -767,14 +766,6 @@ class Engine:
                 transform = datamodule.test_data.transform
             elif dataset:
                 transform = dataset.transform
-            else:
-                logger.exception("Either datamodule or dataset must be provided if transform is None.")
-                raise ValueError
-        elif isinstance(transform, str | Path):
-            transform = A.load(filepath=transform, data_format="yaml")
-        else:
-            logger.exception(f"Unknown type {type(transform)} for transform.")
-            raise TypeError
 
         if export_root is None:
             export_root = Path(self.trainer.default_root_dir)
@@ -791,7 +782,6 @@ class Engine:
             assert input_size is not None, "input_size must be provided for ONNX export."
             exported_model_path = export_to_onnx(
                 model=model,
-                input_size=input_size,
                 export_root=export_root,
                 transform=transform,
                 task=self.task,
@@ -800,7 +790,6 @@ class Engine:
             assert input_size is not None, "input_size must be provided for OpenVINO export."
             exported_model_path = export_to_openvino(
                 model=model,
-                input_size=input_size,
                 export_root=export_root,
                 transform=transform,
                 task=self.task,

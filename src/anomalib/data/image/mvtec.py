@@ -30,14 +30,13 @@ import logging
 from collections.abc import Sequence
 from pathlib import Path
 
-import albumentations as A  # noqa: N812
 from pandas import DataFrame
+from torchvision.transforms.v2 import Compose
 
 from anomalib import TaskType
 from anomalib.data.base import AnomalibDataModule, AnomalibDataset
 from anomalib.data.utils import (
     DownloadInfo,
-    InputNormalizationMethod,
     LabelName,
     Split,
     TestSplitMode,
@@ -221,7 +220,7 @@ class MVTecDataset(AnomalibDataset):
     def __init__(
         self,
         task: TaskType,
-        transform: A.Compose,
+        transform: Compose,
         root: Path | str = "./datasets/MVTec",
         category: str = "bottle",
         split: str | Split | None = None,
@@ -312,17 +311,12 @@ class MVTec(AnomalibDataModule):
         self,
         root: Path | str = "./datasets/MVTec",
         category: str = "bottle",
-        image_size: int | tuple[int, int] = (256, 256),
-        center_crop: int | tuple[int, int] | None = None,
-        normalization: InputNormalizationMethod | str = InputNormalizationMethod.IMAGENET,
         train_batch_size: int = 32,
         eval_batch_size: int = 32,
         num_workers: int = 8,
         task: TaskType = TaskType.SEGMENTATION,
-        # transform_config_train: str | A.Compose | None = None,
-        # transform_config_eval: str | A.Compose | None = None,
-        transform_train=None,
-        transform_eval=None,
+        transform_train: Compose = None,
+        transform_eval: Compose = None,
         test_split_mode: TestSplitMode = TestSplitMode.FROM_DIR,
         test_split_ratio: float = 0.2,
         val_split_mode: ValSplitMode = ValSplitMode.SAME_AS_TEST,
@@ -342,19 +336,6 @@ class MVTec(AnomalibDataModule):
 
         self.root = Path(root)
         self.category = Path(category)
-
-        # transform_train = get_transforms(
-        #     config=transform_config_train,
-        #     image_size=image_size,
-        #     center_crop=center_crop,
-        #     normalization=InputNormalizationMethod(normalization),
-        # )
-        # transform_eval = get_transforms(
-        #     config=transform_config_eval,
-        #     image_size=image_size,
-        #     center_crop=center_crop,
-        #     normalization=InputNormalizationMethod(normalization),
-        # )
 
         self.train_data = MVTecDataset(
             task=task,
