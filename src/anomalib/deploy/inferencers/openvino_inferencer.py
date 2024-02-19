@@ -13,12 +13,12 @@ import albumentations as A  # noqa: N812
 import cv2
 import numpy as np
 from omegaconf import DictConfig
+from PIL import Image
 
 from anomalib import TaskType
 
 from .base_inferencer import Inferencer
 from anomalib.utils.visualization import ImageResult
-from anomalib.data.utils import read_image
 
 logger = logging.getLogger("anomalib")
 
@@ -184,7 +184,7 @@ class OpenVINOInferencer(Inferencer):
         if metadata is None:
             metadata = self.metadata if hasattr(self, "metadata") else {}
         if isinstance(image, str | Path):
-            image: np.ndarray = read_image(image)
+            image = np.array(Image.open(image)).astype(np.float32) / 255.0
 
         metadata["image_shape"] = image.shape[:2]
 
@@ -193,7 +193,7 @@ class OpenVINOInferencer(Inferencer):
         output = self.post_process(predictions, metadata=metadata)
 
         return ImageResult(
-            image=image,
+            image=(image * 255).astype(np.uint8),
             pred_score=output["pred_score"],
             pred_label=output["pred_label"],
             anomaly_map=output["anomaly_map"],

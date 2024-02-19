@@ -82,7 +82,7 @@ def infer(args: Namespace) -> None:
 
     filenames = get_image_filenames(path=args.input)
     for filename in filenames:
-        image = read_image(filename)
+        image = read_image(str(filename)).float() / 255.0
         predictions = inferencer.predict(image=image)
         output = visualizer.visualize_image(predictions)
 

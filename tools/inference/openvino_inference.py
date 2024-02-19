@@ -11,10 +11,12 @@ import logging
 from argparse import ArgumentParser, Namespace
 from pathlib import Path
 
-from anomalib.data.utils import generate_output_image_filename, get_image_filenames, read_image
+from anomalib.data.utils import generate_output_image_filename, get_image_filenames
 from anomalib.data.utils.image import save_image, show_image
 from anomalib.deploy import OpenVINOInferencer
 from anomalib.utils.visualization import ImageVisualizer
+from PIL import Image
+import numpy as np
 
 logger = logging.getLogger(__name__)
 
@@ -78,7 +80,7 @@ def infer(args: Namespace) -> None:
 
     filenames = get_image_filenames(path=args.input)
     for filename in filenames:
-        image = read_image(filename)
+        image = np.array(Image.open(filename)).astype(np.float32) / 255.0
         predictions = inferencer.predict(image=image)
         output = visualizer.visualize_image(predictions)
 
