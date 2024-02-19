@@ -38,7 +38,7 @@ logger = logging.getLogger(__name__)
 DOWNLOAD_INFO = DownloadInfo(
     name="UCSD Pedestrian",
     url="http://www.svcl.ucsd.edu/projects/anomaly/UCSD_Anomaly_Dataset.tar.gz",
-    hashsum="5006421b89885f45a6f93b041145f2eb",
+    hashsum="2329af326951f5097fdd114c50e853957d3e569493a49d22fc082a9fd791915b",
 )
 
 CATEGORIES = ("UCSDped1", "UCSDped2")
