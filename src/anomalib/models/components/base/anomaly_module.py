@@ -184,6 +184,6 @@ class AnomalyModule(pl.LightningModule, ABC):
         raise NotImplementedError
 
     @abstractproperty
-    def default_transform(self) -> Compose:
+    def transform(self) -> Compose:
         """Default transforms."""
         raise NotImplementedError
