@@ -16,8 +16,6 @@ from skimage.morphology import dilation
 from skimage.segmentation import find_boundaries
 
 from anomalib.data.utils import read_image
-from anomalib.utils.normalization.cdf import normalize as normalize_cdf
-from anomalib.utils.normalization.cdf import standardize
 from anomalib.utils.normalization.min_max import normalize as normalize_min_max
 from anomalib.utils.post_processing import compute_mask
 from anomalib.utils.visualization import ImageResult
@@ -154,21 +152,6 @@ class Inferencer(ABC):
                 metadata["min"],
                 metadata["max"],
             )
-
-        # standardize pixel scores
-        if "pixel_mean" in metadata and "pixel_std" in metadata and anomaly_maps is not None:
-            anomaly_maps = standardize(
-                anomaly_maps,
-                metadata["pixel_mean"],
-                metadata["pixel_std"],
-                center_at=metadata["image_mean"],
-            )
-            anomaly_maps = normalize_cdf(anomaly_maps, metadata["pixel_threshold"])
-
-        # standardize image scores
-        if "image_mean" in metadata and "image_std" in metadata:
-            pred_scores = standardize(pred_scores, metadata["image_mean"], metadata["image_std"])
-            pred_scores = normalize_cdf(pred_scores, metadata["image_threshold"])
 
         return anomaly_maps, float(pred_scores)
 
