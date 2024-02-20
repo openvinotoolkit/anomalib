@@ -84,7 +84,7 @@ def test_load_transforms_from_string() -> None:
             A.Resize(224, 224, always_apply=True),
         ],
     )
-    A.save(transform=transforms, filepath=config_path, data_format="yaml")
+    A.save(transform=transforms, filepath_or_buffer=config_path, data_format="yaml")
 
     # Pass a path to config
     transform = get_transforms(config=config_path)
