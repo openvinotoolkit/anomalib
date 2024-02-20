@@ -323,7 +323,7 @@ class BTech(AnomalibDataModule):
             category=category,
         )
 
-    def prepare_data(self) -> None:
+    def prepare_data(self) -> None:  # pragma: no cover
         """Download the dataset if not available.
 
         This method checks if the specified dataset is available in the file system.

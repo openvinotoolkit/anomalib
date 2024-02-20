@@ -314,7 +314,7 @@ class ShanghaiTech(AnomalibVideoDataModule):
             split=Split.TEST,
         )
 
-    def prepare_data(self) -> None:
+    def prepare_data(self) -> None:  # pragma: no cover
         """Download the dataset and convert video files."""
         training_root = self.root / "training"
         if training_root.is_dir():

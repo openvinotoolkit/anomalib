@@ -6,7 +6,7 @@
 import pytest
 from torch.utils.data import DataLoader
 
-from anomalib.data import AnomalibDataModule
+from anomalib.data import AnomalibDataModule, AnomalibDataset
 
 
 class _TestAnomalibDataModule:
@@ -23,3 +23,10 @@ class _TestAnomalibDataModule:
         dataloader = f"{subset}_dataloader"
         assert hasattr(datamodule, dataloader)
         assert isinstance(getattr(datamodule, dataloader)(), DataLoader)
+
+    @pytest.mark.parametrize("subset", ["train", "val", "test"])
+    def test_datamodule_has_dataset_attributes(self, datamodule: AnomalibDataModule, subset: str) -> None:
+        """Test that the datamodule has the correct dataset attributes."""
+        dataset = f"{subset}_data"
+        assert hasattr(datamodule, dataset)
+        assert isinstance(getattr(datamodule, dataset), AnomalibDataset)

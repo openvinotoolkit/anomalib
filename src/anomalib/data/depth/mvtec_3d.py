@@ -303,7 +303,7 @@ class MVTec3D(AnomalibDataModule):
             category=category,
         )
 
-    def prepare_data(self) -> None:
+    def prepare_data(self) -> None:  # pragma: no cover
         """Download the dataset if not available."""
         if (self.root / self.category).is_dir():
             logger.info("Found the dataset.")
