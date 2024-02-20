@@ -139,8 +139,8 @@ def get_single_model_metrics(
             else:
                 input_size = model_config.data.init_args.image_size
             export_to_openvino(
-                export_root=Path(project_path),
                 model=model,
+                export_root=Path(project_path),
                 input_size=input_size,
                 transform=engine.trainer.datamodule.test_data.transform,
                 ov_args={},

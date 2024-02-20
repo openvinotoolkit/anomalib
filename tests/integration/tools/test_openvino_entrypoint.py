@@ -45,8 +45,8 @@ class TestOpenVINOInferenceEntrypoint:
 
         # export OpenVINO model
         export_to_openvino(
-            export_root=_ckpt_path.parent.parent,
             model=model,
+            export_root=_ckpt_path.parent.parent,
             input_size=(256, 256),
             transform=transforms_config,
             ov_args={},

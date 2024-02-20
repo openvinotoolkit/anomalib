@@ -59,6 +59,7 @@ class CflowModel(nn.Module):
         self.condition_vector: int = condition_vector
         self.dec_arch = decoder
         self.pool_layers = layers
+        self.input_size = input_size
 
         self.encoder = TimmFeatureExtractor(backbone=self.backbone, layers=self.pool_layers, pre_trained=pre_trained)
         self.pool_dims = self.encoder.out_dims

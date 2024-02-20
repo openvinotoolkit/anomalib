@@ -758,7 +758,6 @@ class Engine:
                 task=self.task,
             )
         elif export_type == ExportType.ONNX:
-            assert input_size is not None, "input_size must be provided for ONNX export."
             exported_model_path = export_to_onnx(
                 model=model,
                 input_size=input_size,
@@ -767,7 +766,6 @@ class Engine:
                 task=self.task,
             )
         elif export_type == ExportType.OPENVINO:
-            assert input_size is not None, "input_size must be provided for OpenVINO export."
             exported_model_path = export_to_openvino(
                 model=model,
                 input_size=input_size,

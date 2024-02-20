@@ -154,6 +154,7 @@ class TestAPI:
             dataset_path=dataset_path,
             project_path=project_path,
         )
+        engine.fit(model=model, datamodule=dataset)
         engine.export(
             model=model,
             datamodule=dataset,

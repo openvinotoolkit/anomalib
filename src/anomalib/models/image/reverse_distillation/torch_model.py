@@ -46,6 +46,7 @@ class ReverseDistillationModel(nn.Module):
         self.tiler: Tiler | None = None
 
         encoder_backbone = backbone
+        self.input_size = input_size
         self.encoder = TimmFeatureExtractor(backbone=encoder_backbone, pre_trained=pre_trained, layers=layers)
         self.bottleneck = get_bottleneck_layer(backbone)
         self.decoder = get_decoder(backbone)
