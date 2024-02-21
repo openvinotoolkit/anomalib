@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 if try_import("openvino"):
-    from openvino.tools.mo.utils.cli_parser import get_common_cli_parser
+    from openvino.tools.ovc.cli_parser import get_common_cli_parser
 else:
     get_common_cli_parser = None
 
