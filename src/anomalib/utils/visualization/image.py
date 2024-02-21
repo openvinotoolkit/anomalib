@@ -263,6 +263,11 @@ class _ImageGrid:
         """
         num_cols = len(self.images)
         figure_size = (num_cols * 5, 5)
+
+        # Use Agg backend. This method fails when using backend like MacOSX which might be automatically selected
+        # The dimension of image returned by tostring_rgb() does not match the dimension of the canvas
+        matplotlib.use("Agg")
+
         self.figure, self.axis = plt.subplots(1, num_cols, figsize=figure_size)
         self.figure.subplots_adjust(right=0.9)
 
