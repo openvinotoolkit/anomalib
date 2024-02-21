@@ -11,7 +11,6 @@ from omegaconf import DictConfig
 from anomalib.utils.normalization import NormalizationMethod
 from anomalib.utils.types import NORMALIZATION
 
-from .cdf_normalization import _CdfNormalizationCallback
 from .min_max_normalization import _MinMaxNormalizationCallback
 
 
@@ -59,8 +58,6 @@ def _get_normalizer_from_method(normalization_method: NormalizationMethod | str)
         normalizer = None
     elif normalization_method == NormalizationMethod.MIN_MAX:
         normalizer = _MinMaxNormalizationCallback()
-    elif normalization_method == NormalizationMethod.CDF:
-        normalizer = _CdfNormalizationCallback()
     else:
         msg = f"Unknown normalization method {normalization_method}"
         raise ValueError(msg)
