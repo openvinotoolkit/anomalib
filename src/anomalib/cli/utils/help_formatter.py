@@ -51,7 +51,7 @@ def get_short_docstring(component: TypeVar) -> str:
     return docstring.short_description
 
 
-def pre_parse_arguments() -> dict:
+def get_verbosity_subcommand() -> dict:
     """Parse command line arguments and returns a dictionary of key-value pairs.
 
     Returns:
@@ -59,54 +59,22 @@ def pre_parse_arguments() -> dict:
 
     Examples:
         >>> import sys
-        >>> sys.argv = ['anomalib', 'fit', '--arg1', 'value1', '-a', 'value2', '-h']
-        >>> pre_parse_arguments()
-        {'subcommand': 'fit', 'arg1': 'value1', 'a': 'value2', 'h': None}
+        >>> sys.argv = ['anomalib', 'train', '-h', '-v']
+        >>> get_verbosity_subcommand()
+        {'subcommand': 'train', 'help': True, 'verbosity': 1}
     """
-    arguments: dict = {"subcommand": None}
-    i = 1
-    while i < len(sys.argv):
-        if sys.argv[i].startswith("--"):
-            key = sys.argv[i][2:]
-            value = None
-            if i + 1 < len(sys.argv) and not sys.argv[i + 1].startswith("--"):
-                value = sys.argv[i + 1]
-                i += 1
-            arguments[key] = value
-        elif sys.argv[i].startswith("-"):
-            key = sys.argv[i][1:]
-            value = None
-            if i + 1 < len(sys.argv) and not sys.argv[i + 1].startswith("-"):
-                value = sys.argv[i + 1]
-                i += 1
-            arguments[key] = value
-        elif i == 1:
-            arguments["subcommand"] = sys.argv[i]
-        i += 1
+    arguments: dict = {"subcommand": None, "help": False, "verbosity": 2}
+    if len(sys.argv) >= 2 and sys.argv[1] not in ("--help", "-h"):
+        arguments["subcommand"] = sys.argv[1]
+    if "--help" in sys.argv or "-h" in sys.argv:
+        arguments["help"] = True
+        if arguments["subcommand"] in REQUIRED_ARGUMENTS:
+            arguments["verbosity"] = 0
+            if "-v" in sys.argv or "--verbose" in sys.argv:
+                arguments["verbosity"] = 1
+            if "-vv" in sys.argv:
+                arguments["verbosity"] = 2
     return arguments
-
-
-def get_verbosity_subcommand() -> tuple:
-    """Return a tuple containing the verbosity level and the subcommand name.
-
-    The verbosity level is determined by the command line arguments passed to the script.
-    If the subcommand requires additional arguments, the verbosity level is only set if the
-    help option is specified. The verbosity level can be set to 0 (no output), 1 (normal output),
-    or 2 (verbose output).
-
-    Returns:
-        A tuple containing the verbosity level (int) and the subcommand name (str).
-    """
-    arguments = pre_parse_arguments()
-    verbosity = 2
-    if arguments["subcommand"] in REQUIRED_ARGUMENTS and ("h" in arguments or "help" in arguments):
-        if "v" in arguments:
-            verbosity = 1
-        elif "vv" in arguments:
-            verbosity = 2
-        else:
-            verbosity = 0
-    return verbosity, arguments["subcommand"]
 
 
 def get_intro() -> Markdown:
@@ -215,7 +183,7 @@ class CustomHelpFormatter(RichHelpFormatter, DefaultHelpFormatter):
     a more detailed and customizable help output for Anomalib CLI.
 
     Attributes:
-    verbose_level : int
+    verbosity_level : int
         The level of verbosity for the help output.
     subcommand : str | None
         The subcommand to render the guide for.
@@ -229,7 +197,9 @@ class CustomHelpFormatter(RichHelpFormatter, DefaultHelpFormatter):
         Format the help output.
     """
 
-    verbose_level, subcommand = get_verbosity_subcommand()
+    verbosity_dict = get_verbosity_subcommand()
+    verbosity_level = verbosity_dict["verbosity"]
+    subcommand = verbosity_dict["subcommand"]
 
     def add_usage(self, usage: str | None, actions: list, *args, **kwargs) -> None:
         """Add usage information to the formatter.
@@ -246,9 +216,9 @@ class CustomHelpFormatter(RichHelpFormatter, DefaultHelpFormatter):
             None
         """
         if self.subcommand in REQUIRED_ARGUMENTS:
-            if self.verbose_level == 0:
+            if self.verbosity_level == 0:
                 actions = []
-            elif self.verbose_level == 1:
+            elif self.verbosity_level == 1:
                 actions = [action for action in actions if action.dest in REQUIRED_ARGUMENTS[self.subcommand]]
 
         super().add_usage(usage, actions, *args, **kwargs)
@@ -264,9 +234,9 @@ class CustomHelpFormatter(RichHelpFormatter, DefaultHelpFormatter):
             action (argparse.Action): The action to add to the help formatter.
         """
         if self.subcommand in REQUIRED_ARGUMENTS:
-            if self.verbose_level == 0:
+            if self.verbosity_level == 0:
                 return
-            if self.verbose_level == 1 and action.dest not in REQUIRED_ARGUMENTS[self.subcommand]:
+            if self.verbosity_level == 1 and action.dest not in REQUIRED_ARGUMENTS[self.subcommand]:
                 return
         super().add_argument(action)
 
@@ -281,11 +251,11 @@ class CustomHelpFormatter(RichHelpFormatter, DefaultHelpFormatter):
         """
         with self.console.capture() as capture:
             section = self._root_section
-            if self.subcommand in REQUIRED_ARGUMENTS and self.verbose_level in (0, 1) and len(section.rich_items) > 1:
+            if self.subcommand in REQUIRED_ARGUMENTS and self.verbosity_level in (0, 1) and len(section.rich_items) > 1:
                 contents = render_guide(self.subcommand)
                 for content in contents:
                     self.console.print(content)
-            if self.verbose_level > 0:
+            if self.verbosity_level > 0:
                 if len(section.rich_items) > 1:
                     section = Panel(section, border_style="dim", title="Arguments", title_align="left")
                 self.console.print(section, highlight=False, soft_wrap=True)

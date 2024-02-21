@@ -318,7 +318,7 @@ def add_hardware_suffix_to_torch(
 
     for operator, version in requirement.specs:
         hardware_suffix = hardware_suffix or get_hardware_suffix(with_available_torch_build, version)
-        updated_version = version + f"+{hardware_suffix}" if not version.startswith("2") else version
+        updated_version = version + f"+{hardware_suffix}" if not version.startswith(("2.1", "2.2")) else version
 
         # ``specs`` contains operators and versions as follows:
         # These are to be concatenated again for the updated version.
@@ -402,7 +402,7 @@ def get_torch_install_args(requirement: str | Requirement) -> list[str]:
         # Get the torchvision version depending on the torch version.
         torchvision_version = AVAILABLE_TORCH_VERSIONS[version]["torchvision"]
         torchvision_requirement = f"torchvision{operator}{torchvision_version}"
-        if torchvision_version not in ("0.16.0", "0.16.1"):
+        if isinstance(torchvision_version, str) and not torchvision_version.startswith("0.16"):
             torchvision_requirement += f"+{hardware_suffix}"
 
         # Return the install arguments.

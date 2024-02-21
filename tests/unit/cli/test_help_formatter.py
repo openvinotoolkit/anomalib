@@ -13,40 +13,27 @@ from anomalib.cli.utils.help_formatter import (
     get_cli_usage_docstring,
     get_verbose_usage,
     get_verbosity_subcommand,
-    pre_parse_arguments,
     render_guide,
 )
-
-
-def test_pre_parse_arguments() -> None:
-    """Test pre_parse_arguments."""
-    argv = ["anomalib", "subcommand", "--arg1", "value1", "-a2", "value2"]
-    expected_output: dict = {
-        "subcommand": "subcommand",
-        "arg1": "value1",
-        "a2": "value2",
-    }
-    with patch.object(sys, "argv", argv):
-        assert pre_parse_arguments() == expected_output
 
 
 def test_get_verbosity_subcommand() -> None:
     """Test if the verbosity level and subcommand are correctly parsed."""
     argv = ["anomalib", "fit", "-h"]
     with patch.object(sys, "argv", argv):
-        assert get_verbosity_subcommand() == (0, "fit")
+        assert get_verbosity_subcommand() == {"help": True, "verbosity": 0, "subcommand": "fit"}
 
     argv = ["anomalib", "fit", "-h", "-v"]
     with patch.object(sys, "argv", argv):
-        assert get_verbosity_subcommand() == (1, "fit")
+        assert get_verbosity_subcommand() == {"help": True, "verbosity": 1, "subcommand": "fit"}
 
     argv = ["anomalib", "fit", "-h", "-vv"]
     with patch.object(sys, "argv", argv):
-        assert get_verbosity_subcommand() == (2, "fit")
+        assert get_verbosity_subcommand() == {"help": True, "verbosity": 2, "subcommand": "fit"}
 
     argv = ["anomalib", "-h"]
     with patch.object(sys, "argv", argv):
-        assert get_verbosity_subcommand() == (2, None)
+        assert get_verbosity_subcommand() == {"help": True, "verbosity": 2, "subcommand": None}
 
 
 def test_get_verbose_usage() -> None:
@@ -120,7 +107,7 @@ class TestCustomHelpFormatter:
         """Test verbose level 0."""
         argv = ["anomalib", "fit", "-h"]
         assert mock_parser.formatter_class == CustomHelpFormatter
-        mock_parser.formatter_class.verbose_level = 0
+        mock_parser.formatter_class.verbosity_level = 0
         with pytest.raises(SystemExit, match="0"):
             mock_parser.parse_args(argv)
         out, _ = capfd.readouterr()
@@ -131,7 +118,7 @@ class TestCustomHelpFormatter:
         """Test verbose level 1."""
         argv = ["anomalib", "fit", "-h", "-v"]
         assert mock_parser.formatter_class == CustomHelpFormatter
-        mock_parser.formatter_class.verbose_level = 1
+        mock_parser.formatter_class.verbosity_level = 1
         with pytest.raises(SystemExit, match="0"):
             mock_parser.parse_args(argv)
         out, _ = capfd.readouterr()
@@ -142,7 +129,7 @@ class TestCustomHelpFormatter:
         """Test verbose level 2."""
         argv = ["anomalib", "fit", "-h", "-vv"]
         assert mock_parser.formatter_class == CustomHelpFormatter
-        mock_parser.formatter_class.verbose_level = 2
+        mock_parser.formatter_class.verbosity_level = 2
         with pytest.raises(SystemExit, match="0"):
             mock_parser.parse_args(argv)
         out, _ = capfd.readouterr()
