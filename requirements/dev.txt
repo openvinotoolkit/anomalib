@@ -3,5 +3,6 @@ pytest
 pytest-cov
 pytest-sugar
 pytest-xdist
+pytest-mock
 coverage[toml]
 tox

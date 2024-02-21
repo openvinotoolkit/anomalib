@@ -25,7 +25,8 @@ Set up your development environment to start contributing. This involves install
    Install the base and development requirements:
 
    ```bash
-   pip install -r requirements/base.txt -r requirements/dev.txt
+   pip install -r requirements/installer.txt -r requirements/dev.txt
+   anomalib install -v
    ```
 
    Optionally, for a full installation with all dependencies:
