@@ -26,7 +26,7 @@ logger = logging.getLogger("anomalib")
 
 if try_import("openvino"):
     from openvino.runtime import serialize
-    from openvino.tools.mo.convert import convert_model
+    from openvino.tools.ovc import convert_model
 
 
 class ExportType(str, Enum):
