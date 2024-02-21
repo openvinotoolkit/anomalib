@@ -152,7 +152,7 @@ class AnomalibCLI:
         parser.add_argument("--visualization.save", type=bool, default=False)
         parser.add_argument("--visualization.log", type=bool, default=False)
         parser.add_argument("--visualization.show", type=bool, default=False)
-        parser.add_argument("--task", type=TaskType, default=TaskType.SEGMENTATION)
+        parser.add_argument("--task", type=TaskType | str, default=TaskType.SEGMENTATION)
         parser.add_argument("--metrics.image", type=list[str] | str | None, default=["F1Score", "AUROC"])
         parser.add_argument("--metrics.pixel", type=list[str] | str | None, default=None, required=False)
         parser.add_argument("--metrics.threshold", type=BaseThreshold | str, default="F1AdaptiveThreshold")

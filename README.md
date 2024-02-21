@@ -233,7 +233,7 @@ Each model in anomalib is benchmarked on a set of datasets, and the results are 
 </details>
 
 <details>
-<summary>Benchmarking via API</summary>
+<summary>Benchmarking via CLI</summary>
 
 To run the benchmarking tool, run the following command:
 
