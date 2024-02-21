@@ -111,7 +111,7 @@ class Engine:
             Defaults to None.
         pixel_metrics (str | list[str] | None, optional): Pixel metrics to be used for evaluation.
             Defaults to None.
-        visualization_handlers (BaseVisualizationGenerator | list[BaseVisualizationGenerator] | None):
+        visualizers (BaseVisualizationGenerator | list[BaseVisualizationGenerator] | None):
             Visualization parameters. Defaults to None.
         **kwargs: PyTorch Lightning Trainer arguments.
     """
@@ -139,8 +139,8 @@ class Engine:
         self.normalization = normalization
         self.threshold = threshold
         self.task = TaskType(task)
-        self.image_metric_names = image_metrics
-        self.pixel_metric_names = pixel_metrics
+        self.image_metric_names = image_metrics if image_metrics else ["AUROC", "F1Score"]
+        self.pixel_metric_names = pixel_metrics if pixel_metrics else ["AUROC", "F1Score"]
         self.visualizers = visualizers
 
         self.save_image = save_image
