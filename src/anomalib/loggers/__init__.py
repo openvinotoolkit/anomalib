@@ -31,7 +31,7 @@ try:
         ],
     )
 except ImportError:
-    print("To use any logger install it using `anomalib install`")
+    print("To use any logger install it using `anomalib install -v`")
 
 
 AVAILABLE_LOGGERS = ["tensorboard", "wandb", "csv", "comet"]

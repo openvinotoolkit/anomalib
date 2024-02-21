@@ -18,6 +18,8 @@ AVAILABLE_TORCH_VERSIONS = {
     "2.0.0": {"torchvision": "0.15.1", "cuda": ("11.7", "11.8")},
     "2.0.1": {"torchvision": "0.15.2", "cuda": ("11.7", "11.8")},
     "2.1.1": {"torchvision": "0.16.1", "cuda": ("11.8", "12.1")},
+    "2.1.2": {"torchvision": "0.16.2", "cuda": ("11.8", "12.1")},
+    "2.2.0": {"torchvision": "0.16.2", "cuda": ("11.8", "12.1")},
 }
 
 
@@ -95,9 +97,7 @@ def parse_requirements(
 
     if not skip_torch and not torch_requirement:
         msg = "Could not find torch requirement. Anoamlib depends on torch. Please add torch to your requirements."
-        raise ValueError(
-            msg,
-        )
+        raise ValueError(msg)
 
     # Get the unique list of the requirements.
     other_requirements = list(set(other_requirements))
@@ -318,7 +318,7 @@ def add_hardware_suffix_to_torch(
 
     for operator, version in requirement.specs:
         hardware_suffix = hardware_suffix or get_hardware_suffix(with_available_torch_build, version)
-        updated_version = version + f"+{hardware_suffix}" if version not in ("2.1.0", "2.1.1") else version
+        updated_version = version + f"+{hardware_suffix}" if not version.startswith("2") else version
 
         # ``specs`` contains operators and versions as follows:
         # These are to be concatenated again for the updated version.

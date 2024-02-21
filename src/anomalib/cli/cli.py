@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from functools import partial
 from inspect import signature
 from pathlib import Path
@@ -16,7 +16,7 @@ from jsonargparse._actions import _ActionSubCommands
 from rich import traceback
 
 from anomalib import TaskType, __version__
-from anomalib.cli.utils import CustomHelpFormatter
+from anomalib.cli.utils.help_formatter import CustomHelpFormatter, get_short_docstring
 from anomalib.cli.utils.openvino import add_openvino_export_arguments
 from anomalib.loggers import configure_logger
 
@@ -53,12 +53,12 @@ class AnomalibCLI:
     ``SaveConfigCallback`` overwrites the config if it already exists.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, args: Sequence[str] | None = None) -> None:
         self.parser = self.init_parser()
         self.subcommand_parsers: dict[str, ArgumentParser] = {}
         self.subcommand_method_arguments: dict[str, list[str]] = {}
         self.add_subcommands()
-        self.config = self.parser.parse_args()
+        self.config = self.parser.parse_args(args=args)
         self.subcommand = self.config["subcommand"]
         if _LIGHTNING_AVAILABLE:
             self.before_instantiate_classes()
@@ -110,14 +110,15 @@ class AnomalibCLI:
         for subcommand in self.subcommands():
             sub_parser = self.init_parser(**kwargs)
 
+            fn = getattr(Trainer, subcommand)
+            # extract the first line description in the docstring for the subcommand help message
+            description = get_short_docstring(fn)
+            subparser_kwargs = kwargs.get(subcommand, {})
+            subparser_kwargs.setdefault("description", description)
+
             self.subcommand_parsers[subcommand] = sub_parser
-            added_arguments = sub_parser.add_method_arguments(
-                Trainer,
-                subcommand,
-                skip=set(self.subcommands()[subcommand]),
-                fail_untyped=False,
-            )
-            self.subcommand_method_arguments[subcommand] = added_arguments
+            parser_subcommands.add_subcommand(subcommand, sub_parser, help=description)
+            self.add_trainer_arguments(sub_parser, subcommand)
 
         # Add anomalib subcommands
         for subcommand in self.anomalib_subcommands():
@@ -169,6 +170,26 @@ class AnomalibCLI:
         parser.link_arguments("results_dir.path", "trainer.default_root_dir")
         # TODO(ashwinvaidya17): Tiling should also be a category of its own
         # CVS-122659
+
+    def add_trainer_arguments(self, parser: ArgumentParser, subcommand: str) -> None:
+        """Add train arguments to the parser."""
+        self._add_default_arguments_to_parser(parser)
+        self._add_trainer_arguments_to_parser(parser, add_optimizer=True, add_scheduler=True)
+        parser.add_subclass_arguments(
+            AnomalyModule,
+            "model",
+            fail_untyped=False,
+            required=True,
+        )
+        parser.add_subclass_arguments(AnomalibDataModule, "data")
+        self.add_arguments_to_parser(parser)
+        skip: set[str | int] = set(self.subcommands()[subcommand])
+        added = parser.add_method_arguments(
+            Trainer,
+            subcommand,
+            skip=skip,
+        )
+        self.subcommand_method_arguments[subcommand] = added
 
     def add_train_arguments(self, parser: ArgumentParser) -> None:
         """Add train arguments to the parser."""
@@ -239,6 +260,7 @@ class AnomalibCLI:
             help="Install the full or optional-dependencies.",
             default="full",
             type=str,
+            choices=["full", "core", "dev", "loggers", "notebooks", "openvino"],
         )
         sub_parser.add_argument(
             "-v",

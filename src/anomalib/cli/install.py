@@ -48,21 +48,21 @@ def anomalib_install(option: str = "full", verbose: bool = False) -> int:
     )
     requirements = get_requirements(requirement_files=options)
 
-    # Parse requirements into torch, mmcv and other requirements.
+    # Parse requirements into torch and other requirements.
     # This is done to parse the correct version of torch (cpu/cuda).
-    torch_requirement, other_requirements = parse_requirements(requirements, skip_torch="engine" not in options)
+    torch_requirement, other_requirements = parse_requirements(requirements, skip_torch="core" not in options)
 
     # Get install args for torch to install it from a specific index-url
     install_args: list[str] = []
     torch_install_args = []
-    if "engine" in options and torch_requirement is not None:
+    if "core" in options and torch_requirement is not None:
         torch_install_args = get_torch_install_args(torch_requirement)
 
     # Combine torch and other requirements.
     install_args = other_requirements + torch_install_args
 
     # Install requirements.
-    with console.status("[bold green]Working on installation...\n") as status:
+    with console.status("[bold green]Installing packages...  This may take a few minutes.\n") as status:
         if verbose:
             logger.setLevel(logging.INFO)
             status.stop()
