@@ -11,7 +11,6 @@ import pytest
 import torch
 
 from anomalib import TaskType
-from anomalib.data import MVTec
 from anomalib.deploy import ExportType, OpenVINOInferencer, TorchInferencer
 from anomalib.engine import Engine
 from anomalib.models import Padim
@@ -57,7 +56,7 @@ class _MockImageLoader:
         TaskType.SEGMENTATION,
     ],
 )
-def test_torch_inference(task: TaskType, ckpt_path: Callable[[str], Path], dataset_path: Path) -> None:
+def test_torch_inference(task: TaskType, ckpt_path: Callable[[str], Path]) -> None:
     """Tests Torch inference.
 
     Model is not trained as this checks that the inferencers are working.
@@ -70,13 +69,10 @@ def test_torch_inference(task: TaskType, ckpt_path: Callable[[str], Path], datas
     model = Padim()
     engine = Engine(task=task)
     export_root = ckpt_path("Padim").parent.parent
-    datamodule = MVTec(root=dataset_path / "mvtec", category="dummy")
     engine.export(
         model=model,
         export_type=ExportType.TORCH,
-        input_size=(256, 256),
         export_root=export_root,
-        datamodule=datamodule,
         ckpt_path=str(ckpt_path("Padim")),
     )
     # Test torch inferencer
@@ -99,7 +95,7 @@ def test_torch_inference(task: TaskType, ckpt_path: Callable[[str], Path], datas
         TaskType.SEGMENTATION,
     ],
 )
-def test_openvino_inference(task: TaskType, ckpt_path: Callable[[str], Path], dataset_path: Path) -> None:
+def test_openvino_inference(task: TaskType, ckpt_path: Callable[[str], Path]) -> None:
     """Tests OpenVINO inference.
 
     Model is not trained as this checks that the inferencers are working.
@@ -112,13 +108,10 @@ def test_openvino_inference(task: TaskType, ckpt_path: Callable[[str], Path], da
     model = Padim()
     engine = Engine(task=task)
     export_dir = ckpt_path("Padim").parent.parent
-    datamodule = MVTec(root=dataset_path / "mvtec", category="dummy")
     exported_xml_file_path = engine.export(
         model=model,
         export_type=ExportType.OPENVINO,
-        input_size=(256, 256),
         export_root=export_dir,
-        datamodule=datamodule,
         ckpt_path=str(ckpt_path("Padim")),
     )
 
