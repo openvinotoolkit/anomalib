@@ -13,7 +13,7 @@ import lightning.pytorch as pl
 import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torch import nn
-from torchvision.transforms.v2 import Compose
+from torchvision.transforms.v2 import Transform
 
 from anomalib import LearningType
 from anomalib.metrics import AnomalibMetricCollection
@@ -50,7 +50,7 @@ class AnomalyModule(pl.LightningModule, ABC):
         self.image_metrics: AnomalibMetricCollection
         self.pixel_metrics: AnomalibMetricCollection
 
-        self._transform: Compose | None = None
+        self._transform: Transform | None = None
 
     def forward(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> Any:  # noqa: ANN401
         """Perform the forward-pass by passing input tensor to the module.
@@ -184,7 +184,7 @@ class AnomalyModule(pl.LightningModule, ABC):
         raise NotImplementedError
 
     @property
-    def transform(self) -> Compose:
+    def transform(self) -> Transform:
         """Retrieve the transform that the model should use during inference.
 
         If the model is attached to a trainer and the trainer has a datamodule with an eval_transform,
@@ -195,6 +195,6 @@ class AnomalyModule(pl.LightningModule, ABC):
         return self.default_transform
 
     @abstractproperty
-    def default_transform(self) -> Compose:
+    def default_transform(self) -> Transform:
         """Default transforms."""
         raise NotImplementedError

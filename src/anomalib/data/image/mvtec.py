@@ -31,7 +31,7 @@ from collections.abc import Sequence
 from pathlib import Path
 
 from pandas import DataFrame
-from torchvision.transforms.v2 import Compose
+from torchvision.transforms.v2 import Transform
 
 from anomalib import TaskType
 from anomalib.data.base import AnomalibDataModule, AnomalibDataset
@@ -220,7 +220,7 @@ class MVTecDataset(AnomalibDataset):
     def __init__(
         self,
         task: TaskType,
-        transform: Compose,
+        transform: Transform,
         root: Path | str = "./datasets/MVTec",
         category: str = "bottle",
         split: str | Split | None = None,
@@ -315,9 +315,9 @@ class MVTec(AnomalibDataModule):
         eval_batch_size: int = 32,
         num_workers: int = 8,
         task: TaskType = TaskType.SEGMENTATION,
-        transform: Compose = None,
-        train_transform: Compose = None,
-        eval_transform: Compose = None,
+        transform: Transform = None,
+        train_transform: Transform = None,
+        eval_transform: Transform = None,
         test_split_mode: TestSplitMode = TestSplitMode.FROM_DIR,
         test_split_ratio: float = 0.2,
         val_split_mode: ValSplitMode = ValSplitMode.SAME_AS_TEST,

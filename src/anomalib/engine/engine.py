@@ -13,7 +13,7 @@ from lightning.pytorch.trainer.connectors.callback_connector import _CallbackCon
 from lightning.pytorch.utilities.types import _EVALUATE_OUTPUT, _PREDICT_OUTPUT, EVAL_DATALOADERS, TRAIN_DATALOADERS
 from omegaconf import DictConfig, ListConfig
 from torch.utils.data import DataLoader, Dataset
-from torchvision.transforms.v2 import Compose
+from torchvision.transforms.v2 import Transform
 
 from anomalib import LearningType, TaskType
 from anomalib.callbacks.metrics import _MetricsCallback
@@ -264,13 +264,13 @@ class Engine:
 
     def _setup_task_and_transform(
         self,
-        transform: Compose,
+        transform: Transform,
         *dataloaders: EVAL_DATALOADERS | TRAIN_DATALOADERS | AnomalibDataModule | None,
     ) -> None:
         """Override the dataloader task and transform attributes.
 
         Args:
-            transform (Compose): Transform to be used for the dataloaders.
+            transform (Transform): Transform to be used for the dataloaders.
             dataloaders (TRAIN_DATALOADERS | EVAL_DATALOADERS): Dataloaders to be used for training or evaluation.
         """
         for dataloader in dataloaders:
@@ -703,7 +703,7 @@ class Engine:
         model: AnomalyModule,
         export_type: ExportType,
         export_root: str | Path | None = None,
-        transform: Compose | None = None,
+        transform: Transform | None = None,
         ov_args: dict[str, Any] | None = None,
         ckpt_path: str | None = None,
     ) -> Path | None:
@@ -714,7 +714,7 @@ class Engine:
             export_type (ExportType): Export type.
             export_root (str | Path | None, optional): Path to the output directory. If it is not set, the model is
                 exported to trainer.default_root_dir. Defaults to None.
-            transform (Compose | None, optional): Input transform to include in the exported model. If not provided,
+            transform (Transform | None, optional): Input transform to include in the exported model. If not provided,
                 the engine will try to use the transform from the datamodule or dataset. Defaults to None.
             ov_args (dict[str, Any] | None, optional): This is optional and used only for OpenVINO's model optimizer.
                 Defaults to None.
