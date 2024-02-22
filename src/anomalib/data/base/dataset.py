@@ -10,13 +10,13 @@ from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from pathlib import Path
 
-import albumentations as A  # noqa: N812
 import pandas as pd
 import torch
 from pandas import DataFrame
 from PIL import Image
 from torch.utils.data import Dataset
 from torchvision.transforms.functional import to_tensor
+from torchvision.transforms.v2 import Transform
 from torchvision.tv_tensors import Mask
 
 from anomalib import TaskType
@@ -41,7 +41,7 @@ class AnomalibDataset(Dataset, ABC):
         transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
     """
 
-    def __init__(self, task: TaskType, transform: A.Compose) -> None:
+    def __init__(self, task: TaskType, transform: Transform) -> None:
         super().__init__()
         self.task = task
         self.transform = transform
@@ -122,7 +122,7 @@ class AnomalibDataset(Dataset, ABC):
         item = {"image_path": image_path, "label": label_index}
 
         if self.task == TaskType.CLASSIFICATION:
-            item["image"] = self.transform(image)
+            item["image"] = self.transform(image) if self.transform else image
         elif self.task in (TaskType.DETECTION, TaskType.SEGMENTATION):
             # Only Anomalous (1) images have masks in anomaly datasets
             # Therefore, create empty mask for Normal (0) images.
@@ -131,7 +131,11 @@ class AnomalibDataset(Dataset, ABC):
                 if label_index == 0
                 else Mask(to_tensor(Image.open(mask_path)).squeeze())
             )
-            item["image"], item["mask"] = self.transform(image, mask)
+            if self.transform:
+                item["image"], item["mask"] = self.transform(image, mask)
+            else:
+                item["image"] = image
+                item["mask"] = mask
             item["mask_path"] = mask_path
 
             if self.task == TaskType.DETECTION:
