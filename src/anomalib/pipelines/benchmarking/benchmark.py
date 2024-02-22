@@ -31,7 +31,6 @@ from anomalib.loggers import configure_logger
 from anomalib.models import get_model
 from anomalib.pipelines.sweep import get_openvino_throughput, get_run_config, get_torch_throughput
 from anomalib.pipelines.sweep.config import flattened_config_to_nested
-from anomalib.utils.config import update_input_size_config
 
 from .utils import upload_to_comet, upload_to_wandb, write_metrics
 
@@ -299,7 +298,6 @@ def sweep(
                 },
             ),
         )
-    model_config = update_input_size_config(model_config)
 
     # Set device in config. 0 - cpu, [0], [1].. - gpu id
     devices: list[int] | int

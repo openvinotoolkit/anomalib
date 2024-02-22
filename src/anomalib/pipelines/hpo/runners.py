@@ -15,7 +15,6 @@ from anomalib.data import get_datamodule
 from anomalib.engine import Engine
 from anomalib.models import get_model
 from anomalib.pipelines.sweep import flatten_sweep_params, flattened_config_to_nested, set_in_nested_config
-from anomalib.utils.config import update_input_size_config
 from anomalib.utils.exceptions import try_import
 
 from .config import flatten_hpo_params
@@ -71,10 +70,9 @@ class WandbSweep:
 
         for param in wandb.config.as_dict():
             set_in_nested_config(self.config, param.split("."), wandb.config[param])
-        config = update_input_size_config(self.config)
 
-        model = get_model(config.model)
-        datamodule = get_datamodule(config)
+        model = get_model(self.config.model)
+        datamodule = get_datamodule(self.config)
 
         # Disable saving checkpoints as all checkpoints from the sweep will get uploaded
         engine = Engine(enable_checkpointing=False, logger=wandb_logger, devices=1)
@@ -126,10 +124,9 @@ class CometSweep:
                 # this check is needed as comet also returns model and sweep_config as keys
                 if param in self.sweep_config.parameters:
                     set_in_nested_config(self.config, param.split("."), run_params[param])
-            config = update_input_size_config(self.config)
 
-            model = get_model(config.model)
-            datamodule = get_datamodule(config)
+            model = get_model(self.config.model)
+            datamodule = get_datamodule(self.config)
 
             # Disable saving checkpoints as all checkpoints from the sweep will get uploaded
             engine = Engine(enable_checkpointing=False, logger=comet_logger, devices=1)
