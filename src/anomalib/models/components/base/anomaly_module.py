@@ -183,7 +183,18 @@ class AnomalyModule(pl.LightningModule, ABC):
         """Learning type of the model."""
         raise NotImplementedError
 
-    @abstractproperty
+    @property
     def transform(self) -> Compose:
+        """Retrieve the transform that the model should use during inference.
+
+        If the model is attached to a trainer and the trainer has a datamodule with an eval_transform,
+        then the model will use that transform. Otherwise, it will use the default transform.
+        """
+        if self._trainer and self._trainer.datamodule and self._trainer.datamodule.eval_transform:
+            return self._trainer.datamodule.eval_transform
+        return self.default_transform
+
+    @abstractproperty
+    def default_transform(self) -> Compose:
         """Default transforms."""
         raise NotImplementedError

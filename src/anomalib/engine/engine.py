@@ -392,7 +392,7 @@ class Engine:
                 ```
         """
         self._setup_trainer(model)
-        self._setup_task_and_transform(model.transform, train_dataloaders, val_dataloaders, datamodule)
+        self._setup_task_and_transform(model.default_transform, train_dataloaders, val_dataloaders, datamodule)
         if model.learning_type in [LearningType.ZERO_SHOT, LearningType.FEW_SHOT]:
             # if the model is zero-shot or few-shot, we only need to run validate for normalization and thresholding
             self.trainer.validate(model, val_dataloaders, datamodule=datamodule, ckpt_path=ckpt_path)
@@ -443,7 +443,10 @@ class Engine:
         """
         if model:
             self._setup_trainer(model)
-        self._setup_task_and_transform(dataloaders)
+            transform = model.default_transform
+        else:
+            transform = self.model.default_transform
+        self._setup_task_and_transform(transform, dataloaders)
         return self.trainer.validate(model, dataloaders, ckpt_path, verbose, datamodule)
 
     def test(
@@ -527,10 +530,13 @@ class Engine:
         """
         if model:
             self._setup_trainer(model)
+            transform = model.default_transform
         elif not self.model:
             msg = "`Engine.test()` requires an `AnomalyModule` when it hasn't been passed in a previous run."
             raise RuntimeError(msg)
-        self._setup_task_and_transform(dataloaders)
+        else:
+            transform = self.model.default_transform
+        self._setup_task_and_transform(transform, dataloaders)
         if self._should_run_validation(model or self.model, dataloaders, datamodule, ckpt_path):
             logger.info("Running validation before testing to collect normalization metrics and/or thresholds.")
             self.trainer.validate(model, dataloaders, None, verbose=False, datamodule=datamodule)
@@ -603,6 +609,9 @@ class Engine:
         ), "`Engine.predict()` requires an `AnomalyModule` when it hasn't been passed in a previous run."
         if model:
             self._setup_trainer(model)
+            transform = model.default_transform
+        else:
+            transform = self.model.default_transform
 
         if not ckpt_path:
             logger.warning("ckpt_path is not provided. Model weights will not be loaded.")
@@ -621,7 +630,7 @@ class Engine:
                 msg = f"Unknown type for dataloaders {type(dataloaders)}"
                 raise TypeError(msg)
 
-        self._setup_task_and_transform(dataloaders, datamodule)
+        self._setup_task_and_transform(transform, dataloaders, datamodule)
 
         if self._should_run_validation(model or self.model, None, datamodule, ckpt_path):
             logger.info("Running validation before predicting to collect normalization metrics and/or thresholds.")
@@ -676,7 +685,7 @@ class Engine:
         """
         self._setup_trainer(model)
         self._setup_task_and_transform(
-            model.transform,
+            model.default_transform,
             train_dataloaders,
             val_dataloaders,
             test_dataloaders,
@@ -695,9 +704,6 @@ class Engine:
         export_type: ExportType,
         export_root: str | Path | None = None,
         transform: Compose | None = None,
-        datamodule: AnomalibDataModule | None = None,
-        dataset: AnomalibDataset | None = None,
-        input_size: tuple[int, int] | None = None,
         ov_args: dict[str, Any] | None = None,
         ckpt_path: str | None = None,
     ) -> Path | None:
@@ -710,12 +716,6 @@ class Engine:
                 exported to trainer.default_root_dir. Defaults to None.
             transform (Compose | None, optional): Input transform to include in the exported model. If not provided,
                 the engine will try to use the transform from the datamodule or dataset. Defaults to None.
-            datamodule (AnomalibDataModule | None, optional): Datamodule from which transforms is loaded.
-                Will be ignored in transform is provided. Defaults to None.
-            dataset (AnomalibDataset | None, optional): Dataset from which the transforms is loaded.
-                 Will be ignored if transform or datamodule is provided. Defaults to None.
-            input_size (tuple[int, int] | None, optional): This is required only if the model is exported to ONNX and
-                OpenVINO format. Defaults to None.
             ov_args (dict[str, Any] | None, optional): This is optional and used only for OpenVINO's model optimizer.
                 Defaults to None.
             ckpt_path (str | None): Checkpoint path. If provided, the model will be loaded from this path.
@@ -746,16 +746,8 @@ class Engine:
                     --mo_args.compress_to_fp16 False
                 ```
         """
-        self._setup_trainer(model)
-        self._setup_task_and_transform(datamodule, dataset)
         if ckpt_path:
             model = model.__class__.load_from_checkpoint(ckpt_path)
-
-        if transform is None:
-            if datamodule:
-                transform = datamodule.test_data.transform
-            elif dataset:
-                transform = dataset.transform
 
         if export_root is None:
             export_root = Path(self.trainer.default_root_dir)
@@ -769,7 +761,6 @@ class Engine:
                 task=self.task,
             )
         elif export_type == ExportType.ONNX:
-            assert input_size is not None, "input_size must be provided for ONNX export."
             exported_model_path = export_to_onnx(
                 model=model,
                 export_root=export_root,
@@ -777,7 +768,6 @@ class Engine:
                 task=self.task,
             )
         elif export_type == ExportType.OPENVINO:
-            assert input_size is not None, "input_size must be provided for OpenVINO export."
             exported_model_path = export_to_openvino(
                 model=model,
                 export_root=export_root,

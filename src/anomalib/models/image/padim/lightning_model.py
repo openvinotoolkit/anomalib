@@ -132,7 +132,7 @@ class Padim(MemoryBankMixin, AnomalyModule):
         return LearningType.ONE_CLASS
 
     @property
-    def transform(self) -> Compose:
+    def default_transform(self) -> Compose:
         """Default transform for Padim."""
         return Compose(
             [
