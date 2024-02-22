@@ -61,3 +61,8 @@ class DummyModule(AnomalyModule):
     def learning_type(self) -> LearningType:
         """Returns the learning type."""
         return LearningType.ZERO_SHOT
+
+    @property
+    def default_transform(self) -> None:
+        """Returns the transform."""
+        return
