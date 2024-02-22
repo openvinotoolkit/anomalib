@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, Any
 from lightning.pytorch import LightningDataModule
 from lightning.pytorch.utilities.types import EVAL_DATALOADERS, TRAIN_DATALOADERS
 from torch.utils.data.dataloader import DataLoader, default_collate
+from torchvision.transforms import Compose
 
 from anomalib.data.utils import TestSplitMode, ValSplitMode, random_split, split_by_label
 from anomalib.data.utils.synthetic import SyntheticAnomalyDataset
@@ -74,6 +75,9 @@ class AnomalibDataModule(LightningDataModule, ABC):
         val_split_ratio: float,
         test_split_mode: TestSplitMode | None = None,
         test_split_ratio: float | None = None,
+        transform: Compose | None = None,
+        train_transform: Compose | None = None,
+        eval_transform: Compose | None = None,
         seed: int | None = None,
     ) -> None:
         super().__init__()
@@ -85,6 +89,10 @@ class AnomalibDataModule(LightningDataModule, ABC):
         self.val_split_mode = val_split_mode
         self.val_split_ratio = val_split_ratio
         self.seed = seed
+
+        # set transforms
+        self.train_transform = train_transform or transform
+        self.eval_transform = eval_transform or transform
 
         self.train_data: AnomalibDataset
         self.val_data: AnomalibDataset

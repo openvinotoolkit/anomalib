@@ -315,8 +315,9 @@ class MVTec(AnomalibDataModule):
         eval_batch_size: int = 32,
         num_workers: int = 8,
         task: TaskType = TaskType.SEGMENTATION,
-        transform_train: Compose = None,
-        transform_eval: Compose = None,
+        transform: Compose = None,
+        train_transform: Compose = None,
+        eval_transform: Compose = None,
         test_split_mode: TestSplitMode = TestSplitMode.FROM_DIR,
         test_split_ratio: float = 0.2,
         val_split_mode: ValSplitMode = ValSplitMode.SAME_AS_TEST,
@@ -326,6 +327,9 @@ class MVTec(AnomalibDataModule):
         super().__init__(
             train_batch_size=train_batch_size,
             eval_batch_size=eval_batch_size,
+            transform=transform,
+            train_transform=train_transform,
+            eval_transform=eval_transform,
             num_workers=num_workers,
             test_split_mode=test_split_mode,
             test_split_ratio=test_split_ratio,
@@ -339,14 +343,14 @@ class MVTec(AnomalibDataModule):
 
         self.train_data = MVTecDataset(
             task=task,
-            transform=transform_train,
+            transform=self.train_transform,
             split=Split.TRAIN,
             root=root,
             category=category,
         )
         self.test_data = MVTecDataset(
             task=task,
-            transform=transform_eval,
+            transform=self.eval_transform,
             split=Split.TEST,
             root=root,
             category=category,
