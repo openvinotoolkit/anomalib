@@ -3,5 +3,5 @@ init_args:
   root: "datasets/hazelnut_toy"
   normal_dir: "good"
   normalization: imagenet
-  test_split_mode: SYNTHETIC
-  task: CLASSIFICATION
+  test_split_mode: synthetic
+  task: classification

@@ -12,7 +12,6 @@ from pathlib import Path
 import pytest
 import torch
 
-from anomalib import TaskType
 from anomalib.cli import AnomalibCLI
 from anomalib.deploy.export import ExportType
 
@@ -210,7 +209,7 @@ class TestCLI:
             "--results_dir.unique",
             "false",
             "--task",
-            TaskType.SEGMENTATION,
+            "SEGMENTATION",
             "--trainer.max_epochs",
             "1",
             "--trainer.callbacks+=anomalib.callbacks.ModelCheckpoint",

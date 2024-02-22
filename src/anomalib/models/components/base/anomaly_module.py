@@ -90,9 +90,9 @@ class AnomalyModule(pl.LightningModule, ABC):
         Return:
             Predicted output
         """
-        del batch_idx, dataloader_idx  # These variables are not used.
+        del dataloader_idx  # These variables are not used.
 
-        return self.validation_step(batch)
+        return self.validation_step(batch, batch_idx)
 
     def test_step(self, batch: dict[str, str | torch.Tensor], batch_idx: int, *args, **kwargs) -> STEP_OUTPUT:
         """Calls validation_step for anomaly map/score calculation.
