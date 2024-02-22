@@ -140,7 +140,8 @@ class Engine:
         self.threshold = threshold
         self.task = TaskType(task)
         self.image_metric_names = image_metrics if image_metrics else ["AUROC", "F1Score"]
-        self.pixel_metric_names = pixel_metrics if pixel_metrics else ["AUROC", "F1Score"]
+        if self.task == TaskType.SEGMENTATION:
+            self.pixel_metric_names = pixel_metrics if pixel_metrics is not None else ["AUROC", "F1Score"]
         self.visualizers = visualizers
 
         self.save_image = save_image
