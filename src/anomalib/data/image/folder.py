@@ -10,19 +10,17 @@ This script creates a custom dataset from a folder.
 from collections.abc import Sequence
 from pathlib import Path
 
-import albumentations as A  # noqa: N812
 from pandas import DataFrame
+from torchvision.transforms.v2 import Transform
 
 from anomalib import TaskType
 from anomalib.data.base import AnomalibDataModule, AnomalibDataset
 from anomalib.data.utils import (
     DirType,
-    InputNormalizationMethod,
     LabelName,
     Split,
     TestSplitMode,
     ValSplitMode,
-    get_transforms,
 )
 from anomalib.data.utils.path import _prepare_files_labels, validate_and_resolve_path
 
@@ -232,8 +230,8 @@ class FolderDataset(AnomalibDataset):
     def __init__(
         self,
         task: TaskType,
-        transform: A.Compose,
         normal_dir: str | Path | Sequence[str | Path],
+        transform: Transform | None = None,
         root: str | Path | None = None,
         abnormal_dir: str | Path | Sequence[str | Path] | None = None,
         normal_test_dir: str | Path | Sequence[str | Path] | None = None,
@@ -382,15 +380,13 @@ class Folder(AnomalibDataModule):
         mask_dir: str | Path | Sequence[str | Path] | None = None,
         normal_split_ratio: float = 0.2,
         extensions: tuple[str] | None = None,
-        image_size: int | tuple[int, int] = (256, 256),
-        center_crop: int | tuple[int, int] | None = None,
-        normalization: InputNormalizationMethod | str = InputNormalizationMethod.IMAGENET,
         train_batch_size: int = 32,
         eval_batch_size: int = 32,
         num_workers: int = 8,
         task: TaskType = TaskType.SEGMENTATION,
-        transform_config_train: str | A.Compose | None = None,
-        transform_config_eval: str | A.Compose | None = None,
+        transform: Transform | None = None,
+        train_transform: Transform | None = None,
+        eval_transform: Transform | None = None,
         test_split_mode: TestSplitMode = TestSplitMode.FROM_DIR,
         test_split_ratio: float = 0.2,
         val_split_mode: ValSplitMode = ValSplitMode.FROM_TEST,
@@ -405,6 +401,9 @@ class Folder(AnomalibDataModule):
             test_split_ratio=test_split_ratio,
             val_split_mode=val_split_mode,
             val_split_ratio=val_split_ratio,
+            transform=transform,
+            train_transform=train_transform,
+            eval_transform=eval_transform,
             seed=seed,
         )
 
@@ -418,22 +417,9 @@ class Folder(AnomalibDataModule):
             )
 
         self.normal_split_ratio = normal_split_ratio
-        transform_train = get_transforms(
-            config=transform_config_train,
-            image_size=image_size,
-            center_crop=center_crop,
-            normalization=InputNormalizationMethod(normalization),
-        )
-        transform_eval = get_transforms(
-            config=transform_config_eval,
-            image_size=image_size,
-            center_crop=center_crop,
-            normalization=InputNormalizationMethod(normalization),
-        )
-
         self.train_data = FolderDataset(
             task=task,
-            transform=transform_train,
+            transform=self.train_transform,
             split=Split.TRAIN,
             root=root,
             normal_dir=normal_dir,
@@ -445,7 +431,7 @@ class Folder(AnomalibDataModule):
 
         self.test_data = FolderDataset(
             task=task,
-            transform=transform_eval,
+            transform=self.eval_transform,
             split=Split.TEST,
             root=root,
             normal_dir=normal_dir,
