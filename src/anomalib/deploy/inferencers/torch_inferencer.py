@@ -180,7 +180,7 @@ class TorchInferencer(Inferencer):
         if metadata is None:
             metadata = self.metadata if hasattr(self, "metadata") else {}
         if isinstance(image, str | Path):
-            image = read_image(image)
+            image = read_image(image).to(torch.float).div(255.0)
 
         metadata["image_shape"] = image.shape[-2:]
 
