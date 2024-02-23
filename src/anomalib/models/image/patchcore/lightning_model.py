@@ -12,6 +12,7 @@ from typing import Any
 
 import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
+from torchvision.transforms.v2 import CenterCrop, Compose, Normalize, Resize, Transform
 
 from anomalib import LearningType
 from anomalib.models.components import AnomalyModule, MemoryBankMixin
@@ -130,3 +131,17 @@ class Patchcore(MemoryBankMixin, AnomalyModule):
             LearningType: Learning type of the model.
         """
         return LearningType.ONE_CLASS
+
+    def configure_transforms(self, image_size: tuple[int, int] | None = None) -> Transform:
+        """Default transform for Padim."""
+        image_size = image_size or (256, 256)
+        # scale center crop size proportional to image size
+        height, width = image_size
+        center_crop_size = (int(height * (224 / 256)), int(width * (224 / 256)))
+        return Compose(
+            [
+                Resize(image_size, antialias=True),
+                CenterCrop(center_crop_size),
+                Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+            ],
+        )
