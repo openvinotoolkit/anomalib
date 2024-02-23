@@ -5,7 +5,7 @@
 
 import importlib
 import logging
-from abc import ABC, abstractmethod, abstractproperty
+from abc import ABC, abstractproperty
 from collections import OrderedDict
 from typing import TYPE_CHECKING, Any
 
@@ -13,7 +13,7 @@ import lightning.pytorch as pl
 import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torch import nn
-from torchvision.transforms.v2 import Transform
+from torchvision.transforms.v2 import Compose, Normalize, Resize, Transform
 
 from anomalib import LearningType
 from anomalib.metrics import AnomalibMetricCollection
@@ -194,7 +194,21 @@ class AnomalyModule(pl.LightningModule, ABC):
             return self._trainer.datamodule.eval_transform
         return self.configure_transforms()
 
-    @abstractmethod
     def configure_transforms(self, image_size: tuple[int, int] | None = None) -> Transform:
-        """Default transforms."""
-        raise NotImplementedError
+        """Default transforms.
+
+        The default transform is resize to 256x256 and normalize to ImageNet stats. Individual models can override
+        this method to provide custom transforms.
+        """
+        logger.warning(
+            "No implementation of `configure_transforms` was provided in the Lightning model. Using default "
+            "transforms from the base class. This may not be suitable for your use case. Please override "
+            "`configure_transforms` in your model.",
+        )
+        image_size = image_size or (256, 256)
+        return Compose(
+            [
+                Resize(image_size),
+                Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+            ],
+        )
