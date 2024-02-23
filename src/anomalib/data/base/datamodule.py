@@ -75,6 +75,7 @@ class AnomalibDataModule(LightningDataModule, ABC):
         val_split_ratio: float,
         test_split_mode: TestSplitMode | str | None = None,
         test_split_ratio: float | None = None,
+        image_size: tuple[int, int] | None = None,
         transform: Transform | None = None,
         train_transform: Transform | None = None,
         eval_transform: Transform | None = None,
@@ -88,6 +89,7 @@ class AnomalibDataModule(LightningDataModule, ABC):
         self.test_split_ratio = test_split_ratio
         self.val_split_mode = ValSplitMode(val_split_mode)
         self.val_split_ratio = val_split_ratio
+        self.image_size = image_size
         self.seed = seed
 
         # set transforms

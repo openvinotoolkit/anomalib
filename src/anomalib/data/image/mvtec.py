@@ -315,6 +315,7 @@ class MVTec(AnomalibDataModule):
         eval_batch_size: int = 32,
         num_workers: int = 8,
         task: TaskType = TaskType.SEGMENTATION,
+        image_size: tuple[int, int] | None = None,
         transform: Transform = None,
         train_transform: Transform = None,
         eval_transform: Transform = None,
@@ -327,6 +328,7 @@ class MVTec(AnomalibDataModule):
         super().__init__(
             train_batch_size=train_batch_size,
             eval_batch_size=eval_batch_size,
+            image_size=image_size,
             transform=transform,
             train_transform=train_transform,
             eval_transform=eval_transform,
