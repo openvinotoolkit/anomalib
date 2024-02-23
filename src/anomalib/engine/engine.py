@@ -254,15 +254,13 @@ class Engine:
             # https://github.com/openvinotoolkit/anomalib/issues/1642
             self._setup_anomalib_callbacks()
 
-    def _setup_task_and_transform(
+    def _setup_dataset_task(
         self,
-        transform: Transform,
         *dataloaders: EVAL_DATALOADERS | TRAIN_DATALOADERS | AnomalibDataModule | None,
     ) -> None:
-        """Override the dataloader task and transform attributes.
+        """Override the dataloader task with the task passed to the Engine.
 
         Args:
-            transform (Transform): Transform to be used for the dataloaders.
             dataloaders (TRAIN_DATALOADERS | EVAL_DATALOADERS): Dataloaders to be used for training or evaluation.
         """
         for dataloader in dataloaders:
@@ -275,11 +273,50 @@ class Engine:
                                 f"Overriding task from {data.task} with {self.task} for {dataloader.__class__}",
                             )
                             data.task = self.task
-                        if data.transform is None:
-                            logger.info(
-                                "Using default model transforms.",
-                            )
-                            data.transform = transform
+
+    def _setup_transform(
+        self,
+        model: AnomalyModule,
+        dataloaders: DataLoader | list[DataLoader] = None,
+        datamodule: AnomalibDataModule | None = None,
+    ) -> None:
+        """Set up the transform in the dataloaders and/or datamodule.
+
+        If a transform is not already set in the dataloaders or datamodule, the default transform from the model will be
+        used.
+
+        Args:
+            model (AnomalyModule): Model passed to the entrypoint.
+            dataloaders (EVAL_DATALOADERS | TRAIN_DATALOADERS | None, optional): Dataloaders passed to the entrypoint.
+                Defaults to None.
+            datamodule (AnomalibDataModule | None, optional): Lightning datamodule passed to the entrypoint.
+                Defaults to None.
+        """
+        # update transform in dataloaders
+        if isinstance(dataloaders, DataLoader):
+            dataloaders = [dataloaders]
+        for dataloader in dataloaders:
+            if (
+                isinstance(dataloader, DataLoader)
+                and hasattr(dataloader.dataset, "transform")
+                and dataloader.dataset.transform is None
+            ):
+                logger.info(
+                    "No transform specified in dataloader. Using default model transforms.",
+                )
+                dataloader.dataset.transform = model.configure_transforms()
+        # update transform in datamodule
+        if datamodule is not None:
+            if datamodule.train_transform is None:
+                logger.info(
+                    "No train transform specified in datamodule. Using default model transforms.",
+                )
+                datamodule.train_transform = model.configure_transforms(datamodule.image_size)
+            if datamodule.eval_transform is None:
+                logger.info(
+                    "No eval transform specified in datamodule. Using default model transforms.",
+                )
+                datamodule.eval_transform = model.configure_transforms(datamodule.image_size)
 
     def _setup_anomalib_callbacks(self) -> None:
         """Set up callbacks for the trainer."""
@@ -384,7 +421,8 @@ class Engine:
                 ```
         """
         self._setup_trainer(model)
-        self._setup_task_and_transform(model.default_transform, train_dataloaders, val_dataloaders, datamodule)
+        self._setup_dataset_task(train_dataloaders, val_dataloaders, datamodule)
+        self._setup_transform(model, [train_dataloaders, val_dataloaders], datamodule)
         if model.learning_type in [LearningType.ZERO_SHOT, LearningType.FEW_SHOT]:
             # if the model is zero-shot or few-shot, we only need to run validate for normalization and thresholding
             self.trainer.validate(model, val_dataloaders, datamodule=datamodule, ckpt_path=ckpt_path)
@@ -435,10 +473,8 @@ class Engine:
         """
         if model:
             self._setup_trainer(model)
-            transform = model.default_transform
-        else:
-            transform = self.model.default_transform
-        self._setup_task_and_transform(transform, dataloaders)
+        self._setup_dataset_task(dataloaders)
+        self._setup_transform(model or self.model, dataloaders, datamodule)
         return self.trainer.validate(model, dataloaders, ckpt_path, verbose, datamodule)
 
     def test(
@@ -522,13 +558,11 @@ class Engine:
         """
         if model:
             self._setup_trainer(model)
-            transform = model.default_transform
         elif not self.model:
             msg = "`Engine.test()` requires an `AnomalyModule` when it hasn't been passed in a previous run."
             raise RuntimeError(msg)
-        else:
-            transform = self.model.default_transform
-        self._setup_task_and_transform(transform, dataloaders)
+        self._setup_dataset_task(dataloaders)
+        self._setup_transform(model or self.model, dataloaders, datamodule)
         if self._should_run_validation(model or self.model, dataloaders, datamodule, ckpt_path):
             logger.info("Running validation before testing to collect normalization metrics and/or thresholds.")
             self.trainer.validate(model, dataloaders, None, verbose=False, datamodule=datamodule)
@@ -601,9 +635,6 @@ class Engine:
         ), "`Engine.predict()` requires an `AnomalyModule` when it hasn't been passed in a previous run."
         if model:
             self._setup_trainer(model)
-            transform = model.default_transform
-        else:
-            transform = self.model.default_transform
 
         if not ckpt_path:
             logger.warning("ckpt_path is not provided. Model weights will not be loaded.")
@@ -622,7 +653,8 @@ class Engine:
                 msg = f"Unknown type for dataloaders {type(dataloaders)}"
                 raise TypeError(msg)
 
-        self._setup_task_and_transform(transform, dataloaders, datamodule)
+        self._setup_dataset_task(dataloaders, datamodule)
+        self._setup_transform(model or self.model, dataloaders, datamodule)
 
         if self._should_run_validation(model or self.model, None, datamodule, ckpt_path):
             logger.info("Running validation before predicting to collect normalization metrics and/or thresholds.")
@@ -676,13 +708,13 @@ class Engine:
                 ```
         """
         self._setup_trainer(model)
-        self._setup_task_and_transform(
-            model.default_transform,
+        self._setup_dataset_task(
             train_dataloaders,
             val_dataloaders,
             test_dataloaders,
             datamodule,
         )
+        self._setup_transform(model, [train_dataloaders, val_dataloaders, test_dataloaders], datamodule)
         if model.learning_type in [LearningType.ZERO_SHOT, LearningType.FEW_SHOT]:
             # if the model is zero-shot or few-shot, we only need to run validate for normalization and thresholding
             self.trainer.validate(model, val_dataloaders, None, verbose=False, datamodule=datamodule)
