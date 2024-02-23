@@ -11,7 +11,7 @@ import logging
 
 import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
-from torchvision.transforms.v2 import Compose, Normalize, Resize
+from torchvision.transforms.v2 import Compose, Normalize, Resize, Transform
 
 from anomalib import LearningType
 from anomalib.models.components import AnomalyModule, MemoryBankMixin
@@ -131,12 +131,12 @@ class Padim(MemoryBankMixin, AnomalyModule):
         """
         return LearningType.ONE_CLASS
 
-    @property
-    def default_transform(self) -> Compose:
+    def configure_transforms(self, image_size: tuple[int, int] | None = None) -> Transform:
         """Default transform for Padim."""
+        image_size = image_size or self.input_size
         return Compose(
             [
-                Resize(self.input_size),
+                Resize(image_size, antialias=True),
                 Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
             ],
         )
