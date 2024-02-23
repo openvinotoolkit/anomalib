@@ -5,7 +5,7 @@
 
 import importlib
 import logging
-from abc import ABC, abstractproperty
+from abc import ABC, abstractmethod, abstractproperty
 from collections import OrderedDict
 from typing import TYPE_CHECKING, Any
 
@@ -192,9 +192,9 @@ class AnomalyModule(pl.LightningModule, ABC):
         """
         if self._trainer and self._trainer.datamodule and self._trainer.datamodule.eval_transform:
             return self._trainer.datamodule.eval_transform
-        return self.default_transform
+        return self.configure_transforms()
 
-    @abstractproperty
-    def default_transform(self) -> Transform:
+    @abstractmethod
+    def configure_transforms(self) -> Transform:
         """Default transforms."""
         raise NotImplementedError
