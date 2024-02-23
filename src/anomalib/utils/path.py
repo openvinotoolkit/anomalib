@@ -65,37 +65,6 @@ def create_versioned_dir(root_dir: str | Path) -> Path:
     return latest_link_path
 
 
-def get_default_root_directory(
-    root_dir: Path | str,
-    model_name: str = "",
-    dataset_name: str = "",
-    category: str = "",
-) -> Path:
-    """Set the default root directory.
-
-    Args:
-        root_dir (Path | str): Root directory
-        model_name (str, optional): Model name. Defaults to None.
-        dataset_name (str, optional): Dataset name. Defaults to None.
-        category (str, optional): Category. Defaults to None.
-
-    Returns:
-        Path: Path to the root directory.
-
-    Example:
-        >>> get_default_root_directory(Path("results"), "model", "dataset", "category", False)
-        Path('results/model/dataset/category/2022-01-01_00-00-00')
-
-        >>> get_default_root_directory(Path("results"))
-        Path('results')
-
-        >>> get_default_root_directory("results")
-        Path('results')
-    """
-    root_dir = Path(root_dir, model_name, dataset_name, category).resolve()
-    return create_versioned_dir(root_dir)
-
-
 def convert_to_snake_case(s: str) -> str:
     """Converts a string to snake case.
 
