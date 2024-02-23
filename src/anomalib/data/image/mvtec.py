@@ -341,7 +341,7 @@ class MVTec(AnomalibDataModule):
 
         task = TaskType(task)
         self.root = Path(root)
-        self.category = Path(category)
+        self.category = category
 
         transform_train = get_transforms(
             config=transform_config_train,

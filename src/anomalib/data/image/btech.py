@@ -292,7 +292,7 @@ class BTech(AnomalibDataModule):
         )
 
         self.root = Path(root)
-        self.category = Path(category)
+        self.category = category
         task = TaskType(task)
 
         transform_train = get_transforms(

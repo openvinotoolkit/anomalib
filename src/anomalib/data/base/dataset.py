@@ -20,6 +20,7 @@ from torch.utils.data import Dataset
 
 from anomalib import TaskType
 from anomalib.data.utils import masks_to_boxes, read_image
+from anomalib.utils.path import convert_to_snake_case
 
 _EXPECTED_COLUMNS_CLASSIFICATION = ["image_path", "split"]
 _EXPECTED_COLUMNS_SEGMENTATION = [*_EXPECTED_COLUMNS_CLASSIFICATION, "mask_path"]
@@ -45,6 +46,18 @@ class AnomalibDataset(Dataset, ABC):
         self.task = task
         self.transform = transform
         self._samples: DataFrame
+        self._category: str | None = None
+
+    @property
+    def name(self) -> str:
+        """Name of the model."""
+        class_name = self.__class__.__name__
+
+        # Remove the `_dataset` suffix from the class name
+        if class_name.endswith("Dataset"):
+            class_name = class_name[:-7]
+
+        return convert_to_snake_case(self.__class__.__name__)
 
     def __len__(self) -> int:
         """Get length of the dataset."""
@@ -62,6 +75,16 @@ class AnomalibDataset(Dataset, ABC):
         dataset = self if inplace else copy.deepcopy(self)
         dataset.samples = self.samples.iloc[indices].reset_index(drop=True)
         return dataset
+
+    @property
+    def category(self) -> str | None:
+        """Get the category of the dataset."""
+        return self._category
+
+    @category.setter
+    def category(self, category: str) -> None:
+        """Set the category of the dataset."""
+        self._category = category
 
     @property
     def is_setup(self) -> bool:
