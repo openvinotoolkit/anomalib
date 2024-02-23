@@ -96,7 +96,7 @@ class AnomalibDataModule(LightningDataModule, ABC):
 
     @property
     def name(self) -> str:
-        """Name of the model."""
+        """Name of the datamodule."""
         return convert_to_snake_case(self.__class__.__name__.lower())
 
     def setup(self, stage: str | None = None) -> None:

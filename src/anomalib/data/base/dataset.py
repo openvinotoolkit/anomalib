@@ -50,7 +50,7 @@ class AnomalibDataset(Dataset, ABC):
 
     @property
     def name(self) -> str:
-        """Name of the model."""
+        """Name of the dataset."""
         class_name = self.__class__.__name__
 
         # Remove the `_dataset` suffix from the class name
