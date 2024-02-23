@@ -51,16 +51,16 @@ def create_versioned_dir(root_dir: str | Path) -> Path:
 
     # The new directory will have the next highest version number
     new_version_number = highest_version + 1
-    new_dir_path = root_dir / f"v{new_version_number}"
+    new_version_dir = root_dir / f"v{new_version_number}"
 
     # Create the new version directory
-    new_dir_path.mkdir()
+    new_version_dir.mkdir()
 
     # Update the 'latest' symbolic link to point to the new version directory
     latest_link_path = root_dir / "latest"
     if latest_link_path.is_symlink() or latest_link_path.exists():
         latest_link_path.unlink()
-    latest_link_path.symlink_to(new_dir_path, target_is_directory=True)
+    latest_link_path.symlink_to(new_version_dir, target_is_directory=True)
 
     return latest_link_path
 
