@@ -51,7 +51,7 @@ class _DummyAnomalyModule(AnomalyModule):
         return {}
 
     @property
-    def default_transform(self) -> None:
+    def configure_transforms(self) -> None:
         return Resize((256, 256))
 
 

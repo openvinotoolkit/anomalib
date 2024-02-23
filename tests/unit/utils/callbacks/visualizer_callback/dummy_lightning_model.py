@@ -62,7 +62,6 @@ class DummyModule(AnomalyModule):
         """Returns the learning type."""
         return LearningType.ZERO_SHOT
 
-    @property
-    def default_transform(self) -> None:
+    def configure_transforms(self, image_size: tuple[int, int] | None) -> None:
         """Returns the transform."""
-        return
+        del image_size
