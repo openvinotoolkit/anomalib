@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
+from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
 
@@ -277,7 +278,7 @@ class Engine:
     def _setup_transform(
         self,
         model: AnomalyModule,
-        dataloaders: DataLoader | list[DataLoader] = None,
+        dataloaders: DataLoader | Iterable[DataLoader] = None,
         datamodule: AnomalibDataModule | None = None,
     ) -> None:
         """Set up the transform in the dataloaders and/or datamodule.
@@ -295,16 +296,17 @@ class Engine:
         # update transform in dataloaders
         if isinstance(dataloaders, DataLoader):
             dataloaders = [dataloaders]
-        for dataloader in dataloaders:
-            if (
-                isinstance(dataloader, DataLoader)
-                and hasattr(dataloader.dataset, "transform")
-                and dataloader.dataset.transform is None
-            ):
-                logger.info(
-                    "No transform specified in dataloader. Using default model transforms.",
-                )
-                dataloader.dataset.transform = model.configure_transforms()
+        if isinstance(dataloaders, Iterable):
+            for dataloader in dataloaders:
+                if (
+                    isinstance(dataloader, DataLoader)
+                    and hasattr(dataloader.dataset, "transform")
+                    and dataloader.dataset.transform is None
+                ):
+                    logger.info(
+                        "No transform specified in dataloader. Using default model transforms.",
+                    )
+                    dataloader.dataset.transform = model.configure_transforms()
         # update transform in datamodule
         if datamodule is not None:
             if datamodule.train_transform is None:

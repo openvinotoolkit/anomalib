@@ -195,6 +195,6 @@ class AnomalyModule(pl.LightningModule, ABC):
         return self.configure_transforms()
 
     @abstractmethod
-    def configure_transforms(self) -> Transform:
+    def configure_transforms(self, image_size: tuple[int, int] | None = None) -> Transform:
         """Default transforms."""
         raise NotImplementedError
