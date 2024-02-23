@@ -4,11 +4,13 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
+from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
 
 import albumentations as A  # noqa: N812
 from lightning.pytorch.callbacks import Callback
+from lightning.pytorch.loggers import Logger
 from lightning.pytorch.trainer import Trainer
 from lightning.pytorch.trainer.connectors.callback_connector import _CallbackConnector
 from lightning.pytorch.utilities.types import _EVALUATE_OUTPUT, _PREDICT_OUTPUT, EVAL_DATALOADERS, TRAIN_DATALOADERS
@@ -20,11 +22,13 @@ from anomalib.callbacks.normalization import get_normalization_callback
 from anomalib.callbacks.normalization.base import NormalizationCallback
 from anomalib.callbacks.post_processor import _PostProcessorCallback
 from anomalib.callbacks.thresholding import _ThresholdCallback
+from anomalib.callbacks.timer import TimerCallback
 from anomalib.callbacks.visualizer import _VisualizationCallback
 from anomalib.data import AnomalibDataModule, AnomalibDataset, PredictDataset
 from anomalib.deploy.export import ExportType, export_to_onnx, export_to_openvino, export_to_torch
 from anomalib.models import AnomalyModule
 from anomalib.utils.normalization import NormalizationMethod
+from anomalib.utils.path import create_versioned_dir
 from anomalib.utils.types import NORMALIZATION, THRESHOLD
 from anomalib.utils.visualization import BaseVisualizer
 
@@ -111,8 +115,11 @@ class Engine:
             Defaults to None.
         pixel_metrics (str | list[str] | None, optional): Pixel metrics to be used for evaluation.
             Defaults to None.
-        visualization_handlers (BaseVisualizationGenerator | list[BaseVisualizationGenerator] | None):
+        visualizers (BaseVisualizationGenerator | list[BaseVisualizationGenerator] | None):
             Visualization parameters. Defaults to None.
+        default_root_dir (str, optional): Default root directory for the trainer.
+            The results will be saved in this directory.
+            Defaults to ``results``.
         **kwargs: PyTorch Lightning Trainer arguments.
     """
 
@@ -125,9 +132,11 @@ class Engine:
         image_metrics: str | list[str] | None = None,
         pixel_metrics: str | list[str] | None = None,
         visualizers: BaseVisualizer | list[BaseVisualizer] | None = None,
+        logger: Logger | Iterable[Logger] | bool | None = None,
         save_image: bool = False,
         log_image: bool = False,
         show_image: bool = False,
+        default_root_dir: str = "results",
         **kwargs,
     ) -> None:
         # TODO(ashwinvaidya17): Add model argument to engine constructor
@@ -135,7 +144,15 @@ class Engine:
         if callbacks is None:
             callbacks = []
 
-        self._cache = _TrainerArgumentsCache(callbacks=[*callbacks], **kwargs)
+        # Cache the Lightning Trainer arguments.
+        logger = False if logger is None else logger
+        self._cache = _TrainerArgumentsCache(
+            callbacks=[*callbacks],
+            logger=logger,
+            default_root_dir=default_root_dir,
+            **kwargs,
+        )
+
         self.normalization = normalization
         self.threshold = threshold
         self.task = TaskType(task)
@@ -244,6 +261,46 @@ class Engine:
             raise ValueError(msg)
         return callbacks[0] if len(callbacks) > 0 else None
 
+    def _setup_workspace(
+        self,
+        model: AnomalyModule,
+        *data: EVAL_DATALOADERS | TRAIN_DATALOADERS | AnomalibDataModule,
+    ) -> None:
+        """Setup the workspace for the model.
+
+        This method sets up the default root directory for the model based on
+        the model name, dataset name, and category. Model checkpoints, logs, and
+        other artifacts will be saved in this directory.
+
+        Args:
+            model (AnomalyModule): Input model.
+            *data (EVAL_DATALOADERS | TRAIN_DATALOADERS | AnomalibDataModule):
+                Dataloaders or datamodules.
+
+        Raises:
+            TypeError: If the dataloader type is unknown.
+        """
+        # Get the dataset name and category.
+        dataset_name: str
+        category: str
+        for d in data:
+            if d is not None:
+                if isinstance(d, AnomalibDataModule):
+                    dataset_name = d.name
+                    category = d.category
+                elif isinstance(d, DataLoader):
+                    dataset_name = getattr(d.dataset, "name", "")
+                    category = getattr(d.dataset, "category", "")
+                else:
+                    msg = f"Unknown dataloader type: {type(d)}"
+                    raise TypeError(msg)
+
+        # Update the default root directory with the model name, dataset name, and category.
+        root_dir = self._cache.args["default_root_dir"] / model.name / dataset_name / category
+
+        # Create the versioned directory
+        self._cache.args["default_root_dir"] = create_versioned_dir(root_dir)
+
     def _setup_trainer(self, model: AnomalyModule) -> None:
         """Instantiate the trainer based on the model parameters."""
         if self._cache.requires_update(model) or self._trainer is None:
@@ -295,6 +352,8 @@ class Engine:
                     show=self.show_image,
                 ),
             )
+
+        _callbacks.append(TimerCallback())
 
         self.trainer.callbacks = _CallbackConnector._reorder_callbacks(  # noqa: SLF001
             self.trainer.callbacks + _callbacks,
@@ -659,6 +718,7 @@ class Engine:
                 anomalib train --config <config_file_path>
                 ```
         """
+        self._setup_workspace(model, train_dataloaders, val_dataloaders, test_dataloaders, datamodule)
         self._setup_trainer(model)
         self._setup_dataset_task(train_dataloaders, val_dataloaders, test_dataloaders, datamodule)
         if model.learning_type in [LearningType.ZERO_SHOT, LearningType.FEW_SHOT]:
