@@ -158,7 +158,6 @@ class AnomalibCLI:
         parser.add_argument("--metrics.threshold", type=BaseThreshold | str, default="F1AdaptiveThreshold")
         parser.add_argument("--logging.log_graph", type=bool, help="Log the model to the logger", default=False)
         if hasattr(parser, "subcommand") and parser.subcommand != "predict":  # Predict also accepts str and Path inputs
-            parser.link_arguments("data.init_args.image_size", "model.init_args.input_size")
             parser.link_arguments("task", "data.init_args.task")
         parser.add_argument(
             "--results_dir.path",
