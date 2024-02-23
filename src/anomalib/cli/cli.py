@@ -164,9 +164,7 @@ class AnomalibCLI:
             "--default_root_dir",
             type=Path,
             help="Path to save the results.",
-            default=Path(
-                "./results",
-            ),
+            default=Path("./results"),
         )
         parser.link_arguments("default_root_dir", "trainer.default_root_dir")
         # TODO(ashwinvaidya17): Tiling should also be a category of its own
