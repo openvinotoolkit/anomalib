@@ -5,7 +5,7 @@
 
 
 import logging
-from abc import ABC
+from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any
 
 from lightning.pytorch import LightningDataModule
@@ -111,8 +111,11 @@ class AnomalibDataModule(LightningDataModule, ABC):
         """
         if not self.is_setup:
             self._setup(stage)
+            self._create_test_split()
+            self._create_val_split()
         assert self.is_setup
 
+    @abstractmethod
     def _setup(self, _stage: str | None = None) -> None:
         """Set up the datasets and perform dynamic subset splitting.
 
@@ -125,14 +128,7 @@ class AnomalibDataModule(LightningDataModule, ABC):
             the test set must therefore be created as early as the `fit` stage.
 
         """
-        assert self.train_data is not None
-        assert self.test_data is not None
-
-        self.train_data.setup()
-        self.test_data.setup()
-
-        self._create_test_split()
-        self._create_val_split()
+        raise NotImplementedError
 
     def _create_test_split(self) -> None:
         """Obtain the test set based on the settings in the config."""
@@ -186,7 +182,7 @@ class AnomalibDataModule(LightningDataModule, ABC):
         """
         _is_setup: bool = False
         for data in ("train_data", "val_data", "test_data"):
-            if hasattr(self, data) and getattr(self, data).is_setup:
+            if hasattr(self, data):
                 _is_setup = True
 
         return _is_setup

@@ -152,12 +152,13 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
 
         # apply transforms
         if item.get("mask") is not None:
-            item["image"], item["mask"] = self.transform(item["image"], Mask(item["mask"]))
+            if self.transform:
+                item["image"], item["mask"] = self.transform(item["image"], Mask(item["mask"]))
             item["label"] = torch.Tensor([1 in frame for frame in item["mask"]]).int().squeeze(0)
             if self.task == TaskType.DETECTION:
                 item["boxes"], _ = masks_to_boxes(item["mask"])
                 item["boxes"] = item["boxes"][0] if len(item["boxes"]) == 1 else item["boxes"]
-        else:
+        elif self.transform:
             item["image"] = self.transform(item["image"])
 
         # include only target frame in gt
@@ -172,6 +173,18 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
 
 class AnomalibVideoDataModule(AnomalibDataModule):
     """Base class for video data modules."""
+
+    def setup(self, stage: str | None = None) -> None:
+        """Set up train, validation and test data.
+
+        Args:
+            stage: str | None:  Train/Val/Test stages.
+                Defaults to ``None``.
+        """
+        if not self.is_setup:
+            self._setup(stage)
+            self._create_val_split()
+        assert self.is_setup
 
     def _setup(self, _stage: str | None = None) -> None:
         """Set up the datasets and perform dynamic subset splitting.

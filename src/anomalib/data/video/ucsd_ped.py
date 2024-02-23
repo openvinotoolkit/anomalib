@@ -14,17 +14,16 @@ import cv2
 import numpy as np
 import torch
 from pandas import DataFrame
+from torchvision.transforms.v2 import Transform
 
 from anomalib import TaskType
 from anomalib.data.base import AnomalibVideoDataModule, AnomalibVideoDataset
 from anomalib.data.base.video import VideoTargetFrame
 from anomalib.data.utils import (
     DownloadInfo,
-    InputNormalizationMethod,
     Split,
     ValSplitMode,
     download_and_extract,
-    get_transforms,
     read_image,
     validate_path,
 )
@@ -111,7 +110,7 @@ class UCSDpedClipsIndexer(ClipsIndexer):
         mask_frames = sorted(Path(mask_folder).glob("*.bmp"))
         mask_paths = [mask_frames[idx] for idx in frames.int()]
 
-        return np.stack([cv2.imread(str(mask_path), flags=0) / 255.0 for mask_path in mask_paths])
+        return torch.tensor(np.stack([cv2.imread(str(mask_path), flags=0) / 255.0 for mask_path in mask_paths]))
 
     def _compute_frame_pts(self) -> None:
         """Retrieve the number of frames in each video."""
@@ -179,9 +178,6 @@ class UCSDpedDataset(AnomalibVideoDataset):
         self.root_category = Path(root) / category
         self.split = split
         self.indexer_cls: Callable = UCSDpedClipsIndexer
-
-    def _setup(self) -> None:
-        """Create and assign samples."""
         self.samples = make_ucsd_dataset(self.root_category, self.split)
 
 
@@ -225,14 +221,13 @@ class UCSDped(AnomalibVideoDataModule):
         frames_between_clips: int = 10,
         target_frame: VideoTargetFrame = VideoTargetFrame.LAST,
         task: TaskType = TaskType.SEGMENTATION,
-        image_size: int | tuple[int, int] = (256, 256),
-        center_crop: int | tuple[int, int] | None = None,
-        normalization: InputNormalizationMethod | str = InputNormalizationMethod.IMAGENET,
+        image_size: tuple[int, int] | None = None,
+        transform: Transform | None = None,
+        train_transform: Transform | None = None,
+        eval_transform: Transform | None = None,
         train_batch_size: int = 8,
         eval_batch_size: int = 8,
         num_workers: int = 8,
-        transform_config_train: str | A.Compose | None = None,
-        transform_config_eval: str | A.Compose | None = None,
         val_split_mode: ValSplitMode = ValSplitMode.SAME_AS_TEST,
         val_split_ratio: float = 0.5,
         seed: int | None = None,
@@ -241,46 +236,43 @@ class UCSDped(AnomalibVideoDataModule):
             train_batch_size=train_batch_size,
             eval_batch_size=eval_batch_size,
             num_workers=num_workers,
+            image_size=image_size,
+            transform=transform,
+            train_transform=train_transform,
+            eval_transform=eval_transform,
             val_split_mode=val_split_mode,
             val_split_ratio=val_split_ratio,
             seed=seed,
         )
 
+        self.task = TaskType(task)
         self.root = Path(root)
         self.category = category
 
-        transform_train = get_transforms(
-            config=transform_config_train,
-            image_size=image_size,
-            center_crop=center_crop,
-            normalization=InputNormalizationMethod(normalization),
-        )
-        transform_eval = get_transforms(
-            config=transform_config_eval,
-            image_size=image_size,
-            center_crop=center_crop,
-            normalization=InputNormalizationMethod(normalization),
-        )
+        self.clip_length_in_frames = clip_length_in_frames
+        self.frames_between_clips = frames_between_clips
+        self.target_frame = VideoTargetFrame(target_frame)
 
+    def _setup(self, _stage: str | None = None) -> None:
         self.train_data = UCSDpedDataset(
-            task=task,
-            transform=transform_train,
-            clip_length_in_frames=clip_length_in_frames,
-            frames_between_clips=frames_between_clips,
-            target_frame=target_frame,
-            root=root,
-            category=category,
+            task=self.task,
+            transform=self.train_transform,
+            clip_length_in_frames=self.clip_length_in_frames,
+            frames_between_clips=self.frames_between_clips,
+            target_frame=self.target_frame,
+            root=self.root,
+            category=self.category,
             split=Split.TRAIN,
         )
 
         self.test_data = UCSDpedDataset(
-            task=task,
-            transform=transform_eval,
-            clip_length_in_frames=clip_length_in_frames,
-            frames_between_clips=frames_between_clips,
-            target_frame=target_frame,
-            root=root,
-            category=category,
+            task=self.task,
+            transform=self.eval_transform,
+            clip_length_in_frames=self.clip_length_in_frames,
+            frames_between_clips=self.frames_between_clips,
+            target_frame=self.target_frame,
+            root=self.root,
+            category=self.category,
             split=Split.TEST,
         )
 

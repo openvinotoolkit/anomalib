@@ -11,17 +11,16 @@ from pathlib import Path
 
 import albumentations as A  # noqa: N812
 from pandas import DataFrame, isna
+from torchvision.transforms.v2 import Transform
 
 from anomalib import TaskType
 from anomalib.data.base import AnomalibDataModule, AnomalibDepthDataset
 from anomalib.data.utils import (
     DirType,
-    InputNormalizationMethod,
     LabelName,
     Split,
     TestSplitMode,
     ValSplitMode,
-    get_transforms,
 )
 from anomalib.data.utils.path import _prepare_files_labels, validate_and_resolve_path
 
@@ -248,8 +247,6 @@ class Folder3DDataset(AnomalibDepthDataset):
         self.normal_test_depth_dir = normal_test_depth_dir
         self.extensions = extensions
 
-    def _setup(self) -> None:
-        """Assign samples."""
         self.samples = make_folder3d_dataset(
             root=self.root,
             normal_dir=self.normal_dir,
@@ -324,7 +321,7 @@ class Folder3D(AnomalibDataModule):
     def __init__(
         self,
         normal_dir: str | Path,
-        root: str | Path | None = None,
+        root: str | Path,
         abnormal_dir: str | Path | None = None,
         normal_test_dir: str | Path | None = None,
         mask_dir: str | Path | None = None,
@@ -332,15 +329,14 @@ class Folder3D(AnomalibDataModule):
         abnormal_depth_dir: str | Path | None = None,
         normal_test_depth_dir: str | Path | None = None,
         extensions: tuple[str] | None = None,
-        image_size: int | tuple[int, int] = (256, 256),
-        center_crop: int | tuple[int, int] | None = None,
-        normalization: InputNormalizationMethod | str = InputNormalizationMethod.IMAGENET,
         train_batch_size: int = 32,
         eval_batch_size: int = 32,
         num_workers: int = 8,
         task: TaskType | str = TaskType.SEGMENTATION,
-        transform_config_train: str | A.Compose | None = None,
-        transform_config_eval: str | A.Compose | None = None,
+        image_size: tuple[int, int] | None = None,
+        transform: Transform | None = None,
+        train_transform: Transform | None = None,
+        eval_transform: Transform | None = None,
         test_split_mode: TestSplitMode | str = TestSplitMode.FROM_DIR,
         test_split_ratio: float = 0.2,
         val_split_mode: ValSplitMode | str = ValSplitMode.FROM_TEST,
@@ -351,53 +347,54 @@ class Folder3D(AnomalibDataModule):
             train_batch_size=train_batch_size,
             eval_batch_size=eval_batch_size,
             num_workers=num_workers,
+            image_size=image_size,
+            transform=transform,
+            train_transform=train_transform,
+            eval_transform=eval_transform,
             test_split_mode=test_split_mode,
             test_split_ratio=test_split_ratio,
             val_split_mode=val_split_mode,
             val_split_ratio=val_split_ratio,
             seed=seed,
         )
-        task = TaskType(task)
+        self.task = TaskType(task)
+        self.root = Path(root)
+        self.normal_dir = normal_dir
+        self.abnormal_dir = abnormal_dir
+        self.normal_test_dir = normal_test_dir
+        self.mask_dir = mask_dir
+        self.normal_depth_dir = normal_depth_dir
+        self.abnormal_depth_dir = abnormal_depth_dir
+        self.normal_test_depth_dir = normal_test_depth_dir
+        self.extensions = extensions
 
-        transform_train = get_transforms(
-            config=transform_config_train,
-            image_size=image_size,
-            center_crop=center_crop,
-            normalization=InputNormalizationMethod(normalization),
-        )
-        transform_eval = get_transforms(
-            config=transform_config_eval,
-            image_size=image_size,
-            center_crop=center_crop,
-            normalization=InputNormalizationMethod(normalization),
-        )
-
+    def _setup(self, _stage: str | None = None) -> None:
         self.train_data = Folder3DDataset(
-            task=task,
-            transform=transform_train,
+            task=self.task,
+            transform=self.train_transform,
             split=Split.TRAIN,
-            root=root,
-            normal_dir=normal_dir,
-            abnormal_dir=abnormal_dir,
-            normal_test_dir=normal_test_dir,
-            mask_dir=mask_dir,
-            normal_depth_dir=normal_depth_dir,
-            abnormal_depth_dir=abnormal_depth_dir,
-            normal_test_depth_dir=normal_test_depth_dir,
-            extensions=extensions,
+            root=self.root,
+            normal_dir=self.normal_dir,
+            abnormal_dir=self.abnormal_dir,
+            normal_test_dir=self.normal_test_dir,
+            mask_dir=self.mask_dir,
+            normal_depth_dir=self.normal_depth_dir,
+            abnormal_depth_dir=self.abnormal_depth_dir,
+            normal_test_depth_dir=self.normal_test_depth_dir,
+            extensions=self.extensions,
         )
 
         self.test_data = Folder3DDataset(
-            task=task,
-            transform=transform_eval,
+            task=self.task,
+            transform=self.eval_transform,
             split=Split.TEST,
-            root=root,
-            normal_dir=normal_dir,
-            abnormal_dir=abnormal_dir,
-            normal_test_dir=normal_test_dir,
-            normal_depth_dir=normal_depth_dir,
-            abnormal_depth_dir=abnormal_depth_dir,
-            normal_test_depth_dir=normal_test_depth_dir,
-            mask_dir=mask_dir,
-            extensions=extensions,
+            root=self.root,
+            normal_dir=self.normal_dir,
+            abnormal_dir=self.abnormal_dir,
+            normal_test_dir=self.normal_test_dir,
+            normal_depth_dir=self.normal_depth_dir,
+            abnormal_depth_dir=self.abnormal_depth_dir,
+            normal_test_depth_dir=self.normal_test_depth_dir,
+            mask_dir=self.mask_dir,
+            extensions=self.extensions,
         )

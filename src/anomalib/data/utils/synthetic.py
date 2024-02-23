@@ -130,7 +130,7 @@ class SyntheticAnomalyDataset(AnomalibDataset):
         self.mask_dir.mkdir()
 
         self._cleanup = True  # flag that determines if temp dir is cleaned up when instance is deleted
-        self.setup()
+        self.samples = make_synthetic_dataset(self.source_samples, self.im_dir, self.mask_dir, 0.5)
 
     @classmethod
     def from_dataset(cls: type["SyntheticAnomalyDataset"], dataset: AnomalibDataset) -> "SyntheticAnomalyDataset":
@@ -158,11 +158,6 @@ class SyntheticAnomalyDataset(AnomalibDataset):
             setattr(new, key, deepcopy(value))
         self._cleanup = False
         return new
-
-    def _setup(self) -> None:
-        """Create samples dataframe."""
-        logger.info("Generating synthetic anomalous images for validation set")
-        self.samples = make_synthetic_dataset(self.source_samples, self.im_dir, self.mask_dir, 0.5)
 
     def __del__(self) -> None:
         """Make sure the temporary directory is cleaned up when the dataset object is deleted."""

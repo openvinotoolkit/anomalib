@@ -229,8 +229,6 @@ class MVTecDataset(AnomalibDataset):
 
         self.root_category = Path(root) / Path(category)
         self.split = split
-
-    def _setup(self) -> None:
         self.samples = make_mvtec_dataset(self.root_category, split=self.split, extensions=IMG_EXTENSIONS)
 
 
@@ -316,9 +314,9 @@ class MVTec(AnomalibDataModule):
         num_workers: int = 8,
         task: TaskType = TaskType.SEGMENTATION,
         image_size: tuple[int, int] | None = None,
-        transform: Transform = None,
-        train_transform: Transform = None,
-        eval_transform: Transform = None,
+        transform: Transform | None = None,
+        train_transform: Transform | None = None,
+        eval_transform: Transform | None = None,
         test_split_mode: TestSplitMode = TestSplitMode.FROM_DIR,
         test_split_ratio: float = 0.2,
         val_split_mode: ValSplitMode | str = ValSplitMode.SAME_AS_TEST,
@@ -340,23 +338,35 @@ class MVTec(AnomalibDataModule):
             seed=seed,
         )
 
-        task = TaskType(task)
+        self.task = TaskType(task)
         self.root = Path(root)
-        self.category = Path(category)
+        self.category = category
 
+    def _setup(self, _stage: str | None = None) -> None:
+        """Set up the datasets and perform dynamic subset splitting.
+
+        This method may be overridden in subclass for custom splitting behaviour.
+
+        Note:
+            The stage argument is not used here. This is because, for a given instance of an AnomalibDataModule
+            subclass, all three subsets are created at the first call of setup(). This is to accommodate the subset
+            splitting behaviour of anomaly tasks, where the validation set is usually extracted from the test set, and
+            the test set must therefore be created as early as the `fit` stage.
+
+        """
         self.train_data = MVTecDataset(
-            task=task,
+            task=self.task,
             transform=self.train_transform,
             split=Split.TRAIN,
-            root=root,
-            category=category,
+            root=self.root,
+            category=self.category,
         )
         self.test_data = MVTecDataset(
-            task=task,
+            task=self.task,
             transform=self.eval_transform,
             split=Split.TEST,
-            root=root,
-            category=category,
+            root=self.root,
+            category=self.category,
         )
 
     def prepare_data(self) -> None:

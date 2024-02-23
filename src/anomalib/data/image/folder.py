@@ -249,8 +249,8 @@ class FolderDataset(AnomalibDataset):
         self.mask_dir = mask_dir
         self.extensions = extensions
 
-    def _setup(self) -> None:
-        """Assign samples."""
+        # def _setup(self) -> None:
+        #     """Assign samples."""
         self.samples = make_folder_dataset(
             root=self.root,
             normal_dir=self.normal_dir,
@@ -393,7 +393,13 @@ class Folder(AnomalibDataModule):
         val_split_ratio: float = 0.5,
         seed: int | None = None,
     ) -> None:
-        task = TaskType(task)
+        self.root = root
+        self.normal_dir = normal_dir
+        self.abnormal_dir = abnormal_dir
+        self.normal_test_dir = normal_test_dir
+        self.mask_dir = mask_dir
+        self.task = TaskType(task)
+        self.extensions = extensions
         test_split_mode = TestSplitMode(test_split_mode)
         val_split_mode = ValSplitMode(val_split_mode)
         super().__init__(
@@ -420,26 +426,28 @@ class Folder(AnomalibDataModule):
             )
 
         self.normal_split_ratio = normal_split_ratio
+
+    def _setup(self, _stage: str | None = None) -> None:
         self.train_data = FolderDataset(
-            task=task,
+            task=self.task,
             transform=self.train_transform,
             split=Split.TRAIN,
-            root=root,
-            normal_dir=normal_dir,
-            abnormal_dir=abnormal_dir,
-            normal_test_dir=normal_test_dir,
-            mask_dir=mask_dir,
-            extensions=extensions,
+            root=self.root,
+            normal_dir=self.normal_dir,
+            abnormal_dir=self.abnormal_dir,
+            normal_test_dir=self.normal_test_dir,
+            mask_dir=self.mask_dir,
+            extensions=self.extensions,
         )
 
         self.test_data = FolderDataset(
-            task=task,
+            task=self.task,
             transform=self.eval_transform,
             split=Split.TEST,
-            root=root,
-            normal_dir=normal_dir,
-            abnormal_dir=abnormal_dir,
-            normal_test_dir=normal_test_dir,
-            mask_dir=mask_dir,
-            extensions=extensions,
+            root=self.root,
+            normal_dir=self.normal_dir,
+            abnormal_dir=self.abnormal_dir,
+            normal_test_dir=self.normal_test_dir,
+            mask_dir=self.mask_dir,
+            extensions=self.extensions,
         )

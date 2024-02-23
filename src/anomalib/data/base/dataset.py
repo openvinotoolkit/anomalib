@@ -6,7 +6,7 @@
 
 import copy
 import logging
-from abc import ABC, abstractmethod
+from abc import ABC
 from collections.abc import Sequence
 from pathlib import Path
 
@@ -36,6 +36,28 @@ logger = logging.getLogger(__name__)
 class AnomalibDataset(Dataset, ABC):
     """Anomalib dataset.
 
+    The dataset is based on a dataframe that contains the information needed by the dataloader to load each of
+    the dataset items into memory.
+
+    The samples dataframe must be set from the subclass using the setter of the `samples` property.
+
+    The DataFrame must, at least, include the following columns:
+        - `split` (str): The subset to which the dataset item is assigned (e.g., 'train', 'test').
+        - `image_path` (str): Path to the file system location where the image is stored.
+        - `label_index` (int): Index of the anomaly label, typically 0 for 'normal' and 1 for 'anomalous'.
+        - `mask_path` (str, optional): Path to the ground truth masks (for the anomalous images only).
+        Required if task is 'segmentation'.
+
+    Example DataFrame:
+        +---+-------------------+-----------+-------------+------------------+-------+
+        |   | image_path        | label     | label_index | mask_path        | split |
+        +---+-------------------+-----------+-------------+------------------+-------+
+        | 0 | path/to/image.png | anomalous | 1           | path/to/mask.png | train |
+        +---+-------------------+-----------+-------------+------------------+-------+
+
+    Note:
+        The example above is illustrative and may need to be adjusted based on the specific dataset structure.
+
     Args:
         task (str): Task type, either 'classification' or 'segmentation'
         transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
@@ -45,7 +67,7 @@ class AnomalibDataset(Dataset, ABC):
         super().__init__()
         self.task = task
         self.transform = transform
-        self._samples: DataFrame
+        self._samples: DataFrame | None = None
 
     def __len__(self) -> int:
         """Get length of the dataset."""
@@ -65,15 +87,13 @@ class AnomalibDataset(Dataset, ABC):
         return dataset
 
     @property
-    def is_setup(self) -> bool:
-        """Checks if setup() been called."""
-        return hasattr(self, "_samples")
-
-    @property
     def samples(self) -> DataFrame:
         """Get the samples dataframe."""
-        if not self.is_setup:
-            msg = "Dataset is not setup yet. Call setup() first."
+        if self._samples is None:
+            msg = (
+                "Dataset does not have a samples dataframe. Ensure that a dataframe has been assigned to "
+                "`dataset.samples`."
+            )
             raise RuntimeError(msg)
         return self._samples
 
@@ -114,9 +134,9 @@ class AnomalibDataset(Dataset, ABC):
             dict[str, str | torch.Tensor]: Dict of image tensor during training. Otherwise, Dict containing image path,
                 target path, image tensor, label and transformed bounding box.
         """
-        image_path = self._samples.iloc[index].image_path
-        mask_path = self._samples.iloc[index].mask_path
-        label_index = self._samples.iloc[index].label_index
+        image_path = self.samples.iloc[index].image_path
+        mask_path = self.samples.iloc[index].mask_path
+        label_index = self.samples.iloc[index].label_index
 
         image = to_tensor(Image.open(image_path))
         item = {"image_path": image_path, "label": label_index}
@@ -158,40 +178,6 @@ class AnomalibDataset(Dataset, ABC):
             AnomalibDataset: Concatenated dataset.
         """
         assert isinstance(other_dataset, self.__class__), "Cannot concatenate datasets that are not of the same type."
-        assert self.is_setup, "Cannot concatenate uninitialized datasets. Call setup first."
-        assert other_dataset.is_setup, "Cannot concatenate uninitialized datasets. Call setup first."
         dataset = copy.deepcopy(self)
         dataset.samples = pd.concat([self.samples, other_dataset.samples], ignore_index=True)
         return dataset
-
-    def setup(self) -> None:
-        """Load data/metadata into memory."""
-        if not self.is_setup:
-            self._setup()
-        assert self.is_setup, "setup() should set self._samples"
-
-    @abstractmethod
-    def _setup(self) -> DataFrame:
-        """Set up the data module.
-
-        This method should return a dataframe that contains the information needed by the dataloader to load each of
-        the dataset items into memory.
-
-        The DataFrame must, at least, include the following columns:
-            - `split` (str): The subset to which the dataset item is assigned (e.g., 'train', 'test').
-            - `image_path` (str): Path to the file system location where the image is stored.
-            - `label_index` (int): Index of the anomaly label, typically 0 for 'normal' and 1 for 'anomalous'.
-            - `mask_path` (str, optional): Path to the ground truth masks (for the anomalous images only).
-            Required if task is 'segmentation'.
-
-        Example DataFrame:
-            +---+-------------------+-----------+-------------+------------------+-------+
-            |   | image_path        | label     | label_index | mask_path        | split |
-            +---+-------------------+-----------+-------------+------------------+-------+
-            | 0 | path/to/image.png | anomalous | 1           | path/to/mask.png | train |
-            +---+-------------------+-----------+-------------+------------------+-------+
-
-        Note:
-            The example above is illustrative and may need to be adjusted based on the specific dataset structure.
-        """
-        raise NotImplementedError
