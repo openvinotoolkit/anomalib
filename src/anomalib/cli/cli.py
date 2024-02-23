@@ -161,13 +161,14 @@ class AnomalibCLI:
             parser.link_arguments("data.init_args.image_size", "model.init_args.input_size")
             parser.link_arguments("task", "data.init_args.task")
         parser.add_argument(
-            "--results_dir.path",
+            "--default_root_dir",
             type=Path,
             help="Path to save the results.",
-            default=Path("./results"),
+            default=Path(
+                "./results",
+            ),
         )
-        parser.add_argument("--results_dir.unique", type=bool, help="Whether to create a unique folder.", default=False)
-        parser.link_arguments("results_dir.path", "trainer.default_root_dir")
+        parser.link_arguments("default_root_dir", "trainer.default_root_dir")
         # TODO(ashwinvaidya17): Tiling should also be a category of its own
         # CVS-122659
 
