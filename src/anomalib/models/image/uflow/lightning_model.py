@@ -6,6 +6,7 @@ https://arxiv.org/pdf/2211.12353.pdf
 # Copyright (C) 2023-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+import logging
 from typing import Any
 
 import torch
@@ -13,12 +14,15 @@ from lightning.pytorch.core.optimizer import LightningOptimizer
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torch import Tensor
 from torch.optim.lr_scheduler import LRScheduler
+from torchvision.transforms.v2 import Compose, Normalize, Resize, Transform
 
 from anomalib import LearningType
 from anomalib.models.components import AnomalyModule
 
 from .loss import UFlowLoss
 from .torch_model import UflowModel
+
+logger = logging.getLogger(__name__)
 
 __all__ = ["Uflow"]
 
@@ -100,3 +104,14 @@ class Uflow(AnomalyModule):
             LearningType: Learning type of the model.
         """
         return LearningType.ONE_CLASS
+
+    def configure_transforms(self, image_size: tuple[int, int] | None = None) -> Transform:
+        """Default transform for Padim."""
+        if image_size is not None:
+            logger.warning("Image size is not used in UFlow. The input image size is determined by the model.")
+        return Compose(
+            [
+                Resize((448, 448), antialias=True),
+                Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+            ],
+        )
