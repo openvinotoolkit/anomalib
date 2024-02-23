@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING, Any
 import numpy as np
 import torch
 from torch import nn
-from torchvision.transforms import Compose
+from torchvision.transforms.v2 import Compose, Resize
 
 from anomalib import TaskType
 from anomalib.models.components import AnomalyModule
@@ -57,15 +57,29 @@ class InferenceModel(nn.Module):
         transform (Compose): Input transform for the model.
     """
 
-    def __init__(self, model: nn.Module, transform: Compose) -> None:
+    def __init__(self, model: nn.Module, transform: Compose, disable_antialias: bool = False) -> None:
         super().__init__()
         self.model = model
         self.transform = transform
+        if disable_antialias:
+            self.disable_antialias()
 
     def forward(self, batch: torch.Tensor) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
         """Transform the input batch and pass it through the model."""
         batch = self.transform(batch)
         return self.model(batch)
+
+    def disable_antialias(self) -> None:
+        """Disable antialiasing in the Resize transforms of the given transform.
+
+        This is needed for ONNX/OpenVINO export, as antialiasing is not supported in the ONNX opset.
+        """
+        if isinstance(self.transform, Resize):
+            self.transform.antialias = False
+        if isinstance(self.transform, Compose):
+            for transform in self.transform.transforms:
+                if isinstance(transform, Resize):
+                    transform.antialias = False
 
 
 def export_to_torch(
@@ -175,7 +189,7 @@ def export_to_onnx(
     # TODO(djdameln): Move export functionality to anomaly module
     # https://github.com/openvinotoolkit/anomalib/issues/1752
     transform = transform or model.transform
-    inference_model = InferenceModel(model=model.model, transform=transform)
+    inference_model = InferenceModel(model=model.model, transform=transform, disable_antialias=True)
     export_root = _create_export_root(export_root, export_type)
     _write_metadata_to_json(export_root, model, task)
     onnx_path = export_root / "model.onnx"
