@@ -772,6 +772,7 @@ class Engine:
                     --mo_args.compress_to_fp16 False
                 ```
         """
+        self._setup_trainer(model)
         if ckpt_path:
             model = model.__class__.load_from_checkpoint(ckpt_path)
 
