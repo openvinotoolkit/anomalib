@@ -526,8 +526,9 @@ class Engine:
     def predict(
         self,
         model: AnomalyModule | None = None,
-        dataloaders: EVAL_DATALOADERS | AnomalibDataModule | None = None,
-        datamodule: AnomalibDataModule | Dataset | PredictDataset | None = None,
+        dataloaders: EVAL_DATALOADERS | None = None,
+        datamodule: AnomalibDataModule | None = None,
+        dataset: Dataset | PredictDataset | None = None,
         return_predictions: bool | None = None,
         ckpt_path: str | None = None,
     ) -> _PREDICT_OUTPUT | None:
@@ -540,7 +541,7 @@ class Engine:
             model (AnomalyModule | None, optional):
                 Model to be used for prediction.
                 Defaults to None.
-            dataloaders (EVAL_DATALOADERS | AnomalibDataModule | None, optional):
+            dataloaders (EVAL_DATALOADERS | None, optional):
                 An iterable or collection of iterables specifying predict samples.
                 Defaults to None.
             datamodule (AnomalibDataModule | None, optional):
@@ -548,6 +549,9 @@ class Engine:
                 the :class:`~lightning.pytorch.core.hooks.DataHooks.predict_dataloader` hook.
                 The datamodule can also be a dataset that will be wrapped in a torch Dataloader.
                 Defaults to None.
+            dataset (Dataset | PredictDataset | None, optional):
+                A :class:`~torch.utils.data.Dataset` or :class:`~anomalib.data.PredictDataset` that will be used
+                to create a dataloader. Defaults to None.
             return_predictions (bool | None, optional):
                 Whether to return predictions.
                 ``True`` by default except when an accelerator that spawns processes is used (not supported).
@@ -593,9 +597,8 @@ class Engine:
             logger.warning("ckpt_path is not provided. Model weights will not be loaded.")
 
         # Handle the instance when a dataset is passed to the predict method
-        if datamodule is not None and isinstance(datamodule, Dataset):
-            dataloader = DataLoader(datamodule)
-            datamodule = None
+        if dataset is not None:
+            dataloader = DataLoader(dataset)
             if dataloaders is None:
                 dataloaders = dataloader
             elif isinstance(dataloaders, DataLoader):

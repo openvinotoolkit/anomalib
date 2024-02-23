@@ -13,6 +13,7 @@ from typing import Any
 
 from jsonargparse import ActionConfigFile, ArgumentParser, Namespace
 from jsonargparse._actions import _ActionSubCommands
+from lightning.pytorch.core.datamodule import LightningDataModule
 from rich import traceback
 
 from anomalib import TaskType, __version__
@@ -296,6 +297,9 @@ class AnomalibCLI:
             # the minor change here is that engine is instantiated instead of trainer
             self.config_init = self.parser.instantiate_classes(self.config)
             self.datamodule = self._get(self.config_init, "data")
+            if isinstance(self.datamodule, Dataset):
+                param = {f"{self.config.subcommand}_dataset": self.datamodule}
+                self.datamodule = LightningDataModule.from_datasets(**param)
             self.model = self._get(self.config_init, "model")
             self._configure_optimizers_method_to_model()
             self.instantiate_engine()
