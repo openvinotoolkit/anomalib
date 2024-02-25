@@ -172,8 +172,8 @@ class TestCLI:
                 "--export_type",
                 export_type,
                 *self._get_common_cli_args(dataset_path, project_path),
-                "--input_size",
-                "[256, 256]",
+                "--ckpt_path",
+                f"{project_path}/padim/dummy/weights/last.ckpt",
             ],
         )
 
