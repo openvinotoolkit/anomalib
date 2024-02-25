@@ -187,9 +187,7 @@ class TestAPI:
         # https://github.com/openvinotoolkit/anomalib/issues/1478
 
         extra_args = {}
-        if model_name == "patchcore":
-            extra_args["input_size"] = (224, 224)
-        elif model_name in ("rkde", "dfkde"):
+        if model_name in ("rkde", "dfkde"):
             extra_args["n_pca_components"] = 2
 
         # select dataset

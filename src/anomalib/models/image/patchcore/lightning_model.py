@@ -42,7 +42,6 @@ class Patchcore(MemoryBankMixin, AnomalyModule):
 
     def __init__(
         self,
-        input_size: tuple[int, int] = (224, 224),
         backbone: str = "wide_resnet50_2",
         layers: Sequence[str] = ("layer2", "layer3"),
         pre_trained: bool = True,
@@ -52,7 +51,6 @@ class Patchcore(MemoryBankMixin, AnomalyModule):
         super().__init__()
 
         self.model: PatchcoreModel = PatchcoreModel(
-            input_size=input_size,
             backbone=backbone,
             pre_trained=pre_trained,
             layers=layers,
