@@ -49,30 +49,15 @@ class Padim(MemoryBankMixin, AnomalyModule):
     ) -> None:
         super().__init__()
 
-        self.layers = layers
-        self.backbone = backbone
-        self.pre_trained = pre_trained
-        self.n_features = n_features
-        self.layers = layers
+        self.model: PadimModel = PadimModel(
+            backbone=backbone,
+            pre_trained=pre_trained,
+            layers=layers,
+            n_features=n_features,
+        ).eval()
 
         self.stats: list[torch.Tensor] = []
         self.embeddings: list[torch.Tensor] = []
-
-        self.model: PadimModel
-
-    def _setup(self) -> None:
-        """Create the model.
-
-        The model is created at setup time to ensure that the right input size is used.
-        """
-        assert self.input_size is not None, "Padim model needs input size to build torch model."
-        self.model = PadimModel(
-            backbone=self.backbone,
-            input_size=self.input_size,
-            pre_trained=self.pre_trained,
-            layers=self.layers,
-            n_features=self.n_features,
-        ).eval()
 
     @staticmethod
     def configure_optimizers() -> None:

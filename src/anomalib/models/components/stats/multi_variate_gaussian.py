@@ -8,15 +8,17 @@ from typing import Any
 import torch
 from torch import nn
 
+from anomalib.models.components.base import DynamicBufferModule
 
-class MultiVariateGaussian(nn.Module):
+
+class MultiVariateGaussian(DynamicBufferModule, nn.Module):
     """Multi Variate Gaussian Distribution."""
 
-    def __init__(self, n_features: int, n_patches: int) -> None:
+    def __init__(self) -> None:
         super().__init__()
 
-        self.register_buffer("mean", torch.zeros(n_features, n_patches))
-        self.register_buffer("inv_covariance", torch.eye(n_features).unsqueeze(0).repeat(n_patches, 1, 1))
+        self.register_buffer("mean", torch.empty(0))
+        self.register_buffer("inv_covariance", torch.empty(0))
 
         self.mean: torch.Tensor
         self.inv_covariance: torch.Tensor
