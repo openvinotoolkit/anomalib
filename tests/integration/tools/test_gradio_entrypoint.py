@@ -65,7 +65,6 @@ class TestGradioInferenceEntrypoint:
         self,
         get_functions: tuple[Callable, Callable],
         ckpt_path: Callable[[str], Path],
-        transforms_config: dict,
     ) -> None:
         """Test gradio_inference.py."""
         _ckpt_path = ckpt_path("Padim")
@@ -76,8 +75,6 @@ class TestGradioInferenceEntrypoint:
         export_to_openvino(
             export_root=_ckpt_path.parent.parent,
             model=model,
-            input_size=(256, 256),
-            transform=transforms_config,
             ov_args={},
             task=TaskType.SEGMENTATION,
         )

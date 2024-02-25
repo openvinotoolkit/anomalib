@@ -137,29 +137,24 @@ class TestAPI:
             dataset_path (Path): Root to dataset from fixture.
             project_path (Path): Path to temporary project folder from fixture.
         """
-        input_size = (256, 256)
         if model_name == "reverse_distillation":
             # TODO(ashwinvaidya17): Restore this test after fixing reverse distillation
             # https://github.com/openvinotoolkit/anomalib/issues/1513
             pytest.skip("Reverse distillation fails to convert to ONNX")
         elif model_name == "ai_vad":
             pytest.skip("Export fails for video models.")
-        elif model_name == "win_clip":
-            input_size = (240, 240)
-        elif model_name == "uflow":
-            input_size = (448, 448)
+        elif model_name == "rkde" and export_type == ExportType.OPENVINO:
+            pytest.skip("RKDE fails to convert to OpenVINO")
 
-        model, dataset, engine = self._get_objects(
+        model, _, engine = self._get_objects(
             model_name=model_name,
             dataset_path=dataset_path,
             project_path=project_path,
         )
         engine.export(
             model=model,
-            datamodule=dataset,
             ckpt_path=f"{project_path}/{model_name}/dummy/weights/last.ckpt",
             export_type=export_type,
-            input_size=input_size,
         )
 
     def _get_objects(
@@ -193,7 +188,7 @@ class TestAPI:
 
         extra_args = {}
         if model_name == "patchcore":
-            extra_args["input_size"] = (256, 256)
+            extra_args["input_size"] = (224, 224)
         elif model_name in ("rkde", "dfkde"):
             extra_args["n_pca_components"] = 2
 
@@ -206,13 +201,11 @@ class TestAPI:
         else:
             # EfficientAd requires that the batch size be lesser than the number of images in the dataset.
             # This is so that the LR step size is not 0.
-            image_size = (448, 448) if model_name == "uflow" else (256, 256)
             dataset = MVTec(
                 root=dataset_path / "mvtec",
                 category="dummy",
                 task=task_type,
                 train_batch_size=2,
-                image_size=image_size,
             )
 
         model = get_model(model_name, **extra_args)
