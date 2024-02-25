@@ -13,9 +13,10 @@ from typing import TYPE_CHECKING, Any
 import numpy as np
 import torch
 from torch import nn
-from torchvision.transforms.v2 import Compose, Resize
+from torchvision.transforms.v2 import CenterCrop, Compose, Resize
 
 from anomalib import TaskType
+from anomalib.data.transforms import ExportableCenterCrop
 from anomalib.models.components import AnomalyModule
 from anomalib.utils.exceptions import try_import
 
@@ -61,6 +62,7 @@ class InferenceModel(nn.Module):
         super().__init__()
         self.model = model
         self.transform = transform
+        self.convert_center_crop()
         if disable_antialias:
             self.disable_antialias()
 
@@ -80,6 +82,21 @@ class InferenceModel(nn.Module):
             for transform in self.transform.transforms:
                 if isinstance(transform, Resize):
                     transform.antialias = False
+
+    def convert_center_crop(self) -> None:
+        """Convert CenterCrop to ExportableCenterCrop for ONNX export.
+
+        The original CenterCrop transform is not supported in ONNX export. This method replaces the CenterCrop to
+        ExportableCenterCrop, which is supported in ONNX export. For more details, see the implementation of
+        ExportableCenterCrop.
+        """
+        if isinstance(self.transform, CenterCrop):
+            self.transform = ExportableCenterCrop(size=self.transform.size)
+        elif isinstance(self.transform, Compose):
+            transforms = self.transform.transforms
+            for index in range(len(transforms)):
+                if isinstance(transforms[index], CenterCrop):
+                    transforms[index] = ExportableCenterCrop(size=transforms[index].size)
 
 
 def export_to_torch(
