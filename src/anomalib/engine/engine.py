@@ -296,7 +296,7 @@ class Engine:
                     raise TypeError(msg)
 
         # Update the default root directory with the model name, dataset name, and category.
-        root_dir = self._cache.args["default_root_dir"] / model.name / dataset_name / category
+        root_dir = Path(self._cache.args["default_root_dir"]) / model.name / dataset_name / category
 
         # Create the versioned directory
         self._cache.args["default_root_dir"] = create_versioned_dir(root_dir)
