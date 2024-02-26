@@ -49,11 +49,9 @@ class AnomalibDepthDataset(AnomalibDataset, ABC):
         item = {"image_path": image_path, "depth_path": depth_path, "label": label_index}
 
         if self.task == TaskType.CLASSIFICATION:
-            if self.transform:
-                item["image"], item["depth_image"] = self.transform(image, depth_image)
-            else:
-                item["image"] = image
-                item["depth_image"] = depth_image
+            item["image"], item["depth_image"] = (
+                self.transform(image, depth_image) if self.transform else (image, depth_image)
+            )
         elif self.task in (TaskType.DETECTION, TaskType.SEGMENTATION):
             # Only Anomalous (1) images have masks in anomaly datasets
             # Therefore, create empty mask for Normal (0) images.
@@ -62,12 +60,9 @@ class AnomalibDepthDataset(AnomalibDataset, ABC):
                 if label_index == 0
                 else Mask(to_tensor(Image.open(mask_path)).squeeze())
             )
-            if self.transform:
-                item["image"], item["depth_image"], item["mask"] = self.transform(image, mask)
-            else:
-                item["image"] = image
-                item["depth_image"] = depth_image
-                item["mask"] = mask
+            item["image"], item["depth_image"], item["mask"] = (
+                self.transform(image, depth_image, mask) if self.transform else (image, depth_image, mask)
+            )
             item["mask_path"] = mask_path
 
             if self.task == TaskType.DETECTION:

@@ -152,12 +152,7 @@ class AnomalibDataset(Dataset, ABC):
                 if label_index == 0
                 else Mask(to_tensor(Image.open(mask_path)).squeeze())
             )
-            if self.transform:
-                item["image"], item["mask"] = self.transform(image, mask)
-            else:
-                item["image"] = image
-                item["mask"] = mask
-            item["mask_path"] = mask_path
+            item["image"], item["mask"] = self.transform(image, mask) if self.transform else (image, mask)
 
             if self.task == TaskType.DETECTION:
                 # create boxes from masks for detection task
