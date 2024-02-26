@@ -3,7 +3,6 @@
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 import torch
 from torch.utils.data import DataLoader
 from torchvision.transforms.v2 import Resize, Transform
