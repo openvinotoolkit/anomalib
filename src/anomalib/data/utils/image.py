@@ -14,8 +14,10 @@ import numpy as np
 import tifffile as tiff
 import torch
 from matplotlib.figure import Figure
+from PIL import Image
 from torch.nn import functional as F  # noqa: N812
 from torchvision.datasets.folder import IMG_EXTENSIONS
+from torchvision.transforms.v2.functional import to_tensor
 
 from anomalib.data.utils.path import validate_path
 
@@ -329,33 +331,27 @@ def get_image_height_and_width(image_size: int | Sequence[int]) -> tuple[int, in
     return height_and_width
 
 
-def read_image(path: str | Path, image_size: int | tuple[int, int] | None = None) -> np.ndarray:
+def read_image(path: str | Path, as_tensor: bool = False) -> torch.Tensor | np.ndarray:
     """Read image from disk in RGB format.
 
     Args:
         path (str, Path): path to the image file
-        image_size (int | tuple[int, int] | None, optional):
-            Image size to resize the image.
-            Defaults to None.
+        as_tensor (bool, optional): If True, returns the image as a tensor. Defaults to False.
 
     Example:
         >>> image = read_image("test_image.jpg")
+        >>> type(image)
+        <class 'numpy.ndarray'>
+        >>>
+        >>> image = read_image("test_image.jpg", as_tensor=True)
+        >>> type(image)
+        <class 'torch.Tensor'>
 
     Returns:
         image as numpy array
     """
-    path = path if isinstance(path, str) else str(path)
-    image = cv2.imread(path)
-    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-
-    if image_size:
-        # This part is optional, where the user wants to quickly resize the image
-        # with a one-liner code. This would particularly be useful especially when
-        # prototyping new ideas.
-        height, width = get_image_height_and_width(image_size)
-        image = cv2.resize(image, dsize=(width, height), interpolation=cv2.INTER_AREA)
-
-    return image
+    image = Image.open(path)
+    return to_tensor(image) if as_tensor else np.array(image)
 
 
 def read_depth_image(path: str | Path) -> np.ndarray:

@@ -12,9 +12,8 @@ from argparse import ArgumentParser, Namespace
 from pathlib import Path
 
 import torch
-from torchvision.io import read_image
 
-from anomalib.data.utils import generate_output_image_filename, get_image_filenames
+from anomalib.data.utils import generate_output_image_filename, get_image_filenames, read_image
 from anomalib.data.utils.image import save_image, show_image
 from anomalib.deploy import TorchInferencer
 from anomalib.utils.visualization import ImageVisualizer
@@ -82,7 +81,7 @@ def infer(args: Namespace) -> None:
 
     filenames = get_image_filenames(path=args.input)
     for filename in filenames:
-        image = read_image(str(filename)).float() / 255.0
+        image = read_image(filename, as_tensor=True)
         predictions = inferencer.predict(image=image)
         output = visualizer.visualize_image(predictions)
 

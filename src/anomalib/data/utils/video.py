@@ -36,6 +36,7 @@ class ClipsIndexer(VideoClips, ABC):
             video_paths=video_paths,
             clip_length_in_frames=clip_length_in_frames,
             frames_between_clips=frames_between_clips,
+            output_format="TCHW",
         )
         self.mask_paths = mask_paths
 
@@ -60,7 +61,7 @@ class ClipsIndexer(VideoClips, ABC):
         clip_pts = self.clips[video_idx][clip_idx]
 
         return {
-            "image": clip.permute(0, 3, 1, 2) / 255,
+            "image": clip,
             "mask": self.get_mask(idx),
             "video_path": video_path,
             "frames": clip_pts,

@@ -17,12 +17,11 @@ from tempfile import mkdtemp
 import cv2
 import pandas as pd
 from pandas import DataFrame, Series
-from torchvision.io import read_image
 from torchvision.transforms.v2 import Compose
 
 from anomalib import TaskType
 from anomalib.data.base.dataset import AnomalibDataset
-from anomalib.data.utils import Augmenter, Split
+from anomalib.data.utils import Augmenter, Split, read_image
 
 logger = logging.getLogger(__name__)
 
@@ -75,7 +74,7 @@ def make_synthetic_dataset(
             Series: DataFrame row with updated information about the augmented image.
         """
         # read and transform image
-        image = read_image(sample.image_path).float() / 255.0
+        image = read_image(sample.image_path, as_tensor=True)
         # apply anomalous perturbation
         aug_im, mask = augmenter.augment_batch(image.unsqueeze(0))
         # target file name with leading zeros

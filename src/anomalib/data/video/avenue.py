@@ -27,7 +27,6 @@ import numpy as np
 import scipy.io
 import torch
 from pandas import DataFrame
-from torchvision.io import read_image
 from torchvision.transforms.v2 import Transform
 
 from anomalib import TaskType
@@ -38,6 +37,7 @@ from anomalib.data.utils import (
     Split,
     ValSplitMode,
     download_and_extract,
+    read_image,
     validate_path,
 )
 from anomalib.data.utils.video import ClipsIndexer
@@ -128,7 +128,7 @@ class AvenueClipsIndexer(ClipsIndexer):
         if mask_folder.exists():
             mask_frames = sorted(mask_folder.glob("*"))
             mask_paths = [mask_frames[idx] for idx in frames.int()]
-            masks = torch.vstack([read_image(str(mask_path)) for mask_path in mask_paths])
+            masks = torch.vstack([read_image(str(mask_path), as_tensor=True) for mask_path in mask_paths])
         else:
             mat = scipy.io.loadmat(matfile)
             masks = np.vstack([np.stack(m) for m in mat["volLabel"]])

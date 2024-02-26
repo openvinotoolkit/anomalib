@@ -13,9 +13,9 @@ import numpy as np
 import torch
 from omegaconf import DictConfig
 from torch import nn
-from torchvision.io import read_image
 
 from anomalib import TaskType
+from anomalib.data.utils import read_image
 from anomalib.data.utils.boxes import masks_to_boxes
 from anomalib.utils.visualization import ImageResult
 
@@ -180,7 +180,7 @@ class TorchInferencer(Inferencer):
         if metadata is None:
             metadata = self.metadata if hasattr(self, "metadata") else {}
         if isinstance(image, str | Path):
-            image = read_image(image).to(torch.float).div(255.0)
+            image = read_image(image, as_tensor=True)
 
         metadata["image_shape"] = image.shape[-2:]
 
