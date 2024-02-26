@@ -10,7 +10,6 @@ import pytest
 
 from anomalib import TaskType
 from anomalib.data.image.folder import FolderDataset
-from anomalib.data.utils import get_transforms
 from anomalib.data.utils.synthetic import SyntheticAnomalyDataset
 
 
@@ -19,7 +18,6 @@ def folder_dataset(dataset_path: Path) -> FolderDataset:
     """Fixture that returns a FolderDataset instance."""
     return FolderDataset(
         task=TaskType.SEGMENTATION,
-        transform=get_transforms(image_size=(256, 256)),
         root=dataset_path / "mvtec" / "dummy",
         normal_dir="train/good",
         abnormal_dir="test/bad",
