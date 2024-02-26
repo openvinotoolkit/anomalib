@@ -1,5 +1,6 @@
 class_path: anomalib.data.Folder
 init_args:
+  name: bottle
   root: "datasets/MVTec/bottle"
   normal_dir: "train/good"
   abnormal_dir: "test/broken_large"
