@@ -250,8 +250,6 @@ class FolderDataset(AnomalibDataset):
         self.mask_dir = mask_dir
         self.extensions = extensions
 
-        # def _setup(self) -> None:
-        #     """Assign samples."""
         self.samples = make_folder_dataset(
             root=self.root,
             normal_dir=self.normal_dir,
