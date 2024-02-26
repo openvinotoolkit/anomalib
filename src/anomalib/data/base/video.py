@@ -39,9 +39,10 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
 
     Args:
         task (str): Task type, either 'classification' or 'segmentation'
-        transform (Transform): Transforms that should be applied to the input clip.
         clip_length_in_frames (int): Number of video frames in each clip.
         frames_between_clips (int): Number of frames between each consecutive video clip.
+        transform (Transform, optional): Transforms that should be applied to the input clips.
+            Defaults to ``None``.
         target_frame (VideoTargetFrame): Specifies the target frame in the video clip, used for ground truth retrieval.
             Defaults to ``VideoTargetFrame.LAST``.
     """
@@ -49,9 +50,9 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
     def __init__(
         self,
         task: TaskType,
-        transform: Transform,
         clip_length_in_frames: int,
         frames_between_clips: int,
+        transform: Transform | None = None,
         target_frame: VideoTargetFrame = VideoTargetFrame.LAST,
     ) -> None:
         super().__init__(task, transform)

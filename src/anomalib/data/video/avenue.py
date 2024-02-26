@@ -141,7 +141,6 @@ class AvenueDataset(AnomalibVideoDataset):
 
     Args:
         task (TaskType): Task type, 'classification', 'detection' or 'segmentation'
-        transform (Transform): Transforms that should be applied to the input clips.
         split (Split): Split of the dataset, usually Split.TRAIN or Split.TEST
         root (Path | str): Path to the root of the dataset
             Defaults to ``./datasets/avenue``.
@@ -151,8 +150,10 @@ class AvenueDataset(AnomalibVideoDataset):
             Defaults to ``2``.
         frames_between_clips (int, optional): Number of frames between each consecutive video clip.
             Defaults to ``1``.
-        target_frame (VideoTargetFrame): Specifies the target frame in the video clip, used for ground truth retrieval
+        target_frame (VideoTargetFrame): Specifies the target frame in the video clip, used for ground truth retrieval.
             Defaults to ``VideoTargetFrame.LAST``.
+        transform (Transform, optional): Transforms that should be applied to the input images.
+            Defaults to ``None``.
 
     Examples:
         To create an Avenue dataset to train a classification model:
@@ -213,15 +214,21 @@ class AvenueDataset(AnomalibVideoDataset):
     def __init__(
         self,
         task: TaskType,
-        transform: Transform,
         split: Split,
         root: Path | str = "./datasets/avenue",
         gt_dir: Path | str = "./datasets/avenue/ground_truth_demo",
         clip_length_in_frames: int = 2,
         frames_between_clips: int = 1,
+        transform: Transform | None = None,
         target_frame: VideoTargetFrame = VideoTargetFrame.LAST,
     ) -> None:
-        super().__init__(task, transform, clip_length_in_frames, frames_between_clips, target_frame)
+        super().__init__(
+            task=task,
+            clip_length_in_frames=clip_length_in_frames,
+            frames_between_clips=frames_between_clips,
+            target_frame=target_frame,
+            transform=transform,
+        )
 
         self.root = root if isinstance(root, Path) else Path(root)
         self.gt_dir = gt_dir if isinstance(gt_dir, Path) else Path(gt_dir)

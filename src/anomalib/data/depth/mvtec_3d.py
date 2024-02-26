@@ -174,11 +174,12 @@ class MVTec3DDataset(AnomalibDepthDataset):
 
     Args:
         task (TaskType): Task type, ``classification``, ``detection`` or ``segmentation``
-        transform (Transform): Transforms that should be applied to the input images.
         root (Path | str): Path to the root of the dataset
             Defaults to ``"./datasets/MVTec3D"``.
         category (str): Sub-category of the dataset, e.g. 'bagel'
             Defaults to ``"bagel"``.
+        transform (Transform, optional): Transforms that should be applied to the input images.
+            Defaults to ``None``.
         split (str | Split | None): Split of the dataset, usually Split.TRAIN or Split.TEST
             Defaults to ``None``.
     """
@@ -186,9 +187,9 @@ class MVTec3DDataset(AnomalibDepthDataset):
     def __init__(
         self,
         task: TaskType,
-        transform: Transform,
         root: Path | str = "./datasets/MVTec3D",
         category: str = "bagel",
+        transform: Transform | None = None,
         split: str | Split | None = None,
     ) -> None:
         super().__init__(task=task, transform=transform)

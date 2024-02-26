@@ -126,7 +126,8 @@ class BTechDataset(AnomalibDataset):
     Args:
         root: Path to the BTech dataset
         category: Name of the BTech category.
-        transform (Transform): Transforms that should be applied to the input images.
+        transform (Transform, optional): Transforms that should be applied to the input images.
+            Defaults to ``None``.
         split: 'train', 'val' or 'test'
         task: ``classification``, ``detection`` or ``segmentation``
         create_validation_set: Create a validation subset in addition to the train and test subsets
@@ -166,7 +167,7 @@ class BTechDataset(AnomalibDataset):
         self,
         root: str | Path,
         category: str,
-        transform: Transform,
+        transform: Transform | None = None,
         split: str | Split | None = None,
         task: TaskType = TaskType.SEGMENTATION,
     ) -> None:

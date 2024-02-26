@@ -73,9 +73,10 @@ class VisaDataset(AnomalibDataset):
 
     Args:
         task (TaskType): Task type, ``classification``, ``detection`` or ``segmentation``
-        transform (Transform): Transforms that should be applied to the input images.
         root (str | Path): Path to the root of the dataset
         category (str): Sub-category of the dataset, e.g. 'candle'
+        transform (Transform, optional): Transforms that should be applied to the input images.
+            Defaults to ``None``.
         split (str | Split | None): Split of the dataset, usually Split.TRAIN or Split.TEST
             Defaults to ``None``.
 
@@ -129,9 +130,9 @@ class VisaDataset(AnomalibDataset):
     def __init__(
         self,
         task: TaskType,
-        transform: Transform,
         root: str | Path,
         category: str,
+        transform: Transform | None = None,
         split: str | Split | None = None,
     ) -> None:
         super().__init__(task=task, transform=transform)

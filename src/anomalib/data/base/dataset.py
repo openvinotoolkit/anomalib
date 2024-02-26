@@ -60,10 +60,11 @@ class AnomalibDataset(Dataset, ABC):
 
     Args:
         task (str): Task type, either 'classification' or 'segmentation'
-        transform (Transform): Transforms that should be applied to the input images.
+        transform (Transform, optional): Transforms that should be applied to the input images.
+            Defaults to ``None``.
     """
 
-    def __init__(self, task: TaskType, transform: Transform) -> None:
+    def __init__(self, task: TaskType, transform: Transform | None = None) -> None:
         super().__init__()
         self.task = task
         self.transform = transform

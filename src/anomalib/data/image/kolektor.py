@@ -185,9 +185,10 @@ class KolektorDataset(AnomalibDataset):
 
     Args:
         task (TaskType): Task type, ``classification``, ``detection`` or ``segmentation``
-        transform (Transform): Transforms that should be applied to the input images.
         root (Path | str): Path to the root of the dataset
             Defaults to ``./datasets/kolektor``.
+        transform (Transform, optional): Transforms that should be applied to the input images.
+            Defaults to ``None``.
         split (str | Split | None): Split of the dataset, usually Split.TRAIN or Split.TEST
             Defaults to ``None``.
     """
@@ -195,8 +196,8 @@ class KolektorDataset(AnomalibDataset):
     def __init__(
         self,
         task: TaskType,
-        transform: Transform,
         root: Path | str = "./datasets/kolektor",
+        transform: Transform | None = None,
         split: str | Split | None = None,
     ) -> None:
         super().__init__(task=task, transform=transform)

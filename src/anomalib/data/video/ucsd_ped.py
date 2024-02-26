@@ -154,11 +154,12 @@ class UCSDpedDataset(AnomalibVideoDataset):
         task (TaskType): Task type, 'classification', 'detection' or 'segmentation'
         root (Path | str): Path to the root of the dataset
         category (str): Sub-category of the dataset, e.g. "UCSDped1" or "UCSDped2"
-        transform (Transform): Transforms that should be applied to the input images.
         split (str | Split | None): Split of the dataset, usually Split.TRAIN or Split.TEST
         clip_length_in_frames (int, optional): Number of video frames in each clip.
         frames_between_clips (int, optional): Number of frames between each consecutive video clip.
-        target_frame (VideoTargetFrame): Specifies the target frame in the video clip, used for ground truth retrieval
+        target_frame (VideoTargetFrame): Specifies the target frame in the video clip, used for ground truth retrieval.
+        transform (Transform, optional): Transforms that should be applied to the input images.
+            Defaults to ``None``.
     """
 
     def __init__(
@@ -166,13 +167,19 @@ class UCSDpedDataset(AnomalibVideoDataset):
         task: TaskType,
         root: str | Path,
         category: str,
-        transform: Transform,
         split: Split,
         clip_length_in_frames: int = 2,
         frames_between_clips: int = 10,
         target_frame: VideoTargetFrame = VideoTargetFrame.LAST,
+        transform: Transform | None = None,
     ) -> None:
-        super().__init__(task, transform, clip_length_in_frames, frames_between_clips, target_frame)
+        super().__init__(
+            task=task,
+            clip_length_in_frames=clip_length_in_frames,
+            frames_between_clips=frames_between_clips,
+            target_frame=target_frame,
+            transform=transform,
+        )
 
         self.root_category = Path(root) / category
         self.split = split

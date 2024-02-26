@@ -184,7 +184,8 @@ class FolderDataset(AnomalibDataset):
 
     Args:
         task (TaskType): Task type. (``classification``, ``detection`` or ``segmentation``).
-        transform (Transform): Transforms that should be applied to the input images.
+        transform (Transform, optional): Transforms that should be applied to the input images.
+            Defaults to ``None``.
         normal_dir (str | Path | Sequence): Path to the directory containing normal images.
         root (str | Path | None): Root folder of the dataset.
             Defaults to ``None``.

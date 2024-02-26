@@ -207,6 +207,8 @@ class Folder3DDataset(AnomalibDepthDataset):
         normal_test_depth_dir (str | Path | None, optional): Path to the directory containing
             normal depth images for the test dataset. Normal test images will be a split of `normal_dir` if `None`.
             Defaults to ``None``.
+        transform (Transform, optional): Transforms that should be applied to the input images.
+            Defaults to ``None``.
         split (str | Split | None): Fixed subset split that follows from folder structure on file system.
             Choose from [Split.FULL, Split.TRAIN, Split.TEST]
             Defaults to ``None``.
@@ -221,7 +223,6 @@ class Folder3DDataset(AnomalibDepthDataset):
     def __init__(
         self,
         task: TaskType,
-        transform: Transform,
         normal_dir: str | Path,
         root: str | Path | None = None,
         abnormal_dir: str | Path | None = None,
@@ -230,6 +231,7 @@ class Folder3DDataset(AnomalibDepthDataset):
         normal_depth_dir: str | Path | None = None,
         abnormal_depth_dir: str | Path | None = None,
         normal_test_depth_dir: str | Path | None = None,
+        transform: Transform | None = None,
         split: str | Split | None = None,
         extensions: tuple[str, ...] | None = None,
     ) -> None:
