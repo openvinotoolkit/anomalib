@@ -24,7 +24,6 @@ import logging
 from collections.abc import Sequence
 from pathlib import Path
 
-import albumentations as A  # noqa: N812
 from pandas import DataFrame
 from torchvision.transforms.v2 import Transform
 
@@ -175,7 +174,7 @@ class MVTec3DDataset(AnomalibDepthDataset):
 
     Args:
         task (TaskType): Task type, ``classification``, ``detection`` or ``segmentation``
-        transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
+        transform (Transform): Transforms that should be applied to the input images.
         root (Path | str): Path to the root of the dataset
             Defaults to ``"./datasets/MVTec3D"``.
         category (str): Sub-category of the dataset, e.g. 'bagel'
@@ -187,7 +186,7 @@ class MVTec3DDataset(AnomalibDepthDataset):
     def __init__(
         self,
         task: TaskType,
-        transform: A.Compose,
+        transform: Transform,
         root: Path | str = "./datasets/MVTec3D",
         category: str = "bagel",
         split: str | Split | None = None,
@@ -207,13 +206,6 @@ class MVTec3D(AnomalibDataModule):
             Defaults to ``"./datasets/MVTec3D"``.
         category (str): Category of the MVTec dataset (e.g. "bottle" or "cable").
             Defaults to ``bagel``.
-        image_size (int | tuple[int, int] | None, optional): Size of the input image.
-            Defaults to ``(256, 256)``.
-        center_crop (int | tuple[int, int] | None, optional): When provided, the images will be center-cropped to the
-            provided dimensions.
-            Defaults to ``None``.
-        normalization (InputNormalizationMethod | str): Normalization method to be applied to the input images.
-            Defaults to ``InputNormalizationMethod.IMAGENET``.
         train_batch_size (int, optional): Training batch size.
             Defaults to ``32``.
         eval_batch_size (int, optional): Test batch size.
@@ -222,10 +214,14 @@ class MVTec3D(AnomalibDataModule):
             Defaults to ``8``.
         task (TaskType): Task type, 'classification', 'detection' or 'segmentation'
             Defaults to ``TaskType.SEGMENTATION``.
-        transform_config_train (str | A.Compose | None, optional): Config for pre-processing during training.
-            Defaults to None.
-        transform_config_val (str | A.Compose | None, optional): Config for pre-processing during validation.
-            Defaults to None.
+        image_size (tuple[int, int], optional): Size to which input images should be resized.
+            Defaults to ``None``.
+        transform (Transform, optional): Transforms that should be applied to the input images.
+            Defaults to ``None``.
+        train_transform (Transform, optional): Transforms that should be applied to the input images during training.
+            Defaults to ``None``.
+        eval_transform (Transform, optional): Transforms that should be applied to the input images during evaluation.
+            Defaults to ``None``.
         test_split_mode (TestSplitMode): Setting that determines how the testing subset is obtained.
             Defaults to ``TestSplitMode.FROM_DIR``.
         test_split_ratio (float): Fraction of images from the train set that will be reserved for testing.

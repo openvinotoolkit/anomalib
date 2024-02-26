@@ -9,7 +9,6 @@ from pathlib import Path
 from shutil import move
 from typing import TYPE_CHECKING, Any
 
-import albumentations as A  # noqa: N812
 import cv2
 import numpy as np
 import torch
@@ -155,7 +154,7 @@ class UCSDpedDataset(AnomalibVideoDataset):
         task (TaskType): Task type, 'classification', 'detection' or 'segmentation'
         root (Path | str): Path to the root of the dataset
         category (str): Sub-category of the dataset, e.g. "UCSDped1" or "UCSDped2"
-        transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
+        transform (Transform): Transforms that should be applied to the input images.
         split (str | Split | None): Split of the dataset, usually Split.TRAIN or Split.TEST
         clip_length_in_frames (int, optional): Number of video frames in each clip.
         frames_between_clips (int, optional): Number of frames between each consecutive video clip.
@@ -167,7 +166,7 @@ class UCSDpedDataset(AnomalibVideoDataset):
         task: TaskType,
         root: str | Path,
         category: str,
-        transform: A.Compose,
+        transform: Transform,
         split: Split,
         clip_length_in_frames: int = 2,
         frames_between_clips: int = 10,
@@ -191,23 +190,17 @@ class UCSDped(AnomalibVideoDataModule):
         frames_between_clips (int, optional): Number of frames between each consecutive video clip.
         target_frame (VideoTargetFrame): Specifies the target frame in the video clip, used for ground truth retrieval
         task (TaskType): Task type, 'classification', 'detection' or 'segmentation'
-        image_size (int | tuple[int, int] | None, optional): Size of the input image.
-            Defaults to None.
-        center_crop (int | tuple[int, int] | None, optional): When provided, the images will be center-cropped
-            to the provided dimensions.
-        normalize (bool): When True, the images will be normalized to the ImageNet statistics.
-        center_crop (int | tuple[int, int] | None, optional): When provided, the images will be center-cropped
-            to the provided dimensions.
-        normalize (bool): When True, the images will be normalized to the ImageNet statistics.
+        image_size (tuple[int, int], optional): Size to which input images should be resized.
+            Defaults to ``None``.
+        transform (Transform, optional): Transforms that should be applied to the input images.
+            Defaults to ``None``.
+        train_transform (Transform, optional): Transforms that should be applied to the input images during training.
+            Defaults to ``None``.
+        eval_transform (Transform, optional): Transforms that should be applied to the input images during evaluation.
+            Defaults to ``None``.
         train_batch_size (int, optional): Training batch size. Defaults to 32.
         eval_batch_size (int, optional): Test batch size. Defaults to 32.
         num_workers (int, optional): Number of workers. Defaults to 8.
-        transform_config_train (str | A.Compose | None, optional): Config for pre-processing
-            during training.
-            Defaults to None.
-        transform_config_val (str | A.Compose | None, optional): Config for pre-processing
-            during validation.
-            Defaults to None.
         val_split_mode (ValSplitMode): Setting that determines how the validation subset is obtained.
         val_split_ratio (float): Fraction of train or test images that will be reserved for validation.
         seed (int | None, optional): Seed which may be set to a fixed value for reproducibility.

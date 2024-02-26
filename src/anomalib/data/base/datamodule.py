@@ -62,6 +62,14 @@ class AnomalibDataModule(LightningDataModule, ABC):
             Defaults to ``None``.
         test_split_ratio (float): Fraction of the train images held out for testing.
             Defaults to ``None``.
+        image_size (tuple[int, int], optional): Size to which input images should be resized.
+            Defaults to ``None``.
+        transform (Transform, optional): Transforms that should be applied to the input images.
+            Defaults to ``None``.
+        train_transform (Transform, optional): Transforms that should be applied to the input images during training.
+            Defaults to ``None``.
+        eval_transform (Transform, optional): Transforms that should be applied to the input images during evaluation.
+            Defaults to ``None``.
         seed (int | None, optional): Seed used during random subset splitting.
             Defaults to ``None``.
     """

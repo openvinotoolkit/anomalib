@@ -60,7 +60,7 @@ class AnomalibDataset(Dataset, ABC):
 
     Args:
         task (str): Task type, either 'classification' or 'segmentation'
-        transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
+        transform (Transform): Transforms that should be applied to the input images.
     """
 
     def __init__(self, task: TaskType, transform: Transform) -> None:

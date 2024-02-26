@@ -5,10 +5,10 @@
 
 from abc import ABC
 
-import albumentations as A  # noqa: N812
 import torch
 from PIL import Image
 from torchvision.transforms.functional import to_tensor
+from torchvision.transforms.v2 import Transform
 from torchvision.tv_tensors import Mask
 
 from anomalib import TaskType
@@ -21,10 +21,10 @@ class AnomalibDepthDataset(AnomalibDataset, ABC):
 
     Args:
         task (str): Task type, either 'classification' or 'segmentation'
-        transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
+        transform (Transform): Transforms that should be applied to the input images.
     """
 
-    def __init__(self, task: TaskType, transform: A.Compose) -> None:
+    def __init__(self, task: TaskType, transform: Transform) -> None:
         super().__init__(task, transform)
 
         self.transform = transform

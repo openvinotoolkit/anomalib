@@ -184,7 +184,7 @@ class FolderDataset(AnomalibDataset):
 
     Args:
         task (TaskType): Task type. (``classification``, ``detection`` or ``segmentation``).
-        transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
+        transform (Transform): Transforms that should be applied to the input images.
         normal_dir (str | Path | Sequence): Path to the directory containing normal images.
         root (str | Path | None): Root folder of the dataset.
             Defaults to ``None``.
@@ -283,13 +283,6 @@ class Folder(AnomalibDataModule):
         extensions (tuple[str, ...] | None, optional): Type of the image extensions to read from the
             directory.
             Defaults to ``None``.
-        image_size (int | tuple[int, int] | None, optional): Size of the input image.
-            Defaults to ``(256, 256)``.
-        center_crop (int | tuple[int, int] | None, optional): When provided, the images will be center-cropped
-            to the provided dimensions.
-            Defaults to ``None``.
-        normalization (InputNormalizationMethod | str): Normalization method to apply to the input images.
-            Defaults to ``InputNormalizationMethod.IMAGENET``.
         train_batch_size (int, optional): Training batch size.
             Defaults to ``32``.
         eval_batch_size (int, optional): Validation, test and predict batch size.
@@ -298,11 +291,13 @@ class Folder(AnomalibDataModule):
             Defaults to ``8``.
         task (TaskType, optional): Task type. Could be ``classification``, ``detection`` or ``segmentation``.
             Defaults to ``segmentation``.
-        transform_config_train (str | A.Compose | None, optional): Config for pre-processing
-            during training.
+        image_size (tuple[int, int], optional): Size to which input images should be resized.
             Defaults to ``None``.
-        transform_config_val (str | A.Compose | None, optional): Config for pre-processing
-            during validation.
+        transform (Transform, optional): Transforms that should be applied to the input images.
+            Defaults to ``None``.
+        train_transform (Transform, optional): Transforms that should be applied to the input images during training.
+            Defaults to ``None``.
+        eval_transform (Transform, optional): Transforms that should be applied to the input images during evaluation.
             Defaults to ``None``.
         test_split_mode (TestSplitMode): Setting that determines how the testing subset is obtained.
             Defaults to ``TestSplitMode.FROM_DIR``.

@@ -20,7 +20,6 @@ Reference:
 import logging
 from pathlib import Path
 
-import albumentations as A  # noqa: N812
 import numpy as np
 from cv2 import imread
 from pandas import DataFrame
@@ -186,7 +185,7 @@ class KolektorDataset(AnomalibDataset):
 
     Args:
         task (TaskType): Task type, ``classification``, ``detection`` or ``segmentation``
-        transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
+        transform (Transform): Transforms that should be applied to the input images.
         root (Path | str): Path to the root of the dataset
             Defaults to ``./datasets/kolektor``.
         split (str | Split | None): Split of the dataset, usually Split.TRAIN or Split.TEST
@@ -196,7 +195,7 @@ class KolektorDataset(AnomalibDataset):
     def __init__(
         self,
         task: TaskType,
-        transform: A.Compose,
+        transform: Transform,
         root: Path | str = "./datasets/kolektor",
         split: str | Split | None = None,
     ) -> None:
@@ -212,13 +211,6 @@ class Kolektor(AnomalibDataModule):
 
     Args:
         root (Path | str): Path to the root of the dataset
-        image_size (int | tuple[int, int] | None, optional): Size of the input image.
-            Defaults to ``None``.
-        center_crop (int | tuple[int, int] | None, optional): When provided, the images will be center-cropped
-            to the provided dimensions.
-            Defaults to ``None``.
-        normalization (InputNormalizationMethod | str): Normalization method to apply to the input images.
-            Defaults to ``InputNormalizationMethod.IMAGENET``.
         train_batch_size (int, optional): Training batch size.
             Defaults to ``32``.
         eval_batch_size (int, optional): Test batch size.
@@ -227,10 +219,13 @@ class Kolektor(AnomalibDataModule):
             Defaults to ``8``.
         task TaskType): Task type, 'classification', 'detection' or 'segmentation'
             Defaults to ``TaskType.SEGMENTATION``.
-        transform_config_train (str | A.Compose | None, optional): Config for pre-processing during training.
+        image_size (tuple[int, int], optional): Size to which input images should be resized.
             Defaults to ``None``.
-        transform_config_val (str | A.Compose | None, optional): Config for pre-processing
-            during validation.
+        transform (Transform, optional): Transforms that should be applied to the input images.
+            Defaults to ``None``.
+        train_transform (Transform, optional): Transforms that should be applied to the input images during training.
+            Defaults to ``None``.
+        eval_transform (Transform, optional): Transforms that should be applied to the input images during evaluation.
             Defaults to ``None``.
         test_split_mode (TestSplitMode): Setting that determines how the testing subset is obtained.
             Defaults to ``TestSplitMode.FROM_DIR``

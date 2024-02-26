@@ -7,9 +7,9 @@ from abc import ABC
 from enum import Enum
 from typing import TYPE_CHECKING, Any
 
-import albumentations as A  # noqa: N812
 import torch
 from pandas import DataFrame
+from torchvision.transforms.v2 import Transform
 from torchvision.tv_tensors import Mask
 
 from anomalib import TaskType
@@ -39,7 +39,7 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
 
     Args:
         task (str): Task type, either 'classification' or 'segmentation'
-        transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
+        transform (Transform): Transforms that should be applied to the input clip.
         clip_length_in_frames (int): Number of video frames in each clip.
         frames_between_clips (int): Number of frames between each consecutive video clip.
         target_frame (VideoTargetFrame): Specifies the target frame in the video clip, used for ground truth retrieval.
@@ -49,7 +49,7 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
     def __init__(
         self,
         task: TaskType,
-        transform: A.Compose,
+        transform: Transform,
         clip_length_in_frames: int,
         frames_between_clips: int,
         target_frame: VideoTargetFrame = VideoTargetFrame.LAST,
