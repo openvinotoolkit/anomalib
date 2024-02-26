@@ -92,7 +92,7 @@ class AnomalibDataModule(LightningDataModule, ABC):
         self.test_data: AnomalibDataset
 
         self._samples: DataFrame | None = None
-        self._category: str
+        self._category: str = ""
 
     @property
     def name(self) -> str:
