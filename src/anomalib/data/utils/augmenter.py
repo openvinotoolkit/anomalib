@@ -18,6 +18,7 @@ import cv2
 import imgaug.augmenters as iaa
 import numpy as np
 import torch
+from PIL import Image
 from torchvision.datasets.folder import IMG_EXTENSIONS
 
 from anomalib.data.utils.generators.perlin import random_2d_perlin
@@ -111,7 +112,7 @@ class Augmenter:
 
         # Load anomaly source image
         if anomaly_source_path:
-            anomaly_source_img = cv2.imread(str(anomaly_source_path))
+            anomaly_source_img = np.array(Image.open(anomaly_source_path))
             anomaly_source_img = cv2.resize(anomaly_source_img, dsize=(width, height))
         else:  # if no anomaly source is specified, we use the perlin noise as anomalous source
             anomaly_source_img = np.expand_dims(perlin_noise, 2).repeat(3, 2)
