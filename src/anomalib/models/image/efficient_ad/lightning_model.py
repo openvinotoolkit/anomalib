@@ -93,7 +93,6 @@ class EfficientAd(AnomalyModule):
 
     def __init__(
         self,
-        input_size: tuple[int, int] = (256, 256),
         teacher_out_channels: int = 384,
         model_size: EfficientAdModelSize = EfficientAdModelSize.S,
         lr: float = 0.0001,
@@ -107,18 +106,13 @@ class EfficientAd(AnomalyModule):
         self.model_size = model_size
         self.model: EfficientAdModel = EfficientAdModel(
             teacher_out_channels=teacher_out_channels,
-            input_size=input_size,
             model_size=model_size,
             padding=padding,
             pad_maps=pad_maps,
         )
         self.batch_size = batch_size
-        self.image_size = input_size
         self.lr = lr
         self.weight_decay = weight_decay
-
-        self.prepare_pretrained_model()
-        self.prepare_imagenette_data()
 
     def prepare_pretrained_model(self) -> None:
         """Prepare the pretrained teacher model."""
@@ -131,13 +125,13 @@ class EfficientAd(AnomalyModule):
         logger.info(f"Load pretrained teacher model from {teacher_path}")
         self.model.teacher.load_state_dict(torch.load(teacher_path, map_location=torch.device(self.device)))
 
-    def prepare_imagenette_data(self) -> None:
+    def prepare_imagenette_data(self, image_size: tuple[int, int] | torch.Size) -> None:
         """Prepare ImageNette dataset transformations."""
         self.data_transforms_imagenet = A.Compose(
             [  # We obtain an image P ∈ R 3x256x256 from ImageNet by choosing a random image,
-                A.Resize(self.image_size[0] * 2, self.image_size[1] * 2),  # resizing it to 512 x 512,
+                A.Resize(image_size[0] * 2, image_size[1] * 2),  # resizing it to 512 x 512,
                 A.ToGray(p=0.3),  # converting it to gray scale with a probability of 0.3
-                A.CenterCrop(self.image_size[0], self.image_size[1]),  # and cropping the center 256 x 256 pixels
+                A.CenterCrop(image_size[0], image_size[1]),  # and cropping the center 256 x 256 pixels
                 A.ToFloat(always_apply=False, p=1.0, max_value=255),
                 ToTensorV2(),
             ],
@@ -265,6 +259,10 @@ class EfficientAd(AnomalyModule):
 
     def on_train_start(self) -> None:
         """Calculate or load the channel-wise mean and std of the training dataset and push to the model."""
+        sample = next(iter(self.trainer.train_dataloader))
+        image_size = sample["image"].shape[-2:]
+        self.prepare_pretrained_model()
+        self.prepare_imagenette_data(image_size)
         if not self.model.is_set(self.model.mean_std):
             channel_mean_std = self.teacher_channel_mean_std(self.trainer.datamodule.train_dataloader())
             self.model.mean_std.update(channel_mean_std)
