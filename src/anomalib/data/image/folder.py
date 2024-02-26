@@ -185,6 +185,7 @@ class FolderDataset(AnomalibDataset):
     This class is used to create a dataset from a folder. The class utilizes the Torch Dataset class.
 
     Args:
+        name (str): Name of the dataset. This is used to name the datamodule, especially when logging/saving.
         task (TaskType): Task type. (``classification``, ``detection`` or ``segmentation``).
         transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
         normal_dir (str | Path | Sequence): Path to the directory containing normal images.
@@ -231,6 +232,7 @@ class FolderDataset(AnomalibDataset):
 
     def __init__(
         self,
+        name: str,
         task: TaskType,
         transform: A.Compose,
         normal_dir: str | Path | Sequence[str | Path],
@@ -243,6 +245,7 @@ class FolderDataset(AnomalibDataset):
     ) -> None:
         super().__init__(task, transform)
 
+        self._name = name
         self.split = split
         self.root = root
         self.normal_dir = normal_dir
@@ -250,6 +253,14 @@ class FolderDataset(AnomalibDataset):
         self.normal_test_dir = normal_test_dir
         self.mask_dir = mask_dir
         self.extensions = extensions
+
+    @property
+    def name(self) -> str:
+        """Name of the dataset.
+
+        Folder dataset overrides the name property to provide a custom name.
+        """
+        return self._name
 
     def _setup(self) -> None:
         """Assign samples."""
@@ -268,6 +279,7 @@ class Folder(AnomalibDataModule):
     """Folder DataModule.
 
     Args:
+        name (str): Name of the dataset. This is used to name the datamodule, especially when logging/saving.
         normal_dir (str | Path | Sequence): Name of the directory containing normal images.
         root (str | Path | None): Path to the root folder containing normal and abnormal dirs.
             Defaults to ``None``.
@@ -375,6 +387,7 @@ class Folder(AnomalibDataModule):
 
     def __init__(
         self,
+        name: str,
         normal_dir: str | Path | Sequence[str | Path],
         root: str | Path | None = None,
         abnormal_dir: str | Path | Sequence[str | Path] | None = None,
@@ -397,6 +410,7 @@ class Folder(AnomalibDataModule):
         val_split_ratio: float = 0.5,
         seed: int | None = None,
     ) -> None:
+        self._name = name
         task = TaskType(task)
         test_split_mode = TestSplitMode(test_split_mode)
         val_split_mode = ValSplitMode(val_split_mode)
@@ -435,6 +449,7 @@ class Folder(AnomalibDataModule):
         )
 
         self.train_data = FolderDataset(
+            name=name,
             task=task,
             transform=transform_train,
             split=Split.TRAIN,
@@ -447,6 +462,7 @@ class Folder(AnomalibDataModule):
         )
 
         self.test_data = FolderDataset(
+            name=name,
             task=task,
             transform=transform_eval,
             split=Split.TEST,
@@ -457,3 +473,11 @@ class Folder(AnomalibDataModule):
             mask_dir=mask_dir,
             extensions=extensions,
         )
+
+    @property
+    def name(self) -> str:
+        """Name of the datamodule.
+
+        Folder datamodule overrides the name property to provide a custom name.
+        """
+        return self._name

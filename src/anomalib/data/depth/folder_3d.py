@@ -255,7 +255,7 @@ class Folder3DDataset(AnomalibDepthDataset):
     def name(self) -> str:
         """Name of the dataset.
 
-        Folder dataset overrides the name property to provide a custom name.
+        Folder3D dataset overrides the name property to provide a custom name.
         """
         return self._name
 
