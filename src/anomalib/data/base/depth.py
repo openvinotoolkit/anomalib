@@ -13,7 +13,7 @@ from torchvision.tv_tensors import Mask
 
 from anomalib import TaskType
 from anomalib.data.base.dataset import AnomalibDataset
-from anomalib.data.utils import masks_to_boxes, read_depth_image
+from anomalib.data.utils import LabelName, masks_to_boxes, read_depth_image
 
 
 class AnomalibDepthDataset(AnomalibDataset, ABC):
@@ -57,7 +57,7 @@ class AnomalibDepthDataset(AnomalibDataset, ABC):
             # Therefore, create empty mask for Normal (0) images.
             mask = (
                 Mask(torch.zeros(image.shape[-2:]))
-                if label_index == 0
+                if label_index == LabelName.NORMAL
                 else Mask(to_tensor(Image.open(mask_path)).squeeze())
             )
             item["image"], item["depth_image"], item["mask"] = (

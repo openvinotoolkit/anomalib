@@ -20,7 +20,7 @@ from torchvision.transforms.v2 import Transform
 from torchvision.tv_tensors import Mask
 
 from anomalib import TaskType
-from anomalib.data.utils import masks_to_boxes
+from anomalib.data.utils import LabelName, masks_to_boxes
 
 _EXPECTED_COLUMNS_CLASSIFICATION = ["image_path", "split"]
 _EXPECTED_COLUMNS_SEGMENTATION = [*_EXPECTED_COLUMNS_CLASSIFICATION, "mask_path"]
@@ -118,12 +118,12 @@ class AnomalibDataset(Dataset, ABC):
     @property
     def has_normal(self) -> bool:
         """Check if the dataset contains any normal samples."""
-        return 0 in list(self.samples.label_index)
+        return LabelName.NORMAL in list(self.samples.label_index)
 
     @property
     def has_anomalous(self) -> bool:
         """Check if the dataset contains any anomalous samples."""
-        return 1 in list(self.samples.label_index)
+        return LabelName.ABNORMAL in list(self.samples.label_index)
 
     def __getitem__(self, index: int) -> dict[str, str | torch.Tensor]:
         """Get dataset item for the index ``index``.
@@ -149,7 +149,7 @@ class AnomalibDataset(Dataset, ABC):
             # Therefore, create empty mask for Normal (0) images.
             mask = (
                 Mask(torch.zeros(image.shape[-2:]))
-                if label_index == 0
+                if label_index == LabelName.NORMAL
                 else Mask(to_tensor(Image.open(mask_path)).squeeze())
             )
             item["image"], item["mask"] = self.transform(image, mask) if self.transform else (image, mask)
