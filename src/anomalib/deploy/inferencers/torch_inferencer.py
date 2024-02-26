@@ -41,9 +41,8 @@ class TorchInferencer(Inferencer):
         This will ensure that the model is loaded on the ``CPU`` device. To make
         a prediction, we can simply call the ``predict`` method:
 
-        >>> import cv2
-        >>> image = cv2.imread("path/to/image.jpg")
-        >>> image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        >>> from anomalib.data.utils import read_image
+        >>> image = read_image("path/to/image.jpg")
         >>> result = inferencer.predict(image)
 
         ``result`` will be an ``ImageResult`` object containing the prediction

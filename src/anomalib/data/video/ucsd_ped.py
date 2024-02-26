@@ -9,7 +9,6 @@ from pathlib import Path
 from shutil import move
 from typing import TYPE_CHECKING, Any
 
-import cv2
 import numpy as np
 import torch
 from pandas import DataFrame
@@ -109,7 +108,7 @@ class UCSDpedClipsIndexer(ClipsIndexer):
         mask_frames = sorted(Path(mask_folder).glob("*.bmp"))
         mask_paths = [mask_frames[idx] for idx in frames.int()]
 
-        return torch.tensor(np.stack([cv2.imread(str(mask_path), flags=0) / 255.0 for mask_path in mask_paths]))
+        return torch.stack([read_image(mask_path, as_tensor=True) for mask_path in mask_paths]).squeeze()
 
     def _compute_frame_pts(self) -> None:
         """Retrieve the number of frames in each video."""
