@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING, Any
 import numpy as np
 import torch
 from torch import nn
-from torchvision.transforms.v2 import CenterCrop, Compose, Resize
+from torchvision.transforms.v2 import CenterCrop, Compose, Resize, Transform
 
 from anomalib import TaskType
 from anomalib.data.transforms import ExportableCenterCrop
@@ -55,12 +55,12 @@ class InferenceModel(nn.Module):
 
     Args:
         model (nn.Module): Model to export.
-        transform (Compose): Input transform for the model.
+        transform (Transform): Input transform for the model.
         disable_antialias (bool, optional): Disable antialiasing in the Resize transforms of the given transform. This
             is needed for ONNX/OpenVINO export, as antialiasing is not supported in the ONNX opset.
     """
 
-    def __init__(self, model: nn.Module, transform: Compose, disable_antialias: bool = False) -> None:
+    def __init__(self, model: nn.Module, transform: Transform, disable_antialias: bool = False) -> None:
         super().__init__()
         self.model = model
         self.transform = transform
@@ -104,7 +104,7 @@ class InferenceModel(nn.Module):
 def export_to_torch(
     model: AnomalyModule,
     export_root: Path | str,
-    transform: Compose | None = None,
+    transform: Transform | None = None,
     task: TaskType | None = None,
 ) -> Path:
     """Export AnomalibModel to torch.
@@ -112,9 +112,10 @@ def export_to_torch(
     Args:
         model (AnomalyModule): Model to export.
         export_root (Path): Path to the output folder.
-        transform (Compose): Input transforms used for the model. If not provided, the transform is taken from the
-            model.
-        task (TaskType | None): Task type should be provided if transforms is of type dict or A.Compose object.
+        transform (Transform, optional): Input transforms used for the model. If not provided, the transform is taken
+            from the model.
+            Defaults to ``None``.
+        task (TaskType | None): Task type.
             Defaults to ``None``.
 
     Returns:
@@ -159,7 +160,7 @@ def export_to_torch(
 def export_to_onnx(
     model: AnomalyModule,
     export_root: Path | str,
-    transform: Compose | None = None,
+    transform: Transform | None = None,
     task: TaskType | None = None,
     export_type: ExportType = ExportType.ONNX,
 ) -> Path:
@@ -168,9 +169,10 @@ def export_to_onnx(
     Args:
         model (AnomalyModule): Model to export.
         export_root (Path): Path to the root folder of the exported model.
-        transform (Compose): Input transforms used for the model. If not provided, the transform is taken from the
-            model.
-        task (TaskType | None): Task type should be provided if transforms is of type dict or A.Compose object.
+        transform (Transform, optional): Input transforms used for the model. If not provided, the transform is taken
+            from the model.
+            Defaults to ``None``.
+        task (TaskType | None): Task type.
             Defaults to ``None``.
         export_type (ExportType): Mode to export the model. Since this method is used by OpenVINO export as well, we
             need to pass the export type so that the right export path is created.
@@ -228,7 +230,7 @@ def export_to_onnx(
 def export_to_openvino(
     export_root: Path | str,
     model: AnomalyModule,
-    transform: Compose | None = None,
+    transform: Transform | None = None,
     ov_args: dict[str, Any] | None = None,
     task: TaskType | None = None,
 ) -> Path:
@@ -237,11 +239,12 @@ def export_to_openvino(
     Args:
         export_root (Path): Path to the export folder.
         model (AnomalyModule): AnomalyModule to export.
-        transform (Compose): Input transforms used for the model. If not provided, the transform is taken from the
-            model.
+        transform (Transform, optional): Input transforms used for the model. If not provided, the transform is taken
+            from the model.
+            Defaults to ``None``.
         ov_args: Model optimizer arguments for OpenVINO model conversion.
             Defaults to ``None``.
-        task (TaskType | None): Task type should be provided if transforms is of type dict or A.Compose object.
+        task (TaskType | None): Task type.
             Defaults to ``None``.
 
     Returns:
@@ -307,7 +310,7 @@ def get_metadata(
 
     Args:
         model (AnomalyModule): Anomaly model which contains metadata related to normalization.
-        task (TaskType | None): Task type should be provided if transforms is of type dict or A.Compose object.
+        task (TaskType | None): Task type.
             Defaults to None.
 
     Returns:
@@ -377,7 +380,7 @@ def _write_metadata_to_json(
         transform (dict[str, Any] | AnomalibDataset | AnomalibDataModule | A.Compose): Data transforms (augmentations)
             used for the model.
         model (AnomalyModule): AnomalyModule to export.
-        task (TaskType | None): Task type should be provided if transforms is of type dict or A.Compose object.
+        task (TaskType | None): Task type.
             Defaults to None.
     """
     metadata = get_metadata(task=task, model=model)
