@@ -19,6 +19,7 @@ class TestFolder3D(_TestAnomalibDepthDatamodule):
     def datamodule(self, dataset_path: Path, task_type: TaskType) -> Folder3D:
         """Create and return a Folder 3D datamodule."""
         _datamodule = Folder3D(
+            name="dummy",
             root=dataset_path / "mvtec_3d/dummy",
             normal_dir="train/good/rgb",
             abnormal_dir="test/bad/rgb",
