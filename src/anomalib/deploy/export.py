@@ -56,6 +56,8 @@ class InferenceModel(nn.Module):
     Args:
         model (nn.Module): Model to export.
         transform (Compose): Input transform for the model.
+        disable_antialias (bool, optional): Disable antialiasing in the Resize transforms of the given transform. This
+            is needed for ONNX/OpenVINO export, as antialiasing is not supported in the ONNX opset.
     """
 
     def __init__(self, model: nn.Module, transform: Compose, disable_antialias: bool = False) -> None:
