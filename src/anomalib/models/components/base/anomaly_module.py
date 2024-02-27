@@ -5,7 +5,7 @@
 
 import importlib
 import logging
-from abc import ABC, abstractproperty
+from abc import ABC, abstractmethod, abstractproperty
 from collections import OrderedDict
 from typing import TYPE_CHECKING, Any
 
@@ -51,6 +51,18 @@ class AnomalyModule(pl.LightningModule, ABC):
         self.pixel_metrics: AnomalibMetricCollection
 
         self._transform: Transform | None = None
+        self._input_size: tuple[int, int] | None = None
+
+    def setup(self, stage: str) -> None:
+        """Setup the model."""
+        del stage
+        if getattr(self, "model", None) is None:
+            self._setup()
+
+    @abstractmethod
+    def _setup(self, input_size: tuple[int, int] | None = None) -> None:
+        """Setup the model."""
+        raise NotImplementedError
 
     def forward(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> Any:  # noqa: ANN401
         """Perform the forward-pass by passing input tensor to the module.
@@ -190,8 +202,17 @@ class AnomalyModule(pl.LightningModule, ABC):
         If the model is attached to a trainer and the trainer has a datamodule with an eval_transform,
         then the model will use that transform. Otherwise, it will use the default transform.
         """
-        if self._trainer and self._trainer.datamodule and self._trainer.datamodule.eval_transform:
-            return self._trainer.datamodule.eval_transform
+        if self._transform is not None:
+            return self._transform
+        if self._trainer is not None:
+            if self.trainer.datamodule and self.trainer.datamodule.eval_transform:
+                return self.trainer.datamodule.eval_transform
+            if self.trainer.test_dataloaders:
+                return self.trainer.test_dataloaders[0].dataset.transform
+            if self.trainer.val_dataloaders:
+                return self.trainer.val_dataloaders[0].dataset.transform
+            if self.trainer.train_dataloader:
+                return self.trainer.train_dataloader.dataset.transform
         return self.configure_transforms()
 
     def configure_transforms(self, image_size: tuple[int, int] | None = None) -> Transform:
@@ -212,3 +233,24 @@ class AnomalyModule(pl.LightningModule, ABC):
                 Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
             ],
         )
+
+    @property
+    def input_size(self) -> tuple[int, int] | None:
+        """Input size of the model."""
+        # infer input size from the transform
+        dummy_input = torch.zeros(1, 3, 1, 1)
+        output_shape = self.transform(dummy_input).shape[-2:]
+        if output_shape == (1, 1):
+            return None
+        return output_shape[-2:]
+
+    def on_save_checkpoint(self, checkpoint: dict[str, Any]) -> None:
+        """Save the transform and input size to the checkpoint."""
+        torch.save(self.transform, "transform.pt")
+        checkpoint["input_size"] = self.input_size
+        return super().on_save_checkpoint(checkpoint)
+
+    def on_load_checkpoint(self, checkpoint: dict[str, Any]) -> None:
+        """Load the transform and input size from the checkpoint."""
+        self._transform = torch.load("transform.pt")
+        self._setup(input_size=checkpoint["input_size"])

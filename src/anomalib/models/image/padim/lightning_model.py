@@ -42,7 +42,6 @@ class Padim(MemoryBankMixin, AnomalyModule):
 
     def __init__(
         self,
-        input_size: tuple[int, int] = (256, 256),
         backbone: str = "resnet18",
         layers: list[str] = ["layer1", "layer2", "layer3"],  # noqa: B006
         pre_trained: bool = True,
@@ -51,17 +50,25 @@ class Padim(MemoryBankMixin, AnomalyModule):
         super().__init__()
 
         self.layers = layers
-        self.input_size = input_size
-        self.model: PadimModel = PadimModel(
-            input_size=input_size,
-            backbone=backbone,
-            pre_trained=pre_trained,
-            layers=layers,
-            n_features=n_features,
-        ).eval()
+        self.backbone = backbone
+        self.pre_trained = pre_trained
+        self.n_features = n_features
+        self.layers = layers
 
         self.stats: list[torch.Tensor] = []
         self.embeddings: list[torch.Tensor] = []
+
+    def _setup(self, input_size: tuple[int, int] | None = None) -> None:
+        """Setup the model and the loss function."""
+        input_size = input_size or self.input_size
+        assert input_size is not None, "Input size must be specified."
+        self.model: PadimModel = PadimModel(
+            backbone=self.backbone,
+            input_size=input_size or self.input_size,
+            pre_trained=self.pre_trained,
+            layers=self.layers,
+            n_features=self.n_features,
+        ).eval()
 
     @staticmethod
     def configure_optimizers() -> None:
@@ -133,7 +140,7 @@ class Padim(MemoryBankMixin, AnomalyModule):
 
     def configure_transforms(self, image_size: tuple[int, int] | None = None) -> Transform:
         """Default transform for Padim."""
-        image_size = image_size or self.input_size
+        image_size = image_size or (256, 256)
         return Compose(
             [
                 Resize(image_size, antialias=True),

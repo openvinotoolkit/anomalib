@@ -101,8 +101,8 @@ class AnomalibDataModule(LightningDataModule, ABC):
         self.seed = seed
 
         # set transforms
-        self.train_transform = train_transform or transform
-        self.eval_transform = eval_transform or transform
+        self._train_transform = train_transform or transform
+        self._eval_transform = eval_transform or transform
 
         self.train_data: AnomalibDataset
         self.val_data: AnomalibDataset
@@ -227,3 +227,21 @@ class AnomalibDataModule(LightningDataModule, ABC):
     def predict_dataloader(self) -> EVAL_DATALOADERS:
         """Use the test dataloader for inference unless overridden."""
         return self.test_dataloader()
+
+    @property
+    def train_transform(self) -> Transform:
+        """Get the transform that the model should use during training."""
+        if self._train_transform:
+            return self._train_transform
+        if self.trainer and self.trainer.model:
+            return self.trainer.model.configure_transforms(self.image_size)
+        return None
+
+    @property
+    def eval_transform(self) -> Transform:
+        """Get the transform that the model should use during inference."""
+        if self._eval_transform:
+            return self._eval_transform
+        if self.trainer and self.trainer.model:
+            return self.trainer.model.transform
+        return None
