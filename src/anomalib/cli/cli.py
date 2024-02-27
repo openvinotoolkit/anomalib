@@ -28,7 +28,7 @@ try:
     from lightning.pytorch import Trainer
     from torch.utils.data import DataLoader, Dataset
 
-    from anomalib.data import AnomalibDataModule, AnomalibDataset
+    from anomalib.data import AnomalibDataModule
     from anomalib.data.predict import PredictDataset
     from anomalib.engine import Engine
     from anomalib.metrics.threshold import BaseThreshold
@@ -157,7 +157,7 @@ class AnomalibCLI:
         parser.add_argument("--metrics.pixel", type=list[str] | str | None, default=None, required=False)
         parser.add_argument("--metrics.threshold", type=BaseThreshold | str, default="F1AdaptiveThreshold")
         parser.add_argument("--logging.log_graph", type=bool, help="Log the model to the logger", default=False)
-        if hasattr(parser, "subcommand") and parser.subcommand != "predict":  # Predict also accepts str and Path inputs
+        if hasattr(parser, "subcommand") and parser.subcommand not in ("export", "predict"):
             parser.link_arguments("task", "data.init_args.task")
         parser.add_argument(
             "--results_dir.path",
@@ -242,11 +242,10 @@ class AnomalibCLI:
             fail_untyped=False,
             required=True,
         )
-        parser.add_subclass_arguments((AnomalibDataModule, AnomalibDataset), "data")
         added = parser.add_method_arguments(
             Engine,
             "export",
-            skip={"mo_args", "datamodule", "dataset", "model"},
+            skip={"mo_args", "model"},
         )
         self.subcommand_method_arguments["export"] = added
         add_openvino_export_arguments(parser)
@@ -305,8 +304,12 @@ class AnomalibCLI:
                 self.instantiate_engine()
             if "model" in self.config_init[subcommand]:
                 self.model = self._get(self.config_init, "model")
+            else:
+                self.model = None
             if "data" in self.config_init[subcommand]:
                 self.datamodule = self._get(self.config_init, "data")
+            else:
+                self.datamodule = None
 
     def instantiate_engine(self) -> None:
         """Instantiate the engine.
