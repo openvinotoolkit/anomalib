@@ -246,11 +246,8 @@ class AnomalyModule(pl.LightningModule, ABC):
 
     def on_save_checkpoint(self, checkpoint: dict[str, Any]) -> None:
         """Save the transform and input size to the checkpoint."""
-        torch.save(self.transform, "transform.pt")
         checkpoint["input_size"] = self.input_size
-        return super().on_save_checkpoint(checkpoint)
 
     def on_load_checkpoint(self, checkpoint: dict[str, Any]) -> None:
         """Load the transform and input size from the checkpoint."""
-        self._transform = torch.load("transform.pt")
         self._setup(input_size=checkpoint["input_size"])

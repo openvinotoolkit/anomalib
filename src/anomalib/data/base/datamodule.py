@@ -243,5 +243,5 @@ class AnomalibDataModule(LightningDataModule, ABC):
         if self._eval_transform:
             return self._eval_transform
         if self.trainer and self.trainer.model:
-            return self.trainer.model.transform
+            return self.trainer.model.configure_transforms(self.image_size)
         return None
