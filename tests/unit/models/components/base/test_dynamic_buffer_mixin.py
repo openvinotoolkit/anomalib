@@ -29,7 +29,7 @@ class DynamicBufferModule(DynamicBufferMixin):
             "unexpected_keys": [],
             "error_msgs": [],
         }
-        return super()._load_from_state_dict(state_dict, prefix, *default_args.values())
+        super()._load_from_state_dict(state_dict, prefix, *default_args.values())
 
 
 @pytest.fixture()
@@ -59,7 +59,7 @@ class TestDynamicBufferMixin:
             "prefix_second_buffer": torch.zeros(2, 2),
         }
         module.load_from_state_dict(state_dict, "prefix_")
-        # buffer was in the state_dict, and shape was updated
+        # buffer was in the state_dict, and shape was resized
         assert module.get_buffer("first_buffer").shape == (5, 5)
         # buffer was in the state_dict, and shape is the same
         assert module.get_buffer("second_buffer").shape == (2, 2)
