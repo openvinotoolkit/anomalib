@@ -13,7 +13,6 @@ from typing import Any
 
 from jsonargparse import ActionConfigFile, ArgumentParser, Namespace
 from jsonargparse._actions import _ActionSubCommands
-from lightning.pytorch.core.datamodule import LightningDataModule
 from rich import traceback
 
 from anomalib import TaskType, __version__
@@ -27,6 +26,7 @@ logger = logging.getLogger("anomalib.cli")
 _LIGHTNING_AVAILABLE = True
 try:
     from lightning.pytorch import Trainer
+    from lightning.pytorch.core.datamodule import LightningDataModule
     from torch.utils.data import DataLoader, Dataset
 
     from anomalib.data import AnomalibDataModule, AnomalibDataset
