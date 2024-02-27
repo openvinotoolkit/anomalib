@@ -19,7 +19,7 @@ from anomalib.engine import Engine
 from anomalib.models import AnomalyModule, get_available_models, get_model
 
 
-def models() -> list[str]:
+def models() -> set[str]:
     """Return all available models."""
     return get_available_models()
 
