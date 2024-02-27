@@ -155,7 +155,6 @@ class TestCLI:
     @pytest.mark.parametrize("export_type", [ExportType.TORCH, ExportType.ONNX, ExportType.OPENVINO])
     def test_export(
         self,
-        dataset_path: Path,
         project_path: Path,
         export_type: ExportType,
     ) -> None:
@@ -171,7 +170,7 @@ class TestCLI:
                 "export",
                 "--export_type",
                 export_type,
-                *self._get_common_cli_args(dataset_path, project_path),
+                *self._get_common_cli_args(None, project_path),
                 "--ckpt_path",
                 f"{project_path}/padim/dummy/weights/last.ckpt",
             ],
