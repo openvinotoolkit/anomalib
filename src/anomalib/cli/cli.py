@@ -298,8 +298,8 @@ class AnomalibCLI:
             self.config_init = self.parser.instantiate_classes(self.config)
             self.datamodule = self._get(self.config_init, "data")
             if isinstance(self.datamodule, Dataset):
-                param = {f"{self.config.subcommand}_dataset": self.datamodule}
-                self.datamodule = LightningDataModule.from_datasets(**param)
+                kwargs = {f"{self.config.subcommand}_dataset": self.datamodule}
+                self.datamodule = LightningDataModule.from_datasets(**kwargs)
             self.model = self._get(self.config_init, "model")
             self._configure_optimizers_method_to_model()
             self.instantiate_engine()
