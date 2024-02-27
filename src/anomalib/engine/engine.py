@@ -708,8 +708,8 @@ class Engine:
 
     def export(
         self,
-        model: AnomalyModule,
         export_type: ExportType,
+        model: AnomalyModule | None = None,
         export_root: str | Path | None = None,
         transform: dict[str, Any] | A.Compose | str | Path | None = None,
         datamodule: AnomalibDataModule | None = None,
@@ -721,8 +721,9 @@ class Engine:
         """Export the model in PyTorch, ONNX or OpenVINO format.
 
         Args:
-            model (AnomalyModule): Trained model.
             export_type (ExportType): Export type.
+            model (AnomalyModule | None, optional): Trained model.
+                Defaults to None.
             export_root (str | Path | None, optional): Path to the output directory. If it is not set, the model is
                 exported to trainer.default_root_dir. Defaults to None.
             transform (dict[str, Any] | A.Compose | str | Path | None, optional): Transform config. Can either be a
@@ -743,6 +744,7 @@ class Engine:
             Path: Path to the exported model.
 
         Raises:
+            RuntimeError: If model was not provided in a previous run or in the `Engine` constructor.
             ValueError: If Dataset, Datamodule, and transform are not provided.
             TypeError: If path to the transform file is not a string or Path.
 
@@ -765,7 +767,18 @@ class Engine:
                     --mo_args.compress_to_fp16 False
                 ```
         """
-        self._setup_trainer(model)
+        if model:
+            self._setup_trainer(model)
+        else:
+            model = self.model
+
+        if not model:
+            msg = (
+                "`Engine.export()` requires an `AnomalyModule` when it hasn't been passed in a previous run or in the "
+                "`Engine` constructor."
+            )
+            raise RuntimeError(msg)
+
         self._setup_dataset_task(datamodule, dataset)
         if ckpt_path:
             model = model.__class__.load_from_checkpoint(ckpt_path)
@@ -786,6 +799,8 @@ class Engine:
 
         if export_root is None:
             export_root = Path(self.trainer.default_root_dir)
+
+        assert model is not None
 
         exported_model_path: Path | None = None
         if export_type == ExportType.TORCH:
