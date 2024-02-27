@@ -4,7 +4,7 @@ init_args:
   gt_dir: ./datasets/avenue/masks
   clip_length_in_frames: 1
   frames_between_clips: 1
-  target_frame: LAST
+  target_frame: last
   image_size: [256, 256]
   center_crop: null
   normalization: imagenet
@@ -13,6 +13,6 @@ init_args:
   num_workers: 8
   transform_config_train: null
   transform_config_eval: null
-  val_split_mode: FROM_TEST
+  val_split_mode: from_test
   val_split_ratio: 0.5
   seed: null

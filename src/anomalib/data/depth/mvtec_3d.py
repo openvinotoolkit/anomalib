@@ -50,7 +50,7 @@ DOWNLOAD_INFO = DownloadInfo(
     name="mvtec_3d",
     url="https://www.mydrive.ch/shares/45920/dd1eb345346df066c63b5c95676b961b/download/428824485-1643285832"
     "/mvtec_3d_anomaly_detection.tar.xz",
-    checksum="d8bb2800fbf3ac88e798da6ae10dc819",
+    hashsum="d8bb2800fbf3ac88e798da6ae10dc819",
 )
 
 CATEGORIES = ("bagel", "cable_gland", "carrot", "cookie", "dowel", "foam", "peach", "potato", "rope", "tire")
@@ -251,12 +251,12 @@ class MVTec3D(AnomalibDataModule):
         train_batch_size: int = 32,
         eval_batch_size: int = 32,
         num_workers: int = 8,
-        task: TaskType = TaskType.SEGMENTATION,
+        task: TaskType | str = TaskType.SEGMENTATION,
         transform_config_train: str | A.Compose | None = None,
         transform_config_eval: str | A.Compose | None = None,
-        test_split_mode: TestSplitMode = TestSplitMode.FROM_DIR,
+        test_split_mode: TestSplitMode | str = TestSplitMode.FROM_DIR,
         test_split_ratio: float = 0.2,
-        val_split_mode: ValSplitMode = ValSplitMode.SAME_AS_TEST,
+        val_split_mode: ValSplitMode | str = ValSplitMode.SAME_AS_TEST,
         val_split_ratio: float = 0.5,
         seed: int | None = None,
     ) -> None:
@@ -273,6 +273,7 @@ class MVTec3D(AnomalibDataModule):
 
         self.root = Path(root)
         self.category = Path(category)
+        task = TaskType(task)
 
         transform_train = get_transforms(
             config=transform_config_train,

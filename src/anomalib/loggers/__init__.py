@@ -7,22 +7,31 @@
 import logging
 from pathlib import Path
 
-from lightning.pytorch.loggers import CSVLogger, Logger
 from omegaconf.dictconfig import DictConfig
 from omegaconf.listconfig import ListConfig
 from rich.logging import RichHandler
 
-from .comet import AnomalibCometLogger
-from .tensorboard import AnomalibTensorBoardLogger
-from .wandb import AnomalibWandbLogger
-
 __all__ = [
-    "AnomalibCometLogger",
-    "AnomalibTensorBoardLogger",
-    "AnomalibWandbLogger",
     "configure_logger",
     "get_experiment_logger",
 ]
+
+try:
+    from lightning.pytorch.loggers import CSVLogger, Logger
+
+    from .comet import AnomalibCometLogger
+    from .tensorboard import AnomalibTensorBoardLogger
+    from .wandb import AnomalibWandbLogger
+
+    __all__.extend(
+        [
+            "AnomalibCometLogger",
+            "AnomalibTensorBoardLogger",
+            "AnomalibWandbLogger",
+        ],
+    )
+except ImportError:
+    print("To use any logger install it using `anomalib install -v`")
 
 
 AVAILABLE_LOGGERS = ["tensorboard", "wandb", "csv", "comet"]
@@ -60,7 +69,7 @@ def configure_logger(level: int | str = logging.INFO) -> None:
 
 def get_experiment_logger(
     config: DictConfig | ListConfig,
-) -> list[Logger] | bool:
+) -> list | bool:
     """Return a logger based on the choice of logger in the config file.
 
     Args:

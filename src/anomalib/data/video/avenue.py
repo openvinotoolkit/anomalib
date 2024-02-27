@@ -50,12 +50,12 @@ logger = logging.getLogger(__name__)
 DATASET_DOWNLOAD_INFO = DownloadInfo(
     name="Avenue Dataset",
     url="http://www.cse.cuhk.edu.hk/leojia/projects/detectabnormal/Avenue_Dataset.zip",
-    checksum="b7a34b212ecdd30efbd989a6dcb1aceb",
+    hashsum="fc9cb8432a11ca79c18aa180c72524011411b69d3b0ff27c8816e41c0de61531",
 )
 ANNOTATIONS_DOWNLOAD_INFO = DownloadInfo(
     name="Avenue Annotations",
     url="http://www.cse.cuhk.edu.hk/leojia/projects/detectabnormal/ground_truth_demo.zip",
-    checksum="e8e3bff99195b6b511534083b9dbe1f5",
+    hashsum="60fec1728ec8f73a58aad3aeb5729d70a805a47e0b8eb4bf91ab67ef06386d77",
 )
 
 
@@ -329,8 +329,8 @@ class Avenue(AnomalibVideoDataModule):
         gt_dir: Path | str = "./datasets/avenue/ground_truth_demo",
         clip_length_in_frames: int = 2,
         frames_between_clips: int = 1,
-        target_frame: VideoTargetFrame = VideoTargetFrame.LAST,
-        task: TaskType = TaskType.SEGMENTATION,
+        target_frame: VideoTargetFrame | str = VideoTargetFrame.LAST,
+        task: TaskType | str = TaskType.SEGMENTATION,
         image_size: int | tuple[int, int] = (256, 256),
         center_crop: int | tuple[int, int] | None = None,
         normalization: InputNormalizationMethod | str = InputNormalizationMethod.IMAGENET,
@@ -339,7 +339,7 @@ class Avenue(AnomalibVideoDataModule):
         num_workers: int = 8,
         transform_config_train: str | A.Compose | None = None,
         transform_config_eval: str | A.Compose | None = None,
-        val_split_mode: ValSplitMode = ValSplitMode.SAME_AS_TEST,
+        val_split_mode: ValSplitMode | str = ValSplitMode.SAME_AS_TEST,
         val_split_ratio: float = 0.5,
         seed: int | None = None,
     ) -> None:
@@ -369,22 +369,22 @@ class Avenue(AnomalibVideoDataModule):
         )
 
         self.train_data = AvenueDataset(
-            task=task,
+            task=TaskType(task),
             transform=transform_train,
             clip_length_in_frames=clip_length_in_frames,
             frames_between_clips=frames_between_clips,
-            target_frame=target_frame,
+            target_frame=VideoTargetFrame(target_frame),
             root=root,
             gt_dir=gt_dir,
             split=Split.TRAIN,
         )
 
         self.test_data = AvenueDataset(
-            task=task,
+            task=TaskType(task),
             transform=transform_eval,
             clip_length_in_frames=clip_length_in_frames,
             frames_between_clips=frames_between_clips,
-            target_frame=target_frame,
+            target_frame=VideoTargetFrame(target_frame),
             root=root,
             gt_dir=gt_dir,
             split=Split.TEST,

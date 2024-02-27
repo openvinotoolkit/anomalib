@@ -56,7 +56,7 @@ DOWNLOAD_INFO = DownloadInfo(
     name="mvtec",
     url="https://www.mydrive.ch/shares/38536/3830184030e49fe74747669442f0f282/download/420938113-1629952094"
     "/mvtec_anomaly_detection.tar.xz",
-    checksum="eefca59f2cede9c3fc5b6befbfec275e",
+    hashsum="cf4313b13603bec67abb49ca959488f7eedce2a9f7795ec54446c649ac98cd3d",
 )
 
 CATEGORIES = (
@@ -319,12 +319,12 @@ class MVTec(AnomalibDataModule):
         train_batch_size: int = 32,
         eval_batch_size: int = 32,
         num_workers: int = 8,
-        task: TaskType = TaskType.SEGMENTATION,
+        task: TaskType | str = TaskType.SEGMENTATION,
         transform_config_train: str | A.Compose | None = None,
         transform_config_eval: str | A.Compose | None = None,
-        test_split_mode: TestSplitMode = TestSplitMode.FROM_DIR,
+        test_split_mode: TestSplitMode | str = TestSplitMode.FROM_DIR,
         test_split_ratio: float = 0.2,
-        val_split_mode: ValSplitMode = ValSplitMode.SAME_AS_TEST,
+        val_split_mode: ValSplitMode | str = ValSplitMode.SAME_AS_TEST,
         val_split_ratio: float = 0.5,
         seed: int | None = None,
     ) -> None:
@@ -339,6 +339,7 @@ class MVTec(AnomalibDataModule):
             seed=seed,
         )
 
+        task = TaskType(task)
         self.root = Path(root)
         self.category = Path(category)
 

@@ -5,7 +5,7 @@
 
 import logging
 
-from lightning.pytorch.cli import LightningArgumentParser
+from jsonargparse import ArgumentParser
 
 from anomalib.utils.exceptions import try_import
 
@@ -13,12 +13,12 @@ logger = logging.getLogger(__name__)
 
 
 if try_import("openvino"):
-    from openvino.tools.mo.utils.cli_parser import get_common_cli_parser
+    from openvino.tools.ovc.cli_parser import get_common_cli_parser
 else:
     get_common_cli_parser = None
 
 
-def add_openvino_export_arguments(parser: LightningArgumentParser) -> None:
+def add_openvino_export_arguments(parser: ArgumentParser) -> None:
     """Add OpenVINO arguments to parser under --mo key."""
     if get_common_cli_parser is not None:
         group = parser.add_argument_group("OpenVINO Model Optimizer arguments (optional)")

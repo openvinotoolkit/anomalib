@@ -44,6 +44,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - 🔒 Address checkmarx issues. by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/1672
 - 📚 Update contribution guidelines by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/1677
 - 🔨 Refactor Visualisation by @ashwinvaidya17 in https://github.com/openvinotoolkit/anomalib/pull/1693
+- 🔨 Remove Lightning dependencies from the CLI and Add `anomalib install` subcommand by @harimkang in https://github.com/openvinotoolkit/anomalib/pull/1748
+- 🔨 Rename DynamicBufferModule to DynamicBufferMixin by @danylo-boiko in https://github.com/openvinotoolkit/anomalib/pull/1776
 
 ### Deprecated
 
@@ -94,6 +96,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - @f0k made their first contribution in https://github.com/openvinotoolkit/anomalib/pull/1510
 - @holzweber made their first contribution in https://github.com/openvinotoolkit/anomalib/pull/1537
 - @tobybreckon made their first contribution in https://github.com/openvinotoolkit/anomalib/pull/1671
+- @danylo-boiko made their first contribution in https://github.com/openvinotoolkit/anomalib/pull/1776
 
 **Full Changelog**: https://github.com/openvinotoolkit/anomalib/compare/v0.7.0...v1.0.0
 

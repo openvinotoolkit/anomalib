@@ -38,7 +38,7 @@ logger = logging.getLogger(__name__)
 DOWNLOAD_INFO = DownloadInfo(
     name="btech",
     url="https://avires.dimi.uniud.it/papers/btad/btad.zip",
-    checksum="c1fa4d56ac50dd50908ce04e81037a8e",
+    hashsum="461c9387e515bfed41ecaae07c50cf6b10def647b36c9e31d239ab2736b10d2a",
 )
 
 CATEGORIES = ("01", "02", "03")
@@ -271,12 +271,12 @@ class BTech(AnomalibDataModule):
         train_batch_size: int = 32,
         eval_batch_size: int = 32,
         num_workers: int = 8,
-        task: TaskType = TaskType.SEGMENTATION,
+        task: TaskType | str = TaskType.SEGMENTATION,
         transform_config_train: str | A.Compose | None = None,
         transform_config_eval: str | A.Compose | None = None,
-        test_split_mode: TestSplitMode = TestSplitMode.FROM_DIR,
+        test_split_mode: TestSplitMode | str = TestSplitMode.FROM_DIR,
         test_split_ratio: float = 0.2,
-        val_split_mode: ValSplitMode = ValSplitMode.SAME_AS_TEST,
+        val_split_mode: ValSplitMode | str = ValSplitMode.SAME_AS_TEST,
         val_split_ratio: float = 0.5,
         seed: int | None = None,
     ) -> None:
@@ -293,6 +293,7 @@ class BTech(AnomalibDataModule):
 
         self.root = Path(root)
         self.category = Path(category)
+        task = TaskType(task)
 
         transform_train = get_transforms(
             config=transform_config_train,
