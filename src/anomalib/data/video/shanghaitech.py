@@ -174,7 +174,7 @@ class ShanghaiTechTestClipsIndexer(ClipsIndexer):
         frames = sorted(Path(video_path).glob("*.jpg"))
 
         frame_paths = [frames[pt] for pt in clip_pts.int()]
-        video = torch.stack([read_image(str(frame_path), as_tensor=True) for frame_path in frame_paths])
+        video = torch.stack([read_image(frame_path, as_tensor=True) for frame_path in frame_paths])
 
         return video, torch.empty((1, 0)), {}, video_idx
 

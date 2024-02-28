@@ -13,14 +13,12 @@ from pathlib import Path
 import pandas as pd
 import torch
 from pandas import DataFrame
-from PIL import Image
 from torch.utils.data import Dataset
-from torchvision.transforms.functional import to_tensor
 from torchvision.transforms.v2 import Transform
 from torchvision.tv_tensors import Mask
 
 from anomalib import TaskType
-from anomalib.data.utils import LabelName, masks_to_boxes
+from anomalib.data.utils import LabelName, masks_to_boxes, read_image, read_mask
 
 _EXPECTED_COLUMNS_CLASSIFICATION = ["image_path", "split"]
 _EXPECTED_COLUMNS_SEGMENTATION = [*_EXPECTED_COLUMNS_CLASSIFICATION, "mask_path"]
@@ -139,7 +137,7 @@ class AnomalibDataset(Dataset, ABC):
         mask_path = self.samples.iloc[index].mask_path
         label_index = self.samples.iloc[index].label_index
 
-        image = to_tensor(Image.open(image_path))
+        image = read_image(image_path, as_tensor=True)
         item = {"image_path": image_path, "label": label_index}
 
         if self.task == TaskType.CLASSIFICATION:
@@ -148,9 +146,9 @@ class AnomalibDataset(Dataset, ABC):
             # Only Anomalous (1) images have masks in anomaly datasets
             # Therefore, create empty mask for Normal (0) images.
             mask = (
-                Mask(torch.zeros(image.shape[-2:]))
+                Mask(torch.zeros(image.shape[-2:])).to(torch.uint8)
                 if label_index == LabelName.NORMAL
-                else Mask(to_tensor(Image.open(mask_path)).squeeze())
+                else read_mask(mask_path, as_tensor=True)
             )
             item["image"], item["mask"] = self.transform(image, mask) if self.transform else (image, mask)
 

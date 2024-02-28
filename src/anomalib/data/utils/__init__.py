@@ -13,6 +13,7 @@ from .image import (
     get_image_height_and_width,
     read_depth_image,
     read_image,
+    read_mask,
 )
 from .label import LabelName
 from .path import (
@@ -31,6 +32,7 @@ __all__ = [
     "get_image_height_and_width",
     "random_2d_perlin",
     "read_image",
+    "read_mask",
     "read_depth_image",
     "random_split",
     "split_by_label",
