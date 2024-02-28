@@ -107,7 +107,7 @@ class _VisualizationCallback(Callback):
                         )[-1]
                         save_image(image=result.image, root=self.root, filename=filename)
                     if self.show:
-                        show_image(image=result.image, title=str(filename))
+                        show_image(image=result.image, title=str(result.file_name))
                     if self.log:
                         self._add_to_logger(result, pl_module, trainer)
 
