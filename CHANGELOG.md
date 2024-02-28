@@ -22,6 +22,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - 📚 Add docs for the U-Flow model by @willyfh in https://github.com/openvinotoolkit/anomalib/pull/1695
 - 📚 Add docs for the DSR model by @willyfh in https://github.com/openvinotoolkit/anomalib/pull/1700
 - 📚 Add news section to docs by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/1689
+- 🚀 Allow passing model to engine constructor by @danylo-boiko in https://github.com/openvinotoolkit/anomalib/pull/1780
 
 ### Changed
 
