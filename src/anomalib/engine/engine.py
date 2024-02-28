@@ -30,7 +30,7 @@ from anomalib.models import AnomalyModule
 from anomalib.utils.normalization import NormalizationMethod
 from anomalib.utils.path import create_versioned_dir
 from anomalib.utils.types import NORMALIZATION, THRESHOLD
-from anomalib.utils.visualization import BaseVisualizer
+from anomalib.utils.visualization import ImageVisualizer
 
 logger = logging.getLogger(__name__)
 
@@ -115,8 +115,6 @@ class Engine:
             Defaults to None.
         pixel_metrics (str | list[str] | None, optional): Pixel metrics to be used for evaluation.
             Defaults to None.
-        visualizers (BaseVisualizationGenerator | list[BaseVisualizationGenerator] | None):
-            Visualization parameters. Defaults to None.
         default_root_dir (str, optional): Default root directory for the trainer.
             The results will be saved in this directory.
             Defaults to ``results``.
@@ -131,11 +129,7 @@ class Engine:
         task: TaskType | str = TaskType.SEGMENTATION,
         image_metrics: str | list[str] | None = None,
         pixel_metrics: str | list[str] | None = None,
-        visualizers: BaseVisualizer | list[BaseVisualizer] | None = None,
         logger: Logger | Iterable[Logger] | bool | None = None,
-        save_image: bool = False,
-        log_image: bool = False,
-        show_image: bool = False,
         default_root_dir: str = "results",
         **kwargs,
     ) -> None:
@@ -158,11 +152,6 @@ class Engine:
         self.task = TaskType(task)
         self.image_metric_names = image_metrics
         self.pixel_metric_names = pixel_metrics
-        self.visualizers = visualizers
-
-        self.save_image = save_image
-        self.log_image = log_image
-        self.show_image = show_image
 
         self._trainer: Trainer | None = None
 
@@ -180,33 +169,6 @@ class Engine:
             msg = "``self.trainer`` is not assigned yet."
             raise UnassignedError(msg)
         return self._trainer
-
-    @property
-    def visualizers(self) -> BaseVisualizer | list[BaseVisualizer] | None:
-        """Get visualization generators."""
-        return self._visualizers
-
-    @visualizers.setter
-    def visualizers(self, visualizers: BaseVisualizer | list[BaseVisualizer] | None) -> None:
-        """Set the visualizers.
-
-        Args:
-            visualizers (BaseVisualizer | list[BaseVisualizer] | None): Visualizers to be used for visualization.
-        """
-        self._visualizers = visualizers
-        # override the task in the visualizers if it is not the same as the task of the engine
-        if self.visualizers:
-            visualizers = (
-                self.visualizers
-                if isinstance(self.visualizers, list)
-                else [
-                    self.visualizers,
-                ]
-            )
-            for visualizer in visualizers:
-                if hasattr(visualizer, "task") and visualizer.task != self.task:
-                    logger.info(f"Overriding task of {visualizer} to {self.task}")
-                    visualizer.task = self.task
 
     @property
     def model(self) -> AnomalyModule:
@@ -339,12 +301,13 @@ class Engine:
         _callbacks: list[Callback] = []
 
         # Add the Anomalib ModelCheckpoint callback.
-        checkpoint_callback = ModelCheckpoint(
-            dirpath=self._cache.args["default_root_dir"] / "weights" / "lightning",
-            filename="model",
-            auto_insert_metric_name=False,
+        _callbacks.append(
+            ModelCheckpoint(
+                dirpath=self._cache.args["default_root_dir"] / "weights" / "lightning",
+                filename="model",
+                auto_insert_metric_name=False,
+            ),
         )
-        _callbacks.append(checkpoint_callback)
 
         # Add the post-processor callbacks.
         _callbacks.append(_PostProcessorCallback())
@@ -358,17 +321,13 @@ class Engine:
         _callbacks.append(_ThresholdCallback(self.threshold))
         _callbacks.append(_MetricsCallback(self.task, self.image_metric_names, self.pixel_metric_names))
 
-        if self.visualizers is not None:
-            image_save_path = Path(self.trainer.default_root_dir) / "images"
-            _callbacks.append(
-                _VisualizationCallback(
-                    visualizers=self.visualizers,
-                    save=self.save_image,
-                    root=image_save_path,
-                    log=self.log_image,
-                    show=self.show_image,
-                ),
-            )
+        _callbacks.append(
+            _VisualizationCallback(
+                visualizers=ImageVisualizer(task=self.task),
+                save=True,
+                root=self._cache.args["default_root_dir"] / "images",
+            ),
+        )
 
         _callbacks.append(TimerCallback())
 

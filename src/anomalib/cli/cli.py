@@ -34,7 +34,6 @@ try:
     from anomalib.metrics.threshold import BaseThreshold
     from anomalib.models import AnomalyModule
     from anomalib.utils.config import update_config
-    from anomalib.utils.visualization.base import BaseVisualizer
 
 except ImportError:
     _LIGHTNING_AVAILABLE = False
@@ -143,15 +142,6 @@ class AnomalibCLI:
         from anomalib.callbacks.normalization import get_normalization_callback
 
         parser.add_function_arguments(get_normalization_callback, "normalization")
-        # visualization takes task from the project
-        parser.add_argument(
-            "--visualization.visualizers",
-            type=BaseVisualizer | list[BaseVisualizer] | None,
-            default=None,
-        )
-        parser.add_argument("--visualization.save", type=bool, default=False)
-        parser.add_argument("--visualization.log", type=bool, default=False)
-        parser.add_argument("--visualization.show", type=bool, default=False)
         parser.add_argument("--task", type=TaskType | str, default=TaskType.SEGMENTATION)
         parser.add_argument("--metrics.image", type=list[str] | str | None, default=["F1Score", "AUROC"])
         parser.add_argument("--metrics.pixel", type=list[str] | str | None, default=None, required=False)
@@ -326,7 +316,6 @@ class AnomalibCLI:
             "task": self._get(self.config_init, "task"),
             "image_metrics": self._get(self.config_init, "metrics.image"),
             "pixel_metrics": self._get(self.config_init, "metrics.pixel"),
-            **self._get_visualization_parameters(),
         }
         trainer_config = {**self._get(self.config_init, "trainer", default={}), **engine_args}
         key = "callbacks"
@@ -344,16 +333,6 @@ class AnomalibCLI:
                 trainer_config[key].append(config_callback)
         trainer_config[key].extend(get_callbacks(self.config[self.subcommand]))
         self.engine = Engine(**trainer_config)
-
-    def _get_visualization_parameters(self) -> dict[str, Any]:
-        """Return visualization parameters."""
-        subcommand = self.config.subcommand
-        return {
-            "visualizers": self.config_init[subcommand].visualization.visualizers,
-            "save_image": self.config[subcommand].visualization.save,
-            "log_image": self.config[subcommand].visualization.log,
-            "show_image": self.config[subcommand].visualization.show,
-        }
 
     def _run_subcommand(self) -> None:
         """Run subcommand depending on the subcommand.
