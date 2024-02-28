@@ -275,10 +275,11 @@ class Engine:
                             )
                             data.task = self.task
 
+    @staticmethod
     def _setup_transform(
-        self,
         model: AnomalyModule,
         datamodule: AnomalibDataModule | None = None,
+        dataloaders: EVAL_DATALOADERS | TRAIN_DATALOADERS | None = None,
         ckpt_path: Path | str | None = None,
     ) -> None:
         """Implements the logic for setting the transform at the start of each run.
@@ -290,21 +291,43 @@ class Engine:
         Args:
             model (AnomalyModule): The model to assign the transform to.
             datamodule (AnomalibDataModule | None): The datamodule to assign the transform from.
+                defaults to ``None``.
+            dataloaders (EVAL_DATALOADERS | TRAIN_DATALOADERS | None): Dataloaders to assign the transform to.
+                defaults to ``None``.
             ckpt_path (str): The path to the checkpoint.
+                defaults to ``None``.
 
         Returns:
             Transform: The transform loaded from the checkpoint.
         """
-        if datamodule and datamodule.user_transform:
+        if isinstance(dataloaders, DataLoader):
+            dataloaders = [dataloaders]
+
+        # get transform
+        if datamodule and datamodule.transform:
             # a transform passed explicitly to the datamodule takes precedence
-            model.set_transform(datamodule.transform)
+            transform = datamodule.transform
+        elif dataloaders and any(getattr(dl.dataset, "transform", None) for dl in dataloaders):
+            # if dataloaders are provided, we use the transform from the first dataloader that has a transform
+            transform = next(dl.dataset.transform for dl in dataloaders if getattr(dl.dataset, "transform", None))
         elif ckpt_path is not None:
             # if a checkpoint path is provided, we can load the transform from the checkpoint
             checkpoint = torch.load(ckpt_path, map_location=model.device)
-            model.set_transform(checkpoint["transform"])
-        else:
+            transform = checkpoint["transform"]
+        elif model.transform is None:
             # if no transform is provided, we use the default transform from the model
-            model.set_transform(model.transform)
+            image_size = datamodule.image_size if datamodule else None
+            transform = model.configure_transforms(image_size)
+        else:
+            transform = model.transform
+
+        # update transform in model
+        model.set_transform(transform)
+        # The dataloaders don't have access to the trainer and/or model, so we need to set the transforms manually
+        if dataloaders:
+            for dataloader in dataloaders:
+                if not getattr(dataloader.dataset, "transform", None):
+                    dataloader.dataset.transform = transform
 
     def _setup_anomalib_callbacks(self) -> None:
         """Set up callbacks for the trainer."""

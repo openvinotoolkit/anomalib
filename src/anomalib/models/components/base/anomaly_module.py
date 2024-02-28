@@ -205,11 +205,7 @@ class AnomalyModule(pl.LightningModule, ABC):
         If a transform has been set using `set_transform`, it will be returned. Otherwise, we will use the
         model-specific default transform, conditioned on the input size.
         """
-        if self._transform is not None:
-            return self._transform
-        if self._trainer and self.trainer.datamodule:
-            return self.configure_transforms(self.trainer.datamodule.image_size)
-        return self.configure_transforms()
+        return self._transform
 
     def set_transform(self, transform: Transform) -> None:
         """Update the transform linked to the model instance."""
