@@ -32,7 +32,6 @@ class Uflow(AnomalyModule):
 
     def __init__(
         self,
-        input_size: tuple[int, int] = (448, 448),
         backbone: str = "mcait",
         flow_steps: int = 4,
         affine_clamp: float = 2.0,
@@ -50,15 +49,27 @@ class Uflow(AnomalyModule):
             permute_soft (bool): Whether to use soft permutation.
         """
         super().__init__()
-        self.model: UflowModel = UflowModel(
-            input_size=input_size,
-            backbone=backbone,
-            flow_steps=flow_steps,
-            affine_clamp=affine_clamp,
-            affine_subnet_channels_ratio=affine_subnet_channels_ratio,
-            permute_soft=permute_soft,
-        )
+
+        self.backbone = backbone
+        self.flow_steps = flow_steps
+        self.affine_clamp = affine_clamp
+        self.affine_subnet_channels_ratio = affine_subnet_channels_ratio
+        self.permute_soft = permute_soft
+
         self.loss = UFlowLoss()
+
+        self.model: UflowModel
+
+    def _setup(self) -> None:
+        assert self.input_size is not None, "Input size is required for UFlow model."
+        self.model = UflowModel(
+            input_size=self.input_size,
+            backbone=self.backbone,
+            flow_steps=self.flow_steps,
+            affine_clamp=self.affine_clamp,
+            affine_subnet_channels_ratio=self.affine_subnet_channels_ratio,
+            permute_soft=self.permute_soft,
+        )
 
     def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:  # noqa: ARG002 | unused arguments
         """Training step."""
