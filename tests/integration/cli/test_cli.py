@@ -46,7 +46,7 @@ class TestCLI:
                 "test",
                 *self._get_common_cli_args(dataset_path, project_path),
                 "--ckpt_path",
-                f"{project_path}/padim/dummy/weights/last.ckpt",
+                f"{project_path}/Padim/MVTec/dummy/latest/weights/lightning/model.ckpt",
             ],
         )
         torch.cuda.empty_cache()
@@ -63,7 +63,7 @@ class TestCLI:
                 "train",
                 *self._get_common_cli_args(dataset_path, project_path),
                 "--ckpt_path",
-                f"{project_path}/padim/dummy/weights/last.ckpt",
+                f"{project_path}/Padim/MVTec/dummy/latest/weights/lightning/model.ckpt",
             ],
         )
         torch.cuda.empty_cache()
@@ -80,7 +80,7 @@ class TestCLI:
                 "validate",
                 *self._get_common_cli_args(dataset_path, project_path),
                 "--ckpt_path",
-                f"{project_path}/padim/dummy/weights/last.ckpt",
+                f"{project_path}/Padim/MVTec/dummy/latest/weights/lightning/model.ckpt",
             ],
         )
         torch.cuda.empty_cache()
@@ -147,7 +147,7 @@ class TestCLI:
                     project_path,
                 ),
                 "--ckpt_path",
-                f"{project_path}/padim/dummy/weights/last.ckpt",
+                f"{project_path}/Padim/MVTec/dummy/latest/weights/lightning/model.ckpt",
             ],
         )
         torch.cuda.empty_cache()
@@ -210,15 +210,4 @@ class TestCLI:
             "SEGMENTATION",
             "--trainer.max_epochs",
             "1",
-            "--trainer.callbacks+=anomalib.callbacks.ModelCheckpoint",
-            "--trainer.callbacks.dirpath",
-            f"{project_path}/padim/dummy/weights",
-            "--trainer.callbacks.monitor",
-            "null",
-            "--trainer.callbacks.filename",
-            "last",
-            "--trainer.callbacks.save_last",
-            "true",
-            "--trainer.callbacks.auto_insert_metric_name",
-            "false",
         ]

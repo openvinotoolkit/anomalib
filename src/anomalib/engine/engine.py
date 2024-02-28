@@ -230,7 +230,13 @@ class Engine:
     def _setup_workspace(
         self,
         model: AnomalyModule,
-        *data: EVAL_DATALOADERS | TRAIN_DATALOADERS | AnomalibDataModule,
+        train_dataloaders: TRAIN_DATALOADERS | None = None,
+        val_dataloaders: EVAL_DATALOADERS | None = None,
+        test_dataloaders: EVAL_DATALOADERS | None = None,
+        datamodule: AnomalibDataModule | None = None,
+        dataset: AnomalibDataset | None = None,
+        versioned_dir: bool = False,
+        # *data: EVAL_DATALOADERS | TRAIN_DATALOADERS | AnomalibDataModule | AnomalibDataset | None,
     ) -> None:
         """Setup the workspace for the model.
 
@@ -240,32 +246,65 @@ class Engine:
 
         Args:
             model (AnomalyModule): Input model.
-            *data (EVAL_DATALOADERS | TRAIN_DATALOADERS | AnomalibDataModule):
-                Dataloaders or datamodules.
+            train_dataloaders (TRAIN_DATALOADERS | None, optional): Train dataloaders.
+                Defaults to ``None``.
+            val_dataloaders (EVAL_DATALOADERS | None, optional): Validation dataloaders.
+                Defaults to ``None``.
+            test_dataloaders (EVAL_DATALOADERS | None, optional): Test dataloaders.
+                Defaults to ``None``.
+            datamodule (AnomalibDataModule | None, optional): Lightning datamodule.
+                Defaults to ``None``.
+            dataset (AnomalibDataset | None, optional): Anomalib dataset.
+                Defaults to ``None``.
+            versioned_dir (bool, optional): Whether to create a versioned directory.
+                Defaults to ``True``.
 
         Raises:
             TypeError: If the dataloader type is unknown.
         """
-        # Get the dataset name and category.
-        dataset_name: str
-        category: str
-        for d in data:
-            if d is not None:
-                if isinstance(d, AnomalibDataModule):
-                    dataset_name = d.name
-                    category = d.category
-                elif isinstance(d, DataLoader):
-                    dataset_name = getattr(d.dataset, "name", "")
-                    category = getattr(d.dataset, "category", "")
-                else:
-                    msg = f"Unknown dataloader type: {type(d)}"
-                    raise TypeError(msg)
+
+        def extract_dataset_info() -> tuple[str, str]:
+            """Extracts dataset name and category from provided arguments."""
+            nonlocal train_dataloaders, val_dataloaders, test_dataloaders, datamodule, dataset
+
+            # Get the dataset name and category.
+            dataset_name: str = ""
+            category: str | None
+
+            # Check datamodule and dataset directly
+            if datamodule is not None:
+                dataset_name = datamodule.name
+                category = datamodule.category
+            elif dataset is not None:
+                dataset_name = dataset.name
+                category = dataset.category
+
+            # Check dataloaders if dataset_name and category are not set
+            dataloaders = [train_dataloaders, val_dataloaders, test_dataloaders]
+            if not dataset_name or category is None:
+                for dataloader in dataloaders:
+                    if dataloader is not None:
+                        if hasattr(dataloader, "train_data"):
+                            dataset_name = getattr(dataloader.train_data, "name", "")
+                            category = getattr(dataloader.train_data, "category", "")
+                            break
+                        if dataset_name and category is not None:
+                            break
+
+            # Check if category is None and set it to empty string
+            category = category if category is not None else ""
+
+            # Return the dataset name and category
+            return dataset_name, category
+
+        # Get the dataset name and category
+        dataset_name, category = extract_dataset_info()
 
         # Update the default root directory with the model name, dataset name, and category.
         root_dir = Path(self._cache.args["default_root_dir"]) / model.name / dataset_name / category
 
         # Create the versioned directory
-        self._cache.args["default_root_dir"] = create_versioned_dir(root_dir)
+        self._cache.args["default_root_dir"] = create_versioned_dir(root_dir) if versioned_dir else root_dir
 
     def _setup_trainer(self, model: AnomalyModule) -> None:
         """Instantiate the trainer based on the model parameters."""
@@ -304,14 +343,16 @@ class Engine:
         """Set up callbacks for the trainer."""
         _callbacks: list[Callback] = []
 
-        # Add the Anomalib ModelCheckpoint callback.
-        _callbacks.append(
-            ModelCheckpoint(
-                dirpath=self._cache.args["default_root_dir"] / "weights" / "lightning",
-                filename="model",
-                auto_insert_metric_name=False,
-            ),
-        )
+        # Add ModelCheckpoint if it is not in the callbacks list.
+        has_checkpoint_callback = any(isinstance(c, ModelCheckpoint) for c in self._cache.args["callbacks"])
+        if has_checkpoint_callback is False:
+            _callbacks.append(
+                ModelCheckpoint(
+                    dirpath=self._cache.args["default_root_dir"] / "weights" / "lightning",
+                    filename="model",
+                    auto_insert_metric_name=False,
+                ),
+            )
 
         # Add the post-processor callbacks.
         _callbacks.append(_PostProcessorCallback())
@@ -414,6 +455,7 @@ class Engine:
                 anomalib fit --config <config_file_path>
                 ```
         """
+        self._setup_workspace(model, train_dataloaders, val_dataloaders, datamodule, versioned_dir=True)
         self._setup_trainer(model)
         self._setup_dataset_task(train_dataloaders, val_dataloaders, datamodule)
         if model.learning_type in [LearningType.ZERO_SHOT, LearningType.FEW_SHOT]:
@@ -553,6 +595,12 @@ class Engine:
         elif not self.model:
             msg = "`Engine.test()` requires an `AnomalyModule` when it hasn't been passed in a previous run."
             raise RuntimeError(msg)
+
+        self._setup_workspace(
+            model=model or self.model,
+            datamodule=datamodule,
+            test_dataloaders=dataloaders,
+        )
         self._setup_dataset_task(dataloaders)
         if self._should_run_validation(model or self.model, dataloaders, datamodule, ckpt_path):
             logger.info("Running validation before testing to collect normalization metrics and/or thresholds.")

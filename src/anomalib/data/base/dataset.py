@@ -20,7 +20,6 @@ from torch.utils.data import Dataset
 
 from anomalib import TaskType
 from anomalib.data.utils import masks_to_boxes, read_image
-from anomalib.utils.path import convert_to_snake_case
 
 _EXPECTED_COLUMNS_CLASSIFICATION = ["image_path", "split"]
 _EXPECTED_COLUMNS_SEGMENTATION = [*_EXPECTED_COLUMNS_CLASSIFICATION, "mask_path"]
@@ -57,7 +56,7 @@ class AnomalibDataset(Dataset, ABC):
         if class_name.endswith("Dataset"):
             class_name = class_name[:-7]
 
-        return convert_to_snake_case(self.__class__.__name__)
+        return class_name
 
     def __len__(self) -> int:
         """Get length of the dataset."""
