@@ -7,6 +7,7 @@ import logging
 from pathlib import Path
 from typing import Any
 
+import torch
 from lightning.pytorch.callbacks import Callback
 from lightning.pytorch.trainer import Trainer
 from lightning.pytorch.trainer.connectors.callback_connector import _CallbackConnector
@@ -274,6 +275,37 @@ class Engine:
                             )
                             data.task = self.task
 
+    def _setup_transform(
+        self,
+        model: AnomalyModule,
+        datamodule: AnomalibDataModule | None = None,
+        ckpt_path: Path | str | None = None,
+    ) -> None:
+        """Implements the logic for setting the transform at the start of each run.
+
+        Any transform passed explicitly to the datamodule takes precedence. Otherwise, if a checkpoint path is provided,
+        we can load the transform from the checkpoint. If no transform is provided, we use the default transform from
+        the model.
+
+        Args:
+            model (AnomalyModule): The model to assign the transform to.
+            datamodule (AnomalibDataModule | None): The datamodule to assign the transform from.
+            ckpt_path (str): The path to the checkpoint.
+
+        Returns:
+            Transform: The transform loaded from the checkpoint.
+        """
+        if datamodule and datamodule.user_transform:
+            # a transform passed explicitly to the datamodule takes precedence
+            model.set_transform(datamodule.transform)
+        elif ckpt_path is not None:
+            # if a checkpoint path is provided, we can load the transform from the checkpoint
+            checkpoint = torch.load(ckpt_path, map_location=model.device)
+            model.set_transform(checkpoint["transform"])
+        else:
+            # if no transform is provided, we use the default transform from the model
+            model.set_transform(model.transform)
+
     def _setup_anomalib_callbacks(self) -> None:
         """Set up callbacks for the trainer."""
         _callbacks: list[Callback] = [_PostProcessorCallback()]
@@ -378,6 +410,7 @@ class Engine:
         """
         self._setup_trainer(model)
         self._setup_dataset_task(train_dataloaders, val_dataloaders, datamodule)
+        self._setup_transform(model, datamodule, ckpt_path)
         if model.learning_type in [LearningType.ZERO_SHOT, LearningType.FEW_SHOT]:
             # if the model is zero-shot or few-shot, we only need to run validate for normalization and thresholding
             self.trainer.validate(model, val_dataloaders, datamodule=datamodule, ckpt_path=ckpt_path)
@@ -429,6 +462,7 @@ class Engine:
         if model:
             self._setup_trainer(model)
         self._setup_dataset_task(dataloaders)
+        self._setup_transform(model or self.model, datamodule, ckpt_path)
         return self.trainer.validate(model, dataloaders, ckpt_path, verbose, datamodule)
 
     def test(
@@ -516,6 +550,7 @@ class Engine:
             msg = "`Engine.test()` requires an `AnomalyModule` when it hasn't been passed in a previous run."
             raise RuntimeError(msg)
         self._setup_dataset_task(dataloaders)
+        self._setup_transform(model or self.model, datamodule, ckpt_path)
         if self._should_run_validation(model or self.model, dataloaders, datamodule, ckpt_path):
             logger.info("Running validation before testing to collect normalization metrics and/or thresholds.")
             self.trainer.validate(model, dataloaders, None, verbose=False, datamodule=datamodule)
@@ -607,6 +642,7 @@ class Engine:
                 raise TypeError(msg)
 
         self._setup_dataset_task(dataloaders, datamodule)
+        self._setup_transform(model or self.model, datamodule, ckpt_path)
 
         if self._should_run_validation(model or self.model, None, datamodule, ckpt_path):
             logger.info("Running validation before predicting to collect normalization metrics and/or thresholds.")
@@ -666,6 +702,7 @@ class Engine:
             test_dataloaders,
             datamodule,
         )
+        self._setup_transform(model, datamodule, ckpt_path)
         if model.learning_type in [LearningType.ZERO_SHOT, LearningType.FEW_SHOT]:
             # if the model is zero-shot or few-shot, we only need to run validate for normalization and thresholding
             self.trainer.validate(model, val_dataloaders, None, verbose=False, datamodule=datamodule)

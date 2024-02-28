@@ -58,13 +58,15 @@ class Padim(MemoryBankMixin, AnomalyModule):
         self.stats: list[torch.Tensor] = []
         self.embeddings: list[torch.Tensor] = []
 
-    def _setup(self, input_size: tuple[int, int] | None = None) -> None:
-        """Setup the model and the loss function."""
-        input_size = input_size or self.input_size
-        assert input_size is not None, "Input size must be specified."
+    def _setup(self) -> None:
+        """Create the model.
+
+        The model is created at setup time to ensure that the right input size is used.
+        """
+        assert self.input_size is not None, "Padim model needs input size to build torch model."
         self.model: PadimModel = PadimModel(
             backbone=self.backbone,
-            input_size=input_size or self.input_size,
+            input_size=self.input_size,
             pre_trained=self.pre_trained,
             layers=self.layers,
             n_features=self.n_features,

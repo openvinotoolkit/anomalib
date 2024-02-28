@@ -229,19 +229,39 @@ class AnomalibDataModule(LightningDataModule, ABC):
         return self.test_dataloader()
 
     @property
+    def user_transform(self) -> Transform:
+        """This property returns the user-specified transform, if any.
+
+        This property is accessed by the engine to set the transform for the model. The eval_transform takes precedence
+        over the train_transform, because the transform that we store in the model is the one that should be used during
+        inference.
+        """
+        if self._eval_transform:
+            return self._eval_transform
+        if self._train_transform:
+            return self.train_transform
+        return None
+
+    @property
     def train_transform(self) -> Transform:
-        """Get the transform that the model should use during training."""
+        """Get the transforms that the datamodule should apply during training.
+
+        If the train_transform is not set, the engine will request the transform from the model.
+        """
         if self._train_transform:
             return self._train_transform
         if self.trainer and self.trainer.model:
-            return self.trainer.model.configure_transforms(self.image_size)
+            return self.trainer.model.transform
         return None
 
     @property
     def eval_transform(self) -> Transform:
-        """Get the transform that the model should use during inference."""
+        """Get the transform that the datamodule should apply during inference.
+
+        If the eval_transform is not set, the engine will request the transform from the model.
+        """
         if self._eval_transform:
             return self._eval_transform
         if self.trainer and self.trainer.model:
-            return self.trainer.model.configure_transforms(self.image_size)
+            return self.trainer.model.transform
         return None
