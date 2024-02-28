@@ -156,7 +156,7 @@ class Engine:
         self._trainer: Trainer | None = None
 
         if model:
-            self._setup_trainer(model)
+            self.model = model
 
     @property
     def trainer(self) -> Trainer:
@@ -210,10 +210,22 @@ class Engine:
         Returns:
             AnomalyModule: Anomaly model.
         """
+        if self._model:
+            return self._model
         if not self.trainer.model:
             msg = "Trainer does not have a model assigned yet."
             raise UnassignedError(msg)
         return self.trainer.lightning_module
+
+    @model.setter
+    def model(self, model: AnomalyModule) -> None:
+        """Set the model.
+
+        Args:
+            model (AnomalyModule): The model to be used by default by all engine methods.
+        """
+        self._model = model
+        self._setup_trainer(model)
 
     @property
     def normalization_callback(self) -> NormalizationCallback | None:
@@ -387,7 +399,7 @@ class Engine:
                 ```
         """
         if model:
-            self._setup_trainer(model)
+            self.model = model
         elif not self.model:
             msg = (
                 "`Engine.fit()` requires an `AnomalyModule` when it hasn't been passed in a previous run or in the "
@@ -444,7 +456,7 @@ class Engine:
                 ```
         """
         if model:
-            self._setup_trainer(model)
+            self.model = model
         elif not self.model:
             msg = (
                 "`Engine.validate()` requires an `AnomalyModule` when it hasn't been passed in a previous run or in "
@@ -534,7 +546,7 @@ class Engine:
                 ```
         """
         if model:
-            self._setup_trainer(model)
+            self.model = model
         elif not self.model:
             msg = (
                 "`Engine.test()` requires an `AnomalyModule` when it hasn't been passed in a previous run or in the "
@@ -612,7 +624,7 @@ class Engine:
                 ```
         """
         if model:
-            self._setup_trainer(model)
+            self.model = model
         elif not self.model:
             msg = (
                 "`Engine.predict()` requires an `AnomalyModule` when it hasn't been passed in a previous run run or in "
@@ -691,7 +703,7 @@ class Engine:
                 ```
         """
         if model:
-            self._setup_trainer(model)
+            self.model = model
         elif not self.model:
             msg = (
                 "`Engine.train()` requires an `AnomalyModule` when it hasn't been passed in a previous run or in the "
@@ -768,11 +780,8 @@ class Engine:
                 ```
         """
         if model:
-            self._setup_trainer(model)
-        else:
-            model = self.model
-
-        if not model:
+            self.model = model
+        elif not self.model:
             msg = (
                 "`Engine.export()` requires an `AnomalyModule` when it hasn't been passed in a previous run or in the "
                 "`Engine` constructor."
@@ -780,8 +789,7 @@ class Engine:
             raise RuntimeError(msg)
 
         self._setup_dataset_task(datamodule, dataset)
-        if ckpt_path:
-            model = model.__class__.load_from_checkpoint(ckpt_path)
+        checkpoint_model = self.model.__class__.load_from_checkpoint(ckpt_path) if ckpt_path else None
 
         if transform is None:
             if datamodule:
@@ -800,12 +808,10 @@ class Engine:
         if export_root is None:
             export_root = Path(self.trainer.default_root_dir)
 
-        assert model is not None
-
         exported_model_path: Path | None = None
         if export_type == ExportType.TORCH:
             exported_model_path = export_to_torch(
-                model=model,
+                model=checkpoint_model or self.model,
                 export_root=export_root,
                 transform=transform,
                 task=self.task,
@@ -813,7 +819,7 @@ class Engine:
         elif export_type == ExportType.ONNX:
             assert input_size is not None, "input_size must be provided for ONNX export."
             exported_model_path = export_to_onnx(
-                model=model,
+                model=checkpoint_model or self.model,
                 input_size=input_size,
                 export_root=export_root,
                 transform=transform,
@@ -822,7 +828,7 @@ class Engine:
         elif export_type == ExportType.OPENVINO:
             assert input_size is not None, "input_size must be provided for OpenVINO export."
             exported_model_path = export_to_openvino(
-                model=model,
+                model=checkpoint_model or self.model,
                 input_size=input_size,
                 export_root=export_root,
                 transform=transform,
