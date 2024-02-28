@@ -372,7 +372,7 @@ def read_mask(path: str | Path, as_tensor: bool = False) -> torch.Tensor | np.nd
         <class 'torch.Tensor'>
     """
     image = Image.open(path)
-    return Mask(to_image(image).squeeze() / 255) if as_tensor else np.array(image)
+    return Mask(to_image(image).squeeze() / 255, dtype=torch.uint8) if as_tensor else np.array(image)
 
 
 def read_depth_image(path: str | Path) -> np.ndarray:
