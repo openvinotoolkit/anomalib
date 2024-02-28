@@ -130,7 +130,7 @@ class TestSetupTransform:
         # after the setup_transform is called, the dataset should have the default transform from the model
         assert dataset.transform is not None
 
-    def test_single_dataloader_user_specified_transform(self) -> None:
+    def test_single_dataloader_custom_transform(self) -> None:
         """Tests if the user-specified transform is used when passed to the dataloader."""
         transform = Transform()
         dataset = DummyDataset(transform=transform)
@@ -143,48 +143,48 @@ class TestSetupTransform:
         assert model.transform == transform
 
     # test if the user-specified transform is used when passed to the datamodule
-    def test_user_specified_transform(self) -> None:
+    def test_custom_transform(self) -> None:
         """Tests if the user-specified transform is used when passed to the datamodule."""
-        custom_transform = Transform()
-        datamodule = DummyDataModule(transform=custom_transform)
+        transform = Transform()
+        datamodule = DummyDataModule(transform=transform)
         model = DummyModel()
         # assert that the datamodule uses the custom transform before and after setup_transform is called
-        assert datamodule.train_transform == custom_transform
-        assert datamodule.eval_transform == custom_transform
+        assert datamodule.train_transform == transform
+        assert datamodule.eval_transform == transform
         Engine._setup_transform(model, datamodule=datamodule)  # noqa: SLF001
-        assert datamodule.train_transform == custom_transform
-        assert datamodule.eval_transform == custom_transform
-        assert model.transform == custom_transform
+        assert datamodule.train_transform == transform
+        assert datamodule.eval_transform == transform
+        assert model.transform == transform
 
     # test if the user-specified transform is used when passed to the datamodule
-    def test_user_specified_train_transform(self) -> None:
+    def test_custom_train_transform(self) -> None:
         """Tests if the user-specified transform is used when passed to the datamodule as train_transform."""
         model = DummyModel()
-        custom_transform = Transform()
-        datamodule = DummyDataModule(train_transform=custom_transform)
+        transform = Transform()
+        datamodule = DummyDataModule(train_transform=transform)
         # before calling setup, train_transform should be the custom transform and eval_transform should be None
-        assert datamodule.train_transform == custom_transform
+        assert datamodule.train_transform == transform
         assert datamodule.eval_transform is None
         Engine._setup_transform(model, datamodule=datamodule)  # noqa: SLF001
         # after calling setup, train_transform should be the custom transform and eval_transform should be the default
-        assert datamodule.train_transform == custom_transform
+        assert datamodule.train_transform == transform
         assert datamodule.eval_transform is None
-        assert model.transform == custom_transform
+        assert model.transform == transform
 
     # test if the user-specified transform is used when passed to the datamodule
-    def test_user_specified_eval_transform(self) -> None:
+    def test_custom_eval_transform(self) -> None:
         """Tests if the user-specified transform is used when passed to the datamodule as eval_transform."""
         model = DummyModel()
-        custom_transform = Transform()
-        datamodule = DummyDataModule(eval_transform=custom_transform)
+        transform = Transform()
+        datamodule = DummyDataModule(eval_transform=transform)
         # before calling setup, train_transform should be the custom transform and eval_transform should be None
         assert datamodule.train_transform is None
-        assert datamodule.eval_transform == custom_transform
+        assert datamodule.eval_transform == transform
         Engine._setup_transform(model, datamodule=datamodule)  # noqa: SLF001
         # after calling setup, train_transform should be the custom transform and eval_transform should be the default
         assert datamodule.train_transform is None
-        assert datamodule.eval_transform == custom_transform
-        assert model.transform == custom_transform
+        assert datamodule.eval_transform == transform
+        assert model.transform == transform
 
     # test update datamodule
     def test_datamodule_default_transform(self) -> None:
