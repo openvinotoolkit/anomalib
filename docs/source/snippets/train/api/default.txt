@@ -3,10 +3,10 @@ from anomalib.data import MVTec
 from anomalib.models import Patchcore
 from anomalib.engine import Engine
 
-# Initialize the datamodule, model and engine
+# Initialize the datamodule and engine
 datamodule = MVTec()
 model = Patchcore()
-engine = Engine()
+engine = Engine(model=Patchcore())
 
 # Train the model
-engine.fit(datamodule=datamodule, model=model)
+engine.fit(datamodule=datamodule)

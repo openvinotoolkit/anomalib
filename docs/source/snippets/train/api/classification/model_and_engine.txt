@@ -2,9 +2,8 @@
 from anomalib.models import Patchcore
 from anomalib.engine import Engine
 
-# Create the model and engine
-model = Patchcore()
-engine = Engine(task="classification")
+# Create the engine with a Patchcore model
+engine = Engine(model=Patchcore(), task="classification")
 
 # Train a Patchcore model on the given datamodule
-engine.train(datamodule=datamodule, model=model)
+engine.train(datamodule=datamodule)
