@@ -10,10 +10,10 @@ import torch
 from torch import nn
 from torch.nn import functional as F  # noqa: N812
 
-from anomalib.models.components import PCA, DynamicBufferModule, TimmFeatureExtractor
+from anomalib.models.components import PCA, DynamicBufferMixin, TimmFeatureExtractor
 
 
-class SingleClassGaussian(DynamicBufferModule):
+class SingleClassGaussian(DynamicBufferMixin):
     """Model Gaussian distribution over a set of points."""
 
     def __init__(self) -> None:

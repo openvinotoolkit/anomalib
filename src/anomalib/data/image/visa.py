@@ -49,7 +49,7 @@ EXTENSIONS = (".png", ".jpg", ".JPG")
 DOWNLOAD_INFO = DownloadInfo(
     name="VisA",
     url="https://amazon-visual-anomaly.s3.us-west-2.amazonaws.com/VisA_20220922.tar",
-    checksum="ef908989b6dc701fc218f643c127a4de",
+    hashsum="2eb8690c803ab37de0324772964100169ec8ba1fa3f7e94291c9ca673f40f362",
 )
 
 CATEGORIES = (

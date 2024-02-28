@@ -3,9 +3,6 @@
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-# TODO(ashwinvaidya17): This would require a new design.
-# https://jira.devtools.intel.com/browse/IAAALD-149
-
 
 import logging
 from collections.abc import Sequence

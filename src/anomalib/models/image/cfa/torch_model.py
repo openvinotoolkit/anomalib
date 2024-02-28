@@ -21,7 +21,7 @@ from torch.utils.data import DataLoader
 from torchvision.models.feature_extraction import create_feature_extractor
 from tqdm import tqdm
 
-from anomalib.models.components import DynamicBufferModule
+from anomalib.models.components import DynamicBufferMixin
 from anomalib.models.components.feature_extractors import dryrun_find_featuremap_dims
 
 from .anomaly_map import AnomalyMapGenerator
@@ -81,7 +81,7 @@ def get_feature_extractor(backbone: str, return_nodes: list[str]) -> GraphModule
     return feature_extractor
 
 
-class CfaModel(DynamicBufferModule):
+class CfaModel(DynamicBufferMixin):
     """Torch implementation of the CFA Model.
 
     Args:
