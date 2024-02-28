@@ -46,10 +46,29 @@ Anomalib provides two ways to install the library. The first is through PyPI, an
 
 <details>
 <summary>Install from PyPI</summary>
-Installing the library with pip is the easiest way to get started with `anomalib`.
+Installing the library with pip is the easiest way to get started with anomalib.
 
 ```bash
 pip install anomalib
+```
+
+This will install Anomalib CLI using the [installer](requirements/installer.txt) dependecies. Anomalib CLI is a command line interface for training, inference, benchmarking, and hyperparameter optimization. If you want to use the library as a Python package, you can install the library with the following command:
+
+```bash
+# Get help for the installation arguments
+anomalib install -h
+
+# Install the full package
+anomalib install
+
+# Install with verbose output
+anomalib install -v
+
+# Install the core package option only to train and evaluate models via Torch and Lightning
+anomalib install --option core
+
+# Install with OpenVINO option only. This is useful for edge deployment as the wheel size is smaller.
+anomalib install --option openvino
 ```
 
 </details>
@@ -71,6 +90,25 @@ conda activate anomalib_env
 git clone https://github.com/openvinotoolkit/anomalib.git
 cd anomalib
 pip install -e .
+```
+
+This will install Anomalib CLI using the [installer](requirements/installer.txt) dependecies. Anomalib CLI is a command line interface for training, inference, benchmarking, and hyperparameter optimization. If you want to use the library as a Python package, you can install the library with the following command:
+
+```bash
+# Get help for the installation arguments
+anomalib install -h
+
+# Install the full package
+anomalib install
+
+# Install with verbose output
+anomalib install -v
+
+# Install the core package option only to train and evaluate models via Torch and Lightning
+anomalib install --option core
+
+# Install with OpenVINO option only. This is useful for edge deployment as the wheel size is smaller.
+anomalib install --option openvino
 ```
 
 </details>
