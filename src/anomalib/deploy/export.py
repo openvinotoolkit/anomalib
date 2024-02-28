@@ -276,15 +276,14 @@ def export_to_openvino(
         ... )
 
         Using Custom Transforms:
-        This example shows how to use a custom ``Compose`` object for the ``transform`` argument.
+        This example shows how to use a custom ``Transform`` object for the ``transform`` argument.
 
-        >>> import albumentations as A
-        >>> transform = A.Compose([A.Resize(224, 224), A.pytorch.ToTensorV2()])
+        >>> from torchvision.transforms.v2 import Resize
+        >>> transform = Resize(224, 224)
         ...
         >>> export_to_openvino(
         ...     export_root="path/to/export",
         ...     model=model,
-        ...     input_size=(224, 224),
         ...     transform=transform,
         ...     task="segmentation",
         ... )

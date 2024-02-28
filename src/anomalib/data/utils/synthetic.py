@@ -107,7 +107,7 @@ class SyntheticAnomalyDataset(AnomalibDataset):
 
     Args:
         task (str): Task type, either "classification" or "segmentation".
-        transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
+        transform (A.Compose): Transform object describing the transforms that are applied to the inputs.
         source_samples (DataFrame): Normal samples to which the anomalous augmentations will be applied.
     """
 

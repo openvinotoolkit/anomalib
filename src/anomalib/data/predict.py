@@ -20,7 +20,7 @@ class PredictDataset(Dataset):
 
     Args:
         path (str | Path): Path to an image or image-folder.
-        transform (A.Compose | None, optional): Albumentations Compose object describing the transforms that are
+        transform (A.Compose | None, optional): Transform object describing the transforms that are
             applied to the inputs.
         image_size (int | tuple[int, int] | None, optional): Target image size
             to resize the original image. Defaults to None.
