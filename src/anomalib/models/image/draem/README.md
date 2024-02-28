@@ -12,7 +12,7 @@ For optimal results, DRAEM requires specifying the path to a folder of image dat
 
 ## Architecture
 
-![DRAEM Architecture](https://raw.githubusercontent.com/openvinotoolkit/anomalib/main/docs/source/images/draem/architecture.png "DRAEM Architecture")
+![DRAEM Architecture](../../../../../docs/source/images/draem/architecture.png "DRAEM Architecture")
 
 ## Usage
 
@@ -20,4 +20,4 @@ For optimal results, DRAEM requires specifying the path to a folder of image dat
 
 ## Benchmark
 
-Benchmarking results are not yet available for this algorithm. Please check again later.
+### TODO: Add results + benchmark
