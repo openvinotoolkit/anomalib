@@ -1,0 +1,17 @@
+❯ anomalib install -h
+To use other subcommand using `anomalib install`
+To use any logger install it using `anomalib install -v`
+╭─ Arguments ───────────────────────────────────────────────────────────────────╮
+│ Usage: anomalib [options] install [-h]                                        │
+│                        [--option {full,core,dev,loggers,notebooks,openvino}]  │
+│                        [-v]                                                   │
+│                                                                               │
+│                                                                               │
+│ Options:                                                                      │
+│   -h, --help            Show this help message and exit.                      │
+│   --option {full,core,dev,loggers,notebooks,openvino}                         │
+│                         Install the full or optional-dependencies.            │
+│                         (type: None, default: full)                           │
+│   -v, --verbose         Set Logger level to INFO (default: False)             │
+│                                                                               │
+╰───────────────────────────────────────────────────────────────────────────────╯

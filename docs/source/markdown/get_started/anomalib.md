@@ -6,9 +6,16 @@ This section will walk you through the steps to train a model and use it to dete
 
 Installation is simple and can be done in two ways. The first is through PyPI, and the second is through a local installation. PyPI installation is recommended if you want to use the library without making any changes to the source code. If you want to make changes to the library, then a local installation is recommended.
 
+:::::{dropdown} Installing the Installer
+:open:
+
+Anomalib comes with a CLI installer that can be used to install the full package.
+The installer can be installed using the following commands:
+
 ::::{tab-set}
 
-:::{tab-item} PyPI
+:::{tab-item} API
+:sync: label-1
 
 ```{literalinclude} ../../snippets/install/pypi.txt
 :language: bash
@@ -17,14 +24,45 @@ Installation is simple and can be done in two ways. The first is through PyPI, a
 :::
 
 :::{tab-item} Source
+:sync: label-2
 
 ```{literalinclude} ../../snippets/install/source.txt
 :language: bash
 ```
 
 :::
-
 ::::
+The main reason why PyPI and source installer does not install the full package
+is to keep the installation wheel small. The CLI installer also automates the
+installation such as finding the torch version with the right CUDA/CUDNN version.
+
+The next section demonstrates how to install the full package using the CLI installer.
+:::::
+
+:::::{dropdown} Installing the Full Package
+After installing anomalib, you can install the full package using the following commands:
+
+```{literalinclude} ../../snippets/install/anomalib_help.txt
+:language: bash
+```
+
+As can be seen above, the only available sub-command is `install` at the moment.
+The `install` sub-command has options to install either the full package or the
+specific components of the package.
+
+```{literalinclude} ../../snippets/install/anomalib_install_help.txt
+:language: bash
+```
+
+By default the `install` sub-command installs the full package. If you want to
+install only the specific components of the package, you can use the `--option` flag.
+
+```{literalinclude} ../../snippets/install/anomalib_install.txt
+:language: bash
+```
+
+After following these steps, your environment will be ready to use anomalib!
+:::::
 
 ## {octicon}`mortar-board` Training
 
