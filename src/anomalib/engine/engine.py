@@ -12,11 +12,11 @@ import albumentations as A  # noqa: N812
 from lightning.pytorch.callbacks import Callback
 from lightning.pytorch.loggers import Logger
 from lightning.pytorch.trainer import Trainer
-from lightning.pytorch.trainer.connectors.callback_connector import _CallbackConnector
 from lightning.pytorch.utilities.types import _EVALUATE_OUTPUT, _PREDICT_OUTPUT, EVAL_DATALOADERS, TRAIN_DATALOADERS
 from torch.utils.data import DataLoader, Dataset
 
 from anomalib import LearningType, TaskType
+from anomalib.callbacks.checkpoint import ModelCheckpoint
 from anomalib.callbacks.metrics import _MetricsCallback
 from anomalib.callbacks.normalization import get_normalization_callback
 from anomalib.callbacks.normalization.base import NormalizationCallback
@@ -303,13 +303,16 @@ class Engine:
 
     def _setup_trainer(self, model: AnomalyModule) -> None:
         """Instantiate the trainer based on the model parameters."""
-        if self._cache.requires_update(model) or self._trainer is None:
+        # Check if the cache requires an update
+        if self._cache.requires_update(model):
             self._cache.update(model)
+
+        # Setup anomalib callbacks to be used with the trainer
+        self._setup_anomalib_callbacks()
+
+        # Instantiate the trainer if it is not already instantiated
+        if self._trainer is None:
             self._trainer = Trainer(**self._cache.args)
-            # Callbacks need to be setup later as they depend on default_root_dir from the trainer
-            # TODO(djdameln): set up callbacks before instantiating trainer
-            # https://github.com/openvinotoolkit/anomalib/issues/1642
-            self._setup_anomalib_callbacks()
 
     def _setup_dataset_task(
         self,
@@ -333,11 +336,25 @@ class Engine:
 
     def _setup_anomalib_callbacks(self) -> None:
         """Set up callbacks for the trainer."""
-        _callbacks: list[Callback] = [_PostProcessorCallback()]
+        _callbacks: list[Callback] = []
+
+        # Add the Anomalib ModelCheckpoint callback.
+        checkpoint_callback = ModelCheckpoint(
+            dirpath=self._cache.args["default_root_dir"] / "weights" / "lightning",
+            filename="model",
+            auto_insert_metric_name=False,
+        )
+        _callbacks.append(checkpoint_callback)
+
+        # Add the post-processor callbacks.
+        _callbacks.append(_PostProcessorCallback())
+
+        # Add the the normalization callback.
         normalization_callback = get_normalization_callback(self.normalization)
         if normalization_callback is not None:
             _callbacks.append(normalization_callback)
 
+        # Add the thresholding and metrics callbacks.
         _callbacks.append(_ThresholdCallback(self.threshold))
         _callbacks.append(_MetricsCallback(self.task, self.image_metric_names, self.pixel_metric_names))
 
@@ -355,9 +372,8 @@ class Engine:
 
         _callbacks.append(TimerCallback())
 
-        self.trainer.callbacks = _CallbackConnector._reorder_callbacks(  # noqa: SLF001
-            self.trainer.callbacks + _callbacks,
-        )
+        # Combine the callbacks, and update the trainer callbacks.
+        self._cache.args["callbacks"] = _callbacks + self._cache.args["callbacks"]
 
     def _should_run_validation(
         self,
