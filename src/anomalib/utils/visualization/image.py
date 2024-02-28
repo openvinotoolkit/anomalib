@@ -6,6 +6,7 @@
 from collections.abc import Iterator
 from enum import Enum
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import cv2
 import matplotlib.figure
@@ -23,6 +24,9 @@ from anomalib.utils.post_processing import (
 )
 
 from .base import BaseVisualizer, GeneratorResult, VisualizationStep
+
+if TYPE_CHECKING:
+    from matplotlib.axis import Axes
 
 
 class VisualizationMode(str, Enum):
@@ -278,7 +282,7 @@ class _ImageGrid:
     def __init__(self) -> None:
         self.images: list[dict] = []
         self.figure: matplotlib.figure.Figure | None = None
-        self.axis: np.ndarray | None = None
+        self.axis: Axes | np.ndarray | None = None
 
     def add_image(self, image: np.ndarray, title: str | None = None, color_map: str | None = None) -> None:
         """Add an image to the grid.
@@ -304,11 +308,11 @@ class _ImageGrid:
         # The dimension of image returned by tostring_rgb() does not match the dimension of the canvas
         matplotlib.use("Agg")
 
-        self.figure, axis = plt.subplots(1, num_cols, figsize=figure_size)
+        self.figure, self.axis = plt.subplots(1, num_cols, figsize=figure_size)
         self.figure.subplots_adjust(right=0.9)
 
-        self.axis = axis if isinstance(axis, np.ndarray) else np.array([axis])
-        for axis, image_dict in zip(self.axis, self.images, strict=True):
+        axes = self.axis if isinstance(self.axis, np.ndarray) else np.array([self.axis])
+        for axis, image_dict in zip(axes, self.images, strict=True):
             axis.axes.xaxis.set_visible(b=False)
             axis.axes.yaxis.set_visible(b=False)
             axis.imshow(image_dict["image"], image_dict["color_map"], vmin=0, vmax=255)
