@@ -175,8 +175,6 @@ class _ThresholdCallback(Callback):
         pl_module.pixel_threshold.reset()
 
     def _outputs_to_cpu(self, output: STEP_OUTPUT) -> STEP_OUTPUT | dict[str, Any]:
-        # TODO(ashwinvaidya17): This is duplicated in multiple trainer callbacks.
-        # CVS-122664
         if isinstance(output, dict):
             for key, value in output.items():
                 output[key] = self._outputs_to_cpu(value)
