@@ -101,8 +101,9 @@ class TestCLI:
                 *self._get_common_cli_args(
                     dataset_path,
                     project_path,
-                    model_name="WinClip",  # predict with a zero-shot model
                 ),
+                "--ckpt_path",
+                f"{project_path}/padim/dummy/weights/last.ckpt",
             ],
         )
         torch.cuda.empty_cache()
@@ -124,8 +125,9 @@ class TestCLI:
                 *self._get_common_cli_args(
                     None,
                     project_path,
-                    model_name="WinClip",  # predict with a zero-shot model
                 ),
+                "--ckpt_path",
+                f"{project_path}/padim/dummy/weights/last.ckpt",
             ],
         )
         torch.cuda.empty_cache()
@@ -179,7 +181,7 @@ class TestCLI:
         )
 
     @staticmethod
-    def _get_common_cli_args(dataset_path: Path | None, project_path: Path, model_name: str | None = None) -> list[str]:
+    def _get_common_cli_args(dataset_path: Path | None, project_path: Path) -> list[str]:
         """Return common CLI args for all models.
 
         Args:
@@ -202,12 +204,9 @@ class TestCLI:
         else:
             data_args = []
 
-        if not model_name:
-            model_name = "Padim"
-
         return [
             "--model",
-            model_name,
+            "Padim",
             *data_args,
             "--results_dir.path",
             str(project_path),
