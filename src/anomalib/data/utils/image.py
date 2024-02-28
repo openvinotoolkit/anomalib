@@ -18,6 +18,7 @@ from PIL import Image
 from torch.nn import functional as F  # noqa: N812
 from torchvision.datasets.folder import IMG_EXTENSIONS
 from torchvision.transforms.v2.functional import to_tensor
+from torchvision.tv_tensors import Mask
 
 from anomalib.data.utils.path import validate_path
 
@@ -352,6 +353,26 @@ def read_image(path: str | Path, as_tensor: bool = False) -> torch.Tensor | np.n
     """
     image = Image.open(path)
     return to_tensor(image) if as_tensor else np.array(image)
+
+
+def read_mask(path: str | Path, as_tensor: bool = False) -> torch.Tensor | np.ndarray:
+    """Read mask from disk.
+
+    Args:
+        path (str, Path): path to the mask file
+        as_tensor (bool, optional): If True, returns the mask as a tensor. Defaults to False.
+
+    Example:
+        >>> mask = read_mask("test_mask.png")
+        >>> type(mask)
+        <class 'numpy.ndarray'>
+        >>>
+        >>> mask = read_mask("test_mask.png", as_tensor=True)
+        >>> type(mask)
+        <class 'torch.Tensor'>
+    """
+    image = Image.open(path)
+    return Mask(image).squeeze() if as_tensor else np.array(image)
 
 
 def read_depth_image(path: str | Path) -> np.ndarray:
