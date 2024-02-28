@@ -13,7 +13,7 @@ from torch import nn
 from torch.nn.modules.linear import Identity
 from torchvision.transforms import Compose, ToPILImage
 
-from anomalib.models.components import BufferListMixin, DynamicBufferModule
+from anomalib.models.components import BufferListMixin, DynamicBufferMixin
 
 from .prompting import create_prompt_ensemble
 from .utils import class_scores, harmonic_aggregation, make_masks, visual_association_score
@@ -23,7 +23,7 @@ PRETRAINED = "laion400m_e31"
 TEMPERATURE = 0.07  # temperature hyperparameter from the clip paper
 
 
-class WinClipModel(DynamicBufferModule, BufferListMixin, nn.Module):
+class WinClipModel(DynamicBufferMixin, BufferListMixin, nn.Module):
     """PyTorch module that implements the WinClip model for image anomaly detection.
 
     Args:
