@@ -90,8 +90,8 @@ def ckpt_path(project_path: Path, dataset_path: Path) -> Callable[[str], Path]:
         """
         _ckpt_path = project_path / model_name.lower() / "dummy" / "weights" / "last.ckpt"
         if not _ckpt_path.exists():
-            model = get_model(model_name)
             engine = Engine(
+                model=get_model(model_name),
                 logger=False,
                 default_root_dir=project_path,
                 max_epochs=1,
@@ -107,7 +107,7 @@ def ckpt_path(project_path: Path, dataset_path: Path) -> Callable[[str], Path]:
                 ],
             )
             dataset = MVTec(root=dataset_path / "mvtec", category="dummy")
-            engine.fit(model=model, datamodule=dataset)
+            engine.fit(datamodule=dataset)
 
         return _ckpt_path
 

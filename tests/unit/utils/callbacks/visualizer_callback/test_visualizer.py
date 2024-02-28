@@ -22,8 +22,8 @@ def test_add_images(task: TaskType, dataset_path: Path) -> None:
     """Tests if tensorboard logs are generated."""
     with tempfile.TemporaryDirectory() as dir_loc:
         logger = AnomalibTensorBoardLogger(name="tensorboard_logs", save_dir=dir_loc)
-        model = DummyModule(dataset_path)
         engine = Engine(
+            model=DummyModule(dataset_path),
             logger=logger,
             enable_checkpointing=False,
             default_root_dir=dir_loc,
@@ -33,7 +33,7 @@ def test_add_images(task: TaskType, dataset_path: Path) -> None:
             visualizers=ImageVisualizer(),
             accelerator="cpu",
         )
-        engine.test(model=model, datamodule=MVTec(root=dataset_path / "mvtec", category="dummy"))
+        engine.test(datamodule=MVTec(root=dataset_path / "mvtec", category="dummy"))
         # test if images are logged
         assert len(list(Path(dir_loc).glob("**/*.png"))) == 1, "Failed to save to local path"
 

@@ -56,19 +56,19 @@ def infer(args: Namespace) -> None:
 
     callbacks = None if not hasattr(args, "callbacks") else args.callbacks
     engine = Engine(
+        model=get_model(args.model),
         default_root_dir=args.output,
         callbacks=callbacks,
         visualizers=ImageVisualizer(mode=args.visualization_mode),
         save_image=save_images,
         devices=1,
     )
-    model = get_model(args.model)
 
     # create the dataset
     dataset = PredictDataset(**args.data)
     dataloader = DataLoader(dataset)
 
-    engine.predict(model=model, dataloaders=[dataloader], ckpt_path=args.ckpt_path)
+    engine.predict(dataloaders=[dataloader], ckpt_path=args.ckpt_path)
 
 
 if __name__ == "__main__":
