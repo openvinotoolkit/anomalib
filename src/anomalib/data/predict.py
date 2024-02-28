@@ -7,12 +7,10 @@
 from pathlib import Path
 from typing import Any
 
-from PIL import Image
 from torch.utils.data.dataset import Dataset
-from torchvision.transforms.functional import to_tensor
 from torchvision.transforms.v2 import Transform
 
-from anomalib.data.utils import get_image_filenames
+from anomalib.data.utils import get_image_filenames, read_image
 
 
 class PredictDataset(Dataset):
@@ -45,7 +43,7 @@ class PredictDataset(Dataset):
     def __getitem__(self, index: int) -> dict[str, Any]:
         """Get the image based on the `index`."""
         image_filename = self.image_filenames[index]
-        image = to_tensor(Image.open(image_filename))
+        image = read_image(image_filename, as_tensor=True)
         if self.transform:
             image = self.transform(image)
         pre_processed = {"image": image}
