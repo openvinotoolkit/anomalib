@@ -433,7 +433,7 @@ class Engine:
         """
         self._setup_trainer(model)
         self._setup_dataset_task(train_dataloaders, val_dataloaders, datamodule)
-        self._setup_transform(model, datamodule, ckpt_path)
+        self._setup_transform(model, datamodule=datamodule, ckpt_path=ckpt_path)
         if model.learning_type in [LearningType.ZERO_SHOT, LearningType.FEW_SHOT]:
             # if the model is zero-shot or few-shot, we only need to run validate for normalization and thresholding
             self.trainer.validate(model, val_dataloaders, datamodule=datamodule, ckpt_path=ckpt_path)
@@ -485,7 +485,7 @@ class Engine:
         if model:
             self._setup_trainer(model)
         self._setup_dataset_task(dataloaders)
-        self._setup_transform(model or self.model, datamodule, ckpt_path)
+        self._setup_transform(model or self.model, datamodule=datamodule, ckpt_path=ckpt_path)
         return self.trainer.validate(model, dataloaders, ckpt_path, verbose, datamodule)
 
     def test(
@@ -573,7 +573,7 @@ class Engine:
             msg = "`Engine.test()` requires an `AnomalyModule` when it hasn't been passed in a previous run."
             raise RuntimeError(msg)
         self._setup_dataset_task(dataloaders)
-        self._setup_transform(model or self.model, datamodule, ckpt_path)
+        self._setup_transform(model or self.model, datamodule=datamodule, ckpt_path=ckpt_path)
         if self._should_run_validation(model or self.model, dataloaders, datamodule, ckpt_path):
             logger.info("Running validation before testing to collect normalization metrics and/or thresholds.")
             self.trainer.validate(model, dataloaders, None, verbose=False, datamodule=datamodule)
@@ -665,7 +665,7 @@ class Engine:
                 raise TypeError(msg)
 
         self._setup_dataset_task(dataloaders, datamodule)
-        self._setup_transform(model or self.model, datamodule, ckpt_path)
+        self._setup_transform(model or self.model, datamodule=datamodule, ckpt_path=ckpt_path)
 
         if self._should_run_validation(model or self.model, None, datamodule, ckpt_path):
             logger.info("Running validation before predicting to collect normalization metrics and/or thresholds.")
@@ -725,7 +725,7 @@ class Engine:
             test_dataloaders,
             datamodule,
         )
-        self._setup_transform(model, datamodule, ckpt_path)
+        self._setup_transform(model, datamodule=datamodule, ckpt_path=ckpt_path)
         if model.learning_type in [LearningType.ZERO_SHOT, LearningType.FEW_SHOT]:
             # if the model is zero-shot or few-shot, we only need to run validate for normalization and thresholding
             self.trainer.validate(model, val_dataloaders, None, verbose=False, datamodule=datamodule)
