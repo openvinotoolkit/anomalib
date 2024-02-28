@@ -1,4 +1,5 @@
 recursive-include requirements *
+recursive-include src/anomalib/configs *.yaml
 
 # Include marker file for PEP 561
 include src/anomalib/py.typed
