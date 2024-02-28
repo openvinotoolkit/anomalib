@@ -5,7 +5,6 @@ from anomalib.engine import Engine
 
 # Initialize the datamodule and engine
 datamodule = MVTec()
-model = Patchcore()
 engine = Engine(model=Patchcore())
 
 # Train the model
