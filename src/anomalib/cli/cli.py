@@ -169,8 +169,6 @@ class AnomalibCLI:
         )
         parser.add_argument("--results_dir.unique", type=bool, help="Whether to create a unique folder.", default=False)
         parser.link_arguments("results_dir.path", "trainer.default_root_dir")
-        # TODO(ashwinvaidya17): Tiling should also be a category of its own
-        # CVS-122659
 
     def add_trainer_arguments(self, parser: ArgumentParser, subcommand: str) -> None:
         """Add train arguments to the parser."""
