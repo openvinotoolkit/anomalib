@@ -98,7 +98,7 @@ class WinClip(AnomalyModule):
         if self.class_name is not None:
             logger.info("Using class name from init args: %s", self.class_name)
             return self.class_name
-        if hasattr(self, "trainer") and hasattr(self.trainer.datamodule, "category"):
+        if getattr(self, "_trainer", None) and hasattr(self.trainer.datamodule, "category"):
             logger.info("No class name provided, using category from datamodule: %s", self.trainer.datamodule.category)
             return self.trainer.datamodule.category
         logger.info("No class name provided and no category name found in datamodule using default: object")
