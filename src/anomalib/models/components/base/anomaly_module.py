@@ -51,6 +51,21 @@ class AnomalyModule(pl.LightningModule, ABC):
         self.pixel_metrics: AnomalibMetricCollection
 
         self._transform: Transform | None = None
+        self._input_size: tuple[int, int] | None = None
+
+    def setup(self, stage: str) -> None:
+        """Calls the _setup method to build the model if the model is not already built."""
+        del stage
+        if getattr(self, "model", None) is None:
+            self._setup()
+
+    def _setup(self) -> None:
+        """The _setup method is used to build the torch model dynamically or adjust something about them.
+
+        The model implementer may override this method to build the model. This is useful when the model canot be set
+        in the `__init__` method because it requires some information or data that is not available at the time of
+        initialization.
+        """
 
     def forward(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> Any:  # noqa: ANN401
         """Perform the forward-pass by passing input tensor to the module.
@@ -185,14 +200,16 @@ class AnomalyModule(pl.LightningModule, ABC):
 
     @property
     def transform(self) -> Transform:
-        """Retrieve the transform that the model should use during inference.
+        """Retrieve the model-specific transform.
 
-        If the model is attached to a trainer and the trainer has a datamodule with an eval_transform,
-        then the model will use that transform. Otherwise, it will use the default transform.
+        If a transform has been set using `set_transform`, it will be returned. Otherwise, we will use the
+        model-specific default transform, conditioned on the input size.
         """
-        if self._trainer and self._trainer.datamodule and self._trainer.datamodule.eval_transform:
-            return self._trainer.datamodule.eval_transform
-        return self.configure_transforms()
+        return self._transform
+
+    def set_transform(self, transform: Transform) -> None:
+        """Update the transform linked to the model instance."""
+        self._transform = transform
 
     def configure_transforms(self, image_size: tuple[int, int] | None = None) -> Transform:
         """Default transforms.
@@ -212,3 +229,34 @@ class AnomalyModule(pl.LightningModule, ABC):
                 Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
             ],
         )
+
+    @property
+    def input_size(self) -> tuple[int, int] | None:
+        """Return the effective input size of the model.
+
+        The effective input size is the size of the input tensor after the transform has been applied. If the transform
+        is not set, or if the transform does not change the shape of the input tensor, this method will return None.
+        """
+        if self.transform is None:
+            return None
+        dummy_input = torch.zeros(1, 3, 1, 1)
+        output_shape = self.transform(dummy_input).shape[-2:]
+        if output_shape == (1, 1):
+            return None
+        return output_shape[-2:]
+
+    def on_save_checkpoint(self, checkpoint: dict[str, Any]) -> None:
+        """Called when saving the model to a checkpoint.
+
+        Saves the transform to the checkpoint.
+        """
+        checkpoint["transform"] = self.transform
+
+    def on_load_checkpoint(self, checkpoint: dict[str, Any]) -> None:
+        """Called when loading the model from a checkpoint.
+
+        Loads the transform from the checkpoint and calls setup to ensure that the torch model is built before loading
+        the state dict.
+        """
+        self._transform = checkpoint["transform"]
+        self.setup("load_checkpoint")

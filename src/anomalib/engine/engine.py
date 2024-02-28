@@ -4,10 +4,10 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
 
+import torch
 from lightning.pytorch.callbacks import Callback
 from lightning.pytorch.trainer import Trainer
 from lightning.pytorch.trainer.connectors.callback_connector import _CallbackConnector
@@ -275,50 +275,59 @@ class Engine:
                             )
                             data.task = self.task
 
+    @staticmethod
     def _setup_transform(
-        self,
         model: AnomalyModule,
-        dataloaders: DataLoader | Iterable[DataLoader] = None,
         datamodule: AnomalibDataModule | None = None,
+        dataloaders: EVAL_DATALOADERS | TRAIN_DATALOADERS | None = None,
+        ckpt_path: Path | str | None = None,
     ) -> None:
-        """Set up the transform in the dataloaders and/or datamodule.
+        """Implements the logic for setting the transform at the start of each run.
 
-        If a transform is not already set in the dataloaders or datamodule, the default transform from the model will be
-        used.
+        Any transform passed explicitly to the datamodule takes precedence. Otherwise, if a checkpoint path is provided,
+        we can load the transform from the checkpoint. If no transform is provided, we use the default transform from
+        the model.
 
         Args:
-            model (AnomalyModule): Model passed to the entrypoint.
-            dataloaders (EVAL_DATALOADERS | TRAIN_DATALOADERS | None, optional): Dataloaders passed to the entrypoint.
-                Defaults to None.
-            datamodule (AnomalibDataModule | None, optional): Lightning datamodule passed to the entrypoint.
-                Defaults to None.
+            model (AnomalyModule): The model to assign the transform to.
+            datamodule (AnomalibDataModule | None): The datamodule to assign the transform from.
+                defaults to ``None``.
+            dataloaders (EVAL_DATALOADERS | TRAIN_DATALOADERS | None): Dataloaders to assign the transform to.
+                defaults to ``None``.
+            ckpt_path (str): The path to the checkpoint.
+                defaults to ``None``.
+
+        Returns:
+            Transform: The transform loaded from the checkpoint.
         """
-        # update transform in dataloaders
         if isinstance(dataloaders, DataLoader):
             dataloaders = [dataloaders]
-        if isinstance(dataloaders, Iterable):
+
+        # get transform
+        if datamodule and datamodule.transform:
+            # a transform passed explicitly to the datamodule takes precedence
+            transform = datamodule.transform
+        elif dataloaders and any(getattr(dl.dataset, "transform", None) for dl in dataloaders):
+            # if dataloaders are provided, we use the transform from the first dataloader that has a transform
+            transform = next(dl.dataset.transform for dl in dataloaders if getattr(dl.dataset, "transform", None))
+        elif ckpt_path is not None:
+            # if a checkpoint path is provided, we can load the transform from the checkpoint
+            checkpoint = torch.load(ckpt_path, map_location=model.device)
+            transform = checkpoint["transform"]
+        elif model.transform is None:
+            # if no transform is provided, we use the default transform from the model
+            image_size = datamodule.image_size if datamodule else None
+            transform = model.configure_transforms(image_size)
+        else:
+            transform = model.transform
+
+        # update transform in model
+        model.set_transform(transform)
+        # The dataloaders don't have access to the trainer and/or model, so we need to set the transforms manually
+        if dataloaders:
             for dataloader in dataloaders:
-                if (
-                    isinstance(dataloader, DataLoader)
-                    and hasattr(dataloader.dataset, "transform")
-                    and dataloader.dataset.transform is None
-                ):
-                    logger.info(
-                        "No transform specified in dataloader. Using default model transforms.",
-                    )
-                    dataloader.dataset.transform = model.configure_transforms()
-        # update transform in datamodule
-        if datamodule is not None:
-            if datamodule.train_transform is None:
-                logger.info(
-                    "No train transform specified in datamodule. Using default model transforms.",
-                )
-                datamodule.train_transform = model.configure_transforms(datamodule.image_size)
-            if datamodule.eval_transform is None:
-                logger.info(
-                    "No eval transform specified in datamodule. Using default model transforms.",
-                )
-                datamodule.eval_transform = model.configure_transforms(datamodule.image_size)
+                if not getattr(dataloader.dataset, "transform", None):
+                    dataloader.dataset.transform = transform
 
     def _setup_anomalib_callbacks(self) -> None:
         """Set up callbacks for the trainer."""
@@ -424,7 +433,7 @@ class Engine:
         """
         self._setup_trainer(model)
         self._setup_dataset_task(train_dataloaders, val_dataloaders, datamodule)
-        self._setup_transform(model, [train_dataloaders, val_dataloaders], datamodule)
+        self._setup_transform(model, datamodule=datamodule, ckpt_path=ckpt_path)
         if model.learning_type in [LearningType.ZERO_SHOT, LearningType.FEW_SHOT]:
             # if the model is zero-shot or few-shot, we only need to run validate for normalization and thresholding
             self.trainer.validate(model, val_dataloaders, datamodule=datamodule, ckpt_path=ckpt_path)
@@ -476,7 +485,7 @@ class Engine:
         if model:
             self._setup_trainer(model)
         self._setup_dataset_task(dataloaders)
-        self._setup_transform(model or self.model, dataloaders, datamodule)
+        self._setup_transform(model or self.model, datamodule=datamodule, ckpt_path=ckpt_path)
         return self.trainer.validate(model, dataloaders, ckpt_path, verbose, datamodule)
 
     def test(
@@ -564,7 +573,7 @@ class Engine:
             msg = "`Engine.test()` requires an `AnomalyModule` when it hasn't been passed in a previous run."
             raise RuntimeError(msg)
         self._setup_dataset_task(dataloaders)
-        self._setup_transform(model or self.model, dataloaders, datamodule)
+        self._setup_transform(model or self.model, datamodule=datamodule, ckpt_path=ckpt_path)
         if self._should_run_validation(model or self.model, dataloaders, datamodule, ckpt_path):
             logger.info("Running validation before testing to collect normalization metrics and/or thresholds.")
             self.trainer.validate(model, dataloaders, None, verbose=False, datamodule=datamodule)
@@ -656,7 +665,7 @@ class Engine:
                 raise TypeError(msg)
 
         self._setup_dataset_task(dataloaders, datamodule)
-        self._setup_transform(model or self.model, dataloaders, datamodule)
+        self._setup_transform(model or self.model, datamodule=datamodule, ckpt_path=ckpt_path)
 
         if self._should_run_validation(model or self.model, None, datamodule, ckpt_path):
             logger.info("Running validation before predicting to collect normalization metrics and/or thresholds.")
@@ -716,7 +725,7 @@ class Engine:
             test_dataloaders,
             datamodule,
         )
-        self._setup_transform(model, [train_dataloaders, val_dataloaders, test_dataloaders], datamodule)
+        self._setup_transform(model, datamodule=datamodule, ckpt_path=ckpt_path)
         if model.learning_type in [LearningType.ZERO_SHOT, LearningType.FEW_SHOT]:
             # if the model is zero-shot or few-shot, we only need to run validate for normalization and thresholding
             self.trainer.validate(model, val_dataloaders, None, verbose=False, datamodule=datamodule)

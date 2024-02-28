@@ -3,6 +3,11 @@
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+import tempfile
+from collections.abc import Generator
+from pathlib import Path
+
+import pytest
 import torch
 from torch.utils.data import DataLoader
 from torchvision.transforms.v2 import Resize, Transform
@@ -21,12 +26,6 @@ class DummyDataset(AnomalibDataset):
         self.image = torch.rand(3, 10, 10)
         self._samples = None
 
-    def __getitem__(self, index: int) -> torch.Tensor:
-        """Return the image tensor."""
-        if self.transform:
-            return self.transform(self.image)
-        return self.image
-
     def _setup(self, _stage: str | None = None) -> None:
         self._samples = None
 
@@ -41,10 +40,6 @@ class DummyModel(AnomalyModule):
     def __init__(self) -> None:
         super().__init__()
         self.model = torch.nn.Linear(10, 10)
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Return the input tensor."""
-        return self.model(x)
 
     def configure_transforms(self, image_size: tuple[int, int] | None = None) -> Transform:
         """Return a Resize transform."""
@@ -95,102 +90,132 @@ class DummyDataModule(AnomalibDataModule):
         self.test_data = DummyDataset(transform=self.eval_transform)
 
 
+@pytest.fixture()
+def checkpoint_path() -> Generator:
+    """Fixture to create a temporary checkpoint file that stores a Resize transform."""
+    # Create a temporary file
+    transform = Resize((50, 50))
+    with tempfile.TemporaryDirectory() as temp_dir:
+        file_path = Path(temp_dir) / "model.ckpt"
+        checkpoint = {"transform": transform}
+        torch.save(checkpoint, file_path)
+
+        yield file_path
+
+
 class TestSetupTransform:
     """Tests for the `_setup_transform` method of the Anomalib Engine."""
 
     # test update single dataloader
     def test_single_dataloader_default_transform(self) -> None:
         """Tests if the default model transform is used when no transform is passed to the dataloader."""
-        engine = Engine()
         dataset = DummyDataset()
         dataloader = DataLoader(dataset, batch_size=1)
         model = DummyModel()
         # before the setup_transform is called, the dataset should not have a transform
         assert dataset.transform is None
-        engine._setup_transform(model, dataloaders=dataloader)  # noqa: SLF001
+        Engine._setup_transform(model, dataloaders=dataloader)  # noqa: SLF001
         # after the setup_transform is called, the dataset should have the default transform from the model
         assert dataset.transform is not None
 
     # test update multiple dataloaders
     def test_multiple_dataloaders_default_transform(self) -> None:
         """Tests if the default model transform is used when no transform is passed to the dataloader."""
-        engine = Engine()
         dataset = DummyDataset()
         dataloader = DataLoader(dataset, batch_size=1)
         model = DummyModel()
         # before the setup_transform is called, the dataset should not have a transform
         assert dataset.transform is None
-        engine._setup_transform(model, dataloaders=[dataloader, dataloader])  # noqa: SLF001
+        Engine._setup_transform(model, dataloaders=[dataloader, dataloader])  # noqa: SLF001
         # after the setup_transform is called, the dataset should have the default transform from the model
         assert dataset.transform is not None
 
-    # test if the user-specified transform is used when passed to the datamodule
-    def test_user_specified_transform(self) -> None:
-        """Tests if the user-specified transform is used when passed to the datamodule."""
-        custom_transform = Resize((100, 100))
-        engine = Engine()
-        datamodule = DummyDataModule(transform=custom_transform)
+    def test_single_dataloader_custom_transform(self) -> None:
+        """Tests if the user-specified transform is used when passed to the dataloader."""
+        transform = Transform()
+        dataset = DummyDataset(transform=transform)
+        dataloader = DataLoader(dataset, batch_size=1)
         model = DummyModel()
-        # assert that the datamodule uses the custom transform before and after setup_transform is called
-        assert datamodule.train_transform == custom_transform
-        assert datamodule.eval_transform == custom_transform
-        engine._setup_transform(model, datamodule=datamodule)  # noqa: SLF001
-        assert datamodule.train_transform == custom_transform
-        assert datamodule.eval_transform == custom_transform
+        # before the setup_transform is called, the dataset should have the custom transform
+        assert dataset.transform == transform
+        Engine._setup_transform(model, dataloaders=dataloader)  # noqa: SLF001
+        # after the setup_transform is called, the model should have the custom transform
+        assert model.transform == transform
 
     # test if the user-specified transform is used when passed to the datamodule
-    def test_user_specified_train_transform(self) -> None:
+    def test_custom_transform(self) -> None:
+        """Tests if the user-specified transform is used when passed to the datamodule."""
+        transform = Transform()
+        datamodule = DummyDataModule(transform=transform)
+        model = DummyModel()
+        # assert that the datamodule uses the custom transform before and after setup_transform is called
+        assert datamodule.train_transform == transform
+        assert datamodule.eval_transform == transform
+        Engine._setup_transform(model, datamodule=datamodule)  # noqa: SLF001
+        assert datamodule.train_transform == transform
+        assert datamodule.eval_transform == transform
+        assert model.transform == transform
+
+    # test if the user-specified transform is used when passed to the datamodule
+    def test_custom_train_transform(self) -> None:
         """Tests if the user-specified transform is used when passed to the datamodule as train_transform."""
         model = DummyModel()
-        default_size = model.configure_transforms().size
-        custom_transform = Resize((100, 100))
-        engine = Engine()
-        datamodule = DummyDataModule(train_transform=custom_transform)
+        transform = Transform()
+        datamodule = DummyDataModule(train_transform=transform)
         # before calling setup, train_transform should be the custom transform and eval_transform should be None
-        assert datamodule.train_transform == custom_transform
+        assert datamodule.train_transform == transform
         assert datamodule.eval_transform is None
-        engine._setup_transform(model, datamodule=datamodule)  # noqa: SLF001
+        Engine._setup_transform(model, datamodule=datamodule)  # noqa: SLF001
         # after calling setup, train_transform should be the custom transform and eval_transform should be the default
-        assert datamodule.train_transform == custom_transform
-        assert isinstance(datamodule.eval_transform, Resize)
-        assert datamodule.eval_transform.size == default_size
+        assert datamodule.train_transform == transform
+        assert datamodule.eval_transform is None
+        assert model.transform == transform
+
+    # test if the user-specified transform is used when passed to the datamodule
+    def test_custom_eval_transform(self) -> None:
+        """Tests if the user-specified transform is used when passed to the datamodule as eval_transform."""
+        model = DummyModel()
+        transform = Transform()
+        datamodule = DummyDataModule(eval_transform=transform)
+        # before calling setup, train_transform should be the custom transform and eval_transform should be None
+        assert datamodule.train_transform is None
+        assert datamodule.eval_transform == transform
+        Engine._setup_transform(model, datamodule=datamodule)  # noqa: SLF001
+        # after calling setup, train_transform should be the custom transform and eval_transform should be the default
+        assert datamodule.train_transform is None
+        assert datamodule.eval_transform == transform
+        assert model.transform == transform
 
     # test update datamodule
     def test_datamodule_default_transform(self) -> None:
         """Tests if the default model transform is used when no transform is passed to the datamodule."""
-        engine = Engine()
         datamodule = DummyDataModule()
         model = DummyModel()
         # assert that the datamodule has a transform after the setup_transform is called
-        assert datamodule.train_transform is None
-        assert datamodule.eval_transform is None
-        engine._setup_transform(model, datamodule=datamodule)  # noqa: SLF001
-        assert datamodule.train_transform is not None
-        assert datamodule.eval_transform is not None
+        Engine._setup_transform(model, datamodule=datamodule)  # noqa: SLF001
+        assert isinstance(model.transform, Transform)
 
     # test if image size is taken from datamodule
     def test_datamodule_image_size(self) -> None:
         """Tests if the image size that is passed to the datamodule overwrites the default size from the model."""
-        engine = Engine()
         datamodule = DummyDataModule(image_size=(100, 100))
         model = DummyModel()
         # assert that the datamodule has a transform after the setup_transform is called
-        assert datamodule.train_transform is None
-        assert datamodule.eval_transform is None
-        engine._setup_transform(model, datamodule=datamodule)  # noqa: SLF001
-        assert isinstance(datamodule.train_transform, Resize)
-        assert isinstance(datamodule.eval_transform, Resize)
-        assert datamodule.train_transform.size == [100, 100]
-        assert datamodule.eval_transform.size == [100, 100]
+        Engine._setup_transform(model, datamodule=datamodule)  # noqa: SLF001
+        assert isinstance(model.transform, Resize)
+        assert model.transform.size == [100, 100]
 
-    # test if the updated transform is used in the dataloader
-    def test_datamodule_dataloader(self) -> None:
-        """Tests if batch returned by the dataloader has the correct shape after the setup_transform is called."""
-        engine = Engine()
-        datamodule = DummyDataModule()
+    def test_transform_from_checkpoint(self, checkpoint_path: Path) -> None:
+        """Tests if the transform from the checkpoint is used."""
         model = DummyModel()
-        engine._setup_transform(model, datamodule=datamodule)  # noqa: SLF001
-        datamodule.setup()
-        dataloader = datamodule.train_dataloader()
-        for batch in dataloader:
-            assert batch.shape == (1, 3, 256, 256)
+        Engine._setup_transform(model, ckpt_path=checkpoint_path)  # noqa: SLF001
+        assert isinstance(model.transform, Resize)
+        assert model.transform.size == [50, 50]
+
+    def test_precendence_datamodule(self, checkpoint_path: Path) -> None:
+        """Tests if transform from the datamodule goes first if both checkpoint and datamodule are provided."""
+        transform = Transform()
+        datamodule = DummyDataModule(transform=transform)
+        model = DummyModel()
+        Engine._setup_transform(model, ckpt_path=checkpoint_path, datamodule=datamodule)  # noqa: SLF001
+        assert model.transform == transform
