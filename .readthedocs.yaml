@@ -30,5 +30,9 @@ formats:
 python:
   install:
     - requirements: docs/requirements.txt
+    - requirements: requirements/core.txt
+    - requirements: requirements/loggers.txt
+    - requirements: requirements/notebooks.txt
+    - requirements: requirements/openvino.txt
     - method: pip
       path: .

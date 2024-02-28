@@ -6,10 +6,10 @@
 
 import torch
 
-from anomalib.models.components.base import DynamicBufferModule
+from anomalib.models.components.base import DynamicBufferMixin
 
 
-class PCA(DynamicBufferModule):
+class PCA(DynamicBufferMixin):
     """Principle Component Analysis (PCA).
 
     Args:

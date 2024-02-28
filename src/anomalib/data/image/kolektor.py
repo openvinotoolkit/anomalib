@@ -46,7 +46,7 @@ logger = logging.getLogger(__name__)
 DOWNLOAD_INFO = DownloadInfo(
     name="kolektor",
     url="https://go.vicos.si/kolektorsdd",
-    checksum="2b094030343c1cd59df02203ac6c57a0",
+    hashsum="65dc621693418585de9c4467d1340ea7958a6181816f0dc2883a1e8b61f9d4dc",
     filename="KolektorSDD.zip",
 )
 

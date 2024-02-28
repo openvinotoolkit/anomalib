@@ -26,6 +26,7 @@ logger = logging.getLogger("anomalib.cli")
 _LIGHTNING_AVAILABLE = True
 try:
     from lightning.pytorch import Trainer
+    from lightning.pytorch.core.datamodule import LightningDataModule
     from torch.utils.data import DataLoader, Dataset
 
     from anomalib.data import AnomalibDataModule, AnomalibDataset
@@ -168,8 +169,6 @@ class AnomalibCLI:
         )
         parser.add_argument("--results_dir.unique", type=bool, help="Whether to create a unique folder.", default=False)
         parser.link_arguments("results_dir.path", "trainer.default_root_dir")
-        # TODO(ashwinvaidya17): Tiling should also be a category of its own
-        # CVS-122659
 
     def add_trainer_arguments(self, parser: ArgumentParser, subcommand: str) -> None:
         """Add train arguments to the parser."""
@@ -296,6 +295,9 @@ class AnomalibCLI:
             # the minor change here is that engine is instantiated instead of trainer
             self.config_init = self.parser.instantiate_classes(self.config)
             self.datamodule = self._get(self.config_init, "data")
+            if isinstance(self.datamodule, Dataset):
+                kwargs = {f"{self.config.subcommand}_dataset": self.datamodule}
+                self.datamodule = LightningDataModule.from_datasets(**kwargs)
             self.model = self._get(self.config_init, "model")
             self._configure_optimizers_method_to_model()
             self.instantiate_engine()
