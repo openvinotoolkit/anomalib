@@ -26,7 +26,6 @@ logger = logging.getLogger("anomalib.cli")
 _LIGHTNING_AVAILABLE = True
 try:
     from lightning.pytorch import Trainer
-    from lightning.pytorch.core.datamodule import LightningDataModule
     from torch.utils.data import DataLoader, Dataset
 
     from anomalib.data import AnomalibDataModule
@@ -294,8 +293,7 @@ class AnomalibCLI:
             self.config_init = self.parser.instantiate_classes(self.config)
             self.datamodule = self._get(self.config_init, "data")
             if isinstance(self.datamodule, Dataset):
-                kwargs = {f"{self.config.subcommand}_dataset": self.datamodule}
-                self.datamodule = LightningDataModule.from_datasets(**kwargs)
+                self.datamodule = DataLoader(self.datamodule)
             self.model = self._get(self.config_init, "model")
             self._configure_optimizers_method_to_model()
             self.instantiate_engine()
@@ -481,7 +479,10 @@ class AnomalibCLI:
         }
         fn_kwargs["model"] = self.model
         if self.datamodule is not None:
-            fn_kwargs["datamodule"] = self.datamodule
+            if isinstance(self.datamodule, AnomalibDataModule):
+                fn_kwargs["datamodule"] = self.datamodule
+            elif isinstance(self.datamodule, DataLoader):
+                fn_kwargs["dataloaders"] = self.datamodule
         return fn_kwargs
 
     def _parser(self, subcommand: str | None) -> ArgumentParser:
