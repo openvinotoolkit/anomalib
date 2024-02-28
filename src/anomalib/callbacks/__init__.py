@@ -61,9 +61,4 @@ def get_callbacks(config: DictConfig | ListConfig | Namespace) -> list[Callback]
             ),
         )
 
-    # Add callback to log graph to loggers
-    # TODO(ashwinvaidya17): Find location for log_graph key
-    # CVS-122658
-    # if config.logging.log_graph not in (None, False):
-
     return callbacks
