@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Any
 from lightning.pytorch import LightningDataModule
 from lightning.pytorch.utilities.types import EVAL_DATALOADERS, TRAIN_DATALOADERS
 from torch.utils.data.dataloader import DataLoader, default_collate
-from torchvision.transforms.v2 import Transform
+from torchvision.transforms.v2 import Resize, Transform
 
 from anomalib.data.utils import TestSplitMode, ValSplitMode, random_split, split_by_label
 from anomalib.data.utils.synthetic import SyntheticAnomalyDataset
@@ -230,38 +230,42 @@ class AnomalibDataModule(LightningDataModule, ABC):
 
     @property
     def transform(self) -> Transform:
-        """Property that returns the transform.
+        """Property that returns the user-specified transform for the datamodule, if any.
 
         This property is accessed by the engine to set the transform for the model. The eval_transform takes precedence
         over the train_transform, because the transform that we store in the model is the one that should be used during
         inference.
         """
-        if self.eval_transform:
-            return self.eval_transform
-        if self.train_transform:
-            return self.train_transform
+        if self._eval_transform:
+            return self._eval_transform
+        if self._train_transform:
+            return self._train_transform
         return None
 
     @property
     def train_transform(self) -> Transform:
-        """Get the transforms that the datamodule should apply during training.
+        """Get the transforms that will be passed to the train dataset.
 
         If the train_transform is not set, the engine will request the transform from the model.
         """
         if self._train_transform:
             return self._train_transform
-        if getattr(self, "trainer", None) and self.trainer.model:
+        if getattr(self, "trainer", None) and self.trainer.model and self.trainer.model.transform:
             return self.trainer.model.transform
+        if self.image_size:
+            return Resize(self.image_size, antialias=True)
         return None
 
     @property
     def eval_transform(self) -> Transform:
-        """Get the transform that the datamodule should apply during inference.
+        """Get the transform that will be passed to the val/test/predict datasets.
 
         If the eval_transform is not set, the engine will request the transform from the model.
         """
         if self._eval_transform:
             return self._eval_transform
-        if getattr(self, "trainer", None) and self.trainer.model:
+        if getattr(self, "trainer", None) and self.trainer.model and self.trainer.model.transform:
             return self.trainer.model.transform
+        if self.image_size:
+            return Resize(self.image_size, antialias=True)
         return None
