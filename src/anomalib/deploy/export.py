@@ -145,7 +145,7 @@ def export_to_torch(
         ...     task=datamodule.test_data.task,
         ... )
     """
-    transform = transform or model.transform
+    transform = transform or model.transform or model.configure_transforms()
     inference_model = InferenceModel(model=model.model, transform=transform)
     export_root = _create_export_root(export_root, ExportType.TORCH)
     metadata = get_metadata(task=task, model=model)
@@ -209,7 +209,7 @@ def export_to_onnx(
     """
     # TODO(djdameln): Move export functionality to anomaly module
     # https://github.com/openvinotoolkit/anomalib/issues/1752
-    transform = transform or model.transform
+    transform = transform or model.transform or model.configure_transforms()
     inference_model = InferenceModel(model=model.model, transform=transform, disable_antialias=True)
     export_root = _create_export_root(export_root, export_type)
     _write_metadata_to_json(export_root, model, task)
