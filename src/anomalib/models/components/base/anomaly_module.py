@@ -17,7 +17,6 @@ from torch import nn
 from anomalib import LearningType
 from anomalib.metrics import AnomalibMetricCollection
 from anomalib.metrics.threshold import BaseThreshold
-from anomalib.utils.path import convert_to_snake_case
 
 if TYPE_CHECKING:
     from lightning.pytorch.callbacks import Callback
@@ -53,7 +52,7 @@ class AnomalyModule(pl.LightningModule, ABC):
     @property
     def name(self) -> str:
         """Name of the model."""
-        return convert_to_snake_case(self.__class__.__name__)
+        return self.__class__.__name__
 
     def forward(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> Any:  # noqa: ANN401
         """Perform the forward-pass by passing input tensor to the module.

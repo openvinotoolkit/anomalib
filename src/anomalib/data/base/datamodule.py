@@ -14,7 +14,6 @@ from torch.utils.data.dataloader import DataLoader, default_collate
 
 from anomalib.data.utils import TestSplitMode, ValSplitMode, random_split, split_by_label
 from anomalib.data.utils.synthetic import SyntheticAnomalyDataset
-from anomalib.utils.path import convert_to_snake_case
 
 if TYPE_CHECKING:
     from pandas import DataFrame
@@ -97,7 +96,7 @@ class AnomalibDataModule(LightningDataModule, ABC):
     @property
     def name(self) -> str:
         """Name of the datamodule."""
-        return convert_to_snake_case(self.__class__.__name__.lower())
+        return self.__class__.__name__
 
     def setup(self, stage: str | None = None) -> None:
         """Set up train, validation and test data.
