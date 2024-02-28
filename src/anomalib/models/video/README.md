@@ -28,7 +28,7 @@ from anomalib.data import Avenue
 from anomalib.models import AiVad
 from anomalib.engine import Engine
 
-# Load the avenue dataset and engine.
+# Load the avenue datamodule and engine.
 datamodule = Avenue()
 engine = Engine(model=AiVad())
 

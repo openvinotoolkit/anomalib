@@ -25,7 +25,7 @@ from anomalib.data import Visa
 from anomalib.models import EfficientAD
 from anomalib.engine import Engine
 
-# Load the ViSA dataset and engine.
+# Load the ViSA datamodule and engine.
 datamodule = Visa()
 engine = Engine(model=EfficientAD())
 
