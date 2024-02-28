@@ -55,7 +55,6 @@ class Ganomaly(AnomalyModule):
 
     def __init__(
         self,
-        input_size: tuple[int, int] = (256, 256),
         batch_size: int = 32,
         n_features: int = 64,
         latent_vec_size: int = 100,
@@ -70,14 +69,10 @@ class Ganomaly(AnomalyModule):
     ) -> None:
         super().__init__()
 
-        self.model: GanomalyModel = GanomalyModel(
-            input_size=input_size,
-            num_input_channels=3,
-            n_features=n_features,
-            latent_vec_size=latent_vec_size,
-            extra_layers=extra_layers,
-            add_final_conv_layer=add_final_conv_layer,
-        )
+        self.n_features = n_features
+        self.latent_vec_size = latent_vec_size
+        self.extra_layers = extra_layers
+        self.add_final_conv_layer = add_final_conv_layer
 
         self.real_label = torch.ones(size=(batch_size,), dtype=torch.float32)
         self.fake_label = torch.zeros(size=(batch_size,), dtype=torch.float32)
@@ -94,6 +89,19 @@ class Ganomaly(AnomalyModule):
         self.learning_rate = lr
         self.beta1 = beta1
         self.beta2 = beta2
+
+        self.model: GanomalyModel
+
+    def _setup(self) -> None:
+        assert self.input_size is not None, "CSflow needs input size to build torch model."
+        self.model = GanomalyModel(
+            input_size=self.input_size,
+            num_input_channels=3,
+            n_features=self.n_features,
+            latent_vec_size=self.latent_vec_size,
+            extra_layers=self.extra_layers,
+            add_final_conv_layer=self.add_final_conv_layer,
+        )
 
     def _reset_min_max(self) -> None:
         """Reset min_max scores."""
