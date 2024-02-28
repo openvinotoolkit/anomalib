@@ -210,12 +210,10 @@ class Engine:
         Returns:
             AnomalyModule: Anomaly model.
         """
-        if self._model:
-            return self._model
-        if not self.trainer.model:
-            msg = "Trainer does not have a model assigned yet."
+        if not self._model:
+            msg = "``self.model`` is not assigned yet."
             raise UnassignedError(msg)
-        return self.trainer.lightning_module
+        return self._model
 
     @model.setter
     def model(self, model: AnomalyModule) -> None:
