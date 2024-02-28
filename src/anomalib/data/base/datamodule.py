@@ -250,7 +250,7 @@ class AnomalibDataModule(LightningDataModule, ABC):
         """
         if self._train_transform:
             return self._train_transform
-        if self.trainer and self.trainer.model:
+        if hasattr(self, "trainer") and self.trainer.model:
             return self.trainer.model.transform
         return None
 
@@ -262,6 +262,6 @@ class AnomalibDataModule(LightningDataModule, ABC):
         """
         if self._eval_transform:
             return self._eval_transform
-        if self.trainer and self.trainer.model:
+        if hasattr(self, "trainer") and self.trainer.model:
             return self.trainer.model.transform
         return None
