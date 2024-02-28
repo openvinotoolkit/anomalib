@@ -10,7 +10,7 @@ import torch
 from torch import nn
 from torch.nn import functional as F  # noqa: N812
 
-from anomalib.models.components import DynamicBufferModule, KCenterGreedy, TimmFeatureExtractor
+from anomalib.models.components import DynamicBufferMixin, KCenterGreedy, TimmFeatureExtractor
 
 from .anomaly_map import AnomalyMapGenerator
 
@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     from anomalib.data.utils.tiler import Tiler
 
 
-class PatchcoreModel(DynamicBufferModule, nn.Module):
+class PatchcoreModel(DynamicBufferMixin, nn.Module):
     """Patchcore Module.
 
     Args:

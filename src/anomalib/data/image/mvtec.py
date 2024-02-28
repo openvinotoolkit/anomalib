@@ -56,7 +56,7 @@ DOWNLOAD_INFO = DownloadInfo(
     name="mvtec",
     url="https://www.mydrive.ch/shares/38536/3830184030e49fe74747669442f0f282/download/420938113-1629952094"
     "/mvtec_anomaly_detection.tar.xz",
-    checksum="eefca59f2cede9c3fc5b6befbfec275e",
+    hashsum="cf4313b13603bec67abb49ca959488f7eedce2a9f7795ec54446c649ac98cd3d",
 )
 
 CATEGORIES = (

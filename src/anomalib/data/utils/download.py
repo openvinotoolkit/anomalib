@@ -28,7 +28,7 @@ class DownloadInfo:
 
     name: str
     url: str
-    checksum: str
+    hashsum: str
     filename: str | None = None
 
 
@@ -233,17 +233,51 @@ def safe_extract(tar_file: TarFile, root: Path, members: list[TarInfo]) -> None:
         tar_file.extract(member, root)
 
 
-def hash_check(file_path: Path, expected_hash: str) -> None:
-    """Raise assert error if hash does not match the calculated hash of the file.
+def generate_hash(file_path: str | Path, algorithm: str = "sha256") -> str:
+    """Generate a hash of a file using the specified algorithm.
+
+    Args:
+        file_path (str | Path): Path to the file to hash.
+        algorithm (str): The hashing algorithm to use (e.g., 'sha256', 'sha3_512').
+
+    Returns:
+        str: The hexadecimal hash string of the file.
+
+    Raises:
+        ValueError: If the specified hashing algorithm is not supported.
+    """
+    # Get the hashing algorithm.
+    try:
+        hasher = getattr(hashlib, algorithm)()
+    except AttributeError as err:
+        msg = f"Unsupported hashing algorithm: {algorithm}"
+        raise ValueError(msg) from err
+
+    # Read the file in chunks to avoid loading it all into memory
+    with Path(file_path).open("rb") as file:
+        for chunk in iter(lambda: file.read(4096), b""):
+            hasher.update(chunk)
+
+    # Return the computed hash value in hexadecimal format
+    return hasher.hexdigest()
+
+
+def check_hash(file_path: Path, expected_hash: str, algorithm: str = "sha256") -> None:
+    """Raise value error if hash does not match the calculated hash of the file.
 
     Args:
         file_path (Path): Path to file.
         expected_hash (str): Expected hash of the file.
+        algorithm (str): Hashing algorithm to use ('sha256', 'sha3_512', etc.).
     """
-    with file_path.open("rb") as hash_file:
-        assert (
-            hashlib.new(name="md5", data=hash_file.read(), usedforsecurity=False).hexdigest() == expected_hash
-        ), f"Downloaded file {file_path} does not match the required hash."
+    # Compare the calculated hash with the expected hash
+    calculated_hash = generate_hash(file_path, algorithm)
+    if calculated_hash != expected_hash:
+        msg = (
+            f"Calculated hash {calculated_hash} of downloaded file {file_path} does not match the required hash "
+            f"{expected_hash}."
+        )
+        raise ValueError(msg)
 
 
 def extract(file_name: Path, root: Path) -> None:
@@ -303,7 +337,7 @@ def download_and_extract(root: Path, info: DownloadInfo) -> None:
                     reporthook=progress_bar.update_to,
                 )
             logger.info("Checking the hash of the downloaded file.")
-            hash_check(downloaded_file_path, info.checksum)
+            check_hash(downloaded_file_path, info.hashsum)
         else:
             msg = f"Invalid URL to download dataset. Supported 'http://' or 'https://' but '{info.url}' is requested"
             raise RuntimeError(msg)

@@ -26,6 +26,7 @@ logger = logging.getLogger("anomalib.cli")
 _LIGHTNING_AVAILABLE = True
 try:
     from lightning.pytorch import Trainer
+    from lightning.pytorch.core.datamodule import LightningDataModule
     from torch.utils.data import DataLoader, Dataset
 
     from anomalib.data import AnomalibDataModule, AnomalibDataset
@@ -285,6 +286,9 @@ class AnomalibCLI:
             # the minor change here is that engine is instantiated instead of trainer
             self.config_init = self.parser.instantiate_classes(self.config)
             self.datamodule = self._get(self.config_init, "data")
+            if isinstance(self.datamodule, Dataset):
+                kwargs = {f"{self.config.subcommand}_dataset": self.datamodule}
+                self.datamodule = LightningDataModule.from_datasets(**kwargs)
             self.model = self._get(self.config_init, "model")
             self._configure_optimizers_method_to_model()
             self.instantiate_engine()

@@ -150,8 +150,12 @@ class Engine:
         self.normalization = normalization
         self.threshold = threshold
         self.task = TaskType(task)
-        self.image_metric_names = image_metrics
-        self.pixel_metric_names = pixel_metrics
+        self.image_metric_names = image_metrics if image_metrics else ["AUROC", "F1Score"]
+
+        # pixel metrics are only used for segmentation tasks.
+        self.pixel_metric_names = None
+        if self.task == TaskType.SEGMENTATION:
+            self.pixel_metric_names = pixel_metrics if pixel_metrics is not None else ["AUROC", "F1Score"]
 
         self._trainer: Trainer | None = None
 
@@ -337,7 +341,7 @@ class Engine:
     def _should_run_validation(
         self,
         model: AnomalyModule,
-        dataloaders: EVAL_DATALOADERS | AnomalibDataModule | None,
+        dataloaders: EVAL_DATALOADERS | None,
         datamodule: AnomalibDataModule | None,
         ckpt_path: str | None,
     ) -> bool:
@@ -355,7 +359,7 @@ class Engine:
 
         Args:
             model (AnomalyModule): Model passed to the entrypoint.
-            dataloaders (EVAL_DATALOADERS | AnomalibDataModule | None): Dataloaders passed to the entrypoint.
+            dataloaders (EVAL_DATALOADERS | None): Dataloaders passed to the entrypoint.
             datamodule (AnomalibDataModule | None): Lightning datamodule passed to the entrypoint.
             ckpt_path (str | None): Checkpoint path passed to the entrypoint.
 
@@ -377,7 +381,7 @@ class Engine:
     def fit(
         self,
         model: AnomalyModule,
-        train_dataloaders: TRAIN_DATALOADERS | AnomalibDataModule | None = None,
+        train_dataloaders: TRAIN_DATALOADERS | None = None,
         val_dataloaders: EVAL_DATALOADERS | None = None,
         datamodule: AnomalibDataModule | None = None,
         ckpt_path: str | None = None,
@@ -386,7 +390,7 @@ class Engine:
 
         Args:
             model (AnomalyModule): Model to be trained.
-            train_dataloaders (TRAIN_DATALOADERS | AnomalibDataModule | None, optional): Train dataloaders.
+            train_dataloaders (TRAIN_DATALOADERS | None, optional): Train dataloaders.
                 Defaults to None.
             val_dataloaders (EVAL_DATALOADERS | None, optional): Validation dataloaders.
                 Defaults to None.
@@ -421,7 +425,7 @@ class Engine:
     def validate(
         self,
         model: AnomalyModule | None = None,
-        dataloaders: EVAL_DATALOADERS | AnomalibDataModule | None = None,
+        dataloaders: EVAL_DATALOADERS | None = None,
         ckpt_path: str | None = None,
         verbose: bool = True,
         datamodule: AnomalibDataModule | None = None,
@@ -431,7 +435,7 @@ class Engine:
         Args:
             model (AnomalyModule | None, optional): Model to be validated.
                 Defaults to None.
-            dataloaders (EVAL_DATALOADERS | AnomalibDataModule | None, optional): Dataloaders to be used for
+            dataloaders (EVAL_DATALOADERS | None, optional): Dataloaders to be used for
                 validation.
                 Defaults to None.
             ckpt_path (str | None, optional): Checkpoint path. If provided, the model will be loaded from this path.
@@ -468,7 +472,7 @@ class Engine:
     def test(
         self,
         model: AnomalyModule | None = None,
-        dataloaders: EVAL_DATALOADERS | AnomalibDataModule | None = None,
+        dataloaders: EVAL_DATALOADERS | None = None,
         ckpt_path: str | None = None,
         verbose: bool = True,
         datamodule: AnomalibDataModule | None = None,
@@ -482,7 +486,7 @@ class Engine:
             model (AnomalyModule | None, optional):
                 The model to be tested.
                 Defaults to None.
-            dataloaders (EVAL_DATALOADERS | AnomalibDataModule | None, optional):
+            dataloaders (EVAL_DATALOADERS | None, optional):
                 An iterable or collection of iterables specifying test samples.
                 Defaults to None.
             ckpt_path (str | None, optional):
@@ -555,13 +559,12 @@ class Engine:
             self.trainer.validate(model, dataloaders, None, verbose=False, datamodule=datamodule)
         return self.trainer.test(model, dataloaders, ckpt_path, verbose, datamodule)
 
-    # TODO(ashwinvaidya17): revisit typing of data args
-    # https://github.com/openvinotoolkit/anomalib/issues/1638
     def predict(
         self,
         model: AnomalyModule | None = None,
-        dataloaders: EVAL_DATALOADERS | AnomalibDataModule | None = None,
-        datamodule: AnomalibDataModule | Dataset | PredictDataset | None = None,
+        dataloaders: EVAL_DATALOADERS | None = None,
+        datamodule: AnomalibDataModule | None = None,
+        dataset: Dataset | PredictDataset | None = None,
         return_predictions: bool | None = None,
         ckpt_path: str | None = None,
     ) -> _PREDICT_OUTPUT | None:
@@ -574,7 +577,7 @@ class Engine:
             model (AnomalyModule | None, optional):
                 Model to be used for prediction.
                 Defaults to None.
-            dataloaders (EVAL_DATALOADERS | AnomalibDataModule | None, optional):
+            dataloaders (EVAL_DATALOADERS | None, optional):
                 An iterable or collection of iterables specifying predict samples.
                 Defaults to None.
             datamodule (AnomalibDataModule | None, optional):
@@ -582,6 +585,9 @@ class Engine:
                 the :class:`~lightning.pytorch.core.hooks.DataHooks.predict_dataloader` hook.
                 The datamodule can also be a dataset that will be wrapped in a torch Dataloader.
                 Defaults to None.
+            dataset (Dataset | PredictDataset | None, optional):
+                A :class:`~torch.utils.data.Dataset` or :class:`~anomalib.data.PredictDataset` that will be used
+                to create a dataloader. Defaults to None.
             return_predictions (bool | None, optional):
                 Whether to return predictions.
                 ``True`` by default except when an accelerator that spawns processes is used (not supported).
@@ -627,9 +633,8 @@ class Engine:
             logger.warning("ckpt_path is not provided. Model weights will not be loaded.")
 
         # Handle the instance when a dataset is passed to the predict method
-        if datamodule is not None and isinstance(datamodule, Dataset):
-            dataloader = DataLoader(datamodule)
-            datamodule = None
+        if dataset is not None:
+            dataloader = DataLoader(dataset)
             if dataloaders is None:
                 dataloaders = dataloader
             elif isinstance(dataloaders, DataLoader):
@@ -657,7 +662,7 @@ class Engine:
     def train(
         self,
         model: AnomalyModule,
-        train_dataloaders: TRAIN_DATALOADERS | AnomalibDataModule | None = None,
+        train_dataloaders: TRAIN_DATALOADERS | None = None,
         val_dataloaders: EVAL_DATALOADERS | None = None,
         test_dataloaders: EVAL_DATALOADERS | None = None,
         datamodule: AnomalibDataModule | None = None,
@@ -667,7 +672,7 @@ class Engine:
 
         Args:
             model (AnomalyModule): Model to be trained.
-            train_dataloaders (TRAIN_DATALOADERS | AnomalibDataModule | None, optional): Train dataloaders.
+            train_dataloaders (TRAIN_DATALOADERS | None, optional): Train dataloaders.
                 Defaults to None.
             val_dataloaders (EVAL_DATALOADERS | None, optional): Validation dataloaders.
                 Defaults to None.
