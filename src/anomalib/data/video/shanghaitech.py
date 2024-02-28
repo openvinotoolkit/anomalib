@@ -49,7 +49,7 @@ logger = logging.getLogger(__name__)
 DATASET_DOWNLOAD_INFO = DownloadInfo(
     name="ShanghaiTech Dataset",
     url="http://101.32.75.151:8181/dataset/shanghaitech.tar.gz",
-    checksum="08494decd30fb0fa213b519a9c555040",
+    hashsum="c13a827043b259ccf8493c9d9130486872992153a9d714fe229e523cd4c94116",
 )
 
 
