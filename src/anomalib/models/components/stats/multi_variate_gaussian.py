@@ -8,10 +8,10 @@ from typing import Any
 import torch
 from torch import nn
 
-from anomalib.models.components.base import DynamicBufferModule
+from anomalib.models.components.base import DynamicBufferMixin
 
 
-class MultiVariateGaussian(DynamicBufferModule, nn.Module):
+class MultiVariateGaussian(DynamicBufferMixin, nn.Module):
     """Multi Variate Gaussian Distribution."""
 
     def __init__(self) -> None:
