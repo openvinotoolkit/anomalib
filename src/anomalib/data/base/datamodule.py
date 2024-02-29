@@ -9,6 +9,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any
 
 from lightning.pytorch import LightningDataModule
+from lightning.pytorch.trainer.states import TrainerFn
 from lightning.pytorch.utilities.types import EVAL_DATALOADERS, TRAIN_DATALOADERS
 from torch.utils.data.dataloader import DataLoader, default_collate
 from torchvision.transforms.v2 import Resize, Transform
@@ -111,6 +112,8 @@ class AnomalibDataModule(LightningDataModule, ABC):
         self._samples: DataFrame | None = None
         self._category: str = ""
 
+        self._is_setup = False  # flag to track if setup has been called from the trainer
+
     @property
     def name(self) -> str:
         """Name of the datamodule."""
@@ -123,11 +126,14 @@ class AnomalibDataModule(LightningDataModule, ABC):
             stage: str | None:  Train/Val/Test stages.
                 Defaults to ``None``.
         """
-        if not self.is_setup:
+        has_subset = any(hasattr(self, subset) for subset in ["train_data", "val_data", "test_data"])
+        if not has_subset or not self._is_setup:
             self._setup(stage)
             self._create_test_split()
             self._create_val_split()
-        assert self.is_setup
+            if isinstance(stage, TrainerFn):
+                # only set the flag if the stage is a TrainerFn, which means the setup has been called from a trainer
+                self._is_setup = True
 
     @abstractmethod
     def _setup(self, _stage: str | None = None) -> None:
@@ -197,19 +203,6 @@ class AnomalibDataModule(LightningDataModule, ABC):
         elif self.val_split_mode != ValSplitMode.NONE:
             msg = f"Unknown validation split mode: {self.val_split_mode}"
             raise ValueError(msg)
-
-    @property
-    def is_setup(self) -> bool:
-        """Checks if setup() has been called.
-
-        At least one of [train_data, val_data, test_data] should be setup.
-        """
-        _is_setup: bool = False
-        for data in ("train_data", "val_data", "test_data"):
-            if hasattr(self, data):
-                _is_setup = True
-
-        return _is_setup
 
     def train_dataloader(self) -> TRAIN_DATALOADERS:
         """Get train dataloader."""
