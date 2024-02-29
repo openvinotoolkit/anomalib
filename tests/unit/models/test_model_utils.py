@@ -29,7 +29,7 @@ class TestGetModel:
 
     def test_get_model_by_name_with_init_args(self) -> None:
         """Test get_model by name with init args."""
-        model = get_model("Patchcore", input_size=(100, 100))
+        model = get_model("Patchcore", backbone="wide_resnet50_2")
         assert isinstance(model, Patchcore)
 
     def test_get_model_by_dict(self) -> None:
@@ -39,14 +39,14 @@ class TestGetModel:
 
     def test_get_model_by_dict_with_init_args(self) -> None:
         """Test get_model by dict with init args."""
-        model = get_model({"class_path": "Padim", "init_args": {"input_size": (100, 100)}})
+        model = get_model({"class_path": "Padim", "init_args": {"backbone": "wide_resnet50_2"}})
         assert isinstance(model, Padim)
-        model = get_model({"class_path": "Patchcore"}, input_size=(100, 100))
+        model = get_model({"class_path": "Patchcore"}, backbone="wide_resnet50_2")
         assert isinstance(model, Patchcore)
 
     def test_get_model_by_dict_with_full_class_path(self) -> None:
         """Test get_model by dict with full class path."""
-        model = get_model({"class_path": "anomalib.models.Padim", "init_args": {"input_size": (100, 100)}})
+        model = get_model({"class_path": "anomalib.models.Padim", "init_args": {"backbone": "wide_resnet50_2"}})
         assert isinstance(model, Padim)
 
     def test_get_model_by_namespace(self) -> None:
@@ -61,7 +61,6 @@ class TestGetModel:
             class_path="anomalib.models.Padim",
             init_args=Namespace(
                 layers=["layer1", "layer2", "layer3"],
-                input_size=(256, 256),
                 backbone="resnet18",
                 pre_trained=True,
                 n_features=None,
@@ -75,7 +74,7 @@ class TestGetModel:
         config = OmegaConf.create({"class_path": "Padim"})
         model = get_model(config)
         assert isinstance(model, Padim)
-        config = OmegaConf.create({"class_path": "Padim", "init_args": {"input_size": (100, 100)}})
+        config = OmegaConf.create({"class_path": "Padim", "init_args": {"backbone": "wide_resnet50_2"}})
         model = get_model(config)
         assert isinstance(model, Padim)
 

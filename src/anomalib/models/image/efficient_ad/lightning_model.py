@@ -11,14 +11,12 @@ import logging
 from pathlib import Path
 from typing import Any
 
-import albumentations as A  # noqa: N812
-import numpy as np
 import torch
 import tqdm
-from albumentations.pytorch import ToTensorV2
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torch.utils.data import DataLoader
 from torchvision.datasets import ImageFolder
+from torchvision.transforms.v2 import CenterCrop, Compose, Normalize, RandomGrayscale, Resize, ToTensor, Transform
 
 from anomalib import LearningType
 from anomalib.data.utils import DownloadInfo, download_and_extract
@@ -41,38 +39,10 @@ WEIGHTS_DOWNLOAD_INFO = DownloadInfo(
 )
 
 
-class TransformsWrapper:
-    """Transforms wrapper.
-
-    Args:
-        t (A.Compose): Albumentations transforms.
-    """
-
-    def __init__(self, t: A.Compose) -> None:
-        self.transforms = t
-
-    def __call__(self, img: np.ndarray, *args, **kwargs) -> dict[str, Any]:
-        """Apply the transforms to the given image.
-
-        Args:
-            img (np.ndarray): Input image.
-            args: Additional arguments.
-            kwargs: Additional keyword arguments.
-
-        Returns:
-            dict[str, Any]: Output image.
-        """
-        del args, kwargs  # Unused arguments.
-
-        return self.transforms(image=np.array(img))
-
-
 class EfficientAd(AnomalyModule):
     """PL Lightning Module for the EfficientAd algorithm.
 
     Args:
-        input_size (tuple): size of input images
-            Defaults to ``(256, 256)``.
         teacher_out_channels (int): number of convolution output channels
             Defaults to ``384``.
         model_size (str): size of student and teacher model
@@ -92,7 +62,6 @@ class EfficientAd(AnomalyModule):
 
     def __init__(
         self,
-        input_size: tuple[int, int] = (256, 256),
         teacher_out_channels: int = 384,
         model_size: EfficientAdModelSize = EfficientAdModelSize.S,
         lr: float = 0.0001,
@@ -106,18 +75,13 @@ class EfficientAd(AnomalyModule):
         self.model_size = model_size
         self.model: EfficientAdModel = EfficientAdModel(
             teacher_out_channels=teacher_out_channels,
-            input_size=input_size,
             model_size=model_size,
             padding=padding,
             pad_maps=pad_maps,
         )
         self.batch_size = batch_size
-        self.image_size = input_size
         self.lr = lr
         self.weight_decay = weight_decay
-
-        self.prepare_pretrained_model()
-        self.prepare_imagenette_data()
 
     def prepare_pretrained_model(self) -> None:
         """Prepare the pretrained teacher model."""
@@ -130,22 +94,25 @@ class EfficientAd(AnomalyModule):
         logger.info(f"Load pretrained teacher model from {teacher_path}")
         self.model.teacher.load_state_dict(torch.load(teacher_path, map_location=torch.device(self.device)))
 
-    def prepare_imagenette_data(self) -> None:
-        """Prepare ImageNette dataset transformations."""
-        self.data_transforms_imagenet = A.Compose(
-            [  # We obtain an image P ∈ R 3x256x256 from ImageNet by choosing a random image,
-                A.Resize(self.image_size[0] * 2, self.image_size[1] * 2),  # resizing it to 512 x 512,
-                A.ToGray(p=0.3),  # converting it to gray scale with a probability of 0.3
-                A.CenterCrop(self.image_size[0], self.image_size[1]),  # and cropping the center 256 x 256 pixels
-                A.ToFloat(always_apply=False, p=1.0, max_value=255),
-                ToTensorV2(),
+    def prepare_imagenette_data(self, image_size: tuple[int, int] | torch.Size) -> None:
+        """Prepare ImageNette dataset transformations.
+
+        Args:
+            image_size (tuple[int, int] | torch.Size): Image size.
+        """
+        self.data_transforms_imagenet = Compose(
+            [
+                Resize((image_size[0] * 2, image_size[1] * 2)),
+                RandomGrayscale(p=0.3),
+                CenterCrop((image_size[0], image_size[1])),
+                ToTensor(),
             ],
         )
 
         imagenet_dir = Path("./datasets/imagenette")
         if not imagenet_dir.is_dir():
             download_and_extract(imagenet_dir, IMAGENETTE_DOWNLOAD_INFO)
-        imagenet_dataset = ImageFolder(imagenet_dir, transform=TransformsWrapper(t=self.data_transforms_imagenet))
+        imagenet_dataset = ImageFolder(imagenet_dir, transform=self.data_transforms_imagenet)
         self.imagenet_loader = DataLoader(imagenet_dataset, batch_size=self.batch_size, shuffle=True, pin_memory=True)
         self.imagenet_iterator = iter(self.imagenet_loader)
 
@@ -263,7 +230,15 @@ class EfficientAd(AnomalyModule):
         return {"optimizer": optimizer, "lr_scheduler": scheduler}
 
     def on_train_start(self) -> None:
-        """Calculate or load the channel-wise mean and std of the training dataset and push to the model."""
+        """Called before the first training epoch.
+
+        First sets up the pretrained teacher model, then prepares the imagenette data, and finally calculates or
+        loads the channel-wise mean and std of the training dataset and push to the model.
+        """
+        sample = next(iter(self.trainer.train_dataloader))
+        image_size = sample["image"].shape[-2:]
+        self.prepare_pretrained_model()
+        self.prepare_imagenette_data(image_size)
         if not self.model.is_set(self.model.mean_std):
             channel_mean_std = self.teacher_channel_mean_std(self.trainer.datamodule.train_dataloader())
             self.model.mean_std.update(channel_mean_std)
@@ -283,10 +258,10 @@ class EfficientAd(AnomalyModule):
 
         try:
             # infinite dataloader; [0] getting the image not the label
-            batch_imagenet = next(self.imagenet_iterator)[0]["image"].to(self.device)
+            batch_imagenet = next(self.imagenet_iterator)[0].to(self.device)
         except StopIteration:
             self.imagenet_iterator = iter(self.imagenet_loader)
-            batch_imagenet = next(self.imagenet_iterator)[0]["image"].to(self.device)
+            batch_imagenet = next(self.imagenet_iterator)[0].to(self.device)
 
         loss_st, loss_ae, loss_stae = self.model(batch=batch["image"], batch_imagenet=batch_imagenet)
 
@@ -332,3 +307,13 @@ class EfficientAd(AnomalyModule):
             LearningType: Learning type of the model.
         """
         return LearningType.ONE_CLASS
+
+    def configure_transforms(self, image_size: tuple[int, int] | None = None) -> Transform:
+        """Default transform for Padim."""
+        image_size = image_size or (256, 256)
+        return Compose(
+            [
+                Resize(image_size, antialias=True),
+                Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+            ],
+        )

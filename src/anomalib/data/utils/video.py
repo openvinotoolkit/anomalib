@@ -36,6 +36,7 @@ class ClipsIndexer(VideoClips, ABC):
             video_paths=video_paths,
             clip_length_in_frames=clip_length_in_frames,
             frames_between_clips=frames_between_clips,
+            output_format="TCHW",
         )
         self.mask_paths = mask_paths
 

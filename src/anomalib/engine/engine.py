@@ -7,12 +7,13 @@ import logging
 from pathlib import Path
 from typing import Any
 
-import albumentations as A  # noqa: N812
+import torch
 from lightning.pytorch.callbacks import Callback
 from lightning.pytorch.trainer import Trainer
 from lightning.pytorch.trainer.connectors.callback_connector import _CallbackConnector
 from lightning.pytorch.utilities.types import _EVALUATE_OUTPUT, _PREDICT_OUTPUT, EVAL_DATALOADERS, TRAIN_DATALOADERS
 from torch.utils.data import DataLoader, Dataset
+from torchvision.transforms.v2 import Transform
 
 from anomalib import LearningType, TaskType
 from anomalib.callbacks.metrics import _MetricsCallback
@@ -294,6 +295,60 @@ class Engine:
                             )
                             data.task = self.task
 
+    @staticmethod
+    def _setup_transform(
+        model: AnomalyModule,
+        datamodule: AnomalibDataModule | None = None,
+        dataloaders: EVAL_DATALOADERS | TRAIN_DATALOADERS | None = None,
+        ckpt_path: Path | str | None = None,
+    ) -> None:
+        """Implements the logic for setting the transform at the start of each run.
+
+        Any transform passed explicitly to the datamodule takes precedence. Otherwise, if a checkpoint path is provided,
+        we can load the transform from the checkpoint. If no transform is provided, we use the default transform from
+        the model.
+
+        Args:
+            model (AnomalyModule): The model to assign the transform to.
+            datamodule (AnomalibDataModule | None): The datamodule to assign the transform from.
+                defaults to ``None``.
+            dataloaders (EVAL_DATALOADERS | TRAIN_DATALOADERS | None): Dataloaders to assign the transform to.
+                defaults to ``None``.
+            ckpt_path (str): The path to the checkpoint.
+                defaults to ``None``.
+
+        Returns:
+            Transform: The transform loaded from the checkpoint.
+        """
+        if isinstance(dataloaders, DataLoader):
+            dataloaders = [dataloaders]
+
+        # get transform
+        if datamodule and datamodule.transform:
+            # a transform passed explicitly to the datamodule takes precedence
+            transform = datamodule.transform
+        elif dataloaders and any(getattr(dl.dataset, "transform", None) for dl in dataloaders):
+            # if dataloaders are provided, we use the transform from the first dataloader that has a transform
+            transform = next(dl.dataset.transform for dl in dataloaders if getattr(dl.dataset, "transform", None))
+        elif ckpt_path is not None:
+            # if a checkpoint path is provided, we can load the transform from the checkpoint
+            checkpoint = torch.load(ckpt_path, map_location=model.device)
+            transform = checkpoint["transform"]
+        elif model.transform is None:
+            # if no transform is provided, we use the default transform from the model
+            image_size = datamodule.image_size if datamodule else None
+            transform = model.configure_transforms(image_size)
+        else:
+            transform = model.transform
+
+        # update transform in model
+        model.set_transform(transform)
+        # The dataloaders don't have access to the trainer and/or model, so we need to set the transforms manually
+        if dataloaders:
+            for dataloader in dataloaders:
+                if not getattr(dataloader.dataset, "transform", None):
+                    dataloader.dataset.transform = transform
+
     def _setup_anomalib_callbacks(self) -> None:
         """Set up callbacks for the trainer."""
         _callbacks: list[Callback] = [_PostProcessorCallback()]
@@ -406,6 +461,7 @@ class Engine:
             )
             raise RuntimeError(msg)
         self._setup_dataset_task(train_dataloaders, val_dataloaders, datamodule)
+        self._setup_transform(self.model, datamodule=datamodule, ckpt_path=ckpt_path)
         if self.model.learning_type in [LearningType.ZERO_SHOT, LearningType.FEW_SHOT]:
             # if the model is zero-shot or few-shot, we only need to run validate for normalization and thresholding
             self.trainer.validate(self.model, val_dataloaders, datamodule=datamodule, ckpt_path=ckpt_path)
@@ -463,6 +519,7 @@ class Engine:
             )
             raise RuntimeError(msg)
         self._setup_dataset_task(dataloaders)
+        self._setup_transform(self.model, datamodule=datamodule, ckpt_path=ckpt_path)
         return self.trainer.validate(self.model, dataloaders, ckpt_path, verbose, datamodule)
 
     def test(
@@ -553,6 +610,7 @@ class Engine:
             )
             raise RuntimeError(msg)
         self._setup_dataset_task(dataloaders)
+        self._setup_transform(self.model, datamodule=datamodule, ckpt_path=ckpt_path)
         if self._should_run_validation(self.model, dataloaders, datamodule, ckpt_path):
             logger.info("Running validation before testing to collect normalization metrics and/or thresholds.")
             self.trainer.validate(self.model, dataloaders, None, verbose=False, datamodule=datamodule)
@@ -648,6 +706,7 @@ class Engine:
                 raise TypeError(msg)
 
         self._setup_dataset_task(dataloaders, datamodule)
+        self._setup_transform(self.model, datamodule=datamodule, dataloaders=dataloaders, ckpt_path=ckpt_path)
 
         if self._should_run_validation(self.model, None, datamodule, ckpt_path):
             logger.info("Running validation before predicting to collect normalization metrics and/or thresholds.")
@@ -709,7 +768,13 @@ class Engine:
                 "`Engine` constructor."
             )
             raise RuntimeError(msg)
-        self._setup_dataset_task(train_dataloaders, val_dataloaders, test_dataloaders, datamodule)
+        self._setup_dataset_task(
+            train_dataloaders,
+            val_dataloaders,
+            test_dataloaders,
+            datamodule,
+        )
+        self._setup_transform(self.model, datamodule=datamodule, ckpt_path=ckpt_path)
         if self.model.learning_type in [LearningType.ZERO_SHOT, LearningType.FEW_SHOT]:
             # if the model is zero-shot or few-shot, we only need to run validate for normalization and thresholding
             self.trainer.validate(self.model, val_dataloaders, None, verbose=False, datamodule=datamodule)
@@ -722,10 +787,7 @@ class Engine:
         export_type: ExportType,
         model: AnomalyModule | None = None,
         export_root: str | Path | None = None,
-        transform: dict[str, Any] | A.Compose | str | Path | None = None,
-        datamodule: AnomalibDataModule | None = None,
-        dataset: AnomalibDataset | None = None,
-        input_size: tuple[int, int] | None = None,
+        transform: Transform | None = None,
         ov_args: dict[str, Any] | None = None,
         ckpt_path: str | None = None,
     ) -> Path | None:
@@ -737,16 +799,8 @@ class Engine:
                 Defaults to None.
             export_root (str | Path | None, optional): Path to the output directory. If it is not set, the model is
                 exported to trainer.default_root_dir. Defaults to None.
-            transform (dict[str, Any] | A.Compose | str | Path | None, optional): Transform config. Can either be a
-                path to a file containing the transform config or can be an object. The file or object should follow
-                Albumentation's format. If not provided, it takes the transform from datamodule or dataset. Datamodule
-                or Dataset should be provided if transforms is not set. Defaults to None.
-            datamodule (AnomalibDataModule | None, optional): Datamodule from which transforms is loaded.
-                This optional. Defaults to None.
-            dataset (AnomalibDataset | None, optional): Dataset from which the transforms is loaded.
-                 is optional. Defaults to None.
-            input_size (tuple[int, int] | None, optional): This is required only if the model is exported to ONNX and
-                OpenVINO format. Defaults to None.
+            transform (Transform | None, optional): Input transform to include in the exported model. If not provided,
+                the engine will try to use the transform from the datamodule or dataset. Defaults to None.
             ov_args (dict[str, Any] | None, optional): This is optional and used only for OpenVINO's model optimizer.
                 Defaults to None.
             ckpt_path (str | None): Checkpoint path. If provided, the model will be loaded from this path.
@@ -787,22 +841,7 @@ class Engine:
             )
             raise RuntimeError(msg)
 
-        self._setup_dataset_task(datamodule, dataset)
         checkpoint_model = self.model.__class__.load_from_checkpoint(ckpt_path) if ckpt_path else None
-
-        if transform is None:
-            if datamodule:
-                transform = datamodule.test_data.transform
-            elif dataset:
-                transform = dataset.transform
-            else:
-                logger.exception("Either datamodule or dataset must be provided if transform is None.")
-                raise ValueError
-        elif isinstance(transform, str | Path):
-            transform = A.load(filepath=transform, data_format="yaml")
-        else:
-            logger.exception(f"Unknown type {type(transform)} for transform.")
-            raise TypeError
 
         if export_root is None:
             export_root = Path(self.trainer.default_root_dir)
@@ -816,19 +855,15 @@ class Engine:
                 task=self.task,
             )
         elif export_type == ExportType.ONNX:
-            assert input_size is not None, "input_size must be provided for ONNX export."
             exported_model_path = export_to_onnx(
                 model=checkpoint_model or self.model,
-                input_size=input_size,
                 export_root=export_root,
                 transform=transform,
                 task=self.task,
             )
         elif export_type == ExportType.OPENVINO:
-            assert input_size is not None, "input_size must be provided for OpenVINO export."
             exported_model_path = export_to_openvino(
                 model=checkpoint_model or self.model,
-                input_size=input_size,
                 export_root=export_root,
                 transform=transform,
                 task=self.task,

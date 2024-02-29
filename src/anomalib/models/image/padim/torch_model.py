@@ -68,7 +68,6 @@ class PadimModel(nn.Module):
 
     def __init__(
         self,
-        input_size: tuple[int, int],
         layers: list[str],
         backbone: str = "resnet18",
         pre_trained: bool = True,
@@ -80,11 +79,9 @@ class PadimModel(nn.Module):
         self.backbone = backbone
         self.layers = layers
         self.feature_extractor = TimmFeatureExtractor(backbone=self.backbone, layers=layers, pre_trained=pre_trained)
-        self.n_features_original, self.n_patches = _deduce_dims(self.feature_extractor, input_size, self.layers)
-
-        n_features = n_features or _N_FEATURES_DEFAULTS.get(self.backbone)
-
-        if n_features is None:
+        self.n_features_original = sum(self.feature_extractor.out_dims)
+        self.n_features = n_features or _N_FEATURES_DEFAULTS.get(self.backbone)
+        if self.n_features is None:
             msg = (
                 f"n_features must be specified for backbone {self.backbone}. "
                 f"Default values are available for: {sorted(_N_FEATURES_DEFAULTS.keys())}"
@@ -92,10 +89,8 @@ class PadimModel(nn.Module):
             raise ValueError(msg)
 
         assert (
-            0 < n_features <= self.n_features_original
-        ), f"for backbone {self.backbone}, 0 < n_features <= {self.n_features_original}, found {n_features}"
-
-        self.n_features = n_features
+            0 < self.n_features <= self.n_features_original
+        ), f"for backbone {self.backbone}, 0 < n_features <= {self.n_features_original}, found {self.n_features}"
 
         # Since idx is randomly selected, save it with model to get same results
         self.register_buffer(
@@ -104,9 +99,9 @@ class PadimModel(nn.Module):
         )
         self.idx: torch.Tensor
         self.loss = None
-        self.anomaly_map_generator = AnomalyMapGenerator(image_size=input_size)
+        self.anomaly_map_generator = AnomalyMapGenerator()
 
-        self.gaussian = MultiVariateGaussian(self.n_features, self.n_patches)
+        self.gaussian = MultiVariateGaussian()
 
     def forward(self, input_tensor: torch.Tensor) -> torch.Tensor:
         """Forward-pass image-batch (N, C, H, W) into model to extract features.
@@ -146,6 +141,7 @@ class PadimModel(nn.Module):
                 embedding=embeddings,
                 mean=self.gaussian.mean,
                 inv_covariance=self.gaussian.inv_covariance,
+                image_size=input_tensor.shape[-2:],
             )
         return output
 

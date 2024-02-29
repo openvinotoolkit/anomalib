@@ -22,7 +22,6 @@ class TestMVTec(_TestAnomalibImageDatamodule):
             root=dataset_path / "mvtec",
             category="dummy",
             task=task_type,
-            image_size=256,
             train_batch_size=4,
             eval_batch_size=4,
         )

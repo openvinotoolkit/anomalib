@@ -8,7 +8,6 @@ from collections.abc import Sequence
 from typing import cast
 
 import torch
-from omegaconf import ListConfig
 from torch import nn
 from torch.nn import functional as F  # noqa: N812
 
@@ -18,12 +17,10 @@ class AnomalyMapGenerator(nn.Module):
 
     def __init__(
         self,
-        image_size: ListConfig | tuple,
         pool_layers: Sequence[str],
     ) -> None:
         super().__init__()
         self.distance = torch.nn.PairwiseDistance(p=2, keepdim=True)
-        self.image_size = image_size if isinstance(image_size, tuple) else tuple(image_size)
         self.pool_layers: Sequence[str] = pool_layers
 
     def compute_anomaly_map(
@@ -31,13 +28,15 @@ class AnomalyMapGenerator(nn.Module):
         distribution: list[torch.Tensor],
         height: list[int],
         width: list[int],
+        image_size: tuple[int, int] | torch.Size | None,
     ) -> torch.Tensor:
         """Compute the layer map based on likelihood estimation.
 
         Args:
-          distribution: Probability distribution for each decoder block
-          height: blocks height
-          width: blocks width
+            distribution (list[torch.Tensor]): List of likelihoods for each layer.
+            height (list[int]): List of heights of the feature maps.
+            width (list[int]): List of widths of the feature maps.
+            image_size (tuple[int, int] | torch.Size | None): Size of the input image.
 
         Returns:
           Final Anomaly Map
@@ -50,14 +49,14 @@ class AnomalyMapGenerator(nn.Module):
             layer_probabilities = torch.exp(layer_distribution - layer_distribution.max())
             layer_map = layer_probabilities.reshape(-1, height[layer_idx], width[layer_idx])
             # upsample
-            layer_maps.append(
-                F.interpolate(
+            if image_size is not None:
+                layer_map = F.interpolate(
                     layer_map.unsqueeze(1),
-                    size=self.image_size,
+                    size=image_size,
                     mode="bilinear",
                     align_corners=True,
-                ).squeeze(1),
-            )
+                ).squeeze(1)
+            layer_maps.append(layer_map)
         # score aggregation
         score_map = torch.zeros_like(layer_maps[0])
         for layer_idx in range(len(self.pool_layers)):
@@ -90,4 +89,5 @@ class AnomalyMapGenerator(nn.Module):
         distribution: list[torch.Tensor] = cast(list[torch.Tensor], kwargs["distribution"])
         height: list[int] = cast(list[int], kwargs["height"])
         width: list[int] = cast(list[int], kwargs["width"])
-        return self.compute_anomaly_map(distribution, height, width)
+        image_size: tuple[int, int] | torch.Size | None = kwargs.get("image_size", None)
+        return self.compute_anomaly_map(distribution, height, width, image_size)
