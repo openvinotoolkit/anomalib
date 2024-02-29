@@ -64,7 +64,7 @@ class TestAPI:
         engine.test(
             model=model,
             datamodule=dataset,
-            ckpt_path=f"{project_path}/{model.name}/{dataset.name}/{dataset.category}/v0/weights/lightning/model.ckpt",
+            ckpt_path=f"{project_path}/{model.name}/MVTec/dummy/v0/weights/lightning/model.ckpt",
         )
 
     @pytest.mark.parametrize("model_name", models())
@@ -84,7 +84,7 @@ class TestAPI:
         engine.train(
             model=model,
             datamodule=dataset,
-            ckpt_path=f"{project_path}/{model.name}/{dataset.name}/{dataset.category}/v0/weights/lightning/model.ckpt",
+            ckpt_path=f"{project_path}/{model.name}/MVTec/dummy/v0/weights/lightning/model.ckpt",
         )
 
     @pytest.mark.parametrize("model_name", models())
@@ -104,7 +104,7 @@ class TestAPI:
         engine.validate(
             model=model,
             datamodule=dataset,
-            ckpt_path=f"{project_path}/{model.name}/{dataset.name}/{dataset.category}/v0/weights/lightning/model.ckpt",
+            ckpt_path=f"{project_path}/{model.name}/MVTec/dummy/v0/weights/lightning/model.ckpt",
         )
 
     @pytest.mark.parametrize("model_name", models())
@@ -116,15 +116,15 @@ class TestAPI:
             dataset_path (Path): Root to dataset from fixture.
             project_path (Path): Path to temporary project folder from fixture.
         """
-        model, dataset, engine = self._get_objects(
+        model, datamodule, engine = self._get_objects(
             model_name=model_name,
             dataset_path=dataset_path,
             project_path=project_path,
         )
         engine.predict(
             model=model,
-            ckpt_path=f"{project_path}/{model.name}/{dataset.name}/{dataset.category}/v0/weights/lightning/model.ckpt",
-            datamodule=dataset,
+            ckpt_path=f"{project_path}/{model.name}/MVTec/dummy/v0/weights/lightning/model.ckpt",
+            datamodule=datamodule,
         )
 
     @pytest.mark.parametrize("model_name", models())
@@ -153,14 +153,14 @@ class TestAPI:
         elif model_name == "rkde" and export_type == ExportType.OPENVINO:
             pytest.skip("RKDE fails to convert to OpenVINO")
 
-        model, dataset, engine = self._get_objects(
+        model, _, engine = self._get_objects(
             model_name=model_name,
             dataset_path=dataset_path,
             project_path=project_path,
         )
         engine.export(
             model=model,
-            ckpt_path=f"{project_path}/{model.name}/{dataset.name}/{dataset.category}/v0/weights/lightning/model.ckpt",
+            ckpt_path=f"{project_path}/{model.name}/MVTec/dummy/v0/weights/lightning/model.ckpt",
             export_type=export_type,
         )
 
