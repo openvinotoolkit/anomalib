@@ -87,9 +87,9 @@ def ckpt_path(project_path: Path, dataset_path: Path) -> Callable[[str], Path]:
 
         Since integration tests train all the models, model training occurs when running unit tests invididually.
         """
-        _ckpt_path = project_path / model_name / "latest" / "weights" / "lightning" / "model.ckpt"
+        model = get_model(model_name)
+        _ckpt_path = project_path / model.name / "MVTec" / "dummy" / "latest" / "weights" / "lightning" / "model.ckpt"
         if not _ckpt_path.exists():
-            model = get_model(model_name)
             engine = Engine(
                 logger=False,
                 default_root_dir=project_path,
