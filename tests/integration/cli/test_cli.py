@@ -103,7 +103,7 @@ class TestCLI:
                     project_path,
                 ),
                 "--ckpt_path",
-                f"{project_path}/padim/dummy/weights/last.ckpt",
+                f"{project_path}/padim/dummy/weights/lightning/model.ckpt",
             ],
         )
         torch.cuda.empty_cache()
@@ -127,7 +127,7 @@ class TestCLI:
                     project_path,
                 ),
                 "--ckpt_path",
-                f"{project_path}/padim/dummy/weights/last.ckpt",
+                f"{project_path}/padim/dummy/weights/lightning/model.ckpt",
             ],
         )
         torch.cuda.empty_cache()
@@ -176,7 +176,7 @@ class TestCLI:
                 export_type,
                 *self._get_common_cli_args(None, project_path),
                 "--ckpt_path",
-                f"{project_path}/padim/dummy/weights/last.ckpt",
+                f"{project_path}/padim/dummy/weights/lightning/model.ckpt",
             ],
         )
 
