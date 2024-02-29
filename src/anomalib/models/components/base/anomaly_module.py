@@ -67,7 +67,7 @@ class AnomalyModule(pl.LightningModule, ABC):
     def _setup(self) -> None:
         """The _setup method is used to build the torch model dynamically or adjust something about them.
 
-        The model implementer may override this method to build the model. This is useful when the model canot be set
+        The model implementer may override this method to build the model. This is useful when the model cannot be set
         in the `__init__` method because it requires some information or data that is not available at the time of
         initialization.
         """
