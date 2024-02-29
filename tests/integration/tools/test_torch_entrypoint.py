@@ -44,13 +44,13 @@ class TestTorchInferenceEntrypoint:
         model = Padim.load_from_checkpoint(_ckpt_path)
         export_to_torch(
             model=model,
-            export_root=_ckpt_path.parent.parent,
+            export_root=_ckpt_path.parent.parent.parent,
             task=TaskType.SEGMENTATION,
         )
         arguments = get_parser().parse_args(
             [
                 "--weights",
-                str(_ckpt_path.parent) + "/torch/model.pt",
+                str(_ckpt_path.parent.parent) + "/torch/model.pt",
                 "--input",
                 get_dummy_inference_image,
                 "--output",
