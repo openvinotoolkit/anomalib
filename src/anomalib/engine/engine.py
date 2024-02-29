@@ -153,6 +153,7 @@ class Engine:
         self.log_image = log_image
         self.show_image = show_image
 
+        self._model: AnomalyModule | None = None
         self._trainer: Trainer | None = None
 
         if model:
