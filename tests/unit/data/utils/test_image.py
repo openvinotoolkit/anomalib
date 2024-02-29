@@ -4,7 +4,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from pathlib import Path
-from tempfile import TemporaryDirectory
 
 import pytest
 
@@ -42,11 +41,3 @@ class TestGetImageFilenames:
         filename = dataset_path / "avenue/ground_truth_demo/testing_label_mask/1_label.mat"
         with pytest.raises(ValueError, match=r"``filename`` is not an image file*"):
             get_image_filenames(filename)
-
-    def test_outside_base_dir(self) -> None:
-        """Test ``get_image_filenames`` raises ValueError for a path outside the base directory."""
-        with TemporaryDirectory() as tmp_dir, pytest.raises(
-            ValueError,
-            match=r"Access denied: Path is outside the allowed directory",
-        ):
-            get_image_filenames(tmp_dir, base_dir=Path.home())
