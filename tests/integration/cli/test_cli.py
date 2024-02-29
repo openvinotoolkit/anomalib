@@ -63,7 +63,7 @@ class TestCLI:
                 "train",
                 *self._get_common_cli_args(dataset_path, project_path),
                 "--ckpt_path",
-                f"{project_path}/Padim/MVTec/dummy/latest/weights/lightning/model.ckpt",
+                f"{project_path}/Padim/latest/weights/lightning/model.ckpt",
             ],
         )
         torch.cuda.empty_cache()
