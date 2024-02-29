@@ -120,7 +120,8 @@ class AnomalibDataModule(LightningDataModule, ABC):
             stage: str | None:  Train/Val/Test stages.
                 Defaults to ``None``.
         """
-        if not any(hasattr(self, subset) for subset in ["train_data", "val_data", "test_data"]) or not self._is_setup:
+        has_subset = any(hasattr(self, subset) for subset in ["train_data", "val_data", "test_data"])
+        if not has_subset or not self._is_setup:
             self._setup(stage)
             self._create_test_split()
             self._create_val_split()
