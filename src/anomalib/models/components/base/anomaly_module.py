@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, Any
 
 import lightning.pytorch as pl
 import torch
+from lightning.pytorch.trainer.states import TrainerFn
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torch import nn
 from torchvision.transforms.v2 import Compose, Normalize, Resize, Transform
@@ -53,11 +54,15 @@ class AnomalyModule(pl.LightningModule, ABC):
         self._transform: Transform | None = None
         self._input_size: tuple[int, int] | None = None
 
-    def setup(self, stage: str) -> None:
+        self._is_setup = False  # flag to track if setup has been called from the trainer
+
+    def setup(self, stage: str | None = None) -> None:
         """Calls the _setup method to build the model if the model is not already built."""
-        del stage
-        if getattr(self, "model", None) is None:
+        if getattr(self, "model", None) is None or not self._is_setup:
             self._setup()
+            if isinstance(stage, TrainerFn):
+                # only set the flag if the stage is a TrainerFn, which means the setup has been called from a trainer
+                self._is_setup = True
 
     def _setup(self) -> None:
         """The _setup method is used to build the torch model dynamically or adjust something about them.
@@ -237,10 +242,11 @@ class AnomalyModule(pl.LightningModule, ABC):
         The effective input size is the size of the input tensor after the transform has been applied. If the transform
         is not set, or if the transform does not change the shape of the input tensor, this method will return None.
         """
-        if self.transform is None:
+        transform = self.transform or self.configure_transforms()
+        if transform is None:
             return None
         dummy_input = torch.zeros(1, 3, 1, 1)
-        output_shape = self.transform(dummy_input).shape[-2:]
+        output_shape = transform(dummy_input).shape[-2:]
         if output_shape == (1, 1):
             return None
         return output_shape[-2:]
