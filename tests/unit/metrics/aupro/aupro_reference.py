@@ -12,7 +12,7 @@ import logging
 from bisect import bisect
 
 import numpy as np
-from scipy.ndimage.measurements import label
+from scipy.ndimage import label
 
 logger = logging.getLogger(__name__)
 
