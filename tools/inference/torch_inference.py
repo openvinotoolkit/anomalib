@@ -81,7 +81,7 @@ def infer(args: Namespace) -> None:
 
     filenames = get_image_filenames(path=args.input)
     for filename in filenames:
-        image = read_image(filename)
+        image = read_image(filename, as_tensor=True)
         predictions = inferencer.predict(image=image)
         output = visualizer.visualize_image(predictions)
 

@@ -26,10 +26,9 @@ logger = logging.getLogger("anomalib.cli")
 _LIGHTNING_AVAILABLE = True
 try:
     from lightning.pytorch import Trainer
-    from lightning.pytorch.core.datamodule import LightningDataModule
     from torch.utils.data import DataLoader, Dataset
 
-    from anomalib.data import AnomalibDataModule, AnomalibDataset
+    from anomalib.data import AnomalibDataModule
     from anomalib.data.predict import PredictDataset
     from anomalib.engine import Engine
     from anomalib.metrics.threshold import BaseThreshold
@@ -148,8 +147,7 @@ class AnomalibCLI:
         parser.add_argument("--metrics.pixel", type=list[str] | str | None, default=None, required=False)
         parser.add_argument("--metrics.threshold", type=BaseThreshold | str, default="F1AdaptiveThreshold")
         parser.add_argument("--logging.log_graph", type=bool, help="Log the model to the logger", default=False)
-        if hasattr(parser, "subcommand") and parser.subcommand != "predict":  # Predict also accepts str and Path inputs
-            parser.link_arguments("data.init_args.image_size", "model.init_args.input_size")
+        if hasattr(parser, "subcommand") and parser.subcommand not in ("export", "predict"):
             parser.link_arguments("task", "data.init_args.task")
         parser.add_argument(
             "--default_root_dir",
@@ -233,11 +231,10 @@ class AnomalibCLI:
             fail_untyped=False,
             required=True,
         )
-        parser.add_subclass_arguments((AnomalibDataModule, AnomalibDataset), "data")
         added = parser.add_method_arguments(
             Engine,
             "export",
-            skip={"mo_args", "datamodule", "dataset", "model"},
+            skip={"mo_args", "model"},
         )
         self.subcommand_method_arguments["export"] = added
         add_openvino_export_arguments(parser)
@@ -287,8 +284,7 @@ class AnomalibCLI:
             self.config_init = self.parser.instantiate_classes(self.config)
             self.datamodule = self._get(self.config_init, "data")
             if isinstance(self.datamodule, Dataset):
-                kwargs = {f"{self.config.subcommand}_dataset": self.datamodule}
-                self.datamodule = LightningDataModule.from_datasets(**kwargs)
+                self.datamodule = DataLoader(self.datamodule)
             self.model = self._get(self.config_init, "model")
             self._configure_optimizers_method_to_model()
             self.instantiate_engine()
@@ -299,8 +295,12 @@ class AnomalibCLI:
                 self.instantiate_engine()
             if "model" in self.config_init[subcommand]:
                 self.model = self._get(self.config_init, "model")
+            else:
+                self.model = None
             if "data" in self.config_init[subcommand]:
                 self.datamodule = self._get(self.config_init, "data")
+            else:
+                self.datamodule = None
 
     def instantiate_engine(self) -> None:
         """Instantiate the engine.
@@ -459,7 +459,10 @@ class AnomalibCLI:
         }
         fn_kwargs["model"] = self.model
         if self.datamodule is not None:
-            fn_kwargs["datamodule"] = self.datamodule
+            if isinstance(self.datamodule, AnomalibDataModule):
+                fn_kwargs["datamodule"] = self.datamodule
+            elif isinstance(self.datamodule, DataLoader):
+                fn_kwargs["dataloaders"] = self.datamodule
         return fn_kwargs
 
     def _parser(self, subcommand: str | None) -> ArgumentParser:

@@ -102,6 +102,8 @@ class TestCLI:
                     dataset_path,
                     project_path,
                 ),
+                "--ckpt_path",
+                f"{project_path}/padim/dummy/weights/last.ckpt",
             ],
         )
         torch.cuda.empty_cache()
@@ -124,6 +126,8 @@ class TestCLI:
                     None,
                     project_path,
                 ),
+                "--ckpt_path",
+                f"{project_path}/padim/dummy/weights/last.ckpt",
             ],
         )
         torch.cuda.empty_cache()
@@ -155,7 +159,6 @@ class TestCLI:
     @pytest.mark.parametrize("export_type", [ExportType.TORCH, ExportType.ONNX, ExportType.OPENVINO])
     def test_export(
         self,
-        dataset_path: Path,
         project_path: Path,
         export_type: ExportType,
     ) -> None:
@@ -171,9 +174,9 @@ class TestCLI:
                 "export",
                 "--export_type",
                 export_type,
-                *self._get_common_cli_args(dataset_path, project_path),
-                "--input_size",
-                "[256, 256]",
+                *self._get_common_cli_args(None, project_path),
+                "--ckpt_path",
+                f"{project_path}/padim/dummy/weights/last.ckpt",
             ],
         )
 
@@ -184,6 +187,7 @@ class TestCLI:
         Args:
             dataset_path (Path): Path to the dataset. If the path is None, data arguments are not appended to the args.
             project_path (Path): Path to the project folder.
+            model_name (str): Name of the model. Defaults to None.
         """
         # We need to set the predict dataloader as MVTec and UCSDped do have have predict_dataloader attribute defined.
         if dataset_path:

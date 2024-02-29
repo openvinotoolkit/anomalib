@@ -14,11 +14,10 @@ from copy import deepcopy
 from pathlib import Path
 from tempfile import mkdtemp
 
-import albumentations as A  # noqa: N812
 import cv2
 import pandas as pd
-from albumentations.pytorch import ToTensorV2
 from pandas import DataFrame, Series
+from torchvision.transforms.v2 import Compose
 
 from anomalib import TaskType
 from anomalib.data.base.dataset import AnomalibDataset
@@ -62,9 +61,6 @@ def make_synthetic_dataset(
     # initialize augmenter
     augmenter = Augmenter("./datasets/dtd", p_anomalous=1.0, beta=(0.01, 0.2))
 
-    # initialize transform for source images
-    transform = A.Compose([A.ToFloat(), ToTensorV2()])
-
     def augment(sample: Series) -> Series:
         """Apply synthetic anomalous augmentation to a sample from a dataframe.
 
@@ -78,10 +74,9 @@ def make_synthetic_dataset(
             Series: DataFrame row with updated information about the augmented image.
         """
         # read and transform image
-        image = read_image(sample.image_path)
-        image = transform(image=image)["image"].unsqueeze(0)
+        image = read_image(sample.image_path, as_tensor=True)
         # apply anomalous perturbation
-        aug_im, mask = augmenter.augment_batch(image)
+        aug_im, mask = augmenter.augment_batch(image.unsqueeze(0))
         # target file name with leading zeros
         file_name = f"{str(sample.name).zfill(int(math.log10(n_anomalous)) + 1)}.png"
         # write image
@@ -112,11 +107,11 @@ class SyntheticAnomalyDataset(AnomalibDataset):
 
     Args:
         task (str): Task type, either "classification" or "segmentation".
-        transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
+        transform (A.Compose): Transform object describing the transforms that are applied to the inputs.
         source_samples (DataFrame): Normal samples to which the anomalous augmentations will be applied.
     """
 
-    def __init__(self, task: TaskType, transform: A.Compose, source_samples: DataFrame) -> None:
+    def __init__(self, task: TaskType, transform: Compose, source_samples: DataFrame) -> None:
         super().__init__(task, transform)
 
         self.source_samples = source_samples
@@ -134,7 +129,7 @@ class SyntheticAnomalyDataset(AnomalibDataset):
         self.mask_dir.mkdir()
 
         self._cleanup = True  # flag that determines if temp dir is cleaned up when instance is deleted
-        self.setup()
+        self.samples = make_synthetic_dataset(self.source_samples, self.im_dir, self.mask_dir, 0.5)
 
     @classmethod
     def from_dataset(cls: type["SyntheticAnomalyDataset"], dataset: AnomalibDataset) -> "SyntheticAnomalyDataset":
@@ -162,11 +157,6 @@ class SyntheticAnomalyDataset(AnomalibDataset):
             setattr(new, key, deepcopy(value))
         self._cleanup = False
         return new
-
-    def _setup(self) -> None:
-        """Create samples dataframe."""
-        logger.info("Generating synthetic anomalous images for validation set")
-        self.samples = make_synthetic_dataset(self.source_samples, self.im_dir, self.mask_dir, 0.5)
 
     def __del__(self) -> None:
         """Make sure the temporary directory is cleaned up when the dataset object is deleted."""

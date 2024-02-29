@@ -41,7 +41,6 @@ class CflowModel(nn.Module):
 
     def __init__(
         self,
-        input_size: tuple[int, int],
         backbone: str,
         layers: Sequence[str],
         pre_trained: bool = True,
@@ -79,7 +78,7 @@ class CflowModel(nn.Module):
         for parameters in self.encoder.parameters():
             parameters.requires_grad = False
 
-        self.anomaly_map_generator = AnomalyMapGenerator(image_size=input_size, pool_layers=self.pool_layers)
+        self.anomaly_map_generator = AnomalyMapGenerator(pool_layers=self.pool_layers)
 
     def forward(self, images: torch.Tensor) -> torch.Tensor:
         """Forward-pass images into the network to extract encoder features and compute probability.
@@ -142,7 +141,12 @@ class CflowModel(nn.Module):
                 log_prob = decoder_log_prob / dim_feature_vector  # likelihood per dim
                 distribution[layer_idx] = torch.cat((distribution[layer_idx], log_prob))
 
-        output = self.anomaly_map_generator(distribution=distribution, height=height, width=width)
+        output = self.anomaly_map_generator(
+            distribution=distribution,
+            height=height,
+            width=width,
+            image_size=images.shape[-2:],
+        )
         self.decoders.train()
 
         return output.to(images.device)

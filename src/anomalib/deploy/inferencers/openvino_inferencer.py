@@ -9,12 +9,13 @@ from importlib.util import find_spec
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-import albumentations as A  # noqa: N812
 import cv2
 import numpy as np
 from omegaconf import DictConfig
+from PIL import Image
 
 from anomalib import TaskType
+from anomalib.utils.visualization import ImageResult
 
 from .base_inferencer import Inferencer
 
@@ -151,8 +152,7 @@ class OpenVINOInferencer(Inferencer):
         Returns:
             np.ndarray: pre-processed image.
         """
-        transform = A.from_dict(self.metadata["transform"])
-        processed_image = transform(image=image)["image"]
+        processed_image = image
 
         if len(processed_image.shape) == 3:
             processed_image = np.expand_dims(processed_image, axis=0)
@@ -161,6 +161,45 @@ class OpenVINOInferencer(Inferencer):
             processed_image = processed_image.transpose(0, 3, 1, 2)
 
         return processed_image
+
+    def predict(
+        self,
+        image: str | Path | np.ndarray,
+        metadata: dict[str, Any] | None = None,
+    ) -> ImageResult:
+        """Perform a prediction for a given input image.
+
+        The main workflow is (i) pre-processing, (ii) forward-pass, (iii) post-process.
+
+        Args:
+            image (Union[str, np.ndarray]): Input image whose output is to be predicted.
+                It could be either a path to image or numpy array itself.
+
+            metadata: Metadata information such as shape, threshold.
+
+        Returns:
+            ImageResult: Prediction results to be visualized.
+        """
+        if metadata is None:
+            metadata = self.metadata if hasattr(self, "metadata") else {}
+        if isinstance(image, str | Path):
+            image = np.array(Image.open(image)).astype(np.float32) / 255.0
+
+        metadata["image_shape"] = image.shape[:2]
+
+        processed_image = self.pre_process(image)
+        predictions = self.forward(processed_image)
+        output = self.post_process(predictions, metadata=metadata)
+
+        return ImageResult(
+            image=(image * 255).astype(np.uint8),
+            pred_score=output["pred_score"],
+            pred_label=output["pred_label"],
+            anomaly_map=output["anomaly_map"],
+            pred_mask=output["pred_mask"],
+            pred_boxes=output["pred_boxes"],
+            box_labels=output["box_labels"],
+        )
 
     def forward(self, image: np.ndarray) -> np.ndarray:
         """Forward-Pass input tensor to the model.

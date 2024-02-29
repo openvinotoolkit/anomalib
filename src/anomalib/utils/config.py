@@ -162,15 +162,10 @@ def _update_nncf_config(config: DictConfig | ListConfig) -> DictConfig | ListCon
     Returns:
         DictConfig | ListConfig: Updated configurable parameters in DictConfig object.
     """
-    image_size = config.data.init_args.image_size
-    # If the model has input_size param and in case it takes cropped input
-    if "input_size" in config.model.init_args:
-        image_size = config.model.init_args.input_size
-    sample_size = (image_size, image_size) if isinstance(image_size, int) else image_size
     if "optimization" in config and "nncf" in config.optimization:
         if "input_info" not in config.optimization.nncf:
             config.optimization.nncf["input_info"] = {"sample_size": None}
-        config.optimization.nncf.input_info.sample_size = [1, 3, *sample_size]
+        config.optimization.nncf.input_info.sample_size = [1, 3, 10, 10]
         if config.optimization.nncf.apply and "update_config" in config.optimization.nncf:
             return OmegaConf.merge(config, config.optimization.nncf.update_config)
     return config

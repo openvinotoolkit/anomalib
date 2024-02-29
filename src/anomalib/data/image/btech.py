@@ -13,23 +13,21 @@ import logging
 import shutil
 from pathlib import Path
 
-import albumentations as A  # noqa: N812
 import cv2
 import pandas as pd
 from pandas.core.frame import DataFrame
+from torchvision.transforms.v2 import Transform
 from tqdm import tqdm
 
 from anomalib import TaskType
 from anomalib.data.base import AnomalibDataModule, AnomalibDataset
 from anomalib.data.utils import (
     DownloadInfo,
-    InputNormalizationMethod,
     LabelName,
     Split,
     TestSplitMode,
     ValSplitMode,
     download_and_extract,
-    get_transforms,
     validate_path,
 )
 
@@ -128,7 +126,8 @@ class BTechDataset(AnomalibDataset):
     Args:
         root: Path to the BTech dataset
         category: Name of the BTech category.
-        transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
+        transform (Transform, optional): Transforms that should be applied to the input images.
+            Defaults to ``None``.
         split: 'train', 'val' or 'test'
         task: ``classification``, ``detection`` or ``segmentation``
         create_validation_set: Create a validation subset in addition to the train and test subsets
@@ -168,7 +167,7 @@ class BTechDataset(AnomalibDataset):
         self,
         root: str | Path,
         category: str,
-        transform: A.Compose,
+        transform: Transform | None = None,
         split: str | Split | None = None,
         task: TaskType = TaskType.SEGMENTATION,
     ) -> None:
@@ -176,8 +175,6 @@ class BTechDataset(AnomalibDataset):
 
         self.root_category = Path(root) / category
         self.split = split
-
-    def _setup(self) -> None:
         self.samples = make_btech_dataset(path=self.root_category, split=self.split)
 
 
@@ -189,14 +186,6 @@ class BTech(AnomalibDataModule):
             Defaults to ``"./datasets/BTech"``.
         category (str): Name of the BTech category.
             Defaults to ``"01"``.
-        image_size (int | tuple[int, int] | None, optional): Variable to which image is resized.
-            Defaults to ``(256, 256)``.
-        center_crop (int | tuple[int, int] | None, optional): When provided, the images will be center-cropped to the
-            provided dimensions.
-            Defaults to ``None``.
-        normalization (InputNormalizationMethod | str, optional): Normalization method to be applied to the
-            input images.
-            Defaults to ``InputNormalizationMethod.IMAGENET``.
         train_batch_size (int, optional): Training batch size.
             Defaults to ``32``.
         eval_batch_size (int, optional): Eval batch size.
@@ -205,9 +194,13 @@ class BTech(AnomalibDataModule):
             Defaults to ``8``.
         task (TaskType, optional): Task type.
             Defaults to ``TaskType.SEGMENTATION``.
-        transform_config_train (str | A.Compose | None, optional): Config for pre-processing during training.
+        image_size (tuple[int, int], optional): Size to which input images should be resized.
             Defaults to ``None``.
-        transform_config_eval (str | A.Compose | None, optional): Config for pre-processing during validation.
+        transform (Transform, optional): Transforms that should be applied to the input images.
+            Defaults to ``None``.
+        train_transform (Transform, optional): Transforms that should be applied to the input images during training.
+            Defaults to ``None``.
+        eval_transform (Transform, optional): Transforms that should be applied to the input images during evaluation.
             Defaults to ``None``.
         test_split_mode (TestSplitMode, optional): Setting that determines how the testing subset is obtained.
             Defaults to ``TestSplitMode.FROM_DIR``.
@@ -265,15 +258,14 @@ class BTech(AnomalibDataModule):
         self,
         root: Path | str = "./datasets/BTech",
         category: str = "01",
-        image_size: int | tuple[int, int] = (256, 256),
-        center_crop: int | tuple[int, int] | None = None,
-        normalization: InputNormalizationMethod | str = InputNormalizationMethod.IMAGENET,
         train_batch_size: int = 32,
         eval_batch_size: int = 32,
         num_workers: int = 8,
         task: TaskType | str = TaskType.SEGMENTATION,
-        transform_config_train: str | A.Compose | None = None,
-        transform_config_eval: str | A.Compose | None = None,
+        image_size: tuple[int, int] | None = None,
+        transform: Transform | None = None,
+        train_transform: Transform | None = None,
+        eval_transform: Transform | None = None,
         test_split_mode: TestSplitMode | str = TestSplitMode.FROM_DIR,
         test_split_ratio: float = 0.2,
         val_split_mode: ValSplitMode | str = ValSplitMode.SAME_AS_TEST,
@@ -284,6 +276,10 @@ class BTech(AnomalibDataModule):
             train_batch_size=train_batch_size,
             eval_batch_size=eval_batch_size,
             num_workers=num_workers,
+            image_size=image_size,
+            transform=transform,
+            train_transform=train_transform,
+            eval_transform=eval_transform,
             test_split_mode=test_split_mode,
             test_split_ratio=test_split_ratio,
             val_split_mode=val_split_mode,
@@ -293,34 +289,22 @@ class BTech(AnomalibDataModule):
 
         self.root = Path(root)
         self.category = category
-        task = TaskType(task)
+        self.task = TaskType(task)
 
-        transform_train = get_transforms(
-            config=transform_config_train,
-            image_size=image_size,
-            center_crop=center_crop,
-            normalization=InputNormalizationMethod(normalization),
-        )
-        transform_eval = get_transforms(
-            config=transform_config_eval,
-            image_size=image_size,
-            center_crop=center_crop,
-            normalization=InputNormalizationMethod(normalization),
-        )
-
+    def _setup(self, _stage: str | None = None) -> None:
         self.train_data = BTechDataset(
-            task=task,
-            transform=transform_train,
+            task=self.task,
+            transform=self.train_transform,
             split=Split.TRAIN,
-            root=root,
-            category=category,
+            root=self.root,
+            category=self.category,
         )
         self.test_data = BTechDataset(
-            task=task,
-            transform=transform_eval,
+            task=self.task,
+            transform=self.eval_transform,
             split=Split.TEST,
-            root=root,
-            category=category,
+            root=self.root,
+            category=self.category,
         )
 
     def prepare_data(self) -> None:

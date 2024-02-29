@@ -20,22 +20,20 @@ Reference:
 import logging
 from pathlib import Path
 
-import albumentations as A  # noqa: N812
 import numpy as np
 from cv2 import imread
 from pandas import DataFrame
 from sklearn.model_selection import train_test_split
+from torchvision.transforms.v2 import Transform
 
 from anomalib import TaskType
 from anomalib.data.base import AnomalibDataModule, AnomalibDataset
 from anomalib.data.utils import (
     DownloadInfo,
-    InputNormalizationMethod,
     Split,
     TestSplitMode,
     ValSplitMode,
     download_and_extract,
-    get_transforms,
     validate_path,
 )
 
@@ -187,9 +185,10 @@ class KolektorDataset(AnomalibDataset):
 
     Args:
         task (TaskType): Task type, ``classification``, ``detection`` or ``segmentation``
-        transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
         root (Path | str): Path to the root of the dataset
             Defaults to ``./datasets/kolektor``.
+        transform (Transform, optional): Transforms that should be applied to the input images.
+            Defaults to ``None``.
         split (str | Split | None): Split of the dataset, usually Split.TRAIN or Split.TEST
             Defaults to ``None``.
     """
@@ -197,16 +196,14 @@ class KolektorDataset(AnomalibDataset):
     def __init__(
         self,
         task: TaskType,
-        transform: A.Compose,
         root: Path | str = "./datasets/kolektor",
+        transform: Transform | None = None,
         split: str | Split | None = None,
     ) -> None:
         super().__init__(task=task, transform=transform)
 
         self.root = root
         self.split = split
-
-    def _setup(self) -> None:
         self.samples = make_kolektor_dataset(self.root, train_split_ratio=0.8, split=self.split)
 
 
@@ -215,13 +212,6 @@ class Kolektor(AnomalibDataModule):
 
     Args:
         root (Path | str): Path to the root of the dataset
-        image_size (int | tuple[int, int] | None, optional): Size of the input image.
-            Defaults to ``None``.
-        center_crop (int | tuple[int, int] | None, optional): When provided, the images will be center-cropped
-            to the provided dimensions.
-            Defaults to ``None``.
-        normalization (InputNormalizationMethod | str): Normalization method to apply to the input images.
-            Defaults to ``InputNormalizationMethod.IMAGENET``.
         train_batch_size (int, optional): Training batch size.
             Defaults to ``32``.
         eval_batch_size (int, optional): Test batch size.
@@ -230,10 +220,13 @@ class Kolektor(AnomalibDataModule):
             Defaults to ``8``.
         task TaskType): Task type, 'classification', 'detection' or 'segmentation'
             Defaults to ``TaskType.SEGMENTATION``.
-        transform_config_train (str | A.Compose | None, optional): Config for pre-processing during training.
+        image_size (tuple[int, int], optional): Size to which input images should be resized.
             Defaults to ``None``.
-        transform_config_val (str | A.Compose | None, optional): Config for pre-processing
-            during validation.
+        transform (Transform, optional): Transforms that should be applied to the input images.
+            Defaults to ``None``.
+        train_transform (Transform, optional): Transforms that should be applied to the input images during training.
+            Defaults to ``None``.
+        eval_transform (Transform, optional): Transforms that should be applied to the input images during evaluation.
             Defaults to ``None``.
         test_split_mode (TestSplitMode): Setting that determines how the testing subset is obtained.
             Defaults to ``TestSplitMode.FROM_DIR``
@@ -250,15 +243,14 @@ class Kolektor(AnomalibDataModule):
     def __init__(
         self,
         root: Path | str = "./datasets/kolektor",
-        image_size: int | tuple[int, int] = (256, 256),
-        center_crop: int | tuple[int, int] | None = None,
-        normalization: InputNormalizationMethod | str = InputNormalizationMethod.IMAGENET,
         train_batch_size: int = 32,
         eval_batch_size: int = 32,
         num_workers: int = 8,
         task: TaskType | str = TaskType.SEGMENTATION,
-        transform_config_train: str | A.Compose | None = None,
-        transform_config_eval: str | A.Compose | None = None,
+        image_size: tuple[int, int] | None = None,
+        transform: Transform | None = None,
+        train_transform: Transform | None = None,
+        eval_transform: Transform | None = None,
         test_split_mode: TestSplitMode | str = TestSplitMode.FROM_DIR,
         test_split_ratio: float = 0.2,
         val_split_mode: ValSplitMode | str = ValSplitMode.SAME_AS_TEST,
@@ -269,6 +261,10 @@ class Kolektor(AnomalibDataModule):
             train_batch_size=train_batch_size,
             eval_batch_size=eval_batch_size,
             num_workers=num_workers,
+            image_size=image_size,
+            transform=transform,
+            train_transform=train_transform,
+            eval_transform=eval_transform,
             test_split_mode=test_split_mode,
             test_split_ratio=test_split_ratio,
             val_split_mode=val_split_mode,
@@ -276,33 +272,21 @@ class Kolektor(AnomalibDataModule):
             seed=seed,
         )
 
-        task = TaskType(task)
+        self.task = TaskType(task)
         self.root = Path(root)
 
-        transform_train = get_transforms(
-            config=transform_config_train,
-            image_size=image_size,
-            center_crop=center_crop,
-            normalization=InputNormalizationMethod(normalization),
-        )
-        transform_eval = get_transforms(
-            config=transform_config_eval,
-            image_size=image_size,
-            center_crop=center_crop,
-            normalization=InputNormalizationMethod(normalization),
-        )
-
+    def _setup(self, _stage: str | None = None) -> None:
         self.train_data = KolektorDataset(
-            task=task,
-            transform=transform_train,
+            task=self.task,
+            transform=self.train_transform,
             split=Split.TRAIN,
-            root=root,
+            root=self.root,
         )
         self.test_data = KolektorDataset(
-            task=task,
-            transform=transform_eval,
+            task=self.task,
+            transform=self.eval_transform,
             split=Split.TEST,
-            root=root,
+            root=self.root,
         )
 
     def prepare_data(self) -> None:

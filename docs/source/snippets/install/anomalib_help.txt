@@ -1,0 +1,26 @@
+❯ anomalib -h
+To use other subcommand using `anomalib install`
+To use any logger install it using `anomalib install -v`
+╭─ Arguments ───────────────────────────────────────────────────────────────────╮
+│ Usage: anomalib [-h] [-c CONFIG] [--print_config [=flags]] {install} ...      │
+│                                                                               │
+│                                                                               │
+│ Options:                                                                      │
+│   -h, --help            Show this help message and exit.                      │
+│   -c, --config CONFIG   Path to a configuration file in json or yaml format.  │
+│   --print_config [=flags]                                                     │
+│                         Print the configuration after applying all other      │
+│                         arguments and exit. The optional flags customizes the │
+│                         output and are one or more keywords separated b comma.│
+│                         The supported flags are: comments, skip_default,      │
+│                         skip_null.                                            │
+│                                                                               │
+│ Subcommands:                                                                  │
+│   For more details of each subcommand, add it as an argument followed by      │
+│                         --help.                                               │
+│                                                                               │
+│                                                                               │
+│   Available subcommands:                                                      │
+│     install             Install the full-package for anomalib.                │
+│                                                                               │
+╰───────────────────────────────────────────────────────────────────────────────╯

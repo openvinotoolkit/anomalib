@@ -42,21 +42,31 @@ class Csflow(AnomalyModule):
 
     def __init__(
         self,
-        input_size: tuple[int, int] = (256, 256),
         cross_conv_hidden_channels: int = 1024,
         n_coupling_blocks: int = 4,
         clamp: int = 3,
         num_channels: int = 3,
     ) -> None:
         super().__init__()
-        self.model: CsFlowModel = CsFlowModel(
-            input_size=input_size,
-            cross_conv_hidden_channels=cross_conv_hidden_channels,
-            n_coupling_blocks=n_coupling_blocks,
-            clamp=clamp,
-            num_channels=num_channels,
-        )
+
+        self.cross_conv_hidden_channels = cross_conv_hidden_channels
+        self.n_coupling_blocks = n_coupling_blocks
+        self.clamp = clamp
+        self.num_channels = num_channels
+
         self.loss = CsFlowLoss()
+
+        self.model: CsFlowModel
+
+    def _setup(self) -> None:
+        assert self.input_size is not None, "Csflow needs input size to build torch model."
+        self.model = CsFlowModel(
+            input_size=self.input_size,
+            cross_conv_hidden_channels=self.cross_conv_hidden_channels,
+            n_coupling_blocks=self.n_coupling_blocks,
+            clamp=self.clamp,
+            num_channels=self.num_channels,
+        )
 
     def training_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> STEP_OUTPUT:
         """Perform the training step of CS-Flow.

@@ -6,8 +6,8 @@
 
 from pathlib import Path
 
-import albumentations as A  # noqa: N812
 import pytest
+from torchvision.transforms import v2
 
 from anomalib.data import PredictDataset
 
@@ -40,11 +40,11 @@ class TestPredictDataset:
     def test_transforms_applied(self, predict_dataset_path: Path) -> None:
         """Test whether the transforms are applied to the images."""
         # Create a transform that resizes the image to 512x512.
-        transform = A.Compose([A.Resize(512, 512)])
+        transform = v2.Compose([v2.Resize(512)])
         dataset = PredictDataset(path=predict_dataset_path, transform=transform)
 
         # Check the first sample.
         sample = dataset[0]
 
         # Check that the image is resized to 512x512.
-        assert sample["image"].shape == (512, 512, 3)
+        assert sample["image"].shape == (3, 512, 512)

@@ -102,7 +102,8 @@ class ImageVisualizer(BaseVisualizer):
         for i in range(batch_size):
             if "image_path" in batch:
                 height, width = batch["image"].shape[-2:]
-                image = read_image(path=batch["image_path"][i], image_size=(height, width))
+                image = (read_image(path=batch["image_path"][i]) * 255).astype(np.uint8)
+                image = cv2.resize(image, dsize=(width, height), interpolation=cv2.INTER_AREA)
             elif "video_path" in batch:
                 height, width = batch["image"].shape[-2:]
                 image = batch["original_image"][i].squeeze().cpu().numpy()
