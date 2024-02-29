@@ -16,12 +16,7 @@ from skimage.segmentation import mark_boundaries
 
 from anomalib import TaskType
 from anomalib.data.utils import read_image
-from anomalib.utils.post_processing import (
-    add_anomalous_label,
-    add_normal_label,
-    draw_boxes,
-    superimpose_anomaly_map,
-)
+from anomalib.utils.post_processing import add_anomalous_label, add_normal_label, draw_boxes, superimpose_anomaly_map
 
 from .base import BaseVisualizer, GeneratorResult, VisualizationStep
 
@@ -224,7 +219,7 @@ class ImageVisualizer(BaseVisualizer):
             image_grid.add_image(image=image_result.segmentations, title="Segmentation Result")
         elif self.task == TaskType.CLASSIFICATION:
             image_grid.add_image(image_result.image, title="Image")
-            if image_result.heat_map:
+            if image_result.heat_map is not None:
                 image_grid.add_image(image_result.heat_map, "Predicted Heat Map")
             if image_result.pred_label:
                 image_classified = add_anomalous_label(image_result.image, image_result.pred_score)
