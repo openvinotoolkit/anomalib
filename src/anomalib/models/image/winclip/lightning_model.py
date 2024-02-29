@@ -55,7 +55,7 @@ class WinClip(AnomalyModule):
         self.k_shot = k_shot
         self.few_shot_source = Path(few_shot_source) if few_shot_source else None
 
-    def setup(self, stage: str) -> None:
+    def _setup(self) -> None:
         """Setup WinCLIP.
 
         - Set the class name used in the prompt ensemble.
@@ -63,11 +63,7 @@ class WinClip(AnomalyModule):
         - Collect reference images for few-shot inference.
 
         We need to pass the device because this hook is called before the model is moved to the device.
-
-        Args:
-            stage (str): The stage in which the setup is called. Usually ``"fit"``, ``"test"`` or ``predict``.
         """
-        del stage
         # get class name
         self.class_name = self._get_class_name()
         ref_images = None

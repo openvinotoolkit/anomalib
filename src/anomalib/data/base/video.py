@@ -175,17 +175,8 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
 class AnomalibVideoDataModule(AnomalibDataModule):
     """Base class for video data modules."""
 
-    def setup(self, stage: str | None = None) -> None:
-        """Set up train, validation and test data.
-
-        Args:
-            stage: str | None:  Train/Val/Test stages.
-                Defaults to ``None``.
-        """
-        if not self.is_setup:
-            self._setup(stage)
-            self._create_val_split()
-        assert self.is_setup
+    def _create_test_split(self) -> None:
+        """Video datamodules do not support dynamic assignment of the test split."""
 
     def _setup(self, _stage: str | None = None) -> None:
         """Set up the datasets and perform dynamic subset splitting.
