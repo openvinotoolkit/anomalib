@@ -590,17 +590,14 @@ class Engine:
                 anomalib test --config <config_file_path>
                 ```
         """
+        self._setup_workspace(model=model or self.model, datamodule=datamodule, test_dataloaders=dataloaders)
+
         if model:
             self._setup_trainer(model)
         elif not self.model:
             msg = "`Engine.test()` requires an `AnomalyModule` when it hasn't been passed in a previous run."
             raise RuntimeError(msg)
 
-        self._setup_workspace(
-            model=model or self.model,
-            datamodule=datamodule,
-            test_dataloaders=dataloaders,
-        )
         self._setup_dataset_task(dataloaders)
         if self._should_run_validation(model or self.model, dataloaders, datamodule, ckpt_path):
             logger.info("Running validation before testing to collect normalization metrics and/or thresholds.")
@@ -674,6 +671,9 @@ class Engine:
         assert (
             model or self.model
         ), "`Engine.predict()` requires an `AnomalyModule` when it hasn't been passed in a previous run."
+
+        self._setup_workspace(model=model or self.model, datamodule=datamodule, test_dataloaders=dataloaders)
+
         if model:
             self._setup_trainer(model)
 
@@ -746,7 +746,14 @@ class Engine:
                 anomalib train --config <config_file_path>
                 ```
         """
-        self._setup_workspace(model, train_dataloaders, val_dataloaders, test_dataloaders, datamodule)
+        self._setup_workspace(
+            model,
+            train_dataloaders,
+            val_dataloaders,
+            test_dataloaders,
+            datamodule,
+            versioned_dir=True,
+        )
         self._setup_trainer(model)
         self._setup_dataset_task(train_dataloaders, val_dataloaders, test_dataloaders, datamodule)
         if model.learning_type in [LearningType.ZERO_SHOT, LearningType.FEW_SHOT]:
