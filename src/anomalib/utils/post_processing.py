@@ -111,7 +111,7 @@ def superimpose_anomaly_map(
             the formula to compute the blended image is
             I' = (alpha*I1 + (1-alpha)*I2) + gamma
         normalize: whether or not the anomaly maps should
-            be normalized to image min-max
+            be normalized to image min-max at image level
 
 
     Returns:

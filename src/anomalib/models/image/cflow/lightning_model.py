@@ -58,7 +58,6 @@ class Cflow(AnomalyModule):
 
     def __init__(
         self,
-        input_size: tuple[int, int] = (256, 256),
         backbone: str = "wide_resnet50_2",
         layers: Sequence[str] = ("layer2", "layer3", "layer4"),
         pre_trained: bool = True,
@@ -73,7 +72,6 @@ class Cflow(AnomalyModule):
         super().__init__()
 
         self.model: CflowModel = CflowModel(
-            input_size=input_size,
             backbone=backbone,
             pre_trained=pre_trained,
             layers=layers,

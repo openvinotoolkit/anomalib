@@ -11,7 +11,6 @@ from torch.utils.data import DataLoader
 from anomalib.data import PredictDataset
 from anomalib.engine import Engine
 from anomalib.models import AnomalyModule, get_model
-from anomalib.utils.visualization import ImageVisualizer
 
 
 def get_parser() -> LightningArgumentParser:
@@ -26,14 +25,6 @@ def get_parser() -> LightningArgumentParser:
     parser.add_argument("--ckpt_path", type=str, required=True, help="Path to model weights")
     parser.add_class_arguments(PredictDataset, "--data", instantiate=False)
     parser.add_argument("--output", type=str, required=False, help="Path to save the output image(s).")
-    parser.add_argument(
-        "--visualization_mode",
-        type=str,
-        required=False,
-        default="simple",
-        help="Visualization mode.",
-        choices=["full", "simple"],
-    )
     parser.add_argument(
         "--show",
         action="store_true",
@@ -52,14 +43,10 @@ def get_parser() -> LightningArgumentParser:
 
 def infer(args: Namespace) -> None:
     """Run inference."""
-    save_images = bool(args.output)
-
     callbacks = None if not hasattr(args, "callbacks") else args.callbacks
     engine = Engine(
         default_root_dir=args.output,
         callbacks=callbacks,
-        visualizers=ImageVisualizer(mode=args.visualization_mode),
-        save_image=save_images,
         devices=1,
     )
     model = get_model(args.model)

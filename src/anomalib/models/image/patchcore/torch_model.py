@@ -34,7 +34,6 @@ class PatchcoreModel(DynamicBufferMixin, nn.Module):
 
     def __init__(
         self,
-        input_size: tuple[int, int],
         layers: Sequence[str],
         backbone: str = "wide_resnet50_2",
         pre_trained: bool = True,
@@ -45,7 +44,6 @@ class PatchcoreModel(DynamicBufferMixin, nn.Module):
 
         self.backbone = backbone
         self.layers = layers
-        self.input_size = input_size
         self.num_neighbors = num_neighbors
 
         self.feature_extractor = TimmFeatureExtractor(
@@ -54,7 +52,7 @@ class PatchcoreModel(DynamicBufferMixin, nn.Module):
             layers=self.layers,
         )
         self.feature_pooler = torch.nn.AvgPool2d(3, 1, 1)
-        self.anomaly_map_generator = AnomalyMapGenerator(input_size=input_size)
+        self.anomaly_map_generator = AnomalyMapGenerator()
 
         self.register_buffer("memory_bank", torch.Tensor())
         self.memory_bank: torch.Tensor
@@ -101,7 +99,7 @@ class PatchcoreModel(DynamicBufferMixin, nn.Module):
             # reshape to w, h
             patch_scores = patch_scores.reshape((batch_size, 1, width, height))
             # get anomaly map
-            anomaly_map = self.anomaly_map_generator(patch_scores)
+            anomaly_map = self.anomaly_map_generator(patch_scores, input_tensor.shape[-2:])
 
             output = {"anomaly_map": anomaly_map, "pred_score": pred_score}
 

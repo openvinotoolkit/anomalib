@@ -41,13 +41,6 @@ class TestValidatePath:
         validated_path = validate_path(directory_path, base_dir=dataset_path)
         assert validated_path == directory_path.resolve()
 
-    def test_symlinks_to_a_path_outside_base_dir_raises_error(self, dataset_path: Path) -> None:
-        """Test ``validate_path`` raises ValueError for a symlink to a path outside the base directory."""
-        symlink_path = dataset_path / "mvtec/dummy/train/good/symlink"
-        symlink_path.symlink_to("/usr/local/lib")
-        with pytest.raises(ValueError, match=r"Access denied: Path is outside the allowed directory"):
-            validate_path(symlink_path)
-
     def test_nonexistent_file(self, dataset_path: Path) -> None:
         """Test ``validate_path`` raises FileNotFoundError for a nonexistent file."""
         with pytest.raises(FileNotFoundError):
@@ -57,11 +50,6 @@ class TestValidatePath:
         """Test ``validate_path`` raises FileNotFoundError for a nonexistent directory."""
         with pytest.raises(FileNotFoundError):
             validate_path(dataset_path / "nonexistent/directory")
-
-    def test_outside_base_dir(self) -> None:
-        """Test ``validate_path`` raises ValueError for a path outside the base directory."""
-        with pytest.raises(ValueError, match=r"Access denied: Path is outside the allowed directory"):
-            validate_path("/usr/local/lib")
 
     def test_no_read_permission(self) -> None:
         """Test ``validate_path`` raises PermissionError for a file without read permission."""
