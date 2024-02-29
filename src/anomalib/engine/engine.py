@@ -237,7 +237,6 @@ class Engine:
         datamodule: AnomalibDataModule | None = None,
         dataset: AnomalibDataset | None = None,
         versioned_dir: bool = False,
-        # *data: EVAL_DATALOADERS | TRAIN_DATALOADERS | AnomalibDataModule | AnomalibDataset | None,
     ) -> None:
         """Setup the workspace for the model.
 
@@ -263,49 +262,38 @@ class Engine:
         Raises:
             TypeError: If the dataloader type is unknown.
         """
+        # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
+        # 1. Get the dataset name and category from the dataloaders, datamodule, or dataset.
+        dataset_name: str = ""
+        category: str | None
 
-        def extract_dataset_info() -> tuple[str, str]:
-            """Extracts dataset name and category from provided arguments."""
-            nonlocal train_dataloaders, val_dataloaders, test_dataloaders, datamodule, dataset
+        # Check datamodule and dataset directly
+        if datamodule is not None:
+            dataset_name = datamodule.name
+            category = datamodule.category
+        elif dataset is not None:
+            dataset_name = dataset.name
+            category = dataset.category
 
-            # Get the dataset name and category.
-            dataset_name: str = ""
-            category: str | None
+        # Check dataloaders if dataset_name and category are not set
+        dataloaders = [train_dataloaders, val_dataloaders, test_dataloaders]
+        if not dataset_name or category is None:
+            for dataloader in dataloaders:
+                if dataloader is not None:
+                    if hasattr(dataloader, "train_data"):
+                        dataset_name = getattr(dataloader.train_data, "name", "")
+                        category = getattr(dataloader.train_data, "category", "")
+                        break
+                    if dataset_name and category is not None:
+                        break
 
-            # Check datamodule and dataset directly
-            if datamodule is not None:
-                dataset_name = datamodule.name
-                category = datamodule.category
-            elif dataset is not None:
-                dataset_name = dataset.name
-                category = dataset.category
+        # Check if category is None and set it to empty string
+        category = category if category is not None else ""
 
-            # Check dataloaders if dataset_name and category are not set
-            dataloaders = [train_dataloaders, val_dataloaders, test_dataloaders]
-            if not dataset_name or category is None:
-                for dataloader in dataloaders:
-                    if dataloader is not None:
-                        if hasattr(dataloader, "train_data"):
-                            dataset_name = getattr(dataloader.train_data, "name", "")
-                            category = getattr(dataloader.train_data, "category", "")
-                            break
-                        if dataset_name and category is not None:
-                            break
-
-            # Check if category is None and set it to empty string
-            category = category if category is not None else ""
-
-            # Return the dataset name and category
-            return dataset_name, category
-
-        # Get the dataset name and category
-        dataset_name, category = extract_dataset_info()
-
-        # Update the default root directory with the model name, dataset name, and category.
+        # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
+        # 2. Update the default root directory
         root_dir = Path(self._cache.args["default_root_dir"]) / model.name / dataset_name / category
-
-        # Create the versioned directory
-        self._cache.args["default_root_dir"] = create_versioned_dir(root_dir) if versioned_dir else root_dir
+        self._cache.args["default_root_dir"] = create_versioned_dir(root_dir) if versioned_dir else root_dir / "latest"
 
     def _setup_trainer(self, model: AnomalyModule) -> None:
         """Instantiate the trainer based on the model parameters."""
@@ -510,7 +498,13 @@ class Engine:
                 anomalib fit --config <config_file_path>
                 ```
         """
-        self._setup_workspace(model, train_dataloaders, val_dataloaders, datamodule, versioned_dir=True)
+        self._setup_workspace(
+            model=model,
+            train_dataloaders=train_dataloaders,
+            val_dataloaders=val_dataloaders,
+            datamodule=datamodule,
+            versioned_dir=True,
+        )
         self._setup_trainer(model)
         self._setup_dataset_task(train_dataloaders, val_dataloaders, datamodule)
         self._setup_transform(model, datamodule=datamodule, ckpt_path=ckpt_path)
