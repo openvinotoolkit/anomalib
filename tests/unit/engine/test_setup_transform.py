@@ -219,3 +219,12 @@ class TestSetupTransform:
         model = DummyModel()
         Engine._setup_transform(model, ckpt_path=checkpoint_path, datamodule=datamodule)  # noqa: SLF001
         assert model.transform == transform
+
+    def test_transform_already_assigned(self) -> None:
+        """Tests if the transform from the model is used when the model already has a transform assigned."""
+        transform = Transform()
+        model = DummyModel()
+        model.set_transform(transform)
+        datamodule = DummyDataModule()
+        Engine._setup_transform(model, datamodule=datamodule)  # noqa: SLF001
+        assert model.transform == transform
