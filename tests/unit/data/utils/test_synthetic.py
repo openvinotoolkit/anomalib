@@ -17,6 +17,7 @@ from anomalib.data.utils.synthetic import SyntheticAnomalyDataset
 def folder_dataset(dataset_path: Path) -> FolderDataset:
     """Fixture that returns a FolderDataset instance."""
     return FolderDataset(
+        name="dummy",
         task=TaskType.SEGMENTATION,
         root=dataset_path / "mvtec" / "dummy",
         normal_dir="train/good",

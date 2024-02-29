@@ -56,6 +56,11 @@ class AnomalyModule(pl.LightningModule, ABC):
 
         self._is_setup = False  # flag to track if setup has been called from the trainer
 
+    @property
+    def name(self) -> str:
+        """Name of the model."""
+        return self.__class__.__name__
+
     def setup(self, stage: str | None = None) -> None:
         """Calls the _setup method to build the model if the model is not already built."""
         if getattr(self, "model", None) is None or not self._is_setup:
@@ -67,7 +72,7 @@ class AnomalyModule(pl.LightningModule, ABC):
     def _setup(self) -> None:
         """The _setup method is used to build the torch model dynamically or adjust something about them.
 
-        The model implementer may override this method to build the model. This is useful when the model canot be set
+        The model implementer may override this method to build the model. This is useful when the model cannot be set
         in the `__init__` method because it requires some information or data that is not available at the time of
         initialization.
         """

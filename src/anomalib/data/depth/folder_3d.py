@@ -185,6 +185,7 @@ class Folder3DDataset(AnomalibDepthDataset):
     """Folder dataset.
 
     Args:
+        name (str): Name of the dataset.
         task (TaskType): Task type. (``classification``, ``detection`` or ``segmentation``).
         transform (Transform): Transforms that should be applied to the input images.
         normal_dir (str | Path): Path to the directory containing normal images.
@@ -222,6 +223,7 @@ class Folder3DDataset(AnomalibDepthDataset):
 
     def __init__(
         self,
+        name: str,
         task: TaskType,
         normal_dir: str | Path,
         root: str | Path | None = None,
@@ -237,6 +239,7 @@ class Folder3DDataset(AnomalibDepthDataset):
     ) -> None:
         super().__init__(task, transform)
 
+        self._name = name
         self.split = split
         self.root = root
         self.normal_dir = normal_dir
@@ -261,11 +264,20 @@ class Folder3DDataset(AnomalibDepthDataset):
             extensions=self.extensions,
         )
 
+    @property
+    def name(self) -> str:
+        """Name of the dataset.
+
+        Folder3D dataset overrides the name property to provide a custom name.
+        """
+        return self._name
+
 
 class Folder3D(AnomalibDataModule):
     """Folder DataModule.
 
     Args:
+        name (str): Name of the dataset. This is used to name the datamodule, especially when logging/saving.
         normal_dir (str | Path): Name of the directory containing normal images.
         root (str | Path | None): Path to the root folder containing normal and abnormal dirs.
             Defaults to ``None``.
@@ -318,6 +330,7 @@ class Folder3D(AnomalibDataModule):
 
     def __init__(
         self,
+        name: str,
         normal_dir: str | Path,
         root: str | Path,
         abnormal_dir: str | Path | None = None,
@@ -355,6 +368,7 @@ class Folder3D(AnomalibDataModule):
             val_split_ratio=val_split_ratio,
             seed=seed,
         )
+        self._name = name
         self.task = TaskType(task)
         self.root = Path(root)
         self.normal_dir = normal_dir
@@ -368,6 +382,7 @@ class Folder3D(AnomalibDataModule):
 
     def _setup(self, _stage: str | None = None) -> None:
         self.train_data = Folder3DDataset(
+            name=self.name,
             task=self.task,
             transform=self.train_transform,
             split=Split.TRAIN,
@@ -383,6 +398,7 @@ class Folder3D(AnomalibDataModule):
         )
 
         self.test_data = Folder3DDataset(
+            name=self.name,
             task=self.task,
             transform=self.eval_transform,
             split=Split.TEST,
@@ -396,3 +412,11 @@ class Folder3D(AnomalibDataModule):
             mask_dir=self.mask_dir,
             extensions=self.extensions,
         )
+
+    @property
+    def name(self) -> str:
+        """Name of the datamodule.
+
+        Folder3D datamodule overrides the name property to provide a custom name.
+        """
+        return self._name
