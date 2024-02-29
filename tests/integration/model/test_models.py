@@ -12,7 +12,7 @@ from pathlib import Path
 import pytest
 
 from anomalib import TaskType
-from anomalib.callbacks import ModelCheckpoint
+from anomalib.callbacks.checkpoint import ModelCheckpoint
 from anomalib.data import AnomalibDataModule, MVTec, UCSDped
 from anomalib.deploy.export import ExportType
 from anomalib.engine import Engine
@@ -62,7 +62,11 @@ class TestAPI:
             dataset_path=dataset_path,
             project_path=project_path,
         )
-        engine.test(model=model, datamodule=dataset, ckpt_path=f"{project_path}/{model_name}/dummy/weights/last.ckpt")
+        engine.test(
+            model=model,
+            datamodule=dataset,
+            ckpt_path=f"{project_path}/{model_name}/dummy/weights/lightning/model.ckpt",
+        )
 
     @pytest.mark.parametrize("model_name", models())
     def test_train(self, model_name: str, dataset_path: Path, project_path: Path) -> None:
@@ -78,7 +82,11 @@ class TestAPI:
             dataset_path=dataset_path,
             project_path=project_path,
         )
-        engine.train(model=model, datamodule=dataset, ckpt_path=f"{project_path}/{model_name}/dummy/weights/last.ckpt")
+        engine.train(
+            model=model,
+            datamodule=dataset,
+            ckpt_path=f"{project_path}/{model_name}/dummy/weights/lightning/model.ckpt",
+        )
 
     @pytest.mark.parametrize("model_name", models())
     def test_validate(self, model_name: str, dataset_path: Path, project_path: Path) -> None:
@@ -97,7 +105,7 @@ class TestAPI:
         engine.validate(
             model=model,
             datamodule=dataset,
-            ckpt_path=f"{project_path}/{model_name}/dummy/weights/last.ckpt",
+            ckpt_path=f"{project_path}/{model_name}/dummy/weights/lightning/model.ckpt",
         )
 
     @pytest.mark.parametrize("model_name", models())
@@ -116,7 +124,7 @@ class TestAPI:
         )
         engine.predict(
             model=model,
-            ckpt_path=f"{project_path}/{model_name}/dummy/weights/last.ckpt",
+            ckpt_path=f"{project_path}/{model_name}/dummy/weights/lightning/model.ckpt",
             datamodule=datamodule,
         )
 
@@ -153,7 +161,7 @@ class TestAPI:
         )
         engine.export(
             model=model,
-            ckpt_path=f"{project_path}/{model_name}/dummy/weights/last.ckpt",
+            ckpt_path=f"{project_path}/{model_name}/dummy/weights/lightning/model.ckpt",
             export_type=export_type,
         )
 
@@ -216,7 +224,7 @@ class TestAPI:
             task=task_type,
             callbacks=[
                 ModelCheckpoint(
-                    dirpath=f"{project_path}/{model_name}/dummy/weights",
+                    dirpath=f"{project_path}" / "weights" / "lightning",
                     monitor=None,
                     filename="last",
                     save_last=True,

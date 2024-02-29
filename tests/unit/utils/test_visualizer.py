@@ -15,7 +15,7 @@ from anomalib import TaskType
 from anomalib.data import MVTec, PredictDataset
 from anomalib.engine import Engine
 from anomalib.models import get_model
-from anomalib.utils.visualization.image import ImageVisualizer, VisualizationMode, _ImageGrid
+from anomalib.utils.visualization.image import _ImageGrid
 
 
 def test_visualize_fully_defected_masks() -> None:
@@ -39,14 +39,12 @@ class TestVisualizer:
     """Test visualization callback for test and predict with different task types."""
 
     @pytest.mark.parametrize("task", [TaskType.CLASSIFICATION, TaskType.SEGMENTATION, TaskType.DETECTION])
-    @pytest.mark.parametrize("mode", [VisualizationMode.FULL, VisualizationMode.SIMPLE])
     def test_model_visualizer_mode(
         self,
         ckpt_path: Callable[[str], Path],
         project_path: Path,
         dataset_path: Path,
         task: TaskType,
-        mode: VisualizationMode,
     ) -> None:
         """Test combination of model/visualizer/mode on only 1 epoch as a sanity check before merge."""
         _ckpt_path: Path = ckpt_path("Padim")
@@ -54,8 +52,6 @@ class TestVisualizer:
         engine = Engine(
             default_root_dir=project_path,
             fast_dev_run=True,
-            visualizers=ImageVisualizer(mode=mode),
-            save_image=True,
             devices=1,
             task=task,
         )

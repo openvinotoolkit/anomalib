@@ -26,6 +26,7 @@ from anomalib.callbacks.thresholding import _ThresholdCallback
 from anomalib.callbacks.timer import TimerCallback
 from anomalib.callbacks.visualizer import _VisualizationCallback
 from anomalib.data import AnomalibDataModule, AnomalibDataset, PredictDataset
+from anomalib.data.utils.path import resolve_path
 from anomalib.deploy.export import ExportType, export_to_onnx, export_to_openvino, export_to_torch
 from anomalib.models import AnomalyModule
 from anomalib.utils.normalization import NormalizationMethod
@@ -87,10 +88,7 @@ class _TrainerArgumentsCache:
             self._cached_args[key] = value
 
     def requires_update(self, model: AnomalyModule) -> bool:
-        for key, value in model.trainer_arguments.items():
-            if key in self._cached_args and self._cached_args[key] != value:
-                return True
-        return False
+        return any(self._cached_args.get(key, None) != value for key, value in model.trainer_arguments.items())
 
     @property
     def args(self) -> dict[str, Any]:
@@ -131,7 +129,7 @@ class Engine:
         image_metrics: str | list[str] | None = None,
         pixel_metrics: str | list[str] | None = None,
         logger: Logger | Iterable[Logger] | bool | None = None,
-        default_root_dir: str = "results",
+        default_root_dir: str | Path = "results",
         **kwargs,
     ) -> None:
         # TODO(ashwinvaidya17): Add model argument to engine constructor
@@ -144,7 +142,7 @@ class Engine:
         self._cache = _TrainerArgumentsCache(
             callbacks=[*callbacks],
             logger=logger,
-            default_root_dir=default_root_dir,
+            default_root_dir=Path(default_root_dir),
             **kwargs,
         )
 
@@ -270,7 +268,7 @@ class Engine:
 
             # Get the dataset name and category.
             dataset_name: str = ""
-            category: str | None
+            category: str | None = None
 
             # Check datamodule and dataset directly
             if datamodule is not None:
@@ -439,7 +437,7 @@ class Engine:
         model: AnomalyModule,
         dataloaders: EVAL_DATALOADERS | None,
         datamodule: AnomalibDataModule | None,
-        ckpt_path: str | None,
+        ckpt_path: str | Path | None,
     ) -> bool:
         """Check if we need to run validation to collect normalization statistics and thresholds.
 
@@ -457,7 +455,7 @@ class Engine:
             model (AnomalyModule): Model passed to the entrypoint.
             dataloaders (EVAL_DATALOADERS | None): Dataloaders passed to the entrypoint.
             datamodule (AnomalibDataModule | None): Lightning datamodule passed to the entrypoint.
-            ckpt_path (str | None): Checkpoint path passed to the entrypoint.
+            ckpt_path (str | Path | None): Checkpoint path passed to the entrypoint.
 
         Returns:
             bool: Whether it is needed to run a validation sequence.
@@ -480,7 +478,7 @@ class Engine:
         train_dataloaders: TRAIN_DATALOADERS | None = None,
         val_dataloaders: EVAL_DATALOADERS | None = None,
         datamodule: AnomalibDataModule | None = None,
-        ckpt_path: str | None = None,
+        ckpt_path: str | Path | None = None,
     ) -> None:
         """Fit the model using the trainer.
 
@@ -510,6 +508,8 @@ class Engine:
                 anomalib fit --config <config_file_path>
                 ```
         """
+        if ckpt_path:
+            ckpt_path = resolve_path(ckpt_path)
         self._setup_workspace(model, train_dataloaders, val_dataloaders, datamodule, versioned_dir=True)
         self._setup_trainer(model)
         self._setup_dataset_task(train_dataloaders, val_dataloaders, datamodule)
@@ -524,7 +524,7 @@ class Engine:
         self,
         model: AnomalyModule | None = None,
         dataloaders: EVAL_DATALOADERS | None = None,
-        ckpt_path: str | None = None,
+        ckpt_path: str | Path | None = None,
         verbose: bool = True,
         datamodule: AnomalibDataModule | None = None,
     ) -> _EVALUATE_OUTPUT | None:
@@ -564,6 +564,8 @@ class Engine:
         """
         if model:
             self._setup_trainer(model)
+        if ckpt_path:
+            ckpt_path = resolve_path(ckpt_path)
         self._setup_dataset_task(dataloaders)
         self._setup_transform(model or self.model, datamodule=datamodule, ckpt_path=ckpt_path)
         return self.trainer.validate(model, dataloaders, ckpt_path, verbose, datamodule)
@@ -572,7 +574,7 @@ class Engine:
         self,
         model: AnomalyModule | None = None,
         dataloaders: EVAL_DATALOADERS | None = None,
-        ckpt_path: str | None = None,
+        ckpt_path: str | Path | None = None,
         verbose: bool = True,
         datamodule: AnomalibDataModule | None = None,
     ) -> _EVALUATE_OUTPUT:
@@ -647,6 +649,9 @@ class Engine:
                 anomalib test --config <config_file_path>
                 ```
         """
+        if ckpt_path:
+            ckpt_path = resolve_path(ckpt_path)
+
         self._setup_workspace(model=model or self.model, datamodule=datamodule, test_dataloaders=dataloaders)
 
         if model:
@@ -669,7 +674,7 @@ class Engine:
         datamodule: AnomalibDataModule | None = None,
         dataset: Dataset | PredictDataset | None = None,
         return_predictions: bool | None = None,
-        ckpt_path: str | None = None,
+        ckpt_path: str | Path | None = None,
     ) -> _PREDICT_OUTPUT | None:
         """Predict using the model using the trainer.
 
@@ -730,6 +735,9 @@ class Engine:
             model or self.model
         ), "`Engine.predict()` requires an `AnomalyModule` when it hasn't been passed in a previous run."
 
+        if ckpt_path:
+            ckpt_path = resolve_path(ckpt_path)
+
         self._setup_workspace(model=model or self.model, datamodule=datamodule, test_dataloaders=dataloaders)
 
         if model:
@@ -773,7 +781,7 @@ class Engine:
         val_dataloaders: EVAL_DATALOADERS | None = None,
         test_dataloaders: EVAL_DATALOADERS | None = None,
         datamodule: AnomalibDataModule | None = None,
-        ckpt_path: str | None = None,
+        ckpt_path: str | Path | None = None,
     ) -> _EVALUATE_OUTPUT:
         """Fits the model and then calls test on it.
 
@@ -805,6 +813,8 @@ class Engine:
                 anomalib train --config <config_file_path>
                 ```
         """
+        if ckpt_path:
+            ckpt_path = resolve_path(ckpt_path)
         self._setup_workspace(
             model,
             train_dataloaders,
