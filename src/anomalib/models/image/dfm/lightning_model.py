@@ -25,8 +25,6 @@ class Dfm(MemoryBankMixin, AnomalyModule):
     """DFM: Deep Featured Kernel Density Estimation.
 
     Args:
-        input_size (tuple[int, int]): Input size for the model.
-            Defaults to ``(256, 256)``.
         backbone (str): Backbone CNN network
             Defaults to ``"resnet50"``.
         layer (str): Layer to extract features from the backbone CNN
@@ -43,7 +41,6 @@ class Dfm(MemoryBankMixin, AnomalyModule):
 
     def __init__(
         self,
-        input_size: tuple[int, int] = (256, 256),
         backbone: str = "resnet50",
         layer: str = "layer3",
         pre_trained: bool = True,
@@ -57,7 +54,6 @@ class Dfm(MemoryBankMixin, AnomalyModule):
             backbone=backbone,
             pre_trained=pre_trained,
             layer=layer,
-            input_size=input_size,
             pooling_kernel_size=pooling_kernel_size,
             n_comps=pca_level,
             score_type=score_type,
@@ -112,9 +108,9 @@ class Dfm(MemoryBankMixin, AnomalyModule):
         del args, kwargs  # These variables are not used.
 
         if self.score_type == "fre":
-            batch["anomaly_maps"], batch["pred_scores"] = self.model(batch["image"])
+            batch["pred_scores"], batch["anomaly_maps"] = self.model(batch["image"])
         elif self.score_type == "nll":
-            batch["pred_scores"] = self.model(batch["image"])
+            batch["pred_scores"], _ = self.model(batch["image"])
 
         return batch
 

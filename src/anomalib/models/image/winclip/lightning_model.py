@@ -13,6 +13,7 @@ from typing import Any
 
 import torch
 from torch.utils.data import DataLoader
+from torchvision.transforms.v2 import Compose, Normalize, Resize, Transform
 
 from anomalib import LearningType
 from anomalib.data.predict import PredictDataset
@@ -97,7 +98,7 @@ class WinClip(AnomalyModule):
         if self.class_name is not None:
             logger.info("Using class name from init args: %s", self.class_name)
             return self.class_name
-        if hasattr(self, "trainer") and hasattr(self.trainer.datamodule, "category"):
+        if getattr(self, "_trainer", None) and hasattr(self.trainer.datamodule, "category"):
             logger.info("No class name provided, using category from datamodule: %s", self.trainer.datamodule.category)
             return self.trainer.datamodule.category
         logger.info("No class name provided and no category name found in datamodule using default: object")
@@ -170,3 +171,14 @@ class WinClip(AnomalyModule):
             restore_dict = {key: value for key, value in full_dict.items() if key.startswith(pattern)}
             state_dict.update(restore_dict)
         return super().load_state_dict(state_dict, strict)
+
+    def configure_transforms(self, image_size: tuple[int, int] | None = None) -> Transform:
+        """Configure the default transforms used by the model."""
+        if image_size is not None:
+            logger.warning("Image size is not used in WinCLIP. The input image size is determined by the model.")
+        return Compose(
+            [
+                Resize((240, 240), antialias=True),
+                Normalize(mean=(0.48145466, 0.4578275, 0.40821073), std=(0.26862954, 0.26130258, 0.27577711)),
+            ],
+        )

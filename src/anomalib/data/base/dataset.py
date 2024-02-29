@@ -1,25 +1,24 @@
 """Anomalib dataset base class."""
 
-# Copyright (C) 2022 Intel Corporation
+# Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 
 import copy
 import logging
-from abc import ABC, abstractmethod
+from abc import ABC
 from collections.abc import Sequence
 from pathlib import Path
 
-import albumentations as A  # noqa: N812
-import cv2
-import numpy as np
 import pandas as pd
 import torch
 from pandas import DataFrame
 from torch.utils.data import Dataset
+from torchvision.transforms.v2 import Transform
+from torchvision.tv_tensors import Mask
 
 from anomalib import TaskType
-from anomalib.data.utils import masks_to_boxes, read_image
+from anomalib.data.utils import LabelName, masks_to_boxes, read_image, read_mask
 
 _EXPECTED_COLUMNS_CLASSIFICATION = ["image_path", "split"]
 _EXPECTED_COLUMNS_SEGMENTATION = [*_EXPECTED_COLUMNS_CLASSIFICATION, "mask_path"]
@@ -35,16 +34,39 @@ logger = logging.getLogger(__name__)
 class AnomalibDataset(Dataset, ABC):
     """Anomalib dataset.
 
+    The dataset is based on a dataframe that contains the information needed by the dataloader to load each of
+    the dataset items into memory.
+
+    The samples dataframe must be set from the subclass using the setter of the `samples` property.
+
+    The DataFrame must, at least, include the following columns:
+        - `split` (str): The subset to which the dataset item is assigned (e.g., 'train', 'test').
+        - `image_path` (str): Path to the file system location where the image is stored.
+        - `label_index` (int): Index of the anomaly label, typically 0 for 'normal' and 1 for 'anomalous'.
+        - `mask_path` (str, optional): Path to the ground truth masks (for the anomalous images only).
+        Required if task is 'segmentation'.
+
+    Example DataFrame:
+        +---+-------------------+-----------+-------------+------------------+-------+
+        |   | image_path        | label     | label_index | mask_path        | split |
+        +---+-------------------+-----------+-------------+------------------+-------+
+        | 0 | path/to/image.png | anomalous | 1           | path/to/mask.png | train |
+        +---+-------------------+-----------+-------------+------------------+-------+
+
+    Note:
+        The example above is illustrative and may need to be adjusted based on the specific dataset structure.
+
     Args:
         task (str): Task type, either 'classification' or 'segmentation'
-        transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
+        transform (Transform, optional): Transforms that should be applied to the input images.
+            Defaults to ``None``.
     """
 
-    def __init__(self, task: TaskType, transform: A.Compose) -> None:
+    def __init__(self, task: TaskType, transform: Transform | None = None) -> None:
         super().__init__()
         self.task = task
         self.transform = transform
-        self._samples: DataFrame
+        self._samples: DataFrame | None = None
 
     def __len__(self) -> int:
         """Get length of the dataset."""
@@ -64,15 +86,13 @@ class AnomalibDataset(Dataset, ABC):
         return dataset
 
     @property
-    def is_setup(self) -> bool:
-        """Checks if setup() been called."""
-        return hasattr(self, "_samples")
-
-    @property
     def samples(self) -> DataFrame:
         """Get the samples dataframe."""
-        if not self.is_setup:
-            msg = "Dataset is not setup yet. Call setup() first."
+        if self._samples is None:
+            msg = (
+                "Dataset does not have a samples dataframe. Ensure that a dataframe has been assigned to "
+                "`dataset.samples`."
+            )
             raise RuntimeError(msg)
         return self._samples
 
@@ -96,12 +116,12 @@ class AnomalibDataset(Dataset, ABC):
     @property
     def has_normal(self) -> bool:
         """Check if the dataset contains any normal samples."""
-        return 0 in list(self.samples.label_index)
+        return LabelName.NORMAL in list(self.samples.label_index)
 
     @property
     def has_anomalous(self) -> bool:
         """Check if the dataset contains any anomalous samples."""
-        return 1 in list(self.samples.label_index)
+        return LabelName.ABNORMAL in list(self.samples.label_index)
 
     def __getitem__(self, index: int) -> dict[str, str | torch.Tensor]:
         """Get dataset item for the index ``index``.
@@ -113,28 +133,24 @@ class AnomalibDataset(Dataset, ABC):
             dict[str, str | torch.Tensor]: Dict of image tensor during training. Otherwise, Dict containing image path,
                 target path, image tensor, label and transformed bounding box.
         """
-        image_path = self._samples.iloc[index].image_path
-        mask_path = self._samples.iloc[index].mask_path
-        label_index = self._samples.iloc[index].label_index
+        image_path = self.samples.iloc[index].image_path
+        mask_path = self.samples.iloc[index].mask_path
+        label_index = self.samples.iloc[index].label_index
 
-        image = read_image(image_path)
+        image = read_image(image_path, as_tensor=True)
         item = {"image_path": image_path, "label": label_index}
 
         if self.task == TaskType.CLASSIFICATION:
-            transformed = self.transform(image=image)
-            item["image"] = transformed["image"]
+            item["image"] = self.transform(image) if self.transform else image
         elif self.task in (TaskType.DETECTION, TaskType.SEGMENTATION):
             # Only Anomalous (1) images have masks in anomaly datasets
             # Therefore, create empty mask for Normal (0) images.
-
-            mask = np.zeros(shape=image.shape[:2]) if label_index == 0 else cv2.imread(mask_path, flags=0) / 255.0
-            mask = mask.astype(np.single)
-
-            transformed = self.transform(image=image, mask=mask)
-
-            item["image"] = transformed["image"]
-            item["mask_path"] = mask_path
-            item["mask"] = transformed["mask"]
+            mask = (
+                Mask(torch.zeros(image.shape[-2:])).to(torch.uint8)
+                if label_index == LabelName.NORMAL
+                else read_mask(mask_path, as_tensor=True)
+            )
+            item["image"], item["mask"] = self.transform(image, mask) if self.transform else (image, mask)
 
             if self.task == TaskType.DETECTION:
                 # create boxes from masks for detection task
@@ -156,40 +172,6 @@ class AnomalibDataset(Dataset, ABC):
             AnomalibDataset: Concatenated dataset.
         """
         assert isinstance(other_dataset, self.__class__), "Cannot concatenate datasets that are not of the same type."
-        assert self.is_setup, "Cannot concatenate uninitialized datasets. Call setup first."
-        assert other_dataset.is_setup, "Cannot concatenate uninitialized datasets. Call setup first."
         dataset = copy.deepcopy(self)
         dataset.samples = pd.concat([self.samples, other_dataset.samples], ignore_index=True)
         return dataset
-
-    def setup(self) -> None:
-        """Load data/metadata into memory."""
-        if not self.is_setup:
-            self._setup()
-        assert self.is_setup, "setup() should set self._samples"
-
-    @abstractmethod
-    def _setup(self) -> DataFrame:
-        """Set up the data module.
-
-        This method should return a dataframe that contains the information needed by the dataloader to load each of
-        the dataset items into memory.
-
-        The DataFrame must, at least, include the following columns:
-            - `split` (str): The subset to which the dataset item is assigned (e.g., 'train', 'test').
-            - `image_path` (str): Path to the file system location where the image is stored.
-            - `label_index` (int): Index of the anomaly label, typically 0 for 'normal' and 1 for 'anomalous'.
-            - `mask_path` (str, optional): Path to the ground truth masks (for the anomalous images only).
-            Required if task is 'segmentation'.
-
-        Example DataFrame:
-            +---+-------------------+-----------+-------------+------------------+-------+
-            |   | image_path        | label     | label_index | mask_path        | split |
-            +---+-------------------+-----------+-------------+------------------+-------+
-            | 0 | path/to/image.png | anomalous | 1           | path/to/mask.png | train |
-            +---+-------------------+-----------+-------------+------------------+-------+
-
-        Note:
-            The example above is illustrative and may need to be adjusted based on the specific dataset structure.
-        """
-        raise NotImplementedError

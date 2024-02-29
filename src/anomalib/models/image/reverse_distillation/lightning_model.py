@@ -40,21 +40,31 @@ class ReverseDistillation(AnomalyModule):
 
     def __init__(
         self,
-        input_size: tuple[int, int] = (256, 256),
         backbone: str = "wide_resnet50_2",
         layers: Sequence[str] = ("layer1", "layer2", "layer3"),
         anomaly_map_mode: AnomalyMapGenerationMode = AnomalyMapGenerationMode.ADD,
         pre_trained: bool = True,
     ) -> None:
         super().__init__()
-        self.model = ReverseDistillationModel(
-            backbone=backbone,
-            pre_trained=pre_trained,
-            layers=layers,
-            input_size=input_size,
-            anomaly_map_mode=anomaly_map_mode,
-        )
+
+        self.backbone = backbone
+        self.pre_trained = pre_trained
+        self.layers = layers
+        self.anomaly_map_mode = anomaly_map_mode
+
         self.loss = ReverseDistillationLoss()
+
+        self.model: ReverseDistillationModel
+
+    def _setup(self) -> None:
+        assert self.input_size is not None, "Input size is required for Reverse Distillation model."
+        self.model = ReverseDistillationModel(
+            backbone=self.backbone,
+            pre_trained=self.pre_trained,
+            layers=self.layers,
+            input_size=self.input_size,
+            anomaly_map_mode=self.anomaly_map_mode,
+        )
 
     def configure_optimizers(self) -> optim.Adam:
         """Configure optimizers for decoder and bottleneck.

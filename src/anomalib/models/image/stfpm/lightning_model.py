@@ -37,14 +37,12 @@ class Stfpm(AnomalyModule):
 
     def __init__(
         self,
-        input_size: tuple[int, int] = (256, 256),
         backbone: str = "resnet18",
         layers: Sequence[str] = ("layer1", "layer2", "layer3"),
     ) -> None:
         super().__init__()
 
         self.model = STFPMModel(
-            input_size=input_size,
             backbone=backbone,
             layers=layers,
         )

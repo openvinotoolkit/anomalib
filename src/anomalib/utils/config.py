@@ -4,11 +4,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-import inspect
 import logging
 from collections.abc import Sequence
 from datetime import datetime
-from importlib import import_module
 from pathlib import Path
 from typing import Any, cast
 
@@ -106,8 +104,6 @@ def update_config(config: DictConfig | ListConfig | Namespace) -> DictConfig | L
         config.copy() if isinstance(config, DictConfig | ListConfig) else config.clone()
     )
 
-    config = update_input_size_config(config)
-
     # Project Configs
     project_path = get_default_root_directory(config)
     logger.info(f"Project path set to {(project_path)}")
@@ -128,66 +124,6 @@ def update_config(config: DictConfig | ListConfig | Namespace) -> DictConfig | L
     return config
 
 
-def update_input_size_config(config: DictConfig | ListConfig | Namespace) -> DictConfig | ListConfig | Namespace:
-    """Update config with image size as tuple, effective input size and tiling stride.
-
-    Convert integer image size parameters into tuples, calculate the effective input size based on image size
-    and crop size, and set tiling stride if undefined.
-
-    Args:
-        config (DictConfig | ListConfig | Namespace): Configurable parameters object
-
-    Returns:
-        DictConfig | ListConfig: Configurable parameters with updated values
-    """
-    # Image size: Ensure value is in the form [height, width]
-    image_size = config.data.init_args.get("image_size")
-    if isinstance(image_size, int):
-        config.data.init_args.image_size = (image_size,) * 2
-    elif isinstance(image_size, ListConfig | Sequence):
-        assert len(image_size) == 2, "image_size must be a single integer or tuple of length 2 for width and height."
-    else:
-        msg = f"image_size must be either int or ListConfig, got {type(image_size)}"
-        raise TypeError(msg)
-
-    # Use input size from data to model input. If model input size is defined, warn and override.
-    # If input_size is not part of the model parameters, remove it from the config. This is required due to argument
-    # linking from the cli.
-    model_module = import_module(".".join(config.model.class_path.split(".")[:-1]))
-    model_class = getattr(model_module, config.model.class_path.split(".")[-1])
-
-    # Assign center crop
-    center_crop = config.data.init_args.get("center_crop", None)
-    if center_crop:
-        config.data.init_args.center_crop = to_tuple(center_crop)
-    config.data.init_args.image_size = to_tuple(config.data.init_args.image_size)
-
-    if "input_size" in inspect.signature(model_class).parameters:
-        # Center crop: Ensure value is in the form [height, width], and update input_size
-        if center_crop is not None:
-            config.model.init_args.input_size = center_crop
-            logger.info(f"Setting model size to crop size {center_crop}")
-        else:
-            logger.info(
-                f" Setting model input size {config.model.init_args.get('input_size', None)} to"
-                f" dataset size {config.data.init_args.image_size}.",
-            )
-            config.model.init_args.input_size = config.data.init_args.image_size
-        config.model.init_args.input_size = to_tuple(config.model.init_args.input_size)
-
-    elif "input_size" in config.model.init_args:
-        # argument linking adds model input size even if it is not present for that model
-        del config.model.init_args.input_size
-
-    if "tiling" in config and config.tiling.apply:
-        if isinstance(config.tiling.tile_size, int):
-            config.tiling.tile_size = (config.tiling.tile_size,) * 2
-        if config.tiling.stride is None:
-            config.tiling.stride = config.tiling.tile_size
-
-    return config
-
-
 def _update_nncf_config(config: DictConfig | ListConfig) -> DictConfig | ListConfig:
     """Set the NNCF input size based on the value of the crop_size parameter in the configurable parameters object.
 
@@ -197,15 +133,10 @@ def _update_nncf_config(config: DictConfig | ListConfig) -> DictConfig | ListCon
     Returns:
         DictConfig | ListConfig: Updated configurable parameters in DictConfig object.
     """
-    image_size = config.data.init_args.image_size
-    # If the model has input_size param and in case it takes cropped input
-    if "input_size" in config.model.init_args:
-        image_size = config.model.init_args.input_size
-    sample_size = (image_size, image_size) if isinstance(image_size, int) else image_size
     if "optimization" in config and "nncf" in config.optimization:
         if "input_info" not in config.optimization.nncf:
             config.optimization.nncf["input_info"] = {"sample_size": None}
-        config.optimization.nncf.input_info.sample_size = [1, 3, *sample_size]
+        config.optimization.nncf.input_info.sample_size = [1, 3, 10, 10]
         if config.optimization.nncf.apply and "update_config" in config.optimization.nncf:
             return OmegaConf.merge(config, config.optimization.nncf.update_config)
     return config
