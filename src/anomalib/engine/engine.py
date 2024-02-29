@@ -26,7 +26,6 @@ from anomalib.callbacks.thresholding import _ThresholdCallback
 from anomalib.callbacks.timer import TimerCallback
 from anomalib.callbacks.visualizer import _VisualizationCallback
 from anomalib.data import AnomalibDataModule, AnomalibDataset, PredictDataset
-from anomalib.data.utils.path import resolve_path
 from anomalib.deploy.export import ExportType, export_to_onnx, export_to_openvino, export_to_torch
 from anomalib.models import AnomalyModule
 from anomalib.utils.normalization import NormalizationMethod
@@ -263,7 +262,7 @@ class Engine:
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
         # 1. Get the dataset name and category from the dataloaders, datamodule, or dataset.
         dataset_name: str = ""
-        category: str | None
+        category: str | None = None
 
         # Check datamodule and dataset directly
         if datamodule is not None:
@@ -497,7 +496,7 @@ class Engine:
                 ```
         """
         if ckpt_path:
-            ckpt_path = resolve_path(ckpt_path)
+            ckpt_path = Path(ckpt_path).resolve()
 
         self._setup_workspace(
             model=model,
@@ -557,10 +556,10 @@ class Engine:
                 anomalib validate --config <config_file_path>
                 ```
         """
+        if ckpt_path:
+            ckpt_path = Path(ckpt_path).resolve()
         if model:
             self._setup_trainer(model)
-        if ckpt_path:
-            ckpt_path = resolve_path(ckpt_path)
         self._setup_dataset_task(dataloaders)
         self._setup_transform(model or self.model, datamodule=datamodule, ckpt_path=ckpt_path)
         return self.trainer.validate(model, dataloaders, ckpt_path, verbose, datamodule)
@@ -645,7 +644,7 @@ class Engine:
                 ```
         """
         if ckpt_path:
-            ckpt_path = resolve_path(ckpt_path)
+            ckpt_path = Path(ckpt_path).resolve()
 
         self._setup_workspace(model=model or self.model, datamodule=datamodule, test_dataloaders=dataloaders)
 
@@ -731,7 +730,7 @@ class Engine:
         ), "`Engine.predict()` requires an `AnomalyModule` when it hasn't been passed in a previous run."
 
         if ckpt_path:
-            ckpt_path = resolve_path(ckpt_path)
+            ckpt_path = Path(ckpt_path).resolve()
 
         self._setup_workspace(model=model or self.model, datamodule=datamodule, test_dataloaders=dataloaders)
 
@@ -809,7 +808,7 @@ class Engine:
                 ```
         """
         if ckpt_path:
-            ckpt_path = resolve_path(ckpt_path)
+            ckpt_path = Path(ckpt_path).resolve()
         self._setup_workspace(
             model,
             train_dataloaders,
@@ -840,7 +839,7 @@ class Engine:
         export_root: str | Path | None = None,
         transform: Transform | None = None,
         ov_args: dict[str, Any] | None = None,
-        ckpt_path: str | None = None,
+        ckpt_path: str | Path | None = None,
     ) -> Path | None:
         """Export the model in PyTorch, ONNX or OpenVINO format.
 
@@ -853,7 +852,7 @@ class Engine:
                 the engine will try to use the transform from the datamodule or dataset. Defaults to None.
             ov_args (dict[str, Any] | None, optional): This is optional and used only for OpenVINO's model optimizer.
                 Defaults to None.
-            ckpt_path (str | None): Checkpoint path. If provided, the model will be loaded from this path.
+            ckpt_path (str | Path | None): Checkpoint path. If provided, the model will be loaded from this path.
 
         Returns:
             Path: Path to the exported model.
@@ -883,6 +882,7 @@ class Engine:
         """
         self._setup_trainer(model)
         if ckpt_path:
+            ckpt_path = Path(ckpt_path).resolve()
             model = model.__class__.load_from_checkpoint(ckpt_path)
 
         if export_root is None:
