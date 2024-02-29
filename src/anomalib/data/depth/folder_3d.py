@@ -251,16 +251,6 @@ class Folder3DDataset(AnomalibDepthDataset):
         self.normal_test_depth_dir = normal_test_depth_dir
         self.extensions = extensions
 
-    @property
-    def name(self) -> str:
-        """Name of the dataset.
-
-        Folder3D dataset overrides the name property to provide a custom name.
-        """
-        return self._name
-
-    def _setup(self) -> None:
-        """Assign samples."""
         self.samples = make_folder3d_dataset(
             root=self.root,
             normal_dir=self.normal_dir,
@@ -273,6 +263,14 @@ class Folder3DDataset(AnomalibDepthDataset):
             split=self.split,
             extensions=self.extensions,
         )
+
+    @property
+    def name(self) -> str:
+        """Name of the dataset.
+
+        Folder3D dataset overrides the name property to provide a custom name.
+        """
+        return self._name
 
 
 class Folder3D(AnomalibDataModule):

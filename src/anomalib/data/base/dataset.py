@@ -98,11 +98,6 @@ class AnomalibDataset(Dataset, ABC):
         return dataset
 
     @property
-    def is_setup(self) -> bool:
-        """Checks if setup() been called."""
-        return hasattr(self, "_samples")
-
-    @property
     def samples(self) -> DataFrame:
         """Get the samples dataframe."""
         if self._samples is None:
