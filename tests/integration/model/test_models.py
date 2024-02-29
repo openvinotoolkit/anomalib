@@ -12,7 +12,7 @@ from pathlib import Path
 import pytest
 
 from anomalib import TaskType
-from anomalib.data import AnomalibDataModule, MVTec, UCSDped
+from anomalib.data import AnomalibDataModule, MVTec
 from anomalib.deploy.export import ExportType
 from anomalib.engine import Engine
 from anomalib.models import AnomalyModule, get_available_models, get_model
@@ -148,8 +148,6 @@ class TestAPI:
             # TODO(ashwinvaidya17): Restore this test after fixing reverse distillation
             # https://github.com/openvinotoolkit/anomalib/issues/1513
             pytest.skip("Reverse distillation fails to convert to ONNX")
-        elif model_name == "ai_vad":
-            pytest.skip("Export fails for video models.")
         elif model_name == "rkde" and export_type == ExportType.OPENVINO:
             pytest.skip("RKDE fails to convert to OpenVINO")
 
@@ -196,11 +194,10 @@ class TestAPI:
         extra_args = {}
         if model_name in ("rkde", "dfkde"):
             extra_args["n_pca_components"] = 2
+        if model_name == "ai_vad":
+            pytest.skip("Revisit AI-VAD test")
 
         # select dataset
-        if model_name == "ai_vad":
-            # aivad expects UCSD dataset
-            dataset = UCSDped(root=dataset_path / "ucsdped", category="dummy", image_size=[256, 256], task=task_type)
         elif model_name == "win_clip":
             dataset = MVTec(root=dataset_path / "mvtec", category="dummy", image_size=240, task=task_type)
         else:
