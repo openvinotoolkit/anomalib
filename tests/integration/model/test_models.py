@@ -64,7 +64,7 @@ class TestAPI:
         engine.test(
             model=model,
             datamodule=dataset,
-            ckpt_path=f"{project_path}/{model.name}/MVTec/dummy/v0/weights/lightning/model.ckpt",
+            ckpt_path=f"{project_path}/{model.name}/{dataset.name}/dummy/v0/weights/lightning/model.ckpt",
         )
 
     @pytest.mark.parametrize("model_name", models())
@@ -84,7 +84,7 @@ class TestAPI:
         engine.train(
             model=model,
             datamodule=dataset,
-            ckpt_path=f"{project_path}/{model.name}/MVTec/dummy/v0/weights/lightning/model.ckpt",
+            ckpt_path=f"{project_path}/{model.name}/{dataset.name}/dummy/v0/weights/lightning/model.ckpt",
         )
 
     @pytest.mark.parametrize("model_name", models())
@@ -104,7 +104,7 @@ class TestAPI:
         engine.validate(
             model=model,
             datamodule=dataset,
-            ckpt_path=f"{project_path}/{model.name}/MVTec/dummy/v0/weights/lightning/model.ckpt",
+            ckpt_path=f"{project_path}/{model.name}/{dataset.name}/dummy/v0/weights/lightning/model.ckpt",
         )
 
     @pytest.mark.parametrize("model_name", models())
@@ -123,7 +123,7 @@ class TestAPI:
         )
         engine.predict(
             model=model,
-            ckpt_path=f"{project_path}/{model.name}/MVTec/dummy/v0/weights/lightning/model.ckpt",
+            ckpt_path=f"{project_path}/{model.name}/{datamodule.name}/dummy/v0/weights/lightning/model.ckpt",
             datamodule=datamodule,
         )
 
@@ -153,14 +153,14 @@ class TestAPI:
         elif model_name == "rkde" and export_type == ExportType.OPENVINO:
             pytest.skip("RKDE fails to convert to OpenVINO")
 
-        model, _, engine = self._get_objects(
+        model, dataset, engine = self._get_objects(
             model_name=model_name,
             dataset_path=dataset_path,
             project_path=project_path,
         )
         engine.export(
             model=model,
-            ckpt_path=f"{project_path}/{model.name}/MVTec/dummy/v0/weights/lightning/model.ckpt",
+            ckpt_path=f"{project_path}/{model.name}/{dataset.name}/dummy/v0/weights/lightning/model.ckpt",
             export_type=export_type,
         )
 
@@ -200,7 +200,7 @@ class TestAPI:
         # select dataset
         if model_name == "ai_vad":
             # aivad expects UCSD dataset
-            dataset = UCSDped(root=dataset_path / "ucsdped", category="dummy", task=task_type)
+            dataset = UCSDped(root=dataset_path / "ucsdped", category="dummy", image_size=[256, 256], task=task_type)
         elif model_name == "win_clip":
             dataset = MVTec(root=dataset_path / "mvtec", category="dummy", image_size=240, task=task_type)
         else:
