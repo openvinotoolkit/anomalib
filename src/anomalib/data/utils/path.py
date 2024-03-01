@@ -6,7 +6,6 @@
 
 import os
 import re
-import warnings
 from enum import Enum
 from pathlib import Path
 
@@ -162,16 +161,6 @@ def validate_path(path: str | Path, base_dir: str | Path | None = None, should_e
         >>> validate_path("./datasets/MVTec/bottle/train/good/000.png", base_dir="./datasets/MVTec")
         PosixPath('/abs/path/to/anomalib/datasets/MVTec/bottle/train/good/000.png')
 
-        Path to an outside file/directory should raise ValueError:
-
-        >>> validate_path("/usr/local/lib")
-        Traceback (most recent call last):
-        File "<string>", line 1, in <module>
-        File "<string>", line 18, in validate_path
-        ValueError: Access denied: Path is outside the allowed directory
-
-        Path to a non-existing file should raise FileNotFoundError:
-
         >>> validate_path("/path/to/unexisting/file")
         Traceback (most recent call last):
         File "<string>", line 1, in <module>
@@ -211,11 +200,6 @@ def validate_path(path: str | Path, base_dir: str | Path | None = None, should_e
     # Sanitize paths
     path = Path(path).resolve()
     base_dir = Path(base_dir).resolve() if base_dir else Path.home()
-
-    # Check if the resolved path is within the base directory
-    if not str(path).startswith(str(base_dir)):
-        msg = "Path is outside the secured directory"
-        warnings.warn(msg, UserWarning, stacklevel=1)
 
     # In case path ``should_exist``, the path is valid, and should be
     # checked for read and execute permissions.

@@ -4,28 +4,33 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
+from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
 
-import albumentations as A  # noqa: N812
+import torch
 from lightning.pytorch.callbacks import Callback
+from lightning.pytorch.loggers import Logger
 from lightning.pytorch.trainer import Trainer
-from lightning.pytorch.trainer.connectors.callback_connector import _CallbackConnector
 from lightning.pytorch.utilities.types import _EVALUATE_OUTPUT, _PREDICT_OUTPUT, EVAL_DATALOADERS, TRAIN_DATALOADERS
 from torch.utils.data import DataLoader, Dataset
+from torchvision.transforms.v2 import Transform
 
 from anomalib import LearningType, TaskType
+from anomalib.callbacks.checkpoint import ModelCheckpoint
 from anomalib.callbacks.metrics import _MetricsCallback
 from anomalib.callbacks.normalization import get_normalization_callback
 from anomalib.callbacks.normalization.base import NormalizationCallback
 from anomalib.callbacks.post_processor import _PostProcessorCallback
 from anomalib.callbacks.thresholding import _ThresholdCallback
+from anomalib.callbacks.timer import TimerCallback
 from anomalib.callbacks.visualizer import _VisualizationCallback
 from anomalib.data import AnomalibDataModule, AnomalibDataset, PredictDataset
 from anomalib.models import AnomalyModule, ExportType
 from anomalib.utils.normalization import NormalizationMethod
+from anomalib.utils.path import create_versioned_dir
 from anomalib.utils.types import NORMALIZATION, THRESHOLD
-from anomalib.utils.visualization import BaseVisualizer
+from anomalib.utils.visualization import ImageVisualizer
 
 logger = logging.getLogger(__name__)
 
@@ -81,10 +86,7 @@ class _TrainerArgumentsCache:
             self._cached_args[key] = value
 
     def requires_update(self, model: AnomalyModule) -> bool:
-        for key, value in model.trainer_arguments.items():
-            if key in self._cached_args and self._cached_args[key] != value:
-                return True
-        return False
+        return any(self._cached_args.get(key, None) != value for key, value in model.trainer_arguments.items())
 
     @property
     def args(self) -> dict[str, Any]:
@@ -110,8 +112,9 @@ class Engine:
             Defaults to None.
         pixel_metrics (str | list[str] | None, optional): Pixel metrics to be used for evaluation.
             Defaults to None.
-        visualization_handlers (BaseVisualizationGenerator | list[BaseVisualizationGenerator] | None):
-            Visualization parameters. Defaults to None.
+        default_root_dir (str, optional): Default root directory for the trainer.
+            The results will be saved in this directory.
+            Defaults to ``results``.
         **kwargs: PyTorch Lightning Trainer arguments.
     """
 
@@ -123,10 +126,8 @@ class Engine:
         task: TaskType | str = TaskType.SEGMENTATION,
         image_metrics: str | list[str] | None = None,
         pixel_metrics: str | list[str] | None = None,
-        visualizers: BaseVisualizer | list[BaseVisualizer] | None = None,
-        save_image: bool = False,
-        log_image: bool = False,
-        show_image: bool = False,
+        logger: Logger | Iterable[Logger] | bool | None = None,
+        default_root_dir: str | Path = "results",
         **kwargs,
     ) -> None:
         # TODO(ashwinvaidya17): Add model argument to engine constructor
@@ -134,17 +135,24 @@ class Engine:
         if callbacks is None:
             callbacks = []
 
-        self._cache = _TrainerArgumentsCache(callbacks=[*callbacks], **kwargs)
+        # Cache the Lightning Trainer arguments.
+        logger = False if logger is None else logger
+        self._cache = _TrainerArgumentsCache(
+            callbacks=[*callbacks],
+            logger=logger,
+            default_root_dir=Path(default_root_dir),
+            **kwargs,
+        )
+
         self.normalization = normalization
         self.threshold = threshold
         self.task = TaskType(task)
-        self.image_metric_names = image_metrics
-        self.pixel_metric_names = pixel_metrics
-        self.visualizers = visualizers
+        self.image_metric_names = image_metrics if image_metrics else ["AUROC", "F1Score"]
 
-        self.save_image = save_image
-        self.log_image = log_image
-        self.show_image = show_image
+        # pixel metrics are only used for segmentation tasks.
+        self.pixel_metric_names = None
+        if self.task == TaskType.SEGMENTATION:
+            self.pixel_metric_names = pixel_metrics if pixel_metrics is not None else ["AUROC", "F1Score"]
 
         self._trainer: Trainer | None = None
 
@@ -162,33 +170,6 @@ class Engine:
             msg = "``self.trainer`` is not assigned yet."
             raise UnassignedError(msg)
         return self._trainer
-
-    @property
-    def visualizers(self) -> BaseVisualizer | list[BaseVisualizer] | None:
-        """Get visualization generators."""
-        return self._visualizers
-
-    @visualizers.setter
-    def visualizers(self, visualizers: BaseVisualizer | list[BaseVisualizer] | None) -> None:
-        """Set the visualizers.
-
-        Args:
-            visualizers (BaseVisualizer | list[BaseVisualizer] | None): Visualizers to be used for visualization.
-        """
-        self._visualizers = visualizers
-        # override the task in the visualizers if it is not the same as the task of the engine
-        if self.visualizers:
-            visualizers = (
-                self.visualizers
-                if isinstance(self.visualizers, list)
-                else [
-                    self.visualizers,
-                ]
-            )
-            for visualizer in visualizers:
-                if hasattr(visualizer, "task") and visualizer.task != self.task:
-                    logger.info(f"Overriding task of {visualizer} to {self.task}")
-                    visualizer.task = self.task
 
     @property
     def model(self) -> AnomalyModule:
@@ -243,15 +224,85 @@ class Engine:
             raise ValueError(msg)
         return callbacks[0] if len(callbacks) > 0 else None
 
+    def _setup_workspace(
+        self,
+        model: AnomalyModule,
+        train_dataloaders: TRAIN_DATALOADERS | None = None,
+        val_dataloaders: EVAL_DATALOADERS | None = None,
+        test_dataloaders: EVAL_DATALOADERS | None = None,
+        datamodule: AnomalibDataModule | None = None,
+        dataset: AnomalibDataset | None = None,
+        versioned_dir: bool = False,
+    ) -> None:
+        """Setup the workspace for the model.
+
+        This method sets up the default root directory for the model based on
+        the model name, dataset name, and category. Model checkpoints, logs, and
+        other artifacts will be saved in this directory.
+
+        Args:
+            model (AnomalyModule): Input model.
+            train_dataloaders (TRAIN_DATALOADERS | None, optional): Train dataloaders.
+                Defaults to ``None``.
+            val_dataloaders (EVAL_DATALOADERS | None, optional): Validation dataloaders.
+                Defaults to ``None``.
+            test_dataloaders (EVAL_DATALOADERS | None, optional): Test dataloaders.
+                Defaults to ``None``.
+            datamodule (AnomalibDataModule | None, optional): Lightning datamodule.
+                Defaults to ``None``.
+            dataset (AnomalibDataset | None, optional): Anomalib dataset.
+                Defaults to ``None``.
+            versioned_dir (bool, optional): Whether to create a versioned directory.
+                Defaults to ``True``.
+
+        Raises:
+            TypeError: If the dataloader type is unknown.
+        """
+        # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
+        # 1. Get the dataset name and category from the dataloaders, datamodule, or dataset.
+        dataset_name: str = ""
+        category: str | None = None
+
+        # Check datamodule and dataset directly
+        if datamodule is not None:
+            dataset_name = datamodule.name
+            category = datamodule.category
+        elif dataset is not None:
+            dataset_name = dataset.name
+            category = dataset.category
+
+        # Check dataloaders if dataset_name and category are not set
+        dataloaders = [train_dataloaders, val_dataloaders, test_dataloaders]
+        if not dataset_name or category is None:
+            for dataloader in dataloaders:
+                if dataloader is not None:
+                    if hasattr(dataloader, "train_data"):
+                        dataset_name = getattr(dataloader.train_data, "name", "")
+                        category = getattr(dataloader.train_data, "category", "")
+                        break
+                    if dataset_name and category is not None:
+                        break
+
+        # Check if category is None and set it to empty string
+        category = category if category is not None else ""
+
+        # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
+        # 2. Update the default root directory
+        root_dir = Path(self._cache.args["default_root_dir"]) / model.name / dataset_name / category
+        self._cache.args["default_root_dir"] = create_versioned_dir(root_dir) if versioned_dir else root_dir / "latest"
+
     def _setup_trainer(self, model: AnomalyModule) -> None:
         """Instantiate the trainer based on the model parameters."""
-        if self._cache.requires_update(model) or self._trainer is None:
+        # Check if the cache requires an update
+        if self._cache.requires_update(model):
             self._cache.update(model)
+
+        # Setup anomalib callbacks to be used with the trainer
+        self._setup_anomalib_callbacks()
+
+        # Instantiate the trainer if it is not already instantiated
+        if self._trainer is None:
             self._trainer = Trainer(**self._cache.args)
-            # Callbacks need to be setup later as they depend on default_root_dir from the trainer
-            # TODO(djdameln): set up callbacks before instantiating trainer
-            # https://github.com/openvinotoolkit/anomalib/issues/1642
-            self._setup_anomalib_callbacks()
 
     def _setup_dataset_task(
         self,
@@ -273,38 +324,106 @@ class Engine:
                             )
                             data.task = self.task
 
+    @staticmethod
+    def _setup_transform(
+        model: AnomalyModule,
+        datamodule: AnomalibDataModule | None = None,
+        dataloaders: EVAL_DATALOADERS | TRAIN_DATALOADERS | None = None,
+        ckpt_path: Path | str | None = None,
+    ) -> None:
+        """Implements the logic for setting the transform at the start of each run.
+
+        Any transform passed explicitly to the datamodule takes precedence. Otherwise, if a checkpoint path is provided,
+        we can load the transform from the checkpoint. If no transform is provided, we use the default transform from
+        the model.
+
+        Args:
+            model (AnomalyModule): The model to assign the transform to.
+            datamodule (AnomalibDataModule | None): The datamodule to assign the transform from.
+                defaults to ``None``.
+            dataloaders (EVAL_DATALOADERS | TRAIN_DATALOADERS | None): Dataloaders to assign the transform to.
+                defaults to ``None``.
+            ckpt_path (str): The path to the checkpoint.
+                defaults to ``None``.
+
+        Returns:
+            Transform: The transform loaded from the checkpoint.
+        """
+        if isinstance(dataloaders, DataLoader):
+            dataloaders = [dataloaders]
+
+        # get transform
+        if datamodule and datamodule.transform:
+            # a transform passed explicitly to the datamodule takes precedence
+            transform = datamodule.transform
+        elif dataloaders and any(getattr(dl.dataset, "transform", None) for dl in dataloaders):
+            # if dataloaders are provided, we use the transform from the first dataloader that has a transform
+            transform = next(dl.dataset.transform for dl in dataloaders if getattr(dl.dataset, "transform", None))
+        elif ckpt_path is not None:
+            # if a checkpoint path is provided, we can load the transform from the checkpoint
+            checkpoint = torch.load(ckpt_path, map_location=model.device)
+            transform = checkpoint["transform"]
+        elif model.transform is None:
+            # if no transform is provided, we use the default transform from the model
+            image_size = datamodule.image_size if datamodule else None
+            transform = model.configure_transforms(image_size)
+        else:
+            transform = model.transform
+
+        # update transform in model
+        model.set_transform(transform)
+        # The dataloaders don't have access to the trainer and/or model, so we need to set the transforms manually
+        if dataloaders:
+            for dataloader in dataloaders:
+                if not getattr(dataloader.dataset, "transform", None):
+                    dataloader.dataset.transform = transform
+
     def _setup_anomalib_callbacks(self) -> None:
         """Set up callbacks for the trainer."""
-        _callbacks: list[Callback] = [_PostProcessorCallback()]
+        _callbacks: list[Callback] = []
+
+        # Add ModelCheckpoint if it is not in the callbacks list.
+        has_checkpoint_callback = any(isinstance(c, ModelCheckpoint) for c in self._cache.args["callbacks"])
+        if has_checkpoint_callback is False:
+            _callbacks.append(
+                ModelCheckpoint(
+                    dirpath=self._cache.args["default_root_dir"] / "weights" / "lightning",
+                    filename="model",
+                    auto_insert_metric_name=False,
+                ),
+            )
+
+        # Add the post-processor callbacks.
+        _callbacks.append(_PostProcessorCallback())
+
+        # Add the the normalization callback.
         normalization_callback = get_normalization_callback(self.normalization)
         if normalization_callback is not None:
             _callbacks.append(normalization_callback)
 
+        # Add the thresholding and metrics callbacks.
         _callbacks.append(_ThresholdCallback(self.threshold))
         _callbacks.append(_MetricsCallback(self.task, self.image_metric_names, self.pixel_metric_names))
 
-        if self.visualizers is not None:
-            image_save_path = Path(self.trainer.default_root_dir) / "images"
-            _callbacks.append(
-                _VisualizationCallback(
-                    visualizers=self.visualizers,
-                    save=self.save_image,
-                    root=image_save_path,
-                    log=self.log_image,
-                    show=self.show_image,
-                ),
-            )
-
-        self.trainer.callbacks = _CallbackConnector._reorder_callbacks(  # noqa: SLF001
-            self.trainer.callbacks + _callbacks,
+        _callbacks.append(
+            _VisualizationCallback(
+                visualizers=ImageVisualizer(task=self.task),
+                save=True,
+                root=self._cache.args["default_root_dir"] / "images",
+            ),
         )
+
+        _callbacks.append(TimerCallback())
+
+        # Combine the callbacks, and update the trainer callbacks.
+        self._cache.args["callbacks"] = _callbacks + self._cache.args["callbacks"]
 
     def _should_run_validation(
         self,
         model: AnomalyModule,
-        dataloaders: EVAL_DATALOADERS | AnomalibDataModule | None,
+        dataloaders: EVAL_DATALOADERS | None,
         datamodule: AnomalibDataModule | None,
-        ckpt_path: str | None,
+        ckpt_path: str | Path | None,
     ) -> bool:
         """Check if we need to run validation to collect normalization statistics and thresholds.
 
@@ -320,9 +439,9 @@ class Engine:
 
         Args:
             model (AnomalyModule): Model passed to the entrypoint.
-            dataloaders (EVAL_DATALOADERS | AnomalibDataModule | None): Dataloaders passed to the entrypoint.
+            dataloaders (EVAL_DATALOADERS | None): Dataloaders passed to the entrypoint.
             datamodule (AnomalibDataModule | None): Lightning datamodule passed to the entrypoint.
-            ckpt_path (str | None): Checkpoint path passed to the entrypoint.
+            ckpt_path (str | Path | None): Checkpoint path passed to the entrypoint.
 
         Returns:
             bool: Whether it is needed to run a validation sequence.
@@ -342,16 +461,16 @@ class Engine:
     def fit(
         self,
         model: AnomalyModule,
-        train_dataloaders: TRAIN_DATALOADERS | AnomalibDataModule | None = None,
+        train_dataloaders: TRAIN_DATALOADERS | None = None,
         val_dataloaders: EVAL_DATALOADERS | None = None,
         datamodule: AnomalibDataModule | None = None,
-        ckpt_path: str | None = None,
+        ckpt_path: str | Path | None = None,
     ) -> None:
         """Fit the model using the trainer.
 
         Args:
             model (AnomalyModule): Model to be trained.
-            train_dataloaders (TRAIN_DATALOADERS | AnomalibDataModule | None, optional): Train dataloaders.
+            train_dataloaders (TRAIN_DATALOADERS | None, optional): Train dataloaders.
                 Defaults to None.
             val_dataloaders (EVAL_DATALOADERS | None, optional): Validation dataloaders.
                 Defaults to None.
@@ -375,8 +494,19 @@ class Engine:
                 anomalib fit --config <config_file_path>
                 ```
         """
+        if ckpt_path:
+            ckpt_path = Path(ckpt_path).resolve()
+
+        self._setup_workspace(
+            model=model,
+            train_dataloaders=train_dataloaders,
+            val_dataloaders=val_dataloaders,
+            datamodule=datamodule,
+            versioned_dir=True,
+        )
         self._setup_trainer(model)
         self._setup_dataset_task(train_dataloaders, val_dataloaders, datamodule)
+        self._setup_transform(model, datamodule=datamodule, ckpt_path=ckpt_path)
         if model.learning_type in [LearningType.ZERO_SHOT, LearningType.FEW_SHOT]:
             # if the model is zero-shot or few-shot, we only need to run validate for normalization and thresholding
             self.trainer.validate(model, val_dataloaders, datamodule=datamodule, ckpt_path=ckpt_path)
@@ -386,8 +516,8 @@ class Engine:
     def validate(
         self,
         model: AnomalyModule | None = None,
-        dataloaders: EVAL_DATALOADERS | AnomalibDataModule | None = None,
-        ckpt_path: str | None = None,
+        dataloaders: EVAL_DATALOADERS | None = None,
+        ckpt_path: str | Path | None = None,
         verbose: bool = True,
         datamodule: AnomalibDataModule | None = None,
     ) -> _EVALUATE_OUTPUT | None:
@@ -396,7 +526,7 @@ class Engine:
         Args:
             model (AnomalyModule | None, optional): Model to be validated.
                 Defaults to None.
-            dataloaders (EVAL_DATALOADERS | AnomalibDataModule | None, optional): Dataloaders to be used for
+            dataloaders (EVAL_DATALOADERS | None, optional): Dataloaders to be used for
                 validation.
                 Defaults to None.
             ckpt_path (str | None, optional): Checkpoint path. If provided, the model will be loaded from this path.
@@ -425,16 +555,19 @@ class Engine:
                 anomalib validate --config <config_file_path>
                 ```
         """
+        if ckpt_path:
+            ckpt_path = Path(ckpt_path).resolve()
         if model:
             self._setup_trainer(model)
         self._setup_dataset_task(dataloaders)
+        self._setup_transform(model or self.model, datamodule=datamodule, ckpt_path=ckpt_path)
         return self.trainer.validate(model, dataloaders, ckpt_path, verbose, datamodule)
 
     def test(
         self,
         model: AnomalyModule | None = None,
-        dataloaders: EVAL_DATALOADERS | AnomalibDataModule | None = None,
-        ckpt_path: str | None = None,
+        dataloaders: EVAL_DATALOADERS | None = None,
+        ckpt_path: str | Path | None = None,
         verbose: bool = True,
         datamodule: AnomalibDataModule | None = None,
     ) -> _EVALUATE_OUTPUT:
@@ -447,7 +580,7 @@ class Engine:
             model (AnomalyModule | None, optional):
                 The model to be tested.
                 Defaults to None.
-            dataloaders (EVAL_DATALOADERS | AnomalibDataModule | None, optional):
+            dataloaders (EVAL_DATALOADERS | None, optional):
                 An iterable or collection of iterables specifying test samples.
                 Defaults to None.
             ckpt_path (str | None, optional):
@@ -509,26 +642,32 @@ class Engine:
                 anomalib test --config <config_file_path>
                 ```
         """
+        if ckpt_path:
+            ckpt_path = Path(ckpt_path).resolve()
+
+        self._setup_workspace(model=model or self.model, datamodule=datamodule, test_dataloaders=dataloaders)
+
         if model:
             self._setup_trainer(model)
         elif not self.model:
             msg = "`Engine.test()` requires an `AnomalyModule` when it hasn't been passed in a previous run."
             raise RuntimeError(msg)
+
         self._setup_dataset_task(dataloaders)
+        self._setup_transform(model or self.model, datamodule=datamodule, ckpt_path=ckpt_path)
         if self._should_run_validation(model or self.model, dataloaders, datamodule, ckpt_path):
             logger.info("Running validation before testing to collect normalization metrics and/or thresholds.")
             self.trainer.validate(model, dataloaders, None, verbose=False, datamodule=datamodule)
         return self.trainer.test(model, dataloaders, ckpt_path, verbose, datamodule)
 
-    # TODO(ashwinvaidya17): revisit typing of data args
-    # https://github.com/openvinotoolkit/anomalib/issues/1638
     def predict(
         self,
         model: AnomalyModule | None = None,
-        dataloaders: EVAL_DATALOADERS | AnomalibDataModule | None = None,
-        datamodule: AnomalibDataModule | Dataset | PredictDataset | None = None,
+        dataloaders: EVAL_DATALOADERS | None = None,
+        datamodule: AnomalibDataModule | None = None,
+        dataset: Dataset | PredictDataset | None = None,
         return_predictions: bool | None = None,
-        ckpt_path: str | None = None,
+        ckpt_path: str | Path | None = None,
     ) -> _PREDICT_OUTPUT | None:
         """Predict using the model using the trainer.
 
@@ -539,7 +678,7 @@ class Engine:
             model (AnomalyModule | None, optional):
                 Model to be used for prediction.
                 Defaults to None.
-            dataloaders (EVAL_DATALOADERS | AnomalibDataModule | None, optional):
+            dataloaders (EVAL_DATALOADERS | None, optional):
                 An iterable or collection of iterables specifying predict samples.
                 Defaults to None.
             datamodule (AnomalibDataModule | None, optional):
@@ -547,6 +686,9 @@ class Engine:
                 the :class:`~lightning.pytorch.core.hooks.DataHooks.predict_dataloader` hook.
                 The datamodule can also be a dataset that will be wrapped in a torch Dataloader.
                 Defaults to None.
+            dataset (Dataset | PredictDataset | None, optional):
+                A :class:`~torch.utils.data.Dataset` or :class:`~anomalib.data.PredictDataset` that will be used
+                to create a dataloader. Defaults to None.
             return_predictions (bool | None, optional):
                 Whether to return predictions.
                 ``True`` by default except when an accelerator that spawns processes is used (not supported).
@@ -585,6 +727,12 @@ class Engine:
         assert (
             model or self.model
         ), "`Engine.predict()` requires an `AnomalyModule` when it hasn't been passed in a previous run."
+
+        if ckpt_path:
+            ckpt_path = Path(ckpt_path).resolve()
+
+        self._setup_workspace(model=model or self.model, datamodule=datamodule, test_dataloaders=dataloaders)
+
         if model:
             self._setup_trainer(model)
 
@@ -592,9 +740,8 @@ class Engine:
             logger.warning("ckpt_path is not provided. Model weights will not be loaded.")
 
         # Handle the instance when a dataset is passed to the predict method
-        if datamodule is not None and isinstance(datamodule, Dataset):
-            dataloader = DataLoader(datamodule)
-            datamodule = None
+        if dataset is not None:
+            dataloader = DataLoader(dataset)
             if dataloaders is None:
                 dataloaders = dataloader
             elif isinstance(dataloaders, DataLoader):
@@ -606,6 +753,7 @@ class Engine:
                 raise TypeError(msg)
 
         self._setup_dataset_task(dataloaders, datamodule)
+        self._setup_transform(model or self.model, datamodule=datamodule, dataloaders=dataloaders, ckpt_path=ckpt_path)
 
         if self._should_run_validation(model or self.model, None, datamodule, ckpt_path):
             logger.info("Running validation before predicting to collect normalization metrics and/or thresholds.")
@@ -622,17 +770,17 @@ class Engine:
     def train(
         self,
         model: AnomalyModule,
-        train_dataloaders: TRAIN_DATALOADERS | AnomalibDataModule | None = None,
+        train_dataloaders: TRAIN_DATALOADERS | None = None,
         val_dataloaders: EVAL_DATALOADERS | None = None,
         test_dataloaders: EVAL_DATALOADERS | None = None,
         datamodule: AnomalibDataModule | None = None,
-        ckpt_path: str | None = None,
+        ckpt_path: str | Path | None = None,
     ) -> _EVALUATE_OUTPUT:
         """Fits the model and then calls test on it.
 
         Args:
             model (AnomalyModule): Model to be trained.
-            train_dataloaders (TRAIN_DATALOADERS | AnomalibDataModule | None, optional): Train dataloaders.
+            train_dataloaders (TRAIN_DATALOADERS | None, optional): Train dataloaders.
                 Defaults to None.
             val_dataloaders (EVAL_DATALOADERS | None, optional): Validation dataloaders.
                 Defaults to None.
@@ -658,8 +806,24 @@ class Engine:
                 anomalib train --config <config_file_path>
                 ```
         """
+        if ckpt_path:
+            ckpt_path = Path(ckpt_path).resolve()
+        self._setup_workspace(
+            model,
+            train_dataloaders,
+            val_dataloaders,
+            test_dataloaders,
+            datamodule,
+            versioned_dir=True,
+        )
         self._setup_trainer(model)
-        self._setup_dataset_task(train_dataloaders, val_dataloaders, test_dataloaders, datamodule)
+        self._setup_dataset_task(
+            train_dataloaders,
+            val_dataloaders,
+            test_dataloaders,
+            datamodule,
+        )
+        self._setup_transform(model, datamodule=datamodule, ckpt_path=ckpt_path)
         if model.learning_type in [LearningType.ZERO_SHOT, LearningType.FEW_SHOT]:
             # if the model is zero-shot or few-shot, we only need to run validate for normalization and thresholding
             self.trainer.validate(model, val_dataloaders, None, verbose=False, datamodule=datamodule)
@@ -672,12 +836,9 @@ class Engine:
         model: AnomalyModule,
         export_type: ExportType,
         export_root: str | Path | None = None,
-        transform: dict[str, Any] | A.Compose | str | Path | None = None,
-        datamodule: AnomalibDataModule | None = None,
-        dataset: AnomalibDataset | None = None,
-        input_size: tuple[int, int] | None = None,
+        transform: Transform | None = None,
         ov_args: dict[str, Any] | None = None,
-        ckpt_path: str | None = None,
+        ckpt_path: str | Path | None = None,
     ) -> Path | None:
         """Export the model in PyTorch, ONNX or OpenVINO format.
 
@@ -686,19 +847,11 @@ class Engine:
             export_type (ExportType): Export type.
             export_root (str | Path | None, optional): Path to the output directory. If it is not set, the model is
                 exported to trainer.default_root_dir. Defaults to None.
-            transform (dict[str, Any] | A.Compose | str | Path | None, optional): Transform config. Can either be a
-                path to a file containing the transform config or can be an object. The file or object should follow
-                Albumentation's format. If not provided, it takes the transform from datamodule or dataset. Datamodule
-                or Dataset should be provided if transforms is not set. Defaults to None.
-            datamodule (AnomalibDataModule | None, optional): Datamodule from which transforms is loaded.
-                This optional. Defaults to None.
-            dataset (AnomalibDataset | None, optional): Dataset from which the transforms is loaded.
-                 is optional. Defaults to None.
-            input_size (tuple[int, int] | None, optional): This is required only if the model is exported to ONNX and
-                OpenVINO format. Defaults to None.
+            transform (Transform | None, optional): Input transform to include in the exported model. If not provided,
+                the engine will try to use the transform from the datamodule or dataset. Defaults to None.
             ov_args (dict[str, Any] | None, optional): This is optional and used only for OpenVINO's model optimizer.
                 Defaults to None.
-            ckpt_path (str | None): Checkpoint path. If provided, the model will be loaded from this path.
+            ckpt_path (str | Path | None): Checkpoint path. If provided, the model will be loaded from this path.
 
         Returns:
             Path: Path to the exported model.
@@ -727,23 +880,9 @@ class Engine:
                 ```
         """
         self._setup_trainer(model)
-        self._setup_dataset_task(datamodule, dataset)
         if ckpt_path:
+            ckpt_path = Path(ckpt_path).resolve()
             model = model.__class__.load_from_checkpoint(ckpt_path)
-
-        if transform is None:
-            if datamodule:
-                transform = datamodule.test_data.transform
-            elif dataset:
-                transform = dataset.transform
-            else:
-                logger.exception("Either datamodule or dataset must be provided if transform is None.")
-                raise ValueError
-        elif isinstance(transform, str | Path):
-            transform = A.load(filepath=transform, data_format="yaml")
-        else:
-            logger.exception(f"Unknown type {type(transform)} for transform.")
-            raise TypeError
 
         if export_root is None:
             export_root = Path(self.trainer.default_root_dir)
@@ -756,17 +895,13 @@ class Engine:
                 task=self.task,
             )
         elif export_type == ExportType.ONNX:
-            assert input_size is not None, "input_size must be provided for ONNX export."
             exported_model_path = model.to_onnx(
-                input_size=input_size,
                 export_root=export_root,
                 transform=transform,
                 task=self.task,
             )
         elif export_type == ExportType.OPENVINO:
-            assert input_size is not None, "input_size must be provided for OpenVINO export."
             exported_model_path = model.to_openvino(
-                input_size=input_size,
                 export_root=export_root,
                 transform=transform,
                 task=self.task,

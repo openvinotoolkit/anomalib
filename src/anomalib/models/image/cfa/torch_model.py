@@ -21,7 +21,7 @@ from torch.utils.data import DataLoader
 from torchvision.models.feature_extraction import create_feature_extractor
 from tqdm import tqdm
 
-from anomalib.models.components import DynamicBufferModule
+from anomalib.models.components import DynamicBufferMixin
 from anomalib.models.components.feature_extractors import dryrun_find_featuremap_dims
 
 from .anomaly_map import AnomalyMapGenerator
@@ -81,7 +81,7 @@ def get_feature_extractor(backbone: str, return_nodes: list[str]) -> GraphModule
     return feature_extractor
 
 
-class CfaModel(DynamicBufferModule):
+class CfaModel(DynamicBufferMixin):
     """Torch implementation of the CFA Model.
 
     Args:
@@ -96,7 +96,6 @@ class CfaModel(DynamicBufferModule):
 
     def __init__(
         self,
-        input_size: tuple[int, int],
         backbone: str,
         gamma_c: int,
         gamma_d: int,
@@ -105,7 +104,6 @@ class CfaModel(DynamicBufferModule):
         radius: float,
     ) -> None:
         super().__init__()
-        self.input_size = torch.Size(input_size)
         self.gamma_c = gamma_c
         self.gamma_d = gamma_d
 
@@ -115,32 +113,40 @@ class CfaModel(DynamicBufferModule):
         self.register_buffer("memory_bank", torch.tensor(0.0))
         self.memory_bank: torch.Tensor
 
+        self.backbone = backbone
         return_nodes = get_return_nodes(backbone)
         self.feature_extractor = get_feature_extractor(backbone, return_nodes)
+
+        self.descriptor = Descriptor(self.gamma_d, backbone)
+        self.radius = torch.ones(1, requires_grad=True) * radius
+
+        self.anomaly_map_generator = AnomalyMapGenerator(
+            num_nearest_neighbors=num_nearest_neighbors,
+        )
+
+    def get_scale(self, input_size: tuple[int, int] | torch.Size) -> torch.Size:
+        """Get the scale of the feature map.
+
+        Args:
+            input_size (tuple[int, int]): Input size of the image tensor.
+        """
         feature_map_metadata = dryrun_find_featuremap_dims(
             feature_extractor=self.feature_extractor,
             input_size=input_size,
-            layers=return_nodes,
+            layers=get_return_nodes(self.backbone),
         )
         # Scale is to get the largest feature map dimensions of different layers
         # of the feature extractor. In a typical feature extractor, the first
         # layer has the highest resolution.
         resolution = next(iter(feature_map_metadata.values()))["resolution"]
         if isinstance(resolution, int):
-            self.scale = (resolution,) * 2
+            scale = (resolution,) * 2
         elif isinstance(resolution, tuple):
-            self.scale = resolution
+            scale = resolution
         else:
             msg = f"Unknown type {type(resolution)} for `resolution`. Expected types are either int or tuple[int, int]."
             raise TypeError(msg)
-
-        self.descriptor = Descriptor(self.gamma_d, backbone)
-        self.radius = torch.ones(1, requires_grad=True) * radius
-
-        self.anomaly_map_generator = AnomalyMapGenerator(
-            image_size=input_size,
-            num_nearest_neighbors=num_nearest_neighbors,
-        )
+        return scale
 
     def initialize_centroid(self, data_loader: DataLoader) -> None:
         """Initialize the Centroid of the Memory Bank.
@@ -162,10 +168,12 @@ class CfaModel(DynamicBufferModule):
 
         self.memory_bank = rearrange(self.memory_bank, "b c h w -> (b h w) c")
 
+        scale = self.get_scale(batch.shape[-2:])
+
         if self.gamma_c > 1:
             # TODO(samet-akcay): Create PyTorch KMeans class.
             # CVS-122673
-            k_means = KMeans(n_clusters=(self.scale[0] * self.scale[1]) // self.gamma_c, max_iter=3000)
+            k_means = KMeans(n_clusters=(scale[0] * scale[1]) // self.gamma_c, max_iter=3000)
             cluster_centers = k_means.fit(self.memory_bank.cpu()).cluster_centers_
             self.memory_bank = torch.tensor(cluster_centers, requires_grad=False).to(device)
 
@@ -213,7 +221,15 @@ class CfaModel(DynamicBufferModule):
         target_features = self.descriptor(features)
         distance = self.compute_distance(target_features)
 
-        return distance if self.training else self.anomaly_map_generator(distance=distance, scale=self.scale)
+        return (
+            distance
+            if self.training
+            else self.anomaly_map_generator(
+                distance=distance,
+                scale=target_features.shape[-2:],
+                image_size=input_tensor.shape[-2:],
+            )
+        )
 
 
 class Descriptor(nn.Module):

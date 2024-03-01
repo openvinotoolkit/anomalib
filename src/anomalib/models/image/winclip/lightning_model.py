@@ -13,6 +13,7 @@ from typing import Any
 
 import torch
 from torch.utils.data import DataLoader
+from torchvision.transforms.v2 import Compose, Normalize, Resize, Transform
 
 from anomalib import LearningType
 from anomalib.data.predict import PredictDataset
@@ -54,7 +55,7 @@ class WinClip(AnomalyModule):
         self.k_shot = k_shot
         self.few_shot_source = Path(few_shot_source) if few_shot_source else None
 
-    def setup(self, stage: str) -> None:
+    def _setup(self) -> None:
         """Setup WinCLIP.
 
         - Set the class name used in the prompt ensemble.
@@ -62,11 +63,7 @@ class WinClip(AnomalyModule):
         - Collect reference images for few-shot inference.
 
         We need to pass the device because this hook is called before the model is moved to the device.
-
-        Args:
-            stage (str): The stage in which the setup is called. Usually ``"fit"``, ``"test"`` or ``predict``.
         """
-        del stage
         # get class name
         self.class_name = self._get_class_name()
         ref_images = None
@@ -97,7 +94,7 @@ class WinClip(AnomalyModule):
         if self.class_name is not None:
             logger.info("Using class name from init args: %s", self.class_name)
             return self.class_name
-        if hasattr(self, "trainer") and hasattr(self.trainer.datamodule, "category"):
+        if getattr(self, "_trainer", None) and hasattr(self.trainer.datamodule, "category"):
             logger.info("No class name provided, using category from datamodule: %s", self.trainer.datamodule.category)
             return self.trainer.datamodule.category
         logger.info("No class name provided and no category name found in datamodule using default: object")
@@ -170,3 +167,14 @@ class WinClip(AnomalyModule):
             restore_dict = {key: value for key, value in full_dict.items() if key.startswith(pattern)}
             state_dict.update(restore_dict)
         return super().load_state_dict(state_dict, strict)
+
+    def configure_transforms(self, image_size: tuple[int, int] | None = None) -> Transform:
+        """Configure the default transforms used by the model."""
+        if image_size is not None:
+            logger.warning("Image size is not used in WinCLIP. The input image size is determined by the model.")
+        return Compose(
+            [
+                Resize((240, 240), antialias=True),
+                Normalize(mean=(0.48145466, 0.4578275, 0.40821073), std=(0.26862954, 0.26130258, 0.27577711)),
+            ],
+        )

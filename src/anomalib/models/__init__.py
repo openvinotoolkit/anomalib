@@ -5,13 +5,13 @@
 
 
 import logging
-import re
 from importlib import import_module
 
 from jsonargparse import Namespace
 from omegaconf import DictConfig, OmegaConf
 
 from anomalib.models.components import AnomalyModule, ExportType
+from anomalib.utils.path import convert_to_snake_case
 
 from .image import (
     Cfa,
@@ -64,25 +64,6 @@ __all__ = [
 logger = logging.getLogger(__name__)
 
 
-def convert_pascal_to_snake_case(pascal_case: str) -> str:
-    """Convert PascalCase to snake_case.
-
-    Args:
-        pascal_case (str): Input string in PascalCase
-
-    Returns:
-        str: Output string in snake_case
-
-    Examples:
-        >>> _convert_pascal_to_snake_case("EfficientAd")
-        efficient_ad
-
-        >>> _convert_pascal_to_snake_case("Patchcore")
-        patchcore
-    """
-    return re.sub(r"(?<!^)(?=[A-Z])", "_", pascal_case).lower()
-
-
 def convert_snake_to_pascal_case(snake_case: str) -> str:
     """Convert snake_case to PascalCase.
 
@@ -112,7 +93,7 @@ def get_available_models() -> set[str]:
         >>> get_available_models()
         ['ai_vad', 'cfa', 'cflow', 'csflow', 'dfkde', 'dfm', 'draem', 'efficient_ad', 'fastflow', ...]
     """
-    return {convert_pascal_to_snake_case(cls.__name__) for cls in AnomalyModule.__subclasses__()}
+    return {convert_to_snake_case(cls.__name__) for cls in AnomalyModule.__subclasses__()}
 
 
 def _get_model_class_by_name(name: str) -> type[AnomalyModule]:

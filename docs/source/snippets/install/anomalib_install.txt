@@ -1,0 +1,14 @@
+# Get help for the installation arguments
+anomalib install -h
+
+# Install the full package
+anomalib install
+
+# Install with verbose output
+anomalib install -v
+
+# Install the core package option only to train and evaluate models via Torch and Lightning
+anomalib install --option core
+
+# Install with OpenVINO option only. This is useful for edge deployment as the wheel size is smaller.
+anomalib install --option openvino

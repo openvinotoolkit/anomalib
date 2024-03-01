@@ -12,15 +12,16 @@ from enum import Enum
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-import albumentations as A  # noqa: N812
 import lightning.pytorch as pl
 import numpy as np
 import torch
+from lightning.pytorch.trainer.states import TrainerFn
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torch import nn
+from torchvision.transforms.v2 import CenterCrop, Compose, Normalize, Resize, Transform
 
 from anomalib import LearningType, TaskType
-from anomalib.data import AnomalibDataModule, AnomalibDataset
+from anomalib.data.transforms import ExportableCenterCrop
 from anomalib.metrics import AnomalibMetricCollection
 from anomalib.metrics.threshold import BaseThreshold
 from anomalib.utils.exceptions import try_import
@@ -55,6 +56,59 @@ class ExportType(str, Enum):
     TORCH = "torch"
 
 
+class InferenceModel(nn.Module):
+    """Inference model for export.
+
+    The InferenceModel is used to wrap the model and transform for exporting to torch and ONNX/OpenVINO.
+
+    Args:
+        model (nn.Module): Model to export.
+        transform (Transform): Input transform for the model.
+        disable_antialias (bool, optional): Disable antialiasing in the Resize transforms of the given transform. This
+            is needed for ONNX/OpenVINO export, as antialiasing is not supported in the ONNX opset.
+    """
+
+    def __init__(self, model: nn.Module, transform: Transform, disable_antialias: bool = False) -> None:
+        super().__init__()
+        self.model = model
+        self.transform = transform
+        self.convert_center_crop()
+        if disable_antialias:
+            self.disable_antialias()
+
+    def forward(self, batch: torch.Tensor) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
+        """Transform the input batch and pass it through the model."""
+        batch = self.transform(batch)
+        return self.model(batch)
+
+    def disable_antialias(self) -> None:
+        """Disable antialiasing in the Resize transforms of the given transform.
+
+        This is needed for ONNX/OpenVINO export, as antialiasing is not supported in the ONNX opset.
+        """
+        if isinstance(self.transform, Resize):
+            self.transform.antialias = False
+        if isinstance(self.transform, Compose):
+            for transform in self.transform.transforms:
+                if isinstance(transform, Resize):
+                    transform.antialias = False
+
+    def convert_center_crop(self) -> None:
+        """Convert CenterCrop to ExportableCenterCrop for ONNX export.
+
+        The original CenterCrop transform is not supported in ONNX export. This method replaces the CenterCrop to
+        ExportableCenterCrop, which is supported in ONNX export. For more details, see the implementation of
+        ExportableCenterCrop.
+        """
+        if isinstance(self.transform, CenterCrop):
+            self.transform = ExportableCenterCrop(size=self.transform.size)
+        elif isinstance(self.transform, Compose):
+            transforms = self.transform.transforms
+            for index in range(len(transforms)):
+                if isinstance(transforms[index], CenterCrop):
+                    transforms[index] = ExportableCenterCrop(size=transforms[index].size)
+
+
 class AnomalyModule(pl.LightningModule, ABC):
     """AnomalyModule to train, validate, predict and test images.
 
@@ -77,6 +131,32 @@ class AnomalyModule(pl.LightningModule, ABC):
 
         self.image_metrics: AnomalibMetricCollection
         self.pixel_metrics: AnomalibMetricCollection
+
+        self._transform: Transform | None = None
+        self._input_size: tuple[int, int] | None = None
+
+        self._is_setup = False  # flag to track if setup has been called from the trainer
+
+    @property
+    def name(self) -> str:
+        """Name of the model."""
+        return self.__class__.__name__
+
+    def setup(self, stage: str | None = None) -> None:
+        """Calls the _setup method to build the model if the model is not already built."""
+        if getattr(self, "model", None) is None or not self._is_setup:
+            self._setup()
+            if isinstance(stage, TrainerFn):
+                # only set the flag if the stage is a TrainerFn, which means the setup has been called from a trainer
+                self._is_setup = True
+
+    def _setup(self) -> None:
+        """The _setup method is used to build the torch model dynamically or adjust something about them.
+
+        The model implementer may override this method to build the model. This is useful when the model cannot be set
+        in the `__init__` method because it requires some information or data that is not available at the time of
+        initialization.
+        """
 
     def forward(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> Any:  # noqa: ANN401
         """Perform the forward-pass by passing input tensor to the module.
@@ -209,20 +289,84 @@ class AnomalyModule(pl.LightningModule, ABC):
         """Learning type of the model."""
         raise NotImplementedError
 
+    @property
+    def transform(self) -> Transform:
+        """Retrieve the model-specific transform.
+
+        If a transform has been set using `set_transform`, it will be returned. Otherwise, we will use the
+        model-specific default transform, conditioned on the input size.
+        """
+        return self._transform
+
+    def set_transform(self, transform: Transform) -> None:
+        """Update the transform linked to the model instance."""
+        self._transform = transform
+
+    def configure_transforms(self, image_size: tuple[int, int] | None = None) -> Transform:
+        """Default transforms.
+
+        The default transform is resize to 256x256 and normalize to ImageNet stats. Individual models can override
+        this method to provide custom transforms.
+        """
+        logger.warning(
+            "No implementation of `configure_transforms` was provided in the Lightning model. Using default "
+            "transforms from the base class. This may not be suitable for your use case. Please override "
+            "`configure_transforms` in your model.",
+        )
+        image_size = image_size or (256, 256)
+        return Compose(
+            [
+                Resize(image_size, antialias=True),
+                Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+            ],
+        )
+
+    @property
+    def input_size(self) -> tuple[int, int] | None:
+        """Return the effective input size of the model.
+
+        The effective input size is the size of the input tensor after the transform has been applied. If the transform
+        is not set, or if the transform does not change the shape of the input tensor, this method will return None.
+        """
+        transform = self.transform or self.configure_transforms()
+        if transform is None:
+            return None
+        dummy_input = torch.zeros(1, 3, 1, 1)
+        output_shape = transform(dummy_input).shape[-2:]
+        if output_shape == (1, 1):
+            return None
+        return output_shape[-2:]
+
+    def on_save_checkpoint(self, checkpoint: dict[str, Any]) -> None:
+        """Called when saving the model to a checkpoint.
+
+        Saves the transform to the checkpoint.
+        """
+        checkpoint["transform"] = self.transform
+
+    def on_load_checkpoint(self, checkpoint: dict[str, Any]) -> None:
+        """Called when loading the model from a checkpoint.
+
+        Loads the transform from the checkpoint and calls setup to ensure that the torch model is built before loading
+        the state dict.
+        """
+        self._transform = checkpoint["transform"]
+        self.setup("load_checkpoint")
+
     def to_torch(
         self,
         export_root: Path | str,
-        transform: dict[str, Any] | AnomalibDataset | AnomalibDataModule | A.Compose,
+        transform: Transform | None = None,
         task: TaskType | None = None,
     ) -> Path:
         """Export AnomalibModel to torch.
 
         Args:
             export_root (Path): Path to the output folder.
-            transform (dict[str, Any] | AnomalibDataset | AnomalibDataModule | A.Compose): Data transforms
-                (augmentations) used for the model. When using ``dict``, ensure that the transform dict is in the format
-                required by Albumentations.
-            task (TaskType | None): Task type should be provided if transforms is of type dict or A.Compose object.
+            transform (Transform, optional): Input transforms used for the model. If not provided, the transform is
+                taken from the model.
+                Defaults to ``None``.
+            task (TaskType | None): Task type.
                 Defaults to ``None``.
 
         Returns:
@@ -249,32 +393,32 @@ class AnomalyModule(pl.LightningModule, ABC):
             ...     task=datamodule.test_data.task,
             ... )
         """
+        transform = transform or self.transform or self.configure_transforms()
+        inference_model = InferenceModel(model=self.model, transform=transform)
         export_root = _create_export_root(export_root, ExportType.TORCH)
-        metadata = self.get_metadata(task=task, transform=transform)
+        metadata = self.get_metadata(task=task)
         pt_model_path = export_root / "model.pt"
         torch.save(
-            obj={"model": self.model, "metadata": metadata},
+            obj={"model": inference_model, "metadata": metadata},
             f=pt_model_path,
         )
         return pt_model_path
 
     def to_onnx(
         self,
-        input_size: tuple[int, int],
         export_root: Path | str,
-        transform: dict[str, Any] | AnomalibDataset | AnomalibDataModule | A.Compose,
+        transform: Transform | None = None,
         task: TaskType | None = None,
         export_type: ExportType = ExportType.ONNX,
     ) -> Path:
         """Export model to onnx.
 
         Args:
-            input_size (list[int] | tuple[int, int]): Image size used as the input for onnx converter.
             export_root (Path): Path to the root folder of the exported model.
-            transform (dict[str, Any] | AnomalibDataset | AnomalibDataModule | A.Compose): Data transforms
-                (augmentations) used for the model. When using dict, ensure that the transform dict is in the format
-                required by Albumentations.
-            task (TaskType | None): Task type should be provided if transforms is of type dict or A.Compose object.
+            transform (Transform, optional): Input transforms used for the model. If not provided, the transform is
+                taken from the model.
+                Defaults to ``None``.
+            task (TaskType | None): Task type.
                 Defaults to ``None``.
             export_type (ExportType): Mode to export the model. Since this method is used by OpenVINO export as well, we
                 need to pass the export type so that the right export path is created.
@@ -293,7 +437,6 @@ class AnomalyModule(pl.LightningModule, ABC):
             >>> model = Patchcore()
             ...
             >>> model.to_onnx(
-            ...     input_size=(224, 224),
             ...     export_root="path/to/export",
             ...     transform=datamodule.test_data.transform,
             ...     task=datamodule.test_data.task
@@ -302,25 +445,24 @@ class AnomalyModule(pl.LightningModule, ABC):
             Using Custom Transforms:
             This example shows how to use a custom ``Compose`` object for the ``transform`` argument.
 
-            >>> import albumentations as A
-            >>> transform = A.Compose([A.Resize(224, 224), A.pytorch.ToTensorV2()])
-            ...
             >>> model.to_onnx(
-            ...     input_size=(224, 224),
             ...     export_root="path/to/export",
-            ...     transform=transform,
             ...     task="segmentation",
             ... )
         """
+        # TODO(djdameln): Move export functionality to anomaly module
+        # https://github.com/openvinotoolkit/anomalib/issues/1752
+        transform = transform or self.transform or self.configure_transforms()
+        inference_model = InferenceModel(model=self.model, transform=transform, disable_antialias=True)
         export_root = _create_export_root(export_root, export_type)
-        self._write_metadata_to_json(export_root, transform, task)
+        self._write_metadata_to_json(export_root, task)
         onnx_path = export_root / "model.onnx"
         torch.onnx.export(
-            self.model,
-            torch.zeros((1, 3, *input_size)).to(self.device),
+            inference_model,
+            torch.zeros((1, 3, 1, 1)).to(self.device),
             str(onnx_path),
             opset_version=14,
-            dynamic_axes={"input": {0: "batch_size"}, "output": {0: "batch_size"}},
+            dynamic_axes={"input": {0: "batch_size", 2: "height", 3: "weight"}, "output": {0: "batch_size"}},
             input_names=["input"],
             output_names=["output"],
         )
@@ -330,8 +472,7 @@ class AnomalyModule(pl.LightningModule, ABC):
     def to_openvino(
         self,
         export_root: Path | str,
-        input_size: tuple[int, int],
-        transform: dict[str, Any] | AnomalibDataset | AnomalibDataModule | A.Compose,
+        transform: Transform | None = None,
         ov_args: dict[str, Any] | None = None,
         task: TaskType | None = None,
     ) -> Path:
@@ -339,13 +480,12 @@ class AnomalyModule(pl.LightningModule, ABC):
 
         Args:
             export_root (Path): Path to the export folder.
-            input_size (tuple[int, int]): Input size of the model. Used for adding metadata to the IR.
-            transform (dict[str, Any] | AnomalibDataset | AnomalibDataModule | A.Compose): Data transforms
-                (augmentations) used for the model. When using dict, ensure that the transform dict is in the format
-                required by Albumentations.
+            transform (Transform, optional): Input transforms used for the model. If not provided, the transform is
+                taken from the model.
+                Defaults to ``None``.
             ov_args: Model optimizer arguments for OpenVINO model conversion.
                 Defaults to ``None``.
-            task (TaskType | None): Task type should be provided if transforms is of type dict or A.Compose object.
+            task (TaskType | None): Task type.
                 Defaults to ``None``.
 
         Returns:
@@ -369,26 +509,24 @@ class AnomalyModule(pl.LightningModule, ABC):
             ...
             >>> model.to_openvino(
             ...     export_root="path/to/export",
-            ...     input_size=(224, 224),
             ...     transform=datamodule.test_data.transform,
             ...     task=datamodule.test_data.task
             ... )
 
             Using Custom Transforms:
-            This example shows how to use a custom ``Compose`` object for the ``transform`` argument.
+            This example shows how to use a custom ``Transform`` object for the ``transform`` argument.
 
-            >>> import albumentations as A
-            >>> transform = A.Compose([A.Resize(224, 224), A.pytorch.ToTensorV2()])
+            >>> from torchvision.transforms.v2 import Resize
+            >>> transform = Resize(224, 224)
             ...
             >>> model.to_openvino(
             ...     export_root="path/to/export",
-            ...     input_size=(224, 224),
             ...     transform=transform,
             ...     task="segmentation",
             ... )
 
         """
-        model_path = self.to_onnx(input_size, export_root, transform, task, ExportType.OPENVINO)
+        model_path = self.to_onnx(export_root, transform, task, ExportType.OPENVINO)
         ov_model_path = model_path.with_suffix(".xml")
         ov_args = {} if ov_args is None else ov_args
         if convert_model is not None and serialize is not None:
@@ -401,25 +539,18 @@ class AnomalyModule(pl.LightningModule, ABC):
 
     def get_metadata(
         self,
-        transform: dict[str, Any] | AnomalibDataset | AnomalibDataModule | A.Compose,
         task: TaskType | None = None,
     ) -> dict[str, Any]:
         """Get metadata for the exported model.
 
         Args:
-            transform (dict[str, Any] | AnomalibDataset | AnomalibDataModule | A.Compose): Data transforms
-                (augmentations) for the model. When using dict, ensure that the transform dict is in the format
-                required by Albumentations.
-            task (TaskType | None): Task type should be provided if transforms is of type dict or A.Compose object.
+            task (TaskType | None): Task type.
                 Defaults to None.
 
         Returns:
             dict[str, Any]: Metadata for the exported model.
         """
-        transform = _get_transform_dict(transform)
-        task = _get_task(task=task, transform=transform)
-
-        data_metadata = {"task": task, "transform": transform}
+        data_metadata = {"task": task}
         model_metadata = self._get_model_metadata()
         metadata = {**data_metadata, **model_metadata}
 
@@ -454,7 +585,6 @@ class AnomalyModule(pl.LightningModule, ABC):
     def _write_metadata_to_json(
         self,
         export_root: Path,
-        transform: dict[str, Any] | AnomalibDataset | AnomalibDataModule | A.Compose,
         task: TaskType | None = None,
     ) -> None:
         """Write metadata to json file.
@@ -462,84 +592,13 @@ class AnomalyModule(pl.LightningModule, ABC):
         Args:
             export_root (Path): Path to the exported model.
             transform (dict[str, Any] | AnomalibDataset | AnomalibDataModule | A.Compose): Data transforms
-            (augmentations) used for the model.
-            model (AnomalyModule): AnomalyModule to export.
-            task (TaskType | None): Task type should be provided if transforms is of type dict or A.Compose object.
+                (augmentations) used for the model.
+            task (TaskType | None): Task type.
                 Defaults to None.
         """
-        metadata = self.get_metadata(task=task, transform=transform)
+        metadata = self.get_metadata(task=task)
         with (export_root / "metadata.json").open("w", encoding="utf-8") as metadata_file:
             json.dump(metadata, metadata_file, ensure_ascii=False, indent=4)
-
-
-def _get_task(
-    transform: dict[str, Any] | AnomalibDataset | AnomalibDataModule | A.Compose,
-    task: TaskType | None = None,
-) -> TaskType:
-    """Get task from transform or task.
-
-    Args:
-        transform (dict[str, Any] | AnomalibDataset | AnomalibDataModule | A.Compose): If task is None, task is taken
-            from transform.
-        task (TaskType | None): Task type. Defaults to None.
-
-    Raises:
-        ValueError: If task is None and transform is not of type AnomalibDataset or AnomalibDataModule.
-
-    Returns:
-        TaskType: Task type.
-    """
-    _task = task
-    if _task is None:
-        if isinstance(transform, AnomalibDataset):
-            _task = transform.task
-        elif isinstance(transform, AnomalibDataModule):
-            _task = transform.test_data.task
-        else:
-            logging.error(f"Task should be provided when passing transform of type {type(transform)}")
-            raise ValueError
-    return _task
-
-
-def _get_transform_dict(
-    transform_container: dict[str, Any] | AnomalibDataModule | AnomalibDataset | A.Compose,
-) -> dict[str, Any]:
-    """Get transform dict from transform_container.
-
-    Args:
-        transform_container (dict[str, Any] | AnomalibDataModule | AnomalibDataset | A.Compose): Transform dict
-            or AnomalibDataModule or AnomalibDataset or A.Compose object. Transform is taken from container. When using
-            AnomalibDataModule or AnomalibDataset, the task is also taken from the container. When passing
-            transform_container as dict, ensure that the transform dict is in the format required by Albumentations.
-
-    Raises:
-        KeyError: If transform_container is dict and does not contain the required keys.
-        TypeError: If transform_container is not dict, AnomalibDataModule or AnomalibDataset or A.Compose object.
-
-    Returns:
-        dict[str, Any]: Transform dict.
-    """
-    if isinstance(transform_container, dict):
-        try:
-            A.from_dict(transform_container)
-            transform = transform_container
-        except KeyError as exception:
-            logging.exception(
-                f"Unsupported transform: {transform_container}."
-                " Ensure that the transform dict is in the format required by Albumentations.",
-            )
-            raise KeyError from exception
-    elif isinstance(transform_container, A.Compose):
-        transform = transform_container.to_dict()
-    elif isinstance(transform_container, AnomalibDataset):
-        transform = transform_container.transform.to_dict()
-    elif isinstance(transform_container, AnomalibDataModule):
-        transform = transform_container.test_data.transform.to_dict()
-    else:
-        logging.error(f"Unsupported type for transform_container: {type(transform_container)}")
-        raise TypeError
-
-    return transform
 
 
 def _create_export_root(export_root: str | Path, export_type: ExportType) -> Path:

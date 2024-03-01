@@ -12,13 +12,12 @@ from pathlib import Path
 import pytest
 
 from anomalib import TaskType
-from anomalib.callbacks import ModelCheckpoint
-from anomalib.data import AnomalibDataModule, MVTec, UCSDped
+from anomalib.data import AnomalibDataModule, MVTec
 from anomalib.engine import Engine
 from anomalib.models import AnomalyModule, ExportType, get_available_models, get_model
 
 
-def models() -> list[str]:
+def models() -> set[str]:
     """Return all available models."""
     return get_available_models()
 
@@ -61,7 +60,11 @@ class TestAPI:
             dataset_path=dataset_path,
             project_path=project_path,
         )
-        engine.test(model=model, datamodule=dataset, ckpt_path=f"{project_path}/{model_name}/dummy/weights/last.ckpt")
+        engine.test(
+            model=model,
+            datamodule=dataset,
+            ckpt_path=f"{project_path}/{model.name}/{dataset.name}/dummy/v0/weights/lightning/model.ckpt",
+        )
 
     @pytest.mark.parametrize("model_name", models())
     def test_train(self, model_name: str, dataset_path: Path, project_path: Path) -> None:
@@ -77,7 +80,11 @@ class TestAPI:
             dataset_path=dataset_path,
             project_path=project_path,
         )
-        engine.train(model=model, datamodule=dataset, ckpt_path=f"{project_path}/{model_name}/dummy/weights/last.ckpt")
+        engine.train(
+            model=model,
+            datamodule=dataset,
+            ckpt_path=f"{project_path}/{model.name}/{dataset.name}/dummy/v0/weights/lightning/model.ckpt",
+        )
 
     @pytest.mark.parametrize("model_name", models())
     def test_validate(self, model_name: str, dataset_path: Path, project_path: Path) -> None:
@@ -96,7 +103,7 @@ class TestAPI:
         engine.validate(
             model=model,
             datamodule=dataset,
-            ckpt_path=f"{project_path}/{model_name}/dummy/weights/last.ckpt",
+            ckpt_path=f"{project_path}/{model.name}/{dataset.name}/dummy/v0/weights/lightning/model.ckpt",
         )
 
     @pytest.mark.parametrize("model_name", models())
@@ -115,7 +122,7 @@ class TestAPI:
         )
         engine.predict(
             model=model,
-            ckpt_path=f"{project_path}/{model_name}/dummy/weights/last.ckpt",
+            ckpt_path=f"{project_path}/{model.name}/{datamodule.name}/dummy/v0/weights/lightning/model.ckpt",
             datamodule=datamodule,
         )
 
@@ -136,17 +143,12 @@ class TestAPI:
             dataset_path (Path): Root to dataset from fixture.
             project_path (Path): Path to temporary project folder from fixture.
         """
-        input_size = (256, 256)
         if model_name == "reverse_distillation":
             # TODO(ashwinvaidya17): Restore this test after fixing reverse distillation
             # https://github.com/openvinotoolkit/anomalib/issues/1513
             pytest.skip("Reverse distillation fails to convert to ONNX")
-        elif model_name == "ai_vad":
-            pytest.skip("Export fails for video models.")
-        elif model_name == "win_clip":
-            input_size = (240, 240)
-        elif model_name == "uflow":
-            input_size = (448, 448)
+        elif model_name == "rkde" and export_type == ExportType.OPENVINO:
+            pytest.skip("RKDE fails to convert to OpenVINO")
 
         model, dataset, engine = self._get_objects(
             model_name=model_name,
@@ -155,10 +157,8 @@ class TestAPI:
         )
         engine.export(
             model=model,
-            datamodule=dataset,
-            ckpt_path=f"{project_path}/{model_name}/dummy/weights/last.ckpt",
+            ckpt_path=f"{project_path}/{model.name}/{dataset.name}/dummy/v0/weights/lightning/model.ckpt",
             export_type=export_type,
-            input_size=input_size,
         )
 
     def _get_objects(
@@ -191,27 +191,22 @@ class TestAPI:
         # https://github.com/openvinotoolkit/anomalib/issues/1478
 
         extra_args = {}
-        if model_name == "patchcore":
-            extra_args["input_size"] = (256, 256)
-        elif model_name in ("rkde", "dfkde"):
+        if model_name in ("rkde", "dfkde"):
             extra_args["n_pca_components"] = 2
+        if model_name == "ai_vad":
+            pytest.skip("Revisit AI-VAD test")
 
         # select dataset
-        if model_name == "ai_vad":
-            # aivad expects UCSD dataset
-            dataset = UCSDped(root=dataset_path / "ucsdped", category="dummy", task=task_type)
         elif model_name == "win_clip":
             dataset = MVTec(root=dataset_path / "mvtec", category="dummy", image_size=240, task=task_type)
         else:
             # EfficientAd requires that the batch size be lesser than the number of images in the dataset.
             # This is so that the LR step size is not 0.
-            image_size = (448, 448) if model_name == "uflow" else (256, 256)
             dataset = MVTec(
                 root=dataset_path / "mvtec",
                 category="dummy",
                 task=task_type,
                 train_batch_size=2,
-                image_size=image_size,
             )
 
         model = get_model(model_name, **extra_args)
@@ -222,15 +217,6 @@ class TestAPI:
             devices=1,
             pixel_metrics=["F1Score", "AUROC"],
             task=task_type,
-            callbacks=[
-                ModelCheckpoint(
-                    dirpath=f"{project_path}/{model_name}/dummy/weights",
-                    monitor=None,
-                    filename="last",
-                    save_last=True,
-                    auto_insert_metric_name=False,
-                ),
-            ],
             # TODO(ashwinvaidya17): Fix these Edge cases
             # https://github.com/openvinotoolkit/anomalib/issues/1478
             max_steps=70000 if model_name == "efficient_ad" else -1,

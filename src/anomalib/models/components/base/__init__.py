@@ -5,7 +5,7 @@
 
 from .anomaly_module import AnomalyModule, ExportType
 from .buffer_list import BufferListMixin
-from .dynamic_module import DynamicBufferModule
+from .dynamic_buffer import DynamicBufferMixin
 from .memory_bank_module import MemoryBankMixin
 
-__all__ = ["AnomalyModule", "BufferListMixin", "DynamicBufferModule", "MemoryBankMixin", "ExportType"]
+__all__ = ["AnomalyModule", "BufferListMixin", "DynamicBufferMixin", "MemoryBankMixin", "ExportType"]

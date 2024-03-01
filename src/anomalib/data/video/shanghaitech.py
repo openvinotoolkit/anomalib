@@ -23,22 +23,20 @@ from pathlib import Path
 from shutil import move
 from typing import Any
 
-import albumentations as A  # noqa: N812
 import numpy as np
 import pandas as pd
 import torch
 from pandas import DataFrame
+from torchvision.transforms.v2 import Transform
 
 from anomalib import TaskType
 from anomalib.data.base import AnomalibVideoDataModule, AnomalibVideoDataset
 from anomalib.data.base.video import VideoTargetFrame
 from anomalib.data.utils import (
     DownloadInfo,
-    InputNormalizationMethod,
     Split,
     ValSplitMode,
     download_and_extract,
-    get_transforms,
     read_image,
     validate_path,
 )
@@ -49,7 +47,7 @@ logger = logging.getLogger(__name__)
 DATASET_DOWNLOAD_INFO = DownloadInfo(
     name="ShanghaiTech Dataset",
     url="http://101.32.75.151:8181/dataset/shanghaitech.tar.gz",
-    checksum="08494decd30fb0fa213b519a9c555040",
+    hashsum="c13a827043b259ccf8493c9d9130486872992153a9d714fe229e523cd4c94116",
 )
 
 
@@ -143,7 +141,7 @@ class ShanghaiTechTestClipsIndexer(ClipsIndexer):
         frames = self.clips[video_idx][frames_idx]
 
         vid_masks = np.load(mask_file)
-        return np.take(vid_masks, frames, 0)
+        return torch.tensor(np.take(vid_masks, frames, 0))
 
     def _compute_frame_pts(self) -> None:
         """Retrieve the number of frames in each video."""
@@ -176,7 +174,7 @@ class ShanghaiTechTestClipsIndexer(ClipsIndexer):
         frames = sorted(Path(video_path).glob("*.jpg"))
 
         frame_paths = [frames[pt] for pt in clip_pts.int()]
-        video = torch.stack([torch.Tensor(read_image(str(frame_path))) for frame_path in frame_paths])
+        video = torch.stack([read_image(frame_path, as_tensor=True) for frame_path in frame_paths])
 
         return video, torch.empty((1, 0)), {}, video_idx
 
@@ -186,35 +184,39 @@ class ShanghaiTechDataset(AnomalibVideoDataset):
 
     Args:
         task (TaskType): Task type, 'classification', 'detection' or 'segmentation'
-        transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
         split (Split): Split of the dataset, usually Split.TRAIN or Split.TEST
         root (Path | str): Path to the root of the dataset
         scene (int): Index of the dataset scene (category) in range [1, 13]
         clip_length_in_frames (int, optional): Number of video frames in each clip.
         frames_between_clips (int, optional): Number of frames between each consecutive video clip.
-        target_frame (VideoTargetFrame): Specifies the target frame in the video clip, used for ground truth retrieval
+        target_frame (VideoTargetFrame): Specifies the target frame in the video clip, used for ground truth retrieval.
+        transform (Transform, optional): Transforms that should be applied to the input images.
+            Defaults to ``None``.
     """
 
     def __init__(
         self,
         task: TaskType,
-        transform: A.Compose,
         split: Split,
         root: Path | str = "./datasets/shanghaitech",
         scene: int = 1,
         clip_length_in_frames: int = 2,
         frames_between_clips: int = 1,
         target_frame: VideoTargetFrame = VideoTargetFrame.LAST,
+        transform: Transform | None = None,
     ) -> None:
-        super().__init__(task, transform, clip_length_in_frames, frames_between_clips, target_frame)
+        super().__init__(
+            task=task,
+            clip_length_in_frames=clip_length_in_frames,
+            frames_between_clips=frames_between_clips,
+            target_frame=target_frame,
+            transform=transform,
+        )
 
         self.root = Path(root)
         self.scene = scene
         self.split = split
         self.indexer_cls = ShanghaiTechTrainClipsIndexer if self.split == Split.TRAIN else ShanghaiTechTestClipsIndexer
-
-    def _setup(self) -> None:
-        """Create and assign samples."""
         self.samples = make_shanghaitech_dataset(self.root, self.scene, self.split)
 
 
@@ -228,20 +230,17 @@ class ShanghaiTech(AnomalibVideoDataModule):
         frames_between_clips (int, optional): Number of frames between each consecutive video clip.
         target_frame (VideoTargetFrame): Specifies the target frame in the video clip, used for ground truth retrieval
         task TaskType): Task type, 'classification', 'detection' or 'segmentation'
-        image_size (int | tuple[int, int] | None, optional): Size of the input image.
-            Defaults to None.
-        center_crop (int | tuple[int, int] | None, optional): When provided, the images will be center-cropped
-            to the provided dimensions.
-        normalize (bool): When True, the images will be normalized to the ImageNet statistics.
+        image_size (tuple[int, int], optional): Size to which input images should be resized.
+            Defaults to ``None``.
+        transform (Transform, optional): Transforms that should be applied to the input images.
+            Defaults to ``None``.
+        train_transform (Transform, optional): Transforms that should be applied to the input images during training.
+            Defaults to ``None``.
+        eval_transform (Transform, optional): Transforms that should be applied to the input images during evaluation.
+            Defaults to ``None``.
         train_batch_size (int, optional): Training batch size. Defaults to 32.
         eval_batch_size (int, optional): Test batch size. Defaults to 32.
         num_workers (int, optional): Number of workers. Defaults to 8.
-        transform_config_train (str | A.Compose | None, optional): Config for pre-processing
-            during training.
-            Defaults to None.
-        transform_config_val (str | A.Compose | None, optional): Config for pre-processing
-            during validation.
-            Defaults to None.
         val_split_mode (ValSplitMode): Setting that determines how the validation subset is obtained.
         val_split_ratio (float): Fraction of train or test images that will be reserved for validation.
         seed (int | None, optional): Seed which may be set to a fixed value for reproducibility.
@@ -255,14 +254,13 @@ class ShanghaiTech(AnomalibVideoDataModule):
         frames_between_clips: int = 1,
         target_frame: VideoTargetFrame = VideoTargetFrame.LAST,
         task: TaskType = TaskType.SEGMENTATION,
-        image_size: int | tuple[int, int] = (256, 256),
-        center_crop: int | tuple[int, int] | None = None,
-        normalization: InputNormalizationMethod | str = InputNormalizationMethod.IMAGENET,
+        image_size: tuple[int, int] | None = None,
+        transform: Transform | None = None,
+        train_transform: Transform | None = None,
+        eval_transform: Transform | None = None,
         train_batch_size: int = 32,
         eval_batch_size: int = 32,
         num_workers: int = 8,
-        transform_config_train: str | A.Compose | None = None,
-        transform_config_eval: str | A.Compose | None = None,
         val_split_mode: ValSplitMode = ValSplitMode.SAME_AS_TEST,
         val_split_ratio: float = 0.5,
         seed: int | None = None,
@@ -271,46 +269,43 @@ class ShanghaiTech(AnomalibVideoDataModule):
             train_batch_size=train_batch_size,
             eval_batch_size=eval_batch_size,
             num_workers=num_workers,
+            image_size=image_size,
+            transform=transform,
+            train_transform=train_transform,
+            eval_transform=eval_transform,
             val_split_mode=val_split_mode,
             val_split_ratio=val_split_ratio,
             seed=seed,
         )
 
+        self.task = TaskType(task)
         self.root = Path(root)
         self.scene = scene
 
-        transform_train = get_transforms(
-            config=transform_config_train,
-            image_size=image_size,
-            center_crop=center_crop,
-            normalization=InputNormalizationMethod(normalization),
-        )
-        transform_eval = get_transforms(
-            config=transform_config_eval,
-            image_size=image_size,
-            center_crop=center_crop,
-            normalization=InputNormalizationMethod(normalization),
-        )
+        self.clip_length_in_frames = clip_length_in_frames
+        self.frames_between_clips = frames_between_clips
+        self.target_frame = target_frame
 
+    def _setup(self, _stage: str | None = None) -> None:
         self.train_data = ShanghaiTechDataset(
-            task=task,
-            transform=transform_train,
-            clip_length_in_frames=clip_length_in_frames,
-            frames_between_clips=frames_between_clips,
-            target_frame=target_frame,
-            root=root,
-            scene=scene,
+            task=self.task,
+            transform=self.train_transform,
+            clip_length_in_frames=self.clip_length_in_frames,
+            frames_between_clips=self.frames_between_clips,
+            target_frame=self.target_frame,
+            root=self.root,
+            scene=self.scene,
             split=Split.TRAIN,
         )
 
         self.test_data = ShanghaiTechDataset(
-            task=task,
-            transform=transform_eval,
-            clip_length_in_frames=clip_length_in_frames,
-            frames_between_clips=frames_between_clips,
-            target_frame=target_frame,
-            root=root,
-            scene=scene,
+            task=self.task,
+            transform=self.eval_transform,
+            clip_length_in_frames=self.clip_length_in_frames,
+            frames_between_clips=self.frames_between_clips,
+            target_frame=self.target_frame,
+            root=self.root,
+            scene=self.scene,
             split=Split.TEST,
         )
 

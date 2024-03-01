@@ -5,7 +5,6 @@
 
 
 import torch
-from omegaconf import ListConfig
 from torch import nn
 from torch.nn import functional as F  # noqa: N812
 
@@ -21,9 +20,8 @@ class AnomalyMapGenerator(nn.Module):
             Defaults to ``4``.
     """
 
-    def __init__(self, image_size: ListConfig | tuple, sigma: int = 4) -> None:
+    def __init__(self, sigma: int = 4) -> None:
         super().__init__()
-        self.image_size = image_size if isinstance(image_size, tuple) else tuple(image_size)
         kernel_size = 2 * int(4.0 * sigma + 0.5) + 1
         self.blur = GaussianBlur2d(kernel_size=(kernel_size, kernel_size), sigma=(sigma, sigma), channels=1)
 
@@ -51,18 +49,19 @@ class AnomalyMapGenerator(nn.Module):
         distances = distances.reshape(batch, 1, height, width)
         return distances.clamp(0).sqrt()
 
-    def up_sample(self, distance: torch.Tensor) -> torch.Tensor:
+    def up_sample(self, distance: torch.Tensor, image_size: tuple[int, int] | torch.Size) -> torch.Tensor:
         """Up sample anomaly score to match the input image size.
 
         Args:
             distance (torch.Tensor): Anomaly score computed via the mahalanobis distance.
+            image_size (tuple[int, int] | torch.Size): Size to which the anomaly map should be upsampled.
 
         Returns:
             Resized distance matrix matching the input image size
         """
         return F.interpolate(
             distance,
-            size=self.image_size,
+            size=image_size,
             mode="bilinear",
             align_corners=False,
         )
@@ -83,6 +82,7 @@ class AnomalyMapGenerator(nn.Module):
         embedding: torch.Tensor,
         mean: torch.Tensor,
         inv_covariance: torch.Tensor,
+        image_size: tuple[int, int] | torch.Size | None = None,
     ) -> torch.Tensor:
         """Compute anomaly score.
 
@@ -93,6 +93,7 @@ class AnomalyMapGenerator(nn.Module):
             embedding (torch.Tensor): Embedding vector extracted from the test set.
             mean (torch.Tensor): Mean of the multivariate gaussian distribution
             inv_covariance (torch.Tensor): Inverse Covariance matrix of the multivariate gaussian distribution.
+            image_size (tuple[int, int] | torch.Size, optional): Size to which the anomaly map should be upsampled.
 
         Returns:
             Output anomaly score.
@@ -101,8 +102,9 @@ class AnomalyMapGenerator(nn.Module):
             embedding=embedding,
             stats=[mean.to(embedding.device), inv_covariance.to(embedding.device)],
         )
-        up_sampled_score_map = self.up_sample(score_map)
-        return self.smooth_anomaly_map(up_sampled_score_map)
+        if image_size:
+            score_map = self.up_sample(score_map, image_size)
+        return self.smooth_anomaly_map(score_map)
 
     def forward(self, **kwargs) -> torch.Tensor:
         """Return anomaly_map.
@@ -126,5 +128,6 @@ class AnomalyMapGenerator(nn.Module):
         embedding: torch.Tensor = kwargs["embedding"]
         mean: torch.Tensor = kwargs["mean"]
         inv_covariance: torch.Tensor = kwargs["inv_covariance"]
+        image_size: tuple[int, int] | torch.Size = kwargs.get("image_size", None)
 
-        return self.compute_anomaly_map(embedding, mean, inv_covariance)
+        return self.compute_anomaly_map(embedding, mean, inv_covariance, image_size=image_size)

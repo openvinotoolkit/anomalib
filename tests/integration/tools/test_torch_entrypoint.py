@@ -36,21 +36,19 @@ class TestTorchInferenceEntrypoint:
         project_path: Path,
         ckpt_path: Callable[[str], Path],
         get_dummy_inference_image: str,
-        transforms_config: dict,
     ) -> None:
         """Test torch_inference.py."""
         _ckpt_path = ckpt_path("Padim")
         get_parser, infer = get_functions
         model = Padim.load_from_checkpoint(_ckpt_path)
         model.to_torch(
-            export_root=_ckpt_path.parent.parent,
-            transform=transforms_config,
+            export_root=_ckpt_path.parent.parent.parent,
             task=TaskType.SEGMENTATION,
         )
         arguments = get_parser().parse_args(
             [
                 "--weights",
-                str(_ckpt_path.parent) + "/torch/model.pt",
+                str(_ckpt_path.parent.parent) + "/torch/model.pt",
                 "--input",
                 get_dummy_inference_image,
                 "--output",
