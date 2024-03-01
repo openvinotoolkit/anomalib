@@ -38,6 +38,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
+- 🔨 Move all export functionalities to AnomalyModule as base methods in https://github.com/openvinotoolkit/anomalib/pull/1803
 - 🔨 Version bump by @ashwinvaidya17 in https://github.com/openvinotoolkit/anomalib/pull/1305
 - 🔨 Modify README custom dataset by @Kiminjo in https://github.com/openvinotoolkit/anomalib/pull/1314
 - 🔨 Change the documentation URL in `README.md` and add commands to run each inferencer by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/1326
