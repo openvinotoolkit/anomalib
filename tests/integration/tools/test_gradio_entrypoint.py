@@ -47,14 +47,14 @@ class TestGradioInferenceEntrypoint:
         # export torch model
         export_to_torch(
             model=model,
-            export_root=_ckpt_path.parent.parent,
+            export_root=_ckpt_path.parent.parent.parent,
             task=TaskType.SEGMENTATION,
         )
 
         arguments = parser().parse_args(
             [
                 "--weights",
-                str(_ckpt_path.parent) + "/torch/model.pt",
+                str(_ckpt_path.parent.parent) + "/torch/model.pt",
             ],
         )
         assert isinstance(inferencer(arguments.weights, arguments.metadata), TorchInferencer)
@@ -71,7 +71,7 @@ class TestGradioInferenceEntrypoint:
 
         # export OpenVINO model
         export_to_openvino(
-            export_root=_ckpt_path.parent.parent,
+            export_root=_ckpt_path.parent.parent.parent,
             model=model,
             ov_args={},
             task=TaskType.SEGMENTATION,
@@ -80,9 +80,9 @@ class TestGradioInferenceEntrypoint:
         arguments = parser().parse_args(
             [
                 "--weights",
-                str(_ckpt_path.parent) + "/openvino/model.bin",
+                str(_ckpt_path.parent.parent) + "/openvino/model.bin",
                 "--metadata",
-                str(_ckpt_path.parent) + "/openvino/metadata.json",
+                str(_ckpt_path.parent.parent) + "/openvino/metadata.json",
             ],
         )
         assert isinstance(inferencer(arguments.weights, arguments.metadata), OpenVINOInferencer)

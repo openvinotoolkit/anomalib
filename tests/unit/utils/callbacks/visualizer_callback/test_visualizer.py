@@ -12,7 +12,6 @@ from anomalib import TaskType
 from anomalib.data import MVTec
 from anomalib.engine import Engine
 from anomalib.loggers import AnomalibTensorBoardLogger
-from anomalib.utils.visualization.image import ImageVisualizer
 
 from .dummy_lightning_model import DummyModule
 
@@ -25,12 +24,9 @@ def test_add_images(task: TaskType, dataset_path: Path) -> None:
         engine = Engine(
             model=DummyModule(dataset_path),
             logger=logger,
-            enable_checkpointing=False,
             default_root_dir=dir_loc,
             task=task,
             limit_test_batches=1,
-            save_image=True,
-            visualizers=ImageVisualizer(),
             accelerator="cpu",
         )
         engine.test(datamodule=MVTec(root=dataset_path / "mvtec", category="dummy"))

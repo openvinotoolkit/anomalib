@@ -229,6 +229,7 @@ class MVTecDataset(AnomalibDataset):
         super().__init__(task=task, transform=transform)
 
         self.root_category = Path(root) / Path(category)
+        self.category = category
         self.split = split
         self.samples = make_mvtec_dataset(self.root_category, split=self.split, extensions=IMG_EXTENSIONS)
 

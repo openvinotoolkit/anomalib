@@ -67,6 +67,18 @@ class AnomalibDataset(Dataset, ABC):
         self.task = task
         self.transform = transform
         self._samples: DataFrame | None = None
+        self._category: str | None = None
+
+    @property
+    def name(self) -> str:
+        """Name of the dataset."""
+        class_name = self.__class__.__name__
+
+        # Remove the `_dataset` suffix from the class name
+        if class_name.endswith("Dataset"):
+            class_name = class_name[:-7]
+
+        return class_name
 
     def __len__(self) -> int:
         """Get length of the dataset."""
@@ -112,6 +124,16 @@ class AnomalibDataset(Dataset, ABC):
         assert samples["image_path"].apply(lambda p: Path(p).exists()).all(), "missing file path(s) in samples"
 
         self._samples = samples.sort_values(by="image_path", ignore_index=True)
+
+    @property
+    def category(self) -> str | None:
+        """Get the category of the dataset."""
+        return self._category
+
+    @category.setter
+    def category(self, category: str) -> None:
+        """Set the category of the dataset."""
+        self._category = category
 
     @property
     def has_normal(self) -> bool:

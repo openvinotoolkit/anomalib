@@ -6,7 +6,6 @@
 
 import logging
 from collections.abc import Sequence
-from datetime import datetime
 from pathlib import Path
 from typing import Any, cast
 
@@ -15,18 +14,6 @@ from jsonargparse import Path as JSONArgparsePath
 from omegaconf import DictConfig, ListConfig, OmegaConf
 
 logger = logging.getLogger(__name__)
-
-
-def get_default_root_directory(config: DictConfig | ListConfig) -> Path:
-    """Set the default root directory."""
-    root_dir = config.results_dir.path if config.results_dir.path else "./results"
-    model_name = config.model.class_path.split(".")[-1].lower()
-    data_name = config.data.class_path.split(".")[-1].lower()
-    category = config.data.init_args.category if "category" in config.data.init_args else ""
-    # add datetime folder to the path as well so that runs with same configuration are not overwritten
-    time_stamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S") if config.results_dir.unique else ""
-    # loggers should write to results/model/dataset/category/ folder
-    return Path(root_dir, model_name, data_name, category, time_stamp)
 
 
 def _convert_nested_path_to_str(config: Any) -> Any:  # noqa: ANN401
@@ -99,29 +86,7 @@ def update_config(config: DictConfig | ListConfig | Namespace) -> DictConfig | L
     """
     _show_warnings(config)
 
-    # keep track of the original config file because it will be modified
-    config_original: DictConfig | ListConfig | Namespace = (
-        config.copy() if isinstance(config, DictConfig | ListConfig) else config.clone()
-    )
-
-    # Project Configs
-    project_path = get_default_root_directory(config)
-    logger.info(f"Project path set to {(project_path)}")
-
-    (project_path / "weights").mkdir(parents=True, exist_ok=True)
-    (project_path / "images").mkdir(parents=True, exist_ok=True)
-
-    config.trainer.default_root_dir = str(project_path)
-    config.results_dir.path = str(project_path)
-
-    config = _update_nncf_config(config)
-
-    # write the original config for eventual debug (modified config at the end of the function)
-    (project_path / "config_original.yaml").write_text(to_yaml(config_original))
-
-    (project_path / "config.yaml").write_text(to_yaml(config))
-
-    return config
+    return _update_nncf_config(config)
 
 
 def _update_nncf_config(config: DictConfig | ListConfig) -> DictConfig | ListConfig:

@@ -10,7 +10,6 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 import pytest
-from lightning.pytorch.callbacks import ModelCheckpoint
 
 from anomalib.data import ImageDataFormat, MVTec, VideoDataFormat
 from anomalib.engine import Engine
@@ -88,7 +87,8 @@ def ckpt_path(project_path: Path, dataset_path: Path) -> Callable[[str], Path]:
 
         Since integration tests train all the models, model training occurs when running unit tests invididually.
         """
-        _ckpt_path = project_path / model_name.lower() / "dummy" / "weights" / "last.ckpt"
+        model = get_model(model_name)
+        _ckpt_path = project_path / model.name / "MVTec" / "dummy" / "latest" / "weights" / "lightning" / "model.ckpt"
         if not _ckpt_path.exists():
             engine = Engine(
                 model=get_model(model_name),
@@ -96,15 +96,6 @@ def ckpt_path(project_path: Path, dataset_path: Path) -> Callable[[str], Path]:
                 default_root_dir=project_path,
                 max_epochs=1,
                 devices=1,
-                callbacks=[
-                    ModelCheckpoint(
-                        dirpath=project_path / model_name.lower() / "dummy" / "weights",
-                        monitor=None,
-                        filename="last",
-                        save_last=True,
-                        auto_insert_metric_name=False,
-                    ),
-                ],
             )
             dataset = MVTec(root=dataset_path / "mvtec", category="dummy")
             engine.fit(datamodule=dataset)

@@ -110,8 +110,14 @@ class AnomalibDataModule(LightningDataModule, ABC):
         self.test_data: AnomalibDataset
 
         self._samples: DataFrame | None = None
+        self._category: str = ""
 
         self._is_setup = False  # flag to track if setup has been called from the trainer
+
+    @property
+    def name(self) -> str:
+        """Name of the datamodule."""
+        return self.__class__.__name__
 
     def setup(self, stage: str | None = None) -> None:
         """Set up train, validation and test data.
@@ -143,6 +149,16 @@ class AnomalibDataModule(LightningDataModule, ABC):
 
         """
         raise NotImplementedError
+
+    @property
+    def category(self) -> str:
+        """Get the category of the datamodule."""
+        return self._category
+
+    @category.setter
+    def category(self, category: str) -> None:
+        """Set the category of the datamodule."""
+        self._category = category
 
     def _create_test_split(self) -> None:
         """Obtain the test set based on the settings in the config."""
