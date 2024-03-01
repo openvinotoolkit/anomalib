@@ -22,8 +22,7 @@ from anomalib.callbacks.post_processor import _PostProcessorCallback
 from anomalib.callbacks.thresholding import _ThresholdCallback
 from anomalib.callbacks.visualizer import _VisualizationCallback
 from anomalib.data import AnomalibDataModule, AnomalibDataset, PredictDataset
-from anomalib.deploy.export import ExportType, export_to_onnx, export_to_openvino, export_to_torch
-from anomalib.models import AnomalyModule
+from anomalib.models import AnomalyModule, ExportType
 from anomalib.utils.normalization import NormalizationMethod
 from anomalib.utils.types import NORMALIZATION, THRESHOLD
 from anomalib.utils.visualization import BaseVisualizer
@@ -751,16 +750,14 @@ class Engine:
 
         exported_model_path: Path | None = None
         if export_type == ExportType.TORCH:
-            exported_model_path = export_to_torch(
-                model=model,
+            exported_model_path = model.to_torch(
                 export_root=export_root,
                 transform=transform,
                 task=self.task,
             )
         elif export_type == ExportType.ONNX:
             assert input_size is not None, "input_size must be provided for ONNX export."
-            exported_model_path = export_to_onnx(
-                model=model,
+            exported_model_path = model.to_onnx(
                 input_size=input_size,
                 export_root=export_root,
                 transform=transform,
@@ -768,8 +765,7 @@ class Engine:
             )
         elif export_type == ExportType.OPENVINO:
             assert input_size is not None, "input_size must be provided for OpenVINO export."
-            exported_model_path = export_to_openvino(
-                model=model,
+            exported_model_path = model.to_openvino(
                 input_size=input_size,
                 export_root=export_root,
                 transform=transform,

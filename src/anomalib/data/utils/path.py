@@ -6,6 +6,7 @@
 
 import os
 import re
+import warnings
 from enum import Enum
 from pathlib import Path
 
@@ -213,8 +214,8 @@ def validate_path(path: str | Path, base_dir: str | Path | None = None, should_e
 
     # Check if the resolved path is within the base directory
     if not str(path).startswith(str(base_dir)):
-        msg = "Access denied: Path is outside the allowed directory"
-        raise ValueError(msg)
+        msg = "Path is outside the secured directory"
+        warnings.warn(msg, UserWarning, stacklevel=1)
 
     # In case path ``should_exist``, the path is valid, and should be
     # checked for read and execute permissions.

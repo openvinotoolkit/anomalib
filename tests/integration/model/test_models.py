@@ -14,9 +14,8 @@ import pytest
 from anomalib import TaskType
 from anomalib.callbacks import ModelCheckpoint
 from anomalib.data import AnomalibDataModule, MVTec, UCSDped
-from anomalib.deploy.export import ExportType
 from anomalib.engine import Engine
-from anomalib.models import AnomalyModule, get_available_models, get_model
+from anomalib.models import AnomalyModule, ExportType, get_available_models, get_model
 
 
 def models() -> list[str]:

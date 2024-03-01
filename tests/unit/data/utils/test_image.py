@@ -45,8 +45,8 @@ class TestGetImageFilenames:
 
     def test_outside_base_dir(self) -> None:
         """Test ``get_image_filenames`` raises ValueError for a path outside the base directory."""
-        with TemporaryDirectory() as tmp_dir, pytest.raises(
-            ValueError,
-            match=r"Access denied: Path is outside the allowed directory",
-        ):
+        with TemporaryDirectory() as tmp_dir, pytest.warns(
+            UserWarning,
+            match=r"Path is outside the secured directory",
+        ), pytest.raises(ValueError, match=f"Found 0 images in {tmp_dir}"):
             get_image_filenames(tmp_dir, base_dir=Path.home())

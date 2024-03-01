@@ -11,7 +11,7 @@ from importlib import import_module
 from jsonargparse import Namespace
 from omegaconf import DictConfig, OmegaConf
 
-from anomalib.models.components import AnomalyModule
+from anomalib.models.components import AnomalyModule, ExportType
 
 from .image import (
     Cfa,
@@ -58,6 +58,7 @@ __all__ = [
     "Uflow",
     "AiVad",
     "WinClip",
+    "ExportType",
 ]
 
 logger = logging.getLogger(__name__)
