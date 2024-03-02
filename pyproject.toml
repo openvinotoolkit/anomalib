@@ -63,6 +63,9 @@ dev = [
 [project.scripts]
 anomalib = "anomalib.cli.cli:main"
 
+[tool.setuptools.dynamic]
+version = { attr = "anomalib.__version__" }
+
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # RUFF CONFIGURATION                                                          #
 [tool.ruff]
