@@ -140,3 +140,4 @@ def split_by_label(
     normal_subset = dataset.subsample(list(normal_indices))
     anomalous_subset = dataset.subsample(list(anomalous_indices))
     return normal_subset, anomalous_subset
+
