@@ -416,7 +416,6 @@ class Folder3D(AnomalibDataModule):
             mask_dir=self.mask_dir,
             extensions=self.extensions,
         )
-        
 
     @property
     def name(self) -> str:
