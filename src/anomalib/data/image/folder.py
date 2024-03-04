@@ -15,6 +15,7 @@ from torchvision.transforms.v2 import Transform
 
 from anomalib import TaskType
 from anomalib.data.base import AnomalibDataModule, AnomalibDataset
+from anomalib.data.errors import MisMatchError
 from anomalib.data.utils import (
     DirType,
     LabelName,
@@ -78,7 +79,9 @@ def make_folder_dataset(
             4  ./toy/good/04.jpg  DirType.NORMAL            0            Split.TRAIN
     """
 
-    def _resolve_path_and_convert_to_list(path: str | Path | Sequence[str | Path] | None) -> list[Path]:
+    def _resolve_path_and_convert_to_list(
+        path: str | Path | Sequence[str | Path] | None,
+    ) -> list[Path]:
         """Convert path to list of paths.
 
         Args:
@@ -102,7 +105,8 @@ def make_folder_dataset(
     abnormal_dir = _resolve_path_and_convert_to_list(abnormal_dir)
     normal_test_dir = _resolve_path_and_convert_to_list(normal_test_dir)
     mask_dir = _resolve_path_and_convert_to_list(mask_dir)
-    assert len(normal_dir) > 0, "A folder location must be provided in normal_dir."
+    if len(normal_dir) == 0:
+        raise ValueError("A folder location must be provided in normal_dir.")
 
     filenames = []
     labels = []
@@ -144,13 +148,14 @@ def make_folder_dataset(
         samples = samples.astype({"mask_path": "str"})
 
         # make sure all every rgb image has a corresponding mask image.
-        assert (
+        if not (
             samples.loc[samples.label_index == LabelName.ABNORMAL]
             .apply(lambda x: Path(x.image_path).stem in Path(x.mask_path).stem, axis=1)
             .all()
-        ), "Mismatch between anomalous images and mask images. Make sure the mask files \
-            folder follow the same naming convention as the anomalous images in the dataset \
-            (e.g. image: '000.png', mask: '000.png')."
+        ):
+            raise MisMatchError(
+                "Mismatch between anomalous images and mask images. Make sure the mask files folder follow the same naming convention as the anomalous images in the dataset (e.g. image: '000.png', mask: '000.png').",
+            )
     else:
         samples["mask_path"] = ""
 
@@ -167,7 +172,10 @@ def make_folder_dataset(
     # By default, all the normal samples are assigned as train.
     #   and all the abnormal samples are test.
     samples.loc[(samples.label == DirType.NORMAL), "split"] = Split.TRAIN
-    samples.loc[(samples.label == DirType.ABNORMAL) | (samples.label == DirType.NORMAL_TEST), "split"] = Split.TEST
+    samples.loc[
+        (samples.label == DirType.ABNORMAL) | (samples.label == DirType.NORMAL_TEST),
+        "split",
+    ] = Split.TEST
 
     # Get the data frame for the split.
     if split:

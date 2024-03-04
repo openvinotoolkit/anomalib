@@ -67,7 +67,11 @@ def to_tuple(input_size: int | ListConfig) -> tuple[int, int]:
     if isinstance(input_size, int):
         ret_val = cast(tuple[int, int], (input_size,) * 2)
     elif isinstance(input_size, ListConfig | Sequence):
-        assert len(input_size) == 2, "Expected a single integer or tuple of length 2 for width and height."
+        if len(input_size) != 2:
+            raise ValueError(
+                "Expected a single integer or tuple of length 2 for width and height.",
+            )
+
         ret_val = cast(tuple[int, int], tuple(input_size))
     else:
         msg = f"Expected either int or ListConfig, got {type(input_size)}"
@@ -75,7 +79,9 @@ def to_tuple(input_size: int | ListConfig) -> tuple[int, int]:
     return ret_val
 
 
-def update_config(config: DictConfig | ListConfig | Namespace) -> DictConfig | ListConfig | Namespace:
+def update_config(
+    config: DictConfig | ListConfig | Namespace,
+) -> DictConfig | ListConfig | Namespace:
     """Update config.
 
     Args:
@@ -123,5 +129,7 @@ def _show_warnings(config: DictConfig | ListConfig | Namespace) -> None:
         and (config.trainer.devices is None or config.trainer.devices != 1)
         and config.trainer.accelerator != "cpu"
     ):
-        logger.warning("Anomalib currently does not support multi-gpu training. Setting devices to 1.")
+        logger.warning(
+            "Anomalib currently does not support multi-gpu training. Setting devices to 1.",
+        )
         config.trainer.devices = 1

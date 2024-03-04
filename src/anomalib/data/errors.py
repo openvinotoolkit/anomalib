@@ -1,0 +1,2 @@
+class MisMatchError(Exception):
+    pass

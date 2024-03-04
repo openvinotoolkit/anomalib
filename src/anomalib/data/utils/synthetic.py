@@ -46,12 +46,19 @@ def make_synthetic_dataset(
         mask_dir (Path): Directory to which the ground truth anomaly masks will be written.
         anomalous_ratio (float): Fraction of source samples that will be converted into anomalous samples.
     """
-    assert 1 not in source_samples.label_index.to_numpy(), "All source images must be normal."
-    assert image_dir.is_dir(), f"{image_dir} is not a folder."
-    assert mask_dir.is_dir(), f"{mask_dir} is not a folder"
+    if 1 in source_samples.label_index.to_numpy():
+        raise ValueError("All source images must be normal.")
+
+    if not image_dir.is_dir():
+        raise NotADirectoryError(f"{image_dir} is not a folder.")
+
+    if not mask_dir.is_dir():
+        raise NotADirectoryError(f"{mask_dir} is not a folder.")
 
     # filter relevant columns
-    source_samples = source_samples.filter(["image_path", "label", "label_index", "mask_path", "split"])
+    source_samples = source_samples.filter(
+        ["image_path", "label", "label_index", "mask_path", "split"],
+    )
     # randomly select samples for augmentation
     n_anomalous = int(anomalous_ratio * len(source_samples))
     anomalous_samples = source_samples.sample(n_anomalous)
@@ -111,7 +118,12 @@ class SyntheticAnomalyDataset(AnomalibDataset):
         source_samples (DataFrame): Normal samples to which the anomalous augmentations will be applied.
     """
 
-    def __init__(self, task: TaskType, transform: Compose, source_samples: DataFrame) -> None:
+    def __init__(
+        self,
+        task: TaskType,
+        transform: Compose,
+        source_samples: DataFrame,
+    ) -> None:
         super().__init__(task, transform)
 
         self.source_samples = source_samples
@@ -129,17 +141,29 @@ class SyntheticAnomalyDataset(AnomalibDataset):
         self.mask_dir.mkdir()
 
         self._cleanup = True  # flag that determines if temp dir is cleaned up when instance is deleted
-        self.samples = make_synthetic_dataset(self.source_samples, self.im_dir, self.mask_dir, 0.5)
+        self.samples = make_synthetic_dataset(
+            self.source_samples,
+            self.im_dir,
+            self.mask_dir,
+            0.5,
+        )
 
     @classmethod
-    def from_dataset(cls: type["SyntheticAnomalyDataset"], dataset: AnomalibDataset) -> "SyntheticAnomalyDataset":
+    def from_dataset(
+        cls: type["SyntheticAnomalyDataset"],
+        dataset: AnomalibDataset,
+    ) -> "SyntheticAnomalyDataset":
         """Create a synthetic anomaly dataset from an existing dataset of normal images.
 
         Args:
             dataset (AnomalibDataset): Dataset consisting of only normal images that will be converrted to a synthetic
                 anomalous dataset with a 50/50 normal anomalous split.
         """
-        return cls(task=dataset.task, transform=dataset.transform, source_samples=dataset.samples)
+        return cls(
+            task=dataset.task,
+            transform=dataset.transform,
+            source_samples=dataset.samples,
+        )
 
     def __copy__(self) -> "SyntheticAnomalyDataset":
         """Return a shallow copy of the dataset object and prevents cleanup when original object is deleted."""

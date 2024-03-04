@@ -12,7 +12,12 @@ import torch
 from lightning.pytorch.callbacks import Callback
 from lightning.pytorch.loggers import Logger
 from lightning.pytorch.trainer import Trainer
-from lightning.pytorch.utilities.types import _EVALUATE_OUTPUT, _PREDICT_OUTPUT, EVAL_DATALOADERS, TRAIN_DATALOADERS
+from lightning.pytorch.utilities.types import (
+    _EVALUATE_OUTPUT,
+    _PREDICT_OUTPUT,
+    EVAL_DATALOADERS,
+    TRAIN_DATALOADERS,
+)
 from torch.utils.data import DataLoader, Dataset
 from torchvision.transforms.v2 import Transform
 
@@ -26,7 +31,12 @@ from anomalib.callbacks.thresholding import _ThresholdCallback
 from anomalib.callbacks.timer import TimerCallback
 from anomalib.callbacks.visualizer import _VisualizationCallback
 from anomalib.data import AnomalibDataModule, AnomalibDataset, PredictDataset
-from anomalib.deploy.export import ExportType, export_to_onnx, export_to_openvino, export_to_torch
+from anomalib.deploy.export import (
+    ExportType,
+    export_to_onnx,
+    export_to_openvino,
+    export_to_torch,
+)
 from anomalib.models import AnomalyModule
 from anomalib.utils.normalization import NormalizationMethod
 from anomalib.utils.path import create_versioned_dir
@@ -404,7 +414,13 @@ class Engine:
 
         # Add the thresholding and metrics callbacks.
         _callbacks.append(_ThresholdCallback(self.threshold))
-        _callbacks.append(_MetricsCallback(self.task, self.image_metric_names, self.pixel_metric_names))
+        _callbacks.append(
+            _MetricsCallback(
+                self.task,
+                self.image_metric_names,
+                self.pixel_metric_names,
+            ),
+        )
 
         _callbacks.append(
             _VisualizationCallback(
@@ -454,8 +470,14 @@ class Engine:
         if ckpt_path is not None:
             return False
         # check if the model needs to be validated
-        needs_normalization = self.normalization_callback is not None and not hasattr(model, "normalization_metrics")
-        needs_thresholding = self.threshold_callback is not None and not hasattr(model, "image_threshold")
+        needs_normalization = self.normalization_callback is not None and not hasattr(
+            model,
+            "normalization_metrics",
+        )
+        needs_thresholding = self.threshold_callback is not None and not hasattr(
+            model,
+            "image_threshold",
+        )
         # check if the model can be validated (i.e. validation data is available)
         return (needs_normalization or needs_thresholding) and (dataloaders is not None or datamodule is not None)
 
@@ -510,9 +532,20 @@ class Engine:
         self._setup_transform(model, datamodule=datamodule, ckpt_path=ckpt_path)
         if model.learning_type in [LearningType.ZERO_SHOT, LearningType.FEW_SHOT]:
             # if the model is zero-shot or few-shot, we only need to run validate for normalization and thresholding
-            self.trainer.validate(model, val_dataloaders, datamodule=datamodule, ckpt_path=ckpt_path)
+            self.trainer.validate(
+                model,
+                val_dataloaders,
+                datamodule=datamodule,
+                ckpt_path=ckpt_path,
+            )
         else:
-            self.trainer.fit(model, train_dataloaders, val_dataloaders, datamodule, ckpt_path)
+            self.trainer.fit(
+                model,
+                train_dataloaders,
+                val_dataloaders,
+                datamodule,
+                ckpt_path,
+            )
 
     def validate(
         self,
@@ -561,7 +594,11 @@ class Engine:
         if model:
             self._setup_trainer(model)
         self._setup_dataset_task(dataloaders)
-        self._setup_transform(model or self.model, datamodule=datamodule, ckpt_path=ckpt_path)
+        self._setup_transform(
+            model or self.model,
+            datamodule=datamodule,
+            ckpt_path=ckpt_path,
+        )
         return self.trainer.validate(model, dataloaders, ckpt_path, verbose, datamodule)
 
     def test(
@@ -646,7 +683,11 @@ class Engine:
         if ckpt_path:
             ckpt_path = Path(ckpt_path).resolve()
 
-        self._setup_workspace(model=model or self.model, datamodule=datamodule, test_dataloaders=dataloaders)
+        self._setup_workspace(
+            model=model or self.model,
+            datamodule=datamodule,
+            test_dataloaders=dataloaders,
+        )
 
         if model:
             self._setup_trainer(model)
@@ -655,10 +696,27 @@ class Engine:
             raise RuntimeError(msg)
 
         self._setup_dataset_task(dataloaders)
-        self._setup_transform(model or self.model, datamodule=datamodule, ckpt_path=ckpt_path)
-        if self._should_run_validation(model or self.model, dataloaders, datamodule, ckpt_path):
-            logger.info("Running validation before testing to collect normalization metrics and/or thresholds.")
-            self.trainer.validate(model, dataloaders, None, verbose=False, datamodule=datamodule)
+        self._setup_transform(
+            model or self.model,
+            datamodule=datamodule,
+            ckpt_path=ckpt_path,
+        )
+        if self._should_run_validation(
+            model or self.model,
+            dataloaders,
+            datamodule,
+            ckpt_path,
+        ):
+            logger.info(
+                "Running validation before testing to collect normalization metrics and/or thresholds.",
+            )
+            self.trainer.validate(
+                model,
+                dataloaders,
+                None,
+                verbose=False,
+                datamodule=datamodule,
+            )
         return self.trainer.test(model, dataloaders, ckpt_path, verbose, datamodule)
 
     def predict(
@@ -725,20 +783,27 @@ class Engine:
                 anomalib predict --model Padim --data <PATH_TO_IMAGE_OR_FOLDER> --ckpt_path <PATH_TO_CHECKPOINT>
                 ```
         """
-        assert (
-            model or self.model
-        ), "`Engine.predict()` requires an `AnomalyModule` when it hasn't been passed in a previous run."
+        if not (model or self.model):
+            raise ValueError(
+                "`Engine.predict()` requires an `AnomalyModule` when it hasn't been passed in a previous run.",
+            )
 
         if ckpt_path:
             ckpt_path = Path(ckpt_path).resolve()
 
-        self._setup_workspace(model=model or self.model, datamodule=datamodule, test_dataloaders=dataloaders)
+        self._setup_workspace(
+            model=model or self.model,
+            datamodule=datamodule,
+            test_dataloaders=dataloaders,
+        )
 
         if model:
             self._setup_trainer(model)
 
         if not ckpt_path:
-            logger.warning("ckpt_path is not provided. Model weights will not be loaded.")
+            logger.warning(
+                "ckpt_path is not provided. Model weights will not be loaded.",
+            )
 
         # Handle the instance when a dataset is passed to the predict method
         if dataset is not None:
@@ -754,10 +819,22 @@ class Engine:
                 raise TypeError(msg)
 
         self._setup_dataset_task(dataloaders, datamodule)
-        self._setup_transform(model or self.model, datamodule=datamodule, dataloaders=dataloaders, ckpt_path=ckpt_path)
+        self._setup_transform(
+            model or self.model,
+            datamodule=datamodule,
+            dataloaders=dataloaders,
+            ckpt_path=ckpt_path,
+        )
 
-        if self._should_run_validation(model or self.model, None, datamodule, ckpt_path):
-            logger.info("Running validation before predicting to collect normalization metrics and/or thresholds.")
+        if self._should_run_validation(
+            model or self.model,
+            None,
+            datamodule,
+            ckpt_path,
+        ):
+            logger.info(
+                "Running validation before predicting to collect normalization metrics and/or thresholds.",
+            )
             self.trainer.validate(
                 model,
                 dataloaders=None,
@@ -766,7 +843,13 @@ class Engine:
                 datamodule=datamodule,
             )
 
-        return self.trainer.predict(model, dataloaders, datamodule, return_predictions, ckpt_path)
+        return self.trainer.predict(
+            model,
+            dataloaders,
+            datamodule,
+            return_predictions,
+            ckpt_path,
+        )
 
     def train(
         self,
@@ -827,10 +910,27 @@ class Engine:
         self._setup_transform(model, datamodule=datamodule, ckpt_path=ckpt_path)
         if model.learning_type in [LearningType.ZERO_SHOT, LearningType.FEW_SHOT]:
             # if the model is zero-shot or few-shot, we only need to run validate for normalization and thresholding
-            self.trainer.validate(model, val_dataloaders, None, verbose=False, datamodule=datamodule)
+            self.trainer.validate(
+                model,
+                val_dataloaders,
+                None,
+                verbose=False,
+                datamodule=datamodule,
+            )
         else:
-            self.trainer.fit(model, train_dataloaders, val_dataloaders, datamodule, ckpt_path)
-        self.trainer.test(model, test_dataloaders, ckpt_path=ckpt_path, datamodule=datamodule)
+            self.trainer.fit(
+                model,
+                train_dataloaders,
+                val_dataloaders,
+                datamodule,
+                ckpt_path,
+            )
+        self.trainer.test(
+            model,
+            test_dataloaders,
+            ckpt_path=ckpt_path,
+            datamodule=datamodule,
+        )
 
     def export(
         self,

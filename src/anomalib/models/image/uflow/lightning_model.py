@@ -61,7 +61,9 @@ class Uflow(AnomalyModule):
         self.model: UflowModel
 
     def _setup(self) -> None:
-        assert self.input_size is not None, "Input size is required for UFlow model."
+        if self.input_size is None:
+            raise ValueError("Input size is required for UFlow model.")
+
         self.model = UflowModel(
             input_size=self.input_size,
             backbone=self.backbone,
@@ -71,27 +73,49 @@ class Uflow(AnomalyModule):
             permute_soft=self.permute_soft,
         )
 
-    def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:  # noqa: ARG002 | unused arguments
+    def training_step(
+        self,
+        batch: dict[str, str | Tensor],
+        *args,
+        **kwargs,
+    ) -> STEP_OUTPUT:  # | unused arguments
         """Training step."""
         z, ljd = self.model(batch["image"])
         loss = self.loss(z, ljd)
-        self.log_dict({"loss": loss}, on_step=True, on_epoch=False, prog_bar=False, logger=True)
+        self.log_dict(
+            {"loss": loss},
+            on_step=True,
+            on_epoch=False,
+            prog_bar=False,
+            logger=True,
+        )
         return {"loss": loss}
 
-    def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:  # noqa: ARG002 | unused arguments
+    def validation_step(
+        self,
+        batch: dict[str, str | Tensor],
+        *args,
+        **kwargs,
+    ) -> STEP_OUTPUT:  # | unused arguments
         """Validation step."""
         anomaly_maps = self.model(batch["image"])
         batch["anomaly_maps"] = anomaly_maps
         return batch
 
-    def configure_optimizers(self) -> tuple[list[LightningOptimizer], list[LRScheduler]]:
+    def configure_optimizers(
+        self,
+    ) -> tuple[list[LightningOptimizer], list[LRScheduler]]:
         """Return optimizer and scheduler."""
         # Optimizer
         # values used in paper: bottle: 0.0001128999, cable: 0.0016160391, capsule: 0.0012118892, carpet: 0.0012118892,
         # grid: 0.0000362248, hazelnut: 0.0013268899, leather: 0.0006124724, metal_nut: 0.0008148858,
         # pill: 0.0010756100, screw: 0.0004155987, tile: 0.0060457548, toothbrush: 0.0001287313,
         # transistor: 0.0011212904, wood: 0.0002466546, zipper: 0.0000455247
-        optimizer = torch.optim.Adam([{"params": self.parameters(), "initial_lr": 1e-3}], lr=1e-3, weight_decay=1e-5)
+        optimizer = torch.optim.Adam(
+            [{"params": self.parameters(), "initial_lr": 1e-3}],
+            lr=1e-3,
+            weight_decay=1e-5,
+        )
 
         # Scheduler for slowly reducing learning rate
         scheduler = torch.optim.lr_scheduler.LinearLR(
@@ -116,10 +140,15 @@ class Uflow(AnomalyModule):
         """
         return LearningType.ONE_CLASS
 
-    def configure_transforms(self, image_size: tuple[int, int] | None = None) -> Transform:
+    def configure_transforms(
+        self,
+        image_size: tuple[int, int] | None = None,
+    ) -> Transform:
         """Default transform for Padim."""
         if image_size is not None:
-            logger.warning("Image size is not used in UFlow. The input image size is determined by the model.")
+            logger.warning(
+                "Image size is not used in UFlow. The input image size is determined by the model.",
+            )
         return Compose(
             [
                 Resize((448, 448), antialias=True),

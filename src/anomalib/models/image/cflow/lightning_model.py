@@ -95,14 +95,21 @@ class Cflow(AnomalyModule):
         """
         decoders_parameters = []
         for decoder_idx in range(len(self.model.pool_layers)):
-            decoders_parameters.extend(list(self.model.decoders[decoder_idx].parameters()))
+            decoders_parameters.extend(
+                list(self.model.decoders[decoder_idx].parameters()),
+            )
 
         return optim.Adam(
             params=decoders_parameters,
             lr=self.learning_rate,
         )
 
-    def training_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> STEP_OUTPUT:
+    def training_step(
+        self,
+        batch: dict[str, str | torch.Tensor],
+        *args,
+        **kwargs,
+    ) -> STEP_OUTPUT:
         """Perform the training step of CFLOW.
 
         For each batch, decoder layers are trained with a dynamic fiber batch size.
@@ -140,7 +147,11 @@ class Cflow(AnomalyModule):
             width.append(im_width)
             # repeats positional encoding for the entire batch 1 C H W to B C H W
             pos_encoding = einops.repeat(
-                positional_encoding_2d(self.model.condition_vector, im_height, im_width).unsqueeze(0),
+                positional_encoding_2d(
+                    self.model.condition_vector,
+                    im_height,
+                    im_width,
+                ).unsqueeze(0),
                 "b c h w-> (tile b) c h w",
                 tile=batch_size,
             ).to(images.device)
@@ -150,7 +161,10 @@ class Cflow(AnomalyModule):
             decoder = self.model.decoders[layer_idx].to(images.device)
 
             fiber_batches = embedding_length // self.model.fiber_batch_size  # number of fiber batches
-            assert fiber_batches > 0, "Make sure we have enough fibers, otherwise decrease N or batch-size!"
+            if fiber_batches <= 0:
+                raise ValueError(
+                    "Make sure we have enough fibers, otherwise decrease N or batch-size!",
+                )
 
             for batch_num in range(fiber_batches):  # per-fiber processing
                 opt.zero_grad()
@@ -160,7 +174,10 @@ class Cflow(AnomalyModule):
                         (batch_num + 1) * self.model.fiber_batch_size,
                     )
                 else:  # When non-full batch is encountered batch_num * N will go out of bounds
-                    idx = torch.arange(batch_num * self.model.fiber_batch_size, embedding_length)
+                    idx = torch.arange(
+                        batch_num * self.model.fiber_batch_size,
+                        embedding_length,
+                    )
                 # get random vectors
                 c_p = c_r[perm[idx]]  # NxP
                 e_p = e_r[perm[idx]]  # NxC
@@ -174,10 +191,21 @@ class Cflow(AnomalyModule):
                 opt.step()
                 avg_loss += loss.sum()
 
-        self.log("train_loss", avg_loss.item(), on_epoch=True, prog_bar=True, logger=True)
+        self.log(
+            "train_loss",
+            avg_loss.item(),
+            on_epoch=True,
+            prog_bar=True,
+            logger=True,
+        )
         return {"loss": avg_loss}
 
-    def validation_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> STEP_OUTPUT:
+    def validation_step(
+        self,
+        batch: dict[str, str | torch.Tensor],
+        *args,
+        **kwargs,
+    ) -> STEP_OUTPUT:
         """Perform the validation step of CFLOW.
 
             Similar to the training step, encoder features

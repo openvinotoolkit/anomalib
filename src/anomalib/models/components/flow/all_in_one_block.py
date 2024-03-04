@@ -134,9 +134,11 @@ class AllInOneBlock(InvertibleModule):
             self.conditional = False
             self.condition_channels = 0
         else:
-            assert tuple(dims_c[0][1:]) == tuple(
-                dims_in[0][1:],
-            ), f"Dimensions of input and condition don't agree: {dims_c} vs {dims_in}."
+            if tuple(dims_c[0][1:]) != tuple(dims_in[0][1:]):
+                raise ValueError(
+                    f"Dimensions of input and condition don't agree: {dims_c} vs {dims_in}.",
+                )
+
             self.conditional = True
             self.condition_channels = sum(dc[0] for dc in dims_c)
 
@@ -145,7 +147,12 @@ class AllInOneBlock(InvertibleModule):
         self.splits = [split_len1, split_len2]
 
         try:
-            self.permute_function = {0: F.linear, 1: F.conv1d, 2: F.conv2d, 3: F.conv3d}[self.input_rank]
+            self.permute_function = {
+                0: F.linear,
+                1: F.conv1d,
+                2: F.conv2d,
+                3: F.conv3d,
+            }[self.input_rank]
         except KeyError:
             msg = f"Data is {1 + self.input_rank}D. Must be 1D-4D."
             raise ValueError(msg) from None
@@ -168,10 +175,14 @@ class AllInOneBlock(InvertibleModule):
         # the 'magic numbers' (specifically for sigmoid) scale the activation to
         # a sensible range.
         if global_affine_type == "SIGMOID":
-            global_scale = 2.0 - torch.log(torch.tensor([10.0 / global_affine_init - 1.0]))
+            global_scale = 2.0 - torch.log(
+                torch.tensor([10.0 / global_affine_init - 1.0]),
+            )
             self.global_scale_activation = _global_scale_sigmoid_activation
         elif global_affine_type == "SOFTPLUS":
-            global_scale = 2.0 * torch.log(torch.exp(torch.tensor(0.5 * 10.0 * global_affine_init)) - 1)
+            global_scale = 2.0 * torch.log(
+                torch.exp(torch.tensor(0.5 * 10.0 * global_affine_init)) - 1,
+            )
             self.global_scale_activation = _global_scale_softplus_activation
         elif global_affine_type == "EXP":
             global_scale = torch.log(torch.tensor(global_affine_init))
@@ -180,8 +191,12 @@ class AllInOneBlock(InvertibleModule):
             message = 'Global affine activation must be "SIGMOID", "SOFTPLUS" or "EXP"'
             raise ValueError(message)
 
-        self.global_scale = nn.Parameter(torch.ones(1, self.in_channels, *([1] * self.input_rank)) * global_scale)
-        self.global_offset = nn.Parameter(torch.zeros(1, self.in_channels, *([1] * self.input_rank)))
+        self.global_scale = nn.Parameter(
+            torch.ones(1, self.in_channels, *([1] * self.input_rank)) * global_scale,
+        )
+        self.global_offset = nn.Parameter(
+            torch.zeros(1, self.in_channels, *([1] * self.input_rank)),
+        )
 
         if permute_soft:
             w = special_ortho_group.rvs(channels)
@@ -194,7 +209,10 @@ class AllInOneBlock(InvertibleModule):
             # instead of just the permutation matrix w, the learned housholder
             # permutation keeps track of reflection vectors vk, in addition to a
             # random initial permutation w_0.
-            self.vk_householder = nn.Parameter(0.2 * torch.randn(self.householder, channels), requires_grad=True)
+            self.vk_householder = nn.Parameter(
+                0.2 * torch.randn(self.householder, channels),
+                requires_grad=True,
+            )
             self.w_perm = None
             self.w_perm_inv = None
             self.w_0 = nn.Parameter(torch.FloatTensor(w), requires_grad=False)
@@ -204,27 +222,41 @@ class AllInOneBlock(InvertibleModule):
                 requires_grad=False,
             )
             self.w_perm_inv = nn.Parameter(
-                torch.FloatTensor(w.T).view(channels, channels, *([1] * self.input_rank)),
+                torch.FloatTensor(w.T).view(
+                    channels,
+                    channels,
+                    *([1] * self.input_rank),
+                ),
                 requires_grad=False,
             )
 
         if subnet_constructor is None:
             message = "Please supply a callable subnet_constructor function or object (see docstring)"
             raise ValueError(message)
-        self.subnet = subnet_constructor(self.splits[0] + self.condition_channels, 2 * self.splits[1])
+        self.subnet = subnet_constructor(
+            self.splits[0] + self.condition_channels,
+            2 * self.splits[1],
+        )
         self.last_jac = None
 
     def _construct_householder_permutation(self) -> torch.Tensor:
         """Compute a permutation matrix from the reflection vectors that are learned internally as nn.Parameters."""
         w = self.w_0
         for vk in self.vk_householder:
-            w = torch.mm(w, torch.eye(self.in_channels).to(w.device) - 2 * torch.ger(vk, vk) / torch.dot(vk, vk))
+            w = torch.mm(
+                w,
+                torch.eye(self.in_channels).to(w.device) - 2 * torch.ger(vk, vk) / torch.dot(vk, vk),
+            )
 
         for _ in range(self.input_rank):
             w = w.unsqueeze(-1)
         return w
 
-    def _permute(self, x: torch.Tensor, rev: bool = False) -> tuple[Any, float | torch.Tensor]:
+    def _permute(
+        self,
+        x: torch.Tensor,
+        rev: bool = False,
+    ) -> tuple[Any, float | torch.Tensor]:
         """Perform the permutation and scaling after the coupling operation.
 
         Returns transformed outputs and the LogJacDet of the scaling operation.
@@ -244,9 +276,15 @@ class AllInOneBlock(InvertibleModule):
             perm_log_jac = torch.sum(torch.log(scale))
 
         if rev:
-            return ((self.permute_function(x, self.w_perm_inv) - self.global_offset) / scale, perm_log_jac)
+            return (
+                (self.permute_function(x, self.w_perm_inv) - self.global_offset) / scale,
+                perm_log_jac,
+            )
 
-        return (self.permute_function(x * scale + self.global_offset, self.w_perm), perm_log_jac)
+        return (
+            self.permute_function(x * scale + self.global_offset, self.w_perm),
+            perm_log_jac,
+        )
 
     def _pre_permute(self, x: torch.Tensor, rev: bool = False) -> torch.Tensor:
         """Permute before the coupling block.
@@ -258,7 +296,12 @@ class AllInOneBlock(InvertibleModule):
 
         return self.permute_function(x, self.w_perm_inv)
 
-    def _affine(self, x: torch.Tensor, a: torch.Tensor, rev: bool = False) -> tuple[Any, torch.Tensor]:
+    def _affine(
+        self,
+        x: torch.Tensor,
+        a: torch.Tensor,
+        rev: bool = False,
+    ) -> tuple[Any, torch.Tensor]:
         """Perform affine coupling operation.
 
         Given the passive half, and the pre-activation outputs of the
@@ -275,9 +318,15 @@ class AllInOneBlock(InvertibleModule):
             sub_jac -= torch.mean(sub_jac, dim=self.sum_dims, keepdim=True)
 
         if not rev:
-            return (x * torch.exp(sub_jac) + a[:, ch:], torch.sum(sub_jac, dim=self.sum_dims))
+            return (
+                x * torch.exp(sub_jac) + a[:, ch:],
+                torch.sum(sub_jac, dim=self.sum_dims),
+            )
 
-        return ((x - a[:, ch:]) * torch.exp(-sub_jac), -torch.sum(sub_jac, dim=self.sum_dims))
+        return (
+            (x - a[:, ch:]) * torch.exp(-sub_jac),
+            -torch.sum(sub_jac, dim=self.sum_dims),
+        )
 
     def forward(
         self,

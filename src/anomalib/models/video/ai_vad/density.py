@@ -20,7 +20,11 @@ class BaseDensityEstimator(nn.Module, ABC):
     """Base density estimator."""
 
     @abstractmethod
-    def update(self, features: dict[FeatureType, torch.Tensor] | torch.Tensor, group: str | None = None) -> None:
+    def update(
+        self,
+        features: dict[FeatureType, torch.Tensor] | torch.Tensor,
+        group: str | None = None,
+    ) -> None:
         """Update the density model with a new set of features."""
         raise NotImplementedError
 
@@ -89,9 +93,16 @@ class CombinedDensityEstimator(BaseDensityEstimator):
             self.appearance_estimator = GroupedKNNEstimator(n_neighbors_deep)
         if self.use_pose_features:
             self.pose_estimator = GroupedKNNEstimator(n_neighbors=n_neighbors_pose)
-        assert any((use_pose_features, use_deep_features, use_velocity_features))
+        if not any((use_pose_features, use_deep_features, use_velocity_features)):
+            raise ValueError(
+                "At least one of the flags (use_pose_features, use_deep_features, use_velocity_features) must be True.",
+            )
 
-    def update(self, features: dict[FeatureType, torch.Tensor], group: str | None = None) -> None:
+    def update(
+        self,
+        features: dict[FeatureType, torch.Tensor],
+        group: str | None = None,
+    ) -> None:
         """Update the density estimators for the different feature types.
 
         Args:
@@ -114,7 +125,10 @@ class CombinedDensityEstimator(BaseDensityEstimator):
         if self.use_pose_features:
             self.pose_estimator.fit()
 
-    def predict(self, features: dict[FeatureType, torch.Tensor]) -> tuple[torch.Tensor, torch.Tensor]:
+    def predict(
+        self,
+        features: dict[FeatureType, torch.Tensor],
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         """Predict the region- and image-level anomaly scores for an image based on a set of features.
 
         Args:
@@ -129,7 +143,9 @@ class CombinedDensityEstimator(BaseDensityEstimator):
         region_scores = torch.zeros(n_regions).to(device)
         image_score = 0
         if self.use_velocity_features and features[FeatureType.VELOCITY].numel():
-            velocity_scores = self.velocity_estimator.predict(features[FeatureType.VELOCITY])
+            velocity_scores = self.velocity_estimator.predict(
+                features[FeatureType.VELOCITY],
+            )
             region_scores += velocity_scores
             image_score += velocity_scores.max()
         if self.use_deep_features and features[FeatureType.DEEP].numel():
@@ -184,7 +200,9 @@ class GroupedKNNEstimator(DynamicBufferMixin, BaseDensityEstimator):
         # assign memory bank, group index and group names
         self.memory_bank = torch.vstack(list(feature_collection.values()))
         self.group_index = torch.repeat_interleave(
-            Tensor([features.shape[0] for features in feature_collection.values()]).int(),
+            Tensor(
+                [features.shape[0] for features in feature_collection.values()],
+            ).int(),
         )
         self.group_names = list(feature_collection.keys())
         self._compute_normalization_statistics(feature_collection)
@@ -229,7 +247,11 @@ class GroupedKNNEstimator(DynamicBufferMixin, BaseDensityEstimator):
         return distances.mean(axis=1)
 
     @staticmethod
-    def _nearest_neighbors(feature_bank: torch.Tensor, features: torch.Tensor, n_neighbors: int = 1) -> torch.Tensor:
+    def _nearest_neighbors(
+        feature_bank: torch.Tensor,
+        features: torch.Tensor,
+        n_neighbors: int = 1,
+    ) -> torch.Tensor:
         """Perform the KNN search.
 
         Args:
@@ -248,7 +270,10 @@ class GroupedKNNEstimator(DynamicBufferMixin, BaseDensityEstimator):
         distances, _ = distances.topk(k=n_neighbors, largest=False, dim=1)
         return distances
 
-    def _compute_normalization_statistics(self, grouped_features: dict[str, Tensor]) -> None:
+    def _compute_normalization_statistics(
+        self,
+        grouped_features: dict[str, Tensor],
+    ) -> None:
         """Compute min-max normalization statistics while taking the group into account."""
         for group, features in grouped_features.items():
             distances = self.predict(features, group, normalize=False)

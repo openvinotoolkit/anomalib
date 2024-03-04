@@ -59,7 +59,9 @@ class Fastflow(AnomalyModule):
         self.model: FastflowModel
 
     def _setup(self) -> None:
-        assert self.input_size is not None, "Fastflow needs input size to build torch model."
+        if self.input_size is None:
+            raise ValueError("Fastflow needs input size to build torch model.")
+
         self.model = FastflowModel(
             input_size=self.input_size,
             backbone=self.backbone,
@@ -69,7 +71,12 @@ class Fastflow(AnomalyModule):
             hidden_ratio=self.hidden_ratio,
         )
 
-    def training_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> STEP_OUTPUT:
+    def training_step(
+        self,
+        batch: dict[str, str | torch.Tensor],
+        *args,
+        **kwargs,
+    ) -> STEP_OUTPUT:
         """Perform the training step input and return the loss.
 
         Args:
@@ -87,7 +94,12 @@ class Fastflow(AnomalyModule):
         self.log("train_loss", loss.item(), on_epoch=True, prog_bar=True, logger=True)
         return {"loss": loss}
 
-    def validation_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> STEP_OUTPUT:
+    def validation_step(
+        self,
+        batch: dict[str, str | torch.Tensor],
+        *args,
+        **kwargs,
+    ) -> STEP_OUTPUT:
         """Perform the validation step and return the anomaly map.
 
         Args:

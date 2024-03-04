@@ -15,7 +15,10 @@ from anomalib.models.components.feature_extractors import TimmFeatureExtractor
 AVAILABLE_EXTRACTORS = ["mcait", "resnet18", "wide_resnet50_2"]
 
 
-def get_feature_extractor(backbone: str, input_size: tuple[int, int] = (256, 256)) -> nn.Module:
+def get_feature_extractor(
+    backbone: str,
+    input_size: tuple[int, int] = (256, 256),
+) -> nn.Module:
     """Get feature extractor. Currently, is restricted to AVAILABLE_EXTRACTORS.
 
     Args:
@@ -28,9 +31,14 @@ def get_feature_extractor(backbone: str, input_size: tuple[int, int] = (256, 256
     Returns:
         FeatureExtractorInterface: Feature extractor.
     """
-    assert backbone in AVAILABLE_EXTRACTORS, f"Feature extractor must be one of {AVAILABLE_EXTRACTORS}."
+    if backbone not in AVAILABLE_EXTRACTORS:
+        raise ValueError(f"Feature extractor must be one of {AVAILABLE_EXTRACTORS}.")
     if backbone in ["resnet18", "wide_resnet50_2"]:
-        return FeatureExtractor(backbone, input_size, layers=("layer1", "layer2", "layer3"))
+        return FeatureExtractor(
+            backbone,
+            input_size,
+            layers=("layer1", "layer2", "layer3"),
+        )
     if backbone == "mcait":
         return MCaitFeatureExtractor()
     msg = (
@@ -66,7 +74,11 @@ class FeatureExtractor(TimmFeatureExtractor):
         for in_channels, scale in zip(self.channels, self.scale_factors, strict=True):
             self.feature_normalizations.append(
                 nn.LayerNorm(
-                    [in_channels, int(input_size[0] / scale), int(input_size[1] / scale)],
+                    [
+                        in_channels,
+                        int(input_size[0] / scale),
+                        int(input_size[1] / scale),
+                    ],
                     elementwise_affine=True,
                 ),
             )
@@ -84,7 +96,10 @@ class FeatureExtractor(TimmFeatureExtractor):
         self.feature_extractor.eval()
         return self.feature_extractor(img)
 
-    def normalize_features(self, features: Iterable[torch.Tensor]) -> list[torch.Tensor]:
+    def normalize_features(
+        self,
+        features: Iterable[torch.Tensor],
+    ) -> list[torch.Tensor]:
         """Normalize features."""
         return [self.feature_normalizations[i](feature) for i, feature in enumerate(features)]
 
@@ -116,7 +131,11 @@ class MCaitFeatureExtractor(nn.Module):
         features = self.extract_features(img)
         return self.normalize_features(features, training=training)
 
-    def extract_features(self, img: torch.Tensor, **kwargs) -> tuple[torch.Tensor, torch.Tensor]:  # noqa: ARG002 | unused argument
+    def extract_features(
+        self,
+        img: torch.Tensor,
+        **kwargs,
+    ) -> tuple[torch.Tensor, torch.Tensor]:  # | unused argument
         """Extract features from ``img`` from the two extractors.
 
         Args:
@@ -137,7 +156,12 @@ class MCaitFeatureExtractor(nn.Module):
             x1 = self.extractor1.blocks[i](x1)
 
         # Scale 2 --> Extractor 2
-        img_sub = F.interpolate(torch.Tensor(img), size=(224, 224), mode="bicubic", align_corners=True)
+        img_sub = F.interpolate(
+            torch.Tensor(img),
+            size=(224, 224),
+            mode="bicubic",
+            align_corners=True,
+        )
         x2 = self.extractor2.patch_embed(img_sub)
         x2 = x2 + self.extractor2.pos_embed
         x2 = self.extractor2.pos_drop(x2)
@@ -146,7 +170,11 @@ class MCaitFeatureExtractor(nn.Module):
 
         return (x1, x2)
 
-    def normalize_features(self, features: torch.Tensor, **kwargs) -> torch.Tensor:  # noqa: ARG002 | unused argument
+    def normalize_features(
+        self,
+        features: torch.Tensor,
+        **kwargs,
+    ) -> torch.Tensor:  # | unused argument
         """Normalize features.
 
         Args:
@@ -163,7 +191,12 @@ class MCaitFeatureExtractor(nn.Module):
 
             x = extractor.norm(features[i].contiguous())
             x = x.permute(0, 2, 1)
-            x = x.reshape(batch, channels, self.input_size // scale_factor, self.input_size // scale_factor)
+            x = x.reshape(
+                batch,
+                channels,
+                self.input_size // scale_factor,
+                self.input_size // scale_factor,
+            )
             normalized_features.append(x)
 
         return normalized_features

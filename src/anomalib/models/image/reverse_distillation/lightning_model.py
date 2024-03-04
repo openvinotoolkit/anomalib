@@ -57,7 +57,9 @@ class ReverseDistillation(AnomalyModule):
         self.model: ReverseDistillationModel
 
     def _setup(self) -> None:
-        assert self.input_size is not None, "Input size is required for Reverse Distillation model."
+        if self.input_size is None:
+            raise ValueError("Input size is required for Reverse Distillation model.")
+
         self.model = ReverseDistillationModel(
             backbone=self.backbone,
             pre_trained=self.pre_trained,
@@ -78,7 +80,12 @@ class ReverseDistillation(AnomalyModule):
             betas=(0.5, 0.99),
         )
 
-    def training_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> STEP_OUTPUT:
+    def training_step(
+        self,
+        batch: dict[str, str | torch.Tensor],
+        *args,
+        **kwargs,
+    ) -> STEP_OUTPUT:
         """Perform a training step of Reverse Distillation Model.
 
         Features are extracted from three layers of the Encoder model. These are passed to the bottleneck layer
@@ -99,7 +106,12 @@ class ReverseDistillation(AnomalyModule):
         self.log("train_loss", loss.item(), on_epoch=True, prog_bar=True, logger=True)
         return {"loss": loss}
 
-    def validation_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> STEP_OUTPUT:
+    def validation_step(
+        self,
+        batch: dict[str, str | torch.Tensor],
+        *args,
+        **kwargs,
+    ) -> STEP_OUTPUT:
         """Perform a validation step of Reverse Distillation Model.
 
         Similar to the training step, encoder/decoder features are extracted from the CNN for each batch, and

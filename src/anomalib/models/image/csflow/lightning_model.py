@@ -59,7 +59,8 @@ class Csflow(AnomalyModule):
         self.model: CsFlowModel
 
     def _setup(self) -> None:
-        assert self.input_size is not None, "Csflow needs input size to build torch model."
+        if self.input_size is None:
+            raise ValueError("Csflow needs input size to build torch model.")
         self.model = CsFlowModel(
             input_size=self.input_size,
             cross_conv_hidden_channels=self.cross_conv_hidden_channels,

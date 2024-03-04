@@ -51,7 +51,9 @@ class ValSplitMode(str, Enum):
     SYNTHETIC = "synthetic"
 
 
-def concatenate_datasets(datasets: Sequence["data.AnomalibDataset"]) -> "data.AnomalibDataset":
+def concatenate_datasets(
+    datasets: Sequence["data.AnomalibDataset"],
+) -> "data.AnomalibDataset":
     """Concatenate multiple datasets into a single dataset object.
 
     Args:
@@ -86,10 +88,13 @@ def random_split(
     if isinstance(split_ratio, float):
         split_ratio = [1 - split_ratio, split_ratio]
 
-    assert (  # noqa: PT018
-        math.isclose(sum(split_ratio), 1) and sum(split_ratio) <= 1
-    ), f"split ratios must sum to 1, found {sum(split_ratio)}"
-    assert all(0 < ratio < 1 for ratio in split_ratio), f"all split ratios must be between 0 and 1, found {split_ratio}"
+    if not (math.isclose(sum(split_ratio), 1) and sum(split_ratio) <= 1):
+        raise ValueError(f"Split ratios must sum to 1, found {sum(split_ratio)}")
+
+    if not all(0 < ratio < 1 for ratio in split_ratio):
+        raise ValueError(
+            f"All split ratios must be between 0 and 1, found {split_ratio}",
+        )
 
     # create list of source data
     if label_aware and "label_index" in dataset.samples:
@@ -127,7 +132,9 @@ def random_split(
     return [concatenate_datasets(subset) for subset in subsets]
 
 
-def split_by_label(dataset: "data.AnomalibDataset") -> tuple["data.AnomalibDataset", "data.AnomalibDataset"]:
+def split_by_label(
+    dataset: "data.AnomalibDataset",
+) -> tuple["data.AnomalibDataset", "data.AnomalibDataset"]:
     """Split the dataset into the normal and anomalous subsets."""
     samples = dataset.samples
     normal_indices = samples[samples.label_index == 0].index

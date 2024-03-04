@@ -77,8 +77,14 @@ class Ganomaly(AnomalyModule):
         self.real_label = torch.ones(size=(batch_size,), dtype=torch.float32)
         self.fake_label = torch.zeros(size=(batch_size,), dtype=torch.float32)
 
-        self.min_scores: torch.Tensor = torch.tensor(float("inf"), dtype=torch.float32)  # pylint: disable=not-callable
-        self.max_scores: torch.Tensor = torch.tensor(float("-inf"), dtype=torch.float32)  # pylint: disable=not-callable
+        self.min_scores: torch.Tensor = torch.tensor(
+            float("inf"),
+            dtype=torch.float32,
+        )  # pylint: disable=not-callable
+        self.max_scores: torch.Tensor = torch.tensor(
+            float("-inf"),
+            dtype=torch.float32,
+        )  # pylint: disable=not-callable
 
         self.generator_loss = GeneratorLoss(wadv, wcon, wenc)
         self.discriminator_loss = DiscriminatorLoss()
@@ -93,7 +99,9 @@ class Ganomaly(AnomalyModule):
         self.model: GanomalyModel
 
     def _setup(self) -> None:
-        assert self.input_size is not None, "CSflow needs input size to build torch model."
+        if self.input_size is None:
+            raise ValueError("CSflow needs input size to build torch model.")
+
         self.model = GanomalyModel(
             input_size=self.input_size,
             num_input_channels=3,
@@ -105,8 +113,14 @@ class Ganomaly(AnomalyModule):
 
     def _reset_min_max(self) -> None:
         """Reset min_max scores."""
-        self.min_scores = torch.tensor(float("inf"), dtype=torch.float32)  # pylint: disable=not-callable
-        self.max_scores = torch.tensor(float("-inf"), dtype=torch.float32)  # pylint: disable=not-callable
+        self.min_scores = torch.tensor(
+            float("inf"),
+            dtype=torch.float32,
+        )  # pylint: disable=not-callable
+        self.max_scores = torch.tensor(
+            float("-inf"),
+            dtype=torch.float32,
+        )  # pylint: disable=not-callable
 
     def configure_optimizers(self) -> list[optim.Optimizer]:
         """Configure optimizers for each decoder.
@@ -150,7 +164,14 @@ class Ganomaly(AnomalyModule):
 
         # generator update
         pred_fake, _ = self.model.discriminator(fake)
-        g_loss = self.generator_loss(latent_i, latent_o, padded, fake, pred_real, pred_fake)
+        g_loss = self.generator_loss(
+            latent_i,
+            latent_o,
+            padded,
+            fake,
+            pred_real,
+            pred_fake,
+        )
 
         g_opt.zero_grad()
         self.manual_backward(g_loss, retain_graph=True)
@@ -177,7 +198,12 @@ class Ganomaly(AnomalyModule):
         self._reset_min_max()
         return super().on_validation_start()
 
-    def validation_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> STEP_OUTPUT:
+    def validation_step(
+        self,
+        batch: dict[str, str | torch.Tensor],
+        *args,
+        **kwargs,
+    ) -> STEP_OUTPUT:
         """Update min and max scores from the current step.
 
         Args:
@@ -204,14 +230,25 @@ class Ganomaly(AnomalyModule):
     ) -> None:
         """Normalize outputs based on min/max values."""
         outputs["pred_scores"] = self._normalize(outputs["pred_scores"])
-        super().on_validation_batch_end(outputs, batch, batch_idx, dataloader_idx=dataloader_idx)
+        super().on_validation_batch_end(
+            outputs,
+            batch,
+            batch_idx,
+            dataloader_idx=dataloader_idx,
+        )
 
     def on_test_start(self) -> None:
         """Reset min max values before test batch starts."""
         self._reset_min_max()
         return super().on_test_start()
 
-    def test_step(self, batch: dict[str, str | torch.Tensor], batch_idx: int, *args, **kwargs) -> STEP_OUTPUT:
+    def test_step(
+        self,
+        batch: dict[str, str | torch.Tensor],
+        batch_idx: int,
+        *args,
+        **kwargs,
+    ) -> STEP_OUTPUT:
         """Update min and max scores from the current step."""
         del args, kwargs  # Unused arguments.
 
@@ -229,7 +266,12 @@ class Ganomaly(AnomalyModule):
     ) -> None:
         """Normalize outputs based on min/max values."""
         outputs["pred_scores"] = self._normalize(outputs["pred_scores"])
-        super().on_test_batch_end(outputs, batch, batch_idx, dataloader_idx=dataloader_idx)
+        super().on_test_batch_end(
+            outputs,
+            batch,
+            batch_idx,
+            dataloader_idx=dataloader_idx,
+        )
 
     def _normalize(self, scores: torch.Tensor) -> torch.Tensor:
         """Normalize the scores based on min/max of entire dataset.

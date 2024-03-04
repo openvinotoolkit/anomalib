@@ -16,7 +16,15 @@ import tqdm
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torch.utils.data import DataLoader
 from torchvision.datasets import ImageFolder
-from torchvision.transforms.v2 import CenterCrop, Compose, Normalize, RandomGrayscale, Resize, ToTensor, Transform
+from torchvision.transforms.v2 import (
+    CenterCrop,
+    Compose,
+    Normalize,
+    RandomGrayscale,
+    Resize,
+    ToTensor,
+    Transform,
+)
 
 from anomalib import LearningType
 from anomalib.data.utils import DownloadInfo, download_and_extract
@@ -92,7 +100,9 @@ class EfficientAd(AnomalyModule):
             pretrained_models_dir / "efficientad_pretrained_weights" / f"pretrained_teacher_{self.model_size}.pth"
         )
         logger.info(f"Load pretrained teacher model from {teacher_path}")
-        self.model.teacher.load_state_dict(torch.load(teacher_path, map_location=torch.device(self.device)))
+        self.model.teacher.load_state_dict(
+            torch.load(teacher_path, map_location=torch.device(self.device)),
+        )
 
     def prepare_imagenette_data(self, image_size: tuple[int, int] | torch.Size) -> None:
         """Prepare ImageNette dataset transformations.
@@ -112,12 +122,23 @@ class EfficientAd(AnomalyModule):
         imagenet_dir = Path("./datasets/imagenette")
         if not imagenet_dir.is_dir():
             download_and_extract(imagenet_dir, IMAGENETTE_DOWNLOAD_INFO)
-        imagenet_dataset = ImageFolder(imagenet_dir, transform=self.data_transforms_imagenet)
-        self.imagenet_loader = DataLoader(imagenet_dataset, batch_size=self.batch_size, shuffle=True, pin_memory=True)
+        imagenet_dataset = ImageFolder(
+            imagenet_dir,
+            transform=self.data_transforms_imagenet,
+        )
+        self.imagenet_loader = DataLoader(
+            imagenet_dataset,
+            batch_size=self.batch_size,
+            shuffle=True,
+            pin_memory=True,
+        )
         self.imagenet_iterator = iter(self.imagenet_loader)
 
     @torch.no_grad()
-    def teacher_channel_mean_std(self, dataloader: DataLoader) -> dict[str, torch.Tensor]:
+    def teacher_channel_mean_std(
+        self,
+        dataloader: DataLoader,
+    ) -> dict[str, torch.Tensor]:
         """Calculate the mean and std of the teacher models activations.
 
         Adapted from https://math.stackexchange.com/a/2148949
@@ -133,24 +154,43 @@ class EfficientAd(AnomalyModule):
         chanel_sum: torch.Tensor | None = None
         chanel_sum_sqr: torch.Tensor | None = None
 
-        for batch in tqdm.tqdm(dataloader, desc="Calculate teacher channel mean & std", position=0, leave=True):
+        for batch in tqdm.tqdm(
+            dataloader,
+            desc="Calculate teacher channel mean & std",
+            position=0,
+            leave=True,
+        ):
             y = self.model.teacher(batch["image"].to(self.device))
             if not arrays_defined:
                 _, num_channels, _, _ = y.shape
                 n = torch.zeros((num_channels,), dtype=torch.int64, device=y.device)
-                chanel_sum = torch.zeros((num_channels,), dtype=torch.float32, device=y.device)
-                chanel_sum_sqr = torch.zeros((num_channels,), dtype=torch.float32, device=y.device)
+                chanel_sum = torch.zeros(
+                    (num_channels,),
+                    dtype=torch.float32,
+                    device=y.device,
+                )
+                chanel_sum_sqr = torch.zeros(
+                    (num_channels,),
+                    dtype=torch.float32,
+                    device=y.device,
+                )
                 arrays_defined = True
 
             n += y[:, 0].numel()
             chanel_sum += torch.sum(y, dim=[0, 2, 3])
             chanel_sum_sqr += torch.sum(y**2, dim=[0, 2, 3])
 
-        assert n is not None
+        if n is None:
+            raise ValueError("Value of 'n' cannot be None.")
 
         channel_mean = chanel_sum / n
 
-        channel_std = (torch.sqrt((chanel_sum_sqr / n) - (channel_mean**2))).float()[None, :, None, None]
+        channel_std = (torch.sqrt((chanel_sum_sqr / n) - (channel_mean**2))).float()[
+            None,
+            :,
+            None,
+            None,
+        ]
         channel_mean = channel_mean.float()[None, :, None, None]
 
         return {"mean": channel_mean, "std": channel_std}
@@ -169,7 +209,12 @@ class EfficientAd(AnomalyModule):
         maps_st = []
         maps_ae = []
         logger.info("Calculate Validation Dataset Quantiles")
-        for batch in tqdm.tqdm(dataloader, desc="Calculate Validation Dataset Quantiles", position=0, leave=True):
+        for batch in tqdm.tqdm(
+            dataloader,
+            desc="Calculate Validation Dataset Quantiles",
+            position=0,
+            leave=True,
+        ):
             for img, label in zip(batch["image"], batch["label"], strict=True):
                 if label == 0:  # only use good images of validation set!
                     output = self.model(img.to(self.device), normalize=False)
@@ -182,7 +227,10 @@ class EfficientAd(AnomalyModule):
         qa_ae, qb_ae = self._get_quantiles_of_maps(maps_ae)
         return {"qa_st": qa_st, "qa_ae": qa_ae, "qb_st": qb_st, "qb_ae": qb_ae}
 
-    def _get_quantiles_of_maps(self, maps: list[torch.Tensor]) -> tuple[torch.Tensor, torch.Tensor]:
+    def _get_quantiles_of_maps(
+        self,
+        maps: list[torch.Tensor],
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         """Calculate 90% and 99.5% quantiles of the given anomaly maps.
 
         If the total number of elements in the given maps is larger than 16777216
@@ -219,14 +267,20 @@ class EfficientAd(AnomalyModule):
             num_steps = self.trainer.max_steps
         elif self.trainer.max_steps < 0:
             # max_steps not set -> determine steps as 'max_epochs' * 'steps in a single training epoch'
-            num_steps = self.trainer.max_epochs * len(self.trainer.datamodule.train_dataloader())
+            num_steps = self.trainer.max_epochs * len(
+                self.trainer.datamodule.train_dataloader(),
+            )
         else:
             num_steps = min(
                 self.trainer.max_steps,
                 self.trainer.max_epochs * len(self.trainer.datamodule.train_dataloader()),
             )
 
-        scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=int(0.95 * num_steps), gamma=0.1)
+        scheduler = torch.optim.lr_scheduler.StepLR(
+            optimizer,
+            step_size=int(0.95 * num_steps),
+            gamma=0.1,
+        )
         return {"optimizer": optimizer, "lr_scheduler": scheduler}
 
     def on_train_start(self) -> None:
@@ -240,10 +294,17 @@ class EfficientAd(AnomalyModule):
         self.prepare_pretrained_model()
         self.prepare_imagenette_data(image_size)
         if not self.model.is_set(self.model.mean_std):
-            channel_mean_std = self.teacher_channel_mean_std(self.trainer.datamodule.train_dataloader())
+            channel_mean_std = self.teacher_channel_mean_std(
+                self.trainer.datamodule.train_dataloader(),
+            )
             self.model.mean_std.update(channel_mean_std)
 
-    def training_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> dict[str, torch.Tensor]:
+    def training_step(
+        self,
+        batch: dict[str, str | torch.Tensor],
+        *args,
+        **kwargs,
+    ) -> dict[str, torch.Tensor]:
         """Perform the training step for EfficientAd returns the student, autoencoder and combined loss.
 
         Args:
@@ -263,21 +324,37 @@ class EfficientAd(AnomalyModule):
             self.imagenet_iterator = iter(self.imagenet_loader)
             batch_imagenet = next(self.imagenet_iterator)[0].to(self.device)
 
-        loss_st, loss_ae, loss_stae = self.model(batch=batch["image"], batch_imagenet=batch_imagenet)
+        loss_st, loss_ae, loss_stae = self.model(
+            batch=batch["image"],
+            batch_imagenet=batch_imagenet,
+        )
 
         loss = loss_st + loss_ae + loss_stae
         self.log("train_st", loss_st.item(), on_epoch=True, prog_bar=True, logger=True)
         self.log("train_ae", loss_ae.item(), on_epoch=True, prog_bar=True, logger=True)
-        self.log("train_stae", loss_stae.item(), on_epoch=True, prog_bar=True, logger=True)
+        self.log(
+            "train_stae",
+            loss_stae.item(),
+            on_epoch=True,
+            prog_bar=True,
+            logger=True,
+        )
         self.log("train_loss", loss.item(), on_epoch=True, prog_bar=True, logger=True)
         return {"loss": loss}
 
     def on_validation_start(self) -> None:
         """Calculate the feature map quantiles of the validation dataset and push to the model."""
-        map_norm_quantiles = self.map_norm_quantiles(self.trainer.datamodule.val_dataloader())
+        map_norm_quantiles = self.map_norm_quantiles(
+            self.trainer.datamodule.val_dataloader(),
+        )
         self.model.quantiles.update(map_norm_quantiles)
 
-    def validation_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> STEP_OUTPUT:
+    def validation_step(
+        self,
+        batch: dict[str, str | torch.Tensor],
+        *args,
+        **kwargs,
+    ) -> STEP_OUTPUT:
         """Perform the validation step of EfficientAd returns anomaly maps for the input image batch.
 
         Args:
@@ -308,7 +385,10 @@ class EfficientAd(AnomalyModule):
         """
         return LearningType.ONE_CLASS
 
-    def configure_transforms(self, image_size: tuple[int, int] | None = None) -> Transform:
+    def configure_transforms(
+        self,
+        image_size: tuple[int, int] | None = None,
+    ) -> Transform:
         """Default transform for Padim."""
         image_size = image_size or (256, 256)
         return Compose(

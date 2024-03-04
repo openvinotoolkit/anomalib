@@ -8,7 +8,10 @@ from enum import Enum
 
 import torch
 from torch import nn
-from torchvision.models.detection import KeypointRCNN_ResNet50_FPN_Weights, keypointrcnn_resnet50_fpn
+from torchvision.models.detection import (
+    KeypointRCNN_ResNet50_FPN_Weights,
+    keypointrcnn_resnet50_fpn,
+)
 from torchvision.models.detection.roi_heads import keypointrcnn_inference
 from torchvision.ops import roi_align
 from torchvision.transforms import Normalize
@@ -46,9 +49,8 @@ class FeatureExtractor(nn.Module):
         use_deep_features: bool = True,
     ) -> None:
         super().__init__()
-        assert (
-            use_velocity_features or use_pose_features or use_deep_features
-        ), "At least one feature stream must be enabled."
+        if not (use_velocity_features or use_pose_features or use_deep_features):
+            raise ValueError("At least one feature stream must be enabled.")
 
         self.use_velocity_features = use_velocity_features
         self.use_pose_features = use_pose_features
@@ -84,7 +86,10 @@ class FeatureExtractor(nn.Module):
             torch.arange(len(regions)),
             torch.Tensor([boxes.shape[0] for boxes in boxes_list]).int(),
         )
-        boxes = torch.cat([indices.unsqueeze(1).to(rgb_batch.device), torch.cat(boxes_list)], dim=1)
+        boxes = torch.cat(
+            [indices.unsqueeze(1).to(rgb_batch.device), torch.cat(boxes_list)],
+            dim=1,
+        )
 
         # Extract features
         feature_dict = {}
@@ -112,10 +117,18 @@ class DeepExtractor(nn.Module):
         super().__init__()
 
         self.encoder, _ = clip.load("ViT-B/16")
-        self.transform = Normalize(mean=(0.48145466, 0.4578275, 0.40821073), std=(0.26862954, 0.26130258, 0.27577711))
+        self.transform = Normalize(
+            mean=(0.48145466, 0.4578275, 0.40821073),
+            std=(0.26862954, 0.26130258, 0.27577711),
+        )
         self.output_dim = self.encoder.visual.output_dim
 
-    def forward(self, batch: torch.Tensor, boxes: torch.Tensor, batch_size: int) -> torch.Tensor:
+    def forward(
+        self,
+        batch: torch.Tensor,
+        boxes: torch.Tensor,
+        batch_size: int,
+    ) -> torch.Tensor:
         """Extract deep features using CLIP encoder.
 
         Args:
@@ -176,7 +189,11 @@ class VelocityExtractor(nn.Module):
                 range=(-torch.pi, torch.pi),
                 weight=mag.cpu(),
             ).hist
-            histogram_counts = torch.histogram(input=theta.cpu(), bins=self.n_bins, range=(-torch.pi, torch.pi)).hist
+            histogram_counts = torch.histogram(
+                input=theta.cpu(),
+                bins=self.n_bins,
+                range=(-torch.pi, torch.pi),
+            ).hist
             final_histogram = torch.zeros_like(histogram_mag)
             mask = histogram_counts != 0
             final_histogram[mask] = histogram_mag[mask] / histogram_counts[mask]
@@ -221,7 +238,9 @@ class PoseExtractor(nn.Module):
             keypoints = detection["keypoints"]
             normalized_keypoints = (keypoints[..., :2] - boxes[..., :2]) / (boxes[..., 2:] - boxes[..., :2])
             length = normalized_keypoints.shape[-1] * normalized_keypoints.shape[-2]
-            poses.append(normalized_keypoints.reshape(normalized_keypoints.shape[0], length))
+            poses.append(
+                normalized_keypoints.reshape(normalized_keypoints.shape[0], length),
+            )
         return poses
 
     def forward(self, batch: torch.Tensor, boxes: torch.Tensor) -> list[torch.Tensor]:
@@ -246,7 +265,11 @@ class PoseExtractor(nn.Module):
 
         boxes = [box * scale.repeat(2).to(box.device) for box, scale in zip(boxes, scales, strict=True)]
 
-        keypoint_features = self.roi_heads.keypoint_roi_pool(features, boxes, images.image_sizes)
+        keypoint_features = self.roi_heads.keypoint_roi_pool(
+            features,
+            boxes,
+            images.image_sizes,
+        )
         keypoint_features = self.roi_heads.keypoint_head(keypoint_features)
         keypoint_logits = self.roi_heads.keypoint_predictor(keypoint_features)
         keypoints_probs, _ = keypointrcnn_inference(keypoint_logits, boxes)

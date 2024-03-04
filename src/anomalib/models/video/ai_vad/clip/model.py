@@ -48,7 +48,16 @@ class Bottleneck(nn.Module):
                 OrderedDict(
                     [
                         ("-1", nn.AvgPool2d(stride)),
-                        ("0", nn.Conv2d(inplanes, planes * self.expansion, 1, stride=1, bias=False)),
+                        (
+                            "0",
+                            nn.Conv2d(
+                                inplanes,
+                                planes * self.expansion,
+                                1,
+                                stride=1,
+                                bias=False,
+                            ),
+                        ),
                         ("1", nn.BatchNorm2d(planes * self.expansion)),
                     ]
                 )
@@ -225,11 +234,25 @@ class Transformer(nn.Module):
 
 
 class VisionTransformer(nn.Module):
-    def __init__(self, input_resolution: int, patch_size: int, width: int, layers: int, heads: int, output_dim: int):
+    def __init__(
+        self,
+        input_resolution: int,
+        patch_size: int,
+        width: int,
+        layers: int,
+        heads: int,
+        output_dim: int,
+    ):
         super().__init__()
         self.input_resolution = input_resolution
         self.output_dim = output_dim
-        self.conv1 = nn.Conv2d(in_channels=3, out_channels=width, kernel_size=patch_size, stride=patch_size, bias=False)
+        self.conv1 = nn.Conv2d(
+            in_channels=3,
+            out_channels=width,
+            kernel_size=patch_size,
+            stride=patch_size,
+            bias=False,
+        )
 
         scale = width**-0.5
         self.class_embedding = nn.Parameter(scale * torch.randn(width))
@@ -337,7 +360,12 @@ class CLIP(nn.Module):
                 nn.init.normal_(self.visual.attnpool.v_proj.weight, std=std)
                 nn.init.normal_(self.visual.attnpool.c_proj.weight, std=std)
 
-            for resnet_block in [self.visual.layer1, self.visual.layer2, self.visual.layer3, self.visual.layer4]:
+            for resnet_block in [
+                self.visual.layer1,
+                self.visual.layer2,
+                self.visual.layer3,
+                self.visual.layer4,
+            ]:
                 for name, param in resnet_block.named_parameters():
                     if name.endswith("bn3.weight"):
                         nn.init.zeros_(param)
@@ -411,7 +439,12 @@ def convert_weights(model: nn.Module):
                 l.bias.data = l.bias.data.half()
 
         if isinstance(l, nn.MultiheadAttention):
-            for attr in [*[f"{s}_proj_weight" for s in ["in", "q", "k", "v"]], "in_proj_bias", "bias_k", "bias_v"]:
+            for attr in [
+                *[f"{s}_proj_weight" for s in ["in", "q", "k", "v"]],
+                "in_proj_bias",
+                "bias_k",
+                "bias_v",
+            ]:
                 tensor = getattr(l, attr)
                 if tensor is not None:
                     tensor.data = tensor.data.half()
@@ -444,7 +477,12 @@ def build_model(state_dict: dict):
         vision_width = state_dict["visual.layer1.0.conv1.weight"].shape[0]
         output_width = round((state_dict["visual.attnpool.positional_embedding"].shape[0] - 1) ** 0.5)
         vision_patch_size = None
-        assert output_width**2 + 1 == state_dict["visual.attnpool.positional_embedding"].shape[0]
+
+        if output_width**2 + 1 != state_dict["visual.attnpool.positional_embedding"].shape[0]:
+            raise ValueError(
+                "The shape of positional embedding in the state dictionary doesn't match the expected shape."
+            )
+
         image_resolution = output_width * 32
 
     embed_dim = state_dict["text_projection"].shape[1]

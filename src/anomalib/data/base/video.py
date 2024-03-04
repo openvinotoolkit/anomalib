@@ -68,7 +68,9 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
 
     def __len__(self) -> int:
         """Get length of the dataset."""
-        assert isinstance(self.indexer, ClipsIndexer)
+        if not isinstance(self.indexer, ClipsIndexer):
+            raise TypeError("self.indexer must be an instance of ClipsIndexer.")
+
         return self.indexer.num_clips()
 
     @property
@@ -94,7 +96,9 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
 
         Should be called after each change to self._samples
         """
-        assert callable(self.indexer_cls)
+        if not callable(self.indexer_cls):
+            raise TypeError("self.indexer_cls must be callable.")
+
         self.indexer = self.indexer_cls(  # pylint: disable=not-callable
             video_paths=list(self.samples.image_path),
             mask_paths=list(self.samples.mask_path),
@@ -145,7 +149,8 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
         Returns:
             dict[str, str | torch.Tensor]: Dictionary containing the mask, clip and file system information.
         """
-        assert isinstance(self.indexer, ClipsIndexer)
+        if not isinstance(self.indexer, ClipsIndexer):
+            raise TypeError("self.indexer must be an instance of ClipsIndexer.")
 
         item = self.indexer.get_item(index)
         # include the untransformed image for visualization
@@ -154,7 +159,10 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
         # apply transforms
         if item.get("mask") is not None:
             if self.transform:
-                item["image"], item["mask"] = self.transform(item["image"], Mask(item["mask"]))
+                item["image"], item["mask"] = self.transform(
+                    item["image"],
+                    Mask(item["mask"]),
+                )
             item["label"] = torch.Tensor([1 in frame for frame in item["mask"]]).int().squeeze(0)
             if self.task == TaskType.DETECTION:
                 item["boxes"], _ = masks_to_boxes(item["mask"])
@@ -185,8 +193,11 @@ class AnomalibVideoDataModule(AnomalibDataModule):
 
         Video datamodules are not compatible with synthetic anomaly generation.
         """
-        assert self.train_data is not None
-        assert self.test_data is not None
+        if self.train_data is None:
+            raise ValueError("self.train_data cannot be None.")
+
+        if self.test_data is None:
+            raise ValueError("self.test_data cannot be None.")
 
         self.train_data.setup()
         self.test_data.setup()

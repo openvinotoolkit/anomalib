@@ -35,6 +35,7 @@ from torchvision.transforms.v2 import Transform
 
 from anomalib import TaskType
 from anomalib.data.base import AnomalibDataModule, AnomalibDataset
+from anomalib.data.errors import MisMatchError
 from anomalib.data.utils import (
     DownloadInfo,
     LabelName,
@@ -143,8 +144,14 @@ def make_mvtec_dataset(
     samples.label_index = samples.label_index.astype(int)
 
     # separate masks from samples
-    mask_samples = samples.loc[samples.split == "ground_truth"].sort_values(by="image_path", ignore_index=True)
-    samples = samples[samples.split != "ground_truth"].sort_values(by="image_path", ignore_index=True)
+    mask_samples = samples.loc[samples.split == "ground_truth"].sort_values(
+        by="image_path",
+        ignore_index=True,
+    )
+    samples = samples[samples.split != "ground_truth"].sort_values(
+        by="image_path",
+        ignore_index=True,
+    )
 
     # assign mask paths to anomalous test images
     samples["mask_path"] = ""
@@ -155,13 +162,14 @@ def make_mvtec_dataset(
 
     # assert that the right mask files are associated with the right test images
     if len(samples.loc[samples.label_index == LabelName.ABNORMAL]):
-        assert (
+        if not (
             samples.loc[samples.label_index == LabelName.ABNORMAL]
             .apply(lambda x: Path(x.image_path).stem in Path(x.mask_path).stem, axis=1)
             .all()
-        ), "Mismatch between anomalous images and ground truth masks. Make sure the mask files in 'ground_truth' \
-                folder follow the same naming convention as the anomalous images in the dataset (e.g. image: \
-                '000.png', mask: '000.png' or '000_mask.png')."
+        ):
+            raise MisMatchError(
+                "Mismatch between anomalous images and ground truth masks. Make sure the mask files in 'ground_truth' folder follow the same naming convention as the anomalous images in the dataset (e.g. image: '000.png', mask: '000.png' or '000_mask.png').",
+            )
 
     if split:
         samples = samples[samples.split == split].reset_index(drop=True)
@@ -231,7 +239,11 @@ class MVTecDataset(AnomalibDataset):
         self.root_category = Path(root) / Path(category)
         self.category = category
         self.split = split
-        self.samples = make_mvtec_dataset(self.root_category, split=self.split, extensions=IMG_EXTENSIONS)
+        self.samples = make_mvtec_dataset(
+            self.root_category,
+            split=self.split,
+            extensions=IMG_EXTENSIONS,
+        )
 
 
 class MVTec(AnomalibDataModule):

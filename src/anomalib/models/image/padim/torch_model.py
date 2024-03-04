@@ -39,7 +39,11 @@ def _deduce_dims(
     Returns:
         tuple[int, int]: Dimensions of the extracted features: (n_dims_original, n_patches)
     """
-    dimensions_mapping = dryrun_find_featuremap_dims(feature_extractor, input_size, layers)
+    dimensions_mapping = dryrun_find_featuremap_dims(
+        feature_extractor,
+        input_size,
+        layers,
+    )
 
     # the first layer in `layers` has the largest resolution
     first_layer_resolution = dimensions_mapping[layers[0]]["resolution"]
@@ -78,7 +82,11 @@ class PadimModel(nn.Module):
 
         self.backbone = backbone
         self.layers = layers
-        self.feature_extractor = TimmFeatureExtractor(backbone=self.backbone, layers=layers, pre_trained=pre_trained)
+        self.feature_extractor = TimmFeatureExtractor(
+            backbone=self.backbone,
+            layers=layers,
+            pre_trained=pre_trained,
+        )
         self.n_features_original = sum(self.feature_extractor.out_dims)
         self.n_features = n_features or _N_FEATURES_DEFAULTS.get(self.backbone)
         if self.n_features is None:
@@ -88,9 +96,10 @@ class PadimModel(nn.Module):
             )
             raise ValueError(msg)
 
-        assert (
-            0 < self.n_features <= self.n_features_original
-        ), f"for backbone {self.backbone}, 0 < n_features <= {self.n_features_original}, found {self.n_features}"
+        if not (0 < self.n_features <= self.n_features_original):
+            raise ValueError(
+                f"For backbone {self.backbone}, n_features must be greater than 0 and less than or equal to {self.n_features_original}, found {self.n_features}",
+            )
 
         # Since idx is randomly selected, save it with model to get same results
         self.register_buffer(
@@ -157,7 +166,11 @@ class PadimModel(nn.Module):
         embeddings = features[self.layers[0]]
         for layer in self.layers[1:]:
             layer_embedding = features[layer]
-            layer_embedding = F.interpolate(layer_embedding, size=embeddings.shape[-2:], mode="nearest")
+            layer_embedding = F.interpolate(
+                layer_embedding,
+                size=embeddings.shape[-2:],
+                mode="nearest",
+            )
             embeddings = torch.cat((embeddings, layer_embedding), 1)
 
         # subsample embeddings
