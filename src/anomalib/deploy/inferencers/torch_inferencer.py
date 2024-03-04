@@ -181,14 +181,14 @@ class TorchInferencer(Inferencer):
         if isinstance(image, str | Path):
             image = read_image(image, as_tensor=True)
 
-        metadata["image_shape"] = image.shape[-2:]
+        metadata["image_shape"] = image.transpose(2,0,1).shape[-2:]
 
         processed_image = self.pre_process(image)
         predictions = self.forward(processed_image)
         output = self.post_process(predictions, metadata=metadata)
 
         return ImageResult(
-            image=(image.numpy().transpose(1, 2, 0) * 255).astype(np.uint8),
+            image=(image * 255).astype(np.uint8),
             pred_score=output["pred_score"],
             pred_label=output["pred_label"],
             anomaly_map=output["anomaly_map"],
@@ -206,10 +206,15 @@ class TorchInferencer(Inferencer):
         Returns:
             Tensor: pre-processed image.
         """
-        if len(image) == 3:
-            image = image.unsqueeze(0)
+        if len (image.shape) == 3:
+            transposed_image = image.transpose(2,0,1).copy()
+        else:
+            transposed_image = image.copy()
 
-        return image.to(self.device)
+        if len(transposed_image) == 3:
+            return torch.from_numpy(transposed_image).float().to(self.device).unsqueeze(0)
+        else : 
+            return torch.from_numpy(image).float().to(self.device).unsqueeze(0)
 
     def forward(self, image: torch.Tensor) -> torch.Tensor:
         """Forward-Pass input tensor to the model.
