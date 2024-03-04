@@ -32,7 +32,8 @@ def get_feature_extractor(
         FeatureExtractorInterface: Feature extractor.
     """
     if backbone not in AVAILABLE_EXTRACTORS:
-        raise ValueError(f"Feature extractor must be one of {AVAILABLE_EXTRACTORS}.")
+        msg = f"Feature extractor must be one of {AVAILABLE_EXTRACTORS}."
+        raise ValueError(msg)
     if backbone in ["resnet18", "wide_resnet50_2"]:
         return FeatureExtractor(
             backbone,

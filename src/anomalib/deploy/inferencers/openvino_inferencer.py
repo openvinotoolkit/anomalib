@@ -277,7 +277,8 @@ class OpenVINOInferencer(Inferencer):
                 metadata=metadata,
             )
             if anomaly_map is None:
-                raise ValueError("Anomaly map cannot be None.")
+                msg = "Anomaly map cannot be None."
+                raise ValueError(msg)
 
             if "image_shape" in metadata and anomaly_map.shape != metadata["image_shape"]:
                 image_height = metadata["image_shape"][0]

@@ -784,9 +784,8 @@ class Engine:
                 ```
         """
         if not (model or self.model):
-            raise ValueError(
-                "`Engine.predict()` requires an `AnomalyModule` when it hasn't been passed in a previous run.",
-            )
+            msg = "`Engine.predict()` requires an `AnomalyModule` when it hasn't been passed in a previous run."
+            raise ValueError(msg)
 
         if ckpt_path:
             ckpt_path = Path(ckpt_path).resolve()
@@ -1012,7 +1011,8 @@ class Engine:
                 ov_args=ov_args,
             )
         else:
-            logging.error(f"Export type {export_type} is not supported yet.")
+            msg = f"Export type {export_type} is not supported yet."
+            logging.error(msg)
 
         if exported_model_path:
             logging.info(f"Exported model to {exported_model_path}")

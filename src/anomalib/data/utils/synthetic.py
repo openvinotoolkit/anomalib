@@ -47,13 +47,16 @@ def make_synthetic_dataset(
         anomalous_ratio (float): Fraction of source samples that will be converted into anomalous samples.
     """
     if 1 in source_samples.label_index.to_numpy():
-        raise ValueError("All source images must be normal.")
+        msg = "All source images must be normal."
+        raise ValueError(msg)
 
     if not image_dir.is_dir():
-        raise NotADirectoryError(f"{image_dir} is not a folder.")
+        msg = f"{image_dir} is not a folder."
+        raise NotADirectoryError(msg)
 
     if not mask_dir.is_dir():
-        raise NotADirectoryError(f"{mask_dir} is not a folder.")
+        msg = f"{mask_dir} is not a folder."
+        raise NotADirectoryError(msg)
 
     # filter relevant columns
     source_samples = source_samples.filter(

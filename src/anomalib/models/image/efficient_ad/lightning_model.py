@@ -181,7 +181,8 @@ class EfficientAd(AnomalyModule):
             chanel_sum_sqr += torch.sum(y**2, dim=[0, 2, 3])
 
         if n is None:
-            raise ValueError("Value of 'n' cannot be None.")
+            msg = "Value of 'n' cannot be None."
+            raise ValueError(msg)
 
         channel_mean = chanel_sum / n
 

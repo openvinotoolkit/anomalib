@@ -89,12 +89,12 @@ def random_split(
         split_ratio = [1 - split_ratio, split_ratio]
 
     if not (math.isclose(sum(split_ratio), 1) and sum(split_ratio) <= 1):
-        raise ValueError(f"Split ratios must sum to 1, found {sum(split_ratio)}")
+        msg = f"Split ratios must sum to 1, found {sum(split_ratio)}"
+        raise ValueError(msg)
 
     if not all(0 < ratio < 1 for ratio in split_ratio):
-        raise ValueError(
-            f"All split ratios must be between 0 and 1, found {split_ratio}",
-        )
+        msg = f"All split ratios must be between 0 and 1, found {split_ratio}"
+        raise ValueError(msg)
 
     # create list of source data
     if label_aware and "label_index" in dataset.samples:
@@ -113,10 +113,7 @@ def random_split(
             subset_idx = i % sum(subset_lengths)
             subset_lengths[subset_idx] += 1
         if 0 in subset_lengths:
-            msg = (
-                "Zero subset length encountered during splitting. This means one of your subsets might be"
-                " empty or devoid of either normal or anomalous images.",
-            )
+            msg = "Zero subset length encountered during splitting. This means one of your subsets might be empty or devoid of either normal or anomalous images."
             logger.warning(msg)
 
         # perform random subsampling

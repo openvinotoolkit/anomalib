@@ -162,9 +162,8 @@ class Cflow(AnomalyModule):
 
             fiber_batches = embedding_length // self.model.fiber_batch_size  # number of fiber batches
             if fiber_batches <= 0:
-                raise ValueError(
-                    "Make sure we have enough fibers, otherwise decrease N or batch-size!",
-                )
+                msg = "Make sure we have enough fibers, otherwise decrease N or batch-size!"
+                raise ValueError(msg)
 
             for batch_num in range(fiber_batches):  # per-fiber processing
                 opt.zero_grad()

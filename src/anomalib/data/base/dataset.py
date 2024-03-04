@@ -97,7 +97,8 @@ class AnomalibDataset(Dataset, ABC):
                 Defaults to ``False``.
         """
         if len(set(indices)) != len(indices):
-            raise ValueError("No duplicates allowed in indices.")
+            msg = "No duplicates allowed in indices."
+            raise ValueError(msg)
         dataset = self if inplace else copy.deepcopy(self)
         dataset.samples = self.samples.iloc[indices].reset_index(drop=True)
         return dataset
@@ -122,17 +123,16 @@ class AnomalibDataset(Dataset, ABC):
         """
         # validate the passed samples by checking the
         if not isinstance(samples, DataFrame):
-            raise TypeError(
-                f"samples must be a pandas.DataFrame, found {type(samples)}",
-            )
+            msg = f"samples must be a pandas.DataFrame, found {type(samples)}"
+            raise TypeError(msg)
         expected_columns = _EXPECTED_COLUMNS_PERTASK[self.task]
         if not all(col in samples.columns for col in expected_columns):
-            raise ValueError(
-                f"samples must have (at least) columns {expected_columns}, found {samples.columns}",
-            )
+            msg = f"samples must have (at least) columns {expected_columns}, found {samples.columns}"
+            raise ValueError(msg)
 
         if not samples["image_path"].apply(lambda p: Path(p).exists()).all():
-            raise FileNotFoundError("Missing file path(s) in samples")
+            msg = "Missing file path(s) in samples"
+            raise FileNotFoundError(msg)
 
         self._samples = samples.sort_values(by="image_path", ignore_index=True)
 
@@ -205,9 +205,8 @@ class AnomalibDataset(Dataset, ABC):
             AnomalibDataset: Concatenated dataset.
         """
         if not isinstance(other_dataset, self.__class__):
-            raise TypeError(
-                "Cannot concatenate datasets that are not of the same type.",
-            )
+            msg = "Cannot concatenate datasets that are not of the same type."
+            raise TypeError(msg)
 
         dataset = copy.deepcopy(self)
         dataset.samples = pd.concat(

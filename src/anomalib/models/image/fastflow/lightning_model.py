@@ -60,7 +60,8 @@ class Fastflow(AnomalyModule):
 
     def _setup(self) -> None:
         if self.input_size is None:
-            raise ValueError("Fastflow needs input size to build torch model.")
+            msg = "Fastflow needs input size to build torch model."
+            raise ValueError(msg)
 
         self.model = FastflowModel(
             input_size=self.input_size,

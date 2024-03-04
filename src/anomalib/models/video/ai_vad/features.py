@@ -50,7 +50,8 @@ class FeatureExtractor(nn.Module):
     ) -> None:
         super().__init__()
         if not (use_velocity_features or use_pose_features or use_deep_features):
-            raise ValueError("At least one feature stream must be enabled.")
+            msg = "At least one feature stream must be enabled."
+            raise ValueError(msg)
 
         self.use_velocity_features = use_velocity_features
         self.use_pose_features = use_pose_features

@@ -89,9 +89,8 @@ class ImageResult:
 
         if self.pred_boxes is not None:
             if self.box_labels is None:
-                raise ValueError(
-                    "Box labels must be provided when box locations are provided.",
-                )
+                msg = "Box labels must be provided when box locations are provided."
+                raise ValueError(msg)
 
             self.normal_boxes = self.pred_boxes[~self.box_labels.astype(bool)]
             self.anomalous_boxes = self.pred_boxes[self.box_labels.astype(bool)]
@@ -229,7 +228,8 @@ class ImageVisualizer(BaseVisualizer):
         image_grid = _ImageGrid()
         if self.task == TaskType.DETECTION:
             if image_result.pred_boxes is None:
-                raise ValueError("Prediction boxes must not be None.")
+                msg = "Prediction boxes must not be None."
+                raise ValueError(msg)
 
             image_grid.add_image(image_result.image, "Image")
             if image_result.gt_boxes is not None:
@@ -258,7 +258,8 @@ class ImageVisualizer(BaseVisualizer):
             image_grid.add_image(pred_image, "Predictions")
         if self.task == TaskType.SEGMENTATION:
             if image_result.pred_mask is None:
-                raise ValueError("Prediction mask must not be None.")
+                msg = "Prediction mask must not be None."
+                raise ValueError(msg)
 
             image_grid.add_image(image_result.image, "Image")
             if image_result.gt_mask is not None:

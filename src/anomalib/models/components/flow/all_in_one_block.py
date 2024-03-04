@@ -135,9 +135,8 @@ class AllInOneBlock(InvertibleModule):
             self.condition_channels = 0
         else:
             if tuple(dims_c[0][1:]) != tuple(dims_in[0][1:]):
-                raise ValueError(
-                    f"Dimensions of input and condition don't agree: {dims_c} vs {dims_in}.",
-                )
+                msg = f"Dimensions of input and condition don't agree: {dims_c} vs {dims_in}."
+                raise ValueError(msg)
 
             self.conditional = True
             self.condition_channels = sum(dc[0] for dc in dims_c)
@@ -231,8 +230,8 @@ class AllInOneBlock(InvertibleModule):
             )
 
         if subnet_constructor is None:
-            message = "Please supply a callable subnet_constructor function or object (see docstring)"
-            raise ValueError(message)
+            msg = "Please supply a callable subnet_constructor function or object (see docstring)"
+            raise ValueError(msg)
         self.subnet = subnet_constructor(
             self.splits[0] + self.condition_channels,
             2 * self.splits[1],

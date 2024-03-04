@@ -76,7 +76,8 @@ def make_folder3d_dataset(
     normal_test_depth_dir = validate_and_resolve_path(normal_test_depth_dir, root) if normal_test_depth_dir else None
 
     if not normal_dir.is_dir():
-        raise ValueError("A folder location must be provided in normal_dir.")
+        msg = "A folder location must be provided in normal_dir."
+        raise ValueError(msg)
 
     filenames = []
     labels = []
@@ -137,13 +138,13 @@ def make_folder3d_dataset(
             .all()
         )
         if not mismatch:
-            raise MisMatchError(
-                "Mismatch between anomalous images and depth images. Make sure the mask files in 'xyz' folder follow the same naming convention as the anomalous images in the dataset (e.g. image: '000.png', depth: '000.tiff').",
-            )
+            msg = "Mismatch between anomalous images and depth images. Make sure the mask files in 'xyz' folder follow the same naming convention as the anomalous images in the dataset (e.g. image: '000.png', depth: '000.tiff')."
+            raise MisMatchError(msg)
 
         missing_depth_files = samples.depth_path.apply(lambda x: Path(x).exists() if not isna(x) else True).all()
         if not missing_depth_files:
-            raise FileNotFoundError("Missing depth image files.")
+            msg = "Missing depth image files."
+            raise FileNotFoundError(msg)
 
         samples = samples.astype({"depth_path": "str"})
 
@@ -157,7 +158,8 @@ def make_folder3d_dataset(
 
         # make sure all the files exist
         if not samples.mask_path.apply(lambda x: Path(x).exists() if x != "" else True).all():
-            raise FileNotFoundError(f"Missing mask files. mask_dir={mask_dir}")
+            msg = f"Missing mask files. mask_dir={mask_dir}"
+            raise FileNotFoundError(msg)
 
     else:
         samples["mask_path"] = ""

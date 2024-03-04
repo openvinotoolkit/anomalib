@@ -106,7 +106,8 @@ def make_folder_dataset(
     normal_test_dir = _resolve_path_and_convert_to_list(normal_test_dir)
     mask_dir = _resolve_path_and_convert_to_list(mask_dir)
     if len(normal_dir) == 0:
-        raise ValueError("A folder location must be provided in normal_dir.")
+        msg = "A folder location must be provided in normal_dir."
+        raise ValueError(msg)
 
     filenames = []
     labels = []
@@ -153,9 +154,8 @@ def make_folder_dataset(
             .apply(lambda x: Path(x.image_path).stem in Path(x.mask_path).stem, axis=1)
             .all()
         ):
-            raise MisMatchError(
-                "Mismatch between anomalous images and mask images. Make sure the mask files folder follow the same naming convention as the anomalous images in the dataset (e.g. image: '000.png', mask: '000.png').",
-            )
+            msg = "Mismatch between anomalous images and mask images. Make sure the mask files folder follow the same naming convention as the anomalous images in the dataset (e.g. image: '000.png', mask: '000.png')."
+            raise MisMatchError(msg)
     else:
         samples["mask_path"] = ""
 

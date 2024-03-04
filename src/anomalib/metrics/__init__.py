@@ -81,27 +81,23 @@ def _validate_metrics_dict(metrics: dict[str, dict[str, Any]]) -> None:
 
     """
     if not all(isinstance(metric, str) for metric in metrics):
-        raise TypeError(
-            f"All keys (metric names) must be strings, found {sorted(metrics.keys())}",
-        )
+        msg = f"All keys (metric names) must be strings, found {sorted(metrics.keys())}"
+        raise TypeError(msg)
 
     if not all(isinstance(metric, DictConfig | dict) for metric in metrics.values()):
-        raise TypeError(
-            f"All values must be dictionaries, found {list(metrics.values())}",
-        )
+        msg = f"All values must be dictionaries, found {list(metrics.values())}"
+        raise TypeError(msg)
 
     if not all("class_path" in metric and isinstance(metric["class_path"], str) for metric in metrics.values()):
-        raise ValueError(
-            "All internal dictionaries must have a 'class_path' key whose value is of type str.",
-        )
+        msg = "All internal dictionaries must have a 'class_path' key whose value is of type str."
+        raise ValueError(msg)
 
     if not all(
         "init_args" in metric and isinstance(metric["init_args"], dict) or isinstance(metric["init_args"], DictConfig)
         for metric in metrics.values()
     ):
-        raise ValueError(
-            "All internal dictionaries must have a 'init_args' key whose value is of type dict.",
-        )
+        msg = "All internal dictionaries must have a 'init_args' key whose value is of type dict."
+        raise ValueError(msg)
 
 
 def _get_class_from_path(class_path: str) -> Callable:
@@ -109,9 +105,8 @@ def _get_class_from_path(class_path: str) -> Callable:
     module_name, class_name = class_path.rsplit(".", 1)
     module = importlib.import_module(module_name)
     if not hasattr(module, class_name):
-        raise AttributeError(
-            f"Class {class_name} not found in module {module_name}.",
-        )
+        msg = (f"Class {class_name} not found in module {module_name}.",)
+        raise AttributeError(msg)
     return getattr(module, class_name)
 
 
@@ -194,7 +189,8 @@ def create_metric_collection(
 
     if isinstance(metrics, ListConfig | list):
         if not all(isinstance(metric, str) for metric in metrics):
-            raise TypeError(f"All metrics must be strings, found {metrics}")
+            msg = f"All metrics must be strings, found {metrics}"
+            raise TypeError(msg)
         return metric_collection_from_names(metrics, prefix)
 
     if isinstance(metrics, DictConfig | dict):

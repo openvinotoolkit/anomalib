@@ -69,7 +69,8 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
     def __len__(self) -> int:
         """Get length of the dataset."""
         if not isinstance(self.indexer, ClipsIndexer):
-            raise TypeError("self.indexer must be an instance of ClipsIndexer.")
+            msg = "self.indexer must be an instance of ClipsIndexer."
+            raise TypeError(msg)
 
         return self.indexer.num_clips()
 
@@ -97,7 +98,8 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
         Should be called after each change to self._samples
         """
         if not callable(self.indexer_cls):
-            raise TypeError("self.indexer_cls must be callable.")
+            msg = "self.indexer_cls must be callable."
+            raise TypeError(msg)
 
         self.indexer = self.indexer_cls(  # pylint: disable=not-callable
             video_paths=list(self.samples.image_path),
@@ -150,7 +152,8 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
             dict[str, str | torch.Tensor]: Dictionary containing the mask, clip and file system information.
         """
         if not isinstance(self.indexer, ClipsIndexer):
-            raise TypeError("self.indexer must be an instance of ClipsIndexer.")
+            msg = "self.indexer must be an instance of ClipsIndexer."
+            raise TypeError(msg)
 
         item = self.indexer.get_item(index)
         # include the untransformed image for visualization
@@ -194,10 +197,12 @@ class AnomalibVideoDataModule(AnomalibDataModule):
         Video datamodules are not compatible with synthetic anomaly generation.
         """
         if self.train_data is None:
-            raise ValueError("self.train_data cannot be None.")
+            msg = "self.train_data cannot be None."
+            raise ValueError(msg)
 
         if self.test_data is None:
-            raise ValueError("self.test_data cannot be None.")
+            msg = "self.test_data cannot be None."
+            raise ValueError(msg)
 
         self.train_data.setup()
         self.test_data.setup()

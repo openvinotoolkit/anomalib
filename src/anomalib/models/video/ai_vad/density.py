@@ -94,9 +94,10 @@ class CombinedDensityEstimator(BaseDensityEstimator):
         if self.use_pose_features:
             self.pose_estimator = GroupedKNNEstimator(n_neighbors=n_neighbors_pose)
         if not any((use_pose_features, use_deep_features, use_velocity_features)):
-            raise ValueError(
-                "At least one of the flags (use_pose_features, use_deep_features, use_velocity_features) must be True.",
+            msg = (
+                "At least one of the flags (use_pose_features, use_deep_features, use_velocity_features) must be True."
             )
+            raise ValueError(msg)
 
     def update(
         self,

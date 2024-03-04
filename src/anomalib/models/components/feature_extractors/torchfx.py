@@ -174,7 +174,8 @@ class TorchFXFeatureExtractor(nn.Module):
             )
         elif weights is not None:
             if not isinstance(weights, str):
-                raise TypeError("Weights should point to a path")
+                msg = "Weights should point to a path"
+                raise TypeError(msg)
             model_weights = torch.load(weights)
             if "state_dict" in model_weights:
                 model_weights = model_weights["state_dict"]

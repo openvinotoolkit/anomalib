@@ -62,7 +62,8 @@ class Uflow(AnomalyModule):
 
     def _setup(self) -> None:
         if self.input_size is None:
-            raise ValueError("Input size is required for UFlow model.")
+            msg = "Input size is required for UFlow model."
+            raise ValueError(msg)
 
         self.model = UflowModel(
             input_size=self.input_size,
