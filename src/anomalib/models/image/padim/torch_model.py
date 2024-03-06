@@ -97,7 +97,10 @@ class PadimModel(nn.Module):
             raise ValueError(msg)
 
         if not (0 < self.n_features <= self.n_features_original):
-            msg = f"For backbone {self.backbone}, n_features must be greater than 0 and less than or equal to {self.n_features_original}, found {self.n_features}"
+            msg = (
+                f"For backbone {self.backbone}, n_features must be greater than 0 "
+                f"and less than or equal to {self.n_features_original}, found {self.n_features}"
+            )
             raise ValueError(msg)
 
         # Since idx is randomly selected, save it with model to get same results

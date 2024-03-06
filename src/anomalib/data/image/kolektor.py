@@ -171,7 +171,9 @@ def make_kolektor_dataset(
         .apply(lambda x: Path(x.image_path).stem in Path(x.mask_path).stem, axis=1)
         .all()
     ):
-        msg = "Mismatch between anomalous images and ground truth masks. Make sure the mask files follow the same naming convention as the anomalous images in the dataset (e.g. image: 'Part0.jpg', mask: 'Part0_label.bmp')."
+        msg = """Mismatch between anomalous images and ground truth masks. Make sure the mask
+        files follow the same naming convention as the anomalous images in the dataset
+        (e.g. image: 'Part0.jpg', mask: 'Part0_label.bmp')."""
         raise MisMatchError(msg)
 
     # Get the dataframe for the required split

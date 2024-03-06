@@ -153,8 +153,9 @@ def make_mvtec_3d_dataset(
         .all()
     )
     if not mismatch_masks:
-        msg = "Mismatch between anomalous images and ground truth masks. Make sure the mask files in 'ground_truth' folder follow the same naming convention as the anomalous images in the dataset (e.g. image: '000.png', mask: '000.png' or '000_mask.png')."
-
+        msg = """Mismatch between anomalous images and ground truth masks. Make sure the mask
+          files in 'ground_truth' folder follow the same naming convention as the anomalous
+          images in the dataset (e.g. image: '000.png', mask: '000.png' or '000_mask.png')."""
         raise MisMatchError(msg)
 
     mismatch_depth = (
@@ -163,7 +164,9 @@ def make_mvtec_3d_dataset(
         .all()
     )
     if not mismatch_depth:
-        msg = "Mismatch between anomalous images and depth images. Make sure the mask files in 'xyz' folder follow the same naming convention as the anomalous images in the dataset (e.g. image: '000.png', depth: '000.tiff')."
+        msg = """Mismatch between anomalous images and depth images. Make sure the mask files
+        in 'xyz' folder follow the same naming convention as the anomalous images in the dataset
+        (e.g. image: '000.png', depth: '000.tiff')."""
         raise MisMatchError(msg)
 
     if split:

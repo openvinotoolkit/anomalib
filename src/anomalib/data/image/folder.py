@@ -154,7 +154,9 @@ def make_folder_dataset(
             .apply(lambda x: Path(x.image_path).stem in Path(x.mask_path).stem, axis=1)
             .all()
         ):
-            msg = "Mismatch between anomalous images and mask images. Make sure the mask files folder follow the same naming convention as the anomalous images in the dataset (e.g. image: '000.png', mask: '000.png')."
+            msg = """Mismatch between anomalous images and mask images. Make sure the mask files
+            folder follow the same naming convention as the anomalous images in the dataset
+            (e.g. image: '000.png', mask: '000.png')."""
             raise MisMatchError(msg)
     else:
         samples["mask_path"] = ""

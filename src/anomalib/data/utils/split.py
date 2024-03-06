@@ -113,7 +113,10 @@ def random_split(
             subset_idx = i % sum(subset_lengths)
             subset_lengths[subset_idx] += 1
         if 0 in subset_lengths:
-            msg = "Zero subset length encountered during splitting. This means one of your subsets might be empty or devoid of either normal or anomalous images."
+            msg = """
+            Zero subset length encountered during splitting. This means one of your
+            subsets might be empty or devoid of either normal or anomalous images.
+            """
             logger.warning(msg)
 
         # perform random subsampling

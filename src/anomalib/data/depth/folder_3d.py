@@ -138,10 +138,14 @@ def make_folder3d_dataset(
             .all()
         )
         if not mismatch:
-            msg = "Mismatch between anomalous images and depth images. Make sure the mask files in 'xyz' folder follow the same naming convention as the anomalous images in the dataset (e.g. image: '000.png', depth: '000.tiff')."
+            msg = """Mismatch between anomalous images and depth images. Make sure the mask
+              files in 'xyz' folder follow the same naming convention as the anomalous
+              images in the dataset (e.g. image: '000.png', depth: '000.tiff')."""
             raise MisMatchError(msg)
 
-        missing_depth_files = samples.depth_path.apply(lambda x: Path(x).exists() if not isna(x) else True).all()
+        missing_depth_files = samples.depth_path.apply(
+            lambda x: Path(x).exists() if not isna(x) else True,
+        ).all()
         if not missing_depth_files:
             msg = "Missing depth image files."
             raise FileNotFoundError(msg)
@@ -157,7 +161,9 @@ def make_folder3d_dataset(
         samples = samples.astype({"mask_path": "str"})
 
         # make sure all the files exist
-        if not samples.mask_path.apply(lambda x: Path(x).exists() if x != "" else True).all():
+        if not samples.mask_path.apply(
+            lambda x: Path(x).exists() if x != "" else True,
+        ).all():
             msg = f"Missing mask files. mask_dir={mask_dir}"
             raise FileNotFoundError(msg)
 
@@ -177,7 +183,10 @@ def make_folder3d_dataset(
     # By default, all the normal samples are assigned as train.
     #   and all the abnormal samples are test.
     samples.loc[(samples.label == DirType.NORMAL), "split"] = Split.TRAIN
-    samples.loc[(samples.label == DirType.ABNORMAL) | (samples.label == DirType.NORMAL_TEST), "split"] = Split.TEST
+    samples.loc[
+        (samples.label == DirType.ABNORMAL) | (samples.label == DirType.NORMAL_TEST),
+        "split",
+    ] = Split.TEST
 
     # Get the data frame for the split.
     if split:
