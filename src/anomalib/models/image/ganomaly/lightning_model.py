@@ -93,7 +93,10 @@ class Ganomaly(AnomalyModule):
         self.model: GanomalyModel
 
     def _setup(self) -> None:
-        assert self.input_size is not None, "CSflow needs input size to build torch model."
+        if self.input_size is None:
+            msg = "CSflow needs input size to build torch model."
+            raise ValueError(msg)
+
         self.model = GanomalyModel(
             input_size=self.input_size,
             num_input_channels=3,
