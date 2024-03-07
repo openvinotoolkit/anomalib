@@ -10,8 +10,8 @@ from typing import Any
 import torch
 from matplotlib.figure import Figure
 from torchmetrics import Metric
-from torchmetrics.functional import auc
 from torchmetrics.functional.classification import binary_roc
+from torchmetrics.utilities.compute import auc
 from torchmetrics.utilities.data import dim_zero_cat
 
 from anomalib.metrics.pro import connected_components_cpu, connected_components_gpu

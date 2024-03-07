@@ -18,6 +18,7 @@ from .aupro import AUPRO
 from .auroc import AUROC
 from .collection import AnomalibMetricCollection
 from .min_max import MinMax
+from .precision_recall_curve import BinaryPrecisionRecallCurve
 from .pro import PRO
 from .threshold import F1AdaptiveThreshold, ManualThreshold
 
@@ -26,6 +27,7 @@ __all__ = [
     "AUPR",
     "AUPRO",
     "AnomalyScoreDistribution",
+    "BinaryPrecisionRecallCurve",
     "F1AdaptiveThreshold",
     "ManualThreshold",
     "MinMax",

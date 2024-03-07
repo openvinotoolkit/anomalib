@@ -36,16 +36,16 @@ class _MetricsCallback(Callback):
 
     Args:
         task (TaskType | str): Task type of the current run.
-        image_metrics (list[str] | str | None): List of image-level metrics.
-        pixel_metrics (list[str] | str | None): List of pixel-level metrics.
+        image_metrics (list[str] | str | dict[str, dict[str, Any]] | None): List of image-level metrics.
+        pixel_metrics (list[str] | str | dict[str, dict[str, Any]] | None): List of pixel-level metrics.
         device (str): Whether to compute metrics on cpu or gpu. Defaults to cpu.
     """
 
     def __init__(
         self,
         task: TaskType | str = TaskType.SEGMENTATION,
-        image_metrics: list[str] | str | None = None,
-        pixel_metrics: list[str] | str | None = None,
+        image_metrics: list[str] | str | dict[str, dict[str, Any]] | None = None,
+        pixel_metrics: list[str] | str | dict[str, dict[str, Any]] | None = None,
         device: Device = Device.CPU,
     ) -> None:
         super().__init__()
@@ -73,7 +73,7 @@ class _MetricsCallback(Callback):
         if isinstance(image_metric_names, str):
             image_metric_names = [image_metric_names]
 
-        pixel_metric_names: list[str]
+        pixel_metric_names: list[str] | dict[str, dict[str, Any]]
         if self.pixel_metric_names is None:
             pixel_metric_names = []
         elif self.task == TaskType.CLASSIFICATION:
