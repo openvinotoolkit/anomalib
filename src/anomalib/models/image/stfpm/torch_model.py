@@ -31,7 +31,6 @@ class STFPMModel(nn.Module):
     def __init__(
         self,
         layers: Sequence[str],
-        input_size: tuple[int, int],
         backbone: str = "resnet18",
     ) -> None:
         super().__init__()
@@ -50,7 +49,7 @@ class STFPMModel(nn.Module):
         for parameters in self.teacher_model.parameters():
             parameters.requires_grad = False
 
-        self.anomaly_map_generator = AnomalyMapGenerator(image_size=input_size)
+        self.anomaly_map_generator = AnomalyMapGenerator()
 
     def forward(self, images: torch.Tensor) -> torch.Tensor | dict[str, torch.Tensor] | tuple[dict[str, torch.Tensor]]:
         """Forward-pass images into the network.
@@ -78,6 +77,10 @@ class STFPMModel(nn.Module):
         if self.training:
             output = teacher_features, student_features
         else:
-            output = self.anomaly_map_generator(teacher_features=teacher_features, student_features=student_features)
+            output = self.anomaly_map_generator(
+                teacher_features=teacher_features,
+                student_features=student_features,
+                image_size=images.shape[-2:],
+            )
 
         return output

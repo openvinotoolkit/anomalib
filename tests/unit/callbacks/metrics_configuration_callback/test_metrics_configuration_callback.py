@@ -11,6 +11,7 @@ import lightning.pytorch as pl
 import pytest
 import torch
 from omegaconf import DictConfig, OmegaConf
+from torchvision.transforms.v2 import Resize
 
 from anomalib import LearningType
 from anomalib.callbacks.metrics import _MetricsCallback
@@ -48,6 +49,10 @@ class _DummyAnomalyModule(AnomalyModule):
     @property
     def trainer_arguments(self) -> dict:
         return {}
+
+    @property
+    def configure_transforms(self) -> None:
+        return Resize((256, 256))
 
 
 @pytest.fixture()

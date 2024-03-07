@@ -176,17 +176,13 @@ class Decoder(nn.Module):
 
     Args:
         out_channels (int): number of convolution output channels
-        img_size (tuple): size of input images
+        padding (int): use padding in convoluional layers
     """
 
-    def __init__(self, out_channels: int, padding: int, img_size: tuple[int, int], *args, **kwargs) -> None:
+    def __init__(self, out_channels: int, padding: int, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        self.img_size = img_size
+        self.padding = padding
         # use ceil to match output shape of PDN
-        self.last_upsample = (
-            math.ceil(img_size[0] / 4) if padding else math.ceil(img_size[0] / 4) - 8,
-            math.ceil(img_size[1] / 4) if padding else math.ceil(img_size[1] / 4) - 8,
-        )
         self.deconv1 = nn.Conv2d(64, 64, kernel_size=4, stride=1, padding=2)
         self.deconv2 = nn.Conv2d(64, 64, kernel_size=4, stride=1, padding=2)
         self.deconv3 = nn.Conv2d(64, 64, kernel_size=4, stride=1, padding=2)
@@ -202,34 +198,39 @@ class Decoder(nn.Module):
         self.dropout5 = nn.Dropout(p=0.2)
         self.dropout6 = nn.Dropout(p=0.2)
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, image_size: tuple[int, int] | torch.Size) -> torch.Tensor:
         """Perform a forward pass through the network.
 
         Args:
             x (torch.Tensor): Input batch.
+            image_size (tuple): size of input images.
 
         Returns:
             torch.Tensor: Output from the network.
         """
-        x = F.interpolate(x, size=(self.img_size[0] // 64 - 1, self.img_size[1] // 64 - 1), mode="bilinear")
+        last_upsample = (
+            math.ceil(image_size[0] / 4) if self.padding else math.ceil(image_size[0] / 4) - 8,
+            math.ceil(image_size[1] / 4) if self.padding else math.ceil(image_size[1] / 4) - 8,
+        )
+        x = F.interpolate(x, size=(image_size[0] // 64 - 1, image_size[1] // 64 - 1), mode="bilinear")
         x = F.relu(self.deconv1(x))
         x = self.dropout1(x)
-        x = F.interpolate(x, size=(self.img_size[0] // 32, self.img_size[1] // 32), mode="bilinear")
+        x = F.interpolate(x, size=(image_size[0] // 32, image_size[1] // 32), mode="bilinear")
         x = F.relu(self.deconv2(x))
         x = self.dropout2(x)
-        x = F.interpolate(x, size=(self.img_size[0] // 16 - 1, self.img_size[1] // 16 - 1), mode="bilinear")
+        x = F.interpolate(x, size=(image_size[0] // 16 - 1, image_size[1] // 16 - 1), mode="bilinear")
         x = F.relu(self.deconv3(x))
         x = self.dropout3(x)
-        x = F.interpolate(x, size=(self.img_size[0] // 8, self.img_size[1] // 8), mode="bilinear")
+        x = F.interpolate(x, size=(image_size[0] // 8, image_size[1] // 8), mode="bilinear")
         x = F.relu(self.deconv4(x))
         x = self.dropout4(x)
-        x = F.interpolate(x, size=(self.img_size[0] // 4 - 1, self.img_size[1] // 4 - 1), mode="bilinear")
+        x = F.interpolate(x, size=(image_size[0] // 4 - 1, image_size[1] // 4 - 1), mode="bilinear")
         x = F.relu(self.deconv5(x))
         x = self.dropout5(x)
-        x = F.interpolate(x, size=(self.img_size[0] // 2 - 1, self.img_size[1] // 2 - 1), mode="bilinear")
+        x = F.interpolate(x, size=(image_size[0] // 2 - 1, image_size[1] // 2 - 1), mode="bilinear")
         x = F.relu(self.deconv6(x))
         x = self.dropout6(x)
-        x = F.interpolate(x, size=self.last_upsample, mode="bilinear")
+        x = F.interpolate(x, size=last_upsample, mode="bilinear")
         x = F.relu(self.deconv7(x))
         return self.deconv8(x)
 
@@ -239,26 +240,27 @@ class AutoEncoder(nn.Module):
 
     Args:
        out_channels (int): number of convolution output channels
-       img_size (tuple): size of input images
+       padding (int): use padding in convoluional layers
     """
 
-    def __init__(self, out_channels: int, padding: int, img_size: tuple[int, int], *args, **kwargs) -> None:
+    def __init__(self, out_channels: int, padding: int, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.encoder = Encoder()
-        self.decoder = Decoder(out_channels, padding, img_size)
+        self.decoder = Decoder(out_channels, padding)
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, image_size: tuple[int, int] | torch.Size) -> torch.Tensor:
         """Perform the forward pass through the network.
 
         Args:
             x (torch.Tensor): Input batch.
+            image_size (tuple): size of input images.
 
         Returns:
             torch.Tensor: Output from the network.
         """
         x = imagenet_norm_batch(x)
         x = self.encoder(x)
-        return self.decoder(x)
+        return self.decoder(x, image_size)
 
 
 class EfficientAdModel(nn.Module):
@@ -266,7 +268,6 @@ class EfficientAdModel(nn.Module):
 
     Args:
         teacher_out_channels (int): number of convolution output channels of the pre-trained teacher model
-        input_size (tuple): size of input images
         model_size (str): size of student and teacher model
         padding (bool): use padding in convoluional layers
             Defaults to ``False``.
@@ -278,7 +279,6 @@ class EfficientAdModel(nn.Module):
     def __init__(
         self,
         teacher_out_channels: int,
-        input_size: tuple[int, int],
         model_size: EfficientAdModelSize = EfficientAdModelSize.S,
         padding: bool = False,
         pad_maps: bool = True,
@@ -301,9 +301,8 @@ class EfficientAdModel(nn.Module):
             msg = f"Unknown model size {model_size}"
             raise ValueError(msg)
 
-        self.ae: AutoEncoder = AutoEncoder(out_channels=teacher_out_channels, padding=padding, img_size=input_size)
+        self.ae: AutoEncoder = AutoEncoder(out_channels=teacher_out_channels, padding=padding)
         self.teacher_out_channels: int = teacher_out_channels
-        self.input_size: tuple[int, int] = input_size
 
         self.mean_std: nn.ParameterDict = nn.ParameterDict(
             {
@@ -367,6 +366,7 @@ class EfficientAdModel(nn.Module):
         Returns:
             Tensor: Predictions
         """
+        image_size = batch.shape[-2:]
         with torch.no_grad():
             teacher_output = self.teacher(batch)
             if self.is_set(self.mean_std):
@@ -386,7 +386,7 @@ class EfficientAdModel(nn.Module):
 
             # Autoencoder and Student AE Loss
             aug_img = self.choose_random_aug_image(batch)
-            ae_output_aug = self.ae(aug_img)
+            ae_output_aug = self.ae(aug_img, image_size)
 
             with torch.no_grad():
                 teacher_output_aug = self.teacher(aug_img)
@@ -404,7 +404,7 @@ class EfficientAdModel(nn.Module):
 
         # Eval mode.
         with torch.no_grad():
-            ae_output = self.ae(batch)
+            ae_output = self.ae(batch, image_size)
 
             map_st = torch.mean(distance_st, dim=1, keepdim=True)
             map_stae = torch.mean(
@@ -416,8 +416,8 @@ class EfficientAdModel(nn.Module):
         if self.pad_maps:
             map_st = F.pad(map_st, (4, 4, 4, 4))
             map_stae = F.pad(map_stae, (4, 4, 4, 4))
-        map_st = F.interpolate(map_st, size=(self.input_size[0], self.input_size[1]), mode="bilinear")
-        map_stae = F.interpolate(map_stae, size=(self.input_size[0], self.input_size[1]), mode="bilinear")
+        map_st = F.interpolate(map_st, size=image_size, mode="bilinear")
+        map_stae = F.interpolate(map_stae, size=image_size, mode="bilinear")
 
         if self.is_set(self.quantiles) and normalize:
             map_st = 0.1 * (map_st - self.quantiles["qa_st"]) / (self.quantiles["qb_st"] - self.quantiles["qa_st"])

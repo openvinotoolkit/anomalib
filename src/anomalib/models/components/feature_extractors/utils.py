@@ -20,7 +20,8 @@ def dryrun_find_featuremap_dims(
         tuple[int, int]: maping of `layer -> dimensions dict`
             Each `dimension dict` has two keys: `num_features` (int) and `resolution`(tuple[int, int]).
     """
-    dryrun_input = torch.empty(1, 3, *input_size)
+    device = next(feature_extractor.parameters()).device
+    dryrun_input = torch.empty(1, 3, *input_size).to(device)
     dryrun_features = feature_extractor(dryrun_input)
     return {
         layer: {"num_features": dryrun_features[layer].shape[1], "resolution": dryrun_features[layer].shape[2:]}

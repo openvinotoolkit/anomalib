@@ -6,14 +6,13 @@ data:
     image_size:
       - 256
       - 256
-    center_crop: null
-    normalization: imagenet
     train_batch_size: 72
     eval_batch_size: 32
     num_workers: 8
     task: segmentation
-    transform_config_train: null
-    transform_config_eval: null
+    transform: null
+    train_transform: null
+    eval_transform: null
     test_split_mode: from_dir
     test_split_ratio: 0.2
     val_split_mode: same_as_test

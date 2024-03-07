@@ -84,7 +84,7 @@ EXTRAS_REQUIRE = {
     "core": get_required_packages(requirement_files=["core"]),
     "notebooks": get_required_packages(requirement_files=["notebooks"]),
     "openvino": get_required_packages(requirement_files=["openvino"]),
-    "full": get_required_packages(requirement_files=["loggers", "notebooks", "openvino"]),
+    "full": get_required_packages(requirement_files=["loggers", "notebooks", "openvino", "core"]),
 }
 
 try:

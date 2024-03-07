@@ -4,9 +4,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from collections.abc import Iterator
-from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import cv2
 import matplotlib.figure
@@ -16,14 +16,12 @@ from skimage.segmentation import mark_boundaries
 
 from anomalib import TaskType
 from anomalib.data.utils import read_image
-from anomalib.utils.post_processing import (
-    add_anomalous_label,
-    add_normal_label,
-    draw_boxes,
-    superimpose_anomaly_map,
-)
+from anomalib.utils.post_processing import add_anomalous_label, add_normal_label, draw_boxes, superimpose_anomaly_map
 
 from .base import BaseVisualizer, GeneratorResult, VisualizationStep
+
+if TYPE_CHECKING:
+    from matplotlib.axis import Axes
 
 
 class VisualizationMode(str, Enum):
@@ -33,53 +31,90 @@ class VisualizationMode(str, Enum):
     SIMPLE = "simple"
 
 
-@dataclass
 class ImageResult:
     """Collection of data needed to visualize the predictions for an image."""
 
-    image: np.ndarray
-    pred_score: float
-    pred_label: str
-    anomaly_map: np.ndarray | None = None
-    gt_mask: np.ndarray | None = None
-    pred_mask: np.ndarray | None = None
-    gt_boxes: np.ndarray | None = None
-    pred_boxes: np.ndarray | None = None
-    box_labels: np.ndarray | None = None
+    def __init__(
+        self,
+        image: np.ndarray,
+        pred_score: float,
+        pred_label: str,
+        anomaly_map: np.ndarray | None = None,
+        gt_mask: np.ndarray | None = None,
+        pred_mask: np.ndarray | None = None,
+        gt_boxes: np.ndarray | None = None,
+        pred_boxes: np.ndarray | None = None,
+        box_labels: np.ndarray | None = None,
+        normalize: bool = False,
+    ) -> None:
+        self.anomaly_map = anomaly_map
+        self.box_labels = box_labels
+        self.gt_boxes = gt_boxes
+        self.gt_mask = gt_mask
+        self.image = image
+        self.pred_score = pred_score
+        self.pred_label = pred_label
+        self.pred_boxes = pred_boxes
+        self.heat_map: np.ndarray | None = None
+        self.segmentations: np.ndarray | None = None
+        self.normal_boxes: np.ndarray | None = None
+        self.anomalous_boxes: np.ndarray | None = None
 
-    heat_map: np.ndarray = field(init=False)
-    segmentations: np.ndarray = field(init=False)
-    normal_boxes: np.ndarray = field(init=False)
-    anomalous_boxes: np.ndarray = field(init=False)
+        if anomaly_map is not None:
+            self.heat_map = superimpose_anomaly_map(self.anomaly_map, self.image, normalize=normalize)
 
-    def __post_init__(self) -> None:
-        """Generate heatmap overlay and segmentations, convert masks to images."""
-        if self.anomaly_map is not None:
-            self.heat_map = superimpose_anomaly_map(self.anomaly_map, self.image, normalize=False)
+        if self.gt_mask is not None and self.gt_mask.max() <= 1.0:
+            self.gt_mask *= 255
+
+        self.pred_mask = pred_mask
         if self.pred_mask is not None and self.pred_mask.max() <= 1.0:
             self.pred_mask *= 255
             self.segmentations = mark_boundaries(self.image, self.pred_mask, color=(1, 0, 0), mode="thick")
             if self.segmentations.max() <= 1.0:
                 self.segmentations = (self.segmentations * 255).astype(np.uint8)
-        if self.gt_mask is not None and self.gt_mask.max() <= 1.0:
-            self.gt_mask *= 255
+
         if self.pred_boxes is not None:
             assert self.box_labels is not None, "Box labels must be provided when box locations are provided."
             self.normal_boxes = self.pred_boxes[~self.box_labels.astype(bool)]
             self.anomalous_boxes = self.pred_boxes[self.box_labels.astype(bool)]
 
+    def __repr__(self) -> str:
+        """Return a string representation of the object."""
+        repr_str = (
+            f"ImageResult(image={self.image}, pred_score={self.pred_score}, pred_label={self.pred_label}, "
+            f"anomaly_map={self.anomaly_map}, gt_mask={self.gt_mask}, "
+            f"gt_boxes={self.gt_boxes}, pred_boxes={self.pred_boxes}, box_labels={self.box_labels}"
+        )
+        repr_str += f", pred_mask={self.pred_mask}" if self.pred_mask is not None else ""
+        repr_str += f", heat_map={self.heat_map}" if self.heat_map is not None else ""
+        repr_str += f", segmentations={self.segmentations}" if self.segmentations is not None else ""
+        repr_str += f", normal_boxes={self.normal_boxes}" if self.normal_boxes is not None else ""
+        repr_str += f", anomalous_boxes={self.anomalous_boxes}" if self.anomalous_boxes is not None else ""
+        repr_str += ")"
+        return repr_str
+
 
 class ImageVisualizer(BaseVisualizer):
-    """Image/video generator."""
+    """Image/video generator.
+
+    Args:
+        mode (VisualizationMode, optional): Type of visualization mode. Defaults to VisualizationMode.FULL.
+        task (TaskType, optional): Type of task. Defaults to TaskType.CLASSIFICATION.
+        normalize (bool, optional): Whether or not the anomaly maps should be normalized to image min-max at image
+            level. Defaults to False. Note: This is more useful when NormalizationMethod is set to None. Otherwise,
+            the overlayed anomaly map will contain the raw scores.
+    """
 
     def __init__(
         self,
         mode: VisualizationMode = VisualizationMode.FULL,
         task: TaskType = TaskType.CLASSIFICATION,
+        normalize: bool = False,
     ) -> None:
         super().__init__(VisualizationStep.BATCH)
         self.mode = mode
         self.task = task
+        self.normalize = normalize
 
     def generate(self, **kwargs) -> Iterator[GeneratorResult]:
         """Generate images and return them as an iterator."""
@@ -102,7 +137,8 @@ class ImageVisualizer(BaseVisualizer):
         for i in range(batch_size):
             if "image_path" in batch:
                 height, width = batch["image"].shape[-2:]
-                image = read_image(path=batch["image_path"][i], image_size=(height, width))
+                image = (read_image(path=batch["image_path"][i]) * 255).astype(np.uint8)
+                image = cv2.resize(image, dsize=(width, height), interpolation=cv2.INTER_AREA)
             elif "video_path" in batch:
                 height, width = batch["image"].shape[-2:]
                 image = batch["original_image"][i].squeeze().cpu().numpy()
@@ -183,7 +219,7 @@ class ImageVisualizer(BaseVisualizer):
             image_grid.add_image(image=image_result.segmentations, title="Segmentation Result")
         elif self.task == TaskType.CLASSIFICATION:
             image_grid.add_image(image_result.image, title="Image")
-            if hasattr(image_result, "heat_map"):
+            if image_result.heat_map is not None:
                 image_grid.add_image(image_result.heat_map, "Predicted Heat Map")
             if image_result.pred_label:
                 image_classified = add_anomalous_label(image_result.image, image_result.pred_score)
@@ -241,8 +277,8 @@ class _ImageGrid:
 
     def __init__(self) -> None:
         self.images: list[dict] = []
-        self.figure: matplotlib.figure.Figure
-        self.axis: np.ndarray
+        self.figure: matplotlib.figure.Figure | None = None
+        self.axis: Axes | np.ndarray | None = None
 
     def add_image(self, image: np.ndarray, title: str | None = None, color_map: str | None = None) -> None:
         """Add an image to the grid.
