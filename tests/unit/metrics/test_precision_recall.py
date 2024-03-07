@@ -15,4 +15,4 @@ def test_precision_recall() -> None:
     metric = BinaryPrecisionRecallCurve()
     metric.update(predictions, targets)
     _, _, thresholds = metric.compute()
-    assert (thresholds == torch.tensor([14, 15, 16, 17])).all()
+    assert (thresholds == torch.tensor([12, 13, 14, 15, 16, 17])).all()

@@ -111,4 +111,11 @@ def pro_score(predictions: torch.Tensor, comps: torch.Tensor, threshold: float =
     preds[~predictions] = 0
     if n_comps == 1:  # only background
         return torch.Tensor([1.0])
-    return recall(preds.flatten(), comps.flatten(), num_classes=n_comps, average="macro", ignore_index=0)
+    return recall(
+        preds.flatten(),
+        comps.flatten(),
+        task="multiclass",
+        num_classes=n_comps,
+        average="macro",
+        ignore_index=0,
+    )

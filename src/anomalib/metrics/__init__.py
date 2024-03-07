@@ -117,7 +117,6 @@ def metric_collection_from_dicts(metrics: dict[str, dict[str, Any]], prefix: str
             "PixelWiseAUROC": {
                 "class_path": "anomalib.metrics.AUROC",
                 "init_args": {
-                    "compute_on_cpu": True,
                 },
             },
         }
@@ -132,8 +131,7 @@ def metric_collection_from_dicts(metrics: dict[str, dict[str, Any]], prefix: str
                     init_args: {}
                 PixelWiseAUROC:
                     class_path: anomalib.metrics.AUROC
-                    init_args:
-                        compute_on_cpu: true
+
         ```
 
     Args:
