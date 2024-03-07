@@ -14,7 +14,6 @@ from torchmetrics.functional.classification.precision_recall_curve import (
     _adjust_threshold_arg,
     _binary_precision_recall_curve_update,
 )
-from torchmetrics.utilities.checks import _check_same_shape
 
 
 class BinaryPrecisionRecallCurve(Metric):
@@ -47,8 +46,6 @@ class BinaryPrecisionRecallCurve(Metric):
             preds (Tensor): Predicted probabilities
             target (Tensor): Ground truth labels
         """
-        if self.validate_args:
-            _check_same_shape(preds, target)
         preds, target, _ = self._binary_precision_recall_curve_format(preds, target, self.thresholds, self.ignore_index)
         state = _binary_precision_recall_curve_update(preds, target, self.thresholds)
         if isinstance(state, Tensor):
