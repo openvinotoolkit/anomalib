@@ -46,7 +46,7 @@ def test_manual_threshold() -> None:
     datamodule = MVTec()
     f1_score = {
         "F1Score": {
-            "class_path": "torchvision.classification.F1Score",
+            "class_path": "torchmetrics.classification.F1Score",
             "init_args": {"task": "binary"},
         },
     }
