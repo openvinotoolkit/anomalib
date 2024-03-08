@@ -24,7 +24,7 @@ from anomalib.data.utils import (
 from anomalib.data.utils.path import _prepare_files_labels, validate_and_resolve_path
 
 
-def make_folder3d_dataset(
+def make_folder3d_dataset(  # noqa: C901
     normal_dir: str | Path,
     root: str | Path | None = None,
     abnormal_dir: str | Path | None = None,
