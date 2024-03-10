@@ -110,6 +110,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - 🐞Fix visualization by @ashwinvaidya17 in https://github.com/openvinotoolkit/anomalib/pull/1766
 - 🩹Minor fixes by @ashwinvaidya17 in https://github.com/openvinotoolkit/anomalib/pull/1788
 - ⏳ Restore Images by @ashwinvaidya17 in https://github.com/openvinotoolkit/anomalib/pull/1791
+- 🐞 Fix the error if the device in masks_to_boxes is not both CPU and CUDA by @danylo-boiko https://github.com/openvinotoolkit/anomalib/pull/1839
 
 ### New Contributors
 
