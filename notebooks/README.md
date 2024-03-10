@@ -41,13 +41,13 @@ To install Python, Git and other required tools, [OpenVINO Notebooks](https://gi
 
 ## 3. OpenVINO Optimization
 
-| Notebook     | GitHub                                                                                                  | Colab |
-| ------------ | ------------------------------------------------------------------------------------------------------- | ----- |
+| Notebook     | GitHub                                             | Colab |
+| ------------ | -------------------------------------------------- | ----- |
 | Quantization | [401_NNCF](/notebooks/400_openvino/401_nncf.ipynb) |       |
 
 ## 4. Use cases
 
-| Notebook               | GitHub                                                                                                                                                             | Colab |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----- |
+| Notebook               | GitHub                                                                                                        | Colab |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------- | ----- |
 | Dobot Dataset Creation | [501a_training](/notebooks/500_use_cases/501_dobot/501a_training_a_model_with_cubes_from_a_robotic_arm.ipynb) |       |
 | Training               | [501b_training](/notebooks/500_use_cases/501_dobot/501b_inference_with_a_robotic_arm.ipynb)                   |       |

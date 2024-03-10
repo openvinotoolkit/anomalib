@@ -1,7 +1,7 @@
 # Anomalib DataModules Tutorial
 
-| Notebook | GitHub                                         | Colab                                                                                                                                                                                                |
-| -------- | ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Notebook | GitHub                         | Colab                                                                                                                                                                                                |
+| -------- | ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | BTech    | [101_btech](101_btech.ipynb)   | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/openvinotoolkit/anomalib/blob/main/notebooks/100_datamodules/101_btech.ipynb)  |
 | MVTec    | [102_mvtec](102_mvtec.ipynb)   | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/openvinotoolkit/anomalib/blob/main/notebooks/100_datamodules/102_mvtec.ipynb)  |
 | Folder   | [103_folder](103_folder.ipynb) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/openvinotoolkit/anomalib/blob/main/notebooks/100_datamodules/103_folder.ipynb) |
