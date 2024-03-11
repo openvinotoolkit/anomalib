@@ -2,7 +2,7 @@ name: Pre-Merge Checks
 
 on:
   push:
-    branches: [main, hotfix/v1.0.1a]
+    branches: [main, hotfix/*]
   pull_request:
     types:
       - opened
