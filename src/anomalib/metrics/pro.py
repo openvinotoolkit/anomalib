@@ -113,7 +113,7 @@ def pro_score(predictions: torch.Tensor, comps: torch.Tensor, threshold: float =
         return torch.Tensor([1.0])
 
     # Even though ignore_index is set to 0, the final average computed with "macro"
-    # take the entire length of the tensor into account. That's why we need to manually
+    # takes the entire length of the tensor into account. That's why we need to manually
     # subtract 1 from the number of components after taking the sum
     recall_tensor = recall(
         preds.flatten(),
