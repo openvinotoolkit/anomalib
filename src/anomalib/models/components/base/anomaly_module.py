@@ -184,7 +184,7 @@ class AnomalyModule(pl.LightningModule, ABC):
         metric_keys = [key for key in state_dict if key.startswith(f"{name}_metrics")]
         if any(metric_keys):
             if not hasattr(self, f"{name}_metrics"):
-                setattr(self, f"{name}_metrics", AnomalibMetricCollection([], prefix=name))
+                setattr(self, f"{name}_metrics", AnomalibMetricCollection([], prefix=f"{name}_"))
             metrics = getattr(self, f"{name}_metrics")
             for key in metric_keys:
                 class_name = key.split(".")[1]

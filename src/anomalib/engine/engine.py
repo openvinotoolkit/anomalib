@@ -148,12 +148,12 @@ class Engine:
         self.normalization = normalization
         self.threshold = threshold
         self.task = TaskType(task)
-        self.image_metric_names = image_metrics if image_metrics else ["AUROC"]
+        self.image_metric_names = image_metrics if image_metrics else ["AUROC", "F1Score"]
 
         # pixel metrics are only used for segmentation tasks.
         self.pixel_metric_names = None
         if self.task == TaskType.SEGMENTATION:
-            self.pixel_metric_names = pixel_metrics if pixel_metrics is not None else ["AUROC"]
+            self.pixel_metric_names = pixel_metrics if pixel_metrics is not None else ["AUROC", "F1Score"]
 
         self._trainer: Trainer | None = None
 

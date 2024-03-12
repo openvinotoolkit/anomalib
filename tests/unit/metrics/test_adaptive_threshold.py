@@ -44,18 +44,12 @@ def test_manual_threshold() -> None:
 
     model = Padim()
     datamodule = MVTec()
-    f1_score = {
-        "F1Score": {
-            "class_path": "torchmetrics.classification.F1Score",
-            "init_args": {"task": "binary"},
-        },
-    }
 
     engine = Engine(
         normalization=NormalizationMethod.NONE,
         threshold=threshold,
-        image_metrics=f1_score,
-        pixel_metrics=f1_score,
+        image_metrics="F1Score",
+        pixel_metrics="F1Score",
         fast_dev_run=True,
         accelerator="gpu",
         devices=1,
