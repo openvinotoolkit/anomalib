@@ -17,7 +17,9 @@ from .aupr import AUPR
 from .aupro import AUPRO
 from .auroc import AUROC
 from .collection import AnomalibMetricCollection
+from .f1_score import F1Score
 from .min_max import MinMax
+from .precision_recall_curve import BinaryPrecisionRecallCurve
 from .pro import PRO
 from .threshold import F1AdaptiveThreshold, ManualThreshold
 
@@ -26,7 +28,9 @@ __all__ = [
     "AUPR",
     "AUPRO",
     "AnomalyScoreDistribution",
+    "BinaryPrecisionRecallCurve",
     "F1AdaptiveThreshold",
+    "F1Score",
     "ManualThreshold",
     "MinMax",
     "PRO",
@@ -115,7 +119,6 @@ def metric_collection_from_dicts(metrics: dict[str, dict[str, Any]], prefix: str
             "PixelWiseAUROC": {
                 "class_path": "anomalib.metrics.AUROC",
                 "init_args": {
-                    "compute_on_cpu": True,
                 },
             },
         }
@@ -130,8 +133,7 @@ def metric_collection_from_dicts(metrics: dict[str, dict[str, Any]], prefix: str
                     init_args: {}
                 PixelWiseAUROC:
                     class_path: anomalib.metrics.AUROC
-                    init_args:
-                        compute_on_cpu: true
+
         ```
 
     Args:

@@ -10,8 +10,8 @@ from typing import Any
 import torch
 from matplotlib.figure import Figure
 from torchmetrics import Metric
-from torchmetrics.functional import auc
 from torchmetrics.functional.classification import binary_roc
+from torchmetrics.utilities.compute import auc
 from torchmetrics.utilities.data import dim_zero_cat
 
 from anomalib.metrics.pro import connected_components_cpu, connected_components_gpu
@@ -24,8 +24,6 @@ class AUPRO(Metric):
     """Area under per region overlap (AUPRO) Metric.
 
     Args:
-        compute_on_step (bool): Forward only calls ``update()`` and return None if this is set to False.
-            Default: ``True``
         dist_sync_on_step (bool): Synchronize metric state across processes at each ``forward()``
             before returning the value at the step. Default: ``False``
         process_group (Optional[Any]): Specify the process group on which synchronization is called.
@@ -71,7 +69,6 @@ class AUPRO(Metric):
 
     def __init__(
         self,
-        compute_on_step: bool = True,
         dist_sync_on_step: bool = False,
         process_group: Any | None = None,  # noqa: ANN401
         dist_sync_fn: Callable | None = None,
@@ -79,7 +76,6 @@ class AUPRO(Metric):
         num_thresholds: int | None = None,
     ) -> None:
         super().__init__(
-            compute_on_step=compute_on_step,
             dist_sync_on_step=dist_sync_on_step,
             process_group=process_group,
             dist_sync_fn=dist_sync_fn,
