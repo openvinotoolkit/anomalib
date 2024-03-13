@@ -219,7 +219,7 @@ Anomalib supports hyper-parameter optimization using [wandb](https://wandb.ai/) 
 
 ## {octicon}`beaker` Experiment Management
 
-Anomalib is integrated with various libraries for experiment tracking such as comet, tensorboard, and wandb through [lighting loggers](https://pytorch-lightning.readthedocs.io/en/stable/extensions/logging.html).
+Anomalib is integrated with various libraries for experiment tracking such as comet, mlflow,  tensorboard, and wandb through [lighting loggers](https://pytorch-lightning.readthedocs.io/en/stable/extensions/logging.html).
 
 ::::{tab-set}
 
