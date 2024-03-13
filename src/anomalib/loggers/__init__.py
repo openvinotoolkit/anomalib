@@ -3,7 +3,6 @@
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 import logging
 
 from rich.logging import RichHandler
@@ -15,6 +14,7 @@ __all__ = [
 
 try:
     from .comet import AnomalibCometLogger  # noqa: F401
+    from .mlflow import AnomalibMLFlowLogger  # noqa: F401
     from .tensorboard import AnomalibTensorBoardLogger  # noqa: F401
     from .wandb import AnomalibWandbLogger  # noqa: F401
 
@@ -23,6 +23,7 @@ try:
             "AnomalibCometLogger",
             "AnomalibTensorBoardLogger",
             "AnomalibWandbLogger",
+            "AnomalibMLFlowLogger",
         ],
     )
 except ImportError:
