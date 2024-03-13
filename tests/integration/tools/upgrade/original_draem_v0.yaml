@@ -61,7 +61,7 @@ project:
   path: ./results
 
 logging:
-  logger: [] # options: [comet, tensorboard, wandb, csv] or combinations.
+  logger: [] # options: [comet, tensorboard, wandb, csv, mlflow] or combinations.
   log_graph: false # Logs the model graph to respective logger.
 
 optimization:
