@@ -227,7 +227,7 @@ anomalib hpo --backend WANDB  --sweep_config tools/hpo/configs/wandb.yaml
 
 # 🧪 Experiment Management
 
-Anomalib is integrated with various libraries for experiment tracking such as Comet, tensorboard, and wandb through [pytorch lighting loggers](https://pytorch-lightning.readthedocs.io/en/stable/extensions/logging.html). For more information, refer to the [Logging Documentation](https://openvinotoolkit.github.io/anomalib/tutorials/logging.html)
+Anomalib is integrated with various libraries for experiment tracking such as Comet, mlflow, tensorboard, and wandb through [pytorch lighting loggers](https://pytorch-lightning.readthedocs.io/en/stable/extensions/logging.html). For more information, refer to the [Logging Documentation](https://openvinotoolkit.github.io/anomalib/tutorials/logging.html)
 
 <details>
 <summary>Experiment Management via API</summary>
