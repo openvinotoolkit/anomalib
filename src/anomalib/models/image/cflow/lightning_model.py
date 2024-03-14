@@ -32,8 +32,6 @@ class Cflow(AnomalyModule):
     """PL Lightning Module for the CFLOW algorithm.
 
     Args:
-        input_size (tuple[int, int], optional): Input image size.
-            Defaults to ``(256, 256)``.
         backbone (str, optional): Backbone CNN architecture.
             Defaults to ``"wide_resnet50_2"``.
         layers (Sequence[str], optional): Layers to extract features from.

@@ -27,8 +27,6 @@ class Padim(MemoryBankMixin, AnomalyModule):
     """PaDiM: a Patch Distribution Modeling Framework for Anomaly Detection and Localization.
 
     Args:
-        input_size (tuple[int, int]): Size of the model input.
-            Defaults to ``(256, 256)``.
         backbone (str): Backbone CNN network
             Defaults to ``resnet18``.
         layers (list[str]): Layers to extract features from the backbone CNN
