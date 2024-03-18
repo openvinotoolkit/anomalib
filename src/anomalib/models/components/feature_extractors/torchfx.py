@@ -170,7 +170,10 @@ class TorchFXFeatureExtractor(nn.Module):
         if isinstance(weights, WeightsEnum):  # torchvision models
             feature_extractor = create_feature_extractor(model=backbone_model, return_nodes=return_nodes)
         elif weights is not None:
-            assert isinstance(weights, str), "Weights should point to a path"
+            if not isinstance(weights, str):
+                msg = "Weights should point to a path"
+                raise TypeError(msg)
+
             model_weights = torch.load(weights)
             if "state_dict" in model_weights:
                 model_weights = model_weights["state_dict"]

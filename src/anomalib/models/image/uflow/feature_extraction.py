@@ -28,7 +28,10 @@ def get_feature_extractor(backbone: str, input_size: tuple[int, int] = (256, 256
     Returns:
         FeatureExtractorInterface: Feature extractor.
     """
-    assert backbone in AVAILABLE_EXTRACTORS, f"Feature extractor must be one of {AVAILABLE_EXTRACTORS}."
+    if backbone not in AVAILABLE_EXTRACTORS:
+        msg = f"Feature extractor must be one of {AVAILABLE_EXTRACTORS}."
+        raise ValueError(msg)
+
     if backbone in ["resnet18", "wide_resnet50_2"]:
         return FeatureExtractor(backbone, input_size, layers=("layer1", "layer2", "layer3"))
     if backbone == "mcait":
