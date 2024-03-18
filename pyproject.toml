@@ -45,8 +45,6 @@ loggers = [
     "gradio>=4",
     "tensorboard",
     "wandb==0.12.17",
-    "GitPython",
-    "ipykernel",
 ]
 notebooks = ["gitpython", "ipykernel", "ipywidgets", "notebook"]
 dev = [
