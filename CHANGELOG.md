@@ -8,6 +8,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+- 🚀 Allow passing model to engine constructor by @danylo-boiko in https://github.com/openvinotoolkit/anomalib/pull/1780
+
 ### Changed
 
 ### Deprecated
@@ -47,7 +49,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - 📚 Add sdd and contributing guidelines to the documentation by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/1708
 - Fix scheduler num_steps for EfficientAD by @blaz-r in https://github.com/openvinotoolkit/anomalib/pull/1705
 - 🔒 Add GPG keys to sign the python wheel to publish on pypi by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/1687
-- 🚀 Allow passing model to engine constructor by @danylo-boiko in https://github.com/openvinotoolkit/anomalib/pull/1780
 
 ### Changed
 
