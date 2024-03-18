@@ -68,7 +68,9 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
 
     def __len__(self) -> int:
         """Get length of the dataset."""
-        assert isinstance(self.indexer, ClipsIndexer)
+        if not isinstance(self.indexer, ClipsIndexer):
+            msg = "self.indexer must be an instance of ClipsIndexer."
+            raise TypeError(msg)
         return self.indexer.num_clips()
 
     @property
@@ -94,7 +96,9 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
 
         Should be called after each change to self._samples
         """
-        assert callable(self.indexer_cls)
+        if not callable(self.indexer_cls):
+            msg = "self.indexer_cls must be callable."
+            raise TypeError(msg)
         self.indexer = self.indexer_cls(  # pylint: disable=not-callable
             video_paths=list(self.samples.image_path),
             mask_paths=list(self.samples.mask_path),
@@ -145,8 +149,9 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
         Returns:
             dict[str, str | torch.Tensor]: Dictionary containing the mask, clip and file system information.
         """
-        assert isinstance(self.indexer, ClipsIndexer)
-
+        if not isinstance(self.indexer, ClipsIndexer):
+            msg = "self.indexer must be an instance of ClipsIndexer."
+            raise TypeError(msg)
         item = self.indexer.get_item(index)
         # include the untransformed image for visualization
         item["original_image"] = item["image"].to(torch.uint8)
@@ -185,8 +190,13 @@ class AnomalibVideoDataModule(AnomalibDataModule):
 
         Video datamodules are not compatible with synthetic anomaly generation.
         """
-        assert self.train_data is not None
-        assert self.test_data is not None
+        if self.train_data is None:
+            msg = "self.train_data cannot be None."
+            raise ValueError(msg)
+
+        if self.test_data is None:
+            msg = "self.test_data cannot be None."
+            raise ValueError(msg)
 
         self.train_data.setup()
         self.test_data.setup()

@@ -148,7 +148,9 @@ class Cflow(AnomalyModule):
             decoder = self.model.decoders[layer_idx].to(images.device)
 
             fiber_batches = embedding_length // self.model.fiber_batch_size  # number of fiber batches
-            assert fiber_batches > 0, "Make sure we have enough fibers, otherwise decrease N or batch-size!"
+            if fiber_batches <= 0:
+                msg = "Make sure we have enough fibers, otherwise decrease N or batch-size!"
+                raise ValueError(msg)
 
             for batch_num in range(fiber_batches):  # per-fiber processing
                 opt.zero_grad()

@@ -55,7 +55,10 @@ class ReverseDistillation(AnomalyModule):
         self.model: ReverseDistillationModel
 
     def _setup(self) -> None:
-        assert self.input_size is not None, "Input size is required for Reverse Distillation model."
+        if self.input_size is None:
+            msg = "Input size is required for Reverse Distillation model."
+            raise ValueError(msg)
+
         self.model = ReverseDistillationModel(
             backbone=self.backbone,
             pre_trained=self.pre_trained,

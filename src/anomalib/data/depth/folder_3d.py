@@ -14,6 +14,7 @@ from torchvision.transforms.v2 import Transform
 
 from anomalib import TaskType
 from anomalib.data.base import AnomalibDataModule, AnomalibDepthDataset
+from anomalib.data.errors import MisMatchError
 from anomalib.data.utils import (
     DirType,
     LabelName,
@@ -24,7 +25,7 @@ from anomalib.data.utils import (
 from anomalib.data.utils.path import _prepare_files_labels, validate_and_resolve_path
 
 
-def make_folder3d_dataset(
+def make_folder3d_dataset(  # noqa: C901
     normal_dir: str | Path,
     root: str | Path | None = None,
     abnormal_dir: str | Path | None = None,
@@ -74,7 +75,9 @@ def make_folder3d_dataset(
     abnormal_depth_dir = validate_and_resolve_path(abnormal_depth_dir, root) if abnormal_depth_dir else None
     normal_test_depth_dir = validate_and_resolve_path(normal_test_depth_dir, root) if normal_test_depth_dir else None
 
-    assert normal_dir.is_dir(), "A folder location must be provided in normal_dir."
+    if not normal_dir.is_dir():
+        msg = "A folder location must be provided in normal_dir."
+        raise ValueError(msg)
 
     filenames = []
     labels = []
@@ -129,17 +132,23 @@ def make_folder3d_dataset(
             ].image_path.to_numpy()
 
         # make sure every rgb image has a corresponding depth image and that the file exists
-        assert (
+        mismatch = (
             samples.loc[samples.label_index == LabelName.ABNORMAL]
             .apply(lambda x: Path(x.image_path).stem in Path(x.depth_path).stem, axis=1)
             .all()
-        ), "Mismatch between anomalous images and depth images. Make sure the mask files in 'xyz' \
-            folder follow the same naming convention as the anomalous images in the dataset \
-            (e.g. image: '000.png', depth: '000.tiff')."
+        )
+        if not mismatch:
+            msg = """Mismatch between anomalous images and depth images. Make sure the mask files
+            in 'xyz' folder follow the same naming convention as the anomalous images in the dataset
+            (e.g. image: '000.png', depth: '000.tiff')."""
+            raise MisMatchError(msg)
 
-        assert samples.depth_path.apply(
+        missing_depth_files = samples.depth_path.apply(
             lambda x: Path(x).exists() if not isna(x) else True,
-        ).all(), "missing depth image files"
+        ).all()
+        if not missing_depth_files:
+            msg = "Missing depth image files."
+            raise FileNotFoundError(msg)
 
         samples = samples.astype({"depth_path": "str"})
 
@@ -152,9 +161,11 @@ def make_folder3d_dataset(
         samples = samples.astype({"mask_path": "str"})
 
         # make sure all the files exist
-        assert samples.mask_path.apply(
+        if not samples.mask_path.apply(
             lambda x: Path(x).exists() if x != "" else True,
-        ).all(), f"missing mask files, mask_dir={mask_dir}"
+        ).all():
+            msg = f"Missing mask files. mask_dir={mask_dir}"
+            raise FileNotFoundError(msg)
     else:
         samples["mask_path"] = ""
 
