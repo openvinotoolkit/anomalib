@@ -4,8 +4,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-from pathlib import Path
 
+from pkg_resources import Requirement
 from rich.console import Console
 from rich.logging import RichHandler
 
@@ -41,21 +41,25 @@ def anomalib_install(option: str = "full", verbose: bool = False) -> int:
     """
     from pip._internal.commands import create_command
 
-    options = (
-        [option]
-        if option != "full"
-        else [option.stem for option in Path("requirements").glob("*.txt") if option.stem != "dev"]
-    )
-    requirements = get_requirements(requirement_files=options)
+    requirements_dict = get_requirements("anomalib")
+
+    requirements = []
+    if option == "full":
+        for extra in requirements_dict:
+            requirements.extend(requirements_dict[extra])
+    elif option in requirements_dict:
+        requirements.extend(requirements_dict[option])
+    elif option is not None:
+        requirements.append(Requirement.parse(option))
 
     # Parse requirements into torch and other requirements.
     # This is done to parse the correct version of torch (cpu/cuda).
-    torch_requirement, other_requirements = parse_requirements(requirements, skip_torch="core" not in options)
+    torch_requirement, other_requirements = parse_requirements(requirements, skip_torch=option not in ("full", "core"))
 
     # Get install args for torch to install it from a specific index-url
     install_args: list[str] = []
     torch_install_args = []
-    if "core" in options and torch_requirement is not None:
+    if option in ("full", "core") and torch_requirement is not None:
         torch_install_args = get_torch_install_args(torch_requirement)
 
     # Combine torch and other requirements.

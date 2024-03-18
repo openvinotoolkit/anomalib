@@ -41,7 +41,6 @@ class Uflow(AnomalyModule):
         """Uflow model.
 
         Args:
-            input_size (tuple[int, int]): Input image size.
             backbone (str): Backbone name.
             flow_steps (int): Number of flow steps.
             affine_clamp (float): Affine clamp.
@@ -61,7 +60,10 @@ class Uflow(AnomalyModule):
         self.model: UflowModel
 
     def _setup(self) -> None:
-        assert self.input_size is not None, "Input size is required for UFlow model."
+        if self.input_size is None:
+            msg = "Input size is required for UFlow model."
+            raise ValueError(msg)
+
         self.model = UflowModel(
             input_size=self.input_size,
             backbone=self.backbone,
