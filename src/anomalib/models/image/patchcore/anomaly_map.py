@@ -15,8 +15,7 @@ class AnomalyMapGenerator(nn.Module):
     """Generate Anomaly Heatmap.
 
     Args:
-        input_size (ListConfig, tuple): Size of the input image.
-            The anomaly map is upsampled to this dimension.
+        The anomaly map is upsampled to this dimension.
         sigma (int, optional): Standard deviation for Gaussian Kernel.
             Defaults to ``4``.
     """
@@ -65,7 +64,7 @@ class AnomalyMapGenerator(nn.Module):
                 Defaults to None.
 
         Example:
-            >>> anomaly_map_generator = AnomalyMapGenerator(input_size=input_size)
+            >>> anomaly_map_generator = AnomalyMapGenerator()
             >>> map = anomaly_map_generator(patch_scores=patch_scores)
 
         Returns:

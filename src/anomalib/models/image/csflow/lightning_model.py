@@ -28,8 +28,6 @@ class Csflow(AnomalyModule):
     """Fully Convolutional Cross-Scale-Flows for Image-based Defect Detection.
 
     Args:
-        input_size (tuple[int, int]): Size of the model input.
-            Defaults to ``(256, 256)``.
         n_coupling_blocks (int): Number of coupling blocks in the model.
             Defaults to ``4``.
         cross_conv_hidden_channels (int): Number of hidden channels in the cross convolution.
@@ -60,7 +58,7 @@ class Csflow(AnomalyModule):
 
     def _setup(self) -> None:
         if self.input_size is None:
-            msg = "Csflow needs input size to build torch model."
+            msg = "CsFlow needs input size to build torch model."
             raise ValueError(msg)
 
         self.model = CsFlowModel(

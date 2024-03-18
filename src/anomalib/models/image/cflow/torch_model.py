@@ -20,7 +20,6 @@ class CflowModel(nn.Module):
     """CFLOW: Conditional Normalizing Flows.
 
     Args:
-        input_size (tuple[int, int]): Input image size.
         backbone (str): Backbone CNN architecture.
         layers (Sequence[str]): Layers to extract features from.
         pre_trained (bool): Whether to use pre-trained weights.

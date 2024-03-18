@@ -41,7 +41,6 @@ class Uflow(AnomalyModule):
         """Uflow model.
 
         Args:
-            input_size (tuple[int, int]): Input image size.
             backbone (str): Backbone name.
             flow_steps (int): Number of flow steps.
             affine_clamp (float): Affine clamp.
