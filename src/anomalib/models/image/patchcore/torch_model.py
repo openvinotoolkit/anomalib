@@ -22,7 +22,6 @@ class PatchcoreModel(DynamicBufferMixin, nn.Module):
     """Patchcore Module.
 
     Args:
-        input_size (tuple[int, int]): Input size for the model.
         layers (list[str]): Layers used for feature extraction
         backbone (str, optional): Pre-trained model backbone.
             Defaults to ``resnet18``.

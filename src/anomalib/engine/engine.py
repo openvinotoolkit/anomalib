@@ -768,7 +768,7 @@ class Engine:
                 "`Engine.predict()` requires an `AnomalyModule` when it hasn't been passed in a previous run run or in "
                 "the `Engine` constructor."
             )
-            raise RuntimeError(msg)
+            raise ValueError(msg)
 
         if ckpt_path:
             ckpt_path = Path(ckpt_path).resolve()
