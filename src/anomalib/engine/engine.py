@@ -725,9 +725,9 @@ class Engine:
                 anomalib predict --model Padim --data <PATH_TO_IMAGE_OR_FOLDER> --ckpt_path <PATH_TO_CHECKPOINT>
                 ```
         """
-        assert (
-            model or self.model
-        ), "`Engine.predict()` requires an `AnomalyModule` when it hasn't been passed in a previous run."
+        if not (model or self.model):
+            msg = "`Engine.predict()` requires an `AnomalyModule` when it hasn't been passed in a previous run."
+            raise ValueError(msg)
 
         if ckpt_path:
             ckpt_path = Path(ckpt_path).resolve()
