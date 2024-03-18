@@ -247,8 +247,10 @@ class OpenVINOInferencer(Inferencer):
         # Common practice in anomaly detection is to assign anomalous
         # label to the prediction if the prediction score is greater
         # than the image threshold.
+        pred_label: str | None = None
         if "image_threshold" in metadata:
-            pred_label = pred_score >= metadata["image_threshold"]
+            pred_idx = pred_score >= metadata["image_threshold"]
+            pred_label = "Anomalous" if pred_idx else "Normal"
 
         if task == TaskType.CLASSIFICATION:
             _, pred_score = self._normalize(pred_scores=pred_score, metadata=metadata)
