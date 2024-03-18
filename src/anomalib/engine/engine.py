@@ -645,9 +645,9 @@ class Engine:
             >>> model.learning_type
             <LearningType.ONE_CLASS: 'one_class'>
 
-            >>> engine = Engine(model=model)
-            >>> engine.fit(datamodule=datamodule)
-            >>> engine.test(datamodule=datamodule)
+            >>> engine = Engine()
+            >>> engine.fit(model, datamodule=datamodule)
+            >>> engine.test(model, datamodule=datamodule)
 
             # Test a zero-shot model
             >>> from anomalib.data import MVTec

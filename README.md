@@ -126,12 +126,13 @@ from anomalib.data import MVTec
 from anomalib.models import Patchcore
 from anomalib.engine import Engine
 
-# Initialize the datamodule and engine
+# Initialize the datamodule, model and engine
 datamodule = MVTec()
-engine = Engine(model=Patchcore())
+model = Patchcore()
+engine = Engine()
 
 # Train the model
-engine.fit(datamodule=datamodule)
+engine.fit(datamodule=datamodule, model=model)
 ```
 
 </details>
