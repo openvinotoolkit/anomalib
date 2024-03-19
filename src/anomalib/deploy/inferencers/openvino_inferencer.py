@@ -69,10 +69,7 @@ class OpenVINOInferencer(Inferencer):
         metadata is loaded from the ``metadata.json`` file. To make a prediction,
         we can simply call the ``predict`` method:
 
-        >>> import cv2
-        >>> image = cv2.imread("path/to/image.jpg")
-        >>> image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        >>> result = inferencer.predict(image)
+        >>> result = inferencer.predict(image="path/to/image.jpg")
 
         ``result`` will be an ``ImageResult`` object containing the prediction
         results. For example, to visualize the heatmap, we can do the following:
