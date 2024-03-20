@@ -181,7 +181,7 @@ class TorchInferencer(Inferencer):
         if isinstance(image, str | Path):
             image = read_image(image, as_tensor=True)
 
-        metadata["image_shape"] = image.transpose(2,0,1).shape[-2:]
+        metadata["image_shape"] = image.transpose(2, 0, 1).shape[-2:]
 
         processed_image = self.pre_process(image)
         predictions = self.forward(processed_image)
