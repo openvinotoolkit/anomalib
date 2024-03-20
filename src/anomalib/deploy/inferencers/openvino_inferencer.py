@@ -69,9 +69,19 @@ class OpenVINOInferencer(Inferencer):
         metadata is loaded from the ``metadata.json`` file. To make a prediction,
         we can simply call the ``predict`` method:
 
-        >>> result = inferencer.predict(image="path/to/image.jpg")
+        >>> prediction = inferencer.predict(image="path/to/image.jpg")
 
-        ``result`` will be an ``ImageResult`` object containing the prediction
+        Alternatively we can also pass the image as a PIL image or numpy array:
+
+        >>> from PIL import Image
+        >>> image = Image.open("path/to/image.jpg")
+        >>> prediction = inferencer.predict(image=image)
+
+        >>> import numpy as np
+        >>> image = np.random.rand(224, 224, 3)
+        >>> prediction = inferencer.predict(image=image)
+
+        ``prediction`` will be an ``ImageResult`` object containing the prediction
         results. For example, to visualize the heatmap, we can do the following:
 
         >>> from matplotlib import pyplot as plt
