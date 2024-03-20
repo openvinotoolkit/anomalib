@@ -213,8 +213,8 @@ class TorchInferencer(Inferencer):
 
         if len(transposed_image) == 3:
             return torch.from_numpy(transposed_image).float().to(self.device).unsqueeze(0)
-        else : 
-            return torch.from_numpy(image).float().to(self.device).unsqueeze(0)
+
+        return torch.from_numpy(image).float().to(self.device).unsqueeze(0)
 
     def forward(self, image: torch.Tensor) -> torch.Tensor:
         """Forward-Pass input tensor to the model.
