@@ -177,11 +177,26 @@ class OpenVINOInferencer(Inferencer):
         Returns:
             ImageResult: Prediction results to be visualized.
         """
+        # Convert file path or string to image if necessary
+        if isinstance(image, str | Path):
+            image = Image.open(image)
+
+        # Convert PIL image to numpy array
+        if isinstance(image, Image.Image):
+            image = np.array(image, dtype=np.float32)
+        if not isinstance(image, np.ndarray):
+            msg = f"Input image must be a numpy array or a path to an image. Got {type(image)}"
+            raise TypeError(msg)
+
+        # Normalize numpy array to range [0, 1]
+        if image.dtype != np.float32:
+            image = image.astype(np.float32)
+        if image.max() > 1.0:
+            image /= 255.0
+
+        # Check if metadata is provided, if not use the default metadata.
         if metadata is None:
             metadata = self.metadata if hasattr(self, "metadata") else {}
-        if isinstance(image, str | Path):
-            image = np.array(Image.open(image)).astype(np.float32) / 255.0
-
         metadata["image_shape"] = image.shape[:2]
 
         processed_image = self.pre_process(image)
