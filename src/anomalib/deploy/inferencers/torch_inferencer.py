@@ -206,10 +206,7 @@ class TorchInferencer(Inferencer):
         Returns:
             Tensor: pre-processed image.
         """
-        if len (image.shape) == 3:
-            transposed_image = image.transpose(2,0,1).copy()
-        else:
-            transposed_image = image.copy()
+        transposed_image = image.transpose(2, 0, 1).copy() if len(image.shape) == 3 else image.copy()
 
         if len(transposed_image) == 3:
             return torch.from_numpy(transposed_image).float().to(self.device).unsqueeze(0)
