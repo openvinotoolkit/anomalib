@@ -81,29 +81,33 @@ def _validate_metrics_dict(metrics: dict[str, dict[str, Any]]) -> None:
         - have key init_args" and its value is of type dict).
 
     """
-    assert all(
-        isinstance(metric, str) for metric in metrics
-    ), f"All keys (metric names) must be strings, found {sorted(metrics.keys())}"
-    assert all(
-        isinstance(metric, dict | DictConfig) for metric in metrics.values()
-    ), f"All values must be dictionaries, found {list(metrics.values())}"
-    assert all("class_path" in metric and isinstance(metric["class_path"], str) for metric in metrics.values()), (
-        "All internal dictionaries must have a 'class_path' key whose value is of type str, "
-        f"found {list(metrics.values())}"
-    )
-    assert all(
-        "init_args" in metric and isinstance(metric["init_args"], dict | DictConfig) for metric in metrics.values()
-    ), (
-        "All internal dictionaries must have a 'init_args' key whose value is of type dict, "
-        f"found {list(metrics.values())}"
-    )
+    if not all(isinstance(metric, str) for metric in metrics):
+        msg = f"All keys (metric names) must be strings, found {sorted(metrics.keys())}"
+        raise TypeError(msg)
+
+    if not all(isinstance(metric, DictConfig | dict) for metric in metrics.values()):
+        msg = f"All values must be dictionaries, found {list(metrics.values())}"
+        raise TypeError(msg)
+
+    if not all("class_path" in metric and isinstance(metric["class_path"], str) for metric in metrics.values()):
+        msg = "All internal dictionaries must have a 'class_path' key whose value is of type str."
+        raise ValueError(msg)
+
+    if not all(
+        "init_args" in metric and isinstance(metric["init_args"], dict) or isinstance(metric["init_args"], DictConfig)
+        for metric in metrics.values()
+    ):
+        msg = "All internal dictionaries must have a 'init_args' key whose value is of type dict."
+        raise ValueError(msg)
 
 
 def _get_class_from_path(class_path: str) -> Callable:
     """Get a class from a module assuming the string format is `package.subpackage.module.ClassName`."""
     module_name, class_name = class_path.rsplit(".", 1)
     module = importlib.import_module(module_name)
-    assert hasattr(module, class_name), f"Class {class_name} not found in module {module_name}"
+    if not hasattr(module, class_name):
+        msg = f"Class {class_name} not found in module {module_name}"
+        raise AttributeError(msg)
     return getattr(module, class_name)
 
 
@@ -180,7 +184,10 @@ def create_metric_collection(
     # fallback is using the names
 
     if isinstance(metrics, ListConfig | list):
-        assert all(isinstance(metric, str) for metric in metrics), f"All metrics must be strings, found {metrics}"
+        if not all(isinstance(metric, str) for metric in metrics):
+            msg = f"All metrics must be strings, found {metrics}"
+            raise TypeError(msg)
+
         return metric_collection_from_names(metrics, prefix)
 
     if isinstance(metrics, DictConfig | dict):

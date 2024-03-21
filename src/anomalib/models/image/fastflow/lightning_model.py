@@ -24,8 +24,6 @@ class Fastflow(AnomalyModule):
     """PL Lightning Module for the FastFlow algorithm.
 
     Args:
-        input_size (tuple[int, int]): Model input size.
-            Defaults to ``(256, 256)``.
         backbone (str): Backbone CNN network
             Defaults to ``resnet18``.
         pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.
@@ -59,7 +57,10 @@ class Fastflow(AnomalyModule):
         self.model: FastflowModel
 
     def _setup(self) -> None:
-        assert self.input_size is not None, "Fastflow needs input size to build torch model."
+        if self.input_size is None:
+            msg = "Fastflow needs input size to build torch model."
+            raise ValueError(msg)
+
         self.model = FastflowModel(
             input_size=self.input_size,
             backbone=self.backbone,

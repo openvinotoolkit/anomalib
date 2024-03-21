@@ -43,6 +43,8 @@ class EfficientAd(AnomalyModule):
     """PL Lightning Module for the EfficientAd algorithm.
 
     Args:
+        imagenet_dir (Path|str): directory path for the Imagenet dataset
+            Defaults to ``./datasets/imagenette``.
         teacher_out_channels (int): number of convolution output channels
             Defaults to ``384``.
         model_size (str): size of student and teacher model
@@ -62,6 +64,7 @@ class EfficientAd(AnomalyModule):
 
     def __init__(
         self,
+        imagenet_dir: Path | str = "./datasets/imagenette",
         teacher_out_channels: int = 384,
         model_size: EfficientAdModelSize = EfficientAdModelSize.S,
         lr: float = 0.0001,
@@ -72,6 +75,7 @@ class EfficientAd(AnomalyModule):
     ) -> None:
         super().__init__()
 
+        self.imagenet_dir = Path(imagenet_dir)
         self.model_size = model_size
         self.model: EfficientAdModel = EfficientAdModel(
             teacher_out_channels=teacher_out_channels,
@@ -109,10 +113,9 @@ class EfficientAd(AnomalyModule):
             ],
         )
 
-        imagenet_dir = Path("./datasets/imagenette")
-        if not imagenet_dir.is_dir():
-            download_and_extract(imagenet_dir, IMAGENETTE_DOWNLOAD_INFO)
-        imagenet_dataset = ImageFolder(imagenet_dir, transform=self.data_transforms_imagenet)
+        if not self.imagenet_dir.is_dir():
+            download_and_extract(self.imagenet_dir, IMAGENETTE_DOWNLOAD_INFO)
+        imagenet_dataset = ImageFolder(self.imagenet_dir, transform=self.data_transforms_imagenet)
         self.imagenet_loader = DataLoader(imagenet_dataset, batch_size=self.batch_size, shuffle=True, pin_memory=True)
         self.imagenet_iterator = iter(self.imagenet_loader)
 
@@ -146,7 +149,9 @@ class EfficientAd(AnomalyModule):
             chanel_sum += torch.sum(y, dim=[0, 2, 3])
             chanel_sum_sqr += torch.sum(y**2, dim=[0, 2, 3])
 
-        assert n is not None
+        if n is None:
+            msg = "The value of 'n' cannot be None."
+            raise ValueError(msg)
 
         channel_mean = chanel_sum / n
 
