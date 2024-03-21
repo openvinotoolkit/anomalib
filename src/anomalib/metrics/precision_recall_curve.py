@@ -9,14 +9,14 @@ See: https://github.com/Lightning-AI/torchmetrics/issues/1526
 
 
 from torch import Tensor
-from torchmetrics.classification import BinaryPrecisionRecallCurve as Metric
+from torchmetrics.classification import BinaryPrecisionRecallCurve as _BinaryPrecisionRecallCurve
 from torchmetrics.functional.classification.precision_recall_curve import (
     _adjust_threshold_arg,
     _binary_precision_recall_curve_update,
 )
 
 
-class BinaryPrecisionRecallCurve(Metric):
+class BinaryPrecisionRecallCurve(_BinaryPrecisionRecallCurve):
     """Binary precision-recall curve with without threshold prediction normalization."""
 
     def _binary_precision_recall_curve_format(
