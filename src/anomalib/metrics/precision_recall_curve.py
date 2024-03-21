@@ -19,8 +19,8 @@ from torchmetrics.functional.classification.precision_recall_curve import (
 class BinaryPrecisionRecallCurve(_BinaryPrecisionRecallCurve):
     """Binary precision-recall curve with without threshold prediction normalization."""
 
+    @staticmethod
     def _binary_precision_recall_curve_format(
-        self,
         preds: Tensor,
         target: Tensor,
         thresholds: int | list[float] | Tensor | None = None,
@@ -46,7 +46,12 @@ class BinaryPrecisionRecallCurve(_BinaryPrecisionRecallCurve):
             preds (Tensor): Predicted probabilities
             target (Tensor): Ground truth labels
         """
-        preds, target, _ = self._binary_precision_recall_curve_format(preds, target, self.thresholds, self.ignore_index)
+        preds, target, _ = BinaryPrecisionRecallCurve._binary_precision_recall_curve_format(
+            preds,
+            target,
+            self.thresholds,
+            self.ignore_index,
+        )
         state = _binary_precision_recall_curve_update(preds, target, self.thresholds)
         if isinstance(state, Tensor):
             self.confmat += state
