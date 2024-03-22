@@ -16,6 +16,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 
+- Use right interpolation method in WinCLIP resize (<https://github.com/openvinotoolkit/anomalib/pull/1889>)
 - 🐞 Fix the error if the device in masks_to_boxes is not both CPU and CUDA by @danylo-boiko in https://github.com/openvinotoolkit/anomalib/pull/1839
 
 ## [v1.0.0] - 2024-02-29

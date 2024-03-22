@@ -7,14 +7,15 @@
 import logging
 
 import torch
-from torchmetrics import PrecisionRecallCurve
+
+from anomalib.metrics.precision_recall_curve import BinaryPrecisionRecallCurve
 
 from .base import BaseThreshold
 
 logger = logging.getLogger(__name__)
 
 
-class F1AdaptiveThreshold(PrecisionRecallCurve, BaseThreshold):
+class F1AdaptiveThreshold(BinaryPrecisionRecallCurve, BaseThreshold):
     """Anomaly Score Threshold.
 
     This class computes/stores the threshold that determines the anomalous label
@@ -42,7 +43,7 @@ class F1AdaptiveThreshold(PrecisionRecallCurve, BaseThreshold):
     """
 
     def __init__(self, default_value: float = 0.5, **kwargs) -> None:
-        super().__init__(num_classes=1, **kwargs)
+        super().__init__(**kwargs)
 
         self.add_state("value", default=torch.tensor(default_value), persistent=True)
         self.value = torch.tensor(default_value)

@@ -111,7 +111,7 @@ class ImageVisualizer(BaseVisualizer):
     def __init__(
         self,
         mode: VisualizationMode = VisualizationMode.FULL,
-        task: TaskType = TaskType.CLASSIFICATION,
+        task: TaskType | str = TaskType.CLASSIFICATION,
         normalize: bool = False,
     ) -> None:
         super().__init__(VisualizationStep.BATCH)

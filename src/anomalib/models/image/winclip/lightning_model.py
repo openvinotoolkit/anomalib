@@ -13,7 +13,7 @@ from typing import Any
 
 import torch
 from torch.utils.data import DataLoader
-from torchvision.transforms.v2 import Compose, Normalize, Resize, Transform
+from torchvision.transforms.v2 import Compose, InterpolationMode, Normalize, Resize, Transform
 
 from anomalib import LearningType
 from anomalib.data.predict import PredictDataset
@@ -174,7 +174,7 @@ class WinClip(AnomalyModule):
             logger.warning("Image size is not used in WinCLIP. The input image size is determined by the model.")
         return Compose(
             [
-                Resize((240, 240), antialias=True),
+                Resize((240, 240), antialias=True, interpolation=InterpolationMode.BICUBIC),
                 Normalize(mean=(0.48145466, 0.4578275, 0.40821073), std=(0.26862954, 0.26130258, 0.27577711)),
             ],
         )
