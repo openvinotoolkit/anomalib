@@ -5,17 +5,19 @@ This script creates a custom dataset from a folder.
 
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
-
+import logging
 from collections.abc import Sequence
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import torch
 from pandas import DataFrame
 from torchvision.transforms.v2 import Transform
 
 from anomalib import TaskType
-from anomalib.data.base import AnomalibDataModule, AnomalibDataset
+from anomalib.data.base import AnomalibVideoDataModule, AnomalibVideoDataset
+from anomalib.data.base.video import VideoTargetFrame
 from anomalib.data.errors import MisMatchError
 from anomalib.data.utils import (
     DirType,
@@ -26,6 +28,9 @@ from anomalib.data.utils import (
     validate_path,
 )
 from anomalib.data.utils.path import _prepare_files_labels, validate_and_resolve_path
+from anomalib.data.utils.video import ClipsIndexer, convert_video
+
+logger = logging.getLogger(__name__)
 
 
 def make_folder_video_dataset(
@@ -66,33 +71,181 @@ def make_folder_video_dataset(
     # get paths to training videos
     path = validate_path(path)
     # TODO(bepitic): reflect on the true path in example and doc
-    train_path = path / "training"
-    train_list = [(str(train_path),) + filename.parts[-2:] for filename in train_path.glob("*.avi")]
-    train_samples = DataFrame(train_list, columns=["root", "folder", "image_path"])
-    train_samples["split"] = "train"
 
     # get paths to testing folders
-    test_path = Path(path) / "testing"
-    test_list = [(str(test_path),) + filename.parts[-2:] for filename in test_path.glob("*.avi")]
-    test_samples = DataFrame(
-        test_list,
+    path_list = [(str(path),) + filename.parts[-2:] for filename in path.glob("*.avi")]
+    samples = DataFrame(
+        path_list,
         columns=["root", "folder", "image_path"],
-    )  # TODO(Bepitic): Change image Path to video path
-    test_samples["split"] = "test"
+    )  # TODO(Bepitic): Change image Path to video path ?
+    samples["split"] = split
 
-    samples = pd.concat([train_samples, test_samples], ignore_index=True)
-
-    gt_root = Path(gt_dir) / "testing"
     samples["mask_path"] = ""
     # TODO(Bepitic): Maybe other formats?
-    samples.loc[samples.root == str(test_path), "mask_path"] = (
-        str(gt_root) + "/" + samples.image_path.str.split(".").str[0] + ".npy"
+    samples.loc[samples.root == str(path), "mask_path"] = (
+        str(gt_dir) + "/" + samples.image_path.str.split(".").str[0] + ".npy"
     )
 
+    # TODO(Bepitic): Make a system to link both gt and datapoint into the same spot
     samples["image_path"] = samples.root + "/" + samples.image_path
 
-    if split:
-        samples = samples[samples.split == split]
-        samples = samples.reset_index(drop=True)
-
     return samples
+
+
+class FolderClipsIndexer(ClipsIndexer):
+    """Clips indexer for the test set Folder video dataset."""
+
+    def get_mask(self, idx: int) -> torch.Tensor | None:
+        """Retrieve the masks from the file system."""
+        video_idx, frames_idx = self.get_clip_location(idx)
+        mask_file = self.mask_paths[video_idx]
+        if mask_file == "":  # no gt masks available for this clip
+            return None
+        frames = self.clips[video_idx][frames_idx]
+
+        vid_masks = np.load(mask_file)
+        return torch.tensor(np.take(vid_masks, frames, 0))
+
+
+class FolderDataset(AnomalibVideoDataset):
+    """Folder Dataset class.
+
+    Args:
+        task (TaskType): Task type, 'classification', 'detection' or 'segmentation'
+        split (Split): Split of the dataset, usually Split.TRAIN or Split.TEST
+        root (Path | str): Path to the root of the dataset
+        clip_length_in_frames (int, optional): Number of video frames in each clip.
+        frames_between_clips (int, optional): Number of frames between each consecutive video clip.
+        target_frame (VideoTargetFrame): Specifies the target frame in the video clip, used for ground truth retrieval.
+        transform (Transform, optional): Transforms that should be applied to the input images.
+            Defaults to ``None``.
+    """
+
+    def __init__(
+        self,
+        task: TaskType,
+        split: Split,
+        root: Path | str,
+        clip_length_in_frames: int = 2,
+        frames_between_clips: int = 1,
+        target_frame: VideoTargetFrame = VideoTargetFrame.LAST,
+        transform: Transform | None = None,
+    ) -> None:
+        super().__init__(
+            task=task,
+            clip_length_in_frames=clip_length_in_frames,
+            frames_between_clips=frames_between_clips,
+            target_frame=target_frame,
+            transform=transform,
+        )
+
+        self.root = Path(root)
+        self.split = split
+        self.indexer_cls = FolderClipsIndexer
+        self.samples = make_folder_video_dataset(self.root, self.split)  # TODO(Bepitic):Check the constructor
+
+
+class Folder(AnomalibVideoDataModule):
+    """Folder DataModule class.
+
+    Args:
+        root (Path | str): Path to the root of the dataset
+        clip_length_in_frames (int, optional): Number of video frames in each clip.
+        frames_between_clips (int, optional): Number of frames between each consecutive video clip.
+        target_frame (VideoTargetFrame): Specifies the target frame in the video clip, used for ground truth retrieval
+        task TaskType): Task type, 'classification', 'detection' or 'segmentation'
+        image_size (tuple[int, int], optional): Size to which input images should be resized.
+            Defaults to ``None``.
+        transform (Transform, optional): Transforms that should be applied to the input images.
+            Defaults to ``None``.
+        train_transform (Transform, optional): Transforms that should be applied to the input images during training.
+            Defaults to ``None``.
+        eval_transform (Transform, optional): Transforms that should be applied to the input images during evaluation.
+            Defaults to ``None``.
+        train_batch_size (int, optional): Training batch size. Defaults to 32.
+        eval_batch_size (int, optional): Test batch size. Defaults to 32.
+        num_workers (int, optional): Number of workers. Defaults to 8.
+        val_split_mode (ValSplitMode): Setting that determines how the validation subset is obtained.
+        val_split_ratio (float): Fraction of train or test images that will be reserved for validation.
+        seed (int | None, optional): Seed which may be set to a fixed value for reproducibility.
+    """
+
+    def __init__(
+        self,
+        root: Path | str,
+        clip_length_in_frames: int = 2,
+        frames_between_clips: int = 1,
+        target_frame: VideoTargetFrame = VideoTargetFrame.LAST,
+        task: TaskType = TaskType.SEGMENTATION,
+        image_size: tuple[int, int] | None = None,
+        transform: Transform | None = None,
+        train_transform: Transform | None = None,
+        eval_transform: Transform | None = None,
+        train_batch_size: int = 32,
+        eval_batch_size: int = 32,
+        num_workers: int = 8,
+        val_split_mode: ValSplitMode = ValSplitMode.SAME_AS_TEST,
+        val_split_ratio: float = 0.5,
+        seed: int | None = None,
+    ) -> None:
+        super().__init__(
+            train_batch_size=train_batch_size,
+            eval_batch_size=eval_batch_size,
+            num_workers=num_workers,
+            image_size=image_size,
+            transform=transform,
+            train_transform=train_transform,
+            eval_transform=eval_transform,
+            val_split_mode=val_split_mode,
+            val_split_ratio=val_split_ratio,
+            seed=seed,
+        )
+
+        self.task = TaskType(task)
+        self.root = Path(root)
+
+        self.clip_length_in_frames = clip_length_in_frames
+        self.frames_between_clips = frames_between_clips
+        self.target_frame = target_frame
+
+    def _setup(self, _stage: str | None = None) -> None:
+        self.train_data = FolderDataset(
+            task=self.task,
+            transform=self.train_transform,
+            clip_length_in_frames=self.clip_length_in_frames,
+            frames_between_clips=self.frames_between_clips,
+            target_frame=self.target_frame,
+            root=self.root,
+            scene=self.scene,
+            split=Split.TRAIN,
+        )
+
+        self.test_data = FolderDataset(
+            task=self.task,
+            transform=self.eval_transform,
+            clip_length_in_frames=self.clip_length_in_frames,
+            frames_between_clips=self.frames_between_clips,
+            target_frame=self.target_frame,
+            root=self.root,
+            scene=self.scene,
+            split=Split.TEST,
+        )
+
+    @staticmethod
+    def _convert_training_videos(video_folder: Path, target_folder: Path) -> None:
+        """Re-code the training videos to ensure correct reading of frames by torchvision.
+
+        The encoding of the raw video files in the ShanghaiTech dataset causes some problems when
+        reading the frames using pyav. To prevent this, we read the frames from the video files using opencv,
+        and write them to a new video file that can be parsed correctly with pyav.
+
+        Args:
+            video_folder (Path): Path to the folder of training videos.
+            target_folder (Path): File system location where the converted videos will be stored.
+        """
+        training_videos = sorted(video_folder.glob("*"))
+        for video_idx, video_path in enumerate(training_videos):
+            logger.info("Converting training video %s (%i/%i)...", video_path.name, video_idx + 1, len(training_videos))
+            file_name = video_path.name
+            target_path = target_folder / file_name
+            convert_video(video_path, target_path, codec="XVID")
