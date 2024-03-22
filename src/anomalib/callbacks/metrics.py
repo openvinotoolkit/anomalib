@@ -91,14 +91,9 @@ class _MetricsCallback(Callback):
         if isinstance(pl_module, AnomalyModule):
             pl_module.image_metrics = create_metric_collection(image_metric_names, "image_")
             if hasattr(pl_module, "pixel_metrics"):  # incase metrics are loaded from model checkpoint
-                new_metrics = create_metric_collection(pixel_metric_names, "pixel_")
+                new_metrics = create_metric_collection(pixel_metric_names)
                 for name in new_metrics:
-                    # Ruff is ignored as
-                    # >>> name not in pl_module.pixel_metrics
-                    # True
-                    # >>> name not in pl_module.pixel_metrics.keys()
-                    # False
-                    if name not in pl_module.pixel_metrics.keys():  # noqa: SIM118
+                    if name not in pl_module.pixel_metrics:
                         pl_module.pixel_metrics.add_metrics(new_metrics[name])
             else:
                 pl_module.pixel_metrics = create_metric_collection(pixel_metric_names, "pixel_")
