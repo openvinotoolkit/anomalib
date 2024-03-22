@@ -15,6 +15,7 @@ from omegaconf import DictConfig
 from PIL import Image
 
 from anomalib import TaskType
+from anomalib.data.utils.label import LabelName
 from anomalib.utils.visualization import ImageResult
 
 from .base_inferencer import Inferencer
@@ -231,7 +232,7 @@ class OpenVINOInferencer(Inferencer):
 
         # Initialize the result variables.
         anomaly_map: np.ndarray | None = None
-        pred_label: float | None = None
+        pred_label: LabelName | None = None
         pred_mask: float | None = None
 
         # If predictions returns a single value, this means that the task is
@@ -247,10 +248,9 @@ class OpenVINOInferencer(Inferencer):
         # Common practice in anomaly detection is to assign anomalous
         # label to the prediction if the prediction score is greater
         # than the image threshold.
-        pred_label: str | None = None
         if "image_threshold" in metadata:
             pred_idx = pred_score >= metadata["image_threshold"]
-            pred_label = "Anomalous" if pred_idx else "Normal"
+            pred_label = LabelName.ABNORMAL if pred_idx else LabelName.NORMAL
 
         if task == TaskType.CLASSIFICATION:
             _, pred_score = self._normalize(pred_scores=pred_score, metadata=metadata)
