@@ -14,8 +14,47 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 
-- Use right interpolation method in WinCLIP resize (<https://github.com/openvinotoolkit/anomalib/pull/1889>)
+### New Contributors
+
+**Full Changelog**:
+
+## [v1.0.1] - Unreleased
+
+### Added
+
+- Add requirements into `pyproject.toml` & Refactor anomalib install `get_requirements` by @harimkang in https://github.com/openvinotoolkit/anomalib/pull/1808
+
+### Changed
+
+- 📚 Update the getting started notebook by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/1800
+- 🔨Refactored-assert-statements-with-explicit-error-handling by @sahusiddharth in https://github.com/openvinotoolkit/anomalib/pull/1825
+- 🔨Made-imagenette-path-configurable-in-config by @sahusiddharth in https://github.com/openvinotoolkit/anomalib/pull/1833
+- 🛠️ Update changelog by @ashwinvaidya17 in https://github.com/openvinotoolkit/anomalib/pull/1842
+- Remove input_size argument from models #1827 by @Shakib-IO in https://github.com/openvinotoolkit/anomalib/pull/1856
+- 🚀 Allow validation splits from training data by @davnn in https://github.com/openvinotoolkit/anomalib/pull/1865
+- 🛠️ Ensure images are loaded in RGB format by @davnn in https://github.com/openvinotoolkit/anomalib/pull/1866
+- 🔨 Update OpenVINO predict to handle normalization inside the method. by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/1875
+- ✨ Upgrade TorchMetrics by @ashwinvaidya17 in https://github.com/openvinotoolkit/anomalib/pull/1879
+- Address minor WinCLIP issues by @djdameln in https://github.com/openvinotoolkit/anomalib/pull/1889
+
+### Deprecated
+
+### Fixed
+
+- 🐞 Fix dobot notebook by @djdameln in https://github.com/openvinotoolkit/anomalib/pull/1852
+- 🐞 Fix CLI config and update the docs. by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/1886
 - 🐞 Fix the error if the device in masks_to_boxes is not both CPU and CUDA by @danylo-boiko in https://github.com/openvinotoolkit/anomalib/pull/1839
+- 🐞 Hot-fix wrong requirement for setup.py by @harimkang in https://github.com/openvinotoolkit/anomalib/pull/1823
+- 🐞 Use right interpolation method in WinCLIP resize (<https://github.com/openvinotoolkit/anomalib/pull/1889>)
+- 🐞 Fix the error if the device in masks_to_boxes is not both CPU and CUDA by @danylo-boiko in https://github.com/openvinotoolkit/anomalib/pull/1839
+
+### New Contributors
+
+- @sahusiddharth made their first contribution in https://github.com/openvinotoolkit/anomalib/pull/1825
+- @Shakib-IO made their first contribution in https://github.com/openvinotoolkit/anomalib/pull/1856
+- @davnn made their first contribution in https://github.com/openvinotoolkit/anomalib/pull/1866
+
+**Full Changelog**: https://github.com/openvinotoolkit/anomalib/compare/v1.0.0...v1.0.1
 
 ## [v1.0.0] - 2024-02-29
 
