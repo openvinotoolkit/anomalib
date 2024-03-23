@@ -3,16 +3,15 @@
 from typing import Literal
 
 import numpy as np
+from lightning.pytorch.loggers.mlflow import MLFlowLogger
+from lightning.pytorch.utilities import rank_zero_only
 from matplotlib.figure import Figure
 
-# Maybe use try_import from anomalib.utils.exceptions instead.
-try:
-    from lightning.pytorch.loggers.mlflow import MLFlowLogger
-except ModuleNotFoundError:
-    print("To use mlflow logger install it using `pip install mlflow`")
-from lightning.pytorch.utilities import rank_zero_only
+from anomalib.utils.exceptions.imports import try_import
 
 from .base import ImageLoggerBase
+
+try_import("mlflow")
 
 
 class AnomalibMLFlowLogger(ImageLoggerBase, MLFlowLogger):
