@@ -14,15 +14,16 @@ from lightning.pytorch.utilities import rank_zero_only
 
 from .base import ImageLoggerBase
 
+
 class AnomalibMLFlowLogger(ImageLoggerBase, MLFlowLogger):
-    """Logger for MLFlow
+    """Logger for MLFlow.
 
     Adds interface for ``add_image`` in the logger rather than calling the
     experiment object.
 
     .. note::
         Same as the MLFlowLogger provided by PyTorch Lightning and the doc string is reproduced below.
-    
+
     Track your parameters, metrics, source code and more using
     `MLFlow <https://mlflow.org/#core-concepts>`_.
 
@@ -34,7 +35,7 @@ class AnomalibMLFlowLogger(ImageLoggerBase, MLFlowLogger):
 
     Args:
         experiment_name: The name of the experiment.
-        run_name: Name of the new run. 
+        run_name: Name of the new run.
             The `run_name` is internally stored as a ``mlflow.runName`` tag.
             If the ``mlflow.runName`` tag has already been set in `tags`, the value is overridden by the `run_name`.
         tracking_uri: Address of local or remote tracking server.
@@ -51,7 +52,7 @@ class AnomalibMLFlowLogger(ImageLoggerBase, MLFlowLogger):
             - if ``log_model == False`` (default), no checkpoint is logged.
 
         prefix: A string to put at the beginning of metric keys. Defaults to ``''``.
-        kwargs: Additional arguments like `tags`, `artifact_location` etc. used by 
+        kwargs: Additional arguments like `tags`, `artifact_location` etc. used by
             `MLFlowExperiment` can be passed as keyword arguments in this logger.
 
     Example:
@@ -64,7 +65,7 @@ class AnomalibMLFlowLogger(ImageLoggerBase, MLFlowLogger):
     See Also:
         - `MLFlow Documentation <https://mlflow.org/docs/latest/>`_.
     """
-    
+
     def __init__(
         self,
         experiment_name: str | None = "anomalib_logs",
@@ -92,13 +93,12 @@ class AnomalibMLFlowLogger(ImageLoggerBase, MLFlowLogger):
         Args:
             image (np.ndarray | Figure): Image to log.
             name (str | None): The tag of the image defaults to ``None``.
-            kwargs: Additional keyword arguments that are only used if `image` is of type Figure. 
-                These arguments are passed directly to the method that saves the figure. 
+            kwargs: Additional keyword arguments that are only used if `image` is of type Figure.
+                These arguments are passed directly to the method that saves the figure.
                 If `image` is a NumPy array, `kwargs` has no effect.
         """
-        
         # Need to call different functions of `Experiment` for  Figure vs np.ndarray
         if isinstance(image, Figure):
-            self.experiment.log_figure(run_id=self.run_id, figure=image, artifact_file=name,  **kwargs)
+            self.experiment.log_figure(run_id=self.run_id, figure=image, artifact_file=name, **kwargs)
         else:
             self.experiment.log_image(run_id=self.run_id, image=image, artifact_file=name)
