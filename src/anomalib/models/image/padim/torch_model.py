@@ -55,7 +55,6 @@ class PadimModel(nn.Module):
     """Padim Module.
 
     Args:
-        input_size (tuple[int, int]): Input size for the model.
         layers (list[str]): Layers used for feature extraction
         backbone (str, optional): Pre-trained model backbone. Defaults to "resnet18".
             Defaults to ``resnet18``.
@@ -88,9 +87,9 @@ class PadimModel(nn.Module):
             )
             raise ValueError(msg)
 
-        assert (
-            0 < self.n_features <= self.n_features_original
-        ), f"for backbone {self.backbone}, 0 < n_features <= {self.n_features_original}, found {self.n_features}"
+        if not (0 < self.n_features <= self.n_features_original):
+            msg = f"For backbone {self.backbone}, 0 < n_features <= {self.n_features_original}, found {self.n_features}"
+            raise ValueError(msg)
 
         # Since idx is randomly selected, save it with model to get same results
         self.register_buffer(

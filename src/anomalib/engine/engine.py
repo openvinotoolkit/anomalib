@@ -109,10 +109,10 @@ class Engine:
         threshold (THRESHOLD):
             Thresholding method. Defaults to "F1AdaptiveThreshold".
         task (TaskType, optional): Task type. Defaults to TaskType.SEGMENTATION.
-        image_metrics (str | list[str] | None, optional): Image metrics to be used for evaluation.
-            Defaults to None.
-        pixel_metrics (str | list[str] | None, optional): Pixel metrics to be used for evaluation.
-            Defaults to None.
+        image_metrics (list[str] | str | dict[str, dict[str, Any]] | None, optional): Image metrics to be used for
+            evaluation. Defaults to None.
+        pixel_metrics (list[str] | str | dict[str, dict[str, Any]] | None, optional): Pixel metrics to be used for
+            evaluation. Defaults to None.
         default_root_dir (str, optional): Default root directory for the trainer.
             The results will be saved in this directory.
             Defaults to ``results``.
@@ -125,8 +125,8 @@ class Engine:
         normalization: NORMALIZATION = NormalizationMethod.MIN_MAX,
         threshold: THRESHOLD = "F1AdaptiveThreshold",
         task: TaskType | str = TaskType.SEGMENTATION,
-        image_metrics: str | list[str] | None = None,
-        pixel_metrics: str | list[str] | None = None,
+        image_metrics: list[str] | str | dict[str, dict[str, Any]] | None = None,
+        pixel_metrics: list[str] | str | dict[str, dict[str, Any]] | None = None,
         logger: Logger | Iterable[Logger] | bool | None = None,
         default_root_dir: str | Path = "results",
         **kwargs,
@@ -725,9 +725,9 @@ class Engine:
                 anomalib predict --model Padim --data <PATH_TO_IMAGE_OR_FOLDER> --ckpt_path <PATH_TO_CHECKPOINT>
                 ```
         """
-        assert (
-            model or self.model
-        ), "`Engine.predict()` requires an `AnomalyModule` when it hasn't been passed in a previous run."
+        if not (model or self.model):
+            msg = "`Engine.predict()` requires an `AnomalyModule` when it hasn't been passed in a previous run."
+            raise ValueError(msg)
 
         if ckpt_path:
             ckpt_path = Path(ckpt_path).resolve()
