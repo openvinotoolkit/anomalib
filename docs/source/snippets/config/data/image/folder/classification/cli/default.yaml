@@ -1,5 +1,6 @@
 class_path: anomalib.data.Folder
 init_args:
+  name: "MVTec"
   root: "datasets/MVTec/transistor"
   normal_dir: "train/good"
   abnormal_dir: "test/bent_lead"
@@ -7,14 +8,12 @@ init_args:
   normal_split_ratio: 0
   extensions: [".png"]
   image_size: [256, 256]
-  center_crop: null
-  normalization: imagenet
   train_batch_size: 32
   eval_batch_size: 32
   num_workers: 8
   task: classification
-  transform_config_train: null
-  transform_config_eval: null
+  train_transform: null
+  eval_transform: null
   test_split_mode: from_dir
   test_split_ratio: 0.2
   val_split_mode: same_as_test

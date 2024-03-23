@@ -69,12 +69,19 @@ class OpenVINOInferencer(Inferencer):
         metadata is loaded from the ``metadata.json`` file. To make a prediction,
         we can simply call the ``predict`` method:
 
-        >>> import cv2
-        >>> image = cv2.imread("path/to/image.jpg")
-        >>> image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        >>> result = inferencer.predict(image)
+        >>> prediction = inferencer.predict(image="path/to/image.jpg")
 
-        ``result`` will be an ``ImageResult`` object containing the prediction
+        Alternatively we can also pass the image as a PIL image or numpy array:
+
+        >>> from PIL import Image
+        >>> image = Image.open("path/to/image.jpg")
+        >>> prediction = inferencer.predict(image=image)
+
+        >>> import numpy as np
+        >>> image = np.random.rand(224, 224, 3)
+        >>> prediction = inferencer.predict(image=image)
+
+        ``prediction`` will be an ``ImageResult`` object containing the prediction
         results. For example, to visualize the heatmap, we can do the following:
 
         >>> from matplotlib import pyplot as plt
@@ -180,11 +187,26 @@ class OpenVINOInferencer(Inferencer):
         Returns:
             ImageResult: Prediction results to be visualized.
         """
+        # Convert file path or string to image if necessary
+        if isinstance(image, str | Path):
+            image = Image.open(image)
+
+        # Convert PIL image to numpy array
+        if isinstance(image, Image.Image):
+            image = np.array(image, dtype=np.float32)
+        if not isinstance(image, np.ndarray):
+            msg = f"Input image must be a numpy array or a path to an image. Got {type(image)}"
+            raise TypeError(msg)
+
+        # Normalize numpy array to range [0, 1]
+        if image.dtype != np.float32:
+            image = image.astype(np.float32)
+        if image.max() > 1.0:
+            image /= 255.0
+
+        # Check if metadata is provided, if not use the default metadata.
         if metadata is None:
             metadata = self.metadata if hasattr(self, "metadata") else {}
-        if isinstance(image, str | Path):
-            image = np.array(Image.open(image)).astype(np.float32) / 255.0
-
         metadata["image_shape"] = image.shape[:2]
 
         processed_image = self.pre_process(image)
@@ -261,7 +283,9 @@ class OpenVINOInferencer(Inferencer):
                 anomaly_maps=anomaly_map,
                 metadata=metadata,
             )
-            assert anomaly_map is not None
+            if anomaly_map is None:
+                msg = "Anomaly map cannot be None."
+                raise ValueError(msg)
 
             if "image_shape" in metadata and anomaly_map.shape != metadata["image_shape"]:
                 image_height = metadata["image_shape"][0]

@@ -8,6 +8,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+### Changed
+
+### Deprecated
+
+### Fixed
+
+- Use right interpolation method in WinCLIP resize (<https://github.com/openvinotoolkit/anomalib/pull/1889>)
+- 🐞 Fix the error if the device in masks_to_boxes is not both CPU and CUDA by @danylo-boiko in https://github.com/openvinotoolkit/anomalib/pull/1839
+
+## [v1.0.0] - 2024-02-29
+
+### Added
+
 - 🚀 Add KMeans PyTorch Implementation to cfa model by @aadhamm in https://github.com/openvinotoolkit/anomalib/pull/998
 - 🚀 Add DSR model by @phcarval in https://github.com/openvinotoolkit/anomalib/pull/1142
 - ⚙️ Add `setuptools` as a requirement (via `pkg_resources`) by @murilo-cunha in https://github.com/openvinotoolkit/anomalib/pull/1168
@@ -110,7 +123,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - 🐞Fix visualization by @ashwinvaidya17 in https://github.com/openvinotoolkit/anomalib/pull/1766
 - 🩹Minor fixes by @ashwinvaidya17 in https://github.com/openvinotoolkit/anomalib/pull/1788
 - ⏳ Restore Images by @ashwinvaidya17 in https://github.com/openvinotoolkit/anomalib/pull/1791
-- 🐞 Fix the error if the device in masks_to_boxes is not both CPU and CUDA by @danylo-boiko https://github.com/openvinotoolkit/anomalib/pull/1839
 
 ### New Contributors
 
