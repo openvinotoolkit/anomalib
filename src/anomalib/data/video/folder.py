@@ -41,9 +41,9 @@ def make_folder_video_dataset(
     """Make Folder Video Dataset.
 
     Args:
-        path (Path | None): Path to the root directory of the dataset.
+        path (Path | None): Path to the video directory of the dataset(.avi).
             Defaults to ``None``.
-        gt_dir (Path | None, optional): Path to the directory containing the mask annotations.
+        gt_dir (Path | None, optional): Path to the directory containing the mask annotations(.npy).
             Defaults to ``None``.
         split (str | Split | None, optional): Dataset split (ie., Split.FULL, Split.TRAIN or Split.TEST).
             Defaults to ``None``.
@@ -68,6 +68,8 @@ def make_folder_video_dataset(
     Returns:
         DataFrame: an output dataframe containing samples for the requested split (ie., train or test)
     """
+    # TODO(Bepitic): Get a mask for the testing is mandatory ?
+    # but the mask for the training is optional
     # get paths to training videos
     path = validate_path(path)
     # TODO(bepitic): reflect on the true path in example and doc
@@ -113,7 +115,8 @@ class FolderDataset(AnomalibVideoDataset):
     Args:
         task (TaskType): Task type, 'classification', 'detection' or 'segmentation'
         split (Split): Split of the dataset, usually Split.TRAIN or Split.TEST
-        root (Path | str): Path to the root of the dataset
+        path (Path | str): Path to the training/testing videos of the dataset (.avi)
+        path_gt (Path | str): Path to the masks fror the training videos of the dataset (.npy)
         clip_length_in_frames (int, optional): Number of video frames in each clip.
         frames_between_clips (int, optional): Number of frames between each consecutive video clip.
         target_frame (VideoTargetFrame): Specifies the target frame in the video clip, used for ground truth retrieval.
@@ -125,7 +128,8 @@ class FolderDataset(AnomalibVideoDataset):
         self,
         task: TaskType,
         split: Split,
-        root: Path | str,
+        path: Path | str,
+        path_gt: Path | str,
         clip_length_in_frames: int = 2,
         frames_between_clips: int = 1,
         target_frame: VideoTargetFrame = VideoTargetFrame.LAST,
@@ -139,10 +143,15 @@ class FolderDataset(AnomalibVideoDataset):
             transform=transform,
         )
 
-        self.root = Path(root)
+        self.path = Path(path)
         self.split = split
+        self.path_gt = path_gt
         self.indexer_cls = FolderClipsIndexer
-        self.samples = make_folder_video_dataset(self.root, self.split)  # TODO(Bepitic):Check the constructor
+        self.samples = make_folder_video_dataset(
+            self.path,
+            self.path_gt,
+            self.split,
+        )  # TODO(Bepitic):Check the constructor
 
 
 class Folder(AnomalibVideoDataModule):
