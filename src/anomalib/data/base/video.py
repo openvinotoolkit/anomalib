@@ -154,7 +154,7 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
             msg = "self.indexer must be an instance of ClipsIndexer."
             raise TypeError(msg)
         item = self.indexer.get_item(index)
-        item["image"] = to_dtype_video(item["image"])
+        item["image"] = to_dtype_video(video=item["image"], scale=True)
         # include the untransformed image for visualization
         item["original_image"] = item["image"].to(torch.uint8)
 
