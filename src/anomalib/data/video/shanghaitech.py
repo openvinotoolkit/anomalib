@@ -17,7 +17,6 @@ Reference:
 # Copyright (C) 2023-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 import logging
 from pathlib import Path
 from shutil import move
@@ -253,7 +252,7 @@ class ShanghaiTech(AnomalibVideoDataModule):
         clip_length_in_frames: int = 2,
         frames_between_clips: int = 1,
         target_frame: VideoTargetFrame = VideoTargetFrame.LAST,
-        task: TaskType = TaskType.SEGMENTATION,
+        task: TaskType | str = TaskType.SEGMENTATION,
         image_size: tuple[int, int] | None = None,
         transform: Transform | None = None,
         train_transform: Transform | None = None,

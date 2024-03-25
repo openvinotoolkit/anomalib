@@ -169,7 +169,7 @@ class BTechDataset(AnomalibDataset):
         category: str,
         transform: Transform | None = None,
         split: str | Split | None = None,
-        task: TaskType = TaskType.SEGMENTATION,
+        task: TaskType | str = TaskType.SEGMENTATION,
     ) -> None:
         super().__init__(task, transform)
 

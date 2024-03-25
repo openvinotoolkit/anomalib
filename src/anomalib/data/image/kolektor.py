@@ -28,6 +28,7 @@ from torchvision.transforms.v2 import Transform
 
 from anomalib import TaskType
 from anomalib.data.base import AnomalibDataModule, AnomalibDataset
+from anomalib.data.errors import MisMatchError
 from anomalib.data.utils import (
     DownloadInfo,
     Split,
@@ -165,13 +166,15 @@ def make_kolektor_dataset(
     samples = samples[["path", "item", "split", "label", "image_path", "mask_path", "label_index"]]
 
     # assert that the right mask files are associated with the right test images
-    assert (
+    if not (
         samples.loc[samples.label_index == 1]
         .apply(lambda x: Path(x.image_path).stem in Path(x.mask_path).stem, axis=1)
         .all()
-    ), "Mismatch between anomalous images and ground truth masks. Make sure the mask files  \
-        follow the same naming convention as the anomalous images in the dataset (e.g. image: 'Part0.jpg', \
-        mask: 'Part0_label.bmp')."
+    ):
+        msg = """Mismatch between anomalous images and ground truth masks. Make sure the mask files
+        follow the same naming convention as the anomalous images in the dataset
+        (e.g. image: 'Part0.jpg', mask: 'Part0_label.bmp')."""
+        raise MisMatchError(msg)
 
     # Get the dataframe for the required split
     if split:

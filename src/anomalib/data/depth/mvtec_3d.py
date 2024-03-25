@@ -29,6 +29,7 @@ from torchvision.transforms.v2 import Transform
 
 from anomalib import TaskType
 from anomalib.data.base import AnomalibDataModule, AnomalibDepthDataset
+from anomalib.data.errors import MisMatchError
 from anomalib.data.utils import (
     DownloadInfo,
     LabelName,
@@ -146,22 +147,27 @@ def make_mvtec_3d_dataset(
     samples = samples.astype({"image_path": "str", "mask_path": "str", "depth_path": "str"})
 
     # assert that the right mask files are associated with the right test images
-    assert (
+    mismatch_masks = (
         samples.loc[samples.label_index == LabelName.ABNORMAL]
         .apply(lambda x: Path(x.image_path).stem in Path(x.mask_path).stem, axis=1)
         .all()
-    ), "Mismatch between anomalous images and ground truth masks. Make sure the mask files in 'ground_truth' \
-              folder follow the same naming convention as the anomalous images in the dataset (e.g. image: '000.png', \
-              mask: '000.png' or '000_mask.png')."
+    )
+    if not mismatch_masks:
+        msg = """Mismatch between anomalous images and ground truth masks. Make sure the mask files
+          in 'ground_truth' folder follow the same naming convention as the anomalous images in
+          the dataset (e.g. image: '000.png', mask: '000.png' or '000_mask.png')."""
+        raise MisMatchError(msg)
 
-    # assert that the right depth image files are associated with the right test images
-    assert (
+    mismatch_depth = (
         samples.loc[samples.label_index == LabelName.ABNORMAL]
         .apply(lambda x: Path(x.image_path).stem in Path(x.depth_path).stem, axis=1)
         .all()
-    ), "Mismatch between anomalous images and depth images. Make sure the mask files in 'xyz' \
-              folder follow the same naming convention as the anomalous images in the dataset (e.g. image: '000.png', \
-              depth: '000.tiff')."
+    )
+    if not mismatch_depth:
+        msg = """Mismatch between anomalous images and depth images. Make sure the mask files in
+          'xyz' folder follow the same naming convention as the anomalous images in the dataset
+          (e.g. image: '000.png', depth: '000.tiff')."""
+        raise MisMatchError(msg)
 
     if split:
         samples = samples[samples.split == split].reset_index(drop=True)

@@ -74,7 +74,10 @@ class ImageResult:
                 self.segmentations = (self.segmentations * 255).astype(np.uint8)
 
         if self.pred_boxes is not None:
-            assert self.box_labels is not None, "Box labels must be provided when box locations are provided."
+            if self.box_labels is None:
+                msg = "Box labels must be provided when box locations are provided."
+                raise ValueError(msg)
+
             self.normal_boxes = self.pred_boxes[~self.box_labels.astype(bool)]
             self.anomalous_boxes = self.pred_boxes[self.box_labels.astype(bool)]
 
@@ -108,7 +111,7 @@ class ImageVisualizer(BaseVisualizer):
     def __init__(
         self,
         mode: VisualizationMode = VisualizationMode.FULL,
-        task: TaskType = TaskType.CLASSIFICATION,
+        task: TaskType | str = TaskType.CLASSIFICATION,
         normalize: bool = False,
     ) -> None:
         super().__init__(VisualizationStep.BATCH)
@@ -199,7 +202,10 @@ class ImageVisualizer(BaseVisualizer):
         """
         image_grid = _ImageGrid()
         if self.task == TaskType.DETECTION:
-            assert image_result.pred_boxes is not None
+            if image_result.pred_boxes is None:
+                msg = "Image result predicted boxes are None."
+                raise ValueError(msg)
+
             image_grid.add_image(image_result.image, "Image")
             if image_result.gt_boxes is not None:
                 gt_image = draw_boxes(np.copy(image_result.image), image_result.gt_boxes, color=(255, 0, 0))
@@ -210,7 +216,10 @@ class ImageVisualizer(BaseVisualizer):
             pred_image = draw_boxes(pred_image, image_result.anomalous_boxes, color=(255, 0, 0))
             image_grid.add_image(pred_image, "Predictions")
         if self.task == TaskType.SEGMENTATION:
-            assert image_result.pred_mask is not None
+            if image_result.pred_mask is None:
+                msg = "Image result predicted mask is None."
+                raise ValueError(msg)
+
             image_grid.add_image(image_result.image, "Image")
             if image_result.gt_mask is not None:
                 image_grid.add_image(image=image_result.gt_mask, color_map="gray", title="Ground Truth")

@@ -47,6 +47,7 @@ class ValSplitMode(str, Enum):
 
     NONE = "none"
     SAME_AS_TEST = "same_as_test"
+    FROM_TRAIN = "from_train"
     FROM_TEST = "from_test"
     SYNTHETIC = "synthetic"
 
@@ -86,10 +87,13 @@ def random_split(
     if isinstance(split_ratio, float):
         split_ratio = [1 - split_ratio, split_ratio]
 
-    assert (  # noqa: PT018
-        math.isclose(sum(split_ratio), 1) and sum(split_ratio) <= 1
-    ), f"split ratios must sum to 1, found {sum(split_ratio)}"
-    assert all(0 < ratio < 1 for ratio in split_ratio), f"all split ratios must be between 0 and 1, found {split_ratio}"
+    if not (math.isclose(sum(split_ratio), 1) and sum(split_ratio) <= 1):
+        msg = f"Split ratios must sum to 1, found {sum(split_ratio)}"
+        raise ValueError(msg)
+
+    if not all(0 < ratio < 1 for ratio in split_ratio):
+        msg = f"All split ratios must be between 0 and 1, found {split_ratio}"
+        raise ValueError(msg)
 
     # create list of source data
     if label_aware and "label_index" in dataset.samples:
@@ -108,10 +112,8 @@ def random_split(
             subset_idx = i % sum(subset_lengths)
             subset_lengths[subset_idx] += 1
         if 0 in subset_lengths:
-            msg = (
-                "Zero subset length encountered during splitting. This means one of your subsets might be"
-                " empty or devoid of either normal or anomalous images.",
-            )
+            msg = """Zero subset length encountered during splitting. This means one of your subsets
+            might be empty or devoid of either normal or anomalous images."""
             logger.warning(msg)
 
         # perform random subsampling

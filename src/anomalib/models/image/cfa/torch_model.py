@@ -85,7 +85,6 @@ class CfaModel(DynamicBufferMixin):
     """Torch implementation of the CFA Model.
 
     Args:
-        input_size: (tuple[int, int]): Input size of the image tensor.
         backbone (str): Backbone CNN network.
         gamma_c (int): gamma_c parameter from the paper.
         gamma_d (int): gamma_d parameter from the paper.

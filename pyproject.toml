@@ -4,6 +4,66 @@
 requires = ["setuptools>=42", "wheel"]
 build-backend = "setuptools.build_meta"
 
+[project]
+name = "anomalib"
+dynamic = ["version"]
+readme = "README.md"
+description = "anomalib - Anomaly Detection Library"
+requires-python = ">=3.10"
+license = { file = "LICENSE" }
+authors = [{ name = "Intel OpenVINO" }]
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+# REQUIREMENTS                                                                #
+dependencies = [
+    "omegaconf>=2.1.1",
+    "rich>=13.5.2",
+    "jsonargparse==4.27.1",
+    "docstring_parser",     # CLI help-formatter
+    "rich_argparse",        # CLI help-formatter
+]
+
+[project.optional-dependencies]
+core = [
+    "av>=10.0.0",
+    "einops>=0.3.2",
+    "freia>=0.2",
+    "imgaug==0.4.0",
+    "kornia>=0.6.6,<0.6.10",
+    "matplotlib>=3.4.3",
+    "opencv-python>=4.5.3.56",
+    "pandas>=1.1.0",
+    "timm>=0.5.4,<=0.6.13",
+    "lightning>2,<2.2.0",
+    "torch>=2,<2.2.0",
+    "torchmetrics==0.10.3",
+    "open-clip-torch>=2.23.0",
+]
+openvino = ["openvino-dev>=2023.0", "nncf>=2.5.0", "onnx>=1.13.1"]
+loggers = [
+    "comet-ml>=3.31.7",
+    "gradio>=4",
+    "tensorboard",
+    "wandb==0.12.17",
+]
+notebooks = ["gitpython", "ipykernel", "ipywidgets", "notebook"]
+dev = [
+    "pre-commit",
+    "pytest",
+    "pytest-cov",
+    "pytest-xdist",
+    "pytest-mock",
+    "pytest-sugar",
+    "coverage[toml]",
+    "tox",
+]
+full = ["anomalib[core,openvino,loggers,notebooks]"]
+
+[project.scripts]
+anomalib = "anomalib.cli.cli:main"
+
+[tool.setuptools.dynamic]
+version = { attr = "anomalib.__version__" }
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # RUFF CONFIGURATION                                                          #
@@ -65,28 +125,28 @@ ignore = [
     "D107", # Missing docstring in __init__
 
     # pylint
-    "PLR0913",  # Too many arguments to function call
-    "PLR2004",  # consider replacing with a constant variable
-    "PLR0912",  # Too many branches
-    "PLR0915",  # Too many statements
+    "PLR0913", # Too many arguments to function call
+    "PLR2004", # consider replacing with a constant variable
+    "PLR0912", # Too many branches
+    "PLR0915", # Too many statements
 
     # flake8-annotations
-    "ANN101",   # Missing-type-self
-    "ANN002",   # Missing type annotation for *args
-    "ANN003",   # Missing type annotation for **kwargs
+    "ANN101", # Missing-type-self
+    "ANN002", # Missing type annotation for *args
+    "ANN003", # Missing type annotation for **kwargs
 
     # flake8-bandit (`S`)
     "S101", # Use of assert detected.
 
     # flake8-boolean-trap (`FBT`)
-    "FBT001",   # Boolean positional arg in function definition
-    "FBT002",   # Boolean default value in function definition
+    "FBT001", # Boolean positional arg in function definition
+    "FBT002", # Boolean default value in function definition
 
     # flake8-datatimez (`DTZ`)
-    "DTZ005",    # The use of `datetime.datetime.now()` without `tz` argument is not allowed
+    "DTZ005", # The use of `datetime.datetime.now()` without `tz` argument is not allowed
 
     # flake8-fixme (`FIX`)
-    "FIX002",    # Line contains TODO, consider resolving the issue
+    "FIX002", # Line contains TODO, consider resolving the issue
 ]
 
 # Allow autofix for all enabled rules (when `--fix`) is provided.
@@ -162,12 +222,7 @@ skips = ["B101"]
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # PYTEST CONFIGURATION                                                        #
 [tool.pytest.ini_options]
-addopts = [
-    "--strict-markers",
-    "--strict-config",
-    "--showlocals",
-    "-ra",
-]
+addopts = ["--strict-markers", "--strict-config", "--showlocals", "-ra"]
 testpaths = "tests"
 pythonpath = "src"
 
@@ -184,13 +239,20 @@ exclude_lines = [
 ]
 
 [tool.coverage.paths]
-source = [
-    "src",
-    ".tox/*/site-packages",
-]
+source = ["src", ".tox/*/site-packages"]
 
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # NBQA CONFIGURATION                                                          #
 [tool.nbqa.addopts]
 ruff = ["--ignore=E402"]
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+# LINK CHECKER CONFIGURATION                                                  #
+[tool.md_dead_link_check]
+exclude_links = [
+    "https://github.com/openvinotoolkit/anomalib/settings/actions/runners/new",
+    "https://openvinotoolkit.github.io/anomalib/*", # Remove it after publish documentation
+]
+exclude_files = ["docs/*"]
+force_get_requests_for_links = ["https://secure.ethicspoint.com/*"]
