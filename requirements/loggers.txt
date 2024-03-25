@@ -4,3 +4,4 @@ tensorboard
 wandb==0.12.17
 GitPython
 ipykernel
+mlflow>=2.11.1

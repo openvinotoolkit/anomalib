@@ -15,6 +15,7 @@ __all__ = [
 
 try:
     from .comet import AnomalibCometLogger  # noqa: F401
+    from .mlflow import AnomalibMLFlowLogger  # noqa: F401
     from .tensorboard import AnomalibTensorBoardLogger  # noqa: F401
     from .wandb import AnomalibWandbLogger  # noqa: F401
 
@@ -23,6 +24,7 @@ try:
             "AnomalibCometLogger",
             "AnomalibTensorBoardLogger",
             "AnomalibWandbLogger",
+            "AnomalibMLFlowLogger",
         ],
     )
 except ImportError:
