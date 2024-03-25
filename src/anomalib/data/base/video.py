@@ -167,6 +167,9 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
         elif self.transform:
             item["image"] = self.transform(item["image"])
 
+        # squeeze temporal dimensions in case clip length is 1
+        item["image"] = item["image"].squeeze(0)
+
         # include only target frame in gt
         if self.clip_length_in_frames > 1 and self.target_frame != VideoTargetFrame.ALL:
             item = self._select_targets(item)
