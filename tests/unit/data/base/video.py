@@ -3,8 +3,8 @@
 # Copyright (C) 2023-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 import pytest
+import torch
 
 from anomalib.data import AnomalibDataModule
 
@@ -46,3 +46,16 @@ class _TestAnomalibVideoDatamodule(_TestAnomalibDataModule):
             assert len(batch["label"]) == 4
             assert batch["mask"].shape == (4, 256, 256)
             assert batch["mask"].shape == (4, 256, 256)
+
+    @pytest.mark.parametrize("subset", ["train", "val", "test"])
+    def test_item_dtype(self, datamodule: AnomalibDataModule, subset: str) -> None:
+        """Test that the input tensor is of float type and scaled between 0-1."""
+        # Get the dataloader.
+        dataloader = getattr(datamodule, f"{subset}_dataloader")()
+
+        # Get the first batch.
+        batch = next(iter(dataloader))
+        clip = batch["image"]
+        assert clip.dtype == torch.float32
+        assert clip.min() >= 0
+        assert clip.max() <= 1
