@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Any
 import torch
 from pandas import DataFrame
 from torchvision.transforms.v2 import Transform
+from torchvision.transforms.v2.functional._misc import to_dtype_video
 from torchvision.tv_tensors import Mask
 
 from anomalib import TaskType
@@ -153,7 +154,7 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
             msg = "self.indexer must be an instance of ClipsIndexer."
             raise TypeError(msg)
         item = self.indexer.get_item(index)
-        item["image"] = item["image"].to(torch.float32)
+        item["image"] = to_dtype_video(item["image"])
         # include the untransformed image for visualization
         item["original_image"] = item["image"].to(torch.uint8)
 
