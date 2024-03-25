@@ -59,3 +59,14 @@ class _TestAnomalibVideoDatamodule(_TestAnomalibDataModule):
         assert clip.dtype == torch.float32
         assert clip.min() >= 0
         assert clip.max() <= 1
+
+    @pytest.mark.parametrize("clip_length_in_frames", [1])
+    def test_single_frame_squeezed(self, datamodule: AnomalibDataModule) -> None:
+        """Test that the temporal dimension is squeezed when the clip lenght is 1."""
+        # Get the dataloader.
+        dataloader = datamodule.train_dataloader()
+
+        # Get the first batch.
+        batch = next(iter(dataloader))
+        clip = batch["image"]
+        assert clip.shape == (4, 3, 256, 256)
