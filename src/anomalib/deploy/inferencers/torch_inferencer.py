@@ -283,7 +283,7 @@ class TorchInferencer(Inferencer):
         # Common practice in anomaly detection is to assign anomalous
         # label to the prediction if the prediction score is greater
         # than the image threshold.
-        pred_label: str | None = None
+        pred_label: LabelName | None = None
         if "image_threshold" in metadata:
             pred_idx = pred_score >= metadata["image_threshold"]
             pred_label = LabelName.ABNORMAL if pred_idx else LabelName.NORMAL
