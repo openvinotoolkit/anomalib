@@ -4,7 +4,7 @@
 
 This is the implementation of the [U-Flow](https://www.researchsquare.com/article/rs-3367286/latest) paper, based on the [original code](https://www.github.com/mtailanian/uflow)
 
-![U-Flow Architecture](../../../../../docs/source/images/uflow/diagram.png "U-Flow Architecture")
+![U-Flow Architecture](/docs/source/images/uflow/diagram.png "U-Flow Architecture")
 
 ## Abstract
 
@@ -14,17 +14,17 @@ This multiple-hypothesis testing strategy permits the derivation of robust autom
 The segmentation results are evaluated using the Intersection over Union (IoU) metric, and for assessing the generated anomaly maps we report the area under the Receiver Operating Characteristic curve (AUROC), and the area under the per-region-overlap curve (AUPRO).
 Extensive experimentation in various datasets shows that the proposed approach produces state-of-the-art results for all metrics and all datasets, ranking first in most MvTec-AD categories, with a mean pixel-level AUROC of 98.74%._
 
-![Teaser image](../../../../../docs/source/images/uflow/teaser.jpg)
+![Teaser image](/docs/source/images/uflow/teaser.jpg)
 
 ## Localization results
 
 ### Pixel AUROC over MVTec-AD Dataset
 
-![Pixel-AUROC results](../../../../../docs/source/images/uflow/pixel-auroc.png "Pixel-AUROC results")
+![Pixel-AUROC results](/docs/source/images/uflow/pixel-auroc.png "Pixel-AUROC results")
 
 ### Pixel AUPRO over MVTec-AD Dataset
 
-![Pixel-AUPRO results](../../../../../docs/source/images/uflow/pixel-aupro.png "Pixel-AUPRO results")
+![Pixel-AUPRO results](/docs/source/images/uflow/pixel-aupro.png "Pixel-AUPRO results")
 
 ## Segmentation results (IoU) with threshold log(NFA)=0
 
@@ -32,11 +32,11 @@ This paper also proposes a method to automatically compute the threshold using t
 In the default code here, for the sake of comparison with all the other methods of the library, the segmentation is done computing the threshold over the anomaly map at train time.
 Nevertheless, the code for computing the segmentation mask with the NFA criterion is included in the `src/anomalib/models/uflow/anomaly_map.py`.
 
-![IoU results](../../../../../docs/source/images/uflow/iou.png "IoU results")
+![IoU results](/docs/source/images/uflow/iou.png "IoU results")
 
 ## Results over other datasets
 
-![Results over other datasets](../../../../../docs/source/images/uflow/more-results.png "Results over other datasets")
+![Results over other datasets](/docs/source/images/uflow/more-results.png "Results over other datasets")
 
 ## Benchmarking
 
@@ -111,18 +111,18 @@ Normalizing Flow outputs
 
 #### MVTec
 
-![MVTec results - anomalies](../../../../../docs/source/images/uflow/results-mvtec-anomalies.jpg "MVTec results - anomalies")
+![MVTec results - anomalies](/docs/source/images/uflow/results-mvtec-anomalies.jpg "MVTec results - anomalies")
 
 #### BeanTech, LGG MRI, STC
 
-![BeanTech, LGG MRI, STC results - anomalies](../../../../../docs/source/images/uflow/results-others-anomalies.jpg "BeanTech, LGG MRI, STC results - anomalies")
+![BeanTech, LGG MRI, STC results - anomalies](/docs/source/images/uflow/results-others-anomalies.jpg "BeanTech, LGG MRI, STC results - anomalies")
 
 ### Normal images
 
 #### MVTec
 
-![MVTec results - normal](../../../../../docs/source/images/uflow/results-mvtec-good.jpg "MVTec results - normal")
+![MVTec results - normal](/docs/source/images/uflow/results-mvtec-good.jpg "MVTec results - normal")
 
 #### BeanTech, LGG MRI, STC
 
-![BeanTech, LGG MRI, STC results - normal](../../../../../docs/source/images/uflow/results-others-good.jpg "BeanTech, LGG MRI, STC results - normal")
+![BeanTech, LGG MRI, STC results - normal](/docs/source/images/uflow/results-others-good.jpg "BeanTech, LGG MRI, STC results - normal")

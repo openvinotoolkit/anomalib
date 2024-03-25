@@ -246,3 +246,13 @@ source = ["src", ".tox/*/site-packages"]
 # NBQA CONFIGURATION                                                          #
 [tool.nbqa.addopts]
 ruff = ["--ignore=E402"]
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+# LINK CHECKER CONFIGURATION                                                  #
+[tool.md_dead_link_check]
+exclude_links = [
+    "https://github.com/openvinotoolkit/anomalib/settings/actions/runners/new",
+    "https://openvinotoolkit.github.io/anomalib/*", # Remove it after publish documentation
+]
+exclude_files = ["docs/*"]
+force_get_requests_for_links = ["https://secure.ethicspoint.com/*"]
