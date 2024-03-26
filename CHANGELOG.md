@@ -41,6 +41,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 
+- 🐞 Fix single-frame video input size by [@djdameln](https://github.com/djdameln) (<https://github.com/openvinotoolkit/anomalib/pull/1910>)
 - 🐞 Fix dobot notebook by @djdameln in https://github.com/openvinotoolkit/anomalib/pull/1852
 - 🐞 Fix CLI config and update the docs. by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/1886
 - 🐞 Fix the error if the device in masks_to_boxes is not both CPU and CUDA by @danylo-boiko in https://github.com/openvinotoolkit/anomalib/pull/1839
