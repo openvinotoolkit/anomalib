@@ -23,11 +23,11 @@ The anomaly score for each local position $(i,j)$ of the feature map $y^s$ at sc
 
 ## Architecture
 
-![CS-Flow Architecture](../../../../../docs/source/images/cs_flow/architecture1.jpg "CS-Flow Architecture")
+![CS-Flow Architecture](/docs/source/images/cs_flow/architecture1.jpg "CS-Flow Architecture")
 
-![Architecture of a Coupling Block](../../../../../docs/source/images/cs_flow/architecture2.jpg "Architecture of a Coupling Block")
+![Architecture of a Coupling Block](/docs/source/images/cs_flow/architecture2.jpg "Architecture of a Coupling Block")
 
-![Architecture of network predicting scale and shift parameters.](../../../../../docs/source/images/cs_flow/architecture3.jpg "Architecture of network predicting scale and shift parameters.")
+![Architecture of network predicting scale and shift parameters.](/docs/source/images/cs_flow/architecture3.jpg "Architecture of network predicting scale and shift parameters.")
 
 ## Usage
 
