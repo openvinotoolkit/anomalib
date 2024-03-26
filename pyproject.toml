@@ -39,7 +39,7 @@ core = [
     "torchmetrics==0.10.3",
     "open-clip-torch>=2.23.0",
 ]
-openvino = ["openvino-dev>=2023.0", "nncf>=2.5.0", "onnx>=1.13.1"]
+openvino = ["openvino-dev>=2023.0", "nncf>=2.5.0", "onnx>=1.16.0"]
 loggers = [
     "comet-ml>=3.31.7",
     "gradio>=4",
