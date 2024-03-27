@@ -66,11 +66,9 @@ def test_torch_inference(task: TaskType, ckpt_path: Callable[[str], Path]) -> No
         ckpt_path: Callable[[str], Path]: Path to trained PADIM model checkpoint.
         dataset_path (Path): Path to dummy dataset.
     """
-    model = Padim()
-    engine = Engine(task=task)
+    engine = Engine(model=Padim(), task=task)
     export_root = ckpt_path("Padim").parent.parent
     engine.export(
-        model=model,
         export_type=ExportType.TORCH,
         export_root=export_root,
         ckpt_path=str(ckpt_path("Padim")),
@@ -105,11 +103,9 @@ def test_openvino_inference(task: TaskType, ckpt_path: Callable[[str], Path]) ->
         ckpt_path: Callable[[str], Path]: Path to trained PADIM model checkpoint.
         dataset_path (Path): Path to dummy dataset.
     """
-    model = Padim()
-    engine = Engine(task=task)
+    engine = Engine(model=Padim(), task=task)
     export_dir = ckpt_path("Padim").parent.parent
     exported_xml_file_path = engine.export(
-        model=model,
         export_type=ExportType.OPENVINO,
         export_root=export_dir,
         ckpt_path=str(ckpt_path("Padim")),

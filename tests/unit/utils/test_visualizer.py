@@ -48,16 +48,16 @@ class TestVisualizer:
     ) -> None:
         """Test combination of model/visualizer/mode on only 1 epoch as a sanity check before merge."""
         _ckpt_path: Path = ckpt_path("Padim")
-        model = get_model("padim")
         engine = Engine(
+            model=get_model("padim"),
             default_root_dir=project_path,
             fast_dev_run=True,
             devices=1,
             task=task,
         )
         datamodule = MVTec(root=dataset_path / "mvtec", category="dummy", task=task)
-        engine.test(model=model, datamodule=datamodule, ckpt_path=str(_ckpt_path))
+        engine.test(datamodule=datamodule, ckpt_path=str(_ckpt_path))
 
         dataset = PredictDataset(path=dataset_path / "mvtec" / "dummy" / "test")
         datamodule = DataLoader(dataset)
-        engine.predict(model=model, dataloaders=datamodule, ckpt_path=str(_ckpt_path))
+        engine.predict(dataloaders=datamodule, ckpt_path=str(_ckpt_path))

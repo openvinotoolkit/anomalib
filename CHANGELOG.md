@@ -8,6 +8,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+- 🚀 Allow passing model to engine constructor by @danylo-boiko in https://github.com/openvinotoolkit/anomalib/pull/1780
+
 ### Changed
 
 ### Deprecated
