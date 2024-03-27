@@ -24,8 +24,8 @@ jobs:
       - name: Build and sign distribution
         run: |
           python setup.py sdist bdist_wheel
-          gpg --detach-sign -a dist/*.tar.gz
-          gpg --detach-sign -a dist/*.whl
+          gpg --batch --yes --no-tty --detach-sign -a dist/*.tar.gz
+          gpg --batch --yes --no-tty --detach-sign -a dist/*.whl
 
       - name: Upload to PyPI
         run: twine upload dist/*
