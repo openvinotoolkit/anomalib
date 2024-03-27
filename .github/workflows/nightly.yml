@@ -19,7 +19,7 @@ jobs:
       - name: Coverage
         run: tox -e nightly
       - name: Upload coverage result
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: coverage
           path: .tox/coverage.xml
