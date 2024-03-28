@@ -13,7 +13,7 @@ import pytest
 import torch
 
 from anomalib.cli import AnomalibCLI
-from anomalib.deploy.export import ExportType
+from anomalib.models import ExportType
 
 
 class TestCLI:

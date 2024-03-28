@@ -10,7 +10,7 @@ from importlib import import_module
 from jsonargparse import Namespace
 from omegaconf import DictConfig, OmegaConf
 
-from anomalib.models.components import AnomalyModule
+from anomalib.models.components import AnomalyModule, ExportType
 from anomalib.utils.path import convert_to_snake_case
 
 from .image import (
@@ -58,6 +58,7 @@ __all__ = [
     "Uflow",
     "AiVad",
     "WinClip",
+    "ExportType",
 ]
 
 logger = logging.getLogger(__name__)
