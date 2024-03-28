@@ -10,7 +10,7 @@ CFLOW model is based on a conditional normalizing flow framework adopted for ano
 
 ## Architecture
 
-![CFlow Architecture](../../../../../docs/source/images/cflow/architecture.jpg "CFlow Architecture")
+![CFlow Architecture](/docs/source/images/cflow/architecture.jpg "CFlow Architecture")
 
 ## Usage
 
@@ -42,8 +42,8 @@ All results gathered with seed `42`.
 
 ### Sample Results
 
-![Sample Result 1](../../../../../docs/source/images/cflow/results/0.png "Sample Result 1")
+![Sample Result 1](/docs/source/images/cflow/results/0.png "Sample Result 1")
 
-![Sample Result 2](../../../../../docs/source/images/cflow/results/1.png "Sample Result 2")
+![Sample Result 2](/docs/source/images/cflow/results/1.png "Sample Result 2")
 
-![Sample Result 3](../../../../../docs/source/images/cflow/results/2.png "Sample Result 3")
+![Sample Result 3](/docs/source/images/cflow/results/2.png "Sample Result 3")

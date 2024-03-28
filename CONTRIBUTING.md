@@ -86,7 +86,7 @@ However, make sure to address any pre-commit issues before finalizing your pull 
 
 ### Making Changes
 
-1. **Write Code:** Follow the project's coding standards and write your code with clear intent. Ensure your code is well-documented and includes examples where appropriate. For code quality we use ruff, whose configuration is in [`pyproject.toml`](https://github.com/openvinotoolkit/anomalib/blob/main/pyproject.toml) file.
+1. **Write Code:** Follow the project's coding standards and write your code with clear intent. Ensure your code is well-documented and includes examples where appropriate. For code quality we use ruff, whose configuration is in [`pyproject.toml`](pyproject.toml) file.
 
 2. **Add Tests:** If your code includes new functionality, add corresponding tests using [pytest](https://docs.pytest.org/en/7.4.x/) to maintain coverage and reliability.
 
@@ -99,7 +99,7 @@ However, make sure to address any pre-commit issues before finalizing your pull 
    pytest tests/
    ```
 
-5. **Update the Changelog:** For significant changes, add a summary to the [CHANGELOG](https://github.com/openvinotoolkit/anomalib/blob/main/CHANGELOG.md).
+5. **Update the Changelog:** For significant changes, add a summary to the [CHANGELOG](CHANGELOG.md).
 
 6. **Check Licensing:** Ensure you own the code or have rights to use it, adhering to appropriate licensing.
 
