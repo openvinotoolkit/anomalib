@@ -371,7 +371,7 @@ def read_mask(path: str | Path, as_tensor: bool = False) -> torch.Tensor | np.nd
         >>> type(mask)
         <class 'torch.Tensor'>
     """
-    image = Image.open(path)
+    image = Image.open(path).convert("L")
     return Mask(to_image(image).squeeze() / 255, dtype=torch.uint8) if as_tensor else np.array(image)
 
 

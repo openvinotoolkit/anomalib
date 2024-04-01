@@ -18,7 +18,7 @@ authors = [{ name = "Intel OpenVINO" }]
 dependencies = [
     "omegaconf>=2.1.1",
     "rich>=13.5.2",
-    "jsonargparse==4.27.1",
+    "jsonargparse==4.27.7",
     "docstring_parser",     # CLI help-formatter
     "rich_argparse",        # CLI help-formatter
 ]
@@ -33,13 +33,13 @@ core = [
     "matplotlib>=3.4.3",
     "opencv-python>=4.5.3.56",
     "pandas>=1.1.0",
-    "timm>=0.5.4,<=0.6.13",
+    "timm>=0.5.4,<=0.9.16",
     "lightning>2,<2.2.0",
     "torch>=2,<2.2.0",
-    "torchmetrics==0.10.3",
+    "torchmetrics>=1.3.2",
     "open-clip-torch>=2.23.0",
 ]
-openvino = ["openvino-dev>=2023.0", "nncf>=2.5.0", "onnx>=1.13.1"]
+openvino = ["openvino-dev>=2023.0", "nncf>=2.5.0", "onnx>=1.16.0"]
 loggers = [
     "comet-ml>=3.31.7",
     "gradio>=4",
@@ -247,3 +247,13 @@ source = ["src", ".tox/*/site-packages"]
 # NBQA CONFIGURATION                                                          #
 [tool.nbqa.addopts]
 ruff = ["--ignore=E402"]
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+# LINK CHECKER CONFIGURATION                                                  #
+[tool.md_dead_link_check]
+exclude_links = [
+    "https://github.com/openvinotoolkit/anomalib/settings/actions/runners/new",
+    "https://openvinotoolkit.github.io/anomalib/*", # Remove it after publish documentation
+]
+exclude_files = ["docs/*"]
+force_get_requests_for_links = ["https://secure.ethicspoint.com/*"]

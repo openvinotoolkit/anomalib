@@ -14,7 +14,7 @@ In few-shot mode, a reference association module is introduced, which collects a
 
 ## Architecture
 
-![WinCLIP Architecture](../../../../../docs/source/images/winclip/architecture.png "WinCLIP Architecture")
+![WinCLIP Architecture](/docs/source/images/winclip/architecture.png "WinCLIP Architecture")
 
 ## Usage
 

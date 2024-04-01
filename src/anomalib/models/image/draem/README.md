@@ -12,7 +12,7 @@ For optimal results, DRAEM requires specifying the path to a folder of image dat
 
 ## Architecture
 
-![DRAEM Architecture](../../../../../docs/source/images/draem/architecture.png "DRAEM Architecture")
+![DRAEM Architecture](/docs/source/images/draem/architecture.png "DRAEM Architecture")
 
 ## Usage
 
