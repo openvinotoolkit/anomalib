@@ -2,6 +2,6 @@ comet-ml>=3.31.7
 gradio>=4
 tensorboard
 wandb==0.12.17
+mlflow >=1.0.0
 GitPython
 ipykernel
-mlflow>=2.11.1
