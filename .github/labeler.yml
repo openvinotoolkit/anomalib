@@ -1,20 +1,17 @@
 # https://github.com/marketplace/actions/labeler
 
-Benchmarking:
-  - "tools/benchmarking/**/*"
-
 Config:
-  - "anomalib/config/**/*"
+  - "configs/**/*"
 
 Callbacks:
-  - "anomalib/utils/callbacks/**/*"
+  - "anomalib/callbacks/**/*"
 
 CI:
   - ".github/**/*"
   - "tox.ini"
 
 CLI:
-  - "anomalib/utils/cli/**/*"
+  - "anomalib/cli/**/*"
 
 Data:
   - "anomalib/data/**/*"
@@ -26,28 +23,18 @@ Docs:
   - "docs/**/*"
   - "*.md"
 
-HPO:
-  - "anomalib/utils/sweep/**/*"
-  - "tools/hpo/**/*"
-
 Inference:
   - "anomalib/deploy/**/*"
   - "tools/inference/*"
 
 Logger:
-  - "anomalib/utils/loggers/**/*"
+  - "anomalib/loggers/**/*"
 
 Metrics:
-  - "anomalib/utils/metrics/**/*"
+  - "anomalib/metrics/**/*"
 
 Notebooks:
   - "notebooks/**/*"
-
-Pre-Processing:
-  - "anomalib/pre_processing/**/*"
-
-Post-Processing:
-  - "anomalib/post_processing/**/*"
 
 Setup:
   - "**/setup.py"
