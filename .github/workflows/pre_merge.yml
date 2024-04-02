@@ -21,7 +21,7 @@ jobs:
     runs-on: [self-hosted, linux, x64, anomalib]
     steps:
       - name: CHECKOUT REPOSITORY
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -42,7 +42,7 @@ jobs:
             tox-env: "py310"
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Install Python
         uses: actions/setup-python@v5
         with:
