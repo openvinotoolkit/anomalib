@@ -2,7 +2,7 @@ av>=10.0.0
 einops>=0.3.2
 freia>=0.2
 imgaug==0.4.0
-kornia>=0.6.6,<0.6.10
+kornia>=0.6.6,<0.7.3
 matplotlib>=3.4.3
 opencv-python>=4.5.3.56
 pandas>=1.1.0
