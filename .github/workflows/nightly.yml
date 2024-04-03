@@ -13,13 +13,13 @@ jobs:
     if: github.ref == 'refs/heads/main'
     steps:
       - name: CHECKOUT REPOSITORY
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
       - name: Install Tox
         run: pip install tox
       - name: Coverage
         run: tox -e nightly
       - name: Upload coverage result
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: coverage
           path: .tox/coverage.xml

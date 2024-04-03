@@ -8,8 +8,10 @@ jobs:
   deploy:
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-python@v2
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -17,13 +19,13 @@ jobs:
 
       - name: Import GPG Key
         run: |
-          echo "${{ secrets.GPG_PRIVATE_KEY }}" | base64 --decode | gpg --import
+          echo "${{ secrets.GPG_PRIVATE_KEY }}" | base64 --decode | gpg --import --batch --yes --no-tty
 
       - name: Build and sign distribution
         run: |
           python setup.py sdist bdist_wheel
-          gpg --detach-sign -a dist/*.tar.gz
-          gpg --detach-sign -a dist/*.whl
+          gpg --batch --yes --no-tty --pinentry-mode loopback --detach-sign -a dist/*.tar.gz
+          gpg --batch --yes --no-tty --pinentry-mode loopback --detach-sign -a dist/*.whl
 
       - name: Upload to PyPI
         run: twine upload dist/*
