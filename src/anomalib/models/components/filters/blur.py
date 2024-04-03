@@ -65,14 +65,7 @@ class GaussianBlur2d(nn.Module):
         if normalize:
             self.kernel = normalize_kernel2d(self.kernel)
 
-        # Check if the kernel is 2d or 3d and expand it to the number of channels.
-        if self.kernel.ndim == 2:  # For kornia versions < 0.7.0
-            self.kernel.unsqueeze_(0).unsqueeze_(0)
-        elif self.kernel.ndim == 3:  # For kornia versions >= 0.7.0
-            self.kernel.unsqueeze_(0)
-        else:
-            msg = "Kernel should be either 2d or 3d."
-            raise ValueError(msg)
+        self.kernel = self.kernel.view(1, 1, *self.kernel.shape[-2:])
 
         self.kernel = self.kernel.expand(self.channels, -1, -1, -1)
         self.border_type = border_type
