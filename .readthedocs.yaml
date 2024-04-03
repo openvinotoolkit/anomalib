@@ -30,6 +30,7 @@ formats:
 python:
   install:
     - requirements: docs/requirements.txt
-    - requirements: .[full]
     - method: pip
       path: .
+      extra_requirements:
+        - full
