@@ -7,8 +7,8 @@
 
 # CI/CD
 /.ci/                                                       @ashwinvaidya17
-/.devcontainer                                              @ashwinvaidya17 @yunchu
-/.github                                                    @ashwinvaidya17 @yunchu
+/.devcontainer                                              @ashwinvaidya17
+/.github                                                    @ashwinvaidya17
 /.dockerignore                                              @ashwinvaidya17
 
 # Docs
@@ -19,7 +19,7 @@
 /notebooks/100_datamodules                                  @djdameln
 /notebooks/200_models                                       @samet-akcay
 /notebooks/300_benchmarking                                 @ashwinvaidya17
-/notebooks/400_openvino                                     @samet-akcay @paularamo
+/notebooks/400_openvino                                     @samet-akcay
 /notebooks/500_use_cases                                    @paularamo
 /notebooks/README.md                                        @samet-akcay
 
@@ -71,11 +71,11 @@
 /tests/                                                     @samet-akcay @ashwinvaidya17
 
 # Misc
-/pyproject.toml                                             @samet-akcay @yunchu
+/pyproject.toml                                             @samet-akcay
 /README.md                                                  @samet-akcay @ashwinvaidya17 @djdameln
-/setup.py                                                   @samet-akcay @yunchu
+/setup.py                                                   @samet-akcay
 /third-party-programs.txt                                   @samet-akcay @ashwinvaidya17 @djdameln
-/tox.ini                                                    @samet-akcay @yunchu
+/tox.ini                                                    @samet-akcay
 
 # Tools
 /tools/benchmarking                                         @ashwinvaidya17
