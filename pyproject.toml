@@ -47,7 +47,17 @@ loggers = [
     "wandb==0.12.17",
 ]
 notebooks = ["gitpython", "ipykernel", "ipywidgets", "notebook"]
-dev = [
+docs = [
+    "myst-parser",
+    "nbsphinx",
+    "pandoc",
+    "sphinx<8.0",  # 7.0 breaks readthedocs builds.
+    "sphinx_autodoc_typehints",
+    "sphinx_book_theme",
+    "sphinx-copybutton",
+    "sphinx_design",
+]
+test = [
     "pre-commit",
     "pytest",
     "pytest-cov",
@@ -57,7 +67,8 @@ dev = [
     "coverage[toml]",
     "tox",
 ]
-full = ["anomalib[core,openvino,loggers,notebooks,dev]"]
+full = ["anomalib[core,openvino,loggers,notebooks,test]"]
+dev = ["anomalib[full,docs,test]"]
 
 [project.scripts]
 anomalib = "anomalib.cli.cli:main"
