@@ -67,7 +67,7 @@ test = [
     "coverage[toml]",
     "tox",
 ]
-full = ["anomalib[core,openvino,loggers,notebooks,test]"]
+full = ["anomalib[core,openvino,loggers,notebooks]"]
 dev = ["anomalib[full,docs,test]"]
 
 [project.scripts]
