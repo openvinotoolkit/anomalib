@@ -46,17 +46,24 @@ Set up your development environment to start contributing. This involves install
    conda activate anomalib_dev
    ```
 
-2. Install the base and development requirements:
+2. Install the development requirements:
 
    ```bash
-   pip install -r requirements/installer.txt -r requirements/dev.txt
-   anomalib install -v
+   # Option I: Via anomalib install
+   anomalib install --option dev
+
+   #Option II: Via pip install
+   pip install -e .[dev]
    ```
 
    Optionally, for a full installation with all dependencies:
 
    ```bash
-   pip install -e .[all]
+   # Option I: via anomalib install
+   anomalib install --option full
+
+   # Option II: via pip install
+   pip install -e .[full]
    ```
 
 3. Install and configure pre-commit hooks:

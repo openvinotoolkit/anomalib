@@ -18,7 +18,7 @@ authors = [{ name = "Intel OpenVINO" }]
 dependencies = [
     "omegaconf>=2.1.1",
     "rich>=13.5.2",
-    "jsonargparse==4.27.7",
+    "jsonargparse[all]>=4.27.7",
     "docstring_parser",     # CLI help-formatter
     "rich_argparse",        # CLI help-formatter
 ]
@@ -47,7 +47,17 @@ loggers = [
     "wandb==0.12.17",
 ]
 notebooks = ["gitpython", "ipykernel", "ipywidgets", "notebook"]
-dev = [
+docs = [
+    "myst-parser",
+    "nbsphinx",
+    "pandoc",
+    "sphinx<8.0",  # 7.0 breaks readthedocs builds.
+    "sphinx_autodoc_typehints",
+    "sphinx_book_theme",
+    "sphinx-copybutton",
+    "sphinx_design",
+]
+test = [
     "pre-commit",
     "pytest",
     "pytest-cov",
@@ -58,6 +68,7 @@ dev = [
     "tox",
 ]
 full = ["anomalib[core,openvino,loggers,notebooks]"]
+dev = ["anomalib[full,docs,test]"]
 
 [project.scripts]
 anomalib = "anomalib.cli.cli:main"
