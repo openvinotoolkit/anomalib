@@ -52,7 +52,6 @@ class Padim(MemoryBankMixin, AnomalyModule):
             layers=layers,
             n_features=n_features,
         )
-        self.model.feature_extractor.eval()
 
         self.stats: list[torch.Tensor] = []
         self.embeddings: list[torch.Tensor] = []
