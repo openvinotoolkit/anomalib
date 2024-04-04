@@ -10,7 +10,7 @@ from importlib import import_module
 from jsonargparse import Namespace
 from omegaconf import DictConfig, OmegaConf
 
-from anomalib.models.components import AnomalyModule, ExportType
+from anomalib.models.components import AnomalyModule
 from anomalib.utils.path import convert_to_snake_case
 
 from .image import (
@@ -36,7 +36,7 @@ from .video import AiVad
 
 
 class UnknownModelError(ModuleNotFoundError):
-    ...
+    pass
 
 
 __all__ = [
@@ -58,7 +58,6 @@ __all__ = [
     "Uflow",
     "AiVad",
     "WinClip",
-    "ExportType",
 ]
 
 logger = logging.getLogger(__name__)

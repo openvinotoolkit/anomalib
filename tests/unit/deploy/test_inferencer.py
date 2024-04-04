@@ -11,9 +11,9 @@ import pytest
 import torch
 
 from anomalib import TaskType
-from anomalib.deploy import OpenVINOInferencer, TorchInferencer
+from anomalib.deploy import ExportType, OpenVINOInferencer, TorchInferencer
 from anomalib.engine import Engine
-from anomalib.models import ExportType, Padim
+from anomalib.models import Padim
 
 
 class _MockImageLoader:

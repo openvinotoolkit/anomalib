@@ -26,7 +26,8 @@ from anomalib.callbacks.thresholding import _ThresholdCallback
 from anomalib.callbacks.timer import TimerCallback
 from anomalib.callbacks.visualizer import _VisualizationCallback
 from anomalib.data import AnomalibDataModule, AnomalibDataset, PredictDataset
-from anomalib.models import AnomalyModule, ExportType
+from anomalib.deploy import ExportType
+from anomalib.models import AnomalyModule
 from anomalib.utils.normalization import NormalizationMethod
 from anomalib.utils.path import create_versioned_dir
 from anomalib.utils.types import NORMALIZATION, THRESHOLD
