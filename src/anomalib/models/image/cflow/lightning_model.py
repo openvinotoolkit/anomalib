@@ -84,6 +84,7 @@ class Cflow(AnomalyModule):
         # TODO(ashwinvaidya17): LR should be part of optimizer in config.yaml since  cflow has custom optimizer.
         # CVS-122670
         self.learning_rate = lr
+        self.model.encoder.eval()
 
     def configure_optimizers(self) -> Optimizer:
         """Configure optimizers for each decoder.
@@ -119,7 +120,6 @@ class Cflow(AnomalyModule):
         del args, kwargs  # These variables are not used.
 
         opt = self.optimizers()
-        self.model.encoder.eval()
 
         images: torch.Tensor = batch["image"]
         activation = self.model.encoder(images)
