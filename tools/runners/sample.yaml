@@ -1,0 +1,15 @@
+# sample script to show grid search for two categories
+n_jobs: 1
+seed: 42
+hardware: cuda
+model:
+  class_path: Padim
+
+data:
+  class_path: MVTec
+  init_args:
+    category:
+      grid:
+        - bottle
+        - capsule
+    image_size: [256, 256]
