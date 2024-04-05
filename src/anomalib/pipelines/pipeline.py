@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
+import warnings
 from pathlib import Path
 from typing import Any
 
@@ -15,6 +16,9 @@ Path(log_file).parent.mkdir(exist_ok=True, parents=True)
 logger_file_handler = logging.FileHandler(log_file)
 logging.getLogger().addHandler(logger_file_handler)
 logging.getLogger().setLevel(logging.DEBUG)
+warnings.filterwarnings("ignore")
+for logger_name in ["lightning.pytorch", "lightning.fabric", "torchmetrics", "os"]:
+    logging.getLogger(logger_name).handlers = [logger_file_handler]
 
 
 from jsonargparse import ActionConfigFile, ArgumentParser, Namespace  # noqa: E402
@@ -23,7 +27,6 @@ from rich import print  # noqa: E402
 from anomalib.pipelines.executors.serial import SerialExecutor  # noqa: E402
 
 logger = logging.getLogger(__name__)
-# TODO(ashwinvaidya17): capture all terminal output and pipe it to a file
 
 
 class Pipeline:

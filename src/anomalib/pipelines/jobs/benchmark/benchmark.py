@@ -14,6 +14,7 @@ from anomalib.data import get_datamodule
 from anomalib.engine import Engine
 from anomalib.models import get_model
 from anomalib.pipelines.jobs.base import Job
+from anomalib.pipelines.utils import hide_output
 
 from .parser import _Parser
 
@@ -24,6 +25,7 @@ class BenchmarkJob(Job):
     def __init__(self) -> None:
         super().__init__(_Parser(), "benchmark")
 
+    @hide_output
     def run(self, config: dict, task_id: int | None = None) -> dict[str, Any]:  # type: ignore[override]
         """Run the benchmark."""
         self.logger.info(f"Running benchmark with config {config}")
