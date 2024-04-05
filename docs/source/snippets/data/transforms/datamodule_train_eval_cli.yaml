@@ -2,7 +2,6 @@ class_path: anomalib.data.MVTec
 init_args:
   root: ./datasets/MVTec
   category: bottle
-  image_size: [256, 256]
   train_batch_size: 32
   eval_batch_size: 32
   num_workers: 8
@@ -12,7 +11,7 @@ init_args:
   val_split_mode: same_as_test
   val_split_ratio: 0.5
   seed: null
-  eval_transform:
+  train_transform:
     class_path: torchvision.transforms.v2.Compose
     init_args:
       transforms:
@@ -30,7 +29,7 @@ init_args:
           init_args:
             mean: [0.485, 0.456, 0.406]
             std: [0.229, 0.224, 0.225]
-  train_transform:
+  eval_transform:
     class_path: torchvision.transforms.v2.Compose
     init_args:
       transforms:
