@@ -267,11 +267,11 @@ class TorchInferencer(Inferencer):
         # Case III: Predictions could be a list of tensors.
         elif isinstance(predictions, Sequence):
             if isinstance(predictions[1], (torch.Tensor)):
-                anomaly_map, pred_score = predictions
+                pred_score, anomaly_map = predictions
                 anomaly_map = anomaly_map.detach().cpu().numpy()
                 pred_score = pred_score.detach().cpu().numpy()
             else:
-                anomaly_map, pred_score = predictions
+                pred_score, anomaly_map = predictions
                 pred_score = pred_score.detach()
         else:
             msg = (
