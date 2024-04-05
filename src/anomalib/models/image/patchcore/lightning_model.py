@@ -78,9 +78,7 @@ class Patchcore(MemoryBankMixin, AnomalyModule):
         """
         del args, kwargs  # These variables are not used.
 
-        self.model.feature_extractor.eval()
         embedding = self.model(batch["image"])
-
         self.embeddings.append(embedding)
 
     def fit(self) -> None:
