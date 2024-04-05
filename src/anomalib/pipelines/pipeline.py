@@ -46,7 +46,8 @@ class Pipeline:
         for executor in self.executors:
             try:
                 executor.run(args)
-            except Exception:  # noqa: PERF203, BLE001 catch all exception and allow try-catch in loop
+            except Exception:  # noqa: PERF203 catch all exception and allow try-catch in loop
+                logger.exception("An error occurred when running the executor.")
                 print(
                     f"There were some errors when running [red]{executor.job.name}[/red] with"
                     f" [green]{executor.__class__.__name__}[/green]."

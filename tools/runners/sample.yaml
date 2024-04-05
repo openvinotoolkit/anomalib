@@ -4,7 +4,8 @@ seed:
   grid: [42, 43]
 hardware: cuda
 model:
-  class_path: Padim
+  class_path:
+    grid: [Padim, Patchcore]
 
 data:
   class_path: MVTec

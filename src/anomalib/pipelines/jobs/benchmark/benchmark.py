@@ -7,7 +7,6 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Any
 
-import overrides
 import pandas as pd
 from lightning import seed_everything
 
@@ -25,8 +24,7 @@ class BenchmarkJob(Job):
     def __init__(self) -> None:
         super().__init__(_Parser(), "benchmark")
 
-    @overrides
-    def run(self, config: dict, task_id: int | None = None) -> dict[str, Any]:
+    def run(self, config: dict, task_id: int | None = None) -> dict[str, Any]:  # type: ignore[override]
         """Run the benchmark."""
         self.logger.info(f"Running benchmark with config {config}")
         devices: str | list[int] = "auto"

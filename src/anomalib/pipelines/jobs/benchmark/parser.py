@@ -49,7 +49,7 @@ class _GridSearchAction(ActionTypeHint):
     @staticmethod
     def sanitize_value(value: dict | Namespace) -> dict:
         """Returns a new value with all grid search keys removed."""
-        _value = _GridSearchAction.recursive_dict(value) if isinstance(value, Namespace) else copy.deepcopy(value)
+        _value = _GridSearchAction.dict_from_namespace(value) if isinstance(value, Namespace) else copy.deepcopy(value)
         keys: list[str] = []
         _GridSearchAction._crawl(_value, keys)
         for key in keys:
@@ -57,28 +57,51 @@ class _GridSearchAction(ActionTypeHint):
         return _value
 
     @staticmethod
-    def recursive_namespace(container: dict) -> Namespace:
+    def namespace_from_dict(container: dict) -> Namespace:
         """Convert dictionary to Namespace recursively."""
         output = Namespace()
         for k, v in container.items():
             if isinstance(v, dict):
-                setattr(output, k, _GridSearchAction.recursive_namespace(v))
+                setattr(output, k, _GridSearchAction.namespace_from_dict(v))
             else:
                 setattr(output, k, v)
         return output
 
     @staticmethod
-    def recursive_dict(container: Namespace) -> dict:
+    def dict_from_namespace(container: Namespace) -> dict:
         """Convert Namespace to dictionary recursively."""
         output = {}
         for k, v in container.__dict__.items():
             if isinstance(v, Namespace):
-                output[k] = _GridSearchAction.recursive_dict(v)
+                output[k] = _GridSearchAction.dict_from_namespace(v)
             else:
                 output[k] = v
         return output
 
-    def _check_type(self, value: dict | Namespace, append: bool = False, cfg: Namespace | None = None) -> Any:  # noqa: ANN401
+    @staticmethod
+    def flatten_dict(config: dict, prefix: str = "") -> dict:
+        """Flatten the dictionary."""
+        out = {}
+        for key, value in config.items():
+            if isinstance(value, dict):
+                out.update(_GridSearchAction.flatten_dict(value, f"{prefix}{key}."))
+            else:
+                out[f"{prefix}{key}"] = value
+        return out
+
+    @staticmethod
+    def to_nested_dict(config: dict) -> dict:
+        """Convert the flattened dictionary to nested dictionary."""
+        out: dict[str, Any] = {}
+        for key, value in config.items():
+            keys = key.split(".")
+            _dict = out
+            for k in keys[:-1]:
+                _dict = _dict.setdefault(k, {})
+            _dict[keys[-1]] = value
+        return out
+
+    def _check_type(self, value: dict | Namespace | Any, append: bool = False, cfg: Namespace | None = None) -> Any:  # noqa: ANN401
         """Ignore all grid search keys.
 
         This allows the args to follow the same format as ``add_subclass_arguments``
@@ -95,16 +118,20 @@ class _GridSearchAction(ActionTypeHint):
                 - arg2
                     ...
         """
+        if not isinstance(value, dict | Namespace):
+            return value
         _value = _GridSearchAction.sanitize_value(value)
         # check only the keys for which grid is not assigned.
         # this ensures that single keys are checked against the class
-        _value = _GridSearchAction.recursive_namespace(_value)
-        super()._check_type(_value, append, cfg)
+        _value = _GridSearchAction.namespace_from_dict(_value)
+        if vars(_value):
+            super()._check_type(_value, append, cfg)
         # convert original value to Namespace recursively
-        value = _GridSearchAction.recursive_namespace(value)
+        value = _GridSearchAction.namespace_from_dict(value)
         _GridSearchAction.discard_init_args_on_class_path_change(self, value, _value)
         _value.update(value)
         _GridSearchAction.apply_appends(self, _value)
+
         return _value
 
 
@@ -153,29 +180,6 @@ class _Parser(ConfigParser):
         self._add_subclass_arguments(parser, AnomalibDataModule, "data")
 
     @staticmethod
-    def flatten_dict(config: dict, prefix: str = "") -> dict:
-        """Flatten the dictionary."""
-        out = {}
-        for key, value in config.items():
-            if isinstance(value, dict):
-                out.update(_Parser.flatten_dict(value, f"{prefix}{key}."))
-            else:
-                out[f"{prefix}{key}"] = value
-        return out
-
-    @staticmethod
-    def to_nested_dict(config: dict) -> dict:
-        """Convert the flattened dictionary to nested dictionary."""
-        out: dict[str, Any] = {}
-        for key, value in config.items():
-            keys = key.split(".")
-            _dict = out
-            for k in keys[:-1]:
-                _dict = _dict.setdefault(k, {})
-            _dict[keys[-1]] = value
-        return out
-
-    @staticmethod
     def convert_to_tuple(values: ValuesView) -> list[tuple]:
         """Convert a ValuesView object to a list of tuples.
 
@@ -215,11 +219,11 @@ class _Parser(ConfigParser):
         container = {
             "seed": args.seed,
             "hardware": args.hardware,
-            "data": _GridSearchAction.recursive_dict(args.data),
-            "model": _GridSearchAction.recursive_dict(args.model),
+            "data": _GridSearchAction.dict_from_namespace(args.data),
+            "model": _GridSearchAction.dict_from_namespace(args.model),
         }
         # extract all grid keys and return cross product of all grid values
-        container = self.flatten_dict(container)
+        container = _GridSearchAction.flatten_dict(container)
         grid_dict = {key: value for key, value in container.items() if "grid" in key}
         container = {key: value for key, value in container.items() if key not in grid_dict}
         combinations = list(product(*_Parser.convert_to_tuple(grid_dict.values())))
@@ -227,4 +231,4 @@ class _Parser(ConfigParser):
             _container = container.copy()
             for key, value in zip(grid_dict.keys(), combination, strict=True):
                 _container[key.removesuffix(".grid")] = value
-            yield _Parser.to_nested_dict(_container)
+            yield _GridSearchAction.to_nested_dict(_container)
