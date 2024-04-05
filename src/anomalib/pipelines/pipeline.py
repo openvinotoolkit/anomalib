@@ -3,9 +3,9 @@
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 import logging
 from pathlib import Path
+from typing import Any
 
 from rich import traceback
 
@@ -16,12 +16,11 @@ logger_file_handler = logging.FileHandler(log_file)
 logging.getLogger().addHandler(logger_file_handler)
 logging.getLogger().setLevel(logging.DEBUG)
 
-from typing import Any
 
-from jsonargparse import ActionConfigFile, ArgumentParser, Namespace
-from rich import print
+from jsonargparse import ActionConfigFile, ArgumentParser, Namespace  # noqa: E402
+from rich import print  # noqa: E402
 
-from anomalib.pipelines.executors.serial import SerialExecutor
+from anomalib.pipelines.executors.serial import SerialExecutor  # noqa: E402
 
 logger = logging.getLogger(__name__)
 # TODO(ashwinvaidya17): capture all terminal output and pipe it to a file
@@ -30,10 +29,15 @@ logger = logging.getLogger(__name__)
 class Pipeline:
     """Pipeline class."""
 
-    def __init__(self, executors: list[SerialExecutor] | SerialExecutor):
+    def __init__(self, executors: list[SerialExecutor] | SerialExecutor) -> None:
         self.executors = executors if isinstance(executors, list) else [executors]
 
-    def run(self, args: Namespace | None = None) -> Any:
+    def run(self, args: Namespace | None = None) -> Any:  # noqa: ANN401
+        """Run the pipeline.
+
+        Args:
+            args (Namespace): Arguments to run the pipeline. These are the args returned by ArgumentParser.
+        """
         if args is None:
             logger.warning("No arguments provided, parsing arguments from command line.")
             parser = self.get_parser()
@@ -42,10 +46,10 @@ class Pipeline:
         for executor in self.executors:
             try:
                 executor.run(args)
-            except Exception as exception:
-                logger.exception(exception)
+            except Exception:  # noqa: PERF203, BLE001 catch all exception and allow try-catch in loop
                 print(
-                    f"There were some errors when running [red]{executor.job.name}[/red] with [green]{executor.__class__.__name__}[/green]."
+                    f"There were some errors when running [red]{executor.job.name}[/red] with"
+                    f" [green]{executor.__class__.__name__}[/green]."
                     f" Please check [magenta]{log_file}[/magenta] for more details.",
                 )
 

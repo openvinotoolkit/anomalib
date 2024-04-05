@@ -16,6 +16,7 @@ from jsonargparse._actions import _ActionSubCommands
 from rich import traceback
 
 from anomalib import TaskType, __version__
+from anomalib.cli.pipelines import add_pipeline_subparsers, run_pipeline
 from anomalib.cli.utils.help_formatter import CustomHelpFormatter, get_short_docstring
 from anomalib.cli.utils.openvino import add_openvino_export_arguments
 from anomalib.loggers import configure_logger
@@ -92,6 +93,7 @@ class AnomalibCLI:
             "train": {"description": "Fit the model and then call test on the trained model."},
             "predict": {"description": "Run inference on a model."},
             "export": {"description": "Export the model to ONNX or OpenVINO format."},
+            "pipeline": {"description": "Run a pipeline of jobs."},
         }
 
     def add_subcommands(self, **kwargs) -> None:
@@ -240,6 +242,10 @@ class AnomalibCLI:
         add_openvino_export_arguments(parser)
         self.add_arguments_to_parser(parser)
 
+    def add_pipeline_arguments(self, parser: ArgumentParser) -> None:
+        """Add pipeline arguments to the parser."""
+        add_pipeline_subparsers(parser)
+
     def _set_install_subcommand(self, action_subcommand: _ActionSubCommands) -> None:
         sub_parser = ArgumentParser(formatter_class=CustomHelpFormatter)
         sub_parser.add_argument(
@@ -288,7 +294,7 @@ class AnomalibCLI:
             self.model = self._get(self.config_init, "model")
             self._configure_optimizers_method_to_model()
             self.instantiate_engine()
-        else:
+        elif self.config["subcommand"] != "pipeline":
             self.config_init = self.parser.instantiate_classes(self.config)
             subcommand = self.config["subcommand"]
             if subcommand in ("train", "export"):
@@ -353,6 +359,8 @@ class AnomalibCLI:
             fn = getattr(self.engine, self.subcommand)
             fn_kwargs = self._prepare_subcommand_kwargs(self.subcommand)
             fn(**fn_kwargs)
+        elif self.subcommand == "pipeline":
+            run_pipeline(self.config)
         else:
             self.config_init = self.parser.instantiate_classes(self.config)
             getattr(self, f"{self.subcommand}")()

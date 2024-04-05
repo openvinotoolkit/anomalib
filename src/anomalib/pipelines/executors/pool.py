@@ -6,6 +6,7 @@
 import logging
 import multiprocessing
 from concurrent.futures import ProcessPoolExecutor
+from typing import TYPE_CHECKING
 
 import torch
 from jsonargparse import ArgumentParser, Namespace
@@ -13,7 +14,10 @@ from rich import print
 from rich.progress import Progress, TaskID
 
 from anomalib.pipelines.executors.serial import SerialExecutor
-from anomalib.pipelines.jobs.base import BaseJob
+from anomalib.pipelines.jobs.base import Job
+
+if TYPE_CHECKING:
+    from concurrent.futures import Future
 
 logger = logging.getLogger(__name__)
 
@@ -23,12 +27,14 @@ class PoolExecutionError(Exception):
 
 
 class PoolExecutor(SerialExecutor):
-    def __init__(self, job: BaseJob):
+    """Run the job in parallel using a process pool."""
+
+    def __init__(self, job: Job) -> None:
         super().__init__(job)
-        self.processes = {}
+        self.processes: dict[int, Future | None] = {}
         self.progress = Progress()
         self.task_id: TaskID
-        self.results = []
+        self.results: list[dict] = []
         self.failures = False
 
     def run(self, args: Namespace) -> None:

@@ -11,7 +11,7 @@ from typing import Any
 from jsonargparse import ArgumentParser, Namespace
 
 
-class BaseConfigParser(ABC):
+class ConfigParser(ABC):
     """Base class for config parsers."""
 
     def __init__(self, name: str) -> None:
@@ -26,7 +26,7 @@ class BaseConfigParser(ABC):
         """Return iterator based on the arguments."""
 
 
-class BaseJob:
+class Job(ABC):
     """A job is an atomic unit of work that can be run in parallel with other jobs.
 
     Args:
@@ -34,7 +34,7 @@ class BaseJob:
         name (str): Name of the job. This is used by the progress bar and logging.
     """
 
-    def __init__(self, config_parser: BaseConfigParser, name: str) -> None:
+    def __init__(self, config_parser: ConfigParser, name: str) -> None:
         self.config_parser = config_parser
         self.name = name
         self.logger = logging.getLogger(self.name)
@@ -47,7 +47,7 @@ class BaseJob:
         """
 
     @abstractmethod
-    def gather_results(self, results: list[Any]) -> Any:
+    def gather_results(self, results: list[Any]) -> Any:  # noqa: ANN401
         """Gather the results returned from run.
 
         This can be used to combine the results from multiple runs or to save/process individual job results.
@@ -69,7 +69,7 @@ class BaseJob:
         """
 
     @abstractmethod
-    def save_gathered_result(self, result: Any) -> None:
+    def save_gathered_result(self, result: Any) -> None:  # noqa: ANN401
         """Save the gathered results.
 
         This can be used to save the results in a file or a database.

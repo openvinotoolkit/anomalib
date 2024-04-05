@@ -1,4 +1,4 @@
-"""Benchmarking job."""
+"""Config parser for benchmarking."""
 
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -7,20 +7,15 @@ import copy
 from argparse import SUPPRESS
 from collections.abc import Iterable, Iterator, ValuesView
 from itertools import product
-from tempfile import TemporaryDirectory
 from typing import Any
 
-import pandas as pd
 from jsonargparse import ArgumentParser, Namespace
 from jsonargparse._optionals import get_doc_short_description
 from jsonargparse._typehints import ActionTypeHint
-from lightning import seed_everything
 
-from anomalib.data import AnomalibDataModule, get_datamodule
-from anomalib.engine import Engine
-from anomalib.models import AnomalyModule, get_model
-
-from .base import BaseConfigParser, BaseJob
+from anomalib.data import AnomalibDataModule
+from anomalib.models import AnomalyModule
+from anomalib.pipelines.jobs.base import ConfigParser
 
 
 class _GridSearchAction(ActionTypeHint):
@@ -33,7 +28,7 @@ class _GridSearchAction(ActionTypeHint):
         return None
 
     @staticmethod
-    def _crawl(value: Any, parents: list[str], parent: str = "") -> None:
+    def _crawl(value: Any, parents: list[str], parent: str = "") -> None:  # noqa: ANN401
         """Crawl through the dictionary and store path to parents."""
         if isinstance(value, dict):
             for key, val in value.items():
@@ -44,46 +39,46 @@ class _GridSearchAction(ActionTypeHint):
                     _GridSearchAction._crawl(val, parents, parent_key)
 
     @staticmethod
-    def _pop_nested_key(container: dict, key: str) -> None:
+    def pop_nested_key(container: dict, key: str) -> None:
         keys = key.split(".")
         if len(keys) > 1:
-            _GridSearchAction._pop_nested_key(container[keys[0]], ".".join(keys[1:]))
+            _GridSearchAction.pop_nested_key(container[keys[0]], ".".join(keys[1:]))
         else:
             container.pop(keys[0])
 
     @staticmethod
-    def _sanitize_value(value: dict | Namespace) -> dict:
+    def sanitize_value(value: dict | Namespace) -> dict:
         """Returns a new value with all grid search keys removed."""
-        _value = _GridSearchAction._recursive_dict(value) if isinstance(value, Namespace) else copy.deepcopy(value)
-        keys = []
+        _value = _GridSearchAction.recursive_dict(value) if isinstance(value, Namespace) else copy.deepcopy(value)
+        keys: list[str] = []
         _GridSearchAction._crawl(_value, keys)
         for key in keys:
-            _GridSearchAction._pop_nested_key(_value, key)
+            _GridSearchAction.pop_nested_key(_value, key)
         return _value
 
     @staticmethod
-    def _recursive_namespace(container: dict) -> Namespace:
+    def recursive_namespace(container: dict) -> Namespace:
         """Convert dictionary to Namespace recursively."""
         output = Namespace()
         for k, v in container.items():
             if isinstance(v, dict):
-                setattr(output, k, _GridSearchAction._recursive_namespace(v))
+                setattr(output, k, _GridSearchAction.recursive_namespace(v))
             else:
                 setattr(output, k, v)
         return output
 
     @staticmethod
-    def _recursive_dict(container: Namespace) -> dict:
+    def recursive_dict(container: Namespace) -> dict:
         """Convert Namespace to dictionary recursively."""
         output = {}
         for k, v in container.__dict__.items():
             if isinstance(v, Namespace):
-                output[k] = _GridSearchAction._recursive_dict(v)
+                output[k] = _GridSearchAction.recursive_dict(v)
             else:
                 output[k] = v
         return output
 
-    def _check_type(self, value: dict | str | Namespace, append: bool = False, cfg: Namespace | None = None) -> Any:
+    def _check_type(self, value: dict | Namespace, append: bool = False, cfg: Namespace | None = None) -> Any:  # noqa: ANN401
         """Ignore all grid search keys.
 
         This allows the args to follow the same format as ``add_subclass_arguments``
@@ -100,20 +95,20 @@ class _GridSearchAction(ActionTypeHint):
                 - arg2
                     ...
         """
-        _value = _GridSearchAction._sanitize_value(value)
+        _value = _GridSearchAction.sanitize_value(value)
         # check only the keys for which grid is not assigned.
         # this ensures that single keys are checked against the class
-        _value = _GridSearchAction._recursive_namespace(_value)
+        _value = _GridSearchAction.recursive_namespace(_value)
         super()._check_type(_value, append, cfg)
         # convert original value to Namespace recursively
-        value = _GridSearchAction._recursive_namespace(value)
+        value = _GridSearchAction.recursive_namespace(value)
         _GridSearchAction.discard_init_args_on_class_path_change(self, value, _value)
         _value.update(value)
         _GridSearchAction.apply_appends(self, _value)
         return _value
 
 
-class _Parser(BaseConfigParser):
+class _Parser(ConfigParser):
     """Parser for benchmarking job."""
 
     def __init__(self) -> None:
@@ -146,7 +141,7 @@ class _Parser(BaseConfigParser):
 
     def add_arguments(self, parser: ArgumentParser) -> None:
         """Add arguments to the parser."""
-        parser.add_argument("--seed", type=int, default=42, help="Seed for reproducibility.")
+        parser.add_argument("--seed", type=int | dict[str, list[int]], default=42, help="Seed for reproducibility.")
         parser.add_argument(
             "--hardware",
             type=str,
@@ -158,20 +153,20 @@ class _Parser(BaseConfigParser):
         self._add_subclass_arguments(parser, AnomalibDataModule, "data")
 
     @staticmethod
-    def _flatten_dict(config: dict, prefix: str = "") -> dict:
+    def flatten_dict(config: dict, prefix: str = "") -> dict:
         """Flatten the dictionary."""
         out = {}
         for key, value in config.items():
             if isinstance(value, dict):
-                out.update(_Parser._flatten_dict(value, f"{prefix}{key}."))
+                out.update(_Parser.flatten_dict(value, f"{prefix}{key}."))
             else:
                 out[f"{prefix}{key}"] = value
         return out
 
     @staticmethod
-    def _to_nested_dict(config: dict) -> dict:
+    def to_nested_dict(config: dict) -> dict:
         """Convert the flattened dictionary to nested dictionary."""
-        out = {}
+        out: dict[str, Any] = {}
         for key, value in config.items():
             keys = key.split(".")
             _dict = out
@@ -220,64 +215,16 @@ class _Parser(BaseConfigParser):
         container = {
             "seed": args.seed,
             "hardware": args.hardware,
-            "data": _GridSearchAction._recursive_dict(args.data),
-            "model": _GridSearchAction._recursive_dict(args.model),
+            "data": _GridSearchAction.recursive_dict(args.data),
+            "model": _GridSearchAction.recursive_dict(args.model),
         }
         # extract all grid keys and return cross product of all grid values
-        container = self._flatten_dict(container)
+        container = self.flatten_dict(container)
         grid_dict = {key: value for key, value in container.items() if "grid" in key}
         container = {key: value for key, value in container.items() if key not in grid_dict}
         combinations = list(product(*_Parser.convert_to_tuple(grid_dict.values())))
         for combination in combinations:
             _container = container.copy()
             for key, value in zip(grid_dict.keys(), combination, strict=True):
-                _container[key.rstrip(".grid")] = value
-            yield _Parser._to_nested_dict(_container)
-
-
-class BenchmarkJob(BaseJob):
-    """Benchmarking job."""
-
-    def __init__(self) -> None:
-        super().__init__(_Parser(), "benchmark")
-
-    def run(self, config: dict, task_id: int | None = None) -> dict[str, Any]:
-        """Run the benchmark."""
-        self.logger.info(f"Running benchmark with config {config}")
-        devices = "auto"
-        if task_id is not None:
-            devices = [task_id]
-        with TemporaryDirectory() as temp_dir:
-            seed_everything(config["seed"])
-            model = get_model(config["model"])
-            engine = Engine(
-                accelerator=config["hardware"],
-                devices=devices,
-                default_root_dir=temp_dir,
-            )
-            datamodule = get_datamodule(config)
-            engine.fit(model, datamodule)
-            test_results = engine.test(model, datamodule)
-        output = {
-            "seed": config["seed"],
-            "model": config["model"]["class_path"].split(".")[-1],
-            "data": config["data"]["class_path"].split(".")[-1],
-            "category": config["data"]["init_args"].get("category", ""),
-            **test_results[0],
-        }
-        self.logger.info(f"Completed with result {output}")
-        return output
-
-    def gather_results(self, results: list[Any]) -> pd.DataFrame:
-        """Gather the results returned from run."""
-        output = {}
-        for key in results[0]:
-            output[key] = []
-        for result in results:
-            for key, value in result.items():
-                output[key].append(value)
-        return pd.DataFrame(output)
-
-    def tabulate_results(self, results: pd.DataFrame) -> dict[str, Any]:
-        """Return the results as a dict."""
-        return results.to_dict("list")
+                _container[key.removesuffix(".grid")] = value
+            yield _Parser.to_nested_dict(_container)
