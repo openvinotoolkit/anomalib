@@ -13,6 +13,13 @@ This section contains tutorials on how to fully utilize the data components of a
 Learn more about how to use `Folder` dataset to train anomalib models on your custom data.
 :::
 
+:::{grid-item-card} {octicon}`versions` Using Data Transforms.
+:link: ./transforms
+:link-type: doc
+
+Learn how to apply custom data transforms to the input images.
+:::
+
 ::::
 
 ```{toctree}
@@ -20,4 +27,5 @@ Learn more about how to use `Folder` dataset to train anomalib models on your cu
 :hidden:
 
 ./custom_data
+./transforms
 ```
