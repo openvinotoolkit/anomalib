@@ -3,7 +3,6 @@
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
@@ -36,7 +35,7 @@ class STFPMModel(nn.Module):
         self.tiler: Tiler | None = None
 
         self.backbone = backbone
-        self.teacher_model = TimmFeatureExtractor(backbone=self.backbone, pre_trained=True, layers=layers)
+        self.teacher_model = TimmFeatureExtractor(backbone=self.backbone, pre_trained=True, layers=layers).eval()
         self.student_model = TimmFeatureExtractor(
             backbone=self.backbone,
             pre_trained=False,

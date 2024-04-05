@@ -59,17 +59,11 @@ RUN conda install python=3.10
 ## Anomalib Development Env
 #########################################################
 
-FROM python_base_cuda11.4 as anomalib_development_env
+FROM python_base_cuda as anomalib_development_env
 
 # Install all anomalib requirements
-COPY ./requirements/installer.txt /tmp/anomalib/requirements/installer.txt
-RUN pip install --no-cache-dir -r /tmp/anomalib/requirements/installer.txt
+COPY ./pyproject.toml /tmp/anomalib/pyproject.toml
+RUN pip install --no-cache-dir .[full]
 
-COPY ./requirements/openvino.txt /tmp/anomalib/requirements/openvino.txt
-RUN pip install --no-cache-dir -r /tmp/anomalib/requirements/openvino.txt
-
-# Install other requirements related to development
-COPY ./requirements/dev.txt /tmp/anomalib/requirements/dev.txt
-RUN pip install --no-cache-dir -r /tmp/anomalib/requirements/dev.txt
 
 WORKDIR /home/user

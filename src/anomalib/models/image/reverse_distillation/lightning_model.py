@@ -6,7 +6,6 @@ https://arxiv.org/abs/2201.10703v2
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 from collections.abc import Sequence
 from typing import Any
 
@@ -50,9 +49,8 @@ class ReverseDistillation(AnomalyModule):
         self.layers = layers
         self.anomaly_map_mode = anomaly_map_mode
 
-        self.loss = ReverseDistillationLoss()
-
         self.model: ReverseDistillationModel
+        self.loss = ReverseDistillationLoss()
 
     def _setup(self) -> None:
         if self.input_size is None:
