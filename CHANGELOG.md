@@ -10,6 +10,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
+- Use default model-specific eval transform when only train_transform specified by [@djdameln](https://github.com/djdameln) in (<https://github.com/openvinotoolkit/anomalib/pull/1953>)
+
 ### Deprecated
 
 ### Fixed
@@ -18,7 +20,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 **Full Changelog**:
 
-## [v1.0.1] - Unreleased
+## [v1.0.1] - 2024-03-27
 
 ### Added
 
