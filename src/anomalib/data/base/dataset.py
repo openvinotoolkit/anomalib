@@ -3,7 +3,6 @@
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 import copy
 import logging
 from abc import ABC
@@ -62,9 +61,9 @@ class AnomalibDataset(Dataset, ABC):
             Defaults to ``None``.
     """
 
-    def __init__(self, task: TaskType, transform: Transform | None = None) -> None:
+    def __init__(self, task: TaskType | str, transform: Transform | None = None) -> None:
         super().__init__()
-        self.task = task
+        self.task = TaskType(task)
         self.transform = transform
         self._samples: DataFrame | None = None
         self._category: str | None = None

@@ -15,6 +15,7 @@ from omegaconf import DictConfig
 from torch import nn
 
 from anomalib import TaskType
+from anomalib.data import LabelName
 from anomalib.data.utils import read_image
 from anomalib.data.utils.boxes import masks_to_boxes
 from anomalib.utils.visualization import ImageResult
@@ -266,11 +267,11 @@ class TorchInferencer(Inferencer):
         # Case III: Predictions could be a list of tensors.
         elif isinstance(predictions, Sequence):
             if isinstance(predictions[1], (torch.Tensor)):
-                anomaly_map, pred_score = predictions
+                pred_score, anomaly_map = predictions
                 anomaly_map = anomaly_map.detach().cpu().numpy()
                 pred_score = pred_score.detach().cpu().numpy()
             else:
-                anomaly_map, pred_score = predictions
+                pred_score, anomaly_map = predictions
                 pred_score = pred_score.detach()
         else:
             msg = (
@@ -282,10 +283,10 @@ class TorchInferencer(Inferencer):
         # Common practice in anomaly detection is to assign anomalous
         # label to the prediction if the prediction score is greater
         # than the image threshold.
-        pred_label: str | None = None
+        pred_label: LabelName | None = None
         if "image_threshold" in metadata:
             pred_idx = pred_score >= metadata["image_threshold"]
-            pred_label = "Anomalous" if pred_idx else "Normal"
+            pred_label = LabelName.ABNORMAL if pred_idx else LabelName.NORMAL
 
         pred_mask: np.ndarray | None = None
         if "pixel_threshold" in metadata:

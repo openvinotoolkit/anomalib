@@ -21,9 +21,9 @@ jobs:
     runs-on: [self-hosted, linux, x64, anomalib]
     steps:
       - name: CHECKOUT REPOSITORY
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: "3.10"
       - name: Install Tox
@@ -42,9 +42,9 @@ jobs:
             tox-env: "py310"
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Install Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install Tox
@@ -75,3 +75,11 @@ jobs:
           else
             ./codecov -t "${CODECOV_TOKEN}"  --sha $COMMIT_ID -U $HTTP_PROXY -f .tox/coverage.xml
           fi
+
+  md-dead-link-check:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: AlexanderDokuchaev/md-dead-link-check@v0.7
+        with:
+          config: pyproject.toml

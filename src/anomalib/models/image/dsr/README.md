@@ -10,7 +10,7 @@ DSR is a quantized-feature based algorithm that consists of an autoencoder with 
 
 ## Architecture
 
-![DSR Architecture](../../../../../docs/source/images/dsr/architecture.png "DSR Architecture")
+![DSR Architecture](/docs/source/images/dsr/architecture.png "DSR Architecture")
 
 ## Usage
 

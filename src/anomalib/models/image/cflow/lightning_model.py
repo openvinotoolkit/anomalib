@@ -119,7 +119,6 @@ class Cflow(AnomalyModule):
         del args, kwargs  # These variables are not used.
 
         opt = self.optimizers()
-        self.model.encoder.eval()
 
         images: torch.Tensor = batch["image"]
         activation = self.model.encoder(images)

@@ -6,7 +6,6 @@ Paper https://arxiv.org/abs/2011.08785
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 import logging
 
 import torch
@@ -52,7 +51,7 @@ class Padim(MemoryBankMixin, AnomalyModule):
             pre_trained=pre_trained,
             layers=layers,
             n_features=n_features,
-        ).eval()
+        )
 
         self.stats: list[torch.Tensor] = []
         self.embeddings: list[torch.Tensor] = []
@@ -75,9 +74,7 @@ class Padim(MemoryBankMixin, AnomalyModule):
         """
         del args, kwargs  # These variables are not used.
 
-        self.model.feature_extractor.eval()
         embedding = self.model(batch["image"])
-
         self.embeddings.append(embedding.cpu())
 
     def fit(self) -> None:

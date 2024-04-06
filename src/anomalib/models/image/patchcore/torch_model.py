@@ -49,7 +49,7 @@ class PatchcoreModel(DynamicBufferMixin, nn.Module):
             backbone=self.backbone,
             pre_trained=pre_trained,
             layers=self.layers,
-        )
+        ).eval()
         self.feature_pooler = torch.nn.AvgPool2d(3, 1, 1)
         self.anomaly_map_generator = AnomalyMapGenerator()
 
