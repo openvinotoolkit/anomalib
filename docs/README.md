@@ -6,10 +6,10 @@ This is the source code for the Anomalib documentation. It is built using sphinx
 
 ## Installation
 
-To install the dependencies, run the following command:
+To install the dependencies, run the following command from the project root:
 
 ```bash
-pip install -r requirements.txt
+pip install .[docs]
 ```
 
 ## Build
@@ -17,5 +17,6 @@ pip install -r requirements.txt
 To build the documentation, run the following command:
 
 ```bash
+cd docs
 sphinx-build -b html source build
 ```

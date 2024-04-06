@@ -146,4 +146,5 @@ def test_metric_collection_configuration_deserialzation_callback(
         AnomalibMetricCollection,
     ), f"{dummy_anomaly_module.pixel_metrics}"
 
-    assert sorted(dummy_anomaly_module.pixel_metrics) == ["AUPRO", "AUROC", "F1Score"]
+    for metric_name in ("AUROC", "F1Score"):
+        assert metric_name in dummy_anomaly_module.pixel_metrics

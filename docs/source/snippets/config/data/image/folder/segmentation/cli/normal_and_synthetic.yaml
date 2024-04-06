@@ -7,8 +7,8 @@ init_args:
   eval_batch_size: 32
   num_workers: 8
   task: segmentation
-  transform_config_train: null
-  transform_config_eval: null
+  train_transform: null
+  eval_transform: null
   test_split_mode: synthetic
   test_split_ratio: 0.2
   val_split_mode: same_as_test

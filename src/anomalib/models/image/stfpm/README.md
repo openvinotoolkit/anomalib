@@ -12,7 +12,7 @@ During inference, the feature pyramids of teacher and student networks are compa
 
 ## Architecture
 
-![STFPM Architecture](../../../../../docs/source/images/stfpm/architecture.jpg "STFPM Architecture")
+![STFPM Architecture](/docs/source/images/stfpm/architecture.jpg "STFPM Architecture")
 
 ## Usage
 
@@ -47,8 +47,8 @@ All results gathered with seed `42`.
 
 ### Sample Results
 
-![Sample Result 1](../../../../../docs/source/images/stfpm/results/0.png "Sample Result 1")
+![Sample Result 1](/docs/source/images/stfpm/results/0.png "Sample Result 1")
 
-![Sample Result 2](../../../../../docs/source/images/stfpm/results/1.png "Sample Result 2")
+![Sample Result 2](/docs/source/images/stfpm/results/1.png "Sample Result 2")
 
-![Sample Result 3](../../../../../docs/source/images/stfpm/results/2.png "Sample Result 3")
+![Sample Result 3](/docs/source/images/stfpm/results/2.png "Sample Result 3")

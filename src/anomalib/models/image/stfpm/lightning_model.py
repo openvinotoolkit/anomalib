@@ -6,7 +6,6 @@ https://arxiv.org/abs/2103.04257
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 from collections.abc import Sequence
 from typing import Any
 
@@ -61,7 +60,6 @@ class Stfpm(AnomalyModule):
         """
         del args, kwargs  # These variables are not used.
 
-        self.model.teacher_model.eval()
         teacher_features, student_features = self.model.forward(batch["image"])
         loss = self.loss(teacher_features, student_features)
         self.log("train_loss", loss.item(), on_epoch=True, prog_bar=True, logger=True)

@@ -185,7 +185,15 @@ class AnomalibDataModule(LightningDataModule, ABC):
 
     def _create_val_split(self) -> None:
         """Obtain the validation set based on the settings in the config."""
-        if self.val_split_mode == ValSplitMode.FROM_TEST:
+        if self.val_split_mode == ValSplitMode.FROM_TRAIN:
+            # randomly sampled from train set
+            self.train_data, self.val_data = random_split(
+                self.train_data,
+                self.val_split_ratio,
+                label_aware=True,
+                seed=self.seed,
+            )
+        elif self.val_split_mode == ValSplitMode.FROM_TEST:
             # randomly sampled from test set
             self.test_data, self.val_data = random_split(
                 self.test_data,

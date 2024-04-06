@@ -1,3 +1,0 @@
-openvino-dev>=2023.0
-nncf>=2.5.0
-onnx>=1.13.1

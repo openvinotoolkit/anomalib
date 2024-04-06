@@ -12,7 +12,7 @@ The key idea here is that, during inference, when an anomalous image is passed t
 
 ## Architecture
 
-![GANomaly Architecture](../../../../../docs/source/images/ganomaly/architecture.jpg "GANomaly Architecture")
+![GANomaly Architecture](/docs/source/images/ganomaly/architecture.jpg "GANomaly Architecture")
 
 ## Usage
 

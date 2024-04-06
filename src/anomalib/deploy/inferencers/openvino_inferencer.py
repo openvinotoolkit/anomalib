@@ -15,6 +15,7 @@ from omegaconf import DictConfig
 from PIL import Image
 
 from anomalib import TaskType
+from anomalib.data.utils.label import LabelName
 from anomalib.utils.visualization import ImageResult
 
 from .base_inferencer import Inferencer
@@ -69,12 +70,19 @@ class OpenVINOInferencer(Inferencer):
         metadata is loaded from the ``metadata.json`` file. To make a prediction,
         we can simply call the ``predict`` method:
 
-        >>> import cv2
-        >>> image = cv2.imread("path/to/image.jpg")
-        >>> image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        >>> result = inferencer.predict(image)
+        >>> prediction = inferencer.predict(image="path/to/image.jpg")
 
-        ``result`` will be an ``ImageResult`` object containing the prediction
+        Alternatively we can also pass the image as a PIL image or numpy array:
+
+        >>> from PIL import Image
+        >>> image = Image.open("path/to/image.jpg")
+        >>> prediction = inferencer.predict(image=image)
+
+        >>> import numpy as np
+        >>> image = np.random.rand(224, 224, 3)
+        >>> prediction = inferencer.predict(image=image)
+
+        ``prediction`` will be an ``ImageResult`` object containing the prediction
         results. For example, to visualize the heatmap, we can do the following:
 
         >>> from matplotlib import pyplot as plt
@@ -180,11 +188,26 @@ class OpenVINOInferencer(Inferencer):
         Returns:
             ImageResult: Prediction results to be visualized.
         """
+        # Convert file path or string to image if necessary
+        if isinstance(image, str | Path):
+            image = Image.open(image)
+
+        # Convert PIL image to numpy array
+        if isinstance(image, Image.Image):
+            image = np.array(image, dtype=np.float32)
+        if not isinstance(image, np.ndarray):
+            msg = f"Input image must be a numpy array or a path to an image. Got {type(image)}"
+            raise TypeError(msg)
+
+        # Normalize numpy array to range [0, 1]
+        if image.dtype != np.float32:
+            image = image.astype(np.float32)
+        if image.max() > 1.0:
+            image /= 255.0
+
+        # Check if metadata is provided, if not use the default metadata.
         if metadata is None:
             metadata = self.metadata if hasattr(self, "metadata") else {}
-        if isinstance(image, str | Path):
-            image = np.array(Image.open(image)).astype(np.float32) / 255.0
-
         metadata["image_shape"] = image.shape[:2]
 
         processed_image = self.pre_process(image)
@@ -231,7 +254,7 @@ class OpenVINOInferencer(Inferencer):
 
         # Initialize the result variables.
         anomaly_map: np.ndarray | None = None
-        pred_label: float | None = None
+        pred_label: LabelName | None = None
         pred_mask: float | None = None
 
         # If predictions returns a single value, this means that the task is
@@ -248,7 +271,8 @@ class OpenVINOInferencer(Inferencer):
         # label to the prediction if the prediction score is greater
         # than the image threshold.
         if "image_threshold" in metadata:
-            pred_label = pred_score >= metadata["image_threshold"]
+            pred_idx = pred_score >= metadata["image_threshold"]
+            pred_label = LabelName.ABNORMAL if pred_idx else LabelName.NORMAL
 
         if task == TaskType.CLASSIFICATION:
             _, pred_score = self._normalize(pred_scores=pred_score, metadata=metadata)

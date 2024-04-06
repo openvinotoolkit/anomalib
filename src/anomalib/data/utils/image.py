@@ -351,7 +351,7 @@ def read_image(path: str | Path, as_tensor: bool = False) -> torch.Tensor | np.n
     Returns:
         image as numpy array
     """
-    image = Image.open(path)
+    image = Image.open(path).convert("RGB")
     return to_dtype(to_image(image), torch.float32, scale=True) if as_tensor else np.array(image) / 255.0
 
 
@@ -371,7 +371,7 @@ def read_mask(path: str | Path, as_tensor: bool = False) -> torch.Tensor | np.nd
         >>> type(mask)
         <class 'torch.Tensor'>
     """
-    image = Image.open(path)
+    image = Image.open(path).convert("L")
     return Mask(to_image(image).squeeze() / 255, dtype=torch.uint8) if as_tensor else np.array(image)
 
 
@@ -441,7 +441,7 @@ def save_image(filename: Path | str, image: np.ndarray | Figure, root: Path | No
     # if file_path is absolute, then root is ignored
     # so we remove the top level directory from the path
     if file_path.is_absolute() and root:
-        file_path = Path("/".join(str(file_path).split("/")[2:]))
+        file_path = Path(*file_path.parts[2:])  # OS-AGNOSTIC
     if root:
         file_path = root / file_path
 
