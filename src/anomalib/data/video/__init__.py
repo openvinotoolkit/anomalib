@@ -3,10 +3,10 @@
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 from enum import Enum
 
 from .avenue import Avenue
+from .folder_video import FolderVideo
 from .shanghaitech import ShanghaiTech
 from .ucsd_ped import UCSDped
 
@@ -19,4 +19,4 @@ class VideoDataFormat(str, Enum):
     SHANGHAITECH = "shanghaitech"
 
 
-__all__ = ["Avenue", "ShanghaiTech", "UCSDped"]
+__all__ = ["Avenue", "ShanghaiTech", "UCSDped", "FolderVideo"]

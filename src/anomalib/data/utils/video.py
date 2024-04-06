@@ -5,6 +5,7 @@
 
 import warnings
 from abc import ABC, abstractmethod
+from collections import Counter
 from pathlib import Path
 from typing import Any
 
@@ -98,3 +99,39 @@ def convert_video(input_path: Path, output_path: Path, codec: str = "MP4V") -> N
 
     video_reader.release()
     video_writer.release()
+
+
+def most_common_extension(folder_path: Path) -> str | None:
+    """Determine the most common file extension in a specified folder and its subfolders.
+
+    Args:
+    folder_path (Path): The path to the folder to be analyzed.
+
+    Returns:
+    str: The most common file extension in the folder and its subfolders.
+    None: If no files with extensions are found in the folder and its subfolders.
+    """
+    if not folder_path.is_dir():
+        return None
+
+    extensions = []
+
+    # Check files in the main folder
+    extensions = [f.suffix for f in folder_path.iterdir() if f.is_file() and f.suffix]
+
+    # Check files in immediate subfolders
+    ext_subfolders = [
+        f.suffix
+        for subdir in folder_path.iterdir()
+        if subdir.is_dir()
+        for f in subdir.iterdir()
+        if f.is_file() and f.suffix
+    ]
+    extensions += ext_subfolders
+
+    # Count extensions and find the most common
+    extension_counts = Counter(extensions)
+    if extension_counts:
+        return extension_counts.most_common(1)[0][0]
+
+    return None

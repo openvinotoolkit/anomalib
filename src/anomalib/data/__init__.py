@@ -3,7 +3,6 @@
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 import importlib
 import logging
 from enum import Enum
@@ -18,7 +17,7 @@ from .depth import DepthDataFormat, Folder3D, MVTec3D
 from .image import BTech, Folder, ImageDataFormat, Kolektor, MVTec, Visa
 from .predict import PredictDataset
 from .utils import LabelName
-from .video import Avenue, ShanghaiTech, UCSDped, VideoDataFormat
+from .video import Avenue, FolderVideo, ShanghaiTech, UCSDped, VideoDataFormat
 
 logger = logging.getLogger(__name__)
 
