@@ -13,6 +13,13 @@ This section contains tutorials on how to use the different model components of 
 Learn more about how to use the different backbones as feature extractors.
 :::
 
+:::{grid-item-card} {octicon}`table` Input tiling
+:link: ./input_tiling
+:link-type: doc
+
+Learn more about how to use the tiler for input tiling.
+:::
+
 ::::
 
 ```{toctree}
@@ -20,4 +27,5 @@ Learn more about how to use the different backbones as feature extractors.
 :hidden:
 
 ./feature_extractors
+./input_tiling
 ```
