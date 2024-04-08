@@ -4,10 +4,11 @@ This tutorial will show you how to tile the input to a model, using the {py:clas
 
 ```{warning}
 This tutorial assumes that you have already installed anomalib.
-If not, please refer to the installation section.
+If not, please refer to the [Installation](../../../../index.md#installation) section.
 ```
+
 ```{warning}
-Only selected models support tiling. 
+Only selected models support tiling.
 In the current version of Anomalib, these are:
 
 - [Padim](../../reference/models/image/padim.md)
@@ -27,6 +28,7 @@ Tiler in Anomalib by default stacks the tiles batch-wise, so the memory consumpt
 ```
 
 The process of tiling is parametrized by four parameters `tile_size`, `stride`, `remove_border_count`, and `mode`.
+
 - `tile_size` - determines the size of our tiles. Can be either a single number (square tiles) or a tuple.
 - `stride` - determines by how much we move in each direction when "cutting" the image into tiles. Can be either a single number (same step in both directions) or a tuple.
 - `remove_border_count` - how many pixels are removed at the border of the image before tiling (defaults to 0).
@@ -77,21 +79,22 @@ engine.fit(datamodule=datamodule, model=model)
 
 :::{tab-item} CLI
 
-### Using CLI arguments:
+### Using CLI arguments
 
 We can set the {py:class}`TilerConfigurationCallback <anomalib.callbacks.TilerConfigurationCallback>` and its init arguments directly from the CLI.
 
 We pass it as trainer.callback, and then provide the parameters:
+
 ```{code-block} bash
 :emphasize-lines: 2, 3, 4, 5
-anomalib train --model Padim --data anomalib.data.MVTec 
-    --trainer.callbacks anomalib.callbacks.tiler_configuration.TilerConfigurationCallback 
+anomalib train --model Padim --data anomalib.data.MVTec
+    --trainer.callbacks anomalib.callbacks.tiler_configuration.TilerConfigurationCallback
     --trainer.callbacks.enable True
-    --trainer.callbacks.tile_size 128 
+    --trainer.callbacks.tile_size 128
     --trainer.callbacks.stride 64
 ```
 
-### Using config:
+### Using config
 
 For more advanced configuration, we can prepare the config file:
 
