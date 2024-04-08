@@ -5,7 +5,7 @@
 
 import importlib
 import logging
-from abc import ABC, abstractproperty
+from abc import ABC, abstractmethod
 from collections import OrderedDict
 from typing import TYPE_CHECKING, Any
 
@@ -136,20 +136,21 @@ class AnomalyModule(pl.LightningModule, ABC):
 
         return self.predict_step(batch, batch_idx)
 
-    @abstractproperty
+    @property
+    @abstractmethod
     def trainer_arguments(self) -> dict[str, Any]:
         """Arguments used to override the trainer parameters so as to train the model correctly."""
         raise NotImplementedError
 
     def _save_to_state_dict(self, destination: OrderedDict, prefix: str, keep_vars: bool) -> None:
         if hasattr(self, "image_threshold"):
-            destination[
-                "image_threshold_class"
-            ] = f"{self.image_threshold.__class__.__module__}.{self.image_threshold.__class__.__name__}"
+            destination["image_threshold_class"] = (
+                f"{self.image_threshold.__class__.__module__}.{self.image_threshold.__class__.__name__}"
+            )
         if hasattr(self, "pixel_threshold"):
-            destination[
-                "pixel_threshold_class"
-            ] = f"{self.pixel_threshold.__class__.__module__}.{self.pixel_threshold.__class__.__name__}"
+            destination["pixel_threshold_class"] = (
+                f"{self.pixel_threshold.__class__.__module__}.{self.pixel_threshold.__class__.__name__}"
+            )
         if hasattr(self, "normalization_metrics"):
             normalization_class = self.normalization_metrics.__class__
             destination["normalization_class"] = f"{normalization_class.__module__}.{normalization_class.__name__}"
@@ -203,7 +204,8 @@ class AnomalyModule(pl.LightningModule, ABC):
         module = importlib.import_module(".".join(class_path.split(".")[:-1]))
         return getattr(module, class_path.split(".")[-1])()
 
-    @abstractproperty
+    @property
+    @abstractmethod
     def learning_type(self) -> LearningType:
         """Learning type of the model."""
         raise NotImplementedError
