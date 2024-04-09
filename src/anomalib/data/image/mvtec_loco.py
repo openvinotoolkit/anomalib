@@ -194,8 +194,9 @@ class MVTecLocoDataset(AnomalibDataset):
 
             from anomalib.data.image.mvtec_loco import MVTecLocoDataset
             from anomalib.data.utils.transforms import get_transforms
+            from torchvision.transforms.v2 import Resize
 
-            transform = get_transforms(image_size=256)
+            transform = Resize((256, 256))
             dataset = MVTecLocoDataset(
                 task="classification",
                 transform=transform,
