@@ -143,7 +143,11 @@ class AnomalibCLI:
 
         parser.add_function_arguments(get_normalization_callback, "normalization")
         parser.add_argument("--task", type=TaskType | str, default=TaskType.SEGMENTATION)
-        parser.add_argument("--metrics.image", type=list[str] | str | None, default=["F1Score", "AUROC"])
+        parser.add_argument(
+             "--metrics.image",
+             type=list[str] | str | dict[str, dict[str, Any]] | None,
+             default=["F1Score", "AUROC"],
+         )
         parser.add_argument(
             "--metrics.pixel",
             type=list[str] | str | dict[str, dict[str, Any]] | None,
