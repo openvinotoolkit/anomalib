@@ -81,8 +81,8 @@ class SPRO(Metric):
             >>> spro.update(preds, labels)
         """
         score, total = spro_score(
-            predictions,
-            masks,
+            predictions=predictions,
+            targets=masks,
             threshold=self.threshold,
             saturation_config=self.saturation_config,
         )
@@ -116,6 +116,7 @@ def spro_score(
         targets: (list[torch.Tensor]): Ground truth anomaly masks with original height and width. Each element in the
             list is a tensor list of masks for the corresponding image.
         threshold (float): When predictions are passed as float, the threshold is used to binarize the predictions.
+                Defaults: ``0.5``.
         saturation_config (dict): Saturations configuration for each label (pixel value) as the keys.
             Defaults: ``None`` (which the score is equivalent to PRO metric, but with the 'region' are
             separated by mask files.
