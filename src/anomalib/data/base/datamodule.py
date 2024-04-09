@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 def collate_fn(batch: list) -> dict[str, Any]:
     """Collate bounding boxes as lists.
 
-    Bounding boxes and `masks` (not `mask`) are collated as a list of tensors. If `masks` is exist,
+    Bounding boxes and `masks` (not `mask`) are collated as a list of tensors. If `masks` exists,
     the `mask_path` is also collated as a list since each element in the batch could be unequal.
     For all other entries, the default collate function is used.
 
