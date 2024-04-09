@@ -16,6 +16,9 @@ References:
       in: International Journal of Computer Vision (IJCV) 130, 947-969, 2022, DOI: 10.1007/s11263-022-01578-9
 """
 
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
 import logging
 from collections.abc import Sequence
 from pathlib import Path
