@@ -126,6 +126,7 @@ class PadimModel(nn.Module):
             torch.Size([32, 128, 28, 28]),
             torch.Size([32, 256, 14, 14])]
         """
+        output_size = input_tensor.shape[-2:]
         if self.tiler:
             input_tensor = self.tiler.tile(input_tensor)
 
@@ -143,7 +144,7 @@ class PadimModel(nn.Module):
                 embedding=embeddings,
                 mean=self.gaussian.mean,
                 inv_covariance=self.gaussian.inv_covariance,
-                image_size=input_tensor.shape[-2:],
+                image_size=output_size,
             )
         return output
 

@@ -61,6 +61,7 @@ class STFPMModel(nn.Module):
         Returns:
           Teacher and student features when in training mode, otherwise the predicted anomaly maps.
         """
+        output_size = images.shape[-2:]
         if self.tiler:
             images = self.tiler.tile(images)
         teacher_features: dict[str, torch.Tensor] = self.teacher_model(images)
@@ -78,7 +79,7 @@ class STFPMModel(nn.Module):
             output = self.anomaly_map_generator(
                 teacher_features=teacher_features,
                 student_features=student_features,
-                image_size=images.shape[-2:],
+                image_size=output_size,
             )
 
         return output
