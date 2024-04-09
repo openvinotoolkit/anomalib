@@ -26,8 +26,8 @@ class ReverseDistillationModel(nn.Module):
         self.encoder = torchvision.models.wide_resnet50_2(pretrained=True)
 
     Args:
-        backbone (str): Name of the backbone used for encoder and decoder
-        input_size (tuple[int, int]): Size of input image
+        backbone (str): Name of the backbone used for encoder and decoder.
+        input_size (tuple[int, int]): Size of input image.
         layers (list[str]): Name of layers from which the features are extracted.
         anomaly_map_mode (str): Mode used to generate anomaly map. Options are between ``multiply`` and ``add``.
         pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.

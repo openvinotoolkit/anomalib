@@ -14,8 +14,11 @@ import numpy as np
 import tifffile as tiff
 import torch
 from matplotlib.figure import Figure
+from PIL import Image
 from torch.nn import functional as F  # noqa: N812
 from torchvision.datasets.folder import IMG_EXTENSIONS
+from torchvision.transforms.v2.functional import to_dtype, to_image
+from torchvision.tv_tensors import Mask
 
 from anomalib.data.utils.path import validate_path
 
@@ -329,33 +332,47 @@ def get_image_height_and_width(image_size: int | Sequence[int]) -> tuple[int, in
     return height_and_width
 
 
-def read_image(path: str | Path, image_size: int | tuple[int, int] | None = None) -> np.ndarray:
+def read_image(path: str | Path, as_tensor: bool = False) -> torch.Tensor | np.ndarray:
     """Read image from disk in RGB format.
 
     Args:
         path (str, Path): path to the image file
-        image_size (int | tuple[int, int] | None, optional):
-            Image size to resize the image.
-            Defaults to None.
+        as_tensor (bool, optional): If True, returns the image as a tensor. Defaults to False.
 
     Example:
         >>> image = read_image("test_image.jpg")
+        >>> type(image)
+        <class 'numpy.ndarray'>
+        >>>
+        >>> image = read_image("test_image.jpg", as_tensor=True)
+        >>> type(image)
+        <class 'torch.Tensor'>
 
     Returns:
         image as numpy array
     """
-    path = path if isinstance(path, str) else str(path)
-    image = cv2.imread(path)
-    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    image = Image.open(path).convert("RGB")
+    return to_dtype(to_image(image), torch.float32, scale=True) if as_tensor else np.array(image) / 255.0
 
-    if image_size:
-        # This part is optional, where the user wants to quickly resize the image
-        # with a one-liner code. This would particularly be useful especially when
-        # prototyping new ideas.
-        height, width = get_image_height_and_width(image_size)
-        image = cv2.resize(image, dsize=(width, height), interpolation=cv2.INTER_AREA)
 
-    return image
+def read_mask(path: str | Path, as_tensor: bool = False) -> torch.Tensor | np.ndarray:
+    """Read mask from disk.
+
+    Args:
+        path (str, Path): path to the mask file
+        as_tensor (bool, optional): If True, returns the mask as a tensor. Defaults to False.
+
+    Example:
+        >>> mask = read_mask("test_mask.png")
+        >>> type(mask)
+        <class 'numpy.ndarray'>
+        >>>
+        >>> mask = read_mask("test_mask.png", as_tensor=True)
+        >>> type(mask)
+        <class 'torch.Tensor'>
+    """
+    image = Image.open(path).convert("L")
+    return Mask(to_image(image).squeeze() / 255, dtype=torch.uint8) if as_tensor else np.array(image)
 
 
 def read_depth_image(path: str | Path) -> np.ndarray:
@@ -424,9 +441,12 @@ def save_image(filename: Path | str, image: np.ndarray | Figure, root: Path | No
     # if file_path is absolute, then root is ignored
     # so we remove the top level directory from the path
     if file_path.is_absolute() and root:
-        file_path = Path("/".join(str(file_path).split("/")[2:]))
+        file_path = Path(*file_path.parts[2:])  # OS-AGNOSTIC
     if root:
         file_path = root / file_path
+
+    # Make unique file_path if file already exists
+    file_path = duplicate_filename(file_path)
 
     file_path.parent.mkdir(parents=True, exist_ok=True)
     image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)

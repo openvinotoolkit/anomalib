@@ -9,6 +9,5 @@ from enum import Enum
 class NormalizationMethod(str, Enum):
     """Normalization method for normalization."""
 
-    CDF = "cdf"
     MIN_MAX = "min_max"
     NONE = "none"

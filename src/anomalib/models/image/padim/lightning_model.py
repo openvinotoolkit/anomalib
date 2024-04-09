@@ -6,11 +6,11 @@ Paper https://arxiv.org/abs/2011.08785
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 import logging
 
 import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
+from torchvision.transforms.v2 import Compose, Normalize, Resize, Transform
 
 from anomalib import LearningType
 from anomalib.models.components import AnomalyModule, MemoryBankMixin
@@ -26,8 +26,6 @@ class Padim(MemoryBankMixin, AnomalyModule):
     """PaDiM: a Patch Distribution Modeling Framework for Anomaly Detection and Localization.
 
     Args:
-        input_size (tuple[int, int]): Size of the model input.
-            Defaults to ``(256, 256)``.
         backbone (str): Backbone CNN network
             Defaults to ``resnet18``.
         layers (list[str]): Layers to extract features from the backbone CNN
@@ -41,7 +39,6 @@ class Padim(MemoryBankMixin, AnomalyModule):
 
     def __init__(
         self,
-        input_size: tuple[int, int] = (256, 256),
         backbone: str = "resnet18",
         layers: list[str] = ["layer1", "layer2", "layer3"],  # noqa: B006
         pre_trained: bool = True,
@@ -49,14 +46,12 @@ class Padim(MemoryBankMixin, AnomalyModule):
     ) -> None:
         super().__init__()
 
-        self.layers = layers
         self.model: PadimModel = PadimModel(
-            input_size=input_size,
             backbone=backbone,
             pre_trained=pre_trained,
             layers=layers,
             n_features=n_features,
-        ).eval()
+        )
 
         self.stats: list[torch.Tensor] = []
         self.embeddings: list[torch.Tensor] = []
@@ -79,9 +74,7 @@ class Padim(MemoryBankMixin, AnomalyModule):
         """
         del args, kwargs  # These variables are not used.
 
-        self.model.feature_extractor.eval()
         embedding = self.model(batch["image"])
-
         self.embeddings.append(embedding.cpu())
 
     def fit(self) -> None:
@@ -128,3 +121,13 @@ class Padim(MemoryBankMixin, AnomalyModule):
             LearningType: Learning type of the model.
         """
         return LearningType.ONE_CLASS
+
+    def configure_transforms(self, image_size: tuple[int, int] | None = None) -> Transform:
+        """Default transform for Padim."""
+        image_size = image_size or (256, 256)
+        return Compose(
+            [
+                Resize(image_size, antialias=True),
+                Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+            ],
+        )

@@ -17,6 +17,7 @@ from .base import AnomalibDataModule, AnomalibDataset
 from .depth import DepthDataFormat, Folder3D, MVTec3D
 from .image import BTech, Folder, ImageDataFormat, Kolektor, MVTec, MVTecLoco, Visa
 from .predict import PredictDataset
+from .utils import LabelName
 from .video import Avenue, ShanghaiTech, UCSDped, VideoDataFormat
 
 logger = logging.getLogger(__name__)
@@ -67,4 +68,5 @@ __all__ = [
     "UCSDped",
     "ShanghaiTech",
     "Visa",
+    "LabelName",
 ]

@@ -6,7 +6,6 @@ https://arxiv.org/abs/2103.04257
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 from collections.abc import Sequence
 from typing import Any
 
@@ -27,8 +26,6 @@ class Stfpm(AnomalyModule):
     """PL Lightning Module for the STFPM algorithm.
 
     Args:
-        input_size (tuple[int, int]): Size of the model input.
-            Defaults to ``(256, 256)``.
         backbone (str): Backbone CNN network
             Defaults to ``resnet18``.
         layers (list[str]): Layers to extract features from the backbone CNN
@@ -37,14 +34,12 @@ class Stfpm(AnomalyModule):
 
     def __init__(
         self,
-        input_size: tuple[int, int] = (256, 256),
         backbone: str = "resnet18",
         layers: Sequence[str] = ("layer1", "layer2", "layer3"),
     ) -> None:
         super().__init__()
 
         self.model = STFPMModel(
-            input_size=input_size,
             backbone=backbone,
             layers=layers,
         )
@@ -65,7 +60,6 @@ class Stfpm(AnomalyModule):
         """
         del args, kwargs  # These variables are not used.
 
-        self.model.teacher_model.eval()
         teacher_features, student_features = self.model.forward(batch["image"])
         loss = self.loss(teacher_features, student_features)
         self.log("train_loss", loss.item(), on_epoch=True, prog_bar=True, logger=True)

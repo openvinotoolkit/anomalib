@@ -5,14 +5,16 @@
 
 import importlib
 import logging
-from abc import ABC, abstractproperty
+from abc import ABC, abstractmethod
 from collections import OrderedDict
 from typing import TYPE_CHECKING, Any
 
 import lightning.pytorch as pl
 import torch
+from lightning.pytorch.trainer.states import TrainerFn
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torch import nn
+from torchvision.transforms.v2 import Compose, Normalize, Resize, Transform
 
 from anomalib import LearningType
 from anomalib.metrics import AnomalibMetricCollection
@@ -48,6 +50,32 @@ class AnomalyModule(pl.LightningModule, ABC):
 
         self.image_metrics: AnomalibMetricCollection
         self.pixel_metrics: AnomalibMetricCollection
+
+        self._transform: Transform | None = None
+        self._input_size: tuple[int, int] | None = None
+
+        self._is_setup = False  # flag to track if setup has been called from the trainer
+
+    @property
+    def name(self) -> str:
+        """Name of the model."""
+        return self.__class__.__name__
+
+    def setup(self, stage: str | None = None) -> None:
+        """Calls the _setup method to build the model if the model is not already built."""
+        if getattr(self, "model", None) is None or not self._is_setup:
+            self._setup()
+            if isinstance(stage, TrainerFn):
+                # only set the flag if the stage is a TrainerFn, which means the setup has been called from a trainer
+                self._is_setup = True
+
+    def _setup(self) -> None:
+        """The _setup method is used to build the torch model dynamically or adjust something about them.
+
+        The model implementer may override this method to build the model. This is useful when the model cannot be set
+        in the `__init__` method because it requires some information or data that is not available at the time of
+        initialization.
+        """
 
     def forward(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> Any:  # noqa: ANN401
         """Perform the forward-pass by passing input tensor to the module.
@@ -87,9 +115,9 @@ class AnomalyModule(pl.LightningModule, ABC):
         Return:
             Predicted output
         """
-        del batch_idx, dataloader_idx  # These variables are not used.
+        del dataloader_idx  # These variables are not used.
 
-        return self.validation_step(batch)
+        return self.validation_step(batch, batch_idx)
 
     def test_step(self, batch: dict[str, str | torch.Tensor], batch_idx: int, *args, **kwargs) -> STEP_OUTPUT:
         """Calls validation_step for anomaly map/score calculation.
@@ -108,7 +136,8 @@ class AnomalyModule(pl.LightningModule, ABC):
 
         return self.predict_step(batch, batch_idx)
 
-    @abstractproperty
+    @property
+    @abstractmethod
     def trainer_arguments(self) -> dict[str, Any]:
         """Arguments used to override the trainer parameters so as to train the model correctly."""
         raise NotImplementedError
@@ -156,7 +185,7 @@ class AnomalyModule(pl.LightningModule, ABC):
         metric_keys = [key for key in state_dict if key.startswith(f"{name}_metrics")]
         if any(metric_keys):
             if not hasattr(self, f"{name}_metrics"):
-                setattr(self, f"{name}_metrics", AnomalibMetricCollection([], prefix=name))
+                setattr(self, f"{name}_metrics", AnomalibMetricCollection([], prefix=f"{name}_"))
             metrics = getattr(self, f"{name}_metrics")
             for key in metric_keys:
                 class_name = key.split(".")[1]
@@ -175,7 +204,72 @@ class AnomalyModule(pl.LightningModule, ABC):
         module = importlib.import_module(".".join(class_path.split(".")[:-1]))
         return getattr(module, class_path.split(".")[-1])()
 
-    @abstractproperty
+    @property
+    @abstractmethod
     def learning_type(self) -> LearningType:
         """Learning type of the model."""
         raise NotImplementedError
+
+    @property
+    def transform(self) -> Transform:
+        """Retrieve the model-specific transform.
+
+        If a transform has been set using `set_transform`, it will be returned. Otherwise, we will use the
+        model-specific default transform, conditioned on the input size.
+        """
+        return self._transform
+
+    def set_transform(self, transform: Transform) -> None:
+        """Update the transform linked to the model instance."""
+        self._transform = transform
+
+    def configure_transforms(self, image_size: tuple[int, int] | None = None) -> Transform:
+        """Default transforms.
+
+        The default transform is resize to 256x256 and normalize to ImageNet stats. Individual models can override
+        this method to provide custom transforms.
+        """
+        logger.warning(
+            "No implementation of `configure_transforms` was provided in the Lightning model. Using default "
+            "transforms from the base class. This may not be suitable for your use case. Please override "
+            "`configure_transforms` in your model.",
+        )
+        image_size = image_size or (256, 256)
+        return Compose(
+            [
+                Resize(image_size, antialias=True),
+                Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+            ],
+        )
+
+    @property
+    def input_size(self) -> tuple[int, int] | None:
+        """Return the effective input size of the model.
+
+        The effective input size is the size of the input tensor after the transform has been applied. If the transform
+        is not set, or if the transform does not change the shape of the input tensor, this method will return None.
+        """
+        transform = self.transform or self.configure_transforms()
+        if transform is None:
+            return None
+        dummy_input = torch.zeros(1, 3, 1, 1)
+        output_shape = transform(dummy_input).shape[-2:]
+        if output_shape == (1, 1):
+            return None
+        return output_shape[-2:]
+
+    def on_save_checkpoint(self, checkpoint: dict[str, Any]) -> None:
+        """Called when saving the model to a checkpoint.
+
+        Saves the transform to the checkpoint.
+        """
+        checkpoint["transform"] = self.transform
+
+    def on_load_checkpoint(self, checkpoint: dict[str, Any]) -> None:
+        """Called when loading the model from a checkpoint.
+
+        Loads the transform from the checkpoint and calls setup to ensure that the torch model is built before loading
+        the state dict.
+        """
+        self._transform = checkpoint["transform"]
+        self.setup("load_checkpoint")

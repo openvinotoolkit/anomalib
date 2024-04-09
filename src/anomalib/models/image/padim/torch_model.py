@@ -3,7 +3,6 @@
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 from random import sample
 from typing import TYPE_CHECKING
 
@@ -55,7 +54,6 @@ class PadimModel(nn.Module):
     """Padim Module.
 
     Args:
-        input_size (tuple[int, int]): Input size for the model.
         layers (list[str]): Layers used for feature extraction
         backbone (str, optional): Pre-trained model backbone. Defaults to "resnet18".
             Defaults to ``resnet18``.
@@ -68,9 +66,8 @@ class PadimModel(nn.Module):
 
     def __init__(
         self,
-        input_size: tuple[int, int],
-        layers: list[str],
         backbone: str = "resnet18",
+        layers: list[str] = ["layer1", "layer2", "layer3"],  # noqa: B006
         pre_trained: bool = True,
         n_features: int | None = None,
     ) -> None:
@@ -79,23 +76,23 @@ class PadimModel(nn.Module):
 
         self.backbone = backbone
         self.layers = layers
-        self.feature_extractor = TimmFeatureExtractor(backbone=self.backbone, layers=layers, pre_trained=pre_trained)
-        self.n_features_original, self.n_patches = _deduce_dims(self.feature_extractor, input_size, self.layers)
-
-        n_features = n_features or _N_FEATURES_DEFAULTS.get(self.backbone)
-
-        if n_features is None:
+        self.feature_extractor = TimmFeatureExtractor(
+            backbone=self.backbone,
+            layers=layers,
+            pre_trained=pre_trained,
+        ).eval()
+        self.n_features_original = sum(self.feature_extractor.out_dims)
+        self.n_features = n_features or _N_FEATURES_DEFAULTS.get(self.backbone)
+        if self.n_features is None:
             msg = (
                 f"n_features must be specified for backbone {self.backbone}. "
                 f"Default values are available for: {sorted(_N_FEATURES_DEFAULTS.keys())}"
             )
             raise ValueError(msg)
 
-        assert (
-            0 < n_features <= self.n_features_original
-        ), f"for backbone {self.backbone}, 0 < n_features <= {self.n_features_original}, found {n_features}"
-
-        self.n_features = n_features
+        if not (0 < self.n_features <= self.n_features_original):
+            msg = f"For backbone {self.backbone}, 0 < n_features <= {self.n_features_original}, found {self.n_features}"
+            raise ValueError(msg)
 
         # Since idx is randomly selected, save it with model to get same results
         self.register_buffer(
@@ -104,9 +101,9 @@ class PadimModel(nn.Module):
         )
         self.idx: torch.Tensor
         self.loss = None
-        self.anomaly_map_generator = AnomalyMapGenerator(image_size=input_size)
+        self.anomaly_map_generator = AnomalyMapGenerator()
 
-        self.gaussian = MultiVariateGaussian(self.n_features, self.n_patches)
+        self.gaussian = MultiVariateGaussian()
 
     def forward(self, input_tensor: torch.Tensor) -> torch.Tensor:
         """Forward-pass image-batch (N, C, H, W) into model to extract features.
@@ -129,6 +126,7 @@ class PadimModel(nn.Module):
             torch.Size([32, 128, 28, 28]),
             torch.Size([32, 256, 14, 14])]
         """
+        output_size = input_tensor.shape[-2:]
         if self.tiler:
             input_tensor = self.tiler.tile(input_tensor)
 
@@ -146,6 +144,7 @@ class PadimModel(nn.Module):
                 embedding=embeddings,
                 mean=self.gaussian.mean,
                 inv_covariance=self.gaussian.inv_covariance,
+                image_size=output_size,
             )
         return output
 

@@ -6,6 +6,7 @@ https://arxiv.org/pdf/2211.12353.pdf
 # Copyright (C) 2023-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+import logging
 from typing import Any
 
 import torch
@@ -13,12 +14,15 @@ from lightning.pytorch.core.optimizer import LightningOptimizer
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torch import Tensor
 from torch.optim.lr_scheduler import LRScheduler
+from torchvision.transforms.v2 import Compose, Normalize, Resize, Transform
 
 from anomalib import LearningType
 from anomalib.models.components import AnomalyModule
 
 from .loss import UFlowLoss
 from .torch_model import UflowModel
+
+logger = logging.getLogger(__name__)
 
 __all__ = ["Uflow"]
 
@@ -28,7 +32,6 @@ class Uflow(AnomalyModule):
 
     def __init__(
         self,
-        input_size: tuple[int, int] = (448, 448),
         backbone: str = "mcait",
         flow_steps: int = 4,
         affine_clamp: float = 2.0,
@@ -38,7 +41,6 @@ class Uflow(AnomalyModule):
         """Uflow model.
 
         Args:
-            input_size (tuple[int, int]): Input image size.
             backbone (str): Backbone name.
             flow_steps (int): Number of flow steps.
             affine_clamp (float): Affine clamp.
@@ -46,15 +48,30 @@ class Uflow(AnomalyModule):
             permute_soft (bool): Whether to use soft permutation.
         """
         super().__init__()
-        self.model: UflowModel = UflowModel(
-            input_size=input_size,
-            backbone=backbone,
-            flow_steps=flow_steps,
-            affine_clamp=affine_clamp,
-            affine_subnet_channels_ratio=affine_subnet_channels_ratio,
-            permute_soft=permute_soft,
-        )
+
+        self.backbone = backbone
+        self.flow_steps = flow_steps
+        self.affine_clamp = affine_clamp
+        self.affine_subnet_channels_ratio = affine_subnet_channels_ratio
+        self.permute_soft = permute_soft
+
         self.loss = UFlowLoss()
+
+        self.model: UflowModel
+
+    def _setup(self) -> None:
+        if self.input_size is None:
+            msg = "Input size is required for UFlow model."
+            raise ValueError(msg)
+
+        self.model = UflowModel(
+            input_size=self.input_size,
+            backbone=self.backbone,
+            flow_steps=self.flow_steps,
+            affine_clamp=self.affine_clamp,
+            affine_subnet_channels_ratio=self.affine_subnet_channels_ratio,
+            permute_soft=self.permute_soft,
+        )
 
     def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:  # noqa: ARG002 | unused arguments
         """Training step."""
@@ -100,3 +117,14 @@ class Uflow(AnomalyModule):
             LearningType: Learning type of the model.
         """
         return LearningType.ONE_CLASS
+
+    def configure_transforms(self, image_size: tuple[int, int] | None = None) -> Transform:
+        """Default transform for Padim."""
+        if image_size is not None:
+            logger.warning("Image size is not used in UFlow. The input image size is determined by the model.")
+        return Compose(
+            [
+                Resize((448, 448), antialias=True),
+                Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+            ],
+        )

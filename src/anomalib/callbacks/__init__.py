@@ -20,6 +20,7 @@ from .tiler_configuration import TilerConfigurationCallback
 from .timer import TimerCallback
 
 __all__ = [
+    "ModelCheckpoint",
     "GraphLogger",
     "LoadModelCallback",
     "TilerConfigurationCallback",
@@ -43,21 +44,6 @@ def get_callbacks(config: DictConfig | ListConfig | Namespace) -> list[Callback]
 
     callbacks: list[Callback] = []
 
-    monitor_metric = (
-        None if "early_stopping" not in config.model.init_args else config.model.init_args.early_stopping.metric
-    )
-    monitor_mode = "max" if "early_stopping" not in config.model.init_args else config.model.early_stopping.mode
-
-    checkpoint = ModelCheckpoint(
-        dirpath=Path(config.trainer.default_root_dir) / "weights" / "lightning",
-        filename="model",
-        monitor=monitor_metric,
-        mode=monitor_mode,
-        auto_insert_metric_name=False,
-    )
-
-    callbacks.extend([checkpoint, TimerCallback()])
-
     if "ckpt_path" in config.trainer and config.ckpt_path is not None:
         load_model = LoadModelCallback(config.ckpt_path)
         callbacks.append(load_model)
@@ -74,10 +60,5 @@ def get_callbacks(config: DictConfig | ListConfig | Namespace) -> list[Callback]
                 export_dir=str(Path(config.project.path) / "compressed"),
             ),
         )
-
-    # Add callback to log graph to loggers
-    # TODO(ashwinvaidya17): Find location for log_graph key
-    # CVS-122658
-    # if config.logging.log_graph not in (None, False):
 
     return callbacks

@@ -13,6 +13,7 @@ from omegaconf import DictConfig, ListConfig
 
 from anomalib.metrics.threshold import BaseThreshold
 from anomalib.models import AnomalyModule
+from anomalib.utils.types import THRESHOLD
 
 
 class _ThresholdCallback(Callback):
@@ -23,12 +24,7 @@ class _ThresholdCallback(Callback):
 
     def __init__(
         self,
-        threshold: BaseThreshold
-        | tuple[BaseThreshold, BaseThreshold]
-        | DictConfig
-        | ListConfig
-        | list[dict[str, str | float]]
-        | str = "F1AdaptiveThreshold",
+        threshold: THRESHOLD = "F1AdaptiveThreshold",
     ) -> None:
         super().__init__()
         self._initialize_thresholds(threshold)
@@ -66,17 +62,12 @@ class _ThresholdCallback(Callback):
 
     def _initialize_thresholds(
         self,
-        threshold: BaseThreshold
-        | tuple[BaseThreshold, BaseThreshold]
-        | DictConfig
-        | ListConfig
-        | str
-        | list[dict[str, str | float]],
+        threshold: THRESHOLD,
     ) -> None:
         """Initialize ``self.image_threshold`` and ``self.pixel_threshold``.
 
         Args:
-            threshold (BaseThreshold | tuple[BaseThreshold, BaseThreshold] | DictConfig | ListConfig | str):
+            threshold (THRESHOLD):
                 Threshold configuration
 
         Example:
@@ -166,7 +157,7 @@ class _ThresholdCallback(Callback):
             threshold = DictConfig({"class_path": threshold})
 
         class_path = threshold["class_path"]
-        init_args = threshold["init_args"] if "init_args" in threshold else {}
+        init_args = threshold.get("init_args", {})
 
         if len(class_path.split(".")) == 1:
             module_path = "anomalib.metrics.threshold"
@@ -184,8 +175,6 @@ class _ThresholdCallback(Callback):
         pl_module.pixel_threshold.reset()
 
     def _outputs_to_cpu(self, output: STEP_OUTPUT) -> STEP_OUTPUT | dict[str, Any]:
-        # TODO(ashwinvaidya17): This is duplicated in multiple trainer callbacks.
-        # CVS-122664
         if isinstance(output, dict):
             for key, value in output.items():
                 output[key] = self._outputs_to_cpu(value)

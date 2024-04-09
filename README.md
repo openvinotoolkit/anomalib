@@ -9,7 +9,7 @@
 [Key Features](#key-features) •
 [Docs](https://anomalib.readthedocs.io/en/latest/) •
 [Notebooks](notebooks) •
-[License](https://github.com/openvinotoolkit/anomalib/blob/main/LICENSE)
+[License](LICENSE)
 
 [![python](https://img.shields.io/badge/python-3.7%2B-green)]()
 [![pytorch](https://img.shields.io/badge/pytorch-1.8.1%2B-orange)]()
@@ -46,10 +46,29 @@ Anomalib provides two ways to install the library. The first is through PyPI, an
 
 <details>
 <summary>Install from PyPI</summary>
-Installing the library with pip is the easiest way to get started with `anomalib`.
+Installing the library with pip is the easiest way to get started with anomalib.
 
 ```bash
 pip install anomalib
+```
+
+This will install Anomalib CLI using the [dependencies](/pyproject.toml) in the `pyproject.toml` file. Anomalib CLI is a command line interface for training, inference, benchmarking, and hyperparameter optimization. If you want to use the library as a Python package, you can install the library with the following command:
+
+```bash
+# Get help for the installation arguments
+anomalib install -h
+
+# Install the full package
+anomalib install
+
+# Install with verbose output
+anomalib install -v
+
+# Install the core package option only to train and evaluate models via Torch and Lightning
+anomalib install --option core
+
+# Install with OpenVINO option only. This is useful for edge deployment as the wheel size is smaller.
+anomalib install --option openvino
 ```
 
 </details>
@@ -59,7 +78,7 @@ pip install anomalib
 To install from source, you need to clone the repository and install the library using pip via editable mode.
 
 ```bash
-# Use of virtual environment is highy recommended
+# Use of virtual environment is highly recommended
 # Using conda
 yes | conda create -n anomalib_env python=3.10
 conda activate anomalib_env
@@ -71,6 +90,25 @@ conda activate anomalib_env
 git clone https://github.com/openvinotoolkit/anomalib.git
 cd anomalib
 pip install -e .
+```
+
+This will install Anomalib CLI using the [dependencies](/pyproject.toml) in the `pyproject.toml` file. Anomalib CLI is a command line interface for training, inference, benchmarking, and hyperparameter optimization. If you want to use the library as a Python package, you can install the library with the following command:
+
+```bash
+# Get help for the installation arguments
+anomalib install -h
+
+# Install the full package
+anomalib install
+
+# Install with verbose output
+anomalib install -v
+
+# Install the core package option only to train and evaluate models via Torch and Lightning
+anomalib install --option core
+
+# Install with OpenVINO option only. This is useful for edge deployment as the wheel size is smaller.
+anomalib install --option openvino
 ```
 
 </details>
@@ -221,7 +259,7 @@ You first need to modify the `config.yaml` file to enable logging. The following
 
 Anomalib provides a benchmarking tool to evaluate the performance of the anomaly detection models on a given dataset. The benchmarking tool can be used to evaluate the performance of the models on a given dataset, or to compare the performance of multiple models on a given dataset.
 
-Each model in anomalib is benchmarked on a set of datasets, and the results are available in `src/anomalib/models/<model_name>README.md`. For example, the MVTec AD results for the Patchcore model are available in the corresponding [README.md](https://github.com/openvinotoolkit/anomalib/tree/main/src/anomalib/models/patchcore#mvtec-ad-dataset) file.
+Each model in anomalib is benchmarked on a set of datasets, and the results are available in `src/anomalib/models/<type>/<model_name>/README.md`. For example, the MVTec AD results for the Patchcore model are available in the corresponding [README.md](src/anomalib/models/image/patchcore/README.md#mvtec-ad-dataset) file.
 
 <details>
 <summary>Benchmarking via API</summary>
@@ -233,7 +271,7 @@ Each model in anomalib is benchmarked on a set of datasets, and the results are 
 </details>
 
 <details>
-<summary>Benchmarking via API</summary>
+<summary>Benchmarking via CLI</summary>
 
 To run the benchmarking tool, run the following command:
 

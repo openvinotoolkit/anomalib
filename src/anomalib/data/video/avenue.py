@@ -22,22 +22,22 @@ from pathlib import Path
 from shutil import move
 from typing import TYPE_CHECKING
 
-import albumentations as A  # noqa: N812
 import cv2
 import numpy as np
 import scipy.io
+import torch
 from pandas import DataFrame
+from torchvision.transforms.v2 import Transform
 
 from anomalib import TaskType
 from anomalib.data.base import AnomalibVideoDataModule, AnomalibVideoDataset
 from anomalib.data.base.video import VideoTargetFrame
 from anomalib.data.utils import (
     DownloadInfo,
-    InputNormalizationMethod,
     Split,
     ValSplitMode,
     download_and_extract,
-    get_transforms,
+    read_mask,
     validate_path,
 )
 from anomalib.data.utils.video import ClipsIndexer
@@ -50,12 +50,12 @@ logger = logging.getLogger(__name__)
 DATASET_DOWNLOAD_INFO = DownloadInfo(
     name="Avenue Dataset",
     url="http://www.cse.cuhk.edu.hk/leojia/projects/detectabnormal/Avenue_Dataset.zip",
-    checksum="b7a34b212ecdd30efbd989a6dcb1aceb",
+    hashsum="fc9cb8432a11ca79c18aa180c72524011411b69d3b0ff27c8816e41c0de61531",
 )
 ANNOTATIONS_DOWNLOAD_INFO = DownloadInfo(
     name="Avenue Annotations",
     url="http://www.cse.cuhk.edu.hk/leojia/projects/detectabnormal/ground_truth_demo.zip",
-    checksum="e8e3bff99195b6b511534083b9dbe1f5",
+    hashsum="60fec1728ec8f73a58aad3aeb5729d70a805a47e0b8eb4bf91ab67ef06386d77",
 )
 
 
@@ -128,7 +128,7 @@ class AvenueClipsIndexer(ClipsIndexer):
         if mask_folder.exists():
             mask_frames = sorted(mask_folder.glob("*"))
             mask_paths = [mask_frames[idx] for idx in frames.int()]
-            masks = np.stack([cv2.imread(str(mask_path), flags=0) for mask_path in mask_paths])
+            masks = torch.stack([read_mask(mask_path, as_tensor=True) for mask_path in mask_paths])
         else:
             mat = scipy.io.loadmat(matfile)
             masks = np.vstack([np.stack(m) for m in mat["volLabel"]])
@@ -141,7 +141,6 @@ class AvenueDataset(AnomalibVideoDataset):
 
     Args:
         task (TaskType): Task type, 'classification', 'detection' or 'segmentation'
-        transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
         split (Split): Split of the dataset, usually Split.TRAIN or Split.TEST
         root (Path | str): Path to the root of the dataset
             Defaults to ``./datasets/avenue``.
@@ -151,8 +150,10 @@ class AvenueDataset(AnomalibVideoDataset):
             Defaults to ``2``.
         frames_between_clips (int, optional): Number of frames between each consecutive video clip.
             Defaults to ``1``.
-        target_frame (VideoTargetFrame): Specifies the target frame in the video clip, used for ground truth retrieval
+        target_frame (VideoTargetFrame): Specifies the target frame in the video clip, used for ground truth retrieval.
             Defaults to ``VideoTargetFrame.LAST``.
+        transform (Transform, optional): Transforms that should be applied to the input images.
+            Defaults to ``None``.
 
     Examples:
         To create an Avenue dataset to train a classification model:
@@ -213,23 +214,26 @@ class AvenueDataset(AnomalibVideoDataset):
     def __init__(
         self,
         task: TaskType,
-        transform: A.Compose,
         split: Split,
         root: Path | str = "./datasets/avenue",
         gt_dir: Path | str = "./datasets/avenue/ground_truth_demo",
         clip_length_in_frames: int = 2,
         frames_between_clips: int = 1,
+        transform: Transform | None = None,
         target_frame: VideoTargetFrame = VideoTargetFrame.LAST,
     ) -> None:
-        super().__init__(task, transform, clip_length_in_frames, frames_between_clips, target_frame)
+        super().__init__(
+            task=task,
+            clip_length_in_frames=clip_length_in_frames,
+            frames_between_clips=frames_between_clips,
+            target_frame=target_frame,
+            transform=transform,
+        )
 
         self.root = root if isinstance(root, Path) else Path(root)
         self.gt_dir = gt_dir if isinstance(gt_dir, Path) else Path(gt_dir)
         self.split = split
         self.indexer_cls: Callable = AvenueClipsIndexer
-
-    def _setup(self) -> None:
-        """Create and assign samples."""
         self.samples = make_avenue_dataset(self.root, self.gt_dir, self.split)
 
 
@@ -249,25 +253,20 @@ class Avenue(AnomalibVideoDataModule):
             Defaults to ``VideoTargetFrame.LAST``.
         task (TaskType): Task type, 'classification', 'detection' or 'segmentation'
             Defaults to ``TaskType.SEGMENTATION``.
-        image_size (int | tuple[int, int] | None, optional): Size of the input image.
-            Defaults to ``(256, 256)``.
-        center_crop (int | tuple[int, int] | None, optional): When provided, the images will be center-cropped
-            to the provided dimensions.
+        image_size (tuple[int, int], optional): Size to which input images should be resized.
             Defaults to ``None``.
-        normalization (InputNormalizationMethod | str): Normalization method to be applied to the input images.
-            Defaults to ``InputNormalizationMethod.IMAGENET``.
+        transform (Transform, optional): Transforms that should be applied to the input images.
+            Defaults to ``None``.
+        train_transform (Transform, optional): Transforms that should be applied to the input images during training.
+            Defaults to ``None``.
+        eval_transform (Transform, optional): Transforms that should be applied to the input images during evaluation.
+            Defaults to ``None``.
         train_batch_size (int, optional): Training batch size.
             Defaults to ``32``.
         eval_batch_size (int, optional): Test batch size.
             Defaults to ``32``.
         num_workers (int, optional): Number of workers.
             Defaults to ``8``.
-        transform_config_train (str | A.Compose | None, optional): Config for pre-processing
-            during training.
-            Defaults to ``None``.
-        transform_config_val (str | A.Compose | None, optional): Config for pre-processing
-            during validation.
-            Defaults to ``None``.
         val_split_mode (ValSplitMode): Setting that determines how the validation subset is obtained.
             Defaults to ``ValSplitMode.FROM_TEST``.
         val_split_ratio (float): Fraction of train or test images that will be reserved for validation.
@@ -329,17 +328,16 @@ class Avenue(AnomalibVideoDataModule):
         gt_dir: Path | str = "./datasets/avenue/ground_truth_demo",
         clip_length_in_frames: int = 2,
         frames_between_clips: int = 1,
-        target_frame: VideoTargetFrame = VideoTargetFrame.LAST,
-        task: TaskType = TaskType.SEGMENTATION,
-        image_size: int | tuple[int, int] = (256, 256),
-        center_crop: int | tuple[int, int] | None = None,
-        normalization: InputNormalizationMethod | str = InputNormalizationMethod.IMAGENET,
+        target_frame: VideoTargetFrame | str = VideoTargetFrame.LAST,
+        task: TaskType | str = TaskType.SEGMENTATION,
+        image_size: tuple[int, int] | None = None,
+        transform: Transform | None = None,
+        train_transform: Transform | None = None,
+        eval_transform: Transform | None = None,
         train_batch_size: int = 32,
         eval_batch_size: int = 32,
         num_workers: int = 8,
-        transform_config_train: str | A.Compose | None = None,
-        transform_config_eval: str | A.Compose | None = None,
-        val_split_mode: ValSplitMode = ValSplitMode.SAME_AS_TEST,
+        val_split_mode: ValSplitMode | str = ValSplitMode.SAME_AS_TEST,
         val_split_ratio: float = 0.5,
         seed: int | None = None,
     ) -> None:
@@ -347,46 +345,42 @@ class Avenue(AnomalibVideoDataModule):
             train_batch_size=train_batch_size,
             eval_batch_size=eval_batch_size,
             num_workers=num_workers,
+            image_size=image_size,
+            transform=transform,
+            train_transform=train_transform,
+            eval_transform=eval_transform,
             val_split_mode=val_split_mode,
             val_split_ratio=val_split_ratio,
             seed=seed,
         )
 
+        self.task = TaskType(task)
         self.root = Path(root)
         self.gt_dir = Path(gt_dir)
+        self.clip_length_in_frames = clip_length_in_frames
+        self.frames_between_clips = frames_between_clips
+        self.target_frame = VideoTargetFrame(target_frame)
 
-        transform_train = get_transforms(
-            config=transform_config_train,
-            image_size=image_size,
-            center_crop=center_crop,
-            normalization=InputNormalizationMethod(normalization),
-        )
-        transform_eval = get_transforms(
-            config=transform_config_eval,
-            image_size=image_size,
-            center_crop=center_crop,
-            normalization=InputNormalizationMethod(normalization),
-        )
-
+    def _setup(self, _stage: str | None = None) -> None:
         self.train_data = AvenueDataset(
-            task=task,
-            transform=transform_train,
-            clip_length_in_frames=clip_length_in_frames,
-            frames_between_clips=frames_between_clips,
-            target_frame=target_frame,
-            root=root,
-            gt_dir=gt_dir,
+            task=self.task,
+            transform=self.train_transform,
+            clip_length_in_frames=self.clip_length_in_frames,
+            frames_between_clips=self.frames_between_clips,
+            target_frame=self.target_frame,
+            root=self.root,
+            gt_dir=self.gt_dir,
             split=Split.TRAIN,
         )
 
         self.test_data = AvenueDataset(
-            task=task,
-            transform=transform_eval,
-            clip_length_in_frames=clip_length_in_frames,
-            frames_between_clips=frames_between_clips,
-            target_frame=target_frame,
-            root=root,
-            gt_dir=gt_dir,
+            task=self.task,
+            transform=self.eval_transform,
+            clip_length_in_frames=self.clip_length_in_frames,
+            frames_between_clips=self.frames_between_clips,
+            target_frame=self.target_frame,
+            root=self.root,
+            gt_dir=self.gt_dir,
             split=Split.TEST,
         )
 

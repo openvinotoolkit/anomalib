@@ -10,7 +10,6 @@
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 from math import exp
 
 import numpy as np
@@ -562,7 +561,7 @@ class CsFlowModel(nn.Module):
         self.input_dims = (num_channels, *input_size)
         self.clamp = clamp
         self.cross_conv_hidden_channels = cross_conv_hidden_channels
-        self.feature_extractor = MultiScaleFeatureExtractor(n_scales=3, input_size=input_size)
+        self.feature_extractor = MultiScaleFeatureExtractor(n_scales=3, input_size=input_size).eval()
         self.graph = CrossScaleFlow(
             input_dims=self.input_dims,
             n_coupling_blocks=n_coupling_blocks,

@@ -17,11 +17,17 @@ class TestShanghaiTech(_TestAnomalibVideoDatamodule):
     """ShanghaiTech Datamodule Unit Tests."""
 
     @pytest.fixture()
-    def datamodule(self, dataset_path: Path, task_type: TaskType) -> ShanghaiTech:
+    def clip_length_in_frames(self) -> int:
+        """Return the number of frames in each clip."""
+        return 2
+
+    @pytest.fixture()
+    def datamodule(self, dataset_path: Path, task_type: TaskType, clip_length_in_frames: int) -> ShanghaiTech:
         """Create and return a Shanghai datamodule."""
         _datamodule = ShanghaiTech(
             root=dataset_path / "shanghaitech",
             scene=1,
+            clip_length_in_frames=clip_length_in_frames,
             image_size=(256, 256),
             train_batch_size=4,
             eval_batch_size=4,

@@ -89,6 +89,7 @@ Learn how to develop and contribute to anomalib.
 :hidden:
 
 markdown/get_started/anomalib
+markdown/get_started/migration
 ```
 
 ```{toctree}

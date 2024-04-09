@@ -11,14 +11,12 @@ import logging
 from pathlib import Path
 from typing import Any
 
-import albumentations as A  # noqa: N812
-import numpy as np
 import torch
 import tqdm
-from albumentations.pytorch import ToTensorV2
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torch.utils.data import DataLoader
 from torchvision.datasets import ImageFolder
+from torchvision.transforms.v2 import CenterCrop, Compose, Normalize, RandomGrayscale, Resize, ToTensor, Transform
 
 from anomalib import LearningType
 from anomalib.data.utils import DownloadInfo, download_and_extract
@@ -31,48 +29,22 @@ logger = logging.getLogger(__name__)
 IMAGENETTE_DOWNLOAD_INFO = DownloadInfo(
     name="imagenette2.tgz",
     url="https://s3.amazonaws.com/fast-ai-imageclas/imagenette2.tgz",
-    checksum="fe2fc210e6bb7c5664d602c3cd71e612",
+    hashsum="6cbfac238434d89fe99e651496f0812ebc7a10fa62bd42d6874042bf01de4efd",
 )
 
 WEIGHTS_DOWNLOAD_INFO = DownloadInfo(
     name="efficientad_pretrained_weights.zip",
     url="https://github.com/openvinotoolkit/anomalib/releases/download/efficientad_pretrained_weights/efficientad_pretrained_weights.zip",
-    checksum="ec6113d728969cd233271eeed7d692f2",
+    hashsum="c09aeaa2b33f244b3261a5efdaeae8f8284a949470a4c5a526c61275fe62684a",
 )
-
-
-class TransformsWrapper:
-    """Transforms wrapper.
-
-    Args:
-        t (A.Compose): Albumentations transforms.
-    """
-
-    def __init__(self, t: A.Compose) -> None:
-        self.transforms = t
-
-    def __call__(self, img: np.ndarray, *args, **kwargs) -> dict[str, Any]:
-        """Apply the transforms to the given image.
-
-        Args:
-            img (np.ndarray): Input image.
-            args: Additional arguments.
-            kwargs: Additional keyword arguments.
-
-        Returns:
-            dict[str, Any]: Output image.
-        """
-        del args, kwargs  # Unused arguments.
-
-        return self.transforms(image=np.array(img))
 
 
 class EfficientAd(AnomalyModule):
     """PL Lightning Module for the EfficientAd algorithm.
 
     Args:
-        input_size (tuple): size of input images
-            Defaults to ``(256, 256)``.
+        imagenet_dir (Path|str): directory path for the Imagenet dataset
+            Defaults to ``./datasets/imagenette``.
         teacher_out_channels (int): number of convolution output channels
             Defaults to ``384``.
         model_size (str): size of student and teacher model
@@ -92,7 +64,7 @@ class EfficientAd(AnomalyModule):
 
     def __init__(
         self,
-        input_size: tuple[int, int] = (256, 256),
+        imagenet_dir: Path | str = "./datasets/imagenette",
         teacher_out_channels: int = 384,
         model_size: EfficientAdModelSize = EfficientAdModelSize.S,
         lr: float = 0.0001,
@@ -103,21 +75,17 @@ class EfficientAd(AnomalyModule):
     ) -> None:
         super().__init__()
 
+        self.imagenet_dir = Path(imagenet_dir)
         self.model_size = model_size
         self.model: EfficientAdModel = EfficientAdModel(
             teacher_out_channels=teacher_out_channels,
-            input_size=input_size,
             model_size=model_size,
             padding=padding,
             pad_maps=pad_maps,
         )
         self.batch_size = batch_size
-        self.image_size = input_size
         self.lr = lr
         self.weight_decay = weight_decay
-
-        self.prepare_pretrained_model()
-        self.prepare_imagenette_data()
 
     def prepare_pretrained_model(self) -> None:
         """Prepare the pretrained teacher model."""
@@ -125,27 +93,29 @@ class EfficientAd(AnomalyModule):
         if not (pretrained_models_dir / "efficientad_pretrained_weights").is_dir():
             download_and_extract(pretrained_models_dir, WEIGHTS_DOWNLOAD_INFO)
         teacher_path = (
-            pretrained_models_dir / "efficientad_pretrained_weights" / f"pretrained_teacher_{self.model_size}.pth"
+            pretrained_models_dir / "efficientad_pretrained_weights" / f"pretrained_teacher_{self.model_size.value}.pth"
         )
         logger.info(f"Load pretrained teacher model from {teacher_path}")
         self.model.teacher.load_state_dict(torch.load(teacher_path, map_location=torch.device(self.device)))
 
-    def prepare_imagenette_data(self) -> None:
-        """Prepare ImageNette dataset transformations."""
-        self.data_transforms_imagenet = A.Compose(
-            [  # We obtain an image P ∈ R 3x256x256 from ImageNet by choosing a random image,
-                A.Resize(self.image_size[0] * 2, self.image_size[1] * 2),  # resizing it to 512 x 512,
-                A.ToGray(p=0.3),  # converting it to gray scale with a probability of 0.3
-                A.CenterCrop(self.image_size[0], self.image_size[1]),  # and cropping the center 256 x 256 pixels
-                A.ToFloat(always_apply=False, p=1.0, max_value=255),
-                ToTensorV2(),
+    def prepare_imagenette_data(self, image_size: tuple[int, int] | torch.Size) -> None:
+        """Prepare ImageNette dataset transformations.
+
+        Args:
+            image_size (tuple[int, int] | torch.Size): Image size.
+        """
+        self.data_transforms_imagenet = Compose(
+            [
+                Resize((image_size[0] * 2, image_size[1] * 2)),
+                RandomGrayscale(p=0.3),
+                CenterCrop((image_size[0], image_size[1])),
+                ToTensor(),
             ],
         )
 
-        imagenet_dir = Path("./datasets/imagenette")
-        if not imagenet_dir.is_dir():
-            download_and_extract(imagenet_dir, IMAGENETTE_DOWNLOAD_INFO)
-        imagenet_dataset = ImageFolder(imagenet_dir, transform=TransformsWrapper(t=self.data_transforms_imagenet))
+        if not self.imagenet_dir.is_dir():
+            download_and_extract(self.imagenet_dir, IMAGENETTE_DOWNLOAD_INFO)
+        imagenet_dataset = ImageFolder(self.imagenet_dir, transform=self.data_transforms_imagenet)
         self.imagenet_loader = DataLoader(imagenet_dataset, batch_size=self.batch_size, shuffle=True, pin_memory=True)
         self.imagenet_iterator = iter(self.imagenet_loader)
 
@@ -171,15 +141,17 @@ class EfficientAd(AnomalyModule):
             if not arrays_defined:
                 _, num_channels, _, _ = y.shape
                 n = torch.zeros((num_channels,), dtype=torch.int64, device=y.device)
-                chanel_sum = torch.zeros((num_channels,), dtype=torch.float64, device=y.device)
-                chanel_sum_sqr = torch.zeros((num_channels,), dtype=torch.float64, device=y.device)
+                chanel_sum = torch.zeros((num_channels,), dtype=torch.float32, device=y.device)
+                chanel_sum_sqr = torch.zeros((num_channels,), dtype=torch.float32, device=y.device)
                 arrays_defined = True
 
             n += y[:, 0].numel()
             chanel_sum += torch.sum(y, dim=[0, 2, 3])
             chanel_sum_sqr += torch.sum(y**2, dim=[0, 2, 3])
 
-        assert n is not None
+        if n is None:
+            msg = "The value of 'n' cannot be None."
+            raise ValueError(msg)
 
         channel_mean = chanel_sum / n
 
@@ -240,15 +212,38 @@ class EfficientAd(AnomalyModule):
             lr=self.lr,
             weight_decay=self.weight_decay,
         )
-        num_steps = min(
-            self.trainer.max_steps,
-            self.trainer.max_epochs * len(self.trainer.datamodule.train_dataloader()),
-        )
+
+        if self.trainer.max_epochs < 0 and self.trainer.max_steps < 0:
+            msg = "A finite number of steps or epochs must be defined"
+            raise ValueError(msg)
+
+        # lightning stops training when either 'max_steps' or 'max_epochs' is reached (earliest),
+        # so actual training steps need to be determined here
+        if self.trainer.max_epochs < 0:
+            # max_epochs not set
+            num_steps = self.trainer.max_steps
+        elif self.trainer.max_steps < 0:
+            # max_steps not set -> determine steps as 'max_epochs' * 'steps in a single training epoch'
+            num_steps = self.trainer.max_epochs * len(self.trainer.datamodule.train_dataloader())
+        else:
+            num_steps = min(
+                self.trainer.max_steps,
+                self.trainer.max_epochs * len(self.trainer.datamodule.train_dataloader()),
+            )
+
         scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=int(0.95 * num_steps), gamma=0.1)
         return {"optimizer": optimizer, "lr_scheduler": scheduler}
 
     def on_train_start(self) -> None:
-        """Calculate or load the channel-wise mean and std of the training dataset and push to the model."""
+        """Called before the first training epoch.
+
+        First sets up the pretrained teacher model, then prepares the imagenette data, and finally calculates or
+        loads the channel-wise mean and std of the training dataset and push to the model.
+        """
+        sample = next(iter(self.trainer.train_dataloader))
+        image_size = sample["image"].shape[-2:]
+        self.prepare_pretrained_model()
+        self.prepare_imagenette_data(image_size)
         if not self.model.is_set(self.model.mean_std):
             channel_mean_std = self.teacher_channel_mean_std(self.trainer.datamodule.train_dataloader())
             self.model.mean_std.update(channel_mean_std)
@@ -268,10 +263,10 @@ class EfficientAd(AnomalyModule):
 
         try:
             # infinite dataloader; [0] getting the image not the label
-            batch_imagenet = next(self.imagenet_iterator)[0]["image"].to(self.device)
+            batch_imagenet = next(self.imagenet_iterator)[0].to(self.device)
         except StopIteration:
             self.imagenet_iterator = iter(self.imagenet_loader)
-            batch_imagenet = next(self.imagenet_iterator)[0]["image"].to(self.device)
+            batch_imagenet = next(self.imagenet_iterator)[0].to(self.device)
 
         loss_st, loss_ae, loss_stae = self.model(batch=batch["image"], batch_imagenet=batch_imagenet)
 
@@ -317,3 +312,13 @@ class EfficientAd(AnomalyModule):
             LearningType: Learning type of the model.
         """
         return LearningType.ONE_CLASS
+
+    def configure_transforms(self, image_size: tuple[int, int] | None = None) -> Transform:
+        """Default transform for Padim."""
+        image_size = image_size or (256, 256)
+        return Compose(
+            [
+                Resize(image_size, antialias=True),
+                Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+            ],
+        )

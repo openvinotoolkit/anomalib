@@ -8,10 +8,10 @@ import math
 
 import torch
 
-from anomalib.models.components.base import DynamicBufferModule
+from anomalib.models.components.base import DynamicBufferMixin
 
 
-class GaussianKDE(DynamicBufferModule):
+class GaussianKDE(DynamicBufferMixin):
     """Gaussian Kernel Density Estimation.
 
     Args:

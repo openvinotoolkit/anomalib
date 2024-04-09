@@ -6,7 +6,6 @@ https://arxiv.org/abs/2201.10703v2
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 from collections.abc import Sequence
 from typing import Any
 
@@ -26,8 +25,6 @@ class ReverseDistillation(AnomalyModule):
     """PL Lightning Module for Reverse Distillation Algorithm.
 
     Args:
-        input_size (tuple[int, int]): Size of model input
-            Defaults to ``(256, 256)``.
         backbone (str): Backbone of CNN network
             Defaults to ``wide_resnet50_2``.
         layers (list[str]): Layers to extract features from the backbone CNN
@@ -40,21 +37,33 @@ class ReverseDistillation(AnomalyModule):
 
     def __init__(
         self,
-        input_size: tuple[int, int] = (256, 256),
         backbone: str = "wide_resnet50_2",
         layers: Sequence[str] = ("layer1", "layer2", "layer3"),
         anomaly_map_mode: AnomalyMapGenerationMode = AnomalyMapGenerationMode.ADD,
         pre_trained: bool = True,
     ) -> None:
         super().__init__()
-        self.model = ReverseDistillationModel(
-            backbone=backbone,
-            pre_trained=pre_trained,
-            layers=layers,
-            input_size=input_size,
-            anomaly_map_mode=anomaly_map_mode,
-        )
+
+        self.backbone = backbone
+        self.pre_trained = pre_trained
+        self.layers = layers
+        self.anomaly_map_mode = anomaly_map_mode
+
+        self.model: ReverseDistillationModel
         self.loss = ReverseDistillationLoss()
+
+    def _setup(self) -> None:
+        if self.input_size is None:
+            msg = "Input size is required for Reverse Distillation model."
+            raise ValueError(msg)
+
+        self.model = ReverseDistillationModel(
+            backbone=self.backbone,
+            pre_trained=self.pre_trained,
+            layers=self.layers,
+            input_size=self.input_size,
+            anomaly_map_mode=self.anomaly_map_mode,
+        )
 
     def configure_optimizers(self) -> optim.Adam:
         """Configure optimizers for decoder and bottleneck.

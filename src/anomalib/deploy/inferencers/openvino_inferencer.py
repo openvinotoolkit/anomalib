@@ -9,12 +9,14 @@ from importlib.util import find_spec
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-import albumentations as A  # noqa: N812
 import cv2
 import numpy as np
 from omegaconf import DictConfig
+from PIL import Image
 
 from anomalib import TaskType
+from anomalib.data.utils.label import LabelName
+from anomalib.utils.visualization import ImageResult
 
 from .base_inferencer import Inferencer
 
@@ -68,12 +70,19 @@ class OpenVINOInferencer(Inferencer):
         metadata is loaded from the ``metadata.json`` file. To make a prediction,
         we can simply call the ``predict`` method:
 
-        >>> import cv2
-        >>> image = cv2.imread("path/to/image.jpg")
-        >>> image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        >>> result = inferencer.predict(image)
+        >>> prediction = inferencer.predict(image="path/to/image.jpg")
 
-        ``result`` will be an ``ImageResult`` object containing the prediction
+        Alternatively we can also pass the image as a PIL image or numpy array:
+
+        >>> from PIL import Image
+        >>> image = Image.open("path/to/image.jpg")
+        >>> prediction = inferencer.predict(image=image)
+
+        >>> import numpy as np
+        >>> image = np.random.rand(224, 224, 3)
+        >>> prediction = inferencer.predict(image=image)
+
+        ``prediction`` will be an ``ImageResult`` object containing the prediction
         results. For example, to visualize the heatmap, we can do the following:
 
         >>> from matplotlib import pyplot as plt
@@ -151,8 +160,7 @@ class OpenVINOInferencer(Inferencer):
         Returns:
             np.ndarray: pre-processed image.
         """
-        transform = A.from_dict(self.metadata["transform"])
-        processed_image = transform(image=image)["image"]
+        processed_image = image
 
         if len(processed_image.shape) == 3:
             processed_image = np.expand_dims(processed_image, axis=0)
@@ -161,6 +169,60 @@ class OpenVINOInferencer(Inferencer):
             processed_image = processed_image.transpose(0, 3, 1, 2)
 
         return processed_image
+
+    def predict(
+        self,
+        image: str | Path | np.ndarray,
+        metadata: dict[str, Any] | None = None,
+    ) -> ImageResult:
+        """Perform a prediction for a given input image.
+
+        The main workflow is (i) pre-processing, (ii) forward-pass, (iii) post-process.
+
+        Args:
+            image (Union[str, np.ndarray]): Input image whose output is to be predicted.
+                It could be either a path to image or numpy array itself.
+
+            metadata: Metadata information such as shape, threshold.
+
+        Returns:
+            ImageResult: Prediction results to be visualized.
+        """
+        # Convert file path or string to image if necessary
+        if isinstance(image, str | Path):
+            image = Image.open(image)
+
+        # Convert PIL image to numpy array
+        if isinstance(image, Image.Image):
+            image = np.array(image, dtype=np.float32)
+        if not isinstance(image, np.ndarray):
+            msg = f"Input image must be a numpy array or a path to an image. Got {type(image)}"
+            raise TypeError(msg)
+
+        # Normalize numpy array to range [0, 1]
+        if image.dtype != np.float32:
+            image = image.astype(np.float32)
+        if image.max() > 1.0:
+            image /= 255.0
+
+        # Check if metadata is provided, if not use the default metadata.
+        if metadata is None:
+            metadata = self.metadata if hasattr(self, "metadata") else {}
+        metadata["image_shape"] = image.shape[:2]
+
+        processed_image = self.pre_process(image)
+        predictions = self.forward(processed_image)
+        output = self.post_process(predictions, metadata=metadata)
+
+        return ImageResult(
+            image=(image * 255).astype(np.uint8),
+            pred_score=output["pred_score"],
+            pred_label=output["pred_label"],
+            anomaly_map=output["anomaly_map"],
+            pred_mask=output["pred_mask"],
+            pred_boxes=output["pred_boxes"],
+            box_labels=output["box_labels"],
+        )
 
     def forward(self, image: np.ndarray) -> np.ndarray:
         """Forward-Pass input tensor to the model.
@@ -192,7 +254,7 @@ class OpenVINOInferencer(Inferencer):
 
         # Initialize the result variables.
         anomaly_map: np.ndarray | None = None
-        pred_label: float | None = None
+        pred_label: LabelName | None = None
         pred_mask: float | None = None
 
         # If predictions returns a single value, this means that the task is
@@ -209,7 +271,8 @@ class OpenVINOInferencer(Inferencer):
         # label to the prediction if the prediction score is greater
         # than the image threshold.
         if "image_threshold" in metadata:
-            pred_label = pred_score >= metadata["image_threshold"]
+            pred_idx = pred_score >= metadata["image_threshold"]
+            pred_label = LabelName.ABNORMAL if pred_idx else LabelName.NORMAL
 
         if task == TaskType.CLASSIFICATION:
             _, pred_score = self._normalize(pred_scores=pred_score, metadata=metadata)
@@ -222,7 +285,9 @@ class OpenVINOInferencer(Inferencer):
                 anomaly_maps=anomaly_map,
                 metadata=metadata,
             )
-            assert anomaly_map is not None
+            if anomaly_map is None:
+                msg = "Anomaly map cannot be None."
+                raise ValueError(msg)
 
             if "image_shape" in metadata and anomaly_map.shape != metadata["image_shape"]:
                 image_height = metadata["image_shape"][0]

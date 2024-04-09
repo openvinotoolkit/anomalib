@@ -14,7 +14,7 @@ In few-shot mode, a reference association module is introduced, which collects a
 
 ## Architecture
 
-![WinCLIP Architecture](../../../../../docs/source/images/winclip/architecture.png "WinCLIP Architecture")
+![WinCLIP Architecture](/docs/source/images/winclip/architecture.png "WinCLIP Architecture")
 
 ## Usage
 
@@ -22,13 +22,11 @@ WinCLIP is a zero-shot model, which means that we can directly evaluate the mode
 
 ### 0-Shot
 
-`anomalib test --model WinClip --data MVTec --data.image_size 240 --data.normalization clip`
+`anomalib test --model WinClip --data MVTec`
 
 ### 1-Shot
 
-`anomalib test --model WinClip --model.k_shot  1 --data MVTec --data.image_size 240 --data.normalization clip`
-
-> **Note:** The `data.image_size` and `data.normalization` parameters must be set to the above values to match the configuration in which the pre-trained CLIP model weights were obtained.
+`anomalib test --model WinClip --model.k_shot  1 --data MVTec`
 
 ## Parameters
 

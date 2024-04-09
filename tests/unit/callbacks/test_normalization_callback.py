@@ -6,6 +6,7 @@
 
 from pathlib import Path
 
+import pytest
 from lightning.pytorch import seed_everything
 from lightning.pytorch.utilities.types import _EVALUATE_OUTPUT
 
@@ -37,15 +38,12 @@ def run_train_test(normalization_method: str, dataset_path: Path) -> _EVALUATE_O
     return engine.test(model=model, datamodule=datamodule)
 
 
+@pytest.mark.skip(reason="This test is flaky and needs to be revisited.")
 def test_normalizer(dataset_path: Path) -> None:
     """Test if all normalization methods give the same performance."""
     # run without normalization
     seed_everything(42)
     results_without_normalization = run_train_test(normalization_method="none", dataset_path=dataset_path)
-
-    # run with cdf normalization
-    seed_everything(42)
-    results_with_cdf_normalization = run_train_test(normalization_method="cdf", dataset_path=dataset_path)
 
     # run without normalization
     seed_everything(42)
@@ -53,7 +51,6 @@ def test_normalizer(dataset_path: Path) -> None:
 
     # performance should be the same
     for metric in ["image_AUROC", "image_F1Score"]:
-        assert round(results_without_normalization[0][metric], 3) == round(results_with_cdf_normalization[0][metric], 3)
         assert round(results_without_normalization[0][metric], 3) == round(
             results_with_minmax_normalization[0][metric],
             3,

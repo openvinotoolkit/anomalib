@@ -32,8 +32,6 @@ class Cflow(AnomalyModule):
     """PL Lightning Module for the CFLOW algorithm.
 
     Args:
-        input_size (tuple[int, int], optional): Input image size.
-            Defaults to ``(256, 256)``.
         backbone (str, optional): Backbone CNN architecture.
             Defaults to ``"wide_resnet50_2"``.
         layers (Sequence[str], optional): Layers to extract features from.
@@ -58,7 +56,6 @@ class Cflow(AnomalyModule):
 
     def __init__(
         self,
-        input_size: tuple[int, int] = (256, 256),
         backbone: str = "wide_resnet50_2",
         layers: Sequence[str] = ("layer2", "layer3", "layer4"),
         pre_trained: bool = True,
@@ -73,7 +70,6 @@ class Cflow(AnomalyModule):
         super().__init__()
 
         self.model: CflowModel = CflowModel(
-            input_size=input_size,
             backbone=backbone,
             pre_trained=pre_trained,
             layers=layers,
@@ -123,7 +119,6 @@ class Cflow(AnomalyModule):
         del args, kwargs  # These variables are not used.
 
         opt = self.optimizers()
-        self.model.encoder.eval()
 
         images: torch.Tensor = batch["image"]
         activation = self.model.encoder(images)
@@ -152,7 +147,9 @@ class Cflow(AnomalyModule):
             decoder = self.model.decoders[layer_idx].to(images.device)
 
             fiber_batches = embedding_length // self.model.fiber_batch_size  # number of fiber batches
-            assert fiber_batches > 0, "Make sure we have enough fibers, otherwise decrease N or batch-size!"
+            if fiber_batches <= 0:
+                msg = "Make sure we have enough fibers, otherwise decrease N or batch-size!"
+                raise ValueError(msg)
 
             for batch_num in range(fiber_batches):  # per-fiber processing
                 opt.zero_grad()

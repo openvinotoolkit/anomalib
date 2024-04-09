@@ -31,10 +31,10 @@ def masks_to_boxes(
     if anomaly_maps is not None:
         anomaly_maps = anomaly_maps.view((-1,) + masks.shape[-2:])
 
-    if masks.is_cuda:
-        batch_comps = connected_components_gpu(masks).squeeze(1)
-    else:
+    if masks.is_cpu:
         batch_comps = connected_components_cpu(masks).squeeze(1)
+    else:
+        batch_comps = connected_components_gpu(masks).squeeze(1)
 
     batch_boxes = []
     batch_scores = []

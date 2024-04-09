@@ -8,7 +8,6 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
-import albumentations as A  # noqa: N812
 import cv2
 import numpy as np
 import torch
@@ -16,7 +15,10 @@ from omegaconf import DictConfig
 from torch import nn
 
 from anomalib import TaskType
+from anomalib.data import LabelName
+from anomalib.data.utils import read_image
 from anomalib.data.utils.boxes import masks_to_boxes
+from anomalib.utils.visualization import ImageResult
 
 from .base_inferencer import Inferencer
 
@@ -40,9 +42,8 @@ class TorchInferencer(Inferencer):
         This will ensure that the model is loaded on the ``CPU`` device. To make
         a prediction, we can simply call the ``predict`` method:
 
-        >>> import cv2
-        >>> image = cv2.imread("path/to/image.jpg")
-        >>> image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        >>> from anomalib.data.utils import read_image
+        >>> image = read_image("path/to/image.jpg")
         >>> result = inferencer.predict(image)
 
         ``result`` will be an ``ImageResult`` object containing the prediction
@@ -65,11 +66,10 @@ class TorchInferencer(Inferencer):
     ) -> None:
         self.device = self._get_device(device)
 
-        # Load the model weights, metadata and data transforms.
+        # Load the model weights and metadata
         self.checkpoint = self._load_checkpoint(path)
         self.model = self.load_model(path)
         self.metadata = self._load_metadata(path)
-        self.transform = A.from_dict(self.metadata["transform"])
 
     @staticmethod
     def _get_device(device: str) -> torch.device:
@@ -159,8 +159,47 @@ class TorchInferencer(Inferencer):
         model.eval()
         return model.to(self.device)
 
+    def predict(
+        self,
+        image: str | Path | torch.Tensor,
+        metadata: dict[str, Any] | None = None,
+    ) -> ImageResult:
+        """Perform a prediction for a given input image.
+
+        The main workflow is (i) pre-processing, (ii) forward-pass, (iii) post-process.
+
+        Args:
+            image (Union[str, np.ndarray]): Input image whose output is to be predicted.
+                It could be either a path to image or numpy array itself.
+
+            metadata: Metadata information such as shape, threshold.
+
+        Returns:
+            ImageResult: Prediction results to be visualized.
+        """
+        if metadata is None:
+            metadata = self.metadata if hasattr(self, "metadata") else {}
+        if isinstance(image, str | Path):
+            image = read_image(image, as_tensor=True)
+
+        metadata["image_shape"] = image.shape[-2:]
+
+        processed_image = self.pre_process(image)
+        predictions = self.forward(processed_image)
+        output = self.post_process(predictions, metadata=metadata)
+
+        return ImageResult(
+            image=(image.numpy().transpose(1, 2, 0) * 255).astype(np.uint8),
+            pred_score=output["pred_score"],
+            pred_label=output["pred_label"],
+            anomaly_map=output["anomaly_map"],
+            pred_mask=output["pred_mask"],
+            pred_boxes=output["pred_boxes"],
+            box_labels=output["box_labels"],
+        )
+
     def pre_process(self, image: np.ndarray) -> torch.Tensor:
-        """Pre process the input image by applying transformations.
+        """Pre process the input image.
 
         Args:
             image (np.ndarray): Input image
@@ -168,12 +207,10 @@ class TorchInferencer(Inferencer):
         Returns:
             Tensor: pre-processed image.
         """
-        processed_image = self.transform(image=image)["image"]
+        if len(image) == 3:
+            image = image.unsqueeze(0)
 
-        if len(processed_image) == 3:
-            processed_image = processed_image.unsqueeze(0)
-
-        return processed_image.to(self.device)
+        return image.to(self.device)
 
     def forward(self, image: torch.Tensor) -> torch.Tensor:
         """Forward-Pass input tensor to the model.
@@ -230,11 +267,11 @@ class TorchInferencer(Inferencer):
         # Case III: Predictions could be a list of tensors.
         elif isinstance(predictions, Sequence):
             if isinstance(predictions[1], (torch.Tensor)):
-                anomaly_map, pred_score = predictions
+                pred_score, anomaly_map = predictions
                 anomaly_map = anomaly_map.detach().cpu().numpy()
                 pred_score = pred_score.detach().cpu().numpy()
             else:
-                anomaly_map, pred_score = predictions
+                pred_score, anomaly_map = predictions
                 pred_score = pred_score.detach()
         else:
             msg = (
@@ -246,10 +283,10 @@ class TorchInferencer(Inferencer):
         # Common practice in anomaly detection is to assign anomalous
         # label to the prediction if the prediction score is greater
         # than the image threshold.
-        pred_label: str | None = None
+        pred_label: LabelName | None = None
         if "image_threshold" in metadata:
             pred_idx = pred_score >= metadata["image_threshold"]
-            pred_label = "Anomalous" if pred_idx else "Normal"
+            pred_label = LabelName.ABNORMAL if pred_idx else LabelName.NORMAL
 
         pred_mask: np.ndarray | None = None
         if "pixel_threshold" in metadata:

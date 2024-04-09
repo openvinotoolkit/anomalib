@@ -166,7 +166,7 @@ class DummyVideoGenerator(DummyImageGenerator):
         masks: list[np.ndarray] = []
         state = 1 if first_label == LabelName.NORMAL else -1
         for _ in range(length):
-            state = state * -1 if np.random.random() < p_state_switch else state
+            state = state * -1 if self.rng.random() < p_state_switch else state
             label = LabelName.NORMAL if state == 1 else LabelName.ABNORMAL
             frame, mask = self.generate_image(label=label)
             frames.append(frame)
@@ -409,7 +409,7 @@ class DummyImageDatasetGenerator(DummyDatasetGenerator):
                 num_images = self.num_val
             else:
                 num_images = self.num_test
-            
+
             for i in range(num_images):
                 label = LabelName.NORMAL
                 image_filename = path / f"{i:03}{extension}"

@@ -10,10 +10,10 @@ import torch
 from torch import nn
 from torch.nn import functional as F  # noqa: N812
 
-from anomalib.models.components import PCA, DynamicBufferModule, TimmFeatureExtractor
+from anomalib.models.components import PCA, DynamicBufferMixin, TimmFeatureExtractor
 
 
-class SingleClassGaussian(DynamicBufferModule):
+class SingleClassGaussian(DynamicBufferMixin):
     """Model Gaussian distribution over a set of points."""
 
     def __init__(self) -> None:
@@ -74,7 +74,6 @@ class DFMModel(nn.Module):
     Args:
         backbone (str): Pre-trained model backbone.
         layer (str): Layer from which to extract features.
-        input_size (tuple[int, int]): Input size for the model.
         pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.
             Defaults to ``True``.
         pooling_kernel_size (int, optional): Kernel size to pool features extracted from the CNN.
@@ -90,7 +89,6 @@ class DFMModel(nn.Module):
         self,
         backbone: str,
         layer: str,
-        input_size: tuple[int, int],
         pre_trained: bool = True,
         pooling_kernel_size: int = 4,
         n_comps: float = 0.97,
@@ -104,7 +102,6 @@ class DFMModel(nn.Module):
         self.gaussian_model = SingleClassGaussian()
         self.score_type = score_type
         self.layer = layer
-        self.input_size = input_size if isinstance(input_size, tuple) else tuple(input_size)
         self.feature_extractor = TimmFeatureExtractor(
             backbone=self.backbone,
             pre_trained=pre_trained,
@@ -141,14 +138,13 @@ class DFMModel(nn.Module):
         elif self.score_type == "fre":
             feats_reconstructed = self.pca_model.inverse_transform(feats_projected)
             fre = torch.square(features - feats_reconstructed).reshape(feature_shapes)
-            fre_map = torch.unsqueeze(torch.sum(fre, dim=1), 1)
-            score_map = F.interpolate(fre_map, size=self.input_size, mode="bilinear", align_corners=False)
+            score_map = torch.unsqueeze(torch.sum(fre, dim=1), 1)
             score = torch.sum(torch.square(features - feats_reconstructed), dim=1)
         else:
             msg = f"unsupported score type: {self.score_type}"
             raise ValueError(msg)
 
-        return score if self.score_type == "nll" else (score_map, score)
+        return (score, None) if self.score_type == "nll" else (score, score_map)
 
     def get_features(self, batch: torch.Tensor) -> torch.Tensor:
         """Extract features from the pretrained network.
@@ -178,4 +174,7 @@ class DFMModel(nn.Module):
             Tensor: Scores
         """
         feature_vector, feature_shapes = self.get_features(batch)
-        return self.score(feature_vector.view(feature_vector.shape[:2]), feature_shapes)
+        score, score_map = self.score(feature_vector.view(feature_vector.shape[:2]), feature_shapes)
+        if score_map is not None:
+            score_map = F.interpolate(score_map, size=batch.shape[-2:], mode="bilinear", align_corners=False)
+        return score, score_map

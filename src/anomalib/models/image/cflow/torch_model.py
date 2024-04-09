@@ -3,7 +3,6 @@
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 from collections.abc import Sequence
 
 import einops
@@ -20,7 +19,6 @@ class CflowModel(nn.Module):
     """CFLOW: Conditional Normalizing Flows.
 
     Args:
-        input_size (tuple[int, int]): Input image size.
         backbone (str): Backbone CNN architecture.
         layers (Sequence[str]): Layers to extract features from.
         pre_trained (bool): Whether to use pre-trained weights.
@@ -41,7 +39,6 @@ class CflowModel(nn.Module):
 
     def __init__(
         self,
-        input_size: tuple[int, int],
         backbone: str,
         layers: Sequence[str],
         pre_trained: bool = True,
@@ -60,7 +57,11 @@ class CflowModel(nn.Module):
         self.dec_arch = decoder
         self.pool_layers = layers
 
-        self.encoder = TimmFeatureExtractor(backbone=self.backbone, layers=self.pool_layers, pre_trained=pre_trained)
+        self.encoder = TimmFeatureExtractor(
+            backbone=self.backbone,
+            layers=self.pool_layers,
+            pre_trained=pre_trained,
+        ).eval()
         self.pool_dims = self.encoder.out_dims
         self.decoders = nn.ModuleList(
             [
@@ -79,7 +80,7 @@ class CflowModel(nn.Module):
         for parameters in self.encoder.parameters():
             parameters.requires_grad = False
 
-        self.anomaly_map_generator = AnomalyMapGenerator(image_size=input_size, pool_layers=self.pool_layers)
+        self.anomaly_map_generator = AnomalyMapGenerator(pool_layers=self.pool_layers)
 
     def forward(self, images: torch.Tensor) -> torch.Tensor:
         """Forward-pass images into the network to extract encoder features and compute probability.
@@ -142,7 +143,12 @@ class CflowModel(nn.Module):
                 log_prob = decoder_log_prob / dim_feature_vector  # likelihood per dim
                 distribution[layer_idx] = torch.cat((distribution[layer_idx], log_prob))
 
-        output = self.anomaly_map_generator(distribution=distribution, height=height, width=width)
+        output = self.anomaly_map_generator(
+            distribution=distribution,
+            height=height,
+            width=width,
+            image_size=images.shape[-2:],
+        )
         self.decoders.train()
 
         return output.to(images.device)

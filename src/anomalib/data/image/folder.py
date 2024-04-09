@@ -6,23 +6,21 @@ This script creates a custom dataset from a folder.
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 from collections.abc import Sequence
 from pathlib import Path
 
-import albumentations as A  # noqa: N812
 from pandas import DataFrame
+from torchvision.transforms.v2 import Transform
 
 from anomalib import TaskType
 from anomalib.data.base import AnomalibDataModule, AnomalibDataset
+from anomalib.data.errors import MisMatchError
 from anomalib.data.utils import (
     DirType,
-    InputNormalizationMethod,
     LabelName,
     Split,
     TestSplitMode,
     ValSplitMode,
-    get_transforms,
 )
 from anomalib.data.utils.path import _prepare_files_labels, validate_and_resolve_path
 
@@ -104,7 +102,9 @@ def make_folder_dataset(
     abnormal_dir = _resolve_path_and_convert_to_list(abnormal_dir)
     normal_test_dir = _resolve_path_and_convert_to_list(normal_test_dir)
     mask_dir = _resolve_path_and_convert_to_list(mask_dir)
-    assert len(normal_dir) > 0, "A folder location must be provided in normal_dir."
+    if len(normal_dir) == 0:
+        msg = "A folder location must be provided in normal_dir."
+        raise ValueError(msg)
 
     filenames = []
     labels = []
@@ -146,13 +146,16 @@ def make_folder_dataset(
         samples = samples.astype({"mask_path": "str"})
 
         # make sure all every rgb image has a corresponding mask image.
-        assert (
+        if not (
             samples.loc[samples.label_index == LabelName.ABNORMAL]
             .apply(lambda x: Path(x.image_path).stem in Path(x.mask_path).stem, axis=1)
             .all()
-        ), "Mismatch between anomalous images and mask images. Make sure the mask files \
-            folder follow the same naming convention as the anomalous images in the dataset \
-            (e.g. image: '000.png', mask: '000.png')."
+        ):
+            msg = """Mismatch between anomalous images and mask images. Make sure the mask files "
+                     "folder follow the same naming convention as the anomalous images in the dataset "
+                     "(e.g. image: '000.png', mask: '000.png')."""
+            raise MisMatchError(msg)
+
     else:
         samples["mask_path"] = ""
 
@@ -185,8 +188,10 @@ class FolderDataset(AnomalibDataset):
     This class is used to create a dataset from a folder. The class utilizes the Torch Dataset class.
 
     Args:
+        name (str): Name of the dataset. This is used to name the datamodule, especially when logging/saving.
         task (TaskType): Task type. (``classification``, ``detection`` or ``segmentation``).
-        transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
+        transform (Transform, optional): Transforms that should be applied to the input images.
+            Defaults to ``None``.
         normal_dir (str | Path | Sequence): Path to the directory containing normal images.
         root (str | Path | None): Root folder of the dataset.
             Defaults to ``None``.
@@ -231,9 +236,10 @@ class FolderDataset(AnomalibDataset):
 
     def __init__(
         self,
+        name: str,
         task: TaskType,
-        transform: A.Compose,
         normal_dir: str | Path | Sequence[str | Path],
+        transform: Transform | None = None,
         root: str | Path | None = None,
         abnormal_dir: str | Path | Sequence[str | Path] | None = None,
         normal_test_dir: str | Path | Sequence[str | Path] | None = None,
@@ -243,6 +249,7 @@ class FolderDataset(AnomalibDataset):
     ) -> None:
         super().__init__(task, transform)
 
+        self._name = name
         self.split = split
         self.root = root
         self.normal_dir = normal_dir
@@ -251,8 +258,6 @@ class FolderDataset(AnomalibDataset):
         self.mask_dir = mask_dir
         self.extensions = extensions
 
-    def _setup(self) -> None:
-        """Assign samples."""
         self.samples = make_folder_dataset(
             root=self.root,
             normal_dir=self.normal_dir,
@@ -263,11 +268,20 @@ class FolderDataset(AnomalibDataset):
             extensions=self.extensions,
         )
 
+    @property
+    def name(self) -> str:
+        """Name of the dataset.
+
+        Folder dataset overrides the name property to provide a custom name.
+        """
+        return self._name
+
 
 class Folder(AnomalibDataModule):
     """Folder DataModule.
 
     Args:
+        name (str): Name of the dataset. This is used to name the datamodule, especially when logging/saving.
         normal_dir (str | Path | Sequence): Name of the directory containing normal images.
         root (str | Path | None): Path to the root folder containing normal and abnormal dirs.
             Defaults to ``None``.
@@ -285,13 +299,6 @@ class Folder(AnomalibDataModule):
         extensions (tuple[str, ...] | None, optional): Type of the image extensions to read from the
             directory.
             Defaults to ``None``.
-        image_size (int | tuple[int, int] | None, optional): Size of the input image.
-            Defaults to ``(256, 256)``.
-        center_crop (int | tuple[int, int] | None, optional): When provided, the images will be center-cropped
-            to the provided dimensions.
-            Defaults to ``None``.
-        normalization (InputNormalizationMethod | str): Normalization method to apply to the input images.
-            Defaults to ``InputNormalizationMethod.IMAGENET``.
         train_batch_size (int, optional): Training batch size.
             Defaults to ``32``.
         eval_batch_size (int, optional): Validation, test and predict batch size.
@@ -300,11 +307,13 @@ class Folder(AnomalibDataModule):
             Defaults to ``8``.
         task (TaskType, optional): Task type. Could be ``classification``, ``detection`` or ``segmentation``.
             Defaults to ``segmentation``.
-        transform_config_train (str | A.Compose | None, optional): Config for pre-processing
-            during training.
+        image_size (tuple[int, int], optional): Size to which input images should be resized.
             Defaults to ``None``.
-        transform_config_val (str | A.Compose | None, optional): Config for pre-processing
-            during validation.
+        transform (Transform, optional): Transforms that should be applied to the input images.
+            Defaults to ``None``.
+        train_transform (Transform, optional): Transforms that should be applied to the input images during training.
+            Defaults to ``None``.
+        eval_transform (Transform, optional): Transforms that should be applied to the input images during evaluation.
             Defaults to ``None``.
         test_split_mode (TestSplitMode): Setting that determines how the testing subset is obtained.
             Defaults to ``TestSplitMode.FROM_DIR``.
@@ -375,6 +384,7 @@ class Folder(AnomalibDataModule):
 
     def __init__(
         self,
+        name: str,
         normal_dir: str | Path | Sequence[str | Path],
         root: str | Path | None = None,
         abnormal_dir: str | Path | Sequence[str | Path] | None = None,
@@ -382,21 +392,30 @@ class Folder(AnomalibDataModule):
         mask_dir: str | Path | Sequence[str | Path] | None = None,
         normal_split_ratio: float = 0.2,
         extensions: tuple[str] | None = None,
-        image_size: int | tuple[int, int] = (256, 256),
-        center_crop: int | tuple[int, int] | None = None,
-        normalization: InputNormalizationMethod | str = InputNormalizationMethod.IMAGENET,
         train_batch_size: int = 32,
         eval_batch_size: int = 32,
         num_workers: int = 8,
-        task: TaskType = TaskType.SEGMENTATION,
-        transform_config_train: str | A.Compose | None = None,
-        transform_config_eval: str | A.Compose | None = None,
-        test_split_mode: TestSplitMode = TestSplitMode.FROM_DIR,
+        task: TaskType | str = TaskType.SEGMENTATION,
+        image_size: tuple[int, int] | None = None,
+        transform: Transform | None = None,
+        train_transform: Transform | None = None,
+        eval_transform: Transform | None = None,
+        test_split_mode: TestSplitMode | str = TestSplitMode.FROM_DIR,
         test_split_ratio: float = 0.2,
-        val_split_mode: ValSplitMode = ValSplitMode.FROM_TEST,
+        val_split_mode: ValSplitMode | str = ValSplitMode.FROM_TEST,
         val_split_ratio: float = 0.5,
         seed: int | None = None,
     ) -> None:
+        self._name = name
+        self.root = root
+        self.normal_dir = normal_dir
+        self.abnormal_dir = abnormal_dir
+        self.normal_test_dir = normal_test_dir
+        self.mask_dir = mask_dir
+        self.task = TaskType(task)
+        self.extensions = extensions
+        test_split_mode = TestSplitMode(test_split_mode)
+        val_split_mode = ValSplitMode(val_split_mode)
         super().__init__(
             train_batch_size=train_batch_size,
             eval_batch_size=eval_batch_size,
@@ -405,6 +424,10 @@ class Folder(AnomalibDataModule):
             test_split_ratio=test_split_ratio,
             val_split_mode=val_split_mode,
             val_split_ratio=val_split_ratio,
+            image_size=image_size,
+            transform=transform,
+            train_transform=train_transform,
+            eval_transform=eval_transform,
             seed=seed,
         )
 
@@ -418,39 +441,38 @@ class Folder(AnomalibDataModule):
             )
 
         self.normal_split_ratio = normal_split_ratio
-        transform_train = get_transforms(
-            config=transform_config_train,
-            image_size=image_size,
-            center_crop=center_crop,
-            normalization=InputNormalizationMethod(normalization),
-        )
-        transform_eval = get_transforms(
-            config=transform_config_eval,
-            image_size=image_size,
-            center_crop=center_crop,
-            normalization=InputNormalizationMethod(normalization),
-        )
 
+    def _setup(self, _stage: str | None = None) -> None:
         self.train_data = FolderDataset(
-            task=task,
-            transform=transform_train,
+            name=self.name,
+            task=self.task,
+            transform=self.train_transform,
             split=Split.TRAIN,
-            root=root,
-            normal_dir=normal_dir,
-            abnormal_dir=abnormal_dir,
-            normal_test_dir=normal_test_dir,
-            mask_dir=mask_dir,
-            extensions=extensions,
+            root=self.root,
+            normal_dir=self.normal_dir,
+            abnormal_dir=self.abnormal_dir,
+            normal_test_dir=self.normal_test_dir,
+            mask_dir=self.mask_dir,
+            extensions=self.extensions,
         )
 
         self.test_data = FolderDataset(
-            task=task,
-            transform=transform_eval,
+            name=self.name,
+            task=self.task,
+            transform=self.eval_transform,
             split=Split.TEST,
-            root=root,
-            normal_dir=normal_dir,
-            abnormal_dir=abnormal_dir,
-            normal_test_dir=normal_test_dir,
-            mask_dir=mask_dir,
-            extensions=extensions,
+            root=self.root,
+            normal_dir=self.normal_dir,
+            abnormal_dir=self.abnormal_dir,
+            normal_test_dir=self.normal_test_dir,
+            mask_dir=self.mask_dir,
+            extensions=self.extensions,
         )
+
+    @property
+    def name(self) -> str:
+        """Name of the datamodule.
+
+        Folder datamodule overrides the name property to provide a custom name.
+        """
+        return self._name

@@ -6,7 +6,6 @@
 
 import torch
 from einops import rearrange
-from omegaconf import ListConfig
 from torch import nn
 from torch.nn import functional as F  # noqa: N812
 
@@ -18,12 +17,10 @@ class AnomalyMapGenerator(nn.Module):
 
     def __init__(
         self,
-        image_size: ListConfig | tuple,
         num_nearest_neighbors: int,
         sigma: int = 4,
     ) -> None:
         super().__init__()
-        self.image_size = image_size if isinstance(image_size, tuple) else tuple(image_size)
         self.num_nearest_neighbors = num_nearest_neighbors
         self.sigma = sigma
 
@@ -47,17 +44,23 @@ class AnomalyMapGenerator(nn.Module):
         score = rearrange(distance, "b (h w) c -> b c h w", h=scale[0], w=scale[1])
         return score.detach()
 
-    def compute_anomaly_map(self, score: torch.Tensor) -> torch.Tensor:
+    def compute_anomaly_map(
+        self,
+        score: torch.Tensor,
+        image_size: tuple[int, int] | torch.Size | None = None,
+    ) -> torch.Tensor:
         """Compute anomaly map based on the score.
 
         Args:
             score (torch.Tensor): Score tensor.
+            image_size (tuple[int, int] | torch.Size | None, optional): Size of the input image.
 
         Returns:
             Tensor: Anomaly map.
         """
         anomaly_map = score.mean(dim=1, keepdim=True)
-        anomaly_map = F.interpolate(anomaly_map, size=self.image_size, mode="bilinear", align_corners=False)
+        if image_size is not None:
+            anomaly_map = F.interpolate(anomaly_map, size=image_size, mode="bilinear", align_corners=False)
 
         gaussian_blur = GaussianBlur2d(sigma=self.sigma).to(score.device)
         return gaussian_blur(anomaly_map)  # pylint: disable=not-callable
@@ -77,6 +80,7 @@ class AnomalyMapGenerator(nn.Module):
 
         distance: torch.Tensor = kwargs["distance"]
         scale: tuple[int, int] = kwargs["scale"]
+        image_size: tuple[int, int] | torch.Size | None = kwargs.get("image_size", None)
 
         score = self.compute_score(distance=distance, scale=scale)
-        return self.compute_anomaly_map(score)
+        return self.compute_anomaly_map(score, image_size=image_size)

@@ -9,13 +9,13 @@ import torch
 from torch.distributions.multivariate_normal import MultivariateNormal
 from torch.nn.functional import one_hot
 
-from anomalib.models.components.base import DynamicBufferModule
+from anomalib.models.components.base import DynamicBufferMixin
 from anomalib.models.components.cluster.kmeans import KMeans
 
 logger = logging.getLogger(__name__)
 
 
-class GaussianMixture(DynamicBufferModule):
+class GaussianMixture(DynamicBufferMixin):
     """Gaussian Mixture Model.
 
     Args:

@@ -10,7 +10,7 @@ import torch
 from torch import Tensor, nn
 
 from anomalib.metrics.min_max import MinMax
-from anomalib.models.components.base import DynamicBufferModule
+from anomalib.models.components.base import DynamicBufferMixin
 from anomalib.models.components.cluster.gmm import GaussianMixture
 
 from .features import FeatureType
@@ -89,7 +89,9 @@ class CombinedDensityEstimator(BaseDensityEstimator):
             self.appearance_estimator = GroupedKNNEstimator(n_neighbors_deep)
         if self.use_pose_features:
             self.pose_estimator = GroupedKNNEstimator(n_neighbors=n_neighbors_pose)
-        assert any((use_pose_features, use_deep_features, use_velocity_features))
+        if not any((use_pose_features, use_deep_features, use_velocity_features)):
+            msg = "At least one feature stream must be enabled."
+            raise ValueError(msg)
 
     def update(self, features: dict[FeatureType, torch.Tensor], group: str | None = None) -> None:
         """Update the density estimators for the different feature types.
@@ -143,7 +145,7 @@ class CombinedDensityEstimator(BaseDensityEstimator):
         return region_scores, image_score
 
 
-class GroupedKNNEstimator(DynamicBufferModule, BaseDensityEstimator):
+class GroupedKNNEstimator(DynamicBufferMixin, BaseDensityEstimator):
     """Grouped KNN density estimator.
 
     Keeps track of the group (e.g. video id) from which the features were sampled for normalization purposes.

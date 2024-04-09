@@ -36,7 +36,6 @@ class TestOpenVINOInferenceEntrypoint:
         get_functions: tuple[Callable, Callable],
         ckpt_path: Callable[[str], Path],
         get_dummy_inference_image: str,
-        transforms_config: dict,
     ) -> None:
         """Test openvino_inference.py."""
         get_parser, infer = get_functions
@@ -45,10 +44,8 @@ class TestOpenVINOInferenceEntrypoint:
 
         # export OpenVINO model
         export_to_openvino(
-            export_root=_ckpt_path.parent.parent,
+            export_root=_ckpt_path.parent.parent.parent,
             model=model,
-            input_size=(256, 256),
-            transform=transforms_config,
             ov_args={},
             task=TaskType.SEGMENTATION,
         )
@@ -56,13 +53,13 @@ class TestOpenVINOInferenceEntrypoint:
         arguments = get_parser().parse_args(
             [
                 "--weights",
-                str(_ckpt_path.parent) + "/openvino/model.bin",
+                str(_ckpt_path.parent.parent) + "/openvino/model.bin",
                 "--metadata",
-                str(_ckpt_path.parent) + "/openvino/metadata.json",
+                str(_ckpt_path.parent.parent) + "/openvino/metadata.json",
                 "--input",
                 get_dummy_inference_image,
                 "--output",
-                str(_ckpt_path.parent) + "/output.png",
+                str(_ckpt_path.parent.parent) + "/output.png",
             ],
         )
         infer(arguments)

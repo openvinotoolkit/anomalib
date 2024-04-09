@@ -10,7 +10,7 @@ import torch
 from torch import nn
 from torch.nn import functional as F  # noqa: N812
 
-from anomalib.models.components import DynamicBufferModule, KCenterGreedy, TimmFeatureExtractor
+from anomalib.models.components import DynamicBufferMixin, KCenterGreedy, TimmFeatureExtractor
 
 from .anomaly_map import AnomalyMapGenerator
 
@@ -18,11 +18,10 @@ if TYPE_CHECKING:
     from anomalib.data.utils.tiler import Tiler
 
 
-class PatchcoreModel(DynamicBufferModule, nn.Module):
+class PatchcoreModel(DynamicBufferMixin, nn.Module):
     """Patchcore Module.
 
     Args:
-        input_size (tuple[int, int]): Input size for the model.
         layers (list[str]): Layers used for feature extraction
         backbone (str, optional): Pre-trained model backbone.
             Defaults to ``resnet18``.
@@ -34,7 +33,6 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
 
     def __init__(
         self,
-        input_size: tuple[int, int],
         layers: Sequence[str],
         backbone: str = "wide_resnet50_2",
         pre_trained: bool = True,
@@ -45,16 +43,15 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
 
         self.backbone = backbone
         self.layers = layers
-        self.input_size = input_size
         self.num_neighbors = num_neighbors
 
         self.feature_extractor = TimmFeatureExtractor(
             backbone=self.backbone,
             pre_trained=pre_trained,
             layers=self.layers,
-        )
+        ).eval()
         self.feature_pooler = torch.nn.AvgPool2d(3, 1, 1)
-        self.anomaly_map_generator = AnomalyMapGenerator(input_size=input_size)
+        self.anomaly_map_generator = AnomalyMapGenerator()
 
         self.register_buffer("memory_bank", torch.Tensor())
         self.memory_bank: torch.Tensor
@@ -73,6 +70,7 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
         Returns:
             Tensor | dict[str, torch.Tensor]: Embedding for training, anomaly map and anomaly score for testing.
         """
+        output_size = input_tensor.shape[-2:]
         if self.tiler:
             input_tensor = self.tiler.tile(input_tensor)
 
@@ -101,7 +99,7 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
             # reshape to w, h
             patch_scores = patch_scores.reshape((batch_size, 1, width, height))
             # get anomaly map
-            anomaly_map = self.anomaly_map_generator(patch_scores)
+            anomaly_map = self.anomaly_map_generator(patch_scores, output_size)
 
             output = {"anomaly_map": anomaly_map, "pred_score": pred_score}
 

@@ -1,8 +1,10 @@
-"""FastFlow Lightning Model Implementation."""
+"""FastFlow Lightning Model Implementation.
+
+https://arxiv.org/abs/2111.07677
+"""
 
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
-
 
 from typing import Any
 
@@ -21,8 +23,6 @@ class Fastflow(AnomalyModule):
     """PL Lightning Module for the FastFlow algorithm.
 
     Args:
-        input_size (tuple[int, int]): Model input size.
-            Defaults to ``(256, 256)``.
         backbone (str): Backbone CNN network
             Defaults to ``resnet18``.
         pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.
@@ -37,7 +37,6 @@ class Fastflow(AnomalyModule):
 
     def __init__(
         self,
-        input_size: tuple[int, int] = (256, 256),
         backbone: str = "resnet18",
         pre_trained: bool = True,
         flow_steps: int = 8,
@@ -46,15 +45,28 @@ class Fastflow(AnomalyModule):
     ) -> None:
         super().__init__()
 
-        self.model = FastflowModel(
-            input_size=input_size,
-            backbone=backbone,
-            pre_trained=pre_trained,
-            flow_steps=flow_steps,
-            conv3x3_only=conv3x3_only,
-            hidden_ratio=hidden_ratio,
-        )
+        self.backbone = backbone
+        self.pre_trained = pre_trained
+        self.flow_steps = flow_steps
+        self.conv3x3_only = conv3x3_only
+        self.hidden_ratio = hidden_ratio
+
+        self.model: FastflowModel
         self.loss = FastflowLoss()
+
+    def _setup(self) -> None:
+        if self.input_size is None:
+            msg = "Fastflow needs input size to build torch model."
+            raise ValueError(msg)
+
+        self.model = FastflowModel(
+            input_size=self.input_size,
+            backbone=self.backbone,
+            pre_trained=self.pre_trained,
+            flow_steps=self.flow_steps,
+            conv3x3_only=self.conv3x3_only,
+            hidden_ratio=self.hidden_ratio,
+        )
 
     def training_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> STEP_OUTPUT:
         """Perform the training step input and return the loss.

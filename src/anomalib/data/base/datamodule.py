@@ -1,16 +1,18 @@
 """Anomalib datamodule base class."""
 
-# Copyright (C) 2022 Intel Corporation
+# Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 
 import logging
-from abc import ABC
+from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any
 
 from lightning.pytorch import LightningDataModule
+from lightning.pytorch.trainer.states import TrainerFn
 from lightning.pytorch.utilities.types import EVAL_DATALOADERS, TRAIN_DATALOADERS
 from torch.utils.data.dataloader import DataLoader, default_collate
+from torchvision.transforms.v2 import Resize, Transform
 
 from anomalib.data.utils import TestSplitMode, ValSplitMode, random_split, split_by_label
 from anomalib.data.utils.synthetic import SyntheticAnomalyDataset
@@ -67,6 +69,14 @@ class AnomalibDataModule(LightningDataModule, ABC):
             Defaults to ``None``.
         test_split_ratio (float): Fraction of the train images held out for testing.
             Defaults to ``None``.
+        image_size (tuple[int, int], optional): Size to which input images should be resized.
+            Defaults to ``None``.
+        transform (Transform, optional): Transforms that should be applied to the input images.
+            Defaults to ``None``.
+        train_transform (Transform, optional): Transforms that should be applied to the input images during training.
+            Defaults to ``None``.
+        eval_transform (Transform, optional): Transforms that should be applied to the input images during evaluation.
+            Defaults to ``None``.
         seed (int | None, optional): Seed used during random subset splitting.
             Defaults to ``None``.
     """
@@ -76,27 +86,44 @@ class AnomalibDataModule(LightningDataModule, ABC):
         train_batch_size: int,
         eval_batch_size: int,
         num_workers: int,
-        val_split_mode: ValSplitMode,
+        val_split_mode: ValSplitMode | str,
         val_split_ratio: float,
-        test_split_mode: TestSplitMode | None = None,
+        test_split_mode: TestSplitMode | str | None = None,
         test_split_ratio: float | None = None,
+        image_size: tuple[int, int] | None = None,
+        transform: Transform | None = None,
+        train_transform: Transform | None = None,
+        eval_transform: Transform | None = None,
         seed: int | None = None,
     ) -> None:
         super().__init__()
         self.train_batch_size = train_batch_size
         self.eval_batch_size = eval_batch_size
         self.num_workers = num_workers
-        self.test_split_mode = test_split_mode
+        self.test_split_mode = TestSplitMode(test_split_mode) if test_split_mode else TestSplitMode.NONE
         self.test_split_ratio = test_split_ratio
-        self.val_split_mode = val_split_mode
+        self.val_split_mode = ValSplitMode(val_split_mode)
         self.val_split_ratio = val_split_ratio
+        self.image_size = image_size
         self.seed = seed
+
+        # set transforms
+        self._train_transform = train_transform or transform
+        self._eval_transform = eval_transform or transform
 
         self.train_data: AnomalibDataset
         self.val_data: AnomalibDataset
         self.test_data: AnomalibDataset
 
         self._samples: DataFrame | None = None
+        self._category: str = ""
+
+        self._is_setup = False  # flag to track if setup has been called from the trainer
+
+    @property
+    def name(self) -> str:
+        """Name of the datamodule."""
+        return self.__class__.__name__
 
     def setup(self, stage: str | None = None) -> None:
         """Set up train, validation and test data.
@@ -105,10 +132,16 @@ class AnomalibDataModule(LightningDataModule, ABC):
             stage: str | None:  Train/Val/Test stages.
                 Defaults to ``None``.
         """
-        if not self.is_setup:
+        has_subset = any(hasattr(self, subset) for subset in ["train_data", "val_data", "test_data"])
+        if not has_subset or not self._is_setup:
             self._setup(stage)
-        assert self.is_setup
+            self._create_test_split()
+            self._create_val_split()
+            if isinstance(stage, TrainerFn):
+                # only set the flag if the stage is a TrainerFn, which means the setup has been called from a trainer
+                self._is_setup = True
 
+    @abstractmethod
     def _setup(self, _stage: str | None = None) -> None:
         """Set up the datasets and perform dynamic subset splitting.
 
@@ -121,14 +154,17 @@ class AnomalibDataModule(LightningDataModule, ABC):
             the test set must therefore be created as early as the `fit` stage.
 
         """
-        assert self.train_data is not None
-        assert self.test_data is not None
+        raise NotImplementedError
 
-        self.train_data.setup()
-        self.test_data.setup()
+    @property
+    def category(self) -> str:
+        """Get the category of the datamodule."""
+        return self._category
 
-        self._create_test_split()
-        self._create_val_split()
+    @category.setter
+    def category(self, category: str) -> None:
+        """Set the category of the datamodule."""
+        self._category = category
 
     def _create_test_split(self) -> None:
         """Obtain the test set based on the settings in the config."""
@@ -155,7 +191,15 @@ class AnomalibDataModule(LightningDataModule, ABC):
 
     def _create_val_split(self) -> None:
         """Obtain the validation set based on the settings in the config."""
-        if self.val_split_mode == ValSplitMode.FROM_TEST:
+        if self.val_split_mode == ValSplitMode.FROM_TRAIN:
+            # randomly sampled from train set
+            self.train_data, self.val_data = random_split(
+                self.train_data,
+                self.val_split_ratio,
+                label_aware=True,
+                seed=self.seed,
+            )
+        elif self.val_split_mode == ValSplitMode.FROM_TEST:
             # randomly sampled from test set
             self.test_data, self.val_data = random_split(
                 self.test_data,
@@ -176,19 +220,6 @@ class AnomalibDataModule(LightningDataModule, ABC):
         elif self.val_split_mode != ValSplitMode.NONE:
             msg = f"Unknown validation split mode: {self.val_split_mode}"
             raise ValueError(msg)
-
-    @property
-    def is_setup(self) -> bool:
-        """Checks if setup() has been called.
-
-        At least one of [train_data, val_data, test_data] should be setup.
-        """
-        _is_setup: bool = False
-        for data in ("train_data", "val_data", "test_data"):
-            if hasattr(self, data) and getattr(self, data).is_setup:
-                _is_setup = True
-
-        return _is_setup
 
     def train_dataloader(self) -> TRAIN_DATALOADERS:
         """Get train dataloader."""
@@ -222,3 +253,45 @@ class AnomalibDataModule(LightningDataModule, ABC):
     def predict_dataloader(self) -> EVAL_DATALOADERS:
         """Use the test dataloader for inference unless overridden."""
         return self.test_dataloader()
+
+    @property
+    def transform(self) -> Transform:
+        """Property that returns the user-specified transform for the datamodule, if any.
+
+        This property is accessed by the engine to set the transform for the model. The eval_transform takes precedence
+        over the train_transform, because the transform that we store in the model is the one that should be used during
+        inference.
+        """
+        if self._eval_transform:
+            return self._eval_transform
+        if self._train_transform:
+            return self._train_transform
+        return None
+
+    @property
+    def train_transform(self) -> Transform:
+        """Get the transforms that will be passed to the train dataset.
+
+        If the train_transform is not set, the engine will request the transform from the model.
+        """
+        if self._train_transform:
+            return self._train_transform
+        if getattr(self, "trainer", None) and self.trainer.model and self.trainer.model.transform:
+            return self.trainer.model.transform
+        if self.image_size:
+            return Resize(self.image_size, antialias=True)
+        return None
+
+    @property
+    def eval_transform(self) -> Transform:
+        """Get the transform that will be passed to the val/test/predict datasets.
+
+        If the eval_transform is not set, the engine will request the transform from the model.
+        """
+        if self._eval_transform:
+            return self._eval_transform
+        if getattr(self, "trainer", None) and self.trainer.model and self.trainer.model.transform:
+            return self.trainer.model.transform
+        if self.image_size:
+            return Resize(self.image_size, antialias=True)
+        return None

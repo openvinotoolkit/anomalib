@@ -20,25 +20,23 @@ import logging
 from collections.abc import Sequence
 from pathlib import Path
 
-import albumentations as A  # noqa: N812
-import cv2
-import numpy as np
 import torch
 from pandas import DataFrame
+from torchvision.transforms.v2 import Transform
+from torchvision.tv_tensors import Mask
 
 from anomalib import TaskType
 from anomalib.data.base import AnomalibDataModule, AnomalibDataset
 from anomalib.data.utils import (
     DownloadInfo,
-    InputNormalizationMethod,
     LabelName,
     Split,
     TestSplitMode,
     ValSplitMode,
     download_and_extract,
-    get_transforms,
     masks_to_boxes,
     read_image,
+    read_mask,
     validate_path,
 )
 
@@ -51,7 +49,7 @@ DOWNLOAD_INFO = DownloadInfo(
     name="mvtec_loco",
     url="https://www.mydrive.ch/shares/48237/1b9106ccdfbb09a0c414bd49fe44a14a/download/430647091-1646842701"
     "/mvtec_loco_anomaly_detection.tar.xz",
-    checksum="d40f092ac6f88433f609583c4a05f56f",
+    hashsum="d40f092ac6f88433f609583c4a05f56f",
 )
 
 CATEGORIES = (
@@ -182,11 +180,12 @@ class MVTecLocoDataset(AnomalibDataset):
 
     Args:
         task (TaskType): Task type, ``classification``, ``detection`` or ``segmentation``.
-        transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
         root (Path | str): Path to the root of the dataset.
             Defaults to ``./datasets/MVTec_LOCO``.
         category (str): Sub-category of the dataset, e.g. 'breakfast_box'
             Defaults to ``breakfast_box``.
+        transform (Transform, optional): Transforms that should be applied to the input images.
+            Defaults to ``None``.
         split (str | Split | None): Split of the dataset, Split.TRAIN, Split.VAL, or Split.TEST
             Defaults to ``None``.
 
@@ -227,17 +226,15 @@ class MVTecLocoDataset(AnomalibDataset):
     def __init__(
         self,
         task: TaskType,
-        transform: A.Compose,
         root: Path | str = "./datasets/MVTec_LOCO",
         category: str = "breakfast_box",
+        transform: Transform | None = None,
         split: str | Split | None = None,
     ) -> None:
         super().__init__(task=task, transform=transform)
 
         self.root_category = Path(root) / category
         self.split = split
-
-    def _setup(self) -> None:
         self.samples = make_mvtec_loco_dataset(
             self.root_category,
             split=self.split,
@@ -257,42 +254,28 @@ class MVTecLocoDataset(AnomalibDataset):
             dict[str, str | torch.Tensor]: Dict of image tensor during training. Otherwise, Dict containing image path,
                 target path, image tensor, label and transformed bounding box.
         """
-        image_path = self._samples.iloc[index].image_path
-        mask_path = self._samples.iloc[index].mask_path
-        label_index = self._samples.iloc[index].label_index
+        image_path = self.samples.iloc[index].image_path
+        mask_path = self.samples.iloc[index].mask_path
+        label_index = self.samples.iloc[index].label_index
 
-        image = read_image(image_path)
+        image = read_image(image_path, as_tensor=True)
         item = {"image_path": image_path, "label": label_index}
 
         if self.task == TaskType.CLASSIFICATION:
-            transformed = self.transform(image=image)
-            item["image"] = transformed["image"]
+            item["image"] = self.transform(image) if self.transform else image
         elif self.task in (TaskType.DETECTION, TaskType.SEGMENTATION):
             # Only Anomalous (1) images have masks in anomaly datasets
             # Therefore, create empty mask for Normal (0) images.
-            if label_index == LabelName.ABNORMAL:
-                # Read and stack masks
-                masks = np.stack([cv2.imread(mask_path, flags=0) for mask_path in mask_path])
+            mask = (
+                Mask(torch.zeros(image.shape[-2:])).to(torch.uint8)
+                if label_index == LabelName.NORMAL
+                else read_mask(mask_path, as_tensor=True)
+            )
+            item["image"], item["mask"] = self.transform(image, mask) if self.transform else (image, mask)
 
-                # Merge masks and create binary mask
-                mask = np.max(masks, axis=0)
-                mask = np.where(mask > 0, 1, 0)
-            else:
-                # create empty mask for Normal (0) images.
-                mask = np.zeros(shape=image.shape[:2])
-                masks = np.expand_dims(mask, axis=0)
-
-            mask = mask.astype(np.single)
-            masks = masks.astype(np.single)
-
-            transformed = self.transform(image=image, mask=mask)
-
-            item["image"] = transformed["image"]
             item["mask_path"] = mask_path
-            # transform and binarize the mask
-            item["mask"] = transformed["mask"]
             # List of masks with the original size for saturation based metrics calculation
-            item["masks"] = torch.tensor(masks)
+            item["original_masks"] = mask
 
             if self.task == TaskType.DETECTION:
                 # create boxes from masks for detection task
@@ -313,13 +296,6 @@ class MVTecLoco(AnomalibDataModule):
             Defaults to ``"./datasets/MVTec_LOCO"``.
         category (str): Category of the MVTec LOCO dataset (e.g. "breakfast_box").
             Defaults to ``"breakfast_box"``.
-        image_size (int | tuple[int, int] | None, optional): Size of the input image.
-            Defaults to ``(256, 256)``.
-        center_crop (int | tuple[int, int] | None, optional): When provided, the images will be center-cropped
-            to the provided dimensions.
-            Defaults to ``None``.
-        normalization (InputNormalizationMethod | str): Normalization method to be applied to the input images.
-            Defaults to ``InputNormalizationMethod.IMAGENET``.
         train_batch_size (int, optional): Training batch size.
             Defaults to ``32``.
         eval_batch_size (int, optional): Test batch size.
@@ -328,10 +304,13 @@ class MVTecLoco(AnomalibDataModule):
             Defaults to ``8``.
         task TaskType): Task type, 'classification', 'detection' or 'segmentation'
             Defaults to ``TaskType.SEGMENTATION``.
-        transform_config_train (str | A.Compose | None, optional): Config for pre-processing during training.
+        image_size (tuple[int, int], optional): Size to which input images should be resized.
             Defaults to ``None``.
-        transform_config_val (str | A.Compose | None, optional): Config for pre-processing
-            during validation.
+        transform (Transform, optional): Transforms that should be applied to the input images.
+            Defaults to ``None``.
+        train_transform (Transform, optional): Transforms that should be applied to the input images during training.
+            Defaults to ``None``.
+        eval_transform (Transform, optional): Transforms that should be applied to the input images during evaluation.
             Defaults to ``None``.
         test_split_mode (TestSplitMode): Setting that determines how the testing subset is obtained.
             Defaults to ``TestSplitMode.FROM_DIR``.
@@ -381,15 +360,14 @@ class MVTecLoco(AnomalibDataModule):
         self,
         root: Path | str = "./datasets/MVTec_LOCO",
         category: str = "breakfast_box",
-        image_size: int | tuple[int, int] = (256, 256),
-        center_crop: int | tuple[int, int] | None = None,
-        normalization: InputNormalizationMethod | str = InputNormalizationMethod.IMAGENET,
         train_batch_size: int = 32,
         eval_batch_size: int = 32,
         num_workers: int = 8,
         task: TaskType = TaskType.SEGMENTATION,
-        transform_config_train: str | A.Compose | None = None,
-        transform_config_eval: str | A.Compose | None = None,
+        image_size: tuple[int, int] | None = None,
+        transform: Transform | None = None,
+        train_transform: Transform | None = None,
+        eval_transform: Transform | None = None,
         test_split_mode: TestSplitMode = TestSplitMode.FROM_DIR,
         test_split_ratio: float = 0.2,
         val_split_mode: ValSplitMode = ValSplitMode.FROM_DIR,
@@ -399,6 +377,10 @@ class MVTecLoco(AnomalibDataModule):
         super().__init__(
             train_batch_size=train_batch_size,
             eval_batch_size=eval_batch_size,
+            image_size=image_size,
+            transform=transform,
+            train_transform=train_transform,
+            eval_transform=eval_transform,
             num_workers=num_workers,
             test_split_mode=test_split_mode,
             test_split_ratio=test_split_ratio,
@@ -406,42 +388,40 @@ class MVTecLoco(AnomalibDataModule):
             val_split_ratio=val_split_ratio,
             seed=seed,
         )
+        self.task = task
         self.root = Path(root)
-        self.category = Path(category)
+        self.category = category
 
-        transform_train = get_transforms(
-            config=transform_config_train,
-            image_size=image_size,
-            center_crop=center_crop,
-            normalization=InputNormalizationMethod(normalization),
-        )
-        transform_eval = get_transforms(
-            config=transform_config_eval,
-            image_size=image_size,
-            center_crop=center_crop,
-            normalization=InputNormalizationMethod(normalization),
-        )
+    def _setup(self, _stage: str | None = None) -> None:
+        """Set up the datasets, configs, and perform dynamic subset splitting.
+
+        This method overrides the parent class's method to also setup the val dataset.
+        The MVTec LOCO dataset provides an independent validation subset.
+        """
+        if self.train_data is None or self.val_data is None or self.test_data is None:
+            error_message = "train_data, val_data, and test_data must all be provided"
+            raise ValueError(error_message)
 
         self.train_data = MVTecLocoDataset(
-            task=task,
-            transform=transform_train,
+            task=self.task,
+            transform=self.train_transform,
             split=Split.TRAIN,
-            root=root,
-            category=category,
+            root=self.root,
+            category=self.category,
         )
         self.val_data = MVTecLocoDataset(
-            task=task,
-            transform=transform_eval,
+            task=self.task,
+            transform=self.eval_transform,
             split=Split.VAL,
-            root=root,
-            category=category,
+            root=self.root,
+            category=self.category,
         )
         self.test_data = MVTecLocoDataset(
-            task=task,
-            transform=transform_eval,
+            task=self.task,
+            transform=self.eval_transform,
             split=Split.TEST,
-            root=root,
-            category=category,
+            root=self.root,
+            category=self.category,
         )
 
     def prepare_data(self) -> None:
@@ -488,20 +468,3 @@ class MVTecLoco(AnomalibDataModule):
             logger.info("Found the dataset.")
         else:
             download_and_extract(self.root, DOWNLOAD_INFO)
-
-    def _setup(self, _stage: str | None = None) -> None:
-        """Set up the datasets, configs, and perform dynamic subset splitting.
-
-        This method overrides the parent class's method to also setup the val dataset.
-        The MVTec LOCO dataset provides an independent validation subset.
-        """
-        if self.train_data is None or self.val_data is None or self.test_data is None:
-            error_message = "train_data, val_data, and test_data must all be provided"
-            raise ValueError(error_message)
-
-        self.train_data.setup()
-        self.val_data.setup()
-        self.test_data.setup()
-
-        self._create_test_split()
-        self._create_val_split()
