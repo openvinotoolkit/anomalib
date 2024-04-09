@@ -275,7 +275,7 @@ class MVTecLocoDataset(AnomalibDataset):
 
             item["mask_path"] = mask_path
             # List of masks with the original size for saturation based metrics calculation
-            item["original_masks"] = mask
+            item["masks"] = mask
 
             if self.task == TaskType.DETECTION:
                 # create boxes from masks for detection task
@@ -398,10 +398,6 @@ class MVTecLoco(AnomalibDataModule):
         This method overrides the parent class's method to also setup the val dataset.
         The MVTec LOCO dataset provides an independent validation subset.
         """
-        if self.train_data is None or self.val_data is None or self.test_data is None:
-            error_message = "train_data, val_data, and test_data must all be provided"
-            raise ValueError(error_message)
-
         self.train_data = MVTecLocoDataset(
             task=self.task,
             transform=self.train_transform,
