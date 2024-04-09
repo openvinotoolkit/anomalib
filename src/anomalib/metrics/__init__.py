@@ -21,6 +21,7 @@ from .f1_score import F1Score
 from .min_max import MinMax
 from .precision_recall_curve import BinaryPrecisionRecallCurve
 from .pro import PRO
+from .spro import SPRO
 from .threshold import F1AdaptiveThreshold, ManualThreshold
 
 __all__ = [
@@ -34,6 +35,7 @@ __all__ = [
     "ManualThreshold",
     "MinMax",
     "PRO",
+    "SPRO",
 ]
 
 logger = logging.getLogger(__name__)

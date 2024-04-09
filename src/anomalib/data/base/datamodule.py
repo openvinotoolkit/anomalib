@@ -28,7 +28,9 @@ logger = logging.getLogger(__name__)
 def collate_fn(batch: list) -> dict[str, Any]:
     """Collate bounding boxes as lists.
 
-    Bounding boxes are collated as a list of tensors, while the default collate function is used for all other entries.
+    Bounding boxes and `masks` (not `mask`) are collated as a list of tensors. If `masks` is exist,
+    the `mask_path` is also collated as a list since each element in the batch could be unequal.
+    For all other entries, the default collate function is used.
 
     Args:
         batch (List): list of items in the batch where len(batch) is equal to the batch size.
@@ -42,6 +44,10 @@ def collate_fn(batch: list) -> dict[str, Any]:
         if "boxes" in elem:
             # collate boxes as list
             out_dict["boxes"] = [item.pop("boxes") for item in batch]
+        if "masks" in elem:
+            # collate masks and mask_path as list
+            out_dict["masks"] = [item.pop("masks") for item in batch]
+            out_dict["mask_path"] = [item.pop("mask_path") for item in batch]
         # collate other data normally
         out_dict.update({key: default_collate([item[key] for item in batch]) for key in elem})
         return out_dict
@@ -208,6 +214,9 @@ class AnomalibDataModule(LightningDataModule, ABC):
             # converted from random training sample
             self.train_data, normal_val_data = random_split(self.train_data, self.val_split_ratio, seed=self.seed)
             self.val_data = SyntheticAnomalyDataset.from_dataset(normal_val_data)
+        elif self.val_split_mode == ValSplitMode.FROM_DIR:
+            # the val_data is prepared in subclass
+            pass
         elif self.val_split_mode != ValSplitMode.NONE:
             msg = f"Unknown validation split mode: {self.val_split_mode}"
             raise ValueError(msg)

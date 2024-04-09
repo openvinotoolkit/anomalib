@@ -13,7 +13,7 @@ from lightning.pytorch import Callback, Trainer
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 
 from anomalib import TaskType
-from anomalib.metrics import AnomalibMetricCollection, create_metric_collection
+from anomalib.metrics import SPRO, AnomalibMetricCollection, create_metric_collection
 from anomalib.models import AnomalyModule
 
 logger = logging.getLogger(__name__)
@@ -67,8 +67,7 @@ class _MetricsCallback(Callback):
             pl_module (AnomalyModule): Anomalib Model that inherits pl LightningModule.
             stage (str | None, optional): fit, validate, test or predict. Defaults to None.
         """
-        del trainer, stage  # These variables are not used.
-
+        del stage, trainer  # this variable is not used.
         image_metric_names = [] if self.image_metric_names is None else self.image_metric_names
         if isinstance(image_metric_names, str):
             image_metric_names = [image_metric_names]
@@ -182,7 +181,10 @@ class _MetricsCallback(Callback):
         image_metric.update(output["pred_scores"], output["label"].int())
         if "mask" in output and "anomaly_maps" in output:
             pixel_metric.to(self.device)
-            pixel_metric.update(torch.squeeze(output["anomaly_maps"]), torch.squeeze(output["mask"].int()))
+            if "masks" in output:
+                self._update_pixel_metrics(pixel_metric, output)
+            else:
+                pixel_metric.update(torch.squeeze(output["anomaly_maps"]), torch.squeeze(output["mask"].int()))
 
     def _outputs_to_device(self, output: STEP_OUTPUT) -> STEP_OUTPUT | dict[str, Any]:
         if isinstance(output, dict):
@@ -190,7 +192,25 @@ class _MetricsCallback(Callback):
                 output[key] = self._outputs_to_device(value)
         elif isinstance(output, torch.Tensor):
             output = output.to(self.device)
+        elif isinstance(output, list):
+            for i, value in enumerate(output):
+                output[i] = self._outputs_to_device(value)
         return output
+
+    def _update_pixel_metrics(self, pixel_metric: AnomalibMetricCollection, output: STEP_OUTPUT) -> None:
+        """Handle metric updates when the SPRO metric is used alongside other pixel-level metrics."""
+        update = False
+        for name, metric in pixel_metric.items(copy_state=False):
+            if isinstance(metric, SPRO):
+                metric.update(torch.squeeze(output["anomaly_maps"]), output["masks"])
+            else:
+                logger.warning(
+                    f"Metric {name} may not be suitable for a dataset with the region separated "
+                    "in multiple ground-truth masks.",
+                )
+                metric.update(torch.squeeze(output["anomaly_maps"]), torch.squeeze(output["mask"].int()))
+            update = True
+        pixel_metric.set_update_called(update)
 
     @staticmethod
     def _log_metrics(pl_module: AnomalyModule) -> None:

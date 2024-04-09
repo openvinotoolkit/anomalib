@@ -3,7 +3,11 @@
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+import logging
+
 from torchmetrics import MetricCollection
+
+logger = logging.getLogger(__name__)
 
 
 class AnomalibMetricCollection(MetricCollection):
@@ -20,6 +24,10 @@ class AnomalibMetricCollection(MetricCollection):
         for metric in self.values():
             if hasattr(metric, "threshold"):
                 metric.threshold = threshold_value
+
+    def set_update_called(self, val: bool) -> None:
+        """Set the flag indicating whether the update method has been called."""
+        self._update_called = val
 
     def update(self, *args, **kwargs) -> None:
         """Add data to the metrics."""
