@@ -150,7 +150,6 @@ class AnomalibCLI:
             default=None,
             required=False,
         )
-        parser.add_argument("--metrics.pixel", type=list[str] | str | None, default=None, required=False)
         parser.add_argument("--metrics.threshold", type=BaseThreshold | str, default="F1AdaptiveThreshold")
         parser.add_argument("--logging.log_graph", type=bool, help="Log the model to the logger", default=False)
         if hasattr(parser, "subcommand") and parser.subcommand not in ("export", "predict"):
