@@ -81,8 +81,8 @@ class SPRO(Metric):
             >>> spro.update(preds, labels)
         """
         score, total = spro_score(
-            predictions,
-            masks,
+            predictions=predictions,
+            targets=masks,
             threshold=self.threshold,
             saturation_config=self.saturation_config,
         )
