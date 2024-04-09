@@ -272,17 +272,17 @@ class MVTecLocoDataset(AnomalibDataset):
             # Therefore, create empty mask for Normal (0) images.
             if isinstance(mask_path, str):
                 mask_path = [mask_path]
-            mask = (
+            masks = (
                 Mask(torch.zeros(image.shape[-2:])).to(torch.uint8)
                 if label_index == LabelName.NORMAL
                 else Mask(torch.stack([read_mask(path, as_tensor=True) for path in mask_path]))
             )
-            mask = Mask(mask.view(-1, *mask.shape[-2:]).any(dim=0).to(torch.uint8))
+            mask = Mask(masks.view(-1, *masks.shape[-2:]).any(dim=0).to(torch.uint8))
             item["image"], item["mask"] = self.transform(image, mask) if self.transform else (image, mask)
 
             item["mask_path"] = mask_path
             # List of masks with the original size for saturation based metrics calculation
-            item["masks"] = mask
+            item["masks"] = masks
 
             if self.task == TaskType.DETECTION:
                 # create boxes from masks for detection task
