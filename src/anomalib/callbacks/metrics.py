@@ -181,7 +181,7 @@ class _MetricsCallback(Callback):
         image_metric.update(output["pred_scores"], output["label"].int())
         if "mask" in output and "anomaly_maps" in output:
             pixel_metric.to(self.device)
-            if "masks" in output:
+            if "semantic_mask" in output:
                 self._update_pixel_metrics(pixel_metric, output)
             else:
                 pixel_metric.update(torch.squeeze(output["anomaly_maps"]), torch.squeeze(output["mask"].int()))
@@ -202,7 +202,7 @@ class _MetricsCallback(Callback):
         update = False
         for name, metric in pixel_metric.items(copy_state=False):
             if isinstance(metric, SPRO):
-                metric.update(torch.squeeze(output["anomaly_maps"]), output["masks"])
+                metric.update(torch.squeeze(output["anomaly_maps"]), output["semantic_mask"])
             else:
                 logger.warning(
                     f"Metric {name} may not be suitable for a dataset with the region separated "

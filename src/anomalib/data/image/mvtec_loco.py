@@ -25,7 +25,9 @@ from pathlib import Path
 
 import torch
 from pandas import DataFrame
+from PIL import Image
 from torchvision.transforms.v2 import Transform
+from torchvision.transforms.v2.functional import to_image
 from torchvision.tv_tensors import Mask
 
 from anomalib import TaskType
@@ -39,7 +41,6 @@ from anomalib.data.utils import (
     download_and_extract,
     masks_to_boxes,
     read_image,
-    read_mask,
     validate_path,
 )
 
@@ -245,6 +246,11 @@ class MVTecLocoDataset(AnomalibDataset):
             extensions=IMG_EXTENSIONS,
         )
 
+    @staticmethod
+    def _read_mask(mask_path: str | Path) -> Mask:
+        image = Image.open(mask_path).convert("L")
+        return Mask(to_image(image).squeeze(), dtype=torch.uint8)
+
     def __getitem__(self, index: int) -> dict[str, str | torch.Tensor]:
         """Get dataset item for the index ``index``.
 
@@ -272,17 +278,18 @@ class MVTecLocoDataset(AnomalibDataset):
             # Therefore, create empty mask for Normal (0) images.
             if isinstance(mask_path, str):
                 mask_path = [mask_path]
-            masks = (
+            semantic_mask = (
                 Mask(torch.zeros(image.shape[-2:])).to(torch.uint8)
                 if label_index == LabelName.NORMAL
-                else Mask(torch.stack([read_mask(path, as_tensor=True) for path in mask_path]))
+                else Mask(torch.stack([self._read_mask(path) for path in mask_path]))
             )
-            mask = Mask(masks.view(-1, *masks.shape[-2:]).any(dim=0).to(torch.uint8))
-            item["image"], item["mask"] = self.transform(image, mask) if self.transform else (image, mask)
+
+            binary_mask = Mask(semantic_mask.view(-1, *semantic_mask.shape[-2:]).int().any(dim=0).to(torch.uint8))
+            item["image"], item["mask"] = self.transform(image, binary_mask) if self.transform else (image, binary_mask)
 
             item["mask_path"] = mask_path
             # List of masks with the original size for saturation based metrics calculation
-            item["masks"] = masks
+            item["semantic_mask"] = semantic_mask
 
             if self.task == TaskType.DETECTION:
                 # create boxes from masks for detection task

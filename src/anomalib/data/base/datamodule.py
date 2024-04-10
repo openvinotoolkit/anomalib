@@ -44,9 +44,11 @@ def collate_fn(batch: list) -> dict[str, Any]:
         if "boxes" in elem:
             # collate boxes as list
             out_dict["boxes"] = [item.pop("boxes") for item in batch]
-        if "masks" in elem:
-            # collate masks and mask_path as list
-            out_dict["masks"] = [item.pop("masks") for item in batch]
+        if "semantic_mask" in elem:
+            # semantic masks have a variable number of channels, so we collate them as a list
+            out_dict["semantic_mask"] = [item.pop("semantic_mask") for item in batch]
+        if "mask_path" in elem and isinstance(elem["mask_path"], list):
+            # collate mask paths as list
             out_dict["mask_path"] = [item.pop("mask_path") for item in batch]
         # collate other data normally
         out_dict.update({key: default_collate([item[key] for item in batch]) for key in elem})
