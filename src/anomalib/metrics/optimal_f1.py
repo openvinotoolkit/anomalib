@@ -6,7 +6,8 @@
 import logging
 
 import torch
-from torchmetrics import Metric, PrecisionRecallCurve
+from torchmetrics import Metric
+from torchmetrics.classification import BinaryPrecisionRecallCurve
 
 logger = logging.getLogger(__name__)
 
@@ -18,10 +19,6 @@ class OptimalF1(Metric):
     metric of the true labels and the predicted anomaly scores.
 
     Args:
-        num_classes (int): Number of classes.
-        full_state_update (bool, optional): Whether to update the state with the
-            new values.
-            Defaults to ``False``.
         kwargs: Any keyword arguments.
 
     .. deprecated:: 1.0.0
@@ -33,7 +30,7 @@ class OptimalF1(Metric):
 
     full_state_update: bool = False
 
-    def __init__(self, num_classes: int, **kwargs) -> None:
+    def __init__(self, **kwargs) -> None:
         msg = (
             "OptimalF1 metric is deprecated and will be removed in a future release. The optimal F1 score for "
             "Anomalib predictions can be obtained by computing the adaptive threshold with the "
@@ -42,7 +39,7 @@ class OptimalF1(Metric):
         logger.warning(msg)
         super().__init__(**kwargs)
 
-        self.precision_recall_curve = PrecisionRecallCurve(num_classes=num_classes)
+        self.precision_recall_curve = BinaryPrecisionRecallCurve()
 
         self.threshold: torch.Tensor
 
