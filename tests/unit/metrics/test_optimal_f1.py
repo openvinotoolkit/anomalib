@@ -42,4 +42,10 @@ def test_optimal_f1_raw() -> None:
 
     metric.update(preds, labels)
     assert metric.compute() == 1.0
-    assert metric.threshold == 0.5
+    assert metric.threshold == 0.0
+
+    metric.reset()
+    preds = torch.tensor([-0.5, 0.0, 1.0, 2.0, -0.1])
+    metric.update(preds, labels)
+    assert metric.compute() == torch.tensor(1.0)
+    assert metric.threshold == -0.1
