@@ -222,6 +222,7 @@ class WinClipModel(DynamicBufferMixin, BufferListMixin, nn.Module):
 
         return pooled.reshape((n_masks, batch_size, -1)).permute(1, 0, 2)
 
+    @torch.no_grad
     def forward(self, batch: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         """Forward-pass through the model to obtain image and pixel scores.
 
@@ -231,8 +232,7 @@ class WinClipModel(DynamicBufferMixin, BufferListMixin, nn.Module):
         Returns:
             Tuple[torch.Tensor, torch.Tensor]: Tuple containing the image scores and pixel scores.
         """
-        with torch.no_grad():
-            image_embeddings, window_embeddings, patch_embeddings = self.encode_image(batch)
+        image_embeddings, window_embeddings, patch_embeddings = self.encode_image(batch)
 
         # get zero-shot scores
         image_scores = class_scores(image_embeddings, self.text_embeddings, self.temperature, target_class=1)
