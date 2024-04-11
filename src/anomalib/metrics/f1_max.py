@@ -32,18 +32,13 @@ class F1Max(Metric):
         **kwargs: Variable keyword arguments that can be passed to the parent class.
 
     Attributes:
-        full_state_update (bool): Indicates whether the metric requires updating the entire state. Set to False
-                                  for this metric as it calculates the F1 score based on the current state
-                                  without needing historical data.
-        precision_recall_curve (BinaryPrecisionRecallCurve): Utility to compute precision and recall values
-                                                             across different thresholds.
-        threshold (torch.Tensor): Stores the threshold value that results in the maximum F1 score.
-
-    Deprecated:
-        This metric is deprecated as of version 1.0.0 and will be removed in future releases.
-        The recommended approach to obtain the optimal F1 score for Anomalib predictions is by
-        using the AnomalyScoreThreshold metric to compute an adaptive threshold and applying this
-        threshold within the TorchMetrics F1Score metric.
+        full_state_update (bool): Indicates whether the metric requires updating
+            the entire state. Set to False for this metric as it calculates the
+            F1 score based on the current state without needing historical data.
+        precision_recall_curve (BinaryPrecisionRecallCurve): Utility to compute
+            precision and recall values across different thresholds.
+        threshold (torch.Tensor): Stores the threshold value that results in the
+            maximum F1 score.
 
     Examples:
         >>> from anomalib.metrics import F1Max
