@@ -231,7 +231,8 @@ class WinClipModel(DynamicBufferMixin, BufferListMixin, nn.Module):
         Returns:
             Tuple[torch.Tensor, torch.Tensor]: Tuple containing the image scores and pixel scores.
         """
-        image_embeddings, window_embeddings, patch_embeddings = self.encode_image(batch)
+        with torch.no_grad():
+            image_embeddings, window_embeddings, patch_embeddings = self.encode_image(batch)
 
         # get zero-shot scores
         image_scores = class_scores(image_embeddings, self.text_embeddings, self.temperature, target_class=1)
@@ -325,6 +326,8 @@ class WinClipModel(DynamicBufferMixin, BufferListMixin, nn.Module):
         Args:
             class_name (str): The name of the object class used in the prompt ensemble.
         """
+        # get the device, this is to ensure that we move the text embeddings to the same device as the model
+        device = next(self.parameters()).device
         # collect prompt ensemble
         normal_prompts, anomalous_prompts = create_prompt_ensemble(class_name)
         # tokenize prompts
@@ -332,8 +335,8 @@ class WinClipModel(DynamicBufferMixin, BufferListMixin, nn.Module):
         anomalous_tokens = tokenize(anomalous_prompts)
         # encode tokens to obtain prompt embeddings
         with torch.no_grad():
-            normal_embeddings = self.clip.encode_text(normal_tokens)
-            anomalous_embeddings = self.clip.encode_text(anomalous_tokens)
+            normal_embeddings = self.clip.encode_text(normal_tokens.to(device))
+            anomalous_embeddings = self.clip.encode_text(anomalous_tokens.to(device))
         # average prompt embeddings
         normal_embeddings = torch.mean(normal_embeddings, dim=0, keepdim=True)
         anomalous_embeddings = torch.mean(anomalous_embeddings, dim=0, keepdim=True)
