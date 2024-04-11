@@ -57,5 +57,5 @@
 
    ```bash
    sudo docker exec -d anomalib-ci-container /bin/bash -c \
-   "export ANOMALIB_DATASET_PATH=/home/user/datasets;export CODECOV_TOKEN=XXX && /home/user/actions-runner/run.sh"
+   "export CODECOV_TOKEN=XXX && /home/user/actions-runner/run.sh"
    ```

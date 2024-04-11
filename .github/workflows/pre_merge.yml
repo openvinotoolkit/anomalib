@@ -18,7 +18,7 @@ concurrency:
 
 jobs:
   Code-Quality-Checks:
-    runs-on: [self-hosted, linux, x64, anomalib]
+    runs-on: [self-hosted, Linux, X64, igpu]
     steps:
       - name: CHECKOUT REPOSITORY
         uses: actions/checkout@v4
@@ -31,7 +31,7 @@ jobs:
       - name: Code quality checks
         run: tox -e pre-commit
   Pre-Merge-Checks:
-    runs-on: [self-hosted, linux, x64, anomalib]
+    runs-on: [self-hosted, Linux, X64, igpu]
     needs: Code-Quality-Checks
     if: github.event.pull_request.draft == false
     strategy:
@@ -49,10 +49,6 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install Tox
         run: pip install tox
-      - name: Link the dataset path to the dataset directory in the repository root.
-        run: |
-          ln -s $ANOMALIB_DATASET_PATH ./datasets
-          ln -s $ANOMALIB_DATASET_PATH ./notebooks/datasets
       - name: Coverage
         run: tox -e pre-merge-${{ matrix.tox-env }}
       - name: Upload coverage report
