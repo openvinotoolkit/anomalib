@@ -43,18 +43,23 @@ class F1Max(Metric):
     Examples:
         >>> from anomalib.metrics import F1Max
         >>> import torch
+
         >>> preds = torch.tensor([0.1, 0.4, 0.35, 0.8])
         >>> target = torch.tensor([0, 0, 1, 1])
+
         >>> f1_max = F1Max()
         >>> f1_max.update(preds, target)
+
         >>> optimal_f1_score = f1_max.compute()
         >>> print(f"Optimal F1 Score: {f1_max_score}")
         >>> print(f"Optimal Threshold: {f1_max.threshold}")
 
     Note:
         - Use `update` method to input predictions and target labels.
-        - Use `compute` method to calculate the maximum F1 score after all updates.
-        - Use `reset` method to clear the current state and prepare for a new set of calculations.
+        - Use `compute` method to calculate the maximum F1 score after all
+          updates.
+        - Use `reset` method to clear the current state and prepare for a new
+          set of calculations.
     """
 
     full_state_update: bool = False
