@@ -60,12 +60,6 @@ class F1Max(Metric):
     full_state_update: bool = False
 
     def __init__(self, **kwargs) -> None:
-        msg = (
-            "F1Max metric is deprecated and will be removed in a future release. The optimal F1 score for "
-            "Anomalib predictions can be obtained by computing the adaptive threshold with the "
-            "AnomalyScoreThreshold metric and setting the computed threshold value in TorchMetrics F1Score metric."
-        )
-        logger.warning(msg)
         super().__init__(**kwargs)
 
         self.precision_recall_curve = BinaryPrecisionRecallCurve()
