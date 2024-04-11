@@ -1,19 +1,19 @@
-"""Test OptimalF1 metric."""
+"""Test F1Max metric."""
 
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 import torch
 
-from anomalib.metrics.optimal_f1 import OptimalF1
+from anomalib.metrics.f1_max import F1Max
 
 
-def test_optimal_f1_logits() -> None:
-    """Checks if OptimalF1 metric computes the optimal F1 score.
+def test_f1_max_logits() -> None:
+    """Checks if F1Max metric computes the optimal F1 score.
 
     Test when the preds are in [0, 1]
     """
-    metric = OptimalF1()
+    metric = F1Max()
 
     preds = torch.tensor([0.1, 0.5, 0.9, 1.0])
     labels = torch.tensor([0, 1, 1, 1])
@@ -30,12 +30,12 @@ def test_optimal_f1_logits() -> None:
     assert metric.threshold == 0.1
 
 
-def test_optimal_f1_raw() -> None:
-    """Checks if OptimalF1 metric computes the optimal F1 score.
+def test_f1_max_raw() -> None:
+    """Checks if F1Max metric computes the optimal F1 score.
 
     Test when the preds are outside [0, 1]. BinaryPrecisionRecall automatically applies sigmoid.
     """
-    metric = OptimalF1()
+    metric = F1Max()
 
     preds = torch.tensor([-0.5, 0, 0.5, 1.0, 2])
     labels = torch.tensor([0, 1, 1, 1, 1])
