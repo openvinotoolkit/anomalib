@@ -13,10 +13,11 @@
 from enum import Enum
 
 import torch
-from kornia.filters import gaussian_blur2d
 from omegaconf import ListConfig
 from torch import nn
 from torch.nn import functional as F  # noqa: N812
+
+from anomalib.models.components import GaussianBlur2d
 
 
 class AnomalyMapGenerationMode(str, Enum):
@@ -87,8 +88,7 @@ class AnomalyMapGenerator(nn.Module):
             elif self.mode == AnomalyMapGenerationMode.ADD:
                 anomaly_map += distance_map
 
-        return gaussian_blur2d(
-            anomaly_map,
+        return GaussianBlur2d(
             kernel_size=(self.kernel_size, self.kernel_size),
             sigma=(self.sigma, self.sigma),
-        )
+        )(anomaly_map)
