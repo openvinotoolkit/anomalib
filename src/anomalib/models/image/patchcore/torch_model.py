@@ -49,7 +49,7 @@ class PatchcoreModel(DynamicBufferMixin, nn.Module):
             backbone=self.backbone,
             pre_trained=pre_trained,
             layers=self.layers,
-        )
+        ).eval()
         self.feature_pooler = torch.nn.AvgPool2d(3, 1, 1)
         self.anomaly_map_generator = AnomalyMapGenerator()
 
@@ -70,6 +70,7 @@ class PatchcoreModel(DynamicBufferMixin, nn.Module):
         Returns:
             Tensor | dict[str, torch.Tensor]: Embedding for training, anomaly map and anomaly score for testing.
         """
+        output_size = input_tensor.shape[-2:]
         if self.tiler:
             input_tensor = self.tiler.tile(input_tensor)
 
@@ -98,7 +99,7 @@ class PatchcoreModel(DynamicBufferMixin, nn.Module):
             # reshape to w, h
             patch_scores = patch_scores.reshape((batch_size, 1, width, height))
             # get anomaly map
-            anomaly_map = self.anomaly_map_generator(patch_scores, input_tensor.shape[-2:])
+            anomaly_map = self.anomaly_map_generator(patch_scores, output_size)
 
             output = {"anomaly_map": anomaly_map, "pred_score": pred_score}
 

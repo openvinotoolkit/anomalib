@@ -3,7 +3,6 @@
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 from random import sample
 from typing import TYPE_CHECKING
 
@@ -67,8 +66,8 @@ class PadimModel(nn.Module):
 
     def __init__(
         self,
-        layers: list[str],
         backbone: str = "resnet18",
+        layers: list[str] = ["layer1", "layer2", "layer3"],  # noqa: B006
         pre_trained: bool = True,
         n_features: int | None = None,
     ) -> None:
@@ -77,7 +76,11 @@ class PadimModel(nn.Module):
 
         self.backbone = backbone
         self.layers = layers
-        self.feature_extractor = TimmFeatureExtractor(backbone=self.backbone, layers=layers, pre_trained=pre_trained)
+        self.feature_extractor = TimmFeatureExtractor(
+            backbone=self.backbone,
+            layers=layers,
+            pre_trained=pre_trained,
+        ).eval()
         self.n_features_original = sum(self.feature_extractor.out_dims)
         self.n_features = n_features or _N_FEATURES_DEFAULTS.get(self.backbone)
         if self.n_features is None:
@@ -123,6 +126,7 @@ class PadimModel(nn.Module):
             torch.Size([32, 128, 28, 28]),
             torch.Size([32, 256, 14, 14])]
         """
+        output_size = input_tensor.shape[-2:]
         if self.tiler:
             input_tensor = self.tiler.tile(input_tensor)
 
@@ -140,7 +144,7 @@ class PadimModel(nn.Module):
                 embedding=embeddings,
                 mean=self.gaussian.mean,
                 inv_covariance=self.gaussian.inv_covariance,
-                image_size=input_tensor.shape[-2:],
+                image_size=output_size,
             )
         return output
 
