@@ -208,7 +208,7 @@ class ExportMixin:
         transform = transform or self.transform or self.configure_transforms()
         inference_model = InferenceModel(model=self.model, transform=transform, disable_antialias=True)
         export_root = _create_export_root(export_root, ExportType.ONNX)
-        self._write_metadata_to_json(export_root, task)
+        _write_metadata_to_json(self.get_metadata(task), export_root)
         onnx_path = export_root / "model.onnx"
         torch.onnx.export(
             inference_model,
@@ -282,7 +282,7 @@ class ExportMixin:
         transform = transform or self.transform or self.configure_transforms()
         export_root = _create_export_root(export_root, ExportType.OPENVINO)
         inference_model = InferenceModel(model=self.model, transform=transform, disable_antialias=True)
-        self._write_metadata_to_json(export_root, task)
+        _write_metadata_to_json(self.get_metadata(task), export_root)
         ov_model_path = export_root / "model.xml"
         ov_args = {} if ov_args is None else ov_args
         ov_args.update({"example_input": torch.zeros((1, 3, 1, 1)).to(self.device)})
@@ -308,23 +308,7 @@ class ExportMixin:
             dict[str, Any]: Metadata for the exported model.
         """
         data_metadata = {"task": task}
-        model_metadata = self._get_model_metadata()
-        metadata = {**data_metadata, **model_metadata}
-
-        # Convert torch tensors to python lists or values for json serialization.
-        for key, value in metadata.items():
-            if isinstance(value, torch.Tensor):
-                metadata[key] = value.numpy().tolist()
-
-        return metadata
-
-    def _get_model_metadata(self) -> dict[str, torch.Tensor]:
-        """Get meta data related to normalization from model.
-
-        Returns:
-            dict[str, torch.Tensor]: Model metadata
-        """
-        metadata = {}
+        model_metadata = {}
         cached_metadata: dict[str, Number | torch.Tensor] = {}
         for threshold_name in ("image_threshold", "pixel_threshold"):
             if hasattr(self, threshold_name):
@@ -335,27 +319,27 @@ class ExportMixin:
         # Remove undefined values by copying in a new dict
         for key, val in cached_metadata.items():
             if not np.isinf(val).all():
-                metadata[key] = val
+                model_metadata[key] = val
         del cached_metadata
+        metadata = {**data_metadata, **model_metadata}
+
+        # Convert torch tensors to python lists or values for json serialization.
+        for key, value in metadata.items():
+            if isinstance(value, torch.Tensor):
+                metadata[key] = value.numpy().tolist()
+
         return metadata
 
-    def _write_metadata_to_json(
-        self,
-        export_root: Path,
-        task: TaskType | None = None,
-    ) -> None:
-        """Write metadata to json file.
 
-        Args:
-            export_root (Path): Path to the exported model.
-            transform (dict[str, Any] | AnomalibDataset | AnomalibDataModule | A.Compose): Data transforms
-                (augmentations) used for the model.
-            task (TaskType | None): Task type.
-                Defaults to None.
-        """
-        metadata = self.get_metadata(task=task)
-        with (export_root / "metadata.json").open("w", encoding="utf-8") as metadata_file:
-            json.dump(metadata, metadata_file, ensure_ascii=False, indent=4)
+def _write_metadata_to_json(metadata: dict[str, Any], export_root: Path) -> None:
+    """Write metadata to json file.
+
+    Args:
+        metadata (dict[str, Any]): Metadata to export.
+        export_root (Path): Path to the exported model.
+    """
+    with (export_root / "metadata.json").open("w", encoding="utf-8") as metadata_file:
+        json.dump(metadata, metadata_file, ensure_ascii=False, indent=4)
 
 
 def _create_export_root(export_root: str | Path, export_type: ExportType) -> Path:
