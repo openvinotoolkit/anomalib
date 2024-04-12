@@ -175,9 +175,6 @@ class ExportMixin:
                 Defaults to ``None``.
             task (TaskType | None): Task type.
                 Defaults to ``None``.
-            export_type (ExportType): Mode to export the model. Since this method is used by OpenVINO export as well, we
-                need to pass the export type so that the right export path is created.
-                Defaults to ``ExportType.ONNX``.
 
         Returns:
             Path: Path to the exported onnx model.
@@ -279,15 +276,13 @@ class ExportMixin:
             ... )
 
         """
-        transform = transform or self.transform or self.configure_transforms()
+        model_path = self.to_onnx(export_root, transform, task)
         export_root = _create_export_root(export_root, ExportType.OPENVINO)
-        inference_model = InferenceModel(model=self.model, transform=transform, disable_antialias=True)
-        _write_metadata_to_json(self.get_metadata(task), export_root)
         ov_model_path = export_root / "model.xml"
         ov_args = {} if ov_args is None else ov_args
         ov_args.update({"example_input": torch.zeros((1, 3, 1, 1)).to(self.device)})
         if convert_model is not None and serialize is not None:
-            model = convert_model(inference_model, **ov_args)
+            model = convert_model(model_path, **ov_args)
             serialize(model, ov_model_path)
         else:
             logger.exception("Could not find OpenVINO methods. Please check OpenVINO installation.")
