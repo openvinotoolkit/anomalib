@@ -3,7 +3,6 @@
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 import importlib
 import logging
 from collections.abc import Callable
@@ -17,6 +16,7 @@ from .aupr import AUPR
 from .aupro import AUPRO
 from .auroc import AUROC
 from .collection import AnomalibMetricCollection
+from .f1_max import F1Max
 from .f1_score import F1Score
 from .min_max import MinMax
 from .precision_recall_curve import BinaryPrecisionRecallCurve
@@ -30,6 +30,7 @@ __all__ = [
     "AnomalyScoreDistribution",
     "BinaryPrecisionRecallCurve",
     "F1AdaptiveThreshold",
+    "F1Max",
     "F1Score",
     "ManualThreshold",
     "MinMax",
@@ -162,7 +163,7 @@ def metric_collection_from_dicts(metrics: dict[str, dict[str, Any]], prefix: str
 
 def create_metric_collection(
     metrics: list[str] | dict[str, dict[str, Any]],
-    prefix: str | None,
+    prefix: str | None = None,
 ) -> AnomalibMetricCollection:
     """Create a metric collection from a list of metric names or dictionaries.
 

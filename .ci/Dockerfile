@@ -5,7 +5,7 @@ ARG HTTP_PROXY
 ARG HTTPS_PROXY
 ARG NO_PROXY
 
-FROM nvidia/cuda:11.4.3-devel-ubuntu20.04 AS python_base_cuda11.4
+FROM nvidia/cuda:12.4.0-devel-ubuntu20.04 AS python_base_cuda
 LABEL maintainer="Anomalib Development Team"
 
 # Setup proxies
@@ -59,17 +59,11 @@ RUN conda install python=3.10
 ## Anomalib Development Env
 #########################################################
 
-FROM python_base_cuda11.4 as anomalib_development_env
+FROM python_base_cuda as anomalib_development_env
 
 # Install all anomalib requirements
-COPY ./requirements/installer.txt /tmp/anomalib/requirements/installer.txt
-RUN pip install --no-cache-dir -r /tmp/anomalib/requirements/installer.txt
+COPY ./pyproject.toml /tmp/anomalib/pyproject.toml
+RUN pip install --no-cache-dir .[full]
 
-COPY ./requirements/openvino.txt /tmp/anomalib/requirements/openvino.txt
-RUN pip install --no-cache-dir -r /tmp/anomalib/requirements/openvino.txt
-
-# Install other requirements related to development
-COPY ./requirements/dev.txt /tmp/anomalib/requirements/dev.txt
-RUN pip install --no-cache-dir -r /tmp/anomalib/requirements/dev.txt
 
 WORKDIR /home/user
