@@ -91,7 +91,7 @@ def ckpt_path(project_path: Path, dataset_path: Path) -> Callable[[str], Path]:
         _ckpt_path = project_path / model.name / "MVTec" / "dummy" / "latest" / "weights" / "lightning" / "model.ckpt"
         if not _ckpt_path.exists():
             engine = Engine(
-                model=get_model(model_name),
+                model=model,
                 logger=False,
                 default_root_dir=project_path,
                 max_epochs=1,
