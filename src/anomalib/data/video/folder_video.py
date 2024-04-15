@@ -8,9 +8,9 @@ This script creates a custom dataset from a folder.
 import logging
 from collections.abc import Sequence
 from pathlib import Path
+from typing import Any, ClassVar
 
 import numpy as np
-import pandas as pd
 import torch
 from pandas import DataFrame
 from torchvision.transforms.v2 import Transform
@@ -18,53 +18,33 @@ from torchvision.transforms.v2 import Transform
 from anomalib import TaskType
 from anomalib.data.base import AnomalibVideoDataModule, AnomalibVideoDataset
 from anomalib.data.base.video import VideoTargetFrame
-from anomalib.data.errors import MisMatchError
 from anomalib.data.utils import (
-    DirType,
-    LabelName,
     Split,
-    TestSplitMode,
     ValSplitMode,
     read_image,
     read_mask,
     validate_path,
-    video,
 )
-from anomalib.data.utils.path import _prepare_files_labels, validate_and_resolve_path
-from anomalib.data.utils.video import ClipsIndexer, convert_video
+from anomalib.data.utils.path import validate_and_resolve_path
+from anomalib.data.utils.video import ClipsIndexer, convert_video, most_common_extension
 
 logger = logging.getLogger(__name__)
 
 
-# get avi and mp4 2 work
-# ground truth 2 be npy and pt
-# ground truth as a image folder
-# get from most common extension an or functionality to extract the tensors
-
-#    normal_dir: str | Path | Sequence[str | Path],
-#    root: str | Path | None = None,
-#    abnormal_dir: str | Path | Sequence[str | Path] | None = None,
-#    normal_test_dir: str | Path | Sequence[str | Path] | None = None,
-#    mask_dir: str | Path | Sequence[str | Path] | None = None,
-#    split: str | Split | None = None,
-#    extensions: tuple[str, ...] | None = None,
-
-
-def make_folder_video_dataset(
-    root: str | Path | None = None,
-    normal_dir: str | Path | Sequence[str | Path] | None = None,
-    mask_dir: str | Path | Sequence[str | Path] | None = None,
-    test_dir: str | Path | Sequence[str | Path] | None = None,
+def make_folder_video_dataset(  # noqa: C901
+    root: str | Path,
+    normal_dir: str | Path = "",
+    mask_dir: str | Path = "",
+    test_dir: str | Path = "",
     split: str | Split | None = None,
-    extensions: tuple[str, ...] | None = None,
 ) -> DataFrame:
     """Make Folder Video Dataset.
 
     Args:
-        normal_dir (str | Path | Sequence): Path to the directory containing normal images.
         root (str | Path | None): Path to the root directory of the dataset.
             Defaults to ``None``.
-        abnormal_dir (str | Path | Sequence | None, optional): Path to the directory containing abnormal images.
+        normal_dir (str | Path | Sequence): Path to the directory containing normal images.
+        test_dir (str | Path | Sequence | None, optional): Path to the directory containing abnormal images.
             Defaults to ``None``.
         normal_test_dir (str | Path | Sequence | None, optional): Path to the directory containing normal images for
             the test dataset. Normal test images will be a split of `normal_dir` if `None`.
@@ -72,8 +52,6 @@ def make_folder_video_dataset(
         mask_dir (str | Path | Sequence | None, optional): Path to the directory containing the mask annotations.
             Defaults to ``None``.
         split (str | Split | None, optional): Dataset split (ie., Split.FULL, Split.TRAIN or Split.TEST).
-            Defaults to ``None``.
-        extensions (tuple[str, ...] | None, optional): Type of the image extensions to read from the directory.
             Defaults to ``None``.
 
     Returns:
@@ -113,49 +91,6 @@ def make_folder_video_dataset(
             return [validate_and_resolve_path(dir_path, root) for dir_path in path]
         return [validate_and_resolve_path(path, root)] if path is not None else []
 
-    # TODO(Bepitic): Get a mask for the testing is mandatory ?
-    # but the mask for the training is optional
-    # get paths to training videos
-    # normal_dir = _resolve_path_and_convert_to_list(normal_dir)
-    # test_dir = _resolve_path_and_convert_to_list(test_dir)
-    # mask_dir = _resolve_path_and_convert_to_list(mask_dir)
-    # if len(normal_dir) == 0:
-    #     msg = "A folder location must be provided in normal_dir."
-    #     raise ValueError(msg)
-
-    # filenames = []
-    # labels = []
-    # dirs = {DirType.NORMAL: normal_dir}
-
-    # if test_dir:
-    #     dirs[DirType.ABNORMAL] = test_dir
-
-    # if mask_dir:
-    #     dirs[DirType.MASK] = mask_dir
-
-    # TODO(bepitic): reflect on the true path in example and doc
-
-    # # get paths to testing folders
-    # path_list = [(str(root),) + filename.parts[-2:] for filename in normal_dir.glob("*.avi")]
-    # print(path_list)
-    # samples = DataFrame(
-    #     path_list,
-    #     columns=["root", "folder", "image_path"],
-    # )  # TODO(Bepitic): Change image Path to video path ?
-    # samples["split"] = split
-
-    # samples["mask_path"] = ""
-    # # TODO(Bepitic): Maybe other formats?
-    # samples.loc[samples.root == str(path), "mask_path"] = mask_dir
-    # # samples.loc[samples.root == str(path), "mask_path"] = (
-    # # str(mask_dir) + "/" + samples.image_path.str.split(".").str[0] + ".npy"
-    # # )
-
-    # # TODO(Bepitic): Make a system to link both gt and datapoint into the same spot
-    # samples["image_path"] = samples.root + "/" + samples.image_path
-
-    # samples_list = [(str(root),) + filename.parts[-2:] for filename in root.glob("**/*.avi")]
-
     def _contains_files(path: Path, extensions: list) -> bool:
         """Check if the path contains at least one file with a given extension in the directory or its one-level subdir.
 
@@ -166,90 +101,85 @@ def make_folder_video_dataset(
         Returns:
         bool: True if there is at least one file with a given extension, False otherwise.
         """
-        for item in path.iterdir():
-            if (
-                item.is_file()
-                and item.suffix in extensions
-                or item.is_dir()
-                and any(file.suffix in extensions for file in item.iterdir() if file.is_file())
-            ):
-                return True
+        if path.is_dir():
+            for item in path.iterdir():
+                if (item.is_file() and item.suffix in extensions) or (
+                    item.is_dir() and any(file.suffix in extensions for file in item.iterdir() if file.is_file())
+                ):
+                    return True
         return False
 
     def _extract_samples(root: Path, path: Path) -> list:
-        print("_extra fun:")
-        print(f"path: {str(path)}")
-
-        print(f"glob.path: {str([a for a in path.glob('./*')])}")
         samples_list = []
-        if video.most_common_extension(path) in [".avi", ".mp4"]:
-            print("_extra fun: a")
-
-            most_common_extension = video.most_common_extension(path)
+        if most_common_extension(path) in [".avi", ".mp4", ".npy", ".pt"]:
+            common_extension = most_common_extension(path)
             samples_list.extend(
-                [(str(root),) + filename.parts[-2:] for filename in sorted(path.glob(f"./*{most_common_extension}"))],
+                [(str(root),) + filename.parts[-2:] for filename in sorted(path.glob(f"./*{common_extension}"))],
             )
-            print(samples_list)
-        elif video.most_common_extension(path) in [".png", ".tiff", ".bmp", ".tif"]:
-            print("_extra fun: b")
+        elif most_common_extension(path) in [".png", ".jpg", ".tiff", ".bmp", ".tif"]:
             samples_list.extend(
                 [
                     (str(root),) + filename.parts[-2:]
                     for filename in sorted(path.glob("./*"))
-                    if _contains_files(path=path, extensions=[".png", ".tiff", ".bmp", ".tif"])
+                    if _contains_files(path=path, extensions=[".jpg", ".png", ".tiff", ".bmp", ".tif", ".pt", ".npy"])
+                    and not filename.name.startswith(".")
                 ],
             )
         return samples_list
 
+    if isinstance(root, str):
+        root = Path(root)
+
+    if isinstance(normal_dir, str):
+        normal_dir = Path(normal_dir)
+
+    if isinstance(test_dir, str):
+        test_dir = Path(test_dir)
+
+    if isinstance(mask_dir, str):
+        mask_dir = Path(mask_dir)
+
     root = validate_path(root)
     normal_dir = validate_path(root / normal_dir)
-    normal_dir_ext = video.most_common_extension(normal_dir)
     test_dir = validate_path(root / test_dir)
-    test_dir_ext = video.most_common_extension(test_dir)
     mask_dir = validate_path(root / mask_dir)
-    mask_dir_ext = video.most_common_extension(mask_dir)
-    print(_extract_samples(root, normal_dir))
     samples_list = []
     samples_list.extend(_extract_samples(root, normal_dir))
 
-    print("sampleslist")
-    print(samples_list)
     samples_list.extend(_extract_samples(root, test_dir))
 
-    print("sampleslist")
-    print(samples_list)
     samples_list_labels = []
     samples_list_labels.extend(
         [
             filename.parts[-1]
             for filename in sorted(mask_dir.glob("./*"))
-            if _contains_files(path=mask_dir, extensions=[".avi", ".mp4", ".png", ".tiff", ".tif", ".bmp"])
+            if (
+                _contains_files(path=filename, extensions=[".jpg", ".png", ".tiff", ".bmp", ".tif"])
+                and not filename.name.startswith(".")
+            )
+            or filename.suffix in [".npy", ".pt"]
         ],
     )
 
-    print("sampleslist")
-    print(samples_list)
     samples = DataFrame(samples_list, columns=["root", "folder", "image_path"])
-    print(samples.head())
 
     # Remove DS_Strore
     samples = samples[~samples.loc[:, "image_path"].str.contains(".DS_Store")]
-    print(samples.loc[samples.folder == normal_dir.parts[-1]].head())
 
     samples["image_path"] = samples.root + "/" + samples.folder + "/" + samples.image_path
 
     samples.loc[samples.folder == normal_dir.parts[-1], "split"] = "train"
     samples.loc[samples.folder == test_dir.parts[-1], "split"] = "test"
-    samples_list_labels = [item for item in samples_list_labels if item != ".DS_Store"]
-    print(samples_list_labels)
-    print(samples.loc[samples.folder == test_dir.parts[-1]])
+    samples_list_labels = [str(item) for item in samples_list_labels if ".DS_Store" not in str(item)]
     samples.loc[samples.folder == test_dir.parts[-1], "mask_path"] = samples_list_labels
+    if samples_list_labels == []:
+        samples.loc[samples.folder == test_dir.parts[-1], "mask_path"] = ""
+    samples["mask_path"] = str(mask_dir) + "/" + samples.mask_path.astype(str)
     samples.loc[samples.folder == normal_dir.parts[-1], "mask_path"] = ""
 
     if split:
         samples = samples[samples.split == split]
         samples = samples.reset_index(drop=True)
-    print(samples.head())
 
     return samples
 
@@ -257,44 +187,66 @@ def make_folder_video_dataset(
 class FolderClipsIndexerVideo(ClipsIndexer):
     """Clips indexer for the test set Folder video dataset."""
 
-    def get_mask(self, idx: int) -> torch.Tensor | None:
-        """Retrieve the masks from the file system."""
-        video_idx, frames_idx = self.get_clip_location(idx)
-        mask_file = self.mask_paths[video_idx]
-        if mask_file == "":  # no gt masks available for this clip
-            return None
-        frames = self.clips[video_idx][frames_idx]
-
-        vid_masks = np.load(mask_file)
-        return torch.tensor(np.take(vid_masks, frames, 0))
-
-
-class FolderClipsIndexerImgFrames(ClipsIndexer):
-    """Clips class for UCSDped dataset."""
-
-    def get_mask(self, idx: int) -> np.ndarray | None:
+    def get_mask(self, idx: int) -> np.ndarray | torch.Tensor | None:
         """Retrieve the masks from the file system."""
         video_idx, frames_idx = self.get_clip_location(idx)
         mask_folder = self.mask_paths[video_idx]
         if mask_folder == "":  # no gt masks available for this clip
             return None
         frames = self.clips[video_idx][frames_idx]
+        common_extension = most_common_extension(Path(mask_folder))
+        ret = None
 
-        mask_frames = sorted(Path(mask_folder).glob("*.bmp"))
-        mask_paths = [mask_frames[idx] for idx in frames.int()]
+        if common_extension in [".png", ".tiff", ".bmp", ".tif", ".jpg"]:
+            mask_frames = sorted([file for file in Path(mask_folder).glob("*") if not file.name.startswith(".")])
+            mask_paths = [mask_frames[idx] for idx in frames.int()]
+            ret = torch.stack([read_mask(mask_path, as_tensor=True) for mask_path in mask_paths])
+        elif common_extension in [".npy"]:
+            vid_masks = np.load(mask_folder)
+            ret = torch.tensor(np.take(vid_masks, frames, 0))
+        elif common_extension in [".pt"]:
+            vid_masks = torch.load(mask_folder).numpy()
+            ret = torch.tensor(np.take(vid_masks, frames, 0))
 
-        return torch.stack([read_mask(mask_path, as_tensor=True) for mask_path in mask_paths])
+        return ret
+
+
+class FolderClipsIndexerImgFrames(ClipsIndexer):
+    """Clips class for UCSDped dataset."""
+
+    def get_mask(self, idx: int) -> np.ndarray | torch.Tensor | None:
+        """Retrieve the masks from the file system."""
+        video_idx, frames_idx = self.get_clip_location(idx)
+        mask_folder = self.mask_paths[video_idx]
+        if mask_folder == "":  # no gt masks available for this clip
+            return None
+        frames = self.clips[video_idx][frames_idx]
+        common_extension = most_common_extension(Path(mask_folder))
+        ret = None
+
+        if common_extension in [".png", ".tiff", ".bmp", ".tif", ".jpg"]:
+            mask_frames = sorted([file for file in Path(mask_folder).glob("*") if not file.name.startswith(".")])
+            mask_paths = [mask_frames[idx] for idx in frames.int()]
+            ret = torch.stack([read_mask(mask_path, as_tensor=True) for mask_path in mask_paths])
+        elif common_extension in [".npy"]:
+            vid_masks = np.load(mask_folder)
+            ret = torch.tensor(np.take(vid_masks, frames, 0))
+        elif common_extension in [".pt"]:
+            vid_masks = torch.load(mask_folder).numpy()
+            ret = torch.tensor(np.take(vid_masks, frames, 0))
+
+        return ret
 
     def _compute_frame_pts(self) -> None:
         """Retrieve the number of frames in each video."""
         self.video_pts = []
         for video_path in self.video_paths:
-            n_frames = len(list(Path(video_path).glob("*.tif")))
+            n_frames = len([file for file in Path(video_path).glob("*") if not file.name.startswith(".")])  # tiff
             self.video_pts.append(torch.Tensor(range(n_frames)))
 
         self.video_fps = [None] * len(self.video_paths)  # fps information cannot be inferred from folder structure
 
-    def get_clip(self, idx: int) -> tuple[torch.Tensor, torch.Tensor, dict[str, any], int]:
+    def get_clip(self, idx: int) -> tuple[torch.Tensor, torch.Tensor, dict[str, Any], int]:
         """Get a subclip from a list of videos.
 
         Args:
@@ -313,7 +265,8 @@ class FolderClipsIndexerImgFrames(ClipsIndexer):
         video_path = self.video_paths[video_idx]
         clip_pts = self.clips[video_idx][clip_idx]
 
-        frames = sorted(Path(video_path).glob("*.tif"))
+        # Get all the frames in 000.* ~> 999.* where * is an image format
+        frames = sorted([file for file in Path(video_path).glob("*") if not file.name.startswith(".")])
 
         frame_paths = [frames[pt] for pt in clip_pts.int()]
         video = torch.stack([read_image(frame_path, as_tensor=True) for frame_path in frame_paths])
@@ -336,14 +289,17 @@ class FolderDataset(AnomalibVideoDataset):
             Defaults to ``None``.
     """
 
+    VIDEO_EXTENSIONS: ClassVar[set[str]] = {".avi", ".mp4", ".npy", ".pt"}
+    IMAGE_EXTENSIONS: ClassVar[set[str]] = {".bmp", ".png", ".jpg", ".tiff", ".tif"}
+
     def __init__(
         self,
         task: TaskType,
         split: Split,
         root: Path | str,
-        mask_dir: Path | str,
-        normal_dir: Path | str,
-        test_dir: Path | str,
+        mask_dir: Path | str = "test_labels",
+        normal_dir: Path | str = "train_dir",
+        test_dir: Path | str = "test_dir",
         clip_length_in_frames: int = 2,
         frames_between_clips: int = 1,
         target_frame: VideoTargetFrame = VideoTargetFrame.LAST,
@@ -365,15 +321,20 @@ class FolderDataset(AnomalibVideoDataset):
 
         check_path = root
 
-        if split == "test":
-            check_path /= mask_dir
-        else:
-            check_path /= normal_dir
+        check_path = self.root / (self.test_dir if split == Split.TEST else self.normal_dir)
 
-        if video.most_common_extension(check_path) in [".avi", ".mp4"]:
+        file_extension = most_common_extension(check_path)
+        if not file_extension:
+            msg = "No common file extension found in the directory."
+            raise ValueError(msg)
+
+        if file_extension in self.VIDEO_EXTENSIONS:
             self.indexer_cls = FolderClipsIndexerVideo
-        elif video.most_common_extension(check_path) in [".bmp", ".png", ".tiff", ".tif"]:
+        elif file_extension in self.IMAGE_EXTENSIONS:
             self.indexer_cls = FolderClipsIndexerImgFrames
+        else:
+            msg = f"Unsupported file extension {file_extension}"
+            raise TypeError(msg)
 
         self.samples = make_folder_video_dataset(
             root=self.root,
@@ -412,9 +373,9 @@ class FolderVideo(AnomalibVideoDataModule):
     def __init__(
         self,
         root: Path | str,
-        normal_dir: Path | str,
-        mask_dir: Path | str,
-        test_dir: Path | str,
+        mask_dir: Path | str = "test_labels",
+        normal_dir: Path | str = "train_vid",
+        test_dir: Path | str = "test_vid",
         clip_length_in_frames: int = 2,
         frames_between_clips: int = 1,
         target_frame: VideoTargetFrame = VideoTargetFrame.LAST,
@@ -447,11 +408,14 @@ class FolderVideo(AnomalibVideoDataModule):
         self.root = Path(root)
         self.normal_dir = Path(normal_dir)
         self.test_dir = Path(test_dir)
-        self.mask_dir = Path(mask_dir)
+        if mask_dir is not None:
+            self.mask_dir = Path(mask_dir)
+        else:
+            self.mask_dir = Path()
 
         self.clip_length_in_frames = clip_length_in_frames
         self.frames_between_clips = frames_between_clips
-        self.target_frame = target_frame
+        self.target_frame = VideoTargetFrame(target_frame)
 
     def _setup(self, _stage: str | None = None) -> None:
         self.train_data = FolderDataset(
@@ -469,7 +433,7 @@ class FolderVideo(AnomalibVideoDataModule):
 
         self.test_data = FolderDataset(
             task=self.task,
-            transform=self.train_transform,
+            transform=self.eval_transform,
             clip_length_in_frames=self.clip_length_in_frames,
             frames_between_clips=self.frames_between_clips,
             target_frame=self.target_frame,

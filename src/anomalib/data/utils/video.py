@@ -112,7 +112,7 @@ def most_common_extension(folder_path: Path) -> str | None:
     None: If no files with extensions are found in the folder and its subfolders.
     """
     if not folder_path.is_dir():
-        return None
+        return folder_path.suffix
 
     extensions = []
 

@@ -17,6 +17,7 @@ class VideoDataFormat(str, Enum):
     UCSDPED = "ucsdped"
     AVENUE = "avenue"
     SHANGHAITECH = "shanghaitech"
+    FOLDERVIDEO = "foldervideo"
 
 
 __all__ = ["Avenue", "ShanghaiTech", "UCSDped", "FolderVideo"]
