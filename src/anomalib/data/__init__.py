@@ -63,6 +63,7 @@ __all__ = [
     "MVTec",
     "MVTec3D",
     "Avenue",
+    "FolderVideo",
     "UCSDped",
     "ShanghaiTech",
     "Visa",
