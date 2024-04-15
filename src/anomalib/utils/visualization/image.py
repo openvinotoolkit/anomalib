@@ -145,6 +145,8 @@ class ImageVisualizer(BaseVisualizer):
             elif "video_path" in batch:
                 height, width = batch["image"].shape[-2:]
                 image = batch["original_image"][i].squeeze().cpu().numpy()
+                image = image.transpose(1, 2, 0)
+
                 image = cv2.resize(image, dsize=(width, height), interpolation=cv2.INTER_AREA)
             else:
                 msg = "Batch must have either 'image_path' or 'video_path' defined."

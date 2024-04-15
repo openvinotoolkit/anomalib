@@ -6,9 +6,8 @@ This script creates a custom dataset from a folder.
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 import logging
-from collections.abc import Sequence
 from pathlib import Path
-from typing import Any, ClassVar
+from typing import Any
 
 import numpy as np
 import torch
@@ -25,13 +24,15 @@ from anomalib.data.utils import (
     read_mask,
     validate_path,
 )
-from anomalib.data.utils.path import validate_and_resolve_path
 from anomalib.data.utils.video import ClipsIndexer, convert_video, most_common_extension
 
 logger = logging.getLogger(__name__)
 
+SINGLE_FILE_EXTENSIONS: set[str] = {".avi", ".mp4", ".npy", ".pt"}
+FOLDER_IMAGE_EXTENSIONS: set[str] = {".bmp", ".png", ".jpg", ".tiff", ".tif"}
 
-def make_folder_video_dataset(  # noqa: C901
+
+def make_folder_video_dataset(
     root: str | Path,
     normal_dir: str | Path = "",
     mask_dir: str | Path = "",
@@ -41,57 +42,35 @@ def make_folder_video_dataset(  # noqa: C901
     """Make Folder Video Dataset.
 
     Args:
-        root (str | Path | None): Path to the root directory of the dataset.
+        root (str | Path ): Path to the root directory of the dataset.
             Defaults to ``None``.
-        normal_dir (str | Path | Sequence): Path to the directory containing normal images.
-        test_dir (str | Path | Sequence | None, optional): Path to the directory containing abnormal images.
+        normal_dir (str | Path ): Path to the directory containing normal images.
+        test_dir (str | Path, optional): Path to the directory containing abnormal images.
             Defaults to ``None``.
-        normal_test_dir (str | Path | Sequence | None, optional): Path to the directory containing normal images for
+        normal_test_dir (str | Path, optional): Path to the directory containing normal images for
             the test dataset. Normal test images will be a split of `normal_dir` if `None`.
             Defaults to ``None``.
-        mask_dir (str | Path | Sequence | None, optional): Path to the directory containing the mask annotations.
+        mask_dir (str | Path, optional): Path to the directory containing the mask annotations.
             Defaults to ``None``.
         split (str | Split | None, optional): Dataset split (ie., Split.FULL, Split.TRAIN or Split.TEST).
             Defaults to ``None``.
 
-    Returns:
+    Return:
         DataFrame: an output dataframe containing samples for the requested split (ie., train or test).
 
     Example:
-        The following example shows how to get testing samples from ShanghaiTech dataset:
+        The following example shows how to get testing samples from a custom dataset:
 
         >>> root = Path('./myDataset')
-        >>> samples = make_folder_video_dataset(path, split='test')
+        >>> samples = make_folder_video_dataset(root, split='test')
         >>> samples.head()
             root            image_path                      split   mask_path
         0	mydataset	mydataset/testing/frames/01_0014	test	mydataset/testing/test_pixel_mask/01_0014.npy
         1	mydataset	mydataset/testing/frames/01_0015	test	mydataset/testing/test_pixel_mask/01_0015.npy
         ...
-
-    Returns:
-        DataFrame: an output dataframe containing samples for the requested split (ie., train or test)
     """
 
-    def _resolve_path_and_convert_to_list(path: str | Path | Sequence[str | Path] | None) -> list[Path]:
-        """Convert path to list of paths.
-
-        Args:
-            path (str | Path | Sequence | None): Path to replace with Sequence[str | Path].
-
-        Examples:
-            >>> _resolve_path_and_convert_to_list("dir")
-            [Path("path/to/dir")]
-            >>> _resolve_path_and_convert_to_list(["dir1", "dir2"])
-            [Path("path/to/dir1"), Path("path/to/dir2")]
-
-        Returns:
-            list[Path]: The result of path replaced by Sequence[str | Path].
-        """
-        if isinstance(path, Sequence) and not isinstance(path, str):
-            return [validate_and_resolve_path(dir_path, root) for dir_path in path]
-        return [validate_and_resolve_path(path, root)] if path is not None else []
-
-    def _contains_files(path: Path, extensions: list) -> bool:
+    def _contains_files(path: Path, extensions: set[str]) -> bool:
         """Check if the path contains at least one file with a given extension in the directory or its one-level subdir.
 
         Args:
@@ -111,17 +90,20 @@ def make_folder_video_dataset(  # noqa: C901
 
     def _extract_samples(root: Path, path: Path) -> list:
         samples_list = []
-        if most_common_extension(path) in [".avi", ".mp4", ".npy", ".pt"]:
+        if most_common_extension(path) in SINGLE_FILE_EXTENSIONS:
             common_extension = most_common_extension(path)
             samples_list.extend(
                 [(str(root),) + filename.parts[-2:] for filename in sorted(path.glob(f"./*{common_extension}"))],
             )
-        elif most_common_extension(path) in [".png", ".jpg", ".tiff", ".bmp", ".tif"]:
+        elif most_common_extension(path) in FOLDER_IMAGE_EXTENSIONS:
             samples_list.extend(
                 [
                     (str(root),) + filename.parts[-2:]
                     for filename in sorted(path.glob("./*"))
-                    if _contains_files(path=path, extensions=[".jpg", ".png", ".tiff", ".bmp", ".tif", ".pt", ".npy"])
+                    if _contains_files(
+                        path=path,
+                        extensions=SINGLE_FILE_EXTENSIONS | FOLDER_IMAGE_EXTENSIONS,
+                    )
                     and not filename.name.startswith(".")
                 ],
             )
@@ -154,8 +136,7 @@ def make_folder_video_dataset(  # noqa: C901
             filename.parts[-1]
             for filename in sorted(mask_dir.glob("./*"))
             if (
-                _contains_files(path=filename, extensions=[".jpg", ".png", ".tiff", ".bmp", ".tif"])
-                and not filename.name.startswith(".")
+                _contains_files(path=filename, extensions=FOLDER_IMAGE_EXTENSIONS) and not filename.name.startswith(".")
             )
             or filename.suffix in [".npy", ".pt"]
         ],
@@ -163,7 +144,7 @@ def make_folder_video_dataset(  # noqa: C901
 
     samples = DataFrame(samples_list, columns=["root", "folder", "image_path"])
 
-    # Remove DS_Strore
+    # Remove DS_Store
     samples = samples[~samples.loc[:, "image_path"].str.contains(".DS_Store")]
 
     samples["image_path"] = samples.root + "/" + samples.folder + "/" + samples.image_path
@@ -197,7 +178,7 @@ class FolderClipsIndexerVideo(ClipsIndexer):
         common_extension = most_common_extension(Path(mask_folder))
         ret = None
 
-        if common_extension in [".png", ".tiff", ".bmp", ".tif", ".jpg"]:
+        if common_extension in SINGLE_FILE_EXTENSIONS:
             mask_frames = sorted([file for file in Path(mask_folder).glob("*") if not file.name.startswith(".")])
             mask_paths = [mask_frames[idx] for idx in frames.int()]
             ret = torch.stack([read_mask(mask_path, as_tensor=True) for mask_path in mask_paths])
@@ -211,31 +192,8 @@ class FolderClipsIndexerVideo(ClipsIndexer):
         return ret
 
 
-class FolderClipsIndexerImgFrames(ClipsIndexer):
+class FolderClipsIndexerImgFrames(FolderClipsIndexerVideo):
     """Clips class for UCSDped dataset."""
-
-    def get_mask(self, idx: int) -> np.ndarray | torch.Tensor | None:
-        """Retrieve the masks from the file system."""
-        video_idx, frames_idx = self.get_clip_location(idx)
-        mask_folder = self.mask_paths[video_idx]
-        if mask_folder == "":  # no gt masks available for this clip
-            return None
-        frames = self.clips[video_idx][frames_idx]
-        common_extension = most_common_extension(Path(mask_folder))
-        ret = None
-
-        if common_extension in [".png", ".tiff", ".bmp", ".tif", ".jpg"]:
-            mask_frames = sorted([file for file in Path(mask_folder).glob("*") if not file.name.startswith(".")])
-            mask_paths = [mask_frames[idx] for idx in frames.int()]
-            ret = torch.stack([read_mask(mask_path, as_tensor=True) for mask_path in mask_paths])
-        elif common_extension in [".npy"]:
-            vid_masks = np.load(mask_folder)
-            ret = torch.tensor(np.take(vid_masks, frames, 0))
-        elif common_extension in [".pt"]:
-            vid_masks = torch.load(mask_folder).numpy()
-            ret = torch.tensor(np.take(vid_masks, frames, 0))
-
-        return ret
 
     def _compute_frame_pts(self) -> None:
         """Retrieve the number of frames in each video."""
@@ -289,9 +247,6 @@ class FolderDataset(AnomalibVideoDataset):
             Defaults to ``None``.
     """
 
-    VIDEO_EXTENSIONS: ClassVar[set[str]] = {".avi", ".mp4", ".npy", ".pt"}
-    IMAGE_EXTENSIONS: ClassVar[set[str]] = {".bmp", ".png", ".jpg", ".tiff", ".tif"}
-
     def __init__(
         self,
         task: TaskType,
@@ -328,9 +283,9 @@ class FolderDataset(AnomalibVideoDataset):
             msg = "No common file extension found in the directory."
             raise ValueError(msg)
 
-        if file_extension in self.VIDEO_EXTENSIONS:
+        if file_extension in SINGLE_FILE_EXTENSIONS:
             self.indexer_cls = FolderClipsIndexerVideo
-        elif file_extension in self.IMAGE_EXTENSIONS:
+        elif file_extension in FOLDER_IMAGE_EXTENSIONS:
             self.indexer_cls = FolderClipsIndexerImgFrames
         else:
             msg = f"Unsupported file extension {file_extension}"
