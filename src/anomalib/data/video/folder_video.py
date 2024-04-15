@@ -43,15 +43,11 @@ def make_folder_video_dataset(
 
     Args:
         root (str | Path ): Path to the root directory of the dataset.
-            Defaults to ``None``.
         normal_dir (str | Path ): Path to the directory containing normal images.
         test_dir (str | Path, optional): Path to the directory containing abnormal images.
-            Defaults to ``None``.
-        normal_test_dir (str | Path, optional): Path to the directory containing normal images for
-            the test dataset. Normal test images will be a split of `normal_dir` if `None`.
-            Defaults to ``None``.
+            Defaults to ``""``.
         mask_dir (str | Path, optional): Path to the directory containing the mask annotations.
-            Defaults to ``None``.
+            Defaults to ``""``.
         split (str | Split | None, optional): Dataset split (ie., Split.FULL, Split.TRAIN or Split.TEST).
             Defaults to ``None``.
 
@@ -62,11 +58,13 @@ def make_folder_video_dataset(
         The following example shows how to get testing samples from a custom dataset:
 
         >>> root = Path('./myDataset')
-        >>> samples = make_folder_video_dataset(root, split='test')
+        >>> samples = make_folder_video_dataset(
+            root,normal_dir="train_vid", test_dir="test_vid", mask_dir="test_labels", split='test'
+            )
         >>> samples.head()
             root            image_path                      split   mask_path
-        0	mydataset	mydataset/testing/frames/01_0014	test	mydataset/testing/test_pixel_mask/01_0014.npy
-        1	mydataset	mydataset/testing/frames/01_0015	test	mydataset/testing/test_pixel_mask/01_0015.npy
+        0	myDataset	myDataset/test_vid/01_0014	test	myDataset/test_labels/01_0014.npy
+        1	myDataset	myDataset/test_vid/01_0015	test	myDataset/test_labels/01_0015.npy
         ...
     """
 
@@ -178,7 +176,7 @@ class FolderClipsIndexerVideo(ClipsIndexer):
         common_extension = most_common_extension(Path(mask_folder))
         ret = None
 
-        if common_extension in SINGLE_FILE_EXTENSIONS:
+        if common_extension in FOLDER_IMAGE_EXTENSIONS:
             mask_frames = sorted([file for file in Path(mask_folder).glob("*") if not file.name.startswith(".")])
             mask_paths = [mask_frames[idx] for idx in frames.int()]
             ret = torch.stack([read_mask(mask_path, as_tensor=True) for mask_path in mask_paths])
@@ -193,7 +191,7 @@ class FolderClipsIndexerVideo(ClipsIndexer):
 
 
 class FolderClipsIndexerImgFrames(FolderClipsIndexerVideo):
-    """Clips class for UCSDped dataset."""
+    """Clips indexer for the test set Folder video dataset with frames as a video."""
 
     def _compute_frame_pts(self) -> None:
         """Retrieve the number of frames in each video."""
@@ -238,8 +236,10 @@ class FolderDataset(AnomalibVideoDataset):
     Args:
         task (TaskType): Task type, 'classification', 'detection' or 'segmentation'
         split (Split): Split of the dataset, usually Split.TRAIN or Split.TEST
-        path (Path | str): Path to the training/testing videos of the dataset (.avi)
-        path_gt (Path | str): Path to the masks fror the training videos of the dataset (.npy)
+        root (Path | str): Path to the dataset.
+        normal_dir (Path | str): Path to the training videos of the dataset (.avi / .mp4 / imgages as frames).
+        test_dir (Path | str): Path to the testing videos of the dataset.
+        mask_dir (Path | str): Path to the masks for the training videos of the dataset (.npy/.pt/ images)
         clip_length_in_frames (int, optional): Number of video frames in each clip.
         frames_between_clips (int, optional): Number of frames between each consecutive video clip.
         target_frame (VideoTargetFrame): Specifies the target frame in the video clip, used for ground truth retrieval.
@@ -305,10 +305,13 @@ class FolderVideo(AnomalibVideoDataModule):
 
     Args:
         root (Path | str): Path to the root of the dataset
+        normal_dir (Path | str): Path to the training videos of the dataset (.avi / .mp4 / imgages as frames).
+        test_dir (Path | str): Path to the testing videos of the dataset.
+        mask_dir (Path | str): Path to the masks for the training videos of the dataset (.npy/.pt/ images)
         clip_length_in_frames (int, optional): Number of video frames in each clip.
         frames_between_clips (int, optional): Number of frames between each consecutive video clip.
         target_frame (VideoTargetFrame): Specifies the target frame in the video clip, used for ground truth retrieval
-        task TaskType): Task type, 'classification', 'detection' or 'segmentation'
+        task (TaskType): Task type, 'classification', 'detection' or 'segmentation'
         image_size (tuple[int, int], optional): Size to which input images should be resized.
             Defaults to ``None``.
         transform (Transform, optional): Transforms that should be applied to the input images.
