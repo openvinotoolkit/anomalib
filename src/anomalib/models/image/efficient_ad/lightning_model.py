@@ -93,7 +93,7 @@ class EfficientAd(AnomalyModule):
         if not (pretrained_models_dir / "efficientad_pretrained_weights").is_dir():
             download_and_extract(pretrained_models_dir, WEIGHTS_DOWNLOAD_INFO)
         teacher_path = (
-            pretrained_models_dir / "efficientad_pretrained_weights" / f"pretrained_teacher_{self.model_size}.pth"
+            pretrained_models_dir / "efficientad_pretrained_weights" / f"pretrained_teacher_{self.model_size.value}.pth"
         )
         logger.info(f"Load pretrained teacher model from {teacher_path}")
         self.model.teacher.load_state_dict(torch.load(teacher_path, map_location=torch.device(self.device)))

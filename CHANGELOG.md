@@ -10,6 +10,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
+- 🔨Rename OptimalF1 to F1Max for consistency with the literature, by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/1980
+- 🐞Update OptimalF1 score to use BinaryPrecisionRecallCurve and remove num_classes by @ashwinvaidya17 in https://github.com/openvinotoolkit/anomalib/pull/1972
+
 ### Deprecated
 
 ### Fixed
@@ -18,7 +21,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 **Full Changelog**:
 
-## [v1.0.1] - Unreleased
+## [v1.0.1] - 2024-03-27
 
 ### Added
 
