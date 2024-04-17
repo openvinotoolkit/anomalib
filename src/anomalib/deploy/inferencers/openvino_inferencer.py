@@ -199,6 +199,10 @@ class OpenVINOInferencer(Inferencer):
             msg = f"Input image must be a numpy array or a path to an image. Got {type(image)}"
             raise TypeError(msg)
 
+        # Resize image to model input size if not dynamic
+        if self.input_blob.partial_shape[2:].is_static:
+            image = cv2.resize(image, tuple(self.input_blob.shape[2:][::-1]))
+
         # Normalize numpy array to range [0, 1]
         if image.dtype != np.float32:
             image = image.astype(np.float32)
