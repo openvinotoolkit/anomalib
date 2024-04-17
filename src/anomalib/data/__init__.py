@@ -3,7 +3,6 @@
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 import importlib
 import logging
 from enum import Enum
@@ -48,15 +47,16 @@ def get_datamodule(config: DictConfig | ListConfig | dict) -> AnomalibDataModule
         config = DictConfig(config)
 
     try:
-        if len(config.data.class_path.split(".")) > 1:
-            module = importlib.import_module(".".join(config.data.class_path.split(".")[:-1]))
+        _config = config.data if "data" in config else config
+        if len(_config.class_path.split(".")) > 1:
+            module = importlib.import_module(".".join(_config.class_path.split(".")[:-1]))
         else:
             module = importlib.import_module("anomalib.data")
     except ModuleNotFoundError as exception:
-        logger.exception(f"ModuleNotFoundError: {config.data.class_path}")
+        logger.exception(f"ModuleNotFoundError: {_config.class_path}")
         raise UnknownDatamoduleError from exception
-    dataclass = getattr(module, config.data.class_path.split(".")[-1])
-    init_args = {**config.data.get("init_args", {})}  # get dict
+    dataclass = getattr(module, _config.class_path.split(".")[-1])
+    init_args = {**_config.get("init_args", {})}  # get dict
     if "image_size" in init_args:
         init_args["image_size"] = to_tuple(init_args["image_size"])
 

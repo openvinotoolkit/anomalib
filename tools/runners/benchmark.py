@@ -3,9 +3,7 @@
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
-from anomalib.pipelines import Pipeline, PoolExecutor
-from anomalib.pipelines.jobs import BenchmarkJob
+from anomalib.pipelines.orchestrators.benchmark import Benchmark
 
 if __name__ == "__main__":
-    Pipeline(PoolExecutor(BenchmarkJob())).run()
+    Benchmark().run()

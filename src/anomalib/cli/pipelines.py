@@ -7,12 +7,11 @@ from jsonargparse import ArgumentParser, Namespace
 
 from anomalib.utils.exceptions import try_import
 
-if try_import("anomalib.pipelines.pipeline"):
-    from anomalib.pipelines import Pipeline, PoolExecutor
-    from anomalib.pipelines.jobs import BenchmarkJob
+if try_import("anomalib.pipelines.orchestrators"):
+    from anomalib.pipelines.orchestrators import Benchmark, Orchestrator
 
-    PIPELINE_REGISTRY: dict[str, Pipeline] | None = {
-        "benchmark": Pipeline(PoolExecutor(BenchmarkJob())),
+    PIPELINE_REGISTRY: dict[str, Orchestrator] | None = {
+        "benchmark": Benchmark(),
     }
 else:
     PIPELINE_REGISTRY = None

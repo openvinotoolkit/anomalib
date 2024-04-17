@@ -3,7 +3,7 @@
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from .pool import PoolExecutor
-from .serial import SerialExecutor
+from .parallel import ParallelRunner
+from .serial import SerialRunner
 
-__all__ = ["SerialExecutor", "PoolExecutor"]
+__all__ = ["SerialRunner", "ParallelRunner"]

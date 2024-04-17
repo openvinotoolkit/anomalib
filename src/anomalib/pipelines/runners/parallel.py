@@ -8,13 +8,12 @@ import multiprocessing
 from concurrent.futures import ProcessPoolExecutor
 from typing import TYPE_CHECKING
 
-import torch
-from jsonargparse import ArgumentParser, Namespace
+from jsonargparse import Namespace
 from rich import print
 from rich.progress import Progress, TaskID
 
-from anomalib.pipelines.executors.serial import SerialExecutor
 from anomalib.pipelines.jobs.base import Job
+from anomalib.pipelines.runners.base import Runner
 
 if TYPE_CHECKING:
     from concurrent.futures import Future
@@ -22,15 +21,16 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class PoolExecutionError(Exception):
+class ParallelExecutionError(Exception):
     """Pool execution error should be raised when one or more jobs fail in the pool."""
 
 
-class PoolExecutor(SerialExecutor):
+class ParallelRunner(Runner):
     """Run the job in parallel using a process pool."""
 
-    def __init__(self, job: Job) -> None:
+    def __init__(self, job: Job, n_jobs: int) -> None:
         super().__init__(job)
+        self.n_jobs = n_jobs
         self.processes: dict[int, Future | None] = {}
         self.progress = Progress()
         self.task_id: TaskID
@@ -41,15 +41,15 @@ class PoolExecutor(SerialExecutor):
         """Run the job in parallel."""
         self.task_id = self.progress.add_task(self.job.name, total=None)
         self.progress.start()
-        self.processes = {i: None for i in range(args.n_jobs)}
+        self.processes = {i: None for i in range(self.n_jobs)}
 
-        with ProcessPoolExecutor(max_workers=args.n_jobs, mp_context=multiprocessing.get_context("spawn")) as executor:
-            for config in self.job.config_iterator(args):
+        with ProcessPoolExecutor(max_workers=self.n_jobs, mp_context=multiprocessing.get_context("spawn")) as executor:
+            for config in self.job.get_iterator(args):
                 while None not in self.processes.values():
                     self._cleanup_processes()
                 # get free index
                 index = next(i for i, p in self.processes.items() if p is None)
-                self.processes[index] = executor.submit(self.job.run, config, task_id=index)
+                self.processes[index] = executor.submit(self.job.run, **config, task_id=index)
             while None not in self.processes.values():
                 self._cleanup_processes()
             for process in self.processes.values():
@@ -62,14 +62,13 @@ class PoolExecutor(SerialExecutor):
 
         self.progress.update(self.task_id, completed=1, total=1)
         self.progress.stop()
-        gathered_result = self.job.gather_results(self.results)
-        self.job.save_gathered_result(gathered_result)
-        self._print_tabular_results(gathered_result)
+        gathered_result = self.job.on_collect(self.results)
+        self.job.on_save(gathered_result)
         if self.failures:
             msg = f"[bold red]There were some errors with job {self.job.name}[/bold red]"
             print(msg)
             logger.error(msg)
-            raise PoolExecutionError(msg)
+            raise ParallelExecutionError(msg)
         logger.info(f"Job {self.job.name} completed successfully.")
 
     def _cleanup_processes(self) -> None:
@@ -83,13 +82,3 @@ class PoolExecutor(SerialExecutor):
                     self.failures = True
                 self.processes[index] = None
                 self.progress.update(self.task_id, advance=1)
-
-    def add_arguments(self, parser: ArgumentParser) -> None:
-        """Add n_jobs to the parser."""
-        parser.add_argument(
-            "--n_jobs",
-            type=int,
-            default=torch.cuda.device_count(),
-            help="Number of jobs to run in parallel.",
-        )
-        self.job.add_arguments(parser)
