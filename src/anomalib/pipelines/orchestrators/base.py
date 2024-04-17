@@ -44,13 +44,6 @@ class Orchestrator(ABC):
     def _setup_runners(self, args: Namespace) -> list[Runner]:
         """Setup the runners for the pipeline."""
 
-    # @abstractmethod
-    # def _pre_process_args(self, args: Namespace, job_name: str) -> Namespace:
-    #     """Pre-process the arguments before running the pipeline.
-
-    #     This can be used to validate the arguments or to add additional arguments.
-    #     """
-
     def run(self, args: Namespace | None = None) -> None:
         """Run the pipeline.
 
