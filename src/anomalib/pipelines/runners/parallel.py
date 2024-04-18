@@ -62,8 +62,8 @@ class ParallelRunner(Runner):
 
         self.progress.update(self.task_id, completed=1, total=1)
         self.progress.stop()
-        gathered_result = self.job.on_collect(self.results)
-        self.job.on_save(gathered_result)
+        gathered_result = self.job.collect(self.results)
+        self.job.save(gathered_result)
         if self.failures:
             msg = f"[bold red]There were some errors with job {self.job.name}[/bold red]"
             print(msg)

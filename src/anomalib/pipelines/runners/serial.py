@@ -36,8 +36,8 @@ class SerialRunner(Runner):
             except Exception:  # noqa: PERF203
                 failures = True
                 logger.exception(f"Error running job with config {config}")
-        gathered_result = self.job.on_collect(results)
-        self.job.on_save(gathered_result)
+        gathered_result = self.job.collect(results)
+        self.job.save(gathered_result)
         if failures:
             msg = f"[bold red]There were some errors with job {self.job.name}[/bold red]"
             print(msg)

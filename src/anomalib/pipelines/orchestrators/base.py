@@ -55,7 +55,8 @@ class Orchestrator(ABC):
 
         for runner in runners:
             try:
-                runner.run(args[runner.job.name])
+                _args = args[runner.job.name] if runner.job.name in args else None
+                runner.run(_args)
             except Exception:  # noqa: PERF203 catch all exception and allow try-catch in loop
                 logger.exception("An error occurred when running the runner.")
                 print(

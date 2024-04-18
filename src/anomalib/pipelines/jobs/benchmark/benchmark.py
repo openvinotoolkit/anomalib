@@ -5,7 +5,6 @@
 
 from argparse import SUPPRESS
 from collections.abc import Iterator
-from itertools import product
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Any
@@ -21,9 +20,11 @@ from anomalib.data import AnomalibDataModule, get_datamodule
 from anomalib.engine import Engine
 from anomalib.models import AnomalyModule, get_model
 from anomalib.pipelines.jobs.base import Job
-from anomalib.pipelines.utils import hide_output
-
-from .utils import _GridSearchAction, convert_to_tuple, dict_from_namespace, flatten_dict, to_nested_dict
+from anomalib.pipelines.utils import (
+    dict_from_namespace,
+    hide_output,
+)
+from anomalib.pipelines.utils.actions import GridSearchAction, get_iterator_from_grid_dict
 
 
 class BenchmarkJob(Job):
@@ -66,7 +67,7 @@ class BenchmarkJob(Job):
         self.logger.info(f"Completed with result {output}")
         return output
 
-    def on_collect(self, results: list[dict[str, Any]]) -> pd.DataFrame:
+    def collect(self, results: list[dict[str, Any]]) -> pd.DataFrame:
         """Gather the results returned from run."""
         output: dict[str, Any] = {}
         for key in results[0]:
@@ -74,12 +75,11 @@ class BenchmarkJob(Job):
         for result in results:
             for key, value in result.items():
                 output[key].append(value)
-        result = pd.DataFrame(output)
-        self._print_tabular_results(result)
-        return result
+        return pd.DataFrame(output)
 
-    def on_save(self, result: pd.DataFrame) -> None:
+    def save(self, result: pd.DataFrame) -> None:
         """Save the result to a csv file."""
+        self._print_tabular_results(result)
         file_path = Path("runs") / self.accelerator / self.name / "results.csv"
         file_path.parent.mkdir(parents=True, exist_ok=True)
         result.to_csv(file_path, index=False)
@@ -118,16 +118,7 @@ class BenchmarkJob(Job):
             "data": dict_from_namespace(args.data),
             "model": dict_from_namespace(args.model),
         }
-        # extract all grid keys and return cross product of all grid values
-        container = flatten_dict(container)
-        grid_dict = {key: value for key, value in container.items() if "grid" in key}
-        container = {key: value for key, value in container.items() if key not in grid_dict}
-        combinations = list(product(*convert_to_tuple(grid_dict.values())))
-        for combination in combinations:
-            _container = container.copy()
-            for key, value in zip(grid_dict.keys(), combination, strict=True):
-                _container[key.removesuffix(".grid")] = value
-            _container = to_nested_dict(_container)
+        for _container in get_iterator_from_grid_dict(container):
             yield {
                 "seed": _container["seed"],
                 "model": get_model(_container["model"]),
@@ -147,7 +138,7 @@ class BenchmarkJob(Job):
             instantiate=False,
         )
 
-        with _GridSearchAction.allow_default_instance_context():
+        with GridSearchAction.allow_default_instance_context():
             action = group.add_argument(
                 f"--{key}",
                 metavar="CONFIG | CLASS_PATH_OR_NAME | .INIT_ARG_NAME VALUE",
@@ -156,6 +147,6 @@ class BenchmarkJob(Job):
                     f' and "init_args" for any subclass of {baseclass.__name__}.'
                 ),
                 default=SUPPRESS,
-                action=_GridSearchAction(typehint=baseclass, enable_path=True, logger=parser.logger),
+                action=GridSearchAction(typehint=baseclass, enable_path=True, logger=parser.logger),
             )
         action.sub_add_kwargs = {"fail_untyped": True, "sub_configs": True, "instantiate": True}

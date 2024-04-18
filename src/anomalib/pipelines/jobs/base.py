@@ -28,7 +28,7 @@ class Job(ABC):
         """
 
     @abstractmethod
-    def on_collect(self, results: list[RUN_RESULTS]) -> GATHERED_RESULTS:
+    def collect(self, results: list[RUN_RESULTS]) -> GATHERED_RESULTS:
         """Gather the results returned from run.
 
         This can be used to combine the results from multiple runs or to save/process individual job results.
@@ -38,7 +38,7 @@ class Job(ABC):
         """
 
     @abstractmethod
-    def on_save(self, results: GATHERED_RESULTS) -> None:
+    def save(self, results: GATHERED_RESULTS) -> None:
         """Save the gathered results.
 
         This can be used to save the results in a file or a database.
@@ -57,7 +57,7 @@ class Job(ABC):
 
     @staticmethod
     @abstractmethod
-    def get_iterator(args: Namespace) -> Iterator:
+    def get_iterator(args: Namespace | None = None) -> Iterator:
         """Return an iterator based on the arguments.
 
         This can be used to generate the configurations that will be passed to run.
