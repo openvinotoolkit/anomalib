@@ -21,8 +21,6 @@
 [![Downloads](https://static.pepy.tech/personalized-badge/anomalib?period=total&units=international_system&left_color=grey&right_color=green&left_text=PyPI%20Downloads)](https://pepy.tech/project/anomalib)
 ![Discord](https://img.shields.io/discord/1230798452577800237?style=plastic)
 
-
-
 </div>
 
 ---
