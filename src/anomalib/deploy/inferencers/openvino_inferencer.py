@@ -200,7 +200,7 @@ class OpenVINOInferencer(Inferencer):
             raise TypeError(msg)
 
         # Resize image to model input size if not dynamic
-        if self.input_blob.partial_shape[2:].is_static:
+        if self.input_blob.partial_shape[2].is_static and self.input_blob.partial_shape[3].is_static:
             image = cv2.resize(image, tuple(self.input_blob.shape[2:][::-1]))
 
         # Normalize numpy array to range [0, 1]

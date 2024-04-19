@@ -25,10 +25,6 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger("anomalib")
 
-if try_import("openvino"):
-    from openvino.runtime import serialize
-    from openvino.tools.ovc import convert_model
-
 
 class ExportType(str, Enum):
     """Model export type.
@@ -299,15 +295,21 @@ def export_to_openvino(
         ... )
 
     """
+    if not try_import("openvino"):
+        logger.exception("Could not find OpenVINO. Please check OpenVINO installation.")
+        raise ModuleNotFoundError
+
+    import openvino as ov
+
     model_path = export_to_onnx(model, export_root, input_size, transform, task, ExportType.OPENVINO)
     ov_model_path = model_path.with_suffix(".xml")
     ov_args = {} if ov_args is None else ov_args
-    if convert_model is not None and serialize is not None:
-        model = convert_model(model_path, **ov_args)
-        serialize(model, ov_model_path)
-    else:
-        logger.exception("Could not find OpenVINO methods. Please check OpenVINO installation.")
-        raise ModuleNotFoundError
+    # fp16 compression is enabled by default
+    compress_to_fp16 = ov_args.get("compress_to_fp16", True)
+
+    model = ov.convert_model(model_path, **ov_args)
+    ov.save_model(model, ov_model_path, compress_to_fp16=compress_to_fp16)
+
     return ov_model_path
 
 
