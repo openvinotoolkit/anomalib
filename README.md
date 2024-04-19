@@ -19,7 +19,7 @@
 [![Documentation Status](https://readthedocs.org/projects/anomalib/badge/?version=latest)](https://anomalib.readthedocs.io/en/latest/?badge=latest)
 [![codecov](https://codecov.io/gh/openvinotoolkit/anomalib/branch/main/graph/badge.svg?token=Z6A07N1BZK)](https://codecov.io/gh/openvinotoolkit/anomalib)
 [![Downloads](https://static.pepy.tech/personalized-badge/anomalib?period=total&units=international_system&left_color=grey&right_color=green&left_text=PyPI%20Downloads)](https://pepy.tech/project/anomalib)
-![Discord](https://img.shields.io/discord/1230798452577800237?style=plastic)
+[![Discord](https://img.shields.io/discord/1230798452577800237?style=plastic)](https://discord.com/channels/1230798452577800237)
 
 </div>
 
