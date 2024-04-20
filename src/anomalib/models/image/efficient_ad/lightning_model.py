@@ -80,7 +80,7 @@ class EfficientAd(AnomalyModule):
             padding=padding,
             pad_maps=pad_maps,
         )
-        self.batch_size = 1  # hardcoded batch_size for imagenet dataloader
+        self.batch_size = 1  # imagenet dataloader batch size is 1 according to the paper
         self.lr = lr
         self.weight_decay = weight_decay
 
