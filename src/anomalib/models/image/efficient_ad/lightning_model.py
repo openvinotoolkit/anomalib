@@ -58,8 +58,6 @@ class EfficientAd(AnomalyModule):
         pad_maps (bool): relevant if padding is set to False. In this case, pad_maps = True pads the
             output anomaly maps so that their size matches the size in the padding = True case.
             Defaults to ``True``.
-        batch_size (int): batch size for imagenet dataloader
-            Defaults to ``1``.
     """
 
     def __init__(
@@ -71,7 +69,6 @@ class EfficientAd(AnomalyModule):
         weight_decay: float = 0.00001,
         padding: bool = False,
         pad_maps: bool = True,
-        batch_size: int = 1,
     ) -> None:
         super().__init__()
 
@@ -83,7 +80,7 @@ class EfficientAd(AnomalyModule):
             padding=padding,
             pad_maps=pad_maps,
         )
-        self.batch_size = batch_size
+        self.batch_size = 1  # hardcoded batch_size for imagenet dataloader
         self.lr = lr
         self.weight_decay = weight_decay
 
