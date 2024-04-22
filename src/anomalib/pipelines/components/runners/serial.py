@@ -9,8 +9,7 @@ from jsonargparse import Namespace
 from rich import print
 from rich.progress import track
 
-from anomalib.pipelines.jobs.base import Job
-from anomalib.pipelines.runners.base import Runner
+from anomalib.pipelines.components.base import JobGenerator, Runner
 
 logger = logging.getLogger(__name__)
 
@@ -22,25 +21,25 @@ class SerialExecutionError(Exception):
 class SerialRunner(Runner):
     """Serial executor for running a single job at a time."""
 
-    def __init__(self, job: Job) -> None:
-        super().__init__(job)
+    def __init__(self, generator: JobGenerator) -> None:
+        super().__init__(generator)
 
     def run(self, args: Namespace) -> None:
         """Run the job."""
         results = []
         failures = False
-        logger.info(f"Running job {self.job.name}")
-        for config in track(self.job.get_iterator(args), description=self.job.name):
+        logger.info(f"Running job {self.generator.job_class.name}")
+        for job in track(self.generator(args), description=self.generator.job_class.name):
             try:
-                results.append(self.job.run(**config))
+                results.append(job.run())
             except Exception:  # noqa: PERF203
                 failures = True
-                logger.exception(f"Error running job with config {config}")
-        gathered_result = self.job.collect(results)
-        self.job.save(gathered_result)
+                logger.exception("Error running job.")
+        gathered_result = self.generator.job_class.collect(results)
+        self.generator.job_class.save(gathered_result)
         if failures:
-            msg = f"[bold red]There were some errors with job {self.job.name}[/bold red]"
+            msg = f"[bold red]There were some errors with job {self.generator.job_class.name}[/bold red]"
             print(msg)
             logger.error(msg)
             raise SerialExecutionError(msg)
-        logger.info(f"Job {self.job.name} completed successfully.")
+        logger.info(f"Job {self.generator.job_class.name} completed successfully.")

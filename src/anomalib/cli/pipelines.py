@@ -7,10 +7,11 @@ from jsonargparse import ArgumentParser, Namespace
 
 from anomalib.utils.exceptions import try_import
 
-if try_import("anomalib.pipelines.orchestrators"):
-    from anomalib.pipelines.orchestrators import Benchmark, Orchestrator
+if try_import("anomalib.pipelines"):
+    from anomalib.pipelines import Benchmark
+    from anomalib.pipelines.components.base import Pipeline
 
-    PIPELINE_REGISTRY: dict[str, Orchestrator] | None = {
+    PIPELINE_REGISTRY: dict[str, Pipeline] | None = {
         "benchmark": Benchmark(),
     }
 else:

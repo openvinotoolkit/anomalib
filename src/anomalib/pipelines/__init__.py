@@ -3,6 +3,6 @@
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from .runners import ParallelRunner, SerialRunner
+from .benchmark import Benchmark
 
-__all__ = ["ParallelRunner", "SerialRunner"]
+__all__ = ["Benchmark"]

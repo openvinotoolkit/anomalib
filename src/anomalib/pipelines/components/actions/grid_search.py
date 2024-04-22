@@ -11,7 +11,7 @@ from typing import Any
 from jsonargparse import Namespace
 from jsonargparse._typehints import ActionTypeHint
 
-from anomalib.pipelines.utils import (
+from anomalib.pipelines.components import (
     convert_to_tuple,
     dict_from_namespace,
     flatten_dict,

@@ -7,14 +7,14 @@ from abc import ABC, abstractmethod
 
 from jsonargparse import Namespace
 
-from anomalib.pipelines.jobs.base import Job
+from .job import JobGenerator
 
 
 class Runner(ABC):
     """Base runner."""
 
-    def __init__(self, job: Job) -> None:
-        self.job = job
+    def __init__(self, generator: JobGenerator) -> None:
+        self.generator = generator
 
     @abstractmethod
     def run(self, args: Namespace) -> None:

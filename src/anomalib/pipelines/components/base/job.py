@@ -3,9 +3,8 @@
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-import logging
 from abc import ABC, abstractmethod
-from collections.abc import Iterator
+from collections.abc import Generator
 
 from jsonargparse import ArgumentParser, Namespace
 
@@ -17,18 +16,16 @@ class Job(ABC):
 
     name: str
 
-    def __init__(self) -> None:
-        self.logger = logging.getLogger(self.name)
-
     @abstractmethod
-    def run(self, task_id: int | None = None, **kwargs) -> RUN_RESULTS:
+    def run(self, task_id: int | None = None) -> RUN_RESULTS:
         """A job is a single unit of work that can be run in parallel with other jobs.
 
         ``task_id`` is optional and is only passed when the job is run in parallel.
         """
 
+    @staticmethod
     @abstractmethod
-    def collect(self, results: list[RUN_RESULTS]) -> GATHERED_RESULTS:
+    def collect(results: list[RUN_RESULTS]) -> GATHERED_RESULTS:
         """Gather the results returned from run.
 
         This can be used to combine the results from multiple runs or to save/process individual job results.
@@ -37,8 +34,9 @@ class Job(ABC):
             results (list): List of results returned from run.
         """
 
+    @staticmethod
     @abstractmethod
-    def save(self, results: GATHERED_RESULTS) -> None:
+    def save(results: GATHERED_RESULTS) -> None:
         """Save the gathered results.
 
         This can be used to save the results in a file or a database.
@@ -46,6 +44,10 @@ class Job(ABC):
         Args:
             results: The gathered result returned from gather_results.
         """
+
+
+class JobGenerator(ABC):
+    """Generate Job."""
 
     @staticmethod
     @abstractmethod
@@ -55,10 +57,18 @@ class Job(ABC):
         This can be used to add arguments that are specific to the job.
         """
 
-    @staticmethod
+    def __call__(self, args: Namespace | None = None) -> Generator[Job, None, None]:
+        """Calls the ``generate_jobs`` method."""
+        return self.generate_jobs(args)
+
     @abstractmethod
-    def get_iterator(args: Namespace | None = None) -> Iterator:
+    def generate_jobs(self, args: Namespace | None = None) -> Generator[Job, None, None]:
         """Return an iterator based on the arguments.
 
         This can be used to generate the configurations that will be passed to run.
         """
+
+    @property
+    @abstractmethod
+    def job_class(self) -> type[Job]:
+        """Return the job class that will be generated."""

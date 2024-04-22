@@ -24,12 +24,12 @@ format_string = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 logging.basicConfig(format=format_string, level=logging.DEBUG)
 
 
-from anomalib.pipelines.runners.base import Runner  # noqa: E402
+from .runner import Runner  # noqa: E402
 
 logger = logging.getLogger(__name__)
 
 
-class Orchestrator(ABC):
+class Pipeline(ABC):
     """Base class for orchestrator."""
 
     def _get_args(self, args: Namespace) -> Namespace:
@@ -55,12 +55,12 @@ class Orchestrator(ABC):
 
         for runner in runners:
             try:
-                _args = args[runner.job.name] if runner.job.name in args else None
+                _args = args.get(runner.generator.job_class.name, None)
                 runner.run(_args)
             except Exception:  # noqa: PERF203 catch all exception and allow try-catch in loop
                 logger.exception("An error occurred when running the runner.")
                 print(
-                    f"There were some errors when running [red]{runner.job.name}[/red] with"
+                    f"There were some errors when running [red]{runner.generator.job_class.name}[/red] with"
                     f" [green]{runner.__class__.__name__}[/green]."
                     f" Please check [magenta]{log_file}[/magenta] for more details.",
                 )

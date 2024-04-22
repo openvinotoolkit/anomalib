@@ -1,6 +1,0 @@
-extract:
-  backbone:
-    grid: ["resnet18", "resnet34", "resnet50"]
-Fit:
-  model:
-    grid: ["A", "B"]
