@@ -378,7 +378,7 @@ class Tiler:
         if self.input_h < self.tile_size_h or self.input_w < self.tile_size_w:
             msg = (
                 f"One of the edges of the tile size {self.tile_size_h, self.tile_size_w} is larger than "
-                f"that of the image {{self.input_h, self.input_w}}."
+                f"that of the image {self.input_h, self.input_w}."
             )
             raise ValueError(
                 msg,

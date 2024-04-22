@@ -13,6 +13,13 @@ This section contains tutorials on how to fully utilize the data components of a
 Learn more about how to use `Folder` dataset to train anomalib models on your custom data.
 :::
 
+:::{grid-item-card} {octicon}`table` Input tiling
+:link: ./input_tiling
+:link-type: doc
+
+Learn more about how to use the tiler for input tiling.
+:::
+
 ::::
 
 ```{toctree}
@@ -20,4 +27,5 @@ Learn more about how to use `Folder` dataset to train anomalib models on your cu
 :hidden:
 
 ./custom_data
+./input_tiling
 ```
