@@ -25,13 +25,12 @@ from anomalib.data import Visa
 from anomalib.models import EfficientAD
 from anomalib.engine import Engine
 
-# Load the ViSA dataset, model and engine.
+# Load the ViSA datamodule and engine.
 datamodule = Visa()
-model = EfficientAD()
-engine = Engine()
+engine = Engine(model=EfficientAD())
 
 # Train the model
-engine.train(model, datamodule)
+engine.train(datamodule=datamodule)
 ```
 
 </details>
@@ -47,15 +46,14 @@ from anomalib.data import Avenue
 from anomalib.models import EfficientAD
 from anomalib.engine import Engine
 
-# Load the folder, model and engine.
+# Load the datamodule and engine.
 # Set the clip_length_in_frames to 1 to convert the video dataset to a
 #   frame-based image dataset.
 datamodule = Avenue(clip_length_in_frames=1)
-model = EfficientAD()
-engine = Engine()
+engine = Engine(model=EfficientAD())
 
 # Train the model
-engine.train(model, datamodule)
+engine.train(datamodule=datamodule)
 ```
 
 </details>

@@ -103,6 +103,8 @@ class Engine:
         details on other Trainer parameters.
 
     Args:
+        model (AnomalyModule | None, optional): The model to be used by default by all engine methods.
+            Defaults to None.
         callbacks (list[Callback]): Add a callback or list of callbacks.
         normalization (NORMALIZATION, optional): Normalization method.
             Defaults to NormalizationMethod.MIN_MAX.
@@ -121,6 +123,7 @@ class Engine:
 
     def __init__(
         self,
+        model: AnomalyModule | None = None,
         callbacks: list[Callback] | None = None,
         normalization: NORMALIZATION = NormalizationMethod.MIN_MAX,
         threshold: THRESHOLD = "F1AdaptiveThreshold",
@@ -131,8 +134,6 @@ class Engine:
         default_root_dir: str | Path = "results",
         **kwargs,
     ) -> None:
-        # TODO(ashwinvaidya17): Add model argument to engine constructor
-        # https://github.com/openvinotoolkit/anomalib/issues/1639
         if callbacks is None:
             callbacks = []
 
@@ -155,7 +156,11 @@ class Engine:
         if self.task == TaskType.SEGMENTATION:
             self.pixel_metric_names = pixel_metrics if pixel_metrics is not None else ["AUROC", "F1Score"]
 
+        self._model: AnomalyModule | None = None
         self._trainer: Trainer | None = None
+
+        if model:
+            self.model = model
 
     @property
     def trainer(self) -> Trainer:
@@ -182,10 +187,20 @@ class Engine:
         Returns:
             AnomalyModule: Anomaly model.
         """
-        if not self.trainer.model:
-            msg = "Trainer does not have a model assigned yet."
+        if not self._model:
+            msg = "``self.model`` is not assigned yet."
             raise UnassignedError(msg)
-        return self.trainer.lightning_module
+        return self._model
+
+    @model.setter
+    def model(self, model: AnomalyModule) -> None:
+        """Set the model.
+
+        Args:
+            model (AnomalyModule): The model to be used by default by all engine methods.
+        """
+        self._model = model
+        self._setup_trainer(model)
 
     @property
     def normalization_callback(self) -> NormalizationCallback | None:
@@ -400,7 +415,7 @@ class Engine:
         # Add the post-processor callbacks.
         _callbacks.append(_PostProcessorCallback())
 
-        # Add the the normalization callback.
+        # Add the normalization callback.
         normalization_callback = get_normalization_callback(self.normalization)
         if normalization_callback is not None:
             _callbacks.append(normalization_callback)
@@ -464,7 +479,7 @@ class Engine:
 
     def fit(
         self,
-        model: AnomalyModule,
+        model: AnomalyModule | None = None,
         train_dataloaders: TRAIN_DATALOADERS | None = None,
         val_dataloaders: EVAL_DATALOADERS | None = None,
         datamodule: AnomalibDataModule | None = None,
@@ -473,7 +488,8 @@ class Engine:
         """Fit the model using the trainer.
 
         Args:
-            model (AnomalyModule): Model to be trained.
+            model (AnomalyModule | None, optional): Model to be trained.
+                Defaults to None.
             train_dataloaders (TRAIN_DATALOADERS | None, optional): Train dataloaders.
                 Defaults to None.
             val_dataloaders (EVAL_DATALOADERS | None, optional): Validation dataloaders.
@@ -498,24 +514,33 @@ class Engine:
                 anomalib fit --config <config_file_path>
                 ```
         """
+        if model:
+            self.model = model
+        elif not self.model:
+            msg = (
+                "`Engine.fit()` requires an `AnomalyModule` when it hasn't been passed in a previous run or in the "
+                "`Engine` constructor."
+            )
+            raise RuntimeError(msg)
+
         if ckpt_path:
             ckpt_path = Path(ckpt_path).resolve()
 
         self._setup_workspace(
-            model=model,
+            model=self.model,
             train_dataloaders=train_dataloaders,
             val_dataloaders=val_dataloaders,
             datamodule=datamodule,
             versioned_dir=True,
         )
-        self._setup_trainer(model)
+
         self._setup_dataset_task(train_dataloaders, val_dataloaders, datamodule)
-        self._setup_transform(model, datamodule=datamodule, ckpt_path=ckpt_path)
-        if model.learning_type in [LearningType.ZERO_SHOT, LearningType.FEW_SHOT]:
+        self._setup_transform(self.model, datamodule=datamodule, ckpt_path=ckpt_path)
+        if self.model.learning_type in [LearningType.ZERO_SHOT, LearningType.FEW_SHOT]:
             # if the model is zero-shot or few-shot, we only need to run validate for normalization and thresholding
-            self.trainer.validate(model, val_dataloaders, datamodule=datamodule, ckpt_path=ckpt_path)
+            self.trainer.validate(self.model, val_dataloaders, datamodule=datamodule, ckpt_path=ckpt_path)
         else:
-            self.trainer.fit(model, train_dataloaders, val_dataloaders, datamodule, ckpt_path)
+            self.trainer.fit(self.model, train_dataloaders, val_dataloaders, datamodule, ckpt_path)
 
     def validate(
         self,
@@ -559,13 +584,21 @@ class Engine:
                 anomalib validate --config <config_file_path>
                 ```
         """
+        if model:
+            self.model = model
+        elif not self.model:
+            msg = (
+                "`Engine.validate()` requires an `AnomalyModule` when it hasn't been passed in a previous run or in "
+                "the `Engine` constructor."
+            )
+            raise RuntimeError(msg)
+
         if ckpt_path:
             ckpt_path = Path(ckpt_path).resolve()
-        if model:
-            self._setup_trainer(model)
+
         self._setup_dataset_task(dataloaders)
-        self._setup_transform(model or self.model, datamodule=datamodule, ckpt_path=ckpt_path)
-        return self.trainer.validate(model, dataloaders, ckpt_path, verbose, datamodule)
+        self._setup_transform(self.model, datamodule=datamodule, ckpt_path=ckpt_path)
+        return self.trainer.validate(self.model, dataloaders, ckpt_path, verbose, datamodule)
 
     def test(
         self,
@@ -629,8 +662,8 @@ class Engine:
             >>> model.learning_type
             <LearningType.ZERO_SHOT: 'zero_shot'>
 
-            >>> engine = Engine()
-            >>> engine.test(model, datamodule=datamodule)
+            >>> engine = Engine(model=model)
+            >>> engine.test(datamodule=datamodule)
 
         CLI Usage:
             1. you can pick a model.
@@ -646,23 +679,26 @@ class Engine:
                 anomalib test --config <config_file_path>
                 ```
         """
+        if model:
+            self.model = model
+        elif not self.model:
+            msg = (
+                "`Engine.test()` requires an `AnomalyModule` when it hasn't been passed in a previous run or in the "
+                "`Engine` constructor."
+            )
+            raise RuntimeError(msg)
+
         if ckpt_path:
             ckpt_path = Path(ckpt_path).resolve()
 
-        self._setup_workspace(model=model or self.model, datamodule=datamodule, test_dataloaders=dataloaders)
-
-        if model:
-            self._setup_trainer(model)
-        elif not self.model:
-            msg = "`Engine.test()` requires an `AnomalyModule` when it hasn't been passed in a previous run."
-            raise RuntimeError(msg)
+        self._setup_workspace(model=self.model, datamodule=datamodule, test_dataloaders=dataloaders)
 
         self._setup_dataset_task(dataloaders)
-        self._setup_transform(model or self.model, datamodule=datamodule, ckpt_path=ckpt_path)
-        if self._should_run_validation(model or self.model, dataloaders, datamodule, ckpt_path):
+        self._setup_transform(self.model, datamodule=datamodule, ckpt_path=ckpt_path)
+        if self._should_run_validation(self.model, dataloaders, datamodule, ckpt_path):
             logger.info("Running validation before testing to collect normalization metrics and/or thresholds.")
-            self.trainer.validate(model, dataloaders, None, verbose=False, datamodule=datamodule)
-        return self.trainer.test(model, dataloaders, ckpt_path, verbose, datamodule)
+            self.trainer.validate(self.model, dataloaders, None, verbose=False, datamodule=datamodule)
+        return self.trainer.test(self.model, dataloaders, ckpt_path, verbose, datamodule)
 
     def predict(
         self,
@@ -728,17 +764,19 @@ class Engine:
                 anomalib predict --model Padim --data <PATH_TO_IMAGE_OR_FOLDER> --ckpt_path <PATH_TO_CHECKPOINT>
                 ```
         """
-        if not (model or self.model):
-            msg = "`Engine.predict()` requires an `AnomalyModule` when it hasn't been passed in a previous run."
+        if model:
+            self.model = model
+        elif not self.model:
+            msg = (
+                "`Engine.predict()` requires an `AnomalyModule` when it hasn't been passed in a previous run run or in "
+                "the `Engine` constructor."
+            )
             raise ValueError(msg)
 
         if ckpt_path:
             ckpt_path = Path(ckpt_path).resolve()
 
-        self._setup_workspace(model=model or self.model, datamodule=datamodule, test_dataloaders=dataloaders)
-
-        if model:
-            self._setup_trainer(model)
+        self._setup_workspace(model=self.model, datamodule=datamodule, test_dataloaders=dataloaders)
 
         if not ckpt_path:
             logger.warning("ckpt_path is not provided. Model weights will not be loaded.")
@@ -757,23 +795,23 @@ class Engine:
                 raise TypeError(msg)
 
         self._setup_dataset_task(dataloaders, datamodule)
-        self._setup_transform(model or self.model, datamodule=datamodule, dataloaders=dataloaders, ckpt_path=ckpt_path)
+        self._setup_transform(self.model, datamodule=datamodule, dataloaders=dataloaders, ckpt_path=ckpt_path)
 
-        if self._should_run_validation(model or self.model, None, datamodule, ckpt_path):
+        if self._should_run_validation(self.model, None, datamodule, ckpt_path):
             logger.info("Running validation before predicting to collect normalization metrics and/or thresholds.")
             self.trainer.validate(
-                model,
+                self.model,
                 dataloaders=None,
                 ckpt_path=None,
                 verbose=False,
                 datamodule=datamodule,
             )
 
-        return self.trainer.predict(model, dataloaders, datamodule, return_predictions, ckpt_path)
+        return self.trainer.predict(self.model, dataloaders, datamodule, return_predictions, ckpt_path)
 
     def train(
         self,
-        model: AnomalyModule,
+        model: AnomalyModule | None = None,
         train_dataloaders: TRAIN_DATALOADERS | None = None,
         val_dataloaders: EVAL_DATALOADERS | None = None,
         test_dataloaders: EVAL_DATALOADERS | None = None,
@@ -783,7 +821,8 @@ class Engine:
         """Fits the model and then calls test on it.
 
         Args:
-            model (AnomalyModule): Model to be trained.
+            model (AnomalyModule | None, optional): Model to be trained.
+                Defaults to None.
             train_dataloaders (TRAIN_DATALOADERS | None, optional): Train dataloaders.
                 Defaults to None.
             val_dataloaders (EVAL_DATALOADERS | None, optional): Validation dataloaders.
@@ -810,35 +849,45 @@ class Engine:
                 anomalib train --config <config_file_path>
                 ```
         """
+        if model:
+            self.model = model
+        elif not self.model:
+            msg = (
+                "`Engine.train()` requires an `AnomalyModule` when it hasn't been passed in a previous run or in the "
+                "`Engine` constructor."
+            )
+            raise RuntimeError(msg)
+
         if ckpt_path:
             ckpt_path = Path(ckpt_path).resolve()
+
         self._setup_workspace(
-            model,
+            self.model,
             train_dataloaders,
             val_dataloaders,
             test_dataloaders,
             datamodule,
             versioned_dir=True,
         )
-        self._setup_trainer(model)
+
         self._setup_dataset_task(
             train_dataloaders,
             val_dataloaders,
             test_dataloaders,
             datamodule,
         )
-        self._setup_transform(model, datamodule=datamodule, ckpt_path=ckpt_path)
-        if model.learning_type in [LearningType.ZERO_SHOT, LearningType.FEW_SHOT]:
+        self._setup_transform(self.model, datamodule=datamodule, ckpt_path=ckpt_path)
+        if self.model.learning_type in [LearningType.ZERO_SHOT, LearningType.FEW_SHOT]:
             # if the model is zero-shot or few-shot, we only need to run validate for normalization and thresholding
-            self.trainer.validate(model, val_dataloaders, None, verbose=False, datamodule=datamodule)
+            self.trainer.validate(self.model, val_dataloaders, None, verbose=False, datamodule=datamodule)
         else:
-            self.trainer.fit(model, train_dataloaders, val_dataloaders, datamodule, ckpt_path)
-        self.trainer.test(model, test_dataloaders, ckpt_path=ckpt_path, datamodule=datamodule)
+            self.trainer.fit(self.model, train_dataloaders, val_dataloaders, datamodule, ckpt_path)
+        self.trainer.test(self.model, test_dataloaders, ckpt_path=ckpt_path, datamodule=datamodule)
 
     def export(
         self,
-        model: AnomalyModule,
         export_type: ExportType,
+        model: AnomalyModule | None = None,
         export_root: str | Path | None = None,
         transform: Transform | None = None,
         ov_args: dict[str, Any] | None = None,
@@ -847,8 +896,9 @@ class Engine:
         """Export the model in PyTorch, ONNX or OpenVINO format.
 
         Args:
-            model (AnomalyModule): Trained model.
             export_type (ExportType): Export type.
+            model (AnomalyModule | None, optional): Trained model.
+                Defaults to None.
             export_root (str | Path | None, optional): Path to the output directory. If it is not set, the model is
                 exported to trainer.default_root_dir. Defaults to None.
             transform (Transform | None, optional): Input transform to include in the exported model. If not provided,
@@ -861,6 +911,7 @@ class Engine:
             Path: Path to the exported model.
 
         Raises:
+            RuntimeError: If model was not provided in a previous run or in the `Engine` constructor.
             ValueError: If Dataset, Datamodule, and transform are not provided.
             TypeError: If path to the transform file is not a string or Path.
 
@@ -883,10 +934,18 @@ class Engine:
                     --mo_args.compress_to_fp16 False
                 ```
         """
-        self._setup_trainer(model)
+        if model:
+            self.model = model
+        elif not self.model:
+            msg = (
+                "`Engine.export()` requires an `AnomalyModule` when it hasn't been passed in a previous run or in the "
+                "`Engine` constructor."
+            )
+            raise RuntimeError(msg)
+
         if ckpt_path:
             ckpt_path = Path(ckpt_path).resolve()
-            model = model.__class__.load_from_checkpoint(ckpt_path)
+            model = self.model.__class__.load_from_checkpoint(ckpt_path)
 
         if export_root is None:
             export_root = Path(self.trainer.default_root_dir)
@@ -894,21 +953,21 @@ class Engine:
         exported_model_path: Path | None = None
         if export_type == ExportType.TORCH:
             exported_model_path = export_to_torch(
-                model=model,
+                model=model or self.model,
                 export_root=export_root,
                 transform=transform,
                 task=self.task,
             )
         elif export_type == ExportType.ONNX:
             exported_model_path = export_to_onnx(
-                model=model,
+                model=model or self.model,
                 export_root=export_root,
                 transform=transform,
                 task=self.task,
             )
         elif export_type == ExportType.OPENVINO:
             exported_model_path = export_to_openvino(
-                model=model,
+                model=model or self.model,
                 export_root=export_root,
                 transform=transform,
                 task=self.task,

@@ -42,10 +42,10 @@ def test_manual_threshold() -> None:
         {"class_path": "ManualThreshold", "init_args": {"default_value": pixel_threshold}},
     ]
 
-    model = Padim()
     datamodule = MVTec()
 
     engine = Engine(
+        model=Padim(),
         normalization=NormalizationMethod.NONE,
         threshold=threshold,
         image_metrics="F1Score",
@@ -54,6 +54,6 @@ def test_manual_threshold() -> None:
         accelerator="gpu",
         devices=1,
     )
-    engine.fit(model=model, datamodule=datamodule)
+    engine.fit(datamodule=datamodule)
     assert engine.trainer.model.image_metrics.F1Score.threshold == image_threshold
     assert engine.trainer.model.pixel_metrics.F1Score.threshold == pixel_threshold

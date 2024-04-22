@@ -14,7 +14,7 @@ from anomalib import TaskType
 from anomalib.data import AnomalibDataModule, MVTec
 from anomalib.deploy.export import ExportType
 from anomalib.engine import Engine
-from anomalib.models import AnomalyModule, get_available_models, get_model
+from anomalib.models import get_available_models, get_model
 
 
 def models() -> set[str]:
@@ -39,12 +39,12 @@ class TestAPI:
             dataset_path (Path): Root to dataset from fixture.
             project_path (Path): Path to temporary project folder from fixture.
         """
-        model, dataset, engine = self._get_objects(
+        dataset, engine = self._get_objects(
             model_name=model_name,
             dataset_path=dataset_path,
             project_path=project_path,
         )
-        engine.fit(model=model, datamodule=dataset)
+        engine.fit(datamodule=dataset)
 
     @pytest.mark.parametrize("model_name", models())
     def test_test(self, model_name: str, dataset_path: Path, project_path: Path) -> None:
@@ -55,15 +55,14 @@ class TestAPI:
             dataset_path (Path): Root to dataset from fixture.
             project_path (Path): Path to temporary project folder from fixture.
         """
-        model, dataset, engine = self._get_objects(
+        dataset, engine = self._get_objects(
             model_name=model_name,
             dataset_path=dataset_path,
             project_path=project_path,
         )
         engine.test(
-            model=model,
             datamodule=dataset,
-            ckpt_path=f"{project_path}/{model.name}/{dataset.name}/dummy/v0/weights/lightning/model.ckpt",
+            ckpt_path=f"{project_path}/{engine.model.name}/{dataset.name}/dummy/v0/weights/lightning/model.ckpt",
         )
 
     @pytest.mark.parametrize("model_name", models())
@@ -75,15 +74,14 @@ class TestAPI:
             dataset_path (Path): Root to dataset from fixture.
             project_path (Path): Path to temporary project folder from fixture.
         """
-        model, dataset, engine = self._get_objects(
+        dataset, engine = self._get_objects(
             model_name=model_name,
             dataset_path=dataset_path,
             project_path=project_path,
         )
         engine.train(
-            model=model,
             datamodule=dataset,
-            ckpt_path=f"{project_path}/{model.name}/{dataset.name}/dummy/v0/weights/lightning/model.ckpt",
+            ckpt_path=f"{project_path}/{engine.model.name}/{dataset.name}/dummy/v0/weights/lightning/model.ckpt",
         )
 
     @pytest.mark.parametrize("model_name", models())
@@ -95,15 +93,14 @@ class TestAPI:
             dataset_path (Path): Root to dataset from fixture.
             project_path (Path): Path to temporary project folder from fixture.
         """
-        model, dataset, engine = self._get_objects(
+        dataset, engine = self._get_objects(
             model_name=model_name,
             dataset_path=dataset_path,
             project_path=project_path,
         )
         engine.validate(
-            model=model,
             datamodule=dataset,
-            ckpt_path=f"{project_path}/{model.name}/{dataset.name}/dummy/v0/weights/lightning/model.ckpt",
+            ckpt_path=f"{project_path}/{engine.model.name}/{dataset.name}/dummy/v0/weights/lightning/model.ckpt",
         )
 
     @pytest.mark.parametrize("model_name", models())
@@ -115,14 +112,13 @@ class TestAPI:
             dataset_path (Path): Root to dataset from fixture.
             project_path (Path): Path to temporary project folder from fixture.
         """
-        model, datamodule, engine = self._get_objects(
+        datamodule, engine = self._get_objects(
             model_name=model_name,
             dataset_path=dataset_path,
             project_path=project_path,
         )
         engine.predict(
-            model=model,
-            ckpt_path=f"{project_path}/{model.name}/{datamodule.name}/dummy/v0/weights/lightning/model.ckpt",
+            ckpt_path=f"{project_path}/{engine.model.name}/{datamodule.name}/dummy/v0/weights/lightning/model.ckpt",
             datamodule=datamodule,
         )
 
@@ -148,14 +144,13 @@ class TestAPI:
             # https://github.com/openvinotoolkit/anomalib/issues/1513
             pytest.skip(f"{model_name} fails to convert to ONNX and OpenVINO")
 
-        model, dataset, engine = self._get_objects(
+        dataset, engine = self._get_objects(
             model_name=model_name,
             dataset_path=dataset_path,
             project_path=project_path,
         )
         engine.export(
-            model=model,
-            ckpt_path=f"{project_path}/{model.name}/{dataset.name}/dummy/v0/weights/lightning/model.ckpt",
+            ckpt_path=f"{project_path}/{engine.model.name}/{dataset.name}/dummy/v0/weights/lightning/model.ckpt",
             export_type=export_type,
         )
 
@@ -164,8 +159,8 @@ class TestAPI:
         model_name: str,
         dataset_path: Path,
         project_path: Path,
-    ) -> tuple[AnomalyModule, AnomalibDataModule, Engine]:
-        """Return model, dataset, and engine objects.
+    ) -> tuple[AnomalibDataModule, Engine]:
+        """Return dataset and engine objects.
 
         Args:
             model_name (str): Name of the model to train
@@ -173,8 +168,7 @@ class TestAPI:
             project_path (Path): path to the temporary project folder
 
         Returns:
-            tuple[AnomalyModule, AnomalibDataModule, Engine]: Returns the created objects for model, dataset,
-                and engine
+            tuple[AnomalibDataModule, Engine]: Returns the created objects for dataset and engine
         """
         # select task type
         if model_name in ("rkde", "ai_vad"):
@@ -207,8 +201,8 @@ class TestAPI:
                 train_batch_size=2,
             )
 
-        model = get_model(model_name, **extra_args)
         engine = Engine(
+            model=get_model(model_name, **extra_args),
             logger=False,
             default_root_dir=project_path,
             max_epochs=1,
@@ -219,4 +213,4 @@ class TestAPI:
             # https://github.com/openvinotoolkit/anomalib/issues/1478
             max_steps=70000 if model_name == "efficient_ad" else -1,
         )
-        return model, dataset, engine
+        return dataset, engine

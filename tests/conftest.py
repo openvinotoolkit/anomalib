@@ -91,13 +91,14 @@ def ckpt_path(project_path: Path, dataset_path: Path) -> Callable[[str], Path]:
         _ckpt_path = project_path / model.name / "MVTec" / "dummy" / "latest" / "weights" / "lightning" / "model.ckpt"
         if not _ckpt_path.exists():
             engine = Engine(
+                model=model,
                 logger=False,
                 default_root_dir=project_path,
                 max_epochs=1,
                 devices=1,
             )
             dataset = MVTec(root=dataset_path / "mvtec", category="dummy")
-            engine.fit(model=model, datamodule=dataset)
+            engine.fit(datamodule=dataset)
 
         return _ckpt_path
 

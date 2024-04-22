@@ -25,17 +25,17 @@ def run_train_test(normalization_method: str, dataset_path: Path) -> _EVALUATE_O
     Returns:
         _EVALUATE_OUTPUT: Results of the test.
     """
-    model = Padim()
     datamodule = MVTec(root=dataset_path / "mvtec", category="dummy", seed=42)
 
     engine = Engine(
+        model=Padim(),
         normalization=normalization_method,
         threshold="F1AdaptiveThreshold",
         image_metrics=["F1Score", "AUROC"],
         devices=1,
     )
-    engine.fit(model=model, datamodule=datamodule)
-    return engine.test(model=model, datamodule=datamodule)
+    engine.fit(datamodule=datamodule)
+    return engine.test(datamodule=datamodule)
 
 
 @pytest.mark.skip(reason="This test is flaky and needs to be revisited.")

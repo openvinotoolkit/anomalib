@@ -129,10 +129,9 @@ def export_to_torch(
         >>> from anomalib.engine import Engine
         ...
         >>> datamodule = Visa()
-        >>> model = Patchcore()
-        >>> engine = Engine()
+        >>> engine = Engine(model=Patchcore())
         ...
-        >>> engine.fit(model, datamodule)
+        >>> engine.fit(datamodule=datamodule)
 
         Now that we have a model trained, we can export it to torch format.
 
