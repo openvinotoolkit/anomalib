@@ -35,7 +35,7 @@ FOLDER_IMAGE_EXTENSIONS: set[str] = {".bmp", ".png", ".jpg", ".tiff", ".tif"}
 def make_folder_video_dataset(
     root: str | Path,
     normal_dir: str | Path = "",
-    mask_dir: str | Path = "",
+    mask_dir: str | Path | None = "",
     test_dir: str | Path = "",
     split: str | Split | None = None,
 ) -> DataFrame:
@@ -122,23 +122,26 @@ def make_folder_video_dataset(
     root = validate_path(root)
     normal_dir = validate_path(root / normal_dir)
     test_dir = validate_path(root / test_dir)
-    mask_dir = validate_path(root / mask_dir)
+
+    samples_list_labels = []
+    if mask_dir is not None:
+        mask_dir = validate_path(root / mask_dir)
+        samples_list_labels.extend(
+            [
+                filename.parts[-1]
+                for filename in sorted(mask_dir.glob("./*"))
+                if (
+                    _contains_files(path=filename, extensions=FOLDER_IMAGE_EXTENSIONS)
+                    and not filename.name.startswith(".")
+                )
+                or filename.suffix in [".npy", ".pt"]
+            ],
+        )
+
     samples_list = []
     samples_list.extend(_extract_samples(root, normal_dir))
 
     samples_list.extend(_extract_samples(root, test_dir))
-
-    samples_list_labels = []
-    samples_list_labels.extend(
-        [
-            filename.parts[-1]
-            for filename in sorted(mask_dir.glob("./*"))
-            if (
-                _contains_files(path=filename, extensions=FOLDER_IMAGE_EXTENSIONS) and not filename.name.startswith(".")
-            )
-            or filename.suffix in [".npy", ".pt"]
-        ],
-    )
 
     samples = DataFrame(samples_list, columns=["root", "folder", "image_path"])
 
@@ -150,10 +153,12 @@ def make_folder_video_dataset(
     samples.loc[samples.folder == normal_dir.parts[-1], "split"] = "train"
     samples.loc[samples.folder == test_dir.parts[-1], "split"] = "test"
     samples_list_labels = [str(item) for item in samples_list_labels if ".DS_Store" not in str(item)]
-    samples.loc[samples.folder == test_dir.parts[-1], "mask_path"] = samples_list_labels
-    if samples_list_labels == []:
+
+    if mask_dir is not None:
+        samples.loc[samples.folder == test_dir.parts[-1], "mask_path"] = samples_list_labels
+        samples["mask_path"] = str(mask_dir) + "/" + samples.mask_path.astype(str)
+    else:
         samples.loc[samples.folder == test_dir.parts[-1], "mask_path"] = ""
-    samples["mask_path"] = str(mask_dir) + "/" + samples.mask_path.astype(str)
     samples.loc[samples.folder == normal_dir.parts[-1], "mask_path"] = ""
 
     if split:
@@ -239,7 +244,7 @@ class FolderDataset(AnomalibVideoDataset):
         root (Path | str): Path to the dataset.
         normal_dir (Path | str): Path to the training videos of the dataset (.avi / .mp4 / imgages as frames).
         test_dir (Path | str): Path to the testing videos of the dataset.
-        mask_dir (Path | str): Path to the masks for the training videos of the dataset (.npy/.pt/ images)
+        mask_dir (Path | str | None): Path to the masks for the training videos of the dataset (.npy/.pt/ images)
         clip_length_in_frames (int, optional): Number of video frames in each clip.
         frames_between_clips (int, optional): Number of frames between each consecutive video clip.
         target_frame (VideoTargetFrame): Specifies the target frame in the video clip, used for ground truth retrieval.
@@ -252,7 +257,7 @@ class FolderDataset(AnomalibVideoDataset):
         task: TaskType,
         split: Split,
         root: Path | str,
-        mask_dir: Path | str = "test_labels",
+        mask_dir: Path | str | None = None,
         normal_dir: Path | str = "train_dir",
         test_dir: Path | str = "test_dir",
         clip_length_in_frames: int = 2,
@@ -307,11 +312,11 @@ class FolderVideo(AnomalibVideoDataModule):
         root (Path | str): Path to the root of the dataset
         normal_dir (Path | str): Path to the training videos of the dataset (.avi / .mp4 / imgages as frames).
         test_dir (Path | str): Path to the testing videos of the dataset.
-        mask_dir (Path | str): Path to the masks for the training videos of the dataset (.npy/.pt/ images)
+        mask_dir (Path | str | None): Path to the masks for the training videos of the dataset (.npy/.pt/ images)
         clip_length_in_frames (int, optional): Number of video frames in each clip.
         frames_between_clips (int, optional): Number of frames between each consecutive video clip.
         target_frame (VideoTargetFrame): Specifies the target frame in the video clip, used for ground truth retrieval
-        task (TaskType): Task type, 'classification', 'detection' or 'segmentation'
+        task (TaskType | str): Task type, 'classification', 'detection' or 'segmentation'
         image_size (tuple[int, int], optional): Size to which input images should be resized.
             Defaults to ``None``.
         transform (Transform, optional): Transforms that should be applied to the input images.
@@ -331,13 +336,13 @@ class FolderVideo(AnomalibVideoDataModule):
     def __init__(
         self,
         root: Path | str,
-        mask_dir: Path | str = "test_labels",
+        mask_dir: Path | str | None = None,
         normal_dir: Path | str = "train_vid",
         test_dir: Path | str = "test_vid",
         clip_length_in_frames: int = 2,
         frames_between_clips: int = 1,
         target_frame: VideoTargetFrame = VideoTargetFrame.LAST,
-        task: TaskType = TaskType.SEGMENTATION,
+        task: TaskType | str = TaskType.SEGMENTATION,
         image_size: tuple[int, int] | None = None,
         transform: Transform | None = None,
         train_transform: Transform | None = None,
@@ -366,11 +371,7 @@ class FolderVideo(AnomalibVideoDataModule):
         self.root = Path(root)
         self.normal_dir = Path(normal_dir)
         self.test_dir = Path(test_dir)
-        if mask_dir is not None:
-            self.mask_dir = Path(mask_dir)
-        else:
-            self.mask_dir = Path()
-
+        self.mask_dir = mask_dir if mask_dir is None else Path(mask_dir)
         self.clip_length_in_frames = clip_length_in_frames
         self.frames_between_clips = frames_between_clips
         self.target_frame = VideoTargetFrame(target_frame)
