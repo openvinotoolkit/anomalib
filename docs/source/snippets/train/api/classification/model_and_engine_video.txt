@@ -1,0 +1,10 @@
+# Import the model and engine
+from anomalib.models import AiVad
+from anomalib.engine import Engine
+
+# Create the model and engine
+model = AiVad()
+engine = Engine(task="classification")
+
+# Train a Patchcore model on the given datamodule
+engine.train(datamodule=datamodule, model=model)

@@ -1,4 +1,4 @@
-# Custom Data
+# Custom Data (Images)
 
 This tutorial will show you how to train anomalib models on your custom
 data. More specifically, we will show you how to use the [Folder](../../reference/data/image/folder.md)
