@@ -6,7 +6,6 @@ https://arxiv.org/abs/2111.07677
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 from typing import Any
 
 import torch
@@ -52,9 +51,8 @@ class Fastflow(AnomalyModule):
         self.conv3x3_only = conv3x3_only
         self.hidden_ratio = hidden_ratio
 
-        self.loss = FastflowLoss()
-
         self.model: FastflowModel
+        self.loss = FastflowLoss()
 
     def _setup(self) -> None:
         if self.input_size is None:
