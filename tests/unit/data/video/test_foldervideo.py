@@ -28,6 +28,9 @@ class TestFolderVideo(_TestAnomalibVideoDatamodule):
         """Create and return a FolderVideo datamodule."""
         _datamodule = FolderVideo(
             root=dataset_path / "foldervideo",
+            normal_dir="train_vid",
+            test_dir="test_vid",
+            mask_dir="test_labels",
             clip_length_in_frames=clip_length_in_frames,
             task=task_type,
             image_size=256,
