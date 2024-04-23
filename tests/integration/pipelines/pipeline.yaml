@@ -1,0 +1,17 @@
+# mock.patch does not work with multiprocessing("spawn")
+# hence cuda is not part of the tests
+accelerator: cpu
+benchmark:
+  seed:
+    grid: [42, 51]
+  model:
+    class_path:
+      grid: [Padim, Patchcore]
+  data:
+    class_path: MVTec
+    init_args:
+      category:
+        grid:
+          - bottle
+          - capsule
+      image_size: [256, 256]
