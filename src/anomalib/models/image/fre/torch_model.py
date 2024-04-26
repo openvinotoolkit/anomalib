@@ -1,45 +1,42 @@
 """PyTorch model for DFM model implementation."""
 
-# Copyright (C) 2022-2024 Intel Corporation
+# Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
-
-
-import math
 
 import torch
 from torch import nn
 from torch.nn import functional as F  # noqa: N812
 
-from anomalib.models.components import PCA, DynamicBufferMixin, TimmFeatureExtractor
+from anomalib.models.components import TimmFeatureExtractor
 
 
 class TiedAE(nn.Module):
     """Model for the Tied AutoEncoder used for FRE calculation.
 
     Args:
-        full_size (int): Dimension of input to the tied auto-encoder.
-        proj_size (int): Dimension of the reduced-dimension latent space of the tied auto-encoder.
+        input_dim (int): Dimension of input to the tied auto-encoder.
+        latent_dim (int): Dimension of the reduced-dimension latent space of the tied auto-encoder.
     """
 
-    def __init__(self, full_size, proj_size) -> None:
+    def __init__(self, input_dim: int, latent_dim: int) -> None:
         super().__init__()
-        self.full_size = full_size
-        self.proj_size = proj_size
-        self.weight = nn.Parameter(torch.empty(proj_size, full_size))
+        self.input_dim = input_dim
+        self.latent_dim = latent_dim
+        self.weight = nn.Parameter(torch.empty(latent_dim, input_dim))
         torch.nn.init.xavier_uniform_(self.weight)
-        self.decoder_bias = nn.Parameter(torch.zeros(full_size))
-        self.encoder_bias = nn.Parameter(torch.zeros(proj_size))
+        self.decoder_bias = nn.Parameter(torch.zeros(input_dim))
+        self.encoder_bias = nn.Parameter(torch.zeros(latent_dim))
 
-    def forward(self, features_in) -> torch.Tensor:
+    def forward(self, features: torch.Tensor) -> torch.Tensor:
         """Run input features through the autoencoder.
 
         Args:
-            features_in (torch.Tensor): Feature batch.
+            features (torch.Tensor): Feature batch.
 
         Returns:
             Tensor: torch.Tensor containing reconstructed features.
         """
-        encoded = F.linear(features_in, self.weight, self.encoder_bias)
+        encoded = F.linear(features, self.weight, self.encoder_bias)
         return F.linear(encoded, self.weight.t(), self.decoder_bias)
 
 
@@ -53,26 +50,26 @@ class FREModel(nn.Module):
             Defaults to ``True``.
         pooling_kernel_size (int, optional): Kernel size to pool features extracted from the CNN.
             Defaults to ``4``.
-        full_size (int, optional): Dimension of feature at output of layer specified in layer.
-            Defaults to ``65536``. 
-        proj_size (int, optional): Reduced size of feature after applying dimensionality reduction
+        input_dim (int, optional): Dimension of feature at output of layer specified in layer.
+            Defaults to ``65536``.
+        latent_dim (int, optional): Reduced size of feature after applying dimensionality reduction
             via shallow linear autoencoder.
-            Defaults to ``220``. 
+            Defaults to ``220``.
     """
 
     def __init__(
         self,
         backbone: str,
         layer: str,
-        full_size: int,
-        proj_size: int,
+        input_dim: int = 65536,
+        latent_dim: int = 220,
         pre_trained: bool = True,
-        pooling_kernel_size: int = 4
+        pooling_kernel_size: int = 4,
     ) -> None:
         super().__init__()
         self.backbone = backbone
         self.pooling_kernel_size = pooling_kernel_size
-        self.fre_model = TiedAE(full_size, proj_size)
+        self.fre_model = TiedAE(input_dim, latent_dim)
         self.layer = layer
         self.feature_extractor = TimmFeatureExtractor(
             backbone=self.backbone,
@@ -110,8 +107,8 @@ class FREModel(nn.Module):
         """
         features_in, features_out, feature_shapes = self.get_features(batch)
         fre = torch.square(features_in - features_out).reshape(feature_shapes)
-        anomaly_map = torch.sum(fre, 1)  # NxCxHxW --> NxHxW                
-        score = torch.sum(anomaly_map, (1,2))  # NxHxW --> N
+        anomaly_map = torch.sum(fre, 1)  # NxCxHxW --> NxHxW
+        score = torch.sum(anomaly_map, (1, 2))  # NxHxW --> N
         anomaly_map = torch.unsqueeze(anomaly_map, 1)
         anomaly_map = F.interpolate(anomaly_map, size=batch.shape[-2:], mode="bilinear", align_corners=False)
         return score, anomaly_map
