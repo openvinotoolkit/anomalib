@@ -14,33 +14,37 @@ from anomalib.models.components import PCA, DynamicBufferMixin, TimmFeatureExtra
 
 
 class TiedAE(nn.Module):
+    """Model for the Tied AutoEncoder used for FRE calculation.
 
-    def __init__(self, fullSz, projSz) -> None:
+    Args:
+        full_size (int, optional): Dimension of input to the tied auto-encoder.
+        proj_size (int, optional): Dimension of the reduced-dimension latent space of the tied auto-encoder
+    """
+
+    def __init__(self, full_size, proj_size) -> None:
         super().__init__()
-        self.fullSz = fullSz
-        self.projSz = projSz
-        self.weight = nn.Parameter(torch.empty(projSz, fullSz))
+        self.full_size = full_size
+        self.proj_size = proj_size
+        self.weight = nn.Parameter(torch.empty(proj_size, full_size))
         torch.nn.init.xavier_uniform_(self.weight)
-        self.decoder_bias = nn.Parameter(torch.zeros(fullSz))
-        self.encoder_bias = nn.Parameter(torch.zeros(projSz))
+        self.decoder_bias = nn.Parameter(torch.zeros(full_size))
+        self.encoder_bias = nn.Parameter(torch.zeros(proj_size))
 
-    def encoder(self, input):
-        encoded = F.linear(input, self.weight, self.encoder_bias)
-        return encoded
+    def forward(self, features_in):
+        """Run input features through the autoencoder.
 
-    def decoder(self, input):
-        decoded = F.linear(input, self.weight.t(), self.decoder_bias)
-        return decoded
+        Args:
+            features (torch.Tensor): Feature batch.
 
-    def forward(self, input):
-        encoded = F.linear(input, self.weight, self.encoder_bias)
-        decoded = F.linear(encoded, self.weight.t(), self.decoder_bias)
-        return decoded
-
+        Returns:
+            Tensor: torch.Tensor containing reconstructed features.
+        """
+        encoded = F.linear(features_in, self.weight, self.encoder_bias)
+        return F.linear(encoded, self.weight.t(), self.decoder_bias)
 
 
 class FREModel(nn.Module):
-    """Model for the DFM algorithm.
+    """Model for the FRE algorithm.
 
     Args:
         backbone (str): Pre-trained model backbone.
@@ -49,11 +53,11 @@ class FREModel(nn.Module):
             Defaults to ``True``.
         pooling_kernel_size (int, optional): Kernel size to pool features extracted from the CNN.
             Defaults to ``4``.
-        n_comps (float, optional): Ratio from which number of components for PCA are calculated.
-            Defaults to ``0.97``.
-        score_type (str, optional): Scoring type. Options are `fre` and `nll`.  Anomaly
-            Defaults to ``fre``. Segmentation is supported with `fre` only.
-            If using `nll`, set `task` in config.yaml to classification Defaults to ``classification``.
+        full_size (int, optional): Dimension of feature at output of layer specified in layer.
+            Defaults to ``65536``. 
+        proj_size (int, optional): Reduced size of feature after applying dimensionality reduction
+            via shallow linear autoencoder.
+            Defaults to ``220``. 
     """
 
     def __init__(
@@ -76,44 +80,6 @@ class FREModel(nn.Module):
             layers=[layer],
         ).eval()
 
-    # def fit(self, dataset: torch.Tensor) -> None:
-    #     """Fit a pca transformation and a Gaussian model to dataset.
-
-    #     Args:
-    #         dataset (torch.Tensor): Input dataset to fit the model.
-    #     """
-    #     self.pca_model.fit(dataset)
-    #     if self.score_type == "nll":
-    #         features_reduced = self.pca_model.transform(dataset)
-    #         self.gaussian_model.fit(features_reduced.T)
-
-    # def score(self, features: torch.Tensor, feature_shapes: tuple) -> torch.Tensor:
-    #     """Compute scores.
-
-    #     Scores are either PCA-based feature reconstruction error (FRE) scores or
-    #     the Gaussian density-based NLL scores
-
-    #     Args:
-    #         features (torch.Tensor): semantic features on which PCA and density modeling is performed.
-    #         feature_shapes  (tuple): shape of `features` tensor. Used to generate anomaly map of correct shape.
-
-    #     Returns:
-    #         score (torch.Tensor): numpy array of scores
-    #     """
-    #     feats_projected = self.pca_model.transform(features)
-    #     if self.score_type == "nll":
-    #         score = self.gaussian_model.score_samples(feats_projected)
-    #     elif self.score_type == "fre":
-    #         feats_reconstructed = self.pca_model.inverse_transform(feats_projected)
-    #         fre = torch.square(features - feats_reconstructed).reshape(feature_shapes)
-    #         score_map = torch.unsqueeze(torch.sum(fre, dim=1), 1)
-    #         score = torch.sum(torch.square(features - feats_reconstructed), dim=1)
-    #     else:
-    #         msg = f"unsupported score type: {self.score_type}"
-    #         raise ValueError(msg)
-
-    #     return (score, None) if self.score_type == "nll" else (score, score_map)
-
     def get_features(self, batch: torch.Tensor) -> torch.Tensor:
         """Extract features from the pretrained network.
 
@@ -131,7 +97,6 @@ class FREModel(nn.Module):
         feature_shapes = features_in.shape
         features_in = features_in.view(batch_size, -1).detach()
         features_out = self.fre_model(features_in)
-        # return (features_in, features_out)  if self.training else (features_in, feature_shapes)
         return features_in, features_out, feature_shapes
 
     def forward(self, batch: torch.Tensor) -> torch.Tensor:

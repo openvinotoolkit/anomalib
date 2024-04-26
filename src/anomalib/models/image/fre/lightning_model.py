@@ -36,7 +36,8 @@ class Fre(AnomalyModule):
             Defaults to ``2``.
         full_size (int, optional): Dimension of feature at output of layer specified in layer.
             Defaults to ``65536``. 
-        proj_size (int, optional): Reduced size of feature after applying dimensionality reduction via shallow linear autoencoder.
+        proj_size (int, optional): Reduced size of feature after applying dimensionality reduction
+            via shallow linear autoencoder.
             Defaults to ``220``. 
     """
 
@@ -113,7 +114,7 @@ class Fre(AnomalyModule):
     @property
     def trainer_arguments(self) -> dict[str, Any]:
         """Return DFM-specific trainer arguments."""
-        return {"gradient_clip_val": 0, "max_epochs": 220, "num_sanity_val_steps": 0}
+        return {"gradient_clip_val": 0, "max_epochs": 22, "num_sanity_val_steps": 0}
 
     @property
     def learning_type(self) -> LearningType:
