@@ -17,10 +17,7 @@ from rich.table import Table
 from anomalib.data import AnomalibDataModule
 from anomalib.engine import Engine
 from anomalib.models import AnomalyModule
-from anomalib.pipelines.components import (
-    Job,
-    hide_output,
-)
+from anomalib.pipelines.components import Job, hide_output
 
 logger = logging.getLogger(__name__)
 

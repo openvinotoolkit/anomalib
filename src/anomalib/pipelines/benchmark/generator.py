@@ -2,6 +2,7 @@
 
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
+
 from argparse import SUPPRESS
 from collections.abc import Generator
 
@@ -57,7 +58,7 @@ class BenchmarkJobGenerator(JobGenerator):
             )
 
     @staticmethod
-    def _add_subclass_arguments(parser: ArgumentParser, baseclass: type, key: str) -> None:
+    def _add_subclass_arguments(parser: ArgumentParser, base_class: type, key: str) -> None:
         """Adds the subclass of the provided class to the parser under nested_key."""
         doc_group = get_doc_short_description(baseclass, logger=parser.logger)
         group = parser._create_group_if_requested(  # noqa: SLF001
