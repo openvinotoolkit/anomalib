@@ -1,0 +1,13 @@
+model:
+  class_path: anomalib.models.Fre
+  init_args:
+    backbone: resnet50
+    layer: layer3
+    pre_trained: true
+    pooling_kernel_size: 2
+    full_size: 65536
+    proj_size: 220
+    score_type: fre
+
+trainer:
+  max_epochs: 6
