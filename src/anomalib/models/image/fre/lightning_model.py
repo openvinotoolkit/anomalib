@@ -1,11 +1,10 @@
 """FRE: Feature-Reconstruction Error.
 
-https://arxiv.org/abs/1909.11786
+https://papers.bmvc2023.org/0614.pdf
 """
 
-# Copyright (C) 2022-2024 Intel Corporation
+# Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
-
 
 import logging
 from typing import Any
@@ -15,7 +14,7 @@ from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torch import optim
 
 from anomalib import LearningType
-from anomalib.models.components import AnomalyModule, MemoryBankMixin
+from anomalib.models.components import AnomalyModule
 
 from .torch_model import FREModel
 
@@ -27,28 +26,28 @@ class Fre(AnomalyModule):
 
     Args:
         backbone (str): Backbone CNN network
-            Defaults to ``"resnet50"``.
+            Defaults to ``resnet50``.
         layer (str): Layer to extract features from the backbone CNN
-            Defaults to ``"layer3"``.
+            Defaults to ``layer3``.
         pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.
             Defaults to ``True``.
         pooling_kernel_size (int, optional): Kernel size to pool features extracted from the CNN.
             Defaults to ``2``.
-        full_size (int, optional): Dimension of feature at output of layer specified in layer.
-            Defaults to ``65536``. 
-        proj_size (int, optional): Reduced size of feature after applying dimensionality reduction
+        input_dim (int, optional): Dimension of feature at output of layer specified in layer.
+            Defaults to ``65536``.
+        latent_dim (int, optional): Reduced size of feature after applying dimensionality reduction
             via shallow linear autoencoder.
-            Defaults to ``220``. 
+            Defaults to ``220``.
     """
 
     def __init__(
         self,
         backbone: str = "resnet50",
         layer: str = "layer3",
-        full_size: int = 65536,
-        proj_size: int = 220,
         pre_trained: bool = True,
         pooling_kernel_size: int = 2,
+        input_dim: int = 65536,
+        latent_dim: int = 220,
     ) -> None:
         super().__init__()
 
@@ -57,8 +56,8 @@ class Fre(AnomalyModule):
             pre_trained=pre_trained,
             layer=layer,
             pooling_kernel_size=pooling_kernel_size,
-            full_size=full_size,
-            proj_size=proj_size,
+            input_dim=input_dim,
+            latent_dim=latent_dim,
         )
         self.loss_fn = torch.nn.MSELoss()
 
@@ -68,12 +67,9 @@ class Fre(AnomalyModule):
         Returns:
             Optimizer: SGD optimizer
         """
-        return optim.Adam(
-            params=self.model.fre_model.parameters(),
-            lr=1e-3,
-        )
+        return optim.Adam(params=self.model.fre_model.parameters(), lr=1e-3)
 
-    def training_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> None:
+    def training_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> STEP_OUTPUT:
         """Perform the training step of DFM.
 
         For each batch, features are extracted from the CNN.
@@ -108,7 +104,6 @@ class Fre(AnomalyModule):
         del args, kwargs  # These variables are not used.
 
         batch["pred_scores"], batch["anomaly_maps"] = self.model(batch["image"])
-
         return batch
 
     @property
