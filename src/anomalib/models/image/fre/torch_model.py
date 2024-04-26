@@ -17,8 +17,8 @@ class TiedAE(nn.Module):
     """Model for the Tied AutoEncoder used for FRE calculation.
 
     Args:
-        full_size (int, optional): Dimension of input to the tied auto-encoder.
-        proj_size (int, optional): Dimension of the reduced-dimension latent space of the tied auto-encoder
+        full_size (int): Dimension of input to the tied auto-encoder.
+        proj_size (int): Dimension of the reduced-dimension latent space of the tied auto-encoder.
     """
 
     def __init__(self, full_size, proj_size) -> None:
@@ -30,11 +30,11 @@ class TiedAE(nn.Module):
         self.decoder_bias = nn.Parameter(torch.zeros(full_size))
         self.encoder_bias = nn.Parameter(torch.zeros(proj_size))
 
-    def forward(self, features_in):
+    def forward(self, features_in) -> torch.Tensor:
         """Run input features through the autoencoder.
 
         Args:
-            features (torch.Tensor): Feature batch.
+            features_in (torch.Tensor): Feature batch.
 
         Returns:
             Tensor: torch.Tensor containing reconstructed features.
