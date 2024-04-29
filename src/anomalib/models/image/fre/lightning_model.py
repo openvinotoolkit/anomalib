@@ -89,7 +89,7 @@ class Fre(AnomalyModule):
         return {"loss": loss}
 
     def validation_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> STEP_OUTPUT:
-        """Perform the validation step of DFM.
+        """Perform the validation step of FRE.
 
         Similar to the training step, features are extracted from the CNN for each batch.
 
