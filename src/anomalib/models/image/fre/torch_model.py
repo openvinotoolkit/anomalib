@@ -77,7 +77,7 @@ class FREModel(nn.Module):
             layers=[layer],
         ).eval()
 
-    def get_features(self, batch: torch.Tensor) -> torch.Tensor:
+    def get_features(self, batch: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """Extract features from the pretrained network.
 
         Args:
