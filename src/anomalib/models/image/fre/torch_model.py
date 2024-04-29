@@ -1,4 +1,4 @@
-"""PyTorch model for DFM model implementation."""
+"""PyTorch model for FRE model implementation."""
 
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
