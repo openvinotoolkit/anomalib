@@ -70,7 +70,7 @@ class Fre(AnomalyModule):
         return optim.Adam(params=self.model.fre_model.parameters(), lr=1e-3)
 
     def training_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> STEP_OUTPUT:
-        """Perform the training step of DFM.
+        """Perform the training step of FRE.
 
         For each batch, features are extracted from the CNN.
 
