@@ -103,7 +103,7 @@ class FREModel(nn.Module):
             batch (torch.Tensor): Input images
 
         Returns:
-            Tensor: Scores
+            tuple[torch.Tensor, torch.Tensor]: Scores, Anomaly Map
         """
         features_in, features_out, feature_shapes = self.get_features(batch)
         fre = torch.square(features_in - features_out).reshape(feature_shapes)
