@@ -96,7 +96,7 @@ class FREModel(nn.Module):
         features_out = self.fre_model(features_in)
         return features_in, features_out, feature_shapes
 
-    def forward(self, batch: torch.Tensor) -> torch.Tensor:
+    def forward(self, batch: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         """Compute score from input images.
 
         Args:
