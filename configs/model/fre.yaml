@@ -6,7 +6,7 @@ model:
     pre_trained: true
     pooling_kernel_size: 2
     input_dim: 65536
-    proj_size: 220
+    latent_dim: 220
     score_type: fre
 
 trainer:
