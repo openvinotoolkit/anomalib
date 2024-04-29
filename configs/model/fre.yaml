@@ -5,7 +5,7 @@ model:
     layer: layer3
     pre_trained: true
     pooling_kernel_size: 2
-    full_size: 65536
+    input_dim: 65536
     proj_size: 220
     score_type: fre
 
