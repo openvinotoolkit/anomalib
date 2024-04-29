@@ -65,7 +65,7 @@ class Fre(AnomalyModule):
         """Configure optimizers.
 
         Returns:
-            Optimizer: SGD optimizer
+            Optimizer: Adam optimizer
         """
         return optim.Adam(params=self.model.fre_model.parameters(), lr=1e-3)
 
