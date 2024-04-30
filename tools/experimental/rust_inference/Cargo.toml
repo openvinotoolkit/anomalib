@@ -1,0 +1,13 @@
+[package]
+name = "anomalib_inference"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+openvino= { path="/home/ashwin/projects/openvino-rs/crates/openvino" }
+openvino-sys= { path="/home/ashwin/projects/openvino-rs/crates/openvino-sys" }
+
+opencv="0.88.8"
+thiserror = "1.0"
