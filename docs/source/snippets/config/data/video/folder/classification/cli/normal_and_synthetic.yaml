@@ -1,0 +1,9 @@
+class_path: anomalib.data.FolderVideo
+init_args:
+  root: "datasets/microvideodataset/CustomDataset_1"
+  normal_dir: "train_vid"
+  test_split_mode: SYNTHETIC
+  task: CLASSIFICATION
+  train_batch_size: 2
+  eval_batch_size: 2
+  num_workers: 0

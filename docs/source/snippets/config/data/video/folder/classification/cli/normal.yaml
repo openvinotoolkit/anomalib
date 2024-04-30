@@ -1,0 +1,8 @@
+class_path: anomalib.data.Folder
+init_args:
+  root: "datasets/hazelnut_toy"
+  normal_dir: "good"
+  normalization: imagenet
+  val_split_mode: NONE
+  test_split_mode: NONE
+  task: classification

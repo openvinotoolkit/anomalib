@@ -1,0 +1,7 @@
+class_path: anomalib.data.FolderVideo
+init_args:
+  root: "datasets/microvideodataset/CustomDataset_1"
+  normal_dir: "train_vid"
+  mask_dir: "test_labels"
+  test_dir: "test_vid"
+  normal_split_ratio: 0.2

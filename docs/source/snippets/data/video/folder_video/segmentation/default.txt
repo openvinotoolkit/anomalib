@@ -1,0 +1,16 @@
+# Import the datamodule
+from anomalib.data import FolderVideo
+
+# Create the datamodule with a reduced batch size
+datamodule = FolderVideo(
+    root="datasets/microvideodataset/CustomDataset_1",
+    normal_dir="train_vid",
+    test_dir="test_vid",
+    mask_dir="test_labels",
+    train_batch_size=2,
+    eval_batch_size=2,
+    num_workers=0,
+)
+
+# Setup the datamodule
+datamodule.setup()

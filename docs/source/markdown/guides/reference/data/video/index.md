@@ -23,6 +23,13 @@ Learn more about Shanghai Tech dataset.
 Learn more about UCSD Ped1 and Ped2 datasets.
 :::
 
+:::{grid-item-card} FolderVideo
+:link: ./folder_video
+:link-type: doc
+
+Learn more about custom folder dataset(video).
+:::
+
 ::::
 
 ```{toctree}
@@ -30,6 +37,7 @@ Learn more about UCSD Ped1 and Ped2 datasets.
 :hidden:
 
 ./avenue
+./folder_video
 ./shanghaitech
 ./ucsd_ped
 ```

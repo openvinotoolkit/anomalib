@@ -1,0 +1,17 @@
+# Import the datamodule
+from anomalib.data import FolderVideo
+from anomalib.data.utils import TestSplitMode
+
+# Create the datamodule
+datamodule = FolderVideo(
+    root="datasets/microvideodataset/CustomDataset_1",
+    test_split_mode=TestSplitMode.SYNTHETIC,
+    normal_dir="train_vid",
+    task="classification",
+    train_batch_size=2,
+    eval_batch_size=2,
+    num_workers=0,
+)
+
+# Setup the datamodule
+datamodule.setup()

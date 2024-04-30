@@ -566,3 +566,40 @@ class DummyVideoDatasetGenerator(DummyDatasetGenerator):
                 self.video_generator.save_image(image_filename, frame)
             masks_array = np.stack(masks)
             np.save(mask_path, masks_array)
+
+    def _generate_dummy_foldervideo_dataset(
+        self,
+        train_dir: str = "train_vid",
+        test_dir: str = "test_vid",
+    ) -> None:
+        """Generate dummy folder video multiple dataset."""
+        # generate training data
+        mask_dir = "test_labels"
+        path = self.dataset_root / train_dir
+        path.mkdir(exist_ok=True, parents=True)
+        num_clips = self.num_train
+        for clip_idx in range(num_clips):
+            clip_path = path / f"01_{clip_idx:03}.avi"
+            frames, _ = self.video_generator.generate_video(length=32, first_label=LabelName.NORMAL, p_state_switch=0)
+            fourcc = cv2.VideoWriter_fourcc("F", "M", "P", "4")
+            writer = cv2.VideoWriter(str(clip_path), fourcc, 30, self.frame_shape)
+            for _, frame in enumerate(frames):
+                writer.write(frame)
+            writer.release()
+
+        # generate test data
+        test_path = self.dataset_root / test_dir
+        test_path.mkdir(exist_ok=True, parents=True)
+        gt_path = self.dataset_root / mask_dir
+        gt_path.mkdir(exist_ok=True, parents=True)
+
+        for clip_idx in range(self.num_test):
+            clip_path = test_path / f"01_{clip_idx:04}"
+            clip_path.mkdir(exist_ok=True, parents=True)
+            mask_path = gt_path / f"01_{clip_idx:04}.npy"
+            frames, masks = self.video_generator.generate_video(length=32, p_state_switch=0.2)
+            for frame_idx, frame in enumerate(frames):
+                image_filename = clip_path / f"{frame_idx:03}.jpg"
+                self.video_generator.save_image(image_filename, frame)
+            masks_array = np.stack(masks)
+            np.save(mask_path, masks_array)
