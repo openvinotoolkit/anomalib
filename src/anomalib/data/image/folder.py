@@ -33,6 +33,10 @@ def make_folder_dataset(
     mask_dir: str | Path | Sequence[str | Path] | None = None,
     split: str | Split | None = None,
     extensions: tuple[str, ...] | None = None,
+    normal_subset: float | None = None,
+    abnormal_subset: float | None = None,
+    normal_test_subset: float | None = None,
+    mask_subset: float | None = None,
 ) -> DataFrame:
     """Make Folder Dataset.
 
@@ -50,6 +54,18 @@ def make_folder_dataset(
         split (str | Split | None, optional): Dataset split (ie., Split.FULL, Split.TRAIN or Split.TEST).
             Defaults to ``None``.
         extensions (tuple[str, ...] | None, optional): Type of the image extensions to read from the directory.
+            Defaults to ``None``.
+        normal_subset (float | None , optional): A % slice of the normal data to be used in the train split.
+            Choose a float number from [0,1]
+            Defaults to ``None``.
+        abnormal_subset (float | None , optional): A % slice of the abnormal data to be used in the train split.
+            Choose a float number from [0,1]
+            Defaults to ``None``.
+        normal_test_subset (float | None , optional): A % slice of the normal data to be used in the test split.
+            Choose a float number from [0,1]
+            Defaults to ``None``.
+        mask_subset (float | None , optional): A % slice of the mask data to be used in the train split.
+            Choose a float number from [0,1]
             Defaults to ``None``.
 
     Returns:
@@ -109,19 +125,23 @@ def make_folder_dataset(
     filenames = []
     labels = []
     dirs = {DirType.NORMAL: normal_dir}
+    subsets = {DirType.NORMAL: normal_subset}
 
     if abnormal_dir:
         dirs[DirType.ABNORMAL] = abnormal_dir
+        subsets[DirType.ABNORMAL] = abnormal_subset
 
     if normal_test_dir:
         dirs[DirType.NORMAL_TEST] = normal_test_dir
+        subsets[DirType.NORMAL_TEST] = normal_test_subset
 
     if mask_dir:
         dirs[DirType.MASK] = mask_dir
+        subsets[DirType.MASK] = mask_subset
 
     for dir_type, paths in dirs.items():
         for path in paths:
-            filename, label = _prepare_files_labels(path, dir_type, extensions)
+            filename, label = _prepare_files_labels(path, dir_type, extensions, subsets[dir_type])
             filenames += filename
             labels += label
 
@@ -208,6 +228,18 @@ class FolderDataset(AnomalibDataset):
             Defaults to ``None``.
         extensions (tuple[str, ...] | None, optional): Type of the image extensions to read from the directory.
             Defaults to ``None``.
+        normal_subset (float | None , optional): A % slice of the normal data to be used in the train split.
+            Choose a float number from [0,1]
+            Defaults to ``None``.
+        abnormal_subset (float | None , optional): A % slice of the abnormal data to be used in the train split.
+            Choose a float number from [0,1]
+            Defaults to ``None``.
+        normal_test_subset (float | None , optional): A % slice of the normal data to be used in the test split.
+            Choose a float number from [0,1]
+            Defaults to ``None``.
+        mask_subset (float | None , optional): A % slice of the mask data to be used in the train split.
+            Choose a float number from [0,1]
+            Defaults to ``None``.
 
     Raises:
         ValueError: When task is set to classification and `mask_dir` is provided. When `mask_dir` is
@@ -246,6 +278,10 @@ class FolderDataset(AnomalibDataset):
         mask_dir: str | Path | Sequence[str | Path] | None = None,
         split: str | Split | None = None,
         extensions: tuple[str, ...] | None = None,
+        normal_subset: float | None = None,
+        abnormal_subset: float | None = None,
+        normal_test_subset: float | None = None,
+        mask_subset: float | None = None,
     ) -> None:
         super().__init__(task, transform)
 
@@ -257,6 +293,10 @@ class FolderDataset(AnomalibDataset):
         self.normal_test_dir = normal_test_dir
         self.mask_dir = mask_dir
         self.extensions = extensions
+        self.normal_subset = normal_subset
+        self.abnormal_subset = abnormal_subset
+        self.normal_test_subset = normal_test_subset
+        self.mask_subset = mask_subset
 
         self.samples = make_folder_dataset(
             root=self.root,
@@ -266,6 +306,10 @@ class FolderDataset(AnomalibDataset):
             mask_dir=self.mask_dir,
             split=self.split,
             extensions=self.extensions,
+            normal_subset=self.normal_subset,
+            abnormal_subset=self.abnormal_subset,
+            normal_test_subset=self.normal_test_subset,
+            mask_subset=self.mask_subset,
         )
 
     @property
@@ -405,6 +449,10 @@ class Folder(AnomalibDataModule):
         val_split_mode: ValSplitMode | str = ValSplitMode.FROM_TEST,
         val_split_ratio: float = 0.5,
         seed: int | None = None,
+        normal_subset: float | None = None,
+        abnormal_subset: float | None = None,
+        normal_test_subset: float | None = None,
+        mask_subset: float | None = None,
     ) -> None:
         self._name = name
         self.root = root
@@ -416,6 +464,10 @@ class Folder(AnomalibDataModule):
         self.extensions = extensions
         test_split_mode = TestSplitMode(test_split_mode)
         val_split_mode = ValSplitMode(val_split_mode)
+        self.normal_subset = normal_subset
+        self.abnormal_subset = abnormal_subset
+        self.normal_test_subset = normal_test_subset
+        self.mask_subset = mask_subset
         super().__init__(
             train_batch_size=train_batch_size,
             eval_batch_size=eval_batch_size,
@@ -454,6 +506,10 @@ class Folder(AnomalibDataModule):
             normal_test_dir=self.normal_test_dir,
             mask_dir=self.mask_dir,
             extensions=self.extensions,
+            normal_subset=self.normal_subset,
+            abnormal_subset=self.abnormal_subset,
+            normal_test_subset=self.normal_test_subset,
+            mask_subset=self.mask_subset,
         )
 
         self.test_data = FolderDataset(
