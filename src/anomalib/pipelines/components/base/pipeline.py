@@ -5,10 +5,11 @@
 
 import logging
 from abc import ABC, abstractmethod
-from pathlib import Path
 
 from jsonargparse import ActionConfigFile, ArgumentParser, Namespace
 from rich import print, traceback
+
+from anomalib.utils.logging import redirect_logs
 
 from .runner import Runner
 
@@ -16,21 +17,6 @@ traceback.install()
 
 log_file = "runs/pipeline.log"
 logger = logging.getLogger(__name__)
-
-
-def configure_logger() -> None:
-    """Add file handler to logger."""
-    Path(log_file).parent.mkdir(exist_ok=True, parents=True)
-    logger_file_handler = logging.FileHandler(log_file)
-    root_logger = logging.getLogger()
-    root_logger.setLevel(logging.DEBUG)
-    format_string = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-    logging.basicConfig(format=format_string, level=logging.DEBUG, handlers=[logger_file_handler])
-    logging.captureWarnings(capture=True)
-    # remove stream handler from all loggers
-    loggers = [logging.getLogger(name) for name in logging.root.manager.loggerDict]
-    for _logger in loggers:
-        _logger.handlers = [logger_file_handler]
 
 
 class Pipeline(ABC):
@@ -56,7 +42,7 @@ class Pipeline(ABC):
         """
         args = self._get_args(args)
         runners = self._setup_runners(args)
-        configure_logger()
+        redirect_logs(log_file)
 
         for runner in runners:
             try:

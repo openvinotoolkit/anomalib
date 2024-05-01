@@ -11,8 +11,8 @@ from typing import Any
 from jsonargparse import Namespace
 from jsonargparse._typehints import ActionTypeHint
 
-from anomalib.pipelines.components import (
-    convert_to_tuple,
+from anomalib.utils.config import (
+    convert_valuesview_to_tuple,
     dict_from_namespace,
     flatten_dict,
     namespace_from_dict,
@@ -54,7 +54,7 @@ def get_iterator_from_grid_dict(container: dict) -> Generator[dict, Any, None]:
     _container = flatten_dict(container)
     grid_dict = {key: value for key, value in _container.items() if "grid" in key}
     _container = {key: value for key, value in _container.items() if key not in grid_dict}
-    combinations = list(product(*convert_to_tuple(grid_dict.values())))
+    combinations = list(product(*convert_valuesview_to_tuple(grid_dict.values())))
     for combination in combinations:
         for key, value in zip(grid_dict.keys(), combination, strict=True):
             _container[key.removesuffix(".grid")] = value
@@ -73,7 +73,7 @@ class GridSearchAction(ActionTypeHint):
                 class_path: str
                 init_args: [arg1, arg2]
         ```
-        
+
         or
         ```yaml
             nested_key:

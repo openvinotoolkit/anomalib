@@ -11,9 +11,7 @@ if try_import("anomalib.pipelines"):
     from anomalib.pipelines import Benchmark
     from anomalib.pipelines.components.base import Pipeline
 
-    PIPELINE_REGISTRY: dict[str, Pipeline] | None = {
-        "benchmark": Benchmark(),
-    }
+    PIPELINE_REGISTRY: dict[str, Pipeline] | None = {"benchmark": Benchmark()}
 else:
     PIPELINE_REGISTRY = None
 

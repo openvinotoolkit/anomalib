@@ -11,8 +11,10 @@ from jsonargparse._optionals import get_doc_short_description
 
 from anomalib.data import AnomalibDataModule, get_datamodule
 from anomalib.models import AnomalyModule, get_model
-from anomalib.pipelines.components import JobGenerator, dict_from_namespace, hide_output
+from anomalib.pipelines.components import JobGenerator
 from anomalib.pipelines.components.actions import GridSearchAction, get_iterator_from_grid_dict
+from anomalib.utils.config import dict_from_namespace
+from anomalib.utils.logging import hide_output
 
 from .job import BenchmarkJob
 
