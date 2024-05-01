@@ -66,13 +66,14 @@ class GridSearchAction(ActionTypeHint):
 
     Allows using grid search key in the arguments.
 
-    Example:
+    Examples:
         ```yaml
 
             nested_key:
                 class_path: str
                 init_args: [arg1, arg2]
         ```
+        
         or
         ```yaml
             nested_key:
@@ -132,9 +133,14 @@ class GridSearchAction(ActionTypeHint):
         """Ignore all grid search keys.
 
         This allows the args to follow the same format as ``add_subclass_arguments``
-        nested_key:
-            class_path: str
-            init_args: [arg1, arg2]
+        .. code-block:: yaml
+
+            nested_key:
+                class_path:
+                    grid: [val1, val2]  # List of values to grid search
+                init_args:
+                    - arg1
+                    - arg2
         at the same time allows grid search key
         nested_key:
             class_path:
