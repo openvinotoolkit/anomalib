@@ -1,36 +1,40 @@
-"""Base class for orchestrator."""
+"""Base class for pipeline."""
 
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-import warnings
 from abc import ABC, abstractmethod
 from pathlib import Path
 
 from jsonargparse import ActionConfigFile, ArgumentParser, Namespace
 from rich import print, traceback
 
+from .runner import Runner
+
 traceback.install()
+
 log_file = "runs/pipeline.log"
-Path(log_file).parent.mkdir(exist_ok=True, parents=True)
-logger_file_handler = logging.FileHandler(log_file)
-logging.getLogger().addHandler(logger_file_handler)
-logging.getLogger().setLevel(logging.DEBUG)
-warnings.filterwarnings("ignore")
-for logger_name in ["lightning.pytorch", "lightning.fabric", "torchmetrics", "os"]:
-    logging.getLogger(logger_name).handlers = [logger_file_handler]
-format_string = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-logging.basicConfig(format=format_string, level=logging.DEBUG)
-
-
-from .runner import Runner  # noqa: E402
-
 logger = logging.getLogger(__name__)
 
 
+def configure_logger() -> None:
+    """Add file handler to logger."""
+    Path(log_file).parent.mkdir(exist_ok=True, parents=True)
+    logger_file_handler = logging.FileHandler(log_file)
+    root_logger = logging.getLogger()
+    root_logger.setLevel(logging.DEBUG)
+    format_string = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    logging.basicConfig(format=format_string, level=logging.DEBUG, handlers=[logger_file_handler])
+    logging.captureWarnings(capture=True)
+    # remove stream handler from all loggers
+    loggers = [logging.getLogger(name) for name in logging.root.manager.loggerDict]
+    for _logger in loggers:
+        _logger.handlers = [logger_file_handler]
+
+
 class Pipeline(ABC):
-    """Base class for orchestrator."""
+    """Base class for pipeline."""
 
     def _get_args(self, args: Namespace) -> Namespace:
         """Setup the runners for the pipeline."""
@@ -52,6 +56,7 @@ class Pipeline(ABC):
         """
         args = self._get_args(args)
         runners = self._setup_runners(args)
+        configure_logger()
 
         for runner in runners:
             try:

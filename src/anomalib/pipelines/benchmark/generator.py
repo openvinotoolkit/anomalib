@@ -60,9 +60,9 @@ class BenchmarkJobGenerator(JobGenerator):
     @staticmethod
     def _add_subclass_arguments(parser: ArgumentParser, base_class: type, key: str) -> None:
         """Adds the subclass of the provided class to the parser under nested_key."""
-        doc_group = get_doc_short_description(baseclass, logger=parser.logger)
+        doc_group = get_doc_short_description(base_class, logger=parser.logger)
         group = parser._create_group_if_requested(  # noqa: SLF001
-            baseclass,
+            base_class,
             nested_key=key,
             as_group=True,
             doc_group=doc_group,
@@ -76,9 +76,9 @@ class BenchmarkJobGenerator(JobGenerator):
                 metavar="CONFIG | CLASS_PATH_OR_NAME | .INIT_ARG_NAME VALUE",
                 help=(
                     'One or more arguments specifying "class_path"'
-                    f' and "init_args" for any subclass of {baseclass.__name__}.'
+                    f' and "init_args" for any subclass of {base_class.__name__}.'
                 ),
                 default=SUPPRESS,
-                action=GridSearchAction(typehint=baseclass, enable_path=True, logger=parser.logger),
+                action=GridSearchAction(typehint=base_class, enable_path=True, logger=parser.logger),
             )
         action.sub_add_kwargs = {"fail_untyped": True, "sub_configs": True, "instantiate": True}

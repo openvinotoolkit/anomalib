@@ -13,7 +13,7 @@ from .generator import BenchmarkJobGenerator
 
 
 class Benchmark(Pipeline):
-    """Benchmarking orchestrator."""
+    """Benchmarking pipeline."""
 
     def _setup_runners(self, args: Namespace) -> list[Runner]:
         """Setup the runners for the pipeline."""
@@ -23,9 +23,7 @@ class Benchmark(Pipeline):
             if accelerator == "cpu":
                 runners.append(SerialRunner(BenchmarkJobGenerator("cpu")))
             elif accelerator == "cuda":
-                runners.append(
-                    ParallelRunner(BenchmarkJobGenerator("cuda"), n_jobs=torch.cuda.device_count()),
-                )
+                runners.append(ParallelRunner(BenchmarkJobGenerator("cuda"), n_jobs=torch.cuda.device_count()))
             else:
                 msg = f"Unsupported accelerator: {accelerator}"
                 raise ValueError(msg)
