@@ -20,6 +20,13 @@ Learn more about how to use `Folder` dataset to train anomalib models on your cu
 Learn how to apply custom data transforms to the input images.
 :::
 
+:::{grid-item-card} {octicon}`table` Input tiling
+:link: ./input_tiling
+:link-type: doc
+
+Learn more about how to use the tiler for input tiling.
+:::
+
 ::::
 
 ```{toctree}
@@ -28,4 +35,5 @@ Learn how to apply custom data transforms to the input images.
 
 ./custom_data
 ./transforms
+./input_tiling
 ```

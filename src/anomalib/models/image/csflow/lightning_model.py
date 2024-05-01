@@ -6,7 +6,6 @@ https://arxiv.org/pdf/2110.02855.pdf
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 import logging
 from typing import Any
 
@@ -68,6 +67,7 @@ class Csflow(AnomalyModule):
             clamp=self.clamp,
             num_channels=self.num_channels,
         )
+        self.model.feature_extractor.eval()
 
     def training_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> STEP_OUTPUT:
         """Perform the training step of CS-Flow.
@@ -82,7 +82,6 @@ class Csflow(AnomalyModule):
         """
         del args, kwargs  # These variables are not used.
 
-        self.model.feature_extractor.eval()
         z_dist, jacobians = self.model(batch["image"])
         loss = self.loss(z_dist, jacobians)
         self.log("train_loss", loss.item(), on_epoch=True, prog_bar=True, logger=True)
