@@ -8,6 +8,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+- Added subset to `Folder` class to slice the datasets by @MightyStud in https://github.com/openvinotoolkit/anomalib/pull/2038
+
 - Add data_path argument to predict entrypoint and add properties for retrieving model path by @djdameln in https://github.com/openvinotoolkit/anomalib/pull/2018
 
 ### Changed
