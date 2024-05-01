@@ -42,6 +42,7 @@ def _prepare_files_labels(
     path: str | Path,
     path_type: str,
     extensions: tuple[str, ...] | None = None,
+    subset: float | None = None,
 ) -> tuple[list, list]:
     """Return a list of filenames and list corresponding labels.
 
@@ -50,6 +51,8 @@ def _prepare_files_labels(
         path_type (str): Type of images in the provided path ("normal", "abnormal", "normal_test")
         extensions (tuple[str, ...] | None, optional): Type of the image extensions to read from the
             directory.
+        subset (float | None, optional): A % slice of the data.
+            Choose a float number from [0,1]
 
     Returns:
         List, List: Filenames of the images provided in the paths, labels of the images provided in the paths
@@ -75,6 +78,10 @@ def _prepare_files_labels(
         raise RuntimeError(msg)
 
     labels = [path_type] * len(filenames)
+
+    if subset:
+        filenames = filenames[0 : int(subset * len(filenames))]
+        labels = labels[0 : int(subset * len(labels))]
 
     return filenames, labels
 
