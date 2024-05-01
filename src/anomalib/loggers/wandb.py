@@ -3,6 +3,8 @@
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from typing import Literal
+
 import numpy as np
 from lightning.fabric.utilities.types import _PATH
 from lightning.pytorch.loggers.wandb import WandbLogger
@@ -11,14 +13,12 @@ from matplotlib.figure import Figure
 
 from anomalib.utils.exceptions import try_import
 
+from .base import ImageLoggerBase
+
 if try_import("wandb"):
     import wandb
     from wandb.sdk.lib import RunDisabled
     from wandb.wandb_run import Run
-
-from typing import Literal
-
-from .base import ImageLoggerBase
 
 
 class AnomalibWandbLogger(ImageLoggerBase, WandbLogger):
