@@ -1,11 +1,10 @@
 class_path: anomalib.data.Kolektor
 init_args:
   root: "./datasets/kolektor"
-  image_size: [256, 256]
-  transform: null
   train_batch_size: 32
   eval_batch_size: 32
   num_workers: 8
+  transform: null
   train_transform: null
   eval_transform: null
   test_split_mode: from_dir

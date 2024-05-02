@@ -5,11 +5,10 @@ init_args:
   clip_length_in_frames: 1
   frames_between_clips: 1
   target_frame: LAST
-  image_size: [256, 256]
-  transform: null
   train_batch_size: 32
   eval_batch_size: 32
   num_workers: 8
+  transform: null
   train_transform: null
   eval_transform: null
   val_split_mode: FROM_TEST

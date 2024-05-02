@@ -1,0 +1,10 @@
+from anomalib.data import MVTec
+
+datamodule = MVTec()
+datamodule.prepare_data()
+datamodule.setup()
+
+next(iter(datamodule.train_data))["image"].shape
+# torch.Size([3, 900, 900])
+next(iter(datamodule.test_data))["image"].shape
+# torch.Size([3, 900, 900])
