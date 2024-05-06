@@ -315,6 +315,7 @@ class WinClipModel(DynamicBufferMixin, BufferListMixin, nn.Module):
 
         return torch.stack(multi_scale_scores).mean(dim=0)
 
+    @torch.no_grad
     def _collect_text_embeddings(self, class_name: str) -> None:
         """Collect text embeddings for the object class using a compositional prompt ensemble.
 
@@ -334,9 +335,8 @@ class WinClipModel(DynamicBufferMixin, BufferListMixin, nn.Module):
         normal_tokens = tokenize(normal_prompts)
         anomalous_tokens = tokenize(anomalous_prompts)
         # encode tokens to obtain prompt embeddings
-        with torch.no_grad():
-            normal_embeddings = self.clip.encode_text(normal_tokens.to(device))
-            anomalous_embeddings = self.clip.encode_text(anomalous_tokens.to(device))
+        normal_embeddings = self.clip.encode_text(normal_tokens.to(device))
+        anomalous_embeddings = self.clip.encode_text(anomalous_tokens.to(device))
         # average prompt embeddings
         normal_embeddings = torch.mean(normal_embeddings, dim=0, keepdim=True)
         anomalous_embeddings = torch.mean(anomalous_embeddings, dim=0, keepdim=True)
@@ -344,14 +344,14 @@ class WinClipModel(DynamicBufferMixin, BufferListMixin, nn.Module):
         text_embeddings = torch.cat((normal_embeddings, anomalous_embeddings))
         self._text_embeddings = text_embeddings
 
+    @torch.no_grad
     def _collect_visual_embeddings(self, images: torch.Tensor) -> None:
         """Collect visual embeddings based on a set of normal reference images.
 
         Args:
             images (torch.Tensor): Tensor of shape ``(K, C, H, W)`` containing the reference images.
         """
-        with torch.no_grad():
-            _, self._visual_embeddings, self._patch_embeddings = self.encode_image(images)
+        _, self._visual_embeddings, self._patch_embeddings = self.encode_image(images)
 
     def _generate_masks(self) -> list[torch.Tensor]:
         """Prepare a set of masks that operate as multi-scale sliding windows.
