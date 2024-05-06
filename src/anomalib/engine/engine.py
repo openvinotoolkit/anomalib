@@ -225,6 +225,28 @@ class Engine:
             raise ValueError(msg)
         return callbacks[0] if len(callbacks) > 0 else None
 
+    @property
+    def checkpoint_callback(self) -> ModelCheckpoint | None:
+        """The ``ModelCheckpoint`` callback in the trainer.callbacks list, or ``None`` if it doesn't exist.
+
+        Returns:
+            ModelCheckpoint | None: ModelCheckpoint callback, if available.
+        """
+        if self._trainer is None:
+            return None
+        return self.trainer.checkpoint_callback
+
+    @property
+    def best_model_path(self) -> str | None:
+        """The path to the best model checkpoint.
+
+        Returns:
+            str: Path to the best model checkpoint.
+        """
+        if self.checkpoint_callback is None:
+            return None
+        return self.checkpoint_callback.best_model_path
+
     def _setup_workspace(
         self,
         model: AnomalyModule,
@@ -672,6 +694,7 @@ class Engine:
         dataset: Dataset | PredictDataset | None = None,
         return_predictions: bool | None = None,
         ckpt_path: str | Path | None = None,
+        data_path: str | Path | None = None,
     ) -> _PREDICT_OUTPUT | None:
         """Predict using the model using the trainer.
 
@@ -702,6 +725,9 @@ class Engine:
                 If ``None`` and the model instance was passed, use the current weights.
                 Otherwise, the best model checkpoint from the previous ``trainer.fit`` call will be loaded
                 if a checkpoint callback is configured.
+                Defaults to None.
+            data_path (str | Path | None):
+                Path to the image or folder containing images to generate predictions for.
                 Defaults to None.
 
         Returns:
@@ -743,18 +769,19 @@ class Engine:
         if not ckpt_path:
             logger.warning("ckpt_path is not provided. Model weights will not be loaded.")
 
-        # Handle the instance when a dataset is passed to the predict method
+        # Collect dataloaders
+        if dataloaders is None:
+            dataloaders = []
+        elif isinstance(dataloaders, DataLoader):
+            dataloaders = [dataloaders]
+        elif not isinstance(dataloaders, list):
+            msg = f"Unknown type for dataloaders {type(dataloaders)}"
+            raise TypeError(msg)
         if dataset is not None:
-            dataloader = DataLoader(dataset)
-            if dataloaders is None:
-                dataloaders = dataloader
-            elif isinstance(dataloaders, DataLoader):
-                dataloaders = [dataloaders, dataloader]
-            elif isinstance(dataloaders, list):  # dataloader is a list
-                dataloaders.append(dataloader)
-            else:
-                msg = f"Unknown type for dataloaders {type(dataloaders)}"
-                raise TypeError(msg)
+            dataloaders.append(DataLoader(dataset))
+        if data_path is not None:
+            dataloaders.append(DataLoader(PredictDataset(data_path)))
+        dataloaders = dataloaders or None
 
         self._setup_dataset_task(dataloaders, datamodule)
         self._setup_transform(model or self.model, datamodule=datamodule, dataloaders=dataloaders, ckpt_path=ckpt_path)

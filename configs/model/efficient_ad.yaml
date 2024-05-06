@@ -7,12 +7,11 @@ model:
     weight_decay: 1.0e-05
     padding: false
     pad_maps: true
-    batch_size: 1
 
 metrics:
   pixel:
     - AUROC
 
 trainer:
-  max_epochs: 200
+  max_epochs: 1000
   max_steps: 70000

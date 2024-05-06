@@ -81,9 +81,9 @@ class DsrModel(nn.Module):
         for parameters in self.discrete_latent_model.parameters():
             parameters.requires_grad = False
 
-    def load_pretrained_discrete_model_weights(self, ckpt: Path) -> None:
+    def load_pretrained_discrete_model_weights(self, ckpt: Path, device: torch.device | str | None = None) -> None:
         """Load pre-trained model weights."""
-        self.discrete_latent_model.load_state_dict(torch.load(ckpt))
+        self.discrete_latent_model.load_state_dict(torch.load(ckpt, map_location=device))
 
     def forward(
         self,
