@@ -204,7 +204,8 @@ class TestAPI:
                 root=dataset_path / "mvtec",
                 category="dummy",
                 task=task_type,
-                train_batch_size=2,
+                # EfficientAd requires train batch size 1
+                train_batch_size=1 if model_name == "efficient_ad" else 2,
             )
 
         model = get_model(model_name, **extra_args)

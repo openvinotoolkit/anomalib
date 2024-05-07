@@ -102,6 +102,11 @@ class AnomalibDataModule(LightningDataModule, ABC):
         self.seed = seed
 
         # set transforms
+        if bool(train_transform) != bool(eval_transform):
+            msg = "Only one of train_transform and eval_transform was specified. This is not recommended because \
+                    it could lead to unexpected behaviour. Please ensure training and eval transforms have the same \
+                    reshape and normalization characteristics."
+            logger.warning(msg)
         self._train_transform = train_transform or transform
         self._eval_transform = eval_transform or transform
 
@@ -255,8 +260,6 @@ class AnomalibDataModule(LightningDataModule, ABC):
         """
         if self._eval_transform:
             return self._eval_transform
-        if self._train_transform:
-            return self._train_transform
         return None
 
     @property
