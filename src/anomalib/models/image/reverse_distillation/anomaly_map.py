@@ -91,4 +91,4 @@ class AnomalyMapGenerator(nn.Module):
         return GaussianBlur2d(
             kernel_size=(self.kernel_size, self.kernel_size),
             sigma=(self.sigma, self.sigma),
-        )(anomaly_map.to("cpu"))
+        )(anomaly_map.to(student_features[0].device))
