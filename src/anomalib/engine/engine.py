@@ -867,6 +867,7 @@ class Engine:
         model: AnomalyModule,
         export_type: ExportType,
         export_root: str | Path | None = None,
+        input_size: tuple[int, int] | None = None,
         transform: Transform | None = None,
         ov_args: dict[str, Any] | None = None,
         ckpt_path: str | Path | None = None,
@@ -878,6 +879,8 @@ class Engine:
             export_type (ExportType): Export type.
             export_root (str | Path | None, optional): Path to the output directory. If it is not set, the model is
                 exported to trainer.default_root_dir. Defaults to None.
+            input_size (tuple[int, int] | None, optional): A statis input shape for the model, which is exported to ONNX
+                and OpenVINO format. Defaults to None.
             transform (Transform | None, optional): Input transform to include in the exported model. If not provided,
                 the engine will try to use the transform from the datamodule or dataset. Defaults to None.
             ov_args (dict[str, Any] | None, optional): This is optional and used only for OpenVINO's model optimizer.
@@ -904,10 +907,10 @@ class Engine:
                 ```python
                 anomalib export --model Padim --export_mode OPENVINO --data Visa --input_size "[256,256]"
                 ```
-            4. You can also overrride OpenVINO model optimizer by adding the ``--mo_args.<key>`` arguments.
+            4. You can also overrride OpenVINO model optimizer by adding the ``--ov_args.<key>`` arguments.
                 ```python
                 anomalib export --model Padim --export_mode OPENVINO --data Visa --input_size "[256,256]" \
-                    --mo_args.compress_to_fp16 False
+                    --ov_args.compress_to_fp16 False
                 ```
         """
         self._setup_trainer(model)
@@ -930,6 +933,7 @@ class Engine:
             exported_model_path = export_to_onnx(
                 model=model,
                 export_root=export_root,
+                input_size=input_size,
                 transform=transform,
                 task=self.task,
             )
@@ -937,6 +941,7 @@ class Engine:
             exported_model_path = export_to_openvino(
                 model=model,
                 export_root=export_root,
+                input_size=input_size,
                 transform=transform,
                 task=self.task,
                 ov_args=ov_args,
