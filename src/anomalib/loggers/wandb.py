@@ -3,7 +3,7 @@
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
 import numpy as np
 from lightning.fabric.utilities.types import _PATH
@@ -17,8 +17,10 @@ from .base import ImageLoggerBase
 
 if try_import("wandb"):
     import wandb
+
+if TYPE_CHECKING:
     from wandb.sdk.lib import RunDisabled
-    from wandb.wandb_run import Run
+    from wandb.sdk.wandb_run import Run
 
 
 class AnomalibWandbLogger(ImageLoggerBase, WandbLogger):
@@ -97,7 +99,7 @@ class AnomalibWandbLogger(ImageLoggerBase, WandbLogger):
         anonymous: bool | None = None,
         project: str | None = None,
         log_model: Literal["all"] | bool = False,
-        experiment: Run | RunDisabled | None = None,
+        experiment: "Run | RunDisabled | None" = None,
         prefix: str = "",
         checkpoint_name: str | None = None,
         **kwargs,
