@@ -25,10 +25,6 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger("anomalib")
 
-if try_import("openvino"):
-    from openvino.runtime import serialize
-    from openvino.tools.ovc import convert_model
-
 
 class ExportType(str, Enum):
     """Model export type.
@@ -160,6 +156,7 @@ def export_to_torch(
 def export_to_onnx(
     model: AnomalyModule,
     export_root: Path | str,
+    input_size: tuple[int, int] | None = None,
     transform: Transform | None = None,
     task: TaskType | None = None,
     export_type: ExportType = ExportType.ONNX,
@@ -169,6 +166,8 @@ def export_to_onnx(
     Args:
         model (AnomalyModule): Model to export.
         export_root (Path): Path to the root folder of the exported model.
+        input_size (tuple[int, int] | None, optional): Image size used as the input for onnx converter.
+            Defaults to None.
         transform (Transform, optional): Input transforms used for the model. If not provided, the transform is taken
             from the model.
             Defaults to ``None``.
@@ -212,14 +211,18 @@ def export_to_onnx(
     transform = transform or model.transform or model.configure_transforms()
     inference_model = InferenceModel(model=model.model, transform=transform, disable_antialias=True)
     export_root = _create_export_root(export_root, export_type)
+    input_shape = torch.zeros((1, 3, *input_size)) if input_size else torch.zeros((1, 3, 1, 1))
+    dynamic_axes = (
+        None if input_size else {"input": {0: "batch_size", 2: "height", 3: "weight"}, "output": {0: "batch_size"}}
+    )
     _write_metadata_to_json(export_root, model, task)
     onnx_path = export_root / "model.onnx"
     torch.onnx.export(
         inference_model,
-        torch.zeros((1, 3, 1, 1)).to(model.device),
+        input_shape.to(model.device),
         str(onnx_path),
         opset_version=14,
-        dynamic_axes={"input": {0: "batch_size", 2: "height", 3: "weight"}, "output": {0: "batch_size"}},
+        dynamic_axes=dynamic_axes,
         input_names=["input"],
         output_names=["output"],
     )
@@ -228,8 +231,9 @@ def export_to_onnx(
 
 
 def export_to_openvino(
-    export_root: Path | str,
     model: AnomalyModule,
+    export_root: Path | str,
+    input_size: tuple[int, int] | None = None,
     transform: Transform | None = None,
     ov_args: dict[str, Any] | None = None,
     task: TaskType | None = None,
@@ -237,8 +241,10 @@ def export_to_openvino(
     """Convert onnx model to OpenVINO IR.
 
     Args:
-        export_root (Path): Path to the export folder.
         model (AnomalyModule): AnomalyModule to export.
+        export_root (Path): Path to the export folder.
+        input_size (tuple[int, int] | None, optional): Input size of the model. Used for adding metadata to the IR.
+            Defaults to None.
         transform (Transform, optional): Input transforms used for the model. If not provided, the transform is taken
             from the model.
             Defaults to ``None``.
@@ -289,15 +295,21 @@ def export_to_openvino(
         ... )
 
     """
-    model_path = export_to_onnx(model, export_root, transform, task, ExportType.OPENVINO)
+    if not try_import("openvino"):
+        logger.exception("Could not find OpenVINO. Please check OpenVINO installation.")
+        raise ModuleNotFoundError
+
+    import openvino as ov
+
+    model_path = export_to_onnx(model, export_root, input_size, transform, task, ExportType.OPENVINO)
     ov_model_path = model_path.with_suffix(".xml")
     ov_args = {} if ov_args is None else ov_args
-    if convert_model is not None and serialize is not None:
-        model = convert_model(model_path, **ov_args)
-        serialize(model, ov_model_path)
-    else:
-        logger.exception("Could not find OpenVINO methods. Please check OpenVINO installation.")
-        raise ModuleNotFoundError
+    # fp16 compression is enabled by default
+    compress_to_fp16 = ov_args.get("compress_to_fp16", True)
+
+    model = ov.convert_model(model_path, **ov_args)
+    ov.save_model(model, ov_model_path, compress_to_fp16=compress_to_fp16)
+
     return ov_model_path
 
 

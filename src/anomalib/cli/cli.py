@@ -232,7 +232,7 @@ class AnomalibCLI:
         added = parser.add_method_arguments(
             Engine,
             "export",
-            skip={"mo_args", "model"},
+            skip={"ov_args", "model"},
         )
         self.subcommand_method_arguments["export"] = added
         add_openvino_export_arguments(parser)
