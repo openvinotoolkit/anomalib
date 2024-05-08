@@ -88,7 +88,9 @@ class AnomalyMapGenerator(nn.Module):
             elif self.mode == AnomalyMapGenerationMode.ADD:
                 anomaly_map += distance_map
 
-        return GaussianBlur2d(
+        gaussian_blur = GaussianBlur2d(
             kernel_size=(self.kernel_size, self.kernel_size),
             sigma=(self.sigma, self.sigma),
-        )(anomaly_map.to(student_features[0].device))
+        ).to(student_features[0].device)
+
+        return gaussian_blur(anomaly_map)
