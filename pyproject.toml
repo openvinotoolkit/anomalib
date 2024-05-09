@@ -18,7 +18,7 @@ authors = [{ name = "Intel OpenVINO" }]
 dependencies = [
     "omegaconf>=2.1.1",
     "rich>=13.5.2",
-    "jsonargparse[all]>=4.27.7",
+    "jsonargparse[signatures]>=4.27.7",
     "docstring_parser",     # CLI help-formatter
     "rich_argparse",        # CLI help-formatter
 ]
