@@ -344,7 +344,8 @@ def export_to_openvino(
         dataloader = datamodule.val_dataloader()
         if len(dataloader.dataset) < 300:
             logger.warning(
-                f">300 images recommended for INT8 quantization, found only {len(dataloader.dataset)} images",
+                f">300 images recommended for INT8 quantization, "
+                f"found only {len(dataloader.dataset)} images in the validation dataloader",
             )
         calibration_dataset = nncf.Dataset(dataloader, lambda x: x["image"])
         model = nncf.quantize(model, calibration_dataset)
