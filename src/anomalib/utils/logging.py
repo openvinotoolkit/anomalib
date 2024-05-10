@@ -12,11 +12,15 @@ from pathlib import Path
 from typing import Any
 
 
+class LoggerRedirectError(Exception):
+    """Exception occurred when executing function with outputs redirected to logger."""
+
+
 def hide_output(func: Callable[..., Any]) -> Callable[..., Any]:
     """Hide output of the function.
 
     Args:
-        func (function): Hides output of this function.
+        func (function): Hides output from all streams of this function.
 
     Raises:
         Exception: In case the execution of function fails, it raises an exception.
@@ -26,15 +30,21 @@ def hide_output(func: Callable[..., Any]) -> Callable[..., Any]:
     """
 
     @functools.wraps(func)
-    def wrapper(*args, **kwargs) -> Any:  # noqa: ANN401
-        std_out = sys.stdout
-        sys.stdout = buf = io.StringIO()
+    def wrapper(*args: Any, **kwargs: Any) -> Any:  # noqa: ANN401
+        """Wrapper function."""
+        # redirect stdout and stderr to logger
+        stdout = sys.stdout
+        stderr = sys.stderr
+        sys.stdout = io.StringIO()
+        sys.stderr = io.StringIO()
         try:
             value = func(*args, **kwargs)
-        # NOTE: A generic exception is used here to catch all exceptions.
         except Exception as exception:  # noqa: BLE001
-            raise Exception(buf.getvalue()) from exception  # noqa: TRY002
-        sys.stdout = std_out
+            msg = f"Error occurred while executing {func.__name__}"
+            raise LoggerRedirectError(msg) from exception
+        finally:
+            sys.stdout = stdout
+            sys.stderr = stderr
         return value
 
     return wrapper
