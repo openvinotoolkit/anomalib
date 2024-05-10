@@ -26,7 +26,7 @@ from anomalib.callbacks.thresholding import _ThresholdCallback
 from anomalib.callbacks.timer import TimerCallback
 from anomalib.callbacks.visualizer import _VisualizationCallback
 from anomalib.data import AnomalibDataModule, AnomalibDataset, PredictDataset
-from anomalib.deploy.export import ExportType, export_to_onnx, export_to_openvino, export_to_torch
+from anomalib.deploy.export import CompressionType, ExportType, export_to_onnx, export_to_openvino, export_to_torch
 from anomalib.models import AnomalyModule
 from anomalib.utils.normalization import NormalizationMethod
 from anomalib.utils.path import create_versioned_dir
@@ -869,6 +869,8 @@ class Engine:
         export_root: str | Path | None = None,
         input_size: tuple[int, int] | None = None,
         transform: Transform | None = None,
+        compression_type: CompressionType | None = CompressionType.FP16,
+        datamodule: AnomalibDataModule | None = None,
         ov_args: dict[str, Any] | None = None,
         ckpt_path: str | Path | None = None,
     ) -> Path | None:
@@ -882,7 +884,11 @@ class Engine:
             input_size (tuple[int, int] | None, optional): A statis input shape for the model, which is exported to ONNX
                 and OpenVINO format. Defaults to None.
             transform (Transform | None, optional): Input transform to include in the exported model. If not provided,
-                the engine will try to use the transform from the datamodule or dataset. Defaults to None.
+                the transform is taken from the model. Defaults to None.
+            compression_type (CompressionType | None, optional): Compression type for OpenVINO exporting only.
+                Defaults to ``CompressionType.FP16``.
+            datamodule (AnomalibDataModule | None, optional): Lightning datamodule.
+                Must be provided if CompressionType.INT8_PTQ is selected. Defaults to None.
             ov_args (dict[str, Any] | None, optional): This is optional and used only for OpenVINO's model optimizer.
                 Defaults to None.
             ckpt_path (str | Path | None): Checkpoint path. If provided, the model will be loaded from this path.
@@ -944,6 +950,8 @@ class Engine:
                 input_size=input_size,
                 transform=transform,
                 task=self.task,
+                compression_type=compression_type,
+                datamodule=datamodule,
                 ov_args=ov_args,
             )
         else:

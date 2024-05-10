@@ -16,6 +16,7 @@ from torch import nn
 from torchvision.transforms.v2 import CenterCrop, Compose, Resize, Transform
 
 from anomalib import TaskType
+from anomalib.data import AnomalibDataModule
 from anomalib.data.transforms import ExportableCenterCrop
 from anomalib.models.components import AnomalyModule
 from anomalib.utils.exceptions import try_import
@@ -42,6 +43,29 @@ class ExportType(str, Enum):
     ONNX = "onnx"
     OPENVINO = "openvino"
     TORCH = "torch"
+
+
+class CompressionType(str, Enum):
+    """Model compression type when exporting to OpenVINO.
+
+    Examples:
+        >>> from anomalib.deploy import CompressionType
+        >>> CompressionType.INT8_PTQ
+        'int8_ptq'
+    """
+
+    FP16 = "fp16"
+    """
+    Weight compression (FP16)
+    """
+    INT8 = "int8"
+    """
+    Weight compression (INT8)
+    """
+    INT8_PTQ = "int8_ptq"
+    """
+    Full integer quantization (INT8)
+    """
 
 
 class InferenceModel(nn.Module):
@@ -235,6 +259,8 @@ def export_to_openvino(
     export_root: Path | str,
     input_size: tuple[int, int] | None = None,
     transform: Transform | None = None,
+    compression_type: CompressionType | None = CompressionType.FP16,
+    datamodule: AnomalibDataModule | None = None,
     ov_args: dict[str, Any] | None = None,
     task: TaskType | None = None,
 ) -> Path:
@@ -248,7 +274,11 @@ def export_to_openvino(
         transform (Transform, optional): Input transforms used for the model. If not provided, the transform is taken
             from the model.
             Defaults to ``None``.
-        ov_args: Model optimizer arguments for OpenVINO model conversion.
+        compression_type (CompressionType, optional): Compression type for better inference performance.
+            Defaults to ``CompressionType.FP16``.
+        datamodule (AnomalibDataModule | None, optional): Lightning datamodule.
+            Must be provided if CompressionType.INT8_PTQ is selected. Defaults to None.
+        ov_args (dict | None): Model optimizer arguments for OpenVINO model conversion.
             Defaults to ``None``.
         task (TaskType | None): Task type.
             Defaults to ``None``.
@@ -299,15 +329,28 @@ def export_to_openvino(
         logger.exception("Could not find OpenVINO. Please check OpenVINO installation.")
         raise ModuleNotFoundError
 
+    import nncf
     import openvino as ov
 
     model_path = export_to_onnx(model, export_root, input_size, transform, task, ExportType.OPENVINO)
     ov_model_path = model_path.with_suffix(".xml")
     ov_args = {} if ov_args is None else ov_args
-    # fp16 compression is enabled by default
-    compress_to_fp16 = ov_args.get("compress_to_fp16", True)
 
     model = ov.convert_model(model_path, **ov_args)
+    if compression_type == CompressionType.INT8:
+        model = nncf.compress_weights(model)
+    elif compression_type == CompressionType.INT8_PTQ:
+        assert datamodule is not None, "datamodule must be provided for OpenVINO INT8_PTQ compression"
+        dataloader = datamodule.val_dataloader()
+        if len(dataloader.dataset) < 300:
+            logger.warning(
+                f">300 images recommended for INT8 quantization, found only {len(dataloader.dataset)} images",
+            )
+        calibration_dataset = nncf.Dataset(dataloader, lambda x: x["image"])
+        model = nncf.quantize(model, calibration_dataset)
+
+    # fp16 compression is enabled by default
+    compress_to_fp16 = compression_type == CompressionType.FP16
     ov.save_model(model, ov_model_path, compress_to_fp16=compress_to_fp16)
 
     return ov_model_path
