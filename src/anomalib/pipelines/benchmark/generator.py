@@ -3,17 +3,12 @@
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from argparse import SUPPRESS
 from collections.abc import Generator
 
-from jsonargparse import ArgumentParser, Namespace
-from jsonargparse._optionals import get_doc_short_description
-
-from anomalib.data import AnomalibDataModule, get_datamodule
-from anomalib.models import AnomalyModule, get_model
+from anomalib.data import get_datamodule
+from anomalib.models import get_model
 from anomalib.pipelines.components import JobGenerator
-from anomalib.pipelines.components.actions import GridSearchAction, get_iterator_from_grid_dict
-from anomalib.utils.config import dict_from_namespace
+from anomalib.pipelines.components.utils import get_iterator_from_grid_dict
 from anomalib.utils.logging import hide_output
 
 from .job import BenchmarkJob
@@ -30,57 +25,13 @@ class BenchmarkJobGenerator(JobGenerator):
         """Return the job class."""
         return BenchmarkJob
 
-    @staticmethod
-    def add_arguments(parser: ArgumentParser) -> None:
-        """Add job specific arguments to the parser."""
-        group = parser.add_argument_group("Benchmark job specific arguments.")
-        group.add_argument(
-            f"--{BenchmarkJob.name}.seed",
-            type=int | dict[str, list[int]],
-            default=42,
-            help="Seed for reproducibility.",
-        )
-        BenchmarkJobGenerator._add_subclass_arguments(group, AnomalyModule, f"{BenchmarkJob.name}.model")
-        BenchmarkJobGenerator._add_subclass_arguments(group, AnomalibDataModule, f"{BenchmarkJob.name}.data")
-
     @hide_output
-    def generate_jobs(self, args: Namespace) -> Generator[BenchmarkJob, None, None]:
+    def generate_jobs(self, args: dict) -> Generator[BenchmarkJob, None, None]:
         """Return iterator based on the arguments."""
-        container = {
-            "seed": args.seed,
-            "data": dict_from_namespace(args.data),
-            "model": dict_from_namespace(args.model),
-        }
-        for _container in get_iterator_from_grid_dict(container):
+        for _container in get_iterator_from_grid_dict(args):
             yield BenchmarkJob(
                 accelerator=self.accelerator,
                 seed=_container["seed"],
                 model=get_model(_container["model"]),
                 datamodule=get_datamodule(_container["data"]),
             )
-
-    @staticmethod
-    def _add_subclass_arguments(parser: ArgumentParser, base_class: type, key: str) -> None:
-        """Adds the subclass of the provided class to the parser under nested_key."""
-        doc_group = get_doc_short_description(base_class, logger=parser.logger)
-        group = parser._create_group_if_requested(  # noqa: SLF001
-            base_class,
-            nested_key=key,
-            as_group=True,
-            doc_group=doc_group,
-            config_load=False,
-            instantiate=False,
-        )
-
-        with GridSearchAction.allow_default_instance_context():
-            action = group.add_argument(
-                f"--{key}",
-                metavar="CONFIG | CLASS_PATH_OR_NAME | .INIT_ARG_NAME VALUE",
-                help=(
-                    'One or more arguments specifying "class_path"'
-                    f' and "init_args" for any subclass of {base_class.__name__}.'
-                ),
-                default=SUPPRESS,
-                action=GridSearchAction(typehint=base_class, enable_path=True, logger=parser.logger),
-            )
-        action.sub_add_kwargs = {"fail_untyped": True, "sub_configs": True, "instantiate": True}

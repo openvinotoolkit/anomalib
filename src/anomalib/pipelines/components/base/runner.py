@@ -5,8 +5,6 @@
 
 from abc import ABC, abstractmethod
 
-from jsonargparse import Namespace
-
 from .job import JobGenerator
 
 
@@ -17,5 +15,5 @@ class Runner(ABC):
         self.generator = generator
 
     @abstractmethod
-    def run(self, args: Namespace) -> None:
+    def run(self, args: dict) -> None:
         """Run the pipeline."""

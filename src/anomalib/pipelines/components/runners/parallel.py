@@ -8,7 +8,6 @@ import multiprocessing
 from concurrent.futures import ProcessPoolExecutor
 from typing import TYPE_CHECKING
 
-from jsonargparse import Namespace
 from rich import print
 from rich.progress import Progress, TaskID
 
@@ -36,7 +35,7 @@ class ParallelRunner(Runner):
         self.results: list[dict] = []
         self.failures = False
 
-    def run(self, args: Namespace) -> None:
+    def run(self, args: dict) -> None:
         """Run the job in parallel."""
         self.task_id = self.progress.add_task(self.generator.job_class.name, total=None)
         self.progress.start()

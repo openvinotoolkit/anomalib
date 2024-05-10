@@ -6,8 +6,6 @@
 from abc import ABC, abstractmethod
 from collections.abc import Generator
 
-from jsonargparse import ArgumentParser, Namespace
-
 from anomalib.pipelines.types import GATHERED_RESULTS, RUN_RESULTS
 
 
@@ -49,20 +47,12 @@ class Job(ABC):
 class JobGenerator(ABC):
     """Generate Job."""
 
-    @staticmethod
-    @abstractmethod
-    def add_arguments(parser: ArgumentParser) -> None:
-        """Add arguments to the parser.
-
-        This can be used to add arguments that are specific to the job.
-        """
-
-    def __call__(self, args: Namespace | None = None) -> Generator[Job, None, None]:
+    def __call__(self, args: dict | None = None) -> Generator[Job, None, None]:
         """Calls the ``generate_jobs`` method."""
         return self.generate_jobs(args)
 
     @abstractmethod
-    def generate_jobs(self, args: Namespace | None = None) -> Generator[Job, None, None]:
+    def generate_jobs(self, args: dict | None = None) -> Generator[Job, None, None]:
         """Return an iterator based on the arguments.
 
         This can be used to generate the configurations that will be passed to run.

@@ -5,7 +5,6 @@
 
 import logging
 
-from jsonargparse import Namespace
 from rich import print
 from rich.progress import track
 
@@ -24,7 +23,7 @@ class SerialRunner(Runner):
     def __init__(self, generator: JobGenerator) -> None:
         super().__init__(generator)
 
-    def run(self, args: Namespace) -> None:
+    def run(self, args: dict) -> None:
         """Run the job."""
         results = []
         failures = False

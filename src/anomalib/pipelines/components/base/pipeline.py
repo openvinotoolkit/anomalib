@@ -5,8 +5,10 @@
 
 import logging
 from abc import ABC, abstractmethod
+from pathlib import Path
 
-from jsonargparse import ActionConfigFile, ArgumentParser, Namespace
+import yaml
+from jsonargparse import ArgumentParser, Namespace
 from rich import print, traceback
 
 from anomalib.utils.logging import redirect_logs
@@ -22,16 +24,25 @@ logger = logging.getLogger(__name__)
 class Pipeline(ABC):
     """Base class for pipeline."""
 
-    def _get_args(self, args: Namespace) -> Namespace:
-        """Setup the runners for the pipeline."""
+    def _get_args(self, args: Namespace) -> dict:
+        """Get pipeline arguments by parsing the config file.
+
+        Args:
+            args (Namespace): Arguments to run the pipeline. These are the args returned by ArgumentParser.
+
+        Returns:
+            dict: Pipeline arguments.
+        """
         if args is None:
             logger.warning("No arguments provided, parsing arguments from command line.")
             parser = self.get_parser()
             args = parser.parse_args()
-        return args
+
+        with Path(args.config).open() as file:
+            return yaml.safe_load(file)
 
     @abstractmethod
-    def _setup_runners(self, args: Namespace) -> list[Runner]:
+    def _setup_runners(self, args: dict) -> list[Runner]:
         """Setup the runners for the pipeline."""
 
     def run(self, args: Namespace | None = None) -> None:
@@ -56,10 +67,11 @@ class Pipeline(ABC):
                     f" Please check [magenta]{log_file}[/magenta] for more details.",
                 )
 
-    def get_parser(self, parser: ArgumentParser | None = None) -> ArgumentParser:
+    @staticmethod
+    def get_parser(parser: ArgumentParser | None = None) -> ArgumentParser:
         """Create a new parser if none is provided."""
         if parser is None:
             parser = ArgumentParser()
-            parser.add_argument("--config", action=ActionConfigFile, help="Configuration file path.")
+            parser.add_argument("--config", type=str | Path, help="Configuration file path.", required=True)
 
         return parser
