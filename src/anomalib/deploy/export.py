@@ -6,8 +6,6 @@
 
 import json
 import logging
-from collections.abc import Generator
-from contextlib import contextmanager
 from enum import Enum
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -50,26 +48,6 @@ class ExportType(str, Enum):
     TORCH = "torch"
 
 
-@contextmanager
-def model_eval(model: nn.Module) -> Generator[nn.Module, None, None]:
-    """Context manager to set the model to evaluation mode.
-
-    Args:
-        model (nn.Module): Model to set to evaluation mode.
-
-    Examples:
-        >>> from anomalib.deploy import model_eval
-        >>> with model_eval(model):
-        ...     output = model(input)
-    """
-    prev_state = model.training
-    model.eval()
-    try:
-        yield
-    finally:
-        model.train(prev_state)
-
-
 class InferenceModel(nn.Module):
     """Inference model for export.
 
@@ -93,8 +71,7 @@ class InferenceModel(nn.Module):
     def forward(self, batch: torch.Tensor) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
         """Transform the input batch and pass it through the model."""
         batch = self.transform(batch)
-        with model_eval(self.model):
-            return self.model(batch)
+        return self.model(batch)
 
     def disable_antialias(self) -> None:
         """Disable antialiasing in the Resize transforms of the given transform.
