@@ -1,0 +1,13 @@
+model:
+  class_path: anomalib.models.Rkde
+  init_args:
+    roi_stage: RCNN
+    roi_score_threshold: 0.001
+    min_box_size: 25
+    iou_threshold: 0.3
+    max_detections_per_image: 100
+    n_pca_components: 16
+    feature_scaling_method: SCALE
+    max_training_points: 40000
+
+task: detection

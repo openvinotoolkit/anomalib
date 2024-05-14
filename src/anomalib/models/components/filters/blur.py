@@ -1,12 +1,14 @@
 """Gaussian blurring via pytorch."""
 
-from __future__ import annotations
+# Copyright (C) 2022-2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
 
+import torch
 from kornia.filters import get_gaussian_kernel2d
 from kornia.filters.filter import _compute_padding
 from kornia.filters.kernels import normalize_kernel2d
-from torch import Tensor, nn
-from torch.nn import functional as F
+from torch import nn
+from torch.nn import functional as F  # noqa: N812
 
 
 def compute_kernel_size(sigma_val: float) -> int:
@@ -58,22 +60,24 @@ class GaussianBlur2d(nn.Module):
         else:
             kernel_size = kernel_size if isinstance(kernel_size, tuple) else (kernel_size, kernel_size)
 
-        self.kernel: Tensor
+        self.kernel: torch.Tensor
         self.register_buffer("kernel", get_gaussian_kernel2d(kernel_size=kernel_size, sigma=sigma))
         if normalize:
             self.kernel = normalize_kernel2d(self.kernel)
-        self.kernel.unsqueeze_(0).unsqueeze_(0)
+
+        self.kernel = self.kernel.view(1, 1, *self.kernel.shape[-2:])
+
         self.kernel = self.kernel.expand(self.channels, -1, -1, -1)
         self.border_type = border_type
         self.padding = padding
         self.height, self.width = self.kernel.shape[-2:]
         self.padding_shape = _compute_padding([self.height, self.width])
 
-    def forward(self, input_tensor: Tensor) -> Tensor:
+    def forward(self, input_tensor: torch.Tensor) -> torch.Tensor:
         """Blur the input with the computed Gaussian.
 
         Args:
-            input_tensor (Tensor): Input tensor to be blurred.
+            input_tensor (torch.Tensor): Input tensor to be blurred.
 
         Returns:
             Tensor: Blurred output tensor.

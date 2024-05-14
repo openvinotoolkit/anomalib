@@ -1,40 +1,40 @@
 """Multi Variate Gaussian Distribution."""
 
-# Copyright (C) 2022 Intel Corporation
+# Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
-
-from __future__ import annotations
 
 from typing import Any
 
 import torch
-from torch import Tensor, nn
+from torch import nn
+
+from anomalib.models.components.base import DynamicBufferMixin
 
 
-class MultiVariateGaussian(nn.Module):
+class MultiVariateGaussian(DynamicBufferMixin, nn.Module):
     """Multi Variate Gaussian Distribution."""
 
-    def __init__(self, n_features, n_patches):
+    def __init__(self) -> None:
         super().__init__()
 
-        self.register_buffer("mean", torch.zeros(n_features, n_patches))
-        self.register_buffer("inv_covariance", torch.eye(n_features).unsqueeze(0).repeat(n_patches, 1, 1))
+        self.register_buffer("mean", torch.empty(0))
+        self.register_buffer("inv_covariance", torch.empty(0))
 
-        self.mean: Tensor
-        self.inv_covariance: Tensor
+        self.mean: torch.Tensor
+        self.inv_covariance: torch.Tensor
 
     @staticmethod
     def _cov(
-        observations: Tensor,
+        observations: torch.Tensor,
         rowvar: bool = False,
         bias: bool = False,
         ddof: int | None = None,
-        aweights: Tensor = None,
-    ) -> Tensor:
+        aweights: torch.Tensor | None = None,
+    ) -> torch.Tensor:
         """Estimates covariance matrix like numpy.cov.
 
         Args:
-            observations (Tensor): A 1-D or 2-D array containing multiple variables and observations.
+            observations (torch.Tensor): A 1-D or 2-D array containing multiple variables and observations.
                  Each row of `m` represents a variable, and each column a single
                  observation of all those variables. Also see `rowvar` below.
             rowvar (bool): If `rowvar` is True (default), then each row represents a
@@ -50,7 +50,7 @@ class MultiVariateGaussian(nn.Module):
                 `fweights` and `aweights` are specified, and ``ddof=0`` will return
                 the simple average. See the notes for the details. The default value
                 is ``None``.
-            aweights (Tensor): 1-D array of observation vector weights. These relative weights are
+            aweights (torch.Tensor): 1-D array of observation vector weights. These relative weights are
                 typically large for observations considered "important" and smaller for
                 observations considered less "important". If ``ddof=0`` the array of
                 weights can be used to assign probabilities to observation vectors. (Default value = None)
@@ -68,10 +68,7 @@ class MultiVariateGaussian(nn.Module):
             observations = observations.t()
 
         if ddof is None:
-            if bias == 0:
-                ddof = 1
-            else:
-                ddof = 0
+            ddof = 1 if bias == 0 else 0
 
         weights = aweights
         weights_sum: Any
@@ -96,21 +93,18 @@ class MultiVariateGaussian(nn.Module):
 
         observations_m = observations.sub(avg.expand_as(observations))
 
-        if weights is None:
-            x_transposed = observations_m.t()
-        else:
-            x_transposed = torch.mm(torch.diag(weights), observations_m).t()
+        x_transposed = observations_m.t() if weights is None else torch.mm(torch.diag(weights), observations_m).t()
 
         covariance = torch.mm(x_transposed, observations_m)
         covariance = covariance / fact
 
         return covariance.squeeze()
 
-    def forward(self, embedding: Tensor) -> list[Tensor]:
+    def forward(self, embedding: torch.Tensor) -> list[torch.Tensor]:
         """Calculate multivariate Gaussian distribution.
 
         Args:
-          embedding (Tensor): CNN features whose dimensionality is reduced via either random sampling or PCA.
+          embedding (torch.Tensor): CNN features whose dimensionality is reduced via either random sampling or PCA.
 
         Returns:
           mean and inverse covariance of the multi-variate gaussian distribution that fits the features.
@@ -130,11 +124,11 @@ class MultiVariateGaussian(nn.Module):
 
         return [self.mean, self.inv_covariance]
 
-    def fit(self, embedding: Tensor) -> list[Tensor]:
+    def fit(self, embedding: torch.Tensor) -> list[torch.Tensor]:
         """Fit multi-variate gaussian distribution to the input embedding.
 
         Args:
-            embedding (Tensor): Embedding vector extracted from CNN.
+            embedding (torch.Tensor): Embedding vector extracted from CNN.
 
         Returns:
             Mean and the covariance of the embedding.

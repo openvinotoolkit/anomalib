@@ -1,22 +1,24 @@
-"""This module contains Torch inference implementations."""
+"""Torch inference implementations."""
 
-# Copyright (C) 2022 Intel Corporation
+# Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any
 
-import albumentations as A
 import cv2
 import numpy as np
 import torch
 from omegaconf import DictConfig
-from torch import Tensor, nn
+from torch import nn
 
-from anomalib.data import TaskType
+from anomalib import TaskType
+from anomalib.data import LabelName
+from anomalib.data.utils import read_image
 from anomalib.data.utils.boxes import masks_to_boxes
+from anomalib.utils.visualization import ImageResult
 
 from .base_inferencer import Inferencer
 
@@ -26,7 +28,35 @@ class TorchInferencer(Inferencer):
 
     Args:
         path (str | Path): Path to Torch model weights.
-        device (str): Device to use for inference. Options are auto, cpu, cuda. Defaults to "auto".
+        device (str): Device to use for inference. Options are ``auto``,
+            ``cpu``, ``cuda``.
+            Defaults to ``auto``.
+
+    Examples:
+        Assume that we have a Torch ``pt`` model and metadata files in the
+        following structure:
+
+        >>> from anomalib.deploy.inferencers import TorchInferencer
+        >>> inferencer = TorchInferencer(path="path/to/torch/model.pt", device="cpu")
+
+        This will ensure that the model is loaded on the ``CPU`` device. To make
+        a prediction, we can simply call the ``predict`` method:
+
+        >>> from anomalib.data.utils import read_image
+        >>> image = read_image("path/to/image.jpg")
+        >>> result = inferencer.predict(image)
+
+        ``result`` will be an ``ImageResult`` object containing the prediction
+        results. For example, to visualize the heatmap, we can do the following:
+
+        >>> from matplotlib import pyplot as plt
+        >>> plt.imshow(result.heatmap)
+
+        It is also possible to visualize the true and predicted masks if the
+        task is ``TaskType.SEGMENTATION``:
+
+        >>> plt.imshow(result.gt_mask)
+        >>> plt.imshow(result.pred_mask)
     """
 
     def __init__(
@@ -36,11 +66,10 @@ class TorchInferencer(Inferencer):
     ) -> None:
         self.device = self._get_device(device)
 
-        # Load the model weights, metadata and data transforms.
+        # Load the model weights and metadata
         self.checkpoint = self._load_checkpoint(path)
         self.model = self.load_model(path)
         self.metadata = self._load_metadata(path)
-        self.transform = A.from_dict(self.metadata["transform"])
 
     @staticmethod
     def _get_device(device: str) -> torch.device:
@@ -53,7 +82,8 @@ class TorchInferencer(Inferencer):
             torch.device: Device to use for inference.
         """
         if device not in ("auto", "cpu", "cuda", "gpu"):
-            raise ValueError(f"Unknown device {device}")
+            msg = f"Unknown device {device}"
+            raise ValueError(msg)
 
         if device == "auto":
             device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -74,10 +104,10 @@ class TorchInferencer(Inferencer):
             path = Path(path)
 
         if path.suffix not in (".pt", ".pth"):
-            raise ValueError(f"Unknown torch checkpoint file format {path.suffix}. Make sure you save the Torch model.")
+            msg = f"Unknown torch checkpoint file format {path.suffix}. Make sure you save the Torch model."
+            raise ValueError(msg)
 
-        checkpoint = torch.load(path, map_location=self.device)
-        return checkpoint
+        return torch.load(path, map_location=self.device)
 
     def _load_metadata(self, path: str | Path | dict | None = None) -> dict | DictConfig:
         """Load metadata from file.
@@ -92,18 +122,22 @@ class TorchInferencer(Inferencer):
 
         if isinstance(path, dict):
             metadata = path
-        elif isinstance(path, (str, Path)):
+        elif isinstance(path, str | Path):
             checkpoint = self._load_checkpoint(path)
 
             # Torch model should ideally contain the metadata in the checkpoint.
             # Check if the metadata is present in the checkpoint.
-            if "metadata" not in checkpoint.keys():
-                raise KeyError(
+            if "metadata" not in checkpoint:
+                msg = (
                     "``metadata`` is not found in the checkpoint. Please ensure that you save the model as Torch model."
+                )
+                raise KeyError(
+                    msg,
                 )
             metadata = checkpoint["metadata"]
         else:
-            raise ValueError(f"Unknown ``path`` type {type(path)}")
+            msg = f"Unknown ``path`` type {type(path)}"
+            raise TypeError(msg)
 
         return metadata
 
@@ -116,17 +150,56 @@ class TorchInferencer(Inferencer):
         Returns:
             (nn.Module): Torch model.
         """
-
         checkpoint = self._load_checkpoint(path)
-        if "model" not in checkpoint.keys():
-            raise KeyError("``model`` is not found in the checkpoint. Please check the checkpoint file.")
+        if "model" not in checkpoint:
+            msg = "``model`` is not found in the checkpoint. Please check the checkpoint file."
+            raise KeyError(msg)
 
         model = checkpoint["model"]
         model.eval()
         return model.to(self.device)
 
-    def pre_process(self, image: np.ndarray) -> Tensor:
-        """Pre process the input image by applying transformations.
+    def predict(
+        self,
+        image: str | Path | torch.Tensor,
+        metadata: dict[str, Any] | None = None,
+    ) -> ImageResult:
+        """Perform a prediction for a given input image.
+
+        The main workflow is (i) pre-processing, (ii) forward-pass, (iii) post-process.
+
+        Args:
+            image (Union[str, np.ndarray]): Input image whose output is to be predicted.
+                It could be either a path to image or numpy array itself.
+
+            metadata: Metadata information such as shape, threshold.
+
+        Returns:
+            ImageResult: Prediction results to be visualized.
+        """
+        if metadata is None:
+            metadata = self.metadata if hasattr(self, "metadata") else {}
+        if isinstance(image, str | Path):
+            image = read_image(image, as_tensor=True)
+
+        metadata["image_shape"] = image.shape[-2:]
+
+        processed_image = self.pre_process(image)
+        predictions = self.forward(processed_image)
+        output = self.post_process(predictions, metadata=metadata)
+
+        return ImageResult(
+            image=(image.numpy().transpose(1, 2, 0) * 255).astype(np.uint8),
+            pred_score=output["pred_score"],
+            pred_label=output["pred_label"],
+            anomaly_map=output["anomaly_map"],
+            pred_mask=output["pred_mask"],
+            pred_boxes=output["pred_boxes"],
+            box_labels=output["box_labels"],
+        )
+
+    def pre_process(self, image: np.ndarray) -> torch.Tensor:
+        """Pre process the input image.
 
         Args:
             image (np.ndarray): Input image
@@ -134,18 +207,16 @@ class TorchInferencer(Inferencer):
         Returns:
             Tensor: pre-processed image.
         """
-        processed_image = self.transform(image=image)["image"]
+        if len(image) == 3:
+            image = image.unsqueeze(0)
 
-        if len(processed_image) == 3:
-            processed_image = processed_image.unsqueeze(0)
+        return image.to(self.device)
 
-        return processed_image.to(self.device)
-
-    def forward(self, image: Tensor) -> Tensor:
+    def forward(self, image: torch.Tensor) -> torch.Tensor:
         """Forward-Pass input tensor to the model.
 
         Args:
-            image (Tensor): Input tensor.
+            image (torch.Tensor): Input tensor.
 
         Returns:
             Tensor: Output predictions.
@@ -153,12 +224,14 @@ class TorchInferencer(Inferencer):
         return self.model(image)
 
     def post_process(
-        self, predictions: Tensor | list[Tensor] | dict[str, Tensor], metadata: dict | DictConfig | None = None
+        self,
+        predictions: torch.Tensor | list[torch.Tensor] | dict[str, torch.Tensor],
+        metadata: dict | DictConfig | None = None,
     ) -> dict[str, Any]:
         """Post process the output predictions.
 
         Args:
-            predictions (Tensor | list[Tensor] | dict[str, Tensor]): Raw output predicted by the model.
+            predictions (Tensor | list[torch.Tensor] | dict[str, torch.Tensor]): Raw output predicted by the model.
             metadata (dict, optional): Meta data. Post-processing step sometimes requires
                 additional meta data such as image shape. This variable comprises such info.
                 Defaults to None.
@@ -170,10 +243,11 @@ class TorchInferencer(Inferencer):
             metadata = self.metadata
 
         # Some models return a Tensor while others return a list or dictionary. Handle both cases.
-        # TODO: This is a temporary fix. We will wrap this post-processing stage within the model's forward pass.
+        # TODO(ashwinvaidya17): Wrap this post-processing stage within the model's forward pass.
+        # CVS-122674
 
         # Case I: Predictions could be a tensor.
-        if isinstance(predictions, Tensor):
+        if isinstance(predictions, torch.Tensor):
             anomaly_map = predictions.detach().cpu().numpy()
             pred_score = anomaly_map.reshape(-1).max()
 
@@ -182,7 +256,8 @@ class TorchInferencer(Inferencer):
             if "anomaly_map" in predictions:
                 anomaly_map = predictions["anomaly_map"].detach().cpu().numpy()
             else:
-                raise KeyError("``anomaly_map`` not found in the predictions.")
+                msg = "``anomaly_map`` not found in the predictions."
+                raise KeyError(msg)
 
             if "pred_score" in predictions:
                 pred_score = predictions["pred_score"].detach().cpu().numpy()
@@ -191,25 +266,27 @@ class TorchInferencer(Inferencer):
 
         # Case III: Predictions could be a list of tensors.
         elif isinstance(predictions, Sequence):
-            if isinstance(predictions[1], (Tensor)):
-                anomaly_map, pred_score = predictions
+            if isinstance(predictions[1], (torch.Tensor)):
+                pred_score, anomaly_map = predictions
                 anomaly_map = anomaly_map.detach().cpu().numpy()
                 pred_score = pred_score.detach().cpu().numpy()
             else:
-                anomaly_map, pred_score = predictions
+                pred_score, anomaly_map = predictions
                 pred_score = pred_score.detach()
         else:
-            raise ValueError(
-                f"Unknown prediction type {type(predictions)}. Expected Tensor, List[Tensor] or dict[str, Tensor]."
+            msg = (
+                f"Unknown prediction type {type(predictions)}. "
+                "Expected torch.Tensor, list[torch.Tensor] or dict[str, torch.Tensor]."
             )
+            raise TypeError(msg)
 
         # Common practice in anomaly detection is to assign anomalous
         # label to the prediction if the prediction score is greater
         # than the image threshold.
-        pred_label: str | None = None
+        pred_label: LabelName | None = None
         if "image_threshold" in metadata:
             pred_idx = pred_score >= metadata["image_threshold"]
-            pred_label = "Anomalous" if pred_idx else "Normal"
+            pred_label = LabelName.ABNORMAL if pred_idx else LabelName.NORMAL
 
         pred_mask: np.ndarray | None = None
         if "pixel_threshold" in metadata:
@@ -218,7 +295,7 @@ class TorchInferencer(Inferencer):
         anomaly_map = anomaly_map.squeeze()
         anomaly_map, pred_score = self._normalize(anomaly_maps=anomaly_map, pred_scores=pred_score, metadata=metadata)
 
-        if isinstance(anomaly_map, Tensor):
+        if isinstance(anomaly_map, torch.Tensor):
             anomaly_map = anomaly_map.detach().cpu().numpy()
 
         if "image_shape" in metadata and anomaly_map.shape != metadata["image_shape"]:

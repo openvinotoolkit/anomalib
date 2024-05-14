@@ -39,22 +39,15 @@ To install Python, Git and other required tools, [OpenVINO Notebooks](https://gi
 | -------- | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Model    | [201_fastflow](200_models/201_fastflow.ipynb) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/openvinotoolkit/anomalib/blob/main/notebooks/200_models/201_fastflow.ipynb) |
 
-## 3. Benchmarking and Hyperparameter Optimization
+## 3. OpenVINO Optimization
 
-| Notebook       | GitHub                                                      | Colab                                                                                                                                                                                                       |
-| -------------- | ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Benchmarking   | [301_benchmarking](300_benchmarking/301_benchmarking.ipynb) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/openvinotoolkit/anomalib/blob/main/notebooks/300_benchmarking/301_benchmarking.ipynb) |
-| HPO with wandb | [302_hpo_wandb](300_benchmarking/302_hpo_wandb.ipynb)       | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/openvinotoolkit/anomalib/blob/main/notebooks/300_benchmarking/302_hpo_wandb.ipynb)    |
+| Notebook     | GitHub                                             | Colab |
+| ------------ | -------------------------------------------------- | ----- |
+| Quantization | [401_NNCF](/notebooks/400_openvino/401_nncf.ipynb) |       |
 
-## 4. OpenVINO Optimization
+## 4. Use cases
 
-| Notebook     | GitHub                                                                                                  | Colab |
-| ------------ | ------------------------------------------------------------------------------------------------------- | ----- |
-| Quantization | [401_NNCF](https://github.com/openvinotoolkit/anomalib/blob/main/notebooks/400_openvino/401_nncf.ipynb) |       |
-
-## 3. Use cases
-
-| Notebook               | GitHub                                                                                                                                                             | Colab |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----- |
-| Dobot Dataset Creation | [501a_training](https://github.com/openvinotoolkit/anomalib/blob/main/notebooks/500_use_cases/501_dobot/501a_training_a_model_with_cubes_from_a_robotic_arm.ipynb) |       |
-| Training               | [501b_training](https://github.com/openvinotoolkit/anomalib/blob/main/notebooks/500_use_cases/501_dobot/501b_inference_with_a_robotic_arm.ipynb)                   |       |
+| Notebook               | GitHub                                                                                                        | Colab |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------- | ----- |
+| Dobot Dataset Creation | [501a_training](/notebooks/500_use_cases/501_dobot/501a_training_a_model_with_cubes_from_a_robotic_arm.ipynb) |       |
+| Training               | [501b_training](/notebooks/500_use_cases/501_dobot/501b_inference_with_a_robotic_arm.ipynb)                   |       |

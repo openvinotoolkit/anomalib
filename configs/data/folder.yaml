@@ -1,0 +1,22 @@
+class_path: anomalib.data.Folder
+init_args:
+  name: bottle
+  root: "datasets/MVTec/bottle"
+  normal_dir: "train/good"
+  abnormal_dir: "test/broken_large"
+  normal_test_dir: "test/good"
+  mask_dir: "ground_truth/broken_large"
+  normal_split_ratio: 0
+  extensions: [".png"]
+  train_batch_size: 32
+  eval_batch_size: 32
+  num_workers: 8
+  task: segmentation
+  transform: null
+  train_transform: null
+  eval_transform: null
+  test_split_mode: from_dir
+  test_split_ratio: 0.2
+  val_split_mode: same_as_test
+  val_split_ratio: 0.5
+  seed: null

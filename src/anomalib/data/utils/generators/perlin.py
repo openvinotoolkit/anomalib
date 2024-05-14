@@ -6,24 +6,20 @@
 # SPDX-License-Identifier: MIT
 #
 # Modified
-# Copyright (C) 2022 Intel Corporation
+# Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-# pylint: disable=invalid-name
-
-from __future__ import annotations
+# ruff: noqa
 
 import math
 
 import numpy as np
 import torch
-from torch import Tensor
 
 
 def lerp_np(x, y, w):
     """Helper function."""
-    fin_out = (y - x) * w + x
-    return fin_out
+    return (y - x) * w + x
 
 
 def rand_perlin_2d_octaves_np(shape, res, octaves=1, persistence=0.5):
@@ -48,7 +44,7 @@ def generate_perlin_noise_2d(shape, res):
     d = (shape[0] // res[0], shape[1] // res[1])
     grid = np.mgrid[0 : res[0] : delta[0], 0 : res[1] : delta[1]].transpose(1, 2, 0) % 1
     # Gradients
-    angles = 2 * np.pi * np.random.rand(res[0] + 1, res[1] + 1)
+    angles = 2 * np.pi * np.random.default_rng().random(res[0] + 1, res[1] + 1)
     gradients = np.dstack((np.cos(angles), np.sin(angles)))
     g00 = gradients[0:-1, 0:-1].repeat(d[0], 0).repeat(d[1], 1)
     g10 = gradients[1:, 0:-1].repeat(d[0], 0).repeat(d[1], 1)
@@ -68,26 +64,27 @@ def generate_perlin_noise_2d(shape, res):
 
 def random_2d_perlin(
     shape: tuple,
-    res: tuple[int | Tensor, int | Tensor],
+    res: tuple[int | torch.Tensor, int | torch.Tensor],
     fade=lambda t: 6 * t**5 - 15 * t**4 + 10 * t**3,
-) -> np.ndarray | Tensor:
+) -> np.ndarray | torch.Tensor:
     """Returns a random 2d perlin noise array.
 
     Args:
         shape (tuple): Shape of the 2d map.
-        res (tuple[int | Tensor, int | Tensor]): Tuple of scales for perlin noise for height and width dimension.
+        res (tuple[int | torch.Tensor, int | torch.Tensor]): Tuple of scales for perlin noise for height and width dimension.
         fade (_type_, optional): Function used for fading the resulting 2d map.
             Defaults to equation 6*t**5-15*t**4+10*t**3.
 
     Returns:
-        np.ndarray | Tensor: Random 2d-array/tensor generated using perlin noise.
+        np.ndarray | torch.Tensor: Random 2d-array/tensor generated using perlin noise.
     """
-    if isinstance(res[0], int):
+    if isinstance(res[0], int | np.integer):
         result = _rand_perlin_2d_np(shape, res, fade)
-    elif isinstance(res[0], Tensor):
+    elif isinstance(res[0], torch.Tensor):
         result = _rand_perlin_2d(shape, res, fade)
     else:
-        raise TypeError(f"got scales of type {type(res[0])}")
+        msg = f"got scales of type {type(res[0])}"
+        raise TypeError(msg)
     return result
 
 
@@ -97,7 +94,7 @@ def _rand_perlin_2d_np(shape, res, fade=lambda t: 6 * t**5 - 15 * t**4 + 10 * t*
     d = (shape[0] // res[0], shape[1] // res[1])
     grid = np.mgrid[0 : res[0] : delta[0], 0 : res[1] : delta[1]].transpose(1, 2, 0) % 1
 
-    angles = 2 * math.pi * np.random.rand(res[0] + 1, res[1] + 1)
+    angles = 2 * math.pi * np.random.default_rng().random((res[0] + 1, res[1] + 1))
     gradients = np.stack((np.cos(angles), np.sin(angles)), axis=-1)
 
     def tile_grads(slice1, slice2):
@@ -136,7 +133,8 @@ def _rand_perlin_2d(shape, res, fade=lambda t: 6 * t**5 - 15 * t**4 + 10 * t**3)
     def dot(grad, shift):
         return (
             torch.stack(
-                (grid[: shape[0], : shape[1], 0] + shift[0], grid[: shape[0], : shape[1], 1] + shift[1]), dim=-1
+                (grid[: shape[0], : shape[1], 0] + shift[0], grid[: shape[0], : shape[1], 1] + shift[1]),
+                dim=-1,
             )
             * grad[: shape[0], : shape[1]]
         ).sum(dim=-1)

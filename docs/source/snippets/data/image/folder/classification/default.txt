@@ -1,0 +1,14 @@
+# Import the datamodule
+from anomalib.data import Folder
+
+# Create the datamodule
+datamodule = Folder(
+    name="hazelnut_toy",
+    root="datasets/hazelnut_toy",
+    normal_dir="good",
+    abnormal_dir="crack",
+    task="classification",
+)
+
+# Setup the datamodule
+datamodule.setup()

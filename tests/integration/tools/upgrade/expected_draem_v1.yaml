@@ -1,0 +1,100 @@
+data:
+  class_path: anomalib.data.MVTec
+  init_args:
+    root: ./datasets/MVTec
+    category: bottle
+    image_size:
+      - 256
+      - 256
+    train_batch_size: 72
+    eval_batch_size: 32
+    num_workers: 8
+    task: segmentation
+    transform: null
+    train_transform: null
+    eval_transform: null
+    test_split_mode: from_dir
+    test_split_ratio: 0.2
+    val_split_mode: same_as_test
+    val_split_ratio: 0.5
+    seed: null
+model:
+  class_path: anomalib.models.Draem
+  init_args:
+    enable_sspcab: false
+    sspcab_lambda: 0.1
+    anomaly_source_path: null
+    beta:
+      - 0.1
+      - 1.0
+normalization:
+  normalization_method: min_max
+metrics:
+  image:
+    - F1Score
+    - AUROC
+  pixel:
+    - F1Score
+    - AUROC
+  threshold:
+    class_path: anomalib.metrics.F1AdaptiveThreshold
+    init_args:
+      default_value: 0.5
+visualization:
+  visualizers: null
+  save: true
+  log: true
+  show: false
+logging:
+  log_graph: false
+seed_everything: true
+task: segmentation
+results_dir:
+  path: ./results
+  unique: false
+ckpt_path: null
+trainer:
+  accelerator: auto
+  strategy: auto
+  devices: 1
+  num_nodes: 1
+  precision: 32
+  logger: null
+  callbacks:
+    - class_path: lightning.pytorch.callbacks.EarlyStopping
+      init_args:
+        patience: 20
+        mode: max
+        monitor: pixel_AUROC
+  fast_dev_run: false
+  max_epochs: 1
+  min_epochs: null
+  max_steps: -1
+  min_steps: null
+  max_time: null
+  limit_train_batches: 1.0
+  limit_val_batches: 1.0
+  limit_test_batches: 1.0
+  limit_predict_batches: 1.0
+  overfit_batches: 0.0
+  val_check_interval: 1.0
+  check_val_every_n_epoch: 1
+  num_sanity_val_steps: 0
+  log_every_n_steps: 50
+  enable_checkpointing: true
+  enable_progress_bar: true
+  enable_model_summary: true
+  accumulate_grad_batches: 1
+  gradient_clip_val: 0
+  gradient_clip_algorithm: norm
+  deterministic: false
+  benchmark: false
+  inference_mode: true
+  use_distributed_sampler: true
+  profiler: null
+  detect_anomaly: false
+  barebones: false
+  plugins: null
+  sync_batchnorm: false
+  reload_dataloaders_every_n_epochs: 0
+  default_root_dir: null

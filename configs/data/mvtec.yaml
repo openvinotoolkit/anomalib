@@ -1,0 +1,16 @@
+class_path: anomalib.data.MVTec
+init_args:
+  root: ./datasets/MVTec
+  category: bottle
+  train_batch_size: 32
+  eval_batch_size: 32
+  num_workers: 8
+  task: segmentation
+  transform: null
+  train_transform: null
+  eval_transform: null
+  test_split_mode: from_dir
+  test_split_ratio: 0.2
+  val_split_mode: same_as_test
+  val_split_ratio: 0.5
+  seed: null

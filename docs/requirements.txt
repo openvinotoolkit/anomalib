@@ -1,0 +1,8 @@
+myst-parser
+nbsphinx
+pandoc
+sphinx<8.0  # 7.0 breaks readthedocs builds.
+sphinx_autodoc_typehints
+sphinx_book_theme
+sphinx-copybutton
+sphinx_design
