@@ -9,6 +9,7 @@ import logging
 from collections.abc import Callable
 from enum import Enum
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
@@ -148,7 +149,7 @@ class ExportMixin:
         transform = transform or self.transform or self.configure_transforms()
         inference_model = InferenceModel(model=self.model, transform=transform)
         export_root = _create_export_root(export_root, ExportType.TORCH)
-        metadata = self.get_metadata(task=task)
+        metadata = self._get_metadata(task=task)
         pt_model_path = export_root / "model.pt"
         torch.save(
             obj={"model": inference_model, "metadata": metadata},
@@ -208,7 +209,7 @@ class ExportMixin:
         dynamic_axes = (
             None if input_size else {"input": {0: "batch_size", 2: "height", 3: "weight"}, "output": {0: "batch_size"}}
         )
-        _write_metadata_to_json(self.get_metadata(task), export_root)
+        _write_metadata_to_json(self._get_metadata(task), export_root)
         onnx_path = export_root / "model.onnx"
         torch.onnx.export(
             inference_model,
@@ -287,19 +288,21 @@ class ExportMixin:
 
         import openvino as ov
 
-        model_path = self.to_onnx(export_root, input_size, transform, task)
-        export_root = _create_export_root(export_root, ExportType.OPENVINO)
-        ov_model_path = export_root / "model.xml"
-        ov_args = {} if ov_args is None else ov_args
-        # fp16 compression is enabled by default
-        compress_to_fp16 = ov_args.get("compress_to_fp16", True)
+        with TemporaryDirectory() as onnx_directory:
+            model_path = self.to_onnx(onnx_directory, input_size, transform, task)
+            export_root = _create_export_root(export_root, ExportType.OPENVINO)
+            ov_model_path = export_root / "model.xml"
+            ov_args = {} if ov_args is None else ov_args
+            # fp16 compression is enabled by default
+            compress_to_fp16 = ov_args.get("compress_to_fp16", True)
 
-        model = ov.convert_model(model_path, **ov_args)
-        ov.save_model(model, ov_model_path, compress_to_fp16=compress_to_fp16)
+            model = ov.convert_model(model_path, **ov_args)
+            ov.save_model(model, ov_model_path, compress_to_fp16=compress_to_fp16)
+            _write_metadata_to_json(self._get_metadata(task), export_root)
 
         return ov_model_path
 
-    def get_metadata(
+    def _get_metadata(
         self,
         task: TaskType | None = None,
     ) -> dict[str, Any]:
@@ -312,7 +315,6 @@ class ExportMixin:
         Returns:
             dict[str, Any]: Metadata for the exported model.
         """
-        data_metadata = {"task": task}
         model_metadata = {}
         cached_metadata: dict[str, Number | torch.Tensor] = {}
         for threshold_name in ("image_threshold", "pixel_threshold"):
@@ -326,7 +328,7 @@ class ExportMixin:
             if not np.isinf(val).all():
                 model_metadata[key] = val
         del cached_metadata
-        metadata = {**data_metadata, **model_metadata}
+        metadata = {"task": task, **model_metadata}
 
         # Convert torch tensors to python lists or values for json serialization.
         for key, value in metadata.items():
