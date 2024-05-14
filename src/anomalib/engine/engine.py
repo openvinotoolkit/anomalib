@@ -865,14 +865,14 @@ class Engine:
     def export(
         self,
         model: AnomalyModule,
-        export_type: ExportType,
+        export_type: ExportType | str,
         export_root: str | Path | None = None,
         input_size: tuple[int, int] | None = None,
         transform: Transform | None = None,
         ov_args: dict[str, Any] | None = None,
         ckpt_path: str | Path | None = None,
     ) -> Path | None:
-        """Export the model in PyTorch, ONNX or OpenVINO format.
+        r"""Export the model in PyTorch, ONNX or OpenVINO format.
 
         Args:
             model (AnomalyModule): Trained model.
@@ -897,22 +897,25 @@ class Engine:
         CLI Usage:
             1. To export as a torch ``.pt`` file you can run the following command.
                 ```python
-                anomalib export --model Padim --export_mode TORCH --data MVTec
+                anomalib export --model Padim --export_mode TORCH --ckpt_path <PATH_TO_CHECKPOINT>
                 ```
             2. To export as an ONNX ``.onnx`` file you can run the following command.
                 ```python
-                anomalib export --model Padim --export_mode ONNX --data Visa --input_size "[256,256]"
+                anomalib export --model Padim --export_mode ONNX --ckpt_path <PATH_TO_CHECKPOINT> \
+                --input_size "[256,256]"
                 ```
             3. To export as an OpenVINO ``.xml`` and ``.bin`` file you can run the following command.
                 ```python
-                anomalib export --model Padim --export_mode OPENVINO --data Visa --input_size "[256,256]"
+                anomalib export --model Padim --export_mode OPENVINO --ckpt_path <PATH_TO_CHECKPOINT> \
+                --input_size "[256,256]"
                 ```
             4. You can also overrride OpenVINO model optimizer by adding the ``--ov_args.<key>`` arguments.
                 ```python
-                anomalib export --model Padim --export_mode OPENVINO --data Visa --input_size "[256,256]" \
-                    --ov_args.compress_to_fp16 False
+                anomalib export --model Padim --export_mode OPENVINO --ckpt_path <PATH_TO_CHECKPOINT> \
+                --input_size "[256,256]" --ov_args.compress_to_fp16 False
                 ```
         """
+        export_type = ExportType(export_type)
         self._setup_trainer(model)
         if ckpt_path:
             ckpt_path = Path(ckpt_path).resolve()
