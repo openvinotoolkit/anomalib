@@ -4,10 +4,14 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
+import logging
+
 from jsonargparse import Namespace
 
 from anomalib.cli.utils.help_formatter import get_short_docstring
 from anomalib.utils.exceptions import try_import
+
+logger = logging.getLogger(__name__)
 
 if try_import("anomalib.pipelines"):
     from anomalib.pipelines import Benchmark
@@ -27,6 +31,7 @@ def pipeline_subcommands() -> dict[str, dict[str, str]]:
 
 def run_pipeline(args: Namespace) -> None:
     """Run pipeline."""
+    logger.warning("This feature is experimental. It may change or be removed in the future.")
     if PIPELINE_REGISTRY is not None:
         subcommand = args.subcommand
         config = args[subcommand]

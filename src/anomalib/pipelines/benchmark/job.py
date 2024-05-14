@@ -24,7 +24,14 @@ logger = logging.getLogger(__name__)
 
 
 class BenchmarkJob(Job):
-    """Benchmarking job."""
+    """Benchmarking job.
+
+    Args:
+        accelerator (str): The accelerator to use.
+        model (AnomalyModule): The model to use.
+        datamodule (AnomalibDataModule): The data module to use.
+        seed (int): The seed to use.
+    """
 
     name = "benchmark"
 
@@ -54,6 +61,8 @@ class BenchmarkJob(Job):
             )
             engine.fit(self.model, self.datamodule)
             test_results = engine.test(self.model, self.datamodule)
+        # TODO(ashwinvaidya17): Restore throughput
+        # https://github.com/openvinotoolkit/anomalib/issues/2054
         output = {
             "seed": self.seed,
             "accelerator": self.accelerator,

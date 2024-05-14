@@ -30,6 +30,9 @@ class Job(ABC):
 
         Args:
             results (list): List of results returned from run.
+
+        Returns:
+            (GATHERED_RESULTS): Collated results.
         """
 
     @staticmethod
@@ -45,7 +48,11 @@ class Job(ABC):
 
 
 class JobGenerator(ABC):
-    """Generate Job."""
+    """Generate Job.
+
+    The runners accept a generator that generates the jobs. The task of this class is to parse the config and return an
+    iterator of specific jobs.
+    """
 
     def __call__(self, args: dict | None = None) -> Generator[Job, None, None]:
         """Calls the ``generate_jobs`` method."""

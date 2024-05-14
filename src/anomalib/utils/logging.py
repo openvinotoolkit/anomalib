@@ -22,6 +22,21 @@ def hide_output(func: Callable[..., Any]) -> Callable[..., Any]:
     Args:
         func (function): Hides output from all streams of this function.
 
+    Example:
+        >>> @hide_output
+        >>> def my_function():
+        >>>     print("This will not be printed")
+        >>> my_function()
+
+        >>> @hide_output
+        >>> def my_function():
+        >>>     1/0
+        >>> my_function()
+        Traceback (most recent call last):
+        File "<stdin>", line 1, in <module>
+        File "<stdin>", line 2, in my_fun
+        ZeroDivisionError: division by zero
+
     Raises:
         Exception: In case the execution of function fails, it raises an exception.
 
@@ -51,7 +66,12 @@ def hide_output(func: Callable[..., Any]) -> Callable[..., Any]:
 
 
 def redirect_logs(log_file: str) -> None:
-    """Add file handler to logger."""
+    """Add file handler to logger.
+
+    It also removes all other handlers from the loggers.
+
+    Note: This feature does not work well with multiprocessing and won't redirect logs from child processes.
+    """
     Path(log_file).parent.mkdir(exist_ok=True, parents=True)
     logger_file_handler = logging.FileHandler(log_file)
     root_logger = logging.getLogger()
@@ -59,7 +79,7 @@ def redirect_logs(log_file: str) -> None:
     format_string = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
     logging.basicConfig(format=format_string, level=logging.DEBUG, handlers=[logger_file_handler])
     logging.captureWarnings(capture=True)
-    # remove stream handler from all loggers
+    # remove other handlers from all loggers
     loggers = [logging.getLogger(name) for name in logging.root.manager.loggerDict]
     for _logger in loggers:
         _logger.handlers = [logger_file_handler]

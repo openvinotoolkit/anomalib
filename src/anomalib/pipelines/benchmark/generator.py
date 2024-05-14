@@ -15,7 +15,11 @@ from .job import BenchmarkJob
 
 
 class BenchmarkJobGenerator(JobGenerator):
-    """Generate BenchmarkJob."""
+    """Generate BenchmarkJob.
+
+    Args:
+        accelerator (str): The accelerator to use.
+    """
 
     def __init__(self, accelerator: str) -> None:
         self.accelerator = accelerator

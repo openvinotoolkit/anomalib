@@ -24,7 +24,27 @@ class ParallelExecutionError(Exception):
 
 
 class ParallelRunner(Runner):
-    """Run the job in parallel using a process pool."""
+    """Run the job in parallel using a process pool.
+
+    It creates a pool of processes and submits the jobs to the pool.
+    This is useful when you have fixed resources that you want to re-use.
+    Once a process is done, it is replaced with a new job.
+
+    Args:
+        generator (JobGenerator): The generator that generates the jobs.
+        n_jobs (int): The number of jobs to run in parallel.
+
+    Example:
+        Creating a pool with the size of the number of available GPUs and submitting jobs to the pool.
+        >>> ParallelRunner(generator, n_jobs=torch.cuda.device_count())
+        Each time a job is submitted to the pool, an additional parameter `task_id` will be passed to `job.run` method.
+        The job can then use this `task_id` to assign a particular device to train on.
+        >>> def run(self, arg1: int, arg2: nn.Module, task_id: int) -> None:
+        >>>     device = torch.device(f"cuda:{task_id}")
+        >>>     model = arg2.to(device)
+        >>>     ...
+
+    """
 
     def __init__(self, generator: JobGenerator, n_jobs: int) -> None:
         super().__init__(generator)
