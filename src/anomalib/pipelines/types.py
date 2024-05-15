@@ -7,3 +7,4 @@ from typing import Any
 
 RUN_RESULTS = Any
 GATHERED_RESULTS = Any
+PREV_STAGE_RESULT = GATHERED_RESULTS | None

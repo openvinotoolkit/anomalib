@@ -5,6 +5,8 @@
 
 from abc import ABC, abstractmethod
 
+from anomalib.pipelines.types import GATHERED_RESULTS, PREV_STAGE_RESULT
+
 from .job import JobGenerator
 
 
@@ -15,5 +17,5 @@ class Runner(ABC):
         self.generator = generator
 
     @abstractmethod
-    def run(self, args: dict) -> None:
+    def run(self, args: dict, prev_stage_results: PREV_STAGE_RESULT = None) -> GATHERED_RESULTS:
         """Run the pipeline."""

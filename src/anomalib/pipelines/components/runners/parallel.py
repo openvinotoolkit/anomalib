@@ -12,6 +12,7 @@ from rich import print
 from rich.progress import Progress, TaskID
 
 from anomalib.pipelines.components.base import JobGenerator, Runner
+from anomalib.pipelines.types import GATHERED_RESULTS, PREV_STAGE_RESULT
 
 if TYPE_CHECKING:
     from concurrent.futures import Future
@@ -55,14 +56,14 @@ class ParallelRunner(Runner):
         self.results: list[dict] = []
         self.failures = False
 
-    def run(self, args: dict) -> None:
+    def run(self, args: dict, prev_stage_results: PREV_STAGE_RESULT = None) -> GATHERED_RESULTS:
         """Run the job in parallel."""
         self.task_id = self.progress.add_task(self.generator.job_class.name, total=None)
         self.progress.start()
         self.processes = {i: None for i in range(self.n_jobs)}
 
         with ProcessPoolExecutor(max_workers=self.n_jobs, mp_context=multiprocessing.get_context("spawn")) as executor:
-            for job in self.generator.generate_jobs(args):
+            for job in self.generator(args, prev_stage_results):
                 while None not in self.processes.values():
                     self._await_cleanup_processes()
                 # get free index
@@ -80,6 +81,7 @@ class ParallelRunner(Runner):
             logger.error(msg)
             raise ParallelExecutionError(msg)
         logger.info(f"Job {self.generator.job_class.name} completed successfully.")
+        return gathered_result
 
     def _await_cleanup_processes(self, blocking: bool = False) -> None:
         """Wait for any one process to finish.

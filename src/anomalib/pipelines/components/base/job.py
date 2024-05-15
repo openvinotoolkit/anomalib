@@ -6,7 +6,7 @@
 from abc import ABC, abstractmethod
 from collections.abc import Generator
 
-from anomalib.pipelines.types import GATHERED_RESULTS, RUN_RESULTS
+from anomalib.pipelines.types import GATHERED_RESULTS, PREV_STAGE_RESULT, RUN_RESULTS
 
 
 class Job(ABC):
@@ -54,12 +54,20 @@ class JobGenerator(ABC):
     iterator of specific jobs.
     """
 
-    def __call__(self, args: dict | None = None) -> Generator[Job, None, None]:
+    def __call__(
+        self,
+        args: dict | None = None,
+        prev_stage_result: PREV_STAGE_RESULT = None,
+    ) -> Generator[Job, None, None]:
         """Calls the ``generate_jobs`` method."""
-        return self.generate_jobs(args)
+        return self.generate_jobs(args, prev_stage_result)
 
     @abstractmethod
-    def generate_jobs(self, args: dict | None = None) -> Generator[Job, None, None]:
+    def generate_jobs(
+        self,
+        args: dict | None = None,
+        prev_stage_result: PREV_STAGE_RESULT = None,
+    ) -> Generator[Job, None, None]:
         """Return an iterator based on the arguments.
 
         This can be used to generate the configurations that will be passed to run.

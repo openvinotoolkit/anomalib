@@ -6,6 +6,7 @@
 import logging
 from abc import ABC, abstractmethod
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import yaml
 from jsonargparse import ArgumentParser, Namespace
@@ -14,6 +15,9 @@ from rich import print, traceback
 from anomalib.utils.logging import redirect_logs
 
 from .runner import Runner
+
+if TYPE_CHECKING:
+    from anomalib.pipelines.types import PREV_STAGE_RESULT
 
 traceback.install()
 
@@ -54,11 +58,12 @@ class Pipeline(ABC):
         args = self._get_args(args)
         runners = self._setup_runners(args)
         redirect_logs(log_file)
+        previous_results: PREV_STAGE_RESULT = None
 
         for runner in runners:
             try:
                 _args = args.get(runner.generator.job_class.name, None)
-                runner.run(_args)
+                previous_results = runner.run(_args, previous_results)
             except Exception:  # noqa: PERF203 catch all exception and allow try-catch in loop
                 logger.exception("An error occurred when running the runner.")
                 print(
