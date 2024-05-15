@@ -157,7 +157,7 @@ class ExportMixin:
         export_root: Path | str,
         input_size: tuple[int, int] | None = None,
         transform: Transform | None = None,
-        compression_type: CompressionType | None = CompressionType.FP16,
+        compression_type: CompressionType | None = None,
         datamodule: AnomalibDataModule | None = None,
         ov_args: dict[str, Any] | None = None,
         task: TaskType | None = None,
@@ -172,7 +172,7 @@ class ExportMixin:
                 taken from the model.
                 Defaults to ``None``.
             compression_type (CompressionType, optional): Compression type for better inference performance.
-                Defaults to ``CompressionType.FP16``.
+                Defaults to None.
             datamodule (AnomalibDataModule | None, optional): Lightning datamodule.
                 Must be provided if CompressionType.INT8_PTQ is selected. Defaults to None.
             ov_args (dict | None): Model optimizer arguments for OpenVINO model conversion.
@@ -219,6 +219,9 @@ class ExportMixin:
         """
         if not try_import("openvino"):
             logger.exception("Could not find OpenVINO. Please check OpenVINO installation.")
+            raise ModuleNotFoundError
+        if not try_import("nncf"):
+            logger.exception("Could not find NNCF. Please check NNCF installation.")
             raise ModuleNotFoundError
 
         import nncf

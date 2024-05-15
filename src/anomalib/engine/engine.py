@@ -869,7 +869,7 @@ class Engine:
         export_root: str | Path | None = None,
         input_size: tuple[int, int] | None = None,
         transform: Transform | None = None,
-        compression_type: CompressionType | None = CompressionType.FP16,
+        compression_type: CompressionType | None = None,
         datamodule: AnomalibDataModule | None = None,
         ov_args: dict[str, Any] | None = None,
         ckpt_path: str | Path | None = None,
@@ -886,7 +886,7 @@ class Engine:
             transform (Transform | None, optional): Input transform to include in the exported model. If not provided,
                 the transform is taken from the model. Defaults to None.
             compression_type (CompressionType | None, optional): Compression type for OpenVINO exporting only.
-                Defaults to ``CompressionType.FP16``.
+                Defaults to None.
             datamodule (AnomalibDataModule | None, optional): Lightning datamodule.
                 Must be provided if CompressionType.INT8_PTQ is selected. Defaults to None.
             ov_args (dict[str, Any] | None, optional): This is optional and used only for OpenVINO's model optimizer.

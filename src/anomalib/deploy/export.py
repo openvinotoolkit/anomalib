@@ -50,12 +50,12 @@ class CompressionType(str, Enum):
     INT8 = "int8"
     """
     Weight compression (INT8)
-    All weights are quantized to INT8, but before inference they are dequantized to floating point.
+    All weights are quantized to INT8, but are dequantized to floating point before inference.
     """
     INT8_PTQ = "int8_ptq"
     """
     Full integer post-training quantization (INT8)
-    All weights and all operations are quantized to INT8. The inference happens in INT8 precision.
+    All weights and operations are quantized to INT8. Inference is done in INT8 precision.
     """
 
 
