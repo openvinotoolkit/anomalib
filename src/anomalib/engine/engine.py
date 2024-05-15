@@ -865,7 +865,7 @@ class Engine:
     def export(
         self,
         model: AnomalyModule,
-        export_type: ExportType,
+        export_type: ExportType | str,
         export_root: str | Path | None = None,
         input_size: tuple[int, int] | None = None,
         transform: Transform | None = None,
@@ -874,7 +874,7 @@ class Engine:
         ov_args: dict[str, Any] | None = None,
         ckpt_path: str | Path | None = None,
     ) -> Path | None:
-        """Export the model in PyTorch, ONNX or OpenVINO format.
+        r"""Export the model in PyTorch, ONNX or OpenVINO format.
 
         Args:
             model (AnomalyModule): Trained model.
@@ -884,11 +884,13 @@ class Engine:
             input_size (tuple[int, int] | None, optional): A statis input shape for the model, which is exported to ONNX
                 and OpenVINO format. Defaults to None.
             transform (Transform | None, optional): Input transform to include in the exported model. If not provided,
-                the transform is taken from the model. Defaults to None.
+                the engine will try to use the default transform from the model.
+                Defaults to ``None``.
             compression_type (CompressionType | None, optional): Compression type for OpenVINO exporting only.
-                Defaults to None.
+                Defaults to ``None``.
             datamodule (AnomalibDataModule | None, optional): Lightning datamodule.
-                Must be provided if CompressionType.INT8_PTQ is selected. Defaults to None.
+                Must be provided if CompressionType.INT8_PTQ is selected.
+                Defaults to ``None``.
             ov_args (dict[str, Any] | None, optional): This is optional and used only for OpenVINO's model optimizer.
                 Defaults to None.
             ckpt_path (str | Path | None): Checkpoint path. If provided, the model will be loaded from this path.
@@ -903,22 +905,25 @@ class Engine:
         CLI Usage:
             1. To export as a torch ``.pt`` file you can run the following command.
                 ```python
-                anomalib export --model Padim --export_mode TORCH --data MVTec
+                anomalib export --model Padim --export_mode torch --ckpt_path <PATH_TO_CHECKPOINT>
                 ```
             2. To export as an ONNX ``.onnx`` file you can run the following command.
                 ```python
-                anomalib export --model Padim --export_mode ONNX --data Visa --input_size "[256,256]"
+                anomalib export --model Padim --export_mode onnx --ckpt_path <PATH_TO_CHECKPOINT> \
+                --input_size "[256,256]"
                 ```
             3. To export as an OpenVINO ``.xml`` and ``.bin`` file you can run the following command.
                 ```python
-                anomalib export --model Padim --export_mode OPENVINO --data Visa --input_size "[256,256]"
+                anomalib export --model Padim --export_mode openvino --ckpt_path <PATH_TO_CHECKPOINT> \
+                --input_size "[256,256]"
                 ```
-            4. You can also overrride OpenVINO model optimizer by adding the ``--ov_args.<key>`` arguments.
+            4. You can also override OpenVINO model optimizer by adding the ``--ov_args.<key>`` arguments.
                 ```python
-                anomalib export --model Padim --export_mode OPENVINO --data Visa --input_size "[256,256]" \
-                    --ov_args.compress_to_fp16 False
+                anomalib export --model Padim --export_mode openvino --ckpt_path <PATH_TO_CHECKPOINT> \
+                --input_size "[256,256]" --ov_args.compress_to_fp16 False
                 ```
         """
+        export_type = ExportType(export_type)
         self._setup_trainer(model)
         if ckpt_path:
             ckpt_path = Path(ckpt_path).resolve()
