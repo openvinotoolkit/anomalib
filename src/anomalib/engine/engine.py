@@ -26,7 +26,7 @@ from anomalib.callbacks.thresholding import _ThresholdCallback
 from anomalib.callbacks.timer import TimerCallback
 from anomalib.callbacks.visualizer import _VisualizationCallback
 from anomalib.data import AnomalibDataModule, AnomalibDataset, PredictDataset
-from anomalib.deploy.export import CompressionType, ExportType, export_to_onnx, export_to_openvino, export_to_torch
+from anomalib.deploy import CompressionType, ExportType
 from anomalib.models import AnomalyModule
 from anomalib.utils.normalization import NormalizationMethod
 from anomalib.utils.path import create_versioned_dir
@@ -929,23 +929,20 @@ class Engine:
 
         exported_model_path: Path | None = None
         if export_type == ExportType.TORCH:
-            exported_model_path = export_to_torch(
-                model=model,
+            exported_model_path = model.to_torch(
                 export_root=export_root,
                 transform=transform,
                 task=self.task,
             )
         elif export_type == ExportType.ONNX:
-            exported_model_path = export_to_onnx(
-                model=model,
+            exported_model_path = model.to_onnx(
                 export_root=export_root,
                 input_size=input_size,
                 transform=transform,
                 task=self.task,
             )
         elif export_type == ExportType.OPENVINO:
-            exported_model_path = export_to_openvino(
-                model=model,
+            exported_model_path = model.to_openvino(
                 export_root=export_root,
                 input_size=input_size,
                 transform=transform,

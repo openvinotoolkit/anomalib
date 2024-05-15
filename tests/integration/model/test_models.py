@@ -12,7 +12,7 @@ import pytest
 
 from anomalib import TaskType
 from anomalib.data import AnomalibDataModule, MVTec
-from anomalib.deploy.export import ExportType
+from anomalib.deploy import ExportType
 from anomalib.engine import Engine
 from anomalib.models import AnomalyModule, get_available_models, get_model
 
@@ -143,10 +143,10 @@ class TestAPI:
             dataset_path (Path): Root to dataset from fixture.
             project_path (Path): Path to temporary project folder from fixture.
         """
-        if model_name in ("reverse_distillation", "rkde"):
+        if model_name == "rkde":
             # TODO(ashwinvaidya17): Restore this test after fixing the issue
             # https://github.com/openvinotoolkit/anomalib/issues/1513
-            pytest.skip(f"{model_name} fails to convert to ONNX and OpenVINO")
+            pytest.skip(f"{model_name} fails to convert to OpenVINO")
 
         model, dataset, engine = self._get_objects(
             model_name=model_name,
