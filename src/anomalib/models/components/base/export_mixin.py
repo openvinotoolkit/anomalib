@@ -172,9 +172,10 @@ class ExportMixin:
                 taken from the model.
                 Defaults to ``None``.
             compression_type (CompressionType, optional): Compression type for better inference performance.
-                Defaults to None.
+                Defaults to ``None``.
             datamodule (AnomalibDataModule | None, optional): Lightning datamodule.
-                Must be provided if CompressionType.INT8_PTQ is selected. Defaults to None.
+                Must be provided if CompressionType.INT8_PTQ is selected.
+                Defaults to ``None``.
             ov_args (dict | None): Model optimizer arguments for OpenVINO model conversion.
                 Defaults to ``None``.
             task (TaskType | None): Task type.
@@ -237,7 +238,10 @@ class ExportMixin:
             if compression_type == CompressionType.INT8:
                 model = nncf.compress_weights(model)
             elif compression_type == CompressionType.INT8_PTQ:
-                assert datamodule is not None, "datamodule must be provided for OpenVINO INT8_PTQ compression"
+                if datamodule is None:
+                    msg = "Datamodule must be provided for OpenVINO INT8_PTQ compression"
+                    raise ValueError(msg)
+
                 dataloader = datamodule.val_dataloader()
                 if len(dataloader.dataset) < 300:
                     logger.warning(
