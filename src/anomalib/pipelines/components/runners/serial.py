@@ -9,6 +9,7 @@ from rich import print
 from rich.progress import track
 
 from anomalib.pipelines.components.base import JobGenerator, Runner
+from anomalib.pipelines.types import GATHERED_RESULTS, PREV_STAGE_RESULT
 
 logger = logging.getLogger(__name__)
 
@@ -23,12 +24,12 @@ class SerialRunner(Runner):
     def __init__(self, generator: JobGenerator) -> None:
         super().__init__(generator)
 
-    def run(self, args: dict) -> None:
+    def run(self, args: dict, prev_stage_results: PREV_STAGE_RESULT = None) -> GATHERED_RESULTS:
         """Run the job."""
         results = []
         failures = False
         logger.info(f"Running job {self.generator.job_class.name}")
-        for job in track(self.generator(args), description=self.generator.job_class.name):
+        for job in track(self.generator(args, prev_stage_results), description=self.generator.job_class.name):
             try:
                 results.append(job.run())
             except Exception:  # noqa: PERF203
@@ -42,3 +43,4 @@ class SerialRunner(Runner):
             logger.error(msg)
             raise SerialExecutionError(msg)
         logger.info(f"Job {self.generator.job_class.name} completed successfully.")
+        return gathered_result
