@@ -15,7 +15,6 @@ import numpy as np
 from skimage.segmentation import mark_boundaries
 
 from anomalib import TaskType
-from anomalib.data.utils import read_image
 from anomalib.utils.post_processing import add_anomalous_label, add_normal_label, draw_boxes, superimpose_anomaly_map
 
 from .base import BaseVisualizer, GeneratorResult, VisualizationStep
@@ -127,6 +126,21 @@ class ImageVisualizer(BaseVisualizer):
             raise ValueError(msg)
         return self._visualize_batch(outputs)
 
+    def denormalize_imagenet_to_uint8(self, image_normalized: np.ndarray) -> np.ndarray:
+        """Convert the NumPy array image from the ImageNet-normalized scale to uint8 [0, 255].
+
+        Args:
+            image_normalized (np.ndarray): A NumPy array of image(s) that are normalized with ImageNet statistics.
+
+        Returns:
+            np.ndarray: Image(s) in the uint8 format.
+        """
+        std = np.array([0.229, 0.224, 0.225]) * 255
+        mean = np.array([0.485, 0.456, 0.406]) * 255
+
+        # We do not clip pixel values here, in case of hiding the problematic input.
+        return (image_normalized * std + mean).astype(np.uint8)
+
     def _visualize_batch(self, batch: dict) -> Iterator[GeneratorResult]:
         """Yield a visualization result for each item in the batch.
 
@@ -139,9 +153,8 @@ class ImageVisualizer(BaseVisualizer):
         batch_size = batch["image"].shape[0]
         for i in range(batch_size):
             if "image_path" in batch:
-                height, width = batch["image"].shape[-2:]
-                image = (read_image(path=batch["image_path"][i]) * 255).astype(np.uint8)
-                image = cv2.resize(image, dsize=(width, height), interpolation=cv2.INTER_AREA)
+                image = batch["image"][i].cpu().numpy().transpose(1, 2, 0)  # HWC, RGB
+                image = self.denormalize_imagenet_to_uint8(image)
             elif "video_path" in batch:
                 height, width = batch["image"].shape[-2:]
                 image = batch["original_image"][i].squeeze().cpu().numpy()
