@@ -18,7 +18,6 @@ from .runner import Runner
 
 if TYPE_CHECKING:
     from anomalib.pipelines.types import PREV_STAGE_RESULT
-
 traceback.install()
 
 log_file = "runs/pipeline.log"

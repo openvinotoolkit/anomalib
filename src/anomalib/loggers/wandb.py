@@ -3,24 +3,24 @@
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from typing import TYPE_CHECKING, Literal
 
 import numpy as np
+from lightning.fabric.utilities.types import _PATH
 from lightning.pytorch.loggers.wandb import WandbLogger
 from lightning.pytorch.utilities import rank_zero_only
 from matplotlib.figure import Figure
 
 from anomalib.utils.exceptions import try_import
 
+from .base import ImageLoggerBase
+
 if try_import("wandb"):
     import wandb
 
-from typing import TYPE_CHECKING
-
-from .base import ImageLoggerBase
-
 if TYPE_CHECKING:
     from wandb.sdk.lib import RunDisabled
-    from wandb.wandb_run import Run
+    from wandb.sdk.wandb_run import Run
 
 
 class AnomalibWandbLogger(ImageLoggerBase, WandbLogger):
@@ -44,8 +44,10 @@ class AnomalibWandbLogger(ImageLoggerBase, WandbLogger):
             Defaults to ``None``.
         save_dir: Path where data is saved (wandb dir by default).
             Defaults to ``None``.
+        version: Sets the version, mainly used to resume a previous run.
         offline: Run offline (data can be streamed later to wandb servers).
             Defaults to ``False``.
+        dir: Alias for save_dir.
         id: Sets the version, mainly used to resume a previous run.
             Defaults to ``None``.
         anonymous: Enables or explicitly disables anonymous logging.
@@ -89,28 +91,32 @@ class AnomalibWandbLogger(ImageLoggerBase, WandbLogger):
     def __init__(
         self,
         name: str | None = None,
-        save_dir: str | None = None,
-        offline: bool | None = False,
+        save_dir: _PATH = ".",
+        version: str | None = None,
+        offline: bool = False,
+        dir: _PATH | None = None,  # kept to match wandb init # noqa: A002
         id: str | None = None,  # kept to match wandb init # noqa: A002
         anonymous: bool | None = None,
-        version: str | None = None,
         project: str | None = None,
-        log_model: str | bool = False,
-        experiment: type["Run"] | type["RunDisabled"] | None = None,
-        prefix: str | None = "",
+        log_model: Literal["all"] | bool = False,
+        experiment: "Run | RunDisabled | None" = None,
+        prefix: str = "",
+        checkpoint_name: str | None = None,
         **kwargs,
     ) -> None:
         super().__init__(
             name=name,
             save_dir=save_dir,
+            version=version,
             offline=offline,
+            dir=dir,
             id=id,
             anonymous=anonymous,
-            version=version,
             project=project,
             log_model=log_model,
             experiment=experiment,
             prefix=prefix,
+            checkpoint_name=checkpoint_name,
             **kwargs,
         )
         self.image_list: list[wandb.Image] = []  # Cache images

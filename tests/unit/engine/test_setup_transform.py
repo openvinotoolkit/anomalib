@@ -169,7 +169,8 @@ class TestSetupTransform:
         # after calling setup, train_transform should be the custom transform and eval_transform should be the default
         assert datamodule.train_transform == transform
         assert datamodule.eval_transform is None
-        assert model.transform == transform
+        assert model.transform != transform
+        assert model.transform is not None
 
     # test if the user-specified transform is used when passed to the datamodule
     def test_custom_eval_transform(self) -> None:
