@@ -897,21 +897,21 @@ class Engine:
         CLI Usage:
             1. To export as a torch ``.pt`` file you can run the following command.
                 ```python
-                anomalib export --model Padim --export_mode TORCH --ckpt_path <PATH_TO_CHECKPOINT>
+                anomalib export --model Padim --export_mode torch --ckpt_path <PATH_TO_CHECKPOINT>
                 ```
             2. To export as an ONNX ``.onnx`` file you can run the following command.
                 ```python
-                anomalib export --model Padim --export_mode ONNX --ckpt_path <PATH_TO_CHECKPOINT> \
+                anomalib export --model Padim --export_mode onnx --ckpt_path <PATH_TO_CHECKPOINT> \
                 --input_size "[256,256]"
                 ```
             3. To export as an OpenVINO ``.xml`` and ``.bin`` file you can run the following command.
                 ```python
-                anomalib export --model Padim --export_mode OPENVINO --ckpt_path <PATH_TO_CHECKPOINT> \
+                anomalib export --model Padim --export_mode openvino --ckpt_path <PATH_TO_CHECKPOINT> \
                 --input_size "[256,256]"
                 ```
             4. You can also overrride OpenVINO model optimizer by adding the ``--ov_args.<key>`` arguments.
                 ```python
-                anomalib export --model Padim --export_mode OPENVINO --ckpt_path <PATH_TO_CHECKPOINT> \
+                anomalib export --model Padim --export_mode openvino --ckpt_path <PATH_TO_CHECKPOINT> \
                 --input_size "[256,256]" --ov_args.compress_to_fp16 False
                 ```
         """
