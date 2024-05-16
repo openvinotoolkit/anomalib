@@ -91,7 +91,7 @@ class _MetricsCallback(Callback):
 
         # create a separate metric collection for metrics that operate over the semantic segmentation mask
         # (segmentation mask with a separate channel for each defect type)
-        semantic_pixel_metric_names: list[str] | dict[str, dict[str, Any]]
+        semantic_pixel_metric_names: list[str] | dict[str, dict[str, Any]] = []
         # currently only SPRO metric is supported as semantic segmentation metric
         if "SPRO" in pixel_metric_names:
             if isinstance(pixel_metric_names, list):
