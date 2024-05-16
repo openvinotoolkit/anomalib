@@ -36,7 +36,7 @@ from .video import AiVad
 
 
 class UnknownModelError(ModuleNotFoundError):
-    ...
+    pass
 
 
 __all__ = [

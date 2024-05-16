@@ -1,0 +1,24 @@
+from anomalib.engine import Engine
+
+# instantiate the datamodule without passing custom transforms
+datamodule = MVTec()
+# initially, the datamodule will not have any transforms defined
+datamodule.train_transform is None
+# True
+
+engine = Engine()
+engine.fit(model, datamodule=datamodule)
+
+# after running fit, the engine will have injected the model's default transform into the datamodule
+datamodule.train_transform
+# Compose(
+#       Resize(size=[256, 256], interpolation=InterpolationMode.BILINEAR, antialias=True)
+#       CenterCrop(size=(224, 224))
+#       Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225], inplace=False)
+# )
+datamodule.eval_transform
+# Compose(
+#       Resize(size=[256, 256], interpolation=InterpolationMode.BILINEAR, antialias=True)
+#       CenterCrop(size=(224, 224))
+#       Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225], inplace=False)
+# )

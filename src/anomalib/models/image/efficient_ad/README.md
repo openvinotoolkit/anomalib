@@ -18,7 +18,7 @@ Anomalies are detected as the difference in output feature maps between the teac
 
 ## Usage
 
-`python tools/train.py --model efficient_ad`
+`anomalib train --model EfficientAd --data anomalib.data.MVTec --data.train_batch_size 1`
 
 ## Benchmark
 
