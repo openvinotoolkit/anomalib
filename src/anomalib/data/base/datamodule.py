@@ -223,7 +223,10 @@ class AnomalibDataModule(LightningDataModule, ABC):
             self.val_data = SyntheticAnomalyDataset.from_dataset(normal_val_data)
         elif self.val_split_mode == ValSplitMode.FROM_DIR:
             # the val_data is prepared in subclass
-            pass
+            assert hasattr(
+                self,
+                "val_data",
+            ), f"FROM_DIR is not supported for {self.__class__.__name__} which does not assign val_data in _setup."
         elif self.val_split_mode != ValSplitMode.NONE:
             msg = f"Unknown validation split mode: {self.val_split_mode}"
             raise ValueError(msg)
