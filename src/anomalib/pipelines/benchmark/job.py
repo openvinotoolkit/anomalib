@@ -89,7 +89,7 @@ class BenchmarkJob(Job):
     def save(result: pd.DataFrame) -> None:
         """Save the result to a csv file."""
         BenchmarkJob._print_tabular_results(result)
-        file_path = Path("runs") / BenchmarkJob.name / datetime.now().strftime("%Y-%m-%d-%H:%M:%S") / "results.csv"
+        file_path = Path("runs") / BenchmarkJob.name / datetime.now().strftime("%Y-%m-%d-%H_%M_%S") / "results.csv"
         file_path.parent.mkdir(parents=True, exist_ok=True)
         result.to_csv(file_path, index=False)
         logger.info(f"Saved results to {file_path}")
