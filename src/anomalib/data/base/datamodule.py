@@ -102,6 +102,11 @@ class AnomalibDataModule(LightningDataModule, ABC):
         self.seed = seed
 
         # set transforms
+        if bool(train_transform) != bool(eval_transform):
+            msg = "Only one of train_transform and eval_transform was specified. This is not recommended because \
+                    it could lead to unexpected behaviour. Please ensure training and eval transforms have the same \
+                    reshape and normalization characteristics."
+            logger.warning(msg)
         self._train_transform = train_transform or transform
         self._eval_transform = eval_transform or transform
 
@@ -185,7 +190,15 @@ class AnomalibDataModule(LightningDataModule, ABC):
 
     def _create_val_split(self) -> None:
         """Obtain the validation set based on the settings in the config."""
-        if self.val_split_mode == ValSplitMode.FROM_TEST:
+        if self.val_split_mode == ValSplitMode.FROM_TRAIN:
+            # randomly sampled from train set
+            self.train_data, self.val_data = random_split(
+                self.train_data,
+                self.val_split_ratio,
+                label_aware=True,
+                seed=self.seed,
+            )
+        elif self.val_split_mode == ValSplitMode.FROM_TEST:
             # randomly sampled from test set
             self.test_data, self.val_data = random_split(
                 self.test_data,
@@ -247,8 +260,6 @@ class AnomalibDataModule(LightningDataModule, ABC):
         """
         if self._eval_transform:
             return self._eval_transform
-        if self._train_transform:
-            return self._train_transform
         return None
 
     @property

@@ -98,15 +98,12 @@ Here's a brief explanation of each:
   from being committed to the repository. They can include things like style
   checks, unit tests, and static analysis.
 
-- `pre-merge`: These tests are run before code is merged into a main or release
-  branch. They are typically more extensive than pre-commit tests and may
-  include integration tests, performance tests, and other checks that are too
-  time-consuming to run on every commit.
+- `unit`: These tests are run before code is merged into a main or release
+  branch. These are used to test individual components.
 
-- `nightly`: These are tests that are run on a regular schedule, typically once
-  per day ("nightly"). They can include long-running tests, extensive test
-  suites that cover edge cases, or tests that are too resource-intensive to run
-  on every commit or merge.
+- `integration`: These tests are also run before the code is merged into a main
+  or release branch. These test whether the components work together. These focus
+  mainly on training, exporting and inferring models via the API and the CLI.
 
 - `trivy-scan`: Trivy is a comprehensive, open-source vulnerability scanner for
   containers. A `trivy-scan` would check your project's dependencies for known
@@ -124,16 +121,10 @@ To run the pre-commit tests
 tox -e pre-commit
 ```
 
-To run the pre-merge tests
+To run the unit and integration tests
 
 ```bash
 tox -e pre-merge
-```
-
-To run the nightly tests
-
-```bash
-tox -e nightly
 ```
 
 To run the trivy-scan

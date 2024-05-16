@@ -5,7 +5,7 @@
 
 import importlib
 import logging
-from abc import ABC, abstractproperty
+from abc import ABC, abstractmethod
 from collections import OrderedDict
 from typing import TYPE_CHECKING, Any
 
@@ -20,6 +20,8 @@ from anomalib import LearningType
 from anomalib.metrics import AnomalibMetricCollection
 from anomalib.metrics.threshold import BaseThreshold
 
+from .export_mixin import ExportMixin
+
 if TYPE_CHECKING:
     from lightning.pytorch.callbacks import Callback
     from torchmetrics import Metric
@@ -28,7 +30,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class AnomalyModule(pl.LightningModule, ABC):
+class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
     """AnomalyModule to train, validate, predict and test images.
 
     Acts as a base class for all the Anomaly Modules in the library.
@@ -136,7 +138,8 @@ class AnomalyModule(pl.LightningModule, ABC):
 
         return self.predict_step(batch, batch_idx)
 
-    @abstractproperty
+    @property
+    @abstractmethod
     def trainer_arguments(self) -> dict[str, Any]:
         """Arguments used to override the trainer parameters so as to train the model correctly."""
         raise NotImplementedError
@@ -184,7 +187,7 @@ class AnomalyModule(pl.LightningModule, ABC):
         metric_keys = [key for key in state_dict if key.startswith(f"{name}_metrics")]
         if any(metric_keys):
             if not hasattr(self, f"{name}_metrics"):
-                setattr(self, f"{name}_metrics", AnomalibMetricCollection([], prefix=name))
+                setattr(self, f"{name}_metrics", AnomalibMetricCollection([], prefix=f"{name}_"))
             metrics = getattr(self, f"{name}_metrics")
             for key in metric_keys:
                 class_name = key.split(".")[1]
@@ -203,7 +206,8 @@ class AnomalyModule(pl.LightningModule, ABC):
         module = importlib.import_module(".".join(class_path.split(".")[:-1]))
         return getattr(module, class_path.split(".")[-1])()
 
-    @abstractproperty
+    @property
+    @abstractmethod
     def learning_type(self) -> LearningType:
         """Learning type of the model."""
         raise NotImplementedError

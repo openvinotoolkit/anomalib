@@ -3,7 +3,6 @@
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 import copy
 import logging
 from abc import ABC
@@ -62,9 +61,9 @@ class AnomalibDataset(Dataset, ABC):
             Defaults to ``None``.
     """
 
-    def __init__(self, task: TaskType, transform: Transform | None = None) -> None:
+    def __init__(self, task: TaskType | str, transform: Transform | None = None) -> None:
         super().__init__()
-        self.task = task
+        self.task = TaskType(task)
         self.transform = transform
         self._samples: DataFrame | None = None
         self._category: str | None = None
@@ -92,7 +91,9 @@ class AnomalibDataset(Dataset, ABC):
             inplace (bool): When true, the subsampling will be performed on the instance itself.
                 Defaults to ``False``.
         """
-        assert len(set(indices)) == len(indices), "No duplicates allowed in indices."
+        if len(set(indices)) != len(indices):
+            msg = "No duplicates allowed in indices."
+            raise ValueError(msg)
         dataset = self if inplace else copy.deepcopy(self)
         dataset.samples = self.samples.iloc[indices].reset_index(drop=True)
         return dataset
@@ -116,12 +117,18 @@ class AnomalibDataset(Dataset, ABC):
             samples (DataFrame): DataFrame with new samples.
         """
         # validate the passed samples by checking the
-        assert isinstance(samples, DataFrame), f"samples must be a pandas.DataFrame, found {type(samples)}"
+        if not isinstance(samples, DataFrame):
+            msg = f"samples must be a pandas.DataFrame, found {type(samples)}"
+            raise TypeError(msg)
+
         expected_columns = _EXPECTED_COLUMNS_PERTASK[self.task]
-        assert all(
-            col in samples.columns for col in expected_columns
-        ), f"samples must have (at least) columns {expected_columns}, found {samples.columns}"
-        assert samples["image_path"].apply(lambda p: Path(p).exists()).all(), "missing file path(s) in samples"
+        if not all(col in samples.columns for col in expected_columns):
+            msg = f"samples must have (at least) columns {expected_columns}, found {samples.columns}"
+            raise ValueError(msg)
+
+        if not samples["image_path"].apply(lambda p: Path(p).exists()).all():
+            msg = "missing file path(s) in samples"
+            raise FileNotFoundError(msg)
 
         self._samples = samples.sort_values(by="image_path", ignore_index=True)
 
@@ -193,7 +200,9 @@ class AnomalibDataset(Dataset, ABC):
         Returns:
             AnomalibDataset: Concatenated dataset.
         """
-        assert isinstance(other_dataset, self.__class__), "Cannot concatenate datasets that are not of the same type."
+        if not isinstance(other_dataset, self.__class__):
+            msg = "Cannot concatenate datasets that are not of the same type."
+            raise TypeError(msg)
         dataset = copy.deepcopy(self)
         dataset.samples = pd.concat([self.samples, other_dataset.samples], ignore_index=True)
         return dataset

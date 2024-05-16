@@ -20,6 +20,7 @@ REQUIRED_ARGUMENTS = {
     "validate": {"model", "model.help", "data", "data.help", "ckpt_path", "config"},
     "test": {"model", "model.help", "data", "data.help", "ckpt_path", "config"},
     "predict": {"model", "model.help", "data", "data.help", "ckpt_path", "config"},
+    "export": {"model", "model.help", "export_type", "ckpt_path", "config"},
 }
 
 try:
@@ -31,6 +32,7 @@ try:
         "validate": Engine.validate,
         "test": Engine.test,
         "predict": Engine.predict,
+        "export": Engine.export,
     }
 except ImportError:
     print("To use other subcommand using `anomalib install`")

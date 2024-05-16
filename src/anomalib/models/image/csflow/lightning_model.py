@@ -6,7 +6,6 @@ https://arxiv.org/pdf/2110.02855.pdf
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 import logging
 from typing import Any
 
@@ -28,8 +27,6 @@ class Csflow(AnomalyModule):
     """Fully Convolutional Cross-Scale-Flows for Image-based Defect Detection.
 
     Args:
-        input_size (tuple[int, int]): Size of the model input.
-            Defaults to ``(256, 256)``.
         n_coupling_blocks (int): Number of coupling blocks in the model.
             Defaults to ``4``.
         cross_conv_hidden_channels (int): Number of hidden channels in the cross convolution.
@@ -59,7 +56,10 @@ class Csflow(AnomalyModule):
         self.model: CsFlowModel
 
     def _setup(self) -> None:
-        assert self.input_size is not None, "Csflow needs input size to build torch model."
+        if self.input_size is None:
+            msg = "CsFlow needs input size to build torch model."
+            raise ValueError(msg)
+
         self.model = CsFlowModel(
             input_size=self.input_size,
             cross_conv_hidden_channels=self.cross_conv_hidden_channels,
@@ -67,6 +67,7 @@ class Csflow(AnomalyModule):
             clamp=self.clamp,
             num_channels=self.num_channels,
         )
+        self.model.feature_extractor.eval()
 
     def training_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> STEP_OUTPUT:
         """Perform the training step of CS-Flow.
@@ -81,7 +82,6 @@ class Csflow(AnomalyModule):
         """
         del args, kwargs  # These variables are not used.
 
-        self.model.feature_extractor.eval()
         z_dist, jacobians = self.model(batch["image"])
         loss = self.loss(z_dist, jacobians)
         self.log("train_loss", loss.item(), on_epoch=True, prog_bar=True, logger=True)

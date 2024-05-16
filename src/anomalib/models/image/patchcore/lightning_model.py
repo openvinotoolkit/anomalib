@@ -26,8 +26,6 @@ class Patchcore(MemoryBankMixin, AnomalyModule):
     """PatchcoreLightning Module to train PatchCore algorithm.
 
     Args:
-        input_size (tuple[int, int]): Size of the model input.
-            Defaults to ``(224, 224)``.
         backbone (str): Backbone CNN network
             Defaults to ``wide_resnet50_2``.
         layers (list[str]): Layers to extract features from the backbone CNN
@@ -80,9 +78,7 @@ class Patchcore(MemoryBankMixin, AnomalyModule):
         """
         del args, kwargs  # These variables are not used.
 
-        self.model.feature_extractor.eval()
         embedding = self.model(batch["image"])
-
         self.embeddings.append(embedding)
 
     def fit(self) -> None:

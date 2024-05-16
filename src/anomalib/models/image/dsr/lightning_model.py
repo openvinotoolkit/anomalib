@@ -94,7 +94,7 @@ class Dsr(AnomalyModule):
     def on_train_start(self) -> None:
         """Load pretrained weights of the discrete model when starting training."""
         ckpt: Path = self.prepare_pretrained_model()
-        self.model.load_pretrained_discrete_model_weights(ckpt)
+        self.model.load_pretrained_discrete_model_weights(ckpt, self.device)
 
     def on_train_epoch_start(self) -> None:
         """Display a message when starting to train the upsampling module."""

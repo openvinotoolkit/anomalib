@@ -5,7 +5,6 @@ model:
       - layer1
       - layer2
       - layer3
-    input_size: null
     backbone: resnet18
     pre_trained: true
     n_features: null

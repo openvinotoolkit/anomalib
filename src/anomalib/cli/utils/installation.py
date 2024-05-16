@@ -9,6 +9,7 @@ import json
 import os
 import platform
 import re
+from importlib.metadata import requires
 from pathlib import Path
 from warnings import warn
 
@@ -23,32 +24,38 @@ AVAILABLE_TORCH_VERSIONS = {
 }
 
 
-def get_requirements(requirement_files: list[str]) -> list[Requirement]:
-    """Get packages from requirements.txt file.
+def get_requirements(module: str = "anomalib") -> dict[str, list[Requirement]]:
+    """Get requirements of module from importlib.metadata.
 
-    This function returns list of required packages from requirement files.
-
-    Args:
-        requirement_files (list[Requirement]): txt files that contains list of required
-            packages.
+    This function returns list of required packages from importlib_metadata.
 
     Example:
-        >>> get_required_packages(requirement_files=["openvino"])
-        [Requirement('onnx>=1.8.1'), Requirement('networkx~=2.5'), Requirement('openvino-dev==2021.4.1'), ...]
+        >>> get_requirements("anomalib")
+        {
+            "base": ["jsonargparse==4.27.1", ...],
+            "core": ["torch==2.1.1", ...],
+            ...
+        }
 
     Returns:
-        list[Requirement]: List of required packages
+        dict[str, list[Requirement]]: List of required packages for each optional-extras.
     """
-    required_packages: list[Requirement] = []
-
-    for requirement_file in requirement_files:
-        with Path(f"requirements/{requirement_file}.txt").open(encoding="utf8") as file:
-            for line in file:
-                package = line.strip()
-                if package and not package.startswith(("#", "-f")):
-                    required_packages.append(Requirement.parse(package))
-
-    return required_packages
+    requirement_list: list[str] | None = requires(module)
+    extra_requirement: dict[str, list[Requirement]] = {}
+    if requirement_list is None:
+        return extra_requirement
+    for requirement in requirement_list:
+        extra = "core"
+        requirement_extra: list[str] = requirement.replace(" ", "").split(";")
+        if isinstance(requirement_extra, list) and len(requirement_extra) > 1:
+            extra = requirement_extra[-1].split("==")[-1].strip("'\"")
+        _requirement_name = requirement_extra[0]
+        _requirement = Requirement.parse(_requirement_name)
+        if extra in extra_requirement:
+            extra_requirement[extra].append(_requirement)
+        else:
+            extra_requirement[extra] = [_requirement]
+    return extra_requirement
 
 
 def parse_requirements(

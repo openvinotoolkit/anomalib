@@ -28,16 +28,17 @@ def get_feature_extractor(backbone: str, input_size: tuple[int, int] = (256, 256
     Returns:
         FeatureExtractorInterface: Feature extractor.
     """
-    assert backbone in AVAILABLE_EXTRACTORS, f"Feature extractor must be one of {AVAILABLE_EXTRACTORS}."
+    if backbone not in AVAILABLE_EXTRACTORS:
+        msg = f"Feature extractor must be one of {AVAILABLE_EXTRACTORS}."
+        raise ValueError(msg)
+
+    feature_extractor: nn.Module
     if backbone in ["resnet18", "wide_resnet50_2"]:
-        return FeatureExtractor(backbone, input_size, layers=("layer1", "layer2", "layer3"))
+        feature_extractor = FeatureExtractor(backbone, input_size, layers=("layer1", "layer2", "layer3")).eval()
     if backbone == "mcait":
-        return MCaitFeatureExtractor()
-    msg = (
-        "`backbone` must be one of `[mcait, resnet18, wide_resnet50_2]`. These are the only feature extractors tested. "
-        "It does not mean that other feature extractors will not work."
-    )
-    raise ValueError(msg)
+        feature_extractor = MCaitFeatureExtractor().eval()
+
+    return feature_extractor
 
 
 class FeatureExtractor(TimmFeatureExtractor):

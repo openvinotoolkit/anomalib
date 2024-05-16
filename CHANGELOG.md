@@ -8,6 +8,68 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+- 🚀 Update OpenVINO and ONNX export to support fixed input shape by @adrianboguszewski in https://github.com/openvinotoolkit/anomalib/pull/2006
+- Add data_path argument to predict entrypoint and add properties for retrieving model path by @djdameln in https://github.com/openvinotoolkit/anomalib/pull/2018
+
+### Changed
+
+- 🔨 Move all export functionalities to AnomalyModule as base methods by @thinhngo-x in (<https://github.com/openvinotoolkit/anomalib/pull/1803>)
+- Remove unnecessary jsonargparse dependencies by @davnn in (<https://github.com/openvinotoolkit/anomalib/pull/2046>)
+- Use default model-specific eval transform when only train_transform specified by @djdameln(https://github.com/djdameln) in (<https://github.com/openvinotoolkit/anomalib/pull/1953>)
+- 🔨Rename OptimalF1 to F1Max for consistency with the literature, by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/1980
+- 🐞Update OptimalF1 score to use BinaryPrecisionRecallCurve and remove num_classes by @ashwinvaidya17 in https://github.com/openvinotoolkit/anomalib/pull/1972
+
+### Deprecated
+
+### Fixed
+
+### New Contributors
+
+**Full Changelog**:
+
+## [v1.0.1] - 2024-03-27
+
+### Added
+
+- Add requirements into `pyproject.toml` & Refactor anomalib install `get_requirements` by @harimkang in https://github.com/openvinotoolkit/anomalib/pull/1808
+
+### Changed
+
+- 📚 Update the getting started notebook by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/1800
+- 🔨Refactored-assert-statements-with-explicit-error-handling by @sahusiddharth in https://github.com/openvinotoolkit/anomalib/pull/1825
+- 🔨Made-imagenette-path-configurable-in-config by @sahusiddharth in https://github.com/openvinotoolkit/anomalib/pull/1833
+- 🛠️ Update changelog by @ashwinvaidya17 in https://github.com/openvinotoolkit/anomalib/pull/1842
+- Remove input_size argument from models #1827 by @Shakib-IO in https://github.com/openvinotoolkit/anomalib/pull/1856
+- 🚀 Allow validation splits from training data by @davnn in https://github.com/openvinotoolkit/anomalib/pull/1865
+- 🛠️ Ensure images are loaded in RGB format by @davnn in https://github.com/openvinotoolkit/anomalib/pull/1866
+- 🔨 Update OpenVINO predict to handle normalization inside the method. by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/1875
+- ✨ Upgrade TorchMetrics by @ashwinvaidya17 in https://github.com/openvinotoolkit/anomalib/pull/1879
+- Address minor WinCLIP issues by @djdameln in https://github.com/openvinotoolkit/anomalib/pull/1889
+
+### Deprecated
+
+### Fixed
+
+- 🐞 Fix single-frame video input size by [@djdameln](https://github.com/djdameln) (<https://github.com/openvinotoolkit/anomalib/pull/1910>)
+- 🐞 Fix dobot notebook by @djdameln in https://github.com/openvinotoolkit/anomalib/pull/1852
+- 🐞 Fix CLI config and update the docs. by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/1886
+- 🐞 Fix the error if the device in masks_to_boxes is not both CPU and CUDA by @danylo-boiko in https://github.com/openvinotoolkit/anomalib/pull/1839
+- 🐞 Hot-fix wrong requirement for setup.py by @harimkang in https://github.com/openvinotoolkit/anomalib/pull/1823
+- 🐞 Use right interpolation method in WinCLIP resize (<https://github.com/openvinotoolkit/anomalib/pull/1889>)
+- 🐞 Fix the error if the device in masks_to_boxes is not both CPU and CUDA by @danylo-boiko in https://github.com/openvinotoolkit/anomalib/pull/1839
+
+### New Contributors
+
+- @sahusiddharth made their first contribution in https://github.com/openvinotoolkit/anomalib/pull/1825
+- @Shakib-IO made their first contribution in https://github.com/openvinotoolkit/anomalib/pull/1856
+- @davnn made their first contribution in https://github.com/openvinotoolkit/anomalib/pull/1866
+
+**Full Changelog**: https://github.com/openvinotoolkit/anomalib/compare/v1.0.0...v1.0.1
+
+## [v1.0.0] - 2024-02-29
+
+### Added
+
 - 🚀 Add KMeans PyTorch Implementation to cfa model by @aadhamm in https://github.com/openvinotoolkit/anomalib/pull/998
 - 🚀 Add DSR model by @phcarval in https://github.com/openvinotoolkit/anomalib/pull/1142
 - ⚙️ Add `setuptools` as a requirement (via `pkg_resources`) by @murilo-cunha in https://github.com/openvinotoolkit/anomalib/pull/1168

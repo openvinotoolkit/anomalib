@@ -32,14 +32,17 @@ def requirements_file() -> Path:
         return Path(f.name)
 
 
-def test_get_requirements() -> None:
+def test_get_requirements(mocker: MockerFixture) -> None:
     """Test that get_requirements returns the expected dictionary of requirements."""
-    options = [option.stem for option in Path("requirements").glob("*.txt") if option.stem != "dev"]
-    requirements = get_requirements(requirement_files=options)
-    assert isinstance(requirements, list)
+    requirements = get_requirements("anomalib")
+    assert isinstance(requirements, dict)
     assert len(requirements) > 0
-    for req in requirements:
-        assert isinstance(req, Requirement)
+    for reqs in requirements.values():
+        assert isinstance(reqs, list)
+        for req in reqs:
+            assert isinstance(req, Requirement)
+    mocker.patch("anomalib.cli.utils.installation.requires", return_value=None)
+    assert get_requirements() == {}
 
 
 def test_parse_requirements() -> None:

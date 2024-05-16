@@ -3,7 +3,6 @@
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 from collections.abc import Sequence
 
 import einops
@@ -20,7 +19,6 @@ class CflowModel(nn.Module):
     """CFLOW: Conditional Normalizing Flows.
 
     Args:
-        input_size (tuple[int, int]): Input image size.
         backbone (str): Backbone CNN architecture.
         layers (Sequence[str]): Layers to extract features from.
         pre_trained (bool): Whether to use pre-trained weights.
@@ -59,7 +57,11 @@ class CflowModel(nn.Module):
         self.dec_arch = decoder
         self.pool_layers = layers
 
-        self.encoder = TimmFeatureExtractor(backbone=self.backbone, layers=self.pool_layers, pre_trained=pre_trained)
+        self.encoder = TimmFeatureExtractor(
+            backbone=self.backbone,
+            layers=self.pool_layers,
+            pre_trained=pre_trained,
+        ).eval()
         self.pool_dims = self.encoder.out_dims
         self.decoders = nn.ModuleList(
             [

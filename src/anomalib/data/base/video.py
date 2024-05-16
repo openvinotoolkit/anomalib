@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Any
 import torch
 from pandas import DataFrame
 from torchvision.transforms.v2 import Transform
+from torchvision.transforms.v2.functional import to_dtype_video
 from torchvision.tv_tensors import Mask
 
 from anomalib import TaskType
@@ -68,7 +69,9 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
 
     def __len__(self) -> int:
         """Get length of the dataset."""
-        assert isinstance(self.indexer, ClipsIndexer)
+        if not isinstance(self.indexer, ClipsIndexer):
+            msg = "self.indexer must be an instance of ClipsIndexer."
+            raise TypeError(msg)
         return self.indexer.num_clips()
 
     @property
@@ -94,7 +97,9 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
 
         Should be called after each change to self._samples
         """
-        assert callable(self.indexer_cls)
+        if not callable(self.indexer_cls):
+            msg = "self.indexer_cls must be callable."
+            raise TypeError(msg)
         self.indexer = self.indexer_cls(  # pylint: disable=not-callable
             video_paths=list(self.samples.image_path),
             mask_paths=list(self.samples.mask_path),
@@ -145,9 +150,11 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
         Returns:
             dict[str, str | torch.Tensor]: Dictionary containing the mask, clip and file system information.
         """
-        assert isinstance(self.indexer, ClipsIndexer)
-
+        if not isinstance(self.indexer, ClipsIndexer):
+            msg = "self.indexer must be an instance of ClipsIndexer."
+            raise TypeError(msg)
         item = self.indexer.get_item(index)
+        item["image"] = to_dtype_video(video=item["image"], scale=True)
         # include the untransformed image for visualization
         item["original_image"] = item["image"].to(torch.uint8)
 
@@ -161,6 +168,9 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
                 item["boxes"] = item["boxes"][0] if len(item["boxes"]) == 1 else item["boxes"]
         elif self.transform:
             item["image"] = self.transform(item["image"])
+
+        # squeeze temporal dimensions in case clip length is 1
+        item["image"] = item["image"].squeeze(0)
 
         # include only target frame in gt
         if self.clip_length_in_frames > 1 and self.target_frame != VideoTargetFrame.ALL:
@@ -185,8 +195,13 @@ class AnomalibVideoDataModule(AnomalibDataModule):
 
         Video datamodules are not compatible with synthetic anomaly generation.
         """
-        assert self.train_data is not None
-        assert self.test_data is not None
+        if self.train_data is None:
+            msg = "self.train_data cannot be None."
+            raise ValueError(msg)
+
+        if self.test_data is None:
+            msg = "self.test_data cannot be None."
+            raise ValueError(msg)
 
         self.train_data.setup()
         self.test_data.setup()

@@ -43,6 +43,8 @@ class EfficientAd(AnomalyModule):
     """PL Lightning Module for the EfficientAd algorithm.
 
     Args:
+        imagenet_dir (Path|str): directory path for the Imagenet dataset
+            Defaults to ``./datasets/imagenette``.
         teacher_out_channels (int): number of convolution output channels
             Defaults to ``384``.
         model_size (str): size of student and teacher model
@@ -56,22 +58,21 @@ class EfficientAd(AnomalyModule):
         pad_maps (bool): relevant if padding is set to False. In this case, pad_maps = True pads the
             output anomaly maps so that their size matches the size in the padding = True case.
             Defaults to ``True``.
-        batch_size (int): batch size for imagenet dataloader
-            Defaults to ``1``.
     """
 
     def __init__(
         self,
+        imagenet_dir: Path | str = "./datasets/imagenette",
         teacher_out_channels: int = 384,
         model_size: EfficientAdModelSize = EfficientAdModelSize.S,
         lr: float = 0.0001,
         weight_decay: float = 0.00001,
         padding: bool = False,
         pad_maps: bool = True,
-        batch_size: int = 1,
     ) -> None:
         super().__init__()
 
+        self.imagenet_dir = Path(imagenet_dir)
         self.model_size = model_size
         self.model: EfficientAdModel = EfficientAdModel(
             teacher_out_channels=teacher_out_channels,
@@ -79,7 +80,7 @@ class EfficientAd(AnomalyModule):
             padding=padding,
             pad_maps=pad_maps,
         )
-        self.batch_size = batch_size
+        self.batch_size = 1  # imagenet dataloader batch_size is 1 according to the paper
         self.lr = lr
         self.weight_decay = weight_decay
 
@@ -89,7 +90,7 @@ class EfficientAd(AnomalyModule):
         if not (pretrained_models_dir / "efficientad_pretrained_weights").is_dir():
             download_and_extract(pretrained_models_dir, WEIGHTS_DOWNLOAD_INFO)
         teacher_path = (
-            pretrained_models_dir / "efficientad_pretrained_weights" / f"pretrained_teacher_{self.model_size}.pth"
+            pretrained_models_dir / "efficientad_pretrained_weights" / f"pretrained_teacher_{self.model_size.value}.pth"
         )
         logger.info(f"Load pretrained teacher model from {teacher_path}")
         self.model.teacher.load_state_dict(torch.load(teacher_path, map_location=torch.device(self.device)))
@@ -109,10 +110,9 @@ class EfficientAd(AnomalyModule):
             ],
         )
 
-        imagenet_dir = Path("./datasets/imagenette")
-        if not imagenet_dir.is_dir():
-            download_and_extract(imagenet_dir, IMAGENETTE_DOWNLOAD_INFO)
-        imagenet_dataset = ImageFolder(imagenet_dir, transform=self.data_transforms_imagenet)
+        if not self.imagenet_dir.is_dir():
+            download_and_extract(self.imagenet_dir, IMAGENETTE_DOWNLOAD_INFO)
+        imagenet_dataset = ImageFolder(self.imagenet_dir, transform=self.data_transforms_imagenet)
         self.imagenet_loader = DataLoader(imagenet_dataset, batch_size=self.batch_size, shuffle=True, pin_memory=True)
         self.imagenet_iterator = iter(self.imagenet_loader)
 
@@ -146,7 +146,9 @@ class EfficientAd(AnomalyModule):
             chanel_sum += torch.sum(y, dim=[0, 2, 3])
             chanel_sum_sqr += torch.sum(y**2, dim=[0, 2, 3])
 
-        assert n is not None
+        if n is None:
+            msg = "The value of 'n' cannot be None."
+            raise ValueError(msg)
 
         channel_mean = chanel_sum / n
 
@@ -232,9 +234,18 @@ class EfficientAd(AnomalyModule):
     def on_train_start(self) -> None:
         """Called before the first training epoch.
 
-        First sets up the pretrained teacher model, then prepares the imagenette data, and finally calculates or
-        loads the channel-wise mean and std of the training dataset and push to the model.
+        First check if EfficientAd-specific parameters are set correctly (train_batch_size of 1
+        and no Imagenet normalization in transforms), then sets up the pretrained teacher model,
+        then prepares the imagenette data, and finally calculates or loads
+        the channel-wise mean and std of the training dataset and push to the model.
         """
+        if self.trainer.datamodule.train_batch_size != 1:
+            msg = "train_batch_size for EfficientAd should be 1."
+            raise ValueError(msg)
+        if self._transform and any(isinstance(transform, Normalize) for transform in self._transform.transforms):
+            msg = "Transforms for EfficientAd should not contain Normalize."
+            raise ValueError(msg)
+
         sample = next(iter(self.trainer.train_dataloader))
         image_size = sample["image"].shape[-2:]
         self.prepare_pretrained_model()
@@ -309,11 +320,10 @@ class EfficientAd(AnomalyModule):
         return LearningType.ONE_CLASS
 
     def configure_transforms(self, image_size: tuple[int, int] | None = None) -> Transform:
-        """Default transform for Padim."""
+        """Default transform for EfficientAd. Imagenet normalization applied in forward."""
         image_size = image_size or (256, 256)
         return Compose(
             [
                 Resize(image_size, antialias=True),
-                Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
             ],
         )

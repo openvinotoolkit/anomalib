@@ -25,7 +25,6 @@ References:
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 import logging
 from collections.abc import Sequence
 from pathlib import Path
@@ -35,6 +34,7 @@ from torchvision.transforms.v2 import Transform
 
 from anomalib import TaskType
 from anomalib.data.base import AnomalibDataModule, AnomalibDataset
+from anomalib.data.errors import MisMatchError
 from anomalib.data.utils import (
     DownloadInfo,
     LabelName,
@@ -154,14 +154,15 @@ def make_mvtec_dataset(
     ] = mask_samples.image_path.to_numpy()
 
     # assert that the right mask files are associated with the right test images
-    if len(samples.loc[samples.label_index == LabelName.ABNORMAL]):
-        assert (
-            samples.loc[samples.label_index == LabelName.ABNORMAL]
-            .apply(lambda x: Path(x.image_path).stem in Path(x.mask_path).stem, axis=1)
-            .all()
-        ), "Mismatch between anomalous images and ground truth masks. Make sure the mask files in 'ground_truth' \
-                folder follow the same naming convention as the anomalous images in the dataset (e.g. image: \
-                '000.png', mask: '000.png' or '000_mask.png')."
+    abnormal_samples = samples.loc[samples.label_index == LabelName.ABNORMAL]
+    if (
+        len(abnormal_samples)
+        and not abnormal_samples.apply(lambda x: Path(x.image_path).stem in Path(x.mask_path).stem, axis=1).all()
+    ):
+        msg = """Mismatch between anomalous images and ground truth masks. Make sure t
+        he mask files in 'ground_truth' folder follow the same naming convention as the
+        anomalous images in the dataset (e.g. image: '000.png', mask: '000.png' or '000_mask.png')."""
+        raise MisMatchError(msg)
 
     if split:
         samples = samples[samples.split == split].reset_index(drop=True)
@@ -310,12 +311,12 @@ class MVTec(AnomalibDataModule):
         train_batch_size: int = 32,
         eval_batch_size: int = 32,
         num_workers: int = 8,
-        task: TaskType = TaskType.SEGMENTATION,
+        task: TaskType | str = TaskType.SEGMENTATION,
         image_size: tuple[int, int] | None = None,
         transform: Transform | None = None,
         train_transform: Transform | None = None,
         eval_transform: Transform | None = None,
-        test_split_mode: TestSplitMode = TestSplitMode.FROM_DIR,
+        test_split_mode: TestSplitMode | str = TestSplitMode.FROM_DIR,
         test_split_ratio: float = 0.2,
         val_split_mode: ValSplitMode | str = ValSplitMode.SAME_AS_TEST,
         val_split_ratio: float = 0.5,

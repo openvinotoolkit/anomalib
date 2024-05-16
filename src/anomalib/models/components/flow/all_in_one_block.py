@@ -134,9 +134,10 @@ class AllInOneBlock(InvertibleModule):
             self.conditional = False
             self.condition_channels = 0
         else:
-            assert tuple(dims_c[0][1:]) == tuple(
-                dims_in[0][1:],
-            ), f"Dimensions of input and condition don't agree: {dims_c} vs {dims_in}."
+            if tuple(dims_c[0][1:]) != tuple(dims_in[0][1:]):
+                msg = f"Dimensions of input and condition don't agree: {dims_c} vs {dims_in}."
+                raise ValueError(msg)
+
             self.conditional = True
             self.condition_channels = sum(dc[0] for dc in dims_c)
 

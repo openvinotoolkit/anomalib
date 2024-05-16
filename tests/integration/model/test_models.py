@@ -6,14 +6,13 @@ Tests the models using API. The weight paths from the trained models are used fo
 # Copyright (C) 2023-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 from pathlib import Path
 
 import pytest
 
 from anomalib import TaskType
 from anomalib.data import AnomalibDataModule, MVTec
-from anomalib.deploy.export import ExportType
+from anomalib.deploy import ExportType
 from anomalib.engine import Engine
 from anomalib.models import AnomalyModule, get_available_models, get_model
 
@@ -144,12 +143,10 @@ class TestAPI:
             dataset_path (Path): Root to dataset from fixture.
             project_path (Path): Path to temporary project folder from fixture.
         """
-        if model_name == "reverse_distillation":
-            # TODO(ashwinvaidya17): Restore this test after fixing reverse distillation
+        if model_name == "rkde":
+            # TODO(ashwinvaidya17): Restore this test after fixing the issue
             # https://github.com/openvinotoolkit/anomalib/issues/1513
-            pytest.skip("Reverse distillation fails to convert to ONNX")
-        elif model_name == "rkde" and export_type == ExportType.OPENVINO:
-            pytest.skip("RKDE fails to convert to OpenVINO")
+            pytest.skip(f"{model_name} fails to convert to OpenVINO")
 
         model, dataset, engine = self._get_objects(
             model_name=model_name,
@@ -207,7 +204,8 @@ class TestAPI:
                 root=dataset_path / "mvtec",
                 category="dummy",
                 task=task_type,
-                train_batch_size=2,
+                # EfficientAd requires train batch size 1
+                train_batch_size=1 if model_name == "efficient_ad" else 2,
             )
 
         model = get_model(model_name, **extra_args)

@@ -129,20 +129,26 @@ def compose_nncf_config(nncf_config: dict, enabled_options: list[str]) -> dict:
         # So, user can define `order_of_parts` in the optimisation_config
         # to specify the order of applying the parts.
         order_of_parts = optimisation_parts["order_of_parts"]
-        assert isinstance(order_of_parts, list), 'The field "order_of_parts" in optimisation config should be a list'
+        if not isinstance(order_of_parts, list):
+            msg = 'The field "order_of_parts" in optimization config should be a list'
+            raise TypeError(msg)
 
         for part in enabled_options:
-            assert (
-                part in order_of_parts
-            ), f"The part {part} is selected, but it is absent in order_of_parts={order_of_parts}"
+            if part not in order_of_parts:
+                msg = f"The part {part} is selected, but it is absent in order_of_parts={order_of_parts}"
+                raise ValueError(msg)
 
         optimisation_parts_to_choose = [part for part in order_of_parts if part in enabled_options]
 
-    assert "base" in optimisation_parts, 'Error: the optimisation config does not contain the "base" part'
+    if "base" not in optimisation_parts:
+        msg = 'Error: the optimisation config does not contain the "base" part'
+        raise KeyError(msg)
     nncf_config_part = optimisation_parts["base"]
 
     for part in optimisation_parts_to_choose:
-        assert part in optimisation_parts, f'Error: the optimisation config does not contain the part "{part}"'
+        if part not in optimisation_parts:
+            msg = f'Error: the optimisation config does not contain the part "{part}"'
+            raise KeyError(msg)
         optimisation_part_dict = optimisation_parts[part]
         try:
             nncf_config_part = merge_dicts_and_lists_b_into_a(nncf_config_part, optimisation_part_dict)
@@ -205,9 +211,16 @@ def _merge_dicts_and_lists_b_into_a(
             f" type(b) = {type(_b)}"
         )
 
-    assert isinstance(a, dict | list), f"Can merge only dicts and lists, whereas type(a)={type(a)}"
-    assert isinstance(b, dict | list), _err_str(a, b, cur_key)
-    assert isinstance(a, list) == isinstance(b, list), _err_str(a, b, cur_key)
+    if not (isinstance(a, dict | list)):
+        msg = f"Can merge only dicts and lists, whereas type(a)={type(a)}"
+        raise TypeError(msg)
+
+    if not (isinstance(b, dict | list)):
+        raise TypeError(_err_str(a, b, cur_key))
+
+    if (isinstance(a, list) and not isinstance(b, list)) or (isinstance(b, list) and not isinstance(a, list)):
+        raise TypeError(_err_str(a, b, cur_key))
+
     if isinstance(a, list) and isinstance(b, list):
         # the main diff w.r.t. mmcf.Config -- merging of lists
         return a + b
@@ -222,7 +235,8 @@ def _merge_dicts_and_lists_b_into_a(
             a[k] = _merge_dicts_and_lists_b_into_a(a[k], b[k], new_cur_key)
             continue
 
-        assert not isinstance(b[k], dict | list), _err_str(a[k], b[k], new_cur_key)
+        if any(isinstance(b[k], t) for t in [dict, list]):
+            raise TypeError(_err_str(a[k], b[k], new_cur_key))
 
         # suppose here that a[k] and b[k] are scalars, just overwrite
         a[k] = b[k]

@@ -11,9 +11,9 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - name: CHECKOUT REPOSITORY
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: "3.10"
       - name: Install dependencies
@@ -21,7 +21,7 @@ jobs:
       - name: Bandit Scanning
         run: tox -e bandit-scan
       - name: UPLOAD BANDIT REPORT
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: bandit-report
           path: .tox/bandit-report.txt
@@ -31,9 +31,9 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: "3.10"
       - name: Install dependencies
@@ -43,7 +43,7 @@ jobs:
           TRIVY_DOWNLOAD_URL: ${{ vars.TRIVY_DOWNLOAD_URL }}
         run: tox -vv -e trivy-scan
       - name: Upload Trivy results artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: trivy-results
           path: |
