@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Changed
 
 - WinCLIP: set device in text embedding collection and apply forward pass with no grad, by @djdameln in https://github.com/openvinotoolkit/anomalib/pull/1984
+- 🔨 Move all export functionalities to AnomalyModule as base methods by @thinhngo-x in (<https://github.com/openvinotoolkit/anomalib/pull/1803>)
 - Remove unnecessary jsonargparse dependencies by @davnn in (<https://github.com/openvinotoolkit/anomalib/pull/2046>)
 - Use default model-specific eval transform when only train_transform specified by @djdameln(https://github.com/djdameln) in (<https://github.com/openvinotoolkit/anomalib/pull/1953>)
 - 🔨Rename OptimalF1 to F1Max for consistency with the literature, by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/1980
