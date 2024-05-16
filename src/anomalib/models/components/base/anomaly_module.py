@@ -7,6 +7,7 @@ import importlib
 import logging
 from abc import ABC, abstractmethod
 from collections import OrderedDict
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import lightning.pytorch as pl
@@ -275,3 +276,36 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
         """
         self._transform = checkpoint["transform"]
         self.setup("load_checkpoint")
+
+    @classmethod
+    def from_config(
+        cls: type["AnomalyModule"],
+        config_path: str | Path,
+        **kwargs,
+    ) -> "AnomalyModule":
+        """Create a model instance from the configuration."""
+        from jsonargparse import ActionConfigFile, ArgumentParser
+
+        if not Path(config_path).exists():
+            msg = f"Configuration file not found: {config_path}"
+            raise FileNotFoundError(msg)
+
+        model_parser = ArgumentParser()
+        model_parser.add_argument(
+            "-c",
+            "--config",
+            action=ActionConfigFile,
+            help="Path to a configuration file in json or yaml format.",
+        )
+        model_parser.add_subclass_arguments(AnomalyModule, "model", required=False, fail_untyped=False)
+        args = ["--config", str(config_path)]
+        for key, value in kwargs.items():
+            args.extend([f"--{key}", str(value)])
+        config = model_parser.parse_args(args=args)
+        instantiated_classes = model_parser.instantiate_classes(config)
+        model = instantiated_classes.get("model")
+        if isinstance(model, AnomalyModule):
+            return model
+
+        msg = f"Model is not an instance of AnomalyModule: {model}"
+        raise ValueError(msg)

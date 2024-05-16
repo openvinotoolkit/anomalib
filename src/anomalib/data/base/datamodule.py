@@ -6,6 +6,7 @@
 
 import logging
 from abc import ABC, abstractmethod
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from lightning.pytorch import LightningDataModule
@@ -289,3 +290,30 @@ class AnomalibDataModule(LightningDataModule, ABC):
         if self.image_size:
             return Resize(self.image_size, antialias=True)
         return None
+
+    @classmethod
+    def from_config(
+        cls: type["AnomalibDataModule"],
+        config_path: str | Path,
+        **kwargs,
+    ) -> "AnomalibDataModule":
+        """Create a datamodule instance from the configuration."""
+        from jsonargparse import ArgumentParser
+
+        if not Path(config_path).exists():
+            msg = f"Configuration file not found: {config_path}"
+            raise FileNotFoundError(msg)
+
+        data_parser = ArgumentParser()
+        data_parser.add_subclass_arguments(AnomalibDataModule, "data", required=False, fail_untyped=False)
+        args = ["--data", str(config_path)]
+        for key, value in kwargs.items():
+            args.extend([f"--{key}", str(value)])
+        config = data_parser.parse_args(args=args)
+        instantiated_classes = data_parser.instantiate_classes(config)
+        datamodule = instantiated_classes.get("data")
+        if isinstance(datamodule, AnomalibDataModule):
+            return datamodule
+
+        msg = f"Datamodule is not an instance of AnomalibDataModule: {datamodule}"
+        raise ValueError(msg)
