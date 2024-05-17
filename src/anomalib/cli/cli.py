@@ -229,10 +229,15 @@ class AnomalibCLI:
             fail_untyped=False,
             required=True,
         )
+        parser.add_argument(
+            "--data",
+            type=AnomalibDataModule,
+            required=False,
+        )
         added = parser.add_method_arguments(
             Engine,
             "export",
-            skip={"ov_args", "model"},
+            skip={"ov_args", "model", "datamodule"},
         )
         self.subcommand_method_arguments["export"] = added
         add_openvino_export_arguments(parser)

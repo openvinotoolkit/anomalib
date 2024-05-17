@@ -17,7 +17,8 @@ from torch import nn
 from torchvision.transforms.v2 import Transform
 
 from anomalib import TaskType
-from anomalib.deploy.export import ExportType, InferenceModel
+from anomalib.data import AnomalibDataModule
+from anomalib.deploy.export import CompressionType, ExportType, InferenceModel
 from anomalib.utils.exceptions import try_import
 
 if TYPE_CHECKING:
@@ -156,6 +157,8 @@ class ExportMixin:
         export_root: Path | str,
         input_size: tuple[int, int] | None = None,
         transform: Transform | None = None,
+        compression_type: CompressionType | None = None,
+        datamodule: AnomalibDataModule | None = None,
         ov_args: dict[str, Any] | None = None,
         task: TaskType | None = None,
     ) -> Path:
@@ -168,7 +171,12 @@ class ExportMixin:
             transform (Transform, optional): Input transforms used for the model. If not provided, the transform is
                 taken from the model.
                 Defaults to ``None``.
-            ov_args: Model optimizer arguments for OpenVINO model conversion.
+            compression_type (CompressionType, optional): Compression type for better inference performance.
+                Defaults to ``None``.
+            datamodule (AnomalibDataModule | None, optional): Lightning datamodule.
+                Must be provided if CompressionType.INT8_PTQ is selected.
+                Defaults to ``None``.
+            ov_args (dict | None): Model optimizer arguments for OpenVINO model conversion.
                 Defaults to ``None``.
             task (TaskType | None): Task type.
                 Defaults to ``None``.
@@ -213,7 +221,11 @@ class ExportMixin:
         if not try_import("openvino"):
             logger.exception("Could not find OpenVINO. Please check OpenVINO installation.")
             raise ModuleNotFoundError
+        if not try_import("nncf"):
+            logger.exception("Could not find NNCF. Please check NNCF installation.")
+            raise ModuleNotFoundError
 
+        import nncf
         import openvino as ov
 
         with TemporaryDirectory() as onnx_directory:
@@ -221,10 +233,25 @@ class ExportMixin:
             export_root = _create_export_root(export_root, ExportType.OPENVINO)
             ov_model_path = export_root / "model.xml"
             ov_args = {} if ov_args is None else ov_args
-            # fp16 compression is enabled by default
-            compress_to_fp16 = ov_args.get("compress_to_fp16", True)
 
             model = ov.convert_model(model_path, **ov_args)
+            if compression_type == CompressionType.INT8:
+                model = nncf.compress_weights(model)
+            elif compression_type == CompressionType.INT8_PTQ:
+                if datamodule is None:
+                    msg = "Datamodule must be provided for OpenVINO INT8_PTQ compression"
+                    raise ValueError(msg)
+
+                dataloader = datamodule.val_dataloader()
+                if len(dataloader.dataset) < 300:
+                    logger.warning(
+                        f">300 images recommended for INT8 quantization, found only {len(dataloader.dataset)} images",
+                    )
+                calibration_dataset = nncf.Dataset(dataloader, lambda x: x["image"])
+                model = nncf.quantize(model, calibration_dataset)
+
+            # fp16 compression is enabled by default
+            compress_to_fp16 = compression_type == CompressionType.FP16
             ov.save_model(model, ov_model_path, compress_to_fp16=compress_to_fp16)
             _write_metadata_to_json(self._get_metadata(task), export_root)
 
