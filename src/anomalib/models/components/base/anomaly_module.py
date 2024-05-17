@@ -283,8 +283,32 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
         config_path: str | Path,
         **kwargs,
     ) -> "AnomalyModule":
-        """Create a model instance from the configuration."""
+        """Create a model instance from the configuration.
+
+        Args:
+            config_path (str | Path): Path to the model configuration file.
+            **kwargs (dict): Additional keyword arguments.
+
+        Returns:
+            AnomalyModule: model instance.
+
+        Example:
+            The following example shows how to get model from patchcore.yaml:
+
+            .. code-block:: python
+                >>> model_config = "configs/model/patchcore.yaml"
+                >>> model = AnomalyModule.from_config(config_path=model_config)
+
+            The following example shows overriding the configuration file with additional keyword arguments:
+
+            .. code-block:: python
+                >>> override_kwargs = {"model.pre_trained": False}
+                >>> model = AnomalyModule.from_config(config_path=model_config, **override_kwargs)
+        """
         from jsonargparse import ActionConfigFile, ArgumentParser
+        from lightning.pytorch import Trainer
+
+        from anomalib import TaskType
 
         if not Path(config_path).exists():
             msg = f"Configuration file not found: {config_path}"
@@ -298,6 +322,11 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
             help="Path to a configuration file in json or yaml format.",
         )
         model_parser.add_subclass_arguments(AnomalyModule, "model", required=False, fail_untyped=False)
+        model_parser.add_argument("--task", type=TaskType | str, default=TaskType.SEGMENTATION)
+        model_parser.add_argument("--metrics.image", type=list[str] | str | None, default=["F1Score", "AUROC"])
+        model_parser.add_argument("--metrics.pixel", type=list[str] | str | None, default=None, required=False)
+        model_parser.add_argument("--metrics.threshold", type=BaseThreshold | str, default="F1AdaptiveThreshold")
+        model_parser.add_class_arguments(Trainer, "trainer", fail_untyped=False, instantiate=False, sub_configs=True)
         args = ["--config", str(config_path)]
         for key, value in kwargs.items():
             args.extend([f"--{key}", str(value)])

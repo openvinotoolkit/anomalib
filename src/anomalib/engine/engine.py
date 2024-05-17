@@ -958,18 +958,37 @@ class Engine:
     def from_config(
         cls: type["Engine"],
         config_path: str | Path,
-        **kwargs: dict,
+        **kwargs,
     ) -> tuple["Engine", AnomalyModule, AnomalibDataModule]:
         """Create an Engine instance from a configuration file.
 
         Args:
-            config_path (str | Path): Path to the configuration file.
+            config_path (str | Path): Path to the full configuration file.
             **kwargs (dict): Additional keyword arguments.
 
         Returns:
-            Engine: Engine instance.
+            tuple[Engine, AnomalyModule, AnomalibDataModule]: Engine instance.
+
+        Example:
+            The following example shows training with full configuration file:
+
+            .. code-block:: python
+                >>> config_path = "anomalib_full_config.yaml"
+                >>> engine, model, datamodule = Engine.from_config(config_path=config_path)
+                >>> engine.fit(datamodule=datamodule, model=model)
+
+            The following example shows overriding the configuration file with additional keyword arguments:
+
+            .. code-block:: python
+                >>> override_kwargs = {"data.train_batch_size": 8}
+                >>> engine, model, datamodule = Engine.from_config(config_path=config_path, **override_kwargs)
+                >>> engine.fit(datamodule=datamodule, model=model)
         """
         from anomalib.cli.cli import AnomalibCLI
+
+        if not Path(config_path).exists():
+            msg = f"Configuration file not found: {config_path}"
+            raise FileNotFoundError(msg)
 
         args = [
             "fit",

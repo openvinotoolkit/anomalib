@@ -297,7 +297,28 @@ class AnomalibDataModule(LightningDataModule, ABC):
         config_path: str | Path,
         **kwargs,
     ) -> "AnomalibDataModule":
-        """Create a datamodule instance from the configuration."""
+        """Create a datamodule instance from the configuration.
+
+        Args:
+            config_path (str | Path): Path to the data configuration file.
+            **kwargs (dict): Additional keyword arguments.
+
+        Returns:
+            AnomalibDataModule: Datamodule instance.
+
+        Example:
+            The following example shows how to get datamodule from mvtec.yaml:
+
+            .. code-block:: python
+                >>> data_config = "configs/data/mvtec.yaml"
+                >>> datamodule = AnomalibDataModule.from_config(config_path=data_config)
+
+            The following example shows overriding the configuration file with additional keyword arguments:
+
+            .. code-block:: python
+                >>> override_kwargs = {"data.train_batch_size": 8}
+                >>> datamodule = AnomalibDataModule.from_config(config_path=data_config, **override_kwargs)
+        """
         from jsonargparse import ArgumentParser
 
         if not Path(config_path).exists():
