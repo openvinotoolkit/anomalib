@@ -9,4 +9,4 @@ model:
     latent_dim: 220
 
 trainer:
-  max_epochs: 6
+  max_epochs: 220
