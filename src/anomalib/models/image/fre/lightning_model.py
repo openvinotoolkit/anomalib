@@ -109,7 +109,7 @@ class Fre(AnomalyModule):
     @property
     def trainer_arguments(self) -> dict[str, Any]:
         """Return FRE-specific trainer arguments."""
-        return {"gradient_clip_val": 0, "max_epochs": 22, "num_sanity_val_steps": 0}
+        return {"gradient_clip_val": 0, "max_epochs": 220, "num_sanity_val_steps": 0}
 
     @property
     def learning_type(self) -> LearningType:
