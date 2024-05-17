@@ -14,6 +14,7 @@ from lightning.pytorch.loggers import Logger
 from lightning.pytorch.trainer import Trainer
 from lightning.pytorch.utilities.types import _EVALUATE_OUTPUT, _PREDICT_OUTPUT, EVAL_DATALOADERS, TRAIN_DATALOADERS
 from torch.utils.data import DataLoader, Dataset
+from torchmetrics import Metric
 from torchvision.transforms.v2 import Transform
 
 from anomalib import LearningType, TaskType
@@ -871,6 +872,7 @@ class Engine:
         transform: Transform | None = None,
         compression_type: CompressionType | None = None,
         datamodule: AnomalibDataModule | None = None,
+        metric: Metric | str | None = None,
         ov_args: dict[str, Any] | None = None,
         ckpt_path: str | Path | None = None,
     ) -> Path | None:
@@ -890,6 +892,9 @@ class Engine:
                 Defaults to ``None``.
             datamodule (AnomalibDataModule | None, optional): Lightning datamodule.
                 Must be provided if CompressionType.INT8_PTQ is selected.
+                Defaults to ``None``.
+            metric (Metric | str | None, optional): Metric to measure quality loss when quantizing.
+                Must be provided if CompressionType.INT8_ACQ is selected.
                 Defaults to ``None``.
             ov_args (dict[str, Any] | None, optional): This is optional and used only for OpenVINO's model optimizer.
                 Defaults to None.
@@ -954,6 +959,7 @@ class Engine:
                 task=self.task,
                 compression_type=compression_type,
                 datamodule=datamodule,
+                metric=metric,
                 ov_args=ov_args,
             )
         else:

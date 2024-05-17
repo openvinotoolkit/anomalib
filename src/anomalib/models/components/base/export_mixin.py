@@ -6,7 +6,7 @@
 
 import json
 import logging
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING, Any
@@ -14,11 +14,13 @@ from typing import TYPE_CHECKING, Any
 import numpy as np
 import torch
 from torch import nn
+from torchmetrics import Metric
 from torchvision.transforms.v2 import Transform
 
 from anomalib import TaskType
 from anomalib.data import AnomalibDataModule
 from anomalib.deploy.export import CompressionType, ExportType, InferenceModel
+from anomalib.metrics import create_metric_collection
 from anomalib.utils.exceptions import try_import
 
 if TYPE_CHECKING:
@@ -159,6 +161,7 @@ class ExportMixin:
         transform: Transform | None = None,
         compression_type: CompressionType | None = None,
         datamodule: AnomalibDataModule | None = None,
+        metric: Metric | str | None = None,
         ov_args: dict[str, Any] | None = None,
         task: TaskType | None = None,
     ) -> Path:
@@ -175,6 +178,9 @@ class ExportMixin:
                 Defaults to ``None``.
             datamodule (AnomalibDataModule | None, optional): Lightning datamodule.
                 Must be provided if CompressionType.INT8_PTQ is selected.
+                Defaults to ``None``.
+            metric (Metric | str | None, optional): Metric to measure quality loss when quantizing.
+                Must be provided if CompressionType.INT8_ACQ is selected.
                 Defaults to ``None``.
             ov_args (dict | None): Model optimizer arguments for OpenVINO model conversion.
                 Defaults to ``None``.
@@ -242,13 +248,43 @@ class ExportMixin:
                     msg = "Datamodule must be provided for OpenVINO INT8_PTQ compression"
                     raise ValueError(msg)
 
-                dataloader = datamodule.val_dataloader()
+                dataloader = datamodule.train_dataloader()
                 if len(dataloader.dataset) < 300:
                     logger.warning(
                         f">300 images recommended for INT8 quantization, found only {len(dataloader.dataset)} images",
                     )
+
                 calibration_dataset = nncf.Dataset(dataloader, lambda x: x["image"])
                 model = nncf.quantize(model, calibration_dataset)
+            elif compression_type == CompressionType.INT8_ACQ:
+                if datamodule is None:
+                    msg = "Datamodule must be provided for OpenVINO INT8_PTQ compression"
+                    raise ValueError(msg)
+                if metric is None:
+                    msg = "Metric must be provided for OpenVINO INT8_ACQ compression"
+                    raise ValueError(msg)
+
+                dataloader = datamodule.train_dataloader()
+                if len(dataloader.dataset) < 300:
+                    logger.warning(
+                        f">300 images recommended for INT8 quantization, found only {len(dataloader.dataset)} images",
+                    )
+
+                calibration_dataset = nncf.Dataset(dataloader, lambda x: x["image"])
+                validation_dataset = nncf.Dataset(datamodule.val_dataloader())
+
+                if isinstance(metric, str):
+                    metric = create_metric_collection([metric])[metric]
+
+                # validation function to evaluate the quality loss after quantization
+                def val_fn(nncf_model: ov.CompiledModel, validation_data: Iterable) -> float:
+                    for batch in validation_data:
+                        preds = torch.from_numpy(nncf_model(batch["image"])[0])
+                        target = batch["mask"]
+                        metric.update(preds, target)
+                    return metric.compute()
+
+                model = nncf.quantize_with_accuracy_control(model, calibration_dataset, validation_dataset, val_fn)
 
             # fp16 compression is enabled by default
             compress_to_fp16 = compression_type == CompressionType.FP16

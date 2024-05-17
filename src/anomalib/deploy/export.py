@@ -57,6 +57,12 @@ class CompressionType(str, Enum):
     Full integer post-training quantization (INT8)
     All weights and operations are quantized to INT8. Inference is done in INT8 precision.
     """
+    INT8_ACQ = "int8_acq"
+    """
+    Accuracy-control quantization (INT8)
+    Weights and operations are quantized to INT8, except those that would degrade quality of the model more than is
+    acceptable. Inference is done in mixed precision.
+    """
 
 
 class InferenceModel(nn.Module):
