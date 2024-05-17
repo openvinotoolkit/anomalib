@@ -953,3 +953,33 @@ class Engine:
         if exported_model_path:
             logging.info(f"Exported model to {exported_model_path}")
         return exported_model_path
+
+    @classmethod
+    def from_config(
+        cls: type["Engine"],
+        config_path: str | Path,
+        **kwargs: dict,
+    ) -> tuple["Engine", AnomalyModule, AnomalibDataModule]:
+        """Create an Engine instance from a configuration file.
+
+        Args:
+            config_path (str | Path): Path to the configuration file.
+            **kwargs (dict): Additional keyword arguments.
+
+        Returns:
+            Engine: Engine instance.
+        """
+        from anomalib.cli.cli import AnomalibCLI
+
+        args = [
+            "fit",
+            "--config",
+            str(config_path),
+        ]
+        for key, value in kwargs.items():
+            args.extend([f"--{key}", str(value)])
+        anomalib_cli = AnomalibCLI(
+            args=args,
+            run=False,
+        )
+        return anomalib_cli.engine, anomalib_cli.model, anomalib_cli.datamodule
