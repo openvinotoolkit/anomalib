@@ -18,7 +18,7 @@ authors = [{ name = "Intel OpenVINO" }]
 dependencies = [
     "omegaconf>=2.1.1",
     "rich>=13.5.2",
-    "jsonargparse[all]>=4.27.7",
+    "jsonargparse[signatures]>=4.27.7",
     "docstring_parser",     # CLI help-formatter
     "rich_argparse",        # CLI help-formatter
 ]
@@ -39,12 +39,13 @@ core = [
     "torchmetrics>=1.3.2",
     "open-clip-torch>=2.23.0",
 ]
-openvino = ["openvino-dev>=2023.0", "nncf>=2.5.0", "onnx>=1.16.0"]
+openvino = ["openvino>=2024.0", "nncf>=2.10.0", "onnx>=1.16.0"]
 loggers = [
     "comet-ml>=3.31.7",
     "gradio>=4",
     "tensorboard",
-    "wandb==0.12.17",
+    "wandb>=0.12.17,<=0.15.9",
+    "mlflow >=1.0.0",
 ]
 notebooks = ["gitpython", "ipykernel", "ipywidgets", "notebook"]
 docs = [
@@ -204,8 +205,6 @@ src = ["src", "tests"]
 # Unlike Flake8, default to a complexity level of 10.
 max-complexity = 15
 
-[tool.ruff.per-file-ignores]
-"tests/nightly/tools/benchmarking/test_benchmarking.py" = ["E402"]
 
 [tool.ruff.pydocstyle]
 convention = "google"
