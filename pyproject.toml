@@ -10,7 +10,7 @@ dynamic = ["version"]
 readme = "README.md"
 description = "anomalib - Anomaly Detection Library"
 requires-python = ">=3.10"
-license = { file = "LICENSE" }
+license = { file = "LICENSE", text = "Apache-2.0" }
 authors = [{ name = "Intel OpenVINO" }]
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
