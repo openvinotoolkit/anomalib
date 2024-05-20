@@ -16,7 +16,7 @@ In the anomaly classification stage, the features are first reduced to the first
 
 ## Usage
 
-`python tools/train.py --model dfkde`
+`anomalib train --model Dfkde --data MVTec --data.category <category>`
 
 ## Benchmark
 
