@@ -35,7 +35,6 @@ All results gathered with seed `42`.
 | ResNet-50      | 0.933 | 0.951  | 0.817 |    1    | 0.991 | 0.988 | 0.996  | 0.931 |  0.887  |  0.974   |   0.902   | 0.951 | 0.798 |   0.908    |   0.943    | 0.957  |
 | Wide ResNet-50 | 0.947 | 0.928  | 0.909 |    1    | 0.991 | 0.950 | 0.996  | 0.944 |  0.908  |  0.973   |   0.933   | 0.971 | 0.827 |   0.950    |   0.963    | 0.968  |
 
-
 ### Image F1 Score
 
 |                |  Avg  | Carpet | Grid  | Leather | Tile  | Wood  | Bottle | Cable | Capsule | Hazelnut | Metal Nut | Pill  | Screw | Toothbrush | Transistor | Zipper |
