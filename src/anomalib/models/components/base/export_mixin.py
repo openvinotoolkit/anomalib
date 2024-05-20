@@ -180,7 +180,8 @@ class ExportMixin:
                 Must be provided if CompressionType.INT8_PTQ is selected.
                 Defaults to ``None``.
             metric (Metric | str | None, optional): Metric to measure quality loss when quantizing.
-                Must be provided if CompressionType.INT8_ACQ is selected.
+                Must be provided if CompressionType.INT8_ACQ is selected and must return higher value for better
+                performance of the model.
                 Defaults to ``None``.
             ov_args (dict | None): Model optimizer arguments for OpenVINO model conversion.
                 Defaults to ``None``.
@@ -224,11 +225,8 @@ class ExportMixin:
             ...     task="segmentation",
             ... )
         """
-        if not try_import("openvino"):
-            logger.exception("Could not find OpenVINO. Please check OpenVINO installation.")
-            raise ModuleNotFoundError
-        if not try_import("nncf"):
-            logger.exception("Could not find NNCF. Please check NNCF installation.")
+        if not try_import("openvino") or not try_import("nncf"):
+            logger.exception("Could not find OpenVINO or NCCF. Please check OpenVINO and NNCF installation.")
             raise ModuleNotFoundError
 
         import nncf
@@ -241,6 +239,8 @@ class ExportMixin:
             ov_args = {} if ov_args is None else ov_args
 
             model = ov.convert_model(model_path, **ov_args)
+            model_input = model.input(0)
+
             if compression_type == CompressionType.INT8:
                 model = nncf.compress_weights(model)
             elif compression_type == CompressionType.INT8_PTQ:
@@ -248,6 +248,8 @@ class ExportMixin:
                     msg = "Datamodule must be provided for OpenVINO INT8_PTQ compression"
                     raise ValueError(msg)
 
+                if model_input.partial_shape[0].is_static:
+                    datamodule.train_batch_size = model_input.shape[0]
                 dataloader = datamodule.train_dataloader()
                 if len(dataloader.dataset) < 300:
                     logger.warning(
@@ -264,6 +266,9 @@ class ExportMixin:
                     msg = "Metric must be provided for OpenVINO INT8_ACQ compression"
                     raise ValueError(msg)
 
+                if model_input.partial_shape[0].is_static:
+                    datamodule.train_batch_size = model_input.shape[0]
+                    datamodule.eval_batch_size = model_input.shape[0]
                 dataloader = datamodule.train_dataloader()
                 if len(dataloader.dataset) < 300:
                     logger.warning(
@@ -280,7 +285,7 @@ class ExportMixin:
                 def val_fn(nncf_model: ov.CompiledModel, validation_data: Iterable) -> float:
                     for batch in validation_data:
                         preds = torch.from_numpy(nncf_model(batch["image"])[0])
-                        target = batch["mask"]
+                        target = batch["mask"][:, None, :, :]
                         metric.update(preds, target)
                     return metric.compute()
 

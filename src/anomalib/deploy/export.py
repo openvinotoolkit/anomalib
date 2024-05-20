@@ -61,7 +61,7 @@ class CompressionType(str, Enum):
     """
     Accuracy-control quantization (INT8)
     Weights and operations are quantized to INT8, except those that would degrade quality of the model more than is
-    acceptable. Inference is done in mixed precision.
+    acceptable. Inference is done in a mixed precision.
     """
 
 
