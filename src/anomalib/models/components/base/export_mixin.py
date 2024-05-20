@@ -285,7 +285,7 @@ class ExportMixin:
                 def val_fn(nncf_model: ov.CompiledModel, validation_data: Iterable) -> float:
                     for batch in validation_data:
                         preds = torch.from_numpy(nncf_model(batch["image"])[0])
-                        target = batch["mask"][:, None, :, :]
+                        target = batch["mask"][:, None, :, :] if task == TaskType.SEGMENTATION else batch["label"]
                         metric.update(preds, target)
                     return metric.compute()
 
