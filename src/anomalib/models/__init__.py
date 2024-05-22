@@ -3,7 +3,6 @@
 # Copyright (C) 2022-2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 import logging
 from importlib import import_module
 
@@ -24,6 +23,7 @@ from .image import (
     EfficientAd,
     Fastflow,
     Ganomaly,
+    Llm,
     Padim,
     Patchcore,
     ReverseDistillation,
@@ -58,6 +58,7 @@ __all__ = [
     "Uflow",
     "AiVad",
     "WinClip",
+    "Llm",
 ]
 
 logger = logging.getLogger(__name__)

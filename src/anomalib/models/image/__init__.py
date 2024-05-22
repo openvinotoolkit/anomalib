@@ -13,6 +13,7 @@ from .dsr import Dsr
 from .efficient_ad import EfficientAd
 from .fastflow import Fastflow
 from .ganomaly import Ganomaly
+from .llm import Llm
 from .padim import Padim
 from .patchcore import Patchcore
 from .reverse_distillation import ReverseDistillation
@@ -39,4 +40,5 @@ __all__ = [
     "Stfpm",
     "Uflow",
     "WinClip",
+    "Llm",
 ]
