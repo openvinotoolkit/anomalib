@@ -13,7 +13,7 @@ from importlib.metadata import requires
 from pathlib import Path
 from warnings import warn
 
-from pkg_resources import Requirement
+from packaging.requirements import Requirement
 
 AVAILABLE_TORCH_VERSIONS = {
     "2.0.0": {"torchvision": "0.15.1", "cuda": ("11.7", "11.8")},
@@ -293,7 +293,7 @@ def add_hardware_suffix_to_torch(
             Defaults to False.
 
     Examples:
-        >>> from pkg_resources import Requirement
+        >>> from packaging.requirements import Requirement
         >>> req = "torch>=1.13.0, <=2.0.1"
         >>> requirement = Requirement.parse(req)
         >>> requirement.name, requirement.specs
@@ -364,7 +364,7 @@ def get_torch_install_args(requirement: str | Requirement) -> list[str]:
         RuntimeError: If the OS is not supported.
 
     Example:
-        >>> from pkg_resources import Requirement
+        >>> from packaging.requirements import Requirement
         >>> requriment = "torch>=1.13.0"
         >>> get_torch_install_args(requirement)
         ['--extra-index-url', 'https://download.pytorch.org/whl/cpu',

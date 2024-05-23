@@ -18,7 +18,7 @@ from urllib.parse import urlparse
 import requests
 import torch
 from PIL import Image
-from pkg_resources import packaging
+from packaging import version
 from torchvision.transforms import CenterCrop, Compose, Normalize, Resize, ToTensor
 from tqdm import tqdm
 
@@ -33,7 +33,7 @@ except ImportError:
     BICUBIC = Image.BICUBIC
 
 
-if packaging.version.parse(torch.__version__) < packaging.version.parse("1.7.1"):
+if version.parse(torch.__version__) < version.parse("1.7.1"):
     msg = "PyTorch version 1.7.1 or higher is recommended"
     logger.warn(msg)
 

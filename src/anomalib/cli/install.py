@@ -5,7 +5,7 @@
 
 import logging
 
-from pkg_resources import Requirement
+from packaging.requirements import Requirement
 from rich.console import Console
 from rich.logging import RichHandler
 

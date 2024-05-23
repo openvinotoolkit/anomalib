@@ -21,6 +21,7 @@ dependencies = [
     "jsonargparse[signatures]>=4.27.7",
     "docstring_parser",     # CLI help-formatter
     "rich_argparse",        # CLI help-formatter
+    "packaging"
 ]
 
 [project.optional-dependencies]
