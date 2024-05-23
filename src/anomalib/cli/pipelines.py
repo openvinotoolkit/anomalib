@@ -14,10 +14,10 @@ from anomalib.utils.exceptions import try_import
 logger = logging.getLogger(__name__)
 
 if try_import("anomalib.pipelines"):
-    from anomalib.pipelines import Benchmark
+    from anomalib.pipelines import HPO, Benchmark
     from anomalib.pipelines.components.base import Pipeline
 
-    PIPELINE_REGISTRY: dict[str, type[Pipeline]] | None = {"benchmark": Benchmark}
+    PIPELINE_REGISTRY: dict[str, type[Pipeline]] | None = {"benchmark": Benchmark, "hpo": HPO}
 else:
     PIPELINE_REGISTRY = None
 

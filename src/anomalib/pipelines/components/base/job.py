@@ -65,7 +65,7 @@ class JobGenerator(ABC):
     @abstractmethod
     def generate_jobs(
         self,
-        args: dict | None = None,
+        config: dict | None = None,
         prev_stage_result: PREV_STAGE_RESULT = None,
     ) -> Generator[Job, None, None]:
         """Return an iterator based on the arguments.

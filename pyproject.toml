@@ -41,7 +41,7 @@ core = [
 ]
 openvino = ["openvino-dev>=2023.1", "nncf>=2.6.0", "onnx>=1.16.0"]
 loggers = [
-    "comet-ml>=3.31.7",
+    "comet-ml>=3.38.1",
     "gradio>=4",
     "tensorboard",
     "wandb>=0.12.17,<=0.15.9",
