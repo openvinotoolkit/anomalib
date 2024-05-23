@@ -1,8 +1,7 @@
 """Load Anomaly Model."""
 
-# Copyright (C) 2022-2023 Intel Corporation
+# Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
-
 
 import logging
 from importlib import import_module
@@ -23,6 +22,7 @@ from .image import (
     Dsr,
     EfficientAd,
     Fastflow,
+    Fre,
     Ganomaly,
     Padim,
     Patchcore,
@@ -49,6 +49,7 @@ __all__ = [
     "Dsr",
     "EfficientAd",
     "Fastflow",
+    "Fre",
     "Ganomaly",
     "Padim",
     "Patchcore",

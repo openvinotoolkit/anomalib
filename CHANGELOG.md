@@ -10,9 +10,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 - 🚀 Update OpenVINO and ONNX export to support fixed input shape by @adrianboguszewski in https://github.com/openvinotoolkit/anomalib/pull/2006
 - Add data_path argument to predict entrypoint and add properties for retrieving model path by @djdameln in https://github.com/openvinotoolkit/anomalib/pull/2018
+- 🚀 Add compression and quantization for OpenVINO export by @adrianboguszewski in https://github.com/openvinotoolkit/anomalib/pull/2052
 
 ### Changed
 
+- WinCLIP: set device in text embedding collection and apply forward pass with no grad, by @djdameln in https://github.com/openvinotoolkit/anomalib/pull/1984
 - 🔨 Move all export functionalities to AnomalyModule as base methods by @thinhngo-x in (<https://github.com/openvinotoolkit/anomalib/pull/1803>)
 - Remove unnecessary jsonargparse dependencies by @davnn in (<https://github.com/openvinotoolkit/anomalib/pull/2046>)
 - Use default model-specific eval transform when only train_transform specified by @djdameln(https://github.com/djdameln) in (<https://github.com/openvinotoolkit/anomalib/pull/1953>)

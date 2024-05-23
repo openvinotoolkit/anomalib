@@ -26,7 +26,7 @@ from anomalib.callbacks.thresholding import _ThresholdCallback
 from anomalib.callbacks.timer import TimerCallback
 from anomalib.callbacks.visualizer import _VisualizationCallback
 from anomalib.data import AnomalibDataModule, AnomalibDataset, PredictDataset
-from anomalib.deploy import ExportType
+from anomalib.deploy import CompressionType, ExportType
 from anomalib.models import AnomalyModule
 from anomalib.utils.normalization import NormalizationMethod
 from anomalib.utils.path import create_versioned_dir
@@ -869,6 +869,8 @@ class Engine:
         export_root: str | Path | None = None,
         input_size: tuple[int, int] | None = None,
         transform: Transform | None = None,
+        compression_type: CompressionType | None = None,
+        datamodule: AnomalibDataModule | None = None,
         ov_args: dict[str, Any] | None = None,
         ckpt_path: str | Path | None = None,
     ) -> Path | None:
@@ -883,6 +885,11 @@ class Engine:
                 and OpenVINO format. Defaults to None.
             transform (Transform | None, optional): Input transform to include in the exported model. If not provided,
                 the engine will try to use the default transform from the model.
+                Defaults to ``None``.
+            compression_type (CompressionType | None, optional): Compression type for OpenVINO exporting only.
+                Defaults to ``None``.
+            datamodule (AnomalibDataModule | None, optional): Lightning datamodule.
+                Must be provided if CompressionType.INT8_PTQ is selected.
                 Defaults to ``None``.
             ov_args (dict[str, Any] | None, optional): This is optional and used only for OpenVINO's model optimizer.
                 Defaults to None.
@@ -910,7 +917,7 @@ class Engine:
                 anomalib export --model Padim --export_mode openvino --ckpt_path <PATH_TO_CHECKPOINT> \
                 --input_size "[256,256]"
                 ```
-            4. You can also overrride OpenVINO model optimizer by adding the ``--ov_args.<key>`` arguments.
+            4. You can also override OpenVINO model optimizer by adding the ``--ov_args.<key>`` arguments.
                 ```python
                 anomalib export --model Padim --export_mode openvino --ckpt_path <PATH_TO_CHECKPOINT> \
                 --input_size "[256,256]" --ov_args.compress_to_fp16 False
@@ -945,6 +952,8 @@ class Engine:
                 input_size=input_size,
                 transform=transform,
                 task=self.task,
+                compression_type=compression_type,
+                datamodule=datamodule,
                 ov_args=ov_args,
             )
         else:

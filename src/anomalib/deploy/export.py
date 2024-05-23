@@ -33,6 +33,32 @@ class ExportType(str, Enum):
     TORCH = "torch"
 
 
+class CompressionType(str, Enum):
+    """Model compression type when exporting to OpenVINO.
+
+    Examples:
+        >>> from anomalib.deploy import CompressionType
+        >>> CompressionType.INT8_PTQ
+        'int8_ptq'
+    """
+
+    FP16 = "fp16"
+    """
+    Weight compression (FP16)
+    All weights are converted to FP16.
+    """
+    INT8 = "int8"
+    """
+    Weight compression (INT8)
+    All weights are quantized to INT8, but are dequantized to floating point before inference.
+    """
+    INT8_PTQ = "int8_ptq"
+    """
+    Full integer post-training quantization (INT8)
+    All weights and operations are quantized to INT8. Inference is done in INT8 precision.
+    """
+
+
 class InferenceModel(nn.Module):
     """Inference model for export.
 
