@@ -13,6 +13,19 @@ requires-python = ">=3.10"
 license = { file = "LICENSE" }
 authors = [{ name = "Intel OpenVINO" }]
 
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # REQUIREMENTS                                                                #
 dependencies = [
@@ -33,7 +46,7 @@ core = [
     "matplotlib>=3.4.3",
     "opencv-python>=4.5.3.56",
     "pandas>=1.1.0",
-    "timm>=0.5.4,<=0.9.16",
+    "timm>=0.5.4,<=1.0.3",
     "lightning>=2.2",
     "torch>=2",
     "torchmetrics>=1.3.2",
