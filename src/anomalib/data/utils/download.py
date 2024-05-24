@@ -290,7 +290,7 @@ def extract(file_name: Path, root: Path) -> None:
         root (Path): Root directory where the dataset will be stored.
 
     """
-    logger.info("Extracting dataset into root folder.")
+    logger.info(f"Extracting dataset into {root} folder.")
 
     # Safely extract zip files
     if file_name.suffix == ".zip":
