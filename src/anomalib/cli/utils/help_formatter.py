@@ -6,7 +6,6 @@
 import argparse
 import re
 import sys
-from typing import TypeVar
 
 import docstring_parser
 from jsonargparse import DefaultHelpFormatter
@@ -38,11 +37,11 @@ except ImportError:
     print("To use other subcommand using `anomalib install`")
 
 
-def get_short_docstring(component: TypeVar) -> str:
+def get_short_docstring(component: type) -> str:
     """Get the short description from the docstring.
 
     Args:
-        component (TypeVar): The component to get the docstring from
+        component (type): The component to get the docstring from
 
     Returns:
         str: The short description

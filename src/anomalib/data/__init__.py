@@ -3,7 +3,6 @@
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 import importlib
 import logging
 from enum import Enum
@@ -29,20 +28,35 @@ DataFormat = Enum(  # type: ignore[misc]
 )
 
 
-def get_datamodule(config: DictConfig | ListConfig) -> AnomalibDataModule:
+class UnknownDatamoduleError(ModuleNotFoundError):
+    ...
+
+
+def get_datamodule(config: DictConfig | ListConfig | dict) -> AnomalibDataModule:
     """Get Anomaly Datamodule.
 
     Args:
-        config (DictConfig | ListConfig): Configuration of the anomaly model.
+        config (DictConfig | ListConfig | dict): Configuration of the anomaly model.
 
     Returns:
         PyTorch Lightning DataModule
     """
     logger.info("Loading the datamodule")
 
-    module = importlib.import_module(".".join(config.data.class_path.split(".")[:-1]))
-    dataclass = getattr(module, config.data.class_path.split(".")[-1])
-    init_args = {**config.data.get("init_args", {})}  # get dict
+    if isinstance(config, dict):
+        config = DictConfig(config)
+
+    try:
+        _config = config.data if "data" in config else config
+        if len(_config.class_path.split(".")) > 1:
+            module = importlib.import_module(".".join(_config.class_path.split(".")[:-1]))
+        else:
+            module = importlib.import_module("anomalib.data")
+    except ModuleNotFoundError as exception:
+        logger.exception(f"ModuleNotFoundError: {_config.class_path}")
+        raise UnknownDatamoduleError from exception
+    dataclass = getattr(module, _config.class_path.split(".")[-1])
+    init_args = {**_config.get("init_args", {})}  # get dict
     if "image_size" in init_args:
         init_args["image_size"] = to_tuple(init_args["image_size"])
 

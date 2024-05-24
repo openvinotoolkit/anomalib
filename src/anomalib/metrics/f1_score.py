@@ -6,7 +6,6 @@ This is added for convenience.
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 import logging
 from typing import Any, Literal
 
