@@ -39,7 +39,7 @@ class _MinMaxNormalizationCallback(NormalizationCallback):
         """Call when the test begins."""
         del trainer  # `trainer` variable is not used.
 
-        for metric in (pl_module.image_metrics, pl_module.pixel_metrics):
+        for metric in (pl_module.image_metrics, pl_module.pixel_metrics, pl_module.semantic_pixel_metrics):
             if metric is not None:
                 metric.set_threshold(0.5)
 

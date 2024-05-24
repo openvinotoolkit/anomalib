@@ -53,6 +53,7 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
 
         self.image_metrics: AnomalibMetricCollection
         self.pixel_metrics: AnomalibMetricCollection
+        self.semantic_pixel_metrics: AnomalibMetricCollection
 
         self._transform: Transform | None = None
         self._input_size: tuple[int, int] | None = None
