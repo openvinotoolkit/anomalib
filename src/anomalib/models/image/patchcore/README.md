@@ -16,7 +16,7 @@ During inference this memory bank is coreset subsampled. Coreset subsampling gen
 
 ## Usage
 
-`python tools/train.py --model patchcore`
+`anomalib train --model Patchcore --data MVTec --data.category <category>`
 
 ## Benchmark
 

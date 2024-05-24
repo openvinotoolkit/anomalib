@@ -16,7 +16,7 @@ During inference, the feature pyramids of teacher and student networks are compa
 
 ## Usage
 
-`python tools/train.py --model stfpm`
+`anomalib train --model Stfpm --data MVTec --data.category <category>`
 
 ## Benchmark
 
