@@ -891,10 +891,11 @@ class Engine:
             compression_type (CompressionType | None, optional): Compression type for OpenVINO exporting only.
                 Defaults to ``None``.
             datamodule (AnomalibDataModule | None, optional): Lightning datamodule.
-                Must be provided if CompressionType.INT8_PTQ is selected.
+                Must be provided if CompressionType.INT8_PTQ is selected (OpenVINO export only).
                 Defaults to ``None``.
             metric (Metric | str | None, optional): Metric to measure quality loss when quantizing.
-                Must be provided if CompressionType.INT8_ACQ is selected.
+                Must be provided if CompressionType.INT8_ACQ is selected and must return higher value for better
+                performance of the model (OpenVINO export only).
                 Defaults to ``None``.
             ov_args (dict[str, Any] | None, optional): This is optional and used only for OpenVINO's model optimizer.
                 Defaults to None.

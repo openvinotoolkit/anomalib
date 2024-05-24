@@ -24,7 +24,12 @@ from anomalib.metrics import create_metric_collection
 from anomalib.utils.exceptions import try_import
 
 if TYPE_CHECKING:
+    from importlib.util import find_spec
+
     from torch.types import Number
+
+    if find_spec("openvino") is not None:
+        from openvino import CompiledModel
 
 logger = logging.getLogger(__name__)
 
@@ -225,11 +230,10 @@ class ExportMixin:
             ...     task="segmentation",
             ... )
         """
-        if not try_import("openvino") or not try_import("nncf"):
-            logger.exception("Could not find OpenVINO or NCCF. Please check OpenVINO and NNCF installation.")
+        if not try_import("openvino"):
+            logger.exception("Could not find OpenVINO. Please check OpenVINO installation.")
             raise ModuleNotFoundError
 
-        import nncf
         import openvino as ov
 
         with TemporaryDirectory() as onnx_directory:
@@ -239,57 +243,7 @@ class ExportMixin:
             ov_args = {} if ov_args is None else ov_args
 
             model = ov.convert_model(model_path, **ov_args)
-            model_input = model.input(0)
-
-            if compression_type == CompressionType.INT8:
-                model = nncf.compress_weights(model)
-            elif compression_type == CompressionType.INT8_PTQ:
-                if datamodule is None:
-                    msg = "Datamodule must be provided for OpenVINO INT8_PTQ compression"
-                    raise ValueError(msg)
-
-                if model_input.partial_shape[0].is_static:
-                    datamodule.train_batch_size = model_input.shape[0]
-                dataloader = datamodule.train_dataloader()
-                if len(dataloader.dataset) < 300:
-                    logger.warning(
-                        f">300 images recommended for INT8 quantization, found only {len(dataloader.dataset)} images",
-                    )
-
-                calibration_dataset = nncf.Dataset(dataloader, lambda x: x["image"])
-                model = nncf.quantize(model, calibration_dataset)
-            elif compression_type == CompressionType.INT8_ACQ:
-                if datamodule is None:
-                    msg = "Datamodule must be provided for OpenVINO INT8_PTQ compression"
-                    raise ValueError(msg)
-                if metric is None:
-                    msg = "Metric must be provided for OpenVINO INT8_ACQ compression"
-                    raise ValueError(msg)
-
-                if model_input.partial_shape[0].is_static:
-                    datamodule.train_batch_size = model_input.shape[0]
-                    datamodule.eval_batch_size = model_input.shape[0]
-                dataloader = datamodule.train_dataloader()
-                if len(dataloader.dataset) < 300:
-                    logger.warning(
-                        f">300 images recommended for INT8 quantization, found only {len(dataloader.dataset)} images",
-                    )
-
-                calibration_dataset = nncf.Dataset(dataloader, lambda x: x["image"])
-                validation_dataset = nncf.Dataset(datamodule.val_dataloader())
-
-                if isinstance(metric, str):
-                    metric = create_metric_collection([metric])[metric]
-
-                # validation function to evaluate the quality loss after quantization
-                def val_fn(nncf_model: ov.CompiledModel, validation_data: Iterable) -> float:
-                    for batch in validation_data:
-                        preds = torch.from_numpy(nncf_model(batch["image"])[0])
-                        target = batch["mask"][:, None, :, :] if task == TaskType.SEGMENTATION else batch["label"]
-                        metric.update(preds, target)
-                    return metric.compute()
-
-                model = nncf.quantize_with_accuracy_control(model, calibration_dataset, validation_dataset, val_fn)
+            model = self._compress_ov_model(model, compression_type, datamodule, metric, task)
 
             # fp16 compression is enabled by default
             compress_to_fp16 = compression_type == CompressionType.FP16
@@ -297,6 +251,95 @@ class ExportMixin:
             _write_metadata_to_json(self._get_metadata(task), export_root)
 
         return ov_model_path
+
+    def _compress_ov_model(
+        self,
+        model: "CompiledModel",
+        compression_type: CompressionType | None = None,
+        datamodule: AnomalibDataModule | None = None,
+        metric: Metric | str | None = None,
+        task: TaskType | None = None,
+    ) -> "CompiledModel":
+        """Compress OpenVINO model with NNCF.
+
+            model (CompiledModel): Model already exported to OpenVINO format.
+            compression_type (CompressionType, optional): Compression type for better inference performance.
+                Defaults to ``None``.
+            datamodule (AnomalibDataModule | None, optional): Lightning datamodule.
+                Must be provided if CompressionType.INT8_PTQ is selected.
+                Defaults to ``None``.
+            metric (Metric | str | None, optional): Metric to measure quality loss when quantizing.
+                Must be provided if CompressionType.INT8_ACQ is selected and must return higher value for better
+                performance of the model.
+                Defaults to ``None``.
+            task (TaskType | None): Task type.
+                Defaults to ``None``.
+
+        Returns:
+            model (CompiledModel): Model in the OpenVINO format compressed with NNCF quantization.
+        """
+        if not try_import("nncf"):
+            logger.exception("Could not find NCCF. Please check NNCF installation.")
+            raise ModuleNotFoundError
+
+        import nncf
+
+        model_input = model.input(0)
+
+        # weights compression
+        if compression_type == CompressionType.INT8:
+            model = nncf.compress_weights(model)
+        # post-training quantization
+        elif compression_type == CompressionType.INT8_PTQ:
+            if datamodule is None:
+                msg = "Datamodule must be provided for OpenVINO INT8_PTQ compression"
+                raise ValueError(msg)
+
+            if model_input.partial_shape[0].is_static:
+                datamodule.train_batch_size = model_input.shape[0]
+            dataloader = datamodule.train_dataloader()
+            if len(dataloader.dataset) < 300:
+                logger.warning(
+                    f">300 images recommended for INT8 quantization, found only {len(dataloader.dataset)} images",
+                )
+
+            calibration_dataset = nncf.Dataset(dataloader, lambda x: x["image"])
+            model = nncf.quantize(model, calibration_dataset)
+        # accuracy-control quantization
+        elif compression_type == CompressionType.INT8_ACQ:
+            if datamodule is None:
+                msg = "Datamodule must be provided for OpenVINO INT8_PTQ compression"
+                raise ValueError(msg)
+            if metric is None:
+                msg = "Metric must be provided for OpenVINO INT8_ACQ compression"
+                raise ValueError(msg)
+
+            if model_input.partial_shape[0].is_static:
+                datamodule.train_batch_size = model_input.shape[0]
+                datamodule.eval_batch_size = model_input.shape[0]
+            dataloader = datamodule.train_dataloader()
+            if len(dataloader.dataset) < 300:
+                logger.warning(
+                    f">300 images recommended for INT8 quantization, found only {len(dataloader.dataset)} images",
+                )
+
+            calibration_dataset = nncf.Dataset(dataloader, lambda x: x["image"])
+            validation_dataset = nncf.Dataset(datamodule.val_dataloader())
+
+            if isinstance(metric, str):
+                metric = create_metric_collection([metric])[metric]
+
+            # validation function to evaluate the quality loss after quantization
+            def val_fn(nncf_model: "CompiledModel", validation_data: Iterable) -> float:
+                for batch in validation_data:
+                    preds = torch.from_numpy(nncf_model(batch["image"])[0])
+                    target = batch["label"] if task == TaskType.CLASSIFICATION else batch["mask"][:, None, :, :]
+                    metric.update(preds, target)
+                return metric.compute()
+
+            model = nncf.quantize_with_accuracy_control(model, calibration_dataset, validation_dataset, val_fn)
+
+        return model
 
     def _get_metadata(
         self,
