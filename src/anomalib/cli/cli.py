@@ -51,7 +51,7 @@ class AnomalibCLI:
     ``SaveConfigCallback`` overwrites the config if it already exists.
     """
 
-    def __init__(self, args: Sequence[str] | None = None) -> None:
+    def __init__(self, args: Sequence[str] | None = None, run: bool = True) -> None:
         self.parser = self.init_parser()
         self.subcommand_parsers: dict[str, ArgumentParser] = {}
         self.subcommand_method_arguments: dict[str, list[str]] = {}
@@ -61,7 +61,8 @@ class AnomalibCLI:
         if _LIGHTNING_AVAILABLE:
             self.before_instantiate_classes()
             self.instantiate_classes()
-        self._run_subcommand()
+        if run:
+            self._run_subcommand()
 
     def init_parser(self, **kwargs) -> ArgumentParser:
         """Method that instantiates the argument parser."""
