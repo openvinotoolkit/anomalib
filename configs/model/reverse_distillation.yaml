@@ -6,8 +6,6 @@ model:
       - layer1
       - layer2
       - layer3
-    beta1: 0.5
-    beta2: 0.999
     anomaly_map_mode: ADD
     pre_trained: true
 
