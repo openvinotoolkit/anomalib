@@ -41,3 +41,8 @@ class TestFolder(_TestAnomalibImageDatamodule):
         _datamodule.setup()
 
         return _datamodule
+
+    @pytest.fixture()
+    def fxt_data_config_path(self) -> str:
+        """Return the path to the test data config."""
+        return "configs/data/folder.yaml"
