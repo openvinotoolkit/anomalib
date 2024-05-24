@@ -230,7 +230,7 @@ def safe_extract(tar_file: TarFile, root: Path, members: list[TarInfo]) -> None:
 
     """
     for member in members:
-        tar_file.extract(member, root)
+        tar_file.extract(member, root, filter="data")
 
 
 def generate_hash(file_path: str | Path, algorithm: str = "sha256") -> str:
