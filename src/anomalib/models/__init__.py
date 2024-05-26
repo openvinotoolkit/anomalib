@@ -24,6 +24,7 @@ from .image import (
     Fastflow,
     Ganomaly,
     Llm,
+    Llmollama,
     Padim,
     Patchcore,
     ReverseDistillation,
@@ -59,6 +60,7 @@ __all__ = [
     "AiVad",
     "WinClip",
     "Llm",
+    "Llmollama",
 ]
 
 logger = logging.getLogger(__name__)
