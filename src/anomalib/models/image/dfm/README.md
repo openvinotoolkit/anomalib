@@ -18,7 +18,7 @@ In the anomaly classification stage, class-conditional PCA transformations and G
 
 ## Usage
 
-`python tools/train.py --model dfm`
+`anomalib train --model Dfm --data MVTec --data.category <category>`
 
 ## Benchmark
 

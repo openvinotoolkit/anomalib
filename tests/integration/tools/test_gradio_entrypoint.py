@@ -12,7 +12,7 @@ from pathlib import Path
 import pytest
 
 from anomalib import TaskType
-from anomalib.deploy import OpenVINOInferencer, TorchInferencer, export_to_openvino, export_to_torch
+from anomalib.deploy import OpenVINOInferencer, TorchInferencer
 from anomalib.models import Padim
 
 sys.path.append("tools/inference")
@@ -45,8 +45,7 @@ class TestGradioInferenceEntrypoint:
         model = Padim.load_from_checkpoint(_ckpt_path)
 
         # export torch model
-        export_to_torch(
-            model=model,
+        model.to_torch(
             export_root=_ckpt_path.parent.parent.parent,
             task=TaskType.SEGMENTATION,
         )
@@ -70,9 +69,8 @@ class TestGradioInferenceEntrypoint:
         model = Padim.load_from_checkpoint(_ckpt_path)
 
         # export OpenVINO model
-        export_to_openvino(
+        model.to_openvino(
             export_root=_ckpt_path.parent.parent.parent,
-            model=model,
             ov_args={},
             task=TaskType.SEGMENTATION,
         )

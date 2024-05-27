@@ -230,7 +230,9 @@ def safe_extract(tar_file: TarFile, root: Path, members: list[TarInfo]) -> None:
 
     """
     for member in members:
-        tar_file.extract(member, root)
+        # check if the file already exists
+        if not (root / member.name).exists():
+            tar_file.extract(member, root, filter="data")
 
 
 def generate_hash(file_path: str | Path, algorithm: str = "sha256") -> str:
@@ -288,7 +290,7 @@ def extract(file_name: Path, root: Path) -> None:
         root (Path): Root directory where the dataset will be stored.
 
     """
-    logger.info("Extracting dataset into root folder.")
+    logger.info(f"Extracting dataset into {root} folder.")
 
     # Safely extract zip files
     if file_name.suffix == ".zip":

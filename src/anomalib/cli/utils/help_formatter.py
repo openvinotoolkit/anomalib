@@ -6,7 +6,6 @@
 import argparse
 import re
 import sys
-from typing import TypeVar
 
 import docstring_parser
 from jsonargparse import DefaultHelpFormatter
@@ -20,6 +19,7 @@ REQUIRED_ARGUMENTS = {
     "validate": {"model", "model.help", "data", "data.help", "ckpt_path", "config"},
     "test": {"model", "model.help", "data", "data.help", "ckpt_path", "config"},
     "predict": {"model", "model.help", "data", "data.help", "ckpt_path", "config"},
+    "export": {"model", "model.help", "export_type", "ckpt_path", "config"},
 }
 
 try:
@@ -31,16 +31,17 @@ try:
         "validate": Engine.validate,
         "test": Engine.test,
         "predict": Engine.predict,
+        "export": Engine.export,
     }
 except ImportError:
     print("To use other subcommand using `anomalib install`")
 
 
-def get_short_docstring(component: TypeVar) -> str:
+def get_short_docstring(component: type) -> str:
     """Get the short description from the docstring.
 
     Args:
-        component (TypeVar): The component to get the docstring from
+        component (type): The component to get the docstring from
 
     Returns:
         str: The short description
