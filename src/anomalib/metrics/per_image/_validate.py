@@ -2,6 +2,9 @@
 
 `torch` is imported in the functions that use it, so this module can be used in numpy-standalone mode.
 
+TODO(jpcbertoldo): Move validations to a common place and reuse them across the codebase.
+https://github.com/openvinotoolkit/anomalib/issues/2093
+
 author: jpcbertoldo
 """
 
