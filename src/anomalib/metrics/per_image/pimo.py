@@ -195,6 +195,7 @@ class PIMOResult:
             _validate_is_threshs(self.threshs)
             _validate_is_shared_fpr(self.shared_fpr, nan_allowed=False)
             _validate_is_per_image_tprs(self.per_image_tprs, self.image_classes)
+            self.shared_fpr_metric = PIMOSharedFPRMetric(self.shared_fpr_metric).value
 
             if self.paths is not None:
                 _validate_is_source_images_paths(self.paths, expected_num_paths=self.per_image_tprs.shape[0])
@@ -361,6 +362,7 @@ class AUPIMOResult:
     def __post_init__(self) -> None:
         """Validate the inputs for the result object are consistent."""
         try:
+            self.shared_fpr_metric = PIMOSharedFPRMetric(self.shared_fpr_metric).value
             _validate.is_rate_range((self.fpr_lower_bound, self.fpr_upper_bound))
             # TODO(jpcbertoldo): warn when it's too low (use parameters from the numpy code)  # noqa: TD003
             _validate.is_num_threshs_gte2(self.num_threshs)
@@ -532,8 +534,8 @@ def pimo_curves(
     anomaly_maps: Tensor,
     masks: Tensor,
     num_threshs: int,
-    binclf_algorithm: str = BinclfAlgorithm.NUMBA,
-    shared_fpr_metric: str = PIMOSharedFPRMetric.MEAN_PERIMAGE_FPR,
+    binclf_algorithm: BinclfAlgorithm | str = BinclfAlgorithm.NUMBA,
+    shared_fpr_metric: PIMOSharedFPRMetric | str = PIMOSharedFPRMetric.MEAN_PERIMAGE_FPR,
     paths: list[str] | None = None,
 ) -> PIMOResult:
     """Compute the Per-IMage Overlap (PIMO, pronounced pee-mo) curves.
@@ -605,8 +607,8 @@ def aupimo_scores(
     anomaly_maps: Tensor,
     masks: Tensor,
     num_threshs: int = 300_000,
-    binclf_algorithm: str = BinclfAlgorithm.NUMBA,
-    shared_fpr_metric: str = PIMOSharedFPRMetric.MEAN_PERIMAGE_FPR,
+    binclf_algorithm: BinclfAlgorithm | str = BinclfAlgorithm.NUMBA,
+    shared_fpr_metric: PIMOSharedFPRMetric | str = PIMOSharedFPRMetric.MEAN_PERIMAGE_FPR,
     fpr_bounds: tuple[float, float] = (1e-5, 1e-4),
     force: bool = False,
     paths: list[str] | None = None,
@@ -745,8 +747,8 @@ class PIMO(Metric):
     def __init__(
         self,
         num_threshs: int,
-        binclf_algorithm: str = BinclfAlgorithm.NUMBA,
-        shared_fpr_metric: str = PIMOSharedFPRMetric.MEAN_PERIMAGE_FPR,
+        binclf_algorithm: BinclfAlgorithm | str = BinclfAlgorithm.NUMBA,
+        shared_fpr_metric: PIMOSharedFPRMetric | str = PIMOSharedFPRMetric.MEAN_PERIMAGE_FPR.value,
     ) -> None:
         """Per-Image Overlap (PIMO) curve.
 
@@ -770,12 +772,9 @@ class PIMO(Metric):
         _validate.is_num_threshs_gte2(num_threshs)
         self.num_threshs = num_threshs
 
-        # validate binclf_algorithm and shared_fpr_metric
-        BinclfAlgorithm.validate(binclf_algorithm)
-        self.binclf_algorithm = binclf_algorithm
-
-        PIMOSharedFPRMetric.validate(shared_fpr_metric)
-        self.shared_fpr_metric = PIMOSharedFPRMetric.MEAN_PERIMAGE_FPR
+        # validate binclf_algorithm and get string
+        self.binclf_algorithm = BinclfAlgorithm(binclf_algorithm).value
+        self.shared_fpr_metric = PIMOSharedFPRMetric(shared_fpr_metric).value
 
         self.add_state("anomaly_maps", default=[], dist_reduce_fx="cat")
         self.add_state("masks", default=[], dist_reduce_fx="cat")
@@ -888,8 +887,8 @@ class AUPIMO(PIMO):
     def __init__(
         self,
         num_threshs: int = 300_000,
-        binclf_algorithm: str = BinclfAlgorithm.NUMBA,
-        shared_fpr_metric: str = PIMOSharedFPRMetric.MEAN_PERIMAGE_FPR,
+        binclf_algorithm: BinclfAlgorithm | str = BinclfAlgorithm.NUMBA,
+        shared_fpr_metric: PIMOSharedFPRMetric | str = PIMOSharedFPRMetric.MEAN_PERIMAGE_FPR,
         fpr_bounds: tuple[float, float] = (1e-5, 1e-4),
         force: bool = False,
     ) -> None:

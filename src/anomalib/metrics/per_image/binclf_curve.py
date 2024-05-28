@@ -48,8 +48,8 @@ def _validate_is_binclf_curves(binclf_curves: Tensor, valid_threshs: Tensor | No
 def per_image_binclf_curve(
     anomaly_maps: Tensor,
     masks: Tensor,
-    algorithm: str = BinclfAlgorithm.NUMBA,
-    threshs_choice: str = BinclfThreshsChoice.MINMAX_LINSPACE,
+    algorithm: BinclfAlgorithm | str = BinclfAlgorithm.NUMBA,
+    threshs_choice: BinclfThreshsChoice | str = BinclfThreshsChoice.MINMAX_LINSPACE,
     threshs_given: Tensor | None = None,
     num_threshs: int | None = None,
 ) -> tuple[Tensor, Tensor]:

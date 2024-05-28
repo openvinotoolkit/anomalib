@@ -12,7 +12,7 @@ author: jpcbertoldo
 
 import itertools
 from collections import OrderedDict
-from typing import ClassVar
+from enum import Enum
 
 import matplotlib as mpl
 import numpy as np
@@ -25,7 +25,7 @@ from . import _validate
 # =========================================== CONSTANTS ===========================================
 
 
-class StatsOutliersPolicy:
+class StatsOutliersPolicy(Enum):
     """How to handle outliers in per-image metrics boxplots. Use them? Only high? Only low? Both?
 
     Outliers are defined as in a boxplot, i.e. values that are more than 1.5 times the interquartile range (IQR) away
@@ -37,22 +37,13 @@ class StatsOutliersPolicy:
     "both": include both high and low outliers.
     """
 
-    NONE: ClassVar[str] = "none"
-    HI: ClassVar[str] = "hi"
-    LO: ClassVar[str] = "lo"
-    BOTH: ClassVar[str] = "both"
-
-    POLICIES: ClassVar[tuple[str | None, ...]] = (None, NONE, HI, LO, BOTH)
-
-    @staticmethod
-    def validate(policy: str | None) -> None:
-        """Validate the argument `policy`."""
-        if policy not in StatsOutliersPolicy.POLICIES:
-            msg = f"Invalid `policy`. Expected one of {StatsOutliersPolicy.POLICIES}, but got {policy}."
-            raise ValueError(msg)
+    NONE: str = "none"
+    HI: str = "hi"
+    LO: str = "lo"
+    BOTH: str = "both"
 
 
-class StatsRepeatedPolicy:
+class StatsRepeatedPolicy(Enum):
     """How to handle repeated values in per-image metrics boxplots (two stats with same value). Avoid them?
 
     None | "none": do not avoid repeated values, so several stats can have the same value and image index.
@@ -60,37 +51,16 @@ class StatsRepeatedPolicy:
              with the nearest score, is selected.
     """
 
-    NONE: ClassVar[str] = "none"
-    AVOID: ClassVar[str] = "avoid"
-
-    POLICIES: ClassVar[tuple[str | None, ...]] = (None, NONE, AVOID)
-
-    @staticmethod
-    def validate(policy: str | None) -> None:
-        """Validate the argument `policy`."""
-        if policy not in StatsRepeatedPolicy.POLICIES:
-            msg = f"Invalid `policy`. Expected one of {StatsRepeatedPolicy.POLICIES}, but got {policy}."
-            raise ValueError(msg)
+    NONE: str = "none"
+    AVOID: str = "avoid"
 
 
-class StatsAlternativeHypothesis:
+class StatsAlternativeHypothesis(Enum):
     """Alternative hypothesis for the statistical tests used to compare per-image metrics."""
 
-    TWO_SIDED: ClassVar[str] = "two-sided"
-    LESS: ClassVar[str] = "less"
-    GREATER: ClassVar[str] = "greater"
-
-    ALTERNATIVES: ClassVar[tuple[str, ...]] = (TWO_SIDED, LESS, GREATER)
-
-    @staticmethod
-    def validate(alternative: str) -> None:
-        """Validate the argument `alternative`."""
-        if alternative not in StatsAlternativeHypothesis.ALTERNATIVES:
-            msg = (
-                "Invalid `alternative`. "
-                f"Expected one of {StatsAlternativeHypothesis.ALTERNATIVES}, but got {alternative}."
-            )
-            raise ValueError(msg)
+    TWO_SIDED: str = "two-sided"
+    LESS: str = "less"
+    GREATER: str = "greater"
 
 
 # =========================================== ARGS VALIDATION ===========================================
@@ -174,8 +144,8 @@ def per_image_scores_stats(
     per_image_scores: ndarray,
     images_classes: ndarray | None = None,
     only_class: int | None = None,
-    outliers_policy: str | None = StatsOutliersPolicy.NONE,
-    repeated_policy: str | None = StatsRepeatedPolicy.AVOID,
+    outliers_policy: StatsOutliersPolicy | str | None = StatsOutliersPolicy.NONE,
+    repeated_policy: StatsRepeatedPolicy | str | None = StatsRepeatedPolicy.AVOID,
     repeated_replacement_atol: float = 1e-2,
 ) -> list[dict[str, str | int | float]]:
     """Compute statistics of per-image scores (based on a boxplot's statistics).
@@ -240,8 +210,8 @@ def per_image_scores_stats(
 
         The list is sorted by increasing `stat_value`.
     """
-    StatsOutliersPolicy.validate(outliers_policy)
-    StatsRepeatedPolicy.validate(repeated_policy)
+    outliers_policy = StatsOutliersPolicy(outliers_policy)
+    repeated_policy = StatsRepeatedPolicy(repeated_policy)
     _validate_is_per_image_scores(per_image_scores)
 
     # restrain the images to the class `only_class` if given, else use all images
@@ -277,13 +247,13 @@ def per_image_scores_stats(
     outliers_lo = outliers[outliers < boxplot_stats["med"]]
     outliers_hi = outliers[outliers > boxplot_stats["med"]]
 
-    if outliers_policy in (StatsOutliersPolicy.HI, StatsOutliersPolicy.BOTH):
+    if StatsOutliersPolicy(outliers_policy) in (StatsOutliersPolicy.HI, StatsOutliersPolicy.BOTH):
         boxplot_stats = {
             **boxplot_stats,
             **{f"outhi_{idx:06}": value for idx, value in enumerate(outliers_hi)},
         }
 
-    if outliers_policy in (StatsOutliersPolicy.LO, StatsOutliersPolicy.BOTH):
+    if StatsOutliersPolicy(outliers_policy) in (StatsOutliersPolicy.LO, StatsOutliersPolicy.BOTH):
         boxplot_stats = {
             **boxplot_stats,
             **{f"outlo_{idx:06}": value for idx, value in enumerate(outliers_lo)},
@@ -299,10 +269,14 @@ def per_image_scores_stats(
         image_idx = candidate2image_idx[candidate_idx]
 
         # handle repeated values
-        if image_idx not in images_idxs_selected or repeated_policy is None:
+        if (
+            image_idx not in images_idxs_selected
+            or repeated_policy is None
+            or StatsRepeatedPolicy(repeated_policy) == StatsRepeatedPolicy.NONE
+        ):
             pass
 
-        elif repeated_policy == StatsRepeatedPolicy.AVOID:
+        elif StatsRepeatedPolicy(repeated_policy) == StatsRepeatedPolicy.AVOID:
             for other_candidate_idx in candidates_sorted:
                 other_candidate_image_idx = candidate2image_idx[other_candidate_idx]
                 if other_candidate_image_idx in images_idxs_selected:
@@ -384,7 +358,7 @@ def compare_models_pairwise_ttest_rel(
                     in termos of average score.
     """
     _validate_is_scores_per_model(scores_per_model)
-    StatsAlternativeHypothesis.validate(alternative)
+    StatsAlternativeHypothesis(alternative)
 
     # remove nan values; list of items keeps the order of the OrderedDict
     scores_per_model_nonan_items = [
@@ -469,7 +443,7 @@ def compare_models_pairwise_wilcoxon(
                     in terms of average ranks (not scores!).
     """
     _validate_is_scores_per_model(scores_per_model)
-    StatsAlternativeHypothesis.validate(alternative)
+    StatsAlternativeHypothesis(alternative)
 
     # remove nan values; list of items keeps the order of the OrderedDict
     scores_per_model_nonan_items = [

@@ -16,9 +16,8 @@ author: jpcbertoldo
 
 import itertools
 import logging
-from dataclasses import dataclass
+from enum import Enum
 from functools import partial
-from typing import ClassVar
 
 import numpy as np
 from numpy import ndarray
@@ -38,30 +37,19 @@ logger = logging.getLogger(__name__)
 # =========================================== CONSTANTS ===========================================
 
 
-@dataclass
-class BinclfAlgorithm:
-    """Algorithm to use."""
+class BinclfAlgorithm(Enum):
+    """Algorithm to use (relates to the low-level implementation)."""
 
-    PYTHON: ClassVar[str] = "python"
-    NUMBA: ClassVar[str] = "numba"
-    ALGORITHMS: ClassVar[tuple[str, ...]] = (PYTHON, NUMBA)
-
-    @staticmethod
-    def validate(algorithm: str) -> None:
-        """Validate `algorithm` argument."""
-        if algorithm not in BinclfAlgorithm.ALGORITHMS:
-            msg = f"Expected `algorithm` to be one of {BinclfAlgorithm.ALGORITHMS}, but got {algorithm}"
-            raise ValueError(msg)
+    PYTHON: str = "python"
+    NUMBA: str = "numba"
 
 
-@dataclass
-class BinclfThreshsChoice:
+class BinclfThreshsChoice(Enum):
     """Sequence of thresholds to use."""
 
-    GIVEN: ClassVar[str] = "given"
-    MINMAX_LINSPACE: ClassVar[str] = "minmax-linspace"
-    MEAN_FPR_OPTIMIZED: ClassVar[str] = "mean-fpr-optimized"
-    CHOICES: ClassVar[tuple[str, ...]] = (GIVEN, MINMAX_LINSPACE, MEAN_FPR_OPTIMIZED)
+    GIVEN: str = "given"
+    MINMAX_LINSPACE: str = "minmax-linspace"
+    MEAN_FPR_OPTIMIZED: str = "mean-fpr-optimized"
 
 
 # =========================================== ARGS VALIDATION ===========================================
@@ -191,7 +179,7 @@ def binclf_multiple_curves(
     scores_batch: ndarray,
     gts_batch: ndarray,
     threshs: ndarray,
-    algorithm: str = BinclfAlgorithm.NUMBA,
+    algorithm: BinclfAlgorithm | str = BinclfAlgorithm.NUMBA,
 ) -> ndarray:
     """Multiple binary classification matrix (per-instance scope) at each threshold (shared).
 
@@ -231,25 +219,22 @@ def binclf_multiple_curves(
 
         Thresholds are sorted in ascending order.
     """
-    BinclfAlgorithm.validate(algorithm)
+    BinclfAlgorithm(algorithm)
     _validate_is_scores_batch(scores_batch)
     _validate_is_gts_batch(gts_batch)
     _validate.is_same_shape(scores_batch, gts_batch)
     _validate.is_threshs(threshs)
 
-    if algorithm == BinclfAlgorithm.PYTHON:
-        return _binclf_multiple_curves_python(scores_batch, gts_batch, threshs)
+    if BinclfAlgorithm(algorithm) == BinclfAlgorithm.NUMBA:
+        if HAS_NUMBA:
+            return _binclf_curve_numba.binclf_multiple_curves_numba(scores_batch, gts_batch, threshs)
 
-    if algorithm == BinclfAlgorithm.NUMBA:
-        if not HAS_NUMBA:
-            logger.warning(
-                "Algorithm 'numba' was selected, but numba is not installed. Fallback to 'python' algorithm.",
-            )
-            return _binclf_multiple_curves_python(scores_batch, gts_batch, threshs)
-        return _binclf_curve_numba.binclf_multiple_curves_numba(scores_batch, gts_batch, threshs)
+        logger.warning(
+            f"Algorithm '{BinclfAlgorithm.NUMBA.value}' was selected, but numba is not installed. "
+            f"Falling back to '{BinclfAlgorithm.PYTHON.value}' implementation.",
+        )
 
-    msg = f"Expected `algorithm` to be one of {BinclfAlgorithm.ALGORITHMS}, but got {algorithm}"
-    raise NotImplementedError(msg)
+    return _binclf_multiple_curves_python(scores_batch, gts_batch, threshs)
 
 
 # ========================================= PER-IMAGE BINCLF CURVE =========================================
@@ -271,8 +256,8 @@ def _get_threshs_minmax_linspace(anomaly_maps: ndarray, num_threshs: int) -> nda
 def per_image_binclf_curve(
     anomaly_maps: ndarray,
     masks: ndarray,
-    algorithm: str = BinclfAlgorithm.NUMBA,
-    threshs_choice: str = BinclfThreshsChoice.MINMAX_LINSPACE,
+    algorithm: BinclfAlgorithm | str = BinclfAlgorithm.NUMBA,
+    threshs_choice: BinclfThreshsChoice | str = BinclfThreshsChoice.MINMAX_LINSPACE,
     threshs_given: ndarray | None = None,
     num_threshs: int | None = None,
 ) -> tuple[ndarray, ndarray]:
@@ -321,14 +306,14 @@ def per_image_binclf_curve(
 
             Thresholds are sorted in ascending order.
     """
-    BinclfAlgorithm.validate(algorithm)
+    BinclfAlgorithm(algorithm)
     _validate.is_anomaly_maps(anomaly_maps)
     _validate.is_masks(masks)
     _validate.is_same_shape(anomaly_maps, masks)
 
     threshs: ndarray
 
-    if threshs_choice == BinclfThreshsChoice.GIVEN:
+    if BinclfThreshsChoice(threshs_choice) == BinclfThreshsChoice.GIVEN:
         assert threshs_given is not None
         _validate.is_threshs(threshs_given)
         if num_threshs is not None:
@@ -337,7 +322,7 @@ def per_image_binclf_curve(
             )
         threshs = threshs_given.astype(anomaly_maps.dtype)
 
-    elif threshs_choice == BinclfThreshsChoice.MINMAX_LINSPACE:
+    elif BinclfThreshsChoice(threshs_choice) == BinclfThreshsChoice.MINMAX_LINSPACE:
         assert num_threshs is not None
         if threshs_given is not None:
             logger.warning(
@@ -346,11 +331,11 @@ def per_image_binclf_curve(
         # `num_threshs` is validated in the function below
         threshs = _get_threshs_minmax_linspace(anomaly_maps, num_threshs)
 
-    elif threshs_choice == BinclfThreshsChoice.MEAN_FPR_OPTIMIZED:
+    elif BinclfThreshsChoice(threshs_choice) == BinclfThreshsChoice.MEAN_FPR_OPTIMIZED:
         raise NotImplementedError(f"TODO implement {threshs_choice}")  # noqa: EM102
 
     else:
-        msg = f"Expected `threshs_choice` to be one of {BinclfThreshsChoice.CHOICES}, but got {threshs_choice}"
+        msg = f"Expected `threshs_choice` to be from {list(BinclfThreshsChoice.__members__)}, but got {threshs_choice}"
         raise NotImplementedError(msg)
 
     # keep the batch dimension and flatten the rest
