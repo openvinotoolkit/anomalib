@@ -18,9 +18,9 @@ author: jpcbertoldo
 
 import json
 import warnings
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 import torch
 from torch import Tensor
@@ -33,9 +33,6 @@ from . import _validate, pimo_numpy, utils
 from .binclf_curve_numpy import BinclfAlgorithm
 from .pimo_numpy import PIMOSharedFPRMetric
 from .utils import StatsOutliersPolicy, StatsRepeatedPolicy
-
-if TYPE_CHECKING:
-    from collections.abc import Sequence
 
 # =========================================== AUX ===========================================
 
@@ -253,7 +250,7 @@ class PIMOResult:
         return dic
 
     @classmethod
-    def from_dict(cls: type[PIMOResult], dic: dict[str, Tensor | str | list[str]]) -> PIMOResult:
+    def from_dict(cls: type["PIMOResult"], dic: dict[str, Tensor | str | list[str]]) -> "PIMOResult":
         """Return a result object from a dictionary."""
         try:
             return cls(**dic)  # type: ignore[arg-type]
@@ -275,7 +272,7 @@ class PIMOResult:
         torch.save(payload, file_path)
 
     @classmethod
-    def load(cls: type[PIMOResult], file_path: str | Path) -> PIMOResult:
+    def load(cls: type["PIMOResult"], file_path: str | Path) -> "PIMOResult":
         """Load from a `.pt` file.
 
         Args:
@@ -379,13 +376,13 @@ class AUPIMOResult:
 
     @classmethod
     def from_pimoresult(
-        cls: type[AUPIMOResult],
+        cls: type["AUPIMOResult"],
         pimoresult: PIMOResult,
         fpr_bounds: tuple[float, float],
         num_threshs_auc: int,
         aupimos: Tensor,
         paths: list[str] | None = None,
-    ) -> AUPIMOResult:
+    ) -> "AUPIMOResult":
         """Return an AUPIMO result object from a PIMO result object.
 
         Args:
@@ -449,7 +446,7 @@ class AUPIMOResult:
         return dic
 
     @classmethod
-    def from_dict(cls: type[AUPIMOResult], dic: dict[str, Tensor | str | float | int | list[str]]) -> AUPIMOResult:
+    def from_dict(cls: type["AUPIMOResult"], dic: dict[str, Tensor | str | float | int | list[str]]) -> "AUPIMOResult":
         """Return a result object from a dictionary."""
         try:
             return cls(**dic)  # type: ignore[arg-type]
@@ -475,7 +472,7 @@ class AUPIMOResult:
             json.dump(payload, f, indent=4)
 
     @classmethod
-    def load(cls: type[AUPIMOResult], file_path: str | Path) -> AUPIMOResult:
+    def load(cls: type["AUPIMOResult"], file_path: str | Path) -> "AUPIMOResult":
         """Load from a `.json` file.
 
         Args:

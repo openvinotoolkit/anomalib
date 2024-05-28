@@ -11,6 +11,7 @@ author: jpcbertoldo
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
+import warnings
 from collections import OrderedDict
 from copy import deepcopy
 from typing import TYPE_CHECKING
@@ -139,7 +140,7 @@ def _validate_is_scores_per_model_tensor(scores_per_model: dict[str, Tensor] | O
 
 
 def _validate_is_scores_per_model_aupimoresult(
-    scores_per_model: dict[str, AUPIMOResult] | OrderedDict[str, AUPIMOResult],
+    scores_per_model: dict[str, "AUPIMOResult"] | OrderedDict[str, "AUPIMOResult"],
     missing_paths_ok: bool,
 ) -> None:
     first_key_value = None
@@ -187,8 +188,8 @@ def _validate_is_scores_per_model_aupimoresult(
 def _validate_is_scores_per_model(
     scores_per_model: dict[str, Tensor]
     | OrderedDict[str, Tensor]
-    | dict[str, AUPIMOResult]
-    | OrderedDict[str, AUPIMOResult],
+    | dict[str, "AUPIMOResult"]
+    | OrderedDict[str, "AUPIMOResult"],
 ) -> None:
     # it has to be imported here to avoid circular imports
     from .pimo import AUPIMOResult
@@ -279,8 +280,8 @@ per_image_scores_stats.__doc__ = per_image_scores_stats.__doc__.format(  # type:
 def compare_models_pairwise_ttest_rel(
     scores_per_model: dict[str, Tensor]
     | OrderedDict[str, Tensor]
-    | dict[str, AUPIMOResult]
-    | OrderedDict[str, AUPIMOResult],
+    | dict[str, "AUPIMOResult"]
+    | OrderedDict[str, "AUPIMOResult"],
     alternative: str,
     higher_is_better: bool,
 ) -> tuple[tuple[str, ...], dict[tuple[str, str], float]]:
@@ -313,8 +314,8 @@ compare_models_pairwise_ttest_rel.__doc__ = compare_models_pairwise_ttest_rel.__
 def compare_models_pairwise_wilcoxon(
     scores_per_model: dict[str, Tensor]
     | OrderedDict[str, Tensor]
-    | dict[str, AUPIMOResult]
-    | OrderedDict[str, AUPIMOResult],
+    | dict[str, "AUPIMOResult"]
+    | OrderedDict[str, "AUPIMOResult"],
     alternative: str,
     higher_is_better: bool,
 ) -> tuple[tuple[str, ...], dict[tuple[str, str], float]]:
