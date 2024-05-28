@@ -12,7 +12,6 @@ author: jpcbertoldo
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from pathlib import Path
 from typing import Any
 
 import numpy as np
@@ -96,73 +95,6 @@ def is_rate_range(bounds: tuple[float, float]) -> None:
     if lower >= upper:
         msg = f"Expected the upper bound to be larger than the lower bound, but got {upper=} <= {lower=}"
         raise ValueError(msg)
-
-
-def is_file_path(file_path: str | Path, must_exist: bool, extension: str | None, pathlib_ok: bool) -> None:
-    """Validate the given path is a file (optionally) with the expected extension.
-
-    Args:
-        file_path (str | Path): The file path to validate.
-        must_exist (bool): Flag indicating whether the file must exist.
-        extension (str | None): The expected file extension, eg. .png, .jpg, etc. If `None`, no validation is performed.
-        pathlib_ok (bool): Flag indicating whether `pathlib.Path` is allowed; if False, only `str` paths are allowed.
-    """
-    if isinstance(file_path, str):
-        file_path = Path(file_path)
-
-    elif not isinstance(file_path, Path):
-        msg = f"Expected file path to be a string or pathlib.Path, but got {type(file_path)}"
-        raise TypeError(msg)
-
-    # if it's here, then it's a `pathlib.Path`
-    elif not pathlib_ok:
-        msg = f"Only `str` paths are allowed, but got {type(file_path)}"
-        raise TypeError(msg)
-
-    if file_path.is_dir():
-        msg = "Expected file path to be a file, but got a directory."
-        raise ValueError(msg)
-
-    if must_exist and not file_path.exists():
-        msg = f"File does not exist: {file_path}"
-        raise FileNotFoundError(msg)
-
-    if extension is None:
-        return
-
-    if file_path.suffix != extension:
-        msg = f"Expected file path to have extension '{extension}', but got '{file_path.suffix}'"
-        raise ValueError(msg)
-
-
-def is_list_of_file_path(
-    file_paths: list[str | Path],
-    must_exist: bool,
-    extension: str | None,
-    pathlib_ok: bool,
-) -> None:
-    """Validate the given paths are files (optionally) with the expected extension.
-
-    Args:
-        file_paths (list[str | Path]): The file paths to validate.
-        must_exist (bool): Flag indicating whether the files must exist.
-        extension (str | None): The expected file extension, eg. .png, .jpg, etc. If `None`, no validation is performed.
-        pathlib_ok (bool): Flag indicating whether `pathlib.Path` is allowed; if False, only `str` paths are allowed.
-    """
-    if not isinstance(file_paths, list):
-        msg = f"Expected paths to be a list, but got {type(file_paths)}."
-        raise TypeError(msg)
-
-    for idx, path in enumerate(file_paths):
-        try:
-            msg = f"Invalid path at index {idx}: {path}"
-            is_file_path(path, must_exist=must_exist, extension=extension, pathlib_ok=pathlib_ok)
-
-        except TypeError as ex:  # noqa: PERF203
-            raise TypeError(msg) from ex
-
-        except ValueError as ex:
-            raise ValueError(msg) from ex
 
 
 def is_threshs(threshs: ndarray) -> None:

@@ -67,3 +67,8 @@ class TestValidatePath:
             Path(tmp_dir).chmod(0o222)  # Remove read and execute permission
             with pytest.raises(PermissionError, match=r"Read or execute permissions denied for the path:*"):
                 validate_path(tmp_dir, base_dir=Path(tmp_dir))
+
+    def test_file_wrongsuffix(self) -> None:
+        """Test ``validate_path`` raises ValueError for a file with wrong suffix."""
+        with pytest.raises(ValueError, match="Path extension is not accepted."):
+            validate_path("file.png", should_exist=False, accepted_extensions=(".json", ".txt"))

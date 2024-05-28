@@ -27,6 +27,7 @@ from torch import Tensor
 from torchmetrics import Metric
 
 from anomalib.data.utils.image import duplicate_filename
+from anomalib.data.utils.path import validate_path
 
 from . import _validate, pimo_numpy, utils
 from .binclf_curve_numpy import BinclfAlgorithm
@@ -105,16 +106,30 @@ def _validate_is_aupimos(aupimos: Tensor) -> None:
 
 
 def _validate_is_source_images_paths(paths: Sequence[str], expected_num_paths: int | None) -> None:
-    _validate.is_list_of_file_path(
-        paths,  # type: ignore[arg-type]
-        # not necessary to exist because the metric can be computed
-        # directly from the anomaly maps and masks, without the images
-        must_exist=False,
-        # this will eventually be serialized to a file, so we don't want pathlib objects keep it simple
-        pathlib_ok=False,
-        # not enforcing the image type (e.g. png, jpg, etc.)
-        extension=None,
-    )
+    if not isinstance(paths, list):
+        msg = f"Expected paths to be a list, but got {type(paths)}."
+        raise TypeError(msg)
+
+    for idx, path in enumerate(paths):
+        try:
+            msg = f"Invalid path at index {idx}: {path}"
+            validate_path(
+                path,
+                # not necessary to exist because the metric can be computed
+                # directly from the anomaly maps and masks, without the images
+                should_exist=False,
+            )
+
+        except TypeError as ex:
+            raise TypeError(msg) from ex
+
+        except ValueError as ex:
+            raise ValueError(msg) from ex
+
+        if not isinstance(path, str):
+            # this will eventually be serialized to a file, so we don't want pathlib objects keep it simple
+            msg = f"Expected path to be a string, but got {type(path)}."
+            raise TypeError(msg)
 
     if expected_num_paths is None:
         return
@@ -254,7 +269,7 @@ class PIMOResult:
             file_path: path to the `.pt` file where to save the PIMO result.
                        If the file already exists, a numerical suffix is added to the filename.
         """
-        _validate.is_file_path(file_path, must_exist=False, extension=".pt", pathlib_ok=True)
+        validate_path(file_path, should_exist=False, accepted_extensions=(".pt",))
         file_path = duplicate_filename(file_path)
         payload = self.to_dict()
         torch.save(payload, file_path)
@@ -266,7 +281,7 @@ class PIMOResult:
         Args:
             file_path: path to the `.pt` file where to load the PIMO result.
         """
-        _validate.is_file_path(file_path, must_exist=True, extension=".pt", pathlib_ok=True)
+        validate_path(file_path, accepted_extensions=(".pt",))
         payload = torch.load(file_path)
         if not isinstance(payload, dict):
             msg = f"Invalid content in file {file_path}. Must be a dictionary."
@@ -450,7 +465,7 @@ class AUPIMOResult:
             file_path: path to the `.json` file where to save the AUPIMO result.
                        If the file already exists, a numerical suffix is added to the filename.
         """
-        _validate.is_file_path(file_path, must_exist=False, extension=".json", pathlib_ok=True)
+        validate_path(file_path, should_exist=False, accepted_extensions=(".json",))
         file_path = duplicate_filename(file_path)
         file_path = Path(file_path)
         payload = self.to_dict()
@@ -466,7 +481,7 @@ class AUPIMOResult:
         Args:
             file_path: path to the `.json` file where to load the AUPIMO result.
         """
-        _validate.is_file_path(file_path, must_exist=True, extension=".json", pathlib_ok=True)
+        validate_path(file_path, accepted_extensions=(".json",))
         file_path = Path(file_path)
         with file_path.open("r") as f:
             payload = json.load(f)
