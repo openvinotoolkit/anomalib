@@ -505,14 +505,10 @@ class AUPIMOResult:
     ) -> list[dict[str, str | int | float]]:
         """Return the AUPIMO statistics.
 
-        See `anomalib.utils.metrics.per_image.per_image_scores_stats` for details (its docstring below).
+        See `anomalib.utils.metrics.per_image.per_image_scores_stats` for details.
 
         Returns:
             list[dict[str, str | int | float]]: AUPIMO statistics
-
-        `anomalib.utils.metrics.per_image.per_image_scores_stats`.__doc__
-        ==================================================================
-        {docstring_per_image_scores_stats}
         """
         return utils.per_image_scores_stats(
             self.aupimos,
@@ -522,11 +518,6 @@ class AUPIMOResult:
             repeated_policy=repeated_policy,
             repeated_replacement_atol=repeated_replacement_atol,
         )
-
-
-AUPIMOResult.__doc__ = AUPIMOResult.__doc__.format(  # type: ignore[union-attr]
-    docstring_per_image_scores_stats=utils.per_image_scores_stats.__doc__,
-)
 
 
 # =========================================== FUNCTIONAL ===========================================
@@ -546,18 +537,10 @@ def pimo_curves(
     The tensors are converted to numpy arrays and then passed and validated in the numpy code.
     The results are converted back to tensors and wrapped in an dataclass object.
 
-    Refer to `pimo_numpy.pimo_curves()` and `PIMOResult` (their docstrings below).
+    Refer to `pimo_numpy.pimo_curves()` and `PIMOResult`.
 
     Args (extra):
         paths: paths to the source images to which the PIMO curves correspond.
-
-    pimo_numpy.pimo_curves.__doc__
-    ==============================
-    {docstring_pimo_curves}
-
-    PIMOResult.__doc__
-    ==================
-    {docstring_pimoresult}
     """
     _validate_is_anomaly_maps(anomaly_maps)
     anomaly_maps_array = anomaly_maps.detach().cpu().numpy()
@@ -598,13 +581,6 @@ def pimo_curves(
     )
 
 
-# append the docstring
-pimo_curves.__doc__ = pimo_curves.__doc__.format(  # type: ignore[union-attr]
-    docstring_pimo_curves=pimo_numpy.pimo_curves.__doc__,
-    docstring_pimoresult=PIMOResult.__doc__,
-)
-
-
 def aupimo_scores(
     anomaly_maps: Tensor,
     masks: Tensor,
@@ -621,22 +597,10 @@ def aupimo_scores(
     The tensors are converted to numpy arrays and then passed and validated in the numpy code.
     The results are converted back to tensors and wrapped in an dataclass object.
 
-    Refer to `pimo_numpy.aupimo_scores()`, `PIMOResult` and `AUPIMOResult` (their docstrings below).
+    Refer to `pimo_numpy.aupimo_scores()`, `PIMOResult` and `AUPIMOResult`.
 
     Args (extra):
         paths: paths to the source images to which the AUPIMO scores correspond.
-
-    pimo_numpy.aupimo_scores.__doc__
-    =================================
-    {docstring_aupimo_scores}
-
-    PIMOResult.__doc__
-    ==================
-    {docstring_pimoresult}
-
-    AUPIMOResult.__doc__
-    ====================
-    {docstring_aupimoresult}
     """
     _validate_is_anomaly_maps(anomaly_maps)
     anomaly_maps_array = anomaly_maps.detach().cpu().numpy()
@@ -691,14 +655,6 @@ def aupimo_scores(
     return pimoresult, aupimoresult
 
 
-# append the docstrings
-aupimo_scores.__doc__ = aupimo_scores.__doc__.format(  # type: ignore[union-attr]
-    docstring_aupimo_scores=pimo_numpy.aupimo_scores.__doc__,
-    docstring_pimoresult=PIMOResult.__doc__,
-    docstring_aupimoresult=AUPIMOResult.__doc__,
-)
-
-
 # =========================================== TORCHMETRICS ===========================================
 
 
@@ -709,15 +665,7 @@ class PIMO(Metric):
     The tensors are converted to numpy arrays and then passed and validated in the numpy code.
     The results are converted back to tensors and wrapped in an dataclass object.
 
-    Refer to `pimo_numpy.pimo_curves()` and `PIMOResult` (their docstrings below).
-
-    pimo_numpy.pimo_curves.__doc__
-    ==============================
-    {docstring_pimo_curves}
-
-    PIMOResult.__doc__
-    ==================
-    {docstring_pimoresult}
+    Refer to `pimo_numpy.pimo_curves()` and `PIMOResult`.
     """
 
     is_differentiable: bool = False
@@ -814,13 +762,6 @@ class PIMO(Metric):
         )
 
 
-# append the docstrings
-PIMO.__doc__ = PIMO.__doc__.format(  # type: ignore[union-attr]
-    docstring_pimo_curves=pimo_numpy.pimo_curves.__doc__,
-    docstring_pimoresult=PIMOResult.__doc__,
-)
-
-
 class AUPIMO(PIMO):
     """Area Under the Per-Image Overlap (PIMO) curve.
 
@@ -828,19 +769,7 @@ class AUPIMO(PIMO):
     The tensors are converted to numpy arrays and then passed and validated in the numpy code.
     The results are converted back to tensors and wrapped in an dataclass object.
 
-    Refer to `pimo_numpy.aupimo_scores()`, `PIMOResult` and `AUPIMOResult` (their docstrings below).
-
-    pimo_numpy.aupimo_scores.__doc__
-    =================================
-    {docstring_aupimo_scores}
-
-    PIMOResult.__doc__
-    ==================
-    {docstring_pimoresult}
-
-    AUPIMOResult.__doc__
-    ====================
-    {docstring_aupimoresult}
+    Refer to `pimo_numpy.aupimo_scores()`, `PIMOResult` and `AUPIMOResult`.
     """
 
     fpr_bounds: tuple[float, float]
@@ -941,11 +870,3 @@ class AUPIMO(PIMO):
             fpr_bounds=self.fpr_bounds,
             force=force,
         )
-
-
-# append the docstrings
-AUPIMO.__doc__ = AUPIMO.__doc__.format(  # type: ignore[union-attr]
-    docstring_aupimo_scores=pimo_numpy.aupimo_scores.__doc__,
-    docstring_pimoresult=PIMOResult.__doc__,
-    docstring_aupimoresult=AUPIMOResult.__doc__,
-)

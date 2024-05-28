@@ -336,26 +336,26 @@ def compare_models_pairwise_ttest_rel(
                      Valid values are `StatsAlternativeHypothesis.ALTERNATIVES`.
 
     Returns:
-            (models_ordered, test_results):
-                - models_ordered: Models sorted by the user (`OrderedDict` input) or automatically (`dict` input).
+        (models_ordered, test_results):
+            - models_ordered: Models sorted by the user (`OrderedDict` input) or automatically (`dict` input).
 
-                    Automatic sorting is by average score from best to worst model.
-                    Depending on `higher_is_better`, this corresponds to:
-                        - `higher_is_better=True` ==> descending score order
-                        - `higher_is_better=False` ==> ascending score order
-                    along the indices from 0 to `n-1`.
+                Automatic sorting is by average score from best to worst model.
+                Depending on `higher_is_better`, this corresponds to:
+                    - `higher_is_better=True` ==> descending score order
+                    - `higher_is_better=False` ==> ascending score order
+                along the indices from 0 to `n-1`.
 
-                - confidences: Dictionary of confidence values for each pair of models.
+            - confidences: Dictionary of confidence values for each pair of models.
 
-                    For all pairs of indices i and j from 0 to `n-1` such that i != j:
-                        - key: (models_ordered[i], models_ordered[j])
-                        - value: confidence on the alternative hypothesis.
+                For all pairs of indices i and j from 0 to `n-1` such that i != j:
+                    - key: (models_ordered[i], models_ordered[j])
+                    - value: confidence on the alternative hypothesis.
 
-                    For models `models_ordered[i]` and `models_ordered[j]`, the alternative hypothesis is:
-                        - if `less`: model[i] < model[j]
-                        - if `greater`: model[i] > model[j]
-                        - if `two-sided`: model[i] != model[j]
-                    in termos of average score.
+                For models `models_ordered[i]` and `models_ordered[j]`, the alternative hypothesis is:
+                    - if `less`: model[i] < model[j]
+                    - if `greater`: model[i] > model[j]
+                    - if `two-sided`: model[i] != model[j]
+                in termos of average score.
     """
     _validate_is_scores_per_model(scores_per_model)
     StatsAlternativeHypothesis(alternative)
@@ -424,22 +424,22 @@ def compare_models_pairwise_wilcoxon(
               truncated to 0. If `atol` is None, no truncation is done.
 
     Returns:
-            (models_ordered, test_results):
-                - models_ordered: Models sorted by the user (`OrderedDict` input) or automatically (`dict` input).
+        (models_ordered, test_results):
+            - models_ordered: Models sorted by the user (`OrderedDict` input) or automatically (`dict` input).
 
-                    Automatic sorting is from "best to worst" model, which corresponds to ascending average rank
-                    along the indices from 0 to `n-1`.
+                Automatic sorting is from "best to worst" model, which corresponds to ascending average rank
+                along the indices from 0 to `n-1`.
 
-                - confidences: Dictionary of confidence values for each pair of models.
+            - confidences: Dictionary of confidence values for each pair of models.
 
-                    For all pairs of indices i and j from 0 to `n-1` such that i != j:
-                        - key: (models_ordered[i], models_ordered[j])
-                        - value: confidence on the alternative hypothesis.
+                For all pairs of indices i and j from 0 to `n-1` such that i != j:
+                    - key: (models_ordered[i], models_ordered[j])
+                    - value: confidence on the alternative hypothesis.
 
-                    For models `models_ordered[i]` and `models_ordered[j]`, the alternative hypothesis is:
-                        - if `less`: model[i] < model[j]
-                        - if `greater`: model[i] > model[j]
-                        - if `two-sided`: model[i] != model[j]
+                For models `models_ordered[i]` and `models_ordered[j]`, the alternative hypothesis is:
+                    - if `less`: model[i] < model[j]
+                    - if `greater`: model[i] > model[j]
+                    - if `two-sided`: model[i] != model[j]
                     in terms of average ranks (not scores!).
     """
     _validate_is_scores_per_model(scores_per_model)
