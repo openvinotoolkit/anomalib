@@ -7,8 +7,13 @@ author: jpcbertoldo
 import numpy as np
 import pytest
 import torch
+from anomalib import HAS_NUMBA
+from anomalib.metrics.per_image import binclf_curve, binclf_curve_numpy
 from numpy import ndarray
 from torch import Tensor
+
+if HAS_NUMBA:
+    from anomalib.metrics.per_image import _binclf_curve_numba
 
 
 def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
@@ -336,8 +341,6 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
 
 def test__binclf_one_curve_python(pred: ndarray, gt: ndarray, threshs: ndarray, expected: ndarray) -> None:
     """Test if `_binclf_one_curve_python()` returns the expected values."""
-    from anomalib.metrics.per_image import binclf_curve_numpy
-
     computed = binclf_curve_numpy._binclf_one_curve_python(pred, gt, threshs)
     assert computed.shape == (threshs.size, 2, 2)
     assert (computed == expected).all()
@@ -350,8 +353,6 @@ def test__binclf_multiple_curves_python(
     expecteds: ndarray,
 ) -> None:
     """Test if `_binclf_multiple_curves_python()` returns the expected values."""
-    from anomalib.metrics.per_image import binclf_curve_numpy
-
     computed = binclf_curve_numpy._binclf_multiple_curves_python(preds, gts, threshs)
     assert computed.shape == (preds.shape[0], threshs.size, 2, 2)
     assert (computed == expecteds).all()
@@ -363,8 +364,8 @@ def test__binclf_multiple_curves_python(
 
 def test__binclf_one_curve_numba(pred: ndarray, gt: ndarray, threshs: ndarray, expected: ndarray) -> None:
     """Test if `_binclf_one_curve_numba()` returns the expected values."""
-    from anomalib.metrics.per_image import _binclf_curve_numba
-
+    if not HAS_NUMBA:
+        pytest.skip("Numba is not available.")
     computed = _binclf_curve_numba.binclf_one_curve_numba(pred, gt, threshs)
     assert computed.shape == (threshs.size, 2, 2)
     assert (computed == expected).all()
@@ -372,8 +373,8 @@ def test__binclf_one_curve_numba(pred: ndarray, gt: ndarray, threshs: ndarray, e
 
 def test__binclf_multiple_curves_numba(preds: ndarray, gts: ndarray, threshs: ndarray, expecteds: ndarray) -> None:
     """Test if `_binclf_multiple_curves_python()` returns the expected values."""
-    from anomalib.metrics.per_image import _binclf_curve_numba
-
+    if not HAS_NUMBA:
+        pytest.skip("Numba is not available.")
     computed = _binclf_curve_numba.binclf_multiple_curves_numba(preds, gts, threshs)
     assert computed.shape == (preds.shape[0], threshs.size, 2, 2)
     assert (computed == expecteds).all()
@@ -391,8 +392,6 @@ def test_binclf_multiple_curves(
     algorithm: str,
 ) -> None:
     """Test if `binclf_multiple_curves()` returns the expected values."""
-    from anomalib.metrics.per_image import binclf_curve_numpy
-
     computed = binclf_curve_numpy.binclf_multiple_curves(
         preds,
         gts,
@@ -421,8 +420,6 @@ def test_binclf_multiple_curves(
 
 def test_binclf_multiple_curves_validations(args: list, kwargs: dict, exception: Exception) -> None:
     """Test if `_binclf_multiple_curves_python()` raises the expected errors."""
-    from anomalib.metrics.per_image import binclf_curve_numpy
-
     with pytest.raises(exception):
         binclf_curve_numpy.binclf_multiple_curves(*args, **kwargs)
 
@@ -438,8 +435,6 @@ def test_per_image_binclf_curve_numpy(
     expected_binclf_curves: ndarray,
 ) -> None:
     """Test if `per_image_binclf_curve()` returns the expected values."""
-    from anomalib.metrics.per_image import binclf_curve_numpy
-
     computed_threshs, computed_binclf_curves = binclf_curve_numpy.per_image_binclf_curve(
         anomaly_maps,
         masks,
@@ -462,8 +457,6 @@ def test_per_image_binclf_curve_numpy(
 
 def test_per_image_binclf_curve_numpy_validations(args: list, kwargs: dict, exception: Exception) -> None:
     """Test if `per_image_binclf_curve()` raises the expected errors."""
-    from anomalib.metrics.per_image import binclf_curve_numpy
-
     with pytest.raises(exception):
         binclf_curve_numpy.per_image_binclf_curve(*args, **kwargs)
 
@@ -475,8 +468,6 @@ def test_per_image_binclf_curve_numpy_validations_alt(args: list, kwargs: dict, 
 
 def test_rate_metrics_numpy(binclf_curves: ndarray, expected_fprs: ndarray, expected_tprs: ndarray) -> None:
     """Test if rate metrics are computed correctly."""
-    from anomalib.metrics.per_image import binclf_curve_numpy
-
     tprs = binclf_curve_numpy.per_image_tpr(binclf_curves)
     fprs = binclf_curve_numpy.per_image_fpr(binclf_curves)
 
@@ -502,8 +493,6 @@ def test_per_image_binclf_curve_torch(
     expected_binclf_curves: Tensor,
 ) -> None:
     """Test if `per_image_binclf_curve()` returns the expected values."""
-    from anomalib.metrics.per_image import binclf_curve
-
     computed_threshs, computed_binclf_curves = binclf_curve.per_image_binclf_curve(
         anomaly_maps,
         masks,
@@ -526,8 +515,6 @@ def test_per_image_binclf_curve_torch(
 
 def test_rate_metrics_torch(binclf_curves: Tensor, expected_fprs: Tensor, expected_tprs: Tensor) -> None:
     """Test if rate metrics are computed correctly."""
-    from anomalib.metrics.per_image import binclf_curve
-
     tprs = binclf_curve.per_image_tpr(binclf_curves)
     fprs = binclf_curve.per_image_fpr(binclf_curves)
 

@@ -8,9 +8,17 @@ from collections import OrderedDict
 import numpy as np
 import pytest
 import torch
+from anomalib.metrics.per_image import (
+    AUPIMOResult,
+    PIMOSharedFPRMetric,
+    StatsOutliersPolicy,
+    StatsRepeatedPolicy,
+    compare_models_pairwise_ttest_rel,
+    compare_models_pairwise_wilcoxon,
+    format_pairwise_tests_results,
+    per_image_scores_stats,
+)
 from torch import Tensor
-
-from anomalib.metrics.per_image import AUPIMOResult, PIMOSharedFPRMetric
 
 
 def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
@@ -88,12 +96,6 @@ def assert_statsdict_stuff(statdic: dict, max_image_idx: int) -> None:
 
 def test_per_image_scores_stats() -> None:
     """Test `per_image_scores_boxplot_stats`."""
-    from anomalib.metrics.per_image import (
-        StatsOutliersPolicy,
-        StatsRepeatedPolicy,
-        per_image_scores_stats,
-    )
-
     gen = torch.Generator().manual_seed(42)
     num_scores = 201
     scores = torch.randn(num_scores, generator=gen)
@@ -137,8 +139,6 @@ def test_per_image_scores_stats() -> None:
 
 def test_per_image_scores_stats_specific_values() -> None:
     """Test `per_image_scores_boxplot_stats` with specific values."""
-    from anomalib.metrics.per_image import per_image_scores_stats
-
     scores = torch.concatenate(
         [
             # whislo = min value is 0.0
@@ -189,8 +189,6 @@ def test_per_image_scores_stats_specific_values() -> None:
 
 def test_compare_models_pairwise_ttest(scores_per_model: dict, alternative: str, higher_is_better: bool) -> None:
     """Test `compare_models_pairwise_ttest`."""
-    from anomalib.metrics.per_image import AUPIMOResult, compare_models_pairwise_ttest_rel
-
     models_ordered, confidences = compare_models_pairwise_ttest_rel(
         scores_per_model,
         alternative=alternative,
@@ -233,8 +231,6 @@ def test_compare_models_pairwise_ttest(scores_per_model: dict, alternative: str,
 
 def test_compare_models_pairwise_wilcoxon(scores_per_model: dict, alternative: str, higher_is_better: bool) -> None:
     """Test `compare_models_pairwise_wilcoxon`."""
-    from anomalib.metrics.per_image import AUPIMOResult, compare_models_pairwise_wilcoxon
-
     models_ordered, confidences = compare_models_pairwise_wilcoxon(
         scores_per_model,
         alternative=alternative,
@@ -278,12 +274,6 @@ def test_compare_models_pairwise_wilcoxon(scores_per_model: dict, alternative: s
 
 def test_format_pairwise_tests_results(scores_per_model: dict) -> None:
     """Test `format_pairwise_tests_results`."""
-    from anomalib.metrics.per_image import (
-        compare_models_pairwise_ttest_rel,
-        compare_models_pairwise_wilcoxon,
-        format_pairwise_tests_results,
-    )
-
     models_ordered, confidences = compare_models_pairwise_wilcoxon(
         scores_per_model,
         alternative="greater",

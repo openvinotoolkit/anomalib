@@ -8,6 +8,14 @@ from enum import Enum
 __version__ = "1.1.0dev"
 
 
+try:
+    import numba  # noqa: F401
+except ImportError:
+    HAS_NUMBA = False
+else:
+    HAS_NUMBA = True
+
+
 class LearningType(str, Enum):
     """Learning type defining how the model learns from the dataset samples."""
 

@@ -22,12 +22,9 @@ from functools import partial
 import numpy as np
 from numpy import ndarray
 
-try:
-    import numba  # noqa: F401
-except ImportError:
-    HAS_NUMBA = False
-else:
-    HAS_NUMBA = True
+from anomalib import HAS_NUMBA
+
+if HAS_NUMBA:
     from . import _binclf_curve_numba
 
 from . import _validate

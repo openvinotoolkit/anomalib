@@ -9,8 +9,12 @@ from pathlib import Path
 import numpy as np
 import pytest
 import torch
+from anomalib.metrics.per_image import pimo, pimo_numpy
+from anomalib.metrics.per_image.pimo import AUPIMOResult, PIMOResult
 from numpy import ndarray
 from torch import Tensor
+
+from .test_utils import assert_statsdict_stuff
 
 
 def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
@@ -239,8 +243,6 @@ def test_pimo_numpy(
     expected_image_classes: ndarray,
 ) -> None:
     """Test if `pimo()` returns the expected values."""
-    from anomalib.metrics.per_image import pimo_numpy
-
     threshs, shared_fpr, per_image_tprs, image_classes = pimo_numpy.pimo_curves(
         anomaly_maps,
         masks,
@@ -269,8 +271,6 @@ def test_pimo(
     expected_image_classes: Tensor,
 ) -> None:
     """Test if `pimo()` returns the expected values."""
-    from anomalib.metrics.per_image import pimo
-    from anomalib.metrics.per_image.pimo import PIMOResult
 
     def do_assertions(pimoresult: PIMOResult) -> None:
         assert pimoresult.shared_fpr_metric == "mean-per-image-fpr"
@@ -356,8 +356,6 @@ def test_aupimo_values_numpy(
     expected_aupimos: ndarray,
 ) -> None:
     """Test if `aupimo()` returns the expected values."""
-    from anomalib.metrics.per_image import pimo_numpy
-
     threshs, shared_fpr, per_image_tprs, image_classes, aupimos, _ = pimo_numpy.aupimo_scores(
         anomaly_maps,
         masks,
@@ -392,8 +390,6 @@ def test_aupimo_values(
     expected_aupimos: ndarray,
 ) -> None:
     """Test if `aupimo()` returns the expected values."""
-    from anomalib.metrics.per_image import pimo
-    from anomalib.metrics.per_image.pimo import AUPIMOResult, PIMOResult
 
     def do_assertions(pimoresult: PIMOResult, aupimoresult: AUPIMOResult) -> None:
         # test metadata
@@ -460,8 +456,6 @@ def test_aupimo_edge(
     fpr_bounds: tuple[float, float],
 ) -> None:
     """Test some edge cases."""
-    from anomalib.metrics.per_image import pimo_numpy
-
     # None is the case of testing the default bounds
     fpr_bounds = {"fpr_bounds": fpr_bounds, "shared_fpr_metric": "mean-per-image-fpr"} if fpr_bounds is not None else {}
 
@@ -505,9 +499,6 @@ def test_pimoresult_object(
     paths: list[str] | None,
 ) -> None:
     """Test if `PIMOResult` can be converted to other formats and back."""
-    from anomalib.metrics.per_image import pimo
-    from anomalib.metrics.per_image.pimo import PIMOResult
-
     optional_kwargs = {}
     if paths is not None:
         optional_kwargs["paths"] = paths
@@ -556,9 +547,6 @@ def test_aupimoresult_object(
     paths: list[str] | None,
 ) -> None:
     """Test if `AUPIMOResult` can be converted to other formats and back."""
-    from anomalib.metrics.per_image import pimo
-    from anomalib.metrics.per_image.pimo import AUPIMOResult
-
     optional_kwargs = {}
     if paths is not None:
         optional_kwargs["paths"] = paths
@@ -609,7 +597,6 @@ def test_aupimoresult_object(
     # statistics
     stats = aupimoresult.stats()
     assert len(stats) == 6
-    from .test_utils import assert_statsdict_stuff
 
     for statdic in stats:
         assert_statsdict_stuff(statdic, 2)
