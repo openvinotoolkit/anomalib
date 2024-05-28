@@ -36,7 +36,7 @@ from .utils import StatsOutliersPolicy, StatsRepeatedPolicy
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
-# =========================================== ARGS VALIDATION ===========================================
+# =========================================== AUX ===========================================
 
 
 def _images_classes_from_masks(masks: Tensor) -> Tensor:
@@ -49,44 +49,44 @@ def _images_classes_from_masks(masks: Tensor) -> Tensor:
 # =========================================== ARGS VALIDATION ===========================================
 
 
-def _validate_anomaly_maps(anomaly_maps: Tensor) -> None:
+def _validate_is_anomaly_maps(anomaly_maps: Tensor) -> None:
     _validate.is_tensor(anomaly_maps, argname="anomaly_maps")
-    _validate.anomaly_maps(anomaly_maps.numpy())
+    _validate.is_anomaly_maps(anomaly_maps.numpy())
 
 
-def _validate_masks(masks: Tensor) -> None:
+def _validate_is_masks(masks: Tensor) -> None:
     _validate.is_tensor(masks, argname="masks")
-    _validate.masks(masks.numpy())
+    _validate.is_masks(masks.numpy())
 
 
-def _validate_threshs(threshs: Tensor) -> None:
+def _validate_is_threshs(threshs: Tensor) -> None:
     _validate.is_tensor(threshs, argname="threshs")
-    _validate.threshs(threshs.numpy())
+    _validate.is_threshs(threshs.numpy())
 
 
-def _validate_shared_fpr(shared_fpr: Tensor, nan_allowed: bool = False, decreasing: bool = True) -> None:
+def _validate_is_shared_fpr(shared_fpr: Tensor, nan_allowed: bool = False, decreasing: bool = True) -> None:
     _validate.is_tensor(shared_fpr, argname="shared_fpr")
-    _validate.rate_curve(shared_fpr.numpy(), nan_allowed=nan_allowed, decreasing=decreasing)
+    _validate.is_rate_curve(shared_fpr.numpy(), nan_allowed=nan_allowed, decreasing=decreasing)
 
 
-def _validate_image_classes(image_classes: Tensor) -> None:
+def _validate_is_image_classes(image_classes: Tensor) -> None:
     _validate.is_tensor(image_classes, argname="image_classes")
-    _validate.images_classes(image_classes.numpy())
+    _validate.is_images_classes(image_classes.numpy())
 
 
-def _validate_per_image_tprs(per_image_tprs: Tensor, image_classes: Tensor) -> None:
-    _validate_image_classes(image_classes)
+def _validate_is_per_image_tprs(per_image_tprs: Tensor, image_classes: Tensor) -> None:
+    _validate_is_image_classes(image_classes)
     _validate.is_tensor(per_image_tprs, argname="per_image_tprs")
 
     # general validations
-    _validate.per_image_rate_curves(
+    _validate.is_per_image_rate_curves(
         per_image_tprs.numpy(),
         nan_allowed=True,  # normal images have NaN TPRs
         decreasing=None,  # not checked here
     )
 
     # specific to anomalous images
-    _validate.per_image_rate_curves(
+    _validate.is_per_image_rate_curves(
         per_image_tprs[image_classes == 1].numpy(),
         nan_allowed=False,
         decreasing=True,
@@ -99,13 +99,13 @@ def _validate_per_image_tprs(per_image_tprs: Tensor, image_classes: Tensor) -> N
         raise ValueError(msg)
 
 
-def _validate_aupimos(aupimos: Tensor) -> None:
+def _validate_is_aupimos(aupimos: Tensor) -> None:
     _validate.is_tensor(aupimos, argname="aupimos")
-    _validate.rates(aupimos.numpy(), nan_allowed=True)
+    _validate.is_rates(aupimos.numpy(), nan_allowed=True)
 
 
-def _validate_source_images_paths(paths: Sequence[str], expected_num_paths: int | None) -> None:
-    _validate.file_paths(
+def _validate_is_source_images_paths(paths: Sequence[str], expected_num_paths: int | None) -> None:
+    _validate.is_list_of_file_path(
         paths,  # type: ignore[arg-type]
         # not necessary to exist because the metric can be computed
         # directly from the anomaly maps and masks, without the images
@@ -180,12 +180,12 @@ class PIMOResult:
     def __post_init__(self) -> None:
         """Validate the inputs for the result object are consistent."""
         try:
-            _validate_threshs(self.threshs)
-            _validate_shared_fpr(self.shared_fpr, nan_allowed=False)
-            _validate_per_image_tprs(self.per_image_tprs, self.image_classes)
+            _validate_is_threshs(self.threshs)
+            _validate_is_shared_fpr(self.shared_fpr, nan_allowed=False)
+            _validate_is_per_image_tprs(self.per_image_tprs, self.image_classes)
 
             if self.paths is not None:
-                _validate_source_images_paths(self.paths, expected_num_paths=self.per_image_tprs.shape[0])
+                _validate_is_source_images_paths(self.paths, expected_num_paths=self.per_image_tprs.shape[0])
 
         except (TypeError, ValueError) as ex:
             msg = f"Invalid inputs for {self.__class__.__name__} object. Cause: {ex}."
@@ -254,7 +254,7 @@ class PIMOResult:
             file_path: path to the `.pt` file where to save the PIMO result.
                        If the file already exists, a numerical suffix is added to the filename.
         """
-        _validate.file_path(file_path, must_exist=False, extension=".pt", pathlib_ok=True)
+        _validate.is_file_path(file_path, must_exist=False, extension=".pt", pathlib_ok=True)
         file_path = duplicate_filename(file_path)
         payload = self.to_dict()
         torch.save(payload, file_path)
@@ -266,7 +266,7 @@ class PIMOResult:
         Args:
             file_path: path to the `.pt` file where to load the PIMO result.
         """
-        _validate.file_path(file_path, must_exist=True, extension=".pt", pathlib_ok=True)
+        _validate.is_file_path(file_path, must_exist=True, extension=".pt", pathlib_ok=True)
         payload = torch.load(file_path)
         if not isinstance(payload, dict):
             msg = f"Invalid content in file {file_path}. Must be a dictionary."
@@ -349,14 +349,14 @@ class AUPIMOResult:
     def __post_init__(self) -> None:
         """Validate the inputs for the result object are consistent."""
         try:
-            _validate.rate_range((self.fpr_lower_bound, self.fpr_upper_bound))
+            _validate.is_rate_range((self.fpr_lower_bound, self.fpr_upper_bound))
             # TODO(jpcbertoldo): warn when it's too low (use parameters from the numpy code)  # noqa: TD003
-            _validate.num_threshs(self.num_threshs)
-            _validate_aupimos(self.aupimos)
-            _validate.thresh_bounds((self.thresh_lower_bound, self.thresh_upper_bound))
+            _validate.is_num_threshs_gte2(self.num_threshs)
+            _validate_is_aupimos(self.aupimos)
+            _validate.is_thresh_bounds((self.thresh_lower_bound, self.thresh_upper_bound))
 
             if self.paths is not None:
-                _validate_source_images_paths(self.paths, expected_num_paths=self.aupimos.shape[0])
+                _validate_is_source_images_paths(self.paths, expected_num_paths=self.aupimos.shape[0])
 
         except (TypeError, ValueError) as ex:
             msg = f"Invalid inputs for {self.__class__.__name__} object. Cause: {ex}."
@@ -400,7 +400,7 @@ class AUPIMOResult:
             paths = pimoresult.paths
 
         elif paths is not None:
-            _validate_source_images_paths(paths, expected_num_paths=pimoresult.num_images)
+            _validate_is_source_images_paths(paths, expected_num_paths=pimoresult.num_images)
 
         fpr_lower_bound, fpr_upper_bound = fpr_bounds
         # recall: fpr upper/lower bounds are the same as the thresh lower/upper bounds
@@ -450,7 +450,7 @@ class AUPIMOResult:
             file_path: path to the `.json` file where to save the AUPIMO result.
                        If the file already exists, a numerical suffix is added to the filename.
         """
-        _validate.file_path(file_path, must_exist=False, extension=".json", pathlib_ok=True)
+        _validate.is_file_path(file_path, must_exist=False, extension=".json", pathlib_ok=True)
         file_path = duplicate_filename(file_path)
         file_path = Path(file_path)
         payload = self.to_dict()
@@ -466,7 +466,7 @@ class AUPIMOResult:
         Args:
             file_path: path to the `.json` file where to load the AUPIMO result.
         """
-        _validate.file_path(file_path, must_exist=True, extension=".json", pathlib_ok=True)
+        _validate.is_file_path(file_path, must_exist=True, extension=".json", pathlib_ok=True)
         file_path = Path(file_path)
         with file_path.open("r") as f:
             payload = json.load(f)
@@ -543,14 +543,14 @@ def pimo_curves(
     ==================
     {docstring_pimoresult}
     """
-    _validate_anomaly_maps(anomaly_maps)
+    _validate_is_anomaly_maps(anomaly_maps)
     anomaly_maps_array = anomaly_maps.detach().cpu().numpy()
 
-    _validate_masks(masks)
+    _validate_is_masks(masks)
     masks_array = masks.detach().cpu().numpy()
 
     if paths is not None:
-        _validate_source_images_paths(paths, expected_num_paths=anomaly_maps.shape[0])
+        _validate_is_source_images_paths(paths, expected_num_paths=anomaly_maps.shape[0])
 
     # other validations are done in the numpy code
     threshs_array, shared_fpr_array, per_image_tprs_array, _ = pimo_numpy.pimo_curves(
@@ -622,14 +622,14 @@ def aupimo_scores(
     ====================
     {docstring_aupimoresult}
     """
-    _validate_anomaly_maps(anomaly_maps)
+    _validate_is_anomaly_maps(anomaly_maps)
     anomaly_maps_array = anomaly_maps.detach().cpu().numpy()
 
-    _validate_masks(masks)
+    _validate_is_masks(masks)
     masks_array = masks.detach().cpu().numpy()
 
     if paths is not None:
-        _validate_source_images_paths(paths, expected_num_paths=anomaly_maps.shape[0])
+        _validate_is_source_images_paths(paths, expected_num_paths=anomaly_maps.shape[0])
 
     # other validations are done in the numpy code
 
@@ -755,7 +755,7 @@ class PIMO(Metric):
         # the options below are, redundantly, validated here to avoid reaching
         # an error later in the execution
 
-        _validate.num_threshs(num_threshs)
+        _validate.is_num_threshs_gte2(num_threshs)
         self.num_threshs = num_threshs
 
         # validate binclf_algorithm and shared_fpr_metric
@@ -775,9 +775,9 @@ class PIMO(Metric):
             anomaly_maps (Tensor): predictions of the model (ndim == 2, float)
             masks (Tensor): ground truth masks (ndim == 2, binary)
         """
-        _validate_anomaly_maps(anomaly_maps)
-        _validate_masks(masks)
-        _validate.same_shape(anomaly_maps, masks)
+        _validate_is_anomaly_maps(anomaly_maps)
+        _validate_is_masks(masks)
+        _validate.is_same_shape(anomaly_maps, masks)
         self.anomaly_maps.append(anomaly_maps)
         self.masks.append(masks)
 
@@ -898,7 +898,7 @@ class AUPIMO(PIMO):
 
         # other validations are done in PIMO.__init__()
 
-        _validate.rate_range(fpr_bounds)
+        _validate.is_rate_range(fpr_bounds)
         self.fpr_bounds = fpr_bounds
 
         self.force = force

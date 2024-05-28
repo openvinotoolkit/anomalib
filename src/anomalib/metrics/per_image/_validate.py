@@ -30,7 +30,7 @@ def is_tensor(tensor: Any, argname: str | None = None) -> None:  # noqa: ANN401
         raise TypeError(msg)
 
 
-def num_threshs(num_threshs: int) -> None:
+def is_num_threshs_gte2(num_threshs: int) -> None:
     """Validate the number of thresholds is a positive integer >= 2."""
     if not isinstance(num_threshs, int):
         msg = f"Expected the number of thresholds to be an integer, but got {type(num_threshs)}"
@@ -41,7 +41,7 @@ def num_threshs(num_threshs: int) -> None:
         raise ValueError(msg)
 
 
-def same_shape(*args) -> None:
+def is_same_shape(*args) -> None:
     """Works both for tensors and ndarrays."""
     assert len(args) > 0
     shapes = sorted({tuple(arg.shape) for arg in args})
@@ -50,7 +50,7 @@ def same_shape(*args) -> None:
         raise ValueError(msg)
 
 
-def rate(rate: float | int, zero_ok: bool, one_ok: bool) -> None:
+def is_rate(rate: float | int, zero_ok: bool, one_ok: bool) -> None:
     """Validates a rate parameter.
 
     Args:
@@ -75,7 +75,7 @@ def rate(rate: float | int, zero_ok: bool, one_ok: bool) -> None:
         raise ValueError(msg)
 
 
-def rate_range(bounds: tuple[float, float]) -> None:
+def is_rate_range(bounds: tuple[float, float]) -> None:
     """Validates the range of rates within the bounds.
 
     Args:
@@ -90,15 +90,15 @@ def rate_range(bounds: tuple[float, float]) -> None:
         raise ValueError(msg)
 
     lower, upper = bounds
-    rate(lower, zero_ok=False, one_ok=False)
-    rate(upper, zero_ok=False, one_ok=True)
+    is_rate(lower, zero_ok=False, one_ok=False)
+    is_rate(upper, zero_ok=False, one_ok=True)
 
     if lower >= upper:
         msg = f"Expected the upper bound to be larger than the lower bound, but got {upper=} <= {lower=}"
         raise ValueError(msg)
 
 
-def file_path(file_path: str | Path, must_exist: bool, extension: str | None, pathlib_ok: bool) -> None:
+def is_file_path(file_path: str | Path, must_exist: bool, extension: str | None, pathlib_ok: bool) -> None:
     """Validate the given path is a file (optionally) with the expected extension.
 
     Args:
@@ -135,7 +135,12 @@ def file_path(file_path: str | Path, must_exist: bool, extension: str | None, pa
         raise ValueError(msg)
 
 
-def file_paths(file_paths: list[str | Path], must_exist: bool, extension: str | None, pathlib_ok: bool) -> None:
+def is_list_of_file_path(
+    file_paths: list[str | Path],
+    must_exist: bool,
+    extension: str | None,
+    pathlib_ok: bool,
+) -> None:
     """Validate the given paths are files (optionally) with the expected extension.
 
     Args:
@@ -151,7 +156,7 @@ def file_paths(file_paths: list[str | Path], must_exist: bool, extension: str | 
     for idx, path in enumerate(file_paths):
         try:
             msg = f"Invalid path at index {idx}: {path}"
-            file_path(path, must_exist=must_exist, extension=extension, pathlib_ok=pathlib_ok)
+            is_file_path(path, must_exist=must_exist, extension=extension, pathlib_ok=pathlib_ok)
 
         except TypeError as ex:  # noqa: PERF203
             raise TypeError(msg) from ex
@@ -160,7 +165,7 @@ def file_paths(file_paths: list[str | Path], must_exist: bool, extension: str | 
             raise ValueError(msg) from ex
 
 
-def threshs(threshs: ndarray) -> None:
+def is_threshs(threshs: ndarray) -> None:
     """Validate that the thresholds are valid and monotonically increasing."""
     if not isinstance(threshs, ndarray):
         msg = f"Expected thresholds to be an ndarray, but got {type(threshs)}"
@@ -180,7 +185,7 @@ def threshs(threshs: ndarray) -> None:
         raise ValueError(msg)
 
 
-def thresh_bounds(thresh_bounds: tuple[float, float]) -> None:
+def is_thresh_bounds(thresh_bounds: tuple[float, float]) -> None:
     if not isinstance(thresh_bounds, tuple):
         msg = f"Expected threshold bounds to be a tuple, but got {type(thresh_bounds)}."
         raise TypeError(msg)
@@ -204,7 +209,7 @@ def thresh_bounds(thresh_bounds: tuple[float, float]) -> None:
         raise ValueError(msg)
 
 
-def anomaly_maps(anomaly_maps: ndarray) -> None:
+def is_anomaly_maps(anomaly_maps: ndarray) -> None:
     if not isinstance(anomaly_maps, ndarray):
         msg = f"Expected anomaly maps to be an ndarray, but got {type(anomaly_maps)}"
         raise TypeError(msg)
@@ -221,7 +226,7 @@ def anomaly_maps(anomaly_maps: ndarray) -> None:
         raise TypeError(msg)
 
 
-def masks(masks: ndarray) -> None:
+def is_masks(masks: ndarray) -> None:
     if not isinstance(masks, ndarray):
         msg = f"Expected masks to be an ndarray, but got {type(masks)}"
         raise TypeError(msg)
@@ -250,7 +255,7 @@ def masks(masks: ndarray) -> None:
         raise TypeError(msg)
 
 
-def binclf_curves(binclf_curves: ndarray, valid_threshs: ndarray | None) -> None:
+def is_binclf_curves(binclf_curves: ndarray, valid_threshs: ndarray | None) -> None:
     if not isinstance(binclf_curves, ndarray):
         msg = f"Expected binclf curves to be an ndarray, but got {type(binclf_curves)}"
         raise TypeError(msg)
@@ -294,7 +299,7 @@ def binclf_curves(binclf_curves: ndarray, valid_threshs: ndarray | None) -> None
         raise RuntimeError(msg)
 
 
-def images_classes(images_classes: ndarray) -> None:
+def is_images_classes(images_classes: ndarray) -> None:
     if not isinstance(images_classes, ndarray):
         msg = f"Expected image classes to be an ndarray, but got {type(images_classes)}."
         raise TypeError(msg)
@@ -321,7 +326,7 @@ def images_classes(images_classes: ndarray) -> None:
         raise TypeError(msg)
 
 
-def rates(rates: ndarray, nan_allowed: bool) -> None:
+def is_rates(rates: ndarray, nan_allowed: bool) -> None:
     if not isinstance(rates, ndarray):
         msg = f"Expected rates to be an ndarray, but got {type(rates)}."
         raise TypeError(msg)
@@ -355,8 +360,8 @@ def rates(rates: ndarray, nan_allowed: bool) -> None:
         raise ValueError(msg)
 
 
-def rate_curve(rate_curve: ndarray, nan_allowed: bool, decreasing: bool) -> None:
-    rates(rate_curve, nan_allowed=nan_allowed)
+def is_rate_curve(rate_curve: ndarray, nan_allowed: bool, decreasing: bool) -> None:
+    is_rates(rate_curve, nan_allowed=nan_allowed)
 
     diffs = np.diff(rate_curve)
     diffs_valid = diffs[~np.isnan(diffs)] if nan_allowed else diffs
@@ -370,7 +375,7 @@ def rate_curve(rate_curve: ndarray, nan_allowed: bool, decreasing: bool) -> None
         raise ValueError(msg)
 
 
-def per_image_rate_curves(rate_curves: ndarray, nan_allowed: bool, decreasing: bool | None) -> None:
+def is_per_image_rate_curves(rate_curves: ndarray, nan_allowed: bool, decreasing: bool | None) -> None:
     if not isinstance(rate_curves, ndarray):
         msg = f"Expected per-image rate curves to be an ndarray, but got {type(rate_curves)}."
         raise TypeError(msg)

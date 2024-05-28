@@ -67,7 +67,7 @@ class BinclfThreshsChoice:
 # =========================================== ARGS VALIDATION ===========================================
 
 
-def _validate_scores_batch(scores_batch: ndarray) -> None:
+def _validate_is_scores_batch(scores_batch: ndarray) -> None:
     """scores_batch (ndarray): floating (N, D)."""
     if not isinstance(scores_batch, ndarray):
         msg = f"Expected `scores_batch` to be an ndarray, but got {type(scores_batch)}"
@@ -85,7 +85,7 @@ def _validate_scores_batch(scores_batch: ndarray) -> None:
         raise ValueError(msg)
 
 
-def _validate_gts_batch(gts_batch: ndarray) -> None:
+def _validate_is_gts_batch(gts_batch: ndarray) -> None:
     """gts_batch (ndarray): boolean (N, D)."""
     if not isinstance(gts_batch, ndarray):
         msg = f"Expected `gts_batch` to be an ndarray, but got {type(gts_batch)}"
@@ -232,10 +232,10 @@ def binclf_multiple_curves(
         Thresholds are sorted in ascending order.
     """
     BinclfAlgorithm.validate(algorithm)
-    _validate_scores_batch(scores_batch)
-    _validate_gts_batch(gts_batch)
-    _validate.same_shape(scores_batch, gts_batch)
-    _validate.threshs(threshs)
+    _validate_is_scores_batch(scores_batch)
+    _validate_is_gts_batch(gts_batch)
+    _validate.is_same_shape(scores_batch, gts_batch)
+    _validate.is_threshs(threshs)
 
     if algorithm == BinclfAlgorithm.PYTHON:
         return _binclf_multiple_curves_python(scores_batch, gts_batch, threshs)
@@ -257,11 +257,11 @@ def binclf_multiple_curves(
 
 def _get_threshs_minmax_linspace(anomaly_maps: ndarray, num_threshs: int) -> ndarray:
     """Get thresholds linearly spaced between the min and max of the anomaly maps."""
-    _validate.num_threshs(num_threshs)
+    _validate.is_num_threshs_gte2(num_threshs)
     # this operation can be a bit expensive
     thresh_low, thresh_high = thresh_bounds = (anomaly_maps.min().item(), anomaly_maps.max().item())
     try:
-        _validate.thresh_bounds(thresh_bounds)
+        _validate.is_thresh_bounds(thresh_bounds)
     except ValueError as ex:
         msg = f"Invalid threshold bounds computed from the given anomaly maps. Cause: {ex}"
         raise ValueError(msg) from ex
@@ -322,15 +322,15 @@ def per_image_binclf_curve(
             Thresholds are sorted in ascending order.
     """
     BinclfAlgorithm.validate(algorithm)
-    _validate.anomaly_maps(anomaly_maps)
-    _validate.masks(masks)
-    _validate.same_shape(anomaly_maps, masks)
+    _validate.is_anomaly_maps(anomaly_maps)
+    _validate.is_masks(masks)
+    _validate.is_same_shape(anomaly_maps, masks)
 
     threshs: ndarray
 
     if threshs_choice == BinclfThreshsChoice.GIVEN:
         assert threshs_given is not None
-        _validate.threshs(threshs_given)
+        _validate.is_threshs(threshs_given)
         if num_threshs is not None:
             logger.warning(
                 f"Argument `num_threshs` was given, but it is ignored because `threshs_choice` is {threshs_choice}.",
@@ -362,7 +362,7 @@ def per_image_binclf_curve(
     num_images = anomaly_maps.shape[0]
 
     try:
-        _validate.binclf_curves(binclf_curves, valid_threshs=threshs)
+        _validate.is_binclf_curves(binclf_curves, valid_threshs=threshs)
 
         # these two validations cannot be done in `_validate.binclf_curves` because it does not have access to the
         # original shapes of `anomaly_maps`

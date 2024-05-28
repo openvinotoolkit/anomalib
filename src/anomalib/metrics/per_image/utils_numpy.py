@@ -94,7 +94,7 @@ class StatsAlternativeHypothesis:
 
 
 # =========================================== ARGS VALIDATION ===========================================
-def _validate_image_class(image_class: int) -> None:
+def _validate_is_image_class(image_class: int) -> None:
     if not isinstance(image_class, int):
         msg = f"Expected image class to be an int (0 for 'normal', 1 for 'anomalous'), but got {type(image_class)}."
         raise TypeError(msg)
@@ -104,7 +104,7 @@ def _validate_image_class(image_class: int) -> None:
         raise ValueError(msg)
 
 
-def _validate_per_image_scores(per_image_scores: ndarray) -> None:
+def _validate_is_per_image_scores(per_image_scores: ndarray) -> None:
     if not isinstance(per_image_scores, ndarray):
         msg = f"Expected per-image scores to be a numpy array, but got {type(per_image_scores)}."
         raise TypeError(msg)
@@ -114,7 +114,7 @@ def _validate_per_image_scores(per_image_scores: ndarray) -> None:
         raise ValueError(msg)
 
 
-def _validate_scores_per_model(scores_per_model: dict[str, ndarray] | OrderedDict[str, ndarray]) -> None:
+def _validate_is_scores_per_model(scores_per_model: dict[str, ndarray] | OrderedDict[str, ndarray]) -> None:
     if not isinstance(scores_per_model, dict | OrderedDict):
         msg = f"Expected scores per model to be a dictionary or ordered dictionary, but got {type(scores_per_model)}."
         raise TypeError(msg)
@@ -242,16 +242,16 @@ def per_image_scores_stats(
     """
     StatsOutliersPolicy.validate(outliers_policy)
     StatsRepeatedPolicy.validate(repeated_policy)
-    _validate_per_image_scores(per_image_scores)
+    _validate_is_per_image_scores(per_image_scores)
 
     # restrain the images to the class `only_class` if given, else use all images
     if images_classes is None:
         images_selection_mask = np.ones_like(per_image_scores, dtype=bool)
 
     elif only_class is not None:
-        _validate.images_classes(images_classes)
-        _validate.same_shape(per_image_scores, images_classes)
-        _validate_image_class(only_class)
+        _validate.is_images_classes(images_classes)
+        _validate.is_same_shape(per_image_scores, images_classes)
+        _validate_is_image_class(only_class)
         images_selection_mask = images_classes == only_class
 
     else:
@@ -383,7 +383,7 @@ def compare_models_pairwise_ttest_rel(
                         - if `two-sided`: model[i] != model[j]
                     in termos of average score.
     """
-    _validate_scores_per_model(scores_per_model)
+    _validate_is_scores_per_model(scores_per_model)
     StatsAlternativeHypothesis.validate(alternative)
 
     # remove nan values; list of items keeps the order of the OrderedDict
@@ -468,7 +468,7 @@ def compare_models_pairwise_wilcoxon(
                         - if `two-sided`: model[i] != model[j]
                     in terms of average ranks (not scores!).
     """
-    _validate_scores_per_model(scores_per_model)
+    _validate_is_scores_per_model(scores_per_model)
     StatsAlternativeHypothesis.validate(alternative)
 
     # remove nan values; list of items keeps the order of the OrderedDict

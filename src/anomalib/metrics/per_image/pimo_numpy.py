@@ -69,21 +69,21 @@ class PIMOSharedFPRMetric:
 
 def _images_classes_from_masks(masks: ndarray) -> ndarray:
     """Deduce the image classes from the masks."""
-    _validate.masks(masks)
+    _validate.is_masks(masks)
     return (masks == 1).any(axis=(1, 2)).astype(np.int32)
 
 
 # =========================================== ARGS VALIDATION ===========================================
 
 
-def _validate_at_least_one_anomalous_image(masks: ndarray) -> None:
+def _validate_has_at_least_one_anomalous_image(masks: ndarray) -> None:
     image_classes = _images_classes_from_masks(masks)
     if (image_classes == 1).sum() == 0:
         msg = "Expected at least one ANOMALOUS image, but found none."
         raise ValueError(msg)
 
 
-def _validate_at_least_one_normal_image(masks: ndarray) -> None:
+def _validate_has_at_least_one_normal_image(masks: ndarray) -> None:
     image_classes = _images_classes_from_masks(masks)
     if (image_classes == 0).sum() == 0:
         msg = "Expected at least one NORMAL image, but found none."
@@ -139,12 +139,12 @@ def pimo_curves(
     """
     BinclfAlgorithm.validate(binclf_algorithm)
     PIMOSharedFPRMetric.validate(shared_fpr_metric)
-    _validate.num_threshs(num_threshs)
-    _validate.anomaly_maps(anomaly_maps)
-    _validate.masks(masks)
-    _validate.same_shape(anomaly_maps, masks)
-    _validate_at_least_one_anomalous_image(masks)
-    _validate_at_least_one_normal_image(masks)
+    _validate.is_num_threshs_gte2(num_threshs)
+    _validate.is_anomaly_maps(anomaly_maps)
+    _validate.is_masks(masks)
+    _validate.is_same_shape(anomaly_maps, masks)
+    _validate_has_at_least_one_anomalous_image(masks)
+    _validate_has_at_least_one_normal_image(masks)
 
     image_classes = _images_classes_from_masks(masks)
 
@@ -173,7 +173,7 @@ def pimo_curves(
         # shape -> (N, K)
         per_image_fprs_normals = binclf_curve_numpy.per_image_fpr(binclf_curves[image_classes == 0])
         try:
-            _validate.per_image_rate_curves(per_image_fprs_normals, nan_allowed=False, decreasing=True)
+            _validate.is_per_image_rate_curves(per_image_fprs_normals, nan_allowed=False, decreasing=True)
         except ValueError as ex:
             msg = f"Cannot compute PIMO because the per-image FPR curves from normal images are invalid. Cause: {ex}"
             raise RuntimeError(msg) from ex
@@ -235,7 +235,7 @@ def aupimo_scores(
             [4] AUPIMO scores of shape (N,) in [0, 1]
             [5] number of points used in the AUC integration
     """
-    _validate.rate_range(fpr_bounds)
+    _validate.is_rate_range(fpr_bounds)
 
     # other validations are done in the `pimo` function
     threshs, shared_fpr, per_image_tprs, image_classes = pimo_curves(
@@ -246,10 +246,10 @@ def aupimo_scores(
         shared_fpr_metric=shared_fpr_metric,
     )
     try:
-        _validate.threshs(threshs)
-        _validate.rate_curve(shared_fpr, nan_allowed=False, decreasing=True)
-        _validate.images_classes(image_classes)
-        _validate.per_image_rate_curves(per_image_tprs[image_classes == 1], nan_allowed=False, decreasing=True)
+        _validate.is_threshs(threshs)
+        _validate.is_rate_curve(shared_fpr, nan_allowed=False, decreasing=True)
+        _validate.is_images_classes(image_classes)
+        _validate.is_per_image_rate_curves(per_image_tprs[image_classes == 1], nan_allowed=False, decreasing=True)
 
     except ValueError as ex:
         msg = f"Cannot compute AUPIMO because the PIMO curves are invalid. Cause: {ex}"
@@ -383,10 +383,10 @@ def thresh_at_shared_fpr_level(threshs: ndarray, shared_fpr: ndarray, fpr_level:
             [1] threshold
             [2] the actual shared FPR value at the returned threshold
     """
-    _validate.threshs(threshs)
-    _validate.rate_curve(shared_fpr, nan_allowed=False, decreasing=True)
+    _validate.is_threshs(threshs)
+    _validate.is_rate_curve(shared_fpr, nan_allowed=False, decreasing=True)
     _joint_validate_threshs_shared_fpr(threshs, shared_fpr)
-    _validate.rate(fpr_level, zero_ok=True, one_ok=True)
+    _validate.is_rate(fpr_level, zero_ok=True, one_ok=True)
 
     shared_fpr_min, shared_fpr_max = shared_fpr.min(), shared_fpr.max()
 
@@ -433,7 +433,7 @@ def aupimo_normalizing_factor(fpr_bounds: tuple[float, float]) -> float:
     Returns:
         float: the normalization factor (>0).
     """
-    _validate.rate_range(fpr_bounds)
+    _validate.is_rate_range(fpr_bounds)
     fpr_lower_bound, fpr_upper_bound = fpr_bounds
     # the log's base must be the same as the one used in the integration!
     return float(np.log(fpr_upper_bound / fpr_lower_bound))
@@ -453,7 +453,7 @@ def aupimo_random_model_score(fpr_bounds: tuple[float, float]) -> float:
     Returns:
         float: the AUPIMO score.
     """
-    _validate.rate_range(fpr_bounds)
+    _validate.is_rate_range(fpr_bounds)
     fpr_lower_bound, fpr_upper_bound = fpr_bounds
     integral_value = fpr_upper_bound - fpr_lower_bound
     return float(integral_value / aupimo_normalizing_factor(fpr_bounds))
