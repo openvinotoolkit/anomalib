@@ -33,7 +33,6 @@ author: jpcbertoldo
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-import warnings
 from enum import Enum
 
 import numpy as np
@@ -260,18 +259,16 @@ def aupimo_scores(
     )
 
     if not np.isclose(fpr_lower_bound_defacto, fpr_lower_bound, rtol=(rtol := 1e-2)):
-        msg = (
+        logger.warning(
             "The lower bound of the shared FPR integration range is not exactly achieved. "
-            f"Expected {fpr_lower_bound} but got {fpr_lower_bound_defacto}, which is not within {rtol=}."
+            f"Expected {fpr_lower_bound} but got {fpr_lower_bound_defacto}, which is not within {rtol=}.",
         )
-        warnings.warn(msg, RuntimeWarning, stacklevel=1)
 
     if not np.isclose(fpr_upper_bound_defacto, fpr_upper_bound, rtol=rtol):
-        msg = (
+        logger.warning = (
             "The upper bound of the shared FPR integration range is not exactly achieved. "
             f"Expected {fpr_upper_bound} but got {fpr_upper_bound_defacto}, which is not within {rtol=}."
         )
-        warnings.warn(msg, RuntimeWarning, stacklevel=1)
 
     # reminder: fpr lower/upper bound is threshold upper/lower bound (reversed)
     thresh_lower_bound_idx = fpr_upper_bound_thresh_idx
@@ -308,12 +305,10 @@ def aupimo_scores(
         raise RuntimeError(msg)
 
     if invalid_shared_fpr.any():
-        msg = (
+        logger.warning(
             "Some values in the shared fpr integration range are nan. "
-            "The AUPIMO will be computed without these values."
+            "The AUPIMO will be computed without these values.",
         )
-        warnings.warn(msg, RuntimeWarning, stacklevel=1)
-        logger.warning(msg)
 
         # get rid of nan values by removing them from the integration range
         shared_fpr_bounded_log = shared_fpr_bounded_log[~invalid_shared_fpr]
@@ -330,17 +325,14 @@ def aupimo_scores(
         if not force:
             raise RuntimeError(msg)
         msg += " Computation was forced!"
-        warnings.warn(msg, RuntimeWarning, stacklevel=1)
         logger.warning(msg)
 
     if num_points_integral < 300:
-        msg = (
+        logger.warning(
             "The AUPIMO may be inaccurate because the shared fpr integration range doesnt have enough points. "
             f"Found {num_points_integral} points in the integration range. "
-            "Try increasing `num_threshs`."
+            "Try increasing `num_threshs`.",
         )
-        warnings.warn(msg, RuntimeWarning, stacklevel=1)
-        logger.warning(msg)
 
     aucs: ndarray = np.trapz(per_image_tprs_bounded, x=shared_fpr_bounded_log, axis=1)
 

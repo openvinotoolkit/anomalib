@@ -17,7 +17,7 @@ author: jpcbertoldo
 # SPDX-License-Identifier: Apache-2.0
 
 import json
-import warnings
+import logging
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -33,6 +33,8 @@ from . import _validate, pimo_numpy, utils
 from .binclf_curve_numpy import BinclfAlgorithm
 from .pimo_numpy import PIMOSharedFPRMetric
 from .utils import StatsOutliersPolicy, StatsRepeatedPolicy
+
+logger = logging.getLogger(__name__)
 
 # =========================================== AUX ===========================================
 
@@ -759,11 +761,9 @@ class PIMO(Metric):
         """
         super().__init__()
 
-        warnings.warn(
+        logger.warning(
             f"Metric `{self.__class__.__name__}` will save all targets and predictions in buffer."
             " For large datasets this may lead to large memory footprint.",
-            UserWarning,
-            stacklevel=1,
         )
 
         # the options below are, redundantly, validated here to avoid reaching

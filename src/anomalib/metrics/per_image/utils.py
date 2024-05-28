@@ -11,7 +11,6 @@ author: jpcbertoldo
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-import warnings
 from collections import OrderedDict
 from copy import deepcopy
 from typing import TYPE_CHECKING
@@ -180,9 +179,9 @@ def _validate_is_scores_per_model_aupimoresult(
 
     if len(available_paths) != len(scores_per_model):
         msg = "Some models have paths, while others are missing them."
-        if missing_paths_ok:
-            warnings.warn(msg, UserWarning, stacklevel=3)
-            logger.warning(msg)
+        if not missing_paths_ok:
+            raise ValueError(msg)
+        logger.warning(msg)
 
 
 def _validate_is_scores_per_model(
