@@ -1,4 +1,7 @@
-"""Tests for per-image binary classification curves using numpy and numba versions."""
+"""Tests for per-image binary classification curves using numpy and numba versions.
+
+author: jpcbertoldo
+"""
 # ruff: noqa: SLF001, PT011
 
 import numpy as np

@@ -1,9 +1,10 @@
-"""Torch-oriented interfaces for `utils.py`."""
+"""Torch-oriented interfaces for `utils.py`.
+
+author: jpcbertoldo
+"""
 
 # Original Code
-# Copyright (c) 2024 @jpcbertoldo
 # https://github.com/jpcbertoldo/aupimo
-# SPDX-License-Identifier: MIT
 #
 # Modified
 # Copyright (C) 2024 Intel Corporation

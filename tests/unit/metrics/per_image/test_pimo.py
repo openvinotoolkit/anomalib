@@ -1,4 +1,7 @@
-"""Test `anomalib.metrics.per_image.pimo_numpy`."""
+"""Test `anomalib.metrics.per_image.pimo_numpy`.
+
+author: jpcbertoldo
+"""
 
 import tempfile
 from pathlib import Path

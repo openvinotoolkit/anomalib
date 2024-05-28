@@ -1,1 +1,4 @@
-"""Per-Image Metrics Tests."""
+"""Per-Image Metrics Tests.
+
+author: jpcbertoldo
+"""

@@ -1,4 +1,7 @@
-"""Test `utils.py`."""
+"""Test `utils.py`.
+
+author: jpcbertoldo
+"""
 
 from collections import OrderedDict
 
