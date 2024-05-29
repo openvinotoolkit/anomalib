@@ -1,6 +1,6 @@
 """Binary classification matrix curve (NUMBA implementation of low level functions).
 
-See docstring of `binclf_curve` or `binclf_curve_numpy` for more details.
+Details: `.binclf_curve`.
 
 author: jpcbertoldo
 """
@@ -33,7 +33,7 @@ def binclf_one_curve_numba(scores: ndarray, gts: ndarray, threshs: ndarray) -> n
     Returns:
         ndarray: Binary classification matrix curve (K, 2, 2)
 
-        See docstring of `binclf_multiple_curves` for details.
+        Details: `anomalib.metrics.per_image.binclf_curve_numpy.binclf_multiple_curves`.
     """
     num_th = len(threshs)
 
@@ -105,7 +105,7 @@ def binclf_multiple_curves_numba(scores_batch: ndarray, gts_batch: ndarray, thre
     Returns:
         ndarray: Binary classification matrix curves (N, K, 2, 2)
 
-        See docstring of `binclf_multiple_curves` for details.
+        Details: `anomalib.metrics.per_image.binclf_curve_numpy.binclf_multiple_curves`.
     """
     num_imgs = scores_batch.shape[0]
     num_th = len(threshs)

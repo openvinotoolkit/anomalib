@@ -1,7 +1,32 @@
 """Per-Image Overlap curve (PIMO, pronounced pee-mo) and its area under the curve (AUPIMO).
 
+# PIMO
+
+PIMO is a curve of True Positive Rate (TPR) values on each image across multiple anomaly score thresholds.
+The anomaly score thresholds are indexed by a (shared) valued of False Positive Rate (FPR) measure on the normal images.
+
+Each *anomalous* image has its own curve such that the X-axis is shared by all of them.
+
+At a given threshold:
+    X-axis: Shared FPR (may vary)
+        1. Log of the Average of per-image FPR on normal images.
+        SEE NOTE BELOW.
+    Y-axis: per-image TP Rate (TPR), or "Overlap" between the ground truth and the predicted masks.
+
+*** Note about other shared FPR alternatives ***
+The shared FPR metric can be made harder by using the cross-image max (or high-percentile) FPRs instead of the mean.
+Rationale: this will further punish models that have exceptional FPs in normal images.
+So far there is only one shared FPR metric implemented but others will be added in the future.
+
+# AUPIMO
+
+`AUPIMO` is the area under each `PIMO` curve with bounded integration range in terms of shared FPR.
+
+# Disclaimer
+
 This module implements torch interfaces to access the numpy code in `pimo_numpy.py`.
-Check its docstring for more details.
+Tensors are converted to numpy arrays and then passed and validated in the numpy code.
+The results are converted back to tensors and eventually wrapped in an dataclass object.
 
 Validations will preferably happen in ndarray so the numpy code can be reused without torch,
 so often times the Tensor arguments will be converted to ndarray and then validated.
@@ -223,7 +248,7 @@ class PIMOResult:
     def thresh_at(self, fpr_level: float) -> tuple[int, float, float]:
         """Return the threshold at the given shared FPR.
 
-        See `anomalib.utils.metrics.per_image.pimo_numpy.thresh_at_shared_fpr_level` for details.
+        See `anomalib.metrics.per_image.pimo_numpy.thresh_at_shared_fpr_level` for details.
 
         Args:
             fpr_level (float): shared FPR level
@@ -505,7 +530,7 @@ class AUPIMOResult:
     ) -> list[dict[str, str | int | float]]:
         """Return the AUPIMO statistics.
 
-        See `anomalib.utils.metrics.per_image.per_image_scores_stats` for details.
+        See `anomalib.metrics.per_image.utils.per_image_scores_stats` for details.
 
         Returns:
             list[dict[str, str | int | float]]: AUPIMO statistics
@@ -537,10 +562,28 @@ def pimo_curves(
     The tensors are converted to numpy arrays and then passed and validated in the numpy code.
     The results are converted back to tensors and wrapped in an dataclass object.
 
-    Refer to `pimo_numpy.pimo_curves()` and `PIMOResult`.
+    PIMO is a curve of True Positive Rate (TPR) values on each image across multiple anomaly score thresholds.
+    The anomaly score thresholds are indexed by a (cross-image shared) value of False Positive Rate (FPR) measure on
+    the normal images.
 
-    Args (extra):
-        paths: paths to the source images to which the PIMO curves correspond.
+    Details: `anomalib.metrics.per_image.pimo`.
+
+    Args' notation:
+        N: number of images
+        H: image height
+        W: image width
+        K: number of thresholds
+
+    Args:
+        anomaly_maps: floating point anomaly score maps of shape (N, H, W)
+        masks: binary (bool or int) ground truth masks of shape (N, H, W)
+        num_threshs: number of thresholds to compute (K)
+        binclf_algorithm: algorithm to compute the binary classifier curve (see `binclf_curve_numpy.Algorithm`)
+        shared_fpr_metric: metric to compute the shared FPR axis
+        paths: paths to the source images to which the PIMO curves correspond. Default: None.
+
+    Returns:
+        PIMOResult: PIMO curves dataclass object. See `PIMOResult` for details.
     """
     _validate_is_anomaly_maps(anomaly_maps)
     anomaly_maps_array = anomaly_maps.detach().cpu().numpy()
@@ -597,10 +640,29 @@ def aupimo_scores(
     The tensors are converted to numpy arrays and then passed and validated in the numpy code.
     The results are converted back to tensors and wrapped in an dataclass object.
 
-    Refer to `pimo_numpy.aupimo_scores()`, `PIMOResult` and `AUPIMOResult`.
+    Scores are computed from the integration of the PIMO curves within the given FPR bounds, then normalized to [0, 1].
+    It can be thought of as the average TPR of the PIMO curves within the given FPR bounds.
 
-    Args (extra):
+    Details: `anomalib.metrics.per_image.pimo`.
+
+    Args' notation:
+        N: number of images
+        H: image height
+        W: image width
+        K: number of thresholds
+
+    Args:
+        anomaly_maps: floating point anomaly score maps of shape (N, H, W)
+        masks: binary (bool or int) ground truth masks of shape (N, H, W)
+        num_threshs: number of thresholds to compute (K)
+        binclf_algorithm: algorithm to compute the binary classifier curve (see `binclf_curve_numpy.Algorithm`)
+        shared_fpr_metric: metric to compute the shared FPR axis
+        fpr_bounds: lower and upper bounds of the FPR integration range
+        force: whether to force the computation despite bad conditions
         paths: paths to the source images to which the AUPIMO scores correspond.
+
+    Returns:
+        tuple[PIMOResult, AUPIMOResult]: PIMO and AUPIMO results dataclass objects. See `PIMOResult` and `AUPIMOResult`.
     """
     _validate_is_anomaly_maps(anomaly_maps)
     anomaly_maps_array = anomaly_maps.detach().cpu().numpy()
@@ -659,13 +721,35 @@ def aupimo_scores(
 
 
 class PIMO(Metric):
-    """Per-Image Overlap (PIMO) curve.
+    """Per-IMage Overlap (PIMO, pronounced pee-mo) curves.
 
     This torchmetrics interface is a wrapper around the functional interface, which is a wrapper around the numpy code.
     The tensors are converted to numpy arrays and then passed and validated in the numpy code.
     The results are converted back to tensors and wrapped in an dataclass object.
 
-    Refer to `pimo_numpy.pimo_curves()` and `PIMOResult`.
+    PIMO is a curve of True Positive Rate (TPR) values on each image across multiple anomaly score thresholds.
+    The anomaly score thresholds are indexed by a (cross-image shared) value of False Positive Rate (FPR) measure on
+    the normal images.
+
+    Details: `anomalib.metrics.per_image.pimo`.
+
+    Notation:
+        N: number of images
+        H: image height
+        W: image width
+        K: number of thresholds
+
+    Attributes:
+        anomaly_maps: floating point anomaly score maps of shape (N, H, W)
+        masks: binary (bool or int) ground truth masks of shape (N, H, W)
+
+    Args:
+        num_threshs: number of thresholds to compute (K)
+        binclf_algorithm: algorithm to compute the binary classifier curve (see `binclf_curve_numpy.Algorithm`)
+        shared_fpr_metric: metric to compute the shared FPR axis
+
+    Returns:
+        PIMOResult: PIMO curves dataclass object. See `PIMOResult` for details.
     """
 
     is_differentiable: bool = False
@@ -703,9 +787,9 @@ class PIMO(Metric):
         """Per-Image Overlap (PIMO) curve.
 
         Args:
-            num_threshs: number of thresholds used to compute the PIMO curve
-            binclf_algorithm: algorithm to compute the binary classification curve
-            shared_fpr_metric: metric to compute the shared FPR curve
+            num_threshs: number of thresholds used to compute the PIMO curve (K)
+            binclf_algorithm: algorithm to compute the binary classification curve (see `binclf_curve_numpy.Algorithm`)
+            shared_fpr_metric: metric to compute the shared FPR axis
         """
         super().__init__()
 
@@ -769,7 +853,30 @@ class AUPIMO(PIMO):
     The tensors are converted to numpy arrays and then passed and validated in the numpy code.
     The results are converted back to tensors and wrapped in an dataclass object.
 
-    Refer to `pimo_numpy.aupimo_scores()`, `PIMOResult` and `AUPIMOResult`.
+    Scores are computed from the integration of the PIMO curves within the given FPR bounds, then normalized to [0, 1].
+    It can be thought of as the average TPR of the PIMO curves within the given FPR bounds.
+
+    Details: `anomalib.metrics.per_image.pimo`.
+
+    Notation:
+        N: number of images
+        H: image height
+        W: image width
+        K: number of thresholds
+
+    Attributes:
+        anomaly_maps: floating point anomaly score maps of shape (N, H, W)
+        masks: binary (bool or int) ground truth masks of shape (N, H, W)
+
+    Args:
+        num_threshs: number of thresholds to compute (K)
+        binclf_algorithm: algorithm to compute the binary classifier curve (see `binclf_curve_numpy.Algorithm`)
+        shared_fpr_metric: metric to compute the shared FPR axis
+        fpr_bounds: lower and upper bounds of the FPR integration range
+        force: whether to force the computation despite bad conditions
+
+    Returns:
+        tuple[PIMOResult, AUPIMOResult]: PIMO and AUPIMO results dataclass objects. See `PIMOResult` and `AUPIMOResult`.
     """
 
     fpr_bounds: tuple[float, float]

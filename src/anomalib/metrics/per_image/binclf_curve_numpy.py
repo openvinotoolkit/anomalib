@@ -111,7 +111,7 @@ def _binclf_one_curve_python(scores: ndarray, gts: ndarray, threshs: ndarray) ->
     Returns:
         ndarray: Binary classification matrix curve (K, 2, 2)
 
-        See docstring of `binclf_multiple_curves` for details.
+        Details: `anomalib.metrics.per_image.binclf_curve_numpy.binclf_multiple_curves`.
     """
     num_th = len(threshs)
 

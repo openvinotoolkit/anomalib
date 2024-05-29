@@ -1,26 +1,6 @@
 """Per-Image Overlap curve (PIMO, pronounced pee-mo) and its area under the curve (AUPIMO).
 
-# PIMO
-
-PIMO is a curve of True Positive Rate (TPR) values on each image across multiple anomaly score thresholds.
-The anomaly score thresholds are indexed by a (shared) valued of False Positive Rate (FPR) measure on the normal images.
-
-Each *anomalous* image has its own curve such that the X-axis is shared by all of them.
-
-At a given threshold:
-    X-axis: Shared FPR (may vary)
-        1. Log of the Average of per-image FPR on normal images.
-        SEE NOTE BELOW.
-    Y-axis: per-image TP Rate (TPR), or "Overlap" between the ground truth and the predicted masks.
-
-*** Note about other shared FPR alternatives ***
-The shared FPR metric can be made harder by using the cross-image max (or high-percentile) FPRs instead of the mean.
-Rationale: this will further punish models that have exceptional FPs in normal images.
-So far there is only one shared FPR metric implemented but others will be added in the future.
-
-# AUPIMO
-
-`AUPIMO` is the area under each `PIMO` curve with bounded integration range in terms of shared FPR.
+Details: `anomalib.metrics.per_image.pimo`.
 
 author: jpcbertoldo
 """
@@ -103,7 +83,7 @@ def pimo_curves(
     The anomaly score thresholds are indexed by a (cross-image shared) value of False Positive Rate (FPR) measure on
     the normal images.
 
-    See the module's docstring for more details.
+    Details: `anomalib.metrics.per_image.pimo`.
 
     Args' notation:
         N: number of images
@@ -168,7 +148,8 @@ def pimo_curves(
             raise RuntimeError(msg) from ex
 
         # shape -> (K,)
-        # this is the only shared FPR metric implemented so far, see note about shared FPR in the module's docstring
+        # this is the only shared FPR metric implemented so far,
+        # see note about shared FPR in Details: `anomalib.metrics.per_image.pimo`.
         shared_fpr = per_image_fprs_normals.mean(axis=0)
 
     else:
@@ -198,7 +179,7 @@ def aupimo_scores(
     Scores are computed from the integration of the PIMO curves within the given FPR bounds, then normalized to [0, 1].
     It can be thought of as the average TPR of the PIMO curves within the given FPR bounds.
 
-    See `pimo_curves()` and the module's docstring for more details.
+    Details: `anomalib.metrics.per_image.pimo`.
 
     Args' notation:
         N: number of images

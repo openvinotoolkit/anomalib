@@ -1,7 +1,8 @@
 """Binary classification curve (torch interface).
 
 This module implements torch interfaces to access the numpy code in `binclf_curve_numpy.py`.
-Check its docstring for more details.
+
+Details: `anomalib.metrics.per_image.binclf_curve_numpy.binclf_multiple_curves`.
 
 Tensors are build with `torch.from_numpy` and so the returned tensors will share the same memory as the numpy arrays.
 
