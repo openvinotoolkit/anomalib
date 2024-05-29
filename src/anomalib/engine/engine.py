@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any
 
 import torch
-from lightning.pytorch.callbacks import Callback
+from lightning.pytorch.callbacks import Callback, RichModelSummary, RichProgressBar
 from lightning.pytorch.loggers import Logger
 from lightning.pytorch.trainer import Trainer
 from lightning.pytorch.utilities.types import _EVALUATE_OUTPUT, _PREDICT_OUTPUT, EVAL_DATALOADERS, TRAIN_DATALOADERS
@@ -406,7 +406,7 @@ class Engine:
 
     def _setup_anomalib_callbacks(self) -> None:
         """Set up callbacks for the trainer."""
-        _callbacks: list[Callback] = []
+        _callbacks: list[Callback] = [RichProgressBar(), RichModelSummary()]
 
         # Add ModelCheckpoint if it is not in the callbacks list.
         has_checkpoint_callback = any(isinstance(c, ModelCheckpoint) for c in self._cache.args["callbacks"])
@@ -962,3 +962,52 @@ class Engine:
         if exported_model_path:
             logging.info(f"Exported model to {exported_model_path}")
         return exported_model_path
+
+    @classmethod
+    def from_config(
+        cls: type["Engine"],
+        config_path: str | Path,
+        **kwargs,
+    ) -> tuple["Engine", AnomalyModule, AnomalibDataModule]:
+        """Create an Engine instance from a configuration file.
+
+        Args:
+            config_path (str | Path): Path to the full configuration file.
+            **kwargs (dict): Additional keyword arguments.
+
+        Returns:
+            tuple[Engine, AnomalyModule, AnomalibDataModule]: Engine instance.
+
+        Example:
+            The following example shows training with full configuration file:
+
+            .. code-block:: python
+                >>> config_path = "anomalib_full_config.yaml"
+                >>> engine, model, datamodule = Engine.from_config(config_path=config_path)
+                >>> engine.fit(datamodule=datamodule, model=model)
+
+            The following example shows overriding the configuration file with additional keyword arguments:
+
+            .. code-block:: python
+                >>> override_kwargs = {"data.train_batch_size": 8}
+                >>> engine, model, datamodule = Engine.from_config(config_path=config_path, **override_kwargs)
+                >>> engine.fit(datamodule=datamodule, model=model)
+        """
+        from anomalib.cli.cli import AnomalibCLI
+
+        if not Path(config_path).exists():
+            msg = f"Configuration file not found: {config_path}"
+            raise FileNotFoundError(msg)
+
+        args = [
+            "fit",
+            "--config",
+            str(config_path),
+        ]
+        for key, value in kwargs.items():
+            args.extend([f"--{key}", str(value)])
+        anomalib_cli = AnomalibCLI(
+            args=args,
+            run=False,
+        )
+        return anomalib_cli.engine, anomalib_cli.model, anomalib_cli.datamodule

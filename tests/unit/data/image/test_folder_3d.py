@@ -38,3 +38,20 @@ class TestFolder3D(_TestAnomalibDepthDatamodule):
         _datamodule.setup()
 
         return _datamodule
+
+    @pytest.fixture()
+    def fxt_data_config_path(self) -> str:
+        """Return the path to the test data config."""
+        return "configs/data/folder_3d.yaml"
+
+    def test_datamodule_from_config(self, fxt_data_config_path: str) -> None:
+        """Test method to create a datamodule from a configuration file.
+
+        Args:
+            fxt_data_config_path (str): The path to the configuration file.
+
+        Returns:
+            None
+        """
+        pytest.skip("The configuration file does not exist.")
+        _ = fxt_data_config_path

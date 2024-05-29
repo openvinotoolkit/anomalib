@@ -27,7 +27,7 @@ Before fitting the KDE model, the dimensionality of the feature vectors is reduc
 
 ## Usage and parameters
 
-`python tools/train.py --model rkde`
+`anomalib train --model Rkde --data MVTec --data.category <category>`
 
 | Parameter                | Affects Stage      | Description                                                                                                                                                                                                | Type   | Options       |
 | :----------------------- | :----------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :----- | :------------ |

@@ -15,6 +15,7 @@ from jsonargparse._actions import _ActionSubCommands
 from rich import traceback
 
 from anomalib import TaskType, __version__
+from anomalib.cli.pipelines import PIPELINE_REGISTRY, pipeline_subcommands, run_pipeline
 from anomalib.cli.utils.help_formatter import CustomHelpFormatter, get_short_docstring
 from anomalib.cli.utils.openvino import add_openvino_export_arguments
 from anomalib.loggers import configure_logger
@@ -50,7 +51,7 @@ class AnomalibCLI:
     ``SaveConfigCallback`` overwrites the config if it already exists.
     """
 
-    def __init__(self, args: Sequence[str] | None = None) -> None:
+    def __init__(self, args: Sequence[str] | None = None, run: bool = True) -> None:
         self.parser = self.init_parser()
         self.subcommand_parsers: dict[str, ArgumentParser] = {}
         self.subcommand_method_arguments: dict[str, list[str]] = {}
@@ -60,7 +61,8 @@ class AnomalibCLI:
         if _LIGHTNING_AVAILABLE:
             self.before_instantiate_classes()
             self.instantiate_classes()
-        self._run_subcommand()
+        if run:
+            self._run_subcommand()
 
     def init_parser(self, **kwargs) -> ArgumentParser:
         """Method that instantiates the argument parser."""
@@ -129,6 +131,13 @@ class AnomalibCLI:
             )
             # add arguments to subcommand
             getattr(self, f"add_{subcommand}_arguments")(sub_parser)
+
+        # Add pipeline subcommands
+        if PIPELINE_REGISTRY is not None:
+            for subcommand, value in pipeline_subcommands().items():
+                sub_parser = PIPELINE_REGISTRY[subcommand].get_parser()
+                self.subcommand_parsers[subcommand] = sub_parser
+                parser_subcommands.add_subcommand(subcommand, sub_parser, help=value["description"])
 
     def add_arguments_to_parser(self, parser: ArgumentParser) -> None:
         """Extend trainer's arguments to add engine arguments.
@@ -354,6 +363,8 @@ class AnomalibCLI:
             fn = getattr(self.engine, self.subcommand)
             fn_kwargs = self._prepare_subcommand_kwargs(self.subcommand)
             fn(**fn_kwargs)
+        elif PIPELINE_REGISTRY is not None and self.subcommand in pipeline_subcommands():
+            run_pipeline(self.config)
         else:
             self.config_init = self.parser.instantiate_classes(self.config)
             getattr(self, f"{self.subcommand}")()
