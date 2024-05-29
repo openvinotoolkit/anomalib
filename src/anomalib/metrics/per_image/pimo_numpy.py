@@ -74,8 +74,8 @@ def pimo_curves(
     anomaly_maps: ndarray,
     masks: ndarray,
     num_threshs: int,
-    binclf_algorithm: BinclfAlgorithm | str = BinclfAlgorithm.NUMBA,
-    shared_fpr_metric: PIMOSharedFPRMetric | str = PIMOSharedFPRMetric.MEAN_PERIMAGE_FPR,
+    binclf_algorithm: BinclfAlgorithm | str = BinclfAlgorithm.NUMBA.value,
+    shared_fpr_metric: PIMOSharedFPRMetric | str = PIMOSharedFPRMetric.MEAN_PERIMAGE_FPR.value,
 ) -> tuple[ndarray, ndarray, ndarray, ndarray]:
     """Compute the Per-IMage Overlap (PIMO, pronounced pee-mo) curves.
 
@@ -107,7 +107,7 @@ def pimo_curves(
     """
     # validate the strings are valid
     BinclfAlgorithm(binclf_algorithm)
-    PIMOSharedFPRMetric(shared_fpr_metric)
+    shared_fpr_metric = PIMOSharedFPRMetric(shared_fpr_metric)
     _validate.is_num_threshs_gte2(num_threshs)
     _validate.is_anomaly_maps(anomaly_maps)
     _validate.is_masks(masks)
@@ -132,13 +132,13 @@ def pimo_curves(
         anomaly_maps=anomaly_maps,
         masks=masks,
         algorithm=binclf_algorithm,
-        threshs_choice=BinclfThreshsChoice.GIVEN,
+        threshs_choice=BinclfThreshsChoice.GIVEN.value,
         threshs_given=threshs,
         num_threshs=None,
     )
 
     shared_fpr: ndarray
-    if PIMOSharedFPRMetric(shared_fpr_metric) == PIMOSharedFPRMetric.MEAN_PERIMAGE_FPR:
+    if shared_fpr_metric == PIMOSharedFPRMetric.MEAN_PERIMAGE_FPR:
         # shape -> (N, K)
         per_image_fprs_normals = binclf_curve_numpy.per_image_fpr(binclf_curves[image_classes == 0])
         try:
@@ -170,7 +170,7 @@ def aupimo_scores(
     masks: ndarray,
     num_threshs: int = 300_000,
     binclf_algorithm: BinclfAlgorithm | str = BinclfAlgorithm.NUMBA,
-    shared_fpr_metric: PIMOSharedFPRMetric | str = PIMOSharedFPRMetric.MEAN_PERIMAGE_FPR,
+    shared_fpr_metric: PIMOSharedFPRMetric | str = PIMOSharedFPRMetric.MEAN_PERIMAGE_FPR.value,
     fpr_bounds: tuple[float, float] = (1e-5, 1e-4),
     force: bool = False,
 ) -> tuple[ndarray, ndarray, ndarray, ndarray, ndarray, int]:
@@ -246,9 +246,9 @@ def aupimo_scores(
         )
 
     if not np.isclose(fpr_upper_bound_defacto, fpr_upper_bound, rtol=rtol):
-        logger.warning = (
+        logger.warning(
             "The upper bound of the shared FPR integration range is not exactly achieved. "
-            f"Expected {fpr_upper_bound} but got {fpr_upper_bound_defacto}, which is not within {rtol=}."
+            f"Expected {fpr_upper_bound} but got {fpr_upper_bound_defacto}, which is not within {rtol=}.",
         )
 
     # reminder: fpr lower/upper bound is threshold upper/lower bound (reversed)

@@ -9,10 +9,11 @@ from pathlib import Path
 import numpy as np
 import pytest
 import torch
-from anomalib.metrics.per_image import pimo, pimo_numpy
-from anomalib.metrics.per_image.pimo import AUPIMOResult, PIMOResult
 from numpy import ndarray
 from torch import Tensor
+
+from anomalib.metrics.per_image import pimo, pimo_numpy
+from anomalib.metrics.per_image.pimo import AUPIMOResult, PIMOResult
 
 from .test_utils import assert_statsdict_stuff
 

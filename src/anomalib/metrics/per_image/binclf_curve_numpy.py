@@ -176,7 +176,7 @@ def binclf_multiple_curves(
     scores_batch: ndarray,
     gts_batch: ndarray,
     threshs: ndarray,
-    algorithm: BinclfAlgorithm | str = BinclfAlgorithm.NUMBA,
+    algorithm: BinclfAlgorithm | str = BinclfAlgorithm.NUMBA.value,
 ) -> ndarray:
     """Multiple binary classification matrix (per-instance scope) at each threshold (shared).
 
@@ -216,13 +216,13 @@ def binclf_multiple_curves(
 
         Thresholds are sorted in ascending order.
     """
-    BinclfAlgorithm(algorithm)
+    algorithm = BinclfAlgorithm(algorithm)
     _validate_is_scores_batch(scores_batch)
     _validate_is_gts_batch(gts_batch)
     _validate.is_same_shape(scores_batch, gts_batch)
     _validate.is_threshs(threshs)
 
-    if BinclfAlgorithm(algorithm) == BinclfAlgorithm.NUMBA:
+    if algorithm == BinclfAlgorithm.NUMBA:
         if HAS_NUMBA:
             return _binclf_curve_numba.binclf_multiple_curves_numba(scores_batch, gts_batch, threshs)
 
@@ -253,8 +253,8 @@ def _get_threshs_minmax_linspace(anomaly_maps: ndarray, num_threshs: int) -> nda
 def per_image_binclf_curve(
     anomaly_maps: ndarray,
     masks: ndarray,
-    algorithm: BinclfAlgorithm | str = BinclfAlgorithm.NUMBA,
-    threshs_choice: BinclfThreshsChoice | str = BinclfThreshsChoice.MINMAX_LINSPACE,
+    algorithm: BinclfAlgorithm | str = BinclfAlgorithm.NUMBA.value,
+    threshs_choice: BinclfThreshsChoice | str = BinclfThreshsChoice.MINMAX_LINSPACE.value,
     threshs_given: ndarray | None = None,
     num_threshs: int | None = None,
 ) -> tuple[ndarray, ndarray]:
@@ -304,35 +304,41 @@ def per_image_binclf_curve(
             Thresholds are sorted in ascending order.
     """
     BinclfAlgorithm(algorithm)
+    threshs_choice = BinclfThreshsChoice(threshs_choice)
     _validate.is_anomaly_maps(anomaly_maps)
     _validate.is_masks(masks)
     _validate.is_same_shape(anomaly_maps, masks)
 
     threshs: ndarray
 
-    if BinclfThreshsChoice(threshs_choice) == BinclfThreshsChoice.GIVEN:
+    if threshs_choice == BinclfThreshsChoice.GIVEN:
         assert threshs_given is not None
         _validate.is_threshs(threshs_given)
         if num_threshs is not None:
             logger.warning(
-                f"Argument `num_threshs` was given, but it is ignored because `threshs_choice` is {threshs_choice}.",
+                "Argument `num_threshs` was given, "
+                f"but it is ignored because `threshs_choice` is '{threshs_choice.value}'.",
             )
         threshs = threshs_given.astype(anomaly_maps.dtype)
 
-    elif BinclfThreshsChoice(threshs_choice) == BinclfThreshsChoice.MINMAX_LINSPACE:
+    elif threshs_choice == BinclfThreshsChoice.MINMAX_LINSPACE:
         assert num_threshs is not None
         if threshs_given is not None:
             logger.warning(
-                f"Argument `threshs_given` was given, but it is ignored because `threshs_choice` is {threshs_choice}.",
+                "Argument `threshs_given` was given, "
+                f"but it is ignored because `threshs_choice` is '{threshs_choice.value}'.",
             )
         # `num_threshs` is validated in the function below
         threshs = _get_threshs_minmax_linspace(anomaly_maps, num_threshs)
 
-    elif BinclfThreshsChoice(threshs_choice) == BinclfThreshsChoice.MEAN_FPR_OPTIMIZED:
-        raise NotImplementedError(f"TODO implement {threshs_choice}")  # noqa: EM102
+    elif threshs_choice == BinclfThreshsChoice.MEAN_FPR_OPTIMIZED:
+        raise NotImplementedError(f"TODO implement {threshs_choice.value}")  # noqa: EM102
 
     else:
-        msg = f"Expected `threshs_choice` to be from {list(BinclfThreshsChoice.__members__)}, but got {threshs_choice}"
+        msg = (
+            f"Expected `threshs_choice` to be from {list(BinclfThreshsChoice.__members__)},"
+            f" but got '{threshs_choice.value}'"
+        )
         raise NotImplementedError(msg)
 
     # keep the batch dimension and flatten the rest

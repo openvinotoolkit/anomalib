@@ -238,8 +238,8 @@ def per_image_scores_stats(
     per_image_scores: Tensor,
     images_classes: Tensor | None = None,
     only_class: int | None = None,
-    outliers_policy: str | None = StatsOutliersPolicy.NONE,
-    repeated_policy: str | None = StatsRepeatedPolicy.AVOID,
+    outliers_policy: str | StatsOutliersPolicy = StatsOutliersPolicy.NONE.value,
+    repeated_policy: str | StatsRepeatedPolicy = StatsRepeatedPolicy.AVOID.value,
     repeated_replacement_atol: float = 1e-2,
 ) -> list[dict[str, str | int | float]]:
     """Compute statistics of per-image scores (based on a boxplot's statistics).

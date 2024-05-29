@@ -144,8 +144,8 @@ def per_image_scores_stats(
     per_image_scores: ndarray,
     images_classes: ndarray | None = None,
     only_class: int | None = None,
-    outliers_policy: StatsOutliersPolicy | str | None = StatsOutliersPolicy.NONE,
-    repeated_policy: StatsRepeatedPolicy | str | None = StatsRepeatedPolicy.AVOID,
+    outliers_policy: StatsOutliersPolicy | str = StatsOutliersPolicy.NONE.value,
+    repeated_policy: StatsRepeatedPolicy | str = StatsRepeatedPolicy.AVOID.value,
     repeated_replacement_atol: float = 1e-2,
 ) -> list[dict[str, str | int | float]]:
     """Compute statistics of per-image scores (based on a boxplot's statistics).
@@ -247,13 +247,13 @@ def per_image_scores_stats(
     outliers_lo = outliers[outliers < boxplot_stats["med"]]
     outliers_hi = outliers[outliers > boxplot_stats["med"]]
 
-    if StatsOutliersPolicy(outliers_policy) in (StatsOutliersPolicy.HI, StatsOutliersPolicy.BOTH):
+    if outliers_policy in (StatsOutliersPolicy.HI, StatsOutliersPolicy.BOTH):
         boxplot_stats = {
             **boxplot_stats,
             **{f"outhi_{idx:06}": value for idx, value in enumerate(outliers_hi)},
         }
 
-    if StatsOutliersPolicy(outliers_policy) in (StatsOutliersPolicy.LO, StatsOutliersPolicy.BOTH):
+    if outliers_policy in (StatsOutliersPolicy.LO, StatsOutliersPolicy.BOTH):
         boxplot_stats = {
             **boxplot_stats,
             **{f"outlo_{idx:06}": value for idx, value in enumerate(outliers_lo)},
@@ -269,14 +269,10 @@ def per_image_scores_stats(
         image_idx = candidate2image_idx[candidate_idx]
 
         # handle repeated values
-        if (
-            image_idx not in images_idxs_selected
-            or repeated_policy is None
-            or StatsRepeatedPolicy(repeated_policy) == StatsRepeatedPolicy.NONE
-        ):
+        if image_idx not in images_idxs_selected or repeated_policy == StatsRepeatedPolicy.NONE:
             pass
 
-        elif StatsRepeatedPolicy(repeated_policy) == StatsRepeatedPolicy.AVOID:
+        elif repeated_policy == StatsRepeatedPolicy.AVOID:
             for other_candidate_idx in candidates_sorted:
                 other_candidate_image_idx = candidate2image_idx[other_candidate_idx]
                 if other_candidate_image_idx in images_idxs_selected:

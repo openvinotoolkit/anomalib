@@ -7,10 +7,11 @@ author: jpcbertoldo
 import numpy as np
 import pytest
 import torch
-from anomalib import HAS_NUMBA
-from anomalib.metrics.per_image import binclf_curve, binclf_curve_numpy
 from numpy import ndarray
 from torch import Tensor
+
+from anomalib import HAS_NUMBA
+from anomalib.metrics.per_image import binclf_curve, binclf_curve_numpy
 
 if HAS_NUMBA:
     from anomalib.metrics.per_image import _binclf_curve_numba

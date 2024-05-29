@@ -8,6 +8,8 @@ from collections import OrderedDict
 import numpy as np
 import pytest
 import torch
+from torch import Tensor
+
 from anomalib.metrics.per_image import (
     AUPIMOResult,
     PIMOSharedFPRMetric,
@@ -18,7 +20,6 @@ from anomalib.metrics.per_image import (
     format_pairwise_tests_results,
     per_image_scores_stats,
 )
-from torch import Tensor
 
 
 def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:

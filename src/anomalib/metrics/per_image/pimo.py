@@ -524,8 +524,8 @@ class AUPIMOResult:
 
     def stats(
         self,
-        outliers_policy: str | None = StatsOutliersPolicy.NONE,
-        repeated_policy: str | None = StatsRepeatedPolicy.AVOID,
+        outliers_policy: str | StatsOutliersPolicy = StatsOutliersPolicy.NONE.value,
+        repeated_policy: str | StatsRepeatedPolicy = StatsRepeatedPolicy.AVOID.value,
         repeated_replacement_atol: float = 1e-2,
     ) -> list[dict[str, str | int | float]]:
         """Return the AUPIMO statistics.
@@ -552,8 +552,8 @@ def pimo_curves(
     anomaly_maps: Tensor,
     masks: Tensor,
     num_threshs: int,
-    binclf_algorithm: BinclfAlgorithm | str = BinclfAlgorithm.NUMBA,
-    shared_fpr_metric: PIMOSharedFPRMetric | str = PIMOSharedFPRMetric.MEAN_PERIMAGE_FPR,
+    binclf_algorithm: BinclfAlgorithm | str = BinclfAlgorithm.NUMBA.value,
+    shared_fpr_metric: PIMOSharedFPRMetric | str = PIMOSharedFPRMetric.MEAN_PERIMAGE_FPR.value,
     paths: list[str] | None = None,
 ) -> PIMOResult:
     """Compute the Per-IMage Overlap (PIMO, pronounced pee-mo) curves.
@@ -616,7 +616,9 @@ def pimo_curves(
     per_image_tprs = torch.from_numpy(per_image_tprs_array).to(device)
 
     return PIMOResult(
-        shared_fpr_metric=shared_fpr_metric,
+        shared_fpr_metric=shared_fpr_metric.value
+        if isinstance(shared_fpr_metric, PIMOSharedFPRMetric)
+        else shared_fpr_metric,
         threshs=threshs,
         shared_fpr=shared_fpr,
         per_image_tprs=per_image_tprs,
@@ -628,8 +630,8 @@ def aupimo_scores(
     anomaly_maps: Tensor,
     masks: Tensor,
     num_threshs: int = 300_000,
-    binclf_algorithm: BinclfAlgorithm | str = BinclfAlgorithm.NUMBA,
-    shared_fpr_metric: PIMOSharedFPRMetric | str = PIMOSharedFPRMetric.MEAN_PERIMAGE_FPR,
+    binclf_algorithm: BinclfAlgorithm | str = BinclfAlgorithm.NUMBA.value,
+    shared_fpr_metric: PIMOSharedFPRMetric | str = PIMOSharedFPRMetric.MEAN_PERIMAGE_FPR.value,
     fpr_bounds: tuple[float, float] = (1e-5, 1e-4),
     force: bool = False,
     paths: list[str] | None = None,
@@ -699,7 +701,9 @@ def aupimo_scores(
     aupimos = torch.from_numpy(aupimos_array).to(device)
 
     pimoresult = PIMOResult(
-        shared_fpr_metric=shared_fpr_metric,
+        shared_fpr_metric=shared_fpr_metric.value
+        if isinstance(shared_fpr_metric, PIMOSharedFPRMetric)
+        else shared_fpr_metric,
         threshs=threshs,
         shared_fpr=shared_fpr,
         per_image_tprs=per_image_tprs,
@@ -781,7 +785,7 @@ class PIMO(Metric):
     def __init__(
         self,
         num_threshs: int,
-        binclf_algorithm: BinclfAlgorithm | str = BinclfAlgorithm.NUMBA,
+        binclf_algorithm: BinclfAlgorithm | str = BinclfAlgorithm.NUMBA.value,
         shared_fpr_metric: PIMOSharedFPRMetric | str = PIMOSharedFPRMetric.MEAN_PERIMAGE_FPR.value,
     ) -> None:
         """Per-Image Overlap (PIMO) curve.
@@ -923,8 +927,8 @@ class AUPIMO(PIMO):
     def __init__(
         self,
         num_threshs: int = 300_000,
-        binclf_algorithm: BinclfAlgorithm | str = BinclfAlgorithm.NUMBA,
-        shared_fpr_metric: PIMOSharedFPRMetric | str = PIMOSharedFPRMetric.MEAN_PERIMAGE_FPR,
+        binclf_algorithm: BinclfAlgorithm | str = BinclfAlgorithm.NUMBA.value,
+        shared_fpr_metric: PIMOSharedFPRMetric | str = PIMOSharedFPRMetric.MEAN_PERIMAGE_FPR.value,
         fpr_bounds: tuple[float, float] = (1e-5, 1e-4),
         force: bool = False,
     ) -> None:
