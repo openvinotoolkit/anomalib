@@ -250,7 +250,7 @@ class WinClipModel(DynamicBufferMixin, BufferListMixin, nn.Module):
             size=batch.shape[-2:],
             mode="bilinear",
         )
-        return pixel_scores.squeeze(1), image_scores
+        return image_scores, pixel_scores.squeeze(1)
 
     def _compute_zero_shot_scores(
         self,

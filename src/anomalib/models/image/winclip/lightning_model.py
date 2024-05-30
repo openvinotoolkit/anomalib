@@ -125,7 +125,7 @@ class WinClip(AnomalyModule):
     def validation_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> dict:
         """Validation Step of WinCLIP."""
         del args, kwargs  # These variables are not used.
-        batch["anomaly_maps"], batch["pred_scores"] = self.model(batch["image"])
+        batch["pred_scores"], batch["anomaly_maps"] = self.model(batch["image"])
         return batch
 
     @property
