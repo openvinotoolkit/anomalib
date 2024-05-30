@@ -30,7 +30,6 @@ if find_spec("openvino") is not None:
 else:
     logger.warning("OpenVINO is not installed. Please install OpenVINO to use OpenVINOInferencer.")
 
-
 class OpenVINOInferencer(Inferencer):
     """OpenVINO implementation for the inference.
 
@@ -147,7 +146,7 @@ class OpenVINOInferencer(Inferencer):
         compile_model = core.compile_model(model=model, device_name=self.device, config=self.config)
 
         input_blob = compile_model.input(0)
-        output_blob = compile_model.output(0)
+        output_blob = compile_model.outputs
 
         return input_blob, output_blob, compile_model
 
@@ -254,7 +253,7 @@ class OpenVINOInferencer(Inferencer):
         if metadata is None:
             metadata = self.metadata
 
-        predictions = predictions[self.output_blob]
+        predictions = [predictions[i] for i in self.output_blob]
 
         # Initialize the result variables.
         anomaly_map: np.ndarray | None = None
@@ -263,13 +262,17 @@ class OpenVINOInferencer(Inferencer):
 
         # If predictions returns a single value, this means that the task is
         # classification, and the value is the classification prediction score.
-        if len(predictions.shape) == 1:
+        if len(predictions) == 1:
             task = TaskType.CLASSIFICATION
-            pred_score = predictions
+            pred_score = predictions[0]
         else:
-            task = TaskType.SEGMENTATION
-            anomaly_map = predictions.squeeze()
-            pred_score = anomaly_map.reshape(-1).max()
+            task = TaskType.SEGMENTATION if self.task is None else self.task
+            for item in predictions:
+                if len(item.shape) == 1:
+                    pred_score = item[0]
+                else:
+                    anomaly_map = item.squeeze()
+
 
         # Common practice in anomaly detection is to assign anomalous
         # label to the prediction if the prediction score is greater
