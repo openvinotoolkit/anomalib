@@ -136,38 +136,38 @@ class ImageVisualizer(BaseVisualizer):
         Returns:
             Generator that yields a display-ready visualization for each image.
         """
-        batch_size = batch["image"].shape[0]
+        batch_size = batch.image.shape[0]
         for i in range(batch_size):
-            if "image_path" in batch:
-                height, width = batch["image"].shape[-2:]
-                image = (read_image(path=batch["image_path"][i]) * 255).astype(np.uint8)
+            if batch.image_path is not None:
+                height, width = batch.image.shape[-2:]
+                image = (read_image(path=batch.image_path[i]) * 255).astype(np.uint8)
                 image = cv2.resize(image, dsize=(width, height), interpolation=cv2.INTER_AREA)
-            elif "video_path" in batch:
-                height, width = batch["image"].shape[-2:]
-                image = batch["original_image"][i].squeeze().cpu().numpy()
+            elif batch.video_path is not None:
+                height, width = batch.image.shape[-2:]
+                image = batch.original_image[i].squeeze().cpu().numpy()
                 image = cv2.resize(image, dsize=(width, height), interpolation=cv2.INTER_AREA)
             else:
                 msg = "Batch must have either 'image_path' or 'video_path' defined."
                 raise KeyError(msg)
 
             file_name = None
-            if "image_path" in batch:
-                file_name = Path(batch["image_path"][i])
-            elif "video_path" in batch:
-                zero_fill = int(np.log10(batch["last_frame"][i])) + 1
-                suffix = f"{str(batch['frames'][i].int().item()).zfill(zero_fill)}.png"
-                file_name = Path(batch["video_path"][i]) / suffix
+            if batch.image_path is not None:
+                file_name = Path(batch.image_path[i])
+            elif batch.video_path is not None:
+                zero_fill = int(np.log10(batch.last_frame[i])) + 1
+                suffix = f"{str(batch.frames[i].int().item()).zfill(zero_fill)}.png"
+                file_name = Path(batch.video_path[i]) / suffix
 
             image_result = ImageResult(
                 image=image,
-                pred_score=batch["pred_scores"][i].cpu().numpy().item() if "pred_scores" in batch else None,
-                pred_label=batch["pred_labels"][i].cpu().numpy().item() if "pred_labels" in batch else None,
-                anomaly_map=batch["anomaly_maps"][i].cpu().numpy() if "anomaly_maps" in batch else None,
-                pred_mask=batch["pred_masks"][i].squeeze().int().cpu().numpy() if "pred_masks" in batch else None,
-                gt_mask=batch["mask"][i].squeeze().int().cpu().numpy() if "mask" in batch else None,
-                gt_boxes=batch["boxes"][i].cpu().numpy() if "boxes" in batch else None,
-                pred_boxes=batch["pred_boxes"][i].cpu().numpy() if "pred_boxes" in batch else None,
-                box_labels=batch["box_labels"][i].cpu().numpy() if "box_labels" in batch else None,
+                pred_score=batch.pred_score[i].cpu().numpy().item() if batch.pred_score is not None else None,
+                pred_label=batch.pred_label[i].cpu().numpy().item() if batch.pred_label is not None else None,
+                anomaly_map=batch.anomaly_map[i].cpu().numpy() if batch.anomaly_map is not None else None,
+                pred_mask=batch.pred_mask[i].squeeze().int().cpu().numpy() if batch.pred_mask is not None else None,
+                gt_mask=batch.gt_mask[i].squeeze().int().cpu().numpy() if batch.gt_mask is not None else None,
+                gt_boxes=batch.gt_boxes[i].cpu().numpy() if batch.gt_boxes is not None else None,
+                pred_boxes=batch.pred_boxes[i].cpu().numpy() if batch.pred_boxes is not None else None,
+                box_labels=batch.box_labels[i].cpu().numpy() if batch.box_labels is not None else None,
             )
             yield GeneratorResult(image=self.visualize_image(image_result), file_name=file_name)
 

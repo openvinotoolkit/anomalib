@@ -15,6 +15,9 @@ from lightning.pytorch.utilities.types import STEP_OUTPUT
 from anomalib import TaskType
 from anomalib.metrics import AnomalibMetricCollection, create_metric_collection
 from anomalib.models import AnomalyModule
+from anomalib.dataclasses import BatchItem
+
+from dataclasses import asdict
 
 logger = logging.getLogger(__name__)
 
@@ -121,7 +124,7 @@ class _MetricsCallback(Callback):
         del trainer, batch, batch_idx, dataloader_idx  # Unused arguments.
 
         if outputs is not None:
-            self._outputs_to_device(outputs)
+            outputs = self._outputs_to_device(outputs)
             self._update_metrics(pl_module.image_metrics, pl_module.pixel_metrics, outputs)
 
     def on_validation_epoch_end(
@@ -156,7 +159,7 @@ class _MetricsCallback(Callback):
         del trainer, batch, batch_idx, dataloader_idx  # Unused arguments.
 
         if outputs is not None:
-            self._outputs_to_device(outputs)
+            outputs = self._outputs_to_device(outputs)
             self._update_metrics(pl_module.image_metrics, pl_module.pixel_metrics, outputs)
 
     def on_test_epoch_end(
@@ -179,15 +182,17 @@ class _MetricsCallback(Callback):
         output: STEP_OUTPUT,
     ) -> None:
         image_metric.to(self.device)
-        image_metric.update(output["pred_scores"], output["label"].int())
-        if "mask" in output and "anomaly_maps" in output:
+        image_metric.update(output.pred_score, output.gt_label.int())
+        if output.gt_mask is not None and output.anomaly_map is not None:
             pixel_metric.to(self.device)
-            pixel_metric.update(torch.squeeze(output["anomaly_maps"]), torch.squeeze(output["mask"].int()))
+            pixel_metric.update(torch.squeeze(output.anomaly_map), torch.squeeze(output.gt_mask.int()))
 
     def _outputs_to_device(self, output: STEP_OUTPUT) -> STEP_OUTPUT | dict[str, Any]:
         if isinstance(output, dict):
             for key, value in output.items():
                 output[key] = self._outputs_to_device(value)
+        elif isinstance(output, BatchItem):
+            output = BatchItem(**self._outputs_to_device(asdict(output)))
         elif isinstance(output, torch.Tensor):
             output = output.to(self.device)
         return output

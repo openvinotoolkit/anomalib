@@ -17,6 +17,7 @@ from torchvision.transforms.v2 import Transform
 from torchvision.tv_tensors import Mask
 
 from anomalib import TaskType
+from anomalib.dataclasses import BatchItem
 from anomalib.data.utils import LabelName, masks_to_boxes, read_image, read_mask
 
 _EXPECTED_COLUMNS_CLASSIFICATION = ["image_path", "split"]
@@ -189,7 +190,14 @@ class AnomalibDataset(Dataset, ABC):
             msg = f"Unknown task type: {self.task}"
             raise ValueError(msg)
 
-        return item
+        # return item
+        return BatchItem(
+            image=item["image"],
+            gt_mask=item["mask"],
+            gt_label=label_index,
+            image_path=image_path,
+            mask_path=mask_path,
+        )
 
     def __add__(self, other_dataset: "AnomalibDataset") -> "AnomalibDataset":
         """Concatenate this dataset with another dataset.

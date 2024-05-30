@@ -55,12 +55,12 @@ class _MinMaxNormalizationCallback(NormalizationCallback):
         """Call when the validation batch ends, update the min and max observed values."""
         del trainer, batch, batch_idx, dataloader_idx  # These variables are not used.
 
-        if "anomaly_maps" in outputs:
-            pl_module.normalization_metrics(outputs["anomaly_maps"])
-        elif "box_scores" in outputs:
-            pl_module.normalization_metrics(torch.cat(outputs["box_scores"]))
-        elif "pred_scores" in outputs:
-            pl_module.normalization_metrics(outputs["pred_scores"])
+        if outputs.anomaly_map is not None:
+            pl_module.normalization_metrics(outputs.anomaly_map)
+        elif outputs.box_scores is not None:
+            pl_module.normalization_metrics(torch.cat(outputs.box_scores))
+        elif outputs.pred_score is not None:
+            pl_module.normalization_metrics(outputs.pred_score)
         else:
             msg = "No values found for normalization, provide anomaly maps, bbox scores, or image scores"
             raise ValueError(msg)
@@ -99,11 +99,11 @@ class _MinMaxNormalizationCallback(NormalizationCallback):
         image_threshold = pl_module.image_threshold.value.cpu()
         pixel_threshold = pl_module.pixel_threshold.value.cpu()
         stats = pl_module.normalization_metrics.cpu()
-        if "pred_scores" in outputs:
-            outputs["pred_scores"] = normalize(outputs["pred_scores"], image_threshold, stats.min, stats.max)
-        if "anomaly_maps" in outputs:
-            outputs["anomaly_maps"] = normalize(outputs["anomaly_maps"], pixel_threshold, stats.min, stats.max)
-        if "box_scores" in outputs:
-            outputs["box_scores"] = [
-                normalize(scores, pixel_threshold, stats.min, stats.max) for scores in outputs["box_scores"]
+        if outputs.pred_score is not None:
+            outputs.pred_score = normalize(outputs.pred_score, image_threshold, stats.min, stats.max)
+        if outputs.anomaly_map is not None:
+            outputs.anomaly_map = normalize(outputs.anomaly_map, pixel_threshold, stats.min, stats.max)
+        if outputs.box_scores is not None:
+            outputs.box_scores = [
+                normalize(scores, pixel_threshold, stats.min, stats.max) for scores in outputs.box_scores
             ]

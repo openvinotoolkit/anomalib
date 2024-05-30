@@ -17,6 +17,8 @@ from torchvision.transforms.v2 import Resize, Transform
 
 from anomalib.data.utils import TestSplitMode, ValSplitMode, random_split, split_by_label
 from anomalib.data.utils.synthetic import SyntheticAnomalyDataset
+from anomalib.dataclasses import BatchItem
+from dataclasses import asdict
 
 if TYPE_CHECKING:
     from pandas import DataFrame
@@ -26,7 +28,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-def collate_fn(batch: list) -> dict[str, Any]:
+def collate_fn(batch: list[BatchItem]) -> dict[str, Any]:
     """Collate bounding boxes as lists.
 
     Bounding boxes are collated as a list of tensors, while the default collate function is used for all other entries.
@@ -37,16 +39,18 @@ def collate_fn(batch: list) -> dict[str, Any]:
     Returns:
         dict[str, Any]: Dictionary containing the collated batch information.
     """
+    # convert to list of dicts
+    batch = [asdict(item) for item in batch]
     elem = batch[0]  # sample an element from the batch to check the type.
     out_dict = {}
-    if isinstance(elem, dict):
-        if "boxes" in elem:
-            # collate boxes as list
-            out_dict["boxes"] = [item.pop("boxes") for item in batch]
-        # collate other data normally
-        out_dict.update({key: default_collate([item[key] for item in batch]) for key in elem})
-        return out_dict
-    return default_collate(batch)
+    # if isinstance(elem, dict):
+    if "boxes" in elem:
+        # collate boxes as list
+        out_dict["boxes"] = [item.pop("boxes") for item in batch]
+    # collate other data normally
+    out_dict.update({key: default_collate([item[key] for item in batch]) for key in elem if elem[key] is not None})
+    return BatchItem(**out_dict)
+    # return default_collate(batch)
 
 
 class AnomalibDataModule(LightningDataModule, ABC):
@@ -225,6 +229,7 @@ class AnomalibDataModule(LightningDataModule, ABC):
             shuffle=True,
             batch_size=self.train_batch_size,
             num_workers=self.num_workers,
+            collate_fn=collate_fn,
         )
 
     def val_dataloader(self) -> EVAL_DATALOADERS:
