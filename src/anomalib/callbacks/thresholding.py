@@ -182,7 +182,7 @@ class _ThresholdCallback(Callback):
             for key, value in output.items():
                 output[key] = self._outputs_to_cpu(value)
         elif isinstance(output, BatchItem):
-            output = BatchItem(**self._outputs_to_cpu(asdict(output)))
+            output = output.__class__(**self._outputs_to_cpu(asdict(output)))
         elif isinstance(output, torch.Tensor):
             output = output.cpu()
         return output

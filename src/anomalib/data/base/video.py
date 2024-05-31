@@ -129,16 +129,16 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
             msg = f"Unknown video target frame: {self.target_frame}"
             raise ValueError(msg)
 
-        if item.get("mask") is not None:
-            item["mask"] = item["mask"][idx, ...]
-        if item.get("boxes") is not None:
-            item["boxes"] = item["boxes"][idx]
-        if item.get("label") is not None:
-            item["label"] = item["label"][idx]
-        if item.get("original_image") is not None:
-            item["original_image"] = item["original_image"][idx]
-        if item.get("frames") is not None:
-            item["frames"] = item["frames"][idx]
+        if item.mask is not None:
+            item.mask = item.mask[idx, ...]
+        if item.gt_boxes is not None:
+            item.gt_boxes = item.gt_boxes[idx]
+        if item.gt_label is not None:
+            item.gt_label = item.gt_label[idx]
+        if item.original_image is not None:
+            item.original_image = item.original_image[idx]
+        if item.frames is not None:
+            item.frames = item.frames[idx]
         return item
 
     def __getitem__(self, index: int) -> dict[str, str | torch.Tensor]:
@@ -154,30 +154,30 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
             msg = "self.indexer must be an instance of ClipsIndexer."
             raise TypeError(msg)
         item = self.indexer.get_item(index)
-        item["image"] = to_dtype_video(video=item["image"], scale=True)
+        item.image = to_dtype_video(video=item.image, scale=True)
         # include the untransformed image for visualization
-        item["original_image"] = item["image"].to(torch.uint8)
+        item.original_image = item.image.to(torch.uint8)
 
         # apply transforms
-        if item.get("mask") is not None:
+        if item.mask is not None:
             if self.transform:
-                item["image"], item["mask"] = self.transform(item["image"], Mask(item["mask"]))
-            item["label"] = torch.Tensor([1 in frame for frame in item["mask"]]).int().squeeze(0)
+                item.image, item.mask = self.transform(item.image, Mask(item.mask))
+            item.gt_label = torch.Tensor([1 in frame for frame in item.mask]).int().squeeze(0)
             if self.task == TaskType.DETECTION:
-                item["boxes"], _ = masks_to_boxes(item["mask"])
-                item["boxes"] = item["boxes"][0] if len(item["boxes"]) == 1 else item["boxes"]
+                item.gt_boxes, _ = masks_to_boxes(item.mask)
+                item.gt_boxes = item.gt_boxes[0] if len(item.gt_boxes) == 1 else item.gt_boxes
         elif self.transform:
-            item["image"] = self.transform(item["image"])
+            item.image = self.transform(item.image)
 
         # squeeze temporal dimensions in case clip length is 1
-        item["image"] = item["image"].squeeze(0)
+        item.image = item.image.squeeze(0)
 
         # include only target frame in gt
         if self.clip_length_in_frames > 1 and self.target_frame != VideoTargetFrame.ALL:
             item = self._select_targets(item)
 
-        if item["mask"] is None:
-            item.pop("mask")
+        # if item.mask is None:
+        #     item.pop("mask")
 
         return item
 

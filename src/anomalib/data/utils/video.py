@@ -12,6 +12,8 @@ import cv2
 import torch
 from torchvision.datasets.video_utils import VideoClips
 
+from anomalib.dataclasses import VideoBatch
+
 
 class ClipsIndexer(VideoClips, ABC):
     """Extension of torchvision's VideoClips class that also returns the masks for each clip.
@@ -60,13 +62,13 @@ class ClipsIndexer(VideoClips, ABC):
         video_path = self.video_paths[video_idx]
         clip_pts = self.clips[video_idx][clip_idx]
 
-        return {
-            "image": clip,
-            "mask": self.get_mask(idx),
-            "video_path": video_path,
-            "frames": clip_pts,
-            "last_frame": self.last_frame_idx(video_idx),
-        }
+        return VideoBatch(
+            image=clip,
+            gt_mask=self.get_mask(idx),
+            video_path=video_path,
+            frames=clip_pts,
+            last_frame=self.last_frame_idx(video_idx),
+        )
 
 
 def convert_video(input_path: Path, output_path: Path, codec: str = "MP4V") -> None:

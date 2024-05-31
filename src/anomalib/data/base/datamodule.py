@@ -40,16 +40,16 @@ def collate_fn(batch: list[BatchItem]) -> dict[str, Any]:
         dict[str, Any]: Dictionary containing the collated batch information.
     """
     # convert to list of dicts
-    batch = [asdict(item) for item in batch]
-    elem = batch[0]  # sample an element from the batch to check the type.
+    batch_dict = [asdict(item) for item in batch]
+    elem = batch_dict[0]  # sample an element from the batch to check the type.
     out_dict = {}
     # if isinstance(elem, dict):
     if "boxes" in elem:
         # collate boxes as list
-        out_dict["boxes"] = [item.pop("boxes") for item in batch]
+        out_dict["boxes"] = [item.pop("boxes") for item in batch_dict]
     # collate other data normally
     out_dict.update({key: default_collate([item[key] for item in batch]) for key in elem if elem[key] is not None})
-    return BatchItem(**out_dict)
+    return batch[0].__class__(**out_dict)
     # return default_collate(batch)
 
 

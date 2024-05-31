@@ -18,6 +18,8 @@ from anomalib import TaskType
 from anomalib.data.utils import read_image
 from anomalib.utils.post_processing import add_anomalous_label, add_normal_label, draw_boxes, superimpose_anomaly_map
 
+from anomalib.dataclasses import ImageBatch, VideoBatch
+
 from .base import BaseVisualizer, GeneratorResult, VisualizationStep
 
 if TYPE_CHECKING:
@@ -138,23 +140,23 @@ class ImageVisualizer(BaseVisualizer):
         """
         batch_size = batch.image.shape[0]
         for i in range(batch_size):
-            if batch.image_path is not None:
+            if isinstance(batch, ImageBatch):
                 height, width = batch.image.shape[-2:]
                 image = (read_image(path=batch.image_path[i]) * 255).astype(np.uint8)
                 image = cv2.resize(image, dsize=(width, height), interpolation=cv2.INTER_AREA)
-            elif batch.video_path is not None:
+            elif isinstance(batch, VideoBatch):
                 height, width = batch.image.shape[-2:]
-                image = batch.original_image[i].squeeze().cpu().numpy()
+                image = batch.original_image[i].squeeze().cpu().permute(1, 2, 0).numpy()
                 image = cv2.resize(image, dsize=(width, height), interpolation=cv2.INTER_AREA)
             else:
-                msg = "Batch must have either 'image_path' or 'video_path' defined."
-                raise KeyError(msg)
+                msg = "Batch must be of type ImageBatch or VideoBatch."
+                raise TypeError(msg)
 
             file_name = None
-            if batch.image_path is not None:
+            if isinstance(batch, ImageBatch):
                 file_name = Path(batch.image_path[i])
-            elif batch.video_path is not None:
-                zero_fill = int(np.log10(batch.last_frame[i])) + 1
+            elif isinstance(batch, VideoBatch):
+                zero_fill = int(np.log10(batch.last_frame[i].cpu())) + 1
                 suffix = f"{str(batch.frames[i].int().item()).zfill(zero_fill)}.png"
                 file_name = Path(batch.video_path[i]) / suffix
 

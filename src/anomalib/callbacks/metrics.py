@@ -192,7 +192,7 @@ class _MetricsCallback(Callback):
             for key, value in output.items():
                 output[key] = self._outputs_to_device(value)
         elif isinstance(output, BatchItem):
-            output = BatchItem(**self._outputs_to_device(asdict(output)))
+            output = output.__class__(**self._outputs_to_device(asdict(output)))
         elif isinstance(output, torch.Tensor):
             output = output.to(self.device)
         return output
