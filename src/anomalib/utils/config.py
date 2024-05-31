@@ -222,24 +222,6 @@ def update_config(config: DictConfig | ListConfig | Namespace) -> DictConfig | L
     """
     _show_warnings(config)
 
-    return _update_nncf_config(config)
-
-
-def _update_nncf_config(config: DictConfig | ListConfig) -> DictConfig | ListConfig:
-    """Set the NNCF input size based on the value of the crop_size parameter in the configurable parameters object.
-
-    Args:
-        config (DictConfig | ListConfig): Configurable parameters of the current run.
-
-    Returns:
-        DictConfig | ListConfig: Updated configurable parameters in DictConfig object.
-    """
-    if "optimization" in config and "nncf" in config.optimization:
-        if "input_info" not in config.optimization.nncf:
-            config.optimization.nncf["input_info"] = {"sample_size": None}
-        config.optimization.nncf.input_info.sample_size = [1, 3, 10, 10]
-        if config.optimization.nncf.apply and "update_config" in config.optimization.nncf:
-            return OmegaConf.merge(config, config.optimization.nncf.update_config)
     return config
 
 
