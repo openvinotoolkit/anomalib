@@ -81,9 +81,10 @@ class Llmollama(AnomalyModule):
         """Validation Step of WinCLIP."""
         del args, kwargs  # These variables are not used.
         bsize = len(batch["image_path"])
-        long_text = "This is a very long text that might not fit well in a single line in a subplot. So it needs to be wrapped properly to ensure it fits within the plotting area without looking cluttered.This is a very long text that might not fit well in a single line in a subplot. So it needs to be wrapped properly to ensure it fits within the plotting area without looking cluttered.This is a very long text that might not fit well in a single line in a subplot. So it needs to be wrapped properly to ensure it fits within the plotting area without looking cluttered."
+        # long_text = "This is a very long text that might not fit well in a single line in a subplot. So it needs to be wrapped properly to ensure it fits within the plotting area without looking cluttered.This is a very long text that might not fit well in a single line in a subplot. So it needs to be wrapped properly to ensure it fits within the plotting area without looking cluttered.This is a very long text that might not fit well in a single line in a subplot. So it needs to be wrapped properly to ensure it fits within the plotting area without looking cluttered."
 
-        batch["str_output"] =[f'{long_text}']*bsize #[api_call( "", batch["image_path"][0])]*bsize  # the first img of the batch
+        #batch["str_output"] =[f'{long_text}']*bsize
+        batch["str_output"] =[api_call( "", batch["image_path"][0])]*bsize  # the first img of the batch
         batch["pred_scores"] = torch.tensor([0.9]*bsize)
         return batch
 
