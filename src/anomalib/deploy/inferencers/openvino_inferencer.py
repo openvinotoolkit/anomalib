@@ -30,6 +30,7 @@ if find_spec("openvino") is not None:
 else:
     logger.warning("OpenVINO is not installed. Please install OpenVINO to use OpenVINOInferencer.")
 
+
 class OpenVINOInferencer(Inferencer):
     """OpenVINO implementation for the inference.
 
@@ -272,7 +273,6 @@ class OpenVINOInferencer(Inferencer):
                     pred_score = item[0]
                 else:
                     anomaly_map = item.squeeze()
-
 
         # Common practice in anomaly detection is to assign anomalous
         # label to the prediction if the prediction score is greater
