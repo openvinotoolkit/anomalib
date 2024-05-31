@@ -347,7 +347,7 @@ class _ImageGrid:
             if image_dict["descr"] is not None:
                 # Wrap the text
                 # wrapped_text = textwrap.fill(image_dict["descr"][0]['response'], width=100/num_cols)  # Adjust 'width' based on your subplot size and preference
-                wrapped_text = textwrap.fill(image_dict["descr"][0], width=70/num_cols)  # Adjust 'width' based on your subplot size and preference
+                wrapped_text = textwrap.fill(image_dict["descr"][0]['response'], width=70/num_cols)  # Adjust 'width' based on your subplot size and preference
                 axis.set_title(wrapped_text, fontsize=10)
 
                 self.figure.subplots_adjust(top=0.7)

@@ -62,7 +62,7 @@ def api_call(key, prompt, image) -> str:
                         "type": "image_url",
                         "image_url": {
                             "url": f"data:image/jpeg;base64,{base64_image}",
-                            "detail": "high",
+                            "detail": "low", # low, high
                         },
                     },
                 ],
@@ -71,11 +71,11 @@ def api_call(key, prompt, image) -> str:
         "max_tokens": 300,
     }
 
-    # response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload)
+    response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload)
 
     # print(response.json())
 
-    # return response.json()
+    return response.json()
 
     return json.dumps(headers)
 
@@ -95,7 +95,7 @@ class Llm(AnomalyModule):
         super().__init__()
         # self.model = openAI()
         # OpenAI API Key
-        self.openai_key = OPEN_AI_KEY
+        self.openai_key = openai_key
 
     def training_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> None:
         """train Step of LLM."""
@@ -111,8 +111,6 @@ class Llm(AnomalyModule):
     def validation_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> dict:
         """Validation Step of WinCLIP."""
         del args, kwargs  # These variables are not used.
-        # print(batch)
-        # print(batch.keys())
         batch["str_output"] = api_call(self.openai_key, "", batch["image_path"][0])  # the first img of the batch
         batch["pred_scores"] = torch.tensor([0.9])
         return batch
