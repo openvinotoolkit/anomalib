@@ -218,6 +218,22 @@ class ExportMixin:
             ...     task=datamodule.test_data.task
             ... )
 
+            Export and Quantize the Model (OpenVINO IR):
+            This example demonstrates how to export and quantize the model to OpenVINO IR.
+
+            >>> from anomalib.models import Patchcore
+            >>> from anomalib.data import Visa
+            ...
+            >>> datamodule = Visa()
+            >>> model = Patchcore()
+            ...
+            >>> model.to_openvino(
+            ...     export_root="path/to/export",
+            ...     compression_type=CompressionType.INT8_PTQ,
+            ...     datamodule=datamodule,
+            ...     task=datamodule.test_data.task
+            ... )
+
             Using Custom Transforms:
             This example shows how to use a custom ``Transform`` object for the ``transform`` argument.
 

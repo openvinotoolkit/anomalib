@@ -922,12 +922,12 @@ class Engine:
             3. To export as an OpenVINO ``.xml`` and ``.bin`` file you can run the following command.
                 ```python
                 anomalib export --model Padim --export_mode openvino --ckpt_path <PATH_TO_CHECKPOINT> \
-                --input_size "[256,256]"
+                --input_size "[256,256] --compression_type "fp16"
                 ```
-            4. You can also override OpenVINO model optimizer by adding the ``--ov_args.<key>`` arguments.
+            4. You can also quantize OpenVINO model with the following.
                 ```python
                 anomalib export --model Padim --export_mode openvino --ckpt_path <PATH_TO_CHECKPOINT> \
-                --input_size "[256,256]" --ov_args.compress_to_fp16 False
+                --input_size "[256,256]" --compression_type "int8_ptq" --data MVTec
                 ```
         """
         export_type = ExportType(export_type)
