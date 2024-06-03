@@ -182,10 +182,10 @@ class ExportMixin:
             compression_type (CompressionType, optional): Compression type for better inference performance.
                 Defaults to ``None``.
             datamodule (AnomalibDataModule | None, optional): Lightning datamodule.
-                Must be provided if CompressionType.INT8_PTQ is selected.
+                Must be provided if ``CompressionType.INT8_PTQ`` or ``CompressionType.INT8_ACQ`` is selected.
                 Defaults to ``None``.
             metric (Metric | str | None, optional): Metric to measure quality loss when quantizing.
-                Must be provided if CompressionType.INT8_ACQ is selected and must return higher value for better
+                Must be provided if ``CompressionType.INT8_ACQ`` is selected and must return higher value for better
                 performance of the model.
                 Defaults to ``None``.
             ov_args (dict | None): Model optimizer arguments for OpenVINO model conversion.
@@ -243,7 +243,8 @@ class ExportMixin:
             ov_args = {} if ov_args is None else ov_args
 
             model = ov.convert_model(model_path, **ov_args)
-            model = self._compress_ov_model(model, compression_type, datamodule, metric, task)
+            if compression_type != CompressionType.FP16:
+                model = self._compress_ov_model(model, compression_type, datamodule, metric, task)
 
             # fp16 compression is enabled by default
             compress_to_fp16 = compression_type == CompressionType.FP16
@@ -266,10 +267,10 @@ class ExportMixin:
             compression_type (CompressionType, optional): Compression type for better inference performance.
                 Defaults to ``None``.
             datamodule (AnomalibDataModule | None, optional): Lightning datamodule.
-                Must be provided if CompressionType.INT8_PTQ is selected.
+                Must be provided if ``CompressionType.INT8_PTQ`` or ``CompressionType.INT8_ACQ`` is selected.
                 Defaults to ``None``.
             metric (Metric | str | None, optional): Metric to measure quality loss when quantizing.
-                Must be provided if CompressionType.INT8_ACQ is selected and must return higher value for better
+                Must be provided if ``CompressionType.INT8_ACQ`` is selected and must return higher value for better
                 performance of the model.
                 Defaults to ``None``.
             task (TaskType | None): Task type.
@@ -284,62 +285,112 @@ class ExportMixin:
 
         import nncf
 
-        model_input = model.input(0)
-
-        # weights compression
         if compression_type == CompressionType.INT8:
             model = nncf.compress_weights(model)
-        # post-training quantization
         elif compression_type == CompressionType.INT8_PTQ:
-            if datamodule is None:
-                msg = "Datamodule must be provided for OpenVINO INT8_PTQ compression"
-                raise ValueError(msg)
-
-            if model_input.partial_shape[0].is_static:
-                datamodule.train_batch_size = model_input.shape[0]
-            dataloader = datamodule.train_dataloader()
-            if len(dataloader.dataset) < 300:
-                logger.warning(
-                    f">300 images recommended for INT8 quantization, found only {len(dataloader.dataset)} images",
-                )
-
-            calibration_dataset = nncf.Dataset(dataloader, lambda x: x["image"])
-            model = nncf.quantize(model, calibration_dataset)
-        # accuracy-control quantization
+            model = self._post_training_quantization_ov(model, datamodule)
         elif compression_type == CompressionType.INT8_ACQ:
-            if datamodule is None:
-                msg = "Datamodule must be provided for OpenVINO INT8_PTQ compression"
-                raise ValueError(msg)
-            if metric is None:
-                msg = "Metric must be provided for OpenVINO INT8_ACQ compression"
-                raise ValueError(msg)
-
-            if model_input.partial_shape[0].is_static:
-                datamodule.train_batch_size = model_input.shape[0]
-                datamodule.eval_batch_size = model_input.shape[0]
-            dataloader = datamodule.train_dataloader()
-            if len(dataloader.dataset) < 300:
-                logger.warning(
-                    f">300 images recommended for INT8 quantization, found only {len(dataloader.dataset)} images",
-                )
-
-            calibration_dataset = nncf.Dataset(dataloader, lambda x: x["image"])
-            validation_dataset = nncf.Dataset(datamodule.val_dataloader())
-
-            if isinstance(metric, str):
-                metric = create_metric_collection([metric])[metric]
-
-            # validation function to evaluate the quality loss after quantization
-            def val_fn(nncf_model: "CompiledModel", validation_data: Iterable) -> float:
-                for batch in validation_data:
-                    preds = torch.from_numpy(nncf_model(batch["image"])[0])
-                    target = batch["label"] if task == TaskType.CLASSIFICATION else batch["mask"][:, None, :, :]
-                    metric.update(preds, target)
-                return metric.compute()
-
-            model = nncf.quantize_with_accuracy_control(model, calibration_dataset, validation_dataset, val_fn)
+            model = self._accuracy_control_quantization_ov(model, datamodule, metric, task)
+        else:
+            msg = f"Unrecognized compression type: {compression_type}"
+            raise ValueError(msg)
 
         return model
+
+    def _post_training_quantization_ov(
+        self,
+        model: "CompiledModel",
+        datamodule: AnomalibDataModule | None = None,
+    ) -> "CompiledModel":
+        """Post-Training Quantization model with NNCF.
+
+            model (CompiledModel): Model already exported to OpenVINO format.
+            datamodule (AnomalibDataModule | None, optional): Lightning datamodule.
+                Must be provided if ``CompressionType.INT8_PTQ`` or ``CompressionType.INT8_ACQ`` is selected.
+                Defaults to ``None``.
+
+        Returns:
+            model (CompiledModel): Quantized model.
+        """
+        import nncf
+
+        if datamodule is None:
+            msg = "Datamodule must be provided for OpenVINO INT8_PTQ compression"
+            raise ValueError(msg)
+
+        model_input = model.input(0)
+
+        if model_input.partial_shape[0].is_static:
+            datamodule.train_batch_size = model_input.shape[0]
+
+        dataloader = datamodule.train_dataloader()
+        if len(dataloader.dataset) < 300:
+            logger.warning(
+                f">300 images recommended for INT8 quantization, found only {len(dataloader.dataset)} images",
+            )
+
+        calibration_dataset = nncf.Dataset(dataloader, lambda x: x["image"])
+        return nncf.quantize(model, calibration_dataset)
+
+    def _accuracy_control_quantization_ov(
+        self,
+        model: "CompiledModel",
+        datamodule: AnomalibDataModule | None = None,
+        metric: Metric | str | None = None,
+        task: TaskType | None = None,
+    ) -> "CompiledModel":
+        """Accuracy-Control Quantization with NNCF.
+
+            model (CompiledModel): Model already exported to OpenVINO format.
+            datamodule (AnomalibDataModule | None, optional): Lightning datamodule.
+                Must be provided if ``CompressionType.INT8_PTQ`` or ``CompressionType.INT8_ACQ`` is selected.
+                Defaults to ``None``.
+            metric (Metric | str | None, optional): Metric to measure quality loss when quantizing.
+                Must be provided if ``CompressionType.INT8_ACQ`` is selected and must return higher value for better
+                performance of the model.
+                Defaults to ``None``.
+            task (TaskType | None): Task type.
+                Defaults to ``None``.
+
+        Returns:
+            model (CompiledModel): Quantized model.
+        """
+        import nncf
+
+        if datamodule is None:
+            msg = "Datamodule must be provided for OpenVINO INT8_PTQ compression"
+            raise ValueError(msg)
+        if metric is None:
+            msg = "Metric must be provided for OpenVINO INT8_ACQ compression"
+            raise ValueError(msg)
+
+        model_input = model.input(0)
+
+        if model_input.partial_shape[0].is_static:
+            datamodule.train_batch_size = model_input.shape[0]
+            datamodule.eval_batch_size = model_input.shape[0]
+
+        dataloader = datamodule.train_dataloader()
+        if len(dataloader.dataset) < 300:
+            logger.warning(
+                f">300 images recommended for INT8 quantization, found only {len(dataloader.dataset)} images",
+            )
+
+        calibration_dataset = nncf.Dataset(dataloader, lambda x: x["image"])
+        validation_dataset = nncf.Dataset(datamodule.val_dataloader())
+
+        if isinstance(metric, str):
+            metric = create_metric_collection([metric])[metric]
+
+        # validation function to evaluate the quality loss after quantization
+        def val_fn(nncf_model: "CompiledModel", validation_data: Iterable) -> float:
+            for batch in validation_data:
+                preds = torch.from_numpy(nncf_model(batch["image"])[0])
+                target = batch["label"] if task == TaskType.CLASSIFICATION else batch["mask"][:, None, :, :]
+                metric.update(preds, target)
+            return metric.compute()
+
+        return nncf.quantize_with_accuracy_control(model, calibration_dataset, validation_dataset, val_fn)
 
     def _get_metadata(
         self,
