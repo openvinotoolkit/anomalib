@@ -15,18 +15,10 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install setuptools wheel twine
-
-      - name: Import GPG Key
+          pip install build twine
+      - name: Build the python package
         run: |
-          echo "${{ secrets.GPG_PRIVATE_KEY }}" | base64 --decode | gpg --import --batch --yes --no-tty
-
-      - name: Build and sign distribution
-        run: |
-          python setup.py sdist bdist_wheel
-          gpg --batch --yes --no-tty --pinentry-mode loopback --detach-sign -a dist/*.tar.gz
-          gpg --batch --yes --no-tty --pinentry-mode loopback --detach-sign -a dist/*.whl
-
+          python -m build
       - name: Upload to PyPI
         run: twine upload dist/*
         env:
