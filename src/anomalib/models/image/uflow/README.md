@@ -1,21 +1,20 @@
 # U-Flow: A U-shaped Normalizing Flow for Anomaly Detection with Unsupervised Threshold
 
-This is the implementation of the [U-Flow](https://link.springer.com/article/10.1007/s10851-024-01193-y) paper, 
+This is the implementation of the [U-Flow](https://link.springer.com/article/10.1007/s10851-024-01193-y) paper,
 based on the [original code](https://www.github.com/mtailanian/uflow).
 
 <div style="text-align: center;" markdown="1">
 
-### Link to download paper:
+## Link to download paper
 
 [![JMIV](https://img.shields.io/badge/JMIV-UFlow-yellow.svg?style=for-the-badge)](https://link.springer.com/article/10.1007/s10851-024-01193-y)
 [![Arxiv](https://img.shields.io/badge/arXiv-2110.02407-blue.svg?style=for-the-badge)](https://arxiv.org/abs/2211.12353)
 
-### Link to view the paper online:
+## Link to view the paper online
 
 [![JMIV_ONLINE](https://img.shields.io/badge/JMIV_ONLINE-UFlow-red.svg?style=for-the-badge)](https://rdcu.be/dJCkr)
 
 </div>
-
 
 ![U-Flow Architecture](/docs/source/images/uflow/diagram.png "U-Flow Architecture")
 
