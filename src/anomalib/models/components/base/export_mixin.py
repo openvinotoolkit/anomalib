@@ -257,7 +257,7 @@ class ExportMixin:
             ov_args = {} if ov_args is None else ov_args
 
             model = ov.convert_model(model_path, **ov_args)
-            if compression_type != CompressionType.FP16:
+            if compression_type and compression_type != CompressionType.FP16:
                 model = self._compress_ov_model(model, compression_type, datamodule, metric, task)
 
             # fp16 compression is enabled by default
