@@ -225,7 +225,6 @@ class ExportMixin:
             >>> from anomalib.data import Visa
             >>> datamodule = Visa()
             >>> model = Patchcore()
-            ...
             >>> model.to_openvino(
             ...     export_root="path/to/export",
             ...     compression_type=CompressionType.INT8_PTQ,
