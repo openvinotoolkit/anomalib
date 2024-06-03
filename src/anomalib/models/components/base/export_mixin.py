@@ -223,7 +223,6 @@ class ExportMixin:
 
             >>> from anomalib.models import Patchcore
             >>> from anomalib.data import Visa
-            ...
             >>> datamodule = Visa()
             >>> model = Patchcore()
             ...
