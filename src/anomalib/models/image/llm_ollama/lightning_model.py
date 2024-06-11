@@ -6,6 +6,8 @@ Paper No paper
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from typing import List
+
 import base64
 import json
 import logging
@@ -23,6 +25,7 @@ from anomalib.data.predict import PredictDataset
 from anomalib.models.components import AnomalyModule
 
 from ollama import generate
+import ollama
 
 # from .torch_model import openAI # TODO: This is necesary
 
@@ -30,6 +33,60 @@ logger = logging.getLogger(__name__)
 
 __all__ = ["Llmollama"]
 
+model_str = "llava:34b"
+
+def api_call_fewShot(preImages, prompt, image) -> str:
+    prompt = "Describe me if this image has an obious anomaly or not. if yes say 'YES:', follow by a description, and if not say 'NO' and finish."
+
+    # Function to encode the image
+    def encode_image(image_path):
+        with open(image_path, "rb") as image_file:
+            return base64.b64encode(image_file.read()).decode("utf-8")
+
+    # Path to your image
+
+    # Getting the base64 string
+    base64_image = encode_image(image)
+    base64_image_pre = []
+    for i in preImages:
+        base64_image_pre.append(  encode_image(i))
+    # base64_image = base64.b64encode(image).decode('utf-8')
+
+    #response = generate('llava', f'{prompt}', images=[base64_image], stream=False)
+    #response = generate('llava:34b', f'{prompt}', images=[base64_image], stream=False)
+
+
+    res = ollama.chat(
+        model=model_str,
+        messages=[
+                {
+                        'role': 'user',
+                        'images': base64_image_pre,
+                        'content': '',
+                },
+
+                {
+                        'role': 'user',
+                        'images': [],
+                        'content': 'This is a sample of a normal picture without any anomalies.',
+                },
+
+                {
+                        'role': 'user',
+                        'images': [base64_image],
+                        'content': '',
+                },
+
+                {
+                        'role': 'user',
+                        'images': [],
+                        'content': prompt,
+                },
+        ],
+    )
+
+
+    return res
 
 def api_call(prompt, image) -> str:
     prompt = "Describe me if this image has an obious anomaly or not. if yes say 'YES:', follow by a description, and if not say 'NO' and finish."
@@ -45,12 +102,11 @@ def api_call(prompt, image) -> str:
     base64_image = encode_image(image)
     # base64_image = base64.b64encode(image).decode('utf-8')
 
-
-
-
-    response = generate('llava', f'{prompt}', images=[base64_image], stream=False)
+    response = generate(model_str, f'{prompt}', images=[base64_image], stream=False)
+    #response = generate('llava:34b', f'{prompt}', images=[base64_image], stream=False)
 
     return response
+
 
 
 class Llmollama(AnomalyModule):
@@ -65,6 +121,13 @@ class Llmollama(AnomalyModule):
         self,
     ) -> None:
         super().__init__()
+        self.k_shot = 0
+        self.model_str = model_str
+
+    def _setup(self):
+        dataloader = self.trainer.datamodule.train_dataloader()
+        pre_images = self.collect_reference_images(dataloader)
+        self.pre_images = pre_images
 
     def training_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> None:
         """train Step of LLM."""
@@ -81,11 +144,24 @@ class Llmollama(AnomalyModule):
         """Validation Step of WinCLIP."""
         del args, kwargs  # These variables are not used.
         bsize = len(batch["image_path"])
-        # long_text = "This is a very long text that might not fit well in a single line in a subplot. So it needs to be wrapped properly to ensure it fits within the plotting area without looking cluttered.This is a very long text that might not fit well in a single line in a subplot. So it needs to be wrapped properly to ensure it fits within the plotting area without looking cluttered.This is a very long text that might not fit well in a single line in a subplot. So it needs to be wrapped properly to ensure it fits within the plotting area without looking cluttered."
+        out_list: list[str] = []
+        pred_list = []
+        for x in range(bsize):
+            o = "NO - default"
+            if self.k_shot > 0:
+                o = str(api_call_fewShot(self.pre_images ,"", batch["image_path"][x])["response"]).strip()
+            else:
+                o = str(api_call( "", batch["image_path"][x])["response"]).strip()
+            p = 0.0 if o.startswith("N") else 1.0
+            out_list.append(o)
+            pred_list.append(p)
+            #print(p)
+            #if x == 1:
+            #    print(o)
 
-        #batch["str_output"] =[f'{long_text}']*bsize
-        batch["str_output"] =[api_call( "", batch["image_path"][0])]*bsize  # the first img of the batch
-        batch["pred_scores"] = torch.tensor([0.9]*bsize)
+        batch["str_output"] = out_list
+        # [api_call( "", batch["image_path"][0])]*bsize  # the first img of the batch
+        batch["pred_scores"] = torch.tensor(pred_list)
         return batch
 
     @property
@@ -100,7 +176,25 @@ class Llmollama(AnomalyModule):
         Llm is a zero-/few-shot model, depending on the user configuration. Therefore, the learning type is
         set to ``LearningType.FEW_SHOT`` when ``k_shot`` is greater than zero and ``LearningType.ZERO_SHOT`` otherwise.
         """
-        return LearningType.ZERO_SHOT
+        return LearningType.FEW_SHOT if self.k_shot else LearningType.ZERO_SHOT
+
+    def collect_reference_images(self, dataloader: DataLoader) -> torch.Tensor:
+        """Collect reference images for few-shot inference.
+
+        The reference images are collected by iterating the training dataset until the required number of images are
+        collected.
+
+        Returns:
+            ref_images (Tensor): A tensor containing the reference images.
+        """
+        ref_images = []
+        for batch in dataloader:
+            images = batch["image_path"][: self.k_shot - len(ref_images)]
+            ref_images.append( images)
+            if self.k_shot == len(ref_images):
+                break
+        return ref_images
+
 
     def configure_transforms(self, image_size: tuple[int, int] | None = None) -> Transform:
         """Configure the default transforms used by the model."""
