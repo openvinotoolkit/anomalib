@@ -1,36 +1,37 @@
 """Base Anomaly Module for Training Task."""
 
-# Copyright (C) 2022 Intel Corporation
+# Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
-
-from __future__ import annotations
 
 import importlib
 import logging
-from abc import ABC
-from typing import Any, OrderedDict
-from warnings import warn
+from abc import ABC, abstractmethod
+from collections import OrderedDict
+from pathlib import Path
+from typing import TYPE_CHECKING, Any
 
-import pytorch_lightning as pl
+import lightning.pytorch as pl
 import torch
-from pytorch_lightning.callbacks import Callback
-from pytorch_lightning.utilities.types import EPOCH_OUTPUT, STEP_OUTPUT
-from torch import Tensor, nn
-from torchmetrics import Metric
+from lightning.pytorch.trainer.states import TrainerFn
+from lightning.pytorch.utilities.types import STEP_OUTPUT
+from torch import nn
+from torchvision.transforms.v2 import Compose, Normalize, Resize, Transform
 
-from anomalib.data.utils import boxes_to_anomaly_maps, boxes_to_masks, masks_to_boxes
-from anomalib.post_processing import ThresholdMethod
-from anomalib.utils.metrics import (
-    AnomalibMetricCollection,
-    AnomalyScoreDistribution,
-    AnomalyScoreThreshold,
-    MinMax,
-)
+from anomalib import LearningType
+from anomalib.metrics import AnomalibMetricCollection
+from anomalib.metrics.threshold import BaseThreshold
+
+from .export_mixin import ExportMixin
+
+if TYPE_CHECKING:
+    from lightning.pytorch.callbacks import Callback
+    from torchmetrics import Metric
+
 
 logger = logging.getLogger(__name__)
 
 
-class AnomalyModule(pl.LightningModule, ABC):
+class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
     """AnomalyModule to train, validate, predict and test images.
 
     Acts as a base class for all the Anomaly Modules in the library.
@@ -45,20 +46,47 @@ class AnomalyModule(pl.LightningModule, ABC):
         self.loss: nn.Module
         self.callbacks: list[Callback]
 
-        self.threshold_method: ThresholdMethod
-        self.image_threshold = AnomalyScoreThreshold().cpu()
-        self.pixel_threshold = AnomalyScoreThreshold().cpu()
+        self.image_threshold: BaseThreshold
+        self.pixel_threshold: BaseThreshold
 
         self.normalization_metrics: Metric
 
         self.image_metrics: AnomalibMetricCollection
         self.pixel_metrics: AnomalibMetricCollection
 
-    def forward(self, batch: dict[str, str | Tensor], *args, **kwargs) -> Any:
-        """Forward-pass input tensor to the module.
+        self._transform: Transform | None = None
+        self._input_size: tuple[int, int] | None = None
+
+        self._is_setup = False  # flag to track if setup has been called from the trainer
+
+    @property
+    def name(self) -> str:
+        """Name of the model."""
+        return self.__class__.__name__
+
+    def setup(self, stage: str | None = None) -> None:
+        """Calls the _setup method to build the model if the model is not already built."""
+        if getattr(self, "model", None) is None or not self._is_setup:
+            self._setup()
+            if isinstance(stage, TrainerFn):
+                # only set the flag if the stage is a TrainerFn, which means the setup has been called from a trainer
+                self._is_setup = True
+
+    def _setup(self) -> None:
+        """The _setup method is used to build the torch model dynamically or adjust something about them.
+
+        The model implementer may override this method to build the model. This is useful when the model cannot be set
+        in the `__init__` method because it requires some information or data that is not available at the time of
+        initialization.
+        """
+
+    def forward(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> Any:  # noqa: ANN401
+        """Perform the forward-pass by passing input tensor to the module.
 
         Args:
-            batch (dict[str, str | Tensor]): Input batch.
+            batch (dict[str, str | torch.Tensor]): Input batch.
+            *args: Arguments.
+            **kwargs: Keyword arguments.
 
         Returns:
             Tensor: Output tensor from the model.
@@ -67,14 +95,19 @@ class AnomalyModule(pl.LightningModule, ABC):
 
         return self.model(batch)
 
-    def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
+    def validation_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> STEP_OUTPUT:
         """To be implemented in the subclasses."""
         raise NotImplementedError
 
-    def predict_step(self, batch: Any, batch_idx: int, dataloader_idx: int = 0) -> Any:
-        """Step function called during :meth:`~pytorch_lightning.trainer.trainer.Trainer.predict`.
+    def predict_step(
+        self,
+        batch: dict[str, str | torch.Tensor],
+        batch_idx: int,
+        dataloader_idx: int = 0,
+    ) -> STEP_OUTPUT:
+        """Step function called during :meth:`~lightning.pytorch.trainer.Trainer.predict`.
 
-        By default, it calls :meth:`~pytorch_lightning.core.lightning.LightningModule.forward`.
+        By default, it calls :meth:`~lightning.pytorch.core.lightning.LightningModule.forward`.
         Override to add any processing logic.
 
         Args:
@@ -85,32 +118,18 @@ class AnomalyModule(pl.LightningModule, ABC):
         Return:
             Predicted output
         """
-        del batch_idx, dataloader_idx  # These variables are not used.
+        del dataloader_idx  # These variables are not used.
 
-        outputs: Tensor | dict[str, Any] = self.validation_step(batch)
-        self._post_process(outputs)
-        if outputs is not None and isinstance(outputs, dict):
-            outputs["pred_labels"] = outputs["pred_scores"] >= self.image_threshold.value
-            if "anomaly_maps" in outputs.keys():
-                outputs["pred_masks"] = outputs["anomaly_maps"] >= self.pixel_threshold.value
-                if "pred_boxes" not in outputs.keys():
-                    outputs["pred_boxes"], outputs["box_scores"] = masks_to_boxes(
-                        outputs["pred_masks"], outputs["anomaly_maps"]
-                    )
-                    outputs["box_labels"] = [torch.ones(boxes.shape[0]) for boxes in outputs["pred_boxes"]]
-            # apply thresholding to boxes
-            if "box_scores" in outputs and "box_labels" not in outputs:
-                # apply threshold to assign normal/anomalous label to boxes
-                is_anomalous = [scores > self.pixel_threshold.value for scores in outputs["box_scores"]]
-                outputs["box_labels"] = [labels.int() for labels in is_anomalous]
-        return outputs
+        return self.validation_step(batch, batch_idx)
 
-    def test_step(self, batch: dict[str, str | Tensor], batch_idx: int, *args, **kwargs) -> STEP_OUTPUT:
+    def test_step(self, batch: dict[str, str | torch.Tensor], batch_idx: int, *args, **kwargs) -> STEP_OUTPUT:
         """Calls validation_step for anomaly map/score calculation.
 
         Args:
-          batch (dict[str, str | Tensor]): Input batch
+          batch (dict[str, str | torch.Tensor]): Input batch
           batch_idx (int): Batch index
+          args: Arguments.
+          kwargs: Keyword arguments.
 
         Returns:
           Dictionary containing images, features, true labels and masks.
@@ -120,166 +139,202 @@ class AnomalyModule(pl.LightningModule, ABC):
 
         return self.predict_step(batch, batch_idx)
 
-    def validation_step_end(self, val_step_outputs: STEP_OUTPUT, *args, **kwargs) -> STEP_OUTPUT:
-        """Called at the end of each validation step."""
-        del args, kwargs  # These variables are not used.
+    @property
+    @abstractmethod
+    def trainer_arguments(self) -> dict[str, Any]:
+        """Arguments used to override the trainer parameters so as to train the model correctly."""
+        raise NotImplementedError
 
-        self._outputs_to_cpu(val_step_outputs)
-        self._post_process(val_step_outputs)
-        return val_step_outputs
+    def _save_to_state_dict(self, destination: OrderedDict, prefix: str, keep_vars: bool) -> None:
+        if hasattr(self, "image_threshold"):
+            destination[
+                "image_threshold_class"
+            ] = f"{self.image_threshold.__class__.__module__}.{self.image_threshold.__class__.__name__}"
+        if hasattr(self, "pixel_threshold"):
+            destination[
+                "pixel_threshold_class"
+            ] = f"{self.pixel_threshold.__class__.__module__}.{self.pixel_threshold.__class__.__name__}"
+        if hasattr(self, "normalization_metrics"):
+            normalization_class = self.normalization_metrics.__class__
+            destination["normalization_class"] = f"{normalization_class.__module__}.{normalization_class.__name__}"
 
-    def test_step_end(self, test_step_outputs: STEP_OUTPUT, *args, **kwargs) -> STEP_OUTPUT:
-        """Called at the end of each test step."""
-        del args, kwargs  # These variables are not used.
+        return super()._save_to_state_dict(destination, prefix, keep_vars)
 
-        self._outputs_to_cpu(test_step_outputs)
-        self._post_process(test_step_outputs)
-        return test_step_outputs
+    def load_state_dict(self, state_dict: OrderedDict[str, Any], strict: bool = True) -> Any:  # noqa: ANN401
+        """Initialize auxiliary object."""
+        if "image_threshold_class" in state_dict:
+            self.image_threshold = self._get_instance(state_dict, "image_threshold_class")
+        if "pixel_threshold_class" in state_dict:
+            self.pixel_threshold = self._get_instance(state_dict, "pixel_threshold_class")
+        if "normalization_class" in state_dict:
+            self.normalization_metrics = self._get_instance(state_dict, "normalization_class")
+        # Used to load metrics if there is any related data in state_dict
+        self._load_metrics(state_dict)
 
-    def validation_epoch_end(self, outputs: EPOCH_OUTPUT) -> None:
-        """Compute threshold and performance metrics.
+        return super().load_state_dict(state_dict, strict)
 
-        Args:
-          outputs: Batch of outputs from the validation step
-        """
-        if self.threshold_method == ThresholdMethod.ADAPTIVE:
-            self._compute_adaptive_threshold(outputs)
-        self._collect_outputs(self.image_metrics, self.pixel_metrics, outputs)
-        self._log_metrics()
-
-    def test_epoch_end(self, outputs: EPOCH_OUTPUT) -> None:
-        """Compute and save anomaly scores of the test set.
-
-        Args:
-            outputs: Batch of outputs from the validation step
-        """
-        self._collect_outputs(self.image_metrics, self.pixel_metrics, outputs)
-        self._log_metrics()
-
-    def on_predict_batch_end(self, outputs: Any | None, batch: Any, batch_idx: int, dataloader_idx: int) -> None:
-        """Called in the predict loop after the batch.
-
-        Args:
-            outputs: The outputs of predict_step_end(predict_step(x))
-            batch: The batched data as it is returned by the test DataLoader.
-            batch_idx: the index of the batch
-            dataloader_idx: the index of the dataloader
-        """
-        del batch, batch_idx, dataloader_idx  # These variables are not used.
-
-        self._outputs_to_cpu(outputs)
-
-    def _compute_adaptive_threshold(self, outputs: EPOCH_OUTPUT) -> None:
-        self.image_threshold.reset()
-        self.pixel_threshold.reset()
-        self._collect_outputs(self.image_threshold, self.pixel_threshold, outputs)
-        self.image_threshold.compute()
-        if "mask" in outputs[0].keys() and "anomaly_maps" in outputs[0].keys():
-            self.pixel_threshold.compute()
-        else:
-            self.pixel_threshold.value = self.image_threshold.value
-
-        self.image_metrics.set_threshold(self.image_threshold.value.item())
-        self.pixel_metrics.set_threshold(self.pixel_threshold.value.item())
-
-    @staticmethod
-    def _collect_outputs(
-        image_metric: AnomalibMetricCollection,
-        pixel_metric: AnomalibMetricCollection,
-        outputs: EPOCH_OUTPUT,
-    ) -> None:
-        for output in outputs:
-            image_metric.cpu()
-            image_metric.update(output["pred_scores"], output["label"].int())
-            if "mask" in output.keys() and "anomaly_maps" in output.keys():
-                pixel_metric.cpu()
-                pixel_metric.update(torch.squeeze(output["anomaly_maps"]), torch.squeeze(output["mask"].int()))
-
-    @staticmethod
-    def _post_process(outputs: STEP_OUTPUT) -> None:
-        """Compute labels based on model predictions."""
-        if isinstance(outputs, dict):
-            if "pred_scores" not in outputs and "anomaly_maps" in outputs:
-                # infer image scores from anomaly maps
-                outputs["pred_scores"] = (
-                    outputs["anomaly_maps"].reshape(outputs["anomaly_maps"].shape[0], -1).max(dim=1).values
-                )
-            elif "pred_scores" not in outputs and "box_scores" in outputs:
-                # infer image score from bbox confidence scores
-                outputs["pred_scores"] = torch.zeros_like(outputs["label"]).float()
-                for idx, (boxes, scores) in enumerate(zip(outputs["pred_boxes"], outputs["box_scores"])):
-                    if boxes.numel():
-                        outputs["pred_scores"][idx] = scores.max().item()
-
-            if "pred_boxes" in outputs and "anomaly_maps" not in outputs:
-                # create anomaly maps from bbox predictions for thresholding and evaluation
-                image_size: tuple[int, int] = outputs["image"].shape[-2:]
-                true_boxes: list[Tensor] = outputs["boxes"]
-                pred_boxes: Tensor = outputs["pred_boxes"]
-                box_scores: Tensor = outputs["box_scores"]
-
-                outputs["anomaly_maps"] = boxes_to_anomaly_maps(pred_boxes, box_scores, image_size)
-                outputs["mask"] = boxes_to_masks(true_boxes, image_size)
-
-    def _outputs_to_cpu(self, output):
-        if isinstance(output, dict):
-            for key, value in output.items():
-                output[key] = self._outputs_to_cpu(value)
-        elif isinstance(output, list):
-            output = [self._outputs_to_cpu(item) for item in output]
-        elif isinstance(output, Tensor):
-            output = output.cpu()
-        return output
-
-    def _log_metrics(self) -> None:
-        """Log computed performance metrics."""
-        if self.pixel_metrics.update_called:
-            self.log_dict(self.pixel_metrics, prog_bar=True)
-            self.log_dict(self.image_metrics, prog_bar=False)
-        else:
-            self.log_dict(self.image_metrics, prog_bar=True)
-
-    def _load_normalization_class(self, state_dict: OrderedDict[str, Tensor]) -> None:
-        """Assigns the normalization method to use."""
-        if "normalization_metrics.max" in state_dict.keys():
-            self.normalization_metrics = MinMax()
-        elif "normalization_metrics.image_mean" in state_dict.keys():
-            self.normalization_metrics = AnomalyScoreDistribution()
-        else:
-            warn("No known normalization found in model weights.")
-
-    def _load_metrics(self, state_dict: OrderedDict[str, Tensor]) -> None:
+    def _load_metrics(self, state_dict: OrderedDict[str, torch.Tensor]) -> None:
         """Load metrics from saved checkpoint."""
-        self._set_metrics("pixel", state_dict)
-        self._set_metrics("image", state_dict)
+        self._add_metrics("pixel", state_dict)
+        self._add_metrics("image", state_dict)
 
-    def _set_metrics(self, name: str, state_dict: OrderedDict[str, Tensor]):
+    def _add_metrics(self, name: str, state_dict: OrderedDict[str, torch.Tensor]) -> None:
         """Sets the pixel/image metrics.
 
         Args:
-        name (str): is it pixel or image.
-        state_dict (OrderedDict[str, Tensor]): state dict of the model.
+            name (str): is it pixel or image.
+            state_dict (OrderedDict[str, Tensor]): state dict of the model.
         """
-        metric_keys = [key for key in state_dict.keys() if key.startswith(f"{name}_metrics")]
-        if not hasattr(self, f"{name}_metrics") and any(metric_keys):
-            metrics = AnomalibMetricCollection([], prefix=f"{name}_")
+        metric_keys = [key for key in state_dict if key.startswith(f"{name}_metrics")]
+        if any(metric_keys):
+            if not hasattr(self, f"{name}_metrics"):
+                setattr(self, f"{name}_metrics", AnomalibMetricCollection([], prefix=f"{name}_"))
+            metrics = getattr(self, f"{name}_metrics")
             for key in metric_keys:
                 class_name = key.split(".")[1]
                 try:
-                    metrics_module = importlib.import_module("anomalib.utils.metrics")
+                    metrics_module = importlib.import_module("anomalib.metrics")
                     metrics_cls = getattr(metrics_module, class_name)
-                except Exception as exception:
-                    raise ImportError(f"Class {class_name} not found in module anomalib.utils.metrics") from exception
+                except (ImportError, AttributeError) as exception:
+                    msg = f"Class {class_name} not found in module anomalib.metrics"
+                    raise ImportError(msg) from exception
+                logger.info("Loading %s metrics from state dict", class_name)
                 metrics.add_metrics(metrics_cls())
-            setattr(self, f"{name}_metrics", metrics)
 
-    def load_state_dict(self, state_dict: OrderedDict[str, Tensor], strict: bool = True):
-        """Load state dict from checkpoint.
+    def _get_instance(self, state_dict: OrderedDict[str, Any], dict_key: str) -> BaseThreshold:
+        """Get the threshold class from the ``state_dict``."""
+        class_path = state_dict.pop(dict_key)
+        module = importlib.import_module(".".join(class_path.split(".")[:-1]))
+        return getattr(module, class_path.split(".")[-1])()
 
-        Ensures that normalization and thresholding attributes is properly setup before model is loaded.
+    @property
+    @abstractmethod
+    def learning_type(self) -> LearningType:
+        """Learning type of the model."""
+        raise NotImplementedError
+
+    @property
+    def transform(self) -> Transform:
+        """Retrieve the model-specific transform.
+
+        If a transform has been set using `set_transform`, it will be returned. Otherwise, we will use the
+        model-specific default transform, conditioned on the input size.
         """
-        # Used to load missing normalization and threshold parameters
-        self._load_normalization_class(state_dict)
-        # Used to load metrics if there is any related data in state_dict
-        self._load_metrics(state_dict)
-        return super().load_state_dict(state_dict, strict=strict)
+        return self._transform
+
+    def set_transform(self, transform: Transform) -> None:
+        """Update the transform linked to the model instance."""
+        self._transform = transform
+
+    def configure_transforms(self, image_size: tuple[int, int] | None = None) -> Transform:
+        """Default transforms.
+
+        The default transform is resize to 256x256 and normalize to ImageNet stats. Individual models can override
+        this method to provide custom transforms.
+        """
+        logger.warning(
+            "No implementation of `configure_transforms` was provided in the Lightning model. Using default "
+            "transforms from the base class. This may not be suitable for your use case. Please override "
+            "`configure_transforms` in your model.",
+        )
+        image_size = image_size or (256, 256)
+        return Compose(
+            [
+                Resize(image_size, antialias=True),
+                Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+            ],
+        )
+
+    @property
+    def input_size(self) -> tuple[int, int] | None:
+        """Return the effective input size of the model.
+
+        The effective input size is the size of the input tensor after the transform has been applied. If the transform
+        is not set, or if the transform does not change the shape of the input tensor, this method will return None.
+        """
+        transform = self.transform or self.configure_transforms()
+        if transform is None:
+            return None
+        dummy_input = torch.zeros(1, 3, 1, 1)
+        output_shape = transform(dummy_input).shape[-2:]
+        if output_shape == (1, 1):
+            return None
+        return output_shape[-2:]
+
+    def on_save_checkpoint(self, checkpoint: dict[str, Any]) -> None:
+        """Called when saving the model to a checkpoint.
+
+        Saves the transform to the checkpoint.
+        """
+        checkpoint["transform"] = self.transform
+
+    def on_load_checkpoint(self, checkpoint: dict[str, Any]) -> None:
+        """Called when loading the model from a checkpoint.
+
+        Loads the transform from the checkpoint and calls setup to ensure that the torch model is built before loading
+        the state dict.
+        """
+        self._transform = checkpoint["transform"]
+        self.setup("load_checkpoint")
+
+    @classmethod
+    def from_config(
+        cls: type["AnomalyModule"],
+        config_path: str | Path,
+        **kwargs,
+    ) -> "AnomalyModule":
+        """Create a model instance from the configuration.
+
+        Args:
+            config_path (str | Path): Path to the model configuration file.
+            **kwargs (dict): Additional keyword arguments.
+
+        Returns:
+            AnomalyModule: model instance.
+
+        Example:
+            The following example shows how to get model from patchcore.yaml:
+
+            .. code-block:: python
+                >>> model_config = "configs/model/patchcore.yaml"
+                >>> model = AnomalyModule.from_config(config_path=model_config)
+
+            The following example shows overriding the configuration file with additional keyword arguments:
+
+            .. code-block:: python
+                >>> override_kwargs = {"model.pre_trained": False}
+                >>> model = AnomalyModule.from_config(config_path=model_config, **override_kwargs)
+        """
+        from jsonargparse import ActionConfigFile, ArgumentParser
+        from lightning.pytorch import Trainer
+
+        from anomalib import TaskType
+
+        if not Path(config_path).exists():
+            msg = f"Configuration file not found: {config_path}"
+            raise FileNotFoundError(msg)
+
+        model_parser = ArgumentParser()
+        model_parser.add_argument(
+            "-c",
+            "--config",
+            action=ActionConfigFile,
+            help="Path to a configuration file in json or yaml format.",
+        )
+        model_parser.add_subclass_arguments(AnomalyModule, "model", required=False, fail_untyped=False)
+        model_parser.add_argument("--task", type=TaskType | str, default=TaskType.SEGMENTATION)
+        model_parser.add_argument("--metrics.image", type=list[str] | str | None, default=["F1Score", "AUROC"])
+        model_parser.add_argument("--metrics.pixel", type=list[str] | str | None, default=None, required=False)
+        model_parser.add_argument("--metrics.threshold", type=BaseThreshold | str, default="F1AdaptiveThreshold")
+        model_parser.add_class_arguments(Trainer, "trainer", fail_untyped=False, instantiate=False, sub_configs=True)
+        args = ["--config", str(config_path)]
+        for key, value in kwargs.items():
+            args.extend([f"--{key}", str(value)])
+        config = model_parser.parse_args(args=args)
+        instantiated_classes = model_parser.instantiate_classes(config)
+        model = instantiated_classes.get("model")
+        if isinstance(model, AnomalyModule):
+            return model
+
+        msg = f"Model is not an instance of AnomalyModule: {model}"
+        raise ValueError(msg)

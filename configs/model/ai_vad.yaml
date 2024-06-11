@@ -1,0 +1,21 @@
+# NOTE: To get correct results, set the image size to (240, 360) and normalization to none in the dataset
+
+model:
+  class_path: anomalib.models.AiVad
+  init_args:
+    box_score_thresh: 0.7
+    persons_only: false
+    min_bbox_area: 100
+    max_bbox_overlap: 0.65
+    enable_foreground_detections: true
+    foreground_kernel_size: 3
+    foreground_binary_threshold: 18
+    n_velocity_bins: 1
+    use_velocity_features: true
+    use_pose_features: true
+    use_deep_features: true
+    n_components_velocity: 2
+    n_neighbors_pose: 1
+    n_neighbors_deep: 1
+
+task: detection

@@ -1,0 +1,16 @@
+class_path: anomalib.data.Avenue
+init_args:
+  root: ./datasets/avenue
+  gt_dir: ./datasets/avenue/masks
+  clip_length_in_frames: 1
+  frames_between_clips: 1
+  target_frame: last
+  train_batch_size: 32
+  eval_batch_size: 32
+  num_workers: 8
+  transform: null
+  train_transform: null
+  eval_transform: null
+  val_split_mode: from_test
+  val_split_ratio: 0.5
+  seed: null

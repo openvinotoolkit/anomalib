@@ -1,0 +1,19 @@
+metrics:
+  pixel:
+    F1Score:
+      class_path: anomalib.metrics.F1Score
+      init_args:
+        threshold: 0.5
+    AUROC:
+      class_path: anomalib.metrics.AUROC
+      init_args:
+        compute_on_cpu: true
+  image:
+    F1Score:
+      class_path: anomalib.metrics.F1Score
+      init_args:
+        threshold: 0.5
+    AUROC:
+      class_path: anomalib.metrics.AUROC
+      init_args:
+        compute_on_cpu: true

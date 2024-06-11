@@ -1,0 +1,2 @@
+# Using Entrypoint in tools
+python tools/experimental/benchmarking/benchmark.py --config tools/experimental/benchmarking/sample.yaml

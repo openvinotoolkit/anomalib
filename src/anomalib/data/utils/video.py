@@ -1,9 +1,7 @@
 """Video utils."""
 
-# Copyright (C) 2023 Intel Corporation
+# Copyright (C) 2023-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
-
-from __future__ import annotations
 
 import warnings
 from abc import ABC, abstractmethod
@@ -11,7 +9,7 @@ from pathlib import Path
 from typing import Any
 
 import cv2
-from torch import Tensor
+import torch
 from torchvision.datasets.video_utils import VideoClips
 
 
@@ -31,22 +29,23 @@ class ClipsIndexer(VideoClips, ABC):
         self,
         video_paths: list[str],
         mask_paths: list[str],
-        clip_length_in_frames: int = 1,
+        clip_length_in_frames: int = 2,
         frames_between_clips: int = 1,
     ) -> None:
         super().__init__(
             video_paths=video_paths,
             clip_length_in_frames=clip_length_in_frames,
             frames_between_clips=frames_between_clips,
+            output_format="TCHW",
         )
         self.mask_paths = mask_paths
 
     def last_frame_idx(self, video_idx: int) -> int:
-        """Returns the index of the last frame for a given video."""
+        """Return the index of the last frame for a given video."""
         return self.clips[video_idx][-1][-1].item()
 
     @abstractmethod
-    def get_mask(self, idx: int) -> Tensor | None:
+    def get_mask(self, idx: int) -> torch.Tensor | None:
         """Return the masks for the given index."""
         raise NotImplementedError
 
@@ -61,15 +60,13 @@ class ClipsIndexer(VideoClips, ABC):
         video_path = self.video_paths[video_idx]
         clip_pts = self.clips[video_idx][clip_idx]
 
-        item = dict(
-            image=clip,
-            mask=self.get_mask(idx),
-            video_path=video_path,
-            frames=clip_pts,
-            last_frame=self.last_frame_idx(video_idx),
-        )
-
-        return item
+        return {
+            "image": clip,
+            "mask": self.get_mask(idx),
+            "video_path": video_path,
+            "frames": clip_pts,
+            "last_frame": self.last_frame_idx(video_idx),
+        }
 
 
 def convert_video(input_path: Path, output_path: Path, codec: str = "MP4V") -> None:

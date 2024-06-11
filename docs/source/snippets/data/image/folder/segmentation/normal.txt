@@ -1,0 +1,15 @@
+# Import the datamodule
+from anomalib.data import Folder
+from anomalib.data.utils import TestSplitMode, ValSplitMode
+
+# Create the datamodule
+datamodule = Folder(
+    name="hazelnut_toy",
+    root="datasets/MVTec/transistor",
+    normal_dir="train/good",
+    val_split_mode=ValSplitMode.NONE,
+    test_split_mode=TestSplitMode.NONE,
+)
+
+# Setup the datamodule
+datamodule.setup()

@@ -1,17 +1,19 @@
 """Base Depth Dataset."""
 
-from __future__ import annotations
+# Copyright (C) 2023-2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
 
 from abc import ABC
 
-import albumentations as A
-import cv2
-import numpy as np
-from torch import Tensor
+import torch
+from PIL import Image
+from torchvision.transforms.functional import to_tensor
+from torchvision.transforms.v2 import Transform
+from torchvision.tv_tensors import Mask
 
+from anomalib import TaskType
 from anomalib.data.base.dataset import AnomalibDataset
-from anomalib.data.task_type import TaskType
-from anomalib.data.utils import masks_to_boxes, read_depth_image, read_image
+from anomalib.data.utils import LabelName, masks_to_boxes, read_depth_image
 
 
 class AnomalibDepthDataset(AnomalibDataset, ABC):
@@ -19,50 +21,56 @@ class AnomalibDepthDataset(AnomalibDataset, ABC):
 
     Args:
         task (str): Task type, either 'classification' or 'segmentation'
-        transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
+        transform (Transform, optional): Transforms that should be applied to the input images.
+            Defaults to ``None``.
     """
 
-    def __init__(self, task: TaskType, transform: A.Compose) -> None:
+    def __init__(self, task: TaskType, transform: Transform | None = None) -> None:
         super().__init__(task, transform)
 
         self.transform = transform
 
-    def __getitem__(self, index: int) -> dict[str, str | Tensor]:
-        """Return rgb image, depth image and mask."""
+    def __getitem__(self, index: int) -> dict[str, str | torch.Tensor]:
+        """Return rgb image, depth image and mask.
 
-        image_path = self._samples.iloc[index].image_path
-        mask_path = self._samples.iloc[index].mask_path
-        label_index = self._samples.iloc[index].label_index
-        depth_path = self._samples.iloc[index].depth_path
+        Args:
+            index (int): Index of the item to be returned.
 
-        image = read_image(image_path)
-        depth_image = read_depth_image(depth_path)
-        item = dict(image_path=image_path, depth_path=depth_path, label=label_index)
+        Returns:
+            dict[str, str | torch.Tensor]: Dictionary containing the image, depth image and mask.
+        """
+        image_path = self.samples.iloc[index].image_path
+        mask_path = self.samples.iloc[index].mask_path
+        label_index = self.samples.iloc[index].label_index
+        depth_path = self.samples.iloc[index].depth_path
+
+        image = to_tensor(Image.open(image_path))
+        depth_image = to_tensor(read_depth_image(depth_path))
+        item = {"image_path": image_path, "depth_path": depth_path, "label": label_index}
 
         if self.task == TaskType.CLASSIFICATION:
-            transformed = self.transform(image=image, depth_image=depth_image)
-            item["image"] = transformed["image"]
-            item["depth_image"] = transformed["depth_image"]
+            item["image"], item["depth_image"] = (
+                self.transform(image, depth_image) if self.transform else (image, depth_image)
+            )
         elif self.task in (TaskType.DETECTION, TaskType.SEGMENTATION):
             # Only Anomalous (1) images have masks in anomaly datasets
             # Therefore, create empty mask for Normal (0) images.
-            if label_index == 0:
-                mask = np.zeros(shape=image.shape[:2])
-            else:
-                mask = cv2.imread(mask_path, flags=0) / 255.0
-
-            transformed = self.transform(image=image, depth_image=depth_image, mask=mask)
-
-            item["image"] = transformed["image"]
-            item["depth_image"] = transformed["depth_image"]
+            mask = (
+                Mask(torch.zeros(image.shape[-2:]))
+                if label_index == LabelName.NORMAL
+                else Mask(to_tensor(Image.open(mask_path)).squeeze())
+            )
+            item["image"], item["depth_image"], item["mask"] = (
+                self.transform(image, depth_image, mask) if self.transform else (image, depth_image, mask)
+            )
             item["mask_path"] = mask_path
-            item["mask"] = transformed["mask"]
 
             if self.task == TaskType.DETECTION:
                 # create boxes from masks for detection task
                 boxes, _ = masks_to_boxes(item["mask"])
                 item["boxes"] = boxes[0]
         else:
-            raise ValueError(f"Unknown task type: {self.task}")
+            msg = f"Unknown task type: {self.task}"
+            raise ValueError(msg)
 
         return item
