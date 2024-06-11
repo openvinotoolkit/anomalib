@@ -113,7 +113,7 @@ class AiVad(MemoryBankMixin, AnomalyModule):
         """
         features_per_batch = self.model(batch["image"])
 
-        for features, video_path in zip(features_per_batch, batch["video_path"], strict=True):
+        for features, video_path in zip(features_per_batch, batch.video_path, strict=True):
             self.model.density_estimator.update(features, video_path)
             self.total_detections += len(next(iter(features.values())))
 
@@ -139,10 +139,10 @@ class AiVad(MemoryBankMixin, AnomalyModule):
         """
         del args, kwargs  # Unused arguments.
 
-        boxes, anomaly_scores, image_scores = self.model(batch["image"])
-        batch["pred_boxes"] = [box.int() for box in boxes]
-        batch["box_scores"] = [score.to(self.device) for score in anomaly_scores]
-        batch["pred_scores"] = torch.Tensor(image_scores).to(self.device)
+        boxes, anomaly_scores, image_scores = self.model(batch.image)
+        batch.pred_boxes = [box.int() for box in boxes]
+        batch.box_scores = [score.to(self.device) for score in anomaly_scores]
+        batch.pred_score = torch.Tensor(image_scores).to(self.device)
 
         return batch
 

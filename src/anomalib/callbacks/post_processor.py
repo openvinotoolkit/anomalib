@@ -13,6 +13,7 @@ from lightning.pytorch.utilities.types import STEP_OUTPUT
 
 from anomalib.data.utils import boxes_to_anomaly_maps, boxes_to_masks, masks_to_boxes
 from anomalib.models import AnomalyModule
+from anomalib.dataclasses import BatchItem
 
 
 class _PostProcessorCallback(Callback):
@@ -28,7 +29,7 @@ class _PostProcessorCallback(Callback):
         self,
         trainer: Trainer,
         pl_module: AnomalyModule,
-        outputs: STEP_OUTPUT | None,
+        outputs: BatchItem,
         batch: Any,  # noqa: ANN401
         batch_idx: int,
         dataloader_idx: int = 0,
@@ -42,7 +43,7 @@ class _PostProcessorCallback(Callback):
         self,
         trainer: Trainer,
         pl_module: AnomalyModule,
-        outputs: STEP_OUTPUT | None,
+        outputs: BatchItem,
         batch: Any,  # noqa: ANN401
         batch_idx: int,
         dataloader_idx: int = 0,
@@ -56,7 +57,7 @@ class _PostProcessorCallback(Callback):
         self,
         trainer: Trainer,
         pl_module: AnomalyModule,
-        outputs: Any,  # noqa: ANN401
+        outputs: BatchItem,  # noqa: ANN401
         batch: Any,  # noqa: ANN401
         batch_idx: int,
         dataloader_idx: int = 0,
@@ -67,7 +68,7 @@ class _PostProcessorCallback(Callback):
             self.post_process(trainer, pl_module, outputs)
 
     def post_process(self, trainer: Trainer, pl_module: AnomalyModule, outputs: STEP_OUTPUT) -> None:
-        if isinstance(outputs, dict):
+        if isinstance(outputs, BatchItem):
             self._post_process(outputs)
             if trainer.predicting or trainer.testing:
                 self._compute_scores_and_labels(pl_module, outputs)
@@ -77,49 +78,49 @@ class _PostProcessorCallback(Callback):
         pl_module: AnomalyModule,
         outputs: dict[str, Any],
     ) -> None:
-        if "pred_scores" in outputs:
-            outputs["pred_labels"] = outputs["pred_scores"] >= pl_module.image_threshold.value
-        if "anomaly_maps" in outputs:
-            outputs["pred_masks"] = outputs["anomaly_maps"] >= pl_module.pixel_threshold.value
-            if "pred_boxes" not in outputs:
-                outputs["pred_boxes"], outputs["box_scores"] = masks_to_boxes(
-                    outputs["pred_masks"],
-                    outputs["anomaly_maps"],
+        if outputs.pred_score is not None:
+            outputs.pred_label = outputs.pred_score >= pl_module.image_threshold.value
+        if outputs.anomaly_map is not None:
+            outputs.pred_mask = outputs.anomaly_map >= pl_module.pixel_threshold.value
+            if outputs.pred_boxes is None:
+                outputs.pred_boxes, outputs.box_scores = masks_to_boxes(
+                    outputs.pred_mask,
+                    outputs.anomaly_map,
                 )
-                outputs["box_labels"] = [torch.ones(boxes.shape[0]) for boxes in outputs["pred_boxes"]]
+                outputs.box_labels = [torch.ones(boxes.shape[0]) for boxes in outputs.pred_boxes]
         # apply thresholding to boxes
-        if "box_scores" in outputs and "box_labels" not in outputs:
+        if outputs.box_scores is not None and outputs.box_labels is None:
             # apply threshold to assign normal/anomalous label to boxes
-            is_anomalous = [scores > pl_module.pixel_threshold.value for scores in outputs["box_scores"]]
-            outputs["box_labels"] = [labels.int() for labels in is_anomalous]
+            is_anomalous = [scores > pl_module.pixel_threshold.value for scores in outputs.box_scores]
+            outputs.box_labels = [labels.int() for labels in is_anomalous]
 
     @staticmethod
-    def _post_process(outputs: STEP_OUTPUT) -> None:
+    def _post_process(outputs: BatchItem) -> None:
         """Compute labels based on model predictions."""
-        if isinstance(outputs, dict):
-            if "pred_scores" not in outputs and "anomaly_maps" in outputs:
+        if isinstance(outputs, BatchItem):
+            if outputs.pred_score is None and outputs.anomaly_map is not None:
                 # infer image scores from anomaly maps
-                outputs["pred_scores"] = (
-                    outputs["anomaly_maps"]  # noqa: PD011
-                    .reshape(outputs["anomaly_maps"].shape[0], -1)
+                outputs.pred_score = (
+                    outputs.anomaly_map  # noqa: PD011
+                    .reshape(outputs.anomaly_map.shape[0], -1)
                     .max(dim=1)
                     .values
                 )
-            elif "pred_scores" not in outputs and "box_scores" in outputs and "label" in outputs:
+            elif outputs.pred_score is None and outputs.box_score is not None and outputs.gt_label is not None:
                 # infer image score from bbox confidence scores
-                outputs["pred_scores"] = torch.zeros_like(outputs["label"]).float()
-                for idx, (boxes, scores) in enumerate(zip(outputs["pred_boxes"], outputs["box_scores"], strict=True)):
+                outputs.pred_score = torch.zeros_like(outputs.gt_label).float()
+                for idx, (boxes, scores) in enumerate(zip(outputs.pred_boxes, outputs.box_scores, strict=True)):
                     if boxes.numel():
-                        outputs["pred_scores"][idx] = scores.max().item()
+                        outputs.pred_score[idx] = scores.max().item()
 
-            if "pred_boxes" in outputs and "anomaly_maps" not in outputs:
+            if outputs.pred_boxes is not None and outputs.anomaly_map is None:
                 # create anomaly maps from bbox predictions for thresholding and evaluation
-                image_size: tuple[int, int] = outputs["image"].shape[-2:]
-                pred_boxes: torch.Tensor = outputs["pred_boxes"]
-                box_scores: torch.Tensor = outputs["box_scores"]
+                image_size: tuple[int, int] = outputs.image.shape[-2:]
+                pred_boxes: torch.Tensor = outputs.pred_boxes
+                box_scores: torch.Tensor = outputs.box_scores
 
-                outputs["anomaly_maps"] = boxes_to_anomaly_maps(pred_boxes, box_scores, image_size)
+                outputs.anomaly_map = boxes_to_anomaly_maps(pred_boxes, box_scores, image_size)
 
-                if "boxes" in outputs:
-                    true_boxes: list[torch.Tensor] = outputs["boxes"]
-                    outputs["mask"] = boxes_to_masks(true_boxes, image_size)
+                if outputs.gt_boxes is not None:
+                    true_boxes: list[torch.Tensor] = outputs.gt_boxes
+                    outputs.gt_mask = boxes_to_masks(true_boxes, image_size)
