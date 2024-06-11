@@ -162,25 +162,18 @@ class ImageVisualizer(BaseVisualizer):
                 suffix = f"{str(batch['frames'][i].int().item()).zfill(zero_fill)}.png"
                 file_name = Path(batch["video_path"][i]) / suffix
 
-            try:
-                image_result = ImageResult(
-                        image=image,
-                        text_descr=batch["str_output"][:] if "str_output" in batch else "not str",
-                        pred_score=batch["pred_scores"][i].cpu().numpy().item() if "pred_scores" in batch else None,
-                        pred_label=batch["pred_labels"][i].cpu().numpy().item() if "pred_labels" in batch else None,
-                        anomaly_map=batch["anomaly_maps"][i].cpu().numpy() if "anomaly_maps" in batch else None,
-                        pred_mask=batch["pred_masks"][i].squeeze().int().cpu().numpy() if "pred_masks" in batch else None,
-                        gt_mask=batch["mask"][i].squeeze().int().cpu().numpy() if "mask" in batch else None,
-                        gt_boxes=batch["boxes"][i].cpu().numpy() if "boxes" in batch else None,
-                        pred_boxes=batch["pred_boxes"][i].cpu().numpy() if "pred_boxes" in batch else None,
-                        box_labels=batch["box_labels"][i].cpu().numpy() if "box_labels" in batch else None,
-                        )
-            except:
-                # print(batch)
-                print(batch.keys())
-                print(batch["str_output"])
-                raise
-
+            image_result = ImageResult(
+                    image=image,
+                    text_descr=batch["str_output"][:] if "str_output" in batch else "not str",
+                    pred_score=batch["pred_scores"][i].cpu().numpy().item() if "pred_scores" in batch else None,
+                    pred_label=batch["pred_labels"][i].cpu().numpy().item() if "pred_labels" in batch else None,
+                    anomaly_map=batch["anomaly_maps"][i].cpu().numpy() if "anomaly_maps" in batch else None,
+                    pred_mask=batch["pred_masks"][i].squeeze().int().cpu().numpy() if "pred_masks" in batch else None,
+                    gt_mask=batch["mask"][i].squeeze().int().cpu().numpy() if "mask" in batch else None,
+                    gt_boxes=batch["boxes"][i].cpu().numpy() if "boxes" in batch else None,
+                    pred_boxes=batch["pred_boxes"][i].cpu().numpy() if "pred_boxes" in batch else None,
+                    box_labels=batch["box_labels"][i].cpu().numpy() if "box_labels" in batch else None,
+                    )
             yield GeneratorResult(image=self.visualize_image(image_result), file_name=file_name)
 
     def visualize_image(self, image_result: ImageResult) -> np.ndarray:
@@ -252,7 +245,9 @@ class ImageVisualizer(BaseVisualizer):
             if image_result.text_descr:
                 title = image_result.text_descr
 
-            image_grid.add_image(image_result.image, title="Explanation of Image", description=title)
+            image_classified = add_normal_label(image_result.image, 1 - image_result.pred_score)
+            image_grid.add_image(image_classified, title="Explanation of Image", description=title)
+            #image_grid.add_image(image_result.image, title="Explanation of Image", description=title)
 
         return image_grid.generate()
 
@@ -347,7 +342,7 @@ class _ImageGrid:
             if image_dict["descr"] is not None:
                 # Wrap the text
                 # wrapped_text = textwrap.fill(image_dict["descr"][0]['response'], width=100/num_cols)  # Adjust 'width' based on your subplot size and preference
-                wrapped_text = textwrap.fill(image_dict["descr"][0]['response'], width=70/num_cols)  # Adjust 'width' based on your subplot size and preference
+                wrapped_text = textwrap.fill(image_dict["descr"][0], width=70/num_cols)  # Adjust 'width' based on your subplot size and preference
                 axis.set_title(wrapped_text, fontsize=10)
 
                 self.figure.subplots_adjust(top=0.7)

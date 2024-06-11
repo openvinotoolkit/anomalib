@@ -70,12 +70,17 @@ def api_call(key, prompt, image) -> str:
         ],
         "max_tokens": 300,
     }
+    #print(headers)
 
     response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload)
 
-    # print(response.json())
+    #print(json.loads(response.content))
+    if not response.content or not json.loads(response.content).get("choices"):
+        print("error")
+        print(json.loads(response.content))
+        return "No : ERROR on url"
 
-    return response.json()
+    return json.loads(response.content)["choices"][-1]["message"]["content"]
 
     return json.dumps(headers)
 
@@ -111,8 +116,19 @@ class Llm(AnomalyModule):
     def validation_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> dict:
         """Validation Step of WinCLIP."""
         del args, kwargs  # These variables are not used.
-        batch["str_output"] = api_call(self.openai_key, "", batch["image_path"][0])  # the first img of the batch
-        batch["pred_scores"] = torch.tensor([0.9])
+        bsize = len(batch["image_path"])
+        out_list: list[str] = []
+        pred_list = []
+        for x in range(bsize):
+            o = str(api_call( self.openai_key,  "", batch["image_path"][x])).strip()
+            p = 0.0 if o.startswith("N") else 1.0
+            out_list.append(o)
+            pred_list.append(p)
+            print(o)
+            print(p)
+
+        batch["str_output"] = str(out_list)
+        batch["pred_scores"] = torch.tensor(pred_list)
         return batch
 
     @property
