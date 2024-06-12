@@ -203,6 +203,14 @@ class Tiler:
 
     @staticmethod
     def validate_size_type(parameter: int | Sequence) -> tuple[int, ...]:
+        """Validate size type and return tuple of form [tile_h, tile_w].
+
+        Args:
+            parameter (int | Sequence): input tile size parameter.
+
+        Returns:
+            tuple[int, ...]: Validated tile size in tuple form.
+        """
         if isinstance(parameter, int):
             output = (parameter, parameter)
         elif isinstance(parameter, Sequence):
