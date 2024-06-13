@@ -50,10 +50,10 @@ repos:
         # packages in a different order than the rest of the codebase.
         args: ["--ignore=D100,D407,I001"]
 
-  - repo: https://github.com/pre-commit/mirrors-prettier
-    rev: v3.1.0
-    hooks:
-      - id: prettier
+  #- repo: https://github.com/pre-commit/mirrors-prettier
+  #  rev: v3.1.0
+  #  hooks:
+  #    - id: prettier
 
   - repo: https://github.com/igorshubovych/markdownlint-cli
     rev: v0.37.0
