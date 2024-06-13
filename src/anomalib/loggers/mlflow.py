@@ -2,6 +2,7 @@
 
 from typing import Literal
 
+import os
 import numpy as np
 from lightning.pytorch.loggers.mlflow import MLFlowLogger
 from lightning.pytorch.utilities import rank_zero_only
@@ -65,7 +66,7 @@ class AnomalibMLFlowLogger(ImageLoggerBase, MLFlowLogger):
         self,
         experiment_name: str | None = "anomalib_logs",
         run_name: str | None = None,
-        tracking_uri: str | None = None,
+        tracking_uri: str | None = os.getenv("MLFLOW_TRACKING_URI"),
         save_dir: str | None = "./mlruns",
         log_model: Literal[True, False, "all"] | None = False,
         prefix: str | None = "",
