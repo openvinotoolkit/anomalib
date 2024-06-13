@@ -168,6 +168,7 @@ class ImageVisualizer(BaseVisualizer):
                 gt_boxes=batch["boxes"][i].cpu().numpy() if "boxes" in batch else None,
                 pred_boxes=batch["pred_boxes"][i].cpu().numpy() if "pred_boxes" in batch else None,
                 box_labels=batch["box_labels"][i].cpu().numpy() if "box_labels" in batch else None,
+                normalize=self.normalize,
             )
             yield GeneratorResult(image=self.visualize_image(image_result), file_name=file_name)
 
