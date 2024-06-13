@@ -1,9 +1,13 @@
 """Helper functions for the tiled ensemble training."""
+from pathlib import Path
 
 from anomalib.data import AnomalibDataModule, get_datamodule
 from anomalib.models import AnomalyModule, get_model
+from anomalib.utils.normalization import NormalizationMethod
 
+from .ensemble_engine import TiledEnsembleEngine
 from .ensemble_tiling import EnsembleTiler, TileCollater
+from .post_processing.postprocess import NormalizationStage
 
 # Copyright (C) 2023-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -25,6 +29,8 @@ def get_ensemble_datamodule(config: dict, tiler: EnsembleTiler, tile_index: tupl
     datamodule = get_datamodule(config)
     # set custom collate function that does the tiling
     datamodule.collate_fn = TileCollater(tiler, tile_index)
+    datamodule.setup()
+
     return datamodule
 
 
@@ -43,3 +49,60 @@ def get_ensemble_model(config: dict, tiler: EnsembleTiler) -> AnomalyModule:
     model.set_input_size((tiler.tile_size_h, tiler.tile_size_w))
 
     return model
+
+
+def get_ensemble_tiler(config: dict) -> EnsembleTiler:
+    """Get tiler used for image tiling and to obtain tile dimensions.
+
+    Args:
+        config: tiled ensemble run configuration.
+
+    Returns:
+        EnsembleTiler: tiler object.
+    """
+    tiler = EnsembleTiler(
+        tile_size=config["ensemble"]["tiling"]["tile_size"],
+        stride=config["ensemble"]["tiling"]["stride"],
+        image_size=config["data"]["init_args"]["image_size"],
+    )
+
+    return tiler  # noqa: RET504
+
+
+def get_ensemble_engine(
+    tile_index: tuple[int, int],
+    accelerator: str,
+    devices: list[int] | str | int,
+    root_dir: Path,
+    post_process_config: dict,
+) -> TiledEnsembleEngine:
+    """Prepare engine for ensemble training or prediction.
+
+    This method makes sure correct normalization is used and sets the root_dir.
+
+    Args:
+        tile_index (tuple[int, int]): Index of tile that this model processes.
+        accelerator (str): Accelerator (device) to use.
+        devices (list[int] | str | int): device IDs used for training.
+        root_dir (Path): Root directory to save checkpoints, stats and images.
+        post_process_config (dict): Config dictionary for ensemble post-processing.
+
+    Returns:
+        TiledEnsembleEngine: set up engine for ensemble training/prediction.
+    """
+    # if we want tile level normalization we set it here, otherwise it's done later on joined images
+    if post_process_config["normalization_stage"] == NormalizationStage.TILE:
+        normalization = NormalizationMethod.MIN_MAX
+    else:
+        normalization = NormalizationMethod.NONE
+
+    # create engine for specific tile location and fit the model
+    engine = TiledEnsembleEngine(
+        tile_index=tile_index,
+        normalization=normalization,
+        accelerator=accelerator,
+        devices=devices,
+        default_root_dir=root_dir,
+    )
+
+    return engine  # noqa: RET504

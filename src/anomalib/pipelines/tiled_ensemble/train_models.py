@@ -15,12 +15,14 @@ from anomalib.models import AnomalyModule
 from anomalib.pipelines.components import Job, JobGenerator
 from anomalib.pipelines.types import GATHERED_RESULTS, PREV_STAGE_RESULT
 from anomalib.utils.logging import hide_output
-from anomalib.utils.normalization import NormalizationMethod
 
 from .components.ensemble_engine import TiledEnsembleEngine
-from .components.ensemble_tiling import EnsembleTiler
-from .components.helper_functions import get_ensemble_datamodule, get_ensemble_model
-from .components.post_processing.postprocess import NormalizationStage
+from .components.helper_functions import (
+    get_ensemble_datamodule,
+    get_ensemble_engine,
+    get_ensemble_model,
+    get_ensemble_tiler,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -32,10 +34,10 @@ class TrainModelJob(Job):
         accelerator (str): Accelerator (device) to use.
         seed (int): Random seed for reproducibility.
         root_dir (Path): Root directory to save checkpoints, stats and images.
-        model (AnomalyModule): Model to train.
-        datamodule (AnomalibDataModule): Datamodule with all dataloaders.
         tile_index (tuple[int, int]): Index of tile that this model processes.
         post_process_config (dict): Config dictionary for ensemble post-processing.
+        model (AnomalyModule): Model to train.
+        datamodule (AnomalibDataModule): Datamodule with all dataloaders.
 
     """
 
@@ -46,19 +48,19 @@ class TrainModelJob(Job):
         accelerator: str,
         seed: int,
         root_dir: Path,
-        model: AnomalyModule,
-        datamodule: AnomalibDataModule,
         tile_index: tuple[int, int],
         post_process_config: dict,
+        model: AnomalyModule,
+        datamodule: AnomalibDataModule,
     ) -> None:
         super().__init__()
         self.accelerator = accelerator
         self.seed = seed
         self.root_dir = root_dir
-        self.model = model
-        self.datamodule = datamodule
         self.tile_index = tile_index
         self.post_process_config = post_process_config
+        self.model = model
+        self.datamodule = datamodule
 
     @hide_output
     def run(
@@ -78,22 +80,16 @@ class TrainModelJob(Job):
             devices = [task_id]
             logger.info(f"Running job {self.model.__class__.__name__} with device {task_id}")
 
-        logger.info("Start of procedure for tile at position %s,", self.tile_index)
+        logger.info("Start of training for tile at position %s,", self.tile_index)
         seed_everything(self.seed)
 
-        # if we want tile level normalization we set it here, otherwise it's done later on joined images
-        if self.post_process_config["normalization_stage"] == NormalizationStage.TILE:
-            normalization = NormalizationMethod.MIN_MAX
-        else:
-            normalization = NormalizationMethod.NONE
-
         # create engine for specific tile location and fit the model
-        engine = TiledEnsembleEngine(
+        engine = get_ensemble_engine(
             tile_index=self.tile_index,
-            normalization=normalization,
+            post_process_config=self.post_process_config,
             accelerator=self.accelerator,
             devices=devices,
-            default_root_dir=self.root_dir,
+            root_dir=self.root_dir,
         )
         engine.fit(self.model, self.datamodule)
         # move model to cpu to avoid memory issues as the engine is returned to be used in validation phase
@@ -148,11 +144,7 @@ class TrainModelJobGenerator(JobGenerator):
         data_args = args["data"]
 
         # tiler used for splitting the image and getting the tile count
-        tiler = EnsembleTiler(
-            tile_size=ensemble_args["tiling"]["tile_size"],
-            stride=ensemble_args["tiling"]["stride"],
-            image_size=data_args["init_args"]["image_size"],
-        )
+        tiler = get_ensemble_tiler(args)
 
         logger.info(
             "Tiled ensemble training started. Separate models will be trained for %d tile locations.",
@@ -169,8 +161,8 @@ class TrainModelJobGenerator(JobGenerator):
                 accelerator=args["accelerator"],
                 seed=args["seed"],
                 root_dir=self.root_dir,
-                model=model,
-                datamodule=datamodule,
                 tile_index=tile_index,
                 post_process_config=ensemble_args["post_processing"],
+                model=model,
+                datamodule=datamodule,
             )
