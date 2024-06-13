@@ -14,7 +14,6 @@ from anomalib.data import AnomalibDataModule
 from anomalib.models import AnomalyModule
 from anomalib.pipelines.components import Job, JobGenerator
 from anomalib.pipelines.types import GATHERED_RESULTS, PREV_STAGE_RESULT
-from anomalib.utils.logging import hide_output
 
 from .components.ensemble_engine import TiledEnsembleEngine
 from .components.helper_functions import (
@@ -62,7 +61,6 @@ class TrainModelJob(Job):
         self.model = model
         self.datamodule = datamodule
 
-    @hide_output
     def run(
         self,
         task_id: int | None = None,

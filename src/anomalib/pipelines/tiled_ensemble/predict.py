@@ -16,7 +16,6 @@ from torch.utils.data import DataLoader
 from anomalib.models import AnomalyModule
 from anomalib.pipelines.components import Job, JobGenerator
 from anomalib.pipelines.types import GATHERED_RESULTS, PREV_STAGE_RESULT
-from anomalib.utils.logging import hide_output
 
 from .components.ensemble_engine import TiledEnsembleEngine
 from .components.helper_functions import (
@@ -76,7 +75,6 @@ class PredictJob(Job):
         self.engine = engine
         self.ckpt_path = ckpt_path
 
-    @hide_output
     def run(
         self,
         task_id: int | None = None,

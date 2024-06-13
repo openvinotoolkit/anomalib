@@ -13,20 +13,20 @@ from .post_processing.postprocess import NormalizationStage
 # SPDX-License-Identifier: Apache-2.0
 
 
-def get_ensemble_datamodule(config: dict, tiler: EnsembleTiler, tile_index: tuple[int, int]) -> AnomalibDataModule:
+def get_ensemble_datamodule(data_config: dict, tiler: EnsembleTiler, tile_index: tuple[int, int]) -> AnomalibDataModule:
     """Get Anomaly Datamodule adjusted for use in ensemble.
 
     Datamodule collate function gets replaced by TileCollater in order to tile all images before they are passed on.
 
     Args:
-        config (dict): Configuration of the anomaly model.
+        data_config (dict): Configuration of the anomaly model.
         tiler (EnsembleTiler): Tiler used to split the images to tiles for use in ensemble.
         tile_index (tuple[int, int]): Index of the tile in the split image.
 
     Returns:
         AnomalibDataModule: Anomalib Lightning DataModule
     """
-    datamodule = get_datamodule(config)
+    datamodule = get_datamodule(data_config)
     # set custom collate function that does the tiling
     datamodule.collate_fn = TileCollater(tiler, tile_index)
     datamodule.setup()
@@ -34,36 +34,36 @@ def get_ensemble_datamodule(config: dict, tiler: EnsembleTiler, tile_index: tupl
     return datamodule
 
 
-def get_ensemble_model(config: dict, tiler: EnsembleTiler) -> AnomalyModule:
+def get_ensemble_model(model_config: dict, tiler: EnsembleTiler) -> AnomalyModule:
     """Get model prepared for ensemble training.
 
     Args:
-        config (dict): model configuration.
+        model_config (dict): model configuration.
         tiler (EnsembleTiler): tiler used to get tile dimensions.
 
     Returns:
         AnomalyModule: model with input_size setup
     """
-    model = get_model(config)
+    model = get_model(model_config)
     # set model input size match tile size
     model.set_input_size((tiler.tile_size_h, tiler.tile_size_w))
 
     return model
 
 
-def get_ensemble_tiler(config: dict) -> EnsembleTiler:
+def get_ensemble_tiler(args: dict) -> EnsembleTiler:
     """Get tiler used for image tiling and to obtain tile dimensions.
 
     Args:
-        config: tiled ensemble run configuration.
+        args: tiled ensemble run configuration.
 
     Returns:
         EnsembleTiler: tiler object.
     """
     tiler = EnsembleTiler(
-        tile_size=config["ensemble"]["tiling"]["tile_size"],
-        stride=config["ensemble"]["tiling"]["stride"],
-        image_size=config["data"]["init_args"]["image_size"],
+        tile_size=args["ensemble"]["tiling"]["tile_size"],
+        stride=args["ensemble"]["tiling"]["stride"],
+        image_size=args["data"]["init_args"]["image_size"],
     )
 
     return tiler  # noqa: RET504

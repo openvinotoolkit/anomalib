@@ -6,9 +6,9 @@
 from .prediction_data import (
     EnsemblePredictions,
 )
-from .prediction_joiner import EnsemblePredictionJoiner
+from .prediction_merging import PredictionMergingMechanism
 
 __all__ = [
     "EnsemblePredictions",
-    "EnsemblePredictionJoiner",
+    "PredictionMergingMechanism",
 ]

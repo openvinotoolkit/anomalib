@@ -1,21 +1,17 @@
-"""
-Class used as mechanism to join/combine ensemble predictions from each tile into complete image-level representation
-"""
+"""Class used as mechanism to merge ensemble predictions from each tile into complete image-level representation."""
 
-# Copyright (C) 2023 Intel Corporation
+# Copyright (C) 2023-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
-
 import torch
-from tools.tiled_ensemble.ensemble_tiler import EnsembleTiler
-from tools.tiled_ensemble.predictions.prediction_data import EnsemblePredictions
 from torch import Tensor
 
+from anomalib.pipelines.tiled_ensemble.components.ensemble_tiling import EnsembleTiler
+from anomalib.pipelines.tiled_ensemble.components.predictions.prediction_data import EnsemblePredictions
 
-class EnsemblePredictionJoiner:
-    """
-    Class used for joining/combining the data predicted by each separate model of tiled ensemble.
+
+class PredictionMergingMechanism:
+    """Class used for merging the data predicted by each separate model of tiled ensemble.
 
     Tiles are stacked in one tensor and untiled using Ensemble Tiler.
     Boxes from tiles are stacked resulting in one tensor of box coordinates and scores per image.
@@ -26,49 +22,34 @@ class EnsemblePredictionJoiner:
         tiler (EnsembleTiler): Tiler used to transform tiles back to image level representation.
 
     Example:
-        >>> from tools.tiled_ensemble.ensemble_tiler import EnsembleTiler
-        >>> from tools.tiled_ensemble.predictions.prediction_data import MemoryEnsemblePredictions
+        >>> from anomalib.pipelines.tiled_ensemble.components.ensemble_tiling import EnsembleTiler
+        >>> from anomalib.pipelines.tiled_ensemble.components.predictions import EnsemblePredictions
         >>>
         >>> tiler = EnsembleTiler(tile_size=256, stride=128, image_size=512)
-        >>> joiner = EnsemblePredictionJoiner(tiler)
-        >>> data = MemoryEnsemblePredictions()
+        >>> data = EnsemblePredictions()
+        >>> merger = PredictionMergingMechanism(data, tiler)
         >>>
-        >>> # joiner needs to be setup with ensemble predictions storage object
-        >>> joiner.setup(data)
-        >>>
-        >>> # we can then start joining procedure for each batch
-        >>> joiner.join_tile_predictions(0)
+        >>> # we can then start merging procedure for each batch
+        >>> merger.merge_tile_predictions(0)
     """
 
-    def __init__(self, tiler: EnsembleTiler) -> None:
-        self.tiler = tiler
-
-        self.ensemble_predictions: EnsemblePredictions = None
-        self.num_batches = 0
-
-    def setup(self, ensemble_predictions: EnsemblePredictions) -> None:
-        """
-        Prepare the joiner for given prediction data.
-
-        Args:
-            ensemble_predictions (EnsemblePredictions): Dictionary containing batched predictions for each tile.
-
-        """
+    def __init__(self, ensemble_predictions: EnsemblePredictions, tiler: EnsembleTiler) -> None:
         assert ensemble_predictions.num_batches > 0, "There should be at least one batch for each tile prediction."
         assert (0, 0) in ensemble_predictions.get_batch_tiles(
-            0
+            0,
         ), "Tile prediction dictionary should always have at least one tile"
 
         self.ensemble_predictions = ensemble_predictions
         self.num_batches = self.ensemble_predictions.num_batches
 
-    def join_tiles(self, batch_data: dict, tile_key: str) -> Tensor:
-        """
-        Join tiles back into one tensor and perform untiling with tiler.
+        self.tiler = tiler
+
+    def merge_tiles(self, batch_data: dict, tile_key: str) -> Tensor:
+        """Merge tiles back into one tensor and perform untiling with tiler.
 
         Args:
             batch_data (dict): Dictionary containing all tile predictions of current batch.
-            tile_key (str): Key used in prediction dictionary for tiles that we want to join
+            tile_key (str): Key used in prediction dictionary for tiles that we want to merge
 
         Returns:
             Tensor: Tensor of tiles in original (stitched) shape.
@@ -80,7 +61,7 @@ class EnsemblePredictionJoiner:
 
         if tile_key == "mask":
             # in case of ground truth masks, we don't have channels
-            joined_size = (
+            merged_size = (
                 self.tiler.num_patches_h,
                 self.tiler.num_patches_w,
                 batch_size,
@@ -90,7 +71,7 @@ class EnsemblePredictionJoiner:
         else:
             # all tiles beside masks also have channels
             num_channels = first_tiles.shape[1]
-            joined_size = (
+            merged_size = (
                 self.tiler.num_patches_h,
                 self.tiler.num_patches_w,
                 batch_size,
@@ -99,29 +80,28 @@ class EnsemblePredictionJoiner:
                 self.tiler.tile_size_w,
             )
 
-        # create new empty tensor for joined tiles
-        joined_masks = torch.zeros(size=joined_size, device=device)
+        # create new empty tensor for merged tiles
+        merged_masks = torch.zeros(size=merged_size, device=device)
 
-        # insert tile into joined tensor at right locations
+        # insert tile into merged tensor at right locations
         for (tile_i, tile_j), tile_data in batch_data.items():
-            joined_masks[tile_i, tile_j, ...] = tile_data[tile_key]
+            merged_masks[tile_i, tile_j, ...] = tile_data[tile_key]
 
         if tile_key == "mask":
             # add channel as tiler needs it
-            joined_masks = joined_masks.unsqueeze(3)
+            merged_masks = merged_masks.unsqueeze(3)
 
         # stitch tiles back into whole, output is [B, C, H, W]
-        joined_output = self.tiler.untile(joined_masks)
+        merged_output = self.tiler.untile(merged_masks)
 
         if tile_key == "mask":
             # remove previously added channels
-            joined_output = joined_output.squeeze(1)
+            merged_output = merged_output.squeeze(1)
 
-        return joined_output
+        return merged_output
 
-    def join_boxes(self, batch_data: dict) -> dict:
-        """
-        Join boxes data from all tiles. This includes pred_boxes, box_scores and box_labels.
+    def merge_boxes(self, batch_data: dict) -> dict:
+        """Join boxes data from all tiles. This includes pred_boxes, box_scores and box_labels.
 
         Joining is done by stacking boxes from all tiles.
 
@@ -129,8 +109,10 @@ class EnsemblePredictionJoiner:
             batch_data (dict): Dictionary containing all tile predictions of current batch.
 
         Returns:
-            dict: Dictionary with joined boxes, box scores and box labels.
+            dict: Dictionary with merged boxes, box scores and box labels.
         """
+        # TODO @blaz-r: refactor to just get new box data from anomaly maps?
+
         # batch of tiles with index (0, 0) always exists, so we use it to get some basic information
         batch_size = len(batch_data[(0, 0)]["pred_boxes"])
 
@@ -162,22 +144,21 @@ class EnsemblePredictionJoiner:
                 labels[i].append(curr_tile_pred["box_labels"][i])
 
         # arrays with box data for each batch
-        joined_boxes: dict[str, list[Tensor]] = {"pred_boxes": [], "box_scores": [], "box_labels": []}
+        merged_boxes: dict[str, list[Tensor]] = {"pred_boxes": [], "box_scores": [], "box_labels": []}
         for i in range(batch_size):
             # n in this case represents number of predicted boxes
             # stack boxes into form [n, 4] (vertical stack)
-            joined_boxes["pred_boxes"].append(torch.vstack(boxes[i]))
+            merged_boxes["pred_boxes"].append(torch.vstack(boxes[i]))
             # stack scores and labels into form [n] (horizontal stack)
-            joined_boxes["box_scores"].append(torch.hstack(scores[i]))
-            joined_boxes["box_labels"].append(torch.hstack(labels[i]))
+            merged_boxes["box_scores"].append(torch.hstack(scores[i]))
+            merged_boxes["box_labels"].append(torch.hstack(labels[i]))
 
-        return joined_boxes
+        return merged_boxes
 
-    def join_labels_and_scores(self, batch_data: dict) -> dict[str, Tensor]:
-        """
-        Join scores and their corresponding label predictions from all tiles for each image.
+    def merge_labels_and_scores(self, batch_data: dict) -> dict[str, Tensor]:
+        """Join scores and their corresponding label predictions from all tiles for each image.
 
-        Label joining is done by rule where one anomalous tile in image results in whole image being anomalous.
+        Label merging is done by rule where one anomalous tile in image results in whole image being anomalous.
         Scores are averaged over tiles.
 
         Args:
@@ -199,48 +180,45 @@ class EnsemblePredictionJoiner:
 
         scores /= self.tiler.num_tiles
 
-        joined = {"pred_labels": labels, "pred_scores": scores}
+        return {"pred_labels": labels, "pred_scores": scores}
 
-        return joined
-
-    def join_tile_predictions(self, batch_index: int) -> dict[str, Tensor | list]:
-        """
-        Join predictions from ensemble into whole image level representation for batch at index batch_index.
+    def merge_tile_predictions(self, batch_index: int) -> dict[str, Tensor | list]:
+        """Join predictions from ensemble into whole image level representation for batch at index batch_index.
 
         Args:
             batch_index (int): Index of current batch.
 
         Returns:
-            dict[str, Tensor | list]: List of joined predictions for specified batch.
+            dict[str, Tensor | list]: List of merged predictions for specified batch.
         """
         current_batch_data = self.ensemble_predictions.get_batch_tiles(batch_index)
 
         tiled_keys = ["image", "mask", "anomaly_maps", "pred_masks"]
         # take first tile as base prediction, keep items that are the same over all tiles:
         # image_path, label, mask_path
-        joined_predictions = {
+        merged_predictions = {
             "image_path": current_batch_data[(0, 0)]["image_path"],
             "label": current_batch_data[(0, 0)]["label"],
         }
-        if "mask_path" in current_batch_data[(0, 0)].keys():
-            joined_predictions["mask_path"] = current_batch_data[(0, 0)]["mask_path"]
-        if "boxes" in current_batch_data[(0, 0)].keys():
-            joined_predictions["boxes"] = current_batch_data[(0, 0)]["boxes"]
+        if "mask_path" in current_batch_data[(0, 0)]:
+            merged_predictions["mask_path"] = current_batch_data[(0, 0)]["mask_path"]
+        if "boxes" in current_batch_data[(0, 0)]:
+            merged_predictions["boxes"] = current_batch_data[(0, 0)]["boxes"]
 
-            # join all box data from all tiles
-            joined_box_data = self.join_boxes(current_batch_data)
-            joined_predictions["pred_boxes"] = joined_box_data["pred_boxes"]
-            joined_predictions["box_scores"] = joined_box_data["box_scores"]
-            joined_predictions["box_labels"] = joined_box_data["box_labels"]
+            # merge all box data from all tiles
+            merged_box_data = self.merge_boxes(current_batch_data)
+            merged_predictions["pred_boxes"] = merged_box_data["pred_boxes"]
+            merged_predictions["box_scores"] = merged_box_data["box_scores"]
+            merged_predictions["box_labels"] = merged_box_data["box_labels"]
 
-        # join all tiled data
+        # merge all tiled data
         for t_key in tiled_keys:
-            if t_key in current_batch_data[(0, 0)].keys():
-                joined_predictions[t_key] = self.join_tiles(current_batch_data, t_key)
+            if t_key in current_batch_data[(0, 0)]:
+                merged_predictions[t_key] = self.merge_tiles(current_batch_data, t_key)
 
-        # label and score joining
-        joined_scores_and_labels = self.join_labels_and_scores(current_batch_data)
-        joined_predictions["pred_labels"] = joined_scores_and_labels["pred_labels"]
-        joined_predictions["pred_scores"] = joined_scores_and_labels["pred_scores"]
+        # label and score merging
+        merged_scores_and_labels = self.merge_labels_and_scores(current_batch_data)
+        merged_predictions["pred_labels"] = merged_scores_and_labels["pred_labels"]
+        merged_predictions["pred_scores"] = merged_scores_and_labels["pred_scores"]
 
-        return joined_predictions
+        return merged_predictions
