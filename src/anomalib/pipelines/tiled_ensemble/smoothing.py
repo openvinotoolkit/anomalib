@@ -8,6 +8,7 @@ from collections.abc import Generator
 from typing import Any
 
 import torch
+from tqdm import tqdm
 
 from anomalib.models.components import GaussianBlur2d
 from anomalib.pipelines.components import Job, JobGenerator
@@ -83,7 +84,9 @@ class SmoothingJob(Job):
         """
         del task_id  # not needed here
 
-        for data in self.predictions:
+        logger.info("Starting seam smoothing.")
+
+        for data in tqdm(self.predictions, desc="Seam smoothing"):
             # smooth the anomaly map and take only region around seams
             smoothed = self.blur(data["anomaly_maps"])
             data["anomaly_maps"][:, :, self.seam_mask] = smoothed[:, :, self.seam_mask]

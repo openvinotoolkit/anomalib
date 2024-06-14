@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 import torch
+from tqdm import tqdm
 
 from anomalib.metrics import F1AdaptiveThreshold, MinMax
 from anomalib.pipelines.components import Job, JobGenerator
@@ -48,7 +49,9 @@ class StatisticsJob(Job):
         pixel_threshold = F1AdaptiveThreshold()
         pixel_update_called = False
 
-        for data in self.predictions:
+        logger.info("Starting post-processing statistics calculation.")
+
+        for data in tqdm(self.predictions, desc="Stats calculation"):
             # update minmax
             if "anomaly_maps" in data:
                 minmax(data["anomaly_maps"])
