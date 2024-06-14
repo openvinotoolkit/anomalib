@@ -105,7 +105,7 @@ class PredictJob(Job):
                 normalization_stage=self.normalization_stage,
             )
 
-        predictions = self.engine.predict(model=self.model, dataloaders=self.dataloader)
+        predictions = self.engine.predict(model=self.model, dataloaders=self.dataloader, ckpt_path=self.ckpt_path)
 
         return self.tile_index, predictions
 
@@ -175,12 +175,14 @@ class PredictJobGenerator(JobGenerator):
             # prepare datamodule with custom collate function that only provides specific tile of image
             datamodule = get_ensemble_datamodule(args, tiler, tile_index)
 
-            if prev_stage_result is not None:
+            # check if predict step is positioned after training
+            if tile_index in prev_stage_result and isinstance(prev_stage_result[tile_index], TiledEnsembleEngine):
                 engine = prev_stage_result[tile_index]
                 # model is inside engine in this case
                 model = engine.model
                 ckpt_path = None
             else:
+                # any other case - predict is called standalone
                 engine = None
                 # we need to make new model instance as it's not inside engine
                 model = get_ensemble_model(args, tiler)
