@@ -34,7 +34,9 @@ class TrainModelJob(Job):
         seed (int): Random seed for reproducibility.
         root_dir (Path): Root directory to save checkpoints, stats and images.
         tile_index (tuple[int, int]): Index of tile that this model processes.
-        post_process_config (dict): Config dictionary for ensemble post-processing.
+        normalization_stage (str): Normalization stage flag.
+        metrics (dict): metrics dict with pixel and image metric names.
+        trainer_args (dict| None): Additional arguments to pass to the trainer class.
         model (AnomalyModule): Model to train.
         datamodule (AnomalibDataModule): Datamodule with all dataloaders.
 
@@ -48,7 +50,9 @@ class TrainModelJob(Job):
         seed: int,
         root_dir: Path,
         tile_index: tuple[int, int],
-        post_process_config: dict,
+        normalization_stage: str,
+        metrics: dict,
+        trainer_args: dict | None,
         model: AnomalyModule,
         datamodule: AnomalibDataModule,
     ) -> None:
@@ -57,7 +61,9 @@ class TrainModelJob(Job):
         self.seed = seed
         self.root_dir = root_dir
         self.tile_index = tile_index
-        self.post_process_config = post_process_config
+        self.normalization_stage = normalization_stage
+        self.metrics = metrics
+        self.trainer_args = trainer_args
         self.model = model
         self.datamodule = datamodule
 
@@ -84,14 +90,16 @@ class TrainModelJob(Job):
         # create engine for specific tile location and fit the model
         engine = get_ensemble_engine(
             tile_index=self.tile_index,
-            post_process_config=self.post_process_config,
             accelerator=self.accelerator,
             devices=devices,
             root_dir=self.root_dir,
+            normalization_stage=self.normalization_stage,
+            metrics=self.metrics,
+            trainer_args=self.trainer_args,
         )
         engine.fit(self.model, self.datamodule)
         # move model to cpu to avoid memory issues as the engine is returned to be used in validation phase
-        self.model.cpu()
+        engine.model.cpu()
 
         return engine
 
@@ -137,10 +145,6 @@ class TrainModelJobGenerator(JobGenerator):
         """
         del prev_stage_result  # Not needed for this job
 
-        ensemble_args = args["ensemble"]
-        model_args = args["model"]
-        data_args = args["data"]
-
         # tiler used for splitting the image and getting the tile count
         tiler = get_ensemble_tiler(args)
 
@@ -151,8 +155,8 @@ class TrainModelJobGenerator(JobGenerator):
         # go over all tile positions
         for tile_index in product(range(tiler.num_patches_h), range(tiler.num_patches_w)):
             # prepare datamodule with custom collate function that only provides specific tile of image
-            datamodule = get_ensemble_datamodule(data_args, tiler, tile_index)
-            model = get_ensemble_model(model_args, tiler)
+            datamodule = get_ensemble_datamodule(args, tiler, tile_index)
+            model = get_ensemble_model(args, tiler)
 
             # pass root_dir to engine so all models in ensemble have the same root dir
             yield TrainModelJob(
@@ -160,7 +164,9 @@ class TrainModelJobGenerator(JobGenerator):
                 seed=args["seed"],
                 root_dir=self.root_dir,
                 tile_index=tile_index,
-                post_process_config=ensemble_args["post_processing"],
+                normalization_stage=args["ensemble"]["post_processing"]["normalization_stage"],
+                metrics=args["metrics"],
+                trainer_args=args.get("trainer", {}),
                 model=model,
                 datamodule=datamodule,
             )

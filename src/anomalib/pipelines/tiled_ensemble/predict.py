@@ -37,7 +37,7 @@ class PredictJob(Job):
         seed (int): Random seed for reproducibility.
         root_dir (Path): Root directory to save checkpoints, stats and images.
         tile_index (tuple[int, int]): Index of tile that this model processes.
-        post_process_config (dict): Config dictionary for ensemble post-processing.
+        normalization_stage (str): Normalization stage flag.
         dataloader (DataLoader): Dataloader to use for training (either val or test).
         model (AnomalyModule): Model to train.
         engine (TiledEnsembleEngine | None):
@@ -54,7 +54,7 @@ class PredictJob(Job):
         seed: int,
         root_dir: Path,
         tile_index: tuple[int, int],
-        post_process_config: dict,
+        normalization_stage: str,
         dataloader: DataLoader,
         model: AnomalyModule | None,
         engine: TiledEnsembleEngine | None,
@@ -69,7 +69,7 @@ class PredictJob(Job):
         self.seed = seed
         self.root_dir = root_dir
         self.tile_index = tile_index
-        self.post_process_config = post_process_config
+        self.normalization_stage = normalization_stage
         self.dataloader = dataloader
         self.model = model
         self.engine = engine
@@ -99,10 +99,10 @@ class PredictJob(Job):
             # in case predict is invoked separately from train job
             self.engine = get_ensemble_engine(
                 tile_index=self.tile_index,
-                post_process_config=self.post_process_config,
                 accelerator=self.accelerator,
                 devices=devices,
                 root_dir=self.root_dir,
+                normalization_stage=self.normalization_stage,
             )
 
         predictions = self.engine.predict(model=self.model, dataloaders=self.dataloader)
@@ -164,10 +164,6 @@ class PredictJobGenerator(JobGenerator):
             prev_stage_result (dict[tuple[int, int], TiledEnsembleEngine] | None):
                 if called after train job this contains engines with individual models, otherwise load from checkpoints.
         """
-        ensemble_args = args["ensemble"]
-        model_args = args["model"]
-        data_args = args["data"]
-
         # tiler used for splitting the image and getting the tile count
         tiler = get_ensemble_tiler(args)
 
@@ -177,7 +173,7 @@ class PredictJobGenerator(JobGenerator):
         # go over all tile positions
         for tile_index in product(range(tiler.num_patches_h), range(tiler.num_patches_w)):
             # prepare datamodule with custom collate function that only provides specific tile of image
-            datamodule = get_ensemble_datamodule(data_args, tiler, tile_index)
+            datamodule = get_ensemble_datamodule(args, tiler, tile_index)
 
             if prev_stage_result is not None:
                 engine = prev_stage_result[tile_index]
@@ -187,7 +183,7 @@ class PredictJobGenerator(JobGenerator):
             else:
                 engine = None
                 # we need to make new model instance as it's not inside engine
-                model = get_ensemble_model(model_args, tiler)
+                model = get_ensemble_model(args, tiler)
                 tile_i, tile_j = tile_index
                 # prepare checkpoint path for model on current tile location
                 ckpt_path = self.root_dir / "weights" / "lightning" / f"model{tile_i}_{tile_j}.ckpt"
@@ -203,7 +199,7 @@ class PredictJobGenerator(JobGenerator):
                 seed=args["seed"],
                 root_dir=self.root_dir,
                 tile_index=tile_index,
-                post_process_config=ensemble_args["post_processing"],
+                normalization_stage=args["ensemble"]["post_processing"]["normalization_stage"],
                 model=model,
                 dataloader=dataloader,
                 engine=engine,

@@ -58,7 +58,13 @@ class MergeJob(Job):
 
     @staticmethod
     def collect(results: list[RUN_RESULTS]) -> GATHERED_RESULTS:
-        """Nothing to collect in this job."""
+        """Nothing to collect in this job.
+
+        Returns:
+            list[Any]: list of predictions.
+        """
+        # take the first element as result is list of lists here
+        return results[0]
 
     @staticmethod
     def save(results: GATHERED_RESULTS) -> None:

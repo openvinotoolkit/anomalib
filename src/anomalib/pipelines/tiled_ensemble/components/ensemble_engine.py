@@ -60,9 +60,7 @@ class TiledEnsembleEngine(Engine):
 
         # Add ModelCheckpoint if it is not in the callbacks list.
         has_checkpoint_callback = any(isinstance(c, ModelCheckpoint) for c in self._cache.args["callbacks"])
-        if has_checkpoint_callback:
-            logger.warning("Checkpoint provided for model inside ensemble. Ensure correct checkpoint naming.")
-        else:
+        if not has_checkpoint_callback:
             tile_i, tile_j = self.tile_index
             _callbacks.append(
                 ModelCheckpoint(

@@ -11,6 +11,7 @@ from anomalib.pipelines.components.runners import ParallelRunner, SerialRunner
 from .components.ensemble_engine import TiledEnsembleEngine
 from .merge import MergeJobGenerator
 from .predict import PredictData, PredictJobGenerator
+from .smoothing import SmoothingJobGenerator
 from .train_models import TrainModelJobGenerator
 
 
@@ -38,4 +39,8 @@ class TrainTiledEnsemble(Pipeline):
             )
 
         runners.append(SerialRunner(MergeJobGenerator()))
+
+        if args["pipeline"]["ensemble"]["post_processing"]["seam_smoothing"]["apply"]:
+            runners.append(SerialRunner(SmoothingJobGenerator()))
+
         return runners
