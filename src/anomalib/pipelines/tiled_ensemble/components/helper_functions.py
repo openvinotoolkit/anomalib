@@ -1,4 +1,8 @@
 """Helper functions for the tiled ensemble training."""
+
+# Copyright (C) 2023-2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
 from pathlib import Path
 
 from jsonargparse import ArgumentParser, Namespace
@@ -10,10 +14,7 @@ from anomalib.utils.normalization import NormalizationMethod
 
 from .ensemble_engine import TiledEnsembleEngine
 from .ensemble_tiling import EnsembleTiler, TileCollater
-from .post_processing.postprocess import NormalizationStage
-
-# Copyright (C) 2023-2024 Intel Corporation
-# SPDX-License-Identifier: Apache-2.0
+from anomalib.pipelines.tiled_ensemble.normalization import NormalizationStage
 
 
 def get_ensemble_datamodule(args: dict, tiler: EnsembleTiler, tile_index: tuple[int, int]) -> AnomalibDataModule:
