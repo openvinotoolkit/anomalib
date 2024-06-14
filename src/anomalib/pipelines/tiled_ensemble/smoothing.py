@@ -23,8 +23,8 @@ class SmoothingJob(Job):
 
     Args:
         predictions (list[Any]): list of image-level predictions.
-        width_factor (float):  Factor multiplied by tile dimension to get the region around join which will be smoothed.
-        filter_sigma (float): Sigma of filter used for smoothing the joins.
+        width_factor (float):  Factor multiplied by tile dimension to get the region around seam which will be smoothed.
+        filter_sigma (float): Sigma of filter used for smoothing the seams.
         tiler (EnsembleTiler): Tiler object used to get tile dimension data.
     """
 
@@ -34,27 +34,27 @@ class SmoothingJob(Job):
         super().__init__()
         self.predictions = predictions
 
-        # offset in pixels of region around tile join that will be smoothed
+        # offset in pixels of region around tile seam that will be smoothed
         self.height_offset = int(tiler.tile_size_h * width_factor)
         self.width_offset = int(tiler.tile_size_w * width_factor)
         self.tiler = tiler
 
-        self.join_mask = self.prepare_join_mask()
+        self.seam_mask = self.prepare_seam_mask()
 
         self.blur = GaussianBlur2d(sigma=filter_sigma)
 
-    def prepare_join_mask(self) -> torch.Tensor:
-        """Prepare boolean mask of regions around the part where tiles join in ensemble.
+    def prepare_seam_mask(self) -> torch.Tensor:
+        """Prepare boolean mask of regions around the part where tiles seam in ensemble.
 
         Returns:
-            Tensor: Representation of boolean mask where filtered joins should be used.
+            Tensor: Representation of boolean mask where filtered seams should be used.
         """
         img_h, img_w = self.tiler.image_size
         stride_h, stride_w = self.tiler.stride_h, self.tiler.stride_w
 
         mask = torch.zeros(img_h, img_w, dtype=torch.bool)
 
-        # prepare mask strip on vertical joins
+        # prepare mask strip on vertical seams
         curr_w = stride_w
         while curr_w < img_w:
             start_i = curr_w - self.width_offset
@@ -62,7 +62,7 @@ class SmoothingJob(Job):
             mask[:, start_i:end_i] = 1
             curr_w += stride_w
 
-        # prepare mask strip on horizontal joins
+        # prepare mask strip on horizontal seams
         curr_h = stride_h
         while curr_h < img_h:
             start_i = curr_h - self.height_offset
@@ -73,20 +73,20 @@ class SmoothingJob(Job):
         return mask
 
     def run(self, task_id: int | None = None) -> list[Any]:
-        """Run merging job that merges all batches of tile-level predictions into image-level predictions.
+        """Run smoothing job.
 
         Args:
             task_id: not used in this case
 
         Returns:
-            list[Any]: list of merged predictions.
+            list[Any]: list of predictions.
         """
         del task_id  # not needed here
 
         for data in self.predictions:
             # smooth the anomaly map and take only region around seams
             smoothed = self.blur(data["anomaly_maps"])
-            data["anomaly_maps"][:, :, self.join_mask] = smoothed[:, :, self.join_mask]
+            data["anomaly_maps"][:, :, self.seam_mask] = smoothed[:, :, self.seam_mask]
 
         return self.predictions
 

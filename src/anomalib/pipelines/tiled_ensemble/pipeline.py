@@ -8,6 +8,7 @@ import torch
 from anomalib.pipelines.components.base import Pipeline, Runner
 from anomalib.pipelines.components.runners import ParallelRunner, SerialRunner
 
+from .calculate_stats import StatisticsJobGenerator
 from .components.ensemble_engine import TiledEnsembleEngine
 from .merge import MergeJobGenerator
 from .predict import PredictData, PredictJobGenerator
@@ -42,5 +43,7 @@ class TrainTiledEnsemble(Pipeline):
 
         if args["pipeline"]["ensemble"]["post_processing"]["seam_smoothing"]["apply"]:
             runners.append(SerialRunner(SmoothingJobGenerator()))
+
+        runners.append(SerialRunner(StatisticsJobGenerator(root_dir)))
 
         return runners
