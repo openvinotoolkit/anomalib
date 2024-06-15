@@ -1,4 +1,5 @@
 """Tiled ensemble training pipeline."""
+import logging
 
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -18,6 +19,10 @@ from .smoothing import SmoothingJobGenerator
 from .threshold import ThresholdingJobGenerator, ThresholdStage
 from .train_models import TrainModelJobGenerator
 from .visualize import VisualizationJobGenerator
+from ...data.utils import TestSplitMode
+
+
+logger = logging.getLogger(__name__)
 
 
 class TrainTiledEnsemble(Pipeline):
@@ -52,6 +57,10 @@ class TrainTiledEnsemble(Pipeline):
         runners.append(SerialRunner(StatisticsJobGenerator(root_dir)))
 
         """==== TEST STEPS ===="""
+
+        if args["pipeline"]["data"]["init_args"]["test_split_mode"] == TestSplitMode.NONE:
+            logger.info("Test split mode set to `none`, skipping test phase.")
+            return runners
 
         if args["pipeline"]["accelerator"] == "cuda":
             runners.append(
