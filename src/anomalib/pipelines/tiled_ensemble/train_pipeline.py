@@ -15,12 +15,15 @@ import torch
 from anomalib.pipelines.components.base import Pipeline, Runner
 from anomalib.pipelines.components.runners import ParallelRunner, SerialRunner
 
-from .calculate_stats import StatisticsJobGenerator
-from .components.ensemble_engine import TiledEnsembleEngine
-from .merge import MergeJobGenerator
-from .predict import PredictData, PredictJobGenerator
-from .smoothing import SmoothingJobGenerator
-from .train_models import TrainModelJobGenerator
+from .components import (
+    MergeJobGenerator,
+    PredictJobGenerator,
+    SmoothingJobGenerator,
+    StatisticsJobGenerator,
+    TrainModelJobGenerator,
+)
+from .components.utils import PredictData
+from .components.utils.ensemble_engine import TiledEnsembleEngine
 
 logger = logging.getLogger(__name__)
 

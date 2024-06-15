@@ -10,9 +10,9 @@ from lightning import Trainer
 
 from anomalib.data import AnomalibDataModule, get_datamodule
 from anomalib.models import AnomalyModule, get_model
-from anomalib.pipelines.tiled_ensemble.normalization import NormalizationStage
 from anomalib.utils.normalization import NormalizationMethod
 
+from . import NormalizationStage
 from .ensemble_engine import TiledEnsembleEngine
 from .ensemble_tiling import EnsembleTiler, TileCollater
 

@@ -12,9 +12,10 @@ from tqdm import tqdm
 
 from anomalib.models.components import GaussianBlur2d
 from anomalib.pipelines.components import Job, JobGenerator
-from anomalib.pipelines.tiled_ensemble.components.ensemble_tiling import EnsembleTiler
-from anomalib.pipelines.tiled_ensemble.components.helper_functions import get_ensemble_tiler
 from anomalib.pipelines.types import GATHERED_RESULTS, RUN_RESULTS
+
+from .utils.ensemble_tiling import EnsembleTiler
+from .utils.helper_functions import get_ensemble_tiler
 
 logger = logging.getLogger(__name__)
 

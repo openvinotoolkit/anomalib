@@ -5,7 +5,6 @@
 
 import logging
 from collections.abc import Generator
-from enum import Enum
 from itertools import product
 from pathlib import Path
 from typing import Any
@@ -17,14 +16,15 @@ from anomalib.models import AnomalyModule
 from anomalib.pipelines.components import Job, JobGenerator
 from anomalib.pipelines.types import GATHERED_RESULTS, PREV_STAGE_RESULT
 
-from .components.ensemble_engine import TiledEnsembleEngine
-from .components.helper_functions import (
+from .utils import PredictData
+from .utils.ensemble_engine import TiledEnsembleEngine
+from .utils.helper_functions import (
     get_ensemble_datamodule,
     get_ensemble_engine,
     get_ensemble_model,
     get_ensemble_tiler,
 )
-from .components.predictions import EnsemblePredictions
+from .utils.prediction_data import EnsemblePredictions
 
 logger = logging.getLogger(__name__)
 
@@ -126,13 +126,6 @@ class PredictJob(Job):
     @staticmethod
     def save(results: GATHERED_RESULTS) -> None:
         """This stage doesn't save anything."""
-
-
-class PredictData(Enum):
-    """Enum indicating which data to use in prediction job."""
-
-    VAL = "val"
-    TEST = "test"
 
 
 class PredictJobGenerator(JobGenerator):

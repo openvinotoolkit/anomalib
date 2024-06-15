@@ -3,8 +3,7 @@
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from anomalib.pipelines.tiled_ensemble.test_pipeline import TestTiledEnsemble
-from anomalib.pipelines.tiled_ensemble.train_pipeline import TrainTiledEnsemble
+from anomalib.pipelines.tiled_ensemble import TestTiledEnsemble, TrainTiledEnsemble
 
 if __name__ == "__main__":
     print("Running tiled ensemble train pipeline")

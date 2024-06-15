@@ -13,8 +13,9 @@ from tqdm import tqdm
 from anomalib import TaskType
 from anomalib.metrics import AnomalibMetricCollection, create_metric_collection
 from anomalib.pipelines.components import Job, JobGenerator
-from anomalib.pipelines.tiled_ensemble.components.helper_functions import get_threshold_values
 from anomalib.pipelines.types import GATHERED_RESULTS, PREV_STAGE_RESULT, RUN_RESULTS
+
+from .utils.helper_functions import get_threshold_values
 
 logger = logging.getLogger(__name__)
 

@@ -15,8 +15,8 @@ from anomalib.models import AnomalyModule
 from anomalib.pipelines.components import Job, JobGenerator
 from anomalib.pipelines.types import GATHERED_RESULTS, PREV_STAGE_RESULT
 
-from .components.ensemble_engine import TiledEnsembleEngine
-from .components.helper_functions import (
+from .utils.ensemble_engine import TiledEnsembleEngine
+from .utils.helper_functions import (
     get_ensemble_datamodule,
     get_ensemble_engine,
     get_ensemble_model,

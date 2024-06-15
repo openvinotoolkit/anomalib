@@ -6,8 +6,8 @@
 import torch
 from torch import Tensor
 
-from anomalib.pipelines.tiled_ensemble.components.ensemble_tiling import EnsembleTiler
-from anomalib.pipelines.tiled_ensemble.components.predictions.prediction_data import EnsemblePredictions
+from .ensemble_tiling import EnsembleTiler
+from .prediction_data import EnsemblePredictions
 
 
 class PredictionMergingMechanism:

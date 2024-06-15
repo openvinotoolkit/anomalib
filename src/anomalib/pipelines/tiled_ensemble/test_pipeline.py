@@ -11,14 +11,16 @@ import torch
 from anomalib.data.utils import TestSplitMode
 from anomalib.pipelines.components.base import Pipeline, Runner
 from anomalib.pipelines.components.runners import ParallelRunner, SerialRunner
-
-from .merge import MergeJobGenerator
-from .metric_calculation import MetricsCalculationJobGenerator
-from .normalization import NormalizationJobGenerator, NormalizationStage
-from .predict import PredictData, PredictJobGenerator
-from .smoothing import SmoothingJobGenerator
-from .threshold import ThresholdingJobGenerator, ThresholdStage
-from .visualize import VisualizationJobGenerator
+from anomalib.pipelines.tiled_ensemble.components import (
+    MergeJobGenerator,
+    MetricsCalculationJobGenerator,
+    NormalizationJobGenerator,
+    PredictJobGenerator,
+    SmoothingJobGenerator,
+    ThresholdingJobGenerator,
+    VisualizationJobGenerator,
+)
+from anomalib.pipelines.tiled_ensemble.components.utils import NormalizationStage, PredictData, ThresholdStage
 
 logger = logging.getLogger(__name__)
 

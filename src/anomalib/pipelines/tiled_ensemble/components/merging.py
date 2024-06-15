@@ -10,10 +10,12 @@ from typing import Any
 from tqdm import tqdm
 
 from anomalib.pipelines.components import Job, JobGenerator
-from anomalib.pipelines.tiled_ensemble.components.ensemble_tiling import EnsembleTiler
-from anomalib.pipelines.tiled_ensemble.components.helper_functions import get_ensemble_tiler
-from anomalib.pipelines.tiled_ensemble.components.predictions import EnsemblePredictions, PredictionMergingMechanism
 from anomalib.pipelines.types import GATHERED_RESULTS, RUN_RESULTS
+
+from .utils.ensemble_tiling import EnsembleTiler
+from .utils.helper_functions import get_ensemble_tiler
+from .utils.prediction_data import EnsemblePredictions
+from .utils.prediction_merging import PredictionMergingMechanism
 
 logger = logging.getLogger(__name__)
 

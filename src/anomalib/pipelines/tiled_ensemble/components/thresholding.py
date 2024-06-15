@@ -5,7 +5,6 @@
 
 import logging
 from collections.abc import Generator
-from enum import Enum
 from pathlib import Path
 from typing import Any
 
@@ -14,21 +13,11 @@ from tqdm import tqdm
 
 from anomalib.data.utils import masks_to_boxes
 from anomalib.pipelines.components import Job, JobGenerator
-from anomalib.pipelines.tiled_ensemble.components.helper_functions import get_threshold_values
 from anomalib.pipelines.types import GATHERED_RESULTS, RUN_RESULTS
 
+from .utils.helper_functions import get_threshold_values
+
 logger = logging.getLogger(__name__)
-
-
-class ThresholdStage(str, Enum):
-    """Enum signaling at which stage the thresholding is applied.
-
-    In case of tile, thresholding is applied for each tile location separately.
-    In case of image, thresholding is applied at the end when images are joined back together.
-    """
-
-    TILE = "tile"
-    IMAGE = "image"
 
 
 class ThresholdingJob(Job):

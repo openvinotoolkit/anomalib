@@ -6,7 +6,6 @@
 import json
 import logging
 from collections.abc import Generator
-from enum import Enum
 from pathlib import Path
 from typing import Any
 
@@ -17,19 +16,6 @@ from anomalib.pipelines.types import GATHERED_RESULTS, RUN_RESULTS
 from anomalib.utils.normalization.min_max import normalize
 
 logger = logging.getLogger(__name__)
-
-
-class NormalizationStage(str, Enum):
-    """Enum signaling at which stage the normalization is done.
-
-    In case of tile, tiles are normalized for each tile position separately.
-    In case of image, normalization is done at the end when images are joined back together.
-    In case of none, output is not normalized.
-    """
-
-    TILE = "tile"
-    IMAGE = "image"
-    NONE = "none"
 
 
 class NormalizationJob(Job):
