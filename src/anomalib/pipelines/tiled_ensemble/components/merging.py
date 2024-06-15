@@ -24,8 +24,8 @@ class MergeJob(Job):
     """Job for merging tile-level predictions into image-level predictions.
 
     Args:
-        predictions (EnsemblePredictions): object containing ensemble predictions.
-        tiler (EnsembleTiler): ensemble tiler used for untiling.
+        predictions (EnsemblePredictions): Object containing ensemble predictions.
+        tiler (EnsembleTiler): Ensemble tiler used for untiling.
     """
 
     name = "pipeline"
@@ -39,10 +39,10 @@ class MergeJob(Job):
         """Run merging job that merges all batches of tile-level predictions into image-level predictions.
 
         Args:
-            task_id: not used in this case
+            task_id: Not used in this case.
 
         Returns:
-            list[Any]: list of merged predictions.
+            list[Any]: List of merged predictions.
         """
         del task_id  # not needed here
 
@@ -63,7 +63,7 @@ class MergeJob(Job):
         """Nothing to collect in this job.
 
         Returns:
-            list[Any]: list of predictions.
+            list[Any]: List of predictions.
         """
         # take the first element as result is list of lists here
         return results[0]
@@ -92,8 +92,8 @@ class MergeJobGenerator(JobGenerator):
         """Return a generator producing a single merging job.
 
         Args:
-            args: tiled ensemble pipeline args.
-            prev_stage_result (EnsemblePredictions): ensemble predictions from predict step.
+            args (dict): Tiled ensemble pipeline args.
+            prev_stage_result (EnsemblePredictions): Ensemble predictions from predict step.
 
         Returns:
             Generator[Job, None, None]: MergeJob generator

@@ -25,6 +25,7 @@ class VisualizationJob(Job):
     Args:
         predictions (list[Any]): list of image-level predictions.
         root_dir (Path): Root directory to save checkpoints, stats and images.
+        task (TaskType): type of task the predictions represent.
     """
 
     name = "pipeline"
@@ -39,10 +40,10 @@ class VisualizationJob(Job):
         """Run job that visualizes all prediction data.
 
         Args:
-            task_id: not used in this case
+            task_id: Not used in this case.
 
         Returns:
-            list[Any]: unchanged predictions.
+            list[Any]: Unchanged predictions..
         """
         del task_id  # not needed here
 
@@ -52,7 +53,7 @@ class VisualizationJob(Job):
 
         for data in tqdm(self.predictions, desc="Visualizing"):
             for result in visualizer(outputs=data):
-                # Construct image path in following way: root/defect_type/image_name
+                # Finally image path is root/defect_type/image_name
                 file_path = Path(result.file_name)
                 root = self.root_dir / file_path.parent.name
                 filename = file_path.name
@@ -66,7 +67,7 @@ class VisualizationJob(Job):
         """Nothing to collect in this job.
 
         Returns:
-            list[Any]: unchanged list of predictions.
+            list[Any]: Unchanged list of predictions.
         """
         # take the first element as result is list of lists here
         return results[0]
@@ -80,7 +81,7 @@ class VisualizationJobGenerator(JobGenerator):
     """Generate VisualizationJob.
 
     Args:
-        root_dir (Path): Root directory to save checkpoints, stats and images.
+        root_dir (Path): Root directory where images will be saved (root/images).
     """
 
     def __init__(self, root_dir: Path) -> None:
@@ -99,8 +100,8 @@ class VisualizationJobGenerator(JobGenerator):
         """Return a generator producing a single visualization job.
 
         Args:
-            args: ensemble run args.
-            prev_stage_result (list[Any]): ensemble predictions from previous step.
+            args: Ensemble run args.
+            prev_stage_result (list[Any]): Ensemble predictions from previous step.
 
         Returns:
             Generator[Job, None, None]: VisualizationJob generator

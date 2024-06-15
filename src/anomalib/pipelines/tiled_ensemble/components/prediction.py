@@ -62,7 +62,7 @@ class PredictJob(Job):
     ) -> None:
         super().__init__()
         if engine is None and ckpt_path is None:
-            msg = "At least one, engine or checkpoint, must be provided to predict job."
+            msg = "Either engine or checkpoint must be provided to predict job."
             raise ValueError(msg)
 
         self.accelerator = accelerator
@@ -82,10 +82,10 @@ class PredictJob(Job):
         """Predict job that predicts the data with specific model for given tile location.
 
         Args:
-            task_id: Passed when job is ran in parallel
+            task_id: Passed when job is ran in parallel.
 
         Returns:
-            list[Any]: list of predictions.
+            tuple[tuple[int, int], list[Any]]: Tile index, List of predictions.
         """
         devices: str | list[int] = "auto"
         if task_id is not None:
@@ -96,7 +96,7 @@ class PredictJob(Job):
         seed_everything(self.seed)
 
         if self.engine is None:
-            # in case predict is invoked separately from train job
+            # in case predict is invoked separately from train job, make new engine instance
             self.engine = get_ensemble_engine(
                 tile_index=self.tile_index,
                 accelerator=self.accelerator,
@@ -107,6 +107,7 @@ class PredictJob(Job):
 
         predictions = self.engine.predict(model=self.model, dataloaders=self.dataloader, ckpt_path=self.ckpt_path)
 
+        # also return tile index as it's needed in collect method
         return self.tile_index, predictions
 
     @staticmethod
@@ -114,7 +115,7 @@ class PredictJob(Job):
         """Collect predictions from each tile location into the predictions class.
 
         Returns:
-            EnsemblePredictions: object containing all predictions in form ready for joining.
+            EnsemblePredictions: Object containing all predictions in form ready for merging.
         """
         storage = EnsemblePredictions()
 
@@ -188,7 +189,7 @@ class PredictJobGenerator(JobGenerator):
             dataloader = datamodule.test_dataloader()
             if self.data_source == PredictData.VAL:
                 dataloader = datamodule.val_dataloader()
-            # TODO: - this is hack to avoid problem in engine:388 - I think if model has transforms
+            # TODO: - this is tweak to avoid problem in engine:388 - I think if model has transforms
             # that should be preferred over dataset transforms?
             dataloader.dataset.transform = None
 

@@ -1,4 +1,5 @@
 """Tiled ensemble - metrics calculation job."""
+
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
@@ -24,7 +25,11 @@ class MetricsCalculationJob(Job):
     """Job for image and pixel metrics calculation.
 
     Args:
-        predictions (list[Any]): list of predictions.
+        accelerator (str): Accelerator (device) to use.
+        predictions (list[Any]): List of predictions.
+        root_dir (Path): Root directory to save checkpoints, stats and images.
+        image_metrics (AnomalibMetricCollection): Collection of all image-level metrics.
+        pixel_metrics (AnomalibMetricCollection): Collection of all pixel-level metrics.
     """
 
     name = "pipeline"
@@ -48,7 +53,7 @@ class MetricsCalculationJob(Job):
         """Run a job that calculates image and pixel level metrics.
 
         Args:
-            task_id: not used in this case
+            task_id: Not used in this case.
 
         Returns:
             dict[str, float]: Dictionary containing calculated metric values.
@@ -63,6 +68,7 @@ class MetricsCalculationJob(Job):
             if "mask" in data and "anomaly_maps" in data:
                 self.pixel_metrics.update(data["anomaly_maps"], data["mask"].int())
 
+        # compute all metrics on specified accelerator
         metrics_dict = {}
         for name, metric in self.image_metrics.items():
             metric.to(self.accelerator)
@@ -95,7 +101,7 @@ class MetricsCalculationJob(Job):
 
     @staticmethod
     def save(results: GATHERED_RESULTS) -> None:
-        """Nothing is saved in this job."""
+        """Save metrics values to csv."""
         logger.info("Saving metrics to csv.")
 
         # get and remove path from stats dict

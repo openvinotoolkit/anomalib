@@ -1,4 +1,4 @@
-"""Class used as mechanism to merge ensemble predictions from each tile into complete image-level representation."""
+"""Class used as mechanism to merge ensemble predictions from each tile into complete whole-image representation."""
 
 # Copyright (C) 2023-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -22,8 +22,8 @@ class PredictionMergingMechanism:
         tiler (EnsembleTiler): Tiler used to transform tiles back to image level representation.
 
     Example:
-        >>> from anomalib.pipelines.tiled_ensemble.components.ensemble_tiling import EnsembleTiler
-        >>> from anomalib.pipelines.tiled_ensemble.components.predictions import EnsemblePredictions
+        >>> from anomalib.pipelines.tiled_ensemble.components.utils.ensemble_tiling import EnsembleTiler
+        >>> from anomalib.pipelines.tiled_ensemble.components.utils.prediction_data import EnsemblePredictions
         >>>
         >>> tiler = EnsembleTiler(tile_size=256, stride=128, image_size=512)
         >>> data = EnsemblePredictions()
@@ -49,7 +49,7 @@ class PredictionMergingMechanism:
 
         Args:
             batch_data (dict): Dictionary containing all tile predictions of current batch.
-            tile_key (str): Key used in prediction dictionary for tiles that we want to merge
+            tile_key (str): Key used in prediction dictionary for tiles that we want to merge.
 
         Returns:
             Tensor: Tensor of tiles in original (stitched) shape.

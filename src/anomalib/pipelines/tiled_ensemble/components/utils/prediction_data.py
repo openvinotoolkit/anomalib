@@ -8,23 +8,7 @@ from torch import Tensor
 
 
 class EnsemblePredictions:
-    """Basic implementation of EnsemblePredictionData that keeps all predictions in memory as they are.
-
-    Examples:
-        >>> from pytorch_lightning import Trainer
-        >>> data = EnsemblePredictions()
-        >>> trainer = Trainer(...)
-        >>>
-        >>> # predictions for all batches for tile location can be added
-        >>> curr_predictions = trainer.predict()
-        >>> # curr_predictions is list of batches predicted for index
-        >>> data.add_tile_prediction((0, 0), curr_predictions)
-
-        >>> # all tile location predictions can then be obtained for each batch
-        >>> batch_data = data.get_batch_tiles(0)
-        >>> # batch_data is dictionary where keys are all stored tile indices, and values are batch
-        >>> # of predictions at tile location for current index
-    """
+    """Basic implementation of EnsemblePredictionData that keeps all predictions in main memory."""
 
     def __init__(self) -> None:
         super().__init__()
@@ -46,6 +30,8 @@ class EnsemblePredictions:
     def get_batch_tiles(self, batch_index: int) -> dict[tuple[int, int], dict]:
         """Get all tiles of current batch from class dictionary.
 
+        Called by merging mechanism.
+
         Args:
             batch_index (int): Index of current batch of tiles to be returned.
 
@@ -56,8 +42,5 @@ class EnsemblePredictions:
 
         for index, batches in self.all_data.items():
             batch_data[index] = batches[batch_index]
-            if "anomaly_maps" in batch_data[index]:
-                # copy anomaly maps, since in case of test data == val data, post-processing might change them
-                batch_data[index]["anomaly_maps"] = batch_data[index]["anomaly_maps"].clone()
 
         return batch_data

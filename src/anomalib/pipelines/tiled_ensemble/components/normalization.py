@@ -22,8 +22,8 @@ class NormalizationJob(Job):
     """Job for normalization of predictions.
 
     Args:
-        predictions (list[Any]): list of predictions.
-        root_dir (Path): Root directory to save checkpoints, stats and images.
+        predictions (list[Any]): List of predictions.
+        root_dir (Path): Root directory containing statistics needed for normalization.
     """
 
     name = "pipeline"
@@ -37,13 +37,14 @@ class NormalizationJob(Job):
         """Run normalization job which normalizes image, pixel and box scores.
 
         Args:
-            task_id: not used in this case
+            task_id: Not used in this case.
 
         Returns:
-            list[Any]: list of normalized predictions.
+            list[Any]: List of normalized predictions.
         """
         del task_id  # not needed here
 
+        # load all statistics needed for normalization
         stats_path = self.root_dir / "weights" / "lightning" / "stats.json"
         with stats_path.open("r") as f:
             stats = json.load(f)
@@ -70,7 +71,7 @@ class NormalizationJob(Job):
         """Nothing to collect in this job.
 
         Returns:
-            list[Any]: list of predictions.
+            list[Any]: List of predictions.
         """
         # take the first element as result is list of lists here
         return results[0]
@@ -84,7 +85,7 @@ class NormalizationJobGenerator(JobGenerator):
     """Generate NormalizationJob.
 
     Args:
-        root_dir (Path): Root directory to save checkpoints, stats and images.
+        root_dir (Path): Root directory where statistics are saved.
     """
 
     def __init__(self, root_dir: Path) -> None:
@@ -104,10 +105,10 @@ class NormalizationJobGenerator(JobGenerator):
 
         Args:
             args: not used here.
-            prev_stage_result (list[Any]): ensemble predictions from previous step.
+            prev_stage_result (list[Any]): Ensemble predictions from previous step.
 
         Returns:
-            Generator[Job, None, None]: NormalizationJob generator
+            Generator[Job, None, None]: NormalizationJob generator.
         """
         del args  # not needed here
 

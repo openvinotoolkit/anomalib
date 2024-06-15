@@ -35,7 +35,15 @@ class TrainTiledEnsemble(Pipeline):
         self.root_dir: Path | None = None
 
     def _setup_runners(self, args: dict) -> list[Runner]:
-        """Setup the runners for the pipeline."""
+        """Setup the runners for the pipeline.
+
+        This pipeline consists of training and validation steps:
+        Training models > prediction on val data > merging val data >
+        > (optionally) smoothing seams > calculation of post-processing statistics
+
+        Returns:
+            list[Runner]: List of runners executing tiled ensemble train + val jobs.
+        """
         runners: list[Runner] = []
         self.root_dir = TiledEnsembleEngine.setup_ensemble_workspace(args["pipeline"])
 

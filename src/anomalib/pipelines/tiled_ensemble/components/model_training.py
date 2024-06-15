@@ -74,10 +74,10 @@ class TrainModelJob(Job):
         """Run train job that fits the model for given tile location.
 
         Args:
-            task_id: Passed when job is ran in parallel
+            task_id: Passed when job is ran in parallel.
 
         Returns:
-            TiledEnsembleEngine: engine with trained model.
+            TiledEnsembleEngine: Engine containing trained model.
         """
         devices: str | list[int] = "auto"
         if task_id is not None:
@@ -141,7 +141,7 @@ class TrainModelJobGenerator(JobGenerator):
 
         Args:
             args (dict): Dict with config passed to training.
-            prev_stage_result (None): not used here
+            prev_stage_result (None): Not used here.
         """
         del prev_stage_result  # Not needed for this job
 

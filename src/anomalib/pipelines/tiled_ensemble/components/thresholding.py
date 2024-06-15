@@ -24,7 +24,7 @@ class ThresholdingJob(Job):
     """Job used to threshold predictions, producing labels from scores.
 
     Args:
-        predictions (list[Any]): list of predictions.
+        predictions (list[Any]): List of predictions.
         image_threshold (float): Threshold used for image-level thresholding.
         pixel_threshold (float): Threshold used for pixel-level thresholding.
     """
@@ -41,10 +41,10 @@ class ThresholdingJob(Job):
         """Run job that produces prediction labels from scores.
 
         Args:
-            task_id: not used in this case
+            task_id: Not used in this case.
 
         Returns:
-            list[Any]: list of thresholded predictions.
+            list[Any]: List of thresholded predictions.
         """
         del task_id  # not needed here
 
@@ -74,7 +74,7 @@ class ThresholdingJob(Job):
         """Nothing to collect in this job.
 
         Returns:
-            list[Any]: list of predictions.
+            list[Any]: List of predictions.
         """
         # take the first element as result is list of lists here
         return results[0]
@@ -88,7 +88,7 @@ class ThresholdingJobGenerator(JobGenerator):
     """Generate ThresholdingJob.
 
     Args:
-        root_dir (Path): Root directory containing post processing stats.
+        root_dir (Path): Root directory containing post-processing stats.
     """
 
     def __init__(self, root_dir: Path) -> None:
@@ -108,11 +108,12 @@ class ThresholdingJobGenerator(JobGenerator):
 
         Args:
             args: ensemble run args.
-            prev_stage_result (list[Any]): ensemble predictions from previous step.
+            prev_stage_result (list[Any]): Ensemble predictions from previous step.
 
         Returns:
-            Generator[Job, None, None]: ThresholdingJob generator
+            Generator[Job, None, None]: ThresholdingJob generator.
         """
+        # get threshold values base on normalization
         image_threshold, pixel_threshold = get_threshold_values(args, self.root_dir)
 
         yield ThresholdingJob(

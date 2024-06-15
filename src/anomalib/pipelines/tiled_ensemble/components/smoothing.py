@@ -24,7 +24,8 @@ class SmoothingJob(Job):
     """Job for smoothing the area around the tile seam.
 
     Args:
-        predictions (list[Any]): list of image-level predictions.
+        accelerator (str): Accelerator used for processing.
+        predictions (list[Any]): List of image-level predictions.
         width_factor (float):  Factor multiplied by tile dimension to get the region around seam which will be smoothed.
         filter_sigma (float): Sigma of filter used for smoothing the seams.
         tiler (EnsembleTiler): Tiler object used to get tile dimension data.
@@ -57,7 +58,7 @@ class SmoothingJob(Job):
         """Prepare boolean mask of regions around the part where tiles seam in ensemble.
 
         Returns:
-            Tensor: Representation of boolean mask where filtered seams should be used.
+            torch.Tensor: Representation of boolean mask where filtered seams should be used.
         """
         img_h, img_w = self.tiler.image_size
         stride_h, stride_w = self.tiler.stride_h, self.tiler.stride_w
@@ -86,10 +87,10 @@ class SmoothingJob(Job):
         """Run smoothing job.
 
         Args:
-            task_id: not used in this case
+            task_id: Not used in this case.
 
         Returns:
-            list[Any]: list of predictions.
+            list[Any]: List of predictions.
         """
         del task_id  # not needed here
 
@@ -110,7 +111,7 @@ class SmoothingJob(Job):
         """Nothing to collect in this job.
 
         Returns:
-            list[Any]: list of predictions.
+            list[Any]: List of predictions.
         """
         # take the first element as result is list of lists here
         return results[0]
@@ -136,12 +137,13 @@ class SmoothingJobGenerator(JobGenerator):
         """Return a generator producing a single seam smoothing job.
 
         Args:
-            args: tiled ensemble pipeline args.
-            prev_stage_result (list[Any]): ensemble predictions from merging step.
+            args: Tiled ensemble pipeline args.
+            prev_stage_result (list[Any]): Ensemble predictions from previous step.
 
         Returns:
-            Generator[Job, None, None]: MergeJob generator
+            Generator[Job, None, None]: SmoothingJob generator
         """
+        # tiler is used to determine where seams appear
         tiler = get_ensemble_tiler(args)
         yield SmoothingJob(
             accelerator=args["accelerator"],

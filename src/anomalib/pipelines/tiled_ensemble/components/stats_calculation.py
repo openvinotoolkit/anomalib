@@ -23,7 +23,7 @@ class StatisticsJob(Job):
     """Job for calculating min, max and threshold statistics for post-processing.
 
     Args:
-        predictions (list[Any]): list of image-level predictions.
+        predictions (list[Any]): List of image-level predictions.
         root_dir (Path): Root directory to save checkpoints, stats and images.
     """
 
@@ -38,10 +38,10 @@ class StatisticsJob(Job):
         """Run job that calculates statistics needed in post-processing steps.
 
         Args:
-            task_id: not used in this case
+            task_id: Not used in this case
 
         Returns:
-            dict: statistics dict with min, max and threshold values.
+            dict: Statistics dict with min, max and threshold values.
         """
         del task_id  # not needed here
 
@@ -111,7 +111,7 @@ class StatisticsJobGenerator(JobGenerator):
     """Generate StatisticsJob.
 
     Args:
-        root_dir (Path): Root directory to save checkpoints, stats and images.
+        root_dir (Path): Root directory where statistics file will be saved (in weights folder).
     """
 
     def __init__(self, root_dir: Path) -> None:
@@ -130,11 +130,11 @@ class StatisticsJobGenerator(JobGenerator):
         """Return a generator producing a single stats calculating job.
 
         Args:
-            args: not used here.
-            prev_stage_result (list[Any]): ensemble predictions from previous step.
+            args: Not used here.
+            prev_stage_result (list[Any]): Ensemble predictions from previous step.
 
         Returns:
-            Generator[Job, None, None]: StatisticsJob generator
+            Generator[Job, None, None]: StatisticsJob generator.
         """
         del args  # not needed here
 

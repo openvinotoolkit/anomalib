@@ -36,7 +36,16 @@ class TestTiledEnsemble(Pipeline):
         self.root_dir = root_dir
 
     def _setup_runners(self, args: dict) -> list[Runner]:
-        """Setup the runners for the pipeline."""
+        """Set up the runners for the pipeline.
+
+        This pipeline consists of jobs used to test/evaluate tiled ensemble:
+        Prediction on test data > merging of predictions > (optional) seam smoothing
+        > Normalization > Thresholding (if option for image-stage is used)
+        > Visualisation of predictions > Metrics calculation.
+
+        Returns:
+            list[Runner]: List of runners executing tiled ensemble testing jobs.
+        """
         runners: list[Runner] = []
 
         if args["pipeline"]["data"]["init_args"]["test_split_mode"] == TestSplitMode.NONE:
