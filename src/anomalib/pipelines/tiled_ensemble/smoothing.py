@@ -32,7 +32,12 @@ class SmoothingJob(Job):
     name = "pipeline"
 
     def __init__(
-        self, accelerator: str, predictions: list[Any], width_factor: float, filter_sigma: float, tiler: EnsembleTiler
+        self,
+        accelerator: str,
+        predictions: list[Any],
+        width_factor: float,
+        filter_sigma: float,
+        tiler: EnsembleTiler,
     ) -> None:
         super().__init__()
         self.accelerator = accelerator

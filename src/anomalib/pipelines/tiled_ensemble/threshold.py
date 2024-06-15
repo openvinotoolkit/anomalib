@@ -3,7 +3,6 @@
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-import json
 import logging
 from collections.abc import Generator
 from enum import Enum
@@ -15,7 +14,7 @@ from tqdm import tqdm
 
 from anomalib.data.utils import masks_to_boxes
 from anomalib.pipelines.components import Job, JobGenerator
-from anomalib.pipelines.tiled_ensemble.normalization import NormalizationStage
+from anomalib.pipelines.tiled_ensemble.components.helper_functions import get_threshold_values
 from anomalib.pipelines.types import GATHERED_RESULTS, RUN_RESULTS
 
 logger = logging.getLogger(__name__)
@@ -125,16 +124,7 @@ class ThresholdingJobGenerator(JobGenerator):
         Returns:
             Generator[Job, None, None]: ThresholdingJob generator
         """
-        if args["ensemble"]["post_processing"]["normalization_stage"] == NormalizationStage.NONE:
-            stats_path = self.root_dir / "weights" / "lightning" / "stats.json"
-            with stats_path.open("r") as f:
-                stats = json.load(f)
-            image_threshold = stats["image_threshold"]
-            pixel_threshold = stats["pixel_threshold"]
-        else:
-            # normalization transforms the scores so that threshold is at 0.5
-            image_threshold = 0.5
-            pixel_threshold = 0.5
+        image_threshold, pixel_threshold = get_threshold_values(args, self.root_dir)
 
         yield ThresholdingJob(
             predictions=prev_stage_result,

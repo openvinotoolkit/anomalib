@@ -1,5 +1,4 @@
 """Tiled ensemble - metrics calculation job."""
-
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
@@ -14,6 +13,7 @@ from tqdm import tqdm
 from anomalib import TaskType
 from anomalib.metrics import AnomalibMetricCollection, create_metric_collection
 from anomalib.pipelines.components import Job, JobGenerator
+from anomalib.pipelines.tiled_ensemble.components.helper_functions import get_threshold_values
 from anomalib.pipelines.types import GATHERED_RESULTS, PREV_STAGE_RESULT, RUN_RESULTS
 
 logger = logging.getLogger(__name__)
@@ -180,11 +180,17 @@ class MetricsCalculationJobGenerator(JobGenerator):
         pixel_metrics_config = args["metrics"].get("pixel", None)
         task = args["data"]["init_args"]["task"]
 
+        image_threshold, pixel_threshold = get_threshold_values(args, self.root_dir)
+
         image_metrics, pixel_metrics = self.configure_ensemble_metrics(
             task=task,
             image_metrics=image_metrics_config,
             pixel_metrics=pixel_metrics_config,
         )
+
+        # set thresholds for metrics that need it
+        image_metrics.set_threshold(image_threshold)
+        pixel_metrics.set_threshold(pixel_threshold)
 
         yield MetricsCalculationJob(
             accelerator=args["accelerator"],

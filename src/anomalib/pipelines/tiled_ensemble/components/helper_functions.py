@@ -1,8 +1,8 @@
 """Helper functions for the tiled ensemble training."""
+import json
 
 # Copyright (C) 2023-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
-
 from pathlib import Path
 
 from jsonargparse import ArgumentParser, Namespace
@@ -150,3 +150,30 @@ def get_ensemble_engine(
     )
 
     return engine  # noqa: RET504
+
+
+def get_threshold_values(args: dict, root_dir: Path) -> tuple[float, float]:
+    """Get threshold values for image and pixel level predictions.
+
+    If normalization is not used, get values based on statistics obtained from validation set.
+    If normalization is used, both image and pixel threshold are 0.5
+
+    Args:
+        args (dict): ensemble run args, used to get normalization stage.
+        root_dir (Path): path to run root where stats file is saved.
+
+    Returns:
+        tuple[float, float]: image and pixel threshold.
+    """
+    if args["ensemble"]["post_processing"]["normalization_stage"] == NormalizationStage.NONE:
+        stats_path = root_dir / "weights" / "lightning" / "stats.json"
+        with stats_path.open("r") as f:
+            stats = json.load(f)
+        image_threshold = stats["image_threshold"]
+        pixel_threshold = stats["pixel_threshold"]
+    else:
+        # normalization transforms the scores so that threshold is at 0.5
+        image_threshold = 0.5
+        pixel_threshold = 0.5
+
+    return image_threshold, pixel_threshold
