@@ -11,9 +11,10 @@ from anomalib.pipelines.components.runners import ParallelRunner, SerialRunner
 from .calculate_stats import StatisticsJobGenerator
 from .components.ensemble_engine import TiledEnsembleEngine
 from .merge import MergeJobGenerator
-from .normalization import NormalizationStage, NormalizationJobGenerator
+from .normalization import NormalizationJobGenerator, NormalizationStage
 from .predict import PredictData, PredictJobGenerator
 from .smoothing import SmoothingJobGenerator
+from .threshold import ThresholdingJobGenerator, ThresholdStage
 from .train_models import TrainModelJobGenerator
 
 
@@ -52,11 +53,11 @@ class TrainTiledEnsemble(Pipeline):
 
         if args["pipeline"]["accelerator"] == "cuda":
             runners.append(
-                    ParallelRunner(PredictJobGenerator(root_dir, PredictData.TEST), n_jobs=torch.cuda.device_count()),
+                ParallelRunner(PredictJobGenerator(root_dir, PredictData.TEST), n_jobs=torch.cuda.device_count()),
             )
         else:
             runners.append(
-                    SerialRunner(PredictJobGenerator(root_dir, PredictData.TEST)),
+                SerialRunner(PredictJobGenerator(root_dir, PredictData.TEST)),
             )
         runners.append(SerialRunner(MergeJobGenerator()))
 
@@ -65,5 +66,7 @@ class TrainTiledEnsemble(Pipeline):
 
         if args["pipeline"]["ensemble"]["post_processing"]["normalization_stage"] == NormalizationStage.IMAGE:
             runners.append(SerialRunner(NormalizationJobGenerator(root_dir)))
+        if args["pipeline"]["ensemble"]["post_processing"]["threshold_stage"] == ThresholdStage.IMAGE:
+            runners.append(SerialRunner(ThresholdingJobGenerator(root_dir)))
 
         return runners

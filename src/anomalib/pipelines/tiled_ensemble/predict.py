@@ -168,7 +168,8 @@ class PredictJobGenerator(JobGenerator):
         tiler = get_ensemble_tiler(args)
 
         logger.info(
-            "Tiled ensemble predicting started.",
+            "Tiled ensemble predicting started using %s data.",
+            self.data_source.value,
         )
         # go over all tile positions
         for tile_index in product(range(tiler.num_patches_h), range(tiler.num_patches_w)):

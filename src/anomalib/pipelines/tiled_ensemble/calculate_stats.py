@@ -133,7 +133,7 @@ class StatisticsJobGenerator(JobGenerator):
             prev_stage_result (list[Any]): ensemble predictions from previous step.
 
         Returns:
-            Generator[Job, None, None]: MergeJob generator
+            Generator[Job, None, None]: StatisticsJob generator
         """
         del args  # not needed here
 

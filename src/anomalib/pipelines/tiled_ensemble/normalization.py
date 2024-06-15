@@ -4,7 +4,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import json
-
 import logging
 from collections.abc import Generator
 from enum import Enum
@@ -37,7 +36,7 @@ class NormalizationJob(Job):
     """Job for normalization of predictions.
 
     Args:
-        predictions (list[Any]): list of image-level predictions.
+        predictions (list[Any]): list of predictions.
         root_dir (Path): Root directory to save checkpoints, stats and images.
     """
 
@@ -92,7 +91,7 @@ class NormalizationJob(Job):
 
     @staticmethod
     def save(results: GATHERED_RESULTS) -> None:
-        """Nothing is saved in this job"""
+        """Nothing is saved in this job."""
 
 
 class NormalizationJobGenerator(JobGenerator):
@@ -115,14 +114,14 @@ class NormalizationJobGenerator(JobGenerator):
         args: dict | None = None,
         prev_stage_result: list[Any] | None = None,
     ) -> Generator[Job, None, None]:
-        """Return a generator producing a single stats calculating job.
+        """Return a generator producing a single normalization job.
 
         Args:
             args: not used here.
             prev_stage_result (list[Any]): ensemble predictions from previous step.
 
         Returns:
-            Generator[Job, None, None]: MergeJob generator
+            Generator[Job, None, None]: NormalizationJob generator
         """
         del args  # not needed here
 

@@ -10,11 +10,11 @@ from lightning import Trainer
 
 from anomalib.data import AnomalibDataModule, get_datamodule
 from anomalib.models import AnomalyModule, get_model
+from anomalib.pipelines.tiled_ensemble.normalization import NormalizationStage
 from anomalib.utils.normalization import NormalizationMethod
 
 from .ensemble_engine import TiledEnsembleEngine
 from .ensemble_tiling import EnsembleTiler, TileCollater
-from anomalib.pipelines.tiled_ensemble.normalization import NormalizationStage
 
 
 def get_ensemble_datamodule(args: dict, tiler: EnsembleTiler, tile_index: tuple[int, int]) -> AnomalibDataModule:
