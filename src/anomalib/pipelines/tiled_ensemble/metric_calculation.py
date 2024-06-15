@@ -63,7 +63,6 @@ class MetricsCalculationJob(Job):
                 self.pixel_metrics.update(data["anomaly_maps"], data["mask"].int())
 
         metrics_dict = {}
-        # TODO: move to accelerator
         for name, metric in self.image_metrics.items():
             metric.to(self.accelerator)
             metrics_dict[name] = metric.compute().item()

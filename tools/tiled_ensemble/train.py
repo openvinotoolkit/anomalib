@@ -3,7 +3,16 @@
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from anomalib.pipelines.tiled_ensemble.pipeline import TrainTiledEnsemble
+from anomalib.pipelines.tiled_ensemble.test_pipeline import TestTiledEnsemble
+from anomalib.pipelines.tiled_ensemble.train_pipeline import TrainTiledEnsemble
 
 if __name__ == "__main__":
-    TrainTiledEnsemble().run()
+    print("Running tiled ensemble train pipeline")
+    train_pipeline = TrainTiledEnsemble()
+    # run training
+    train_pipeline.run()
+
+    print("Running tiled ensemble test pipeline.")
+    # pass the root dir from train run to load checkpoints
+    test_pipeline = TestTiledEnsemble(train_pipeline.root_dir)
+    test_pipeline.run()

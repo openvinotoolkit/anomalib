@@ -177,7 +177,7 @@ class PredictJobGenerator(JobGenerator):
             datamodule = get_ensemble_datamodule(args, tiler, tile_index)
 
             # check if predict step is positioned after training
-            if tile_index in prev_stage_result and isinstance(prev_stage_result[tile_index], TiledEnsembleEngine):
+            if prev_stage_result and tile_index in prev_stage_result:
                 engine = prev_stage_result[tile_index]
                 # model is inside engine in this case
                 model = engine.model
