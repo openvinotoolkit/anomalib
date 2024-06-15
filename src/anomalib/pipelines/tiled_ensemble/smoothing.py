@@ -31,8 +31,11 @@ class SmoothingJob(Job):
 
     name = "pipeline"
 
-    def __init__(self, predictions: list[Any], width_factor: float, filter_sigma: float, tiler: EnsembleTiler) -> None:
+    def __init__(
+        self, accelerator: str, predictions: list[Any], width_factor: float, filter_sigma: float, tiler: EnsembleTiler
+    ) -> None:
         super().__init__()
+        self.accelerator = accelerator
         self.predictions = predictions
 
         # offset in pixels of region around tile seam that will be smoothed
@@ -87,9 +90,12 @@ class SmoothingJob(Job):
         logger.info("Starting seam smoothing.")
 
         for data in tqdm(self.predictions, desc="Seam smoothing"):
-            # smooth the anomaly map and take only region around seams
+            # move to specified accelerator for faster execution
+            data["anomaly_maps"] = data["anomaly_maps"].to(self.accelerator)
+            # smooth the anomaly map and take only region around seams delimited by seam_mask
             smoothed = self.blur(data["anomaly_maps"])
             data["anomaly_maps"][:, :, self.seam_mask] = smoothed[:, :, self.seam_mask]
+            data["anomaly_maps"] = data["anomaly_maps"].cpu()
 
         return self.predictions
 
@@ -132,6 +138,7 @@ class SmoothingJobGenerator(JobGenerator):
         """
         tiler = get_ensemble_tiler(args)
         yield SmoothingJob(
+            accelerator=args["accelerator"],
             predictions=prev_stage_result,
             width_factor=args["ensemble"]["post_processing"]["seam_smoothing"]["width"],
             filter_sigma=args["ensemble"]["post_processing"]["seam_smoothing"]["width"],

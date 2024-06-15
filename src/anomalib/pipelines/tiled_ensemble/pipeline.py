@@ -1,14 +1,15 @@
 """Tiled ensemble training pipeline."""
-import logging
 
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+import logging
 import torch
 
 from anomalib.pipelines.components.base import Pipeline, Runner
 from anomalib.pipelines.components.runners import ParallelRunner, SerialRunner
 
+from anomalib.data.utils import TestSplitMode
 from .calculate_stats import StatisticsJobGenerator
 from .components.ensemble_engine import TiledEnsembleEngine
 from .merge import MergeJobGenerator
@@ -19,8 +20,6 @@ from .smoothing import SmoothingJobGenerator
 from .threshold import ThresholdingJobGenerator, ThresholdStage
 from .train_models import TrainModelJobGenerator
 from .visualize import VisualizationJobGenerator
-from ...data.utils import TestSplitMode
-
 
 logger = logging.getLogger(__name__)
 

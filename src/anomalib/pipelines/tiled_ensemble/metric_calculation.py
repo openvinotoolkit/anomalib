@@ -30,12 +30,14 @@ class MetricsCalculationJob(Job):
 
     def __init__(
         self,
+        accelerator: str,
         predictions: list,
         root_dir: Path,
         image_metrics: AnomalibMetricCollection,
         pixel_metrics: AnomalibMetricCollection,
     ) -> None:
         super().__init__()
+        self.accelerator = accelerator
         self.predictions = predictions
         self.root_dir = root_dir
         self.image_metrics = image_metrics
@@ -63,11 +65,15 @@ class MetricsCalculationJob(Job):
         metrics_dict = {}
         # TODO: move to accelerator
         for name, metric in self.image_metrics.items():
+            metric.to(self.accelerator)
             metrics_dict[name] = metric.compute().item()
+            metric.cpu()
 
         if self.pixel_metrics.update_called:
             for name, metric in self.pixel_metrics.items():
+                metric.to(self.accelerator)
                 metrics_dict[name] = metric.compute().item()
+                metric.cpu()
 
         for name, value in metrics_dict.items():
             print(f"{name}: {value:.4f}")
@@ -181,6 +187,7 @@ class MetricsCalculationJobGenerator(JobGenerator):
         )
 
         yield MetricsCalculationJob(
+            accelerator=args["accelerator"],
             predictions=prev_stage_result,
             root_dir=self.root_dir,
             image_metrics=image_metrics,
