@@ -191,10 +191,13 @@ class PredictJobGenerator(JobGenerator):
                 # prepare checkpoint path for model on current tile location
                 ckpt_path = self.root_dir / "weights" / "lightning" / f"model{tile_i}_{tile_j}.ckpt"
 
-            # since the same job is used to predict test and val data
+            # pick the dataloader based on predict data
             dataloader = datamodule.test_dataloader()
             if self.data_source == PredictData.VAL:
                 dataloader = datamodule.val_dataloader()
+            # TODO: - this is hack to avoid problem in engine:388 - I think if model has transforms
+            # that should be preferred over dataset ones
+            dataloader.dataset.transform = None
 
             # pass root_dir to engine so all models in ensemble have the same root dir
             yield PredictJob(
