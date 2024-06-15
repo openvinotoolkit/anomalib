@@ -97,7 +97,7 @@ class TrainModelJob(Job):
             metrics=self.metrics,
             trainer_args=self.trainer_args,
         )
-        engine.fit(self.model, self.datamodule)
+        engine.fit(model=self.model, datamodule=self.datamodule)
         # move model to cpu to avoid memory issues as the engine is returned to be used in validation phase
         engine.model.cpu()
 

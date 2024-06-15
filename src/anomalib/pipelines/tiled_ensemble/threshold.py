@@ -60,7 +60,7 @@ class ThresholdingJob(Job):
         """
         del task_id  # not needed here
 
-        logger.info("Starting thresholding to obtain labels.")
+        logger.info("Starting thresholding.")
 
         for data in tqdm(self.predictions, desc="Thresholding"):
             if "pred_scores" in data:
@@ -137,5 +137,7 @@ class ThresholdingJobGenerator(JobGenerator):
             pixel_threshold = 0.5
 
         yield ThresholdingJob(
-            predictions=prev_stage_result, image_threshold=image_threshold, pixel_threshold=pixel_threshold
+            predictions=prev_stage_result,
+            image_threshold=image_threshold,
+            pixel_threshold=pixel_threshold,
         )

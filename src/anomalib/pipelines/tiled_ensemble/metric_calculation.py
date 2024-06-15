@@ -50,14 +50,18 @@ class MetricsCalculationJob(Job):
         Returns:
             dict[str, float]: Dictionary containing calculated metric values.
         """
+        del task_id  # not needed here
+
         logger.info("Starting metrics calculation.")
 
+        # add predicted data to metrics
         for data in tqdm(self.predictions, desc="Calculating metrics"):
             self.image_metrics.update(data["pred_scores"], data["label"].int())
-            if "mask" in data.keys() and "anomaly_maps" in data.keys():
+            if "mask" in data and "anomaly_maps" in data:
                 self.pixel_metrics.update(data["anomaly_maps"], data["mask"].int())
 
         metrics_dict = {}
+        # TODO: move to accelerator
         for name, metric in self.image_metrics.items():
             metrics_dict[name] = metric.compute().item()
 
@@ -68,6 +72,7 @@ class MetricsCalculationJob(Job):
         for name, value in metrics_dict.items():
             print(f"{name}: {value:.4f}")
 
+        # save path used in `save` method
         metrics_dict["save_path"] = self.root_dir / "metric_results.csv"
 
         return metrics_dict
@@ -92,8 +97,8 @@ class MetricsCalculationJob(Job):
         results_path.parent.mkdir(parents=True, exist_ok=True)
 
         df_dict = {k: [v] for k, v in results.items()}
-        df = pd.DataFrame(df_dict)
-        df.to_csv(results_path, index=False)
+        metrics_df = pd.DataFrame(df_dict)
+        metrics_df.to_csv(results_path, index=False)
 
 
 class MetricsCalculationJobGenerator(JobGenerator):
@@ -139,8 +144,6 @@ class MetricsCalculationJobGenerator(JobGenerator):
                 "Ignoring the following pixel-level metrics: %s",
                 pixel_metrics,
             )
-        else:
-            pixel_metrics = pixel_metrics
 
         # if a single metric is passed, transform to list to fit the creation function
         if isinstance(image_metrics, str):

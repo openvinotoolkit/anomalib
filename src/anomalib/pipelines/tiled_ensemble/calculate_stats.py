@@ -1,8 +1,9 @@
 """Tiled ensemble - post-processing statistics calculation job."""
-import json
 
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
+
+import json
 import logging
 from collections.abc import Generator
 from pathlib import Path
