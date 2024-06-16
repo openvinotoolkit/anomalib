@@ -61,6 +61,13 @@ class _MinMaxNormalizationCallback(NormalizationCallback):
             if metric is not None:
                 metric.set_threshold(0.5)
 
+    def on_validation_epoch_start(self, trainer: Trainer, pl_module: AnomalyModule) -> None:
+        """Call when the validation epoch begins."""
+        del trainer  # `trainer` variable is not used.
+
+        if hasattr(pl_module, "normalization_metrics"):
+            pl_module.normalization_metrics.reset()
+
     def on_validation_batch_end(
         self,
         trainer: Trainer,
