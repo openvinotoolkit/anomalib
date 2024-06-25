@@ -33,7 +33,8 @@ logger = logging.getLogger(__name__)
 
 __all__ = ["Llmollama"]
 
-model_str = "llava:34b"
+#model_str = "llava:34b"
+model_str = "llava:latest"
 
 def api_call_fewShot(preImages, prompt, image) -> str:
     prompt = "Describe me if this image has an obious anomaly or not. if yes say 'YES:', follow by a description, and if not say 'NO' and finish."
@@ -91,6 +92,7 @@ def api_call_fewShot(preImages, prompt, image) -> str:
 def api_call(prompt, image) -> str:
     prompt = "Describe me if this image has an obious anomaly or not. if yes say 'YES:', follow by a description, and if not say 'NO' and finish."
 
+
     # Function to encode the image
     def encode_image(image_path):
         with open(image_path, "rb") as image_file:
@@ -119,9 +121,10 @@ class Llmollama(AnomalyModule):
 
     def __init__(
         self,
+        k_shot = 0,
     ) -> None:
         super().__init__()
-        self.k_shot = 0
+        self.k_shot = k_shot
         self.model_str = model_str
 
     def _setup(self):
@@ -149,15 +152,12 @@ class Llmollama(AnomalyModule):
         for x in range(bsize):
             o = "NO - default"
             if self.k_shot > 0:
-                o = str(api_call_fewShot(self.pre_images ,"", batch["image_path"][x])["response"]).strip()
+                o = str(api_call_fewShot(self.pre_images ,"", batch["image_path"][x])["message"]["content"]).strip()
             else:
                 o = str(api_call( "", batch["image_path"][x])["response"]).strip()
             p = 0.0 if o.startswith("N") else 1.0
             out_list.append(o)
             pred_list.append(p)
-            #print(p)
-            #if x == 1:
-            #    print(o)
 
         batch["str_output"] = out_list
         # [api_call( "", batch["image_path"][0])]*bsize  # the first img of the batch
@@ -190,7 +190,7 @@ class Llmollama(AnomalyModule):
         ref_images = []
         for batch in dataloader:
             images = batch["image_path"][: self.k_shot - len(ref_images)]
-            ref_images.append( images)
+            ref_images.extend( images)
             if self.k_shot == len(ref_images):
                 break
         return ref_images

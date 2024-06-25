@@ -15,6 +15,8 @@ from .fastflow import Fastflow
 from .ganomaly import Ganomaly
 from .llm import Llm
 from .llm_ollama import Llmollama
+from .llava import Llava
+from .llava_next import Llavanext
 from .padim import Padim
 from .patchcore import Patchcore
 from .reverse_distillation import ReverseDistillation
@@ -43,4 +45,6 @@ __all__ = [
     "WinClip",
     "Llm",
     "Llmollama",
+    "Llava",
+    "Llavanext",
 ]
