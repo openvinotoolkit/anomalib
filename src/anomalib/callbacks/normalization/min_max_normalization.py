@@ -43,6 +43,18 @@ class _MinMaxNormalizationCallback(NormalizationCallback):
             if metric is not None:
                 metric.set_threshold(0.5)
 
+    def on_validation_batch_start(self,
+        trainer: Trainer,
+        pl_module: AnomalyModule,
+        outputs: STEP_OUTPUT,
+        batch: Any,  # noqa: ANN401
+        dataloader_idx: int = 0,
+    ) -> None:
+        """Call when the validation batch starts, reset the min and max to default values
+        to make sure that irrelevant values from previous epochs are not used."""
+        del trainer, batch, dataloader_idx  # These variables are not used.
+        pl_module.normalization_metrics.reset()
+
     def on_validation_batch_end(
         self,
         trainer: Trainer,
