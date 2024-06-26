@@ -1,4 +1,5 @@
 name: Pre-Merge Checks
+permissions: read-all
 
 on:
   push:
