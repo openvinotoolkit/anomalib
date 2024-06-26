@@ -1,8 +1,6 @@
 """Per-Image Overlap curve (PIMO, pronounced pee-mo) and its area under the curve (AUPIMO).
 
 Details: `anomalib.metrics.per_image.pimo`.
-
-author: jpcbertoldo
 """
 
 # Original Code

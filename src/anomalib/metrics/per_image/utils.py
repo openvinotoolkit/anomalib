@@ -1,7 +1,4 @@
-"""Torch-oriented interfaces for `utils.py`.
-
-author: jpcbertoldo
-"""
+"""Torch-oriented interfaces for `utils.py`."""
 
 # Original Code
 # https://github.com/jpcbertoldo/aupimo

@@ -1,8 +1,6 @@
 """Binary classification matrix curve (NUMBA implementation of low level functions).
 
 Details: `.binclf_curve`.
-
-author: jpcbertoldo
 """
 
 # Original Code

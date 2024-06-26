@@ -30,8 +30,6 @@ The results are converted back to tensors and eventually wrapped in an dataclass
 
 Validations will preferably happen in ndarray so the numpy code can be reused without torch,
 so often times the Tensor arguments will be converted to ndarray and then validated.
-
-author: jpcbertoldo
 """
 
 # Original Code

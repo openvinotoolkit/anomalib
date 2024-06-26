@@ -8,8 +8,6 @@ Tensors are build with `torch.from_numpy` and so the returned tensors will share
 
 Validations will preferably happen in ndarray so the numpy code can be reused without torch,
 so often times the Tensor arguments will be converted to ndarray and then validated.
-
-author: jpcbertoldo
 """
 
 # Original Code

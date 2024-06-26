@@ -1,7 +1,4 @@
-"""Per-Image Metrics.
-
-author: jpcbertoldo
-"""
+"""Per-Image Metrics."""
 
 # Original Code
 # https://github.com/jpcbertoldo/aupimo

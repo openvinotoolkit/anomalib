@@ -1,7 +1,4 @@
-"""Utility functions for per-image metrics.
-
-author: jpcbertoldo
-"""
+"""Utility functions for per-image metrics."""
 
 # Original Code
 # https://github.com/jpcbertoldo/aupimo
