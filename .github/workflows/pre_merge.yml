@@ -19,7 +19,7 @@ concurrency:
 
 jobs:
   Code-Quality-Checks:
-    runs-on: [self-hosted, linux, x64, anomalib]
+    runs-on: ubuntu-20.04
     steps:
       - name: CHECKOUT REPOSITORY
         uses: actions/checkout@v4
