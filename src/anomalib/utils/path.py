@@ -57,13 +57,13 @@ def create_versioned_dir(root_dir: str | Path) -> Path:
     new_version_dir.mkdir()
 
     # Update the 'latest' symbolic link to point to the new version directory
-    latest_link_path = root_dir / "latest"
-    if latest_link_path.is_symlink() or latest_link_path.exists():
-        latest_link_path.unlink()
-    latest_link_path.symlink_to(new_version_dir, target_is_directory=True)
-
-    return latest_link_path
-
+    # latest_link_path = root_dir / "latest"
+    # if latest_link_path.is_symlink() or latest_link_path.exists():
+    #     latest_link_path.unlink()
+    # latest_link_path.symlink_to(new_version_dir, target_is_directory=True)
+    #
+    # return latest_link_path
+    return new_version_dir
 
 def convert_to_snake_case(s: str) -> str:
     """Converts a string to snake case.
