@@ -13,8 +13,7 @@ from anomalib import LearningType
 from anomalib.models.components import AnomalibModule
 
 
-class _DummyModel(nn.Module):
-    ...
+class _DummyModel(nn.Module): ...
 
 
 class DummyModule(AnomalibModule):
