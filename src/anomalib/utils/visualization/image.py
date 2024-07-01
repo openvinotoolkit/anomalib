@@ -38,9 +38,9 @@ class ImageResult:
     def __init__(
         self,
         image: np.ndarray,
-        pred_score: float = 0.0,
-        pred_label: str = "",
-        text_descr: str = "",
+        pred_score: None | float = 0.0,
+        pred_label: None | str = "",
+        text_descr: str | None = None,
         anomaly_map: np.ndarray | None = None,
         gt_mask: np.ndarray | None = None,
         pred_mask: np.ndarray | None = None,
@@ -164,7 +164,7 @@ class ImageVisualizer(BaseVisualizer):
 
             image_result = ImageResult(
                 image=image,
-                text_descr=batch["str_output"][:] if "str_output" in batch else "not str",
+                text_descr=batch["str_output"][i] if "str_output" in batch else None,
                 pred_score=batch["pred_scores"][i].cpu().numpy().item() if "pred_scores" in batch else None,
                 pred_label=batch["pred_labels"][i].cpu().numpy().item() if "pred_labels" in batch else None,
                 anomaly_map=batch["anomaly_maps"][i].cpu().numpy() if "anomaly_maps" in batch else None,
@@ -241,12 +241,12 @@ class ImageVisualizer(BaseVisualizer):
                 image_classified = add_normal_label(image_result.image, 1 - image_result.pred_score)
             image_grid.add_image(image=image_classified, title="Prediction")
         elif self.task == TaskType.EXPLANATION:
-            title = ""
+            description = ""
             if image_result.text_descr:
-                title = image_result.text_descr
+                description = image_result.text_descr
 
             image_classified = add_normal_label(image_result.image, 1 - image_result.pred_score)
-            image_grid.add_image(image_classified, title="Explanation of Image", description=title)
+            image_grid.add_image(image_classified, title="Explanation of Image", description=description)
             # image_grid.add_image(image_result.image, title="Explanation of Image", description=title)
 
         return image_grid.generate()
@@ -333,7 +333,6 @@ class _ImageGrid:
         matplotlib.use("Agg")
 
         self.figure, self.axis = plt.subplots(1, num_cols, figsize=figure_size)
-        # self.figure.subplots_adjust(left=0.9)
 
         axes = self.axis if isinstance(self.axis, np.ndarray) else np.array([self.axis])
         for axis, image_dict in zip(axes, self.images, strict=True):
@@ -347,7 +346,7 @@ class _ImageGrid:
                 # Wrap the text
                 # wrapped_text = textwrap.fill(image_dict["descr"][0]['response'], width=100/num_cols)  # Adjust 'width' based on your subplot size and preference
                 wrapped_text = textwrap.fill(
-                    image_dict["descr"][0], width=70 / num_cols
+                        image_dict["descr"], width=70//num_cols,
                 )  # Adjust 'width' based on your subplot size and preference
                 axis.set_title(wrapped_text, fontsize=10)
 
