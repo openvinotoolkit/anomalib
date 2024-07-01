@@ -6,7 +6,6 @@ This script creates a custom dataset from a folder.
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 from pathlib import Path
 
 from pandas import DataFrame, isna
@@ -14,7 +13,7 @@ from torchvision.transforms.v2 import Transform
 
 from anomalib import TaskType
 from anomalib.data.base import AnomalibDataModule, AnomalibDepthDataset
-from anomalib.data.errors import MisMatchError
+from anomalib.data.errors import MismatchError
 from anomalib.data.utils import (
     DirType,
     LabelName,
@@ -141,7 +140,7 @@ def make_folder3d_dataset(  # noqa: C901
             msg = """Mismatch between anomalous images and depth images. Make sure the mask files
             in 'xyz' folder follow the same naming convention as the anomalous images in the dataset
             (e.g. image: '000.png', depth: '000.tiff')."""
-            raise MisMatchError(msg)
+            raise MismatchError(msg)
 
         missing_depth_files = samples.depth_path.apply(
             lambda x: Path(x).exists() if not isna(x) else True,

@@ -14,7 +14,7 @@ from torchvision.transforms.v2 import Transform
 
 from anomalib import TaskType
 from anomalib.data.base import AnomalibDataModule, AnomalibDataset
-from anomalib.data.errors import MisMatchError
+from anomalib.data.errors import MismatchError
 from anomalib.data.utils import (
     DirType,
     LabelName,
@@ -154,7 +154,7 @@ def make_folder_dataset(
             msg = """Mismatch between anomalous images and mask images. Make sure the mask files "
                      "folder follow the same naming convention as the anomalous images in the dataset "
                      "(e.g. image: '000.png', mask: '000.png')."""
-            raise MisMatchError(msg)
+            raise MismatchError(msg)
 
     else:
         samples["mask_path"] = ""
