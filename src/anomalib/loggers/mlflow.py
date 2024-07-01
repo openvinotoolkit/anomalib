@@ -7,10 +7,10 @@ from lightning.pytorch.loggers.mlflow import MLFlowLogger
 from lightning.pytorch.utilities import rank_zero_only
 from matplotlib.figure import Figure
 
-from .base import ImageLoggerBase
+from .base import ImageLogger
 
 
-class AnomalibMLFlowLogger(ImageLoggerBase, MLFlowLogger):
+class AnomalibMLFlowLogger(ImageLogger, MLFlowLogger):
     """Logger for MLFlow.
 
     Adds interface for ``add_image`` in the logger rather than calling the

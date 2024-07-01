@@ -18,7 +18,7 @@ from anomalib import TaskType
 from anomalib.data.utils import read_image
 from anomalib.utils.post_processing import add_anomalous_label, add_normal_label, draw_boxes, superimpose_anomaly_map
 
-from .base import BaseVisualizer, GeneratorResult, VisualizationStep
+from .base import GeneratorResult, VisualizationStep, Visualizer
 
 if TYPE_CHECKING:
     from matplotlib.axis import Axes
@@ -97,7 +97,7 @@ class ImageResult:
         return repr_str
 
 
-class ImageVisualizer(BaseVisualizer):
+class ImageVisualizer(Visualizer):
     """Image/video generator.
 
     Args:
