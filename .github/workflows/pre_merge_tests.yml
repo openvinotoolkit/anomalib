@@ -15,6 +15,10 @@ on:
     #   - "**.ipynb"
     #   - "**.yaml"
   workflow_dispatch: # run on request (no need for PR)
+  workflow_run:
+    workflows: ["Pre-Merge Checks"]
+    types:
+      - completed
 
 # This is what will cancel the workflow concurrency
 concurrency:
@@ -24,8 +28,7 @@ concurrency:
 jobs:
   Pre-Merge-Checks:
     runs-on: [self-hosted, linux, x64, anomalib]
-    needs: Code-Quality-Checks
-    if: github.event.pull_request.draft == false
+    if: github.event.pull_request.draft == false && ${{ github.event.workflow_run.conclusion == 'success' }}
     strategy:
       max-parallel: 1
       matrix:
