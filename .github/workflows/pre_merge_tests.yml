@@ -10,10 +10,10 @@ on:
       - reopened
       - synchronize
       - ready_for_review
-    # paths:
-    #   - "**.py"
-    #   - "**.ipynb"
-    #   - "**.yaml"
+    paths:
+      - "**.py"
+      - "**.ipynb"
+      - "**.yaml"
   workflow_dispatch: # run on request (no need for PR)
 
 # This is what will cancel the workflow concurrency
