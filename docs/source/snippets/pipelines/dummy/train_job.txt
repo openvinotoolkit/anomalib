@@ -1,0 +1,31 @@
+class TrainJob(Job):
+    name = "train"
+
+    def __init__(self, lr: float, backbone: str, stride: int):
+        self.lr = lr
+        self.backbone = backbone
+        self.stride = stride
+
+    def run(self, task_id: int | None = None) -> dict:
+        print(f"Training with lr: {self.lr}, backbone: {self.backbone}, stride: {self.stride}")
+        time.sleep(2)
+        score = np.random.uniform(0.7, 1.0)
+        return {"lr": self.lr, "backbone": self.backbone, "stride": self.stride, "score": score}
+
+    @staticmethod
+    def collect(results: list[dict]) -> pd.DataFrame:
+        """Collect all individual runs into a dict of lists."""
+        output: dict = {}
+        for key in results[0]:
+            output[key] = []
+        for result in results:
+            for key, value in result.items():
+                output[key].append(value)
+        return pd.DataFrame(output)
+
+    @staticmethod
+    def save(results: pd.DataFrame) -> None:
+        """Save results in a csv file."""
+        file_path = Path("runs") / TrainJob.name
+        file_path.mkdir(parents=True, exist_ok=True)
+        results.to_csv(file_path / "results.csv", index=False)
