@@ -1,0 +1,41 @@
+name: Pre-Merge Checks
+permissions: read-all
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
+  workflow_dispatch: # run on request (no need for PR)
+
+# This is what will cancel the workflow concurrency
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  Code-Quality-Checks:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: CHECKOUT REPOSITORY
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: Install Tox
+        run: pip install tox
+      - name: Code quality checks
+        run: tox -e pre-commit
+
+  md-dead-link-check:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: AlexanderDokuchaev/md-dead-link-check@v0.8
+        with:
+          config: pyproject.toml

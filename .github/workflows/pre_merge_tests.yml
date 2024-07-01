@@ -1,4 +1,4 @@
-name: Pre-Merge Checks
+name: Pre-Merge Tests
 permissions: read-all
 
 on:
@@ -10,6 +10,10 @@ on:
       - reopened
       - synchronize
       - ready_for_review
+    paths:
+      - "**.py"
+      - "**.ipynb"
+      - "**.yaml"
   workflow_dispatch: # run on request (no need for PR)
 
 # This is what will cancel the workflow concurrency
@@ -18,19 +22,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  Code-Quality-Checks:
-    runs-on: ubuntu-20.04
-    steps:
-      - name: CHECKOUT REPOSITORY
-        uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.10"
-      - name: Install Tox
-        run: pip install tox
-      - name: Code quality checks
-        run: tox -e pre-commit
   Pre-Merge-Checks:
     runs-on: [self-hosted, linux, x64, anomalib]
     needs: Code-Quality-Checks
@@ -76,11 +67,3 @@ jobs:
           else
             ./codecov -t "${CODECOV_TOKEN}"  --sha $COMMIT_ID -U $HTTP_PROXY -f .tox/coverage.xml
           fi
-
-  md-dead-link-check:
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v4
-      - uses: AlexanderDokuchaev/md-dead-link-check@v0.8
-        with:
-          config: pyproject.toml
