@@ -2,14 +2,19 @@ name: Pre-Merge Tests
 permissions: read-all
 
 on:
+  push:
+    branches: [main]
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
+    # paths:
+    #   - "**.py"
+    #   - "**.ipynb"
+    #   - "**.yaml"
   workflow_dispatch: # run on request (no need for PR)
-  workflow_run:
-    workflows: [Pre-Merge Checks]
-    types: [completed]
-    paths:
-      - "**.py"
-      - "**.ipynb"
-      - "**.yaml"
 
 # This is what will cancel the workflow concurrency
 concurrency:
@@ -17,9 +22,11 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  Pre-Merge-Checks:
+    uses: ./.github/pre_merge_code_quality.yml
   Pre-Merge-Tests:
     runs-on: [self-hosted, linux, x64, anomalib]
-    if: github.event.pull_request.draft == false && ${{ github.event.workflow_run.conclusion == 'success' }}
+    if: github.event.pull_request.draft == false
     strategy:
       max-parallel: 1
       matrix:

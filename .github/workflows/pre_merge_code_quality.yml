@@ -2,14 +2,7 @@ name: Pre-Merge Checks
 permissions: read-all
 
 on:
-  push:
-    branches: [main]
-  pull_request:
-    types:
-      - opened
-      - reopened
-      - synchronize
-      - ready_for_review
+  workflow_call: # call from pre-merge tests
   workflow_dispatch: # run on request (no need for PR)
 
 # This is what will cancel the workflow concurrency
