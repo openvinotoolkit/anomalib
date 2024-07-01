@@ -8,8 +8,7 @@ on:
   #   - "**.yaml"
   workflow_dispatch: # run on request (no need for PR)
   workflow_run:
-    branches: [main]
-    workflows: ["Pre-Merge Tests"]
+    workflows: [Pre-Merge Checks]
     types: [completed]
 
 # This is what will cancel the workflow concurrency
