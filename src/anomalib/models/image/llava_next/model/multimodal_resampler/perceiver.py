@@ -1,5 +1,4 @@
-"""
-Taken from https://github.com/lucidrains/flamingo-pytorch
+"""Taken from https://github.com/lucidrains/flamingo-pytorch
 """
 
 import torch
@@ -42,12 +41,11 @@ class PerceiverAttention(nn.Module):
         self.to_out = nn.Linear(inner_dim, dim, bias=False)
 
     def forward(self, x, latents):
-        """
-        Args:
-            x (torch.Tensor): image features
-                shape (b, T, n1, D)
-            latent (torch.Tensor): latent features
-                shape (b, T, n2, D)
+        """Args:
+        x (torch.Tensor): image features
+        shape (b, T, n1, D)
+        latent (torch.Tensor): latent features
+        shape (b, T, n2, D)
         """
         x = self.norm_media(x)
         latents = self.norm_latents(latents)
@@ -95,17 +93,17 @@ class PerceiverResamplerModule(nn.Module):
                     [
                         PerceiverAttention(dim=dim, dim_head=dim_head, heads=heads),
                         FeedForward(dim=dim, mult=ff_mult) if ff_mult > 0 else nn.Identity(),
-                    ]
-                )
+                    ],
+                ),
             )
 
         self.norm = nn.LayerNorm(dim)
 
     def forward(self, x):
-        """
-        Args:
+        """Args:
             x (torch.Tensor): image features
                 shape (b, T, F, v, D)
+
         Returns:
             shape (b, T, n, D) where n is self.num_latents
         """
@@ -136,7 +134,9 @@ class PerceiverResampler(nn.Module):
         self.ff_mult = model_args.mm_perceiver_ff_mult
         self.pretrained = model_args.mm_perceiver_pretrained
 
-        self.perceiver = PerceiverResamplerModule(dim=vision_tower.hidden_size, depth=self.depth, num_latents=self.num_latents, ff_mult=self.ff_mult)
+        self.perceiver = PerceiverResamplerModule(
+            dim=vision_tower.hidden_size, depth=self.depth, num_latents=self.num_latents, ff_mult=self.ff_mult
+        )
 
         if self.pretrained is not None:
             self.load_state_dict(torch.load(self.pretrained))

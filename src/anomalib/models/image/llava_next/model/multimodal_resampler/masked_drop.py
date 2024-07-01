@@ -1,7 +1,7 @@
-import torch
-import torch.nn as nn
-
 import random
+
+import torch
+from torch import nn
 
 
 class MaskedDrop(nn.Module):
@@ -15,7 +15,6 @@ class MaskedDrop(nn.Module):
         self.ratio_lower = model_args.mm_mask_drop_ratio_lower
 
     def forward(self, image_features, *args, **kwargs):
-
         if not self.training:
             return image_features
 
@@ -54,8 +53,7 @@ class MaskedDrop(nn.Module):
         }
 
     def random_masking(self, x, len_keep):
-        """
-        Perform per-sample random masking by per-sample shuffling.
+        """Perform per-sample random masking by per-sample shuffling.
         Per-sample shuffling is done by argsort random noise.
         x: [N, L, D], sequence
         """

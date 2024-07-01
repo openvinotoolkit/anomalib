@@ -1,36 +1,43 @@
 import argparse
-import torch
-import os
 import json
-from tqdm import tqdm
-import shortuuid
-
-from llava.constants import IMAGE_TOKEN_INDEX, DEFAULT_IMAGE_TOKEN, DEFAULT_IM_START_TOKEN, DEFAULT_IM_END_TOKEN
-from llava.conversation import conv_templates, SeparatorStyle
-from llava.model.builder import load_pretrained_model
-from llava.utils import disable_torch_init
-from llava.mm_utils import tokenizer_image_token, get_model_name_from_path, KeywordsStoppingCriteria
-
-from llava.constants import IGNORE_INDEX, DEFAULT_IMAGE_TOKEN, DEFAULT_IM_START_TOKEN, DEFAULT_IM_END_TOKEN, IMAGE_TOKEN_INDEX
-from typing import Dict, Optional, Sequence, List
-import transformers
+import math
+import os
 import re
 
+import shortuuid
+import torch
+import transformers
+from llava.constants import (
+    DEFAULT_IMAGE_TOKEN,
+    IGNORE_INDEX,
+    IMAGE_TOKEN_INDEX,
+)
+from llava.conversation import SeparatorStyle, conv_templates
+from llava.mm_utils import KeywordsStoppingCriteria, get_model_name_from_path
+from llava.model.builder import load_pretrained_model
+from llava.utils import disable_torch_init
 from PIL import Image
-import math
+from tqdm import tqdm
 
 
 def split_list(lst, n):
     """Split a list into n (roughly) equal-sized chunks"""
     chunk_size = math.ceil(len(lst) / n)  # integer division
-    return [lst[i:i+chunk_size] for i in range(0, len(lst), chunk_size)]
+    return [lst[i : i + chunk_size] for i in range(0, len(lst), chunk_size)]
 
 
 def get_chunk(lst, n, k):
     chunks = split_list(lst, n)
     return chunks[k]
 
-def preprocess_qwen(sources, tokenizer: transformers.PreTrainedTokenizer, has_image: bool = False, max_len=2048, system_message: str = "You are a helpful assistant.") -> Dict:
+
+def preprocess_qwen(
+    sources,
+    tokenizer: transformers.PreTrainedTokenizer,
+    has_image: bool = False,
+    max_len=2048,
+    system_message: str = "You are a helpful assistant.",
+) -> dict:
     roles = {"human": "<|im_start|>user", "gpt": "<|im_start|>assistant"}
 
     im_start, im_end = tokenizer.additional_special_tokens_ids
@@ -55,24 +62,36 @@ def preprocess_qwen(sources, tokenizer: transformers.PreTrainedTokenizer, has_im
         role = roles[sentence["from"]]
         if has_image and sentence["value"] is not None and "<image>" in sentence["value"]:
             num_image = len(re.findall(DEFAULT_IMAGE_TOKEN, sentence["value"]))
-            texts = sentence["value"].split('<image>')
-            _input_id = tokenizer(role).input_ids + nl_tokens 
-            for i,text in enumerate(texts):
-                _input_id += tokenizer(text).input_ids 
-                if i<len(texts)-1:
+            texts = sentence["value"].split("<image>")
+            _input_id = tokenizer(role).input_ids + nl_tokens
+            for i, text in enumerate(texts):
+                _input_id += tokenizer(text).input_ids
+                if i < len(texts) - 1:
                     _input_id += [IMAGE_TOKEN_INDEX] + nl_tokens
             _input_id += [im_end] + nl_tokens
-            assert sum([i==IMAGE_TOKEN_INDEX for i in _input_id])==num_image
+            assert sum([i == IMAGE_TOKEN_INDEX for i in _input_id]) == num_image
         else:
             if sentence["value"] is None:
                 _input_id = tokenizer(role).input_ids + nl_tokens
             else:
-                _input_id = tokenizer(role).input_ids + nl_tokens + tokenizer(sentence["value"]).input_ids + [im_end] + nl_tokens
+                _input_id = (
+                    tokenizer(role).input_ids
+                    + nl_tokens
+                    + tokenizer(sentence["value"]).input_ids
+                    + [im_end]
+                    + nl_tokens
+                )
         input_id += _input_id
         if role == "<|im_start|>user":
             _target = [im_start] + [IGNORE_INDEX] * (len(_input_id) - 3) + [im_end] + nl_tokens
         elif role == "<|im_start|>assistant":
-            _target = [im_start] + [IGNORE_INDEX] * len(tokenizer(role).input_ids) + _input_id[len(tokenizer(role).input_ids) + 1 : -2] + [im_end] + nl_tokens
+            _target = (
+                [im_start]
+                + [IGNORE_INDEX] * len(tokenizer(role).input_ids)
+                + _input_id[len(tokenizer(role).input_ids) + 1 : -2]
+                + [im_end]
+                + nl_tokens
+            )
         else:
             raise NotImplementedError
         target += _target
@@ -83,8 +102,8 @@ def preprocess_qwen(sources, tokenizer: transformers.PreTrainedTokenizer, has_im
     targets = torch.tensor(targets, dtype=torch.long)
     return input_ids
 
+
 def eval_model(args):
-    
     # Model
     disable_torch_init()
     model_path = os.path.expanduser(args.model_path)
@@ -98,7 +117,7 @@ def eval_model(args):
     answers_file = os.path.expanduser(args.answers_file)
     os.makedirs(os.path.dirname(answers_file), exist_ok=True)
     ans_file = open(answers_file, "w")
-    
+
     for line in tqdm(questions):
         idx = line["sample_id"]
         question_type = line["metadata"]["question_type"]
@@ -116,13 +135,15 @@ def eval_model(args):
         conv.append_message(conv.roles[1], None)
         prompt = conv.get_prompt()
 
-        input_ids = preprocess_qwen([line["conversations"][0],{'from': 'gpt','value': None}], tokenizer, has_image=True).cuda()
+        input_ids = preprocess_qwen(
+            [line["conversations"][0], {"from": "gpt", "value": None}], tokenizer, has_image=True
+        ).cuda()
         img_num = list(input_ids.squeeze()).count(IMAGE_TOKEN_INDEX)
 
         image_tensors = []
         for image_file in image_files:
             image = Image.open(os.path.join(args.image_folder, image_file))
-            image_tensor = image_processor.preprocess(image, return_tensors='pt')['pixel_values']
+            image_tensor = image_processor.preprocess(image, return_tensors="pt")["pixel_values"]
             image_tensors.append(image_tensor.half().cuda())
         # image_tensors = torch.cat(image_tensors, dim=0)
 
@@ -140,30 +161,34 @@ def eval_model(args):
                 num_beams=args.num_beams,
                 # no_repeat_ngram_size=3,
                 max_new_tokens=1024,
-                use_cache=True)
+                use_cache=True,
+            )
 
-        
         outputs = tokenizer.batch_decode(output_ids, skip_special_tokens=True)[0]
         outputs = outputs.strip()
         if outputs.endswith(stop_str):
-            outputs = outputs[:-len(stop_str)]
+            outputs = outputs[: -len(stop_str)]
         outputs = outputs.strip()
 
         ans_id = shortuuid.uuid()
-        ans_file.write(json.dumps({
-                                   "dataset": dataset_name,
-                                   "sample_id": idx,
-                                   "prompt": cur_prompt,
-                                   "pred_response": outputs,
-                                   "gt_response": gt,
-                                   "shortuuid": ans_id,
-                                   "model_id": model_name,
-                                   "question_type": question_type,
-                                   }) + "\n")
+        ans_file.write(
+            json.dumps(
+                {
+                    "dataset": dataset_name,
+                    "sample_id": idx,
+                    "prompt": cur_prompt,
+                    "pred_response": outputs,
+                    "gt_response": gt,
+                    "shortuuid": ans_id,
+                    "model_id": model_name,
+                    "question_type": question_type,
+                }
+            )
+            + "\n"
+        )
         ans_file.flush()
 
         if len(line["conversations"]) > 2:
-
             for i in range(2, len(line["conversations"]), 2):
                 input_ids = torch.cat((input_ids, output_ids), dim=1)
 
@@ -178,7 +203,9 @@ def eval_model(args):
                 conv.append_message(conv.roles[1], None)
                 prompt = conv.get_prompt()
 
-                input_ids_new = preprocess_qwen([line["conversations"][i],{'from': 'gpt','value': None}], tokenizer, has_image=True).cuda()
+                input_ids_new = preprocess_qwen(
+                    [line["conversations"][i], {"from": "gpt", "value": None}], tokenizer, has_image=True
+                ).cuda()
                 input_ids = torch.cat((input_ids, input_ids_new), dim=1)
                 img_num = list(input_ids_new.squeeze()).count(IMAGE_TOKEN_INDEX)
 
@@ -196,29 +223,35 @@ def eval_model(args):
                         num_beams=args.num_beams,
                         # no_repeat_ngram_size=3,
                         max_new_tokens=1024,
-                        use_cache=True)
-        
+                        use_cache=True,
+                    )
+
                 outputs = tokenizer.batch_decode(output_ids, skip_special_tokens=True)[0]
                 outputs = outputs.strip()
                 if outputs.endswith(stop_str):
-                    outputs = outputs[:-len(stop_str)]
+                    outputs = outputs[: -len(stop_str)]
                 outputs = outputs.strip()
 
                 ans_id = shortuuid.uuid()
-                ans_file.write(json.dumps({
-                                        "dataset": dataset_name,
-                                        "sample_id": idx,
-                                        "prompt": cur_prompt,
-                                        "pred_response": outputs,
-                                        "gt_response": gt,
-                                        "shortuuid": ans_id,
-                                        "model_id": model_name,
-                                        "question_type": question_type,
-                                        }) + "\n")
+                ans_file.write(
+                    json.dumps(
+                        {
+                            "dataset": dataset_name,
+                            "sample_id": idx,
+                            "prompt": cur_prompt,
+                            "pred_response": outputs,
+                            "gt_response": gt,
+                            "shortuuid": ans_id,
+                            "model_id": model_name,
+                            "question_type": question_type,
+                        }
+                    )
+                    + "\n"
+                )
                 ans_file.flush()
 
-
     ans_file.close()
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

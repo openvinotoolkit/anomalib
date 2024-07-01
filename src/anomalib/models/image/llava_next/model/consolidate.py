@@ -1,14 +1,13 @@
-"""
-Usage:
+"""Usage:
 python3 -m llava.model.consolidate --src ~/model_weights/llava-7b --dst ~/model_weights/llava-7b_consolidate
 """
 
 import argparse
 
 import torch
-from transformers import AutoTokenizer, AutoModelForCausalLM
 from llava.model import *
 from llava.model.utils import auto_upgrade
+from transformers import AutoModelForCausalLM, AutoTokenizer
 
 
 def consolidate_ckpt(src_path, dst_path):

@@ -1,6 +1,6 @@
-import torch
-import torch.nn as nn
 import math
+
+from torch import nn
 
 
 class SpatialPool(nn.Module):
@@ -16,7 +16,12 @@ class SpatialPool(nn.Module):
         elif self.mode == "max":
             self.pool = nn.MaxPool2d(kernel_size=self.stride, stride=self.stride)
         elif self.mode == "conv":
-            self.pool = nn.Conv2d(in_channels=vision_tower.hidden_size, out_channels=self.out_channels, kernel_size=self.stride, stride=self.stride)
+            self.pool = nn.Conv2d(
+                in_channels=vision_tower.hidden_size,
+                out_channels=self.out_channels,
+                kernel_size=self.stride,
+                stride=self.stride,
+            )
         else:
             raise ValueError(f"Unknown pooling mode: {self.pool}.")
 

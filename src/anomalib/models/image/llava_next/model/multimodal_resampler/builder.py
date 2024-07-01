@@ -1,9 +1,9 @@
 import torch
 
 from .masked_drop import MaskedDrop
-from .spatial_pool import SpatialPool
 from .perceiver import PerceiverResampler
 from .qformer import Qformer
+from .spatial_pool import SpatialPool
 
 
 class IdentityMap(torch.nn.Module):

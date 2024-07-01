@@ -1,7 +1,6 @@
 import torch
-import torch.nn as nn
-
-from transformers import CLIPVisionModel, CLIPImageProcessor, CLIPVisionConfig
+from torch import nn
+from transformers import CLIPImageProcessor, CLIPVisionConfig, CLIPVisionModel
 
 
 class CLIPVisionTower(nn.Module):
@@ -18,14 +17,14 @@ class CLIPVisionTower(nn.Module):
             self.load_model()
         elif getattr(args, "unfreeze_mm_vision_tower", False):
             # TODO: better detector is needed.
-            print(f"The checkpoint seems to contain `vision_tower` weights: `unfreeze_mm_vision_tower`: True.")
+            print("The checkpoint seems to contain `vision_tower` weights: `unfreeze_mm_vision_tower`: True.")
             self.load_model()
         else:
             self.cfg_only = CLIPVisionConfig.from_pretrained(self.vision_tower_name)
 
     def load_model(self, device_map=None):
         if self.is_loaded:
-            print("{} is already loaded, `load_model` called again, skipping.".format(self.vision_tower_name))
+            print(f"{self.vision_tower_name} is already loaded, `load_model` called again, skipping.")
             return
 
         # import pdb; pdb.set_trace()
@@ -40,7 +39,17 @@ class CLIPVisionTower(nn.Module):
 
         if self.select_feature in ["slicefour_patch", "slicefour_cls_patch"]:
             select_every_k_layer = len(image_forward_outs.hidden_states) // 4
-            image_features = torch.cat([image_forward_outs.hidden_states[i] for i in range(select_every_k_layer + self.select_layer, len(image_forward_outs.hidden_states), select_every_k_layer)], dim=-1)
+            image_features = torch.cat(
+                [
+                    image_forward_outs.hidden_states[i]
+                    for i in range(
+                        select_every_k_layer + self.select_layer,
+                        len(image_forward_outs.hidden_states),
+                        select_every_k_layer,
+                    )
+                ],
+                dim=-1,
+            )
             select_feature_type = select_feature_type.replace("slicefour_", "")
         elif self.select_feature in ["slice_m25811_f6_patch", "slice_m25811_f6_cls_patch"]:
             select_layers = [-2, -5, -8, -11, 6]
@@ -61,11 +70,15 @@ class CLIPVisionTower(nn.Module):
         if type(images) is list:
             image_features = []
             for image in images:
-                image_forward_out = self.vision_tower(image.to(device=self.device, dtype=self.dtype).unsqueeze(0), output_hidden_states=True)
+                image_forward_out = self.vision_tower(
+                    image.to(device=self.device, dtype=self.dtype).unsqueeze(0), output_hidden_states=True
+                )
                 image_feature = self.feature_select(image_forward_out).to(image.dtype)
                 image_features.append(image_feature)
         else:
-            image_forward_outs = self.vision_tower(images.to(device=self.device, dtype=self.dtype), output_hidden_states=True)
+            image_forward_outs = self.vision_tower(
+                images.to(device=self.device, dtype=self.dtype), output_hidden_states=True
+            )
             image_features = self.feature_select(image_forward_outs).to(images.dtype)
 
         return image_features

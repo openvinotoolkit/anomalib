@@ -11,7 +11,7 @@ def auto_upgrade(config):
         if confirm.lower() in ["y", "yes"]:
             print("Upgrading checkpoint...")
             assert len(cfg.architectures) == 1
-            setattr(cfg.__class__, "model_type", "llava")
+            cfg.__class__.model_type = "llava"
             cfg.architectures[0] = "LlavaLlamaForCausalLM"
             cfg.save_pretrained(config)
             print("Checkpoint upgraded.")

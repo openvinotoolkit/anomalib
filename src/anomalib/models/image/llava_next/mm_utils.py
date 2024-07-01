@@ -1,11 +1,12 @@
-from PIL import Image
-from io import BytesIO
+import ast
 import base64
 import math
-import ast
+from io import BytesIO
 
 import torch
+from PIL import Image
 from transformers import StoppingCriteria
+
 from anomalib.models.image.llava_next.constants import IMAGE_TOKEN_INDEX
 
 
@@ -91,7 +92,9 @@ def process_highres_image_crop_split(image, data_args, processor=None):
         processor = data_args.image_processor
     image_crop = resize_and_center_crop(image, crop_resolution)
     image_patches = extract_patches(image_crop, patch_size=split_resolution, overlap_ratio=0)
-    image_patches = [processor.preprocess(image_patch, return_tensors="pt")["pixel_values"][0] for image_patch in image_patches]
+    image_patches = [
+        processor.preprocess(image_patch, return_tensors="pt")["pixel_values"][0] for image_patch in image_patches
+    ]
     return torch.stack(image_patches, dim=0)
 
 
@@ -112,13 +115,14 @@ def process_highres_image(image, processor, grid_pinpoints):
     image_padded = image_padded.resize((select_size, select_size))
     image_patches = extract_patches(image_padded, patch_size=processor.size["shortest_edge"], overlap_ratio=0)
     image_patches = [image_original_resize] + image_patches
-    image_patches = [processor.preprocess(image_patch, return_tensors="pt")["pixel_values"][0] for image_patch in image_patches]
+    image_patches = [
+        processor.preprocess(image_patch, return_tensors="pt")["pixel_values"][0] for image_patch in image_patches
+    ]
     return torch.stack(image_patches, dim=0)
 
 
 def select_best_resolution(original_size, possible_resolutions):
-    """
-    Selects the best resolution from a list of possible resolutions based on the original size.
+    """Selects the best resolution from a list of possible resolutions based on the original size.
 
     Args:
         original_size (tuple): The original size of the image in the format (width, height).
@@ -141,7 +145,9 @@ def select_best_resolution(original_size, possible_resolutions):
         effective_resolution = min(downscaled_width * downscaled_height, original_width * original_height)
         wasted_resolution = (width * height) - effective_resolution
 
-        if effective_resolution > max_effective_resolution or (effective_resolution == max_effective_resolution and wasted_resolution < min_wasted_resolution):
+        if effective_resolution > max_effective_resolution or (
+            effective_resolution == max_effective_resolution and wasted_resolution < min_wasted_resolution
+        ):
             max_effective_resolution = effective_resolution
             min_wasted_resolution = wasted_resolution
             best_fit = (width, height)
@@ -150,8 +156,7 @@ def select_best_resolution(original_size, possible_resolutions):
 
 
 def resize_and_pad_image(image, target_resolution):
-    """
-    Resize and pad an image to a target resolution while maintaining aspect ratio.
+    """Resize and pad an image to a target resolution while maintaining aspect ratio.
 
     Args:
         image (PIL.Image.Image): The input image.
@@ -189,8 +194,7 @@ def resize_and_pad_image(image, target_resolution):
 
 
 def divide_to_patches(image, patch_size):
-    """
-    Divides an image into patches of a specified size.
+    """Divides an image into patches of a specified size.
 
     Args:
         image (PIL.Image.Image): The input image.
@@ -211,8 +215,7 @@ def divide_to_patches(image, patch_size):
 
 
 def get_anyres_image_grid_shape(image_size, grid_pinpoints, patch_size):
-    """
-    Calculate the shape of the image patch grid after the preprocessing for images of any resolution.
+    """Calculate the shape of the image patch grid after the preprocessing for images of any resolution.
 
     Args:
         image_size (tuple): The size of the input image in the format (width, height).
@@ -236,8 +239,7 @@ def get_anyres_image_grid_shape(image_size, grid_pinpoints, patch_size):
 
 
 def process_anyres_image(image, processor, grid_pinpoints):
-    """
-    Process an image with variable resolutions.
+    """Process an image with variable resolutions.
 
     Args:
         image (PIL.Image.Image): The input image to be processed.
@@ -275,7 +277,9 @@ def process_anyres_image(image, processor, grid_pinpoints):
     # image_original_resize = image_padded_square.resize((processor.size['shortest_edge'], processor.size['shortest_edge']))
 
     image_patches = [image_original_resize] + patches
-    image_patches = [processor.preprocess(image_patch, return_tensors="pt")["pixel_values"][0] for image_patch in image_patches]
+    image_patches = [
+        processor.preprocess(image_patch, return_tensors="pt")["pixel_values"][0] for image_patch in image_patches
+    ]
     return torch.stack(image_patches, dim=0)
 
 

@@ -1,11 +1,11 @@
-import dataclasses
-from enum import auto, Enum
-from typing import List, Any, Dict, Union, Tuple
-import re
 import base64
+import dataclasses
+import re
+from enum import Enum, auto
 from io import BytesIO
+from typing import Any, Union
+
 from PIL import Image
-from transformers import AutoTokenizer
 
 
 class SeparatorStyle(Enum):
@@ -27,8 +27,8 @@ class Conversation:
     """A class that keeps all conversation history."""
 
     system: str
-    roles: List[str]
-    messages: List[List[str]]
+    roles: list[str]
+    messages: list[list[str]]
     offset: int
     sep_style: SeparatorStyle = SeparatorStyle.SINGLE
     sep: str = "###"
@@ -38,9 +38,9 @@ class Conversation:
     tokenizer_id: str = ""
     tokenizer: Any = None
     # Stop criteria (the default one is EOS token)
-    stop_str: Union[str, List[str]] = None
+    stop_str: Union[str, list[str]] = None
     # Stops generation if meeting any token in this list
-    stop_token_ids: List[int] = None
+    stop_token_ids: list[int] = None
 
     skip_next: bool = False
 
@@ -104,7 +104,9 @@ class Conversation:
                     chat_template_messages.append({"role": role, "content": message})
 
             # print(chat_template_messages)
-            return self.tokenizer.apply_chat_template(chat_template_messages, tokenize=False, add_generation_prompt=True)
+            return self.tokenizer.apply_chat_template(
+                chat_template_messages, tokenize=False, add_generation_prompt=True
+            )
             # ret = "" if self.system == "" else self.system + self.sep + "\n"
             # for role, message in messages:
             #     if message:
@@ -259,7 +261,16 @@ class Conversation:
         return ret
 
     def copy(self):
-        return Conversation(system=self.system, roles=self.roles, messages=[[x, y] for x, y in self.messages], offset=self.offset, sep_style=self.sep_style, sep=self.sep, sep2=self.sep2, version=self.version)
+        return Conversation(
+            system=self.system,
+            roles=self.roles,
+            messages=[[x, y] for x, y in self.messages],
+            offset=self.offset,
+            sep_style=self.sep_style,
+            sep=self.sep,
+            sep2=self.sep2,
+            version=self.version,
+        )
 
     def dict(self):
         if len(self.get_images()) > 0:
@@ -282,7 +293,7 @@ class Conversation:
 
 
 conv_vicuna_v0 = Conversation(
-    system="A chat between a curious human and an artificial intelligence assistant. " "The assistant gives helpful, detailed, and polite answers to the human's questions.",
+    system="A chat between a curious human and an artificial intelligence assistant. The assistant gives helpful, detailed, and polite answers to the human's questions.",
     roles=("Human", "Assistant"),
     messages=[
         ["Human", "What are the key differences between renewable and non-renewable energy sources?"],
@@ -314,7 +325,7 @@ conv_vicuna_v0 = Conversation(
 )
 
 conv_vicuna_v1 = Conversation(
-    system="A chat between a curious user and an artificial intelligence assistant. " "The assistant gives helpful, detailed, and polite answers to the user's questions.",
+    system="A chat between a curious user and an artificial intelligence assistant. The assistant gives helpful, detailed, and polite answers to the user's questions.",
     roles=("USER", "ASSISTANT"),
     version="v1",
     messages=[],
@@ -338,7 +349,7 @@ If a question does not make any sense, or is not factually coherent, explain why
 )
 
 conv_llava_llama_2 = Conversation(
-    system="You are a helpful language and vision assistant. " "You are able to understand the visual content that the user provides, " "and assist the user with a variety of tasks using natural language.",
+    system="You are a helpful language and vision assistant. You are able to understand the visual content that the user provides, and assist the user with a variety of tasks using natural language.",
     roles=("USER", "ASSISTANT"),
     version="llama_v2",
     messages=[],
@@ -353,7 +364,7 @@ conv_llava_llama_2 = Conversation(
 # except Exception as e:
 #     print("Error loading llama3 tokenizer")
 #     print(e)
-# 
+#
 # conv_llava_llama_3 = Conversation(
 #     system="You are a helpful language and vision assistant. " "You are able to understand the visual content that the user provides, " "and assist the user with a variety of tasks using natural language.",
 #     roles=("<|start_header_id|>user", "<|start_header_id|>assistant"),
@@ -365,7 +376,7 @@ conv_llava_llama_2 = Conversation(
 #     tokenizer=llama3_tokenizer,
 #     stop_token_ids=[128009],
 # )
-# 
+#
 conv_mistral_instruct = Conversation(
     system="",
     roles=("USER", "ASSISTANT"),
@@ -389,7 +400,7 @@ conv_llava_llama_2_simple = Conversation(
 )
 
 conv_llava_llama_2_mmtag = Conversation(
-    system="Answer the questions about the visual content that the user provides." "The visual content will be provided with the following format: <Image>visual content</Image>.",
+    system="Answer the questions about the visual content that the user provides.The visual content will be provided with the following format: <Image>visual content</Image>.",
     roles=("USER", "ASSISTANT"),
     version="llama_v2_mmtag",
     messages=[],
@@ -421,7 +432,15 @@ You are a helpful assistant.""",
     sep="<|im_end|>",
 )
 
-conv_gemma_instruct = Conversation(system="", roles=("<start_of_turn>user\n", "<start_of_turn>model\n"), version="gemma", messages=[], offset=0, sep_style=SeparatorStyle.GEMMA, sep="<end_of_turn>\n")
+conv_gemma_instruct = Conversation(
+    system="",
+    roles=("<start_of_turn>user\n", "<start_of_turn>model\n"),
+    version="gemma",
+    messages=[],
+    offset=0,
+    sep_style=SeparatorStyle.GEMMA,
+    sep="<end_of_turn>\n",
+)
 
 conv_llava_plain = Conversation(
     system="",
@@ -433,7 +452,7 @@ conv_llava_plain = Conversation(
 )
 
 conv_llava_v0 = Conversation(
-    system="A chat between a curious human and an artificial intelligence assistant. " "The assistant gives helpful, detailed, and polite answers to the human's questions.",
+    system="A chat between a curious human and an artificial intelligence assistant. The assistant gives helpful, detailed, and polite answers to the human's questions.",
     roles=("Human", "Assistant"),
     messages=[],
     offset=0,
@@ -454,7 +473,7 @@ conv_llava_v0_mmtag = Conversation(
 )
 
 conv_llava_v1 = Conversation(
-    system="A chat between a curious human and an artificial intelligence assistant. " "The assistant gives helpful, detailed, and polite answers to the human's questions.",
+    system="A chat between a curious human and an artificial intelligence assistant. The assistant gives helpful, detailed, and polite answers to the human's questions.",
     roles=("USER", "ASSISTANT"),
     version="v1",
     messages=[],
@@ -540,7 +559,7 @@ conv_templates = {
     "llava_v1": conv_llava_v1,
     "llava_v1_mmtag": conv_llava_v1_mmtag,
     "llava_llama_2": conv_llava_llama_2,
-    #"llava_llama_3": conv_llava_llama_3,
+    # "llava_llama_3": conv_llava_llama_3,
     "llava_llama_2_simple": conv_llava_llama_2_simple,
     "llava_llama_2_mmtag": conv_llava_llama_2_mmtag,
     "llava_mistral_instruct": conv_mistral_instruct,

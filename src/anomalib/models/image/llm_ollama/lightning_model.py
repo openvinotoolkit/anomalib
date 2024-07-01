@@ -6,26 +6,18 @@ Paper No paper
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import List
 
 import base64
-import json
 import logging
-from collections import OrderedDict
-from pathlib import Path
-from typing import Any
 
-import requests
+import ollama
 import torch
+from ollama import generate
 from torch.utils.data import DataLoader
 from torchvision.transforms.v2 import Compose, InterpolationMode, Normalize, Resize, Transform
 
 from anomalib import LearningType
-from anomalib.data.predict import PredictDataset
 from anomalib.models.components import AnomalyModule
-
-from ollama import generate
-import ollama
 
 # from .torch_model import openAI # TODO: This is necesary
 
@@ -33,8 +25,9 @@ logger = logging.getLogger(__name__)
 
 __all__ = ["Llmollama"]
 
-#model_str = "llava:34b"
+# model_str = "llava:34b"
 model_str = "llava:latest"
+
 
 def api_call_fewShot(preImages, prompt, image) -> str:
     prompt = "Describe me if this image has an obious anomaly or not. if yes say 'YES:', follow by a description, and if not say 'NO' and finish."
@@ -50,48 +43,43 @@ def api_call_fewShot(preImages, prompt, image) -> str:
     base64_image = encode_image(image)
     base64_image_pre = []
     for i in preImages:
-        base64_image_pre.append(  encode_image(i))
+        base64_image_pre.append(encode_image(i))
     # base64_image = base64.b64encode(image).decode('utf-8')
 
-    #response = generate('llava', f'{prompt}', images=[base64_image], stream=False)
-    #response = generate('llava:34b', f'{prompt}', images=[base64_image], stream=False)
-
+    # response = generate('llava', f'{prompt}', images=[base64_image], stream=False)
+    # response = generate('llava:34b', f'{prompt}', images=[base64_image], stream=False)
 
     res = ollama.chat(
         model=model_str,
         messages=[
-                {
-                        'role': 'user',
-                        'images': base64_image_pre,
-                        'content': '',
-                },
-
-                {
-                        'role': 'user',
-                        'images': [],
-                        'content': 'This is a sample of a normal picture without any anomalies.',
-                },
-
-                {
-                        'role': 'user',
-                        'images': [base64_image],
-                        'content': '',
-                },
-
-                {
-                        'role': 'user',
-                        'images': [],
-                        'content': prompt,
-                },
+            {
+                "role": "user",
+                "images": base64_image_pre,
+                "content": "",
+            },
+            {
+                "role": "user",
+                "images": [],
+                "content": "This is a sample of a normal picture without any anomalies.",
+            },
+            {
+                "role": "user",
+                "images": [base64_image],
+                "content": "",
+            },
+            {
+                "role": "user",
+                "images": [],
+                "content": prompt,
+            },
         ],
     )
 
-
     return res
+
 
 def api_call(prompt, image) -> str:
     prompt = "Describe me if this image has an obious anomaly or not. if yes say 'YES:', follow by a description, and if not say 'NO' and finish."
-
 
     # Function to encode the image
     def encode_image(image_path):
@@ -104,11 +92,10 @@ def api_call(prompt, image) -> str:
     base64_image = encode_image(image)
     # base64_image = base64.b64encode(image).decode('utf-8')
 
-    response = generate(model_str, f'{prompt}', images=[base64_image], stream=False)
-    #response = generate('llava:34b', f'{prompt}', images=[base64_image], stream=False)
+    response = generate(model_str, f"{prompt}", images=[base64_image], stream=False)
+    # response = generate('llava:34b', f'{prompt}', images=[base64_image], stream=False)
 
     return response
-
 
 
 class Llmollama(AnomalyModule):
@@ -121,7 +108,7 @@ class Llmollama(AnomalyModule):
 
     def __init__(
         self,
-        k_shot = 0,
+        k_shot=0,
     ) -> None:
         super().__init__()
         self.k_shot = k_shot
@@ -133,7 +120,7 @@ class Llmollama(AnomalyModule):
         self.pre_images = pre_images
 
     def training_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> None:
-        """train Step of LLM."""
+        """Train Step of LLM."""
         del args, kwargs  # These variables are not used.
         # no train on llm
         return batch
@@ -152,9 +139,9 @@ class Llmollama(AnomalyModule):
         for x in range(bsize):
             o = "NO - default"
             if self.k_shot > 0:
-                o = str(api_call_fewShot(self.pre_images ,"", batch["image_path"][x])["message"]["content"]).strip()
+                o = str(api_call_fewShot(self.pre_images, "", batch["image_path"][x])["message"]["content"]).strip()
             else:
-                o = str(api_call( "", batch["image_path"][x])["response"]).strip()
+                o = str(api_call("", batch["image_path"][x])["response"]).strip()
             p = 0.0 if o.startswith("N") else 1.0
             out_list.append(o)
             pred_list.append(p)
@@ -190,11 +177,10 @@ class Llmollama(AnomalyModule):
         ref_images = []
         for batch in dataloader:
             images = batch["image_path"][: self.k_shot - len(ref_images)]
-            ref_images.extend( images)
+            ref_images.extend(images)
             if self.k_shot == len(ref_images):
                 break
         return ref_images
-
 
     def configure_transforms(self, image_size: tuple[int, int] | None = None) -> Transform:
         """Configure the default transforms used by the model."""

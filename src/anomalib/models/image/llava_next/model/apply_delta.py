@@ -1,14 +1,13 @@
-"""
-Usage:
+"""Usage:
 python3 -m fastchat.model.apply_delta --base ~/model_weights/llama-7b --target ~/model_weights/vicuna-7b --delta lmsys/vicuna-7b-delta
 """
 
 import argparse
 
 import torch
-from tqdm import tqdm
-from transformers import AutoTokenizer, AutoModelForCausalLM
 from llava import LlavaLlamaForCausalLM
+from tqdm import tqdm
+from transformers import AutoModelForCausalLM, AutoTokenizer
 
 
 def apply_delta(base_model_path, target_model_path, delta_path):
@@ -27,7 +26,10 @@ def apply_delta(base_model_path, target_model_path, delta_path):
         if param.data.shape == base.state_dict()[name].shape:
             param.data += base.state_dict()[name]
         else:
-            assert name in ["model.embed_tokens.weight", "lm_head.weight"], f"{name} dimension mismatch: {param.data.shape} vs {base.state_dict()[name].shape}"
+            assert name in [
+                "model.embed_tokens.weight",
+                "lm_head.weight",
+            ], f"{name} dimension mismatch: {param.data.shape} vs {base.state_dict()[name].shape}"
             bparam = base.state_dict()[name]
             param.data[: bparam.shape[0], : bparam.shape[1]] += bparam
 
