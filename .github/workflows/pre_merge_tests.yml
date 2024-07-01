@@ -26,6 +26,7 @@ jobs:
     uses: ./.github/workflows/pre_merge_code_quality.yml
   Pre-Merge-Tests:
     runs-on: [self-hosted, linux, x64, anomalib]
+    needs: [Pre-Merge-Checks]
     if: github.event.pull_request.draft == false
     strategy:
       max-parallel: 1
