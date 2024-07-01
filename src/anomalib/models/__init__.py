@@ -23,6 +23,8 @@ from .image import (
     EfficientAd,
     Fastflow,
     Ganomaly,
+    Llava,
+    Llavanext,
     Llm,
     Llmollama,
     Padim,
@@ -61,6 +63,8 @@ __all__ = [
     "WinClip",
     "Llm",
     "Llmollama",
+    "Llava",
+    "Llavanext",
 ]
 
 logger = logging.getLogger(__name__)

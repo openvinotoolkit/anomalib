@@ -3,10 +3,10 @@
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+import textwrap
 from collections.abc import Iterator
 from enum import Enum
 from pathlib import Path
-import textwrap
 from typing import TYPE_CHECKING
 
 import cv2
@@ -36,19 +36,19 @@ class ImageResult:
     """Collection of data needed to visualize the predictions for an image."""
 
     def __init__(
-            self,
-            image: np.ndarray,
-            pred_score: float = 0.0,
-            pred_label: str = "",
-            text_descr: str = "",
-            anomaly_map: np.ndarray | None = None,
-            gt_mask: np.ndarray | None = None,
-            pred_mask: np.ndarray | None = None,
-            gt_boxes: np.ndarray | None = None,
-            pred_boxes: np.ndarray | None = None,
-            box_labels: np.ndarray | None = None,
-            normalize: bool = False,
-            ) -> None:
+        self,
+        image: np.ndarray,
+        pred_score: float = 0.0,
+        pred_label: str = "",
+        text_descr: str = "",
+        anomaly_map: np.ndarray | None = None,
+        gt_mask: np.ndarray | None = None,
+        pred_mask: np.ndarray | None = None,
+        gt_boxes: np.ndarray | None = None,
+        pred_boxes: np.ndarray | None = None,
+        box_labels: np.ndarray | None = None,
+        normalize: bool = False,
+    ) -> None:
         self.text_descr = text_descr
 
         self.anomaly_map = anomaly_map
@@ -88,10 +88,10 @@ class ImageResult:
     def __repr__(self) -> str:
         """Return a string representation of the object."""
         repr_str = (
-                f"ImageResult(image={self.image}, pred_score={self.pred_score}, pred_label={self.pred_label}, "
-                f"anomaly_map={self.anomaly_map}, gt_mask={self.gt_mask}, "
-                f"gt_boxes={self.gt_boxes}, pred_boxes={self.pred_boxes}, box_labels={self.box_labels}"
-                )
+            f"ImageResult(image={self.image}, pred_score={self.pred_score}, pred_label={self.pred_label}, "
+            f"anomaly_map={self.anomaly_map}, gt_mask={self.gt_mask}, "
+            f"gt_boxes={self.gt_boxes}, pred_boxes={self.pred_boxes}, box_labels={self.box_labels}"
+        )
         repr_str += f", pred_mask={self.pred_mask}" if self.pred_mask is not None else ""
         repr_str += f", heat_map={self.heat_map}" if self.heat_map is not None else ""
         repr_str += f", segmentations={self.segmentations}" if self.segmentations is not None else ""
@@ -113,11 +113,11 @@ class ImageVisualizer(BaseVisualizer):
     """
 
     def __init__(
-            self,
-            mode: VisualizationMode = VisualizationMode.FULL,
-            task: TaskType | str = TaskType.CLASSIFICATION,
-            normalize: bool = False,
-            ) -> None:
+        self,
+        mode: VisualizationMode = VisualizationMode.FULL,
+        task: TaskType | str = TaskType.CLASSIFICATION,
+        normalize: bool = False,
+    ) -> None:
         super().__init__(VisualizationStep.BATCH)
         self.mode = mode
         self.task = task
@@ -162,25 +162,18 @@ class ImageVisualizer(BaseVisualizer):
                 suffix = f"{str(batch['frames'][i].int().item()).zfill(zero_fill)}.png"
                 file_name = Path(batch["video_path"][i]) / suffix
 
-            try:
-                image_result = ImageResult(
-                        image=image,
-                        text_descr=batch["str_output"][:] if "str_output" in batch else "not str",
-                        pred_score=batch["pred_scores"][i].cpu().numpy().item() if "pred_scores" in batch else None,
-                        pred_label=batch["pred_labels"][i].cpu().numpy().item() if "pred_labels" in batch else None,
-                        anomaly_map=batch["anomaly_maps"][i].cpu().numpy() if "anomaly_maps" in batch else None,
-                        pred_mask=batch["pred_masks"][i].squeeze().int().cpu().numpy() if "pred_masks" in batch else None,
-                        gt_mask=batch["mask"][i].squeeze().int().cpu().numpy() if "mask" in batch else None,
-                        gt_boxes=batch["boxes"][i].cpu().numpy() if "boxes" in batch else None,
-                        pred_boxes=batch["pred_boxes"][i].cpu().numpy() if "pred_boxes" in batch else None,
-                        box_labels=batch["box_labels"][i].cpu().numpy() if "box_labels" in batch else None,
-                        )
-            except:
-                # print(batch)
-                print(batch.keys())
-                print(batch["str_output"])
-                raise
-
+            image_result = ImageResult(
+                image=image,
+                text_descr=batch["str_output"][:] if "str_output" in batch else "not str",
+                pred_score=batch["pred_scores"][i].cpu().numpy().item() if "pred_scores" in batch else None,
+                pred_label=batch["pred_labels"][i].cpu().numpy().item() if "pred_labels" in batch else None,
+                anomaly_map=batch["anomaly_maps"][i].cpu().numpy() if "anomaly_maps" in batch else None,
+                pred_mask=batch["pred_masks"][i].squeeze().int().cpu().numpy() if "pred_masks" in batch else None,
+                gt_mask=batch["mask"][i].squeeze().int().cpu().numpy() if "mask" in batch else None,
+                gt_boxes=batch["boxes"][i].cpu().numpy() if "boxes" in batch else None,
+                pred_boxes=batch["pred_boxes"][i].cpu().numpy() if "pred_boxes" in batch else None,
+                box_labels=batch["box_labels"][i].cpu().numpy() if "box_labels" in batch else None,
+            )
             yield GeneratorResult(image=self.visualize_image(image_result), file_name=file_name)
 
     def visualize_image(self, image_result: ImageResult) -> np.ndarray:
@@ -252,7 +245,9 @@ class ImageVisualizer(BaseVisualizer):
             if image_result.text_descr:
                 title = image_result.text_descr
 
-            image_grid.add_image(image_result.image, title="Explanation of Image", description=title)
+            image_classified = add_normal_label(image_result.image, 1 - image_result.pred_score)
+            image_grid.add_image(image_classified, title="Explanation of Image", description=title)
+            # image_grid.add_image(image_result.image, title="Explanation of Image", description=title)
 
         return image_grid.generate()
 
@@ -270,20 +265,20 @@ class ImageVisualizer(BaseVisualizer):
         if self.task == TaskType.DETECTION:
             # return image with bounding boxes augmented
             image_with_boxes = draw_boxes(
-                    image=np.copy(image_result.image),
-                    boxes=image_result.anomalous_boxes,
-                    color=(0, 0, 255),
-                    )
+                image=np.copy(image_result.image),
+                boxes=image_result.anomalous_boxes,
+                color=(0, 0, 255),
+            )
             if image_result.gt_boxes is not None:
                 image_with_boxes = draw_boxes(image=image_with_boxes, boxes=image_result.gt_boxes, color=(255, 0, 0))
             return image_with_boxes
         if self.task == TaskType.SEGMENTATION:
             visualization = mark_boundaries(
-                    image_result.heat_map,
-                    image_result.pred_mask,
-                    color=(1, 0, 0),
-                    mode="thick",
-                    )
+                image_result.heat_map,
+                image_result.pred_mask,
+                color=(1, 0, 0),
+                mode="thick",
+            )
             return (visualization * 255).astype(np.uint8)
         if self.task == TaskType.CLASSIFICATION:
             if image_result.pred_label:
@@ -308,8 +303,12 @@ class _ImageGrid:
         self.axis: Axes | np.ndarray | None = None
 
     def add_image(
-            self, image: np.ndarray, title: str | None = None, color_map: str | None = None, description: str | None = None
-            ) -> None:
+        self,
+        image: np.ndarray,
+        title: str | None = None,
+        color_map: str | None = None,
+        description: str | None = None,
+    ) -> None:
         """Add an image to the grid.
 
         Args:
@@ -347,7 +346,9 @@ class _ImageGrid:
             if image_dict["descr"] is not None:
                 # Wrap the text
                 # wrapped_text = textwrap.fill(image_dict["descr"][0]['response'], width=100/num_cols)  # Adjust 'width' based on your subplot size and preference
-                wrapped_text = textwrap.fill(image_dict["descr"][0]['response'], width=70/num_cols)  # Adjust 'width' based on your subplot size and preference
+                wrapped_text = textwrap.fill(
+                    image_dict["descr"][0], width=70 / num_cols
+                )  # Adjust 'width' based on your subplot size and preference
                 axis.set_title(wrapped_text, fontsize=10)
 
                 self.figure.subplots_adjust(top=0.7)

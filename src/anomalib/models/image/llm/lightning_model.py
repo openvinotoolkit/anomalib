@@ -9,17 +9,12 @@ Paper No paper
 import base64
 import json
 import logging
-from collections import OrderedDict
-from pathlib import Path
-from typing import Any
 
 import requests
 import torch
-from torch.utils.data import DataLoader
 from torchvision.transforms.v2 import Compose, InterpolationMode, Normalize, Resize, Transform
 
 from anomalib import LearningType
-from anomalib.data.predict import PredictDataset
 from anomalib.models.components import AnomalyModule
 
 # from .torch_model import openAI # TODO: This is necesary
@@ -49,33 +44,38 @@ def api_call(key, prompt, image) -> str:
     }
 
     payload = {
-        "model": "gpt-4-turbo",
-        "messages": [
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "text",
-                        "text": prompt,
-                    },
-                    {
-                        "type": "image_url",
-                        "image_url": {
-                            "url": f"data:image/jpeg;base64,{base64_image}",
-                            "detail": "low", # low, high
-                        },
+            "model": "gpt-4-turbo",
+            "messages": [
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": prompt,
+                            },
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/jpeg;base64,{base64_image}",
+                                "detail": "low",  # low, high
+                                },
+                            },
+                        ],
                     },
                 ],
-            },
-        ],
-        "max_tokens": 300,
-    }
+            "max_tokens": 300,
+            }
+    # print(headers)
 
     response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload)
 
-    # print(response.json())
+    # print(json.loads(response.content))
+    if not response.content or not json.loads(response.content).get("choices"):
+        print("error")
+        print(json.loads(response.content))
+        return "No : ERROR on url"
 
-    return response.json()
+    return json.loads(response.content)["choices"][-1]["message"]["content"]
 
     return json.dumps(headers)
 
@@ -98,7 +98,7 @@ class Llm(AnomalyModule):
         self.openai_key = openai_key
 
     def training_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> None:
-        """train Step of LLM."""
+        """Train Step of LLM."""
         del args, kwargs  # These variables are not used.
         # no train on llm
         return batch
@@ -111,8 +111,19 @@ class Llm(AnomalyModule):
     def validation_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> dict:
         """Validation Step of WinCLIP."""
         del args, kwargs  # These variables are not used.
-        batch["str_output"] = api_call(self.openai_key, "", batch["image_path"][0])  # the first img of the batch
-        batch["pred_scores"] = torch.tensor([0.9])
+        bsize = len(batch["image_path"])
+        out_list: list[str] = []
+        pred_list = []
+        for x in range(bsize):
+            o = str(api_call(self.openai_key, "", batch["image_path"][x])).strip()
+            p = 0.0 if o.startswith("N") else 1.0
+            out_list.append(o)
+            pred_list.append(p)
+            print(o)
+            print(p)
+
+        batch["str_output"] = str(out_list)
+        batch["pred_scores"] = torch.tensor(pred_list)
         return batch
 
     @property

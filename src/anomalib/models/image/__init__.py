@@ -13,6 +13,8 @@ from .dsr import Dsr
 from .efficient_ad import EfficientAd
 from .fastflow import Fastflow
 from .ganomaly import Ganomaly
+from .llava import Llava
+from .llava_next import Llavanext
 from .llm import Llm
 from .llm_ollama import Llmollama
 from .padim import Padim
@@ -43,4 +45,6 @@ __all__ = [
     "WinClip",
     "Llm",
     "Llmollama",
+    "Llava",
+    "Llavanext",
 ]
