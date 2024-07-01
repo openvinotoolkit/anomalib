@@ -2,14 +2,13 @@ name: Pre-Merge Tests
 permissions: read-all
 
 on:
-  push:
-    branches: [main]
-    # paths:
-    #   - "**.py"
-    #   - "**.ipynb"
-    #   - "**.yaml"
+  # paths:
+  #   - "**.py"
+  #   - "**.ipynb"
+  #   - "**.yaml"
   workflow_dispatch: # run on request (no need for PR)
   workflow_run:
+    branches: [main]
     workflows: ["Pre-Merge Checks"]
     types:
       - completed
