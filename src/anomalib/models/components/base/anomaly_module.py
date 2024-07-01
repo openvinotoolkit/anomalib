@@ -25,7 +25,7 @@ from .export_mixin import ExportMixin
 
 if TYPE_CHECKING:
     from lightning.pytorch.callbacks import Callback
-    from torchmetrics import Metric
+    from torchmetrics import MetricCollection
 
 
 logger = logging.getLogger(__name__)
@@ -49,7 +49,7 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
         self.image_threshold: BaseThreshold
         self.pixel_threshold: BaseThreshold
 
-        self.normalization_metrics: Metric
+        self.normalization_metrics: MetricCollection
 
         self.image_metrics: AnomalibMetricCollection
         self.pixel_metrics: AnomalibMetricCollection

@@ -100,9 +100,9 @@ class Csflow(AnomalyModule):
         """
         del args, kwargs  # These variables are not used.
 
-        anomaly_maps, anomaly_scores = self.model(batch["image"])
-        batch["anomaly_maps"] = anomaly_maps
-        batch["pred_scores"] = anomaly_scores
+        output = self.model(batch["image"])
+        batch["anomaly_maps"] = output["anomaly_map"]
+        batch["pred_scores"] = output["pred_score"]
         return batch
 
     @property
