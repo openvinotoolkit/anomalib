@@ -6,6 +6,9 @@ Paper No paper
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+
+from lightning.pytorch.utilities.types import STEP_OUTPUT
+
 import base64
 import json
 import logging
@@ -16,6 +19,7 @@ from torchvision.transforms.v2 import Compose, InterpolationMode, Normalize, Res
 
 from anomalib import LearningType
 from anomalib.models.components import AnomalyModule
+from anomalib.engine.engine import UnassignedError
 
 # from .torch_model import openAI # TODO: This is necesary
 
@@ -39,9 +43,9 @@ def api_call(key, prompt, image) -> str:
     # base64_image = base64.b64encode(image).decode('utf-8')
 
     headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {key}",
-    }
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {key}",
+            }
 
     payload = {
             "model": "gpt-4-turbo",
@@ -65,7 +69,6 @@ def api_call(key, prompt, image) -> str:
                 ],
             "max_tokens": 300,
             }
-    # print(headers)
 
     response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload)
 
@@ -77,7 +80,6 @@ def api_call(key, prompt, image) -> str:
 
     return json.loads(response.content)["choices"][-1]["message"]["content"]
 
-    return json.dumps(headers)
 
 
 class Llm(AnomalyModule):
@@ -89,12 +91,16 @@ class Llm(AnomalyModule):
     """
 
     def __init__(
-        self,
-        openai_key: str = "",
-    ) -> None:
+            self,
+            openai_key: None | str = "",
+            ) -> None:
         super().__init__()
         # self.model = openAI()
         # OpenAI API Key
+        if not openai_key:
+            msg = "OpenAI key not found."
+            raise UnassignedError(msg)
+
         self.openai_key = openai_key
 
     def training_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> None:
@@ -108,21 +114,35 @@ class Llm(AnomalyModule):
         """WinCLIP doesn't require optimization, therefore returns no optimizers."""
         return
 
-    def validation_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> dict:
-        """Validation Step of WinCLIP."""
+    def validation_step(self, batch: dict[str, str | list[str] | torch.Tensor], *args, **kwargs) -> STEP_OUTPUT:
+        """Get batch of anomaly maps from input image batch.
+
+        Args:
+            batch (dict[str, str | list[str] | torch.Tensor]): Batch containing image filename, image, label and mask
+            args: Additional arguments.
+            kwargs: Additional keyword arguments.
+
+        Returns:
+            dict[str, Any]: str_otput and pred_scores, the output of the Llm and pred_scores 1.0 if is an anomaly image.
+        """
         del args, kwargs  # These variables are not used.
         bsize = len(batch["image_path"])
         out_list: list[str] = []
-        pred_list = []
-        for x in range(bsize):
-            o = str(api_call(self.openai_key, "", batch["image_path"][x])).strip()
-            p = 0.0 if o.startswith("N") else 1.0
-            out_list.append(o)
-            pred_list.append(p)
-            print(o)
-            print(p)
+        pred_list: list[float] = []
+        for i in range(bsize):
+            try:
+                output = str(api_call(self.openai_key, "", batch["image_path"][i])).strip()
+            except Exception as e:
+                logging.exception(f"Error calling openAI API for image {batch['image_path'][i]}: {e}")
+                continue
 
-        batch["str_output"] = str(out_list)
+
+            prediction = 0.0 if output.startswith("N") else 1.0
+            out_list.append(output)
+            pred_list.append(prediction)
+            logging.debug(f"Output: {output}, Prediction: {prediction}")
+
+        batch["str_output"] = out_list
         batch["pred_scores"] = torch.tensor(pred_list)
         return batch
 
@@ -145,8 +165,8 @@ class Llm(AnomalyModule):
         if image_size is not None:
             logger.warning("Image size is not used in WinCLIP. The input image size is determined by the model.")
         return Compose(
-            [
-                Resize((240, 240), antialias=True, interpolation=InterpolationMode.BICUBIC),
-                Normalize(mean=(0.48145466, 0.4578275, 0.40821073), std=(0.26862954, 0.26130258, 0.27577711)),
-            ],
-        )
+                [
+                    Resize((240, 240), antialias=True, interpolation=InterpolationMode.BICUBIC),
+                    Normalize(mean=(0.48145466, 0.4578275, 0.40821073), std=(0.26862954, 0.26130258, 0.27577711)),
+                    ],
+                )
