@@ -2,10 +2,11 @@ name: Pre-Merge Tests
 permissions: read-all
 
 on:
-  # paths:
-  #   - "**.py"
-  #   - "**.ipynb"
-  #   - "**.yaml"
+  pull_request:
+    paths:
+      - "**.py"
+      - "**.ipynb"
+      - "**.yaml"
   workflow_dispatch: # run on request (no need for PR)
   workflow_run:
     workflows: [Pre-Merge Checks]
