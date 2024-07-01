@@ -43,7 +43,7 @@ repos:
 
   # notebooks.
   - repo: https://github.com/nbQA-dev/nbQA
-    rev: 1.7.0
+    rev: 1.8.5
     hooks:
       - id: nbqa-ruff
         # Ignore unsorted imports. This is because jupyter notebooks can import
