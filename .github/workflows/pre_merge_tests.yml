@@ -23,7 +23,7 @@ concurrency:
 
 jobs:
   Pre-Merge-Checks:
-    uses: ./.github/pre_merge_code_quality.yml
+    uses: ./.github/workflows/pre_merge_code_quality.yml
   Pre-Merge-Tests:
     runs-on: [self-hosted, linux, x64, anomalib]
     if: github.event.pull_request.draft == false
