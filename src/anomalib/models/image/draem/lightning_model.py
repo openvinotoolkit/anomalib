@@ -6,7 +6,6 @@ Paper https://arxiv.org/abs/2108.07610
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 from collections.abc import Callable
 from typing import Any
 
@@ -16,7 +15,7 @@ from torch import nn
 
 from anomalib import LearningType
 from anomalib.data.utils import Augmenter
-from anomalib.models.components import AnomalyModule
+from anomalib.models.components import AnomalibModule
 
 from .loss import DraemLoss
 from .torch_model import DraemModel
@@ -24,7 +23,7 @@ from .torch_model import DraemModel
 __all__ = ["Draem"]
 
 
-class Draem(AnomalyModule):
+class Draem(AnomalibModule):
     """DRÆM: A discriminatively trained reconstruction embedding for surface anomaly detection.
 
     Args:

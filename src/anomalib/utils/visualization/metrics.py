@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 from .base import GeneratorResult, VisualizationStep, Visualizer
 
 if TYPE_CHECKING:
-    from anomalib.models import AnomalyModule
+    from anomalib.models import AnomalibModule
 
 
 class MetricsVisualizer(Visualizer):
@@ -20,7 +20,7 @@ class MetricsVisualizer(Visualizer):
 
     def generate(self, **kwargs) -> Iterator[GeneratorResult]:
         """Generate metric plots and return them as an iterator."""
-        pl_module: AnomalyModule = kwargs.get("pl_module", None)
+        pl_module: AnomalibModule = kwargs.get("pl_module", None)
         if pl_module is None:
             msg = "`pl_module` must be provided"
             raise ValueError(msg)

@@ -20,6 +20,7 @@ from torchvision.transforms.v2 import Compose, Normalize, Resize, Transform
 from anomalib import LearningType
 from anomalib.metrics import AnomalibMetricCollection
 from anomalib.metrics.threshold import Threshold
+from anomalib.utils import create_class_alias_with_deprecation_warning
 
 from .export_mixin import ExportMixin
 
@@ -31,8 +32,8 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
-    """AnomalyModule to train, validate, predict and test images.
+class AnomalibModule(ExportMixin, pl.LightningModule, ABC):
+    """AnomalibModule to train, validate, predict and test images.
 
     Acts as a base class for all the Anomaly Modules in the library.
     """
@@ -279,10 +280,10 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
 
     @classmethod
     def from_config(
-        cls: type["AnomalyModule"],
+        cls: type["AnomalibModule"],
         config_path: str | Path,
         **kwargs,
-    ) -> "AnomalyModule":
+    ) -> "AnomalibModule":
         """Create a model instance from the configuration.
 
         Args:
@@ -321,7 +322,7 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
             action=ActionConfigFile,
             help="Path to a configuration file in json or yaml format.",
         )
-        model_parser.add_subclass_arguments(AnomalyModule, "model", required=False, fail_untyped=False)
+        model_parser.add_subclass_arguments(AnomalibModule, "model", required=False, fail_untyped=False)
         model_parser.add_argument("--task", type=TaskType | str, default=TaskType.SEGMENTATION)
         model_parser.add_argument("--metrics.image", type=list[str] | str | None, default=["F1Score", "AUROC"])
         model_parser.add_argument("--metrics.pixel", type=list[str] | str | None, default=None, required=False)
@@ -333,8 +334,12 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
         config = model_parser.parse_args(args=args)
         instantiated_classes = model_parser.instantiate_classes(config)
         model = instantiated_classes.get("model")
-        if isinstance(model, AnomalyModule):
+        if isinstance(model, AnomalibModule):
             return model
 
         msg = f"Model is not an instance of AnomalyModule: {model}"
         raise ValueError(msg)
+
+
+# NOTE: This is deprecated and will be removed in future versions.
+AnomalyModule = create_class_alias_with_deprecation_warning(AnomalibModule, "AnomalyModule")

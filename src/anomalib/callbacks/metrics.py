@@ -3,7 +3,6 @@
 # Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 import logging
 from enum import Enum
 from typing import Any
@@ -14,7 +13,7 @@ from lightning.pytorch.utilities.types import STEP_OUTPUT
 
 from anomalib import TaskType
 from anomalib.metrics import AnomalibMetricCollection, create_metric_collection
-from anomalib.models import AnomalyModule
+from anomalib.models import AnomalibModule
 
 logger = logging.getLogger(__name__)
 
@@ -57,7 +56,7 @@ class _MetricsCallback(Callback):
     def setup(
         self,
         trainer: Trainer,
-        pl_module: AnomalyModule,
+        pl_module: AnomalibModule,
         stage: str | None = None,
     ) -> None:
         """Set image and pixel-level AnomalibMetricsCollection within Anomalib Model.
@@ -88,7 +87,7 @@ class _MetricsCallback(Callback):
                 self.pixel_metric_names if not isinstance(self.pixel_metric_names, str) else [self.pixel_metric_names]
             )
 
-        if isinstance(pl_module, AnomalyModule):
+        if isinstance(pl_module, AnomalibModule):
             pl_module.image_metrics = create_metric_collection(image_metric_names, "image_")
             if hasattr(pl_module, "pixel_metrics"):  # incase metrics are loaded from model checkpoint
                 new_metrics = create_metric_collection(pixel_metric_names)
@@ -102,7 +101,7 @@ class _MetricsCallback(Callback):
     def on_validation_epoch_start(
         self,
         trainer: Trainer,
-        pl_module: AnomalyModule,
+        pl_module: AnomalibModule,
     ) -> None:
         del trainer  # Unused argument.
 
@@ -112,7 +111,7 @@ class _MetricsCallback(Callback):
     def on_validation_batch_end(
         self,
         trainer: Trainer,
-        pl_module: AnomalyModule,
+        pl_module: AnomalibModule,
         outputs: STEP_OUTPUT | None,
         batch: Any,  # noqa: ANN401
         batch_idx: int,
@@ -127,7 +126,7 @@ class _MetricsCallback(Callback):
     def on_validation_epoch_end(
         self,
         trainer: Trainer,
-        pl_module: AnomalyModule,
+        pl_module: AnomalibModule,
     ) -> None:
         del trainer  # Unused argument.
 
@@ -137,7 +136,7 @@ class _MetricsCallback(Callback):
     def on_test_epoch_start(
         self,
         trainer: Trainer,
-        pl_module: AnomalyModule,
+        pl_module: AnomalibModule,
     ) -> None:
         del trainer  # Unused argument.
 
@@ -147,7 +146,7 @@ class _MetricsCallback(Callback):
     def on_test_batch_end(
         self,
         trainer: Trainer,
-        pl_module: AnomalyModule,
+        pl_module: AnomalibModule,
         outputs: STEP_OUTPUT | None,
         batch: Any,  # noqa: ANN401
         batch_idx: int,
@@ -162,13 +161,13 @@ class _MetricsCallback(Callback):
     def on_test_epoch_end(
         self,
         trainer: Trainer,
-        pl_module: AnomalyModule,
+        pl_module: AnomalibModule,
     ) -> None:
         del trainer  # Unused argument.
 
         self._log_metrics(pl_module)
 
-    def _set_threshold(self, pl_module: AnomalyModule) -> None:
+    def _set_threshold(self, pl_module: AnomalibModule) -> None:
         pl_module.image_metrics.set_threshold(pl_module.image_threshold.value.item())
         pl_module.pixel_metrics.set_threshold(pl_module.pixel_threshold.value.item())
 
@@ -193,7 +192,7 @@ class _MetricsCallback(Callback):
         return output
 
     @staticmethod
-    def _log_metrics(pl_module: AnomalyModule) -> None:
+    def _log_metrics(pl_module: AnomalibModule) -> None:
         """Log computed performance metrics."""
         if pl_module.pixel_metrics._update_called:  # noqa: SLF001
             pl_module.log_dict(pl_module.pixel_metrics, prog_bar=True)

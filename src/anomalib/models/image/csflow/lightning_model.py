@@ -13,7 +13,7 @@ import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 
 from anomalib import LearningType
-from anomalib.models.components import AnomalyModule
+from anomalib.models.components import AnomalibModule
 
 from .loss import CsFlowLoss
 from .torch_model import CsFlowModel
@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 __all__ = ["Csflow"]
 
 
-class Csflow(AnomalyModule):
+class Csflow(AnomalibModule):
     """Fully Convolutional Cross-Scale-Flows for Image-based Defect Detection.
 
     Args:

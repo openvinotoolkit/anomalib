@@ -10,14 +10,14 @@ import torch
 from torch import nn
 
 from anomalib import LearningType
-from anomalib.models.components import AnomalyModule
+from anomalib.models.components import AnomalibModule
 
 
 class _DummyModel(nn.Module):
     ...
 
 
-class DummyModule(AnomalyModule):
+class DummyModule(AnomalibModule):
     """A dummy model which calls visualizer callback on fake images and masks.
 
     TODO(ashwinvaidya17): Remove this when the DummyModels have been refactored.

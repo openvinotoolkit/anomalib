@@ -6,7 +6,6 @@ Paper https://arxiv.org/pdf/2212.00789.pdf
 # Copyright (C) 2023-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 import logging
 from typing import Any
 
@@ -15,7 +14,7 @@ from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torchvision.transforms.v2 import Transform
 
 from anomalib import LearningType
-from anomalib.models.components import AnomalyModule, MemoryBankMixin
+from anomalib.models.components import AnomalibModule, MemoryBankMixin
 
 from .torch_model import AiVadModel
 
@@ -24,7 +23,7 @@ logger = logging.getLogger(__name__)
 __all__ = ["AiVad"]
 
 
-class AiVad(MemoryBankMixin, AnomalyModule):
+class AiVad(MemoryBankMixin, AnomalibModule):
     """AI-VAD: Attribute-based Representations for Accurate and Interpretable Video Anomaly Detection.
 
     Args:

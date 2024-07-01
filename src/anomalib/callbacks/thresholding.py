@@ -12,7 +12,7 @@ from lightning.pytorch.utilities.types import STEP_OUTPUT
 from omegaconf import DictConfig, ListConfig
 
 from anomalib.metrics.threshold import Threshold
-from anomalib.models import AnomalyModule
+from anomalib.models import AnomalibModule
 from anomalib.utils.types import THRESHOLD
 
 
@@ -31,21 +31,21 @@ class _ThresholdCallback(Callback):
         self.image_threshold: Threshold
         self.pixel_threshold: Threshold
 
-    def setup(self, trainer: Trainer, pl_module: AnomalyModule, stage: str) -> None:
+    def setup(self, trainer: Trainer, pl_module: AnomalibModule, stage: str) -> None:
         del trainer, stage  # Unused arguments.
         if not hasattr(pl_module, "image_threshold"):
             pl_module.image_threshold = self.image_threshold
         if not hasattr(pl_module, "pixel_threshold"):
             pl_module.pixel_threshold = self.pixel_threshold
 
-    def on_validation_epoch_start(self, trainer: Trainer, pl_module: AnomalyModule) -> None:
+    def on_validation_epoch_start(self, trainer: Trainer, pl_module: AnomalibModule) -> None:
         del trainer  # Unused argument.
         self._reset(pl_module)
 
     def on_validation_batch_end(
         self,
         trainer: Trainer,
-        pl_module: AnomalyModule,
+        pl_module: AnomalibModule,
         outputs: STEP_OUTPUT | None,
         batch: Any,  # noqa: ANN401
         batch_idx: int,
@@ -56,7 +56,7 @@ class _ThresholdCallback(Callback):
             self._outputs_to_cpu(outputs)
             self._update(pl_module, outputs)
 
-    def on_validation_epoch_end(self, trainer: Trainer, pl_module: AnomalyModule) -> None:
+    def on_validation_epoch_end(self, trainer: Trainer, pl_module: AnomalibModule) -> None:
         del trainer  # Unused argument.
         self._compute(pl_module)
 
@@ -170,7 +170,7 @@ class _ThresholdCallback(Callback):
         class_ = getattr(module, class_path)
         return class_(**init_args)
 
-    def _reset(self, pl_module: AnomalyModule) -> None:
+    def _reset(self, pl_module: AnomalibModule) -> None:
         pl_module.image_threshold.reset()
         pl_module.pixel_threshold.reset()
 
@@ -182,14 +182,14 @@ class _ThresholdCallback(Callback):
             output = output.cpu()
         return output
 
-    def _update(self, pl_module: AnomalyModule, outputs: STEP_OUTPUT) -> None:
+    def _update(self, pl_module: AnomalibModule, outputs: STEP_OUTPUT) -> None:
         pl_module.image_threshold.cpu()
         pl_module.image_threshold.update(outputs["pred_scores"], outputs["label"].int())
         if "mask" in outputs and "anomaly_maps" in outputs:
             pl_module.pixel_threshold.cpu()
             pl_module.pixel_threshold.update(outputs["anomaly_maps"], outputs["mask"].int())
 
-    def _compute(self, pl_module: AnomalyModule) -> None:
+    def _compute(self, pl_module: AnomalibModule) -> None:
         pl_module.image_threshold.compute()
         if pl_module.pixel_threshold._update_called:  # noqa: SLF001
             pl_module.pixel_threshold.compute()

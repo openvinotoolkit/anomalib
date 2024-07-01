@@ -3,7 +3,6 @@
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 import logging
 from collections.abc import Sequence
 from typing import Any
@@ -12,7 +11,7 @@ import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 
 from anomalib import LearningType
-from anomalib.models.components import AnomalyModule, MemoryBankMixin
+from anomalib.models.components import AnomalibModule, MemoryBankMixin
 from anomalib.models.components.classification import FeatureScalingMethod
 
 from .torch_model import DfkdeModel
@@ -20,7 +19,7 @@ from .torch_model import DfkdeModel
 logger = logging.getLogger(__name__)
 
 
-class Dfkde(MemoryBankMixin, AnomalyModule):
+class Dfkde(MemoryBankMixin, AnomalibModule):
     """DFKDE: Deep Feature Kernel Density Estimation.
 
     Args:

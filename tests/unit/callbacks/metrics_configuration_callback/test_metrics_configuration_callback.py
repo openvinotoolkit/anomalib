@@ -17,10 +17,10 @@ from anomalib import LearningType
 from anomalib.callbacks.metrics import _MetricsCallback
 from anomalib.metrics import AnomalibMetricCollection
 from anomalib.metrics.threshold import F1AdaptiveThreshold
-from anomalib.models.components import AnomalyModule
+from anomalib.models.components import AnomalibModule
 
 
-class _DummyAnomalyModule(AnomalyModule):
+class _DummyAnomalyModule(AnomalibModule):
     def __init__(self) -> None:
         super().__init__()
         self.task = "segmentation"

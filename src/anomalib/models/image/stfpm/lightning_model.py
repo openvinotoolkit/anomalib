@@ -14,7 +14,7 @@ from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torch import optim
 
 from anomalib import LearningType
-from anomalib.models.components import AnomalyModule
+from anomalib.models.components import AnomalibModule
 
 from .loss import STFPMLoss
 from .torch_model import STFPMModel
@@ -22,7 +22,7 @@ from .torch_model import STFPMModel
 __all__ = ["Stfpm"]
 
 
-class Stfpm(AnomalyModule):
+class Stfpm(AnomalibModule):
     """PL Lightning Module for the STFPM algorithm.
 
     Args:

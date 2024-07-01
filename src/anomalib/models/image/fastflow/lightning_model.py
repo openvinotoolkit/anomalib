@@ -13,13 +13,13 @@ from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torch import optim
 
 from anomalib import LearningType
-from anomalib.models.components import AnomalyModule
+from anomalib.models.components import AnomalibModule
 
 from .loss import FastflowLoss
 from .torch_model import FastflowModel
 
 
-class Fastflow(AnomalyModule):
+class Fastflow(AnomalibModule):
     """PL Lightning Module for the FastFlow algorithm.
 
     Args:

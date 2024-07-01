@@ -6,7 +6,6 @@ https://ieeexplore.ieee.org/abstract/document/8999287
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 import logging
 from typing import Any
 
@@ -14,7 +13,7 @@ import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 
 from anomalib import LearningType
-from anomalib.models.components import AnomalyModule, MemoryBankMixin
+from anomalib.models.components import AnomalibModule, MemoryBankMixin
 from anomalib.models.components.classification import FeatureScalingMethod
 
 from .region_extractor import RoiStage
@@ -23,7 +22,7 @@ from .torch_model import RkdeModel
 logger = logging.getLogger(__name__)
 
 
-class Rkde(MemoryBankMixin, AnomalyModule):
+class Rkde(MemoryBankMixin, AnomalibModule):
     """Region Based Anomaly Detection With Real-Time Training and Analysis.
 
     Args:

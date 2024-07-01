@@ -15,14 +15,14 @@ from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torchvision.transforms.v2 import CenterCrop, Compose, Normalize, Resize, Transform
 
 from anomalib import LearningType
-from anomalib.models.components import AnomalyModule, MemoryBankMixin
+from anomalib.models.components import AnomalibModule, MemoryBankMixin
 
 from .torch_model import PatchcoreModel
 
 logger = logging.getLogger(__name__)
 
 
-class Patchcore(MemoryBankMixin, AnomalyModule):
+class Patchcore(MemoryBankMixin, AnomalibModule):
     """PatchcoreLightning Module to train PatchCore algorithm.
 
     Args:
