@@ -1,4 +1,8 @@
-"""Helpers for downloading files, calculating metrics, computing anomaly maps, and visualization."""
+"""Anomalib utililty functions."""
 
-# Copyright (C) 2022 Intel Corporation
+# Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
+
+from .warning import create_class_alias_with_deprecation_warning
+
+__all__ = ["create_class_alias_with_deprecation_warning"]
