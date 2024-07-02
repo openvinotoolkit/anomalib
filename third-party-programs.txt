@@ -42,3 +42,7 @@ terms are listed below.
 7. CLIP neural network used for deep feature extraction in AI-VAD model
    Copyright (c) 2022 @openai, https://github.com/openai/CLIP.
    SPDX-License-Identifier: MIT
+
+8. AUPIMO metric implementation is based on the original code
+   Copyright (c) 2023 @jpcbertoldo, https://github.com/jpcbertoldo/aupimo
+   SPDX-License-Identifier: MIT
