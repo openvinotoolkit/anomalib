@@ -89,7 +89,7 @@ class Uflow(AnomalyModule):
     def configure_optimizers(self) -> tuple[list[LightningOptimizer], list[LRScheduler]]:
         """Return optimizer and scheduler."""
         # Optimizer
-        # values used in paper: bottle: 0.0001128999, cable: 0.0016160391, capsule: 0.0012118892, carpet: 0.0012118892,
+        # LRs used in paper: bottle: 0.0001128999, cable: 0.0016160391, capsule: 0.0012118892, carpet: 0.0012118892,
         # grid: 0.0000362248, hazelnut: 0.0013268899, leather: 0.0006124724, metal_nut: 0.0008148858,
         # pill: 0.0010756100, screw: 0.0004155987, tile: 0.0060457548, toothbrush: 0.0001287313,
         # transistor: 0.0011212904, wood: 0.0002466546, zipper: 0.0000455247
@@ -106,7 +106,7 @@ class Uflow(AnomalyModule):
 
     @property
     def trainer_arguments(self) -> dict[str, Any]:
-        """Return EfficientAD trainer arguments."""
+        """Return Uflow trainer arguments."""
         return {"num_sanity_val_steps": 0}
 
     @property
@@ -119,7 +119,7 @@ class Uflow(AnomalyModule):
         return LearningType.ONE_CLASS
 
     def configure_transforms(self, image_size: tuple[int, int] | None = None) -> Transform:
-        """Default transform for Padim."""
+        """Default transform for Uflow."""
         if image_size is not None:
             logger.warning("Image size is not used in UFlow. The input image size is determined by the model.")
         return Compose(
