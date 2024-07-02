@@ -28,7 +28,7 @@ from anomalib.callbacks.timer import TimerCallback
 from anomalib.callbacks.visualizer import _VisualizationCallback
 from anomalib.data import AnomalibDataModule, AnomalibDataset, PredictDataset
 from anomalib.deploy import CompressionType, ExportType
-from anomalib.models import AnomalyModule
+from anomalib.models import AnomalibModule
 from anomalib.utils.normalization import NormalizationMethod
 from anomalib.utils.path import create_versioned_dir
 from anomalib.utils.types import NORMALIZATION, THRESHOLD
@@ -74,7 +74,7 @@ class _TrainerArgumentsCache:
     def __init__(self, **kwargs) -> None:
         self._cached_args = {**kwargs}
 
-    def update(self, model: AnomalyModule) -> None:
+    def update(self, model: AnomalibModule) -> None:
         """Replace cached arguments with arguments retrieved from the model.
 
         Args:
@@ -87,7 +87,7 @@ class _TrainerArgumentsCache:
                 )
             self._cached_args[key] = value
 
-    def requires_update(self, model: AnomalyModule) -> bool:
+    def requires_update(self, model: AnomalibModule) -> bool:
         return any(self._cached_args.get(key, None) != value for key, value in model.trainer_arguments.items())
 
     @property
@@ -174,7 +174,7 @@ class Engine:
         return self._trainer
 
     @property
-    def model(self) -> AnomalyModule:
+    def model(self) -> AnomalibModule:
         """Property to get the model.
 
         Raises:
@@ -250,7 +250,7 @@ class Engine:
 
     def _setup_workspace(
         self,
-        model: AnomalyModule,
+        model: AnomalibModule,
         train_dataloaders: TRAIN_DATALOADERS | None = None,
         val_dataloaders: EVAL_DATALOADERS | None = None,
         test_dataloaders: EVAL_DATALOADERS | None = None,
@@ -315,7 +315,7 @@ class Engine:
         root_dir = Path(self._cache.args["default_root_dir"]) / model.name / dataset_name / category
         self._cache.args["default_root_dir"] = create_versioned_dir(root_dir) if versioned_dir else root_dir / "latest"
 
-    def _setup_trainer(self, model: AnomalyModule) -> None:
+    def _setup_trainer(self, model: AnomalibModule) -> None:
         """Instantiate the trainer based on the model parameters."""
         # Check if the cache requires an update
         if self._cache.requires_update(model):
@@ -353,7 +353,7 @@ class Engine:
 
     @staticmethod
     def _setup_transform(
-        model: AnomalyModule,
+        model: AnomalibModule,
         datamodule: AnomalibDataModule | None = None,
         dataloaders: EVAL_DATALOADERS | TRAIN_DATALOADERS | None = None,
         ckpt_path: Path | str | None = None,
@@ -447,7 +447,7 @@ class Engine:
 
     def _should_run_validation(
         self,
-        model: AnomalyModule,
+        model: AnomalibModule,
         dataloaders: EVAL_DATALOADERS | None,
         datamodule: AnomalibDataModule | None,
         ckpt_path: str | Path | None,
@@ -487,7 +487,7 @@ class Engine:
 
     def fit(
         self,
-        model: AnomalyModule,
+        model: AnomalibModule,
         train_dataloaders: TRAIN_DATALOADERS | None = None,
         val_dataloaders: EVAL_DATALOADERS | None = None,
         datamodule: AnomalibDataModule | None = None,
@@ -542,7 +542,7 @@ class Engine:
 
     def validate(
         self,
-        model: AnomalyModule | None = None,
+        model: AnomalibModule | None = None,
         dataloaders: EVAL_DATALOADERS | None = None,
         ckpt_path: str | Path | None = None,
         verbose: bool = True,
@@ -592,7 +592,7 @@ class Engine:
 
     def test(
         self,
-        model: AnomalyModule | None = None,
+        model: AnomalibModule | None = None,
         dataloaders: EVAL_DATALOADERS | None = None,
         ckpt_path: str | Path | None = None,
         verbose: bool = True,
@@ -689,7 +689,7 @@ class Engine:
 
     def predict(
         self,
-        model: AnomalyModule | None = None,
+        model: AnomalibModule | None = None,
         dataloaders: EVAL_DATALOADERS | None = None,
         datamodule: AnomalibDataModule | None = None,
         dataset: Dataset | PredictDataset | None = None,
@@ -801,7 +801,7 @@ class Engine:
 
     def train(
         self,
-        model: AnomalyModule,
+        model: AnomalibModule,
         train_dataloaders: TRAIN_DATALOADERS | None = None,
         val_dataloaders: EVAL_DATALOADERS | None = None,
         test_dataloaders: EVAL_DATALOADERS | None = None,
@@ -865,7 +865,7 @@ class Engine:
 
     def export(
         self,
-        model: AnomalyModule,
+        model: AnomalibModule,
         export_type: ExportType | str,
         export_root: str | Path | None = None,
         input_size: tuple[int, int] | None = None,
@@ -976,7 +976,7 @@ class Engine:
         cls: type["Engine"],
         config_path: str | Path,
         **kwargs,
-    ) -> tuple["Engine", AnomalyModule, AnomalibDataModule]:
+    ) -> tuple["Engine", AnomalibModule, AnomalibDataModule]:
         """Create an Engine instance from a configuration file.
 
         Args:

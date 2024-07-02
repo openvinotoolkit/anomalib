@@ -7,7 +7,6 @@ See: https://github.com/Lightning-AI/torchmetrics/issues/1526
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 from torch import Tensor
 from torchmetrics.classification import BinaryPrecisionRecallCurve as _BinaryPrecisionRecallCurve
 from torchmetrics.functional.classification.precision_recall_curve import (

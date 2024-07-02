@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from anomalib.models.components.base import AnomalyModule
+from anomalib.models.components.base import AnomalibModule
 
 
 class TestAnomalyModule:
@@ -21,7 +21,7 @@ class TestAnomalyModule:
     def test_from_config_with_wrong_config_path(self) -> None:
         """Test AnomalyModule.from_config with wrong model name."""
         with pytest.raises(FileNotFoundError):
-            AnomalyModule.from_config(config_path="wrong_configs.yaml")
+            AnomalibModule.from_config(config_path="wrong_configs.yaml")
 
     @pytest.mark.parametrize(
         "model_name",
@@ -48,6 +48,6 @@ class TestAnomalyModule:
     def test_from_config(self, model_name: str, fxt_model_config_folder_path: str) -> None:
         """Test AnomalyModule.from_config."""
         config_path = Path(fxt_model_config_folder_path) / f"{model_name}.yaml"
-        model = AnomalyModule.from_config(config_path=config_path)
+        model = AnomalibModule.from_config(config_path=config_path)
         assert model is not None
-        assert isinstance(model, AnomalyModule)
+        assert isinstance(model, AnomalibModule)

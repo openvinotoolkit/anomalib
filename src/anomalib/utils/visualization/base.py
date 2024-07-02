@@ -11,6 +11,8 @@ from pathlib import Path
 
 import numpy as np
 
+from anomalib.utils import create_class_alias_with_deprecation_warning
+
 
 @dataclass
 class GeneratorResult:
@@ -31,7 +33,7 @@ class VisualizationStep(str, Enum):
     STAGE_END = "stage_end"
 
 
-class BaseVisualizer(ABC):
+class Visualizer(ABC):
     """Base visualization generator."""
 
     def __init__(self, visualize_on: VisualizationStep) -> None:
@@ -45,3 +47,7 @@ class BaseVisualizer(ABC):
     def __call__(self, **kwargs) -> Iterator[GeneratorResult]:
         """Call generate method."""
         return self.generate(**kwargs)
+
+
+# NOTE: This is deprecated and will be removed in future releases.
+BaseVisualizer = create_class_alias_with_deprecation_warning(Visualizer, "BaseVisualizer")

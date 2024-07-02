@@ -90,7 +90,7 @@ class CrossConvolutions(nn.Module):
         )
         self.conv_scale0_1 = nn.Conv2d(
             channels_hidden * 1,
-            channels,  #
+            channels,
             kernel_size=kernel_size,
             padding=pad,
             bias=not batch_norm,
@@ -99,7 +99,7 @@ class CrossConvolutions(nn.Module):
         )
         self.conv_scale1_1 = nn.Conv2d(
             channels_hidden * 1,
-            channels,  #
+            channels,
             kernel_size=kernel_size,
             padding=pad * 1,
             bias=not batch_norm,
@@ -108,7 +108,7 @@ class CrossConvolutions(nn.Module):
         )
         self.conv_scale2_1 = nn.Conv2d(
             channels_hidden * 1,
-            channels,  #
+            channels,
             kernel_size=kernel_size,
             padding=pad,
             bias=not batch_norm,

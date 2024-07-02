@@ -15,7 +15,7 @@ from torchvision.transforms.v2 import Resize, Transform
 from anomalib import LearningType, TaskType
 from anomalib.data import AnomalibDataModule, AnomalibDataset
 from anomalib.engine import Engine
-from anomalib.models import AnomalyModule
+from anomalib.models import AnomalibModule
 
 
 class DummyDataset(AnomalibDataset):
@@ -34,7 +34,7 @@ class DummyDataset(AnomalibDataset):
         return 1
 
 
-class DummyModel(AnomalyModule):
+class DummyModel(AnomalibModule):
     """Dummy model for testing the setup_transform method."""
 
     def __init__(self) -> None:

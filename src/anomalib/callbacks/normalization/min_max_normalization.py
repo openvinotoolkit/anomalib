@@ -3,7 +3,6 @@
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 from typing import Any
 
 import torch
@@ -11,7 +10,7 @@ from lightning.pytorch import Trainer
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 
 from anomalib.metrics import MinMax
-from anomalib.models.components import AnomalyModule
+from anomalib.models.components import AnomalibModule
 from anomalib.utils.normalization.min_max import normalize
 
 from .base import NormalizationCallback
@@ -23,7 +22,7 @@ class _MinMaxNormalizationCallback(NormalizationCallback):
     Note: This callback is set within the Engine.
     """
 
-    def setup(self, trainer: Trainer, pl_module: AnomalyModule, stage: str | None = None) -> None:
+    def setup(self, trainer: Trainer, pl_module: AnomalibModule, stage: str | None = None) -> None:
         """Add min_max metrics to normalization metrics."""
         del trainer, stage  # These variables are not used.
 
@@ -35,7 +34,7 @@ class _MinMaxNormalizationCallback(NormalizationCallback):
                 msg,
             )
 
-    def on_test_start(self, trainer: Trainer, pl_module: AnomalyModule) -> None:
+    def on_test_start(self, trainer: Trainer, pl_module: AnomalibModule) -> None:
         """Call when the test begins."""
         del trainer  # `trainer` variable is not used.
 
@@ -46,7 +45,7 @@ class _MinMaxNormalizationCallback(NormalizationCallback):
     def on_validation_batch_end(
         self,
         trainer: Trainer,
-        pl_module: AnomalyModule,
+        pl_module: AnomalibModule,
         outputs: STEP_OUTPUT,
         batch: Any,  # noqa: ANN401
         batch_idx: int,
@@ -68,7 +67,7 @@ class _MinMaxNormalizationCallback(NormalizationCallback):
     def on_test_batch_end(
         self,
         trainer: Trainer,
-        pl_module: AnomalyModule,
+        pl_module: AnomalibModule,
         outputs: STEP_OUTPUT | None,
         batch: Any,  # noqa: ANN401
         batch_idx: int,
@@ -82,7 +81,7 @@ class _MinMaxNormalizationCallback(NormalizationCallback):
     def on_predict_batch_end(
         self,
         trainer: Trainer,
-        pl_module: AnomalyModule,
+        pl_module: AnomalibModule,
         outputs: Any,  # noqa: ANN401
         batch: Any,  # noqa: ANN401
         batch_idx: int,
@@ -94,7 +93,7 @@ class _MinMaxNormalizationCallback(NormalizationCallback):
         self._normalize_batch(outputs, pl_module)
 
     @staticmethod
-    def _normalize_batch(outputs: Any, pl_module: AnomalyModule) -> None:  # noqa: ANN401
+    def _normalize_batch(outputs: Any, pl_module: AnomalibModule) -> None:  # noqa: ANN401
         """Normalize a batch of predictions."""
         image_threshold = pl_module.image_threshold.value.cpu()
         pixel_threshold = pl_module.pixel_threshold.value.cpu()

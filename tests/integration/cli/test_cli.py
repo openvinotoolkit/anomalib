@@ -6,7 +6,6 @@ This just checks if one of the model works end-to-end. The rest of the models ar
 # Copyright (C) 2023-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 from pathlib import Path
 
 import pytest

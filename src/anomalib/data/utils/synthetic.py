@@ -6,7 +6,6 @@ This dataset can be used when there is a lack of real anomalous data.
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 import logging
 import math
 import shutil

@@ -3,13 +3,12 @@
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 import torch
 
-from .base import BaseThreshold
+from .base import Threshold
 
 
-class ManualThreshold(BaseThreshold):
+class ManualThreshold(Threshold):
     """Initialize Manual Threshold.
 
     Args:

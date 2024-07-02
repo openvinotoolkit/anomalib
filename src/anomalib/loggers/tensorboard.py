@@ -3,7 +3,6 @@
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 from pathlib import Path
 
 import numpy as np
@@ -15,10 +14,10 @@ except ModuleNotFoundError:
     print("To use tensorboard logger install it using `pip install tensorboard`")
 from lightning.pytorch.utilities import rank_zero_only
 
-from .base import ImageLoggerBase
+from .base import ImageLogger
 
 
-class AnomalibTensorBoardLogger(ImageLoggerBase, TensorBoardLogger):
+class AnomalibTensorBoardLogger(ImageLogger, TensorBoardLogger):
     """Logger for tensorboard.
 
     Adds interface for `add_image` in the logger rather than calling the experiment object.

@@ -22,13 +22,13 @@ from torch.nn import functional as F  # noqa: N812
 from torch.optim import Optimizer
 
 from anomalib import LearningType
-from anomalib.models.components import AnomalyModule
+from anomalib.models.components import AnomalibModule
 
 from .torch_model import CflowModel
 from .utils import get_logp, positional_encoding_2d
 
 
-class Cflow(AnomalyModule):
+class Cflow(AnomalibModule):
     """PL Lightning Module for the CFLOW algorithm.
 
     Args:
@@ -165,7 +165,6 @@ class Cflow(AnomalyModule):
                 e_p = e_r[perm[idx]]  # NxC
                 # decoder returns the transformed variable z and the log Jacobian determinant
                 p_u, log_jac_det = decoder(e_p, [c_p])
-                #
                 decoder_log_prob = get_logp(dim_feature_vector, p_u, log_jac_det)
                 log_prob = decoder_log_prob / dim_feature_vector  # likelihood per dim
                 loss = -F.logsigmoid(log_prob)

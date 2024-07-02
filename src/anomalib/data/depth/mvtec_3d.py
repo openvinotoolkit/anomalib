@@ -19,7 +19,6 @@ Reference:
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 import logging
 from collections.abc import Sequence
 from pathlib import Path
@@ -29,7 +28,7 @@ from torchvision.transforms.v2 import Transform
 
 from anomalib import TaskType
 from anomalib.data.base import AnomalibDataModule, AnomalibDepthDataset
-from anomalib.data.errors import MisMatchError
+from anomalib.data.errors import MismatchError
 from anomalib.data.utils import (
     DownloadInfo,
     LabelName,
@@ -156,7 +155,7 @@ def make_mvtec_3d_dataset(
         msg = """Mismatch between anomalous images and ground truth masks. Make sure the mask files
           in 'ground_truth' folder follow the same naming convention as the anomalous images in
           the dataset (e.g. image: '000.png', mask: '000.png' or '000_mask.png')."""
-        raise MisMatchError(msg)
+        raise MismatchError(msg)
 
     mismatch_depth = (
         samples.loc[samples.label_index == LabelName.ABNORMAL]
@@ -167,7 +166,7 @@ def make_mvtec_3d_dataset(
         msg = """Mismatch between anomalous images and depth images. Make sure the mask files in
           'xyz' folder follow the same naming convention as the anomalous images in the dataset
           (e.g. image: '000.png', depth: '000.tiff')."""
-        raise MisMatchError(msg)
+        raise MismatchError(msg)
 
     if split:
         samples = samples[samples.split == split].reset_index(drop=True)

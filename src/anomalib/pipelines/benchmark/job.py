@@ -16,7 +16,7 @@ from rich.table import Table
 
 from anomalib.data import AnomalibDataModule
 from anomalib.engine import Engine
-from anomalib.models import AnomalyModule
+from anomalib.models import AnomalibModule
 from anomalib.pipelines.components import Job
 from anomalib.utils.logging import hide_output
 
@@ -35,7 +35,7 @@ class BenchmarkJob(Job):
 
     name = "benchmark"
 
-    def __init__(self, accelerator: str, model: AnomalyModule, datamodule: AnomalibDataModule, seed: int) -> None:
+    def __init__(self, accelerator: str, model: AnomalibModule, datamodule: AnomalibDataModule, seed: int) -> None:
         super().__init__()
         self.accelerator = accelerator
         self.model = model

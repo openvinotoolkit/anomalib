@@ -6,7 +6,6 @@ Region Extractor.
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 from enum import Enum
 
 import torch

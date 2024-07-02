@@ -3,7 +3,6 @@
 # Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 from typing import Any
 
 import torch
@@ -12,7 +11,7 @@ from lightning.pytorch import Trainer
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 
 from anomalib.data.utils import boxes_to_anomaly_maps, boxes_to_masks, masks_to_boxes
-from anomalib.models import AnomalyModule
+from anomalib.models import AnomalibModule
 
 
 class _PostProcessorCallback(Callback):
@@ -27,7 +26,7 @@ class _PostProcessorCallback(Callback):
     def on_validation_batch_end(
         self,
         trainer: Trainer,
-        pl_module: AnomalyModule,
+        pl_module: AnomalibModule,
         outputs: STEP_OUTPUT | None,
         batch: Any,  # noqa: ANN401
         batch_idx: int,
@@ -41,7 +40,7 @@ class _PostProcessorCallback(Callback):
     def on_test_batch_end(
         self,
         trainer: Trainer,
-        pl_module: AnomalyModule,
+        pl_module: AnomalibModule,
         outputs: STEP_OUTPUT | None,
         batch: Any,  # noqa: ANN401
         batch_idx: int,
@@ -55,7 +54,7 @@ class _PostProcessorCallback(Callback):
     def on_predict_batch_end(
         self,
         trainer: Trainer,
-        pl_module: AnomalyModule,
+        pl_module: AnomalibModule,
         outputs: Any,  # noqa: ANN401
         batch: Any,  # noqa: ANN401
         batch_idx: int,
@@ -66,7 +65,7 @@ class _PostProcessorCallback(Callback):
         if outputs is not None:
             self.post_process(trainer, pl_module, outputs)
 
-    def post_process(self, trainer: Trainer, pl_module: AnomalyModule, outputs: STEP_OUTPUT) -> None:
+    def post_process(self, trainer: Trainer, pl_module: AnomalibModule, outputs: STEP_OUTPUT) -> None:
         if isinstance(outputs, dict):
             self._post_process(outputs)
             if trainer.predicting or trainer.testing:
@@ -74,7 +73,7 @@ class _PostProcessorCallback(Callback):
 
     @staticmethod
     def _compute_scores_and_labels(
-        pl_module: AnomalyModule,
+        pl_module: AnomalibModule,
         outputs: dict[str, Any],
     ) -> None:
         if "pred_scores" in outputs:

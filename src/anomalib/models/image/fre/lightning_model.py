@@ -14,14 +14,14 @@ from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torch import optim
 
 from anomalib import LearningType
-from anomalib.models.components import AnomalyModule
+from anomalib.models.components import AnomalibModule
 
 from .torch_model import FREModel
 
 logger = logging.getLogger(__name__)
 
 
-class Fre(AnomalyModule):
+class Fre(AnomalibModule):
     """FRE: Feature-reconstruction error using Tied AutoEncoder.
 
     Args:

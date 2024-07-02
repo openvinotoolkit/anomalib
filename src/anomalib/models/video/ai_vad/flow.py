@@ -3,7 +3,6 @@
 # Copyright (C) 2023-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 import torch
 import torchvision.transforms.functional as F  # noqa: N812
 from torch import nn

@@ -14,14 +14,14 @@ from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torch import optim
 
 from anomalib import LearningType
-from anomalib.models.components import AnomalyModule
+from anomalib.models.components import AnomalibModule
 
 from .anomaly_map import AnomalyMapGenerationMode
 from .loss import ReverseDistillationLoss
 from .torch_model import ReverseDistillationModel
 
 
-class ReverseDistillation(AnomalyModule):
+class ReverseDistillation(AnomalibModule):
     """PL Lightning Module for Reverse Distillation Algorithm.
 
     Args:

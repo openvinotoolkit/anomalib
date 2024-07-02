@@ -3,7 +3,6 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 import subprocess  # nosec B404
 from pathlib import Path
 from typing import TYPE_CHECKING, Any

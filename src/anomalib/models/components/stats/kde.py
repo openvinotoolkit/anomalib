@@ -3,7 +3,6 @@
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 import math
 
 import torch
@@ -72,7 +71,6 @@ class GaussianKDE(DynamicBufferMixin):
         bw_transform = torch.linalg.cholesky(inv_cov)
         dataset = torch.matmul(dataset, bw_transform)
 
-        #
         norm = torch.prod(torch.diag(bw_transform))
         norm *= math.pow((2 * math.pi), (-dimension / 2))
 

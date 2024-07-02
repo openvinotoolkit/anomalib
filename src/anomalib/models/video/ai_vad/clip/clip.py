@@ -84,9 +84,10 @@ def _download(url: str, root: str):
 
     total_size = int(response.headers.get("Content-Length", 0))
 
-    with open(download_target, "wb") as file, tqdm(
-        total=total_size, ncols=80, unit="iB", unit_scale=True, unit_divisor=1024
-    ) as loop:
+    with (
+        open(download_target, "wb") as file,
+        tqdm(total=total_size, ncols=80, unit="iB", unit_scale=True, unit_divisor=1024) as loop,
+    ):
         for chunk in response.iter_content(chunk_size=8192):
             if chunk:
                 file.write(chunk)

@@ -8,7 +8,7 @@ from abc import ABC, abstractmethod
 from lightning.pytorch import Callback
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 
-from anomalib.models.components import AnomalyModule
+from anomalib.models.components import AnomalibModule
 
 
 class NormalizationCallback(Callback, ABC):
@@ -16,7 +16,7 @@ class NormalizationCallback(Callback, ABC):
 
     @staticmethod
     @abstractmethod
-    def _normalize_batch(batch: STEP_OUTPUT, pl_module: AnomalyModule) -> None:
+    def _normalize_batch(batch: STEP_OUTPUT, pl_module: AnomalibModule) -> None:
         """Normalize an output batch.
 
         Args:

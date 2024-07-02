@@ -54,7 +54,7 @@ def hide_output(func: Callable[..., Any]) -> Callable[..., Any]:
         sys.stderr = io.StringIO()
         try:
             value = func(*args, **kwargs)
-        except Exception as exception:  # noqa: BLE001
+        except Exception as exception:
             msg = f"Error occurred while executing {func.__name__}"
             raise LoggerRedirectError(msg) from exception
         finally:

@@ -3,7 +3,6 @@
 # Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 from enum import Enum
 
 from .folder_3d import Folder3D

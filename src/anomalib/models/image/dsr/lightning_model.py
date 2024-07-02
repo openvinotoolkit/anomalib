@@ -17,7 +17,7 @@ from torch import Tensor
 from anomalib import LearningType
 from anomalib.data.utils import DownloadInfo, download_and_extract
 from anomalib.data.utils.augmenter import Augmenter
-from anomalib.models.components import AnomalyModule
+from anomalib.models.components import AnomalibModule
 from anomalib.models.image.dsr.anomaly_generator import DsrAnomalyGenerator
 from anomalib.models.image.dsr.loss import DsrSecondStageLoss, DsrThirdStageLoss
 from anomalib.models.image.dsr.torch_model import DsrModel
@@ -33,7 +33,7 @@ WEIGHTS_DOWNLOAD_INFO = DownloadInfo(
 )
 
 
-class Dsr(AnomalyModule):
+class Dsr(AnomalibModule):
     """DSR: A Dual Subspace Re-Projection Network for Surface Anomaly Detection.
 
     Args:

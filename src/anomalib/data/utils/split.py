@@ -11,7 +11,6 @@ These function are useful
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 import logging
 import math
 from collections.abc import Sequence
@@ -103,7 +102,7 @@ def random_split(
         per_label_datasets = [dataset]
 
     # outer list: per-label unique, inner list: random subsets with the given ratio
-    subsets: list[list["data.AnomalibDataset"]] = []
+    subsets: list[list[data.AnomalibDataset]] = []
     # split each (label-aware) subset of source data
     for label_dataset in per_label_datasets:
         # get subset lengths

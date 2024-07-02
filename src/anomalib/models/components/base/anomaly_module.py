@@ -19,7 +19,8 @@ from torchvision.transforms.v2 import Compose, Normalize, Resize, Transform
 
 from anomalib import LearningType
 from anomalib.metrics import AnomalibMetricCollection
-from anomalib.metrics.threshold import BaseThreshold
+from anomalib.metrics.threshold import Threshold
+from anomalib.utils import create_class_alias_with_deprecation_warning
 
 from .export_mixin import ExportMixin
 
@@ -31,8 +32,8 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
-    """AnomalyModule to train, validate, predict and test images.
+class AnomalibModule(ExportMixin, pl.LightningModule, ABC):
+    """AnomalibModule to train, validate, predict and test images.
 
     Acts as a base class for all the Anomaly Modules in the library.
     """
@@ -46,8 +47,8 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
         self.loss: nn.Module
         self.callbacks: list[Callback]
 
-        self.image_threshold: BaseThreshold
-        self.pixel_threshold: BaseThreshold
+        self.image_threshold: Threshold
+        self.pixel_threshold: Threshold
 
         self.normalization_metrics: Metric
 
@@ -147,13 +148,13 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
 
     def _save_to_state_dict(self, destination: OrderedDict, prefix: str, keep_vars: bool) -> None:
         if hasattr(self, "image_threshold"):
-            destination[
-                "image_threshold_class"
-            ] = f"{self.image_threshold.__class__.__module__}.{self.image_threshold.__class__.__name__}"
+            destination["image_threshold_class"] = (
+                f"{self.image_threshold.__class__.__module__}.{self.image_threshold.__class__.__name__}"
+            )
         if hasattr(self, "pixel_threshold"):
-            destination[
-                "pixel_threshold_class"
-            ] = f"{self.pixel_threshold.__class__.__module__}.{self.pixel_threshold.__class__.__name__}"
+            destination["pixel_threshold_class"] = (
+                f"{self.pixel_threshold.__class__.__module__}.{self.pixel_threshold.__class__.__name__}"
+            )
         if hasattr(self, "normalization_metrics"):
             normalization_class = self.normalization_metrics.__class__
             destination["normalization_class"] = f"{normalization_class.__module__}.{normalization_class.__name__}"
@@ -201,7 +202,7 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
                 logger.info("Loading %s metrics from state dict", class_name)
                 metrics.add_metrics(metrics_cls())
 
-    def _get_instance(self, state_dict: OrderedDict[str, Any], dict_key: str) -> BaseThreshold:
+    def _get_instance(self, state_dict: OrderedDict[str, Any], dict_key: str) -> Threshold:
         """Get the threshold class from the ``state_dict``."""
         class_path = state_dict.pop(dict_key)
         module = importlib.import_module(".".join(class_path.split(".")[:-1]))
@@ -279,10 +280,10 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
 
     @classmethod
     def from_config(
-        cls: type["AnomalyModule"],
+        cls: type["AnomalibModule"],
         config_path: str | Path,
         **kwargs,
-    ) -> "AnomalyModule":
+    ) -> "AnomalibModule":
         """Create a model instance from the configuration.
 
         Args:
@@ -321,11 +322,11 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
             action=ActionConfigFile,
             help="Path to a configuration file in json or yaml format.",
         )
-        model_parser.add_subclass_arguments(AnomalyModule, "model", required=False, fail_untyped=False)
+        model_parser.add_subclass_arguments(AnomalibModule, "model", required=False, fail_untyped=False)
         model_parser.add_argument("--task", type=TaskType | str, default=TaskType.SEGMENTATION)
         model_parser.add_argument("--metrics.image", type=list[str] | str | None, default=["F1Score", "AUROC"])
         model_parser.add_argument("--metrics.pixel", type=list[str] | str | None, default=None, required=False)
-        model_parser.add_argument("--metrics.threshold", type=BaseThreshold | str, default="F1AdaptiveThreshold")
+        model_parser.add_argument("--metrics.threshold", type=Threshold | str, default="F1AdaptiveThreshold")
         model_parser.add_class_arguments(Trainer, "trainer", fail_untyped=False, instantiate=False, sub_configs=True)
         args = ["--config", str(config_path)]
         for key, value in kwargs.items():
@@ -333,8 +334,12 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
         config = model_parser.parse_args(args=args)
         instantiated_classes = model_parser.instantiate_classes(config)
         model = instantiated_classes.get("model")
-        if isinstance(model, AnomalyModule):
+        if isinstance(model, AnomalibModule):
             return model
 
         msg = f"Model is not an instance of AnomalyModule: {model}"
         raise ValueError(msg)
+
+
+# NOTE: This is deprecated and will be removed in future versions.
+AnomalyModule = create_class_alias_with_deprecation_warning(AnomalibModule, "AnomalyModule")
