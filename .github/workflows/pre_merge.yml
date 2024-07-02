@@ -48,15 +48,12 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-        #   architecture: "x64"
-        # env:
-        #   AGENT_TOOLSDIRECTORY: /opt/hostedtoolcache
       - name: Install Tox
         run: pip install tox
       - name: Link the dataset path to the dataset directory in the repository root.
         run: |
-          ln -s $ANOMALIB_DATASET_PATH ./datasets
-          ln -s $ANOMALIB_DATASET_PATH ./notebooks/datasets
+          ln -sf $ANOMALIB_DATASET_PATH ./datasets
+          ln -sf $ANOMALIB_DATASET_PATH ./notebooks/datasets
       - name: Coverage
         run: tox -e pre-merge-${{ matrix.tox-env }}
       - name: Upload coverage report
