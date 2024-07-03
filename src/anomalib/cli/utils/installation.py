@@ -153,7 +153,7 @@ def get_cuda_version() -> str | None:
     except OSError:
         msg = "Could not find cuda-version. Instead, the CPU version of torch will be installed."
         warn(msg, stacklevel=2)
-    return None
+    return "12.1"
 
 
 def update_cuda_version_with_available_torch_cuda_build(cuda_version: str, torch_version: str) -> str:
