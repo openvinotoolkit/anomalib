@@ -17,6 +17,7 @@ from PIL import Image
 from anomalib import TaskType
 from anomalib.data.utils.label import LabelName
 from anomalib.utils.visualization import ImageResult
+from anomalib.dataclasses import ImageBatch
 
 from .base_inferencer import Inferencer
 
@@ -218,15 +219,8 @@ class OpenVINOInferencer(Inferencer):
         predictions = self.forward(processed_image)
         output = self.post_process(predictions, metadata=metadata)
 
-        return ImageResult(
-            image=(image * 255).astype(np.uint8),
-            pred_score=output["pred_score"],
-            pred_label=output["pred_label"],
-            anomaly_map=output["anomaly_map"],
-            pred_mask=output["pred_mask"],
-            pred_boxes=output["pred_boxes"],
-            box_labels=output["box_labels"],
-        )
+        output.image = image
+        return output
 
     def forward(self, image: np.ndarray) -> np.ndarray:
         """Forward-Pass input tensor to the model.
@@ -311,15 +305,15 @@ class OpenVINOInferencer(Inferencer):
             pred_boxes = None
             box_labels = None
 
-        return {
-            "anomaly_map": anomaly_map,
-            "pred_label": pred_label,
-            "pred_score": pred_score,
-            "pred_mask": pred_mask,
-            "pred_boxes": pred_boxes,
-            "box_labels": box_labels,
-        }
-
+        return ImageBatch(
+            anomaly_map=anomaly_map,
+            pred_score=pred_score,
+            pred_label=pred_label,
+            pred_mask=pred_mask,
+            pred_boxes=pred_boxes,
+            box_labels=box_labels,
+        )
+    
     @staticmethod
     def _get_boxes(mask: np.ndarray) -> np.ndarray:
         """Get bounding boxes from masks.

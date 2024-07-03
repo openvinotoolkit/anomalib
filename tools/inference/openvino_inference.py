@@ -14,7 +14,8 @@ from pathlib import Path
 from anomalib.data.utils import generate_output_image_filename, get_image_filenames, read_image
 from anomalib.data.utils.image import save_image, show_image
 from anomalib.deploy import OpenVINOInferencer
-from anomalib.utils.visualization import ImageVisualizer
+from anomalib.utils.visualization import ImageVisualizer, ImageResult
+import numpy as np
 
 logger = logging.getLogger(__name__)
 
@@ -73,14 +74,25 @@ def infer(args: Namespace) -> None:
         args (Namespace): The arguments from the command line.
     """
     # Get the inferencer.
-    inferencer = OpenVINOInferencer(path=args.weights, metadata=args.metadata, device=args.device)
+    inferencer = OpenVINOInferencer(path=args.weights, metadata=args.metadata, device=args.device, task=args.task)
     visualizer = ImageVisualizer(mode=args.visualization_mode, task=args.task)
 
     filenames = get_image_filenames(path=args.input)
     for filename in filenames:
         image = read_image(filename)
         predictions = inferencer.predict(image=image)
-        output = visualizer.visualize_image(predictions)
+
+        # this is temporary until we update the visualizer to take the dataclass directly.
+        image_result = ImageResult(
+            image=(predictions.image * 255).astype(np.uint8),
+            pred_score=predictions.pred_score,
+            pred_label=predictions.pred_label,
+            anomaly_map=predictions.anomaly_map,
+            pred_mask=predictions.pred_mask,
+            pred_boxes=predictions.pred_boxes,
+            box_labels=predictions.box_labels,
+        )
+        output = visualizer.visualize_image(image_result)
 
         if args.output is None and args.show is False:
             msg = "Neither output path is provided nor show flag is set. Inferencer will run but return nothing."
