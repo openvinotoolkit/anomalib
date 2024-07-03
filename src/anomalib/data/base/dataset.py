@@ -23,6 +23,7 @@ _EXPECTED_COLUMNS_CLASSIFICATION = ["image_path", "split"]
 _EXPECTED_COLUMNS_SEGMENTATION = [*_EXPECTED_COLUMNS_CLASSIFICATION, "mask_path"]
 _EXPECTED_COLUMNS_PERTASK = {
     "classification": _EXPECTED_COLUMNS_CLASSIFICATION,
+    "explanation": _EXPECTED_COLUMNS_CLASSIFICATION,
     "segmentation": _EXPECTED_COLUMNS_SEGMENTATION,
     "detection": _EXPECTED_COLUMNS_SEGMENTATION,
 }
@@ -169,7 +170,7 @@ class AnomalibDataset(Dataset, ABC):
         image = read_image(image_path, as_tensor=True)
         item = {"image_path": image_path, "label": label_index}
 
-        if self.task == TaskType.CLASSIFICATION:
+        if self.task in (TaskType.CLASSIFICATION, TaskType.EXPLANATION):
             item["image"] = self.transform(image) if self.transform else image
         elif self.task in (TaskType.DETECTION, TaskType.SEGMENTATION):
             # Only Anomalous (1) images have masks in anomaly datasets
