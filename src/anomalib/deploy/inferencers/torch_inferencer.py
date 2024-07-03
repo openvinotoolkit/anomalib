@@ -18,6 +18,7 @@ from anomalib import TaskType
 from anomalib.data import LabelName
 from anomalib.data.utils import read_image
 from anomalib.data.utils.boxes import masks_to_boxes
+from anomalib.dataclasses import ImageBatch
 from anomalib.utils.visualization import ImageResult
 
 from .base_inferencer import Inferencer
@@ -188,15 +189,8 @@ class TorchInferencer(Inferencer):
         predictions = self.forward(processed_image)
         output = self.post_process(predictions, metadata=metadata)
 
-        return ImageResult(
-            image=(image.numpy().transpose(1, 2, 0) * 255).astype(np.uint8),
-            pred_score=output["pred_score"],
-            pred_label=output["pred_label"],
-            anomaly_map=output["anomaly_map"],
-            pred_mask=output["pred_mask"],
-            pred_boxes=output["pred_boxes"],
-            box_labels=output["box_labels"],
-        )
+        output.image = image
+        return output
 
     def pre_process(self, image: np.ndarray) -> torch.Tensor:
         """Pre process the input image.
@@ -313,11 +307,11 @@ class TorchInferencer(Inferencer):
             pred_boxes = None
             box_labels = None
 
-        return {
-            "anomaly_map": anomaly_map,
-            "pred_label": pred_label,
-            "pred_score": pred_score,
-            "pred_mask": pred_mask,
-            "pred_boxes": pred_boxes,
-            "box_labels": box_labels,
-        }
+        return ImageBatch(
+            anomaly_map=anomaly_map,
+            pred_score=pred_score,
+            pred_label=pred_label,
+            pred_mask=pred_mask,
+            pred_boxes=pred_boxes,
+            box_labels=box_labels,
+        )

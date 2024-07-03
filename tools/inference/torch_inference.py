@@ -11,12 +11,13 @@ import logging
 from argparse import ArgumentParser, Namespace
 from pathlib import Path
 
+import numpy as np
 import torch
 
 from anomalib.data.utils import generate_output_image_filename, get_image_filenames, read_image
 from anomalib.data.utils.image import save_image, show_image
 from anomalib.deploy import TorchInferencer
-from anomalib.utils.visualization import ImageVisualizer
+from anomalib.utils.visualization import ImageResult, ImageVisualizer
 
 logger = logging.getLogger(__name__)
 
@@ -83,7 +84,18 @@ def infer(args: Namespace) -> None:
     for filename in filenames:
         image = read_image(filename, as_tensor=True)
         predictions = inferencer.predict(image=image)
-        output = visualizer.visualize_image(predictions)
+
+        # this is temporary until we update the visualizer to take the dataclass directly.
+        image_result = ImageResult(
+            image=(predictions.image.numpy().transpose(1, 2, 0) * 255).astype(np.uint8),
+            pred_score=predictions.pred_score,
+            pred_label=predictions.pred_label,
+            anomaly_map=predictions.anomaly_map,
+            pred_mask=predictions.pred_mask,
+            pred_boxes=predictions.pred_boxes,
+            box_labels=predictions.box_labels,
+        )
+        output = visualizer.visualize_image(image_result)
 
         if args.output is None and args.show is False:
             msg = "Neither output path is provided nor show flag is set. Inferencer will run but return nothing."
