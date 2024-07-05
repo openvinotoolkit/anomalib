@@ -34,6 +34,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
+- Remove deprecated `pkg_resources` dependencies, install `packaging` instead by @davnn in (<https://github.com/openvinotoolkit/anomalib/pull/2082>)
+- WinCLIP: set device in text embedding collection and apply forward pass with no grad, by @djdameln in https://github.com/openvinotoolkit/anomalib/pull/1984
 - 🔨 Move all export functionalities to AnomalyModule as base methods by @thinhngo-x in (<https://github.com/openvinotoolkit/anomalib/pull/1803>)
 - ⬆️ Update torch and lightning package versions by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/1949
 - 🔨 Use default model-specific eval transform when only train_transform specified by @djdameln(https://github.com/djdameln) in (<https://github.com/openvinotoolkit/anomalib/pull/1953>)

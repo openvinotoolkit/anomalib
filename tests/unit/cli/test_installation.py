@@ -8,7 +8,7 @@ import tempfile
 from pathlib import Path
 
 import pytest
-from pkg_resources import Requirement
+from packaging.requirements import Requirement
 from pytest_mock import MockerFixture
 
 from anomalib.cli.utils.installation import (
