@@ -8,6 +8,7 @@ Utility functions that compute a PRO curve and its definite integral, given
 pairs of anomaly and ground truth maps.
 The PRO curve can also be integrated up to a constant integration limit.
 """
+
 import logging
 from bisect import bisect
 
