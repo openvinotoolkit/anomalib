@@ -5,15 +5,11 @@
 
 import logging
 
-from pkg_resources import Requirement
+from packaging.version import parse
 from rich.console import Console
 from rich.logging import RichHandler
 
-from anomalib.cli.utils.installation import (
-    get_requirements,
-    get_torch_install_args,
-    parse_requirements,
-)
+from anomalib.cli.utils.installation import get_requirements, get_torch_install_args, parse_requirements
 
 logger = logging.getLogger("pip")
 logger.setLevel(logging.WARNING)  # setLevel: CRITICAL, ERROR, WARNING, INFO, DEBUG, NOTSET
@@ -50,7 +46,7 @@ def anomalib_install(option: str = "full", verbose: bool = False) -> int:
     elif option in requirements_dict:
         requirements.extend(requirements_dict[option])
     elif option is not None:
-        requirements.append(Requirement.parse(option))
+        requirements.append(parse(option))
 
     # Parse requirements into torch and other requirements.
     # This is done to parse the correct version of torch (cpu/cuda).
