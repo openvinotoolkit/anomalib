@@ -1,0 +1,16 @@
+class SignificanceJobGenerator(JobGenerator):
+    """Generate SignificantFeatureJob."""
+
+    def generate_jobs(
+        self,
+        args: dict | None = None,
+        prev_stage_result: pd.DataFrame | None = None,
+    ) -> Generator[SignificantFeatureJob, None, None]:
+        """Generate Jobs via random selection."""
+        assert prev_stage_result is not None, "Previous stage result is required"
+        yield SignificantFeatureJob(metrics_df=prev_stage_result)
+
+    @property
+    def job_class(self) -> type:
+        """Return the job class."""
+        return SignificantFeatureJob
