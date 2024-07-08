@@ -664,10 +664,7 @@ def aupimo_scores(
     Returns:
         tuple[PIMOResult, AUPIMOResult]: PIMO and AUPIMO results dataclass objects. See `PIMOResult` and `AUPIMOResult`.
     """
-    _validate_is_anomaly_maps(anomaly_maps)
     anomaly_maps_array = anomaly_maps.detach().cpu().numpy()
-
-    _validate_is_masks(masks)
     masks_array = masks.detach().cpu().numpy()
 
     if paths is not None:
