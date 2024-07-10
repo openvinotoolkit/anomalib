@@ -63,7 +63,7 @@ class EfficientAd(AnomalyModule):
         self,
         imagenet_dir: Path | str = "./datasets/imagenette",
         teacher_out_channels: int = 384,
-        model_size: EfficientAdModelSize = EfficientAdModelSize.S,
+        model_size: str | EfficientAdModelSize = EfficientAdModelSize.S,
         lr: float = 0.0001,
         weight_decay: float = 0.00001,
         padding: bool = False,
@@ -72,10 +72,10 @@ class EfficientAd(AnomalyModule):
         super().__init__()
 
         self.imagenet_dir = Path(imagenet_dir)
-        self.model_size = model_size
+        self.model_size = EfficientAdModelSize(model_size)
         self.model: EfficientAdModel = EfficientAdModel(
             teacher_out_channels=teacher_out_channels,
-            model_size=model_size,
+            model_size=self.model_size,
             padding=padding,
             pad_maps=pad_maps,
         )

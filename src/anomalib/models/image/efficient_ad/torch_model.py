@@ -278,12 +278,12 @@ class EfficientAdModel(nn.Module):
     def __init__(
         self,
         teacher_out_channels: int,
-        model_size: EfficientAdModelSize = EfficientAdModelSize.S,
+        model_size: str | EfficientAdModelSize = EfficientAdModelSize.S,
         padding: bool = False,
         pad_maps: bool = True,
     ) -> None:
         super().__init__()
-
+        model_size = EfficientAdModelSize(model_size)
         self.pad_maps = pad_maps
         self.teacher: MediumPatchDescriptionNetwork | SmallPatchDescriptionNetwork
         self.student: MediumPatchDescriptionNetwork | SmallPatchDescriptionNetwork
