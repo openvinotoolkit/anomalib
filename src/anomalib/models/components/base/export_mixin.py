@@ -3,7 +3,6 @@
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 import json
 import logging
 from collections.abc import Callable, Iterable
@@ -428,9 +427,7 @@ class ExportMixin:
             for key, value in self.normalization_metrics.state_dict().items():
                 cached_metadata[key] = value.cpu()
         # Remove undefined values by copying in a new dict
-        for key, val in cached_metadata.items():
-            if not np.isinf(val).all():
-                model_metadata[key] = val
+        model_metadata = {key: val for key, val in cached_metadata.items() if not np.isinf(val).all()}
         del cached_metadata
         metadata = {"task": task, **model_metadata}
 

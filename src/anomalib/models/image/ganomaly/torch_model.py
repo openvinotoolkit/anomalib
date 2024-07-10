@@ -9,7 +9,6 @@ Code adapted from https://github.com/samet-akcay/ganomaly.
 # Copyright (C) 2020-2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 import math
 
 import torch
