@@ -293,7 +293,7 @@ def add_hardware_suffix_to_torch(
             Defaults to False.
 
     Examples:
-        >>> from packaging.requirements import Requirement
+        >>> from pkg_resources import Requirement
         >>> req = "torch>=1.13.0, <=2.0.1"
         >>> requirement = Requirement.parse(req)
         >>> requirement.name, requirement.specs
@@ -364,7 +364,7 @@ def get_torch_install_args(requirement: str | Requirement) -> list[str]:
         RuntimeError: If the OS is not supported.
 
     Example:
-        >>> from packaging.requirements import Requirement
+        >>> from pkg_resources import Requirement
         >>> requriment = "torch>=1.13.0"
         >>> get_torch_install_args(requirement)
         ['--extra-index-url', 'https://download.pytorch.org/whl/cpu',
