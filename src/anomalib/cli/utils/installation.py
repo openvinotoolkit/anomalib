@@ -11,13 +11,9 @@ import platform
 import re
 from importlib.metadata import requires
 from pathlib import Path
-from typing import TYPE_CHECKING
 from warnings import warn
 
-from packaging.version import parse
-
-if TYPE_CHECKING:
-    from packaging.requirements import Requirement
+from pkg_resources import Requirement
 
 AVAILABLE_TORCH_VERSIONS = {
     "2.0.0": {"torchvision": "0.15.1", "cuda": ("11.7", "11.8")},
@@ -54,7 +50,7 @@ def get_requirements(module: str = "anomalib") -> dict[str, list[Requirement]]:
         if isinstance(requirement_extra, list) and len(requirement_extra) > 1:
             extra = requirement_extra[-1].split("==")[-1].strip("'\"")
         _requirement_name = requirement_extra[0]
-        _requirement = parse(_requirement_name)
+        _requirement = Requirement.parse(_requirement_name)
         if extra in extra_requirement:
             extra_requirement[extra].append(_requirement)
         else:
@@ -77,12 +73,12 @@ def parse_requirements(
 
     Examples:
         >>> requirements = [
-        ...     parse("torch==1.13.0"),
-        ...     parse("onnx>=1.8.1"),
+        ...     Requirement.parse("torch==1.13.0"),
+        ...     Requirement.parse("onnx>=1.8.1"),
         ... ]
         >>> parse_requirements(requirements=requirements)
-        (parse("torch==1.13.0"),
-        parse("onnx>=1.8.1"))
+        (Requirement.parse("torch==1.13.0"),
+        Requirement.parse("onnx>=1.8.1"))
 
     Returns:
         tuple[str, list[str], list[str]]: Tuple of torch and other requirements.
@@ -299,7 +295,7 @@ def add_hardware_suffix_to_torch(
     Examples:
         >>> from packaging.requirements import Requirement
         >>> req = "torch>=1.13.0, <=2.0.1"
-        >>> requirement = parse(req)
+        >>> requirement = Requirement.parse(req)
         >>> requirement.name, requirement.specs
         ('torch', [('>=', '1.13.0'), ('<=', '2.0.1')])
 
@@ -308,13 +304,13 @@ def add_hardware_suffix_to_torch(
 
         ``with_available_torch_build=True`` will use the latest available PyTorch build.
         >>> req = "torch==2.0.1"
-        >>> requirement = parse(req)
+        >>> requirement = Requirement.parse(req)
         >>> add_hardware_suffix_to_torch(requirement, with_available_torch_build=True)
         'torch==2.0.1+cu118'
 
         It is possible to pass the ``hardware_suffix`` manually.
         >>> req = "torch==2.0.1"
-        >>> requirement = parse(req)
+        >>> requirement = Requirement.parse(req)
         >>> add_hardware_suffix_to_torch(requirement, hardware_suffix="cu121")
         'torch==2.0.1+cu111'
 
@@ -378,7 +374,7 @@ def get_torch_install_args(requirement: str | Requirement) -> list[str]:
         list[str]: The install arguments.
     """
     if isinstance(requirement, str):
-        requirement = parse(requirement)
+        requirement = Requirement.parse(requirement)
 
     # NOTE: This does not take into account if the requirement has multiple versions
     #   such as torch<2.0.1,>=1.13.0
