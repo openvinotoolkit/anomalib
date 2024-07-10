@@ -147,13 +147,13 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
 
     def _save_to_state_dict(self, destination: OrderedDict, prefix: str, keep_vars: bool) -> None:
         if hasattr(self, "image_threshold"):
-            destination[
-                "image_threshold_class"
-            ] = f"{self.image_threshold.__class__.__module__}.{self.image_threshold.__class__.__name__}"
+            destination["image_threshold_class"] = (
+                f"{self.image_threshold.__class__.__module__}.{self.image_threshold.__class__.__name__}"
+            )
         if hasattr(self, "pixel_threshold"):
-            destination[
-                "pixel_threshold_class"
-            ] = f"{self.pixel_threshold.__class__.__module__}.{self.pixel_threshold.__class__.__name__}"
+            destination["pixel_threshold_class"] = (
+                f"{self.pixel_threshold.__class__.__module__}.{self.pixel_threshold.__class__.__name__}"
+            )
         if hasattr(self, "normalization_metrics"):
             normalization_class = self.normalization_metrics.__class__
             destination["normalization_class"] = f"{normalization_class.__module__}.{normalization_class.__name__}"
