@@ -138,7 +138,6 @@ class CflowModel(nn.Module):
                 # decoder returns the transformed variable z and the log Jacobian determinant
                 with torch.no_grad():
                     p_u, log_jac_det = decoder(e_p, [c_p])
-                #
                 decoder_log_prob = get_logp(dim_feature_vector, p_u, log_jac_det)
                 log_prob = decoder_log_prob / dim_feature_vector  # likelihood per dim
                 distribution[layer_idx] = torch.cat((distribution[layer_idx], log_prob))

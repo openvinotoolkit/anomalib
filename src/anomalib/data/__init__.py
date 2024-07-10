@@ -28,8 +28,7 @@ DataFormat = Enum(  # type: ignore[misc]
 )
 
 
-class UnknownDatamoduleError(ModuleNotFoundError):
-    ...
+class UnknownDatamoduleError(ModuleNotFoundError): ...
 
 
 def get_datamodule(config: DictConfig | ListConfig | dict) -> AnomalibDataModule:

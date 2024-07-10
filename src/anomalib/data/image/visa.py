@@ -21,7 +21,6 @@ Reference:
 # Subset splitting code adapted from https://github.com/amazon-science/spot-diff
 # Original licence: Apache-2.0
 
-
 import csv
 import logging
 import shutil
