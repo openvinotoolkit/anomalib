@@ -3,7 +3,6 @@
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 import torch
 from matplotlib import pyplot as plt
 from matplotlib.axis import Axis
