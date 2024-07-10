@@ -22,7 +22,7 @@ class CacheRichLiveState:
 
     def __init__(self) -> None:
         self.console = get_console()
-        self.live: "Live" | None = None
+        self.live: Live | None = None
 
     def __enter__(self) -> None:
         """Save the live state of the console."""
