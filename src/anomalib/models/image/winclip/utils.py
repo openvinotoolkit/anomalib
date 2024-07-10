@@ -204,7 +204,7 @@ def make_masks(grid_size: tuple[int, int], kernel_size: int, stride: int = 1) ->
     """
     if any(dim < kernel_size for dim in grid_size):
         msg = (
-            f"Each dimension of the grid size must be greater than or equal to"
+            "Each dimension of the grid size must be greater than or equal to "
             f"the kernel size. Got grid size {grid_size} and kernel size {kernel_size}."
         )
         raise ValueError(msg)
