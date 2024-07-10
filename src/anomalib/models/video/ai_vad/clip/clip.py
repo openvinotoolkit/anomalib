@@ -18,7 +18,7 @@ from urllib.parse import urlparse
 import requests
 import torch
 from PIL import Image
-from pkg_resources import packaging
+from packaging import version
 from torchvision.transforms import CenterCrop, Compose, Normalize, Resize, ToTensor
 from tqdm import tqdm
 
@@ -33,7 +33,7 @@ except ImportError:
     BICUBIC = Image.BICUBIC
 
 
-if packaging.version.parse(torch.__version__) < packaging.version.parse("1.7.1"):
+if version.parse(torch.__version__) < version.parse("1.7.1"):
     msg = "PyTorch version 1.7.1 or higher is recommended"
     logger.warn(msg)
 
@@ -84,9 +84,10 @@ def _download(url: str, root: str):
 
     total_size = int(response.headers.get("Content-Length", 0))
 
-    with open(download_target, "wb") as file, tqdm(
-        total=total_size, ncols=80, unit="iB", unit_scale=True, unit_divisor=1024
-    ) as loop:
+    with (
+        open(download_target, "wb") as file,
+        tqdm(total=total_size, ncols=80, unit="iB", unit_scale=True, unit_divisor=1024) as loop,
+    ):
         for chunk in response.iter_content(chunk_size=8192):
             if chunk:
                 file.write(chunk)

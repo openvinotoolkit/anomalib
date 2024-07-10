@@ -19,7 +19,6 @@ Reference:
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 import logging
 from collections.abc import Sequence
 from pathlib import Path
