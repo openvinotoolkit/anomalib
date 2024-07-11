@@ -15,12 +15,12 @@ from lightning.pytorch.utilities.types import STEP_OUTPUT
 
 from anomalib.data.utils.image import save_image, show_image
 from anomalib.loggers import AnomalibWandbLogger
-from anomalib.loggers.base import ImageLoggerBase
-from anomalib.models import AnomalyModule
+from anomalib.loggers.base import ImageLogger
+from anomalib.models import AnomalibModule
 from anomalib.utils.visualization import (
-    BaseVisualizer,
     GeneratorResult,
     VisualizationStep,
+    Visualizer,
 )
 
 logger = logging.getLogger(__name__)
@@ -30,7 +30,7 @@ class _VisualizationCallback(Callback):
     """Callback for visualization that is used internally by the Engine.
 
     Args:
-        visualizers (BaseVisualizer | list[BaseVisualizer]):
+        visualizers (Visualizer | list[Visualizer]):
             Visualizer objects that are used for computing the visualizations. Defaults to None.
         save (bool, optional): Save the image. Defaults to False.
         root (Path | None, optional): The path to save the images. Defaults to None.
@@ -59,7 +59,7 @@ class _VisualizationCallback(Callback):
 
     def __init__(
         self,
-        visualizers: BaseVisualizer | list[BaseVisualizer],
+        visualizers: Visualizer | list[Visualizer],
         save: bool = False,
         root: Path | None = None,
         log: bool = False,
@@ -77,7 +77,7 @@ class _VisualizationCallback(Callback):
     def on_test_batch_end(
         self,
         trainer: Trainer,
-        pl_module: AnomalyModule,
+        pl_module: AnomalibModule,
         outputs: STEP_OUTPUT | None,
         batch: Any,  # noqa: ANN401
         batch_idx: int,
@@ -114,7 +114,7 @@ class _VisualizationCallback(Callback):
                     if self.log:
                         self._add_to_logger(result, pl_module, trainer)
 
-    def on_test_end(self, trainer: Trainer, pl_module: AnomalyModule) -> None:
+    def on_test_end(self, trainer: Trainer, pl_module: AnomalibModule) -> None:
         for generator in self.generators:
             if generator.visualize_on == VisualizationStep.STAGE_END:
                 for result in generator(trainer=trainer, pl_module=pl_module):
@@ -135,7 +135,7 @@ class _VisualizationCallback(Callback):
     def on_predict_batch_end(
         self,
         trainer: Trainer,
-        pl_module: AnomalyModule,
+        pl_module: AnomalibModule,
         outputs: STEP_OUTPUT | None,
         batch: Any,  # noqa: ANN401
         batch_idx: int,
@@ -143,13 +143,13 @@ class _VisualizationCallback(Callback):
     ) -> None:
         return self.on_test_batch_end(trainer, pl_module, outputs, batch, batch_idx, dataloader_idx)
 
-    def on_predict_end(self, trainer: Trainer, pl_module: AnomalyModule) -> None:
+    def on_predict_end(self, trainer: Trainer, pl_module: AnomalibModule) -> None:
         return self.on_test_end(trainer, pl_module)
 
     def _add_to_logger(
         self,
         result: GeneratorResult,
-        module: AnomalyModule,
+        module: AnomalibModule,
         trainer: Trainer,
     ) -> None:
         """Add image to logger.
@@ -172,8 +172,8 @@ class _VisualizationCallback(Callback):
         image = result.image
         for log_to in available_loggers:
             # check if logger object is same as the requested object
-            if isinstance(available_loggers[log_to], ImageLoggerBase):
-                logger: ImageLoggerBase = cast(ImageLoggerBase, available_loggers[log_to])  # placate mypy
+            if isinstance(available_loggers[log_to], ImageLogger):
+                logger: ImageLogger = cast(ImageLogger, available_loggers[log_to])  # placate mypy
                 _name = filename.parent.name + "_" + filename.name if isinstance(filename, Path) else filename
                 logger.add_image(
                     image=image,

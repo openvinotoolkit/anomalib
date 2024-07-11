@@ -12,10 +12,10 @@ except ModuleNotFoundError:
     print("To use comet logger install it using `pip install comet-ml`")
 from lightning.pytorch.utilities import rank_zero_only
 
-from .base import ImageLoggerBase
+from .base import ImageLogger
 
 
-class AnomalibCometLogger(ImageLoggerBase, CometLogger):
+class AnomalibCometLogger(ImageLogger, CometLogger):
     """Logger for comet.
 
     Adds interface for ``add_image`` in the logger rather than calling the

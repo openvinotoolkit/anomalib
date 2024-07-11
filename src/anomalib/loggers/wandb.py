@@ -13,7 +13,7 @@ from matplotlib.figure import Figure
 
 from anomalib.utils.exceptions import try_import
 
-from .base import ImageLoggerBase
+from .base import ImageLogger
 
 if try_import("wandb"):
     import wandb
@@ -23,7 +23,7 @@ if TYPE_CHECKING:
     from wandb.sdk.wandb_run import Run
 
 
-class AnomalibWandbLogger(ImageLoggerBase, WandbLogger):
+class AnomalibWandbLogger(ImageLogger, WandbLogger):
     """Logger for wandb.
 
     Adds interface for `add_image` in the logger rather than calling the experiment object.

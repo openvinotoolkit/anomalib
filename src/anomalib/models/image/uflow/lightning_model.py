@@ -17,7 +17,7 @@ from torch.optim.lr_scheduler import LRScheduler
 from torchvision.transforms.v2 import Compose, Normalize, Resize, Transform
 
 from anomalib import LearningType
-from anomalib.models.components import AnomalyModule
+from anomalib.models.components import AnomalibModule
 
 from .loss import UFlowLoss
 from .torch_model import UflowModel
@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 __all__ = ["Uflow"]
 
 
-class Uflow(AnomalyModule):
+class Uflow(AnomalibModule):
     """PL Lightning Module for the UFLOW algorithm."""
 
     def __init__(

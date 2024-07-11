@@ -19,7 +19,7 @@ from torchvision.transforms.v2 import CenterCrop, Compose, Normalize, RandomGray
 
 from anomalib import LearningType
 from anomalib.data.utils import DownloadInfo, download_and_extract
-from anomalib.models.components import AnomalyModule
+from anomalib.models.components import AnomalibModule
 
 from .torch_model import EfficientAdModel, EfficientAdModelSize, reduce_tensor_elems
 
@@ -38,7 +38,7 @@ WEIGHTS_DOWNLOAD_INFO = DownloadInfo(
 )
 
 
-class EfficientAd(AnomalyModule):
+class EfficientAd(AnomalibModule):
     """PL Lightning Module for the EfficientAd algorithm.
 
     Args:

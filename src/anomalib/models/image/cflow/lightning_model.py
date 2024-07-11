@@ -22,13 +22,13 @@ from torch.nn import functional as F  # noqa: N812
 from torch.optim import Optimizer
 
 from anomalib import LearningType
-from anomalib.models.components import AnomalyModule
+from anomalib.models.components import AnomalibModule
 
 from .torch_model import CflowModel
 from .utils import get_logp, positional_encoding_2d
 
 
-class Cflow(AnomalyModule):
+class Cflow(AnomalibModule):
     """PL Lightning Module for the CFLOW algorithm.
 
     Args:

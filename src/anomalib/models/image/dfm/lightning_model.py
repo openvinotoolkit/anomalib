@@ -13,14 +13,14 @@ import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 
 from anomalib import LearningType
-from anomalib.models.components import AnomalyModule, MemoryBankMixin
+from anomalib.models.components import AnomalibModule, MemoryBankMixin
 
 from .torch_model import DFMModel
 
 logger = logging.getLogger(__name__)
 
 
-class Dfm(MemoryBankMixin, AnomalyModule):
+class Dfm(MemoryBankMixin, AnomalibModule):
     """DFM: Deep Featured Kernel Density Estimation.
 
     Args:

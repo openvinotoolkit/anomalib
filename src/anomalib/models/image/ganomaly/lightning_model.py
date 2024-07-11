@@ -14,7 +14,7 @@ from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torch import optim
 
 from anomalib import LearningType
-from anomalib.models.components import AnomalyModule
+from anomalib.models.components import AnomalibModule
 
 from .loss import DiscriminatorLoss, GeneratorLoss
 from .torch_model import GanomalyModel
@@ -22,7 +22,7 @@ from .torch_model import GanomalyModel
 logger = logging.getLogger(__name__)
 
 
-class Ganomaly(AnomalyModule):
+class Ganomaly(AnomalibModule):
     """PL Lightning Module for the GANomaly Algorithm.
 
     Args:

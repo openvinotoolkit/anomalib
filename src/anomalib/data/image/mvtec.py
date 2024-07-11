@@ -34,7 +34,7 @@ from torchvision.transforms.v2 import Transform
 
 from anomalib import TaskType
 from anomalib.data.base import AnomalibDataModule, AnomalibDataset
-from anomalib.data.errors import MisMatchError
+from anomalib.data.errors import MismatchError
 from anomalib.data.utils import (
     DownloadInfo,
     LabelName,
@@ -162,7 +162,7 @@ def make_mvtec_dataset(
         msg = """Mismatch between anomalous images and ground truth masks. Make sure t
         he mask files in 'ground_truth' folder follow the same naming convention as the
         anomalous images in the dataset (e.g. image: '000.png', mask: '000.png' or '000_mask.png')."""
-        raise MisMatchError(msg)
+        raise MismatchError(msg)
 
     if split:
         samples = samples[samples.split == split].reset_index(drop=True)

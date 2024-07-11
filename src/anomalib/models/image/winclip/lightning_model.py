@@ -17,7 +17,7 @@ from torchvision.transforms.v2 import Compose, InterpolationMode, Normalize, Res
 
 from anomalib import LearningType
 from anomalib.data.predict import PredictDataset
-from anomalib.models.components import AnomalyModule
+from anomalib.models.components import AnomalibModule
 
 from .torch_model import WinClipModel
 
@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 __all__ = ["WinClip"]
 
 
-class WinClip(AnomalyModule):
+class WinClip(AnomalibModule):
     """WinCLIP Lightning model.
 
     Args:

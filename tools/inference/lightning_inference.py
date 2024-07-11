@@ -10,7 +10,7 @@ from torch.utils.data import DataLoader
 
 from anomalib.data import PredictDataset
 from anomalib.engine import Engine
-from anomalib.models import AnomalyModule, get_model
+from anomalib.models import AnomalibModule, get_model
 
 
 def get_parser() -> LightningArgumentParser:
@@ -20,7 +20,7 @@ def get_parser() -> LightningArgumentParser:
         LightningArgumentParser: The parser object.
     """
     parser = LightningArgumentParser(description="Inference on Anomaly models in Lightning format.")
-    parser.add_lightning_class_args(AnomalyModule, "model", subclass_mode=True)
+    parser.add_lightning_class_args(AnomalibModule, "model", subclass_mode=True)
     parser.add_lightning_class_args(Callback, "--callbacks", subclass_mode=True, required=False)
     parser.add_argument("--ckpt_path", type=str, required=True, help="Path to model weights")
     parser.add_class_arguments(PredictDataset, "--data", instantiate=False)
