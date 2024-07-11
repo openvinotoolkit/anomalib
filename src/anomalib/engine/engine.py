@@ -434,7 +434,6 @@ class Engine:
         _callbacks.append(
             _VisualizationCallback(
                 visualizers=ImageVisualizer(task=self.task),
-                show=True,
                 save=True,
                 root=self._cache.args["default_root_dir"] / "images",
             ),
