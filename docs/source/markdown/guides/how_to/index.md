@@ -57,6 +57,8 @@ Learn more about anomalib's deployment capabilities
 :::
 
 :::{grid-item-card} {octicon}`workflow` Pipelines
+:link: ./pipelines/index
+:link-type: doc
 
 Learn more about anomalib hpo, sweep and benchmarking pipelines
 :::
@@ -69,4 +71,5 @@ Learn more about anomalib hpo, sweep and benchmarking pipelines
 
 ./data/index
 ./models/index
+./pipelines/index
 ```

@@ -1,4 +1,5 @@
 name: Pre-Merge Checks
+permissions: read-all
 
 on:
   push:
@@ -18,7 +19,7 @@ concurrency:
 
 jobs:
   Code-Quality-Checks:
-    runs-on: [self-hosted, linux, x64, anomalib]
+    runs-on: ubuntu-20.04
     steps:
       - name: CHECKOUT REPOSITORY
         uses: actions/checkout@v4
@@ -80,6 +81,6 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
-      - uses: AlexanderDokuchaev/md-dead-link-check@v0.8
+      - uses: AlexanderDokuchaev/md-dead-link-check@v0.9
         with:
           config: pyproject.toml

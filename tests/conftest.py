@@ -3,7 +3,6 @@
 # Copyright (C) 2023-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 import shutil
 from collections.abc import Callable, Generator
 from pathlib import Path

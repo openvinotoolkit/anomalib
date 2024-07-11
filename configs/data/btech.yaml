@@ -1,6 +1,6 @@
 class_path: anomalib.data.BTech
 init_args:
-  root: "./dtasets/BTech"
+  root: "./datasets/BTech"
   category: "01"
   train_batch_size: 32
   eval_batch_size: 32
