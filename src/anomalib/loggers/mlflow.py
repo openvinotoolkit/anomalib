@@ -1,5 +1,6 @@
 """MLFlow logger with add image interface."""
 
+import os
 from typing import Literal
 
 import numpy as np
