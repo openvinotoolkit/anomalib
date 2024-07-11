@@ -24,98 +24,6 @@ from anomalib.data.utils import (
 from anomalib.data.utils.path import _prepare_files_labels, validate_and_resolve_path
 
 
-def make_path_dirs(
-    normal_dir: str | Path,
-    abnormal_dir: str | Path | None = None,
-    normal_test_dir: str | Path | None = None,
-    mask_dir: str | Path | None = None,
-    normal_depth_dir: str | Path | None = None,
-    abnormal_depth_dir: str | Path | None = None,
-    normal_test_depth_dir: str | Path | None = None,
-) -> dict:
-    """Create a dictionary containing paths to different directories."""
-    dirs = {DirType.NORMAL: normal_dir}
-
-    if abnormal_dir:
-        dirs[DirType.ABNORMAL] = abnormal_dir
-
-    if normal_test_dir:
-        dirs[DirType.NORMAL_TEST] = normal_test_dir
-
-    if normal_depth_dir:
-        dirs[DirType.NORMAL_DEPTH] = normal_depth_dir
-
-    if abnormal_depth_dir:
-        dirs[DirType.ABNORMAL_DEPTH] = abnormal_depth_dir
-
-    if normal_test_depth_dir:
-        dirs[DirType.NORMAL_TEST_DEPTH] = normal_test_depth_dir
-
-    if mask_dir:
-        dirs[DirType.MASK] = mask_dir
-    return dirs
-
-
-def add_mask(
-    samples: DataFrame,
-    normal_depth_dir: str | Path | None = None,
-    abnormal_dir: str | Path | None = None,
-    normal_test_dir: str | Path | None = None,
-    mask_dir: str | Path | None = None,
-) -> DataFrame:
-    """If a path to mask is provided, add it to the sample dataframe."""
-    if normal_depth_dir:
-        samples.loc[samples.label == DirType.NORMAL, "depth_path"] = samples.loc[
-            samples.label == DirType.NORMAL_DEPTH
-        ].image_path.to_numpy()
-        samples.loc[samples.label == DirType.ABNORMAL, "depth_path"] = samples.loc[
-            samples.label == DirType.ABNORMAL_DEPTH
-        ].image_path.to_numpy()
-
-        if normal_test_dir:
-            samples.loc[samples.label == DirType.NORMAL_TEST, "depth_path"] = samples.loc[
-                samples.label == DirType.NORMAL_TEST_DEPTH
-            ].image_path.to_numpy()
-
-        # make sure every rgb image has a corresponding depth image and that the file exists
-        mismatch = (
-            samples.loc[samples.label_index == LabelName.ABNORMAL]
-            .apply(lambda x: Path(x.image_path).stem in Path(x.depth_path).stem, axis=1)
-            .all()
-        )
-        if not mismatch:
-            msg = """Mismatch between anomalous images and depth images. Make sure the mask files
-            in 'xyz' folder follow the same naming convention as the anomalous images in the dataset
-            (e.g. image: '000.png', depth: '000.tiff')."""
-            raise MisMatchError(msg)
-
-        missing_depth_files = samples.depth_path.apply(
-            lambda x: Path(x).exists() if not isna(x) else True,
-        ).all()
-        if not missing_depth_files:
-            msg = "Missing depth image files."
-            raise FileNotFoundError(msg)
-
-        samples = samples.astype({"depth_path": "str"})
-
-    if mask_dir and abnormal_dir:
-        samples.loc[samples.label == DirType.ABNORMAL, "mask_path"] = samples.loc[
-            samples.label == DirType.MASK
-        ].image_path.to_numpy()
-        samples["mask_path"] = samples["mask_path"].fillna("")
-        samples = samples.astype({"mask_path": "str"})
-
-        # make sure all the files exist
-        if not samples.mask_path.apply(
-            lambda x: Path(x).exists() if x != "" else True,
-        ).all():
-            msg = f"Missing mask files. mask_dir={mask_dir}"
-            raise FileNotFoundError(msg)
-    else:
-        samples["mask_path"] = ""
-    return samples
-
-
 def make_folder3d_dataset(
     normal_dir: str | Path,
     root: str | Path | None = None,
@@ -170,27 +78,28 @@ def make_folder3d_dataset(
         msg = "A folder location must be provided in normal_dir."
         raise ValueError(msg)
 
-    filenames = []
-    labels = []
-    dirs = make_path_dirs(
-        normal_dir,
-        abnormal_dir,
-        normal_test_dir,
-        mask_dir,
-        normal_depth_dir,
-        abnormal_depth_dir,
-        normal_test_depth_dir,
-    )
+    dirs = {
+        DirType.NORMAL: normal_dir,
+        DirType.ABNORMAL: abnormal_dir,
+        DirType.NORMAL_TEST: normal_test_dir,
+        DirType.NORMAL_DEPTH: normal_depth_dir,
+        DirType.ABNORMAL_DEPTH: abnormal_depth_dir,
+        DirType.NORMAL_TEST_DEPTH: normal_test_depth_dir,
+        DirType.MASK: mask_dir,
+    }
 
-    for dir_type, path in dirs.items():
-        filename, label = _prepare_files_labels(path, dir_type, extensions)
-        filenames += filename
-        labels += label
+    filenames: list[Path] = []
+    labels: list[str] = []
+
+    for dir_type, dir_path in dirs.items():
+        if dir_path is not None:
+            filename, label = _prepare_files_labels(dir_path, dir_type, extensions)
+            filenames += filename
+            labels += label
 
     samples = DataFrame({"image_path": filenames, "label": labels})
     samples = samples.sort_values(by="image_path", ignore_index=True)
 
-    # Create label index for normal (0) and abnormal (1) images.
     samples.loc[
         (samples.label == DirType.NORMAL) | (samples.label == DirType.NORMAL_TEST),
         "label_index",
@@ -199,9 +108,61 @@ def make_folder3d_dataset(
     samples.label_index = samples.label_index.astype("Int64")
 
     # If a path to mask is provided, add it to the sample dataframe.
-    samples = add_mask(samples, normal_depth_dir, abnormal_dir, normal_test_dir, mask_dir)
+    if normal_depth_dir:
+        samples.loc[samples.label == DirType.NORMAL, "depth_path"] = samples.loc[
+            samples.label == DirType.NORMAL_DEPTH
+        ].image_path.to_numpy()
+        samples.loc[samples.label == DirType.ABNORMAL, "depth_path"] = samples.loc[
+            samples.label == DirType.ABNORMAL_DEPTH
+        ].image_path.to_numpy()
 
-    # remove all the rows with temporal image samples that have already been assigned
+        if normal_test_dir:
+            samples.loc[samples.label == DirType.NORMAL_TEST, "depth_path"] = samples.loc[
+                samples.label == DirType.NORMAL_TEST_DEPTH
+            ].image_path.to_numpy()
+
+        # make sure every rgb image has a corresponding depth image and that the file exists
+        mismatch = (
+            samples.loc[samples.label_index == LabelName.ABNORMAL]
+            .apply(lambda x: Path(x.image_path).stem in Path(x.depth_path).stem, axis=1)
+            .all()
+        )
+        if not mismatch:
+            msg = (
+                "Mismatch between anomalous images and depth images. "
+                "Make sure the mask files in 'xyz' folder follow the same naming "
+                "convention as the anomalous images in the dataset"
+                "(e.g. image: '000.png', depth: '000.tiff')."
+            )
+            raise MisMatchError(msg)
+
+        missing_depth_files = samples.depth_path.apply(
+            lambda x: Path(x).exists() if not isna(x) else True,
+        ).all()
+        if not missing_depth_files:
+            msg = "Missing depth image files."
+            raise FileNotFoundError(msg)
+
+        samples = samples.astype({"depth_path": "str"})
+
+    # If a path to mask is provided, add it to the sample dataframe.
+    if mask_dir and abnormal_dir:
+        samples.loc[samples.label == DirType.ABNORMAL, "mask_path"] = samples.loc[
+            samples.label == DirType.MASK
+        ].image_path.to_numpy()
+        samples["mask_path"] = samples["mask_path"].fillna("")
+        samples = samples.astype({"mask_path": "str"})
+
+        # Make sure all the files exist
+        if not samples.mask_path.apply(
+            lambda x: Path(x).exists() if x != "" else True,
+        ).all():
+            msg = f"Missing mask files. mask_dir={mask_dir}"
+            raise FileNotFoundError(msg)
+    else:
+        samples["mask_path"] = ""
+
+    # Remove all the rows with temporal image samples that have already been assigned
     samples = samples.loc[
         (samples.label == DirType.NORMAL) | (samples.label == DirType.ABNORMAL) | (samples.label == DirType.NORMAL_TEST)
     ]
