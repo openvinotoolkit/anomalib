@@ -27,7 +27,6 @@ from torchvision.transforms.v2 import (
 from anomalib import LearningType
 from torch.utils.data import DataLoader
 from anomalib.models.components import AnomalyModule
-from anomalib.engine.engine import UnassignedError
 
 # from .torch_model import openAI # TODO: This is necesary
 
@@ -211,6 +210,8 @@ class Llm(AnomalyModule):
         self.model_str = model_str
         # OpenAI API Key
         if not openai_key:
+            from anomalib.engine.engine import UnassignedError
+
             msg = "OpenAI key not found."
             raise UnassignedError(msg)
 
@@ -236,7 +237,10 @@ class Llm(AnomalyModule):
         return
 
     def validation_step(
-        self, batch: dict[str, str | list[str] | torch.Tensor], *args, **kwargs
+        self,
+        batch: dict[str, str | list[str] | torch.Tensor],
+        *args,
+        **kwargs,
     ) -> STEP_OUTPUT:
         """Get batch of anomaly maps from input image batch.
 
@@ -284,7 +288,6 @@ class Llm(AnomalyModule):
             out_list.append(output)
             pred_list.append(prediction)
             logging.debug(f"Output: {output}, Prediction: {prediction}")
-            # print( f"img_path:{batch['image_path'][i]}, Output: {output}, Prediction: {prediction}")
 
         batch["str_output"] = out_list
         batch["pred_scores"] = torch.tensor(pred_list).to(self.device)
