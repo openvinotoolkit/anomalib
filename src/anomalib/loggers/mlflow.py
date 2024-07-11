@@ -2,7 +2,6 @@
 
 from typing import Literal
 
-import os
 import numpy as np
 from lightning.pytorch.loggers.mlflow import MLFlowLogger
 from lightning.pytorch.utilities import rank_zero_only
