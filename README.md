@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="https://raw.githubusercontent.com/openvinotoolkit/anomalib/main/docs/source/_static/images/logos/anomalib-wide-blue.png" width="600px">
+<img src="https://raw.githubusercontent.com/openvinotoolkit/anomalib/main/docs/source/_static/images/logos/anomalib-wide-blue.png" width="600px" alt="Anomalib Logo">
 
 **A library for benchmarking, developing and deploying deep learning anomaly detection algorithms**
 
@@ -30,7 +30,7 @@
 Anomalib is a deep learning library that aims to collect state-of-the-art anomaly detection algorithms for benchmarking on both public and private datasets. Anomalib provides several ready-to-use implementations of anomaly detection algorithms described in the recent literature, as well as a set of tools that facilitate the development and implementation of custom models. The library has a strong focus on visual anomaly detection, where the goal of the algorithm is to detect and/or localize anomalies within images or videos in a dataset. Anomalib is constantly updated with new algorithms and training/inference extensions, so keep checking!
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/openvinotoolkit/anomalib/main/docs/source/_static/images/readme.png" width="1000">
+  <img src="https://raw.githubusercontent.com/openvinotoolkit/anomalib/main/docs/source/_static/images/readme.png" width="1000" alt="A prediction made by anomalib">
 </p>
 
 ## Key features
@@ -304,5 +304,5 @@ For those who would like to contribute to the library, see [CONTRIBUTING.md](CON
 Thank you to all of the people who have already made a contribution - we appreciate your support!
 
 <a href="https://github.com/openvinotoolkit/anomalib/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=openvinotoolkit/anomalib" />
+  <img src="https://contrib.rocks/image?repo=openvinotoolkit/anomalib" alt="Contributors to openvinotoolkit/anomalib" />
 </a>

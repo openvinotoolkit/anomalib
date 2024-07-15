@@ -6,7 +6,6 @@ Sparse Random Projection using PyTorch Operations
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 import numpy as np
 import torch
 from sklearn.utils.random import sample_without_replacement
