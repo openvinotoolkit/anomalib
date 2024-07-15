@@ -81,5 +81,11 @@ def redirect_logs(log_file: str) -> None:
     logging.captureWarnings(capture=True)
     # remove other handlers from all loggers
     loggers = [logging.getLogger(name) for name in logging.root.manager.loggerDict]
-    for _logger in loggers:
-        _logger.handlers = [logger_file_handler]
+    include_loggers = ("anomalib", "torch", "lightning")
+    exclude_loggers = ("comet_ml", "wandb")
+    # Exclude comet_ml and wandb loggers from the redirection otherwise HPO hangs
+    for logger in loggers:
+        if not any(name in logger.name for name in exclude_loggers) and any(
+            name in logger.name for name in include_loggers
+        ):
+            logger.handlers = [logger_file_handler]
