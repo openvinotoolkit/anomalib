@@ -76,7 +76,7 @@ class _MetricsCallback(Callback):
         pixel_metric_names: list[str] | dict[str, dict[str, Any]]
         if self.pixel_metric_names is None:
             pixel_metric_names = []
-        elif self.task == TaskType.CLASSIFICATION:
+        elif self.task in (TaskType.CLASSIFICATION, TaskType.EXPLANATION):
             pixel_metric_names = []
             logger.warning(
                 "Cannot perform pixel-level evaluation when task type is classification. "
@@ -89,14 +89,23 @@ class _MetricsCallback(Callback):
             )
 
         if isinstance(pl_module, AnomalyModule):
-            pl_module.image_metrics = create_metric_collection(image_metric_names, "image_")
-            if hasattr(pl_module, "pixel_metrics"):  # incase metrics are loaded from model checkpoint
+            pl_module.image_metrics = create_metric_collection(
+                image_metric_names,
+                "image_",
+            )
+            if hasattr(
+                pl_module,
+                "pixel_metrics",
+            ):  # incase metrics are loaded from model checkpoint
                 new_metrics = create_metric_collection(pixel_metric_names)
                 for name in new_metrics:
                     if name not in pl_module.pixel_metrics:
                         pl_module.pixel_metrics.add_metrics(new_metrics[name])
             else:
-                pl_module.pixel_metrics = create_metric_collection(pixel_metric_names, "pixel_")
+                pl_module.pixel_metrics = create_metric_collection(
+                    pixel_metric_names,
+                    "pixel_",
+                )
             self._set_threshold(pl_module)
 
     def on_validation_epoch_start(
@@ -122,7 +131,11 @@ class _MetricsCallback(Callback):
 
         if outputs is not None:
             self._outputs_to_device(outputs)
-            self._update_metrics(pl_module.image_metrics, pl_module.pixel_metrics, outputs)
+            self._update_metrics(
+                pl_module.image_metrics,
+                pl_module.pixel_metrics,
+                outputs,
+            )
 
     def on_validation_epoch_end(
         self,
@@ -157,7 +170,11 @@ class _MetricsCallback(Callback):
 
         if outputs is not None:
             self._outputs_to_device(outputs)
-            self._update_metrics(pl_module.image_metrics, pl_module.pixel_metrics, outputs)
+            self._update_metrics(
+                pl_module.image_metrics,
+                pl_module.pixel_metrics,
+                outputs,
+            )
 
     def on_test_epoch_end(
         self,
@@ -182,7 +199,10 @@ class _MetricsCallback(Callback):
         image_metric.update(output["pred_scores"], output["label"].int())
         if "mask" in output and "anomaly_maps" in output:
             pixel_metric.to(self.device)
-            pixel_metric.update(torch.squeeze(output["anomaly_maps"]), torch.squeeze(output["mask"].int()))
+            pixel_metric.update(
+                torch.squeeze(output["anomaly_maps"]),
+                torch.squeeze(output["mask"].int()),
+            )
 
     def _outputs_to_device(self, output: STEP_OUTPUT) -> STEP_OUTPUT | dict[str, Any]:
         if isinstance(output, dict):

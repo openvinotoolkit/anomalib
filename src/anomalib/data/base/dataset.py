@@ -17,13 +17,14 @@ from torchvision.transforms.v2 import Transform
 from torchvision.tv_tensors import Mask
 
 from anomalib import TaskType
-from anomalib.data.utils import (LabelName, masks_to_boxes, read_image,
-                                 read_mask)
+from anomalib.data.utils import LabelName, masks_to_boxes, read_image, read_mask
 
 _EXPECTED_COLUMNS_CLASSIFICATION = ["image_path", "split"]
+_EXPECTED_COLUMNS_EXPLANATION = ["image_path", "split"]
 _EXPECTED_COLUMNS_SEGMENTATION = [*_EXPECTED_COLUMNS_CLASSIFICATION, "mask_path"]
 _EXPECTED_COLUMNS_PERTASK = {
     "classification": _EXPECTED_COLUMNS_CLASSIFICATION,
+    "explanation": _EXPECTED_COLUMNS_EXPLANATION,
     "segmentation": _EXPECTED_COLUMNS_SEGMENTATION,
     "detection": _EXPECTED_COLUMNS_SEGMENTATION,
 }
@@ -63,7 +64,9 @@ class AnomalibDataset(Dataset, ABC):
     """
 
     def __init__(
-        self, task: TaskType | str, transform: Transform | None = None
+        self,
+        task: TaskType | str,
+        transform: Transform | None = None,
     ) -> None:
         super().__init__()
         self.task = TaskType(task)
@@ -87,7 +90,9 @@ class AnomalibDataset(Dataset, ABC):
         return len(self.samples)
 
     def subsample(
-        self, indices: Sequence[int], inplace: bool = False
+        self,
+        indices: Sequence[int],
+        inplace: bool = False,
     ) -> "AnomalibDataset":
         """Subsamples the dataset at the provided indices.
 
@@ -184,9 +189,7 @@ class AnomalibDataset(Dataset, ABC):
                 if label_index == LabelName.NORMAL
                 else read_mask(mask_path, as_tensor=True)
             )
-            item["image"], item["mask"] = (
-                self.transform(image, mask) if self.transform else (image, mask)
-            )
+            item["image"], item["mask"] = self.transform(image, mask) if self.transform else (image, mask)
 
             if self.task == TaskType.DETECTION:
                 # create boxes from masks for detection task
@@ -212,6 +215,7 @@ class AnomalibDataset(Dataset, ABC):
             raise TypeError(msg)
         dataset = copy.deepcopy(self)
         dataset.samples = pd.concat(
-            [self.samples, other_dataset.samples], ignore_index=True
+            [self.samples, other_dataset.samples],
+            ignore_index=True,
         )
         return dataset

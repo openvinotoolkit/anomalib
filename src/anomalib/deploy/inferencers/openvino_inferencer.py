@@ -28,7 +28,9 @@ if find_spec("openvino") is not None:
     if TYPE_CHECKING:
         from openvino import CompiledModel
 else:
-    logger.warning("OpenVINO is not installed. Please install OpenVINO to use OpenVINOInferencer.")
+    logger.warning(
+        "OpenVINO is not installed. Please install OpenVINO to use OpenVINOInferencer.",
+    )
 
 
 class OpenVINOInferencer(Inferencer):
@@ -111,7 +113,10 @@ class OpenVINOInferencer(Inferencer):
 
         self.task = TaskType(task) if task else TaskType(self.metadata["task"])
 
-    def load_model(self, path: str | Path | tuple[bytes, bytes]) -> tuple[Any, Any, "CompiledModel"]:
+    def load_model(
+        self,
+        path: str | Path | tuple[bytes, bytes],
+    ) -> tuple[Any, Any, "CompiledModel"]:
         """Load the OpenVINO model.
 
         Args:
@@ -144,7 +149,11 @@ class OpenVINOInferencer(Inferencer):
         cache_folder.mkdir(exist_ok=True)
         core.set_property({"CACHE_DIR": cache_folder})
 
-        compile_model = core.compile_model(model=model, device_name=self.device, config=self.config)
+        compile_model = core.compile_model(
+            model=model,
+            device_name=self.device,
+            config=self.config,
+        )
 
         input_blob = compile_model.input(0)
         output_blob = compile_model.output(0)
@@ -239,7 +248,11 @@ class OpenVINOInferencer(Inferencer):
         """
         return self.model(image)
 
-    def post_process(self, predictions: np.ndarray, metadata: dict | DictConfig | None = None) -> dict[str, Any]:
+    def post_process(
+        self,
+        predictions: np.ndarray,
+        metadata: dict | DictConfig | None = None,
+    ) -> dict[str, Any]:
         """Post process the output predictions.
 
         Args:
@@ -278,11 +291,13 @@ class OpenVINOInferencer(Inferencer):
             pred_idx = pred_score >= metadata["image_threshold"]
             pred_label = LabelName.ABNORMAL if pred_idx else LabelName.NORMAL
 
-        if task == TaskType.CLASSIFICATION:
+        if task in (TaskType.CLASSIFICATION, TaskType.EXPLANATION):
             _, pred_score = self._normalize(pred_scores=pred_score, metadata=metadata)
         elif task in (TaskType.SEGMENTATION, TaskType.DETECTION):
             if "pixel_threshold" in metadata:
-                pred_mask = (anomaly_map >= metadata["pixel_threshold"]).astype(np.uint8)
+                pred_mask = (anomaly_map >= metadata["pixel_threshold"]).astype(
+                    np.uint8,
+                )
 
             anomaly_map, pred_score = self._normalize(
                 pred_scores=pred_score,
