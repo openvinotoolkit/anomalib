@@ -17,7 +17,8 @@ from torchvision.transforms.v2 import Transform
 from torchvision.tv_tensors import Mask
 
 from anomalib import TaskType
-from anomalib.data.utils import LabelName, masks_to_boxes, read_image, read_mask
+from anomalib.data.utils import (LabelName, masks_to_boxes, read_image,
+                                 read_mask)
 
 _EXPECTED_COLUMNS_CLASSIFICATION = ["image_path", "split"]
 _EXPECTED_COLUMNS_SEGMENTATION = [*_EXPECTED_COLUMNS_CLASSIFICATION, "mask_path"]
@@ -61,7 +62,9 @@ class AnomalibDataset(Dataset, ABC):
             Defaults to ``None``.
     """
 
-    def __init__(self, task: TaskType | str, transform: Transform | None = None) -> None:
+    def __init__(
+        self, task: TaskType | str, transform: Transform | None = None
+    ) -> None:
         super().__init__()
         self.task = TaskType(task)
         self.transform = transform
@@ -83,7 +86,9 @@ class AnomalibDataset(Dataset, ABC):
         """Get length of the dataset."""
         return len(self.samples)
 
-    def subsample(self, indices: Sequence[int], inplace: bool = False) -> "AnomalibDataset":
+    def subsample(
+        self, indices: Sequence[int], inplace: bool = False
+    ) -> "AnomalibDataset":
         """Subsamples the dataset at the provided indices.
 
         Args:
@@ -169,7 +174,7 @@ class AnomalibDataset(Dataset, ABC):
         image = read_image(image_path, as_tensor=True)
         item = {"image_path": image_path, "label": label_index}
 
-        if self.task == TaskType.CLASSIFICATION:
+        if self.task in (TaskType.CLASSIFICATION, TaskType.EXPLANATION):
             item["image"] = self.transform(image) if self.transform else image
         elif self.task in (TaskType.DETECTION, TaskType.SEGMENTATION):
             # Only Anomalous (1) images have masks in anomaly datasets
@@ -179,7 +184,9 @@ class AnomalibDataset(Dataset, ABC):
                 if label_index == LabelName.NORMAL
                 else read_mask(mask_path, as_tensor=True)
             )
-            item["image"], item["mask"] = self.transform(image, mask) if self.transform else (image, mask)
+            item["image"], item["mask"] = (
+                self.transform(image, mask) if self.transform else (image, mask)
+            )
 
             if self.task == TaskType.DETECTION:
                 # create boxes from masks for detection task
@@ -204,5 +211,7 @@ class AnomalibDataset(Dataset, ABC):
             msg = "Cannot concatenate datasets that are not of the same type."
             raise TypeError(msg)
         dataset = copy.deepcopy(self)
-        dataset.samples = pd.concat([self.samples, other_dataset.samples], ignore_index=True)
+        dataset.samples = pd.concat(
+            [self.samples, other_dataset.samples], ignore_index=True
+        )
         return dataset
