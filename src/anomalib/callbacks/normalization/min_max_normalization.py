@@ -46,9 +46,7 @@ class _MinMaxNormalizationCallback(NormalizationCallback):
         for name, metric in pl_module.normalization_metrics.items():
             if not isinstance(metric, MinMax):
                 msg = f"Expected normalization_metric {name} to be of type MinMax, got {type(metric)}"
-                raise TypeError(
-                    msg,
-                )
+                raise TypeError(msg)
 
     def on_test_start(self, trainer: Trainer, pl_module: AnomalyModule) -> None:
         """Call when the test begins."""
