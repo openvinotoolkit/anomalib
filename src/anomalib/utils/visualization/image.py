@@ -1,5 +1,6 @@
 """Image/video generator."""
 
+
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
@@ -17,7 +18,12 @@ from skimage.segmentation import mark_boundaries
 
 from anomalib import TaskType
 from anomalib.data.utils import read_image
-from anomalib.utils.post_processing import add_anomalous_label, add_normal_label, draw_boxes, superimpose_anomaly_map
+from anomalib.utils.post_processing import (
+    add_anomalous_label,
+    add_normal_label,
+    draw_boxes,
+    superimpose_anomaly_map,
+)
 
 from .base import BaseVisualizer, GeneratorResult, VisualizationStep
 
@@ -64,11 +70,7 @@ class ImageResult:
         self.anomalous_boxes: np.ndarray | None = None
 
         if anomaly_map is not None:
-            self.heat_map = superimpose_anomaly_map(
-                self.anomaly_map,
-                self.image,
-                normalize=normalize,
-            )
+            self.heat_map = superimpose_anomaly_map(self.anomaly_map, self.image, normalize=normalize)
 
         if self.gt_mask is not None and self.gt_mask.max() <= 1.0:
             self.gt_mask *= 255
@@ -76,12 +78,7 @@ class ImageResult:
         self.pred_mask = pred_mask
         if self.pred_mask is not None and self.pred_mask.max() <= 1.0:
             self.pred_mask *= 255
-            self.segmentations = mark_boundaries(
-                self.image,
-                self.pred_mask,
-                color=(1, 0, 0),
-                mode="thick",
-            )
+            self.segmentations = mark_boundaries(self.image, self.pred_mask, color=(1, 0, 0), mode="thick")
             if self.segmentations.max() <= 1.0:
                 self.segmentations = (self.segmentations * 255).astype(np.uint8)
 
@@ -155,19 +152,11 @@ class ImageVisualizer(BaseVisualizer):
             if "image_path" in batch:
                 height, width = batch["image"].shape[-2:]
                 image = (read_image(path=batch["image_path"][i]) * 255).astype(np.uint8)
-                image = cv2.resize(
-                    image,
-                    dsize=(width, height),
-                    interpolation=cv2.INTER_AREA,
-                )
+                image = cv2.resize(image, dsize=(width, height), interpolation=cv2.INTER_AREA)
             elif "video_path" in batch:
                 height, width = batch["image"].shape[-2:]
                 image = batch["original_image"][i].squeeze().cpu().numpy()
-                image = cv2.resize(
-                    image,
-                    dsize=(width, height),
-                    interpolation=cv2.INTER_AREA,
-                )
+                image = cv2.resize(image, dsize=(width, height), interpolation=cv2.INTER_AREA)
             else:
                 msg = "Batch must have either 'image_path' or 'video_path' defined."
                 raise KeyError(msg)
@@ -182,20 +171,17 @@ class ImageVisualizer(BaseVisualizer):
 
             image_result = ImageResult(
                 image=image,
-                pred_score=(batch["pred_scores"][i].cpu().numpy().item() if "pred_scores" in batch else None),
-                pred_label=(batch["pred_labels"][i].cpu().numpy().item() if "pred_labels" in batch else None),
-                anomaly_map=(batch["anomaly_maps"][i].cpu().numpy() if "anomaly_maps" in batch else None),
-                pred_mask=(batch["pred_masks"][i].squeeze().int().cpu().numpy() if "pred_masks" in batch else None),
-                gt_mask=(batch["mask"][i].squeeze().int().cpu().numpy() if "mask" in batch else None),
+                pred_score=batch["pred_scores"][i].cpu().numpy().item() if "pred_scores" in batch else None,
+                pred_label=batch["pred_labels"][i].cpu().numpy().item() if "pred_labels" in batch else None,
+                anomaly_map=batch["anomaly_maps"][i].cpu().numpy() if "anomaly_maps" in batch else None,
+                pred_mask=batch["pred_masks"][i].squeeze().int().cpu().numpy() if "pred_masks" in batch else None,
+                gt_mask=batch["mask"][i].squeeze().int().cpu().numpy() if "mask" in batch else None,
                 gt_boxes=batch["boxes"][i].cpu().numpy() if "boxes" in batch else None,
-                pred_boxes=(batch["pred_boxes"][i].cpu().numpy() if "pred_boxes" in batch else None),
-                box_labels=(batch["box_labels"][i].cpu().numpy() if "box_labels" in batch else None),
+                pred_boxes=batch["pred_boxes"][i].cpu().numpy() if "pred_boxes" in batch else None,
+                box_labels=batch["box_labels"][i].cpu().numpy() if "box_labels" in batch else None,
                 normalize=self.normalize,
             )
-            yield GeneratorResult(
-                image=self.visualize_image(image_result),
-                file_name=file_name,
-            )
+            yield GeneratorResult(image=self.visualize_image(image_result), file_name=file_name)
 
     def visualize_image(self, image_result: ImageResult) -> np.ndarray:
         """Generate the visualization for an image.
@@ -234,28 +220,12 @@ class ImageVisualizer(BaseVisualizer):
 
             image_grid.add_image(image_result.image, "Image")
             if image_result.gt_boxes is not None:
-                gt_image = draw_boxes(
-                    np.copy(image_result.image),
-                    image_result.gt_boxes,
-                    color=(255, 0, 0),
-                )
-                image_grid.add_image(
-                    image=gt_image,
-                    color_map="gray",
-                    title="Ground Truth",
-                )
+                gt_image = draw_boxes(np.copy(image_result.image), image_result.gt_boxes, color=(255, 0, 0))
+                image_grid.add_image(image=gt_image, color_map="gray", title="Ground Truth")
             else:
                 image_grid.add_image(image_result.image, "Image")
-            pred_image = draw_boxes(
-                np.copy(image_result.image),
-                image_result.normal_boxes,
-                color=(0, 255, 0),
-            )
-            pred_image = draw_boxes(
-                pred_image,
-                image_result.anomalous_boxes,
-                color=(255, 0, 0),
-            )
+            pred_image = draw_boxes(np.copy(image_result.image), image_result.normal_boxes, color=(0, 255, 0))
+            pred_image = draw_boxes(pred_image, image_result.anomalous_boxes, color=(255, 0, 0))
             image_grid.add_image(pred_image, "Predictions")
         if self.task == TaskType.SEGMENTATION:
             if image_result.pred_mask is None:
@@ -264,17 +234,9 @@ class ImageVisualizer(BaseVisualizer):
 
             image_grid.add_image(image_result.image, "Image")
             if image_result.gt_mask is not None:
-                image_grid.add_image(
-                    image=image_result.gt_mask,
-                    color_map="gray",
-                    title="Ground Truth",
-                )
+                image_grid.add_image(image=image_result.gt_mask, color_map="gray", title="Ground Truth")
             image_grid.add_image(image_result.heat_map, "Predicted Heat Map")
-            image_grid.add_image(
-                image=image_result.pred_mask,
-                color_map="gray",
-                title="Predicted Mask",
-            )
+            image_grid.add_image(image=image_result.pred_mask, color_map="gray", title="Predicted Mask")
             image_grid.add_image(
                 image=image_result.segmentations,
                 title="Segmentation Result",
@@ -284,30 +246,17 @@ class ImageVisualizer(BaseVisualizer):
             if image_result.heat_map is not None:
                 image_grid.add_image(image_result.heat_map, "Predicted Heat Map")
             if image_result.pred_label:
-                image_classified = add_anomalous_label(
-                    image_result.image,
-                    image_result.pred_score,
-                )
+                image_classified = add_anomalous_label(image_result.image, image_result.pred_score)
             else:
-                image_classified = add_normal_label(
-                    image_result.image,
-                    1 - image_result.pred_score,
-                )
+                image_classified = add_normal_label(image_result.image, 1 - image_result.pred_score)
             image_grid.add_image(image=image_classified, title="Prediction")
         elif self.task == TaskType.EXPLANATION:
             description = ""
             if image_result.text_descr:
                 description = image_result.text_descr
 
-            image_classified = add_normal_label(
-                image_result.image,
-                1 - image_result.pred_score,
-            )
-            image_grid.add_image(
-                image_classified,
-                title="Explanation of Image",
-                description=description,
-            )
+            image_classified = add_normal_label(image_result.image, 1 - image_result.pred_score)
+            image_grid.add_image(image_classified, title="Explanation of Image", description=description)
 
         return image_grid.generate()
 
@@ -330,11 +279,7 @@ class ImageVisualizer(BaseVisualizer):
                 color=(0, 0, 255),
             )
             if image_result.gt_boxes is not None:
-                image_with_boxes = draw_boxes(
-                    image=image_with_boxes,
-                    boxes=image_result.gt_boxes,
-                    color=(255, 0, 0),
-                )
+                image_with_boxes = draw_boxes(image=image_with_boxes, boxes=image_result.gt_boxes, color=(255, 0, 0))
             return image_with_boxes
         if self.task == TaskType.SEGMENTATION:
             visualization = mark_boundaries(
@@ -346,15 +291,9 @@ class ImageVisualizer(BaseVisualizer):
             return (visualization * 255).astype(np.uint8)
         if self.task == TaskType.CLASSIFICATION:
             if image_result.pred_label:
-                image_classified = add_anomalous_label(
-                    image_result.image,
-                    image_result.pred_score,
-                )
+                image_classified = add_anomalous_label(image_result.image, image_result.pred_score)
             else:
-                image_classified = add_normal_label(
-                    image_result.image,
-                    1 - image_result.pred_score,
-                )
+                image_classified = add_normal_label(image_result.image, 1 - image_result.pred_score)
             return image_classified
 
         if self.task == TaskType.EXPLANATION:
@@ -364,21 +303,11 @@ class ImageVisualizer(BaseVisualizer):
                 description = image_result.text_descr
 
             if image_result.pred_label:
-                image_classified = add_anomalous_label(
-                    image_result.image,
-                    image_result.pred_score,
-                )
+                image_classified = add_anomalous_label(image_result.image, image_result.pred_score)
             else:
-                image_classified = add_normal_label(
-                    image_result.image,
-                    1 - image_result.pred_score,
-                )
+                image_classified = add_normal_label(image_result.image, 1 - image_result.pred_score)
 
-            image_grid.add_image(
-                image_classified,
-                title="Explanation of Image",
-                description=description,
-            )
+            image_grid.add_image(image_classified, title="Explanation of Image", description=description)
 
             return image_grid.generate()
 
@@ -413,12 +342,7 @@ class _ImageGrid:
           description (str): Description of the image shown on the plot TaskType.EXPLANATION.
           color_map (str | None): Name of matplotlib color map used to map scalar data to colours. Defaults to None.
         """
-        image_data = {
-            "image": image,
-            "title": title,
-            "color_map": color_map,
-            "descr": description,
-        }
+        image_data = {"image": image, "title": title, "color_map": color_map, "descr": description}
         self.images.append(image_data)
 
     def generate(self) -> np.ndarray:
