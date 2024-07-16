@@ -41,9 +41,7 @@ class _MinMaxNormalizationCallback(NormalizationCallback):
                 f"Expected normalization_metrics to be of type MetricCollection"
                 f"got {type(pl_module.normalization_metrics)}"
             )
-            raise TypeError(
-                msg,
-            )
+            raise TypeError(msg)
 
         for name, metric in pl_module.normalization_metrics.items():
             if not isinstance(metric, MinMax):
