@@ -6,7 +6,7 @@
 from anomalib.pipelines.components.base import Pipeline, Runner
 from anomalib.pipelines.components.runners import SerialRunner
 
-from .generator import HPOJobGenerator
+from .generator import CometHPOJobGenerator, WandbHPOJobGenerator
 
 
 class HPO(Pipeline):
@@ -15,6 +15,5 @@ class HPO(Pipeline):
     def _setup_runners(self, args: dict) -> list[Runner]:
         """Setup runners for the HPO."""
         backend = args.get("backend", "comet")
-        project = args.get("project", "anomalib-hpo")
-        entity = args.get("entity", "anomalib")
-        return [SerialRunner(HPOJobGenerator(backend, project, entity))]
+        job = CometHPOJobGenerator() if backend == "comet" else WandbHPOJobGenerator()
+        return [SerialRunner(job)]

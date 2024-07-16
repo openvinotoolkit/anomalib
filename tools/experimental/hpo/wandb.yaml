@@ -1,0 +1,23 @@
+# example of hpo using wandb
+backend: wandb
+wandb_hpo:
+  project: anomalib-hpo
+  entity: anomalib
+  count: 4
+  sweep_configuration:
+    method: bayes
+    metric:
+      name: pixel_AUROC
+      goal: maximize
+    parameters:
+      data:
+        class_path: anomalib.data.image.MVTec
+        init_args:
+          category: capsule
+          image_size:
+            values: [128, 256]
+      model:
+        class_path: anomalib.models.Padim
+        init_args:
+          backbone:
+            values: [resnet18, wide_resnet50_2]

@@ -1,8 +1,8 @@
 # example of hpo using cometml
 backend: comet
-project: anomalib-hpo
-entity: anomalib
-hpo:
+comet_hpo:
+  name: anomalib-hpo
+  workspace: anomalib
   algorithm: "bayes"
   spec:
     maxCombo: 4
