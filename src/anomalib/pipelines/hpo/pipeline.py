@@ -6,7 +6,8 @@
 from anomalib.pipelines.components.base import Pipeline, Runner
 from anomalib.pipelines.components.runners import SerialRunner
 
-from .generator import CometHPOJobGenerator, WandbHPOJobGenerator
+from .comet_job_generator import CometHPOJobGenerator
+from .wandb_job_generator import WandbHPOJobGenerator
 
 
 class HPO(Pipeline):

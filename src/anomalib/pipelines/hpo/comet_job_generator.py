@@ -3,7 +3,6 @@
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-import logging
 from collections.abc import Generator
 
 from anomalib.data import get_datamodule
@@ -14,46 +13,23 @@ from anomalib.pipelines.types import PREV_STAGE_RESULT
 from anomalib.utils.exceptions import try_import
 from anomalib.utils.logging import hide_output
 
-from .job import CometHPOJob, WandbHPOJob
+from .comet_job import CometHPOJob
 from .utils import flatten_hpo_params, set_in_nested_dict
 
-logger = logging.getLogger(__name__)
+if try_import("comet_ml"):
+    import comet_ml
+    from lightning.pytorch.loggers import CometLogger
 
-
-class WandbHPOJobGenerator(JobGenerator):
-    """Generate Wandb based HPO job."""
-
-    def __init__(self) -> None:
-        if not try_import("wandb"):
-            msg = "HPO using wandb is requested but wandb is not installed."
-            raise ImportError(msg)
-
-    @property
-    def job_class(self) -> type:
-        """Return the job class."""
-        return WandbHPOJob
-
-    @hide_output
-    def generate_jobs(
-        self,
-        config: dict,
-        prev_stage_result: PREV_STAGE_RESULT,
-    ) -> Generator[Job, None, None]:
-        """Generate a single job that uses ``wandb.agent`` internally."""
-        del prev_stage_result  # Not needed for this job
-        yield WandbHPOJob(
-            project=config["project"],
-            entity=config["entity"],
-            sweep_configuration=config["sweep_configuration"],
-            count=config["count"],
-        )
+    COMET_AVAILABLE = True
+else:
+    COMET_AVAILABLE = False
 
 
 class CometHPOJobGenerator(JobGenerator):
     """Generate Comet based HPO job."""
 
     def __init__(self) -> None:
-        if not try_import("comet_ml"):
+        if not COMET_AVAILABLE:
             msg = "HPO using comet_ml is requested but comet_ml is not installed."
             raise ImportError(msg)
 
@@ -69,9 +45,6 @@ class CometHPOJobGenerator(JobGenerator):
         prev_stage_result: PREV_STAGE_RESULT,
     ) -> Generator[Job, None, None]:
         """Generate jobs based on parameters suggested from comet hyperparameter optimizer."""
-        import comet_ml
-        from lightning.pytorch.loggers import CometLogger
-
         del prev_stage_result  # Not needed for this job
         # flatten all nested non-hpo keys under parameters
         flattened_dict = flatten_hpo_params(config["parameters"])
