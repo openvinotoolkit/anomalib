@@ -15,6 +15,7 @@ import torch
 from lightning.pytorch.trainer.states import TrainerFn
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torch import nn
+from torchmetrics import MetricCollection
 from torchvision.transforms.v2 import Compose, Normalize, Resize, Transform
 
 from anomalib import LearningType
@@ -25,7 +26,6 @@ from .export_mixin import ExportMixin
 
 if TYPE_CHECKING:
     from lightning.pytorch.callbacks import Callback
-    from torchmetrics import Metric
 
 
 logger = logging.getLogger(__name__)
@@ -49,7 +49,7 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
         self.image_threshold: BaseThreshold
         self.pixel_threshold: BaseThreshold
 
-        self.normalization_metrics: Metric
+        self.normalization_metrics: MetricCollection
 
         self.image_metrics: AnomalibMetricCollection
         self.pixel_metrics: AnomalibMetricCollection
@@ -147,16 +147,17 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
 
     def _save_to_state_dict(self, destination: OrderedDict, prefix: str, keep_vars: bool) -> None:
         if hasattr(self, "image_threshold"):
-            destination[
-                "image_threshold_class"
-            ] = f"{self.image_threshold.__class__.__module__}.{self.image_threshold.__class__.__name__}"
+            destination["image_threshold_class"] = (
+                f"{self.image_threshold.__class__.__module__}.{self.image_threshold.__class__.__name__}"
+            )
         if hasattr(self, "pixel_threshold"):
-            destination[
-                "pixel_threshold_class"
-            ] = f"{self.pixel_threshold.__class__.__module__}.{self.pixel_threshold.__class__.__name__}"
+            destination["pixel_threshold_class"] = (
+                f"{self.pixel_threshold.__class__.__module__}.{self.pixel_threshold.__class__.__name__}"
+            )
         if hasattr(self, "normalization_metrics"):
-            normalization_class = self.normalization_metrics.__class__
-            destination["normalization_class"] = f"{normalization_class.__module__}.{normalization_class.__name__}"
+            for metric in self.normalization_metrics:
+                metric_class = self.normalization_metrics[metric].__class__
+                destination[f"{metric}_normalization_class"] = f"{metric_class.__module__}.{metric_class.__name__}"
 
         return super()._save_to_state_dict(destination, prefix, keep_vars)
 
@@ -166,8 +167,21 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
             self.image_threshold = self._get_instance(state_dict, "image_threshold_class")
         if "pixel_threshold_class" in state_dict:
             self.pixel_threshold = self._get_instance(state_dict, "pixel_threshold_class")
-        if "normalization_class" in state_dict:
-            self.normalization_metrics = self._get_instance(state_dict, "normalization_class")
+
+        if "anomaly_maps_normalization_class" in state_dict:
+            self.anomaly_maps_normalization_metrics = self._get_instance(state_dict, "anomaly_maps_normalization_class")
+        if "box_scores_normalization_class" in state_dict:
+            self.box_scores_normalization_metrics = self._get_instance(state_dict, "box_scores_normalization_class")
+        if "pred_scores_normalization_class" in state_dict:
+            self.pred_scores_normalization_metrics = self._get_instance(state_dict, "pred_scores_normalization_class")
+
+        self.normalization_metrics = MetricCollection(
+            {
+                "anomaly_maps": self.anomaly_maps_normalization_metrics,
+                "box_scores": self.box_scores_normalization_metrics,
+                "pred_scores": self.pred_scores_normalization_metrics,
+            },
+        )
         # Used to load metrics if there is any related data in state_dict
         self._load_metrics(state_dict)
 

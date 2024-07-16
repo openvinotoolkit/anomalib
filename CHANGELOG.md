@@ -10,9 +10,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
+- 🔨 Replace "./dtasets/BTech" to "./dtasets/BTech"
+
 ### Deprecated
 
 ### Fixed
+
+- 🔨 Fix uncorrect download path of btech dataset
 
 ### New Contributors
 
@@ -60,6 +64,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 
+- Fix image-level heatmap normalization in visualizer by @djdameln in https://github.com/openvinotoolkit/anomalib/pull/2131
 - 🐞 Fix dimensionality mismatch issue caused by the new kornia version by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/1944
 - 🐞 Fix DFM PyTorch inference by @adrianboguszewski in https://github.com/openvinotoolkit/anomalib/pull/1952
 - 🐞 Fix anomaly map shape to also work with tiling by @blaz-r in https://github.com/openvinotoolkit/anomalib/pull/1959

@@ -1,4 +1,5 @@
 name: Code Scanning
+permissions: read-all
 
 on:
   workflow_dispatch: # run on request (no need for PR)

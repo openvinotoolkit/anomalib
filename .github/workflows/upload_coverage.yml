@@ -1,4 +1,6 @@
 name: Upload coverage
+permissions: read-all
+
 on:
   workflow_run:
     workflows: ["Pre-Merge Checks"]

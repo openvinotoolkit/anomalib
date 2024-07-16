@@ -1,4 +1,6 @@
 name: Upload Python Package
+permissions: read-all
+
 on:
   release:
     types: [published]
