@@ -19,7 +19,6 @@ import itertools as it
 from typing import Union
 
 import networkx as nx
-import numpy as np
 import torch
 from mpmath import mp
 from skimage.morphology import max_tree
@@ -35,13 +34,14 @@ class NFATree:
         zi (torch.Tensor): Latent variable of shape (C, H, W).
         """
         self.n_channels = zi.shape[0]
-        self.zi2_rav = zi.reshape(self.n_channels, -1).cpu().numpy() ** 2
+        self.zi2_rav = zi.reshape(self.n_channels, -1) ** 2
 
-        score = torch.mean(zi**2, dim=0).cpu().numpy()
+        score = torch.mean(zi**2, dim=0)
         self.original_shape = score.shape
+        self.original_device = score.device
         self.tree = self.build_tree(score)
 
-    def compute_log_prob_map(self) -> np.ndarray:
+    def compute_log_prob_map(self) -> torch.Tensor:
         """Compute the log probability map
         First compute the log probability of each node of the tree. Then, apply the prune and merge steps iteratively
         until no more changes are done in the tree. Finally, get the final clusters and build the log probability map.
@@ -55,11 +55,11 @@ class NFATree:
             keep_merging = self.pfa_merge()
         self.pfa_prune()
 
-        log_prob_map = np.empty(self.original_shape[0] * self.original_shape[1], dtype=np.float32)
-        log_prob_map[:] = np.nan
-
         final_clusters = self.get_final_clusters()
 
+        num_pixels = self.original_shape[0] * self.original_shape[1]
+        log_prob_map = torch.empty(num_pixels, dtype=torch.float32, device=self.original_device)
+        log_prob_map[:] = torch.nan
         for log_prob, pixels in final_clusters.items():
             log_prob_map[pixels] = log_prob
 
@@ -68,10 +68,10 @@ class NFATree:
         return log_prob_map
 
     def compute_log_prob(self):
-        """Compute the log probability of each node in the tree. The log probability is computed using the Chernoff bound
-        for a Chi2 distribution of `self.n_channels` degrees of freedom.
+        """Compute the log probability of each node in the tree. The log probability is computed using the Chernoff
+        bound for a Chi2 distribution of `self.n_channels` degrees of freedom.
         """
-        zi2_sum = np.sum(self.zi2_rav, axis=0)
+        zi2_sum = torch.sum(self.zi2_rav, dim=0)
 
         for n in self.tree.nodes:
             region = self.tree.nodes[n]["pixels"]
@@ -80,16 +80,16 @@ class NFATree:
             # Chernoff bound for one Chi2 distribution of `self.n_channels` degrees of freedom
             log_prob = (
                 -(self.n_channels / 2)
-                * (zi2_min / self.n_channels - 1 - np.log(zi2_min / self.n_channels))
-                / np.log(10)
+                * (zi2_min / self.n_channels - 1 - torch.log(zi2_min / self.n_channels))
+                / torch.log(torch.tensor(10).to(zi2_min.device))
             )
 
             # Log prob for the whole region
             self.tree.nodes[n]["log_prob"] = len(region) * log_prob
 
-    def build_tree(self, score: np.ndarray) -> nx.DiGraph:
+    def build_tree(self, score: torch.Tensor) -> nx.DiGraph:
         """Build a tree from the score map."""
-        parents, pixel_indices = max_tree(score, connectivity=1)
+        parents, pixel_indices = max_tree(score.cpu().numpy(), connectivity=1)
         parents_rav = parents.ravel()
         score_rav = score.ravel()
 
@@ -104,7 +104,7 @@ class NFATree:
 
         return tree
 
-    def prune(self, graph, starting_node):
+    def prune(self, graph: nx.DiGraph, starting_node: int):
         """Transform a canonical max tree to a max tree."""
         value = graph.nodes[starting_node]["score"]
         cluster_nodes = [starting_node]
@@ -116,7 +116,7 @@ class NFATree:
                 self.prune(graph, p)
         graph.nodes[starting_node]["pixels"] = cluster_nodes
 
-    def accumulate(self, graph, starting_node):
+    def accumulate(self, graph, starting_node) -> list[int]:
         """Transform a max tree to a component tree."""
         pixels = graph.nodes[starting_node]["pixels"]
         for p in graph.predecessors(starting_node):
@@ -124,8 +124,8 @@ class NFATree:
         return pixels
 
     def get_branch(self, starting_node: int) -> list[int]:
-        """Get a connected section of the tree, starting from `starting_node`, where all nodes have exactly one predecessor
-        (except for the starting leaf itself)
+        """Get a connected section of the tree, starting from `starting_node`, where all nodes have exactly one
+        predecessor (except for the starting leaf itself)
         """
         branch = [starting_node]
         successors = [s for s in self.tree.successors(starting_node)]
@@ -148,8 +148,8 @@ class NFATree:
         final_clusters = {}
         for l in leaves:
             branch_nodes = self.get_branch(l)
-            branch_log_probs = [self.tree.nodes[b]["log_prob"] for b in branch_nodes]
-            branch_chosen_node = branch_nodes[np.argmin(branch_log_probs)]
+            branch_log_probs = torch.stack([self.tree.nodes[b]["log_prob"] for b in branch_nodes])
+            branch_chosen_node = branch_nodes[torch.argmin(branch_log_probs)]
             final_clusters[self.tree.nodes[branch_chosen_node]["log_prob"]] = self.tree.nodes[branch_chosen_node][
                 "pixels"
             ]
@@ -166,7 +166,7 @@ class NFATree:
         for l in leaves:
             branch_nodes = self.get_branch(l)
             branch_log_probs = [self.tree.nodes[b]["log_prob"] for b in branch_nodes]
-            chosen_node = np.argmin(branch_log_probs)
+            chosen_node = torch.argmin(torch.stack(branch_log_probs))
             for i in range(len(branch_nodes)):
                 if i != chosen_node:
                     self.tree.add_edges_from(
@@ -174,7 +174,7 @@ class NFATree:
                     )
                     self.tree.remove_node(branch_nodes[i])
 
-    def pfa_merge(self):
+    def pfa_merge(self) -> bool:
         """Procedure 2 in the paper (https://link.springer.com/article/10.1007/s10851-024-01193-y).
         The second procedure consists of merging leaf nodes with the same successor in case the latter is more
         significant than all others. In this case, all leaf nodes are removed from the tree, and we only keep their
@@ -184,11 +184,11 @@ class NFATree:
         bifurcations = [p for p in self.tree.pred if len(self.tree.pred[p]) > 1]
         for b in bifurcations:
             # if predecessors are not leaves, continue. We only merge leaves.
-            if np.sum([len([pp for pp in self.tree.predecessors(p)]) for p in self.tree.predecessors(b)]) > 0:
-                continue
             preds = [p for p in self.tree.predecessors(b)]
-            preds_nfas = [self.tree.nodes[p]["log_prob"] for p in preds]
-            if self.tree.nodes[b]["log_prob"] <= np.min(preds_nfas):
+            if torch.tensor([len([pp for pp in self.tree.predecessors(p)]) for p in preds]).sum() > 0:
+                continue
+            preds_nfas = torch.stack([self.tree.nodes[p]["log_prob"] for p in preds])
+            if self.tree.nodes[b]["log_prob"] <= torch.min(preds_nfas):
                 merged = True
                 for p in preds:
                     self.tree.add_edges_from(
@@ -199,10 +199,10 @@ class NFATree:
 
 
 def compute_number_of_tests(polyominoes_sizes: Union[int, list[int]]) -> float:
-    """Compute the number of tests for the NFA tree, corresponding to all possible regions with arbitrary shape and size in
-    the image. Considering 4-connectivity, these groups of connected pixels correspond to the figures called polyominoes
-    and a good approximation for the number of polyominoes is given by this formula. See references [60] and [61] in the
-    U-Flow paper for more details.
+    """Compute the number of tests for the NFA tree, corresponding to all possible regions with arbitrary shape and
+    size in the image. Considering 4-connectivity, these groups of connected pixels correspond to the figures called
+    polyominoes and a good approximation for the number of polyominoes is given by this formula. See references [60]
+    and [61] in the U-Flow paper for more details.
     """
     alpha = mp.mpf(0.316915)
     beta = mp.mpf(4.062570)
@@ -218,4 +218,4 @@ def compute_number_of_tests(polyominoes_sizes: Union[int, list[int]]) -> float:
             n_test_i += alpha * beta**region_size_mp / region_size_mp
         n_test += n_test_i * region_size
 
-    return float(np.array(mp.log10(n_test), dtype=np.float32))
+    return float(torch.tensor(mp.log10(n_test), dtype=torch.float32))

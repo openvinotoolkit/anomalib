@@ -97,7 +97,7 @@ class AnomalyMapGenerator(nn.Module):
                 torch.cat(
                     [
                         F.interpolate(
-                            torch.from_numpy(log_prob_s_i).nan_to_num(0).unsqueeze(0).unsqueeze(0),
+                            log_prob_s_i.nan_to_num(0).unsqueeze(0).unsqueeze(0),
                             size=target_size,
                             mode=upsample_mode,
                             **{"align_corners": False} if "nearest" not in upsample_mode else {},
