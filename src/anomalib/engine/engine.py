@@ -760,7 +760,9 @@ class Engine:
             raise ValueError(msg)
 
         if ckpt_path:
-            ckpt_path = Path(ckpt_path).resolve()
+            ckpt_path = Path(ckpt_path)
+            # ckpt_path = Path(ckpt_path).resolve()
+
 
         self._setup_workspace(model=model or self.model, datamodule=datamodule, test_dataloaders=dataloaders)
 
