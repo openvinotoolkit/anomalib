@@ -1,4 +1,7 @@
-"""Description:
+"""NFA Tree.
+
+Description:
+
     This module contains the implementation of the NFA tree algorithm, used in the U-Flow model to compute the
     log-probability map from the latent variables, and then generate a mask, performing an automatic segmentation of
     anomalies.
@@ -15,8 +18,8 @@ Licence:
     Copyright (C) 2022-2024 Intel Corporation
     SPDX-License-Identifier: Apache-2.0
 """
+
 import itertools as it
-from typing import Union
 
 import networkx as nx
 import torch
@@ -29,9 +32,11 @@ mp.dps = 15
 class NFATree:
     """Class for building a NFA tree of upper level sets, from a latent variable."""
 
-    def __init__(self, zi: torch.Tensor):
-        """Args:
-        zi (torch.Tensor): Latent variable of shape (C, H, W).
+    def __init__(self, zi: torch.Tensor) -> None:
+        """NFA Tree.
+
+        Args:
+            zi (torch.Tensor): Latent variable of shape (C, H, W).
         """
         self.n_channels = zi.shape[0]
         self.zi2_rav = zi.reshape(self.n_channels, -1) ** 2
@@ -42,9 +47,11 @@ class NFATree:
         self.tree = self.build_tree(score)
 
     def compute_log_prob_map(self) -> torch.Tensor:
-        """Compute the log probability map
-        First compute the log probability of each node of the tree. Then, apply the prune and merge steps iteratively
-        until no more changes are done in the tree. Finally, get the final clusters and build the log probability map.
+        """Compute the log probability map.
+
+        First compute the log probability of each node of the tree. Then, apply
+        the prune and merge steps iteratively until no more changes are done in
+        the tree. Finally, get the final clusters and build the log probability map.
         """
         self.compute_log_prob()
 
@@ -63,12 +70,12 @@ class NFATree:
         for log_prob, pixels in final_clusters.items():
             log_prob_map[pixels] = log_prob
 
-        log_prob_map = log_prob_map.reshape(self.original_shape)
+        return log_prob_map.reshape(self.original_shape)
 
-        return log_prob_map
+    def compute_log_prob(self) -> None:
+        """Compute the log probability of each node in the tree.
 
-    def compute_log_prob(self):
-        """Compute the log probability of each node in the tree. The log probability is computed using the Chernoff
+        The log probability is computed using the Chernoff
         bound for a Chi2 distribution of `self.n_channels` degrees of freedom.
         """
         zi2_sum = torch.sum(self.zi2_rav, dim=0)
@@ -104,11 +111,11 @@ class NFATree:
 
         return tree
 
-    def prune(self, graph: nx.DiGraph, starting_node: int):
+    def prune(self, graph: nx.DiGraph, starting_node: int) -> None:
         """Transform a canonical max tree to a max tree."""
         value = graph.nodes[starting_node]["score"]
         cluster_nodes = [starting_node]
-        for p in [p for p in graph.predecessors(starting_node)]:
+        for p in list(graph.predecessors(starting_node)):
             if graph.nodes[p]["score"] == value:
                 cluster_nodes.append(p)
                 graph.remove_node(p)
@@ -116,7 +123,7 @@ class NFATree:
                 self.prune(graph, p)
         graph.nodes[starting_node]["pixels"] = cluster_nodes
 
-    def accumulate(self, graph, starting_node) -> list[int]:
+    def accumulate(self, graph: nx.DiGraph, starting_node: int) -> list[int]:
         """Transform a max tree to a component tree."""
         pixels = graph.nodes[starting_node]["pixels"]
         for p in graph.predecessors(starting_node):
@@ -124,30 +131,34 @@ class NFATree:
         return pixels
 
     def get_branch(self, starting_node: int) -> list[int]:
-        """Get a connected section of the tree, starting from `starting_node`, where all nodes have exactly one
-        predecessor (except for the starting leaf itself)
+        """Get Branch.
+
+        Get a connected section of the tree, starting from `starting_node`,
+        where all nodes have exactly one predecessor
+        (except for the starting leaf itself)
         """
         branch = [starting_node]
-        successors = [s for s in self.tree.successors(starting_node)]
+        successors = list(self.tree.successors(starting_node))
 
         if len(successors) == 0:
             return branch
         assert len(successors) == 1, "Node has more than one successor"
 
-        is_only_child = len([p for p in self.tree.predecessors(successors[0])]) == 1
+        is_only_child = len(list(self.tree.predecessors(successors[0]))) == 1
         if is_only_child:
             branch.extend(self.get_branch(successors[0]))
         return branch
 
     def get_final_clusters(self) -> dict[float, list[int]]:
         """Get the final clusters of the tree.
-        The final clusters are the leaves of the final tree, where each leaf is the node with the lowest log probability
-        in its branch.
+
+        The final clusters are the leaves of the final tree,
+        where each leaf is the node with the lowest log probability in its branch.
         """
         leaves = [p for p in self.tree.pred if len(self.tree.pred[p]) == 0]
         final_clusters = {}
-        for l in leaves:
-            branch_nodes = self.get_branch(l)
+        for leave in leaves:
+            branch_nodes = self.get_branch(leave)
             branch_log_probs = torch.stack([self.tree.nodes[b]["log_prob"] for b in branch_nodes])
             branch_chosen_node = branch_nodes[torch.argmin(branch_log_probs)]
             final_clusters[self.tree.nodes[branch_chosen_node]["log_prob"]] = self.tree.nodes[branch_chosen_node][
@@ -155,16 +166,20 @@ class NFATree:
             ]
         return final_clusters
 
-    def pfa_prune(self):
-        """Procedure 1 in the paper (https://link.springer.com/article/10.1007/s10851-024-01193-y).
-        This procedure aims to filter a set of nested connected components, keeping only the most significant one. We
-        identify which of these connected components is the most significant one, as it may better delineate the
-        anomalous region. After determining which node to preserve, the tree is pruned so that just the chosen node is
-        kept, and all other branch nodes are removed.
+    def pfa_prune(self) -> None:
+        """PFA Prune.
+
+        Procedure 1 in the paper (https://link.springer.com/article/10.1007/s10851-024-01193-y).
+        This procedure aims to filter a set of nested connected components,
+        keeping only the most significant one. We identify which of these
+        connected components is the most significant one, as it may better
+        delineate the anomalous region. After determining which node to preserve,
+        the tree is pruned so that just the chosen node is kept, and all other
+        branch nodes are removed.
         """
         leaves = [p for p in self.tree.pred if len(self.tree.pred[p]) == 0]
-        for l in leaves:
-            branch_nodes = self.get_branch(l)
+        for leave in leaves:
+            branch_nodes = self.get_branch(leave)
             branch_log_probs = [self.tree.nodes[b]["log_prob"] for b in branch_nodes]
             chosen_node = torch.argmin(torch.stack(branch_log_probs))
             for i in range(len(branch_nodes)):
@@ -175,17 +190,20 @@ class NFATree:
                     self.tree.remove_node(branch_nodes[i])
 
     def pfa_merge(self) -> bool:
-        """Procedure 2 in the paper (https://link.springer.com/article/10.1007/s10851-024-01193-y).
-        The second procedure consists of merging leaf nodes with the same successor in case the latter is more
-        significant than all others. In this case, all leaf nodes are removed from the tree, and we only keep their
-        successor.
+        """PFA Merge.
+
+        Procedure 2 in the paper (https://link.springer.com/article/10.1007/s10851-024-01193-y).
+        The second procedure consists of merging leaf nodes with the same
+        successor in case the latter is more significant than all others.
+        In this case, all leaf nodes are removed from the tree, and we only
+        keep their successor.
         """
         merged = False
         bifurcations = [p for p in self.tree.pred if len(self.tree.pred[p]) > 1]
         for b in bifurcations:
             # if predecessors are not leaves, continue. We only merge leaves.
-            preds = [p for p in self.tree.predecessors(b)]
-            if torch.tensor([len([pp for pp in self.tree.predecessors(p)]) for p in preds]).sum() > 0:
+            preds = list(self.tree.predecessors(b))
+            if torch.tensor([len(list(self.tree.predecessors(p))) for p in preds]).sum() > 0:
                 continue
             preds_nfas = torch.stack([self.tree.nodes[p]["log_prob"] for p in preds])
             if self.tree.nodes[b]["log_prob"] <= torch.min(preds_nfas):
@@ -198,11 +216,13 @@ class NFATree:
         return merged
 
 
-def compute_number_of_tests(polyominoes_sizes: Union[int, list[int]]) -> float:
-    """Compute the number of tests for the NFA tree, corresponding to all possible regions with arbitrary shape and
-    size in the image. Considering 4-connectivity, these groups of connected pixels correspond to the figures called
-    polyominoes and a good approximation for the number of polyominoes is given by this formula. See references [60]
-    and [61] in the U-Flow paper for more details.
+def compute_number_of_tests(polyominoes_sizes: int | list[int]) -> float:
+    """Compute the number of tests for the NFA tree.
+
+    Corresponding to all possible regions with arbitrary shape and size in the image.
+    Considering 4-connectivity, these groups of connected pixels correspond to the figures called
+    polyominoes and a good approximation for the number of polyominoes is given by this formula.
+    See references [60] and [61] in the U-Flow paper for more details.
     """
     alpha = mp.mpf(0.316915)
     beta = mp.mpf(4.062570)
