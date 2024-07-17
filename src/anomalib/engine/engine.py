@@ -764,6 +764,7 @@ class Engine:
             # ckpt_path = Path(ckpt_path).resolve()
 
 
+
         self._setup_workspace(model=model or self.model, datamodule=datamodule, test_dataloaders=dataloaders)
 
         if model:
