@@ -588,7 +588,7 @@ class CsFlowModel(nn.Module):
             z_dist, _ = self.graph(features)  # Ignore Jacobians
             anomaly_scores = self._compute_anomaly_scores(z_dist)
             anomaly_maps = self.anomaly_map_generator(z_dist)
-            output = anomaly_maps, anomaly_scores
+            output = {"anomaly_map": anomaly_maps, "pred_score": anomaly_scores}
         return output
 
     def _compute_anomaly_scores(self, z_dists: torch.Tensor) -> torch.Tensor:
