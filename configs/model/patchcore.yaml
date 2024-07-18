@@ -6,5 +6,5 @@ model:
       - layer2
       - layer3
     pre_trained: true
-    coreset_sampling_ratio: 0.01
+    coreset_sampling_ratio: 0.1
     num_neighbors: 9
