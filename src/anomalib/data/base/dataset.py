@@ -89,11 +89,7 @@ class AnomalibDataset(Dataset, ABC):
         """Get length of the dataset."""
         return len(self.samples)
 
-    def subsample(
-        self,
-        indices: Sequence[int],
-        inplace: bool = False,
-    ) -> "AnomalibDataset":
+    def subsample(self, indices: Sequence[int], inplace: bool = False) -> "AnomalibDataset":
         """Subsamples the dataset at the provided indices.
 
         Args:
@@ -214,8 +210,5 @@ class AnomalibDataset(Dataset, ABC):
             msg = "Cannot concatenate datasets that are not of the same type."
             raise TypeError(msg)
         dataset = copy.deepcopy(self)
-        dataset.samples = pd.concat(
-            [self.samples, other_dataset.samples],
-            ignore_index=True,
-        )
+        dataset.samples = pd.concat([self.samples, other_dataset.samples], ignore_index=True)
         return dataset
