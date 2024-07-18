@@ -46,11 +46,7 @@ class AnomalibDepthDataset(AnomalibDataset, ABC):
 
         image = to_tensor(Image.open(image_path))
         depth_image = to_tensor(read_depth_image(depth_path))
-        item = {
-            "image_path": image_path,
-            "depth_path": depth_path,
-            "label": label_index,
-        }
+        item = {"image_path": image_path, "depth_path": depth_path, "label": label_index}
 
         if self.task in (TaskType.CLASSIFICATION, TaskType.EXPLANATION):
             item["image"], item["depth_image"] = (
