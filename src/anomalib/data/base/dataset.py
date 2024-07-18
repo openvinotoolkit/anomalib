@@ -63,11 +63,7 @@ class AnomalibDataset(Dataset, ABC):
             Defaults to ``None``.
     """
 
-    def __init__(
-        self,
-        task: TaskType | str,
-        transform: Transform | None = None,
-    ) -> None:
+    def __init__(self, task: TaskType | str, transform: Transform | None = None) -> None:
         super().__init__()
         self.task = TaskType(task)
         self.transform = transform

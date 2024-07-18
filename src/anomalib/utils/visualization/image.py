@@ -18,12 +18,7 @@ from skimage.segmentation import mark_boundaries
 
 from anomalib import TaskType
 from anomalib.data.utils import read_image
-from anomalib.utils.post_processing import (
-    add_anomalous_label,
-    add_normal_label,
-    draw_boxes,
-    superimpose_anomaly_map,
-)
+from anomalib.utils.post_processing import add_anomalous_label, add_normal_label, draw_boxes, superimpose_anomaly_map
 
 from .base import BaseVisualizer, GeneratorResult, VisualizationStep
 
@@ -103,7 +98,6 @@ class ImageResult:
         repr_str += f", normal_boxes={self.normal_boxes}" if self.normal_boxes is not None else ""
         repr_str += f", anomalous_boxes={self.anomalous_boxes}" if self.anomalous_boxes is not None else ""
         repr_str += f", text_descr={self.text_descr}" if self.text_descr is not None else ""
-
         repr_str += ")"
         return repr_str
 
@@ -237,10 +231,7 @@ class ImageVisualizer(BaseVisualizer):
                 image_grid.add_image(image=image_result.gt_mask, color_map="gray", title="Ground Truth")
             image_grid.add_image(image_result.heat_map, "Predicted Heat Map")
             image_grid.add_image(image=image_result.pred_mask, color_map="gray", title="Predicted Mask")
-            image_grid.add_image(
-                image=image_result.segmentations,
-                title="Segmentation Result",
-            )
+            image_grid.add_image(image=image_result.segmentations, title="Segmentation Result")
         elif self.task == TaskType.CLASSIFICATION:
             image_grid.add_image(image_result.image, title="Image")
             if image_result.heat_map is not None:
