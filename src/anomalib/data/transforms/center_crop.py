@@ -9,7 +9,7 @@
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Any
+from typing import Any, Sequence
 
 import torch
 from torch.nn.functional import pad
@@ -77,9 +77,9 @@ class ExportableCenterCrop(Transform):
         size (int | tuple[int, int]): Desired output size of the crop.
     """
 
-    def __init__(self, size: int | tuple[int, int]) -> None:
+    def __init__(self, size: int | Sequence[int, int]) -> None:
         super().__init__()
-        self.size = list(size) if isinstance(size, tuple) else [size, size]
+        self.size = list(size) if isinstance(size, Sequence) else [size, size]
 
     def _transform(self, inpt: torch.Tensor, params: dict[str, Any]) -> torch.Tensor:
         """Apply the transform."""
