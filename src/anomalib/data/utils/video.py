@@ -12,7 +12,7 @@ import cv2
 import torch
 from torchvision.datasets.video_utils import VideoClips
 
-from anomalib.dataclasses import VideoBatch
+from anomalib.dataclasses import PredictBatch
 
 
 class ClipsIndexer(VideoClips, ABC):
@@ -62,7 +62,7 @@ class ClipsIndexer(VideoClips, ABC):
         video_path = self.video_paths[video_idx]
         clip_pts = self.clips[video_idx][clip_idx]
 
-        return VideoBatch(
+        return PredictBatch(
             image=clip,
             gt_mask=self.get_mask(idx),
             video_path=video_path,

@@ -100,7 +100,7 @@ class _MetricsCallback(Callback):
                         pl_module.pixel_metrics.add_metrics(new_metrics[name])
             else:
                 pl_module.pixel_metrics = create_metric_collection(pixel_metric_names, "pixel_")
-            self._set_threshold(pl_module)
+            # self._set_threshold(pl_module)
 
     def on_validation_epoch_start(
         self,
@@ -134,7 +134,7 @@ class _MetricsCallback(Callback):
     ) -> None:
         del trainer  # Unused argument.
 
-        self._set_threshold(pl_module)
+        # self._set_threshold(pl_module)
         self._log_metrics(pl_module)
 
     def on_test_epoch_start(
@@ -171,9 +171,9 @@ class _MetricsCallback(Callback):
 
         self._log_metrics(pl_module)
 
-    def _set_threshold(self, pl_module: AnomalyModule) -> None:
-        pl_module.image_metrics.set_threshold(pl_module.image_threshold.value.item())
-        pl_module.pixel_metrics.set_threshold(pl_module.pixel_threshold.value.item())
+    # def _set_threshold(self, pl_module: AnomalyModule) -> None:
+    #     pl_module.image_metrics.set_threshold(pl_module.post_processor.image_threshold)
+    #     pl_module.pixel_metrics.set_threshold(pl_module.post_processor.pixel_threshold)
 
     def _update_metrics(
         self,

@@ -7,7 +7,7 @@
 from typing import Any
 
 import torch
-from lightning import Callback
+from lightning import Callback, LightningModule
 from lightning.pytorch import Trainer
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 
@@ -16,7 +16,7 @@ from anomalib.models import AnomalyModule
 from anomalib.dataclasses import BatchItem
 
 
-class _PostProcessorCallback(Callback):
+class _PostProcessorCallback_old(Callback):
     """Applies post-processing to the model outputs.
 
     Note: This callback is set within the Engine.
@@ -124,3 +124,30 @@ class _PostProcessorCallback(Callback):
                 if outputs.gt_boxes is not None:
                     true_boxes: list[torch.Tensor] = outputs.gt_boxes
                     outputs.gt_mask = boxes_to_masks(true_boxes, image_size)
+
+
+class _PostProcessorCallback(Callback):
+    """Applies post-processing to the model outputs.
+
+    Note: This callback is set within the Engine.
+    """
+
+    def __init__(self) -> None:
+        super().__init__()
+
+    def on_validation_batch_end(
+        self,
+        trainer: Trainer,
+        pl_module: AnomalyModule,
+        outputs: BatchItem,
+        batch: Any,  # noqa: ANN401
+        batch_idx: int,
+        dataloader_idx: int = 0,
+    ) -> None:
+        del batch, batch_idx, dataloader_idx  # Unused arguments.
+
+        pl_module.post_processor.update(outputs)
+
+    def on_validation_epoch_end(self, trainer: Trainer, pl_module: LightningModule) -> None:
+        pl_module.post_processor.compute()
+    

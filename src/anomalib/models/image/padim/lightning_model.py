@@ -8,13 +8,16 @@ Paper https://arxiv.org/abs/2011.08785
 
 import logging
 
+from dataclasses import replace
+
 import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torchvision.transforms.v2 import Compose, Normalize, Resize, Transform
 
 from anomalib import LearningType
 from anomalib.models.components import AnomalyModule, MemoryBankMixin
-from anomalib.dataclasses import BatchItem
+from anomalib.dataclasses import PredictBatch
+from anomalib.models.components.base.post_processing import OneClassPostProcessor
 
 from .torch_model import PadimModel
 
@@ -57,12 +60,14 @@ class Padim(MemoryBankMixin, AnomalyModule):
         self.stats: list[torch.Tensor] = []
         self.embeddings: list[torch.Tensor] = []
 
+        self.post_processor = OneClassPostProcessor()
+
     @staticmethod
     def configure_optimizers() -> None:
         """PADIM doesn't require optimization, therefore returns no optimizers."""
         return
 
-    def training_step(self, batch: BatchItem, *args, **kwargs) -> None:
+    def training_step(self, batch: PredictBatch, *args, **kwargs) -> None:
         """Perform the training step of PADIM. For each batch, hierarchical features are extracted from the CNN.
 
         Args:
@@ -86,7 +91,7 @@ class Padim(MemoryBankMixin, AnomalyModule):
         logger.info("Fitting a Gaussian to the embedding collected from the training set.")
         self.stats = self.model.gaussian.fit(embeddings)
 
-    def validation_step(self, batch: BatchItem, *args, **kwargs) -> STEP_OUTPUT:
+    def validation_step(self, batch: PredictBatch, *args, **kwargs) -> STEP_OUTPUT:
         """Perform a validation step of PADIM.
 
         Similar to the training step, hierarchical features are extracted from the CNN for each batch.
@@ -101,9 +106,9 @@ class Padim(MemoryBankMixin, AnomalyModule):
             These are required in `validation_epoch_end` for feature concatenation.
         """
         del args, kwargs  # These variables are not used.
-
-        batch.anomaly_map = self.model(batch.image)
-        return batch
+        
+        anomaly_map = self.model(batch.image)
+        return replace(batch, anomaly_map=anomaly_map)
 
     @property
     def trainer_arguments(self) -> dict[str, int | float]:

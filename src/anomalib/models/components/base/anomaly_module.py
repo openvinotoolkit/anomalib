@@ -18,8 +18,10 @@ from torch import nn
 from torchvision.transforms.v2 import Compose, Normalize, Resize, Transform
 
 from anomalib import LearningType
+from anomalib.dataclasses import PredictBatch
 from anomalib.metrics import AnomalibMetricCollection
 from anomalib.metrics.threshold import BaseThreshold
+from anomalib.models.components.base.post_processing import PostProcessor
 
 from .export_mixin import ExportMixin
 
@@ -46,13 +48,10 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
         self.loss: nn.Module
         self.callbacks: list[Callback]
 
-        self.image_threshold: BaseThreshold
-        self.pixel_threshold: BaseThreshold
-
-        self.normalization_metrics: Metric
-
         self.image_metrics: AnomalibMetricCollection
         self.pixel_metrics: AnomalibMetricCollection
+
+        self.post_processor: PostProcessor
 
         self._transform: Transform | None = None
         self._input_size: tuple[int, int] | None = None
@@ -92,16 +91,11 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
             Tensor: Output tensor from the model.
         """
         del args, kwargs  # These variables are not used.
-
         return self.model(batch)
-
-    def validation_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> STEP_OUTPUT:
-        """To be implemented in the subclasses."""
-        raise NotImplementedError
 
     def predict_step(
         self,
-        batch: dict[str, str | torch.Tensor],
+        batch: PredictBatch,
         batch_idx: int,
         dataloader_idx: int = 0,
     ) -> STEP_OUTPUT:
@@ -120,7 +114,8 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
         """
         del dataloader_idx  # These variables are not used.
 
-        return self.validation_step(batch, batch_idx)
+        batch = self.validation_step(batch, batch_idx)
+        return self.post_processor.post_process_batch(batch)
 
     def test_step(self, batch: dict[str, str | torch.Tensor], batch_idx: int, *args, **kwargs) -> STEP_OUTPUT:
         """Calls validation_step for anomaly map/score calculation.

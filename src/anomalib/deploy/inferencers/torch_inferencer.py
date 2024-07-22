@@ -18,7 +18,7 @@ from anomalib import TaskType
 from anomalib.data import LabelName
 from anomalib.data.utils import read_image
 from anomalib.data.utils.boxes import masks_to_boxes
-from anomalib.dataclasses import ImageBatch
+from anomalib.dataclasses import PredictBatch
 from anomalib.utils.visualization import ImageResult
 
 from .base_inferencer import Inferencer
@@ -307,7 +307,7 @@ class TorchInferencer(Inferencer):
             pred_boxes = None
             box_labels = None
 
-        return ImageBatch(
+        return PredictBatch(
             anomaly_map=anomaly_map,
             pred_score=pred_score,
             pred_label=pred_label,

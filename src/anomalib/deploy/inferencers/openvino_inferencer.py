@@ -17,7 +17,7 @@ from PIL import Image
 from anomalib import TaskType
 from anomalib.data.utils.label import LabelName
 from anomalib.utils.visualization import ImageResult
-from anomalib.dataclasses import ImageBatch
+from anomalib.dataclasses import PredictBatch
 
 from .base_inferencer import Inferencer
 
@@ -305,7 +305,7 @@ class OpenVINOInferencer(Inferencer):
             pred_boxes = None
             box_labels = None
 
-        return ImageBatch(
+        return PredictBatch(
             anomaly_map=anomaly_map,
             pred_score=pred_score,
             pred_label=pred_label,
