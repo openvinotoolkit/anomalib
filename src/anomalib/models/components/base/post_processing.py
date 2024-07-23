@@ -56,12 +56,20 @@ class OneClassPostProcessor(PostProcessor):
         self._pixel_threshold.compute()
         self._normalization_stats.compute()
 
-    def forward(self, pred_score: torch.Tensor, anomaly_map):
+    def forward(self, predictions: torch.Tensor | tuple[torch.Tensor, torch.Tensor]):
         """ Funcional forward method for post-processing.
         """
+        if isinstance(predictions, tuple):
+            pred_score, anomaly_map = predictions
+            pred_score = self._normalize(pred_score, self.min, self.max, self.image_threshold)
+        else:
+            anomaly_map = predictions
+            pred_score = torch.amax(anomaly_map, dim=(-2, -1))
+        pred_label = self._threshold(pred_score, self.image_threshold)
+        pred_mask = self._threshold(anomaly_map, self.pixel_threshold)
         pred_score = self._normalize(pred_score, self.min, self.max, self.image_threshold)
         anomaly_map = self._normalize(anomaly_map, self.min, self.max, self.pixel_threshold)
-        return pred_score, anomaly_map
+        return pred_score, pred_label, anomaly_map, pred_mask
 
     def post_process_batch(self, batch: PredictBatch):
         # apply threshold
@@ -70,8 +78,8 @@ class OneClassPostProcessor(PostProcessor):
         return self.normalize_batch(batch)
 
     def threshold_batch(self, batch: PredictBatch):
-        pred_label = self._threshold(batch.pred_score, self.image_threshold)
-        pred_mask = self._threshold(batch.anomaly_map, self.pixel_threshold)
+        pred_label = batch.pred_label or self._threshold(batch.pred_score, self.image_threshold)
+        pred_mask = batch.pred_mask or self._threshold(batch.anomaly_map, self.pixel_threshold)
         return replace(batch, pred_label=pred_label, pred_mask=pred_mask)
 
     def normalize_batch(self, batch: PredictBatch):

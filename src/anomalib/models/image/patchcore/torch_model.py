@@ -101,7 +101,7 @@ class PatchcoreModel(DynamicBufferMixin, nn.Module):
             # get anomaly map
             anomaly_map = self.anomaly_map_generator(patch_scores, output_size)
 
-            output = {"anomaly_map": anomaly_map, "pred_score": pred_score}
+            output = (pred_score, anomaly_map)
 
         return output
 

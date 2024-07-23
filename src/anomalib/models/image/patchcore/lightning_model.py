@@ -8,6 +8,7 @@ Paper https://arxiv.org/abs/2106.08265.
 
 import logging
 from collections.abc import Sequence
+from dataclasses import replace
 from typing import Any
 
 import torch
@@ -15,7 +16,9 @@ from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torchvision.transforms.v2 import CenterCrop, Compose, Normalize, Resize, Transform
 
 from anomalib import LearningType
+from anomalib.dataclasses import PredictBatch
 from anomalib.models.components import AnomalyModule, MemoryBankMixin
+from anomalib.models.components.base.post_processing import OneClassPostProcessor
 
 from .torch_model import PatchcoreModel
 
@@ -56,6 +59,8 @@ class Patchcore(MemoryBankMixin, AnomalyModule):
         )
         self.coreset_sampling_ratio = coreset_sampling_ratio
         self.embeddings: list[torch.Tensor] = []
+
+        self.post_processor = OneClassPostProcessor()
 
     def configure_optimizers(self) -> None:
         """Configure optimizers.
@@ -104,13 +109,9 @@ class Patchcore(MemoryBankMixin, AnomalyModule):
         del args, kwargs
 
         # Get anomaly maps and predicted scores from the model.
-        output = self.model(batch["image"])
+        pred_score, anomaly_map = self.model(batch["image"])
 
-        # Add anomaly maps and predicted scores to the batch.
-        batch["anomaly_maps"] = output["anomaly_map"]
-        batch["pred_scores"] = output["pred_score"]
-
-        return batch
+        return replace(batch, pred_score=pred_score, anomaly_map=anomaly_map)
 
     @property
     def trainer_arguments(self) -> dict[str, Any]:
