@@ -1,5 +1,7 @@
 import torch
 
+from collections import namedtuple
+
 from dataclasses import dataclass, asdict, InitVar
 import warnings
 from pathlib import Path
@@ -8,6 +10,16 @@ from lightning.pytorch.trainer.states import RunningStage
 
 # from anomalib.models.components.base import AnomalyModule
 
+
+InferenceBatch = namedtuple(
+    "InferenceBatch",
+    [
+        "pred_label",
+        "pred_score",
+        "pred_mask",
+        "anomaly_map"
+    ]
+)
 
 
 @dataclass

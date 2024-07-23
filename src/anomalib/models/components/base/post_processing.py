@@ -5,7 +5,7 @@ from torchmetrics import MetricCollection
 from anomalib.metrics import MinMax, F1AdaptiveThreshold
 
 from dataclasses import replace
-from anomalib.dataclasses import PredictBatch
+from anomalib.dataclasses import PredictBatch, InferenceBatch
 from abc import ABC, abstractmethod
 
 
@@ -69,7 +69,12 @@ class OneClassPostProcessor(PostProcessor):
         pred_mask = self._threshold(anomaly_map, self.pixel_threshold)
         pred_score = self._normalize(pred_score, self.min, self.max, self.image_threshold)
         anomaly_map = self._normalize(anomaly_map, self.min, self.max, self.pixel_threshold)
-        return pred_score, pred_label, anomaly_map, pred_mask
+        return InferenceBatch(
+            pred_label=pred_label,
+            pred_score=pred_score,
+            pred_mask=pred_mask,
+            anomaly_map=anomaly_map
+        )
 
     def post_process_batch(self, batch: PredictBatch):
         # apply threshold
