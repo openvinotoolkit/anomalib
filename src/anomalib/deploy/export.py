@@ -71,10 +71,11 @@ class InferenceModel(nn.Module):
             is needed for ONNX/OpenVINO export, as antialiasing is not supported in the ONNX opset.
     """
 
-    def __init__(self, model: nn.Module, transform: Transform, disable_antialias: bool = False) -> None:
+    def __init__(self, model: nn.Module, transform: Transform, post_processor: nn.Module, disable_antialias: bool = False) -> None:
         super().__init__()
         self.model = model
         self.transform = transform
+        self.post_processor = post_processor
         self.convert_center_crop()
         if disable_antialias:
             self.disable_antialias()
@@ -82,7 +83,8 @@ class InferenceModel(nn.Module):
     def forward(self, batch: torch.Tensor) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
         """Transform the input batch and pass it through the model."""
         batch = self.transform(batch)
-        return self.model(batch)
+        predictions = self.model(batch)
+        return self.post_processor(predictions)
 
     def disable_antialias(self) -> None:
         """Disable antialiasing in the Resize transforms of the given transform.

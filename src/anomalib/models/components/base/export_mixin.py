@@ -39,6 +39,7 @@ class ExportMixin:
         self,
         export_root: Path | str,
         transform: Transform | None = None,
+        post_processor: nn.Module | None = None,
         task: TaskType | None = None,
     ) -> Path:
         """Export AnomalibModel to torch.
@@ -76,7 +77,8 @@ class ExportMixin:
             ... )
         """
         transform = transform or self.transform or self.configure_transforms()
-        inference_model = InferenceModel(model=self.model, transform=transform)
+        post_processor = post_processor or self.post_processor
+        inference_model = InferenceModel(model=self.model, transform=transform, post_processor=post_processor)
         export_root = _create_export_root(export_root, ExportType.TORCH)
         metadata = self._get_metadata(task=task)
         pt_model_path = export_root / "model.pt"
@@ -91,6 +93,7 @@ class ExportMixin:
         export_root: Path | str,
         input_size: tuple[int, int] | None = None,
         transform: Transform | None = None,
+        post_processor: nn.Module | None = None,
         task: TaskType | None = None,
     ) -> Path:
         """Export model to onnx.
@@ -132,7 +135,8 @@ class ExportMixin:
             ... )
         """
         transform = transform or self.transform or self.configure_transforms()
-        inference_model = InferenceModel(model=self.model, transform=transform, disable_antialias=True)
+        post_processor = post_processor or self.post_processor
+        inference_model = InferenceModel(model=self.model, transform=transform, post_processor=post_processor, disable_antialias=True)
         export_root = _create_export_root(export_root, ExportType.ONNX)
         input_shape = torch.zeros((1, 3, *input_size)) if input_size else torch.zeros((1, 3, 1, 1))
         dynamic_axes = (
