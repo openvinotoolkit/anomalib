@@ -51,7 +51,7 @@ class ImageResult:
         self.box_labels = box_labels
         self.gt_boxes = gt_boxes
         self.gt_mask = gt_mask
-        self.image = image
+        self.image = cv2.resize(image, anomaly_map.squeeze().shape[:2])
         self.pred_score = pred_score
         self.pred_label = pred_label
         self.pred_boxes = pred_boxes
@@ -66,7 +66,7 @@ class ImageResult:
         if self.gt_mask is not None and self.gt_mask.max() <= 1.0:
             self.gt_mask *= 255
 
-        self.pred_mask = pred_mask
+        self.pred_mask = pred_mask.astype(np.uint8).squeeze()
         if self.pred_mask is not None and self.pred_mask.max() <= 1.0:
             self.pred_mask *= 255
             self.segmentations = mark_boundaries(self.image, self.pred_mask, color=(1, 0, 0), mode="thick")
