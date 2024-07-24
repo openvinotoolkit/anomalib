@@ -5,14 +5,14 @@ from torchmetrics import MetricCollection
 from anomalib.metrics import MinMax, F1AdaptiveThreshold
 
 from dataclasses import replace
-from anomalib.dataclasses import PredictBatch, InferenceBatch
+from anomalib.dataclasses import Batch, InferenceBatch
 from abc import ABC, abstractmethod
 
 
 class PostProcessor(nn.Module, ABC):
 
     @abstractmethod
-    def update(self, batch: PredictBatch):
+    def update(self, batch: Batch):
         """ Update the min and max values.
         """
         pass
@@ -24,7 +24,7 @@ class PostProcessor(nn.Module, ABC):
         pass
 
     @abstractmethod
-    def post_process_batch(self, batch: PredictBatch):
+    def post_process_batch(self, batch: Batch):
         """ Post-process the predictions.
         """
         pass
@@ -42,7 +42,7 @@ class OneClassPostProcessor(PostProcessor):
         self._pixel_threshold = F1AdaptiveThreshold()
         self._normalization_stats = MinMax()
 
-    def update(self, batch: PredictBatch):
+    def update(self, batch: Batch):
         """ Update the min and max values.
         """
         self._image_threshold.update(batch.pred_score, batch.gt_label)
@@ -76,18 +76,18 @@ class OneClassPostProcessor(PostProcessor):
             anomaly_map=anomaly_map
         )
 
-    def post_process_batch(self, batch: PredictBatch):
+    def post_process_batch(self, batch: Batch):
         # apply threshold
         batch = self.threshold_batch(batch)
         # apply normalization
         return self.normalize_batch(batch)
 
-    def threshold_batch(self, batch: PredictBatch):
+    def threshold_batch(self, batch: Batch):
         pred_label = batch.pred_label or self._threshold(batch.pred_score, self.image_threshold)
         pred_mask = batch.pred_mask or self._threshold(batch.anomaly_map, self.pixel_threshold)
         return replace(batch, pred_label=pred_label, pred_mask=pred_mask)
 
-    def normalize_batch(self, batch: PredictBatch):
+    def normalize_batch(self, batch: Batch):
         # normalize image-level predictions
         pred_score = self._normalize(batch.pred_score, self.min, self.max, self.image_threshold)
         # normalize pixel-level predictions

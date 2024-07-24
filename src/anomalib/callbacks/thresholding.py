@@ -14,7 +14,7 @@ from omegaconf import DictConfig, ListConfig
 from anomalib.metrics.threshold import BaseThreshold
 from anomalib.models import AnomalyModule
 from anomalib.utils.types import THRESHOLD
-from anomalib.dataclasses import BatchItem
+from anomalib.dataclasses import Batch
 
 from dataclasses import asdict
 
@@ -181,7 +181,7 @@ class _ThresholdCallback(Callback):
         if isinstance(output, dict):
             for key, value in output.items():
                 output[key] = self._outputs_to_cpu(value)
-        elif isinstance(output, BatchItem):
+        elif isinstance(output, Batch):
             output = output.__class__(**self._outputs_to_cpu(asdict(output)))
         elif isinstance(output, torch.Tensor):
             output = output.cpu()

@@ -17,7 +17,7 @@ from torchvision.transforms.v2 import Resize, Transform
 
 from anomalib.data.utils import TestSplitMode, ValSplitMode, random_split, split_by_label
 from anomalib.data.utils.synthetic import SyntheticAnomalyDataset
-from anomalib.dataclasses import BatchItem
+from anomalib.dataclasses import Batch
 from dataclasses import asdict
 
 if TYPE_CHECKING:
@@ -28,7 +28,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-def collate_fn(batch: list[BatchItem]) -> dict[str, Any]:
+def collate_fn(batch: list[Batch]) -> dict[str, Any]:
     """Collate bounding boxes as lists.
 
     Bounding boxes are collated as a list of tensors, while the default collate function is used for all other entries.

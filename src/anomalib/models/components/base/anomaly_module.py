@@ -18,7 +18,7 @@ from torch import nn
 from torchvision.transforms.v2 import Compose, Normalize, Resize, Transform
 
 from anomalib import LearningType
-from anomalib.dataclasses import PredictBatch
+from anomalib.dataclasses import Batch
 from anomalib.metrics import AnomalibMetricCollection
 from anomalib.metrics.threshold import BaseThreshold
 from anomalib.models.components.base.post_processing import PostProcessor
@@ -95,7 +95,7 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
 
     def predict_step(
         self,
-        batch: PredictBatch,
+        batch: Batch,
         batch_idx: int,
         dataloader_idx: int = 0,
     ) -> STEP_OUTPUT:
