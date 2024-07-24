@@ -10,6 +10,7 @@ from typing import Any
 
 import torchmetrics
 from omegaconf import DictConfig, ListConfig
+from torchmetrics import Metric
 
 from .anomaly_score_distribution import AnomalyScoreDistribution
 from .aupr import AUPR
@@ -162,7 +163,7 @@ def metric_collection_from_dicts(metrics: dict[str, dict[str, Any]], prefix: str
 
 
 def create_metric_collection(
-    metrics: list[str] | dict[str, dict[str, Any]],
+    metrics: list[str] | dict[str, dict[str, Any]] | Metric | list[Metric],
     prefix: str | None = None,
 ) -> AnomalibMetricCollection:
     """Create a metric collection from a list of metric names or dictionaries.
@@ -171,25 +172,31 @@ def create_metric_collection(
 
         - if list[str] (names of metrics): see `metric_collection_from_names`
         - if dict[str, dict[str, Any]] (path and init args of a class): see `metric_collection_from_dicts`
+        - if list[Metric] (metric objects): A collection is returned with those metrics.
 
     The function will first try to retrieve the metric from the metrics defined in Anomalib metrics module,
     then in TorchMetrics package.
 
     Args:
-        metrics (list[str] | dict[str, dict[str, Any]]): List of metrics or dictionaries to create metric collection.
+        metrics (list[str] | dict[str, dict[str, Any]] | Metric | list[Metric]): List of metrics or dictionaries to
+            create metric collection.
         prefix (str | None): Prefix to assign to the metrics in the collection.
 
     Returns:
         AnomalibMetricCollection: Collection of metrics.
     """
-    # fallback is using the names
-
     if isinstance(metrics, ListConfig | list):
-        if not all(isinstance(metric, str) for metric in metrics):
-            msg = f"All metrics must be strings, found {metrics}"
+        if not (
+            all(isinstance(metric, str) for metric in metrics) or all(isinstance(metric, Metric) for metric in metrics)
+        ):
+            msg = f"All metrics must be either string or Metric objects, found {metrics}"
             raise TypeError(msg)
+        if all(isinstance(metric, str) for metric in metrics):
+            return metric_collection_from_names(metrics, prefix)
+        return AnomalibMetricCollection(metrics, prefix)
 
-        return metric_collection_from_names(metrics, prefix)
+    if isinstance(metrics, Metric):
+        return AnomalibMetricCollection([metrics], prefix)
 
     if isinstance(metrics, DictConfig | dict):
         _validate_metrics_dict(metrics)
