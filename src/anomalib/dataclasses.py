@@ -2,22 +2,18 @@ import torch
 
 from collections import namedtuple
 
-from dataclasses import dataclass, asdict, InitVar
+from dataclasses import dataclass, asdict
 import warnings
 from pathlib import Path
-
-from lightning.pytorch.trainer.states import RunningStage
-
-# from anomalib.models.components.base import AnomalyModule
 
 
 InferenceBatch = namedtuple(
     "InferenceBatch",
     [
-        "pred_label",
         "pred_score",
+        "pred_label",
+        "anomaly_map",
         "pred_mask",
-        "anomaly_map"
     ]
 )
 
@@ -57,6 +53,9 @@ class InputBatch(BatchItem):
     original_image: torch.Tensor | None = None
     frames: torch.Tensor | None = None
     last_frame: int | None = None
+
+    def __post_init__(self):
+        self.image = self.image
     
     @property
     def mask(self) -> torch.Tensor:
@@ -83,8 +82,8 @@ class InputBatch(BatchItem):
 class PredictBatch(InputBatch):
     """Base class for storing the prediction results of a model."""
 
-    pred_score: float | None = None
-    pred_label: int | None = None
+    pred_score: torch.Tensor | None = None
+    pred_label: torch.Tensor | None = None
     anomaly_map: torch.Tensor | None = None
     pred_mask: torch.Tensor | None = None
     pred_boxes: torch.Tensor | None = None
@@ -95,9 +94,29 @@ class PredictBatch(InputBatch):
         # compute pred score if not supplied
         if self.pred_score is None and self.anomaly_map is not None:
             # infer image scores from anomaly maps
-            self.pred_score = (
-                self.anomaly_map  # noqa: PD011
-                .reshape(self.anomaly_map.shape[0], -1)
-                .max(dim=1)
-                .values
-            )
+            self.pred_score = torch.amax(self.anomaly_map, dim=(-2,-1)).squeeze()
+        
+        self._format_and_validate()
+
+    def _format_and_validate(self):
+
+        # validate and format pred score
+        if self.pred_score is not None:
+            self.pred_score = self.pred_score.squeeze()
+
+        # validate and format pred label
+        if self.pred_label is not None:
+            self.pred_label = self.pred_label.squeeze().bool()
+
+        # validate and format anomaly map
+        if self.anomaly_map is not None:
+            if self.anomaly_map.dim() == 4:  # anomaly map has shape [N, C, H, W]
+                assert self.anomaly_map.shape[1] == 1, f"Anomaly map must have 1 channel, got {self.anomaly_map.shape[1]}"
+                self.anomaly_map = self.anomaly_map.squeeze(1)
+        
+        # validate and format pred mask
+        if self.pred_mask is not None:
+            if self.pred_mask.dim() == 4:  # mask has shape [N, C, H, W]
+                assert self.pred_mask.shape[1] == 1, f"Mask must have 1 channel, got {self.pred_mask.shape[1]}"
+                self.pred_mask = self.pred_mask.squeeze(1)
+            self.pred_mask = self.pred_mask.bool()
