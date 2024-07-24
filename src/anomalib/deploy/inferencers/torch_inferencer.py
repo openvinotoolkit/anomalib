@@ -12,10 +12,8 @@ from torch import nn
 from anomalib.data.utils import read_image
 from anomalib.dataclasses import PredictBatch
 
-from .base_inferencer import Inferencer
 
-
-class TorchInferencer(Inferencer):
+class TorchInferencer:
     """PyTorch implementation for the inference.
 
     Args:
@@ -154,14 +152,3 @@ class TorchInferencer(Inferencer):
             image = image.unsqueeze(0)  # model expects [B, C, H, W]
 
         return image.to(self.device)
-
-    def forward(self, image: str | Path | torch.Tensor) -> PredictBatch:
-        """Forward-Pass input tensor to the model.
-
-        Args:
-            image (str | Path | torch.Tensor): Input image to be passed to the model.
-
-        Returns:
-            Tensor: Output predictions.
-        """
-        return self.predict(image)
