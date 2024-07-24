@@ -420,7 +420,7 @@ class Engine:
             )
 
         # Add the post-processor callbacks.
-        _callbacks.append(_PostProcessorCallback())
+        # _callbacks.append(_PostProcessorCallback())
 
         # Add the the normalization callback.
         # normalization_callback = get_normalization_callback(self.normalization)

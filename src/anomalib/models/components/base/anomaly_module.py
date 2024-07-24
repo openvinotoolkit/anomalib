@@ -8,10 +8,11 @@ import logging
 from abc import ABC, abstractmethod
 from collections import OrderedDict
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, final
 
 import lightning.pytorch as pl
 import torch
+from lightning.pytorch import Callback
 from lightning.pytorch.trainer.states import TrainerFn
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torch import nn
@@ -57,6 +58,11 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
         self._input_size: tuple[int, int] | None = None
 
         self._is_setup = False  # flag to track if setup has been called from the trainer
+
+    @final
+    def configure_callbacks(self):
+        if isinstance(self.post_processor, Callback):
+            return [self.post_processor]
 
     @property
     def name(self) -> str:

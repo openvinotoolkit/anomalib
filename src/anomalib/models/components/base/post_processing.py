@@ -1,7 +1,8 @@
 
+from lightning import LightningModule, Trainer
 import torch
 from torch import nn
-from torchmetrics import MetricCollection
+from lightning.pytorch import Callback
 from anomalib.metrics import MinMax, F1AdaptiveThreshold
 
 from dataclasses import replace
@@ -10,12 +11,6 @@ from abc import ABC, abstractmethod
 
 
 class PostProcessor(nn.Module, ABC):
-
-    @abstractmethod
-    def update(self, batch: Batch):
-        """ Update the min and max values.
-        """
-        pass
 
     @abstractmethod
     def forward(self, pred_score, anomaly_map):
@@ -31,7 +26,7 @@ class PostProcessor(nn.Module, ABC):
 
 
 
-class OneClassPostProcessor(PostProcessor):
+class OneClassPostProcessor(PostProcessor, Callback):
     """ Default post-processor for one-class anomaly detection.
     """
 
@@ -42,16 +37,20 @@ class OneClassPostProcessor(PostProcessor):
         self._pixel_threshold = F1AdaptiveThreshold()
         self._normalization_stats = MinMax()
 
-    def update(self, batch: Batch):
-        """ Update the min and max values.
-        """
-        self._image_threshold.update(batch.pred_score, batch.gt_label)
-        self._pixel_threshold.update(batch.anomaly_map, batch.gt_mask)
-        self._normalization_stats.update(batch.anomaly_map)
+    def on_validation_batch_end(
+        self,
+        trainer: Trainer,
+        pl_module: LightningModule,
+        outputs: Batch,
+        *args,
+        **kwargs,
+    ) -> None:
+        del trainer, pl_module # Unused arguments.
+        self._image_threshold.update(outputs.pred_score, outputs.gt_label)
+        self._pixel_threshold.update(outputs.anomaly_map, outputs.gt_mask)
+        self._normalization_stats.update(outputs.anomaly_map)
 
-    def compute(self):
-        """ Compute the min and max values.
-        """
+    def on_validation_epoch_end(self, trainer: Trainer, pl_module: LightningModule) -> None:
         self._image_threshold.compute()
         self._pixel_threshold.compute()
         self._normalization_stats.compute()
