@@ -1,21 +1,20 @@
 import torch
 
+import numpy as np
+
 from collections import namedtuple
+from typing import NamedTuple, Generic, TypeVar
 
 from dataclasses import dataclass, asdict
 import warnings
 from pathlib import Path
 
 
-InferenceBatch = namedtuple(
-    "InferenceBatch",
-    [
-        "pred_score",
-        "pred_label",
-        "anomaly_map",
-        "pred_mask",
-    ]
-)
+class InferenceBatch(NamedTuple):
+    pred_score: torch.Tensor | None = None
+    pred_label: torch.Tensor | None = None
+    anomaly_map: torch.Tensor | None = None
+    pred_mask: torch.Tensor | None = None
 
 
 @dataclass
@@ -78,6 +77,84 @@ class InputBatch(BatchItem):
         self.gt_mask = value
 
 
+T = TypeVar("T")
+
+@dataclass
+class GenericInputBatch(Generic[T]):
+    image: T | None = None
+
+    gt_label: T | None = None
+    gt_mask: T | None = None
+    gt_boxes: T | None = None
+
+    image_path: Path | None = None
+    mask_path: Path | None = None
+    video_path: Path | None = None
+    original_image: T | None = None
+    frames: T | None = None
+    last_frame: int | None = None
+
+@dataclass
+class GenericOutputBatch(Generic[T]):
+    pred_score: T | None = None
+    pred_label: T | None = None
+    anomaly_map: T | None = None
+    pred_mask: T | None = None
+    pred_boxes: T | None = None
+    box_scores: T | None = None
+    box_labels: T | None = None
+
+@dataclass
+class GenericBatch(Generic[T], GenericInputBatch[T], GenericOutputBatch[T]):
+    pass
+
+@dataclass
+class NumpyBatch(GenericBatch[np.ndarray]):
+        
+    def __post_init__(self):
+        self._format_and_validate()
+
+    def _format_and_validate(self):
+
+        # validate and format pred score
+        if self.pred_score is not None:
+            self.pred_score = np.squeeze(self.pred_score)
+
+        # validate and format pred label
+        if self.pred_label is not None:
+            self.pred_label = np.squeeze(self.pred_label).astype(bool)
+
+        # validate and format anomaly map
+        if self.anomaly_map is not None:
+            if self.anomaly_map.ndim == 4:
+                assert self.anomaly_map.shape[1] == 1, f"Anomaly map must have 1 channel, got {self.anomaly_map.shape[1]}"
+                self.anomaly_map = np.squeeze(self.anomaly_map, axis=1)
+    
+
+
+@dataclass
+class TorchBatch(GenericBatch[torch.Tensor]):
+    """Base class for storing the prediction results of a model."""
+
+    def __post_init__(self):
+        self._format_and_validate()
+
+    def _format_and_validate(self):
+
+        # validate and format pred score
+        if self.pred_score is not None:
+            self.pred_score = self.pred_score.squeeze()
+
+        # validate and format pred label
+        if self.pred_label is not None:
+            self.pred_label = self.pred_label.squeeze().bool()
+
+        # validate and format anomaly map
+        if self.anomaly_map is not None:
+            if self.anomaly_map.dim() == 4:
+                assert self.anomaly_map.shape[1] == 1, f"Anomaly map must have 1 channel, got {self.anomaly_map.shape[1]}"
+                self.anomaly_map = self.anomaly_map.squeeze(1)
+
 @dataclass(kw_only=True)
 class PredictBatch(InputBatch):
     """Base class for storing the prediction results of a model."""
@@ -120,3 +197,6 @@ class PredictBatch(InputBatch):
                 assert self.pred_mask.shape[1] == 1, f"Mask must have 1 channel, got {self.pred_mask.shape[1]}"
                 self.pred_mask = self.pred_mask.squeeze(1)
             self.pred_mask = self.pred_mask.bool()
+
+    def to_numpy():
+        """Convert to NumpyPredictBatch"""

@@ -17,6 +17,7 @@ from torch import nn
 from torchvision.transforms.v2 import Transform
 
 from anomalib import TaskType
+from anomalib.dataclasses import InferenceBatch
 from anomalib.data import AnomalibDataModule
 from anomalib.deploy.export import CompressionType, ExportType, InferenceModel
 from anomalib.utils.exceptions import try_import
@@ -151,7 +152,7 @@ class ExportMixin:
             opset_version=14,
             dynamic_axes=dynamic_axes,
             input_names=["input"],
-            output_names=["output"],
+            output_names=list(InferenceBatch._fields),
         )
 
         return onnx_path
