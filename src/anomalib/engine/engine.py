@@ -321,7 +321,7 @@ class Engine:
             self._cache.update(model)
 
         # Setup anomalib callbacks to be used with the trainer
-        self._setup_anomalib_callbacks()
+        self._setup_anomalib_callbacks(model)
 
         # Temporarily set devices to 1 to avoid issues with multiple processes
         self._cache.args["devices"] = 1
@@ -404,7 +404,7 @@ class Engine:
                 if not getattr(dataloader.dataset, "transform", None):
                     dataloader.dataset.transform = transform
 
-    def _setup_anomalib_callbacks(self) -> None:
+    def _setup_anomalib_callbacks(self, model: AnomalyModule) -> None:
         """Set up callbacks for the trainer."""
         _callbacks: list[Callback] = [RichProgressBar(), RichModelSummary()]
 
@@ -420,7 +420,7 @@ class Engine:
             )
 
         # Add the post-processor callbacks.
-        # _callbacks.append(_PostProcessorCallback())
+        _callbacks.append(model.post_processor)
 
         # Add the the normalization callback.
         # normalization_callback = get_normalization_callback(self.normalization)

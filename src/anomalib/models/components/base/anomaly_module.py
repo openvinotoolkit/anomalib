@@ -8,7 +8,7 @@ import logging
 from abc import ABC, abstractmethod
 from collections import OrderedDict
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, final
+from typing import TYPE_CHECKING, Any
 
 import lightning.pytorch as pl
 import torch
@@ -58,11 +58,6 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
         self._input_size: tuple[int, int] | None = None
 
         self._is_setup = False  # flag to track if setup has been called from the trainer
-
-    @final
-    def configure_callbacks(self):
-        if isinstance(self.post_processor, Callback):
-            return [self.post_processor]
 
     @property
     def name(self) -> str:
@@ -120,8 +115,7 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
         """
         del dataloader_idx  # These variables are not used.
 
-        batch = self.validation_step(batch, batch_idx)
-        return self.post_processor.post_process_batch(batch)
+        return self.validation_step(batch, batch_idx)
 
     def test_step(self, batch: dict[str, str | torch.Tensor], batch_idx: int, *args, **kwargs) -> STEP_OUTPUT:
         """Calls validation_step for anomaly map/score calculation.

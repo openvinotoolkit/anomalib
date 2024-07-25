@@ -10,7 +10,7 @@ from anomalib.dataclasses import Batch, InferenceBatch
 from abc import ABC, abstractmethod
 
 
-class PostProcessor(nn.Module, ABC):
+class PostProcessor(nn.Module, Callback, ABC):
 
     @abstractmethod
     def forward(self, pred_score, anomaly_map):
@@ -26,7 +26,7 @@ class PostProcessor(nn.Module, ABC):
 
 
 
-class OneClassPostProcessor(PostProcessor, Callback):
+class OneClassPostProcessor(PostProcessor):
     """ Default post-processor for one-class anomaly detection.
     """
 
@@ -55,6 +55,14 @@ class OneClassPostProcessor(PostProcessor, Callback):
         self._pixel_threshold.compute()
         self._normalization_stats.compute()
 
+    def on_test_batch_end(self, trainer: Trainer, pl_module: LightningModule, outputs: Batch, *args, **kwargs) -> None:
+        del trainer, pl_module
+        self.post_process_batch(outputs)
+
+    def on_predict_batch_end(self, trainer: Trainer, pl_module: LightningModule, outputs: Batch, *args, **kwargs) -> None:
+        del trainer, pl_module
+        self.post_process_batch(outputs)
+
     def forward(self, predictions: torch.Tensor | tuple[torch.Tensor, torch.Tensor]):
         """ Funcional forward method for post-processing.
         """
@@ -77,21 +85,19 @@ class OneClassPostProcessor(PostProcessor, Callback):
 
     def post_process_batch(self, batch: Batch):
         # apply threshold
-        batch = self.threshold_batch(batch)
+        self.threshold_batch(batch)
         # apply normalization
-        return self.normalize_batch(batch)
+        self.normalize_batch(batch)
 
     def threshold_batch(self, batch: Batch):
-        pred_label = batch.pred_label or self._threshold(batch.pred_score, self.image_threshold)
-        pred_mask = batch.pred_mask or self._threshold(batch.anomaly_map, self.pixel_threshold)
-        return replace(batch, pred_label=pred_label, pred_mask=pred_mask)
+        batch.pred_label = batch.pred_label or self._threshold(batch.pred_score, self.image_threshold)
+        batch.pred_mask = batch.pred_mask or self._threshold(batch.anomaly_map, self.pixel_threshold)
 
     def normalize_batch(self, batch: Batch):
         # normalize image-level predictions
-        pred_score = self._normalize(batch.pred_score, self.min, self.max, self.image_threshold)
+        batch.pred_score = self._normalize(batch.pred_score, self.min, self.max, self.image_threshold)
         # normalize pixel-level predictions
-        anomaly_map = self._normalize(batch.anomaly_map, self.min, self.max, self.pixel_threshold)
-        return replace(batch, pred_score=pred_score, anomaly_map=anomaly_map)
+        batch.anomaly_map = self._normalize(batch.anomaly_map, self.min, self.max, self.pixel_threshold)
 
     @staticmethod
     def _threshold(preds, threshold):
