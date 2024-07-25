@@ -17,7 +17,7 @@ from torchvision.transforms.v2 import Transform
 from torchvision.tv_tensors import Mask
 
 from anomalib import TaskType
-from anomalib.dataclasses import Batch
+from anomalib.dataclasses import DatasetItem
 from anomalib.data.utils import LabelName, masks_to_boxes, read_image, read_mask
 
 _EXPECTED_COLUMNS_CLASSIFICATION = ["image_path", "split"]
@@ -168,7 +168,7 @@ class AnomalibDataset(Dataset, ABC):
         label_index = self.samples.iloc[index].label_index
 
         image = read_image(image_path, as_tensor=True)
-        item = {"image_path": image_path, "label": label_index}
+        item = {"image_path": image_path, "gt_label": label_index}
 
         if self.task == TaskType.CLASSIFICATION:
             item["image"] = self.transform(image) if self.transform else image
@@ -180,20 +180,20 @@ class AnomalibDataset(Dataset, ABC):
                 if label_index == LabelName.NORMAL
                 else read_mask(mask_path, as_tensor=True)
             )
-            item["image"], item["mask"] = self.transform(image, mask) if self.transform else (image, mask)
+            item["image"], item["gt_mask"] = self.transform(image, mask) if self.transform else (image, mask)
 
             if self.task == TaskType.DETECTION:
                 # create boxes from masks for detection task
-                boxes, _ = masks_to_boxes(item["mask"])
+                boxes, _ = masks_to_boxes(item["gt_mask"])
                 item["boxes"] = boxes[0]
         else:
             msg = f"Unknown task type: {self.task}"
             raise ValueError(msg)
 
         # return item
-        return Batch(
+        return DatasetItem(
             image=item["image"],
-            gt_mask=item["mask"],
+            gt_mask=item["gt_mask"],
             gt_label=label_index,
             image_path=image_path,
             mask_path=mask_path,
