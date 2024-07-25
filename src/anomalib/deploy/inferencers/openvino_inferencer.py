@@ -10,12 +10,11 @@ from typing import TYPE_CHECKING, Any
 
 import cv2
 import numpy as np
+from openvino.runtime.utils.data_helpers.wrappers import OVDict
 
 from anomalib import TaskType
 from anomalib.data.utils import read_image
 from anomalib.dataclasses import NumpyBatch
-
-from openvino.runtime.utils.data_helpers.wrappers import OVDict
 
 logger = logging.getLogger("anomalib")
 
@@ -172,7 +171,7 @@ class OpenVINOInferencer:
             image = np.expand_dims(image, axis=0)
 
         if image.shape[-1] == 3:
-            image = image.transpose(0, 3, 1, 2)\
+            image = image.transpose(0, 3, 1, 2)
 
         return image
 
@@ -207,8 +206,8 @@ class OpenVINOInferencer:
             msg = f"Input image must be a numpy array or a path to an image. Got {type(image)}"
             raise TypeError(msg)
 
-        processed_image = self.pre_process(image)
-        predictions = self.model(processed_image)
+        image = self.pre_process(image)
+        predictions = self.model(image)
         pred_dict = self.post_process(predictions)
 
         return NumpyBatch(

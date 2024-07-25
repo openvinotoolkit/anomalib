@@ -14,8 +14,7 @@ from pathlib import Path
 from anomalib.data.utils import generate_output_image_filename, get_image_filenames, read_image
 from anomalib.data.utils.image import save_image, show_image
 from anomalib.deploy import OpenVINOInferencer
-from anomalib.utils.visualization import ImageVisualizer, ImageResult
-import numpy as np
+from anomalib.utils.visualization import ImageResult, ImageVisualizer
 
 logger = logging.getLogger(__name__)
 
@@ -83,15 +82,7 @@ def infer(args: Namespace) -> None:
         predictions = inferencer.predict(image=image)
 
         # this is temporary until we update the visualizer to take the dataclass directly.
-        image_result = ImageResult(
-            image=(predictions.image * 255).astype(np.uint8),
-            pred_score=predictions.pred_score,
-            pred_label=predictions.pred_label,
-            anomaly_map=predictions.anomaly_map,
-            pred_mask=predictions.pred_mask,
-            pred_boxes=predictions.pred_boxes,
-            box_labels=predictions.box_labels,
-        )
+        image_result = ImageResult.from_batch(predictions)
         output = visualizer.visualize_image(image_result)
 
         if args.output is None and args.show is False:

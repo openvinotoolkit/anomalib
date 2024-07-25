@@ -11,7 +11,6 @@ import logging
 from argparse import ArgumentParser, Namespace
 from pathlib import Path
 
-import numpy as np
 import torch
 
 from anomalib.data.utils import generate_output_image_filename, get_image_filenames, read_image
@@ -85,16 +84,7 @@ def infer(args: Namespace) -> None:
         image = read_image(filename, as_tensor=True)
         predictions = inferencer.predict(image=image)
 
-        # this is temporary until we update the visualizer to take the dataclass directly.
-        image_result = ImageResult(
-            image=(predictions.image.numpy().transpose(1, 2, 0) * 255).astype(np.uint8),
-            pred_score=predictions.pred_score.cpu().numpy() if predictions.pred_score is not None else None,
-            pred_label=predictions.pred_label.cpu().numpy() if predictions.pred_label is not None else None,
-            anomaly_map=predictions.anomaly_map.cpu().numpy() if predictions.anomaly_map is not None else None,
-            pred_mask=predictions.pred_mask.cpu().numpy() if predictions.pred_mask is not None else None,
-            pred_boxes=predictions.pred_boxes.cpu().numpy() if predictions.pred_boxes is not None else None,
-            box_labels=predictions.box_labels.cpu().numpy() if predictions.box_labels is not None else None,
-        )
+        image_result = ImageResult.from_batch(predictions)
         output = visualizer.visualize_image(image_result)
 
         if args.output is None and args.show is False:

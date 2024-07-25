@@ -131,8 +131,8 @@ class TorchInferencer:
         if isinstance(image, str | Path):
             image = read_image(image, as_tensor=True)
 
-        processed_image = self.pre_process(image)
-        predictions = self.model(processed_image)
+        image = self.pre_process(image)
+        predictions = self.model(image)
 
         return Batch(
             image=image,

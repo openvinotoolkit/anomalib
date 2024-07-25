@@ -2,8 +2,8 @@
 
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
-
 from collections.abc import Iterator
+from dataclasses import InitVar, asdict, dataclass, fields
 from enum import Enum
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -16,7 +16,13 @@ from skimage.segmentation import mark_boundaries
 
 from anomalib import TaskType
 from anomalib.data.utils import read_image
-from anomalib.utils.post_processing import add_anomalous_label, add_normal_label, draw_boxes, superimpose_anomaly_map
+from anomalib.dataclasses import Batch, NumpyBatch
+from anomalib.utils.post_processing import (
+    add_anomalous_label,
+    add_normal_label,
+    draw_boxes,
+    superimpose_anomaly_map,
+)
 
 from .base import BaseVisualizer, GeneratorResult, VisualizationStep
 
@@ -31,42 +37,33 @@ class VisualizationMode(str, Enum):
     SIMPLE = "simple"
 
 
+@dataclass
 class ImageResult:
     """Collection of data needed to visualize the predictions for an image."""
 
-    def __init__(
-        self,
-        image: np.ndarray,
-        pred_score: float,
-        pred_label: str,
-        anomaly_map: np.ndarray | None = None,
-        gt_mask: np.ndarray | None = None,
-        pred_mask: np.ndarray | None = None,
-        gt_boxes: np.ndarray | None = None,
-        pred_boxes: np.ndarray | None = None,
-        box_labels: np.ndarray | None = None,
-        normalize: bool = False,
-    ) -> None:
-        self.anomaly_map = anomaly_map
-        self.box_labels = box_labels
-        self.gt_boxes = gt_boxes
-        self.gt_mask = gt_mask
-        self.image = cv2.resize(image, anomaly_map.squeeze().shape[:2])
-        self.pred_score = pred_score
-        self.pred_label = pred_label
-        self.pred_boxes = pred_boxes
-        self.heat_map: np.ndarray | None = None
-        self.segmentations: np.ndarray | None = None
-        self.normal_boxes: np.ndarray | None = None
-        self.anomalous_boxes: np.ndarray | None = None
+    image: np.ndarray
+    pred_score: float
+    pred_label: str
+    anomaly_map: np.ndarray | None = None
+    gt_mask: np.ndarray | None = None
+    pred_mask: np.ndarray | None = None
+    gt_boxes: np.ndarray | None = None
+    pred_boxes: np.ndarray | None = None
+    box_labels: np.ndarray | None = None
+    normalize: InitVar[bool] = False
 
-        if anomaly_map is not None:
+    def __post_init__(self, normalize):
+        if self.image.dtype != np.uint8:
+            self.image = (self.image * 255).astype(np.uint8)
+        self.image = cv2.resize(self.image.squeeze(), self.anomaly_map.squeeze().shape[:2])
+
+        if self.anomaly_map is not None:
             self.heat_map = superimpose_anomaly_map(self.anomaly_map, self.image, normalize=normalize)
 
         if self.gt_mask is not None and self.gt_mask.max() <= 1.0:
             self.gt_mask *= 255
 
-        self.pred_mask = pred_mask.astype(np.uint8).squeeze()
+        self.pred_mask = self.pred_mask.astype(np.uint8).squeeze()
         if self.pred_mask is not None and self.pred_mask.max() <= 1.0:
             self.pred_mask *= 255
             self.segmentations = mark_boundaries(self.image, self.pred_mask, color=(1, 0, 0), mode="thick")
@@ -95,6 +92,18 @@ class ImageResult:
         repr_str += f", anomalous_boxes={self.anomalous_boxes}" if self.anomalous_boxes is not None else ""
         repr_str += ")"
         return repr_str
+
+    @classmethod
+    def from_batch(cls, batch: Batch | NumpyBatch):
+        """Create an ImageResult object from a Batch object.
+
+        This is a temporary solution until we refactor the visualizer to take a Batch object directly as input.
+        """
+        if isinstance(batch, Batch):
+            batch = batch.to_numpy()
+        batch_dict = asdict(batch)
+        field_names = {field.name for field in fields(cls)} & set(batch_dict.keys())
+        return cls(**dict((key, batch_dict[key]) for key in field_names))
 
 
 class ImageVisualizer(BaseVisualizer):
