@@ -1,5 +1,5 @@
 import warnings
-from dataclasses import asdict, dataclass, astuple
+from dataclasses import asdict, dataclass, astuple, replace, fields, is_dataclass
 from collections.abc import Iterable
 from pathlib import Path
 from typing import Generic, NamedTuple, TypeVar
@@ -54,6 +54,29 @@ class BackwardCompatibilityMixin:
         self.gt_mask = value
 
 
+class ReplaceMixin:
+    """Mixin class for dataclasses that allows for in-place replacement of attributes."""
+    def replace(self, in_place=False, **changes):
+        """
+        Replace fields in place and call __post_init__ to reinitialize the instance.
+        
+        Parameters:
+        changes (dict): A dictionary of field names and their new values.
+        """
+        if not is_dataclass(self):
+            raise TypeError("replace can only be used with dataclass instances")
+    
+        if in_place:
+            for field in fields(self):
+                if field.init and field.name in changes:
+                    setattr(self, field.name, changes[field.name])
+            if hasattr(self, "__post_init__"):
+                self.__post_init__()
+            return self
+        else:
+            return replace(self, **changes)
+
+
 T = TypeVar("T", torch.Tensor, np.ndarray)
 
 
@@ -100,7 +123,10 @@ class GenericDatasetItem(Generic[T], GenericInput[T], GenericOutput[T]):
                 self.anomaly_map = self.anomaly_map.squeeze(1)
 
 @dataclass
-class NumpyDatasetItem(GenericDatasetItem[np.ndarray]):
+class NumpyDatasetItem(
+    ReplaceMixin,
+    GenericDatasetItem[np.ndarray]
+):
 
     def __post_init__(self):
         GenericDatasetItem.__post_init__(self)
@@ -111,7 +137,11 @@ class NumpyDatasetItem(GenericDatasetItem[np.ndarray]):
             self.image = self.image.transpose(1, 2, 0)  # [C, H, W] -> [H, W, C]
 
 @dataclass
-class DatasetItem(BackwardCompatibilityMixin, GenericDatasetItem[torch.Tensor]):
+class DatasetItem(
+    BackwardCompatibilityMixin,
+    ReplaceMixin,
+    GenericDatasetItem[torch.Tensor]
+):
     """Base class for storing"""
 
     def __post_init__(self):
@@ -157,7 +187,10 @@ class GenericBatch(Generic[T], GenericInput[T], GenericOutput[T], ABC):
         yield from self.dataset_items
 
 @dataclass(kw_only=True)
-class NumpyBatch(GenericBatch[np.ndarray]):
+class NumpyBatch(
+    ReplaceMixin,
+    GenericBatch[np.ndarray]
+):
 
     def __post_init__(self):
         GenericBatch.__post_init__(self)
@@ -197,7 +230,11 @@ class NumpyBatch(GenericBatch[np.ndarray]):
         return items
 
 @dataclass(kw_only=True)
-class Batch(BackwardCompatibilityMixin, GenericBatch[torch.Tensor]):
+class Batch(
+    BackwardCompatibilityMixin,
+    ReplaceMixin,
+    GenericBatch[torch.Tensor]
+):
     """Base class for storing the prediction results of a model."""
 
     def __post_init__(self):

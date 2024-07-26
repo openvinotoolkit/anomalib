@@ -90,14 +90,16 @@ class OneClassPostProcessor(PostProcessor):
         self.normalize_batch(batch)
 
     def threshold_batch(self, batch: Batch):
-        batch.pred_label = batch.pred_label or self._threshold(batch.pred_score, self.image_threshold)
-        batch.pred_mask = batch.pred_mask or self._threshold(batch.anomaly_map, self.pixel_threshold)
+        pred_label = batch.pred_label or self._threshold(batch.pred_score, self.image_threshold)
+        pred_mask = batch.pred_mask or self._threshold(batch.anomaly_map, self.pixel_threshold)
+        batch.replace(pred_label=pred_label, pred_mask=pred_mask, in_place=True)
 
     def normalize_batch(self, batch: Batch):
         # normalize image-level predictions
-        batch.pred_score = self._normalize(batch.pred_score, self.min, self.max, self.image_threshold)
+        pred_score = self._normalize(batch.pred_score, self.min, self.max, self.image_threshold)
         # normalize pixel-level predictions
-        batch.anomaly_map = self._normalize(batch.anomaly_map, self.min, self.max, self.pixel_threshold)
+        anomaly_map = self._normalize(batch.anomaly_map, self.min, self.max, self.pixel_threshold)
+        batch.replace(pred_score=pred_score, anomaly_map=anomaly_map, in_place=True)
 
     @staticmethod
     def _threshold(preds, threshold):
