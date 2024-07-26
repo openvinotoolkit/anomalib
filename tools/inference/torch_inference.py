@@ -84,7 +84,7 @@ def infer(args: Namespace) -> None:
         image = read_image(filename, as_tensor=True)
         predictions = inferencer.predict(image=image)
 
-        image_result = ImageResult.from_batch(predictions)
+        image_result = ImageResult.from_dataset_item(predictions.dataset_items[0])
         output = visualizer.visualize_image(image_result)
 
         if args.output is None and args.show is False:

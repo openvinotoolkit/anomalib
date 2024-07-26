@@ -1,14 +1,13 @@
 import warnings
-from dataclasses import asdict, dataclass, astuple, replace, fields, is_dataclass
+from abc import ABC, abstractmethod
 from collections.abc import Iterable
+from dataclasses import asdict, astuple, dataclass, fields, is_dataclass, replace
 from pathlib import Path
 from typing import Generic, NamedTuple, TypeVar
-from torch.utils.data.dataloader import default_collate
-
-from abc import ABC, abstractmethod
 
 import numpy as np
 import torch
+from torch.utils.data.dataloader import default_collate
 
 
 class InferenceBatch(NamedTuple):
@@ -39,7 +38,7 @@ class BackwardCompatibilityMixin:
     def mask(self) -> torch.Tensor:
         """Legacy getter for gt_mask. Will be removed in v1.2."""
         warnings.warn(
-            "The `mask` attribute is deprecated and will be removed in v1.2. " "Please use `pred_mask` instead.",
+            "The `mask` attribute is deprecated and will be removed in v1.2. Please use `pred_mask` instead.",
             DeprecationWarning,
         )
         return self.gt_mask
@@ -48,24 +47,24 @@ class BackwardCompatibilityMixin:
     def mask(self, value: torch.Tensor) -> None:
         """Legacy setter for gt_mask. Will be removed in v1.2."""
         warnings.warn(
-            "The `mask` attribute is deprecated and will be removed in v1.2. " "Please use `pred_mask` instead.",
+            "The `mask` attribute is deprecated and will be removed in v1.2. Please use `pred_mask` instead.",
             DeprecationWarning,
         )
         self.gt_mask = value
 
 
-class ReplaceMixin:
+class ReplaceMixin:  # InPlaceUpdateMixin?
     """Mixin class for dataclasses that allows for in-place replacement of attributes."""
-    def replace(self, in_place=False, **changes):
-        """
-        Replace fields in place and call __post_init__ to reinitialize the instance.
-        
+
+    def replace(self, in_place=True, **changes):  # update?
+        """Replace fields in place and call __post_init__ to reinitialize the instance.
+
         Parameters:
         changes (dict): A dictionary of field names and their new values.
         """
         if not is_dataclass(self):
             raise TypeError("replace can only be used with dataclass instances")
-    
+
         if in_place:
             for field in fields(self):
                 if field.init and field.name in changes:
@@ -106,41 +105,43 @@ class GenericOutput(Generic[T]):
     box_scores: T | None = None
     box_labels: T | None = None
 
+
 @dataclass
 class GenericDatasetItem(Generic[T], GenericInput[T], GenericOutput[T]):
-    
     def __post_init__(self):
-
         if self.image is not None:
             assert self.image.ndim == 3, "Image must have shape [C, H, W] or [H, W, C]"
 
         if self.anomaly_map is not None:
-            assert self.anomaly_map.ndim == 2 or self.anomaly_map.ndim == 3, "Anomaly map must have shape [H, W] or [C, H, W]"
+            assert (
+                self.anomaly_map.ndim == 2 or self.anomaly_map.ndim == 3
+            ), "Anomaly map must have shape [H, W] or [C, H, W]"
             if self.anomaly_map.ndim == 3:
                 assert (
                     self.anomaly_map.shape[0] == 1 or self.anomaly_map.shape[-1] == 1
                 ), f"Anomaly map must have 1 channel, got shape {self.anomaly_map.shape}"
                 self.anomaly_map = self.anomaly_map.squeeze(1)
 
+
 @dataclass
 class NumpyDatasetItem(
     ReplaceMixin,
-    GenericDatasetItem[np.ndarray]
+    GenericDatasetItem[np.ndarray],
 ):
-
     def __post_init__(self):
         GenericDatasetItem.__post_init__(self)
 
         # validate and format image
-        assert self.image.dim() == 3, "Image must have shape [H, W, C]"
+        assert self.image.ndim == 3, "Image must have shape [H, W, C]"
         if self.image.shape[0] == 3:
             self.image = self.image.transpose(1, 2, 0)  # [C, H, W] -> [H, W, C]
+
 
 @dataclass
 class DatasetItem(
     BackwardCompatibilityMixin,
     ReplaceMixin,
-    GenericDatasetItem[torch.Tensor]
+    GenericDatasetItem[torch.Tensor],
 ):
     """Base class for storing"""
 
@@ -151,11 +152,20 @@ class DatasetItem(
         if self.image.shape[2] == 3:
             self.image = self.image.permute(2, 0, 1)  # [H, W, C] -> [C, H, W]
 
+    def to_numpy(self) -> NumpyDatasetItem:
+        """Convert the dataset item to a NumpyBatch object."""
+        batch_dict = asdict(self)
+        for key, value in batch_dict.items():
+            if isinstance(value, torch.Tensor):
+                batch_dict[key] = value.cpu().numpy()
+        return NumpyDatasetItem(
+            **batch_dict,
+        )
+
+
 @dataclass
 class GenericBatch(Generic[T], GenericInput[T], GenericOutput[T], ABC):
-    
     def __post_init__(self):
-
         if self.image is not None:
             assert self.image.ndim == 4, f"Image must have shape [N, C, H, W] or [N, H, W, C], got {self.image.shape}"
 
@@ -165,6 +175,22 @@ class GenericBatch(Generic[T], GenericInput[T], GenericOutput[T], ABC):
                     self.anomaly_map.shape[1] == 1
                 ), f"Anomaly map must have 1 channel, got {self.anomaly_map.shape[1]}"
                 self.anomaly_map = self.anomaly_map.squeeze(1)
+
+        if self.pred_score is not None:
+            if self.pred_score.ndim == 2:
+                self.pred_score = self.pred_score.squeeze(0)
+            elif self.pred_score.ndim == 0:
+                self.pred_score = self.pred_score.unsqueeze(0)
+            elif self.pred_score.ndim != 1:
+                raise ValueError(f"Invalid shape for pred_score: {self.pred_score.shape}")
+
+        if self.pred_label is not None:
+            if self.pred_label.ndim == 2:
+                self.pred_label = self.pred_label.squeeze(0)
+            elif self.pred_label.ndim == 0:
+                self.pred_label = self.pred_label.unsqueeze(0)
+            elif self.pred_label.ndim != 1:
+                raise ValueError(f"Invalid shape for pred_label: {self.pred_label.shape}")
 
     @property
     def batch_size(self) -> int | None:
@@ -186,12 +212,12 @@ class GenericBatch(Generic[T], GenericInput[T], GenericOutput[T], ABC):
     def __iter__(self):
         yield from self.dataset_items
 
+
 @dataclass(kw_only=True)
 class NumpyBatch(
     ReplaceMixin,
-    GenericBatch[np.ndarray]
+    GenericBatch[np.ndarray],
 ):
-
     def __post_init__(self):
         GenericBatch.__post_init__(self)
 
@@ -200,13 +226,9 @@ class NumpyBatch(
         if self.image.shape[1] == 3:
             self.image = self.image.transpose(0, 2, 3, 1)  # [N, C, H, W] -> [N, H, W, C]
 
-        # validate and format pred score
-        if self.pred_score is not None:
-            self.pred_score = np.squeeze(self.pred_score)
-
         # validate and format pred label
         if self.pred_label is not None:
-            self.pred_label = np.squeeze(self.pred_label).astype(bool)
+            self.pred_label = self.pred_label.astype(bool)
 
         # validate and format anomaly map
         if self.anomaly_map is not None:
@@ -224,16 +246,17 @@ class NumpyBatch(
         for i in range(self.batch_size):
             items.append(
                 NumpyDatasetItem(
-                    **{key: value[i] if isinstance(value, Iterable) else None for key, value in batch_dict.items()}
-                )
+                    **{key: value[i] if isinstance(value, Iterable) else None for key, value in batch_dict.items()},
+                ),
             )
         return items
+
 
 @dataclass(kw_only=True)
 class Batch(
     BackwardCompatibilityMixin,
     ReplaceMixin,
-    GenericBatch[torch.Tensor]
+    GenericBatch[torch.Tensor],
 ):
     """Base class for storing the prediction results of a model."""
 
@@ -246,21 +269,21 @@ class Batch(
             self.image = self.image.unsqueeze(0)
 
         # validate and format pred score
-        if self.pred_score is not None:
-            self.pred_score = self.pred_score.squeeze()
-        elif self.anomaly_map is not None:
+        if self.pred_score is None and self.anomaly_map is not None:
             # infer image scores from anomaly maps
             self.pred_score = torch.amax(self.anomaly_map, dim=(-2, -1))
 
         # validate and format pred label
         if self.pred_label is not None:
-            self.pred_label = self.pred_label.squeeze().bool()
+            self.pred_label = self.pred_label.bool()
 
         # validate and format anomaly map
         if self.anomaly_map is not None:
-            assert (
-                self.anomaly_map.ndim in [2, 3, 4]
-            ), f"Anomaly map must have shape [N, 1, H, W], [N, H, W] or [H, W], got {self.anomaly_map.shape}"
+            assert self.anomaly_map.ndim in [
+                2,
+                3,
+                4,
+            ], f"Anomaly map must have shape [N, 1, H, W], [N, H, W] or [H, W], got {self.anomaly_map.shape}"
             if self.anomaly_map.ndim == 4:  # anomaly map has shape [N, C, H, W]
                 assert (
                     self.anomaly_map.shape[1] == 1
@@ -294,8 +317,8 @@ class Batch(
         for i in range(self.batch_size):
             items.append(
                 DatasetItem(
-                    **{key: value[i] if isinstance(value, Iterable) else None for key, value in batch_dict.items()}
-                )
+                    **{key: value[i] if isinstance(value, Iterable) else None for key, value in batch_dict.items()},
+                ),
             )
         return items
 

@@ -16,7 +16,7 @@ from skimage.segmentation import mark_boundaries
 
 from anomalib import TaskType
 from anomalib.data.utils import read_image
-from anomalib.dataclasses import Batch, NumpyBatch
+from anomalib.dataclasses import Batch, DatasetItem, NumpyBatch, NumpyDatasetItem
 from anomalib.utils.post_processing import (
     add_anomalous_label,
     add_normal_label,
@@ -105,6 +105,18 @@ class ImageResult:
         field_names = {field.name for field in fields(cls)} & set(batch_dict.keys())
         return cls(**dict((key, batch_dict[key]) for key in field_names))
 
+    @classmethod
+    def from_dataset_item(cls, item: DatasetItem | NumpyDatasetItem):
+        """Create an ImageResult object from a DatasetItem object.
+
+        This is a temporary solution until we refactor the visualizer to take a DatasetItem object directly as input.
+        """
+        if isinstance(item, DatasetItem):
+            item = item.to_numpy()
+        item_dict = asdict(item)
+        field_names = {field.name for field in fields(cls)} & set(item_dict.keys())
+        return cls(**dict((key, item_dict[key]) for key in field_names))
+
 
 class ImageVisualizer(BaseVisualizer):
     """Image/video generator.
@@ -145,39 +157,23 @@ class ImageVisualizer(BaseVisualizer):
         Returns:
             Generator that yields a display-ready visualization for each image.
         """
-        batch_size = batch.image.shape[0]
-        for i in range(batch_size):
-            if batch.image_path is not None:
-                height, width = batch.image.shape[-2:]
-                image = (read_image(path=batch.image_path[i]) * 255).astype(np.uint8)
-                image = cv2.resize(image, dsize=(width, height), interpolation=cv2.INTER_AREA)
-            elif batch.video_path is not None:
-                height, width = batch.image.shape[-2:]
-                image = batch.original_image[i].squeeze().cpu().permute(1, 2, 0).numpy()
-                image = cv2.resize(image, dsize=(width, height), interpolation=cv2.INTER_AREA)
+        for item in batch:
+            if item.image_path is not None:
+                image = read_image(path=item.image_path, as_tensor=True)
+                # set filename
+                file_name = Path(item.image_path)
+            elif item.video_path is not None:
+                image = item.original_image
+                # set filename
+                zero_fill = int(np.log10(item.last_frame.cpu())) + 1
+                suffix = f"{str(item.frames.int().item()).zfill(zero_fill)}.png"
+                file_name = Path(item.video_path) / suffix
             else:
-                msg = "Batch must be of type ImageBatch or VideoBatch."
+                msg = "Item must have image path or video path defined."
                 raise TypeError(msg)
 
-            file_name = None
-            if batch.image_path is not None:
-                file_name = Path(batch.image_path[i])
-            elif batch.video_path is not None:
-                zero_fill = int(np.log10(batch.last_frame[i].cpu())) + 1
-                suffix = f"{str(batch.frames[i].int().item()).zfill(zero_fill)}.png"
-                file_name = Path(batch.video_path[i]) / suffix
-
-            image_result = ImageResult(
-                image=image,
-                pred_score=batch.pred_score[i].cpu().numpy().item() if batch.pred_score is not None else None,
-                pred_label=batch.pred_label[i].cpu().numpy().item() if batch.pred_label is not None else None,
-                anomaly_map=batch.anomaly_map[i].cpu().numpy() if batch.anomaly_map is not None else None,
-                pred_mask=batch.pred_mask[i].squeeze().int().cpu().numpy() if batch.pred_mask is not None else None,
-                gt_mask=batch.gt_mask[i].squeeze().int().cpu().numpy() if batch.gt_mask is not None else None,
-                gt_boxes=batch.gt_boxes[i].cpu().numpy() if batch.gt_boxes is not None else None,
-                pred_boxes=batch.pred_boxes[i].cpu().numpy() if batch.pred_boxes is not None else None,
-                box_labels=batch.box_labels[i].cpu().numpy() if batch.box_labels is not None else None,
-            )
+            item.replace(image=image)
+            image_result = ImageResult.from_dataset_item(item)
             yield GeneratorResult(image=self.visualize_image(image_result), file_name=file_name)
 
     def visualize_image(self, image_result: ImageResult) -> np.ndarray:

@@ -1,34 +1,26 @@
-
-from lightning import LightningModule, Trainer
-import torch
-from torch import nn
-from lightning.pytorch import Callback
-from anomalib.metrics import MinMax, F1AdaptiveThreshold
-
-from dataclasses import replace
-from anomalib.dataclasses import Batch, InferenceBatch
 from abc import ABC, abstractmethod
+
+import torch
+from lightning import LightningModule, Trainer
+from lightning.pytorch import Callback
+from torch import nn
+
+from anomalib.dataclasses import Batch, InferenceBatch
+from anomalib.metrics import F1AdaptiveThreshold, MinMax
 
 
 class PostProcessor(nn.Module, Callback, ABC):
-
     @abstractmethod
     def forward(self, pred_score, anomaly_map):
-        """ Funcional forward method for post-processing.
-        """
-        pass
+        """Funcional forward method for post-processing."""
 
     @abstractmethod
     def post_process_batch(self, batch: Batch):
-        """ Post-process the predictions.
-        """
-        pass
-
+        """Post-process the predictions."""
 
 
 class OneClassPostProcessor(PostProcessor):
-    """ Default post-processor for one-class anomaly detection.
-    """
+    """Default post-processor for one-class anomaly detection."""
 
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
@@ -45,7 +37,7 @@ class OneClassPostProcessor(PostProcessor):
         *args,
         **kwargs,
     ) -> None:
-        del trainer, pl_module # Unused arguments.
+        del trainer, pl_module  # Unused arguments.
         self._image_threshold.update(outputs.pred_score, outputs.gt_label)
         self._pixel_threshold.update(outputs.anomaly_map, outputs.gt_mask)
         self._normalization_stats.update(outputs.anomaly_map)
@@ -59,13 +51,14 @@ class OneClassPostProcessor(PostProcessor):
         del trainer, pl_module
         self.post_process_batch(outputs)
 
-    def on_predict_batch_end(self, trainer: Trainer, pl_module: LightningModule, outputs: Batch, *args, **kwargs) -> None:
+    def on_predict_batch_end(
+        self, trainer: Trainer, pl_module: LightningModule, outputs: Batch, *args, **kwargs
+    ) -> None:
         del trainer, pl_module
         self.post_process_batch(outputs)
 
     def forward(self, predictions: torch.Tensor | tuple[torch.Tensor, torch.Tensor]):
-        """ Funcional forward method for post-processing.
-        """
+        """Funcional forward method for post-processing."""
         if isinstance(predictions, tuple):
             pred_score, anomaly_map = predictions
             pred_score = self._normalize(pred_score, self.min, self.max, self.image_threshold)
@@ -80,7 +73,7 @@ class OneClassPostProcessor(PostProcessor):
             pred_label=pred_label,
             pred_score=pred_score,
             pred_mask=pred_mask,
-            anomaly_map=anomaly_map
+            anomaly_map=anomaly_map,
         )
 
     def post_process_batch(self, batch: Batch):
@@ -92,14 +85,14 @@ class OneClassPostProcessor(PostProcessor):
     def threshold_batch(self, batch: Batch):
         pred_label = batch.pred_label or self._threshold(batch.pred_score, self.image_threshold)
         pred_mask = batch.pred_mask or self._threshold(batch.anomaly_map, self.pixel_threshold)
-        batch.replace(pred_label=pred_label, pred_mask=pred_mask, in_place=True)
+        batch.replace(pred_label=pred_label, pred_mask=pred_mask)
 
     def normalize_batch(self, batch: Batch):
         # normalize image-level predictions
         pred_score = self._normalize(batch.pred_score, self.min, self.max, self.image_threshold)
         # normalize pixel-level predictions
         anomaly_map = self._normalize(batch.anomaly_map, self.min, self.max, self.pixel_threshold)
-        batch.replace(pred_score=pred_score, anomaly_map=anomaly_map, in_place=True)
+        batch.replace(pred_score=pred_score, anomaly_map=anomaly_map)
 
     @staticmethod
     def _threshold(preds, threshold):
@@ -115,7 +108,7 @@ class OneClassPostProcessor(PostProcessor):
     @property
     def image_threshold(self):
         return self._image_threshold.value
-    
+
     @property
     def pixel_threshold(self):
         return self._pixel_threshold.value
@@ -123,7 +116,7 @@ class OneClassPostProcessor(PostProcessor):
     @property
     def min(self):
         return self._normalization_stats.min
-    
+
     @property
     def max(self):
         return self._normalization_stats.max
