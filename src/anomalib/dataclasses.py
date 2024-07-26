@@ -143,6 +143,9 @@ class GenericBatch(Generic[T], GenericInput[T], GenericOutput[T]):
                 return len(item)
         return None
 
+    def __len__(self):
+        return self.batch_size
+
 @dataclass(kw_only=True)
 class NumpyBatch(GenericBatch[np.ndarray]):
 
@@ -185,7 +188,7 @@ class Batch(BackwardCompatibilityMixin, GenericBatch[torch.Tensor]):
             self.pred_score = self.pred_score.squeeze()
         elif self.anomaly_map is not None:
             # infer image scores from anomaly maps
-            self.pred_score = torch.amax(self.anomaly_map, dim=(-2, -1)).squeeze()
+            self.pred_score = torch.amax(self.anomaly_map, dim=(-2, -1))
 
         # validate and format pred label
         if self.pred_label is not None:
