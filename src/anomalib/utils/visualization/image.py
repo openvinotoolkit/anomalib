@@ -94,18 +94,6 @@ class ImageResult:
         return repr_str
 
     @classmethod
-    def from_batch(cls, batch: Batch | NumpyBatch):
-        """Create an ImageResult object from a Batch object.
-
-        This is a temporary solution until we refactor the visualizer to take a Batch object directly as input.
-        """
-        if isinstance(batch, Batch):
-            batch = batch.to_numpy()
-        batch_dict = asdict(batch)
-        field_names = {field.name for field in fields(cls)} & set(batch_dict.keys())
-        return cls(**dict((key, batch_dict[key]) for key in field_names))
-
-    @classmethod
     def from_dataset_item(cls, item: DatasetItem | NumpyDatasetItem):
         """Create an ImageResult object from a DatasetItem object.
 

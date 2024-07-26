@@ -203,14 +203,14 @@ class GenericBatch(Generic[T], GenericInput[T], GenericOutput[T], ABC):
 
     @property
     @abstractmethod
-    def dataset_items(self):
+    def items(self):
         pass
 
     def __len__(self):
         return self.batch_size
 
     def __iter__(self):
-        yield from self.dataset_items
+        yield from self.items
 
 
 @dataclass(kw_only=True)
@@ -239,7 +239,7 @@ class NumpyBatch(
                 self.anomaly_map = np.squeeze(self.anomaly_map, axis=1)
 
     @property
-    def dataset_items(self):
+    def items(self):
         """Convert the batch to a list of DatasetItem objects."""
         batch_dict = asdict(self)
         items = []
@@ -310,7 +310,7 @@ class Batch(
         )
 
     @property
-    def dataset_items(self):
+    def items(self):
         """Convert the batch to a list of DatasetItem objects."""
         batch_dict = asdict(self)
         items = []
