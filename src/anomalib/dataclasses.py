@@ -5,6 +5,8 @@ from pathlib import Path
 from typing import Generic, NamedTuple, TypeVar
 from torch.utils.data.dataloader import default_collate
 
+from abc import ABC, abstractmethod
+
 import numpy as np
 import torch
 
@@ -120,7 +122,7 @@ class DatasetItem(BackwardCompatibilityMixin, GenericDatasetItem[torch.Tensor]):
             self.image = self.image.permute(2, 0, 1)  # [H, W, C] -> [C, H, W]
 
 @dataclass
-class GenericBatch(Generic[T], GenericInput[T], GenericOutput[T]):
+class GenericBatch(Generic[T], GenericInput[T], GenericOutput[T], ABC):
     
     def __post_init__(self):
 
@@ -143,8 +145,16 @@ class GenericBatch(Generic[T], GenericInput[T], GenericOutput[T]):
                 return len(item)
         return None
 
+    @property
+    @abstractmethod
+    def dataset_items(self):
+        pass
+
     def __len__(self):
         return self.batch_size
+
+    def __iter__(self):
+        yield from self.dataset_items
 
 @dataclass(kw_only=True)
 class NumpyBatch(GenericBatch[np.ndarray]):
@@ -173,6 +183,19 @@ class NumpyBatch(GenericBatch[np.ndarray]):
                 ), f"Anomaly map must have 1 channel, got {self.anomaly_map.shape[1]}"
                 self.anomaly_map = np.squeeze(self.anomaly_map, axis=1)
 
+    @property
+    def dataset_items(self):
+        """Convert the batch to a list of DatasetItem objects."""
+        batch_dict = asdict(self)
+        items = []
+        for i in range(self.batch_size):
+            items.append(
+                NumpyDatasetItem(
+                    **{key: value[i] if isinstance(value, Iterable) else None for key, value in batch_dict.items()}
+                )
+            )
+        return items
+
 @dataclass(kw_only=True)
 class Batch(BackwardCompatibilityMixin, GenericBatch[torch.Tensor]):
     """Base class for storing the prediction results of a model."""
@@ -181,7 +204,9 @@ class Batch(BackwardCompatibilityMixin, GenericBatch[torch.Tensor]):
         GenericBatch.__post_init__(self)
 
         # validate and format image
-        assert self.image.dim() == 4, "Image must have shape [N, C, H, W]"
+        assert self.image.dim() in [3, 4], "Image must have shape [N, C, H, W] or [C, H, W]"
+        if self.image.dim() == 3:
+            self.image = self.image.unsqueeze(0)
 
         # validate and format pred score
         if self.pred_score is not None:
@@ -196,11 +221,16 @@ class Batch(BackwardCompatibilityMixin, GenericBatch[torch.Tensor]):
 
         # validate and format anomaly map
         if self.anomaly_map is not None:
-            if self.anomaly_map.dim() == 4:  # anomaly map has shape [N, C, H, W]
+            assert (
+                self.anomaly_map.ndim in [2, 3, 4]
+            ), f"Anomaly map must have shape [N, 1, H, W], [N, H, W] or [H, W], got {self.anomaly_map.shape}"
+            if self.anomaly_map.ndim == 4:  # anomaly map has shape [N, C, H, W]
                 assert (
                     self.anomaly_map.shape[1] == 1
                 ), f"Anomaly map must have 1 channel, got {self.anomaly_map.shape[1]}"
                 self.anomaly_map = self.anomaly_map.squeeze(1)
+            elif self.anomaly_map.ndim == 2:
+                self.anomaly_map = self.anomaly_map.unsqueeze(0)
 
         # validate and format pred mask
         if self.pred_mask is not None:
@@ -219,7 +249,8 @@ class Batch(BackwardCompatibilityMixin, GenericBatch[torch.Tensor]):
             **batch_dict,
         )
 
-    def to_items(self):
+    @property
+    def dataset_items(self):
         """Convert the batch to a list of DatasetItem objects."""
         batch_dict = asdict(self)
         items = []
