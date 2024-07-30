@@ -53,7 +53,7 @@ Installing the library with pip is the easiest way to get started with anomalib.
 pip install anomalib
 ```
 
-This will install Anomalib CLI using the [dependencies](/pyproject.toml) in the `pyproject.toml` file. Anomalib CLI is a command line interface for training, inference, benchmarking, and hyperparameter optimization. If you want to use the library as a Python package, you can install the library with the following command:
+This will install Anomalib CLI using the [dependencies](/pyproject.toml) in the `pyproject.toml` file. Anomalib CLI is a command-line interface for training, inference, benchmarking, and hyperparameter optimization. If you want to use the library as a Python package, you can install the library with the following command:
 
 ```bash
 # Get help for the installation arguments
