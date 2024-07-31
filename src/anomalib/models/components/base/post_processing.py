@@ -57,18 +57,14 @@ class OneClassPostProcessor(PostProcessor):
         del trainer, pl_module
         self.post_process_batch(outputs)
 
-    def forward(self, predictions: torch.Tensor | tuple[torch.Tensor, torch.Tensor]):
+    def forward(self, predictions: InferenceBatch):
         """Funcional forward method for post-processing."""
-        if isinstance(predictions, tuple):
-            pred_score, anomaly_map = predictions
-            pred_score = self._normalize(pred_score, self.min, self.max, self.image_threshold)
-        else:
-            anomaly_map = predictions
-            pred_score = torch.amax(anomaly_map, dim=(-2, -1))
+        assert predictions.anomaly_map is not None, "Anomaly map is required for one-class post-processing."
+        pred_score = predictions.pred_score or torch.amax(predictions.anomaly_map, dim=(-2, -1))
         pred_label = self._threshold(pred_score, self.image_threshold)
-        pred_mask = self._threshold(anomaly_map, self.pixel_threshold)
+        pred_mask = self._threshold(predictions.anomaly_map, self.pixel_threshold)
         pred_score = self._normalize(pred_score, self.min, self.max, self.image_threshold)
-        anomaly_map = self._normalize(anomaly_map, self.min, self.max, self.pixel_threshold)
+        anomaly_map = self._normalize(predictions.anomaly_map, self.min, self.max, self.pixel_threshold)
         return InferenceBatch(
             pred_label=pred_label,
             pred_score=pred_score,

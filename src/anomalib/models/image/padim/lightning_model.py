@@ -107,8 +107,8 @@ class Padim(MemoryBankMixin, AnomalyModule):
         """
         del args, kwargs  # These variables are not used.
         
-        anomaly_map = self.model(batch.image)
-        return replace(batch, anomaly_map=anomaly_map)
+        predictions = self.model(batch.image)
+        return replace(batch, anomaly_map=predictions.anomaly_map)
 
     @property
     def trainer_arguments(self) -> dict[str, int | float]:

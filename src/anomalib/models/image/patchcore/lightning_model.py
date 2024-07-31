@@ -83,7 +83,7 @@ class Patchcore(MemoryBankMixin, AnomalyModule):
         """
         del args, kwargs  # These variables are not used.
 
-        embedding = self.model(batch["image"])
+        embedding = self.model(batch.image)
         self.embeddings.append(embedding)
 
     def fit(self) -> None:
@@ -109,9 +109,9 @@ class Patchcore(MemoryBankMixin, AnomalyModule):
         del args, kwargs
 
         # Get anomaly maps and predicted scores from the model.
-        pred_score, anomaly_map = self.model(batch["image"])
+        predictions = self.model(batch.image)
 
-        return replace(batch, pred_score=pred_score, anomaly_map=anomaly_map)
+        return replace(batch, pred_score=predictions.pred_score, anomaly_map=predictions.anomaly_map)
 
     @property
     def trainer_arguments(self) -> dict[str, Any]:

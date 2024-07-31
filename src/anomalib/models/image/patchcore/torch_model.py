@@ -10,6 +10,7 @@ import torch
 from torch import nn
 from torch.nn import functional as F  # noqa: N812
 
+from anomalib.dataclasses import InferenceBatch
 from anomalib.models.components import DynamicBufferMixin, KCenterGreedy, TimmFeatureExtractor
 
 from .anomaly_map import AnomalyMapGenerator
@@ -56,7 +57,7 @@ class PatchcoreModel(DynamicBufferMixin, nn.Module):
         self.register_buffer("memory_bank", torch.Tensor())
         self.memory_bank: torch.Tensor
 
-    def forward(self, input_tensor: torch.Tensor) -> torch.Tensor | dict[str, torch.Tensor]:
+    def forward(self, input_tensor: torch.Tensor) -> torch.Tensor | InferenceBatch:
         """Return Embedding during training, or a tuple of anomaly map and anomaly score during testing.
 
         Steps performed:
@@ -87,7 +88,7 @@ class PatchcoreModel(DynamicBufferMixin, nn.Module):
         embedding = self.reshape_embedding(embedding)
 
         if self.training:
-            output = embedding
+            return embedding
         else:
             # apply nearest neighbor search
             patch_scores, locations = self.nearest_neighbors(embedding=embedding, n_neighbors=1)
@@ -101,9 +102,7 @@ class PatchcoreModel(DynamicBufferMixin, nn.Module):
             # get anomaly map
             anomaly_map = self.anomaly_map_generator(patch_scores, output_size)
 
-            output = (pred_score, anomaly_map)
-
-        return output
+        return InferenceBatch(pred_score=pred_score, anomaly_map=anomaly_map)
 
     def generate_embedding(self, features: dict[str, torch.Tensor]) -> torch.Tensor:
         """Generate embedding from hierarchical feature map.
