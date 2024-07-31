@@ -14,6 +14,7 @@ from lightning.pytorch.loggers import Logger
 from lightning.pytorch.trainer import Trainer
 from lightning.pytorch.utilities.types import _EVALUATE_OUTPUT, _PREDICT_OUTPUT, EVAL_DATALOADERS, TRAIN_DATALOADERS
 from torch.utils.data import DataLoader, Dataset
+from torchmetrics import Metric
 from torchvision.transforms.v2 import Transform
 
 from anomalib import LearningType, TaskType
@@ -433,7 +434,7 @@ class Engine:
 
         _callbacks.append(
             _VisualizationCallback(
-                visualizers=ImageVisualizer(task=self.task),
+                visualizers=ImageVisualizer(task=self.task, normalize=self.normalization == NormalizationMethod.NONE),
                 save=True,
                 root=self._cache.args["default_root_dir"] / "images",
             ),
@@ -871,6 +872,7 @@ class Engine:
         transform: Transform | None = None,
         compression_type: CompressionType | None = None,
         datamodule: AnomalibDataModule | None = None,
+        metric: Metric | str | None = None,
         ov_args: dict[str, Any] | None = None,
         ckpt_path: str | Path | None = None,
     ) -> Path | None:
@@ -889,7 +891,12 @@ class Engine:
             compression_type (CompressionType | None, optional): Compression type for OpenVINO exporting only.
                 Defaults to ``None``.
             datamodule (AnomalibDataModule | None, optional): Lightning datamodule.
-                Must be provided if CompressionType.INT8_PTQ is selected.
+                Must be provided if ``CompressionType.INT8_PTQ`` or `CompressionType.INT8_ACQ`` is selected
+                (OpenVINO export only).
+                Defaults to ``None``.
+            metric (Metric | str | None, optional): Metric to measure quality loss when quantizing.
+                Must be provided if ``CompressionType.INT8_ACQ`` is selected and must return higher value for better
+                performance of the model (OpenVINO export only).
                 Defaults to ``None``.
             ov_args (dict[str, Any] | None, optional): This is optional and used only for OpenVINO's model optimizer.
                 Defaults to None.
@@ -915,12 +922,12 @@ class Engine:
             3. To export as an OpenVINO ``.xml`` and ``.bin`` file you can run the following command.
                 ```python
                 anomalib export --model Padim --export_mode openvino --ckpt_path <PATH_TO_CHECKPOINT> \
-                --input_size "[256,256]"
+                --input_size "[256,256] --compression_type "fp16"
                 ```
-            4. You can also override OpenVINO model optimizer by adding the ``--ov_args.<key>`` arguments.
+            4. You can also quantize OpenVINO model with the following.
                 ```python
                 anomalib export --model Padim --export_mode openvino --ckpt_path <PATH_TO_CHECKPOINT> \
-                --input_size "[256,256]" --ov_args.compress_to_fp16 False
+                --input_size "[256,256]" --compression_type "int8_ptq" --data MVTec
                 ```
         """
         export_type = ExportType(export_type)
@@ -954,6 +961,7 @@ class Engine:
                 task=self.task,
                 compression_type=compression_type,
                 datamodule=datamodule,
+                metric=metric,
                 ov_args=ov_args,
             )
         else:

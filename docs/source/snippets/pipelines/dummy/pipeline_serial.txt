@@ -1,0 +1,9 @@
+class ExperimentPipeline(Pipeline):
+    """Experiment pipeline."""
+
+    def _setup_runners(self, args: dict) -> list[Runner]:
+        """Setup the runners for the pipeline."""
+        return [
+            SerialRunner(TrainJobGenerator()),
+            SerialRunner(SignificanceJobGenerator()),
+        ]
