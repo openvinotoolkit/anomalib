@@ -26,11 +26,9 @@ from anomalib.models.image.llava_next.constants import (
     DEFAULT_IMAGE_TOKEN,
     IMAGE_TOKEN_INDEX,
 )
-
-
-from transformers import AutoProcessor, LlavaNextForConditionalGeneration
-
-
+from anomalib.models.image.llava_next.conversation import SeparatorStyle, conv_templates
+from anomalib.models.image.llava_next.mm_utils import process_images, tokenizer_image_token
+from anomalib.models.image.llava_next.model.builder import load_pretrained_model
 
 logger = logging.getLogger(__name__)
 
@@ -67,12 +65,20 @@ class Llavanext(AnomalyModule):
         self.model_path = model_path
         self.conv_mode = conver_mode
         self.max_new_tokens = max_new_tokens
+        # Model
+        # disable_torch_init()
 
-        self.model = LlavaNextForConditionalGeneration.from_pretrained("llava-hf/llava-v1.6-mistral-7b-hf", torch_dtype=torch.float16, device_map="auto", load_in_4bit=self.load4bits)
-        self.processor = AutoProcessor.from_pretrained("llava-hf/llava-v1.6-mistral-7b-hf")
+        self.pretrained = "lmms-lab/llava-next-interleave-qwen-7b-dpo"
+        self.model_name = "Qwen/Qwen1.5-7B-Chat"
+        # self.device = "cuda"
+        self.device_map = "auto"
+        # Add any other thing you want to pass in llava_model_args
+        self.tokenizer, self.model, self.image_processor, self.max_length = load_pretrained_model(
+            self.pretrained, None, self.model_name, device_map=self.device_map, attn_implementation=None
+        )
 
-
-
+        self.model.eval()
+        self.model.tie_weights()
 
     def _setup(self):
         dataloader = self.trainer.datamodule.train_dataloader()
@@ -92,7 +98,6 @@ class Llavanext(AnomalyModule):
 
     def validation_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> dict:
         """Validation Step of WinCLIP."""
-        self._setup()
         del args, kwargs  # These variables are not used.
         bsize = len(batch["image_path"])
         out_list: list[str] = []
@@ -151,7 +156,7 @@ class Llavanext(AnomalyModule):
             image = Image.open(BytesIO(response.content)).convert("RGB")
         else:
             image = Image.open(image_file).convert("RGB")
-        #print(image.size)
+        print(image.size)
         return image
 
     def configure_transforms(self, image_size: tuple[int, int] | None = None) -> Transform:
@@ -169,7 +174,7 @@ class Llavanext(AnomalyModule):
         image = self.load_image(image_path)
         image_size = image.size
         # Similar operation in model_worker.py
-        #image_tensor = process_images([image], self.image_processor, self.model.config)
+        image_tensor = process_images([image], self.image_processor, self.model.config)
         if type(image_tensor) is list:
             image_tensor = [imag.to(self.model.device, dtype=torch.float16) for imag in image_tensor]
         else:
@@ -202,6 +207,7 @@ class Llavanext(AnomalyModule):
         stop_str = conv.sep if conv.sep_style != SeparatorStyle.TWO else conv.sep2
         keywords = [stop_str]
         streamer = TextStreamer(self.tokenizer, skip_prompt=True, skip_special_tokens=True)
+        # print(image_tensor.shape)
 
         with torch.inference_mode():
             output_ids = self.model.generate(
@@ -211,6 +217,7 @@ class Llavanext(AnomalyModule):
                 do_sample=not self.temperature > 0,
                 temperature=self.temperature,
                 max_new_tokens=self.max_new_tokens,
+                # streamer=streamer,
                 use_cache=True,
             )
 
@@ -223,51 +230,96 @@ class Llavanext(AnomalyModule):
         images_size = []
 
         for img_path in preImages:
+            print(img_path)
             i = self.load_image(img_path)
-            images_size.append(i.size)
-            images.append(i)
+            # images_size.append(i.size)
+            # images.append(i)
 
+        image = self.load_image(image_path)
+        image_size = image.size
+        images.append(image)
+        images.append(image)
+        images_size.append(image_size)
+        images_size.append(image_size)
+        print(image_path)
 
-        img = self.load_image(image_path)
-        prompt = ""
-        preprompt = ""
+        # Similar operation in model_worker.py
+        image_tensor = process_images(images, self.image_processor, self.model.config)
+        if type(image_tensor) is list:
+            image_tensor = [imag.to(dtype=torch.float16) for imag in image_tensor]
+        else:
+            image_tensor = image_tensor.to(dtype=torch.float16)
 
-        promptend =  "From this 2 images, the forst one being a normal image, and the second one a possibly abnormal one Check if the second one diverges in an obvious abnormal form from the first one and report if there is an abnormality,  If the Object contains any defects, irregularities, or anomalies, respond with 'YES:description' where 'description' explains the specific defect(s) found, if there is not a defect then say NO, and stop."
+        preprompt = "This is an object without any abnormality or defect."
 
-        # Prepare a batch of two prompts, where the first one is a multi-turn conversation and the second is not
-        conversation_1 = [
-             {
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": promptend},
-                    {"type": "image"},
-                    {"type": "image"},
-                    ],
-            },
-        ]
+        prompt = "You are an expert in a production factory examining products with defects the Describe me if the object in the second image has an anomaly or not. if yes start the response with: 'YES:', follow by a description, and if not say 'NO' and finish."
+        # conv_template = "llava_llama_3" # Make sure you use correct chat template for different models
+        conv_template = "qwen_1_5"  # Make sure you use correct chat template for different models
 
-        prompt_1 = self.processor.apply_chat_template(conversation_1, add_generation_prompt=True)
-        prompts = [prompt_1]
+        question = DEFAULT_IMAGE_TOKEN + "\n "
+        conv = copy.deepcopy(conv_templates[conv_template])
+        conv.append_message(conv.roles[0], question + preprompt)
+        conv.append_message(conv.roles[0], question + prompt)
+        conv.append_message(conv.roles[1], None)
+        prompt_question = conv.get_prompt()
+        print(len(images_size))
 
-        # We can simply feed images in the order they have to be used in the text prompt
-        # Each "<image>" token uses one image leaving the next for the subsequent "<image>" tokens
-        inputs = self.processor(text=prompts, images=[images[0], img], padding=False, return_tensors="pt").to(self.model.device)
+        input_ids = (
+            tokenizer_image_token(prompt_question, self.tokenizer, IMAGE_TOKEN_INDEX, return_tensors="pt")
+            .unsqueeze(0)
+            .to(self.device)
+        )
+        # image_sizes = [image.size]
 
-        # Generate
-        generate_ids = self.model.generate(**inputs, max_new_tokens=300)
-        text_outputs = self.processor.batch_decode(generate_ids, skip_special_tokens=True, clean_up_tokenization_spaces=True)
-        instructions = len(preprompt) + len(prompt) + len(promptend) + 3*13 + 11
-        print(text_outputs[0])
-
-        return text_outputs[0][instructions:]
+        cont = self.model.generate(
+            input_ids,
+            images=image_tensor,
+            image_sizes=images_size,
+            do_sample=True,
+            temperature=0.3,
+            max_new_tokens=256,
+        )
+        text_outputs = self.tokenizer.batch_decode(cont, skip_special_tokens=True)
+        return text_outputs[0]
+        prompt = "Describe me if this image has an obious anomaly or not. if yes say 'YES:', follow by a description, and if not say 'NO' and finish."
 
     def api_call(self, prompt, image_path) -> str:
-        return ""
+        image = self.load_image(image_path)
+        image_tensor = process_images([image], self.image_processor, self.model.config)
+        image_tensor = [_image.to(dtype=torch.float16, device=self.device) for _image in image_tensor]
+
+        prompt = """You are given an image and need to identify whether it has any visible defects or anomalies. If the image contains any defects, irregularities, or anomalies, respond with "YES:description" where "description" explains the specific defect(s) found. If the image does not contain any defects or anomalies, respond with "NO". Consider defects such as blurriness, incorrect color, artifacts, missing parts, distortion, or any other noticeable issues."""
+
+        prompt = "You are a an expert with the Describe me if this image has an anomaly or not. if yes start the response with: 'YES:', follow by a description, and if not say 'NO' and finish. Consider defects such as blurriness, incorrect color, artifacts, missing parts, distortion, or any other noticeable issues."
+        conv_template = "llava_llama_3"  # Make sure you use correct chat template for different models
+        conv_template = "qwen_1_5"  # Make sure you use correct chat template for different models
+        question = DEFAULT_IMAGE_TOKEN + "\n "
+        conv = copy.deepcopy(conv_templates[conv_template])
+        conv.append_message(conv.roles[0], question)
+        conv.append_message(conv.roles[0], prompt)
+        conv.append_message(conv.roles[1], None)
+        prompt_question = conv.get_prompt()
+
+        input_ids = (
+            tokenizer_image_token(prompt_question, self.tokenizer, IMAGE_TOKEN_INDEX, return_tensors="pt")
+            .unsqueeze(0)
+            .to(self.device)
+        )
+        image_sizes = [image.size]
+
+        cont = self.model.generate(
+            input_ids,
+            images=image_tensor,
+            image_sizes=image_sizes,
+            do_sample=False,
+            temperature=0,
+            max_new_tokens=256,
+        )
+        text_outputs = self.tokenizer.batch_decode(cont, skip_special_tokens=True)
+        return text_outputs[0]
         prompt = "Describe me if this image has an obious anomaly or not. if yes say 'YES:', follow by a description, and if not say 'NO' and finish."
 
     def inference(self, prompt, image_path):
-        return ""
-
         url = "https://github.com/haotian-liu/LLaVA/blob/1a91fc274d7c35a9b50b3cb29c4247ae5837ce39/images/llava_v1_5_radar.jpg?raw=true"
         image = Image.open(requests.get(url, stream=True).raw)
         image_tensor = process_images([image], image_processor, model.config)
