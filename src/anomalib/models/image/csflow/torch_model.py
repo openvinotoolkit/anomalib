@@ -90,7 +90,7 @@ class CrossConvolutions(nn.Module):
         )
         self.conv_scale0_1 = nn.Conv2d(
             channels_hidden * 1,
-            channels,  #
+            channels,
             kernel_size=kernel_size,
             padding=pad,
             bias=not batch_norm,
@@ -99,7 +99,7 @@ class CrossConvolutions(nn.Module):
         )
         self.conv_scale1_1 = nn.Conv2d(
             channels_hidden * 1,
-            channels,  #
+            channels,
             kernel_size=kernel_size,
             padding=pad * 1,
             bias=not batch_norm,
@@ -108,7 +108,7 @@ class CrossConvolutions(nn.Module):
         )
         self.conv_scale2_1 = nn.Conv2d(
             channels_hidden * 1,
-            channels,  #
+            channels,
             kernel_size=kernel_size,
             padding=pad,
             bias=not batch_norm,
@@ -588,7 +588,7 @@ class CsFlowModel(nn.Module):
             z_dist, _ = self.graph(features)  # Ignore Jacobians
             anomaly_scores = self._compute_anomaly_scores(z_dist)
             anomaly_maps = self.anomaly_map_generator(z_dist)
-            output = anomaly_maps, anomaly_scores
+            output = {"anomaly_map": anomaly_maps, "pred_score": anomaly_scores}
         return output
 
     def _compute_anomaly_scores(self, z_dists: torch.Tensor) -> torch.Tensor:
