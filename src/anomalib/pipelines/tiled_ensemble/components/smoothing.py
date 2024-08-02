@@ -149,6 +149,6 @@ class SmoothingJobGenerator(JobGenerator):
             accelerator=args["accelerator"],
             predictions=prev_stage_result,
             width_factor=args["ensemble"]["post_processing"]["seam_smoothing"]["width"],
-            filter_sigma=args["ensemble"]["post_processing"]["seam_smoothing"]["width"],
+            filter_sigma=args["ensemble"]["post_processing"]["seam_smoothing"]["sigma"],
             tiler=tiler,
         )
