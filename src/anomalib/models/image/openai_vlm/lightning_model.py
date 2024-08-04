@@ -7,9 +7,9 @@ Paper (No paper)
 
 import base64
 import logging
+from pathlib import Path
 
 import openai
-import Path
 import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torch.utils.data import DataLoader
@@ -49,7 +49,7 @@ class OpenaiVlm(AnomalyModule):
             raise UnassignedError(msg)
 
         self.openai_key = openai_key
-        self.openai = openai.client()
+        self.openai = openai.OpenAI(api_key=openai_key)
         self.openai.api_key = self.openai_key
         self.image_threshold = ManualThreshold()
 
@@ -58,7 +58,7 @@ class OpenaiVlm(AnomalyModule):
         pre_images = self.collect_reference_images(dataloader)
         self.pre_images = pre_images
 
-    def api_call_few_shot(self, key: str, pre_img: str, prompt: str, image: str) -> str:
+    def api_call_few_shot(self, pre_img: str, image: str) -> str:
         """Makes an API call to OpenAI's GPT-4 model to detect anomalies in an image.
 
         Args:
@@ -78,30 +78,69 @@ class OpenaiVlm(AnomalyModule):
 
         # Function to encode the image
         def encode_image(image_path: str) -> str:
-            with Path.open(image_path, "rb") as image_file:
+            path = Path(image_path)
+            with path.open("rb") as image_file:
                 return base64.b64encode(image_file.read()).decode("utf-8")
 
         # Getting the base64 string
         base64_image = encode_image(image)
         base64_image_pre = [encode_image(img) for img in pre_img]
+        prompt = """
+         You will receive an image that is going to be an example of the typical image without any anomaly,
+         and the last image that you need to decide if it has an anomaly or not.
+         Answer with a 'NO' if it does not have any anomalies and 'YES: description'
+         where description is a description of the anomaly provided, position.
+        """
         messages = [
             {
                 "role": "system",
-                "content": "You will receive an image that is going to be an example of the typical image without any anomaly, \nand the last image that you need to decide if it has an anomaly or not.\nAnswer with a 'NO' if it does not have any anomalies and 'YES: description' where description is a description of the anomaly provided, position.",
+                "content": prompt,
             },
-            {"role": "user", "content": f"data:image/png;base64,{base64_image_pre[0]}"},
-            {"role": "user", "content": f"data:image/png;base64,{base64_image}"},
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "image_url",
+                        "image_url": {"url": f"data:image/png;base64,{base64_image_pre[0]}"},
+                        "detail": "high",
+                    },
+                ],
+            },
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "image_url",
+                        "image_url": {"url": f"data:image/png;base64,{base64_image}"},
+                        "detail": "high",
+                    },
+                ],
+            },
         ]
 
         try:
             # Make the API call using the openai library
-            response = self.openai.chat.completions.create(model="gpt-4", messages=messages, max_tokens=300)
-            return response.choices[-1].message["content"]
-        except openai.error.OpenAIError as e:
-            print(f"An error occurred Calling the API of OpenAI: {e}")
+            response = self.openai.chat.completions.create(
+                model="gpt-4o-mini-2024-07-18",
+                messages=messages,
+                max_tokens=300,
+            )
+            return response.choices[-1].message.content
+        except openai.APIConnectionError as e:
+            print("The server could not be reached")
+            print(e.__cause__)  # an underlying Exception, likely raised within httpx.
+            raise
+        except openai.RateLimitError as e:
+            print("A 429 status code was received; we should back off a bit.")
+            print(e.__cause__)
+            raise
+        except openai.APIStatusError as e:
+            print("Another non-200-range status code was received")
+            print(e.status_code)
+            print(e.response)
             raise
 
-    def api_call(self, key: str, prompt: str, image: str) -> str:
+    def api_call(self, image: str) -> str:
         """Makes an API call to OpenAI's GPT-4 model to detect anomalies in an image.
 
         Args:
@@ -148,7 +187,8 @@ class OpenaiVlm(AnomalyModule):
 
         # Function to encode the image
         def encode_image(image_path: str) -> str:
-            with Path.open(image_path, "rb") as image_file:
+            path = Path(image_path)
+            with path.open("rb") as image_file:
                 return base64.b64encode(image_file.read()).decode("utf-8")
 
         # Getting the base64 string
@@ -159,15 +199,37 @@ class OpenaiVlm(AnomalyModule):
                 "role": "system",
                 "content": f"{prompt}",
             },
-            {"role": "user", "content": f"data:image/png;base64,{base64_image}"},
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "image_url",
+                        "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"},
+                        "detail": "high",
+                    },
+                ],
+            },
         ]
 
         try:
             # Make the API call using the openai library
-            response = self.openai.chat.completions.create(model="gpt-4o", messages=messages, max_tokens=300)
-            return response.choices[-1].message["content"]
-        except openai.error.OpenAIError as e:
-            print(f"An error occurred Calling the API of OpenAI: {e}")
+            response = self.openai.chat.completions.create(
+                model="gpt-4o-mini-2024-07-18",
+                messages=messages,
+                max_tokens=300,
+            )
+            return response.choices[-1].message.content
+        except openai.APIConnectionError as e:
+            print("The server could not be reached")
+            print(e.__cause__)  # an underlying Exception, likely raised within httpx.
+            raise
+        except openai.RateLimitError:
+            print("A 429 status code was received; we should back off a bit.")
+            raise
+        except openai.APIStatusError as e:
+            print("Another non-200-range status code was received")
+            print(e.status_code)
+            print(e.response)
             raise
 
     def training_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> dict[str, str | torch.Tensor]:
@@ -205,14 +267,14 @@ class OpenaiVlm(AnomalyModule):
             try:
                 if self.k_shot > 0:
                     output = str(
-                        self.api_call_few_shot(self.openai_key, self.pre_images, "", batch["image_path"][i]),
+                        self.api_call_few_shot(self.pre_images, batch["image_path"][i]),
                     ).strip()
                 else:
-                    output = str(self.api_call(self.openai_key, "", batch["image_path"][i])).strip()
-            except Exception as e:
+                    output = str(self.api_call(batch["image_path"][i])).strip()
+            except Exception:
                 print(f"Error:img_path:{batch['image_path']}")
                 logging.exception(
-                    f"Error calling openAI API for image {batch['image_path'][i]}: {e}",
+                    f"Error calling openAI API for image {batch['image_path'][i]}",
                 )
                 output = "Error"
 
