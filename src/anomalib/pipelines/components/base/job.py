@@ -56,16 +56,16 @@ class JobGenerator(ABC):
 
     def __call__(
         self,
-        args: dict | None = None,
+        config: dict | None = None,
         prev_stage_result: PREV_STAGE_RESULT = None,
     ) -> Generator[Job, None, None]:
         """Calls the ``generate_jobs`` method."""
-        return self.generate_jobs(args, prev_stage_result)
+        return self.generate_jobs(config, prev_stage_result)
 
     @abstractmethod
     def generate_jobs(
         self,
-        args: dict | None = None,
+        config: dict | None = None,
         prev_stage_result: PREV_STAGE_RESULT = None,
     ) -> Generator[Job, None, None]:
         """Return an iterator based on the arguments.

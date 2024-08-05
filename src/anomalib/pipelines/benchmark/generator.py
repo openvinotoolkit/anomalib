@@ -33,12 +33,12 @@ class BenchmarkJobGenerator(JobGenerator):
     @hide_output
     def generate_jobs(
         self,
-        args: dict,
+        config: dict,
         previous_stage_result: PREV_STAGE_RESULT,
     ) -> Generator[BenchmarkJob, None, None]:
         """Return iterator based on the arguments."""
         del previous_stage_result  # Not needed for this job
-        for _container in get_iterator_from_grid_dict(args):
+        for _container in get_iterator_from_grid_dict(config):
             yield BenchmarkJob(
                 accelerator=self.accelerator,
                 seed=_container["seed"],
