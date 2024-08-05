@@ -24,7 +24,7 @@ from anomalib.data.utils import (
 from anomalib.data.utils.path import _prepare_files_labels, validate_and_resolve_path
 
 
-def make_folder3d_dataset(  # noqa: C901
+def make_folder3d_dataset(
     normal_dir: str | Path,
     root: str | Path | None = None,
     abnormal_dir: str | Path | None = None,
@@ -78,37 +78,28 @@ def make_folder3d_dataset(  # noqa: C901
         msg = "A folder location must be provided in normal_dir."
         raise ValueError(msg)
 
-    filenames = []
-    labels = []
-    dirs = {DirType.NORMAL: normal_dir}
+    dirs = {
+        DirType.NORMAL: normal_dir,
+        DirType.ABNORMAL: abnormal_dir,
+        DirType.NORMAL_TEST: normal_test_dir,
+        DirType.NORMAL_DEPTH: normal_depth_dir,
+        DirType.ABNORMAL_DEPTH: abnormal_depth_dir,
+        DirType.NORMAL_TEST_DEPTH: normal_test_depth_dir,
+        DirType.MASK: mask_dir,
+    }
 
-    if abnormal_dir:
-        dirs[DirType.ABNORMAL] = abnormal_dir
+    filenames: list[Path] = []
+    labels: list[str] = []
 
-    if normal_test_dir:
-        dirs[DirType.NORMAL_TEST] = normal_test_dir
-
-    if normal_depth_dir:
-        dirs[DirType.NORMAL_DEPTH] = normal_depth_dir
-
-    if abnormal_depth_dir:
-        dirs[DirType.ABNORMAL_DEPTH] = abnormal_depth_dir
-
-    if normal_test_depth_dir:
-        dirs[DirType.NORMAL_TEST_DEPTH] = normal_test_depth_dir
-
-    if mask_dir:
-        dirs[DirType.MASK] = mask_dir
-
-    for dir_type, path in dirs.items():
-        filename, label = _prepare_files_labels(path, dir_type, extensions)
-        filenames += filename
-        labels += label
+    for dir_type, dir_path in dirs.items():
+        if dir_path is not None:
+            filename, label = _prepare_files_labels(dir_path, dir_type, extensions)
+            filenames += filename
+            labels += label
 
     samples = DataFrame({"image_path": filenames, "label": labels})
     samples = samples.sort_values(by="image_path", ignore_index=True)
 
-    # Create label index for normal (0) and abnormal (1) images.
     samples.loc[
         (samples.label == DirType.NORMAL) | (samples.label == DirType.NORMAL_TEST),
         "label_index",
@@ -137,9 +128,12 @@ def make_folder3d_dataset(  # noqa: C901
             .all()
         )
         if not mismatch:
-            msg = """Mismatch between anomalous images and depth images. Make sure the mask files
-            in 'xyz' folder follow the same naming convention as the anomalous images in the dataset
-            (e.g. image: '000.png', depth: '000.tiff')."""
+            msg = (
+                "Mismatch between anomalous images and depth images. "
+                "Make sure the mask files in 'xyz' folder follow the same naming "
+                "convention as the anomalous images in the dataset"
+                "(e.g. image: '000.png', depth: '000.tiff')."
+            )
             raise MisMatchError(msg)
 
         missing_depth_files = samples.depth_path.apply(
@@ -159,7 +153,7 @@ def make_folder3d_dataset(  # noqa: C901
         samples["mask_path"] = samples["mask_path"].fillna("")
         samples = samples.astype({"mask_path": "str"})
 
-        # make sure all the files exist
+        # Make sure all the files exist
         if not samples.mask_path.apply(
             lambda x: Path(x).exists() if x != "" else True,
         ).all():
@@ -168,7 +162,7 @@ def make_folder3d_dataset(  # noqa: C901
     else:
         samples["mask_path"] = ""
 
-    # remove all the rows with temporal image samples that have already been assigned
+    # Remove all the rows with temporal image samples that have already been assigned
     samples = samples.loc[
         (samples.label == DirType.NORMAL) | (samples.label == DirType.ABNORMAL) | (samples.label == DirType.NORMAL_TEST)
     ]
