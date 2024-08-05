@@ -150,8 +150,8 @@ def test_get_torch_install_args(mocker: MockerFixture) -> None:
     expected_args = [
         "--extra-index-url",
         "https://download.pytorch.org/whl/cu111",
-        "torch==2.0.1+cu111",
-        "torchvision==0.15.2+cu111",
+        "torch==2.0.1",
+        "torchvision==0.15.2",
     ]
     install_args = get_torch_install_args(requirement)
     for arg in expected_args:

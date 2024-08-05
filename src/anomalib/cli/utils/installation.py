@@ -293,7 +293,7 @@ def get_torch_install_args(requirement: str | Requirement) -> list[str]:
         >>> requriment = "torch>=1.13.0"
         >>> get_torch_install_args(requirement)
         ['--extra-index-url', 'https://download.pytorch.org/whl/cpu',
-        'torch==1.13.0', 'torchvision==0.14.0']
+        'torch>=1.13.0', 'torchvision==0.14.0']
 
     Returns:
         list[str]: The install arguments.
@@ -326,18 +326,15 @@ def get_torch_install_args(requirement: str | Requirement) -> list[str]:
         # Create the PyTorch Index URL to download the correct wheel.
         index_url = f"https://download.pytorch.org/whl/{hardware_suffix}"
 
-        torch_version = f"{requirement.name}=={version}"  # eg: torch==1.13.0
+        torch_version = f"{requirement.name}{operator}{version}"  # eg: torch==1.13.0
 
         # Get the torchvision version depending on the torch version.
         torchvision_version = AVAILABLE_TORCH_VERSIONS[version]["torchvision"]
         torchvision_requirement = f"torchvision{operator}{torchvision_version}"
-        if isinstance(torchvision_version, str) and not torchvision_version.startswith("0.16"):
-            torchvision_requirement += f"+{hardware_suffix}"
 
         # Return the install arguments.
         install_args += [
             "--extra-index-url",
-            # "--index-url",
             index_url,
             torch_version,
             torchvision_requirement,
