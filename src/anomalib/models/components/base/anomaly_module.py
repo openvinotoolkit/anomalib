@@ -266,6 +266,8 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
         The effective input size is the size of the input tensor after the transform has been applied. If the transform
         is not set, or if the transform does not change the shape of the input tensor, this method will return None.
         """
+        if self._input_size:
+            return self._input_size
         transform = self.transform or self.configure_transforms()
         if transform is None:
             return None
@@ -274,6 +276,10 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
         if output_shape == (1, 1):
             return None
         return output_shape[-2:]
+
+    def set_input_size(self, input_size: tuple[int, int]) -> None:
+        """Update the effective input size of the model."""
+        self._input_size = input_size
 
     def on_save_checkpoint(self, checkpoint: dict[str, Any]) -> None:
         """Called when saving the model to a checkpoint.
