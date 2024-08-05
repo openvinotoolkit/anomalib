@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
+import os
 from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
@@ -408,6 +409,15 @@ class Engine:
     def _setup_anomalib_callbacks(self) -> None:
         """Set up callbacks for the trainer."""
         _callbacks: list[Callback] = [RichProgressBar(), RichModelSummary()]
+
+        # Update dirpath of each cached callback preppending "default_root_dir" 
+        # (which was updated in _setup_workspace() method)
+        for cached_callback in self._cache.args["callbacks"]:
+            if hasattr(cached_callback, "dirpath"):
+                callback_dirpath = Path(cached_callback.dirpath)
+                common_prefix = Path(os.path.commonpath([str(self._cache.args["default_root_dir"]), str(callback_dirpath)]))
+                callback_dirpath = callback_dirpath.relative_to(common_prefix)
+                cached_callback.dirpath = self._cache.args["default_root_dir"] / callback_dirpath
 
         # Add ModelCheckpoint if it is not in the callbacks list.
         has_checkpoint_callback = any(isinstance(c, ModelCheckpoint) for c in self._cache.args["callbacks"])
