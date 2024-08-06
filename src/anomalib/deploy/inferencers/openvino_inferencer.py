@@ -12,7 +12,6 @@ import cv2
 import numpy as np
 from openvino.runtime.utils.data_helpers.wrappers import OVDict
 
-from anomalib import TaskType
 from anomalib.data.utils import read_image
 from anomalib.dataclasses import NumpyBatch
 
@@ -95,18 +94,13 @@ class OpenVINOInferencer:
     def __init__(
         self,
         path: str | Path | tuple[bytes, bytes],
-        # metadata: str | Path | dict | None = None,
         device: str | None = "AUTO",
-        task: str | None = None,
         config: dict | None = None,
     ) -> None:
         self.device = device
 
         self.config = config
         self.input_blob, self.output_blob, self.model = self.load_model(path)
-        # self.metadata = super()._load_metadata(metadata)
-
-        self.task = TaskType(task) if task else TaskType(self.metadata["task"])
 
     def load_model(self, path: str | Path | tuple[bytes, bytes]) -> tuple[Any, Any, "CompiledModel"]:
         """Load the OpenVINO model.
@@ -176,11 +170,11 @@ class OpenVINOInferencer:
         return image
 
     @staticmethod
-    def post_process(predictions: OVDict):
+    def post_process(predictions: OVDict) -> dict:
         """Convert OpenVINO output dictionary to NumpyBatch."""
         names = [next(iter(name)) for name in predictions.names()]
         values = predictions.to_tuple()
-        return dict(zip(names, values))
+        return dict(zip(names, values, strict=False))
 
     def predict(
         self,

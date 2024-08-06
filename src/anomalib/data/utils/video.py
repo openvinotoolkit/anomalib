@@ -6,13 +6,12 @@
 import warnings
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Any
 
 import cv2
 import torch
 from torchvision.datasets.video_utils import VideoClips
 
-from anomalib.dataclasses import Batch
+from anomalib.dataclasses import DatasetItem
 
 
 class ClipsIndexer(VideoClips, ABC):
@@ -51,7 +50,7 @@ class ClipsIndexer(VideoClips, ABC):
         """Return the masks for the given index."""
         raise NotImplementedError
 
-    def get_item(self, idx: int) -> dict[str, Any]:
+    def get_item(self, idx: int) -> DatasetItem:
         """Return a dictionary containing the clip, mask, video path and frame indices."""
         with warnings.catch_warnings():
             # silence warning caused by bug in torchvision, see https://github.com/pytorch/vision/issues/5787
@@ -62,7 +61,7 @@ class ClipsIndexer(VideoClips, ABC):
         video_path = self.video_paths[video_idx]
         clip_pts = self.clips[video_idx][clip_idx]
 
-        return Batch(
+        return DatasetItem(
             image=clip,
             gt_mask=self.get_mask(idx),
             video_path=video_path,

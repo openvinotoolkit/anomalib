@@ -16,7 +16,7 @@ from skimage.segmentation import mark_boundaries
 
 from anomalib import TaskType
 from anomalib.data.utils import read_image
-from anomalib.dataclasses import Batch, DatasetItem, NumpyBatch, NumpyDatasetItem
+from anomalib.dataclasses import DatasetItem, NumpyDatasetItem
 from anomalib.utils.post_processing import (
     add_anomalous_label,
     add_normal_label,
@@ -52,10 +52,12 @@ class ImageResult:
     box_labels: np.ndarray | None = None
     normalize: InitVar[bool] = False
 
-    def __post_init__(self, normalize):
+    def __post_init__(self, normalize: bool) -> None:
+        """Format and compute additional fields."""
         if self.image.dtype != np.uint8:
             self.image = (self.image * 255).astype(np.uint8)
-        self.image = cv2.resize(self.image.squeeze(), self.anomaly_map.squeeze().shape[:2])
+        if self.anomaly_map is not None:
+            self.image = cv2.resize(self.image.squeeze(), self.anomaly_map.squeeze().shape[:2])
 
         if self.anomaly_map is not None:
             self.heat_map = superimpose_anomaly_map(self.anomaly_map, self.image, normalize=normalize)
@@ -63,12 +65,13 @@ class ImageResult:
         if self.gt_mask is not None and self.gt_mask.max() <= 1.0:
             self.gt_mask *= 255
 
-        self.pred_mask = self.pred_mask.astype(np.uint8).squeeze()
-        if self.pred_mask is not None and self.pred_mask.max() <= 1.0:
-            self.pred_mask *= 255
-            self.segmentations = mark_boundaries(self.image, self.pred_mask, color=(1, 0, 0), mode="thick")
-            if self.segmentations.max() <= 1.0:
-                self.segmentations = (self.segmentations * 255).astype(np.uint8)
+        if self.pred_mask is not None:
+            self.pred_mask = self.pred_mask.astype(np.uint8).squeeze()
+            if self.pred_mask.max() <= 1.0:
+                self.pred_mask *= 255
+                self.segmentations = mark_boundaries(self.image, self.pred_mask, color=(1, 0, 0), mode="thick")
+                if self.segmentations.max() <= 1.0:
+                    self.segmentations = (self.segmentations * 255).astype(np.uint8)
 
         if self.pred_boxes is not None:
             if self.box_labels is None:
@@ -94,7 +97,7 @@ class ImageResult:
         return repr_str
 
     @classmethod
-    def from_dataset_item(cls, item: DatasetItem | NumpyDatasetItem):
+    def from_dataset_item(cls: type["ImageResult"], item: DatasetItem | NumpyDatasetItem) -> "ImageResult":
         """Create an ImageResult object from a DatasetItem object.
 
         This is a temporary solution until we refactor the visualizer to take a DatasetItem object directly as input.
@@ -103,7 +106,7 @@ class ImageResult:
             item = item.to_numpy()
         item_dict = asdict(item)
         field_names = {field.name for field in fields(cls)} & set(item_dict.keys())
-        return cls(**dict((key, item_dict[key]) for key in field_names))
+        return cls(**{key: item_dict[key] for key in field_names})
 
 
 class ImageVisualizer(BaseVisualizer):

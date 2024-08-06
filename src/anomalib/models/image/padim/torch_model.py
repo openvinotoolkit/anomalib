@@ -140,13 +140,12 @@ class PadimModel(nn.Module):
 
         if self.training:
             return embeddings
-        else:
-            anomaly_map = self.anomaly_map_generator(
-                embedding=embeddings,
-                mean=self.gaussian.mean,
-                inv_covariance=self.gaussian.inv_covariance,
-                image_size=output_size,
-            )
+        anomaly_map = self.anomaly_map_generator(
+            embedding=embeddings,
+            mean=self.gaussian.mean,
+            inv_covariance=self.gaussian.inv_covariance,
+            image_size=output_size,
+        )
         return InferenceBatch(anomaly_map=anomaly_map)
 
     def generate_embedding(self, features: dict[str, torch.Tensor]) -> torch.Tensor:

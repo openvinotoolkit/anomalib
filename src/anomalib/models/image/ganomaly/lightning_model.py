@@ -14,6 +14,7 @@ from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torch import optim
 
 from anomalib import LearningType
+from anomalib.dataclasses import Batch
 from anomalib.models.components import AnomalyModule
 
 from .loss import DiscriminatorLoss, GeneratorLoss
@@ -177,11 +178,11 @@ class Ganomaly(AnomalyModule):
         self._reset_min_max()
         return super().on_validation_start()
 
-    def validation_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> STEP_OUTPUT:
+    def validation_step(self, batch: Batch, *args, **kwargs) -> STEP_OUTPUT:
         """Update min and max scores from the current step.
 
         Args:
-            batch (dict[str, str | torch.Tensor]): Predicted difference between z and z_hat.
+            batch (Batch): Predicted difference between z and z_hat.
             args: Additional arguments.
             kwargs: Additional keyword arguments.
 
@@ -211,7 +212,7 @@ class Ganomaly(AnomalyModule):
         self._reset_min_max()
         return super().on_test_start()
 
-    def test_step(self, batch: dict[str, str | torch.Tensor], batch_idx: int, *args, **kwargs) -> STEP_OUTPUT:
+    def test_step(self, batch: Batch, batch_idx: int, *args, **kwargs) -> STEP_OUTPUT:
         """Update min and max scores from the current step."""
         del args, kwargs  # Unused arguments.
 

@@ -5,7 +5,7 @@
 
 from abc import ABC
 from enum import Enum
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 import torch
 from pandas import DataFrame
@@ -18,6 +18,7 @@ from anomalib.data.base.datamodule import AnomalibDataModule
 from anomalib.data.base.dataset import AnomalibDataset
 from anomalib.data.utils import ValSplitMode, masks_to_boxes
 from anomalib.data.utils.video import ClipsIndexer
+from anomalib.dataclasses import DatasetItem
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -107,17 +108,17 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
             frames_between_clips=self.frames_between_clips,
         )
 
-    def _select_targets(self, item: dict[str, Any]) -> dict[str, Any]:
+    def _select_targets(self, item: DatasetItem) -> DatasetItem:
         """Select the target frame from the clip.
 
         Args:
-            item (dict[str, Any]): Item containing the clip information.
+            item (DatasetItem): Item containing the clip information.
 
         Raises:
             ValueError: If the target frame is not one of the supported options.
 
         Returns:
-            dict[str, Any]: Selected item from the clip.
+            DatasetItem: Selected item from the clip.
         """
         if self.target_frame == VideoTargetFrame.FIRST:
             idx = 0
@@ -129,8 +130,8 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
             msg = f"Unknown video target frame: {self.target_frame}"
             raise ValueError(msg)
 
-        if item.mask is not None:
-            item.mask = item.mask[idx, ...]
+        if item.gt_mask is not None:
+            item.gt_mask = item.mask[idx, ...]
         if item.gt_boxes is not None:
             item.gt_boxes = item.gt_boxes[idx]
         if item.gt_label is not None:
@@ -141,14 +142,14 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
             item.frames = item.frames[idx]
         return item
 
-    def __getitem__(self, index: int) -> dict[str, str | torch.Tensor]:
+    def __getitem__(self, index: int) -> DatasetItem:
         """Get the dataset item for the index ``index``.
 
         Args:
             index (int): Index of the item to be returned.
 
         Returns:
-            dict[str, str | torch.Tensor]: Dictionary containing the mask, clip and file system information.
+            DatasetItem: Dictionary containing the mask, clip and file system information.
         """
         if not isinstance(self.indexer, ClipsIndexer):
             msg = "self.indexer must be an instance of ClipsIndexer."
@@ -175,9 +176,6 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
         # include only target frame in gt
         if self.clip_length_in_frames > 1 and self.target_frame != VideoTargetFrame.ALL:
             item = self._select_targets(item)
-
-        # if item.mask is None:
-        #     item.pop("mask")
 
         return item
 

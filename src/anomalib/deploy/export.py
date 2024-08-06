@@ -72,7 +72,13 @@ class InferenceModel(nn.Module):
             is needed for ONNX/OpenVINO export, as antialiasing is not supported in the ONNX opset.
     """
 
-    def __init__(self, model: nn.Module, transform: Transform, post_processor: nn.Module, disable_antialias: bool = False) -> None:
+    def __init__(
+        self,
+        model: nn.Module,
+        transform: Transform,
+        post_processor: nn.Module,
+        disable_antialias: bool = False,
+    ) -> None:
         super().__init__()
         self.model = model
         self.transform = transform

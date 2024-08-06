@@ -14,6 +14,7 @@ from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torchvision.transforms.v2 import Transform
 
 from anomalib import LearningType
+from anomalib.dataclasses import Batch
 from anomalib.models.components import AnomalyModule, MemoryBankMixin
 
 from .torch_model import AiVadModel
@@ -102,16 +103,17 @@ class AiVad(MemoryBankMixin, AnomalyModule):
         """AI-VAD training does not involve fine-tuning of NN weights, no optimizers needed."""
         return
 
-    def training_step(self, batch: dict[str, str | torch.Tensor]) -> None:
+    def training_step(self, batch: Batch) -> None:
         """Training Step of AI-VAD.
 
         Extract features from the batch of clips and update the density estimators.
 
         Args:
-            batch (dict[str, str | torch.Tensor]): Batch containing image filename, image, label and mask
+            batch (Batch): Batch containing image filename, image, label and mask
         """
         features_per_batch = self.model(batch["image"])
 
+        assert isinstance(batch.video_path, list)
         for features, video_path in zip(features_per_batch, batch.video_path, strict=True):
             self.model.density_estimator.update(features, video_path)
             self.total_detections += len(next(iter(features.values())))
@@ -123,13 +125,13 @@ class AiVad(MemoryBankMixin, AnomalyModule):
             raise ValueError(msg)
         self.model.density_estimator.fit()
 
-    def validation_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> STEP_OUTPUT:
+    def validation_step(self, batch: Batch, *args, **kwargs) -> STEP_OUTPUT:
         """Perform the validation step of AI-VAD.
 
         Extract boxes and box scores..
 
         Args:
-            batch (dict[str, str | torch.Tensor]): Input batch
+            batch (Batch): Input batch
             *args: Arguments.
             **kwargs: Keyword arguments.
 

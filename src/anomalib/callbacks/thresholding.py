@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import importlib
+from dataclasses import asdict
 from typing import Any
 
 import torch
@@ -11,12 +12,10 @@ from lightning.pytorch import Callback, Trainer
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 from omegaconf import DictConfig, ListConfig
 
+from anomalib.dataclasses import Batch
 from anomalib.metrics.threshold import BaseThreshold
 from anomalib.models import AnomalyModule
 from anomalib.utils.types import THRESHOLD
-from anomalib.dataclasses import Batch
-
-from dataclasses import asdict
 
 
 class _ThresholdCallback(Callback):

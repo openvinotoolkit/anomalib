@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
+from dataclasses import asdict
 from enum import Enum
 from typing import Any
 
@@ -12,11 +13,9 @@ from lightning.pytorch import Callback, Trainer
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 
 from anomalib import TaskType
+from anomalib.dataclasses import Batch
 from anomalib.metrics import AnomalibMetricCollection, create_metric_collection
 from anomalib.models import AnomalyModule
-from anomalib.dataclasses import Batch
-
-from dataclasses import asdict
 
 logger = logging.getLogger(__name__)
 
@@ -99,7 +98,6 @@ class _MetricsCallback(Callback):
                         pl_module.pixel_metrics.add_metrics(new_metrics[name])
             else:
                 pl_module.pixel_metrics = create_metric_collection(pixel_metric_names, "pixel_")
-            # self._set_threshold(pl_module)
 
     def on_validation_epoch_start(
         self,
@@ -133,7 +131,6 @@ class _MetricsCallback(Callback):
     ) -> None:
         del trainer  # Unused argument.
 
-        # self._set_threshold(pl_module)
         self._log_metrics(pl_module)
 
     def on_test_epoch_start(
@@ -169,10 +166,6 @@ class _MetricsCallback(Callback):
         del trainer  # Unused argument.
 
         self._log_metrics(pl_module)
-
-    # def _set_threshold(self, pl_module: AnomalyModule) -> None:
-    #     pl_module.image_metrics.set_threshold(pl_module.post_processor.image_threshold)
-    #     pl_module.pixel_metrics.set_threshold(pl_module.post_processor.pixel_threshold)
 
     def _update_metrics(
         self,

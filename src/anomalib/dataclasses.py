@@ -1,69 +1,78 @@
-import warnings
+"""Anomalib dataclasses."""
+
+import logging
 from abc import ABC, abstractmethod
-from collections.abc import Iterable
+from collections.abc import Iterator
 from dataclasses import asdict, astuple, dataclass, fields, is_dataclass, replace
 from pathlib import Path
-from typing import Generic, NamedTuple, TypeVar
+from typing import Any, Generic, NamedTuple, TypeVar
 
 import numpy as np
 import torch
-from torch.utils.data.dataloader import default_collate
+from torch.utils.data import default_collate
+
+logger = logging.getLogger(__name__)
 
 
 class InferenceBatch(NamedTuple):
+    """Batch for use in torch and inference models."""
+
     pred_score: torch.Tensor | None = None
     pred_label: torch.Tensor | None = None
     anomaly_map: torch.Tensor | None = None
     pred_mask: torch.Tensor | None = None
 
 
+@dataclass
 class BackwardCompatibilityMixin:
     """Base class for dataclass objects that are passed between steps in the pipeline."""
 
     def __getitem__(self, key: str) -> torch.Tensor:
+        """Retrieve items by key."""
         try:
             return asdict(self)[key]
-        except KeyError:
-            msg = f"{key} is not a valid key for StepOutput. Valid keys are: {list(asdict(self).keys())}"
-            raise KeyError(msg)
+        except KeyError as err:
+            msg = f"{key} is not a valid key for {self.__class__}. Valid keys are: {list(asdict(self).keys())}"
+            raise KeyError(msg) from err
 
-    def __setitem__(self, key, value):
+    def __setitem__(self, key: str, value: Any) -> None:  # noqa: ANN401
+        """Set items by key."""
         if hasattr(self, key):
             setattr(self, key, value)
         else:
-            msg = f"{key} is not a valid key for StepOutput. Valid keys are: {list(asdict(self).keys())}"
+            msg = f"{key} is not a valid key for {self.__class__}. Valid keys are: {list(asdict(self).keys())}"
             raise KeyError(msg)
 
     @property
     def mask(self) -> torch.Tensor:
         """Legacy getter for gt_mask. Will be removed in v1.2."""
-        warnings.warn(
+        logger.warn(
             "The `mask` attribute is deprecated and will be removed in v1.2. Please use `pred_mask` instead.",
-            DeprecationWarning,
         )
         return self.gt_mask
 
     @mask.setter
     def mask(self, value: torch.Tensor) -> None:
         """Legacy setter for gt_mask. Will be removed in v1.2."""
-        warnings.warn(
+        logger.warn(
             "The `mask` attribute is deprecated and will be removed in v1.2. Please use `pred_mask` instead.",
-            DeprecationWarning,
         )
         self.gt_mask = value
 
 
+@dataclass
 class ReplaceMixin:  # InPlaceUpdateMixin?
     """Mixin class for dataclasses that allows for in-place replacement of attributes."""
 
-    def replace(self, in_place=True, **changes):  # update?
+    def replace(self, in_place: bool = True, **changes) -> Any:  # noqa: ANN401
         """Replace fields in place and call __post_init__ to reinitialize the instance.
 
         Parameters:
         changes (dict): A dictionary of field names and their new values.
         """
         if not is_dataclass(self):
-            raise TypeError("replace can only be used with dataclass instances")
+            msg = "replace can only be used with dataclass instances"
+            raise TypeError(msg)
 
         if in_place:
             for field in fields(self):
@@ -72,31 +81,39 @@ class ReplaceMixin:  # InPlaceUpdateMixin?
             if hasattr(self, "__post_init__"):
                 self.__post_init__()
             return self
-        else:
-            return replace(self, **changes)
+        return replace(self, **changes)
 
 
 T = TypeVar("T", torch.Tensor, np.ndarray)
+PathT = TypeVar("PathT", list[Path], Path)
+ItemT = TypeVar("ItemT", bound="GenericDatasetItem")
 
 
 @dataclass
-class GenericInput(Generic[T]):
+class GenericInput(Generic[T, PathT]):
+    """Generic dataclass that defines the possible input fields."""
+
     image: T | None = None
+    depth_image: T | None = None
 
     gt_label: T | None = None
     gt_mask: T | None = None
     gt_boxes: T | None = None
 
-    image_path: Path | None = None
-    mask_path: Path | None = None
-    video_path: Path | None = None
+    image_path: PathT | None = None
+    mask_path: PathT | None = None
+    depth_path: PathT | None = None
+    video_path: PathT | None = None
+
     original_image: T | None = None
     frames: T | None = None
-    last_frame: int | None = None
+    last_frame: T | None = None
 
 
 @dataclass
 class GenericOutput(Generic[T]):
+    """Generic dataclass that defines the possible output fields."""
+
     pred_score: T | None = None
     pred_label: T | None = None
     anomaly_map: T | None = None
@@ -107,15 +124,16 @@ class GenericOutput(Generic[T]):
 
 
 @dataclass
-class GenericDatasetItem(Generic[T], GenericInput[T], GenericOutput[T]):
-    def __post_init__(self):
+class GenericDatasetItem(Generic[T, PathT], GenericInput[T, PathT], GenericOutput[T]):
+    """Generic dataset for a single dataset item."""
+
+    def __post_init__(self) -> None:
+        """Validate and format shapes."""
         if self.image is not None:
             assert self.image.ndim == 3, "Image must have shape [C, H, W] or [H, W, C]"
 
         if self.anomaly_map is not None:
-            assert (
-                self.anomaly_map.ndim == 2 or self.anomaly_map.ndim == 3
-            ), "Anomaly map must have shape [H, W] or [C, H, W]"
+            assert self.anomaly_map.ndim in [2, 3], "Anomaly map must have shape [H, W] or [C, H, W]"
             if self.anomaly_map.ndim == 3:
                 assert (
                     self.anomaly_map.shape[0] == 1 or self.anomaly_map.shape[-1] == 1
@@ -126,30 +144,35 @@ class GenericDatasetItem(Generic[T], GenericInput[T], GenericOutput[T]):
 @dataclass
 class NumpyDatasetItem(
     ReplaceMixin,
-    GenericDatasetItem[np.ndarray],
+    GenericDatasetItem[np.ndarray, Path],
 ):
-    def __post_init__(self):
+    """Numpy implementation of dataset item."""
+
+    def __post_init__(self) -> None:
+        """Validate and format shapes."""
         GenericDatasetItem.__post_init__(self)
 
         # validate and format image
-        assert self.image.ndim == 3, "Image must have shape [H, W, C]"
-        if self.image.shape[0] == 3:
-            self.image = self.image.transpose(1, 2, 0)  # [C, H, W] -> [H, W, C]
+        if self.image is not None:
+            assert self.image.ndim == 3, "Image must have shape [H, W, C]"
+            if self.image.shape[0] == 3:
+                self.image = self.image.transpose(1, 2, 0)  # [C, H, W] -> [H, W, C]
 
 
 @dataclass
 class DatasetItem(
     BackwardCompatibilityMixin,
     ReplaceMixin,
-    GenericDatasetItem[torch.Tensor],
+    GenericDatasetItem[torch.Tensor, Path],
 ):
-    """Base class for storing"""
+    """Torch version of dataset item."""
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
+        """Validate and format shapes."""
         GenericDatasetItem.__post_init__(self)
 
         # validate and format image
-        if self.image.shape[2] == 3:
+        if self.image is not None and self.image.shape[2] == 3:
             self.image = self.image.permute(2, 0, 1)  # [H, W, C] -> [C, H, W]
 
     def to_numpy(self) -> NumpyDatasetItem:
@@ -164,17 +187,17 @@ class DatasetItem(
 
 
 @dataclass
-class GenericBatch(Generic[T], GenericInput[T], GenericOutput[T], ABC):
-    def __post_init__(self):
+class GenericBatch(Generic[T, ItemT], GenericInput[T, list[Path]], GenericOutput[T], ABC):
+    """Generic dataclass for a batch of dataset items."""
+
+    def __post_init__(self) -> None:
+        """Validate and format shapes."""
         if self.image is not None:
             assert self.image.ndim == 4, f"Image must have shape [N, C, H, W] or [N, H, W, C], got {self.image.shape}"
 
-        if self.anomaly_map is not None:
-            if self.anomaly_map.ndim == 4:
-                assert (
-                    self.anomaly_map.shape[1] == 1
-                ), f"Anomaly map must have 1 channel, got {self.anomaly_map.shape[1]}"
-                self.anomaly_map = self.anomaly_map.squeeze(1)
+        if self.anomaly_map is not None and self.anomaly_map.ndim == 4:
+            assert self.anomaly_map.shape[1] == 1, f"Anomaly map must have 1 channel, got {self.anomaly_map.shape[1]}"
+            self.anomaly_map = self.anomaly_map.squeeze(1)
 
         if self.pred_score is not None:
             if self.pred_score.ndim == 2:
@@ -182,7 +205,8 @@ class GenericBatch(Generic[T], GenericInput[T], GenericOutput[T], ABC):
             elif self.pred_score.ndim == 0:
                 self.pred_score = self.pred_score.unsqueeze(0)
             elif self.pred_score.ndim != 1:
-                raise ValueError(f"Invalid shape for pred_score: {self.pred_score.shape}")
+                msg = f"Invalid shape for pred_score: {self.pred_score.shape}"
+                raise ValueError(msg)
 
         if self.pred_label is not None:
             if self.pred_label.ndim == 2:
@@ -190,83 +214,88 @@ class GenericBatch(Generic[T], GenericInput[T], GenericOutput[T], ABC):
             elif self.pred_label.ndim == 0:
                 self.pred_label = self.pred_label.unsqueeze(0)
             elif self.pred_label.ndim != 1:
-                raise ValueError(f"Invalid shape for pred_label: {self.pred_label.shape}")
+                msg = f"Invalid shape for pred_label: {self.pred_label.shape}"
+                raise ValueError(msg)
 
     @property
-    def batch_size(self) -> int | None:
+    def batch_size(self) -> int:
+        """Determine the batch size from the contents."""
         for item in astuple(self):
             if hasattr(item, "shape"):
                 return item.shape[0]
-            elif hasattr(item, "__len__"):
+            if hasattr(item, "__len__"):
                 return len(item)
-        return None
+        return 0
 
     @property
     @abstractmethod
-    def items(self):
-        pass
+    def items(self) -> list[ItemT]:
+        """Return the dataset items that make up the batch."""
 
-    def __len__(self):
+    def __len__(self) -> int:
+        """Return the batch size."""
         return self.batch_size
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[GenericDatasetItem]:
+        """Iterate over the dataset items."""
         yield from self.items
 
 
 @dataclass(kw_only=True)
 class NumpyBatch(
     ReplaceMixin,
-    GenericBatch[np.ndarray],
+    GenericBatch[np.ndarray, NumpyDatasetItem],
 ):
-    def __post_init__(self):
+    """Numpy implementation of a batch of dataset items."""
+
+    def __post_init__(self) -> None:
+        """Validate and format shapes."""
         GenericBatch.__post_init__(self)
 
         # validate and format image
-        assert self.image.ndim == 4, "Image must have shape [N, H, W, C]"
-        if self.image.shape[1] == 3:
-            self.image = self.image.transpose(0, 2, 3, 1)  # [N, C, H, W] -> [N, H, W, C]
+        if self.image is not None:
+            assert self.image.ndim == 4, "Image must have shape [N, H, W, C]"
+            if self.image.shape[1] == 3:
+                self.image = self.image.transpose(0, 2, 3, 1)  # [N, C, H, W] -> [N, H, W, C]
 
         # validate and format pred label
         if self.pred_label is not None:
             self.pred_label = self.pred_label.astype(bool)
 
         # validate and format anomaly map
-        if self.anomaly_map is not None:
-            if self.anomaly_map.ndim == 4:
-                assert (
-                    self.anomaly_map.shape[1] == 1
-                ), f"Anomaly map must have 1 channel, got {self.anomaly_map.shape[1]}"
-                self.anomaly_map = np.squeeze(self.anomaly_map, axis=1)
+        if self.anomaly_map is not None and self.anomaly_map.ndim == 4:
+            assert self.anomaly_map.shape[1] == 1, f"Anomaly map must have 1 channel, got {self.anomaly_map.shape[1]}"
+            self.anomaly_map = np.squeeze(self.anomaly_map, axis=1)
 
     @property
-    def items(self):
+    def items(self) -> list[NumpyDatasetItem]:
         """Convert the batch to a list of DatasetItem objects."""
         batch_dict = asdict(self)
-        items = []
-        for i in range(self.batch_size):
-            items.append(
-                NumpyDatasetItem(
-                    **{key: value[i] if isinstance(value, Iterable) else None for key, value in batch_dict.items()},
-                ),
+        return [
+            NumpyDatasetItem(
+                **{key: value[i] if hasattr(value, "__getitem__") else None for key, value in batch_dict.items()},
             )
-        return items
+            for i in range(self.batch_size)
+        ]
 
 
 @dataclass(kw_only=True)
 class Batch(
     BackwardCompatibilityMixin,
     ReplaceMixin,
-    GenericBatch[torch.Tensor],
+    GenericBatch[torch.Tensor, DatasetItem],
 ):
-    """Base class for storing the prediction results of a model."""
+    """Torch implementation of a batch of dataset items."""
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
+        """Validate and format shapes."""
         GenericBatch.__post_init__(self)
 
         # validate and format image
-        assert self.image.dim() in [3, 4], "Image must have shape [N, C, H, W] or [C, H, W]"
-        if self.image.dim() == 3:
-            self.image = self.image.unsqueeze(0)
+        if self.image is not None:
+            assert self.image.dim() in [3, 4], "Image must have shape [N, C, H, W] or [C, H, W]"
+            if self.image.dim() == 3:
+                self.image = self.image.unsqueeze(0)
 
         # validate and format pred score
         if self.pred_score is None and self.anomaly_map is not None:
@@ -310,20 +339,18 @@ class Batch(
         )
 
     @property
-    def items(self):
+    def items(self) -> list[DatasetItem]:
         """Convert the batch to a list of DatasetItem objects."""
         batch_dict = asdict(self)
-        items = []
-        for i in range(self.batch_size):
-            items.append(
-                DatasetItem(
-                    **{key: value[i] if isinstance(value, Iterable) else None for key, value in batch_dict.items()},
-                ),
+        return [
+            DatasetItem(
+                **{key: value[i] if hasattr(value, "__getitem__") else None for key, value in batch_dict.items()},
             )
-        return items
+            for i in range(self.batch_size)
+        ]
 
     @classmethod
-    def collate(cls, items: list[DatasetItem]):
+    def collate(cls: type["Batch"], items: list[DatasetItem]) -> "Batch":
         """Convert a list of DatasetItem objects to a Batch object."""
         keys = [key for key, value in asdict(items[0]).items() if value is not None]
         out_dict = {key: default_collate([getattr(item, key) for item in items]) for key in keys}

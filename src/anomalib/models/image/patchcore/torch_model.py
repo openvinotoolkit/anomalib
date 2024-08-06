@@ -89,18 +89,17 @@ class PatchcoreModel(DynamicBufferMixin, nn.Module):
 
         if self.training:
             return embedding
-        else:
-            # apply nearest neighbor search
-            patch_scores, locations = self.nearest_neighbors(embedding=embedding, n_neighbors=1)
-            # reshape to batch dimension
-            patch_scores = patch_scores.reshape((batch_size, -1))
-            locations = locations.reshape((batch_size, -1))
-            # compute anomaly score
-            pred_score = self.compute_anomaly_score(patch_scores, locations, embedding)
-            # reshape to w, h
-            patch_scores = patch_scores.reshape((batch_size, 1, width, height))
-            # get anomaly map
-            anomaly_map = self.anomaly_map_generator(patch_scores, output_size)
+        # apply nearest neighbor search
+        patch_scores, locations = self.nearest_neighbors(embedding=embedding, n_neighbors=1)
+        # reshape to batch dimension
+        patch_scores = patch_scores.reshape((batch_size, -1))
+        locations = locations.reshape((batch_size, -1))
+        # compute anomaly score
+        pred_score = self.compute_anomaly_score(patch_scores, locations, embedding)
+        # reshape to w, h
+        patch_scores = patch_scores.reshape((batch_size, 1, width, height))
+        # get anomaly map
+        anomaly_map = self.anomaly_map_generator(patch_scores, output_size)
 
         return InferenceBatch(pred_score=pred_score, anomaly_map=anomaly_map)
 

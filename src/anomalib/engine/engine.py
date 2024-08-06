@@ -20,9 +20,7 @@ from torchvision.transforms.v2 import Transform
 from anomalib import LearningType, TaskType
 from anomalib.callbacks.checkpoint import ModelCheckpoint
 from anomalib.callbacks.metrics import _MetricsCallback
-from anomalib.callbacks.normalization import get_normalization_callback
 from anomalib.callbacks.normalization.base import NormalizationCallback
-from anomalib.callbacks.post_processor import _PostProcessorCallback
 from anomalib.callbacks.thresholding import _ThresholdCallback
 from anomalib.callbacks.timer import TimerCallback
 from anomalib.callbacks.visualizer import _VisualizationCallback
@@ -423,13 +421,7 @@ class Engine:
         # Add the post-processor callbacks.
         _callbacks.append(model.post_processor)
 
-        # Add the the normalization callback.
-        # normalization_callback = get_normalization_callback(self.normalization)
-        # if normalization_callback is not None:
-        #     _callbacks.append(normalization_callback)
-
-        # Add the thresholding and metrics callbacks.
-        # _callbacks.append(_ThresholdCallback(self.threshold))
+        # Add the metrics callback.
         _callbacks.append(_MetricsCallback(self.task, self.image_metric_names, self.pixel_metric_names))
 
         _callbacks.append(

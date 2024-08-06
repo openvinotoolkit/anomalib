@@ -23,12 +23,13 @@ from anomalib import LearningType
 from anomalib.dataclasses import Batch
 from anomalib.metrics import AnomalibMetricCollection
 from anomalib.metrics.threshold import BaseThreshold
-from anomalib.models.components.base.post_processing import PostProcessor
 
 from .export_mixin import ExportMixin
 
 if TYPE_CHECKING:
     from lightning.pytorch.callbacks import Callback
+
+    from anomalib.models.components.base.post_processing import PostProcessor
 
 logger = logging.getLogger(__name__)
 
@@ -116,11 +117,11 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
 
         return self.validation_step(batch, batch_idx)
 
-    def test_step(self, batch: dict[str, str | torch.Tensor], batch_idx: int, *args, **kwargs) -> STEP_OUTPUT:
+    def test_step(self, batch: Batch, batch_idx: int, *args, **kwargs) -> STEP_OUTPUT:
         """Calls validation_step for anomaly map/score calculation.
 
         Args:
-          batch (dict[str, str | torch.Tensor]): Input batch
+          batch (Batch): Input batch
           batch_idx (int): Batch index
           args: Arguments.
           kwargs: Keyword arguments.

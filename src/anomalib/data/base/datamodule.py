@@ -6,18 +6,17 @@
 import logging
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from lightning.pytorch import LightningDataModule
 from lightning.pytorch.trainer.states import TrainerFn
 from lightning.pytorch.utilities.types import EVAL_DATALOADERS, TRAIN_DATALOADERS
-from torch.utils.data.dataloader import DataLoader, default_collate
+from torch.utils.data.dataloader import DataLoader
 from torchvision.transforms.v2 import Resize, Transform
 
 from anomalib.data.utils import TestSplitMode, ValSplitMode, random_split, split_by_label
 from anomalib.data.utils.synthetic import SyntheticAnomalyDataset
 from anomalib.dataclasses import Batch
-from dataclasses import asdict
 
 if TYPE_CHECKING:
     from pandas import DataFrame
@@ -25,31 +24,6 @@ if TYPE_CHECKING:
     from anomalib.data.base.dataset import AnomalibDataset
 
 logger = logging.getLogger(__name__)
-
-
-def collate_fn(batch: list) -> dict[str, Any]:
-    """Collate bounding boxes as lists.
-
-    Bounding boxes are collated as a list of tensors, while the default collate function is used for all other entries.
-
-    Args:
-        batch (List): list of items in the batch where len(batch) is equal to the batch size.
-
-    Returns:
-        dict[str, Any]: Dictionary containing the collated batch information.
-    """
-    # convert to list of dicts
-    # batch_dict = [asdict(item) for item in batch]
-    elem = batch[0]  # sample an element from the batch to check the type.
-    out_dict = {}
-    # if isinstance(elem, dict):
-    if "boxes" in elem:
-        # collate boxes as list
-        out_dict["boxes"] = [item.pop("boxes") for item in batch]
-    # collate other data normally
-    out_dict.update({key: default_collate([item[key] for item in batch]) for key in elem})
-    return Batch(**out_dict)
-    # return default_collate(batch)
 
 
 class AnomalibDataModule(LightningDataModule, ABC):
