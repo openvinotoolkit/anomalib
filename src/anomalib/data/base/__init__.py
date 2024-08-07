@@ -11,7 +11,7 @@ from .video import AnomalibVideoDataModule, AnomalibVideoDataset
 __all__ = [
     "AnomalibDataset",
     "AnomalibDataModule",
+    "AnomalibDepthDataset",
     "AnomalibVideoDataset",
     "AnomalibVideoDataModule",
-    "AnomalibDepthDataset",
 ]
