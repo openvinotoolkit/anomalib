@@ -14,7 +14,7 @@ from lightning.pytorch.utilities.types import EVAL_DATALOADERS, TRAIN_DATALOADER
 from torch.utils.data.dataloader import DataLoader, default_collate
 from torchvision.transforms.v2 import Resize, Transform
 
-from anomalib.data.utils import TestSplitMode, ValSplitMode, random_split, split_by_label
+from anomalib.data.utils import SplitMode, TestSplitMode, ValSplitMode, resolve_split_mode
 from anomalib.data.utils.synthetic import SyntheticAnomalyDataset
 
 if TYPE_CHECKING:
@@ -80,9 +80,9 @@ class AnomalibDataModule(LightningDataModule, ABC):
         train_batch_size: int,
         eval_batch_size: int,
         num_workers: int,
-        val_split_mode: ValSplitMode | str,
-        val_split_ratio: float,
-        test_split_mode: TestSplitMode | str | None = None,
+        val_split_mode: SplitMode | ValSplitMode | str | None = None,
+        val_split_ratio: float | None = None,
+        test_split_mode: SplitMode | TestSplitMode | str | None = None,
         test_split_ratio: float | None = None,
         image_size: tuple[int, int] | None = None,
         transform: Transform | None = None,
@@ -94,12 +94,14 @@ class AnomalibDataModule(LightningDataModule, ABC):
         self.train_batch_size = train_batch_size
         self.eval_batch_size = eval_batch_size
         self.num_workers = num_workers
-        self.test_split_mode = TestSplitMode(test_split_mode) if test_split_mode else TestSplitMode.NONE
         self.test_split_ratio = test_split_ratio
-        self.val_split_mode = ValSplitMode(val_split_mode)
         self.val_split_ratio = val_split_ratio
         self.image_size = image_size
         self.seed = seed
+
+        # Check the split mode for backward compatibility
+        self.test_split_mode = resolve_split_mode(test_split_mode)
+        self.val_split_mode = resolve_split_mode(val_split_mode)
 
         # set transforms
         if bool(train_transform) != bool(eval_transform):
@@ -124,6 +126,16 @@ class AnomalibDataModule(LightningDataModule, ABC):
         """Name of the datamodule."""
         return self.__class__.__name__
 
+    @property
+    def category(self) -> str:
+        """Get the category of the datamodule."""
+        return self._category
+
+    @category.setter
+    def category(self, category: str) -> None:
+        """Set the category of the datamodule."""
+        self._category = category
+
     def setup(self, stage: str | None = None) -> None:
         """Set up train, validation and test data.
 
@@ -131,14 +143,23 @@ class AnomalibDataModule(LightningDataModule, ABC):
             stage: str | None:  Train/Val/Test stages.
                 Defaults to ``None``.
         """
-        has_subset = any(hasattr(self, subset) for subset in ["train_data", "val_data", "test_data"])
-        if not has_subset or not self._is_setup:
-            self._setup(stage)
-            self._create_test_split()
-            self._create_val_split()
-            if isinstance(stage, TrainerFn):
-                # only set the flag if the stage is a TrainerFn, which means the setup has been called from a trainer
-                self._is_setup = True
+        # Check if setup is needed.
+        has_any_dataset = any(hasattr(self, dataset) for dataset in ["train_data", "val_data", "test_data"])
+        if has_any_dataset and self._is_setup:
+            # Setup already completed
+            # Validate the dataset splits meet the required criteria and exit early.
+            self._validate_datasets()
+            return
+
+        # Perform implementation-specific setup
+        self._setup(stage)
+
+        # Post setup processing
+        self._post_setup()
+
+        # Set the flag if the stage is a TrainerFn, which means the setup has been called from a trainer
+        if isinstance(stage, TrainerFn):
+            self._is_setup = True
 
     @abstractmethod
     def _setup(self, _stage: str | None = None) -> None:
@@ -155,66 +176,138 @@ class AnomalibDataModule(LightningDataModule, ABC):
         """
         raise NotImplementedError
 
-    @property
-    def category(self) -> str:
-        """Get the category of the datamodule."""
-        return self._category
+    def _post_setup(self) -> None:
+        """Post setup method to process the datasets and validate the splits."""
+        self._process_datasets()
+        self._validate_datasets()
 
-    @category.setter
-    def category(self, category: str) -> None:
-        """Set the category of the datamodule."""
-        self._category = category
+    def _process_datasets(self) -> None:
+        """Process datasets based on the available datasets."""
+        available_datasets = [split for split in ["train", "val", "test"] if hasattr(self, f"{split}_data")]
+        logger.info(f"Available datasets: {available_datasets}")
 
-    def _create_test_split(self) -> None:
-        """Obtain the test set based on the settings in the config."""
-        if self.test_data.has_normal:
-            # split the test data into normal and anomalous so these can be processed separately
-            normal_test_data, self.test_data = split_by_label(self.test_data)
-        elif self.test_split_mode != TestSplitMode.NONE:
-            # when the user did not provide any normal images for testing, we sample some from the training set,
-            # except when the user explicitly requested no test splitting.
-            logger.info(
-                "No normal test images found. Sampling from training set using a split ratio of %0.2f",
-                self.test_split_ratio,
-            )
-            if self.test_split_ratio is not None:
-                self.train_data, normal_test_data = random_split(self.train_data, self.test_split_ratio, seed=self.seed)
-
-        if self.test_split_mode == TestSplitMode.FROM_DIR:
-            self.test_data += normal_test_data
-        elif self.test_split_mode == TestSplitMode.SYNTHETIC:
-            self.test_data = SyntheticAnomalyDataset.from_dataset(normal_test_data)
-        elif self.test_split_mode != TestSplitMode.NONE:
-            msg = f"Unsupported Test Split Mode: {self.test_split_mode}"
+        if available_datasets == ["train"]:
+            self._process_train_only_scenario()
+        elif available_datasets == ["train", "test"]:
+            self._process_train_test_scenario()
+        elif available_datasets == ["train", "val"]:
+            self._process_train_val_scenario()
+        else:
+            msg = "Invalid dataset configuration."
             raise ValueError(msg)
 
-    def _create_val_split(self) -> None:
-        """Obtain the validation set based on the settings in the config."""
-        if self.val_split_mode == ValSplitMode.FROM_TRAIN:
-            # randomly sampled from train set
-            self.train_data, self.val_data = random_split(
-                self.train_data,
-                self.val_split_ratio,
-                label_aware=True,
-                seed=self.seed,
+    def _process_train_only_scenario(self) -> None:
+        if self.test_split_mode == SplitMode.AUTO:
+            if self.train_data.has_anomalous:
+                # 1. assign abnormal images to the eval set
+                normal_dataset, abnormal_dataset = self.train_data.create_subset("label", seed=self.seed)
+
+                # 2. split the normal dataset to train/test splits with test_split_ratio
+                # if self.test_split_ratio is None, the default value is 0.4 (60% train, 40% test (20, 20 val/test))
+                split_ratio = self.test_split_ratio or 0.4
+                logger.info(f"Splitting normal images with ratio: {split_ratio}")
+                self.train_data, normal_eval_dataset = normal_dataset.create_subset(split_ratio, seed=self.seed)
+
+                # 3. split the eval dataset to val/test splits with val_split_ratio
+                eval_dataset = normal_eval_dataset + abnormal_dataset
+                split_ratio = self.val_split_ratio or 0.5
+                self.val_data, self.test_data = eval_dataset.create_subset(
+                    split_ratio,
+                    label_aware=True,
+                    seed=self.seed,
+                )
+            else:
+                logger.warning(
+                    "No abnormal images found in the train set. "
+                    "Skipping val/test set creation. "
+                    "This means that the model will not be evaluated.",
+                )
+        elif self.test_split_mode == SplitMode.PREDEFINED:
+            logger.warning(
+                "Skipping val/test set creation. This means that the model will not be evaluated.",
             )
-        elif self.val_split_mode == ValSplitMode.FROM_TEST:
-            # randomly sampled from test set
-            self.test_data, self.val_data = random_split(
-                self.test_data,
-                self.val_split_ratio,
-                label_aware=True,
+            # if there are abnormal images in the train set warn the user.
+            if self.train_data.has_anomalous:
+                logger.warning(
+                    "Train set contains abnormal images, but no val/test set is created. "
+                    "If this is intended, you can ignore this warning.",
+                )
+        elif self.test_split_mode == SplitMode.SYNTHETIC:
+            logger.info("Generating synthetic val and test sets.")
+            self.val_data = SyntheticAnomalyDataset.from_dataset(self.train_data)
+            self.test_data = SyntheticAnomalyDataset.from_dataset(self.train_data)
+
+        else:
+            msg = f"Invalid test split mode: {self.test_split_mode}"
+            raise ValueError(msg)
+
+    def _process_train_test_scenario(self) -> None:
+        if self.val_split_mode == SplitMode.AUTO:
+            if self.val_split_ratio is None:
+                logger.info("'val_split_ratio' is not specified. Choosing a default value of 0.5 for AUTO mode.")
+                split_ratio = 0.5
+            else:
+                split_ratio = self.val_split_ratio
+
+            self.val_data, self.test_data = self.test_data.create_subset(
+                criteria=[split_ratio, 1 - split_ratio],
                 seed=self.seed,
+                label_aware=True,
             )
-        elif self.val_split_mode == ValSplitMode.SAME_AS_TEST:
-            # equal to test set
-            self.val_data = self.test_data
-        elif self.val_split_mode == ValSplitMode.SYNTHETIC:
-            # converted from random training sample
-            self.train_data, normal_val_data = random_split(self.train_data, self.val_split_ratio, seed=self.seed)
-            self.val_data = SyntheticAnomalyDataset.from_dataset(normal_val_data)
-        elif self.val_split_mode != ValSplitMode.NONE:
-            msg = f"Unknown validation split mode: {self.val_split_mode}"
+        elif self.val_split_mode == SplitMode.PREDEFINED:
+            logger.warning(
+                "Skipping val set creation. This means that the model will not be evaluated."
+                "You can use 'SplitMode.AUTO' to automatically create a val set, "
+                "or 'SplitMode.SYNTHETIC' to generate synthetic val set.",
+            )
+        elif self.val_split_mode == SplitMode.SYNTHETIC:
+            logger.info("Generating synthetic val set.")
+            self.val_data = SyntheticAnomalyDataset.from_dataset(self.train_data)
+        else:
+            msg = f"Invalid val split mode: {self.val_split_mode}"
+            raise ValueError(msg)
+
+    def _process_train_val_scenario(self) -> None:
+        if self.test_split_mode == SplitMode.AUTO:
+            if self.test_split_ratio is None:
+                logger.info("'test_split_ratio' is not specified. Choosing a default value of 0.5 for AUTO mode.")
+                split_ratio = 0.5
+            else:
+                split_ratio = self.test_split_ratio
+
+            self.val_data, self.test_data = self.val_data.create_subset(
+                criteria=[1 - split_ratio, split_ratio],
+                seed=self.seed,
+                label_aware=True,
+            )
+        elif self.test_split_mode == SplitMode.PREDEFINED:
+            logger.warning(
+                "Skipping test set creation. This means that the model will not be evaluated."
+                "You can use 'SplitMode.AUTO' to automatically create a test set, "
+                "or 'SplitMode.SYNTHETIC' to generate synthetic test set.",
+            )
+        elif self.test_split_mode == SplitMode.SYNTHETIC:
+            logger.info("Generating synthetic test set.")
+            self.test_data = SyntheticAnomalyDataset.from_dataset(self.train_data)
+        else:
+            msg = f"Invalid test split mode: {self.test_split_mode}"
+            raise ValueError(msg)
+
+    def _validate_datasets(self) -> None:
+        """Perform sanity check on train, validation, and test sets."""
+        # Check train set
+        if hasattr(self, "train_data") and not self.train_data.all_normal:
+            msg = "Train set should contain only normal images."
+            raise ValueError(msg)
+
+        # Check validation set
+        if hasattr(self, "val_data") and not (self.val_data.has_normal and self.val_data.has_anomalous):
+            msg = "Validation set should contain both normal and abnormal images."
+            raise ValueError(msg)
+
+        # Check test set
+        if hasattr(self, "test_data") and not (self.test_data.has_normal and self.test_data.has_anomalous):
+            msg = "Test set should contain both normal and abnormal images."
             raise ValueError(msg)
 
     def train_dataloader(self) -> TRAIN_DATALOADERS:
