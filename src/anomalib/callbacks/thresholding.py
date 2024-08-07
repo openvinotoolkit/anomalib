@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import importlib
+from dataclasses import asdict
 from typing import Any
 
 import torch
@@ -11,6 +12,7 @@ from lightning.pytorch import Callback, Trainer
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 from omegaconf import DictConfig, ListConfig
 
+from anomalib.dataclasses import Batch
 from anomalib.metrics.threshold import BaseThreshold
 from anomalib.models import AnomalyModule
 from anomalib.utils.types import THRESHOLD
@@ -53,7 +55,7 @@ class _ThresholdCallback(Callback):
     ) -> None:
         del trainer, batch, batch_idx, dataloader_idx  # Unused arguments.
         if outputs is not None:
-            self._outputs_to_cpu(outputs)
+            outputs = self._outputs_to_cpu(outputs)
             self._update(pl_module, outputs)
 
     def on_validation_epoch_end(self, trainer: Trainer, pl_module: AnomalyModule) -> None:
@@ -178,16 +180,18 @@ class _ThresholdCallback(Callback):
         if isinstance(output, dict):
             for key, value in output.items():
                 output[key] = self._outputs_to_cpu(value)
+        elif isinstance(output, Batch):
+            output = output.__class__(**self._outputs_to_cpu(asdict(output)))
         elif isinstance(output, torch.Tensor):
             output = output.cpu()
         return output
 
     def _update(self, pl_module: AnomalyModule, outputs: STEP_OUTPUT) -> None:
         pl_module.image_threshold.cpu()
-        pl_module.image_threshold.update(outputs["pred_scores"], outputs["label"].int())
-        if "mask" in outputs and "anomaly_maps" in outputs:
+        pl_module.image_threshold.update(outputs.pred_score, outputs.gt_label.int())
+        if outputs.gt_mask is not None and outputs.anomaly_map is not None:
             pl_module.pixel_threshold.cpu()
-            pl_module.pixel_threshold.update(outputs["anomaly_maps"], outputs["mask"].int())
+            pl_module.pixel_threshold.update(outputs.anomaly_map, outputs.gt_mask.int())
 
     def _compute(self, pl_module: AnomalyModule) -> None:
         pl_module.image_threshold.compute()

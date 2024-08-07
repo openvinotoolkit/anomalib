@@ -18,8 +18,10 @@ from torchvision.transforms.v2 import Transform
 
 from anomalib import TaskType
 from anomalib.data import AnomalibDataModule
+from anomalib.dataclasses import InferenceBatch
 from anomalib.deploy.export import CompressionType, ExportType, InferenceModel
 from anomalib.metrics import create_metric_collection
+from anomalib.models.components.base.post_processing import PostProcessor
 from anomalib.utils.exceptions import try_import
 
 if TYPE_CHECKING:
@@ -38,6 +40,7 @@ class ExportMixin:
 
     model: nn.Module
     transform: Transform
+    post_processor: PostProcessor
     configure_transforms: Callable
     device: torch.device
 
@@ -45,6 +48,7 @@ class ExportMixin:
         self,
         export_root: Path | str,
         transform: Transform | None = None,
+        post_processor: nn.Module | None = None,
         task: TaskType | None = None,
     ) -> Path:
         """Export AnomalibModel to torch.
@@ -53,6 +57,8 @@ class ExportMixin:
             export_root (Path): Path to the output folder.
             transform (Transform, optional): Input transforms used for the model. If not provided, the transform is
                 taken from the model.
+                Defaults to ``None``.
+            post_processor (nn.Module, optional): Post-processing module to apply to the model output.
                 Defaults to ``None``.
             task (TaskType | None): Task type.
                 Defaults to ``None``.
@@ -82,7 +88,8 @@ class ExportMixin:
             ... )
         """
         transform = transform or self.transform or self.configure_transforms()
-        inference_model = InferenceModel(model=self.model, transform=transform)
+        post_processor = post_processor or self.post_processor
+        inference_model = InferenceModel(model=self.model, transform=transform, post_processor=post_processor)
         export_root = _create_export_root(export_root, ExportType.TORCH)
         metadata = self._get_metadata(task=task)
         pt_model_path = export_root / "model.pt"
@@ -97,6 +104,7 @@ class ExportMixin:
         export_root: Path | str,
         input_size: tuple[int, int] | None = None,
         transform: Transform | None = None,
+        post_processor: nn.Module | None = None,
         task: TaskType | None = None,
     ) -> Path:
         """Export model to onnx.
@@ -107,6 +115,8 @@ class ExportMixin:
                 Defaults to None.
             transform (Transform, optional): Input transforms used for the model. If not provided, the transform is
                 taken from the model.
+                Defaults to ``None``.
+            post_processor (nn.Module, optional): Post-processing module to apply to the model output.
                 Defaults to ``None``.
             task (TaskType | None): Task type.
                 Defaults to ``None``.
@@ -138,7 +148,13 @@ class ExportMixin:
             ... )
         """
         transform = transform or self.transform or self.configure_transforms()
-        inference_model = InferenceModel(model=self.model, transform=transform, disable_antialias=True)
+        post_processor = post_processor or self.post_processor
+        inference_model = InferenceModel(
+            model=self.model,
+            transform=transform,
+            post_processor=post_processor,
+            disable_antialias=True,
+        )
         export_root = _create_export_root(export_root, ExportType.ONNX)
         input_shape = torch.zeros((1, 3, *input_size)) if input_size else torch.zeros((1, 3, 1, 1))
         dynamic_axes = (
@@ -153,7 +169,7 @@ class ExportMixin:
             opset_version=14,
             dynamic_axes=dynamic_axes,
             input_names=["input"],
-            output_names=["output"],
+            output_names=list(InferenceBatch._fields),
         )
 
         return onnx_path

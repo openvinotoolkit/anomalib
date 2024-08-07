@@ -7,13 +7,16 @@ Paper https://arxiv.org/abs/2011.08785
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
+from dataclasses import replace
 
 import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torchvision.transforms.v2 import Compose, Normalize, Resize, Transform
 
 from anomalib import LearningType
+from anomalib.dataclasses import Batch
 from anomalib.models.components import AnomalyModule, MemoryBankMixin
+from anomalib.models.components.base.post_processing import OneClassPostProcessor
 
 from .torch_model import PadimModel
 
@@ -56,12 +59,14 @@ class Padim(MemoryBankMixin, AnomalyModule):
         self.stats: list[torch.Tensor] = []
         self.embeddings: list[torch.Tensor] = []
 
+        self.post_processor = OneClassPostProcessor()
+
     @staticmethod
     def configure_optimizers() -> None:
         """PADIM doesn't require optimization, therefore returns no optimizers."""
         return
 
-    def training_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> None:
+    def training_step(self, batch: Batch, *args, **kwargs) -> None:
         """Perform the training step of PADIM. For each batch, hierarchical features are extracted from the CNN.
 
         Args:
@@ -74,7 +79,7 @@ class Padim(MemoryBankMixin, AnomalyModule):
         """
         del args, kwargs  # These variables are not used.
 
-        embedding = self.model(batch["image"])
+        embedding = self.model(batch.image)
         self.embeddings.append(embedding.cpu())
 
     def fit(self) -> None:
@@ -85,7 +90,7 @@ class Padim(MemoryBankMixin, AnomalyModule):
         logger.info("Fitting a Gaussian to the embedding collected from the training set.")
         self.stats = self.model.gaussian.fit(embeddings)
 
-    def validation_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> STEP_OUTPUT:
+    def validation_step(self, batch: Batch, *args, **kwargs) -> STEP_OUTPUT:
         """Perform a validation step of PADIM.
 
         Similar to the training step, hierarchical features are extracted from the CNN for each batch.
@@ -101,8 +106,8 @@ class Padim(MemoryBankMixin, AnomalyModule):
         """
         del args, kwargs  # These variables are not used.
 
-        batch["anomaly_maps"] = self.model(batch["image"])
-        return batch
+        predictions = self.model(batch.image)
+        return replace(batch, anomaly_map=predictions.anomaly_map)
 
     @property
     def trainer_arguments(self) -> dict[str, int | float]:

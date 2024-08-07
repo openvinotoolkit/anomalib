@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Any
 
 import lightning.pytorch as pl
 import torch
+from lightning.pytorch import Callback
 from lightning.pytorch.trainer.states import TrainerFn
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torch import nn
@@ -19,6 +20,7 @@ from torchmetrics import MetricCollection
 from torchvision.transforms.v2 import Compose, Normalize, Resize, Transform
 
 from anomalib import LearningType
+from anomalib.dataclasses import Batch
 from anomalib.metrics import AnomalibMetricCollection
 from anomalib.metrics.threshold import BaseThreshold
 
@@ -27,6 +29,7 @@ from .export_mixin import ExportMixin
 if TYPE_CHECKING:
     from lightning.pytorch.callbacks import Callback
 
+    from anomalib.models.components.base.post_processing import PostProcessor
 
 logger = logging.getLogger(__name__)
 
@@ -46,13 +49,10 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
         self.loss: nn.Module
         self.callbacks: list[Callback]
 
-        self.image_threshold: BaseThreshold
-        self.pixel_threshold: BaseThreshold
-
-        self.normalization_metrics: MetricCollection
-
         self.image_metrics: AnomalibMetricCollection
         self.pixel_metrics: AnomalibMetricCollection
+
+        self.post_processor: PostProcessor
 
         self._transform: Transform | None = None
         self._input_size: tuple[int, int] | None = None
@@ -92,16 +92,11 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
             Tensor: Output tensor from the model.
         """
         del args, kwargs  # These variables are not used.
-
         return self.model(batch)
-
-    def validation_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> STEP_OUTPUT:
-        """To be implemented in the subclasses."""
-        raise NotImplementedError
 
     def predict_step(
         self,
-        batch: dict[str, str | torch.Tensor],
+        batch: Batch,
         batch_idx: int,
         dataloader_idx: int = 0,
     ) -> STEP_OUTPUT:
@@ -122,11 +117,11 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
 
         return self.validation_step(batch, batch_idx)
 
-    def test_step(self, batch: dict[str, str | torch.Tensor], batch_idx: int, *args, **kwargs) -> STEP_OUTPUT:
+    def test_step(self, batch: Batch, batch_idx: int, *args, **kwargs) -> STEP_OUTPUT:
         """Calls validation_step for anomaly map/score calculation.
 
         Args:
-          batch (dict[str, str | torch.Tensor]): Input batch
+          batch (Batch): Input batch
           batch_idx (int): Batch index
           args: Arguments.
           kwargs: Keyword arguments.
