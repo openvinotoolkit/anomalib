@@ -78,12 +78,6 @@ class DummyDataModule(AnomalibDataModule):
             eval_transform=eval_transform,
         )
 
-    def _create_val_split(self) -> None:
-        pass
-
-    def _create_test_split(self) -> None:
-        pass
-
     def _setup(self, _stage: str | None = None) -> None:
         self.train_data = DummyDataset(transform=self.train_transform)
         self.val_data = DummyDataset(transform=self.eval_transform)

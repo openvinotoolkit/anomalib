@@ -185,9 +185,6 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
 class AnomalibVideoDataModule(AnomalibDataModule):
     """Base class for video data modules."""
 
-    def _create_test_split(self) -> None:
-        """Video datamodules do not support dynamic assignment of the test split."""
-
     def _setup(self, _stage: str | None = None) -> None:
         """Set up the datasets and perform dynamic subset splitting.
 
@@ -210,4 +207,5 @@ class AnomalibVideoDataModule(AnomalibDataModule):
             msg = f"Val split mode {self.test_split_mode} not supported for video datasets."
             raise ValueError(msg)
 
-        self._create_val_split()
+    def _post_setup(self) -> None:
+        """Processing video datasets has not been implemented yet."""
