@@ -91,7 +91,7 @@ class ExportMixin:
             obj={"model": inference_model, "metadata": metadata},
             f=pt_model_path,
         )
-        return pt_model_path
+        return pt_model_path,inference_model,metadata
 
     def to_onnx(
         self,
