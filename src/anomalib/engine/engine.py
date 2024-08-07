@@ -944,7 +944,7 @@ class Engine:
 
         exported_model_path: Path | None = None
         if export_type == ExportType.TORCH:
-            exported_model_path = model.to_torch(
+            exported_model_path,inference_model,metadata = model.to_torch(
                 export_root=export_root,
                 transform=transform,
                 task=self.task,
@@ -972,7 +972,7 @@ class Engine:
 
         if exported_model_path:
             logging.info(f"Exported model to {exported_model_path}")
-        return exported_model_path
+        return exported_model_path,inference_model,metadata
 
     @classmethod
     def from_config(
