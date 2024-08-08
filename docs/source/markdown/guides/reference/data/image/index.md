@@ -1,6 +1,8 @@
 # Image Data
 
-::::{grid}
+::::{grid} 2
+:margin: 1 1 0 0
+:gutter: 1
 
 :::{grid-item-card} BTech
 :link: ./btech
@@ -14,6 +16,13 @@ Learn more about BTech dataset.
 :link-type: doc
 
 Learn more about custom folder dataset.
+:::
+
+:::{grid-item-card} CSV
+:link: ./csv
+:link-type: doc
+
+Learn more about custom dataset using CSV files.
 :::
 
 :::{grid-item-card} Kolektor
