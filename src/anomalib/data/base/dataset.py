@@ -323,3 +323,14 @@ class AnomalibDataset(Dataset, ABC):
         dataset = copy.deepcopy(self)
         dataset.samples = pd.concat([self.samples, other_dataset.samples], ignore_index=True)
         return dataset
+
+    def copy(self) -> "AnomalibDataset":
+        """Create a deep copy of the dataset.
+
+        Returns:
+            AnomalibDataset: A new instance of the dataset with the same attributes.
+        """
+        return copy.deepcopy(self)
+
+    # Alias for copy method
+    clone = copy
