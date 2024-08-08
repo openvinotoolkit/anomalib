@@ -39,11 +39,13 @@ from anomalib.data.utils import (
     DownloadInfo,
     LabelName,
     Split,
+    SplitMode,
     TestSplitMode,
     ValSplitMode,
     download_and_extract,
     validate_path,
 )
+from anomalib.data.utils.split import resolve_split_mode
 
 logger = logging.getLogger(__name__)
 
@@ -316,12 +318,14 @@ class MVTec(AnomalibDataModule):
         transform: Transform | None = None,
         train_transform: Transform | None = None,
         eval_transform: Transform | None = None,
-        test_split_mode: TestSplitMode | str = TestSplitMode.FROM_DIR,
+        test_split_mode: SplitMode | TestSplitMode | str = SplitMode.PREDEFINED,
         test_split_ratio: float = 0.2,
-        val_split_mode: ValSplitMode | str = ValSplitMode.SAME_AS_TEST,
+        val_split_mode: SplitMode | ValSplitMode | str = SplitMode.AUTO,
         val_split_ratio: float = 0.5,
         seed: int | None = None,
     ) -> None:
+        test_split_mode = resolve_split_mode(test_split_mode)
+        val_split_mode = resolve_split_mode(val_split_mode)
         super().__init__(
             train_batch_size=train_batch_size,
             eval_batch_size=eval_batch_size,
@@ -360,6 +364,7 @@ class MVTec(AnomalibDataModule):
             root=self.root,
             category=self.category,
         )
+
         self.test_data = MVTecDataset(
             task=self.task,
             transform=self.eval_transform,
@@ -367,6 +372,10 @@ class MVTec(AnomalibDataModule):
             root=self.root,
             category=self.category,
         )
+        # MVTec AD dataset does not provide a validation set.
+        # Auto behavior is to use the test set as the validation set.
+        if self.val_split_mode == SplitMode.AUTO:
+            self.val_data = self.test_data.clone()
 
     def prepare_data(self) -> None:
         """Download the dataset if not available.
