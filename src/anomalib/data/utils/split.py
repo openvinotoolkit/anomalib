@@ -144,6 +144,11 @@ def resolve_split_mode(split_mode: str | TestSplitMode | ValSplitMode | SplitMod
     value = split_mode.value if isinstance(split_mode, TestSplitMode | ValSplitMode) else split_mode
     value = str(value).lower()
 
+    # Check for new SplitMode values first
+    if value in [mode.value.lower() for mode in SplitMode]:
+        return SplitMode(value)
+
+    # Legacy mapping for old modes
     mapping = {
         "none": SplitMode.AUTO,
         "from_dir": SplitMode.PREDEFINED,
