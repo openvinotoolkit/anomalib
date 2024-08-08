@@ -12,11 +12,13 @@ from tempfile import mkdtemp
 
 import cv2
 import numpy as np
+import pandas as pd
 from scipy.io import savemat
 from skimage import img_as_ubyte
 from skimage.io import imsave
 
 from anomalib.data import DataFormat
+from anomalib.data.image.btech import make_btech_dataset
 from anomalib.data.utils import Augmenter, LabelName
 
 
@@ -354,6 +356,29 @@ class DummyImageDatasetGenerator(DummyDatasetGenerator):
         """Generate dummy BeanTech dataset in directory using the same convention as BeanTech AD."""
         # BeanTech AD follows the same convention as MVTec AD.
         self._generate_dummy_mvtec_dataset(normal_dir="ok", abnormal_dir="ko", mask_suffix="")
+
+    def _generate_dummy_csv_dataset(self) -> None:
+        """Generate dummy CSV dataset with a csv file."""
+        # Get the dataset samples from BTech dataset. This is because btech
+        # dataset is generated before the csv dataset, so we can use the samples.
+        btech_root = self.dataset_root.parent / "btech" / "dummy"
+        samples = make_btech_dataset(btech_root)
+
+        # CSV dataset uses 'normal' and 'abnormal' as labels.
+        # Replace 'ok' with 'normal' and 'ko' with 'abnormal' in the 'label' column
+        samples["label"] = samples["label"].replace({"ok": "normal", "ko": "abnormal"})
+
+        # Create validation samples by copying test samples and changing the split
+        test_samples = samples[samples["split"] == "test"].copy()
+        val_samples = test_samples.copy()
+        val_samples["split"] = "val"
+
+        # Concatenate original samples with validation samples
+        samples = pd.concat([samples, val_samples], ignore_index=True)
+
+        # Create the dataset directory and save the samples as a csv file.
+        self.dataset_root.mkdir(parents=True, exist_ok=True)
+        samples.to_csv(self.dataset_root / "samples.csv", index=False)
 
     def _generate_dummy_mvtec_3d_dataset(self) -> None:
         """Generate dummy MVTec 3D AD dataset in a temporary directory using the same convention as MVTec AD."""
