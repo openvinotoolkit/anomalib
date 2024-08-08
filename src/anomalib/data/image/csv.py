@@ -470,8 +470,8 @@ class CSV(AnomalibDataModule):
         transform: Transform | None = None,
         train_transform: Transform | None = None,
         eval_transform: Transform | None = None,
-        test_split_mode: SplitMode | str = SplitMode.PREDEFINED,
-        test_split_ratio: float = 0.2,
+        test_split_mode: SplitMode | str = SplitMode.AUTO,
+        test_split_ratio: float = 0.4,
         val_split_mode: SplitMode | str = SplitMode.AUTO,
         val_split_ratio: float = 0.5,
         seed: int | None = None,
@@ -510,7 +510,7 @@ class CSV(AnomalibDataModule):
             transform=self.train_transform,
         )
 
-        if self.val_split_mode == SplitMode.PREDEFINED:
+        if self.val_split_mode == SplitMode.AUTO:
             self.val_data = CSVDataset(
                 name="val",
                 csv_path=self.csv_path,
@@ -521,7 +521,7 @@ class CSV(AnomalibDataModule):
                 transform=self.eval_transform,
             )
 
-        if self.test_split_mode == SplitMode.PREDEFINED:
+        if self.test_split_mode == SplitMode.AUTO:
             self.test_data = CSVDataset(
                 name="test",
                 csv_path=self.csv_path,
