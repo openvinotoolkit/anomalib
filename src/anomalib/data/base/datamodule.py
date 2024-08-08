@@ -186,6 +186,11 @@ class AnomalibDataModule(LightningDataModule, ABC):
         available_datasets = [split for split in ["train", "val", "test"] if hasattr(self, f"{split}_data")]
         logger.info(f"Available datasets: {available_datasets}")
 
+        # We don't need to process the datasets if all three are available
+        if available_datasets == ["train", "val", "test"]:
+            return
+
+        # Otherwise, process the datasets based on the available datasets
         if available_datasets == ["train"]:
             self._process_train_only_scenario()
         elif available_datasets == ["train", "test"]:
