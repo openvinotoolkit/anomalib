@@ -247,7 +247,7 @@ class ImageVisualizer(BaseVisualizer):
                 description = image_result.text_descr
 
             image_classified = add_normal_label(image_result.image, 1 - image_result.pred_score)
-            image_grid.add_image(image_classified, title="Explanation of Image", description=description)
+            image_grid.add_image(image_classified, title=description)
 
         return image_grid.generate()
 
@@ -298,7 +298,7 @@ class ImageVisualizer(BaseVisualizer):
             else:
                 image_classified = add_normal_label(image_result.image, 1 - image_result.pred_score)
 
-            image_grid.add_image(image_classified, title="Explanation of Image", description=description)
+            image_grid.add_image(image_classified, title=description)
 
             return image_grid.generate()
 
@@ -323,17 +323,15 @@ class _ImageGrid:
         image: np.ndarray,
         title: str | None = None,
         color_map: str | None = None,
-        description: str | None = None,
     ) -> None:
         """Add an image to the grid.
 
         Args:
           image (np.ndarray): Image which should be added to the figure.
           title (str): Image title shown on the plot.
-          description (str): Description of the image shown on the plot TaskType.EXPLANATION.
           color_map (str | None): Name of matplotlib color map used to map scalar data to colours. Defaults to None.
         """
-        image_data = {"image": image, "title": title, "color_map": color_map, "descr": description}
+        image_data = {"image": image, "title": title, "color_map": color_map}
         self.images.append(image_data)
 
     def generate(self) -> np.ndarray:
@@ -358,10 +356,8 @@ class _ImageGrid:
             axis.axes.yaxis.set_visible(b=False)
             axis.imshow(image_dict["image"], image_dict["color_map"], vmin=0, vmax=255)
             if image_dict["title"] is not None:
-                axis.title.set_text(image_dict["title"])
-            if image_dict["descr"] is not None:
                 wrapped_text = textwrap.fill(
-                    image_dict["descr"],
+                    image_dict["title"],
                     width=70 // num_cols,
                 )  # Adjust 'width' based on your subplot size and preference
 

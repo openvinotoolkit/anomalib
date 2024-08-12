@@ -15,7 +15,7 @@ from anomalib import TaskType
 from anomalib.data import MVTec, PredictDataset
 from anomalib.engine import Engine
 from anomalib.models import get_model
-from anomalib.utils.visualization.image import _ImageGrid
+from anomalib.utils.visualization.image import ImageResult, ImageVisualizer, VisualizationMode, _ImageGrid
 
 
 def test_visualize_fully_defected_masks() -> None:
@@ -33,6 +33,37 @@ def test_visualize_fully_defected_masks() -> None:
 
     # assert that the plotted image is completely white
     assert np.all(plotted_img[0][..., 0] == 255)
+
+
+def test_model_visualizer_explanation() -> None:
+    """Test visualizer image on TaskType.EXPLANATION."""
+    anomaly_map = np.zeros((100, 100), dtype=np.float64)
+    anomaly_map[10:20, 10:20] = 1.0
+    gt_mask = np.zeros((100, 100))
+    gt_mask[15:25, 15:25] = 1.0
+    rng = np.random.default_rng()
+    image = rng.integers(0, 255, size=(100, 100, 3), dtype=np.uint8)
+
+    image_result = ImageResult(
+        image=image,
+        pred_score=0.9,
+        pred_label="abnormal",
+        text_descr=(
+            "Some very long text to see how it is formatted in the image"
+            " Some very long text to see how it is formatted in the image"
+        ),
+        anomaly_map=anomaly_map,
+        gt_mask=gt_mask,
+        pred_mask=anomaly_map,
+    )
+
+    image_visualizer = ImageVisualizer(
+        mode=VisualizationMode.FULL,
+        task=TaskType.EXPLANATION,
+    )
+    result = image_visualizer.visualize_image(image_result)
+
+    assert result.shape == (500, 500, 3)
 
 
 class TestVisualizer:
