@@ -210,17 +210,18 @@ class AnomalibDataModule(LightningDataModule, ABC):
                 # 2. split the normal dataset to train/test splits with test_split_ratio
                 # if self.test_split_ratio is None, the default value is 0.4 (60% train, 40% test (20, 20 val/test))
                 split_ratio = self.test_split_ratio or 0.4
-                logger.info(f"Splitting normal images with ratio: {split_ratio}")
-                self.train_data, normal_eval_dataset = normal_dataset.create_subset(
-                    criteria=[1 - split_ratio, split_ratio],
+                logger.info(f"Splitting normal images to train/test splits with ratio: {split_ratio}")
+                normal_eval_dataset, self.train_data = normal_dataset.create_subset(
+                    criteria=split_ratio,
                     seed=self.seed,
                 )
 
                 # 3. split the eval dataset to val/test splits with val_split_ratio
                 eval_dataset = normal_eval_dataset + abnormal_dataset
                 split_ratio = self.val_split_ratio or 0.5
+                logger.info(f"Splitting eval images to val/test splits with ratio: {split_ratio}")
                 self.val_data, self.test_data = eval_dataset.create_subset(
-                    criteria=[split_ratio, 1 - split_ratio],
+                    criteria=split_ratio,
                     label_aware=True,
                     seed=self.seed,
                 )
@@ -241,24 +242,42 @@ class AnomalibDataModule(LightningDataModule, ABC):
                     "If this is intended, you can ignore this warning.",
                 )
         elif self.test_split_mode == SplitMode.SYNTHETIC:
+            # First split the train set to train/eval splits to get different
+            # normal images for train and eval sets.
+            split_ratio = self.test_split_ratio or 0.4
+            logger.info(f"Splitting normal train images to train/eval splits with ratio: {split_ratio}")
+            eval_train_data, self.train_data = self.train_data.create_subset(
+                criteria=split_ratio,
+                seed=self.seed,
+            )
+
+            # Generate synthetic val and test sets
             logger.info("Generating synthetic val and test sets.")
-            self.val_data = SyntheticAnomalyDataset.from_dataset(self.train_data)
-            self.test_data = SyntheticAnomalyDataset.from_dataset(self.train_data)
+            synthetic_eval_data = SyntheticAnomalyDataset.from_dataset(eval_train_data)
+
+            # Split the eval data to val/test splits with val_split_ratio
+            split_ratio = self.val_split_ratio or 0.5
+            logger.info(f"Splitting synthetic eval images to val/test splits with ratio: {split_ratio}")
+            self.val_data, self.test_data = synthetic_eval_data.create_subset(
+                criteria=split_ratio,
+                seed=self.seed,
+                label_aware=True,
+            )
 
         else:
             msg = f"Invalid test split mode: {self.test_split_mode}"
             raise ValueError(msg)
 
     def _process_train_test_scenario(self) -> None:
-        if self.val_split_mode == SplitMode.AUTO:
-            if self.val_split_ratio is None:
-                logger.info("'val_split_ratio' is not specified. Choosing a default value of 0.5 for AUTO mode.")
-                split_ratio = 0.5
-            else:
-                split_ratio = self.val_split_ratio
+        if self.val_split_ratio is None:
+            logger.info("'val_split_ratio' is not specified. Choosing a default value of 0.5 for AUTO mode.")
+            split_ratio = 0.5
+        else:
+            split_ratio = self.val_split_ratio
 
+        if self.val_split_mode == SplitMode.AUTO:
             self.val_data, self.test_data = self.test_data.create_subset(
-                criteria=[split_ratio, 1 - split_ratio],
+                criteria=split_ratio,
                 seed=self.seed,
                 label_aware=True,
             )
@@ -269,22 +288,26 @@ class AnomalibDataModule(LightningDataModule, ABC):
                 "or 'SplitMode.SYNTHETIC' to generate synthetic val set.",
             )
         elif self.val_split_mode == SplitMode.SYNTHETIC:
+            normal_val_data, self.train_data = self.train_data.create_subset(
+                criteria=split_ratio,
+                seed=self.seed,
+            )
             logger.info("Generating synthetic val set.")
-            self.val_data = SyntheticAnomalyDataset.from_dataset(self.train_data)
+            self.val_data = SyntheticAnomalyDataset.from_dataset(normal_val_data)
         else:
             msg = f"Invalid val split mode: {self.val_split_mode}"
             raise ValueError(msg)
 
     def _process_train_val_scenario(self) -> None:
-        if self.test_split_mode == SplitMode.AUTO:
-            if self.test_split_ratio is None:
-                logger.info("'test_split_ratio' is not specified. Choosing a default value of 0.5 for AUTO mode.")
-                split_ratio = 0.5
-            else:
-                split_ratio = self.test_split_ratio
+        if self.test_split_ratio is None:
+            logger.info("'test_split_ratio' is not specified. Choosing a default value of 0.5 for AUTO mode.")
+            split_ratio = 0.5
+        else:
+            split_ratio = self.test_split_ratio
 
-            self.val_data, self.test_data = self.val_data.create_subset(
-                criteria=[1 - split_ratio, split_ratio],
+        if self.test_split_mode == SplitMode.AUTO:
+            self.test_data, self.val_data = self.val_data.create_subset(
+                criteria=split_ratio,
                 seed=self.seed,
                 label_aware=True,
             )
@@ -295,8 +318,12 @@ class AnomalibDataModule(LightningDataModule, ABC):
                 "or 'SplitMode.SYNTHETIC' to generate synthetic test set.",
             )
         elif self.test_split_mode == SplitMode.SYNTHETIC:
+            normal_test_data, self.train_data = self.train_data.create_subset(
+                criteria=split_ratio,
+                seed=self.seed,
+            )
             logger.info("Generating synthetic test set.")
-            self.test_data = SyntheticAnomalyDataset.from_dataset(self.train_data)
+            self.test_data = SyntheticAnomalyDataset.from_dataset(normal_test_data)
         else:
             msg = f"Invalid test split mode: {self.test_split_mode}"
             raise ValueError(msg)
@@ -305,18 +332,27 @@ class AnomalibDataModule(LightningDataModule, ABC):
         """Perform sanity check on train, validation, and test sets."""
         # Check train set
         if hasattr(self, "train_data") and not self.train_data.all_normal:
-            msg = "Train set should contain only normal images."
-            raise ValueError(msg)
+            logger.warning(
+                "Train set contains abnormal images. "
+                "This is unusual and may lead to unexpected results. "
+                "Typically, the train set should contain only normal images.",
+            )
 
         # Check validation set
         if hasattr(self, "val_data") and not (self.val_data.has_normal and self.val_data.has_anomalous):
-            msg = "Validation set should contain both normal and abnormal images."
-            raise ValueError(msg)
+            logger.warning(
+                "Validation set does not contain both normal and abnormal images. "
+                "This may impact the ability to properly evaluate the model after training. "
+                "It's recommended to have both normal and abnormal images in the validation set.",
+            )
 
         # Check test set
         if hasattr(self, "test_data") and not (self.test_data.has_normal and self.test_data.has_anomalous):
-            msg = "Test set should contain both normal and abnormal images."
-            raise ValueError(msg)
+            logger.warning(
+                "Test set does not contain both normal and abnormal images. "
+                "This may lead to incomplete or biased evaluation of the model. "
+                "It's recommended to have both normal and abnormal images in the test set.",
+            )
 
     def train_dataloader(self) -> TRAIN_DATALOADERS:
         """Get train dataloader."""
