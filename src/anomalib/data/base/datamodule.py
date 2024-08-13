@@ -265,7 +265,7 @@ class AnomalibDataModule(LightningDataModule, ABC):
         elif self.val_split_mode == SplitMode.PREDEFINED:
             logger.warning(
                 "Skipping val set creation. This means that the model will not be evaluated."
-                "You can use 'SplitMode.AUTO' to automatically create a val set, "
+                "You can use 'SplitMode.AUTO' to automatically create a val set by randomly sampling from the test set, "
                 "or 'SplitMode.SYNTHETIC' to generate synthetic val set.",
             )
         elif self.val_split_mode == SplitMode.SYNTHETIC:
