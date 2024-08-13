@@ -240,7 +240,7 @@ class OpenaiVlm(AnomalyModule):
 
     @staticmethod
     def configure_optimizers() -> None:
-        """WinCLIP doesn't require optimization, therefore returns no optimizers."""
+        """OpenaiVlm doesn't require optimization, therefore returns no optimizers."""
         return
 
     def validation_step(
