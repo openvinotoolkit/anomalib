@@ -54,6 +54,7 @@ Learn more about Visa dataset.
 
 ./btech
 ./folder
+./csv
 ./kolektor
 ./mvtec
 ./visa
