@@ -58,7 +58,13 @@ class OpenaiVlm(AnomalyModule):
         pre_images = self.collect_reference_images(dataloader)
         self.pre_images = pre_images
 
-    def api_call_few_shot(self, pre_img: str, image: str) -> str:
+    # Function to encode the image
+    def _encode_image(self, image_path: str) -> str:
+        path = Path(image_path)
+        with path.open("rb") as image_file:
+            return base64.b64encode(image_file.read()).decode("utf-8")
+
+    def api_call_few_shot(self, pre_img: list[str], image: str) -> str:
         """Makes an API call to OpenAI's GPT-4 model to detect anomalies in an image.
 
         Args:
@@ -75,16 +81,9 @@ class OpenaiVlm(AnomalyModule):
         Raises:
             openai.error.OpenAIError: If there is an error during the API call.
         """
-
-        # Function to encode the image
-        def encode_image(image_path: str) -> str:
-            path = Path(image_path)
-            with path.open("rb") as image_file:
-                return base64.b64encode(image_file.read()).decode("utf-8")
-
         # Getting the base64 string
-        base64_image = encode_image(image)
-        base64_image_pre = [encode_image(img) for img in pre_img]
+        base64_image = self._encode_image(image)
+        base64_image_pre = [self._encode_image(img) for img in pre_img]
         prompt = """
          You will receive an image that is going to be an example of the typical image without any anomaly,
          and the last image that you need to decide if it has an anomaly or not.
@@ -113,8 +112,10 @@ class OpenaiVlm(AnomalyModule):
                 "content": [
                     {
                         "type": "image_url",
-                        "image_url": {"url": f"data:image/png;base64,{base64_image}"},
-                        "detail": "high",
+                        "image_url": {
+                            "url": f"data:image/png;base64,{base64_image}",
+                            "detail": "high",
+                        },
                     },
                 ],
             },
@@ -187,14 +188,8 @@ class OpenaiVlm(AnomalyModule):
         - Focus on obvious anomalies that could impact final use of the object operation or safety.
         """
 
-        # Function to encode the image
-        def encode_image(image_path: str) -> str:
-            path = Path(image_path)
-            with path.open("rb") as image_file:
-                return base64.b64encode(image_file.read()).decode("utf-8")
-
         # Getting the base64 string
-        base64_image = encode_image(image)
+        base64_image = self._encode_image(image)
 
         messages = [
             {
