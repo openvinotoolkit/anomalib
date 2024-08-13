@@ -337,13 +337,13 @@ class SubsetCreator:
         """
         if criteria == "label":
             splits = self.split_by_label()
-        if isinstance(criteria, int):
+        elif isinstance(criteria, int):
             splits = self.split_by_count(criteria, label_aware=label_aware, seed=seed)
-        if isinstance(criteria, float):
+        elif isinstance(criteria, float):
             splits = self.split_by_ratio(criteria, label_aware=label_aware, seed=seed)
-        if isinstance(criteria, dict):
+        elif isinstance(criteria, dict):
             splits = self.split_by_mixed_criteria(criteria, label_aware=label_aware, seed=seed)
-        if isinstance(criteria, Sequence):
+        elif isinstance(criteria, Sequence):
             if all(isinstance(x, int) for x in criteria):
                 # eg., [100, 200, 300]
                 splits = self.split_by_count(*criteria, label_aware=label_aware, seed=seed)
@@ -359,6 +359,9 @@ class SubsetCreator:
             else:
                 msg = f"Invalid sequence type for splitting: {criteria}"
                 raise ValueError(msg)
+        else:
+            msg = f"Invalid criteria type for splitting: {criteria}. Allowed types: str, int, float, dict, or Sequence."
+            raise TypeError(msg)
 
         if splits is None:
             msg = f"Invalid criteria for splitting: {criteria}. "
@@ -412,28 +415,50 @@ class SubsetCreator:
         self,
         *ratios: float,
         label_aware: bool = False,
-        seed: None | int = None,
+        seed: int | None = None,
     ) -> list[pd.DataFrame]:
         """Split the dataset into multiple parts based on specified ratios."""
         if not all(0 < ratio < 1 for ratio in ratios):
             msg = "All ratios must be between 0 and 1."
             raise ValueError(msg)
 
-        if sum(ratios) > 1:
-            msg = "Sum of ratios cannot exceed 1."
+        if not math.isclose(sum(ratios), 1.0, rel_tol=1e-5):
+            msg = f"Sum of ratios must be close to 1, got {sum(ratios)}"
             raise ValueError(msg)
 
-        total_samples = len(self.samples)
-        splits = []
-        remaining_samples = self.samples.copy()
+        def split_by_ratio_without_label_awareness() -> list[pd.DataFrame]:
+            shuffled_samples = self.samples.sample(frac=1, random_state=seed)
+            total_samples = len(shuffled_samples)
+            splits = []
+            start_idx = 0
+            for ratio in ratios[:-1]:  # Process all but the last ratio
+                end_idx = start_idx + int(ratio * total_samples)
+                splits.append(shuffled_samples.iloc[start_idx:end_idx].reset_index(drop=True))
+                start_idx = end_idx
+            # Add the remaining samples to the last split
+            splits.append(shuffled_samples.iloc[start_idx:].reset_index(drop=True))
+            return splits
 
-        for ratio in ratios:
-            split_size = int(total_samples * ratio)
-            split = self.filter.by_count(split_size, remaining_samples, seed, label_aware)
-            splits.append(split)
-            remaining_samples = remaining_samples[~remaining_samples.index.isin(split.index)]
+        def split_by_ratio_with_label_awareness() -> list[pd.DataFrame]:
+            grouped = self.samples.groupby("label_index")
+            splits = [pd.DataFrame() for _ in ratios]
 
-        return splits
+            for _, label_group in grouped:
+                shuffled_group = label_group.sample(frac=1, random_state=seed)
+                group_size = len(shuffled_group)
+                start_idx = 0
+                for i, ratio in enumerate(ratios):
+                    end_idx = start_idx + int(ratio * group_size)
+                    splits[i] = pd.concat([splits[i], shuffled_group.iloc[start_idx:end_idx]])
+                    start_idx = end_idx
+
+            # Shuffle each split
+            return [split.sample(frac=1, random_state=seed).reset_index(drop=True) for split in splits]
+
+        if label_aware:
+            return split_by_ratio_with_label_awareness()
+
+        return split_by_ratio_without_label_awareness()
 
     def split_by_mixed_criteria(
         self,
