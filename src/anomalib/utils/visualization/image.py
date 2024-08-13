@@ -165,6 +165,7 @@ class ImageVisualizer(BaseVisualizer):
 
             image_result = ImageResult(
                 image=image,
+                text_descr=batch["str_output"][i] if "str_output" in batch else None,
                 pred_score=batch["pred_scores"][i].cpu().numpy().item() if "pred_scores" in batch else None,
                 pred_label=batch["pred_labels"][i].cpu().numpy().item() if "pred_labels" in batch else None,
                 anomaly_map=batch["anomaly_maps"][i].cpu().numpy() if "anomaly_maps" in batch else None,
