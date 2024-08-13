@@ -12,7 +12,6 @@ These function are useful
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-import math
 import warnings
 from collections.abc import Sequence
 from enum import Enum
@@ -160,9 +159,15 @@ def resolve_split_mode(split_mode: str | TestSplitMode | ValSplitMode | SplitMod
         else:
             deprecated_mode = f"'{original_input}'"
 
+        warning_message = (
+            f"The split mode {deprecated_mode} is deprecated and will be removed in version 1.3. "
+            f"It is being mapped to 'SplitMode.{resolved_mode.name}', which may not provide exactly "
+            f"the same behavior as the original mode. "
+            f"Please review your splitting logic to ensure it meets your requirements."
+        )
         warnings.warn(
-            f"The split mode {deprecated_mode} is deprecated. Use 'SplitMode.{resolved_mode.name}' instead.",
-            DeprecationWarning,
+            message=warning_message,
+            category=DeprecationWarning,
             stacklevel=2,
         )
         return resolved_mode
@@ -303,8 +308,9 @@ class SubsetCreator:
             msg = "All ratios must be between 0 and 1."
             raise ValueError(msg)
 
-        if not math.isclose(sum(ratios), 1.0, rel_tol=1e-5):
-            msg = f"Sum of ratios must be close to 1, got {sum(ratios)}"
+        total_ratio = sum(ratios)
+        if total_ratio > 1.0:
+            msg = f"Sum of ratios must not exceed 1, got {total_ratio}"
             raise ValueError(msg)
 
         def split_by_ratio_without_label_awareness() -> list[pd.DataFrame]:
@@ -312,17 +318,18 @@ class SubsetCreator:
             total_samples = len(shuffled_samples)
             splits = []
             start_idx = 0
-            for ratio in ratios[:-1]:  # Process all but the last ratio
+            for ratio in ratios:
                 end_idx = start_idx + int(ratio * total_samples)
                 splits.append(shuffled_samples.iloc[start_idx:end_idx].reset_index(drop=True))
                 start_idx = end_idx
-            # Add the remaining samples to the last split
-            splits.append(shuffled_samples.iloc[start_idx:].reset_index(drop=True))
+            # Add any remaining samples as the last split
+            if start_idx < total_samples:
+                splits.append(shuffled_samples.iloc[start_idx:].reset_index(drop=True))
             return splits
 
         def split_by_ratio_with_label_awareness() -> list[pd.DataFrame]:
             grouped = self.samples.groupby("label_index")
-            splits = [pd.DataFrame() for _ in ratios]
+            splits = [pd.DataFrame() for _ in ratios] + [pd.DataFrame()]  # Add an extra DataFrame for remaining samples
 
             for _, label_group in grouped:
                 shuffled_group = label_group.sample(frac=1, random_state=seed)
@@ -332,9 +339,14 @@ class SubsetCreator:
                     end_idx = start_idx + int(ratio * group_size)
                     splits[i] = pd.concat([splits[i], shuffled_group.iloc[start_idx:end_idx]])
                     start_idx = end_idx
+                # Add any remaining samples to the last split
+                if start_idx < group_size:
+                    splits[-1] = pd.concat([splits[-1], shuffled_group.iloc[start_idx:]])
 
             # Shuffle each split
-            return [split.sample(frac=1, random_state=seed).reset_index(drop=True) for split in splits]
+            return [
+                split.sample(frac=1, random_state=seed).reset_index(drop=True) for split in splits if not split.empty
+            ]
 
         if label_aware:
             return split_by_ratio_with_label_awareness()
