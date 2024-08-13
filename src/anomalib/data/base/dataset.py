@@ -145,6 +145,9 @@ class AnomalibDataset(Dataset, ABC):
 
         self._samples = samples.sort_values(by="image_path", ignore_index=True)
 
+        # Clear the cache to avoid using outdated data structures
+        self.clear_cache()
+
     @property
     def filter(self) -> DatasetFilter:
         """Get the dataset filter.
@@ -179,6 +182,11 @@ class AnomalibDataset(Dataset, ABC):
         if self._filter is None:
             self._filter = DatasetFilter(self.samples)
         return self._filter
+
+    def clear_cache(self) -> None:
+        """Clear cached data structures that depend on samples."""
+        self._subset_creator = None
+        self._filter = None
 
     def create_subset(
         self,
@@ -280,7 +288,6 @@ class AnomalibDataset(Dataset, ABC):
                 target path, image tensor, label and transformed bounding box.
         """
         image_path = self.samples.iloc[index].image_path
-        mask_path = self.samples.iloc[index].mask_path
         label_index = self.samples.iloc[index].label_index
 
         image = read_image(image_path, as_tensor=True)
@@ -291,6 +298,7 @@ class AnomalibDataset(Dataset, ABC):
         elif self.task in (TaskType.DETECTION, TaskType.SEGMENTATION):
             # Only Anomalous (1) images have masks in anomaly datasets
             # Therefore, create empty mask for Normal (0) images.
+            mask_path = self.samples.iloc[index].mask_path
             mask = (
                 Mask(torch.zeros(image.shape[-2:])).to(torch.uint8)
                 if label_index == LabelName.NORMAL
