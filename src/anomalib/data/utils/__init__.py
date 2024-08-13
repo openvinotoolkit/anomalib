@@ -24,16 +24,7 @@ from .path import (
     validate_and_resolve_path,
     validate_path,
 )
-from .split import (
-    Split,
-    SplitMode,
-    TestSplitMode,
-    ValSplitMode,
-    concatenate_datasets,
-    random_split,
-    resolve_split_mode,
-    split_by_label,
-)
+from .split import Split, SplitMode, TestSplitMode, ValSplitMode, resolve_split_mode
 
 __all__ = [
     "generate_output_image_filename",
@@ -43,10 +34,7 @@ __all__ = [
     "read_image",
     "read_mask",
     "read_depth_image",
-    "random_split",
     "resolve_split_mode",
-    "split_by_label",
-    "concatenate_datasets",
     "Split",
     "SplitMode",
     "ValSplitMode",
