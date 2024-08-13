@@ -510,7 +510,7 @@ class CSV(AnomalibDataModule):
             transform=self.train_transform,
         )
 
-        if self.val_split_mode == SplitMode.AUTO:
+        if self.val_split_mode == SplitMode.PREDEFINED:
             self.val_data = CSVDataset(
                 name="val",
                 csv_path=self.csv_path,
@@ -521,7 +521,7 @@ class CSV(AnomalibDataModule):
                 transform=self.eval_transform,
             )
 
-        if self.test_split_mode == SplitMode.AUTO:
+        if self.test_split_mode == SplitMode.PREDEFINED:
             self.test_data = CSVDataset(
                 name="test",
                 csv_path=self.csv_path,
