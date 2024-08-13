@@ -211,13 +211,16 @@ class AnomalibDataModule(LightningDataModule, ABC):
                 # if self.test_split_ratio is None, the default value is 0.4 (60% train, 40% test (20, 20 val/test))
                 split_ratio = self.test_split_ratio or 0.4
                 logger.info(f"Splitting normal images with ratio: {split_ratio}")
-                self.train_data, normal_eval_dataset = normal_dataset.create_subset(split_ratio, seed=self.seed)
+                self.train_data, normal_eval_dataset = normal_dataset.create_subset(
+                    criteria=[1 - split_ratio, split_ratio],
+                    seed=self.seed,
+                )
 
                 # 3. split the eval dataset to val/test splits with val_split_ratio
                 eval_dataset = normal_eval_dataset + abnormal_dataset
                 split_ratio = self.val_split_ratio or 0.5
                 self.val_data, self.test_data = eval_dataset.create_subset(
-                    split_ratio,
+                    criteria=[split_ratio, 1 - split_ratio],
                     label_aware=True,
                     seed=self.seed,
                 )
