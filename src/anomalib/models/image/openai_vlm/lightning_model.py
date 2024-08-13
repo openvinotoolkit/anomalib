@@ -101,8 +101,10 @@ class OpenaiVlm(AnomalyModule):
                 "content": [
                     {
                         "type": "image_url",
-                        "image_url": {"url": f"data:image/png;base64,{base64_image_pre[0]}"},
-                        "detail": "high",
+                        "image_url": {
+                            "url": f"data:image/png;base64,{base64_image_pre[0]}",
+                            "detail": "high",
+                        },
                     },
                 ],
             },
@@ -204,8 +206,10 @@ class OpenaiVlm(AnomalyModule):
                 "content": [
                     {
                         "type": "image_url",
-                        "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"},
-                        "detail": "high",
+                        "image_url": {
+                            "url": f"data:image/jpeg;base64,{base64_image}",
+                            "detail": "high",
+                        },
                     },
                 ],
             },
