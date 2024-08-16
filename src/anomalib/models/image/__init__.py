@@ -5,6 +5,7 @@
 
 from .cfa import Cfa
 from .cflow import Cflow
+from .chatgpt_vision import ChatGPTVision
 from .csflow import Csflow
 from .dfkde import Dfkde
 from .dfm import Dfm
@@ -14,7 +15,6 @@ from .efficient_ad import EfficientAd
 from .fastflow import Fastflow
 from .fre import Fre
 from .ganomaly import Ganomaly
-from .openai_vlm import OpenaiVlm
 from .padim import Padim
 from .patchcore import Patchcore
 from .reverse_distillation import ReverseDistillation
@@ -26,6 +26,7 @@ from .winclip import WinClip
 __all__ = [
     "Cfa",
     "Cflow",
+    "ChatGPTVision",
     "Csflow",
     "Dfkde",
     "Dfm",
@@ -35,7 +36,6 @@ __all__ = [
     "Fastflow",
     "Fre",
     "Ganomaly",
-    "OpenaiVlm",
     "Padim",
     "Patchcore",
     "ReverseDistillation",

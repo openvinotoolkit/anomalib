@@ -23,11 +23,24 @@ The model operates by encoding images into base64 format and passing them to the
 In zero-shot mode, the model does not require any reference images:
 
 ```python
-from openai_vlm import OpenaiVlm
+from anomalib.data import MVTec
+from anomalib.engine import Engine
+from anomalib.models import ChatGPTVision
+from dotenv import load_dotenv
 
-model = OpenaiVlm(openai_key="your-openai-api-key")
-result = model.api_call(image="path/to/image.jpg")
-print(result)
+# Load the environment variables from the .env file
+# load_dotenv(dotenv_path=env_path)
+load_dotenv()
+
+model = ChatGPTVision(k_shot=0)
+engine = Engine(task=TaskType.EXPLANATION)
+datamodule = MVTec(
+    category=bottle,
+    train_batch_size=1,
+    eval_batch_size=1,
+    num_workers=0,
+    )
+engine.test(model=model, datamodule=datamodule)
 ```
 
 ### Few-Shot Anomaly Detection
@@ -37,16 +50,14 @@ In few-shot mode, the model uses a small set of normal reference images:
 ```python
 from anomalib.data import MVTec
 from anomalib.engine import Engine
-from anomalib.models import OpenaiVlm
+from anomalib.models import ChatGPTVision
 from dotenv import load_dotenv
 
 # Load the environment variables from the .env file
 # load_dotenv(dotenv_path=env_path)
 load_dotenv()
 
-                                                                                                                          # Access the secret key
-secret_key = os.getenv("OPEN_AI_KEY")
-model = OpenaiVlm(k_shot=0, openai_key=secret_key)
+model = ChatGPTVision(k_shot=2)
 engine = Engine(task=TaskType.EXPLANATION)
 datamodule = MVTec(
     category=bottle,
@@ -59,10 +70,11 @@ engine.test(model=model, datamodule=datamodule)
 
 ## Parameters
 
-| Parameter    | Type | Description                                               | Default |
-| ------------ | ---- | --------------------------------------------------------- | ------- |
-| `k_shot`     | int  | Number of normal reference images used in few-shot mode.  | `0`     |
-| `openai_key` | str  | API key for OpenAI. Required for accessing the GPT-4 API. | `None`  |
+| Parameter    | Type | Description                                                                                     | Default                    |
+| ------------ | ---- | ----------------------------------------------------------------------------------------------- | -------------------------- |
+| `k_shot`     | int  | Number of normal reference images used in few-shot mode.                                        | `0`                        |
+| `model_name` | str  | The OpenAI VLM for the image detection.                                                         | `"gpt-4o-mini-2024-07-18"` |
+| `detail`     | bool | The detail level of the input in the VLM for image detection: 'high' (`true`), 'low' (`false`). | `True`                     |
 
 ## Example Outputs
 
@@ -74,12 +86,10 @@ The model returns a response indicating whether an anomaly is detected:
   "NO"
   ```
 
-  ![Openai result no anomaly](/docs/source/images/openai_vlm/good.png "Openai without anomaly result")
-
-- **Few-Shot Example**:
+  ![Openai result no anomaly](/docs/source/images/chatgpt_vision/good.png "Openai without anomaly result")
 
   ```plaintext
   "YES: Description of the detected anomaly."
   ```
 
-  ![Openai result with anomaly](/docs/source/images/winclip/architecture.png "Openai with Anomaly result")
+  ![Openai result with anomaly](/docs/source/images/chatgpt_vision/broken.png "Openai with Anomaly result")
