@@ -35,8 +35,8 @@ def test_visualize_fully_defected_masks() -> None:
     assert np.all(plotted_img[0][..., 0] == 255)
 
 
-def test_model_visualizer_explanation() -> None:
-    """Test visualizer image on TaskType.EXPLANATION."""
+def test_model_visualizer_language() -> None:
+    """Test visualizer image on TaskType.LANGUAGE."""
     anomaly_map = np.zeros((100, 100), dtype=np.float64)
     anomaly_map[10:20, 10:20] = 1.0
     gt_mask = np.zeros((100, 100))
@@ -59,7 +59,7 @@ def test_model_visualizer_explanation() -> None:
 
     image_visualizer = ImageVisualizer(
         mode=VisualizationMode.FULL,
-        task=TaskType.EXPLANATION,
+        task=TaskType.LANGUAGE,
     )
     result = image_visualizer.visualize_image(image_result)
 

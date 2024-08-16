@@ -242,7 +242,7 @@ class ImageVisualizer(BaseVisualizer):
             else:
                 image_classified = add_normal_label(image_result.image, 1 - image_result.pred_score)
             image_grid.add_image(image=image_classified, title="Prediction")
-        elif self.task == TaskType.EXPLANATION:
+        elif self.task == TaskType.LANGUAGE:
             description = ""
             if image_result.text_descr:
                 description = image_result.text_descr
@@ -288,7 +288,7 @@ class ImageVisualizer(BaseVisualizer):
                 image_classified = add_normal_label(image_result.image, 1 - image_result.pred_score)
             return image_classified
 
-        if self.task == TaskType.EXPLANATION:
+        if self.task == TaskType.LANGUAGE:
             image_grid = _ImageGrid()
             description = ""
             if image_result.text_descr:
