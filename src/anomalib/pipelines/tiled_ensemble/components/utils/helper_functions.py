@@ -17,21 +17,20 @@ from .ensemble_engine import TiledEnsembleEngine
 from .ensemble_tiling import EnsembleTiler, TileCollater
 
 
-def get_ensemble_datamodule(args: dict, tiler: EnsembleTiler, tile_index: tuple[int, int]) -> AnomalibDataModule:
+def get_ensemble_datamodule(data_args: dict, tiler: EnsembleTiler, tile_index: tuple[int, int]) -> AnomalibDataModule:
     """Get Anomaly Datamodule adjusted for use in ensemble.
 
     Datamodule collate function gets replaced by TileCollater in order to tile all images before they are passed on.
 
     Args:
-        args: tiled ensemble run configuration.
+        data_args: tiled ensemble data configuration.
         tiler (EnsembleTiler): Tiler used to split the images to tiles for use in ensemble.
         tile_index (tuple[int, int]): Index of the tile in the split image.
 
     Returns:
         AnomalibDataModule: Anomalib Lightning DataModule
     """
-    data_config = args["data"]
-    datamodule = get_datamodule(data_config)
+    datamodule = get_datamodule(data_args)
     # set custom collate function that does the tiling
     datamodule.collate_fn = TileCollater(tiler, tile_index)
     datamodule.setup()
@@ -39,18 +38,17 @@ def get_ensemble_datamodule(args: dict, tiler: EnsembleTiler, tile_index: tuple[
     return datamodule
 
 
-def get_ensemble_model(args: dict, tiler: EnsembleTiler) -> AnomalyModule:
+def get_ensemble_model(model_args: dict, tiler: EnsembleTiler) -> AnomalyModule:
     """Get model prepared for ensemble training.
 
     Args:
-        args: tiled ensemble run configuration.
+        model_args: tiled ensemble model configuration.
         tiler (EnsembleTiler): tiler used to get tile dimensions.
 
     Returns:
         AnomalyModule: model with input_size setup
     """
-    model_config = args["model"]
-    model = get_model(model_config)
+    model = get_model(model_args)
     # set model input size match tile size
     model.set_input_size((tiler.tile_size_h, tiler.tile_size_w))
 

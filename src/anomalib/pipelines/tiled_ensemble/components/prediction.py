@@ -168,7 +168,7 @@ class PredictJobGenerator(JobGenerator):
         # go over all tile positions
         for tile_index in product(range(tiler.num_patches_h), range(tiler.num_patches_w)):
             # prepare datamodule with custom collate function that only provides specific tile of image
-            datamodule = get_ensemble_datamodule(args, tiler, tile_index)
+            datamodule = get_ensemble_datamodule(args["data"], tiler, tile_index)
 
             # check if predict step is positioned after training
             if prev_stage_result and tile_index in prev_stage_result:
@@ -180,7 +180,7 @@ class PredictJobGenerator(JobGenerator):
                 # any other case - predict is called standalone
                 engine = None
                 # we need to make new model instance as it's not inside engine
-                model = get_ensemble_model(args, tiler)
+                model = get_ensemble_model(args["model"], tiler)
                 tile_i, tile_j = tile_index
                 # prepare checkpoint path for model on current tile location
                 ckpt_path = self.root_dir / "weights" / "lightning" / f"model{tile_i}_{tile_j}.ckpt"

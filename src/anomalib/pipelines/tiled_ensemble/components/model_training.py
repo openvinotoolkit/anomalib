@@ -155,8 +155,8 @@ class TrainModelJobGenerator(JobGenerator):
         # go over all tile positions
         for tile_index in product(range(tiler.num_patches_h), range(tiler.num_patches_w)):
             # prepare datamodule with custom collate function that only provides specific tile of image
-            datamodule = get_ensemble_datamodule(args, tiler, tile_index)
-            model = get_ensemble_model(args, tiler)
+            datamodule = get_ensemble_datamodule(args["data"], tiler, tile_index)
+            model = get_ensemble_model(args["model"], tiler)
 
             # pass root_dir to engine so all models in ensemble have the same root dir
             yield TrainModelJob(
