@@ -13,6 +13,7 @@ from tqdm import tqdm
 from anomalib import TaskType
 from anomalib.data.utils.image import save_image
 from anomalib.pipelines.components import Job, JobGenerator
+from anomalib.pipelines.tiled_ensemble.components.utils import NormalizationStage
 from anomalib.pipelines.types import GATHERED_RESULTS, RUN_RESULTS
 from anomalib.utils.visualization import ImageVisualizer
 
@@ -26,15 +27,17 @@ class VisualizationJob(Job):
         predictions (list[Any]): list of image-level predictions.
         root_dir (Path): Root directory to save checkpoints, stats and images.
         task (TaskType): type of task the predictions represent.
+        normalize (bool): if predictions need to be normalized
     """
 
-    name = "pipeline"
+    name = "Visualize"
 
-    def __init__(self, predictions: list, root_dir: Path, task: TaskType) -> None:
+    def __init__(self, predictions: list, root_dir: Path, task: TaskType, normalize: bool) -> None:
         super().__init__()
         self.predictions = predictions
         self.root_dir = root_dir / "images"
         self.task = task
+        self.normalize = normalize
 
     def run(self, task_id: int | None = None) -> list[Any]:
         """Run job that visualizes all prediction data.
@@ -43,11 +46,11 @@ class VisualizationJob(Job):
             task_id: Not used in this case.
 
         Returns:
-            list[Any]: Unchanged predictions..
+            list[Any]: Unchanged predictions.
         """
         del task_id  # not needed here
 
-        visualizer = ImageVisualizer(task=self.task)
+        visualizer = ImageVisualizer(task=self.task, normalize=self.normalize)
 
         logger.info("Starting visualization.")
 
@@ -84,8 +87,10 @@ class VisualizationJobGenerator(JobGenerator):
         root_dir (Path): Root directory where images will be saved (root/images).
     """
 
-    def __init__(self, root_dir: Path) -> None:
+    def __init__(self, root_dir: Path, task: TaskType, normalization_stage: NormalizationStage) -> None:
         self.root_dir = root_dir
+        self.task = task
+        self.normalize = normalization_stage == NormalizationStage.NONE
 
     @property
     def job_class(self) -> type:
@@ -106,6 +111,6 @@ class VisualizationJobGenerator(JobGenerator):
         Returns:
             Generator[Job, None, None]: VisualizationJob generator
         """
-        task = args["data"]["init_args"]["task"]
+        del args  # args not used here
 
-        yield VisualizationJob(prev_stage_result, self.root_dir, task)
+        yield VisualizationJob(prev_stage_result, self.root_dir, self.task, self.normalize)

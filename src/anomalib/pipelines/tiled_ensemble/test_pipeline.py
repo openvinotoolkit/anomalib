@@ -48,29 +48,78 @@ class TestTiledEnsemble(Pipeline):
         """
         runners: list[Runner] = []
 
-        if args["pipeline"]["data"]["init_args"]["test_split_mode"] == TestSplitMode.NONE:
+        if args["data"]["init_args"]["test_split_mode"] == TestSplitMode.NONE:
             logger.info("Test split mode set to `none`, skipping test phase.")
             return runners
 
-        if args["pipeline"]["accelerator"] == "cuda":
+        seed = args["seed"]
+        accelerator = args["accelerator"]
+        tiling_args = args["tiling"]
+        data_args = args["data"]
+        normalization_stage = NormalizationStage(args["normalization_stage"])
+        threshold_stage = ThresholdStage(args["threshold_stage"])
+        model_args = args["TrainModels"]["model"]
+        task = args["data"]["init_args"]["task"]
+        metrics = args["TrainModels"]["metrics"]
+
+        if accelerator == "cuda":
             runners.append(
-                ParallelRunner(PredictJobGenerator(self.root_dir, PredictData.TEST), n_jobs=torch.cuda.device_count()),
+                ParallelRunner(
+                    PredictJobGenerator(
+                        PredictData.TEST,
+                        seed=seed,
+                        accelerator=accelerator,
+                        root_dir=self.root_dir,
+                        tiling_args=tiling_args,
+                        data_args=data_args,
+                        model_args=model_args,
+                        normalization_stage=normalization_stage,
+                    ),
+                    n_jobs=torch.cuda.device_count(),
+                ),
             )
         else:
             runners.append(
-                SerialRunner(PredictJobGenerator(self.root_dir, PredictData.TEST)),
+                SerialRunner(
+                    PredictJobGenerator(
+                        PredictData.TEST,
+                        seed=seed,
+                        accelerator=accelerator,
+                        root_dir=self.root_dir,
+                        tiling_args=tiling_args,
+                        data_args=data_args,
+                        model_args=model_args,
+                        normalization_stage=normalization_stage,
+                    ),
+                ),
             )
-        runners.append(SerialRunner(MergeJobGenerator()))
+        runners.append(SerialRunner(MergeJobGenerator(tiling_args=tiling_args, data_args=data_args)))
 
-        if args["pipeline"]["ensemble"]["post_processing"]["seam_smoothing"]["apply"]:
-            runners.append(SerialRunner(SmoothingJobGenerator()))
+        if args["SeamSmoothing"]["apply"]:
+            runners.append(
+                SerialRunner(
+                    SmoothingJobGenerator(accelerator=accelerator, tiling_args=tiling_args, data_args=data_args),
+                ),
+            )
 
-        if args["pipeline"]["ensemble"]["post_processing"]["normalization_stage"] == NormalizationStage.IMAGE:
+        if normalization_stage == NormalizationStage.IMAGE:
             runners.append(SerialRunner(NormalizationJobGenerator(self.root_dir)))
-        if args["pipeline"]["ensemble"]["post_processing"]["threshold_stage"] == ThresholdStage.IMAGE:
-            runners.append(SerialRunner(ThresholdingJobGenerator(self.root_dir)))
+        if threshold_stage == ThresholdStage.IMAGE:
+            runners.append(SerialRunner(ThresholdingJobGenerator(self.root_dir, normalization_stage)))
 
-        runners.append(SerialRunner(VisualizationJobGenerator(self.root_dir)))
-        runners.append(SerialRunner(MetricsCalculationJobGenerator(self.root_dir)))
+        runners.append(
+            SerialRunner(VisualizationJobGenerator(self.root_dir, task=task, normalization_stage=normalization_stage)),
+        )
+        runners.append(
+            SerialRunner(
+                MetricsCalculationJobGenerator(
+                    accelerator=accelerator,
+                    root_dir=self.root_dir,
+                    task=task,
+                    metrics=metrics,
+                    normalization_stage=normalization_stage,
+                ),
+            ),
+        )
 
         return runners

@@ -15,6 +15,7 @@ from anomalib.data.utils import masks_to_boxes
 from anomalib.pipelines.components import Job, JobGenerator
 from anomalib.pipelines.types import GATHERED_RESULTS, RUN_RESULTS
 
+from .utils import NormalizationStage
 from .utils.helper_functions import get_threshold_values
 
 logger = logging.getLogger(__name__)
@@ -29,9 +30,9 @@ class ThresholdingJob(Job):
         pixel_threshold (float): Threshold used for pixel-level thresholding.
     """
 
-    name = "pipeline"
+    name = "Threshold"
 
-    def __init__(self, predictions: list, image_threshold: float, pixel_threshold: float) -> None:
+    def __init__(self, predictions: list[Any] | None, image_threshold: float, pixel_threshold: float) -> None:
         super().__init__()
         self.predictions = predictions
         self.image_threshold = image_threshold
@@ -91,8 +92,9 @@ class ThresholdingJobGenerator(JobGenerator):
         root_dir (Path): Root directory containing post-processing stats.
     """
 
-    def __init__(self, root_dir: Path) -> None:
+    def __init__(self, root_dir: Path, normalization_stage: NormalizationStage) -> None:
         self.root_dir = root_dir
+        self.normalization_stage = normalization_stage
 
     @property
     def job_class(self) -> type:
@@ -113,8 +115,10 @@ class ThresholdingJobGenerator(JobGenerator):
         Returns:
             Generator[Job, None, None]: ThresholdingJob generator.
         """
+        del args  # args not used here
+
         # get threshold values base on normalization
-        image_threshold, pixel_threshold = get_threshold_values(args, self.root_dir)
+        image_threshold, pixel_threshold = get_threshold_values(self.normalization_stage, self.root_dir)
 
         yield ThresholdingJob(
             predictions=prev_stage_result,

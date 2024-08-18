@@ -1,4 +1,5 @@
 """Helper functions for the tiled ensemble training."""
+
 import json
 
 # Copyright (C) 2023-2024 Intel Corporation
@@ -55,25 +56,26 @@ def get_ensemble_model(model_args: dict, tiler: EnsembleTiler) -> AnomalyModule:
     return model
 
 
-def get_ensemble_tiler(args: dict) -> EnsembleTiler:
+def get_ensemble_tiler(tiling_args: dict, data_args: dict) -> EnsembleTiler:
     """Get tiler used for image tiling and to obtain tile dimensions.
 
     Args:
-        args: tiled ensemble run configuration.
+        tiling_args: tiled ensemble tiling configuration.
+        data_args: tiled ensemble data configuration.
 
     Returns:
         EnsembleTiler: tiler object.
     """
     tiler = EnsembleTiler(
-        tile_size=args["ensemble"]["tiling"]["tile_size"],
-        stride=args["ensemble"]["tiling"]["stride"],
-        image_size=args["data"]["init_args"]["image_size"],
+        tile_size=tiling_args["tile_size"],
+        stride=tiling_args["stride"],
+        image_size=data_args["init_args"]["image_size"],
     )
 
     return tiler  # noqa: RET504
 
 
-def parse_trainer_kwargs(trainer_args: dict) -> Namespace | dict:
+def parse_trainer_kwargs(trainer_args: dict | None) -> Namespace | dict:
     """Parse trainer args and instantiate all needed elements.
 
     Transforms config into kwargs ready for Trainer, including instantiation of callback etc.
@@ -150,20 +152,20 @@ def get_ensemble_engine(
     return engine  # noqa: RET504
 
 
-def get_threshold_values(args: dict, root_dir: Path) -> tuple[float, float]:
+def get_threshold_values(normalization_stage: NormalizationStage, root_dir: Path) -> tuple[float, float]:
     """Get threshold values for image and pixel level predictions.
 
     If normalization is not used, get values based on statistics obtained from validation set.
     If normalization is used, both image and pixel threshold are 0.5
 
     Args:
-        args (dict): ensemble run args, used to get normalization stage.
+        normalization_stage (NormalizationStage): ensemble run args, used to get normalization stage.
         root_dir (Path): path to run root where stats file is saved.
 
     Returns:
         tuple[float, float]: image and pixel threshold.
     """
-    if args["ensemble"]["post_processing"]["normalization_stage"] == NormalizationStage.NONE:
+    if normalization_stage == NormalizationStage.NONE:
         stats_path = root_dir / "weights" / "lightning" / "stats.json"
         with stats_path.open("r") as f:
             stats = json.load(f)

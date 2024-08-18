@@ -1,4 +1,5 @@
 """Tiled ensemble utils and helper functions."""
+
 from enum import Enum
 
 # Copyright (C) 2024 Intel Corporation

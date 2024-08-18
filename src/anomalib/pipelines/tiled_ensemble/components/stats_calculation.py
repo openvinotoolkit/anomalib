@@ -28,9 +28,9 @@ class StatisticsJob(Job):
         root_dir (Path): Root directory to save checkpoints, stats and images.
     """
 
-    name = "pipeline"
+    name = "Stats"
 
-    def __init__(self, predictions: list, root_dir: Path) -> None:
+    def __init__(self, predictions: list[Any] | None, root_dir: Path) -> None:
         super().__init__()
         self.predictions = predictions
         self.root_dir = root_dir
@@ -84,7 +84,7 @@ class StatisticsJob(Job):
         for pred_name, pred_metric in minmax.items():
             min_max_vals[pred_name] = {
                 "min": pred_metric.min.item(),
-                "max": pred_metric.max.item()
+                "max": pred_metric.max.item(),
             }
 
         # return stats with save path that is later used to save statistics.

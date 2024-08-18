@@ -75,7 +75,7 @@ class PredictionMergingMechanism:
                 self.tiler.num_patches_h,
                 self.tiler.num_patches_w,
                 batch_size,
-                num_channels,
+                int(num_channels),
                 self.tiler.tile_size_h,
                 self.tiler.tile_size_w,
             )

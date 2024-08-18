@@ -16,6 +16,7 @@ from anomalib.metrics import AnomalibMetricCollection, create_metric_collection
 from anomalib.pipelines.components import Job, JobGenerator
 from anomalib.pipelines.types import GATHERED_RESULTS, PREV_STAGE_RESULT, RUN_RESULTS
 
+from .utils import NormalizationStage
 from .utils.helper_functions import get_threshold_values
 
 logger = logging.getLogger(__name__)
@@ -32,12 +33,12 @@ class MetricsCalculationJob(Job):
         pixel_metrics (AnomalibMetricCollection): Collection of all pixel-level metrics.
     """
 
-    name = "pipeline"
+    name = "Metrics"
 
     def __init__(
         self,
         accelerator: str,
-        predictions: list,
+        predictions: list[Any] | None,
         root_dir: Path,
         image_metrics: AnomalibMetricCollection,
         pixel_metrics: AnomalibMetricCollection,
@@ -120,8 +121,19 @@ class MetricsCalculationJobGenerator(JobGenerator):
         root_dir (Path): Root directory to save checkpoints, stats and images.
     """
 
-    def __init__(self, root_dir: Path) -> None:
+    def __init__(
+        self,
+        accelerator: str,
+        root_dir: Path,
+        task: TaskType,
+        metrics: dict,
+        normalization_stage: NormalizationStage,
+    ) -> None:
+        self.accelerator = accelerator
         self.root_dir = root_dir
+        self.task = task
+        self.metrics = metrics
+        self.normalization_stage = normalization_stage
 
     @property
     def job_class(self) -> type:
@@ -182,11 +194,13 @@ class MetricsCalculationJobGenerator(JobGenerator):
         Returns:
             Generator[Job, None, None]: MetricsCalculationJob generator
         """
-        image_metrics_config = args["metrics"].get("image", None)
-        pixel_metrics_config = args["metrics"].get("pixel", None)
-        task = args["data"]["init_args"]["task"]
+        del args  # args not used here
 
-        image_threshold, pixel_threshold = get_threshold_values(args, self.root_dir)
+        image_metrics_config = self.metrics.get("image", None)
+        pixel_metrics_config = self.metrics.get("pixel", None)
+        task = self.task
+
+        image_threshold, pixel_threshold = get_threshold_values(self.normalization_stage, self.root_dir)
 
         image_metrics, pixel_metrics = self.configure_ensemble_metrics(
             task=task,
@@ -199,7 +213,7 @@ class MetricsCalculationJobGenerator(JobGenerator):
         pixel_metrics.set_threshold(pixel_threshold)
 
         yield MetricsCalculationJob(
-            accelerator=args["accelerator"],
+            accelerator=self.accelerator,
             predictions=prev_stage_result,
             root_dir=self.root_dir,
             image_metrics=image_metrics,

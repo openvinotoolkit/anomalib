@@ -48,7 +48,7 @@ class TiledEnsembleEngine(Engine):
         Returns:
             Path: path to new workspace root dir
         """
-        model_name = args["model"]["class_path"].split(".")[-1]
+        model_name = args["TrainModels"]["model"]["class_path"].split(".")[-1]
         dataset_name = args["data"]["class_path"].split(".")[-1]
         category = args["data"]["init_args"]["category"]
         root_dir = Path(args["default_root_dir"]) / model_name / dataset_name / category

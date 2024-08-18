@@ -15,6 +15,7 @@ from anomalib.models import AnomalyModule
 from anomalib.pipelines.components import Job, JobGenerator
 from anomalib.pipelines.types import GATHERED_RESULTS, PREV_STAGE_RESULT
 
+from .utils import NormalizationStage
 from .utils.ensemble_engine import TiledEnsembleEngine
 from .utils.helper_functions import (
     get_ensemble_datamodule,
@@ -42,7 +43,7 @@ class TrainModelJob(Job):
 
     """
 
-    name = "pipeline"
+    name = "TrainModels"
 
     def __init__(
         self,
@@ -124,8 +125,21 @@ class TrainModelJobGenerator(JobGenerator):
         root_dir (Path): Root directory to save checkpoints, stats and images.
     """
 
-    def __init__(self, root_dir: Path) -> None:
+    def __init__(
+        self,
+        seed: int,
+        accelerator: str,
+        root_dir: Path,
+        tiling_args: dict,
+        data_args: dict,
+        normalization_stage: NormalizationStage,
+    ) -> None:
+        self.seed = seed
+        self.accelerator = accelerator
         self.root_dir = root_dir
+        self.tiling_args = tiling_args
+        self.data_args = data_args
+        self.normalization_stage = normalization_stage
 
     @property
     def job_class(self) -> type:
@@ -144,9 +158,12 @@ class TrainModelJobGenerator(JobGenerator):
             prev_stage_result (None): Not used here.
         """
         del prev_stage_result  # Not needed for this job
+        if args is None:
+            msg = "TrainModels job requires config args"
+            raise ValueError(msg)
 
         # tiler used for splitting the image and getting the tile count
-        tiler = get_ensemble_tiler(args)
+        tiler = get_ensemble_tiler(self.tiling_args, self.data_args)
 
         logger.info(
             "Tiled ensemble training started. Separate models will be trained for %d tile locations.",
@@ -155,16 +172,16 @@ class TrainModelJobGenerator(JobGenerator):
         # go over all tile positions
         for tile_index in product(range(tiler.num_patches_h), range(tiler.num_patches_w)):
             # prepare datamodule with custom collate function that only provides specific tile of image
-            datamodule = get_ensemble_datamodule(args["data"], tiler, tile_index)
+            datamodule = get_ensemble_datamodule(self.data_args, tiler, tile_index)
             model = get_ensemble_model(args["model"], tiler)
 
             # pass root_dir to engine so all models in ensemble have the same root dir
             yield TrainModelJob(
-                accelerator=args["accelerator"],
-                seed=args["seed"],
+                accelerator=self.accelerator,
+                seed=self.seed,
                 root_dir=self.root_dir,
                 tile_index=tile_index,
-                normalization_stage=args["ensemble"]["post_processing"]["normalization_stage"],
+                normalization_stage=self.normalization_stage,
                 metrics=args["metrics"],
                 trainer_args=args.get("trainer", {}),
                 model=model,

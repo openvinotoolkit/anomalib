@@ -28,7 +28,7 @@ class MergeJob(Job):
         tiler (EnsembleTiler): Ensemble tiler used for untiling.
     """
 
-    name = "pipeline"
+    name = "Merge"
 
     def __init__(self, predictions: EnsemblePredictions, tiler: EnsembleTiler) -> None:
         super().__init__()
@@ -76,8 +76,10 @@ class MergeJob(Job):
 class MergeJobGenerator(JobGenerator):
     """Generate MergeJob."""
 
-    def __init__(self) -> None:
+    def __init__(self, tiling_args: dict, data_args: dict) -> None:
         super().__init__()
+        self.tiling_args = tiling_args
+        self.data_args = data_args
 
     @property
     def job_class(self) -> type:
@@ -87,7 +89,7 @@ class MergeJobGenerator(JobGenerator):
     def generate_jobs(
         self,
         args: dict | None = None,
-        prev_stage_result: EnsemblePredictions = None,
+        prev_stage_result: EnsemblePredictions | None = None,
     ) -> Generator[Job, None, None]:
         """Return a generator producing a single merging job.
 
@@ -98,5 +100,7 @@ class MergeJobGenerator(JobGenerator):
         Returns:
             Generator[Job, None, None]: MergeJob generator
         """
-        tiler = get_ensemble_tiler(args)
+        del args  # args not used here
+
+        tiler = get_ensemble_tiler(self.tiling_args, self.data_args)
         yield MergeJob(prev_stage_result, tiler)

@@ -22,7 +22,7 @@ from .components import (
     StatisticsJobGenerator,
     TrainModelJobGenerator,
 )
-from .components.utils import PredictData
+from .components.utils import NormalizationStage, PredictData
 from .components.utils.ensemble_engine import TiledEnsembleEngine
 
 logger = logging.getLogger(__name__)
@@ -32,7 +32,7 @@ class TrainTiledEnsemble(Pipeline):
     """Tiled ensemble training pipeline."""
 
     def __init__(self) -> None:
-        self.root_dir: Path | None = None
+        self.root_dir: Path
 
     def _setup_runners(self, args: dict) -> list[Runner]:
         """Setup the runners for the pipeline.
@@ -45,14 +45,40 @@ class TrainTiledEnsemble(Pipeline):
             list[Runner]: List of runners executing tiled ensemble train + val jobs.
         """
         runners: list[Runner] = []
-        self.root_dir = TiledEnsembleEngine.setup_ensemble_workspace(args["pipeline"])
+        self.root_dir = TiledEnsembleEngine.setup_ensemble_workspace(args)
 
-        if args["pipeline"]["accelerator"] == "cuda":
+        seed = args["seed"]
+        accelerator = args["accelerator"]
+        tiling_args = args["tiling"]
+        data_args = args["data"]
+        normalization_stage = NormalizationStage(args["normalization_stage"])
+        model_args = args["TrainModels"]["model"]
+
+        if accelerator == "cuda":
             runners.extend(
                 [
-                    ParallelRunner(TrainModelJobGenerator(self.root_dir), n_jobs=torch.cuda.device_count()),
                     ParallelRunner(
-                        PredictJobGenerator(self.root_dir, PredictData.VAL),
+                        TrainModelJobGenerator(
+                            seed=seed,
+                            accelerator=accelerator,
+                            root_dir=self.root_dir,
+                            tiling_args=tiling_args,
+                            data_args=data_args,
+                            normalization_stage=normalization_stage,
+                        ),
+                        n_jobs=torch.cuda.device_count(),
+                    ),
+                    ParallelRunner(
+                        PredictJobGenerator(
+                            data_source=PredictData.VAL,
+                            seed=seed,
+                            accelerator=accelerator,
+                            root_dir=self.root_dir,
+                            tiling_args=tiling_args,
+                            data_args=data_args,
+                            model_args=model_args,
+                            normalization_stage=normalization_stage,
+                        ),
                         n_jobs=torch.cuda.device_count(),
                     ),
                 ],
@@ -60,14 +86,38 @@ class TrainTiledEnsemble(Pipeline):
         else:
             runners.extend(
                 [
-                    SerialRunner(TrainModelJobGenerator(self.root_dir)),
-                    SerialRunner(PredictJobGenerator(self.root_dir, PredictData.VAL)),
+                    SerialRunner(
+                        TrainModelJobGenerator(
+                            seed=seed,
+                            accelerator=accelerator,
+                            root_dir=self.root_dir,
+                            tiling_args=tiling_args,
+                            data_args=data_args,
+                            normalization_stage=normalization_stage,
+                        ),
+                    ),
+                    SerialRunner(
+                        PredictJobGenerator(
+                            data_source=PredictData.VAL,
+                            seed=seed,
+                            accelerator=accelerator,
+                            root_dir=self.root_dir,
+                            tiling_args=tiling_args,
+                            data_args=data_args,
+                            model_args=model_args,
+                            normalization_stage=normalization_stage,
+                        ),
+                    ),
                 ],
             )
-        runners.append(SerialRunner(MergeJobGenerator()))
+        runners.append(SerialRunner(MergeJobGenerator(tiling_args=tiling_args, data_args=data_args)))
 
-        if args["pipeline"]["ensemble"]["post_processing"]["seam_smoothing"]["apply"]:
-            runners.append(SerialRunner(SmoothingJobGenerator()))
+        if args["SeamSmoothing"]["apply"]:
+            runners.append(
+                SerialRunner(
+                    SmoothingJobGenerator(accelerator=accelerator, tiling_args=tiling_args, data_args=data_args),
+                ),
+            )
 
         runners.append(SerialRunner(StatisticsJobGenerator(self.root_dir)))
 

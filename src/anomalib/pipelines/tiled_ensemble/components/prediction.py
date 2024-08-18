@@ -16,7 +16,7 @@ from anomalib.models import AnomalyModule
 from anomalib.pipelines.components import Job, JobGenerator
 from anomalib.pipelines.types import GATHERED_RESULTS, PREV_STAGE_RESULT
 
-from .utils import PredictData
+from .utils import NormalizationStage, PredictData
 from .utils.ensemble_engine import TiledEnsembleEngine
 from .utils.helper_functions import (
     get_ensemble_datamodule,
@@ -46,7 +46,7 @@ class PredictJob(Job):
 
     """
 
-    name = "pipeline"
+    name = "Predict"
 
     def __init__(
         self,
@@ -78,7 +78,7 @@ class PredictJob(Job):
     def run(
         self,
         task_id: int | None = None,
-    ) -> tuple[tuple[int, int], list[Any]]:
+    ) -> tuple[tuple[int, int], Any | None]:
         """Predict job that predicts the data with specific model for given tile location.
 
         Args:
@@ -137,9 +137,25 @@ class PredictJobGenerator(JobGenerator):
         data_source (PredictData): Whether to predict on validation set. If false use test set.
     """
 
-    def __init__(self, root_dir: Path, data_source: PredictData) -> None:
-        self.root_dir = root_dir
+    def __init__(
+        self,
+        data_source: PredictData,
+        seed: int,
+        accelerator: str,
+        root_dir: Path,
+        tiling_args: dict,
+        data_args: dict,
+        model_args: dict,
+        normalization_stage: NormalizationStage,
+    ) -> None:
         self.data_source = data_source
+        self.seed = seed
+        self.accelerator = accelerator
+        self.root_dir = root_dir
+        self.tiling_args = tiling_args
+        self.data_args = data_args
+        self.model_args = model_args
+        self.normalization_stage = normalization_stage
 
     @property
     def job_class(self) -> type:
@@ -158,8 +174,10 @@ class PredictJobGenerator(JobGenerator):
             prev_stage_result (dict[tuple[int, int], TiledEnsembleEngine] | None):
                 if called after train job this contains engines with individual models, otherwise load from checkpoints.
         """
+        del args  # args not used here
+
         # tiler used for splitting the image and getting the tile count
-        tiler = get_ensemble_tiler(args)
+        tiler = get_ensemble_tiler(self.tiling_args, self.data_args)
 
         logger.info(
             "Tiled ensemble predicting started using %s data.",
@@ -168,7 +186,7 @@ class PredictJobGenerator(JobGenerator):
         # go over all tile positions
         for tile_index in product(range(tiler.num_patches_h), range(tiler.num_patches_w)):
             # prepare datamodule with custom collate function that only provides specific tile of image
-            datamodule = get_ensemble_datamodule(args["data"], tiler, tile_index)
+            datamodule = get_ensemble_datamodule(self.data_args, tiler, tile_index)
 
             # check if predict step is positioned after training
             if prev_stage_result and tile_index in prev_stage_result:
@@ -180,7 +198,7 @@ class PredictJobGenerator(JobGenerator):
                 # any other case - predict is called standalone
                 engine = None
                 # we need to make new model instance as it's not inside engine
-                model = get_ensemble_model(args["model"], tiler)
+                model = get_ensemble_model(self.model_args, tiler)
                 tile_i, tile_j = tile_index
                 # prepare checkpoint path for model on current tile location
                 ckpt_path = self.root_dir / "weights" / "lightning" / f"model{tile_i}_{tile_j}.ckpt"
@@ -195,11 +213,11 @@ class PredictJobGenerator(JobGenerator):
 
             # pass root_dir to engine so all models in ensemble have the same root dir
             yield PredictJob(
-                accelerator=args["accelerator"],
-                seed=args["seed"],
+                accelerator=self.accelerator,
+                seed=self.seed,
                 root_dir=self.root_dir,
                 tile_index=tile_index,
-                normalization_stage=args["ensemble"]["post_processing"]["normalization_stage"],
+                normalization_stage=self.normalization_stage,
                 model=model,
                 dataloader=dataloader,
                 engine=engine,

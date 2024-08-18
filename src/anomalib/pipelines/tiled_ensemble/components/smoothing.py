@@ -31,7 +31,7 @@ class SmoothingJob(Job):
         tiler (EnsembleTiler): Tiler object used to get tile dimension data.
     """
 
-    name = "pipeline"
+    name = "SeamSmoothing"
 
     def __init__(
         self,
@@ -124,6 +124,12 @@ class SmoothingJob(Job):
 class SmoothingJobGenerator(JobGenerator):
     """Generate SmoothingJob."""
 
+    def __init__(self, accelerator: str, tiling_args: dict, data_args: dict) -> None:
+        super().__init__()
+        self.accelerator = accelerator
+        self.tiling_args = tiling_args
+        self.data_args = data_args
+
     @property
     def job_class(self) -> type:
         """Return the job class."""
@@ -143,12 +149,15 @@ class SmoothingJobGenerator(JobGenerator):
         Returns:
             Generator[Job, None, None]: SmoothingJob generator
         """
+        if args is None:
+            msg = "SeamSmoothing job requires config args"
+            raise ValueError(msg)
         # tiler is used to determine where seams appear
-        tiler = get_ensemble_tiler(args)
+        tiler = get_ensemble_tiler(self.tiling_args, self.data_args)
         yield SmoothingJob(
-            accelerator=args["accelerator"],
+            accelerator=self.accelerator,
             predictions=prev_stage_result,
-            width_factor=args["ensemble"]["post_processing"]["seam_smoothing"]["width"],
-            filter_sigma=args["ensemble"]["post_processing"]["seam_smoothing"]["sigma"],
+            width_factor=args["width"],
+            filter_sigma=args["sigma"],
             tiler=tiler,
         )
