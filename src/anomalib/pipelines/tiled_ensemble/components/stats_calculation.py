@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any
 
 import torch
+from torchmetrics import MetricCollection
 from tqdm import tqdm
 
 from anomalib.metrics import F1AdaptiveThreshold, MinMax
@@ -45,7 +46,13 @@ class StatisticsJob(Job):
         """
         del task_id  # not needed here
 
-        minmax = MinMax().cpu()
+        minmax = MetricCollection(
+            {
+                "anomaly_maps": MinMax().cpu(),
+                "box_scores": MinMax().cpu(),
+                "pred_scores": MinMax().cpu(),
+            },
+        )
         image_threshold = F1AdaptiveThreshold()
         pixel_threshold = F1AdaptiveThreshold()
         pixel_update_called = False
@@ -55,14 +62,11 @@ class StatisticsJob(Job):
         for data in tqdm(self.predictions, desc="Stats calculation"):
             # update minmax
             if "anomaly_maps" in data:
-                minmax(data["anomaly_maps"])
-            elif "box_scores" in data:
-                minmax(torch.cat(data["box_scores"]))
-            elif "pred_scores" in data:
-                minmax(data["pred_scores"])
-            else:
-                msg = "No values found for normalization, provide anomaly maps, bbox scores, or image scores"
-                raise ValueError(msg)
+                minmax["anomaly_maps"](data["anomaly_maps"])
+            if "box_scores" in data:
+                minmax["box_scores"](torch.cat(data["box_scores"]))
+            if "pred_scores" in data:
+                minmax["pred_scores"](data["pred_scores"])
 
             # update thresholds
             image_threshold.update(data["pred_scores"], data["label"].int())
@@ -76,10 +80,16 @@ class StatisticsJob(Job):
         else:
             pixel_threshold.value = image_threshold.value
 
+        min_max_vals = {}
+        for pred_name, pred_metric in minmax.items():
+            min_max_vals[pred_name] = {
+                "min": pred_metric.min.item(),
+                "max": pred_metric.max.item()
+            }
+
         # return stats with save path that is later used to save statistics.
         return {
-            "min": minmax.min.item(),
-            "max": minmax.max.item(),
+            "minmax": min_max_vals,
             "image_threshold": image_threshold.value.item(),
             "pixel_threshold": pixel_threshold.value.item(),
             "save_path": (self.root_dir / "weights" / "lightning" / "stats.json"),

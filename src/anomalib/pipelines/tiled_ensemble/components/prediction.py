@@ -189,7 +189,7 @@ class PredictJobGenerator(JobGenerator):
             dataloader = datamodule.test_dataloader()
             if self.data_source == PredictData.VAL:
                 dataloader = datamodule.val_dataloader()
-            # TODO: - this is tweak to avoid problem in engine:388 - I think if model has transforms
+            # TODO #2254: - this is tweak to avoid problem in engine:388 - I think if model has transforms
             # that should be preferred over dataset transforms?
             dataloader.dataset.transform = None
 

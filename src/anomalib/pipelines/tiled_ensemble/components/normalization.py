@@ -48,20 +48,19 @@ class NormalizationJob(Job):
         stats_path = self.root_dir / "weights" / "lightning" / "stats.json"
         with stats_path.open("r") as f:
             stats = json.load(f)
-        min_val = stats["min"]
-        max_val = stats["max"]
+        minmax = stats["minmax"]
         image_threshold = stats["image_threshold"]
         pixel_threshold = stats["pixel_threshold"]
 
         logger.info("Starting normalization.")
 
         for data in tqdm(self.predictions, desc="Normalizing"):
-            data["pred_scores"] = normalize(data["pred_scores"], image_threshold, min_val, max_val)
+            data["pred_scores"] = normalize(data["pred_scores"], image_threshold, minmax["pred_scores"]["min"], minmax["pred_scores"]["max"])
             if "anomaly_maps" in data:
-                data["anomaly_maps"] = normalize(data["anomaly_maps"], pixel_threshold, min_val, max_val)
+                data["anomaly_maps"] = normalize(data["anomaly_maps"], pixel_threshold, minmax["anomaly_maps"]["min"], minmax["anomaly_maps"]["max"])
             if "box_scores" in data:
                 data["box_scores"] = [
-                    normalize(scores, pixel_threshold, min_val, max_val) for scores in data["box_scores"]
+                    normalize(scores, pixel_threshold, minmax["box_scores"]["min"], minmax["box_scores"]["max"]) for scores in data["box_scores"]
                 ]
 
         return self.predictions
