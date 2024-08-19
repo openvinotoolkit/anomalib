@@ -324,8 +324,11 @@ class Engine:
         # Setup anomalib callbacks to be used with the trainer
         self._setup_anomalib_callbacks()
 
-        # Temporarily set devices to 1 to avoid issues with multiple processes
-        self._cache.args["devices"] = 1
+        # TODO(ashwinvaidya17, djdameln, samet-akcay): Add Multi-GPU support to Anomalib
+        # https://github.com/openvinotoolkit/anomalib/issues/1449
+        if len(self._cache.args["gpus"]) > 1:
+            logger.warning("Multi-GPU support is not available yet. Setting devices to 1.")
+            self._cache.args["devices"] = 1
 
         # Instantiate the trainer if it is not already instantiated
         if self._trainer is None:
