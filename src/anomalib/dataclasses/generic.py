@@ -8,6 +8,7 @@ from typing import Generic, TypeVar
 
 import numpy as np
 import torch
+from torch.utils.data import default_collate
 from torchvision.tv_tensors import Image, Mask, Video
 
 ImageT = TypeVar("ImageT", Image, Video, np.ndarray)
@@ -24,6 +25,14 @@ class _InputFields(Generic[T, ImageT, MaskT, PathT]):
     gt_label: T | None = None
     gt_mask: MaskT | None = None
     mask_path: PathT | None = None
+
+
+@dataclass
+class _ImageInputFields(
+    Generic[T, ImageT, MaskT, PathT],
+    _InputFields[T, ImageT, MaskT, PathT],
+):
+    """Generic dataclass that defines the image input fields."""
 
 
 @dataclass
@@ -54,11 +63,7 @@ class _OutputFields(Generic[T, MaskT]):
 
 
 @dataclass
-class _GenericItem(
-    Generic[T, ImageT, MaskT, PathT],
-    _OutputFields[T, MaskT],
-    _InputFields[T, ImageT, MaskT, PathT],
-):
+class _GenericItem:
     """Generic dataclass for a dataset item."""
 
 
@@ -66,10 +71,8 @@ ItemT = TypeVar("ItemT", bound="_GenericItem")
 
 
 @dataclass
-class BatchMixin(
-    Generic[ItemT],
-):
-    """Mixin that adds batch functionalities to a dataclass."""
+class _GenericBatch(Generic[ItemT]):
+    """Generic dataclass for a batch."""
 
     @property
     @abstractmethod
@@ -104,3 +107,10 @@ class BatchMixin(
                 return len(value)
         msg = "Batch size not found. Make sure the batch has at least one field."
         raise ValueError(msg)
+
+    @classmethod
+    def collate(cls: type["_GenericBatch"], items: list[ItemT]) -> "_GenericBatch":
+        """Convert a list of DatasetItem objects to a Batch object."""
+        keys = [key for key, value in asdict(items[0]).items() if value is not None]
+        out_dict = {key: default_collate([getattr(item, key) for item in items]) for key in keys}
+        return cls(**out_dict)
