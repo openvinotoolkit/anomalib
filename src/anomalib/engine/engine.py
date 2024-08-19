@@ -326,7 +326,7 @@ class Engine:
 
         # TODO(ashwinvaidya17, djdameln, samet-akcay): Add Multi-GPU support to Anomalib
         # https://github.com/openvinotoolkit/anomalib/issues/1449
-        if len(self._cache.args["gpus"]) > 1:
+        if len(self._cache.args["devices"]) > 1:
             logger.warning("Multi-GPU support is not available yet. Setting devices to 1.")
             self._cache.args["devices"] = 1
 
