@@ -373,7 +373,7 @@ class MVTec(AnomalibDataModule):
             category=self.category,
         )
         # MVTec AD dataset does not provide a validation set.
-        # Auto behavior is to use the test set as the validation set.
+        # Auto behaviour is to clone the test set as validation set.
         if self.val_split_mode == SplitMode.AUTO:
             self.val_data = self.test_data.clone()
 

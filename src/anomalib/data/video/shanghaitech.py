@@ -39,6 +39,7 @@ from anomalib.data.utils import (
     read_image,
     validate_path,
 )
+from anomalib.data.utils.split import SplitMode, resolve_split_mode
 from anomalib.data.utils.video import ClipsIndexer, convert_video
 
 logger = logging.getLogger(__name__)
@@ -260,10 +261,11 @@ class ShanghaiTech(AnomalibVideoDataModule):
         train_batch_size: int = 32,
         eval_batch_size: int = 32,
         num_workers: int = 8,
-        val_split_mode: ValSplitMode = ValSplitMode.SAME_AS_TEST,
-        val_split_ratio: float = 0.5,
+        val_split_mode: SplitMode | ValSplitMode | str = SplitMode.AUTO,
+        val_split_ratio: float | None = None,
         seed: int | None = None,
     ) -> None:
+        val_split_mode = resolve_split_mode(val_split_mode)
         super().__init__(
             train_batch_size=train_batch_size,
             eval_batch_size=eval_batch_size,
@@ -307,6 +309,11 @@ class ShanghaiTech(AnomalibVideoDataModule):
             scene=self.scene,
             split=Split.TEST,
         )
+
+        # Shanghai Tech dataset does not provide a validation set.
+        # Auto behaviour is to clone the test set as the validation set.
+        if self.val_split_mode == SplitMode.AUTO:
+            self.val_data = self.test_data.clone()
 
     def prepare_data(self) -> None:
         """Download the dataset and convert video files."""
