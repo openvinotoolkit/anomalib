@@ -315,6 +315,52 @@ class Engine:
         root_dir = Path(self._cache.args["default_root_dir"]) / model.name / dataset_name / category
         self._cache.args["default_root_dir"] = create_versioned_dir(root_dir) if versioned_dir else root_dir / "latest"
 
+    def _setup_device(self) -> None:
+        """TO BE DEPRECATED: Setup the device for the trainer.
+
+        This method configures the device (GPU) to be used by the trainer.
+        It handles various input formats for device specification and
+        ensures compatibility with the current single-GPU limitation.
+
+        Note:
+            This method is a temporary solution until multi-GPU support
+            is added to Anomalib.
+
+        Todo:
+            Add Multi-GPU support to Anomalib.
+            https://github.com/openvinotoolkit/anomalib/issues/1449
+
+        Raises:
+            ValueError: If an invalid device specification is provided.
+        """
+        devices = self._cache.args.get("devices")
+        if devices is not None:
+            if isinstance(devices, int) or (isinstance(devices, str) and devices.isdigit()):
+                # If devices is a single integer, treat it as a specific GPU ID
+                if int(devices) > 1:
+                    logger.warning("Multi-GPU support is not available yet. Using only the first GPU.")
+                self._cache.args["devices"] = [int(devices)]
+                logger.info(f"Using GPU with ID: {devices}")
+            elif isinstance(devices, list):
+                # If devices is a list, use only the first GPU ID
+                if len(devices) > 0:
+                    self._cache.args["devices"] = [devices[0]]
+                    if len(devices) > 1:
+                        logger.warning("Multi-GPU support is not available yet. Using only the first GPU.")
+                    logger.info(f"Using GPU with ID: {devices[0]}")
+                else:
+                    logger.warning("Empty list provided for 'devices'. Using default GPU selection.")
+                    self._cache.args["devices"] = None
+            elif isinstance(devices, str) and "," in devices:
+                # If devices is a comma-separated string, use only the first GPU
+                first_gpu = int(devices.split(",")[0].strip())
+                logger.warning(f"Multi-GPU support is not available yet. Using only the first GPU (ID: {first_gpu}).")
+                self._cache.args["devices"] = [first_gpu]
+            else:
+                # For any other input, use the default behavior
+                logger.warning("Unrecognized 'devices' format. Using default GPU selection.")
+                self._cache.args["devices"] = None
+
     def _setup_trainer(self, model: AnomalyModule) -> None:
         """Instantiate the trainer based on the model parameters."""
         # Check if the cache requires an update
@@ -324,12 +370,9 @@ class Engine:
         # Setup anomalib callbacks to be used with the trainer
         self._setup_anomalib_callbacks()
 
-        # TODO(ashwinvaidya17, djdameln, samet-akcay): Add Multi-GPU support to Anomalib
+        # TODO (ashwinvaidya17, djdameln, samet-akcay): Remove this when multi-GPU support is added to Anomalib
         # https://github.com/openvinotoolkit/anomalib/issues/1449
-        devices = self._cache.args.get("devices")
-        if devices and str(devices).count(","):
-            logger.warning("Multi-GPU support is not available yet. Using the first specified GPU.")
-            self._cache.args["devices"] = str(devices).split(",")[0].strip()
+        self._setup_device()
 
         # Instantiate the trainer if it is not already instantiated
         if self._trainer is None:
