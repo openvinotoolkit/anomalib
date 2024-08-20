@@ -1,4 +1,4 @@
-# OpenAI VLM: Zero-/Few-Shot Anomaly Classification
+# GPTVad: Zero-/Few-Shot Anomaly Classification
 
 This repository contains the implementation of the `OpenAI VLM`, a model designed for zero-shot and few-shot anomaly detection using OpenAI's GPT-4 for image analysis.
 
@@ -29,7 +29,10 @@ from anomalib.models import ChatGPTVision
 from dotenv import load_dotenv
 
 # Load the environment variables from the .env file
-# load_dotenv(dotenv_path=env_path)
+# The implementation searchs for an environment variable OPENAI_API_KEY
+# that will contain the key of OpenAI.
+
+# load from .env to an environment variable.
 load_dotenv()
 
 model = ChatGPTVision(k_shot=0)
