@@ -6,7 +6,9 @@ Tests the models using API. The weight paths from the trained models are used fo
 # Copyright (C) 2023-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+import os
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
@@ -143,6 +145,9 @@ class TestAPI:
             dataset_path (Path): Root to dataset from fixture.
             project_path (Path): Path to temporary project folder from fixture.
         """
+        if model_name == "chat_g_p_t_vision":
+            pytest.skip(f"{model_name} can not be exported")
+
         if model_name == "rkde":
             # TODO(ashwinvaidya17): Restore this test after fixing the issue
             # https://github.com/openvinotoolkit/anomalib/issues/1513
@@ -176,11 +181,23 @@ class TestAPI:
             tuple[AnomalyModule, AnomalibDataModule, Engine]: Returns the created objects for model, dataset,
                 and engine
         """
+        # Mock the ChatGPTWrapper if the model_name is "chat_g_p_t_vision"
+        if model_name == "g_p_t_vad":
+            os.environ["OPENAI_API_KEY"] = "fake-api-key"
+            with (
+                patch("anomalib.models.image.gptvad.chatgpt.GPTWrapper") as mock_gptwrapper,
+            ):
+                mock_instance = mock_gptwrapper.return_value
+                mock_instance.api_call.return_value = "NO"
+                self.mock_gptwrapper = mock_gptwrapper  # Store the mock for potential later use
+
         # select task type
         if model_name in ("rkde", "ai_vad"):
             task_type = TaskType.DETECTION
         elif model_name in ("ganomaly", "dfkde"):
             task_type = TaskType.CLASSIFICATION
+        elif model_name in ("g_p_t_vad"):
+            task_type = TaskType.EXPLANATION
         else:
             task_type = TaskType.SEGMENTATION
 
