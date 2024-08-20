@@ -31,7 +31,6 @@ class TestFolder(_TestAnomalibImageDatamodule):
             root=dataset_path / "mvtec" / "dummy",
             normal_dir="train/good",
             abnormal_dir="test/bad",
-            normal_test_dir="test/good",
             mask_dir=mask_dir,
             train_batch_size=4,
             eval_batch_size=4,
