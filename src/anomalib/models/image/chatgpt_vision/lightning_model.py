@@ -25,7 +25,7 @@ __all__ = ["ChatGPTVision"]
 
 
 class ChatGPTVision(AnomalyModule):
-    """OpenaiVlm Lightning model using OpenAI's GPT-4 for image anomaly detection.
+    """OpenAI VLM Lightning model using OpenAI's GPT-4 for image anomaly detection.
 
     Args:
         k_shot(int): The number of images that will compare to detect if it is an anomaly.
