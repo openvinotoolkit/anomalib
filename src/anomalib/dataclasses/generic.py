@@ -22,10 +22,14 @@ Instance = TypeVar("Instance")
 Value = TypeVar("Value")
 
 
-class DataClassDescriptor(
+class FieldDescriptor(
     Generic[Value],
 ):
-    """Descriptor for dataclasses."""
+    """Descriptor for Anomalib's dataclass fields.
+
+    Using a descriptor ensures that the values of dataclass fields can be validated before being set.
+    This allows validation of the input data not only when it is first set, but also when it is updated.
+    """
 
     def __init__(self, validator_name: str | None = None, default: Value | None = None) -> None:
         """Initialize the descriptor."""
@@ -37,7 +41,12 @@ class DataClassDescriptor(
         self.name = name
 
     def __get__(self, instance: Instance | None, owner: type[Instance]) -> Value | None:
-        """Get the value of the descriptor."""
+        """Get the value of the descriptor.
+
+        Returns:
+            - The default value if available and if the instance is None (method is called from class).
+            - The value of the attribute if the instance is not None (method is called from instance).
+        """
         if instance is None:
             if self.default is not None or NoneType in self.get_types(owner):
                 return self.default
@@ -46,7 +55,10 @@ class DataClassDescriptor(
         return instance.__dict__[self.name]
 
     def __set__(self, instance: Instance, value: Value) -> None:
-        """Set the value of the descriptor."""
+        """Set the value of the descriptor.
+
+        First calls the validator method if available, then sets the value of the attribute.
+        """
         if self.validator_name is not None:
             validator = getattr(instance, self.validator_name)
             value = validator(value)
@@ -66,10 +78,10 @@ class DataClassDescriptor(
 class _InputFields(Generic[T, ImageT, MaskT, PathT], ABC):
     """Generic dataclass that defines the standard input fields."""
 
-    image: DataClassDescriptor[ImageT] = DataClassDescriptor(validator_name="_validate_image")
-    gt_label: DataClassDescriptor[T | None] = DataClassDescriptor(validator_name="_validate_gt_label")
-    gt_mask: DataClassDescriptor[MaskT | None] = DataClassDescriptor(validator_name="_validate_gt_mask")
-    mask_path: DataClassDescriptor[PathT | None] = DataClassDescriptor(validator_name="_validate_mask_path")
+    image: FieldDescriptor[ImageT] = FieldDescriptor(validator_name="_validate_image")
+    gt_label: FieldDescriptor[T | None] = FieldDescriptor(validator_name="_validate_gt_label")
+    gt_mask: FieldDescriptor[MaskT | None] = FieldDescriptor(validator_name="_validate_gt_mask")
+    mask_path: FieldDescriptor[PathT | None] = FieldDescriptor(validator_name="_validate_mask_path")
 
     @abstractmethod
     def _validate_image(self, image: ImageT) -> ImageT:
