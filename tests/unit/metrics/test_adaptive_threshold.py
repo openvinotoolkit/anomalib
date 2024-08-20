@@ -55,5 +55,5 @@ def test_manual_threshold() -> None:
         devices=1,
     )
     engine.fit(model=model, datamodule=datamodule)
-    assert engine.trainer.model.image_metrics.F1Score.threshold == image_threshold
-    assert engine.trainer.model.pixel_metrics.F1Score.threshold == pixel_threshold
+    assert engine.trainer.lightning_module.image_metrics.F1Score.threshold == image_threshold
+    assert engine.trainer.lightning_module.pixel_metrics.F1Score.threshold == pixel_threshold
