@@ -38,8 +38,11 @@ class DataClassDescriptor(
 
     def __get__(self, instance: Instance | None, owner: type[Instance]) -> Value | None:
         """Get the value of the descriptor."""
-        if instance is None and (self.default is not None or NoneType in self.get_types(owner)):
-            return self.default
+        if instance is None:
+            if self.default is not None or NoneType in self.get_types(owner):
+                return self.default
+            msg = f"No default attribute value specified for field '{self.name}'."
+            raise AttributeError(msg)
         return instance.__dict__[self.name]
 
     def __set__(self, instance: Instance, value: Value) -> None:
@@ -49,9 +52,14 @@ class DataClassDescriptor(
             value = validator(value)
         instance.__dict__[self.name] = value
 
-    def get_types(self, owner: type[Instance]) -> tuple[type]:
+    def get_types(self, owner: type[Instance]) -> tuple[type, ...]:
         """Get the types of the descriptor."""
-        return get_args(get_args(get_type_hints(owner)[self.name])[0])
+        try:
+            types = get_args(get_type_hints(owner)[self.name])
+            return get_args(types[0]) if hasattr(types[0], "__args__") else (types[0],)
+        except (KeyError, TypeError, AttributeError) as e:
+            msg = f"Unable to determine types for {self.name} in {owner}"
+            raise TypeError(msg) from e
 
 
 @dataclass
