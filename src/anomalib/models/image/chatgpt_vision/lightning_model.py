@@ -88,8 +88,8 @@ class ChatGPTVision(AnomalyModule):
         """
         del args, kwargs  # These variables are not used.
         batch_size = len(batch["image_path"])
-        out_list: list[str] = []
-        pred_list: list[float] = []
+        outputs: list[str] = []
+        predictions: list[float] = []
         for i in range(batch_size):
             # Getting the base64 string
             base64_images = [self._encode_image(img) for img in self.pre_images]
