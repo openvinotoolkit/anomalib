@@ -7,7 +7,7 @@ from typing import Any
 import openai
 
 
-class ChatGPTWrapper:
+class GPTWrapper:
     """A wrapper class for making API calls to OpenAI's GPT-4 model to detect anomalies in images.
 
     Environment variable OPENAI_API_KEY (str): API key for OpenAI.
