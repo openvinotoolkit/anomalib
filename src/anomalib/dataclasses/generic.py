@@ -1,10 +1,9 @@
 """Generic dataclasses that can be implemented for different data types."""
 
-from abc import abstractmethod
 from collections.abc import Callable, Iterator
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Generic, TypeVar
+from typing import ClassVar, Generic, TypeVar
 
 import numpy as np
 import torch
@@ -74,11 +73,14 @@ ItemT = TypeVar("ItemT", bound="_GenericItem")
 class _GenericBatch(Generic[ItemT]):
     """Generic dataclass for a batch."""
 
-    @property
-    @abstractmethod
-    def item_class(self) -> Callable:
-        """Get the item class."""
-        raise NotImplementedError
+    item_class: ClassVar[Callable]
+
+    def __init_subclass__(cls, **kwargs) -> None:
+        """Ensure that the subclass has the required attributes."""
+        super().__init_subclass__(**kwargs)
+        if not hasattr(cls, "item_class"):
+            msg = f"{cls.__name__} must have an 'item_class' attribute."
+            raise AttributeError(msg)
 
     def __iter__(self) -> Iterator[ItemT]:
         """Iterate over the batch."""

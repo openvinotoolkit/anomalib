@@ -1,21 +1,15 @@
 """Dataclasses for torch inputs and outputs."""
 
-from abc import ABC, abstractmethod
 from collections.abc import Callable
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Generic, NamedTuple, TypeVar
+from typing import ClassVar, Generic, NamedTuple, TypeVar
 
 import torch
 from torchvision.tv_tensors import Image, Mask, Video
 
 from .generic import _GenericBatch, _GenericItem, _InputFields, _OutputFields, _VideoInputFields
-from .numpy import (
-    NumpyImageOutputBatch,
-    NumpyImageOutputItem,
-    NumpyVideoOutputBatch,
-    NumpyVideoOutputItem,
-)
+from .numpy import NumpyImageBatch, NumpyImageItem, NumpyVideoBatch, NumpyVideoItem
 
 NumpyT = TypeVar("NumpyT")
 
@@ -32,18 +26,17 @@ class InferenceBatch(NamedTuple):
 @dataclass
 class ToNumpyMixin(
     Generic[NumpyT],
-    ABC,
 ):
     """Mixin for converting torch-based dataclasses to numpy."""
 
-    @property
-    @abstractmethod
-    def numpy_class(self) -> Callable:
-        """Get the numpy class.
+    numpy_class: ClassVar[Callable]
 
-        This property should be implemented in the subclass.
-        """
-        raise NotImplementedError
+    def __init_subclass__(cls, **kwargs) -> None:
+        """Ensure that the subclass has the required attributes."""
+        super().__init_subclass__(**kwargs)
+        if not hasattr(cls, "numpy_class"):
+            msg = f"{cls.__name__} must have a 'numpy_class' attribute."
+            raise AttributeError(msg)
 
     def to_numpy(self) -> NumpyT:
         """Convert the batch to a NumpyBatch object."""
@@ -58,71 +51,51 @@ class ToNumpyMixin(
 
 # torch image outputs
 @dataclass
-class TorchImageOutputItem(
-    ToNumpyMixin[NumpyImageOutputItem],
+class ImageItem(
+    ToNumpyMixin[NumpyImageItem],
     _GenericItem,
     _OutputFields[torch.Tensor, Mask],
     _InputFields[torch.Tensor, Image, Mask, Path],
 ):
     """Dataclass for torch image output item."""
 
-    @property
-    def numpy_class(self) -> Callable:
-        """Get the numpy equivalent of the torch dataclass."""
-        return NumpyImageOutputItem
+    numpy_class = NumpyImageItem
 
 
 @dataclass
-class TorchImageOutputBatch(
-    ToNumpyMixin[NumpyImageOutputBatch],
-    _GenericBatch[TorchImageOutputItem],
+class ImageBatch(
+    ToNumpyMixin[NumpyImageBatch],
+    _GenericBatch[ImageItem],
     _OutputFields[torch.Tensor, Mask],
     _InputFields[torch.Tensor, Image, Mask, list[Path]],
 ):
     """Dataclass for torch image output batch."""
 
-    @property
-    def item_class(self) -> Callable:
-        """Get the single-item equivalent of the batch class."""
-        return TorchImageOutputItem
-
-    @property
-    def numpy_class(self) -> Callable:
-        """Get the numpy equivalent of the torch dataclass."""
-        return NumpyImageOutputBatch
+    item_class = ImageItem
+    numpy_class = NumpyImageBatch
 
 
 # torch video outputs
 @dataclass
-class TorchVideoOutputItem(
-    ToNumpyMixin[NumpyVideoOutputItem],
+class VideoItem(
+    ToNumpyMixin[NumpyVideoItem],
     _GenericItem,
     _OutputFields[torch.Tensor, Mask],
     _VideoInputFields[torch.Tensor, Video, Mask, Path],
 ):
     """Dataclass for torch video output item."""
 
-    @property
-    def numpy_class(self) -> Callable:
-        """Get the numpy equivalent of the torch dataclass."""
-        return NumpyVideoOutputItem
+    numpy_class = NumpyVideoItem
 
 
 @dataclass
-class TorchVideoOutputBatch(
-    ToNumpyMixin[NumpyVideoOutputBatch],
-    _GenericBatch[TorchVideoOutputItem],
+class VideoBatch(
+    ToNumpyMixin[NumpyVideoBatch],
+    _GenericBatch[VideoItem],
     _OutputFields[torch.Tensor, Mask],
     _VideoInputFields[torch.Tensor, Video, Mask, list[Path]],
 ):
     """Dataclass for torch video output batch."""
 
-    @property
-    def item_class(self) -> Callable:
-        """Get the single-item equivalent of the batch class."""
-        return TorchVideoOutputItem
-
-    @property
-    def numpy_class(self) -> Callable:
-        """Get the numpy equivalent of the torch dataclass."""
-        return NumpyVideoOutputBatch
+    item_class = VideoItem
+    numpy_class = NumpyVideoBatch
