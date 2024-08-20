@@ -15,7 +15,6 @@ from anomalib.utils.path import convert_to_snake_case
 from .image import (
     Cfa,
     Cflow,
-    ChatGPTVision,
     Csflow,
     Dfkde,
     Dfm,
@@ -25,6 +24,7 @@ from .image import (
     Fastflow,
     Fre,
     Ganomaly,
+    GPTVad,
     Padim,
     Patchcore,
     ReverseDistillation,
@@ -43,7 +43,6 @@ class UnknownModelError(ModuleNotFoundError):
 __all__ = [
     "Cfa",
     "Cflow",
-    "ChatGPTVision",
     "Csflow",
     "Dfkde",
     "Dfm",
@@ -53,6 +52,7 @@ __all__ = [
     "Fastflow",
     "Fre",
     "Ganomaly",
+    "GPTVad",
     "Padim",
     "Patchcore",
     "ReverseDistillation",

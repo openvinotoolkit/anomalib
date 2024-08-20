@@ -80,16 +80,16 @@ engine.test(model=model, datamodule=datamodule)
 
 The model returns a response indicating whether an anomaly is detected:
 
-- **Zero-Shot Example**:
+- **Zero-Shot/Few-Shot Example**:
 
   ```plaintext
   "NO"
   ```
 
-  ![Openai result no anomaly](/docs/source/images/chatgpt_vision/good.png "Openai without anomaly result")
+  ![GPTVad result no anomaly](/docs/source/images/gptvad/good.png "GPTVad without anomaly result")
 
   ```plaintext
   "YES: Description of the detected anomaly."
   ```
 
-  ![Openai result with anomaly](/docs/source/images/chatgpt_vision/broken.png "Openai with Anomaly result")
+  ![GPTVad result with anomaly](/docs/source/images/gptvad/broken.png "GPTVad with Anomaly result")

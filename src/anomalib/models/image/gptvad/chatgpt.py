@@ -12,6 +12,9 @@ class GPTWrapper:
 
     Environment variable OPENAI_API_KEY (str): API key for OpenAI.
     https://platform.openai.com/docs/quickstart/step-2-set-up-your-api-key
+    Other possible models: https://platform.openai.com/docs/models/gpt-4-turbo-and-gpt-4
+    All models with vision capabilities: 'gpt-4-turbo-2024-04-09', 'gpt-4-turbo',
+    all versions of 'gpt-4o-mini', and 'gpt-4o'
 
     Args:
         model_name (str): Model name for OpenAI API VLM. Default "gpt-4o"
