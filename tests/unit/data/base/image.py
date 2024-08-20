@@ -24,11 +24,11 @@ class _TestAnomalibImageDatamodule(_TestAnomalibDataModule):
         batch = next(iter(dataloader))
 
         # Check that the batch has the correct shape.
-        assert batch["image"].shape == (4, 3, 256, 256)
-        assert batch["label"].shape == (4,)
+        assert batch["image"].shape == (2, 3, 256, 256)
+        assert batch["label"].shape == (2,)
 
         if dataloader.dataset.task in ("detection", "segmentation"):
-            assert batch["mask"].shape == (4, 256, 256)
+            assert batch["mask"].shape == (2, 256, 256)
 
     def test_non_overlapping_splits(self, datamodule: AnomalibDataModule) -> None:
         """This test ensures that all splits are non-overlapping when split mode == from_test."""
