@@ -61,6 +61,18 @@ class ImageItem(
 
     numpy_class = NumpyImageItem
 
+    def _validate_image(self, image: Image) -> Image:
+        return image
+
+    def _validate_gt_label(self, gt_label: torch.Tensor) -> torch.Tensor:
+        return gt_label
+
+    def _validate_gt_mask(self, gt_mask: Mask) -> Mask:
+        return gt_mask
+
+    def _validate_mask_path(self, mask_path: Path) -> Path:
+        return mask_path
+
 
 @dataclass
 class ImageBatch(
@@ -73,6 +85,18 @@ class ImageBatch(
 
     item_class = ImageItem
     numpy_class = NumpyImageBatch
+
+    def _validate_image(self, image: Image) -> Image:
+        return image
+
+    def _validate_gt_label(self, gt_label: torch.Tensor) -> torch.Tensor:
+        return gt_label
+
+    def _validate_gt_mask(self, gt_mask: Mask) -> Mask:
+        return gt_mask
+
+    def _validate_mask_path(self, mask_path: list[Path]) -> list[Path]:
+        return mask_path
 
 
 # torch video outputs
@@ -87,6 +111,18 @@ class VideoItem(
 
     numpy_class = NumpyVideoItem
 
+    def _validate_image(self, image: Image) -> Video:
+        return image
+
+    def _validate_gt_label(self, gt_label: torch.Tensor) -> torch.Tensor:
+        return gt_label
+
+    def _validate_gt_mask(self, gt_mask: Mask) -> Mask:
+        return gt_mask
+
+    def _validate_mask_path(self, mask_path: Path) -> Path:
+        return mask_path
+
 
 @dataclass
 class VideoBatch(
@@ -99,3 +135,15 @@ class VideoBatch(
 
     item_class = VideoItem
     numpy_class = NumpyVideoBatch
+
+    def _validate_image(self, image: Image) -> Video:
+        return image
+
+    def _validate_gt_label(self, gt_label: torch.Tensor) -> torch.Tensor:
+        return gt_label
+
+    def _validate_gt_mask(self, gt_mask: Mask) -> Mask:
+        return gt_mask
+
+    def _validate_mask_path(self, mask_path: list[Path]) -> list[Path]:
+        return mask_path

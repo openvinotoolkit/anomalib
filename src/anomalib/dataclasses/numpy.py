@@ -17,6 +17,18 @@ class NumpyImageItem(
 ):
     """Dataclass for numpy image output item."""
 
+    def _validate_image(self, image: np.ndarray) -> np.ndarray:
+        return image
+
+    def _validate_gt_label(self, gt_label: np.ndarray) -> np.ndarray:
+        return gt_label
+
+    def _validate_gt_mask(self, gt_mask: np.ndarray) -> np.ndarray:
+        return gt_mask
+
+    def _validate_mask_path(self, mask_path: Path) -> Path:
+        return mask_path
+
 
 @dataclass
 class NumpyImageBatch(
@@ -28,6 +40,18 @@ class NumpyImageBatch(
 
     item_class = NumpyImageItem
 
+    def _validate_image(self, image: np.ndarray) -> np.ndarray:
+        return image
+
+    def _validate_gt_label(self, gt_label: np.ndarray) -> np.ndarray:
+        return gt_label
+
+    def _validate_gt_mask(self, gt_mask: np.ndarray) -> np.ndarray:
+        return gt_mask
+
+    def _validate_mask_path(self, mask_path: list[Path]) -> list[Path]:
+        return mask_path
+
 
 # torch video outputs
 @dataclass
@@ -37,6 +61,18 @@ class NumpyVideoItem(
     _VideoInputFields[np.ndarray, np.ndarray, np.ndarray, Path],
 ):
     """Dataclass for numpy video output item."""
+
+    def _validate_image(self, image: np.ndarray) -> np.ndarray:
+        return image
+
+    def _validate_gt_label(self, gt_label: np.ndarray) -> np.ndarray:
+        return gt_label
+
+    def _validate_gt_mask(self, gt_mask: np.ndarray) -> np.ndarray:
+        return gt_mask
+
+    def _validate_mask_path(self, mask_path: Path) -> Path:
+        return mask_path
 
 
 @dataclass
@@ -48,3 +84,15 @@ class NumpyVideoBatch(
     """Dataclass for numpy video output batch."""
 
     item_class = NumpyVideoItem
+
+    def _validate_image(self, image: np.ndarray) -> np.ndarray:
+        return image
+
+    def _validate_gt_label(self, gt_label: np.ndarray) -> np.ndarray:
+        return gt_label
+
+    def _validate_gt_mask(self, gt_mask: np.ndarray) -> np.ndarray:
+        return gt_mask
+
+    def _validate_mask_path(self, mask_path: list[Path]) -> list[Path]:
+        return mask_path

@@ -1,9 +1,11 @@
 """Generic dataclasses that can be implemented for different data types."""
 
+from abc import ABC, abstractmethod
 from collections.abc import Callable, Iterator
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import ClassVar, Generic, TypeVar
+from types import NoneType
+from typing import ClassVar, Generic, TypeVar, get_args, get_type_hints
 
 import numpy as np
 import torch
@@ -16,14 +18,70 @@ MaskT = TypeVar("MaskT", Mask, np.ndarray)
 PathT = TypeVar("PathT", list[Path], Path)
 
 
+Instance = TypeVar("Instance")
+Value = TypeVar("Value")
+
+
+class DataClassDescriptor(
+    Generic[Value],
+):
+    """Descriptor for dataclasses."""
+
+    def __init__(self, validator_name: str | None = None, default: Value | None = None) -> None:
+        """Initialize the descriptor."""
+        self.validator_name = validator_name
+        self.default = default
+
+    def __set_name__(self, owner: type[Instance], name: str) -> None:
+        """Set the name of the descriptor."""
+        self.name = name
+
+    def __get__(self, instance: Instance | None, owner: type[Instance]) -> Value | None:
+        """Get the value of the descriptor."""
+        if instance is None and (self.default is not None or NoneType in self.get_types(owner)):
+            return self.default
+        return instance.__dict__[self.name]
+
+    def __set__(self, instance: Instance, value: Value) -> None:
+        """Set the value of the descriptor."""
+        if self.validator_name is not None:
+            validator = getattr(instance, self.validator_name)
+            value = validator(value)
+        instance.__dict__[self.name] = value
+
+    def get_types(self, owner: type[Instance]) -> tuple[type]:
+        """Get the types of the descriptor."""
+        return get_args(get_args(get_type_hints(owner)[self.name])[0])
+
+
 @dataclass
-class _InputFields(Generic[T, ImageT, MaskT, PathT]):
+class _InputFields(Generic[T, ImageT, MaskT, PathT], ABC):
     """Generic dataclass that defines the standard input fields."""
 
-    image: ImageT
-    gt_label: T | None = None
-    gt_mask: MaskT | None = None
-    mask_path: PathT | None = None
+    image: DataClassDescriptor[ImageT] = DataClassDescriptor(validator_name="_validate_image")
+    gt_label: DataClassDescriptor[T | None] = DataClassDescriptor(validator_name="_validate_gt_label")
+    gt_mask: DataClassDescriptor[MaskT | None] = DataClassDescriptor(validator_name="_validate_gt_mask")
+    mask_path: DataClassDescriptor[PathT | None] = DataClassDescriptor(validator_name="_validate_mask_path")
+
+    @abstractmethod
+    def _validate_image(self, image: ImageT) -> ImageT:
+        """Validate the image."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def _validate_gt_mask(self, gt_mask: MaskT) -> MaskT:
+        """Validate the ground truth mask."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def _validate_mask_path(self, mask_path: PathT) -> PathT:
+        """Validate the mask path."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def _validate_gt_label(self, gt_label: T) -> T:
+        """Validate the ground truth label."""
+        raise NotImplementedError
 
 
 @dataclass
@@ -44,7 +102,6 @@ class _VideoInputFields(
     original_image: ImageT | None = None
 
     video_path: PathT | None = None
-    mask_path: PathT | None = None
 
     target_frame: T | None = None
     frames: T | None = None
