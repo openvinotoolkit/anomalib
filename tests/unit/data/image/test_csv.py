@@ -25,8 +25,8 @@ class TestCSV(_TestAnomalibImageDatamodule):
         _datamodule = CSV(
             name="dummy_csv",
             csv_path=dataset_path / "csv" / "samples.csv",
-            train_batch_size=4,
-            eval_batch_size=4,
+            train_batch_size=2,
+            eval_batch_size=2,
             num_workers=0,
             task=task_type,
             test_split_mode="predefined",

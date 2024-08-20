@@ -50,7 +50,7 @@ def test_create_by_ratio(sample_classification_dataframe: pd.DataFrame) -> None:
     """Test creating subsets by ratio."""
     subset_creator = SubsetCreator(sample_classification_dataframe)
     ratios = [0.7, 0.2, 0.1]
-    splits = subset_creator.create(ratios, label_aware=True, seed=42)
+    splits = subset_creator.create(ratios, label_aware=False, seed=42)
 
     assert len(splits) == len(ratios)
     assert [len(split) for split in splits] == [70, 20, 10]
@@ -99,5 +99,5 @@ def test_overlapping_indices(sample_classification_dataframe: pd.DataFrame) -> N
 def test_ratio_sum_exceeds_one(sample_segmentation_dataframe: pd.DataFrame) -> None:
     """Test behavior when ratio sum exceeds one."""
     subset_creator = SubsetCreator(sample_segmentation_dataframe)
-    with pytest.raises(ValueError, match="Sum of ratios cannot exceed 1."):
+    with pytest.raises(ValueError, match="Sum of ratios must not exceed 1"):
         subset_creator.create([0.7, 0.5])

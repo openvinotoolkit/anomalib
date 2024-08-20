@@ -32,8 +32,8 @@ class TestFolder(_TestAnomalibImageDatamodule):
             normal_dir="train/good",
             abnormal_dir="test/bad",
             mask_dir=mask_dir,
-            train_batch_size=4,
-            eval_batch_size=4,
+            train_batch_size=2,
+            eval_batch_size=2,
             num_workers=0,
             task=task_type,
         )

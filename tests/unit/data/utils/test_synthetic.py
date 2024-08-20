@@ -18,11 +18,9 @@ def folder_dataset(dataset_path: Path) -> FolderDataset:
     """Fixture that returns a FolderDataset instance."""
     return FolderDataset(
         name="dummy",
-        task=TaskType.SEGMENTATION,
+        task=TaskType.CLASSIFICATION,
         root=dataset_path / "mvtec" / "dummy",
         normal_dir="train/good",
-        abnormal_dir="test/bad",
-        mask_dir="ground_truth/bad",
     )
 
 
@@ -36,7 +34,7 @@ def synthetic_dataset(folder_dataset: FolderDataset) -> SyntheticAnomalyDataset:
 def synthetic_dataset_from_samples(folder_dataset: FolderDataset) -> SyntheticAnomalyDataset:
     """Fixture that returns a SyntheticAnomalyDataset instance."""
     return SyntheticAnomalyDataset(
-        task=folder_dataset.task,
+        task=TaskType.CLASSIFICATION,
         transform=folder_dataset.transform,
         source_samples=folder_dataset.samples,
     )

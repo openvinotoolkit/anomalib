@@ -263,8 +263,8 @@ class DummyImageDatasetGenerator(DummyDatasetGenerator):
     Args:
         data_format (DataFormat): Data format of the dataset.
         root (Path | str, optional): Path to the root directory. Defaults to None.
-        num_train (int, optional): Number of training images to generate. Defaults to 1000.
-        num_test (int, optional): Number of testing images to generate per category. Defaults to 100.
+        num_train (int, optional): Number of training images to generate. Defaults to 5.
+        num_test (int, optional): Number of testing images to generate per category. Defaults to 5.
         img_height (int, optional): Height of the image. Defaults to 128.
         img_width (int, optional): Width of the image. Defaults to 128.
         max_size (Optional[int], optional): Maximum size of the test shapes. Defaults to 10.
