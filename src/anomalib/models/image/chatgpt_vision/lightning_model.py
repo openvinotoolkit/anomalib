@@ -29,7 +29,7 @@ class ChatGPTVision(AnomalyModule):
 
     Args:
         k_shot(int): The number of images that will compare to detect if it is an anomaly.
-        model_name (str): The openAI vlm for the image detection.
+        model_name (str): The OpenAI VLM for the image anomaly detection.
         detail (bool): The detail of the input in the vlm for the image detection 'high'(true) 'low'(false).
     """
 
