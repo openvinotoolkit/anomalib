@@ -48,7 +48,7 @@ class FieldDescriptor(
             - The value of the attribute if the instance is not None (method is called from instance).
         """
         if instance is None:
-            if self.default is not None or NoneType in self.get_types(owner):
+            if self.default is not None or self.is_optional(owner):
                 return self.default
             msg = f"No default attribute value specified for field '{self.name}'."
             raise AttributeError(msg)
@@ -72,6 +72,10 @@ class FieldDescriptor(
         except (KeyError, TypeError, AttributeError) as e:
             msg = f"Unable to determine types for {self.name} in {owner}"
             raise TypeError(msg) from e
+
+    def is_optional(self, owner: type[Instance]) -> bool:
+        """Check if the descriptor is optional."""
+        return NoneType in self.get_types(owner)
 
 
 @dataclass
