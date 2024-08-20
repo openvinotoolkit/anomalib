@@ -22,9 +22,7 @@ def folder_dataset(dataset_path: Path) -> FolderDataset:
         root=dataset_path / "mvtec" / "dummy",
         normal_dir="train/good",
         abnormal_dir="test/bad",
-        normal_test_dir="test/good",
         mask_dir="ground_truth/bad",
-        split="train",
     )
 
 
