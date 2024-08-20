@@ -37,7 +37,7 @@ class TestAPI:
         """Fit the model and save checkpoint.
 
         Args:
-            mock_chatgptwrapper(Mock): Mock the wrapper of openAI API for chatgpt.
+            mock_chat_gpt_wrapper(Mock): Mock the wrapper of openAI API for chatgpt.
             model_name (str): Name of the model.
             dataset_path (Path): Root to dataset from fixture.
             project_path (Path): Path to temporary project folder from fixture.
