@@ -29,8 +29,8 @@ class TestCSV(_TestAnomalibImageDatamodule):
             eval_batch_size=4,
             num_workers=0,
             task=task_type,
-            test_split_mode="auto",
-            val_split_mode="auto",
+            test_split_mode="predefined",
+            val_split_mode="predefined",
         )
         _datamodule.setup()
 
