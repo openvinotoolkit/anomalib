@@ -25,7 +25,7 @@ In zero-shot mode, the model does not require any reference images:
 ```python
 from anomalib.data import MVTec
 from anomalib.engine import Engine
-from anomalib.models import ChatGPTVision
+from anomalib.models import GptVad
 from dotenv import load_dotenv
 
 # Load the environment variables from the .env file
@@ -35,7 +35,7 @@ from dotenv import load_dotenv
 # load from .env to an environment variable.
 load_dotenv()
 
-model = ChatGPTVision(k_shot=0)
+model = GptVad(k_shot=0)
 engine = Engine(task=TaskType.VISUAL_PROMPTING)
 datamodule = MVTec(
     category=bottle,
@@ -53,14 +53,14 @@ In few-shot mode, the model uses a small set of normal reference images:
 ```python
 from anomalib.data import MVTec
 from anomalib.engine import Engine
-from anomalib.models import ChatGPTVision
+from anomalib.models import GptVad
 from dotenv import load_dotenv
 
 # Load the environment variables from the .env file
 # load_dotenv(dotenv_path=env_path)
 load_dotenv()
 
-model = ChatGPTVision(k_shot=2)
+model = GptVad(k_shot=2)
 engine = Engine(task=TaskType.VISUAL_PROMPTING)
 datamodule = MVTec(
     category=bottle,
