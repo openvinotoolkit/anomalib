@@ -122,6 +122,6 @@ class GPTWrapper:
             )
             return response.choices[-1].message.content or ""
         except Exception:
-            msg = "The openai API trow an exception."
+            msg = "Error generating a response with OpenAI API."
             logging.exception(msg)
             raise
