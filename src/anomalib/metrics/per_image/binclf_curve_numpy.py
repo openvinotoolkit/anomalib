@@ -20,7 +20,13 @@ from functools import partial
 import numpy as np
 from numpy import ndarray
 
-from anomalib import HAS_NUMBA
+try:
+    import numba  # noqa: F401
+except ImportError:
+    HAS_NUMBA = False
+else:
+    HAS_NUMBA = True
+
 
 if HAS_NUMBA:
     from . import _binclf_curve_numba
@@ -225,8 +231,9 @@ def binclf_multiple_curves(
             return _binclf_curve_numba.binclf_multiple_curves_numba(scores_batch, gts_batch, threshs)
 
         logger.warning(
-            f"Algorithm '{BinclfAlgorithm.NUMBA.value}' was selected, but numba is not installed. "
+            f"Algorithm '{BinclfAlgorithm.NUMBA.value}' was selected, but Numba is not installed. "
             f"Falling back to '{BinclfAlgorithm.PYTHON.value}' implementation.",
+            "Notice that the performance will be slower. Consider installing Numba for faster computation.",
         )
 
     return _binclf_multiple_curves_python(scores_batch, gts_batch, threshs)
