@@ -21,10 +21,10 @@ from .chatgpt import GPTWrapper
 
 logger = logging.getLogger(__name__)
 
-__all__ = ["GPTVad"]
+__all__ = ["GptVad"]
 
 
-class GPTVad(AnomalyModule):
+class GptVad(AnomalyModule):
     """OpenAI VLM Lightning model using OpenAI's GPT-4 for image anomaly detection.
 
     Args:

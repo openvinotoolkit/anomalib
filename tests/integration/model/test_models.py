@@ -145,7 +145,7 @@ class TestAPI:
             dataset_path (Path): Root to dataset from fixture.
             project_path (Path): Path to temporary project folder from fixture.
         """
-        if model_name == "g_p_t_vad":
+        if model_name == "gpt_vad":
             pytest.skip(f"{model_name} can not be exported")
 
         if model_name == "rkde":
@@ -181,8 +181,8 @@ class TestAPI:
             tuple[AnomalyModule, AnomalibDataModule, Engine]: Returns the created objects for model, dataset,
                 and engine
         """
-        # Mock the GPTWrapper if the model_name is "g_p_t_vad"
-        if model_name == "g_p_t_vad":
+        # Mock the GPTWrapper if the model_name is "gpt_vad"
+        if model_name == "gpt_vad":
             os.environ["OPENAI_API_KEY"] = "fake-api-key"
             with (
                 patch("anomalib.models.image.gptvad.chatgpt.GPTWrapper") as mock_gptwrapper,
@@ -196,7 +196,7 @@ class TestAPI:
             task_type = TaskType.DETECTION
         elif model_name in ("ganomaly", "dfkde"):
             task_type = TaskType.CLASSIFICATION
-        elif model_name in ("g_p_t_vad"):
+        elif model_name in ("gpt_vad"):
             task_type = TaskType.VISUAL_PROMPTING
         else:
             task_type = TaskType.SEGMENTATION

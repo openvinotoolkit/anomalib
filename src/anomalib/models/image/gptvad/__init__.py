@@ -3,6 +3,6 @@
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from .lightning_model import GPTVad
+from .lightning_model import GptVad
 
-__all__ = ["GPTVad"]
+__all__ = ["GptVad"]

@@ -1,4 +1,4 @@
-# GPTVad: Zero-/Few-Shot Anomaly Classification
+# GptVad: Zero-/Few-Shot Anomaly Classification
 
 This repository contains the implementation of the `OpenAI VLM`, a model designed for zero-shot and few-shot anomaly detection using OpenAI's GPT-4 for image analysis.
 
@@ -89,10 +89,10 @@ The model returns a response indicating whether an anomaly is detected:
   "NO"
   ```
 
-  ![GPTVad result no anomaly](/docs/source/images/gptvad/good.png "GPTVad without anomaly result")
+  ![GptVad result no anomaly](/docs/source/images/gptvad/good.png "GptVad without anomaly result")
 
   ```plaintext
   "YES: Description of the detected anomaly."
   ```
 
-  ![GPTVad result with anomaly](/docs/source/images/gptvad/broken.png "GPTVad with Anomaly result")
+  ![GptVad result with anomaly](/docs/source/images/gptvad/broken.png "GptVad with Anomaly result")

@@ -1,4 +1,6 @@
-"""Unit tests for GPTVad OpenAI Api funtions."""
+"""Unit tests for GptVad OpenAI Api funtions."""
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
 
 import os
 

@@ -14,7 +14,7 @@ from .efficient_ad import EfficientAd
 from .fastflow import Fastflow
 from .fre import Fre
 from .ganomaly import Ganomaly
-from .gptvad import GPTVad
+from .gptvad import GptVad
 from .padim import Padim
 from .patchcore import Patchcore
 from .reverse_distillation import ReverseDistillation
@@ -35,7 +35,7 @@ __all__ = [
     "Fastflow",
     "Fre",
     "Ganomaly",
-    "GPTVad",
+    "GptVad",
     "Padim",
     "Patchcore",
     "ReverseDistillation",
