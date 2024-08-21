@@ -438,11 +438,23 @@ def test_aupimo_values(
         num_threshs=7,
         binclf_algorithm="numba",
         fpr_bounds=fpr_bounds,
+        return_average=False,
         force=True,
     )
     metric.update(anomaly_maps, masks)
     pimoresult_from_metric, aupimoresult_from_metric = metric.compute()
     do_assertions(pimoresult_from_metric, aupimoresult_from_metric)
+
+    # metric interface
+    metric = pimo.AUPIMO(
+        num_threshs=7,
+        binclf_algorithm="numba",
+        fpr_bounds=fpr_bounds,
+        return_average=True,  # only return the average AUPIMO
+        force=True,
+    )
+    metric.update(anomaly_maps, masks)
+    metric.compute()
 
 
 def test_aupimo_edge(

@@ -854,6 +854,7 @@ class AUPIMO(PIMO):
     """
 
     fpr_bounds: tuple[float, float]
+    return_average: bool
     force: bool
 
     @staticmethod
@@ -898,6 +899,7 @@ class AUPIMO(PIMO):
         num_threshs: int = 300_000,
         binclf_algorithm: BinclfAlgorithm | str = BinclfAlgorithm.NUMBA.value,
         fpr_bounds: tuple[float, float] = (1e-5, 1e-4),
+        return_average: bool = True,
         force: bool = False,
     ) -> None:
         """Area Under the Per-Image Overlap (PIMO) curve.
@@ -906,6 +908,7 @@ class AUPIMO(PIMO):
             num_threshs: [passed to parent `PIMO`] number of thresholds used to compute the PIMO curve
             binclf_algorithm: [passed to parent `PIMO`] algorithm to compute the binary classification curve
             fpr_bounds: lower and upper bounds of the FPR integration range
+            return_average: if True, return the average AUPIMO score; if False, return all the individual AUPIMO scores
             force: if True, force the computation of the AUPIMO scores even in bad conditions (e.g. few points)
         """
         super().__init__(
@@ -917,7 +920,7 @@ class AUPIMO(PIMO):
 
         _validate.is_rate_range(fpr_bounds)
         self.fpr_bounds = fpr_bounds
-
+        self.return_average = return_average
         self.force = force
 
     def compute(self, force: bool | None = None) -> tuple[PIMOResult, AUPIMOResult]:  # type: ignore[override]
@@ -938,7 +941,7 @@ class AUPIMO(PIMO):
         anomaly_maps = torch.concat(self.anomaly_maps, dim=0)
         masks = torch.concat(self.masks, dim=0)
         force = force if force is not None else self.force
-        return aupimo_scores(
+        pimoresult, aupimoresult = aupimo_scores(
             anomaly_maps,
             masks,
             self.num_threshs,
@@ -946,3 +949,8 @@ class AUPIMO(PIMO):
             fpr_bounds=self.fpr_bounds,
             force=force,
         )
+        if self.return_average:
+            # normal images have NaN AUPIMO scores
+            is_nan = torch.isnan(aupimoresult.aupimos)
+            return aupimoresult.aupimos[~is_nan].mean()
+        return pimoresult, aupimoresult
