@@ -203,8 +203,10 @@ def make_masks(grid_size: tuple[int, int], kernel_size: int, stride: int = 1) ->
                 [ 5,  7, 13, 15]], dtype=torch.int32)
     """
     if any(dim < kernel_size for dim in grid_size):
-        msg = "Each dimension of the grid size must be greater than or equal to the kernel size. Got grid size {} and \
-               kernel size {}.".format(grid_size, kernel_size)
+        msg = (
+            "Each dimension of the grid size must be greater than or equal to "
+            f"the kernel size. Got grid size {grid_size} and kernel size {kernel_size}."
+        )
         raise ValueError(msg)
     height, width = grid_size
     grid = torch.arange(height * width).reshape(1, height, width)

@@ -3,7 +3,6 @@
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 import logging
 from abc import ABC, abstractmethod
 from pathlib import Path
@@ -271,8 +270,8 @@ class AnomalibDataModule(LightningDataModule, ABC):
         """
         if self._train_transform:
             return self._train_transform
-        if getattr(self, "trainer", None) and self.trainer.model and self.trainer.model.transform:
-            return self.trainer.model.transform
+        if getattr(self, "trainer", None) and self.trainer.lightning_module and self.trainer.lightning_module.transform:
+            return self.trainer.lightning_module.transform
         if self.image_size:
             return Resize(self.image_size, antialias=True)
         return None
@@ -285,8 +284,8 @@ class AnomalibDataModule(LightningDataModule, ABC):
         """
         if self._eval_transform:
             return self._eval_transform
-        if getattr(self, "trainer", None) and self.trainer.model and self.trainer.model.transform:
-            return self.trainer.model.transform
+        if getattr(self, "trainer", None) and self.trainer.lightning_module and self.trainer.lightning_module.transform:
+            return self.trainer.lightning_module.transform
         if self.image_size:
             return Resize(self.image_size, antialias=True)
         return None
