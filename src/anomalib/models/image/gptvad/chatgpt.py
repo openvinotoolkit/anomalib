@@ -47,7 +47,9 @@ class GPTWrapper:
         """Makes an API call to OpenAI's GPT-4 model to detect anomalies in an image.
 
         Args:
-            images (list[str]): List of base64 images that serve as examples and last one to check for anomalies.
+            images (list[str]): List of base64 images. If only one image is provided,
+              it is treated as the anomalous image. If multiple images are provided,
+              the last one is considered anomalous, and the rest are treated as normal examples.
             extension (str): Extension of the group of images that needs to be checked for anomalies. Default = 'png'
 
         Returns:
@@ -64,6 +66,8 @@ class GPTWrapper:
         messages: list[dict[str, Any]] = []
 
         if len(images) > 0:
+            # If multiple images are provided, the last one is considered anomalous,
+            # and the rest are treated as normal examples.
             prompt = """
              You will receive an image that is going to be an example of the typical image without any anomaly,
              and the last image that you need to decide if it has an anomaly or not.
@@ -92,7 +96,9 @@ class GPTWrapper:
                     ],
                 },
             )
-        else:
+        elif len(images) == 1:
+            # If only one image is provided,
+            # it is treated as the anomalous image.
             prompt = """
             Examine the provided image carefully to determine if there is an obvious anomaly present.
             Anomalies may include mechanical malfunctions, unexpected objects, safety hazards, structural damages,
@@ -143,6 +149,9 @@ class GPTWrapper:
                     },
                 ]
                 messages.extend(image_message)
+        else:
+            msg = "No images provided for anomaly detection."
+            raise ValueError(msg)
 
         try:
             # Make the API call using the openai library
