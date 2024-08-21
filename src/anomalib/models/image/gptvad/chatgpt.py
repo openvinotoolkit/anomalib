@@ -1,4 +1,6 @@
 """Wrapper for the OpenAI calls to the VLM model."""
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
 
 import logging
 import os
@@ -6,7 +8,9 @@ from typing import Any
 
 import openai
 
-from anomalib.engine.engine import UnassignedError
+
+class APIKeyError(Exception):
+    """APIKeyError error."""
 
 
 class GPTWrapper:
@@ -19,6 +23,9 @@ class GPTWrapper:
     all versions of 'gpt-4o-mini', and 'gpt-4o'
 
     Args:
+        images (list[str]): List of base64 images. If only one image is provided,
+        it is treated as the anomalous image. If multiple images are provided,
+        the last one is considered anomalous, and the rest are treated as normal examples.
         model_name (str): Model name for OpenAI API VLM. Default "gpt-4o"
         detail (bool): If the images will be sended with high detail or low detail.
 
@@ -30,7 +37,7 @@ class GPTWrapper:
         self.detail = detail
         if not openai_key:
             msg = "OpenAI environment key not found.(OPENAI_API_KEY)"
-            raise UnassignedError(msg)
+            raise APIKeyError(msg)
 
     def api_call(
         self,
@@ -52,6 +59,10 @@ class GPTWrapper:
             openai.error.OpenAIError: If there is an error during the API call.
         """
         prompt: str = ""
+
+        detail_img = "high" if self.detail else "low"
+        messages: list[dict[str, Any]] = []
+
         if len(images) > 0:
             prompt = """
              You will receive an image that is going to be an example of the typical image without any anomaly,
@@ -59,6 +70,28 @@ class GPTWrapper:
              Answer with a 'NO' if it does not have any anomalies and 'YES: description'
              where description is a description of the anomaly provided, position.
             """
+
+            messages.append(
+                {
+                    "role": "system",
+                    "content": prompt,
+                },
+            )
+            # Add the single image
+            messages.append(
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/{extension};base64,{images[0]}",
+                                "detail": detail_img,
+                            },
+                        },
+                    ],
+                },
+            )
         else:
             prompt = """
             Examine the provided image carefully to determine if there is an obvious anomaly present.
@@ -88,30 +121,28 @@ class GPTWrapper:
             - Provide clear and concise descriptions for any detected anomalies.
             - Focus on obvious anomalies that could impact final use of the object operation or safety.
             """
-
-        detail_img = "high" if self.detail else "low"
-        messages: list[dict[str, Any]] = [
-            {
-                "role": "system",
-                "content": prompt,
-            },
-        ]
-        for image in images:
-            image_message = [
+            messages.append(
                 {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "image_url",
-                            "image_url": {
-                                "url": f"data:image/{extension};base64,{image}",
-                                "detail": detail_img,
-                            },
-                        },
-                    ],
+                    "role": "system",
+                    "content": prompt,
                 },
-            ]
-            messages.extend(image_message)
+            )
+            for image in images:
+                image_message = [
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "image_url",
+                                "image_url": {
+                                    "url": f"data:image/{extension};base64,{image}",
+                                    "detail": detail_img,
+                                },
+                            },
+                        ],
+                    },
+                ]
+                messages.extend(image_message)
 
         try:
             # Make the API call using the openai library
