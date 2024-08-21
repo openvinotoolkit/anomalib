@@ -148,15 +148,6 @@ def _validate_is_scores_per_model_aupimoresult(
 
         first_model_name, first_aupimoresult = first_key_value
 
-        # check that the metadata is the same, so they can be compared indeed
-        if aupimoresult.shared_fpr_metric != first_aupimoresult.shared_fpr_metric:
-            msg = (
-                "Expected AUPIMOResult objects in scores per model to have the same shared FPR metric, "
-                f"but got ({model_name}) {aupimoresult.shared_fpr_metric} != "
-                f"{first_aupimoresult.shared_fpr_metric} ({first_model_name})."
-            )
-            raise ValueError(msg)
-
         if aupimoresult.fpr_bounds != first_aupimoresult.fpr_bounds:
             msg = (
                 "Expected AUPIMOResult objects in scores per model to have the same FPR bounds, "

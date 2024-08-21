@@ -54,7 +54,6 @@ from anomalib.data.utils.path import validate_path
 
 from . import _validate, pimo_numpy, utils
 from .binclf_curve_numpy import BinclfAlgorithm
-from .pimo_numpy import PIMOSharedFPRMetric
 from .utils import StatsOutliersPolicy, StatsRepeatedPolicy
 
 logger = logging.getLogger(__name__)
@@ -177,15 +176,11 @@ class PIMOResult:
         - TPR: True Positive Rate
 
     Attributes:
-        shared_fpr_metric (str): [metadata] shared FPR metric used to compute the PIMO curve
         threshs (Tensor): sequence of K (monotonically increasing) thresholds used to compute the PIMO curve
         shared_fpr (Tensor): K values of the shared FPR metric at the corresponding thresholds
         per_image_tprs (Tensor): for each of the N images, the K values of in-image TPR at the corresponding thresholds
         paths (list[str]) (optional): [metadata] paths to the source images to which the PIMO curves correspond
     """
-
-    # metadata
-    shared_fpr_metric: str
 
     # data
     threshs: Tensor = field(repr=False)  # shape => (K,)
@@ -220,7 +215,6 @@ class PIMOResult:
             _validate_is_threshs(self.threshs)
             _validate_is_shared_fpr(self.shared_fpr, nan_allowed=False)
             _validate_is_per_image_tprs(self.per_image_tprs, self.image_classes)
-            self.shared_fpr_metric = PIMOSharedFPRMetric(self.shared_fpr_metric).value
 
             if self.paths is not None:
                 _validate_is_source_images_paths(self.paths, expected_num_paths=self.per_image_tprs.shape[0])
@@ -266,7 +260,6 @@ class PIMOResult:
     def to_dict(self) -> dict[str, Tensor | str]:
         """Return a dictionary with the result object's attributes."""
         dic = {
-            "shared_fpr_metric": self.shared_fpr_metric,
             "threshs": self.threshs,
             "shared_fpr": self.shared_fpr,
             "per_image_tprs": self.per_image_tprs,
@@ -309,6 +302,9 @@ class PIMOResult:
         if not isinstance(payload, dict):
             msg = f"Invalid content in file {file_path}. Must be a dictionary."
             raise TypeError(msg)
+        # for compatibility with the original code
+        if "shared_fpr_metric" in payload:
+            del payload["shared_fpr_metric"]
         try:
             return cls.from_dict(payload)
         except TypeError as ex:
@@ -323,7 +319,6 @@ class AUPIMOResult:
     This interface gathers the AUPIMO data and metadata and provides several utility methods.
 
     Attributes:
-        shared_fpr_metric (str): [metadata] shared FPR metric used to compute the PIMO curve
         fpr_lower_bound (float): [metadata] LOWER bound of the FPR integration range
         fpr_upper_bound (float): [metadata] UPPER bound of the FPR integration range
         num_threshs (int): [metadata] number of thresholds used to effectively compute AUPIMO;
@@ -334,7 +329,6 @@ class AUPIMOResult:
     """
 
     # metadata
-    shared_fpr_metric: str
     fpr_lower_bound: float
     fpr_upper_bound: float
     num_threshs: int
@@ -387,7 +381,6 @@ class AUPIMOResult:
     def __post_init__(self) -> None:
         """Validate the inputs for the result object are consistent."""
         try:
-            self.shared_fpr_metric = PIMOSharedFPRMetric(self.shared_fpr_metric).value
             _validate.is_rate_range((self.fpr_lower_bound, self.fpr_upper_bound))
             # TODO(jpcbertoldo): warn when it's too low (use parameters from the numpy code)  # noqa: TD003
             _validate.is_num_threshs_gte2(self.num_threshs)
@@ -447,7 +440,6 @@ class AUPIMOResult:
         _, thresh_upper_bound, __ = pimoresult.thresh_at(fpr_lower_bound)
         # `_` is the threshold's index, `__` is the actual fpr value
         return cls(
-            shared_fpr_metric=pimoresult.shared_fpr_metric,
             fpr_lower_bound=fpr_lower_bound,
             fpr_upper_bound=fpr_upper_bound,
             num_threshs=num_threshs_auc,
@@ -460,7 +452,6 @@ class AUPIMOResult:
     def to_dict(self) -> dict[str, Tensor | str | float | int]:
         """Return a dictionary with the result object's attributes."""
         dic = {
-            "shared_fpr_metric": self.shared_fpr_metric,
             "fpr_lower_bound": self.fpr_lower_bound,
             "fpr_upper_bound": self.fpr_upper_bound,
             "num_threshs": self.num_threshs,
@@ -514,6 +505,9 @@ class AUPIMOResult:
             msg = f"Invalid payload in file {file_path}. Must be a dictionary."
             raise TypeError(msg)
         payload["aupimos"] = torch.tensor(payload["aupimos"], dtype=torch.float64)
+        # for compatibility with the original code
+        if "shared_fpr_metric" in payload:
+            del payload["shared_fpr_metric"]
         try:
             return cls.from_dict(payload)
         except (TypeError, ValueError) as ex:
@@ -551,7 +545,6 @@ def pimo_curves(
     masks: Tensor,
     num_threshs: int,
     binclf_algorithm: BinclfAlgorithm | str = BinclfAlgorithm.NUMBA.value,
-    shared_fpr_metric: PIMOSharedFPRMetric | str = PIMOSharedFPRMetric.MEAN_PERIMAGE_FPR.value,
     paths: list[str] | None = None,
 ) -> PIMOResult:
     """Compute the Per-IMage Overlap (PIMO, pronounced pee-mo) curves.
@@ -577,7 +570,6 @@ def pimo_curves(
         masks: binary (bool or int) ground truth masks of shape (N, H, W)
         num_threshs: number of thresholds to compute (K)
         binclf_algorithm: algorithm to compute the binary classifier curve (see `binclf_curve_numpy.Algorithm`)
-        shared_fpr_metric: metric to compute the shared FPR axis
         paths: paths to the source images to which the PIMO curves correspond. Default: None.
 
     Returns:
@@ -598,7 +590,6 @@ def pimo_curves(
         masks_array,
         num_threshs,
         binclf_algorithm=binclf_algorithm,
-        shared_fpr_metric=shared_fpr_metric,
     )
     # _ is `image_classes` -- not needed here because it's a property in the result object
 
@@ -614,9 +605,6 @@ def pimo_curves(
     per_image_tprs = torch.from_numpy(per_image_tprs_array).to(device)
 
     return PIMOResult(
-        shared_fpr_metric=shared_fpr_metric.value
-        if isinstance(shared_fpr_metric, PIMOSharedFPRMetric)
-        else shared_fpr_metric,
         threshs=threshs,
         shared_fpr=shared_fpr,
         per_image_tprs=per_image_tprs,
@@ -629,7 +617,6 @@ def aupimo_scores(
     masks: Tensor,
     num_threshs: int = 300_000,
     binclf_algorithm: BinclfAlgorithm | str = BinclfAlgorithm.NUMBA.value,
-    shared_fpr_metric: PIMOSharedFPRMetric | str = PIMOSharedFPRMetric.MEAN_PERIMAGE_FPR.value,
     fpr_bounds: tuple[float, float] = (1e-5, 1e-4),
     force: bool = False,
     paths: list[str] | None = None,
@@ -656,7 +643,6 @@ def aupimo_scores(
         masks: binary (bool or int) ground truth masks of shape (N, H, W)
         num_threshs: number of thresholds to compute (K)
         binclf_algorithm: algorithm to compute the binary classifier curve (see `binclf_curve_numpy.Algorithm`)
-        shared_fpr_metric: metric to compute the shared FPR axis
         fpr_bounds: lower and upper bounds of the FPR integration range
         force: whether to force the computation despite bad conditions
         paths: paths to the source images to which the AUPIMO scores correspond.
@@ -677,7 +663,6 @@ def aupimo_scores(
         masks_array,
         num_threshs,
         binclf_algorithm=binclf_algorithm,
-        shared_fpr_metric=shared_fpr_metric,
         fpr_bounds=fpr_bounds,
         force=force,
     )
@@ -696,9 +681,6 @@ def aupimo_scores(
     aupimos = torch.from_numpy(aupimos_array).to(device)
 
     pimoresult = PIMOResult(
-        shared_fpr_metric=shared_fpr_metric.value
-        if isinstance(shared_fpr_metric, PIMOSharedFPRMetric)
-        else shared_fpr_metric,
         threshs=threshs,
         shared_fpr=shared_fpr,
         per_image_tprs=per_image_tprs,
@@ -745,7 +727,6 @@ class PIMO(Metric):
     Args:
         num_threshs: number of thresholds to compute (K)
         binclf_algorithm: algorithm to compute the binary classifier curve (see `binclf_curve_numpy.Algorithm`)
-        shared_fpr_metric: metric to compute the shared FPR axis
 
     Returns:
         PIMOResult: PIMO curves dataclass object. See `PIMOResult` for details.
@@ -757,7 +738,6 @@ class PIMO(Metric):
 
     num_threshs: int
     binclf_algorithm: str
-    shared_fpr_metric: str
 
     anomaly_maps: list[Tensor]
     masks: list[Tensor]
@@ -781,14 +761,12 @@ class PIMO(Metric):
         self,
         num_threshs: int,
         binclf_algorithm: BinclfAlgorithm | str = BinclfAlgorithm.NUMBA.value,
-        shared_fpr_metric: PIMOSharedFPRMetric | str = PIMOSharedFPRMetric.MEAN_PERIMAGE_FPR.value,
     ) -> None:
         """Per-Image Overlap (PIMO) curve.
 
         Args:
             num_threshs: number of thresholds used to compute the PIMO curve (K)
             binclf_algorithm: algorithm to compute the binary classification curve (see `binclf_curve_numpy.Algorithm`)
-            shared_fpr_metric: metric to compute the shared FPR axis
         """
         super().__init__()
 
@@ -805,7 +783,6 @@ class PIMO(Metric):
 
         # validate binclf_algorithm and get string
         self.binclf_algorithm = BinclfAlgorithm(binclf_algorithm).value
-        self.shared_fpr_metric = PIMOSharedFPRMetric(shared_fpr_metric).value
 
         self.add_state("anomaly_maps", default=[], dist_reduce_fx="cat")
         self.add_state("masks", default=[], dist_reduce_fx="cat")
@@ -841,7 +818,6 @@ class PIMO(Metric):
             masks,
             self.num_threshs,
             binclf_algorithm=self.binclf_algorithm,
-            shared_fpr_metric=self.shared_fpr_metric,
         )
 
 
@@ -870,7 +846,6 @@ class AUPIMO(PIMO):
     Args:
         num_threshs: number of thresholds to compute (K)
         binclf_algorithm: algorithm to compute the binary classifier curve (see `binclf_curve_numpy.Algorithm`)
-        shared_fpr_metric: metric to compute the shared FPR axis
         fpr_bounds: lower and upper bounds of the FPR integration range
         force: whether to force the computation despite bad conditions
 
@@ -915,15 +890,13 @@ class AUPIMO(PIMO):
 
     def __repr__(self) -> str:
         """Show the metric name and its integration bounds."""
-        metric = self.shared_fpr_metric
         lower, upper = self.fpr_bounds
-        return f"{self.__class__.__name__}({metric} in [{lower:.2g}, {upper:.2g}])"
+        return f"{self.__class__.__name__}([{lower:.2g}, {upper:.2g}])"
 
     def __init__(
         self,
         num_threshs: int = 300_000,
         binclf_algorithm: BinclfAlgorithm | str = BinclfAlgorithm.NUMBA.value,
-        shared_fpr_metric: PIMOSharedFPRMetric | str = PIMOSharedFPRMetric.MEAN_PERIMAGE_FPR.value,
         fpr_bounds: tuple[float, float] = (1e-5, 1e-4),
         force: bool = False,
     ) -> None:
@@ -932,14 +905,12 @@ class AUPIMO(PIMO):
         Args:
             num_threshs: [passed to parent `PIMO`] number of thresholds used to compute the PIMO curve
             binclf_algorithm: [passed to parent `PIMO`] algorithm to compute the binary classification curve
-            shared_fpr_metric: [passed to parent `PIMO`] metric to compute the shared FPR curve
             fpr_bounds: lower and upper bounds of the FPR integration range
             force: if True, force the computation of the AUPIMO scores even in bad conditions (e.g. few points)
         """
         super().__init__(
             num_threshs=num_threshs,
             binclf_algorithm=binclf_algorithm,
-            shared_fpr_metric=shared_fpr_metric,
         )
 
         # other validations are done in PIMO.__init__()
@@ -972,7 +943,6 @@ class AUPIMO(PIMO):
             masks,
             self.num_threshs,
             binclf_algorithm=self.binclf_algorithm,
-            shared_fpr_metric=self.shared_fpr_metric,
             fpr_bounds=self.fpr_bounds,
             force=force,
         )

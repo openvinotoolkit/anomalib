@@ -1,7 +1,11 @@
-"""Test `anomalib.metrics.per_image.pimo_numpy`.
+"""Test `anomalib.metrics.per_image.pimo_numpy`."""
 
-author: jpcbertoldo
-"""
+# Original Code
+# https://github.com/jpcbertoldo/aupimo
+#
+# Modified
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
 
 import tempfile
 from pathlib import Path
@@ -9,11 +13,10 @@ from pathlib import Path
 import numpy as np
 import pytest
 import torch
-from numpy import ndarray
-from torch import Tensor
-
 from anomalib.metrics.per_image import pimo, pimo_numpy
 from anomalib.metrics.per_image.pimo import AUPIMOResult, PIMOResult
+from numpy import ndarray
+from torch import Tensor
 
 from .test_utils import assert_statsdict_stuff
 
@@ -249,7 +252,6 @@ def test_pimo_numpy(
         masks,
         num_threshs=7,
         binclf_algorithm="numba",
-        shared_fpr_metric="mean-per-image-fpr",
     )
     _do_test_pimo_outputs(
         threshs,
@@ -274,7 +276,6 @@ def test_pimo(
     """Test if `pimo()` returns the expected values."""
 
     def do_assertions(pimoresult: PIMOResult) -> None:
-        assert pimoresult.shared_fpr_metric == "mean-per-image-fpr"
         threshs = pimoresult.threshs
         shared_fpr = pimoresult.shared_fpr
         per_image_tprs = pimoresult.per_image_tprs
@@ -296,7 +297,6 @@ def test_pimo(
         masks,
         num_threshs=7,
         binclf_algorithm="numba",
-        shared_fpr_metric="mean-per-image-fpr",
     )
     do_assertions(pimoresult)
 
@@ -304,7 +304,6 @@ def test_pimo(
     metric = pimo.PIMO(
         num_threshs=7,
         binclf_algorithm="numba",
-        shared_fpr_metric="mean-per-image-fpr",
     )
     metric.update(anomaly_maps, masks)
     pimoresult = metric.compute()
@@ -362,7 +361,6 @@ def test_aupimo_values_numpy(
         masks,
         num_threshs=7,
         binclf_algorithm="numba",
-        shared_fpr_metric="mean-per-image-fpr",
         fpr_bounds=fpr_bounds,
         force=True,
     )
@@ -394,8 +392,6 @@ def test_aupimo_values(
 
     def do_assertions(pimoresult: PIMOResult, aupimoresult: AUPIMOResult) -> None:
         # test metadata
-        assert pimoresult.shared_fpr_metric == "mean-per-image-fpr"
-        assert aupimoresult.shared_fpr_metric == "mean-per-image-fpr"
         assert aupimoresult.fpr_bounds == fpr_bounds
         # recall: this one is not the same as the number of thresholds in the curve
         # this is the number of thresholds used to compute the integral in `aupimo()`
@@ -432,7 +428,6 @@ def test_aupimo_values(
         masks,
         num_threshs=7,
         binclf_algorithm="numba",
-        shared_fpr_metric="mean-per-image-fpr",
         fpr_bounds=fpr_bounds,
         force=True,
     )
@@ -442,7 +437,6 @@ def test_aupimo_values(
     metric = pimo.AUPIMO(
         num_threshs=7,
         binclf_algorithm="numba",
-        shared_fpr_metric="mean-per-image-fpr",
         fpr_bounds=fpr_bounds,
         force=True,
     )
@@ -458,7 +452,7 @@ def test_aupimo_edge(
 ) -> None:
     """Test some edge cases."""
     # None is the case of testing the default bounds
-    fpr_bounds = {"fpr_bounds": fpr_bounds, "shared_fpr_metric": "mean-per-image-fpr"} if fpr_bounds is not None else {}
+    fpr_bounds = {"fpr_bounds": fpr_bounds} if fpr_bounds is not None else {}
 
     # not enough points on the curve
     # 10 threshs / 6 decades = 1.6 threshs per decade < 3
@@ -509,7 +503,6 @@ def test_pimoresult_object(
         masks,
         num_threshs=7,
         binclf_algorithm="numba",
-        shared_fpr_metric="mean-per-image-fpr",
         **optional_kwargs,
     )
 
@@ -523,7 +516,6 @@ def test_pimoresult_object(
     pimoresult_from_dict = PIMOResult.from_dict(dic)
     assert isinstance(pimoresult_from_dict, PIMOResult)
     # values should be the same
-    assert pimoresult_from_dict.shared_fpr_metric == pimoresult.shared_fpr_metric
     assert torch.allclose(pimoresult_from_dict.threshs, pimoresult.threshs)
     assert torch.allclose(pimoresult_from_dict.shared_fpr, pimoresult.shared_fpr)
     assert torch.allclose(pimoresult_from_dict.per_image_tprs, pimoresult.per_image_tprs, equal_nan=True)
@@ -536,7 +528,6 @@ def test_pimoresult_object(
         pimoresult_from_load = PIMOResult.load(str(file_path))
     assert isinstance(pimoresult_from_load, PIMOResult)
     # values should be the same
-    assert pimoresult_from_load.shared_fpr_metric == pimoresult.shared_fpr_metric
     assert torch.allclose(pimoresult_from_load.threshs, pimoresult.threshs)
     assert torch.allclose(pimoresult_from_load.shared_fpr, pimoresult.shared_fpr)
     assert torch.allclose(pimoresult_from_load.per_image_tprs, pimoresult.per_image_tprs, equal_nan=True)
@@ -557,7 +548,6 @@ def test_aupimoresult_object(
         masks,
         num_threshs=7,
         binclf_algorithm="numba",
-        shared_fpr_metric="mean-per-image-fpr",
         fpr_bounds=(1e-5, 1e-4),
         force=True,
         **optional_kwargs,
@@ -575,7 +565,6 @@ def test_aupimoresult_object(
     aupimoresult_from_dict = AUPIMOResult.from_dict(dic)
     assert isinstance(aupimoresult_from_dict, AUPIMOResult)
     # values should be the same
-    assert aupimoresult_from_dict.shared_fpr_metric == aupimoresult.shared_fpr_metric
     assert aupimoresult_from_dict.fpr_bounds == aupimoresult.fpr_bounds
     assert aupimoresult_from_dict.num_threshs == aupimoresult.num_threshs
     assert aupimoresult_from_dict.thresh_bounds == aupimoresult.thresh_bounds
@@ -589,7 +578,6 @@ def test_aupimoresult_object(
         aupimoresult_from_load = AUPIMOResult.load(str(file_path))
     assert isinstance(aupimoresult_from_load, AUPIMOResult)
     # values should be the same
-    assert aupimoresult_from_load.shared_fpr_metric == aupimoresult.shared_fpr_metric
     assert aupimoresult_from_load.fpr_bounds == aupimoresult.fpr_bounds
     assert aupimoresult_from_load.num_threshs == aupimoresult.num_threshs
     assert aupimoresult_from_load.thresh_bounds == aupimoresult.thresh_bounds

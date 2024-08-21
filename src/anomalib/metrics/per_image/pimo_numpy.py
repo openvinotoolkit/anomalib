@@ -73,7 +73,6 @@ def pimo_curves(
     masks: ndarray,
     num_threshs: int,
     binclf_algorithm: BinclfAlgorithm | str = BinclfAlgorithm.NUMBA.value,
-    shared_fpr_metric: PIMOSharedFPRMetric | str = PIMOSharedFPRMetric.MEAN_PERIMAGE_FPR.value,
 ) -> tuple[ndarray, ndarray, ndarray, ndarray]:
     """Compute the Per-IMage Overlap (PIMO, pronounced pee-mo) curves.
 
@@ -94,7 +93,6 @@ def pimo_curves(
         masks: binary (bool or int) ground truth masks of shape (N, H, W)
         num_threshs: number of thresholds to compute (K)
         binclf_algorithm: algorithm to compute the binary classifier curve (see `binclf_curve_numpy.Algorithm`)
-        shared_fpr_metric: metric to compute the shared FPR axis
 
     Returns:
         tuple[ndarray, ndarray, ndarray, ndarray]:
@@ -105,7 +103,6 @@ def pimo_curves(
     """
     # validate the strings are valid
     BinclfAlgorithm(binclf_algorithm)
-    shared_fpr_metric = PIMOSharedFPRMetric(shared_fpr_metric)
     _validate.is_num_threshs_gte2(num_threshs)
     _validate.is_anomaly_maps(anomaly_maps)
     _validate.is_masks(masks)
@@ -136,23 +133,19 @@ def pimo_curves(
     )
 
     shared_fpr: ndarray
-    if shared_fpr_metric == PIMOSharedFPRMetric.MEAN_PERIMAGE_FPR:
-        # shape -> (N, K)
-        per_image_fprs_normals = binclf_curve_numpy.per_image_fpr(binclf_curves[image_classes == 0])
-        try:
-            _validate.is_per_image_rate_curves(per_image_fprs_normals, nan_allowed=False, decreasing=True)
-        except ValueError as ex:
-            msg = f"Cannot compute PIMO because the per-image FPR curves from normal images are invalid. Cause: {ex}"
-            raise RuntimeError(msg) from ex
+    # mean-per-image-fpr on normal images
+    # shape -> (N, K)
+    per_image_fprs_normals = binclf_curve_numpy.per_image_fpr(binclf_curves[image_classes == 0])
+    try:
+        _validate.is_per_image_rate_curves(per_image_fprs_normals, nan_allowed=False, decreasing=True)
+    except ValueError as ex:
+        msg = f"Cannot compute PIMO because the per-image FPR curves from normal images are invalid. Cause: {ex}"
+        raise RuntimeError(msg) from ex
 
-        # shape -> (K,)
-        # this is the only shared FPR metric implemented so far,
-        # see note about shared FPR in Details: `anomalib.metrics.per_image.pimo`.
-        shared_fpr = per_image_fprs_normals.mean(axis=0)
-
-    else:
-        msg = f"Shared FPR metric `{shared_fpr_metric}` is not implemented."
-        raise NotImplementedError(msg)
+    # shape -> (K,)
+    # this is the only shared FPR metric implemented so far,
+    # see note about shared FPR in Details: `anomalib.metrics.per_image.pimo`.
+    shared_fpr = per_image_fprs_normals.mean(axis=0)
 
     # shape -> (N, K)
     per_image_tprs = binclf_curve_numpy.per_image_tpr(binclf_curves)
@@ -168,7 +161,6 @@ def aupimo_scores(
     masks: ndarray,
     num_threshs: int = 300_000,
     binclf_algorithm: BinclfAlgorithm | str = BinclfAlgorithm.NUMBA,
-    shared_fpr_metric: PIMOSharedFPRMetric | str = PIMOSharedFPRMetric.MEAN_PERIMAGE_FPR.value,
     fpr_bounds: tuple[float, float] = (1e-5, 1e-4),
     force: bool = False,
 ) -> tuple[ndarray, ndarray, ndarray, ndarray, ndarray, int]:
@@ -190,7 +182,6 @@ def aupimo_scores(
         masks: binary (bool or int) ground truth masks of shape (N, H, W)
         num_threshs: number of thresholds to compute (K)
         binclf_algorithm: algorithm to compute the binary classifier curve (see `binclf_curve_numpy.Algorithm`)
-        shared_fpr_metric: metric to compute the shared FPR axis
         fpr_bounds: lower and upper bounds of the FPR integration range
         force: whether to force the computation despite bad conditions
 
@@ -211,7 +202,6 @@ def aupimo_scores(
         masks=masks,
         num_threshs=num_threshs,
         binclf_algorithm=binclf_algorithm,
-        shared_fpr_metric=shared_fpr_metric,
     )
     try:
         _validate.is_threshs(threshs)

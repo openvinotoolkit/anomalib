@@ -1,18 +1,19 @@
-"""Test `utils.py`.
+"""Test `utils.py`."""
 
-author: jpcbertoldo
-"""
+# Original Code
+# https://github.com/jpcbertoldo/aupimo
+#
+# Modified
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
 
 from collections import OrderedDict
 
 import numpy as np
 import pytest
 import torch
-from torch import Tensor
-
 from anomalib.metrics.per_image import (
     AUPIMOResult,
-    PIMOSharedFPRMetric,
     StatsOutliersPolicy,
     StatsRepeatedPolicy,
     compare_models_pairwise_ttest_rel,
@@ -20,6 +21,7 @@ from anomalib.metrics.per_image import (
     format_pairwise_tests_results,
     per_image_scores_stats,
 )
+from torch import Tensor
 
 
 def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
@@ -33,7 +35,6 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
     aucs3 = torch.sin(torch.linspace(0, torch.pi, num_images)).clip(0, 1)
 
     mock_aupimoresult_stuff = {
-        "shared_fpr_metric": PIMOSharedFPRMetric.MEAN_PERIMAGE_FPR,
         "fpr_lower_bound": 1e-5,
         "fpr_upper_bound": 1e-4,
         "num_threshs": 1_000,

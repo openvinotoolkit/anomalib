@@ -1,17 +1,21 @@
-"""Tests for per-image binary classification curves using numpy and numba versions.
+"""Tests for per-image binary classification curves using numpy and numba versions."""
 
-author: jpcbertoldo
-"""
+# Original Code
+# https://github.com/jpcbertoldo/aupimo
+#
+# Modified
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
 # ruff: noqa: SLF001, PT011
 
 import numpy as np
 import pytest
 import torch
+from anomalib.metrics.per_image import binclf_curve, binclf_curve_numpy
+from anomalib.metrics.per_image.binclf_curve_numpy import HAS_NUMBA
 from numpy import ndarray
 from torch import Tensor
-
-from anomalib import HAS_NUMBA
-from anomalib.metrics.per_image import binclf_curve, binclf_curve_numpy
 
 if HAS_NUMBA:
     from anomalib.metrics.per_image import _binclf_curve_numba
