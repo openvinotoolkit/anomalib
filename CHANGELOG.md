@@ -10,17 +10,46 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
-- 🔨 Replace "./dtasets/BTech" to "./dtasets/BTech"
-
 ### Deprecated
 
 ### Fixed
 
-- 🔨 Fix uncorrect download path of btech dataset
-
 ### New Contributors
 
 **Full Changelog**:
+
+## [v1.1.1]
+
+### Added
+
+- 📚Ppipelines how-to guide by @ashwinvaidya17 in https://github.com/openvinotoolkit/anomalib/pull/2109
+
+### Changed
+
+- Set permissions for github workflows by @djdameln in https://github.com/openvinotoolkit/anomalib/pull/2127
+- Update timm requirement from <=1.0.3,>=0.5.4 to >=0.5.4,<=1.0.7 by @dependabot in https://github.com/openvinotoolkit/anomalib/pull/2151
+- 🚀 Use gh actions runners for pre-commit checks by @ashwinvaidya17 in https://github.com/openvinotoolkit/anomalib/pull/2160
+- Bump AlexanderDokuchaev/md-dead-link-check from 0.8 to 0.9 by @dependabot in https://github.com/openvinotoolkit/anomalib/pull/2162
+- Added accuracy control quantization by @adrianboguszewski in https://github.com/openvinotoolkit/anomalib/pull/2070
+
+### Deprecated
+
+- 🔨Remove device postfix by @ashwinvaidya17 in https://github.com/openvinotoolkit/anomalib/pull/2233
+
+### Fixed
+
+- Fix: get MLFLOW_TRACKING_UTI from env variables as default by @CarlosNacher in https://github.com/openvinotoolkit/anomalib/pull/2107
+- Fix normalization by @alexriedel1 in https://github.com/openvinotoolkit/anomalib/pull/2130
+- Fix image-level heatmap normalization by @djdameln in https://github.com/openvinotoolkit/anomalib/pull/2131
+- Fix: efficient ad model_size str fixes by @Gornoka in https://github.com/openvinotoolkit/anomalib/pull/2159
+- Fix the CI by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/2178
+- Fix BTech Dataset by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/2180
+
+### New Contributors
+
+- @CarlosNacher made their first contribution in https://github.com/openvinotoolkit/anomalib/pull/2107
+
+**Full Changelog**: https://github.com/openvinotoolkit/anomalib/compare/v1.1.0...v1.1.1
 
 ## [v1.1.0]
 
