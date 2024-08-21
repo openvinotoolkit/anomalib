@@ -36,7 +36,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 model = ChatGPTVision(k_shot=0)
-engine = Engine(task=TaskType.EXPLANATION)
+engine = Engine(task=TaskType.VISUAL_PROMPTING)
 datamodule = MVTec(
     category=bottle,
     train_batch_size=1,
@@ -61,7 +61,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 model = ChatGPTVision(k_shot=2)
-engine = Engine(task=TaskType.EXPLANATION)
+engine = Engine(task=TaskType.VISUAL_PROMPTING)
 datamodule = MVTec(
     category=bottle,
     train_batch_size=1,
