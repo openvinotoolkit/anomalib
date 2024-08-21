@@ -14,7 +14,7 @@ from torchvision.tv_tensors import Mask
 from anomalib import TaskType
 from anomalib.data.base.dataset import AnomalibDataset
 from anomalib.data.utils import LabelName, masks_to_boxes, read_depth_image
-from anomalib.dataclasses import DatasetItem
+from anomalib.dataclasses import DepthItem
 
 
 class AnomalibDepthDataset(AnomalibDataset, ABC):
@@ -31,7 +31,7 @@ class AnomalibDepthDataset(AnomalibDataset, ABC):
 
         self.transform = transform
 
-    def __getitem__(self, index: int) -> DatasetItem:
+    def __getitem__(self, index: int) -> DepthItem:
         """Return rgb image, depth image and mask.
 
         Args:
@@ -74,9 +74,9 @@ class AnomalibDepthDataset(AnomalibDataset, ABC):
             msg = f"Unknown task type: {self.task}"
             raise ValueError(msg)
 
-        return DatasetItem(
+        return DepthItem(
             image=item["image"],
-            depth_image=item["depth_image"],
+            depth_map=item["depth_image"],
             gt_mask=item["mask"],
             gt_label=item["label"],
             image_path=image_path,

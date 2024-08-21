@@ -16,7 +16,7 @@ from skimage.segmentation import mark_boundaries
 
 from anomalib import TaskType
 from anomalib.data.utils import read_image
-from anomalib.dataclasses import DatasetItem, NumpyDatasetItem
+from anomalib.dataclasses import ImageItem, NumpyImageItem, VideoItem
 from anomalib.utils.post_processing import (
     add_anomalous_label,
     add_normal_label,
@@ -57,12 +57,15 @@ class ImageResult:
         if self.image.dtype != np.uint8:
             self.image = (self.image * 255).astype(np.uint8)
         if self.anomaly_map is not None:
-            self.image = cv2.resize(self.image.squeeze(), self.anomaly_map.squeeze().shape[:2])
+            height, width = self.anomaly_map.squeeze().shape[:2]
+            self.image = cv2.resize(self.image.squeeze(), (width, height))
 
         if self.anomaly_map is not None:
             self.heat_map = superimpose_anomaly_map(self.anomaly_map, self.image, normalize=normalize)
 
         if self.gt_mask is not None and self.gt_mask.max() <= 1.0:
+            if self.gt_mask.dtype == bool:
+                self.gt_mask = self.gt_mask.astype(np.uint8)
             self.gt_mask *= 255
 
         if self.pred_mask is not None:
@@ -97,12 +100,12 @@ class ImageResult:
         return repr_str
 
     @classmethod
-    def from_dataset_item(cls: type["ImageResult"], item: DatasetItem | NumpyDatasetItem) -> "ImageResult":
+    def from_dataset_item(cls: type["ImageResult"], item: ImageItem | NumpyImageItem) -> "ImageResult":
         """Create an ImageResult object from a DatasetItem object.
 
         This is a temporary solution until we refactor the visualizer to take a DatasetItem object directly as input.
         """
-        if isinstance(item, DatasetItem):
+        if isinstance(item, ImageItem):
             item = item.to_numpy()
         item_dict = asdict(item)
         field_names = {field.name for field in fields(cls)} & set(item_dict.keys())
@@ -149,11 +152,11 @@ class ImageVisualizer(BaseVisualizer):
             Generator that yields a display-ready visualization for each image.
         """
         for item in batch:
-            if item.image_path is not None:
+            if hasattr(item, "image_path") and item.image_path is not None:
                 image = read_image(path=item.image_path, as_tensor=True)
                 # set filename
                 file_name = Path(item.image_path)
-            elif item.video_path is not None:
+            elif hasattr(item, "video_path") and item.video_path is not None:
                 image = item.original_image
                 # set filename
                 zero_fill = int(np.log10(item.last_frame.cpu())) + 1
@@ -163,8 +166,11 @@ class ImageVisualizer(BaseVisualizer):
                 msg = "Item must have image path or video path defined."
                 raise TypeError(msg)
 
-            item.replace(image=image)
-            image_result = ImageResult.from_dataset_item(item)
+            item.image = image
+            if isinstance(item, VideoItem):
+                image_result = ImageResult.from_dataset_item(item.to_image())
+            else:
+                image_result = ImageResult.from_dataset_item(item)
             yield GeneratorResult(image=self.visualize_image(image_result), file_name=file_name)
 
     def visualize_image(self, image_result: ImageResult) -> np.ndarray:

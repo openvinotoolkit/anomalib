@@ -7,15 +7,16 @@ Paper https://arxiv.org/pdf/2212.00789.pdf
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
+from dataclasses import replace
 from typing import Any
 
-import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torchvision.transforms.v2 import Transform
 
 from anomalib import LearningType
-from anomalib.dataclasses import Batch
+from anomalib.dataclasses import VideoBatch
 from anomalib.models.components import AnomalyModule, MemoryBankMixin
+from anomalib.models.components.base.post_processing import OneClassPostProcessor
 
 from .torch_model import AiVadModel
 
@@ -98,12 +99,14 @@ class AiVad(MemoryBankMixin, AnomalyModule):
 
         self.total_detections = 0
 
+        self.post_processor = OneClassPostProcessor()
+
     @staticmethod
     def configure_optimizers() -> None:
         """AI-VAD training does not involve fine-tuning of NN weights, no optimizers needed."""
         return
 
-    def training_step(self, batch: Batch) -> None:
+    def training_step(self, batch: VideoBatch) -> None:
         """Training Step of AI-VAD.
 
         Extract features from the batch of clips and update the density estimators.
@@ -111,7 +114,7 @@ class AiVad(MemoryBankMixin, AnomalyModule):
         Args:
             batch (Batch): Batch containing image filename, image, label and mask
         """
-        features_per_batch = self.model(batch["image"])
+        features_per_batch = self.model(batch.image)
 
         assert isinstance(batch.video_path, list)
         for features, video_path in zip(features_per_batch, batch.video_path, strict=True):
@@ -125,7 +128,7 @@ class AiVad(MemoryBankMixin, AnomalyModule):
             raise ValueError(msg)
         self.model.density_estimator.fit()
 
-    def validation_step(self, batch: Batch, *args, **kwargs) -> STEP_OUTPUT:
+    def validation_step(self, batch: VideoBatch, *args, **kwargs) -> STEP_OUTPUT:
         """Perform the validation step of AI-VAD.
 
         Extract boxes and box scores..
@@ -140,12 +143,14 @@ class AiVad(MemoryBankMixin, AnomalyModule):
         """
         del args, kwargs  # Unused arguments.
 
-        boxes, anomaly_scores, image_scores = self.model(batch.image)
-        batch.pred_boxes = [box.int() for box in boxes]
-        batch.box_scores = [score.to(self.device) for score in anomaly_scores]
-        batch.pred_score = torch.Tensor(image_scores).to(self.device)
+        predictions = self.model(batch.image)
 
-        return batch
+        return replace(
+            batch,
+            pred_score=predictions.pred_score,
+            anomaly_map=predictions.anomaly_map,
+            pred_mask=predictions.pred_mask,
+        )
 
     @property
     def trainer_arguments(self) -> dict[str, Any]:

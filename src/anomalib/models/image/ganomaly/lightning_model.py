@@ -178,7 +178,7 @@ class Ganomaly(AnomalyModule):
         self._reset_min_max()
         return super().on_validation_start()
 
-    def validation_step(self, batch: Batch, *args, **kwargs) -> STEP_OUTPUT:
+    def validation_step(self, batch: Batch, *args, **kwargs) -> Batch:
         """Update min and max scores from the current step.
 
         Args:
@@ -191,20 +191,20 @@ class Ganomaly(AnomalyModule):
         """
         del args, kwargs  # Unused arguments.
 
-        batch["pred_scores"] = self.model(batch["image"])
-        self.max_scores = max(self.max_scores, torch.max(batch["pred_scores"]))
-        self.min_scores = min(self.min_scores, torch.min(batch["pred_scores"]))
+        batch.pred_score = self.model(batch.image)
+        self.max_scores = max(self.max_scores, torch.max(batch.pred_score))
+        self.min_scores = min(self.min_scores, torch.min(batch.pred_score))
         return batch
 
     def on_validation_batch_end(
         self,
-        outputs: STEP_OUTPUT,
+        outputs: Batch,
         batch: Any,  # noqa: ANN401
         batch_idx: int,
         dataloader_idx: int = 0,
     ) -> None:
         """Normalize outputs based on min/max values."""
-        outputs["pred_scores"] = self._normalize(outputs["pred_scores"])
+        outputs.pred_score = self._normalize(outputs.pred_score)
         super().on_validation_batch_end(outputs, batch, batch_idx, dataloader_idx=dataloader_idx)
 
     def on_test_start(self) -> None:
@@ -212,24 +212,24 @@ class Ganomaly(AnomalyModule):
         self._reset_min_max()
         return super().on_test_start()
 
-    def test_step(self, batch: Batch, batch_idx: int, *args, **kwargs) -> STEP_OUTPUT:
+    def test_step(self, batch: Batch, batch_idx: int, *args, **kwargs) -> Batch:
         """Update min and max scores from the current step."""
         del args, kwargs  # Unused arguments.
 
         super().test_step(batch, batch_idx)
-        self.max_scores = max(self.max_scores, torch.max(batch["pred_scores"]))
-        self.min_scores = min(self.min_scores, torch.min(batch["pred_scores"]))
+        self.max_scores = max(self.max_scores, torch.max(batch.pred_score))
+        self.min_scores = min(self.min_scores, torch.min(batch.pred_score))
         return batch
 
     def on_test_batch_end(
         self,
-        outputs: STEP_OUTPUT,
+        outputs: Batch,
         batch: Any,  # noqa: ANN401
         batch_idx: int,
         dataloader_idx: int = 0,
     ) -> None:
         """Normalize outputs based on min/max values."""
-        outputs["pred_scores"] = self._normalize(outputs["pred_scores"])
+        outputs.pred_score = self._normalize(outputs.pred_score)
         super().on_test_batch_end(outputs, batch, batch_idx, dataloader_idx=dataloader_idx)
 
     def _normalize(self, scores: torch.Tensor) -> torch.Tensor:

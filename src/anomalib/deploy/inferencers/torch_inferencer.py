@@ -9,7 +9,7 @@ import torch
 from torch import nn
 
 from anomalib.data.utils import read_image
-from anomalib.dataclasses import Batch
+from anomalib.dataclasses import ImageBatch
 
 
 class TorchInferencer:
@@ -117,7 +117,7 @@ class TorchInferencer:
     def predict(
         self,
         image: str | Path | torch.Tensor,
-    ) -> Batch:
+    ) -> ImageBatch:
         """Perform a prediction for a given input image.
 
         Args:
@@ -133,7 +133,7 @@ class TorchInferencer:
         image = self.pre_process(image)
         predictions = self.model(image)
 
-        return Batch(
+        return ImageBatch(
             image=image,
             **predictions._asdict(),
         )

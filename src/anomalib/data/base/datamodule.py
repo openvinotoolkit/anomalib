@@ -16,7 +16,7 @@ from torchvision.transforms.v2 import Resize, Transform
 
 from anomalib.data.utils import TestSplitMode, ValSplitMode, random_split, split_by_label
 from anomalib.data.utils.synthetic import SyntheticAnomalyDataset
-from anomalib.dataclasses import Batch
+from anomalib.dataclasses import ImageBatch
 
 if TYPE_CHECKING:
     from pandas import DataFrame
@@ -202,7 +202,7 @@ class AnomalibDataModule(LightningDataModule, ABC):
             shuffle=True,
             batch_size=self.train_batch_size,
             num_workers=self.num_workers,
-            collate_fn=Batch.collate,
+            collate_fn=ImageBatch.collate,
         )
 
     def val_dataloader(self) -> EVAL_DATALOADERS:
@@ -212,7 +212,7 @@ class AnomalibDataModule(LightningDataModule, ABC):
             shuffle=False,
             batch_size=self.eval_batch_size,
             num_workers=self.num_workers,
-            collate_fn=Batch.collate,
+            collate_fn=ImageBatch.collate,
         )
 
     def test_dataloader(self) -> EVAL_DATALOADERS:
@@ -222,7 +222,7 @@ class AnomalibDataModule(LightningDataModule, ABC):
             shuffle=False,
             batch_size=self.eval_batch_size,
             num_workers=self.num_workers,
-            collate_fn=Batch.collate,
+            collate_fn=ImageBatch.collate,
         )
 
     def predict_dataloader(self) -> EVAL_DATALOADERS:

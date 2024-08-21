@@ -3,7 +3,6 @@
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Iterator
 from dataclasses import asdict, dataclass
-from pathlib import Path
 from types import NoneType
 from typing import ClassVar, Generic, TypeVar, get_args, get_type_hints
 
@@ -15,7 +14,7 @@ from torchvision.tv_tensors import Image, Mask, Video
 ImageT = TypeVar("ImageT", Image, Video, np.ndarray)
 T = TypeVar("T", torch.Tensor, np.ndarray)
 MaskT = TypeVar("MaskT", Mask, np.ndarray)
-PathT = TypeVar("PathT", list[Path], Path)
+PathT = TypeVar("PathT", list[str], str)
 
 
 Instance = TypeVar("Instance")
@@ -110,48 +109,133 @@ class _InputFields(Generic[T, ImageT, MaskT, PathT], ABC):
 
 @dataclass
 class _ImageInputFields(
-    Generic[T, ImageT, MaskT, PathT],
-    _InputFields[T, ImageT, MaskT, PathT],
+    Generic[PathT],
+    ABC,
 ):
     """Generic dataclass that defines the image input fields."""
+
+    image_path: FieldDescriptor[PathT | None] = FieldDescriptor(validator_name="_validate_image_path")
+
+    @abstractmethod
+    def _validate_image_path(self, image_path: PathT) -> PathT | None:
+        """Validate the image path."""
+        raise NotImplementedError
 
 
 @dataclass
 class _VideoInputFields(
     Generic[T, ImageT, MaskT, PathT],
-    _InputFields[T, ImageT, MaskT, PathT],
+    ABC,
 ):
     """Generic dataclass that defines the video input fields."""
 
-    original_image: ImageT | None = None
+    original_image: FieldDescriptor[ImageT | None] = FieldDescriptor(validator_name="_validate_original_image")
+    video_path: FieldDescriptor[PathT | None] = FieldDescriptor(validator_name="_validate_video_path")
+    target_frame: FieldDescriptor[T | None] = FieldDescriptor(validator_name="_validate_target_frame")
+    frames: FieldDescriptor[T | None] = FieldDescriptor(validator_name="_validate_frames")
+    last_frame: FieldDescriptor[T | None] = FieldDescriptor(validator_name="_validate_last_frame")
 
-    video_path: PathT | None = None
+    @abstractmethod
+    def _validate_original_image(self, original_image: ImageT) -> ImageT | None:
+        """Validate the original image."""
+        raise NotImplementedError
 
-    target_frame: T | None = None
-    frames: T | None = None
-    last_frame: T | None = None
+    @abstractmethod
+    def _validate_video_path(self, video_path: PathT) -> PathT | None:
+        """Validate the video path."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def _validate_target_frame(self, target_frame: T) -> T | None:
+        """Validate the target frame."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def _validate_frames(self, frames: T) -> T | None:
+        """Validate the frames."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def _validate_last_frame(self, last_frame: T) -> T | None:
+        """Validate the last frame."""
+        raise NotImplementedError
 
 
 @dataclass
-class _OutputFields(Generic[T, MaskT]):
+class _DepthInputFields(
+    Generic[T, PathT],
+    _ImageInputFields[PathT],
+    ABC,
+):
+    """Generic dataclass that defines the depth input fields."""
+
+    depth_map: FieldDescriptor[T | None] = FieldDescriptor(validator_name="_validate_depth_map")
+    depth_path: FieldDescriptor[PathT | None] = FieldDescriptor(validator_name="_validate_depth_path")
+
+    @abstractmethod
+    def _validate_depth_map(self, depth_map: ImageT) -> ImageT | None:
+        """Validate the depth map."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def _validate_depth_path(self, depth_path: PathT) -> PathT | None:
+        """Validate the depth path."""
+        raise NotImplementedError
+
+
+@dataclass
+class _OutputFields(Generic[T, MaskT], ABC):
     """Generic dataclass that defines the standard output fields."""
 
-    pred_score: T | None = None
-    pred_label: T | None = None
-    anomaly_map: T | None = None
-    pred_mask: MaskT | None = None
+    anomaly_map: FieldDescriptor[MaskT | None] = FieldDescriptor(validator_name="_validate_anomaly_map")
+    pred_score: FieldDescriptor[T | None] = FieldDescriptor(validator_name="_validate_pred_score")
+    pred_mask: FieldDescriptor[MaskT | None] = FieldDescriptor(validator_name="_validate_pred_mask")
+    pred_label: FieldDescriptor[T | None] = FieldDescriptor(validator_name="_validate_pred_label")
+
+    @abstractmethod
+    def _validate_anomaly_map(self, anomaly_map: MaskT) -> MaskT | None:
+        """Validate the anomaly map."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def _validate_pred_score(self, pred_score: T) -> T | None:
+        """Validate the predicted score."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def _validate_pred_mask(self, pred_mask: MaskT) -> MaskT | None:
+        """Validate the predicted mask."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def _validate_pred_label(self, pred_label: T) -> T | None:
+        """Validate the predicted label."""
+        raise NotImplementedError
 
 
 @dataclass
-class _GenericItem:
+class _GenericItem(
+    Generic[T, ImageT, MaskT, PathT],
+    _OutputFields[T, MaskT],
+    _InputFields[T, ImageT, MaskT, PathT],
+):
     """Generic dataclass for a dataset item."""
+
+
+@dataclass
+class _GenericBatch(
+    Generic[T, ImageT, MaskT, PathT],
+    _OutputFields[T, MaskT],
+    _InputFields[T, ImageT, MaskT, PathT],
+):
+    """Generic dataclass for a batch."""
 
 
 ItemT = TypeVar("ItemT", bound="_GenericItem")
 
 
 @dataclass
-class _GenericBatch(Generic[ItemT]):
+class BatchIterateMixin(Generic[ItemT]):
     """Generic dataclass for a batch."""
 
     item_class: ClassVar[Callable]
@@ -159,7 +243,7 @@ class _GenericBatch(Generic[ItemT]):
     def __init_subclass__(cls, **kwargs) -> None:
         """Ensure that the subclass has the required attributes."""
         super().__init_subclass__(**kwargs)
-        if not hasattr(cls, "item_class"):
+        if not (hasattr(cls, "item_class") or issubclass(cls, ABC)):
             msg = f"{cls.__name__} must have an 'item_class' attribute."
             raise AttributeError(msg)
 
@@ -193,7 +277,7 @@ class _GenericBatch(Generic[ItemT]):
             raise AttributeError(msg) from e
 
     @classmethod
-    def collate(cls: type["_GenericBatch"], items: list[ItemT]) -> "_GenericBatch":
+    def collate(cls: type["BatchIterateMixin"], items: list[ItemT]) -> "BatchIterateMixin":
         """Convert a list of DatasetItem objects to a Batch object."""
         keys = [key for key, value in asdict(items[0]).items() if value is not None]
         out_dict = {key: default_collate([getattr(item, key) for item in items]) for key in keys}

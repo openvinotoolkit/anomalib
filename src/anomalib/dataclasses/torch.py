@@ -1,14 +1,22 @@
 """Dataclasses for torch inputs and outputs."""
 
 from collections.abc import Callable, Sequence
-from dataclasses import asdict, dataclass
-from pathlib import Path
+from dataclasses import asdict, dataclass, fields
 from typing import ClassVar, Generic, NamedTuple, TypeVar
 
 import torch
+from torchvision.transforms.v2.functional import to_dtype_image
 from torchvision.tv_tensors import Image, Mask, Video
 
-from .generic import _GenericBatch, _GenericItem, _InputFields, _OutputFields, _VideoInputFields
+from .generic import (
+    BatchIterateMixin,
+    ImageT,
+    _DepthInputFields,
+    _GenericBatch,
+    _GenericItem,
+    _ImageInputFields,
+    _VideoInputFields,
+)
 from .numpy import NumpyImageBatch, NumpyImageItem, NumpyVideoBatch, NumpyVideoItem
 
 NumpyT = TypeVar("NumpyT")
@@ -49,13 +57,22 @@ class ToNumpyMixin(
         )
 
 
+@dataclass
+class Item(Generic[ImageT], _GenericItem[torch.Tensor, ImageT, Mask, str]):
+    """Dataclass for torch item."""
+
+
+@dataclass
+class Batch(Generic[ImageT], _GenericBatch[torch.Tensor, ImageT, Mask, list[str]]):
+    """Dataclass for torch batch."""
+
+
 # torch image outputs
 @dataclass
 class ImageItem(
     ToNumpyMixin[NumpyImageItem],
-    _GenericItem,
-    _OutputFields[torch.Tensor, Mask],
-    _InputFields[torch.Tensor, Image, Mask, Path],
+    _ImageInputFields[str],
+    Item[Image],
 ):
     """Dataclass for torch image output item."""
 
@@ -65,7 +82,7 @@ class ImageItem(
         assert isinstance(image, torch.Tensor), f"Image must be a torch.Tensor, got {type(image)}."
         assert image.ndim == 3, f"Image must have shape [C, H, W], got shape {image.shape}."
         assert image.shape[0] == 3, f"Image must have 3 channels, got {image.shape[0]}."
-        return Image(image, dtype=torch.float32)
+        return to_dtype_image(image, torch.float32, scale=True)
 
     def _validate_gt_label(self, gt_label: torch.Tensor | int | None) -> torch.Tensor:
         if gt_label is None:
@@ -93,18 +110,33 @@ class ImageItem(
             gt_mask = gt_mask.squeeze(0)
         return Mask(gt_mask, dtype=torch.bool)
 
-    def _validate_mask_path(self, mask_path: Path | None) -> Path | None:
+    def _validate_mask_path(self, mask_path: str | None) -> str | None:
         if mask_path is None:
             return None
-        return Path(mask_path)
+        return str(mask_path)
+
+    def _validate_anomaly_map(self, anomaly_map: torch.Tensor) -> torch.Tensor | None:
+        return anomaly_map
+
+    def _validate_pred_score(self, pred_score: torch.Tensor | None) -> torch.Tensor | None:
+        return pred_score
+
+    def _validate_pred_mask(self, pred_mask: torch.Tensor) -> torch.Tensor | None:
+        return pred_mask
+
+    def _validate_pred_label(self, pred_label: torch.Tensor) -> torch.Tensor | None:
+        return pred_label
+
+    def _validate_image_path(self, image_path: str | None) -> str | None:
+        return image_path
 
 
 @dataclass
 class ImageBatch(
     ToNumpyMixin[NumpyImageBatch],
-    _GenericBatch[ImageItem],
-    _OutputFields[torch.Tensor, Mask],
-    _InputFields[torch.Tensor, Image, Mask, list[Path]],
+    BatchIterateMixin[ImageItem],
+    _ImageInputFields[list[str]],
+    Batch[Image],
 ):
     """Dataclass for torch image output batch."""
 
@@ -158,7 +190,7 @@ class ImageBatch(
             gt_mask = gt_mask.squeeze(1)
         return Mask(gt_mask, dtype=torch.bool)
 
-    def _validate_mask_path(self, mask_path: Sequence[Path] | Sequence[str] | None) -> list[Path] | None:
+    def _validate_mask_path(self, mask_path: Sequence[str] | Sequence[str] | None) -> list[str] | None:
         if mask_path is None:
             return None
         assert isinstance(
@@ -168,16 +200,32 @@ class ImageBatch(
         assert (
             len(mask_path) == self.batch_size
         ), f"Invalid length for mask_path. Got length {len(mask_path)} for batch size {self.batch_size}."
-        return [Path(path) for path in mask_path]
+        return [str(path) for path in mask_path]
+
+    def _validate_anomaly_map(self, anomaly_map: torch.Tensor) -> torch.Tensor | None:
+        return anomaly_map
+
+    def _validate_pred_score(self, pred_score: torch.Tensor | None) -> torch.Tensor | None:
+        if pred_score is None and self.anomaly_map is not None:
+            return torch.amax(self.anomaly_map, dim=(-2, -1))
+        return pred_score
+
+    def _validate_pred_mask(self, pred_mask: torch.Tensor) -> torch.Tensor | None:
+        return pred_mask
+
+    def _validate_pred_label(self, pred_label: torch.Tensor) -> torch.Tensor | None:
+        return pred_label
+
+    def _validate_image_path(self, image_path: list[str]) -> list[str] | None:
+        return image_path
 
 
 # torch video outputs
 @dataclass
 class VideoItem(
     ToNumpyMixin[NumpyVideoItem],
-    _GenericItem,
-    _OutputFields[torch.Tensor, Mask],
-    _VideoInputFields[torch.Tensor, Video, Mask, Path],
+    _VideoInputFields[torch.Tensor, Video, Mask, str],
+    Item[Video],
 ):
     """Dataclass for torch video output item."""
 
@@ -192,16 +240,48 @@ class VideoItem(
     def _validate_gt_mask(self, gt_mask: Mask) -> Mask:
         return gt_mask
 
-    def _validate_mask_path(self, mask_path: Path) -> Path:
+    def _validate_mask_path(self, mask_path: str) -> str:
         return mask_path
+
+    def _validate_anomaly_map(self, anomaly_map: torch.Tensor) -> torch.Tensor | None:
+        return anomaly_map
+
+    def _validate_pred_score(self, pred_score: torch.Tensor | None) -> torch.Tensor | None:
+        return pred_score
+
+    def _validate_pred_mask(self, pred_mask: torch.Tensor) -> torch.Tensor | None:
+        return pred_mask
+
+    def _validate_pred_label(self, pred_label: torch.Tensor) -> torch.Tensor | None:
+        return pred_label
+
+    def _validate_original_image(self, original_image: Video) -> Video:
+        return original_image
+
+    def _validate_video_path(self, video_path: str) -> str:
+        return video_path
+
+    def _validate_target_frame(self, target_frame: torch.Tensor) -> torch.Tensor:
+        return target_frame
+
+    def _validate_frames(self, frames: torch.Tensor) -> torch.Tensor:
+        return frames
+
+    def _validate_last_frame(self, last_frame: torch.Tensor) -> torch.Tensor:
+        return last_frame
+
+    def to_image(self) -> ImageItem:
+        """Convert the video item to an image item."""
+        image_keys = [field.name for field in fields(ImageItem)]
+        return ImageItem(**{key: getattr(self, key, None) for key in image_keys})
 
 
 @dataclass
 class VideoBatch(
     ToNumpyMixin[NumpyVideoBatch],
-    _GenericBatch[VideoItem],
-    _OutputFields[torch.Tensor, Mask],
-    _VideoInputFields[torch.Tensor, Video, Mask, list[Path]],
+    BatchIterateMixin[VideoItem],
+    _VideoInputFields[torch.Tensor, Video, Mask, list[str]],
+    Batch[Video],
 ):
     """Dataclass for torch video output batch."""
 
@@ -217,5 +297,122 @@ class VideoBatch(
     def _validate_gt_mask(self, gt_mask: Mask) -> Mask:
         return gt_mask
 
-    def _validate_mask_path(self, mask_path: list[Path]) -> list[Path]:
+    def _validate_mask_path(self, mask_path: list[str]) -> list[str]:
         return mask_path
+
+    def _validate_anomaly_map(self, anomaly_map: torch.Tensor) -> torch.Tensor:
+        return anomaly_map
+
+    def _validate_pred_score(self, pred_score: torch.Tensor) -> torch.Tensor:
+        return pred_score
+
+    def _validate_pred_mask(self, pred_mask: torch.Tensor) -> torch.Tensor:
+        return pred_mask
+
+    def _validate_pred_label(self, pred_label: torch.Tensor) -> torch.Tensor:
+        return pred_label
+
+    def _validate_original_image(self, original_image: Video) -> Video:
+        return original_image
+
+    def _validate_video_path(self, video_path: list[str]) -> list[str]:
+        return video_path
+
+    def _validate_target_frame(self, target_frame: torch.Tensor) -> torch.Tensor:
+        return target_frame
+
+    def _validate_frames(self, frames: torch.Tensor) -> torch.Tensor:
+        return frames
+
+    def _validate_last_frame(self, last_frame: torch.Tensor) -> torch.Tensor:
+        return last_frame
+
+
+# depth
+@dataclass
+class DepthItem(
+    ToNumpyMixin[NumpyImageItem],
+    _DepthInputFields[torch.Tensor, str],
+    Item[Image],
+):
+    """Dataclass for torch depth output item."""
+
+    numpy_class = NumpyImageItem
+
+    def _validate_image(self, image: Image) -> Image:
+        return image
+
+    def _validate_gt_label(self, gt_label: torch.Tensor) -> torch.Tensor:
+        return gt_label
+
+    def _validate_gt_mask(self, gt_mask: Mask) -> Mask:
+        return gt_mask
+
+    def _validate_mask_path(self, mask_path: str) -> str:
+        return mask_path
+
+    def _validate_anomaly_map(self, anomaly_map: torch.Tensor) -> torch.Tensor:
+        return anomaly_map
+
+    def _validate_pred_score(self, pred_score: torch.Tensor) -> torch.Tensor:
+        return pred_score
+
+    def _validate_pred_mask(self, pred_mask: torch.Tensor) -> torch.Tensor:
+        return pred_mask
+
+    def _validate_pred_label(self, pred_label: torch.Tensor) -> torch.Tensor:
+        return pred_label
+
+    def _validate_image_path(self, image_path: str) -> str:
+        return image_path
+
+    def _validate_depth_map(self, depth_map: torch.Tensor) -> torch.Tensor:
+        return depth_map
+
+    def _validate_depth_path(self, depth_path: str) -> str:
+        return depth_path
+
+
+@dataclass
+class DepthBatch(
+    ToNumpyMixin[NumpyImageBatch],
+    BatchIterateMixin[DepthItem],
+    _DepthInputFields[torch.Tensor, list[str]],
+    Batch[Image],
+):
+    """Dataclass for torch depth output batch."""
+
+    item_class = DepthItem
+
+    def _validate_image(self, image: Image) -> Image:
+        return image
+
+    def _validate_gt_label(self, gt_label: torch.Tensor) -> torch.Tensor:
+        return gt_label
+
+    def _validate_gt_mask(self, gt_mask: Mask) -> Mask:
+        return gt_mask
+
+    def _validate_mask_path(self, mask_path: list[str]) -> list[str]:
+        return mask_path
+
+    def _validate_anomaly_map(self, anomaly_map: torch.Tensor) -> torch.Tensor:
+        return anomaly_map
+
+    def _validate_pred_score(self, pred_score: torch.Tensor) -> torch.Tensor:
+        return pred_score
+
+    def _validate_pred_mask(self, pred_mask: torch.Tensor) -> torch.Tensor:
+        return pred_mask
+
+    def _validate_pred_label(self, pred_label: torch.Tensor) -> torch.Tensor:
+        return pred_label
+
+    def _validate_image_path(self, image_path: list[str]) -> list[str]:
+        return image_path
+
+    def _validate_depth_map(self, depth_map: torch.Tensor) -> torch.Tensor:
+        return depth_map
+
+    def _validate_depth_path(self, depth_path: list[str]) -> list[str]:
+        return depth_path

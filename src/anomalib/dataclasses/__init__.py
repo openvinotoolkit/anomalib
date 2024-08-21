@@ -7,14 +7,20 @@ from .numpy import (
     NumpyVideoItem,
 )
 from .torch import (
+    Batch,
+    DepthBatch,
+    DepthItem,
     ImageBatch,
     ImageItem,
     InferenceBatch,
+    Item,
     VideoBatch,
     VideoItem,
 )
 
 __all__ = [
+    "Item",
+    "Batch",
     "InferenceBatch",
     "ImageItem",
     "ImageBatch",
@@ -24,4 +30,6 @@ __all__ = [
     "NumpyImageBatch",
     "NumpyVideoItem",
     "NumpyVideoBatch",
+    "DepthItem",
+    "DepthBatch",
 ]

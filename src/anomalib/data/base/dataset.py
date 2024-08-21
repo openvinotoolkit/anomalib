@@ -18,7 +18,7 @@ from torchvision.tv_tensors import Mask
 
 from anomalib import TaskType
 from anomalib.data.utils import LabelName, masks_to_boxes, read_image, read_mask
-from anomalib.dataclasses import DatasetItem
+from anomalib.dataclasses import ImageItem, Item
 
 _EXPECTED_COLUMNS_CLASSIFICATION = ["image_path", "split"]
 _EXPECTED_COLUMNS_SEGMENTATION = [*_EXPECTED_COLUMNS_CLASSIFICATION, "mask_path"]
@@ -153,7 +153,7 @@ class AnomalibDataset(Dataset, ABC):
         """Check if the dataset contains any anomalous samples."""
         return LabelName.ABNORMAL in list(self.samples.label_index)
 
-    def __getitem__(self, index: int) -> DatasetItem:
+    def __getitem__(self, index: int) -> Item:
         """Get dataset item for the index ``index``.
 
         Args:
@@ -189,10 +189,10 @@ class AnomalibDataset(Dataset, ABC):
             msg = f"Unknown task type: {self.task}"
             raise ValueError(msg)
 
-        return DatasetItem(
+        return ImageItem(
             image=item["image"],
             gt_mask=item["gt_mask"],
-            gt_label=label_index,
+            gt_label=int(label_index),
             image_path=image_path,
             mask_path=mask_path,
         )

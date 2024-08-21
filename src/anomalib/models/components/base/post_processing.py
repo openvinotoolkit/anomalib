@@ -53,7 +53,14 @@ class OneClassPostProcessor(PostProcessor):
         self._pixel_threshold.compute()
         self._normalization_stats.compute()
 
-    def on_test_batch_end(self, trainer: Trainer, pl_module: LightningModule, outputs: Batch, *args, **kwargs) -> None:
+    def on_test_batch_end(
+        self,
+        trainer: Trainer,
+        pl_module: LightningModule,
+        outputs: Batch,
+        *args,
+        **kwargs,
+    ) -> None:
         """Apply the post-processing steps to the current batch of predictions."""
         del trainer, pl_module, args, kwargs
         self.post_process_batch(outputs)
@@ -94,17 +101,21 @@ class OneClassPostProcessor(PostProcessor):
 
     def threshold_batch(self, batch: Batch) -> None:
         """Apply thresholding to the batch predictions."""
-        pred_label = batch.pred_label or self._threshold(batch.pred_score, self.image_threshold)
-        pred_mask = batch.pred_mask or self._threshold(batch.anomaly_map, self.pixel_threshold)
-        batch.replace(pred_label=pred_label, pred_mask=pred_mask)
+        batch.pred_label = (
+            batch.pred_label
+            if batch.pred_label is not None
+            else self._threshold(batch.pred_score, self.image_threshold)
+        )
+        batch.pred_mask = (
+            batch.pred_mask if batch.pred_mask is not None else self._threshold(batch.anomaly_map, self.pixel_threshold)
+        )
 
     def normalize_batch(self, batch: Batch) -> None:
         """Normalize the predicted scores and anomaly maps."""
         # normalize image-level predictions
-        pred_score = self._normalize(batch.pred_score, self.min, self.max, self.image_threshold)
+        batch.pred_score = self._normalize(batch.pred_score, self.min, self.max, self.image_threshold)
         # normalize pixel-level predictions
-        anomaly_map = self._normalize(batch.anomaly_map, self.min, self.max, self.pixel_threshold)
-        batch.replace(pred_score=pred_score, anomaly_map=anomaly_map)
+        batch.anomaly_map = self._normalize(batch.anomaly_map, self.min, self.max, self.pixel_threshold)
 
     @staticmethod
     def _threshold(preds: torch.Tensor, threshold: float) -> torch.Tensor:

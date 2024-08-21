@@ -13,7 +13,7 @@ import numpy as np
 from openvino.runtime.utils.data_helpers.wrappers import OVDict
 
 from anomalib.data.utils import read_image
-from anomalib.dataclasses import NumpyBatch
+from anomalib.dataclasses import NumpyImageBatch
 
 logger = logging.getLogger("anomalib")
 
@@ -179,7 +179,7 @@ class OpenVINOInferencer:
     def predict(
         self,
         image: str | Path | np.ndarray,
-    ) -> NumpyBatch:
+    ) -> NumpyImageBatch:
         """Perform a prediction for a given input image.
 
         The main workflow is (i) pre-processing, (ii) forward-pass, (iii) post-process.
@@ -204,7 +204,7 @@ class OpenVINOInferencer:
         predictions = self.model(image)
         pred_dict = self.post_process(predictions)
 
-        return NumpyBatch(
+        return NumpyImageBatch(
             image=image,
             **pred_dict,
         )
