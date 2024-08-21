@@ -6,6 +6,8 @@ from typing import Any
 
 import openai
 
+from anomalib.engine.engine import UnassignedError
+
 
 class GPTWrapper:
     """A wrapper class for making API calls to OpenAI's GPT-4 model to detect anomalies in images.
@@ -27,8 +29,6 @@ class GPTWrapper:
         self.model_name = model_name
         self.detail = detail
         if not openai_key:
-            from anomalib.engine.engine import UnassignedError
-
             msg = "OpenAI environment key not found.(OPENAI_API_KEY)"
             raise UnassignedError(msg)
 
