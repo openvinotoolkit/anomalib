@@ -93,17 +93,17 @@ class _InputFields(Generic[T, ImageT, MaskT, PathT], ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def _validate_gt_mask(self, gt_mask: MaskT) -> MaskT:
+    def _validate_gt_mask(self, gt_mask: MaskT) -> MaskT | None:
         """Validate the ground truth mask."""
         raise NotImplementedError
 
     @abstractmethod
-    def _validate_mask_path(self, mask_path: PathT) -> PathT:
+    def _validate_mask_path(self, mask_path: PathT) -> PathT | None:
         """Validate the mask path."""
         raise NotImplementedError
 
     @abstractmethod
-    def _validate_gt_label(self, gt_label: T) -> T:
+    def _validate_gt_label(self, gt_label: T) -> T | None:
         """Validate the ground truth label."""
         raise NotImplementedError
 
@@ -185,11 +185,12 @@ class _GenericBatch(Generic[ItemT]):
     @property
     def batch_size(self) -> int:
         """Get the batch size."""
-        for value in asdict(self).values():
-            if hasattr(value, "__len__"):
-                return len(value)
-        msg = "Batch size not found. Make sure the batch has at least one field."
-        raise ValueError(msg)
+        try:
+            image = getattr(self, "image")  # noqa: B009
+            return len(image)
+        except (KeyError, AttributeError) as e:
+            msg = "Cannot determine batch size because 'image' attribute has not been set."
+            raise AttributeError(msg) from e
 
     @classmethod
     def collate(cls: type["_GenericBatch"], items: list[ItemT]) -> "_GenericBatch":

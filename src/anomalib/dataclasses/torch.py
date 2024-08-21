@@ -1,6 +1,6 @@
 """Dataclasses for torch inputs and outputs."""
 
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import ClassVar, Generic, NamedTuple, TypeVar
@@ -62,16 +62,41 @@ class ImageItem(
     numpy_class = NumpyImageItem
 
     def _validate_image(self, image: Image) -> Image:
-        return image
+        assert isinstance(image, torch.Tensor), f"Image must be a torch.Tensor, got {type(image)}."
+        assert image.ndim == 3, f"Image must have shape [C, H, W], got shape {image.shape}."
+        assert image.shape[0] == 3, f"Image must have 3 channels, got {image.shape[0]}."
+        return Image(image, dtype=torch.float32)
 
-    def _validate_gt_label(self, gt_label: torch.Tensor) -> torch.Tensor:
-        return gt_label
+    def _validate_gt_label(self, gt_label: torch.Tensor | int | None) -> torch.Tensor:
+        if gt_label is None:
+            return None
+        if isinstance(gt_label, int):
+            gt_label = torch.tensor(gt_label)
+        assert isinstance(
+            gt_label,
+            torch.Tensor,
+        ), f"Ground truth label must be an integer or a torch.Tensor, got {type(gt_label)}."
+        assert gt_label.ndim == 0, f"Ground truth label must be a scalar, got shape {gt_label.shape}."
+        assert not torch.is_floating_point(gt_label), f"Ground truth label must be boolean or integer, got {gt_label}."
+        return gt_label.bool()
 
-    def _validate_gt_mask(self, gt_mask: Mask) -> Mask:
-        return gt_mask
+    def _validate_gt_mask(self, gt_mask: Mask | None) -> Mask | None:
+        if gt_mask is None:
+            return None
+        assert isinstance(gt_mask, torch.Tensor), f"Ground truth mask must be a torch.Tensor, got {type(gt_mask)}."
+        assert gt_mask.ndim in [
+            2,
+            3,
+        ], f"Ground truth mask must have shape [H, W] or [1, H, W] got shape {gt_mask.shape}."
+        if gt_mask.ndim == 3:
+            assert gt_mask.shape[0] == 1, f"Ground truth mask must have 1 channel, got {gt_mask.shape[0]}."
+            gt_mask = gt_mask.squeeze(0)
+        return Mask(gt_mask, dtype=torch.bool)
 
-    def _validate_mask_path(self, mask_path: Path) -> Path:
-        return mask_path
+    def _validate_mask_path(self, mask_path: Path | None) -> Path | None:
+        if mask_path is None:
+            return None
+        return Path(mask_path)
 
 
 @dataclass
@@ -87,16 +112,63 @@ class ImageBatch(
     numpy_class = NumpyImageBatch
 
     def _validate_image(self, image: Image) -> Image:
-        return image
+        assert isinstance(image, torch.Tensor), f"Image must be a torch.Tensor, got {type(image)}."
+        assert image.ndim in [3, 4], f"Image must have shape [C, H, W] or [N, C, H, W], got shape {image.shape}."
+        if image.ndim == 3:
+            image = image.unsqueeze(0)  # add batch dimension
+        assert image.shape[1] == 3, f"Image must have 3 channels, got {image.shape[0]}."
+        return Image(image, dtype=torch.float32)
 
-    def _validate_gt_label(self, gt_label: torch.Tensor) -> torch.Tensor:
-        return gt_label
+    def _validate_gt_label(self, gt_label: torch.Tensor | Sequence[int] | None) -> torch.Tensor:
+        if gt_label is None:
+            return None
+        if isinstance(gt_label, Sequence):
+            gt_label = torch.tensor(gt_label)
+        assert isinstance(
+            gt_label,
+            torch.Tensor,
+        ), f"Ground truth label must be a sequence of integers or a torch.Tensor, got {type(gt_label)}."
+        assert gt_label.ndim == 1, f"Ground truth label must be a 1-dimensional vector, got shape {gt_label.shape}."
+        assert (
+            len(gt_label) == self.batch_size
+        ), f"Ground truth label must have length {self.batch_size}, got length {len(gt_label)}."
+        assert not torch.is_floating_point(gt_label), f"Ground truth label must be boolean or integer, got {gt_label}."
+        return gt_label.bool()
 
-    def _validate_gt_mask(self, gt_mask: Mask) -> Mask:
-        return gt_mask
+    def _validate_gt_mask(self, gt_mask: Mask | None) -> Mask | None:
+        if gt_mask is None:
+            return None
+        assert isinstance(gt_mask, torch.Tensor), f"Ground truth mask must be a torch.Tensor, got {type(gt_mask)}."
+        assert gt_mask.ndim in [
+            2,
+            3,
+            4,
+        ], f"Ground truth mask must have shape [H, W] or [N, H, W] or [N, 1, H, W] got shape {gt_mask.shape}."
+        if gt_mask.ndim == 2:
+            assert (
+                self.batch_size == 1
+            ), f"Invalid shape for gt_mask. Got mask shape {gt_mask.shape} for batch size {self.batch_size}."
+            gt_mask = gt_mask.unsqueeze(0)
+        if gt_mask.ndim == 3:
+            assert (
+                gt_mask.shape[0] == self.batch_size
+            ), f"Invalid shape for gt_mask. Got mask shape {gt_mask.shape} for batch size {self.batch_size}."
+        if gt_mask.ndim == 4:
+            assert gt_mask.shape[1] == 1, f"Ground truth mask must have 1 channel, got {gt_mask.shape[1]}."
+            gt_mask = gt_mask.squeeze(1)
+        return Mask(gt_mask, dtype=torch.bool)
 
-    def _validate_mask_path(self, mask_path: list[Path]) -> list[Path]:
-        return mask_path
+    def _validate_mask_path(self, mask_path: Sequence[Path] | Sequence[str] | None) -> list[Path] | None:
+        if mask_path is None:
+            return None
+        assert isinstance(
+            mask_path,
+            Sequence,
+        ), f"Mask path must be a sequence of paths or strings, got {type(mask_path)}."
+        assert (
+            len(mask_path) == self.batch_size
+        ), f"Invalid length for mask_path. Got length {len(mask_path)} for batch size {self.batch_size}."
+        return [Path(path) for path in mask_path]
 
 
 # torch video outputs
