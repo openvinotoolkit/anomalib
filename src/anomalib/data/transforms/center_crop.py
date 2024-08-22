@@ -78,7 +78,7 @@ class ExportableCenterCrop(Transform):
         size (int | tuple[int, int]): Desired output size of the crop.
     """
 
-    def __init__(self, size: int | Sequence[int, int]) -> None:
+    def __init__(self, size: int | Sequence[int]) -> None:
         super().__init__()
         self.size = list(size) if isinstance(size, Sequence) else [size, size]
 
