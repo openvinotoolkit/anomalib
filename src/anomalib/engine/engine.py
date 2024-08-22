@@ -358,8 +358,8 @@ class Engine:
                 self._cache.args["devices"] = [first_gpu]
             else:
                 # For any other input, use the default behavior
-                logger.warning("Unrecognized 'devices' format. Using default GPU selection.")
-                self._cache.args["devices"] = None
+                logger.warning("Unrecognized 'devices' format. Using the 'auto' selection.")
+                self._cache.args["devices"] = "auto"
 
     def _setup_trainer(self, model: AnomalyModule) -> None:
         """Instantiate the trainer based on the model parameters."""
