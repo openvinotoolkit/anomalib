@@ -246,8 +246,10 @@ class ImageVisualizer(BaseVisualizer):
             description = ""
             if image_result.text_descr:
                 description = image_result.text_descr
-
-            image_classified = add_normal_label(image_result.image, 1 - image_result.pred_score)
+            if image_result.pred_label:
+                image_classified = add_anomalous_label(image_result.image, image_result.pred_score)
+            else:
+                image_classified = add_normal_label(image_result.image, 1 - image_result.pred_score)
             image_grid.add_image(image_classified, title=description)
 
         return image_grid.generate()
