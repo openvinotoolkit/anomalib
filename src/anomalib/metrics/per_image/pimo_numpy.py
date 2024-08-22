@@ -303,7 +303,7 @@ def aupimo_scores(
             "Try increasing `num_threshs`.",
         )
 
-    aucs: ndarray = np.trapz(per_image_tprs_bounded, x=shared_fpr_bounded_log, axis=1)
+    aucs: ndarray = np.trapezoid(per_image_tprs_bounded, x=shared_fpr_bounded_log, axis=1)
 
     # normalize, then clip(0, 1) makes sure that the values are in [0, 1] in case of numerical errors
     normalization_factor = aupimo_normalizing_factor(fpr_bounds)
