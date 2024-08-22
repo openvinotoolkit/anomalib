@@ -69,7 +69,8 @@ class GPTWrapper:
             # If multiple images are provided, the last one is considered anomalous,
             # and the rest are treated as normal examples.
             prompt = """
-             You will receive an image that is going to be an example of the typical image without any anomaly,
+             You will receive a group of images that are going to be an example
+             of the typical image without any anomaly,
              and the last image that you need to decide if it has an anomaly or not.
              Answer with a 'NO' if it does not have any anomalies and 'YES: description'
              where description is a description of the anomaly provided, position.
@@ -81,21 +82,23 @@ class GPTWrapper:
                     "content": prompt,
                 },
             )
-            # Add the single image
-            messages.append(
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "image_url",
-                            "image_url": {
-                                "url": f"data:image/{extension};base64,{images[0]}",
-                                "detail": detail_img,
+            for image in images:
+                image_message = [
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "image_url",
+                                "image_url": {
+                                    "url": f"data:image/{extension};base64,{image}",
+                                    "detail": detail_img,
+                                },
                             },
-                        },
-                    ],
-                },
-            )
+                        ],
+                    },
+                ]
+                messages.extend(image_message)
+
         elif len(images) == 1:
             # If only one image is provided,
             # it is treated as the anomalous image.
@@ -133,22 +136,21 @@ class GPTWrapper:
                     "content": prompt,
                 },
             )
-            for image in images:
-                image_message = [
-                    {
-                        "role": "user",
-                        "content": [
-                            {
-                                "type": "image_url",
-                                "image_url": {
-                                    "url": f"data:image/{extension};base64,{image}",
-                                    "detail": detail_img,
-                                },
+            # Add the single image
+            messages.append(
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/{extension};base64,{images[0]}",
+                                "detail": detail_img,
                             },
-                        ],
-                    },
-                ]
-                messages.extend(image_message)
+                        },
+                    ],
+                },
+            )
         else:
             msg = "No images provided for anomaly detection."
             raise ValueError(msg)
