@@ -6,7 +6,7 @@
 import logging
 from collections.abc import Iterable
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import torch
 from lightning.pytorch.callbacks import Callback, RichModelSummary, RichProgressBar
@@ -333,33 +333,53 @@ class Engine:
         Raises:
             ValueError: If an invalid device specification is provided.
         """
+        accelerator = self._cache.args.get("accelerator")
         devices = self._cache.args.get("devices")
-        if devices is not None:
-            if isinstance(devices, int) or (isinstance(devices, str) and devices.isdigit()):
-                # If devices is a single integer, treat it as a specific GPU ID
-                if int(devices) > 1:
-                    logger.warning("Multi-GPU support is not available yet. Using only the first GPU.")
-                self._cache.args["devices"] = [int(devices)]
-                logger.info(f"Using GPU with ID: {devices}")
-            elif isinstance(devices, list):
-                # If devices is a list, use only the first GPU ID
-                if len(devices) > 0:
-                    self._cache.args["devices"] = [devices[0]]
-                    if len(devices) > 1:
-                        logger.warning("Multi-GPU support is not available yet. Using only the first GPU.")
-                    logger.info(f"Using GPU with ID: {devices[0]}")
-                else:
-                    logger.warning("Empty list provided for 'devices'. Using default GPU selection.")
-                    self._cache.args["devices"] = None
-            elif isinstance(devices, str) and "," in devices:
-                # If devices is a comma-separated string, use only the first GPU
-                first_gpu = int(devices.split(",")[0].strip())
-                logger.warning(f"Multi-GPU support is not available yet. Using only the first GPU (ID: {first_gpu}).")
-                self._cache.args["devices"] = [first_gpu]
+
+        # Only proceed with GPU setup if the accelerator is set to "gpu"
+        if accelerator != "gpu":
+            return
+
+        # Helper function to log warning and return single GPU specification
+        def use_single_gpu(message: str) -> Literal[1]:
+            """Log a warning and return a single GPU specification."""
+            logger.warning(f"{message} Defaulting to a single GPU.")
+            return 1  # Let Lightning choose the GPU
+
+        # Handle various input types
+        if devices is None:
+            self._cache.args["devices"] = 1
+            logger.info("No specific GPU selected. Using Lightning's default selection.")
+        elif isinstance(devices, int):
+            if devices > 1 or devices <= 0:  # Treat 0 and negative values (except -1) as a request for all GPUs
+                message = f"Multiple GPUs requested ({devices}), but multi-GPU is not supported."
+                self._cache.args["devices"] = use_single_gpu(message)
+            else:  # devices == 1
+                self._cache.args["devices"] = 1  # Let Lightning choose the GPU
+        elif isinstance(devices, str):
+            if devices.lower() in ("-1", "auto", "0"):
+                self._cache.args["devices"] = use_single_gpu("All GPUs requested, but multi-GPU is not supported.")
+            elif "," in devices:
+                message = f"Multiple GPUs specified ({devices}), but multi-GPU is not supported."
+                self._cache.args["devices"] = use_single_gpu(message)
             else:
-                # For any other input, use the default behavior
-                logger.warning("Unrecognized 'devices' format. Using the 'auto' selection.")
-                self._cache.args["devices"] = "auto"
+                try:
+                    gpu_id = int(devices)
+                    self._cache.args["devices"] = (
+                        [gpu_id] if gpu_id > 0 else use_single_gpu(f"Invalid GPU specification: {devices}.")
+                    )
+                except ValueError:
+                    self._cache.args["devices"] = use_single_gpu(f"Invalid GPU specification: {devices}.")
+        elif isinstance(devices, list):
+            if len(devices) > 1:
+                message = f"Multiple GPUs specified {devices}, but multi-GPU is not supported."
+                self._cache.args["devices"] = use_single_gpu(message)
+            elif len(devices) == 1:
+                self._cache.args["devices"] = devices  # Keep the single GPU specified
+            else:  # Empty list
+                self._cache.args["devices"] = use_single_gpu("Empty list provided for 'devices'.")
+        else:
+            self._cache.args["devices"] = use_single_gpu(f"Unrecognized 'devices' format: {devices}.")
 
     def _setup_trainer(self, model: AnomalyModule) -> None:
         """Instantiate the trainer based on the model parameters."""
