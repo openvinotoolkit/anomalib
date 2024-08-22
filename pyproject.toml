@@ -53,7 +53,7 @@ core = [
     # NOTE: open-clip-torch throws the following error on v2.26.1
     #   torch.onnx.errors.UnsupportedOperatorError: Exporting the operator
     #   'aten::_native_multi_head_attention' to ONNX opset version 14 is not supported
-    "open-clip-torch>=2.23.0,<2.26.1",
+    "open-clip-torch>=2.23.0,<2.26.2",
 ]
 openvino = ["openvino>=2024.0", "nncf>=2.10.0", "onnx>=1.16.0"]
 loggers = [

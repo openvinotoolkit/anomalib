@@ -184,7 +184,7 @@ class Engine:
         Returns:
             AnomalyModule: Anomaly model.
         """
-        if not self.trainer.model:
+        if not self.trainer.lightning_module:
             msg = "Trainer does not have a model assigned yet."
             raise UnassignedError(msg)
         return self.trainer.lightning_module

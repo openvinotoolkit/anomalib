@@ -12,7 +12,6 @@ from pkg_resources import Requirement
 from pytest_mock import MockerFixture
 
 from anomalib.cli.utils.installation import (
-    add_hardware_suffix_to_torch,
     get_cuda_suffix,
     get_cuda_version,
     get_hardware_suffix,
@@ -122,29 +121,6 @@ def test_get_hardware_suffix(mocker: MockerFixture) -> None:
     assert get_hardware_suffix() == "cpu"
 
 
-def test_add_hardware_suffix_to_torch(mocker: MockerFixture) -> None:
-    """Test that add_hardware_suffix_to_torch returns the expected updated requirement."""
-    mocker.patch("anomalib.cli.utils.installation.get_hardware_suffix", return_value="cu121")
-    requirement = Requirement.parse("torch>=1.13.0, <=2.0.1")
-    updated_requirement = add_hardware_suffix_to_torch(requirement)
-    assert "torch" in updated_requirement
-    assert ">=1.13.0+cu121" in updated_requirement
-    assert "<=2.0.1+cu121" in updated_requirement
-
-    requirement = Requirement.parse("torch==2.0.1")
-    mocker.patch("anomalib.cli.utils.installation.get_hardware_suffix", return_value="cu118")
-    updated_requirement = add_hardware_suffix_to_torch(requirement, with_available_torch_build=True)
-    assert updated_requirement == "torch==2.0.1+cu118"
-
-    requirement = Requirement.parse("torch==2.0.1")
-    updated_requirement = add_hardware_suffix_to_torch(requirement, hardware_suffix="cu111")
-    assert updated_requirement == "torch==2.0.1+cu111"
-
-    requirement = Requirement.parse("torch>=1.13.0, <=2.0.1, !=1.14.0")
-    with pytest.raises(ValueError, match="Requirement version can be a single value or a range."):
-        add_hardware_suffix_to_torch(requirement)
-
-
 def test_get_torch_install_args(mocker: MockerFixture) -> None:
     """Test that get_torch_install_args returns the expected install arguments."""
     requirement = Requirement.parse("torch>=2.1.1")
@@ -174,8 +150,8 @@ def test_get_torch_install_args(mocker: MockerFixture) -> None:
     expected_args = [
         "--extra-index-url",
         "https://download.pytorch.org/whl/cu111",
-        "torch==2.0.1+cu111",
-        "torchvision==0.15.2+cu111",
+        "torch==2.0.1",
+        "torchvision==0.15.2",
     ]
     install_args = get_torch_install_args(requirement)
     for arg in expected_args:
