@@ -276,81 +276,6 @@ def get_hardware_suffix(with_available_torch_build: bool = False, torch_version:
     return hardware_suffix
 
 
-def add_hardware_suffix_to_torch(
-    requirement: Requirement,
-    hardware_suffix: str | None = None,
-    with_available_torch_build: bool = False,
-) -> str:
-    """Add hardware suffix to the torch requirement.
-
-    Args:
-        requirement (Requirement): Requirement object comprising requirement
-            details.
-        hardware_suffix (str | None): Hardware suffix. If None, it will be set
-            to the correct hardware suffix. Defaults to None.
-        with_available_torch_build (bool): To check whether the installed
-            CUDA version is supported by the latest available PyTorch build.
-            Defaults to False.
-
-    Examples:
-        >>> from pkg_resources import Requirement
-        >>> req = "torch>=1.13.0, <=2.0.1"
-        >>> requirement = Requirement.parse(req)
-        >>> requirement.name, requirement.specs
-        ('torch', [('>=', '1.13.0'), ('<=', '2.0.1')])
-
-        >>> add_hardware_suffix_to_torch(requirement)
-        'torch>=1.13.0+cu121, <=2.0.1+cu121'
-
-        ``with_available_torch_build=True`` will use the latest available PyTorch build.
-        >>> req = "torch==2.0.1"
-        >>> requirement = Requirement.parse(req)
-        >>> add_hardware_suffix_to_torch(requirement, with_available_torch_build=True)
-        'torch==2.0.1+cu118'
-
-        It is possible to pass the ``hardware_suffix`` manually.
-        >>> req = "torch==2.0.1"
-        >>> requirement = Requirement.parse(req)
-        >>> add_hardware_suffix_to_torch(requirement, hardware_suffix="cu121")
-        'torch==2.0.1+cu111'
-
-    Raises:
-        ValueError: When the requirement has more than two version criterion.
-
-    Returns:
-        str: Updated torch package with the right cuda suffix.
-    """
-    name = requirement.unsafe_name
-    updated_specs: list[str] = []
-
-    for operator, version in requirement.specs:
-        hardware_suffix = hardware_suffix or get_hardware_suffix(with_available_torch_build, version)
-        updated_version = version + f"+{hardware_suffix}" if not version.startswith(("2.1", "2.2")) else version
-
-        # ``specs`` contains operators and versions as follows:
-        # These are to be concatenated again for the updated version.
-        updated_specs.append(operator + updated_version)
-
-    updated_requirement: str = ""
-
-    if updated_specs:
-        # This is the case when specs are e.g. ['<=1.9.1+cu111']
-        if len(updated_specs) == 1:
-            updated_requirement = name + updated_specs[0]
-        # This is the case when specs are e.g., ['<=1.9.1+cu111', '>=1.8.1+cu111']
-        elif len(updated_specs) == 2:
-            updated_requirement = name + updated_specs[0] + ", " + updated_specs[1]
-        else:
-            msg = (
-                "Requirement version can be a single value or a range. \n"
-                "For example it could be torch>=1.8.1 "
-                "or torch>=1.8.1, <=1.9.1\n"
-                f"Got {updated_specs} instead."
-            )
-            raise ValueError(msg)
-    return updated_requirement
-
-
 def get_torch_install_args(requirement: str | Requirement) -> list[str]:
     """Get the install arguments for Torch requirement.
 
@@ -368,7 +293,7 @@ def get_torch_install_args(requirement: str | Requirement) -> list[str]:
         >>> requriment = "torch>=1.13.0"
         >>> get_torch_install_args(requirement)
         ['--extra-index-url', 'https://download.pytorch.org/whl/cpu',
-        'torch==1.13.0+cpu', 'torchvision==0.14.0+cpu']
+        'torch>=1.13.0', 'torchvision==0.14.0']
 
     Returns:
         list[str]: The install arguments.
@@ -401,21 +326,15 @@ def get_torch_install_args(requirement: str | Requirement) -> list[str]:
         # Create the PyTorch Index URL to download the correct wheel.
         index_url = f"https://download.pytorch.org/whl/{hardware_suffix}"
 
-        # Create the PyTorch version depending on the CUDA version. For example,
-        # If CUDA version is 11.2, then the PyTorch version is 1.8.0+cu112.
-        # If CUDA version is None, then the PyTorch version is 1.8.0+cpu.
-        torch_version = add_hardware_suffix_to_torch(requirement, hardware_suffix, with_available_torch_build=True)
+        torch_version = f"{requirement.name}{operator}{version}"  # eg: torch==1.13.0
 
         # Get the torchvision version depending on the torch version.
         torchvision_version = AVAILABLE_TORCH_VERSIONS[version]["torchvision"]
         torchvision_requirement = f"torchvision{operator}{torchvision_version}"
-        if isinstance(torchvision_version, str) and not torchvision_version.startswith("0.16"):
-            torchvision_requirement += f"+{hardware_suffix}"
 
         # Return the install arguments.
         install_args += [
             "--extra-index-url",
-            # "--index-url",
             index_url,
             torch_version,
             torchvision_requirement,
