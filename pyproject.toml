@@ -68,7 +68,7 @@ docs = [
     "myst-parser",
     "nbsphinx",
     "pandoc",
-    "sphinx<8.0",  # 7.0 breaks readthedocs builds.
+    "sphinx",
     "sphinx_autodoc_typehints",
     "sphinx_book_theme",
     "sphinx-copybutton",
@@ -97,7 +97,7 @@ version = { attr = "anomalib.__version__" }
 # RUFF CONFIGURATION                                                          #
 [tool.ruff]
 # Enable rules
-select = [
+lint.select = [
     "F",    # Pyflakes (`F`)
     "E",    # pycodestyle error (`E`)
     "W",    # pycodestyle warning (`W`)
@@ -148,7 +148,7 @@ select = [
     # "LOG",  # flake8-logging (`LOG`) - ERROR: Unknown rule selector: `LOG`
 ]
 
-ignore = [
+lint.ignore = [
     # pydocstyle
     "D107", # Missing docstring in __init__
 
@@ -178,8 +178,8 @@ ignore = [
 ]
 
 # Allow autofix for all enabled rules (when `--fix`) is provided.
-fixable = ["ALL"]
-unfixable = []
+lint.fixable = ["ALL"]
+lint.unfixable = []
 
 # Exclude a variety of commonly ignored directories.
 exclude = [
@@ -209,7 +209,7 @@ exclude = [
 line-length = 120
 
 # Allow unused variables when underscore-prefixed.
-dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+lint.dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
 
 # Assume Python 3.10.
 target-version = "py310"
@@ -217,12 +217,12 @@ target-version = "py310"
 # Allow imports relative to the "src" and "tests" directories.
 src = ["src", "tests"]
 
-[tool.ruff.mccabe]
+[tool.ruff.lint.mccabe]
 # Unlike Flake8, default to a complexity level of 10.
 max-complexity = 15
 
 
-[tool.ruff.pydocstyle]
+[tool.ruff.lint.pydocstyle]
 convention = "google"
 
 
