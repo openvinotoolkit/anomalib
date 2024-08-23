@@ -78,7 +78,7 @@ class ImageItem(
 
     numpy_class = NumpyImageItem
 
-    def _validate_image(self, image: Image) -> Image:
+    def _validate_image(self, image: torch.Tensor) -> Image:
         assert isinstance(image, torch.Tensor), f"Image must be a torch.Tensor, got {type(image)}."
         assert image.ndim == 3, f"Image must have shape [C, H, W], got shape {image.shape}."
         assert image.shape[0] == 3, f"Image must have 3 channels, got {image.shape[0]}."
@@ -97,7 +97,7 @@ class ImageItem(
         assert not torch.is_floating_point(gt_label), f"Ground truth label must be boolean or integer, got {gt_label}."
         return gt_label.bool()
 
-    def _validate_gt_mask(self, gt_mask: Mask | None) -> Mask | None:
+    def _validate_gt_mask(self, gt_mask: torch.Tensor | None) -> Mask | None:
         if gt_mask is None:
             return None
         assert isinstance(gt_mask, torch.Tensor), f"Ground truth mask must be a torch.Tensor, got {type(gt_mask)}."
@@ -115,14 +115,36 @@ class ImageItem(
             return None
         return str(mask_path)
 
-    def _validate_anomaly_map(self, anomaly_map: torch.Tensor) -> torch.Tensor | None:
-        return anomaly_map
+    def _validate_anomaly_map(self, anomaly_map: torch.Tensor | None) -> Mask | None:
+        if anomaly_map is None:
+            return None
+        assert isinstance(anomaly_map, torch.Tensor), f"Anomaly map must be a torch.Tensor, got {type(anomaly_map)}."
+        assert anomaly_map.ndim in [
+            2,
+            3,
+        ], f"Anomaly map must have shape [H, W] or [1, H, W], got shape {anomaly_map.shape}."
+        if anomaly_map.ndim == 3:
+            assert (
+                anomaly_map.shape[0] == 1
+            ), f"Anomaly map with 3 dimensions must have 1 channel, got {anomaly_map.shape[0]}."
+            anomaly_map = anomaly_map.squeeze(0)
+        return Mask(anomaly_map, dtype=torch.float32)
 
     def _validate_pred_score(self, pred_score: torch.Tensor | None) -> torch.Tensor | None:
         return pred_score
 
     def _validate_pred_mask(self, pred_mask: torch.Tensor) -> torch.Tensor | None:
-        return pred_mask
+        if pred_mask is None:
+            return None
+        assert isinstance(pred_mask, torch.Tensor), f"Predicted mask must be a torch.Tensor, got {type(pred_mask)}."
+        assert pred_mask.ndim in [
+            2,
+            3,
+        ], f"Predicted mask must have shape [H, W] or [1, H, W] got shape {pred_mask.shape}."
+        if pred_mask.ndim == 3:
+            assert pred_mask.shape[0] == 1, f"Predicted mask must have 1 channel, got {pred_mask.shape[0]}."
+            pred_mask = pred_mask.squeeze(0)
+        return Mask(pred_mask, dtype=torch.bool)
 
     def _validate_pred_label(self, pred_label: torch.Tensor) -> torch.Tensor | None:
         return pred_label
@@ -375,7 +397,6 @@ class DepthItem(
 
 @dataclass
 class DepthBatch(
-    ToNumpyMixin[NumpyImageBatch],
     BatchIterateMixin[DepthItem],
     _DepthInputFields[torch.Tensor, list[str]],
     Batch[Image],
