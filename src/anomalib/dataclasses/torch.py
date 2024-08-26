@@ -4,6 +4,7 @@ from collections.abc import Callable, Sequence
 from dataclasses import asdict, dataclass, fields
 from typing import ClassVar, Generic, NamedTuple, TypeVar
 
+import numpy as np
 import torch
 from torchvision.transforms.v2.functional import to_dtype_image
 from torchvision.tv_tensors import Image, Mask, Video
@@ -130,10 +131,20 @@ class ImageItem(
             anomaly_map = anomaly_map.squeeze(0)
         return Mask(anomaly_map, dtype=torch.float32)
 
-    def _validate_pred_score(self, pred_score: torch.Tensor | None) -> torch.Tensor | None:
-        return pred_score
+    def _validate_pred_score(self, pred_score: torch.Tensor | np.ndarray | None) -> torch.Tensor | None:
+        if pred_score is None:
+            return torch.amax(self.anomaly_map, dim=(-2, -1)) if self.anomaly_map is not None else None
+        if not isinstance(pred_score, torch.Tensor):
+            try:
+                pred_score = torch.tensor(pred_score)
+            except Exception as e:
+                msg = "Failed to convert pred_score to a torch.Tensor."
+                raise ValueError(msg) from e
+        pred_score = pred_score.squeeze()
+        assert pred_score.ndim == 0, f"Predicted score must be a scalar, got shape {pred_score.shape}."
+        return pred_score.to(torch.float32)
 
-    def _validate_pred_mask(self, pred_mask: torch.Tensor) -> torch.Tensor | None:
+    def _validate_pred_mask(self, pred_mask: torch.Tensor | None) -> Mask | None:
         if pred_mask is None:
             return None
         assert isinstance(pred_mask, torch.Tensor), f"Predicted mask must be a torch.Tensor, got {type(pred_mask)}."
@@ -146,11 +157,23 @@ class ImageItem(
             pred_mask = pred_mask.squeeze(0)
         return Mask(pred_mask, dtype=torch.bool)
 
-    def _validate_pred_label(self, pred_label: torch.Tensor) -> torch.Tensor | None:
-        return pred_label
+    def _validate_pred_label(self, pred_label: torch.Tensor | np.ndarray | None) -> torch.Tensor | None:
+        if pred_label is None:
+            return None
+        if not isinstance(pred_label, torch.Tensor):
+            try:
+                pred_label = torch.tensor(pred_label)
+            except Exception as e:
+                msg = "Failed to convert pred_score to a torch.Tensor."
+                raise ValueError(msg) from e
+        pred_label = pred_label.squeeze()
+        assert pred_label.ndim == 0, f"Predicted label must be a scalar, got shape {pred_label.shape}."
+        return pred_label.to(torch.bool)
 
     def _validate_image_path(self, image_path: str | None) -> str | None:
-        return image_path
+        if image_path is None:
+            return None
+        return str(image_path)
 
 
 @dataclass
@@ -224,8 +247,29 @@ class ImageBatch(
         ), f"Invalid length for mask_path. Got length {len(mask_path)} for batch size {self.batch_size}."
         return [str(path) for path in mask_path]
 
-    def _validate_anomaly_map(self, anomaly_map: torch.Tensor) -> torch.Tensor | None:
-        return anomaly_map
+    def _validate_anomaly_map(self, anomaly_map: torch.Tensor | np.ndarray | None) -> torch.Tensor | None:
+        if anomaly_map is None:
+            return None
+        if not isinstance(anomaly_map, torch.Tensor):
+            try:
+                anomaly_map = torch.tensor(anomaly_map)
+            except Exception as e:
+                msg = "Failed to convert anomaly_map to a torch.Tensor."
+                raise ValueError(msg) from e
+        assert anomaly_map.ndim in [
+            2,
+            3,
+            4,
+        ], f"Anomaly map must have shape [H, W] or [N, H, W] or [N, 1, H, W], got shape {anomaly_map.shape}."
+        if anomaly_map.ndim == 2:
+            assert (
+                self.batch_size == 1
+            ), f"Invalid shape for anomaly_map. Got mask shape {anomaly_map.shape} for batch size {self.batch_size}."
+            anomaly_map = anomaly_map.unsqueeze(0)
+        if anomaly_map.ndim == 4:
+            assert anomaly_map.shape[1] == 1, f"Anomaly map must have 1 channel, got {anomaly_map.shape[1]}."
+            anomaly_map = anomaly_map.squeeze(1)
+        return Mask(anomaly_map, dtype=torch.float32)
 
     def _validate_pred_score(self, pred_score: torch.Tensor | None) -> torch.Tensor | None:
         if pred_score is None and self.anomaly_map is not None:
