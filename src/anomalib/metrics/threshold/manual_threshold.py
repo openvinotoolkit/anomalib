@@ -5,10 +5,10 @@
 
 import torch
 
-from .base import BaseThreshold
+from .threshold import Threshold
 
 
-class ManualThreshold(BaseThreshold):
+class ManualThreshold(Threshold):
     """Initialize Manual Threshold.
 
     Args:
