@@ -16,7 +16,7 @@ from anomalib.loggers import AnomalibTensorBoardLogger
 from .dummy_lightning_model import DummyModule
 
 
-@pytest.mark.parametrize("task", [TaskType.CLASSIFICATION, TaskType.SEGMENTATION, TaskType.DETECTION])
+@pytest.mark.parametrize("task", [TaskType.CLASSIFICATION, TaskType.SEGMENTATION])
 def test_add_images(task: TaskType, dataset_path: Path) -> None:
     """Tests if tensorboard logs are generated."""
     with tempfile.TemporaryDirectory() as dir_loc:

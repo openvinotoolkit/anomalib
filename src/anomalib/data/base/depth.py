@@ -16,7 +16,7 @@ from torchvision.tv_tensors import Mask
 from anomalib import TaskType
 from anomalib.data.base.datamodule import AnomalibDataModule
 from anomalib.data.base.dataset import AnomalibDataset
-from anomalib.data.utils import LabelName, masks_to_boxes, read_depth_image
+from anomalib.data.utils import LabelName, read_depth_image
 from anomalib.dataclasses import DepthBatch, DepthItem
 
 
@@ -56,7 +56,7 @@ class AnomalibDepthDataset(AnomalibDataset, ABC):
             item["image"], item["depth_image"] = (
                 self.transform(image, depth_image) if self.transform else (image, depth_image)
             )
-        elif self.task in (TaskType.DETECTION, TaskType.SEGMENTATION):
+        elif self.task == TaskType.SEGMENTATION:
             # Only Anomalous (1) images have masks in anomaly datasets
             # Therefore, create empty mask for Normal (0) images.
             mask = (
@@ -69,10 +69,6 @@ class AnomalibDepthDataset(AnomalibDataset, ABC):
             )
             item["mask_path"] = mask_path
 
-            if self.task == TaskType.DETECTION:
-                # create boxes from masks for detection task
-                boxes, _ = masks_to_boxes(item["mask"])
-                item["boxes"] = boxes[0]
         else:
             msg = f"Unknown task type: {self.task}"
             raise ValueError(msg)

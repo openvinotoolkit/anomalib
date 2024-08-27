@@ -52,7 +52,6 @@ class _MockImageLoader:
     "task",
     [
         TaskType.CLASSIFICATION,
-        TaskType.DETECTION,
         TaskType.SEGMENTATION,
     ],
 )
@@ -91,7 +90,6 @@ def test_torch_inference(task: TaskType, ckpt_path: Callable[[str], Path]) -> No
     "task",
     [
         TaskType.CLASSIFICATION,
-        TaskType.DETECTION,
         TaskType.SEGMENTATION,
     ],
 )

@@ -27,12 +27,7 @@ class _TestAnomalibVideoDatamodule(_TestAnomalibDataModule):
         expected_train_fields = {"image", "video_path", "frames", "last_frame", "original_image"}
         expected_eval_fields = expected_train_fields | {"gt_label", "gt_mask"}
 
-        if subset == "train":
-            expected_fields = expected_train_fields
-        else:
-            expected_fields = (
-                expected_eval_fields | {"boxes"} if dataloader.dataset.task == "detection" else expected_eval_fields
-            )
+        expected_fields = expected_train_fields if subset == "train" else expected_eval_fields
 
         batch_fields = {field.name for field in fields(batch) if getattr(batch, field.name) is not None}
         assert batch_fields == expected_fields

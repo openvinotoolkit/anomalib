@@ -25,11 +25,8 @@ class _TestAnomalibDepthDatamodule(_TestAnomalibDataModule):
         # Check that the batch has the correct keys.
         expected_fields = {"image_path", "depth_path", "gt_label", "image", "depth_map"}
 
-        if dataloader.dataset.task in ("detection", "segmentation"):
+        if dataloader.dataset.task == "segmentation":
             expected_fields |= {"mask_path", "gt_mask"}
-
-            if dataloader.dataset.task == "detection":
-                expected_fields |= {"boxes"}
 
         batch_fields = {field.name for field in fields(batch) if getattr(batch, field.name) is not None}
         assert batch_fields == expected_fields
@@ -41,5 +38,5 @@ class _TestAnomalibDepthDatamodule(_TestAnomalibDataModule):
         assert batch.depth_map.shape == (4, 3, 256, 256)
         assert batch.gt_label.shape == (4,)
 
-        if dataloader.dataset.task in ("detection", "segmentation"):
+        if dataloader.dataset.task == "segmentation":
             assert batch.gt_mask.shape == (4, 256, 256)

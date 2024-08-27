@@ -38,7 +38,7 @@ def test_visualize_fully_defected_masks() -> None:
 class TestVisualizer:
     """Test visualization callback for test and predict with different task types."""
 
-    @pytest.mark.parametrize("task", [TaskType.CLASSIFICATION, TaskType.SEGMENTATION, TaskType.DETECTION])
+    @pytest.mark.parametrize("task", [TaskType.CLASSIFICATION, TaskType.SEGMENTATION])
     def test_model_visualizer_mode(
         self,
         ckpt_path: Callable[[str], Path],

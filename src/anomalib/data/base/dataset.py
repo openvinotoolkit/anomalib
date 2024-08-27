@@ -17,7 +17,7 @@ from torchvision.transforms.v2 import Transform
 from torchvision.tv_tensors import Mask
 
 from anomalib import TaskType
-from anomalib.data.utils import LabelName, masks_to_boxes, read_image, read_mask
+from anomalib.data.utils import LabelName, read_image, read_mask
 from anomalib.dataclasses import ImageItem, Item
 
 _EXPECTED_COLUMNS_CLASSIFICATION = ["image_path", "split"]
@@ -171,7 +171,7 @@ class AnomalibDataset(Dataset, ABC):
 
         if self.task == TaskType.CLASSIFICATION:
             item["image"] = self.transform(image) if self.transform else image
-        elif self.task in (TaskType.DETECTION, TaskType.SEGMENTATION):
+        elif self.task == TaskType.SEGMENTATION:
             # Only Anomalous (1) images have masks in anomaly datasets
             # Therefore, create empty mask for Normal (0) images.
             mask = (
@@ -181,10 +181,6 @@ class AnomalibDataset(Dataset, ABC):
             )
             item["image"], item["gt_mask"] = self.transform(image, mask) if self.transform else (image, mask)
 
-            if self.task == TaskType.DETECTION:
-                # create boxes from masks for detection task
-                boxes, _ = masks_to_boxes(item["gt_mask"])
-                item["boxes"] = boxes[0]
         else:
             msg = f"Unknown task type: {self.task}"
             raise ValueError(msg)
