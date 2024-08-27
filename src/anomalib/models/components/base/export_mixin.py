@@ -21,7 +21,6 @@ from anomalib.data import AnomalibDataModule
 from anomalib.dataclasses import InferenceBatch
 from anomalib.deploy.export import CompressionType, ExportType, InferenceModel
 from anomalib.metrics import create_metric_collection
-from anomalib.post_processing.one_class import PostProcessor
 from anomalib.utils.exceptions import try_import
 
 if TYPE_CHECKING:
@@ -40,7 +39,6 @@ class ExportMixin:
 
     model: nn.Module
     transform: Transform
-    post_processor: PostProcessor
     configure_transforms: Callable
     device: torch.device
 
@@ -88,7 +86,7 @@ class ExportMixin:
             ... )
         """
         transform = transform or self.transform or self.configure_transforms()
-        post_processor = post_processor or self.post_processor
+        post_processor = post_processor or getattr(self, "post_processor", None)
         inference_model = InferenceModel(model=self.model, transform=transform, post_processor=post_processor)
         export_root = _create_export_root(export_root, ExportType.TORCH)
         metadata = self._get_metadata(task=task)
@@ -148,7 +146,7 @@ class ExportMixin:
             ... )
         """
         transform = transform or self.transform or self.configure_transforms()
-        post_processor = post_processor or self.post_processor
+        post_processor = post_processor or getattr(self, "post_processor", None)
         inference_model = InferenceModel(
             model=self.model,
             transform=transform,

@@ -421,10 +421,11 @@ class Engine:
             )
 
         # Add the post-processor callback.
-        if self.post_processor is not None:
-            model.post_processor = self.post_processor
-        else:
-            model.post_processor = model.default_post_processor()
+        if model.post_processor is None:
+            if self.post_processor is not None:
+                model.set_post_processor(self.post_processor)
+            else:
+                model.set_post_processor(model.default_post_processor())
         _callbacks.append(model.post_processor)
 
         # Add the metrics callback.

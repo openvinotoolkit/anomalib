@@ -51,7 +51,7 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
         self.image_metrics: AnomalibMetricCollection
         self.pixel_metrics: AnomalibMetricCollection
 
-        self._post_processor: PostProcessor
+        self._post_processor: PostProcessor | None = None
 
         self._transform: Transform | None = None
         self._input_size: tuple[int, int] | None = None
@@ -254,12 +254,11 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
         )
 
     @property
-    def post_processor(self) -> PostProcessor:
+    def post_processor(self) -> PostProcessor | None:
         """Return the post processor."""
         return self._post_processor
 
-    @post_processor.setter
-    def post_processor(self, post_processor: PostProcessor) -> None:
+    def set_post_processor(self, post_processor: PostProcessor) -> None:
         """Set the post processor.
 
         We cannot use a setter here, because the post processor is an nn.Module.
