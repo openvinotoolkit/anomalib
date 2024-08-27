@@ -16,12 +16,10 @@ from lightning.pytorch import Callback
 from lightning.pytorch.trainer.states import TrainerFn
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torch import nn
-from torchmetrics import MetricCollection
 from torchvision.transforms.v2 import Compose, Normalize, Resize, Transform
 
 from anomalib import LearningType
 from anomalib.dataclasses import Batch
-from anomalib.metrics import AnomalibMetricCollection
 from anomalib.metrics.threshold import BaseThreshold
 from anomalib.post_processing import PostProcessor
 
@@ -29,6 +27,8 @@ from .export_mixin import ExportMixin
 
 if TYPE_CHECKING:
     from lightning.pytorch.callbacks import Callback
+
+    from anomalib.metrics import AnomalibMetricCollection
 
 logger = logging.getLogger(__name__)
 
@@ -155,60 +155,6 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
 
         return super()._save_to_state_dict(destination, prefix, keep_vars)
 
-    def load_state_dict(self, state_dict: OrderedDict[str, Any], strict: bool = True) -> Any:  # noqa: ANN401
-        """Initialize auxiliary object."""
-        if "image_threshold_class" in state_dict:
-            self.image_threshold = self._get_instance(state_dict, "image_threshold_class")
-        if "pixel_threshold_class" in state_dict:
-            self.pixel_threshold = self._get_instance(state_dict, "pixel_threshold_class")
-
-        if "anomaly_maps_normalization_class" in state_dict:
-            self.anomaly_maps_normalization_metrics = self._get_instance(state_dict, "anomaly_maps_normalization_class")
-        if "box_scores_normalization_class" in state_dict:
-            self.box_scores_normalization_metrics = self._get_instance(state_dict, "box_scores_normalization_class")
-        if "pred_scores_normalization_class" in state_dict:
-            self.pred_scores_normalization_metrics = self._get_instance(state_dict, "pred_scores_normalization_class")
-
-        self.normalization_metrics = MetricCollection(
-            {
-                "anomaly_maps": self.anomaly_maps_normalization_metrics,
-                "box_scores": self.box_scores_normalization_metrics,
-                "pred_scores": self.pred_scores_normalization_metrics,
-            },
-        )
-        # Used to load metrics if there is any related data in state_dict
-        self._load_metrics(state_dict)
-
-        return super().load_state_dict(state_dict, strict)
-
-    def _load_metrics(self, state_dict: OrderedDict[str, torch.Tensor]) -> None:
-        """Load metrics from saved checkpoint."""
-        self._add_metrics("pixel", state_dict)
-        self._add_metrics("image", state_dict)
-
-    def _add_metrics(self, name: str, state_dict: OrderedDict[str, torch.Tensor]) -> None:
-        """Sets the pixel/image metrics.
-
-        Args:
-            name (str): is it pixel or image.
-            state_dict (OrderedDict[str, Tensor]): state dict of the model.
-        """
-        metric_keys = [key for key in state_dict if key.startswith(f"{name}_metrics")]
-        if any(metric_keys):
-            if not hasattr(self, f"{name}_metrics"):
-                setattr(self, f"{name}_metrics", AnomalibMetricCollection([], prefix=f"{name}_"))
-            metrics = getattr(self, f"{name}_metrics")
-            for key in metric_keys:
-                class_name = key.split(".")[1]
-                try:
-                    metrics_module = importlib.import_module("anomalib.metrics")
-                    metrics_cls = getattr(metrics_module, class_name)
-                except (ImportError, AttributeError) as exception:
-                    msg = f"Class {class_name} not found in module anomalib.metrics"
-                    raise ImportError(msg) from exception
-                logger.info("Loading %s metrics from state dict", class_name)
-                metrics.add_metrics(metrics_cls())
-
     def _get_instance(self, state_dict: OrderedDict[str, Any], dict_key: str) -> BaseThreshold:
         """Get the threshold class from the ``state_dict``."""
         class_path = state_dict.pop(dict_key)
@@ -292,6 +238,7 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
         Saves the transform to the checkpoint.
         """
         checkpoint["transform"] = self.transform
+        checkpoint["post_processor"] = self.post_processor
 
     def on_load_checkpoint(self, checkpoint: dict[str, Any]) -> None:
         """Called when loading the model from a checkpoint.
@@ -300,6 +247,7 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
         the state dict.
         """
         self._transform = checkpoint["transform"]
+        self._post_processor = checkpoint["post_processor"]
         self.setup("load_checkpoint")
 
     @classmethod

@@ -869,6 +869,7 @@ class Engine:
         export_root: str | Path | None = None,
         input_size: tuple[int, int] | None = None,
         transform: Transform | None = None,
+        post_processor: PostProcessor | None = None,
         compression_type: CompressionType | None = None,
         datamodule: AnomalibDataModule | None = None,
         metric: Metric | str | None = None,
@@ -886,6 +887,9 @@ class Engine:
                 and OpenVINO format. Defaults to None.
             transform (Transform | None, optional): Input transform to include in the exported model. If not provided,
                 the engine will try to use the default transform from the model.
+                Defaults to ``None``.
+            post_processor (PostProcessor | None, optional): Post-processor to include in the exported model.
+                If not provided, the engine will try to use the default post-processor from the model.
                 Defaults to ``None``.
             compression_type (CompressionType | None, optional): Compression type for OpenVINO exporting only.
                 Defaults to ``None``.
@@ -957,6 +961,7 @@ class Engine:
                 export_root=export_root,
                 input_size=input_size,
                 transform=transform,
+                post_processor=post_processor,
                 task=self.task,
                 compression_type=compression_type,
                 datamodule=datamodule,

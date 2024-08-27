@@ -20,7 +20,6 @@ from anomalib.dataclasses import ImageItem, NumpyImageItem, VideoItem
 from anomalib.utils.post_processing import (
     add_anomalous_label,
     add_normal_label,
-    draw_boxes,
     superimpose_anomaly_map,
 )
 
@@ -203,20 +202,6 @@ class ImageVisualizer(BaseVisualizer):
             An image showing the full set of visualizations for the input image.
         """
         image_grid = _ImageGrid()
-        if self.task == TaskType.DETECTION:
-            if image_result.pred_boxes is None:
-                msg = "Image result predicted boxes are None."
-                raise ValueError(msg)
-
-            image_grid.add_image(image_result.image, "Image")
-            if image_result.gt_boxes is not None:
-                gt_image = draw_boxes(np.copy(image_result.image), image_result.gt_boxes, color=(255, 0, 0))
-                image_grid.add_image(image=gt_image, color_map="gray", title="Ground Truth")
-            else:
-                image_grid.add_image(image_result.image, "Image")
-            pred_image = draw_boxes(np.copy(image_result.image), image_result.normal_boxes, color=(0, 255, 0))
-            pred_image = draw_boxes(pred_image, image_result.anomalous_boxes, color=(255, 0, 0))
-            image_grid.add_image(pred_image, "Predictions")
         if self.task == TaskType.SEGMENTATION:
             if image_result.pred_mask is None:
                 msg = "Image result predicted mask is None."
@@ -251,16 +236,6 @@ class ImageVisualizer(BaseVisualizer):
         Returns:
             An image showing the simple visualization for the input image.
         """
-        if self.task == TaskType.DETECTION:
-            # return image with bounding boxes augmented
-            image_with_boxes = draw_boxes(
-                image=np.copy(image_result.image),
-                boxes=image_result.anomalous_boxes,
-                color=(0, 0, 255),
-            )
-            if image_result.gt_boxes is not None:
-                image_with_boxes = draw_boxes(image=image_with_boxes, boxes=image_result.gt_boxes, color=(255, 0, 0))
-            return image_with_boxes
         if self.task == TaskType.SEGMENTATION:
             visualization = mark_boundaries(
                 image_result.heat_map,

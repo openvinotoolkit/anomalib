@@ -177,6 +177,7 @@ class ExportMixin:
         export_root: Path | str,
         input_size: tuple[int, int] | None = None,
         transform: Transform | None = None,
+        post_processor: nn.Module | None = None,
         compression_type: CompressionType | None = None,
         datamodule: AnomalibDataModule | None = None,
         metric: Metric | str | None = None,
@@ -191,6 +192,8 @@ class ExportMixin:
                 Defaults to None.
             transform (Transform, optional): Input transforms used for the model. If not provided, the transform is
                 taken from the model.
+                Defaults to ``None``.
+            post_processor (nn.Module, optional): Post-processing module to apply to the model output.
                 Defaults to ``None``.
             compression_type (CompressionType, optional): Compression type for better inference performance.
                 Defaults to ``None``.
@@ -264,7 +267,8 @@ class ExportMixin:
         import openvino as ov
 
         with TemporaryDirectory() as onnx_directory:
-            model_path = self.to_onnx(onnx_directory, input_size, transform, task)
+            post_processor = post_processor or getattr(self, "post_processor", None)
+            model_path = self.to_onnx(onnx_directory, input_size, transform, post_processor, task)
             export_root = _create_export_root(export_root, ExportType.OPENVINO)
             ov_model_path = export_root / "model.xml"
             ov_args = {} if ov_args is None else ov_args
