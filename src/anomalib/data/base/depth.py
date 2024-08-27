@@ -6,15 +6,18 @@
 from abc import ABC
 
 import torch
+from lightning.pytorch.utilities.types import EVAL_DATALOADERS, TRAIN_DATALOADERS
 from PIL import Image
+from torch.utils.data.dataloader import DataLoader
 from torchvision.transforms.functional import to_tensor
 from torchvision.transforms.v2 import Transform
 from torchvision.tv_tensors import Mask
 
 from anomalib import TaskType
+from anomalib.data.base.datamodule import AnomalibDataModule
 from anomalib.data.base.dataset import AnomalibDataset
 from anomalib.data.utils import LabelName, masks_to_boxes, read_depth_image
-from anomalib.dataclasses import DepthItem
+from anomalib.dataclasses import DepthBatch, DepthItem
 
 
 class AnomalibDepthDataset(AnomalibDataset, ABC):
@@ -77,9 +80,43 @@ class AnomalibDepthDataset(AnomalibDataset, ABC):
         return DepthItem(
             image=item["image"],
             depth_map=item["depth_image"],
-            gt_mask=item["mask"],
+            gt_mask=item.get("mask"),
             gt_label=item["label"],
             image_path=image_path,
             depth_path=depth_path,
-            mask_path=mask_path,
+            mask_path=item.get("mask_path"),
+        )
+
+
+class AnomalibDepthDataModule(AnomalibDataModule):
+    """Base depth datamodule class."""
+
+    def train_dataloader(self) -> TRAIN_DATALOADERS:
+        """Get train dataloader."""
+        return DataLoader(
+            dataset=self.train_data,
+            shuffle=True,
+            batch_size=self.train_batch_size,
+            num_workers=self.num_workers,
+            collate_fn=DepthBatch.collate,
+        )
+
+    def val_dataloader(self) -> EVAL_DATALOADERS:
+        """Get validation dataloader."""
+        return DataLoader(
+            dataset=self.val_data,
+            shuffle=False,
+            batch_size=self.eval_batch_size,
+            num_workers=self.num_workers,
+            collate_fn=DepthBatch.collate,
+        )
+
+    def test_dataloader(self) -> EVAL_DATALOADERS:
+        """Get test dataloader."""
+        return DataLoader(
+            dataset=self.test_data,
+            shuffle=False,
+            batch_size=self.eval_batch_size,
+            num_workers=self.num_workers,
+            collate_fn=DepthBatch.collate,
         )

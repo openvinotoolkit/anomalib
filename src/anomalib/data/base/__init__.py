@@ -5,7 +5,7 @@
 
 from .datamodule import AnomalibDataModule
 from .dataset import AnomalibDataset
-from .depth import AnomalibDepthDataset
+from .depth import AnomalibDepthDataModule, AnomalibDepthDataset
 from .video import AnomalibVideoDataModule, AnomalibVideoDataset
 
 __all__ = [
@@ -14,4 +14,5 @@ __all__ = [
     "AnomalibVideoDataset",
     "AnomalibVideoDataModule",
     "AnomalibDepthDataset",
+    "AnomalibDepthDataModule",
 ]

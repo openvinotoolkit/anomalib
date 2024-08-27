@@ -12,7 +12,7 @@ from pandas import DataFrame, isna
 from torchvision.transforms.v2 import Transform
 
 from anomalib import TaskType
-from anomalib.data.base import AnomalibDataModule, AnomalibDepthDataset
+from anomalib.data.base import AnomalibDepthDataModule, AnomalibDepthDataset
 from anomalib.data.errors import MisMatchError
 from anomalib.data.utils import (
     DirType,
@@ -283,7 +283,7 @@ class Folder3DDataset(AnomalibDepthDataset):
         return self._name
 
 
-class Folder3D(AnomalibDataModule):
+class Folder3D(AnomalibDepthDataModule):
     """Folder DataModule.
 
     Args:

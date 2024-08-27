@@ -3,6 +3,8 @@
 # Copyright (C) 2023-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from dataclasses import fields
+
 import pytest
 import torch
 
@@ -22,30 +24,31 @@ class _TestAnomalibVideoDatamodule(_TestAnomalibDataModule):
         batch = next(iter(dataloader))
 
         # Check that the batch has the correct keys.
-        expected_train_keys = {"image", "video_path", "frames", "last_frame", "original_image"}
-        expected_eval_keys = expected_train_keys | {"label", "mask"}
+        expected_train_fields = {"image", "video_path", "frames", "last_frame", "original_image"}
+        expected_eval_fields = expected_train_fields | {"gt_label", "gt_mask"}
 
         if subset == "train":
-            expected_keys = expected_train_keys
+            expected_fields = expected_train_fields
         else:
-            expected_keys = (
-                expected_eval_keys | {"boxes"} if dataloader.dataset.task == "detection" else expected_eval_keys
+            expected_fields = (
+                expected_eval_fields | {"boxes"} if dataloader.dataset.task == "detection" else expected_eval_fields
             )
 
-        assert batch.keys() == expected_keys
+        batch_fields = {field.name for field in fields(batch) if getattr(batch, field.name) is not None}
+        assert batch_fields == expected_fields
 
         # Check that the batch has the correct shape.
-        assert batch["image"].shape == (4, 2, 3, 256, 256)
-        assert len(batch["video_path"]) == 4
-        assert len(batch["frames"]) == 4
-        assert len(batch["last_frame"]) == 4
+        assert batch.image.shape == (4, 2, 3, 256, 256)
+        assert len(batch.video_path) == 4
+        assert len(batch.frames) == 4
+        assert len(batch.last_frame) == 4
         # We don't know the shape of the original image, so we only check that it is a list of 4 images.
-        assert batch["original_image"].shape[0] == 4
+        assert batch.original_image.shape[0] == 4
 
         if subset in ("val", "test"):
-            assert len(batch["label"]) == 4
-            assert batch["mask"].shape == (4, 256, 256)
-            assert batch["mask"].shape == (4, 256, 256)
+            assert len(batch.gt_label) == 4
+            assert batch.gt_mask.shape == (4, 256, 256)
+            assert batch.gt_mask.shape == (4, 256, 256)
 
     @pytest.mark.parametrize("subset", ["train", "val", "test"])
     def test_item_dtype(self, datamodule: AnomalibDataModule, subset: str) -> None:
@@ -55,7 +58,7 @@ class _TestAnomalibVideoDatamodule(_TestAnomalibDataModule):
 
         # Get the first batch.
         batch = next(iter(dataloader))
-        clip = batch["image"]
+        clip = batch.image
         assert clip.dtype == torch.float32
         assert clip.min() >= 0
         assert clip.max() <= 1
@@ -68,5 +71,5 @@ class _TestAnomalibVideoDatamodule(_TestAnomalibDataModule):
 
         # Get the first batch.
         batch = next(iter(dataloader))
-        clip = batch["image"]
+        clip = batch.image
         assert clip.shape == (4, 3, 256, 256)

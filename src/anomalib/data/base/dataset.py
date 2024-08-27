@@ -191,7 +191,7 @@ class AnomalibDataset(Dataset, ABC):
 
         return ImageItem(
             image=item["image"],
-            gt_mask=item["gt_mask"],
+            gt_mask=item.get("gt_mask"),
             gt_label=int(label_index),
             image_path=image_path,
             mask_path=mask_path,
