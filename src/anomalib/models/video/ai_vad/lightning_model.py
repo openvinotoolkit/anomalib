@@ -16,7 +16,7 @@ from torchvision.transforms.v2 import Transform
 from anomalib import LearningType
 from anomalib.dataclasses import VideoBatch
 from anomalib.models.components import AnomalyModule, MemoryBankMixin
-from anomalib.models.components.base.post_processing import OneClassPostProcessor
+from anomalib.post_processing.one_class import OneClassPostProcessor, PostProcessor
 
 from .torch_model import AiVadModel
 
@@ -99,8 +99,6 @@ class AiVad(MemoryBankMixin, AnomalyModule):
 
         self.total_detections = 0
 
-        self.post_processor = OneClassPostProcessor()
-
     @staticmethod
     def configure_optimizers() -> None:
         """AI-VAD training does not involve fine-tuning of NN weights, no optimizers needed."""
@@ -170,3 +168,7 @@ class AiVad(MemoryBankMixin, AnomalyModule):
         """AI-VAD does not need a transform, as the region- and feature-extractors apply their own transforms."""
         del image_size
         return None
+
+    def default_post_processor(self) -> PostProcessor:
+        """Return the default post-processor for AI-VAD."""
+        return OneClassPostProcessor()

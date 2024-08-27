@@ -21,7 +21,7 @@ from anomalib.data import AnomalibDataModule
 from anomalib.dataclasses import InferenceBatch
 from anomalib.deploy.export import CompressionType, ExportType, InferenceModel
 from anomalib.metrics import create_metric_collection
-from anomalib.models.components.base.post_processing import PostProcessor
+from anomalib.post_processing.one_class import PostProcessor
 from anomalib.utils.exceptions import try_import
 
 if TYPE_CHECKING:

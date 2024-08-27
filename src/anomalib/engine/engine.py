@@ -27,6 +27,7 @@ from anomalib.callbacks.visualizer import _VisualizationCallback
 from anomalib.data import AnomalibDataModule, AnomalibDataset, PredictDataset
 from anomalib.deploy import CompressionType, ExportType
 from anomalib.models import AnomalyModule
+from anomalib.post_processing import PostProcessor
 from anomalib.utils.normalization import NormalizationMethod
 from anomalib.utils.path import create_versioned_dir
 from anomalib.utils.types import NORMALIZATION, THRESHOLD
@@ -121,6 +122,7 @@ class Engine:
     def __init__(
         self,
         callbacks: list[Callback] | None = None,
+        post_processor: PostProcessor | None = None,
         normalization: NORMALIZATION = NormalizationMethod.MIN_MAX,
         threshold: THRESHOLD = "F1AdaptiveThreshold",
         task: TaskType | str = TaskType.SEGMENTATION,
@@ -130,6 +132,7 @@ class Engine:
         default_root_dir: str | Path = "results",
         **kwargs,
     ) -> None:
+        del normalization, threshold
         # TODO(ashwinvaidya17): Add model argument to engine constructor
         # https://github.com/openvinotoolkit/anomalib/issues/1639
         if callbacks is None:
@@ -144,8 +147,7 @@ class Engine:
             **kwargs,
         )
 
-        self.normalization = normalization
-        self.threshold = threshold
+        self.post_processor = post_processor
         self.task = TaskType(task)
         self.image_metric_names = image_metrics if image_metrics else ["AUROC", "F1Max"]
 
@@ -418,7 +420,11 @@ class Engine:
                 ),
             )
 
-        # Add the post-processor callbacks.
+        # Add the post-processor callback.
+        if self.post_processor is not None:
+            model.post_processor = self.post_processor
+        else:
+            model.post_processor = model.default_post_processor()
         _callbacks.append(model.post_processor)
 
         # Add the metrics callback.
@@ -426,7 +432,7 @@ class Engine:
 
         _callbacks.append(
             _VisualizationCallback(
-                visualizers=ImageVisualizer(task=self.task, normalize=self.normalization == NormalizationMethod.NONE),
+                visualizers=ImageVisualizer(task=self.task, normalize=False),
                 save=True,
                 root=self._cache.args["default_root_dir"] / "images",
             ),

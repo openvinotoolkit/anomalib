@@ -1,25 +1,12 @@
 """Post-processing module for anomaly detection models."""
 
-from abc import ABC, abstractmethod
-
 import torch
 from lightning import LightningModule, Trainer
-from lightning.pytorch import Callback
-from torch import nn
 
 from anomalib.dataclasses import Batch, InferenceBatch
 from anomalib.metrics import F1AdaptiveThreshold, MinMax
 
-
-class PostProcessor(nn.Module, Callback, ABC):
-    """Base class for post-processor.
-
-    The post-processor is a callback that is used to post-process the predictions of the model.
-    """
-
-    @abstractmethod
-    def forward(self, batch: InferenceBatch) -> InferenceBatch:
-        """Functional forward method for post-processing."""
+from .base import PostProcessor
 
 
 class OneClassPostProcessor(PostProcessor):

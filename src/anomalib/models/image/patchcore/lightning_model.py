@@ -18,7 +18,7 @@ from torchvision.transforms.v2 import CenterCrop, Compose, Normalize, Resize, Tr
 from anomalib import LearningType
 from anomalib.dataclasses import Batch
 from anomalib.models.components import AnomalyModule, MemoryBankMixin
-from anomalib.models.components.base.post_processing import OneClassPostProcessor
+from anomalib.post_processing.one_class import OneClassPostProcessor
 
 from .torch_model import PatchcoreModel
 
@@ -59,8 +59,6 @@ class Patchcore(MemoryBankMixin, AnomalyModule):
         )
         self.coreset_sampling_ratio = coreset_sampling_ratio
         self.embeddings: list[torch.Tensor] = []
-
-        self.post_processor = OneClassPostProcessor()
 
     def configure_optimizers(self) -> None:
         """Configure optimizers.
@@ -140,3 +138,11 @@ class Patchcore(MemoryBankMixin, AnomalyModule):
                 Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
             ],
         )
+
+    def default_post_processor(self) -> OneClassPostProcessor:
+        """Return the default post-processor for the model.
+
+        Returns:
+            OneClassPostProcessor: Post-processor for one-class models.
+        """
+        return OneClassPostProcessor()

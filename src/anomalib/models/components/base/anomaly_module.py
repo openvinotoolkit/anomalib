@@ -23,13 +23,12 @@ from anomalib import LearningType
 from anomalib.dataclasses import Batch
 from anomalib.metrics import AnomalibMetricCollection
 from anomalib.metrics.threshold import BaseThreshold
+from anomalib.post_processing import PostProcessor
 
 from .export_mixin import ExportMixin
 
 if TYPE_CHECKING:
     from lightning.pytorch.callbacks import Callback
-
-    from anomalib.models.components.base.post_processing import PostProcessor
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +51,7 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
         self.image_metrics: AnomalibMetricCollection
         self.pixel_metrics: AnomalibMetricCollection
 
-        self.post_processor: PostProcessor
+        self._post_processor: PostProcessor
 
         self._transform: Transform | None = None
         self._input_size: tuple[int, int] | None = None
@@ -253,6 +252,24 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
                 Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
             ],
         )
+
+    @property
+    def post_processor(self) -> PostProcessor:
+        """Return the post processor."""
+        return self._post_processor
+
+    @post_processor.setter
+    def post_processor(self, post_processor: PostProcessor) -> None:
+        """Set the post processor.
+
+        We cannot use a setter here, because the post processor is an nn.Module.
+        """
+        self._post_processor = post_processor
+
+    @abstractmethod
+    def default_post_processor(self) -> PostProcessor:
+        """Default post processor."""
+        raise NotImplementedError
 
     @property
     def input_size(self) -> tuple[int, int] | None:
