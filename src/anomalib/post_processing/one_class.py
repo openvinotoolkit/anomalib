@@ -17,7 +17,8 @@ class OneClassPostProcessor(PostProcessor):
 
         self._image_threshold = F1AdaptiveThreshold()
         self._pixel_threshold = F1AdaptiveThreshold()
-        self._normalization_stats = MinMax()
+        self._image_normalization_stats = MinMax()
+        self._pixel_normalization_stats = MinMax()
 
     def on_validation_batch_end(
         self,
@@ -31,14 +32,16 @@ class OneClassPostProcessor(PostProcessor):
         del trainer, pl_module, args, kwargs  # Unused arguments.
         self._image_threshold.update(outputs.pred_score, outputs.gt_label)
         self._pixel_threshold.update(outputs.anomaly_map, outputs.gt_mask)
-        self._normalization_stats.update(outputs.anomaly_map)
+        self._image_normalization_stats.update(outputs.pred_score)
+        self._pixel_normalization_stats.update(outputs.anomaly_map)
 
     def on_validation_epoch_end(self, trainer: Trainer, pl_module: LightningModule) -> None:
         """Compute the final threshold and normalization values."""
         del trainer, pl_module
         self._image_threshold.compute()
         self._pixel_threshold.compute()
-        self._normalization_stats.compute()
+        self._image_normalization_stats.compute()
+        self._pixel_normalization_stats.compute()
 
     def on_test_batch_end(
         self,
@@ -70,8 +73,8 @@ class OneClassPostProcessor(PostProcessor):
         pred_score = predictions.pred_score or torch.amax(predictions.anomaly_map, dim=(-2, -1))
         pred_label = self._threshold(pred_score, self.image_threshold)
         pred_mask = self._threshold(predictions.anomaly_map, self.pixel_threshold)
-        pred_score = self._normalize(pred_score, self.min, self.max, self.image_threshold)
-        anomaly_map = self._normalize(predictions.anomaly_map, self.min, self.max, self.pixel_threshold)
+        pred_score = self._normalize(pred_score, self.image_min, self.image_max, self.image_threshold)
+        anomaly_map = self._normalize(predictions.anomaly_map, self.pixel_min, self.pixel_max, self.pixel_threshold)
         return InferenceBatch(
             pred_label=pred_label,
             pred_score=pred_score,
@@ -100,9 +103,9 @@ class OneClassPostProcessor(PostProcessor):
     def normalize_batch(self, batch: Batch) -> None:
         """Normalize the predicted scores and anomaly maps."""
         # normalize image-level predictions
-        batch.pred_score = self._normalize(batch.pred_score, self.min, self.max, self.image_threshold)
+        batch.pred_score = self._normalize(batch.pred_score, self.image_min, self.image_max, self.image_threshold)
         # normalize pixel-level predictions
-        batch.anomaly_map = self._normalize(batch.anomaly_map, self.min, self.max, self.pixel_threshold)
+        batch.anomaly_map = self._normalize(batch.anomaly_map, self.pixel_min, self.pixel_max, self.pixel_threshold)
 
     @staticmethod
     def _threshold(preds: torch.Tensor, threshold: float) -> torch.Tensor:
@@ -127,11 +130,21 @@ class OneClassPostProcessor(PostProcessor):
         return self._pixel_threshold.value
 
     @property
-    def min(self) -> float:
+    def image_min(self) -> float:
         """Get the minimum value for normalization."""
-        return self._normalization_stats.min
+        return self._image_normalization_stats.min
 
     @property
-    def max(self) -> float:
+    def image_max(self) -> float:
         """Get the maximum value for normalization."""
-        return self._normalization_stats.max
+        return self._image_normalization_stats.max
+
+    @property
+    def pixel_min(self) -> float:
+        """Get the minimum value for normalization."""
+        return self._pixel_normalization_stats.min
+
+    @property
+    def pixel_max(self) -> float:
+        """Get the maximum value for normalization."""
+        return self._pixel_normalization_stats.max
