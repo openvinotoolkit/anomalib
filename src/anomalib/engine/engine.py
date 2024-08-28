@@ -28,9 +28,7 @@ from anomalib.data import AnomalibDataModule, AnomalibDataset, PredictDataset
 from anomalib.deploy import CompressionType, ExportType
 from anomalib.models import AnomalyModule
 from anomalib.post_processing import PostProcessor
-from anomalib.utils.normalization import NormalizationMethod
 from anomalib.utils.path import create_versioned_dir
-from anomalib.utils.types import NORMALIZATION, THRESHOLD
 from anomalib.utils.visualization import ImageVisualizer
 
 logger = logging.getLogger(__name__)
@@ -123,8 +121,6 @@ class Engine:
         self,
         callbacks: list[Callback] | None = None,
         post_processor: PostProcessor | None = None,
-        normalization: NORMALIZATION = NormalizationMethod.MIN_MAX,
-        threshold: THRESHOLD = "F1AdaptiveThreshold",
         task: TaskType | str = TaskType.SEGMENTATION,
         image_metrics: list[str] | str | dict[str, dict[str, Any]] | None = None,
         pixel_metrics: list[str] | str | dict[str, dict[str, Any]] | None = None,
@@ -132,7 +128,6 @@ class Engine:
         default_root_dir: str | Path = "results",
         **kwargs,
     ) -> None:
-        del normalization, threshold
         # TODO(ashwinvaidya17): Add model argument to engine constructor
         # https://github.com/openvinotoolkit/anomalib/issues/1639
         if callbacks is None:

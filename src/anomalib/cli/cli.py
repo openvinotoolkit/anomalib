@@ -146,9 +146,6 @@ class AnomalibCLI:
             Since ``Engine`` parameters are manually added, any change to the
             ``Engine`` class should be reflected manually.
         """
-        from anomalib.callbacks.normalization import get_normalization_callback
-
-        parser.add_function_arguments(get_normalization_callback, "normalization")
         parser.add_argument("--task", type=TaskType | str, default=TaskType.SEGMENTATION)
         parser.add_argument("--metrics.image", type=list[str] | str | None, default=None)
         parser.add_argument("--metrics.pixel", type=list[str] | str | None, default=None, required=False)
@@ -325,8 +322,6 @@ class AnomalibCLI:
         from anomalib.callbacks import get_callbacks
 
         engine_args = {
-            "normalization": self._get(self.config_init, "normalization.normalization_method"),
-            "threshold": self._get(self.config_init, "metrics.threshold"),
             "task": self._get(self.config_init, "task"),
             "image_metrics": self._get(self.config_init, "metrics.image"),
             "pixel_metrics": self._get(self.config_init, "metrics.pixel"),
