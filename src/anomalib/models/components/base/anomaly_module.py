@@ -211,7 +211,6 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
         """
         self._post_processor = post_processor
 
-    # @abstractmethod
     def default_post_processor(self) -> PostProcessor:
         """Default post processor.
 
