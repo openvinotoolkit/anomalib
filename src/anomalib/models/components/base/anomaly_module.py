@@ -21,7 +21,7 @@ from torchvision.transforms.v2 import Compose, Normalize, Resize, Transform
 from anomalib import LearningType
 from anomalib.dataclasses import Batch
 from anomalib.metrics.threshold import BaseThreshold
-from anomalib.post_processing import PostProcessor
+from anomalib.post_processing import OneClassPostProcessor, PostProcessor
 
 from .export_mixin import ExportMixin
 
@@ -211,10 +211,17 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
         """
         self._post_processor = post_processor
 
-    @abstractmethod
+    # @abstractmethod
     def default_post_processor(self) -> PostProcessor:
-        """Default post processor."""
-        raise NotImplementedError
+        """Default post processor.
+
+        Override in subclass for model-specific post-processing behaviour.
+        """
+        if self.learning_type == LearningType.ONE_CLASS:
+            return OneClassPostProcessor()
+        msg = f"No default post-processor available for model {self.__name__} with learning type {self.learning_type}. \
+              Please override the default_post_processor method in the model implementation."
+        raise NotImplementedError(msg)
 
     @property
     def input_size(self) -> tuple[int, int] | None:
