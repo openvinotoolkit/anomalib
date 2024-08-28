@@ -15,9 +15,19 @@ from torchvision.transforms.v2 import Resize
 
 from anomalib import LearningType
 from anomalib.callbacks.metrics import _MetricsCallback
+from anomalib.dataclasses import InferenceBatch
 from anomalib.metrics import AnomalibMetricCollection
 from anomalib.metrics.threshold import F1AdaptiveThreshold
 from anomalib.models.components import AnomalyModule
+from anomalib.post_processing import PostProcessor
+
+
+class DummyPostProcessor(PostProcessor):
+    """Dummy post-processor for testing."""
+
+    def forward(self, batch: InferenceBatch) -> InferenceBatch:
+        """Dummy forward method."""
+        return batch
 
 
 class _DummyAnomalyModule(AnomalyModule):
@@ -53,6 +63,9 @@ class _DummyAnomalyModule(AnomalyModule):
     @property
     def configure_transforms(self) -> None:
         return Resize((256, 256))
+
+    def default_post_processor(self) -> PostProcessor:
+        return super().default_post_processor()
 
 
 @pytest.fixture()
