@@ -13,6 +13,7 @@ from torch.utils.data import DataLoader
 
 from anomalib import TaskType
 from anomalib.data import MVTec, PredictDataset
+from anomalib.dataclasses import ImageBatch
 from anomalib.engine import Engine
 from anomalib.models import get_model
 from anomalib.utils.visualization.image import _ImageGrid
@@ -59,5 +60,5 @@ class TestVisualizer:
         engine.test(model=model, datamodule=datamodule, ckpt_path=str(_ckpt_path))
 
         dataset = PredictDataset(path=dataset_path / "mvtec" / "dummy" / "test")
-        datamodule = DataLoader(dataset)
+        datamodule = DataLoader(dataset, collate_fn=ImageBatch.collate)
         engine.predict(model=model, dataloaders=datamodule, ckpt_path=str(_ckpt_path))
