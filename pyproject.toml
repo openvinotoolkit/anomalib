@@ -162,6 +162,9 @@ lint.ignore = [
     "PLR0915", # Too many statements
 
     # NOTE: Disable the following rules for now.
+    "A004", # import is shadowing a Python built-in
+    "A005", # Module is shadowing a Python built-in
+    "B909", # Mutation to loop iterable during iteration
     "PLR6301", # could be a function, class method or static method
     "PLW1514", # Add explicit encoding argument
     "PLR6201", # Convert to set
@@ -182,7 +185,6 @@ lint.ignore = [
 
     "RUF021", # Parenthesize the `and` subexpression
     "RUF022", # Apply an isort-style sorting to '__all__'
-    "RUF025", # Replace with `dict.fromkeys(iterable, value)`)
     "S404", # `subprocess` module is possibly insecure
     # End of disable rules
 
@@ -258,6 +260,9 @@ notice-rgx = """
 # Copyright \\(C\\) (\\d{4}(-\\d{4})?) Intel Corporation
 # SPDX-License-Identifier: Apache-2\\.0
 """
+
+[tool.ruff.lint.per-file-ignores]
+"notebooks/**/*" = ["CPY001"]
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # MYPY CONFIGURATION.                                                         #

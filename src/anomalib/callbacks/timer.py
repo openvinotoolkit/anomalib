@@ -105,5 +105,5 @@ class TimerCallback(Callback):
             else:
                 test_data_loader = trainer.test_dataloaders[0]
             output += f"(batch_size={test_data_loader.batch_size})"
-        output += f" : {self.num_images/testing_time} FPS"
+        output += f" : {self.num_images / testing_time} FPS"
         logger.info(output)
