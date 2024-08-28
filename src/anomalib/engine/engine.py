@@ -20,8 +20,6 @@ from torchvision.transforms.v2 import Transform
 from anomalib import LearningType, TaskType
 from anomalib.callbacks.checkpoint import ModelCheckpoint
 from anomalib.callbacks.metrics import _MetricsCallback
-from anomalib.callbacks.normalization.base import NormalizationCallback
-from anomalib.callbacks.thresholding import _ThresholdCallback
 from anomalib.callbacks.timer import TimerCallback
 from anomalib.callbacks.visualizer import _VisualizationCallback
 from anomalib.data import AnomalibDataModule, AnomalibDataset, PredictDataset
@@ -182,44 +180,6 @@ class Engine:
             msg = "Trainer does not have a model assigned yet."
             raise UnassignedError(msg)
         return self.trainer.lightning_module
-
-    @property
-    def normalization_callback(self) -> NormalizationCallback | None:
-        """The ``NormalizationCallback`` callback in the trainer.callbacks list, or ``None`` if it doesn't exist.
-
-        Returns:
-            NormalizationCallback | None: Normalization callback, if available.
-
-        Raises:
-            ValueError: If there are multiple normalization callbacks.
-        """
-        callbacks = [callback for callback in self.trainer.callbacks if isinstance(callback, NormalizationCallback)]
-        if len(callbacks) > 1:
-            msg = (
-                f"Trainer can only have one normalization callback but multiple found: {callbacks}. "
-                "Please check your configuration. Exiting to avoid unexpected behavior."
-            )
-            raise ValueError(msg)
-        return callbacks[0] if len(callbacks) > 0 else None
-
-    @property
-    def threshold_callback(self) -> _ThresholdCallback | None:
-        """The ``ThresholdCallback`` callback in the trainer.callbacks list, or ``None`` if it doesn't exist.
-
-        Returns:
-            _ThresholdCallback | None: Threshold callback, if available.
-
-        Raises:
-            ValueError: If there are multiple threshold callbacks.
-        """
-        callbacks = [callback for callback in self.trainer.callbacks if isinstance(callback, _ThresholdCallback)]
-        if len(callbacks) > 1:
-            msg = (
-                f"Trainer can only have one thresholding callback but multiple found: {callbacks}. "
-                "Please check your configuration. Exiting to avoid unexpected behavior."
-            )
-            raise ValueError(msg)
-        return callbacks[0] if len(callbacks) > 0 else None
 
     @property
     def checkpoint_callback(self) -> ModelCheckpoint | None:
@@ -442,8 +402,6 @@ class Engine:
     def _should_run_validation(
         self,
         model: AnomalyModule,
-        dataloaders: EVAL_DATALOADERS | None,
-        datamodule: AnomalibDataModule | None,
         ckpt_path: str | Path | None,
     ) -> bool:
         """Check if we need to run validation to collect normalization statistics and thresholds.
@@ -471,13 +429,7 @@ class Engine:
         if model.learning_type not in [LearningType.ZERO_SHOT, LearningType.FEW_SHOT]:
             return False
         # check if a checkpoint path is provided
-        if ckpt_path is not None:
-            return False
-        # check if the model needs to be validated
-        needs_normalization = self.normalization_callback is not None and not hasattr(model, "normalization_metrics")
-        needs_thresholding = self.threshold_callback is not None and not hasattr(model, "image_threshold")
-        # check if the model can be validated (i.e. validation data is available)
-        return (needs_normalization or needs_thresholding) and (dataloaders is not None or datamodule is not None)
+        return ckpt_path is None
 
     def fit(
         self,
@@ -676,7 +628,7 @@ class Engine:
 
         self._setup_dataset_task(dataloaders)
         self._setup_transform(model or self.model, datamodule=datamodule, ckpt_path=ckpt_path)
-        if self._should_run_validation(model or self.model, dataloaders, datamodule, ckpt_path):
+        if self._should_run_validation(model or self.model, ckpt_path):
             logger.info("Running validation before testing to collect normalization metrics and/or thresholds.")
             self.trainer.validate(model, dataloaders, None, verbose=False, datamodule=datamodule)
         return self.trainer.test(model, dataloaders, ckpt_path, verbose, datamodule)
@@ -781,7 +733,7 @@ class Engine:
         self._setup_dataset_task(dataloaders, datamodule)
         self._setup_transform(model or self.model, datamodule=datamodule, dataloaders=dataloaders, ckpt_path=ckpt_path)
 
-        if self._should_run_validation(model or self.model, None, datamodule, ckpt_path):
+        if self._should_run_validation(model or self.model, ckpt_path):
             logger.info("Running validation before predicting to collect normalization metrics and/or thresholds.")
             self.trainer.validate(
                 model,
