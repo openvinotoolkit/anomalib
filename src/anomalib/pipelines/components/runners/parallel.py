@@ -60,7 +60,7 @@ class ParallelRunner(Runner):
         """Run the job in parallel."""
         self.task_id = self.progress.add_task(self.generator.job_class.name, total=None)
         self.progress.start()
-        self.processes = {i: None for i in range(self.n_jobs)}
+        self.processes = dict.fromkeys(range(self.n_jobs))
 
         with ProcessPoolExecutor(max_workers=self.n_jobs, mp_context=multiprocessing.get_context("spawn")) as executor:
             for job in self.generator(args, prev_stage_results):
