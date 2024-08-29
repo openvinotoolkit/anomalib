@@ -12,13 +12,13 @@ from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import torch
+from lightning.pytorch import LightningModule
 from torch import nn
 from torchmetrics import Metric
 from torchvision.transforms.v2 import Transform
 
 from anomalib import TaskType
 from anomalib.data import AnomalibDataModule
-from anomalib.dataclasses import InferenceBatch
 from anomalib.deploy.export import CompressionType, ExportType
 from anomalib.deploy.utils import make_transform_exportable
 from anomalib.metrics import create_metric_collection
@@ -141,6 +141,9 @@ class ExportMixin:
             None if input_size else {"input": {0: "batch_size", 2: "height", 3: "weight"}, "output": {0: "batch_size"}}
         )
         onnx_path = export_root / "model.onnx"
+        # apply pass through the model to get the output names
+        assert isinstance(self, LightningModule)  # mypy
+        output_names = [name for name, value in self.eval()(input_shape)._asdict().items() if value is not None]
         torch.onnx.export(
             self,
             input_shape.to(self.device),
@@ -148,7 +151,7 @@ class ExportMixin:
             opset_version=14,
             dynamic_axes=dynamic_axes,
             input_names=["input"],
-            output_names=list(InferenceBatch._fields),
+            output_names=output_names,
         )
 
         return onnx_path

@@ -58,6 +58,8 @@ class ImageResult:
 
         if self.anomaly_map is not None:
             self.heat_map = superimpose_anomaly_map(self.anomaly_map, self.image, normalize=normalize)
+        else:
+            self.heat_map = None
 
         if self.gt_mask is not None and self.gt_mask.max() <= 1.0:
             if self.gt_mask.dtype == bool:

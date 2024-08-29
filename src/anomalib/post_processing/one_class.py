@@ -38,18 +38,26 @@ class OneClassPostProcessor(PostProcessor):
     ) -> None:
         """Update the normalization and thresholding metrics using the batch output."""
         del trainer, pl_module, args, kwargs  # Unused arguments.
-        self._image_threshold.update(outputs.pred_score, outputs.gt_label)
-        self._pixel_threshold.update(outputs.anomaly_map, outputs.gt_mask)
-        self._image_normalization_stats.update(outputs.pred_score)
-        self._pixel_normalization_stats.update(outputs.anomaly_map)
+        if outputs.pred_score is not None:
+            self._image_threshold.update(outputs.pred_score, outputs.gt_label)
+        if outputs.anomaly_map is not None:
+            self._pixel_threshold.update(outputs.anomaly_map, outputs.gt_mask)
+        if outputs.pred_score is not None:
+            self._image_normalization_stats.update(outputs.pred_score)
+        if outputs.anomaly_map is not None:
+            self._pixel_normalization_stats.update(outputs.anomaly_map)
 
     def on_validation_epoch_end(self, trainer: Trainer, pl_module: LightningModule) -> None:
         """Compute the final threshold and normalization values."""
         del trainer, pl_module
-        self._image_threshold.compute()
-        self._pixel_threshold.compute()
-        self._image_normalization_stats.compute()
-        self._pixel_normalization_stats.compute()
+        if self._image_threshold.update_called:
+            self._image_threshold.compute()
+        if self._pixel_threshold.update_called:
+            self._pixel_threshold.compute()
+        if self._image_normalization_stats.update_called:
+            self._image_normalization_stats.compute()
+        if self._pixel_normalization_stats.update_called:
+            self._pixel_normalization_stats.compute()
 
     def on_test_batch_end(
         self,
@@ -77,7 +85,9 @@ class OneClassPostProcessor(PostProcessor):
 
     def forward(self, predictions: InferenceBatch) -> InferenceBatch:
         """Funcional forward method for post-processing."""
-        assert predictions.anomaly_map is not None, "Anomaly map is required for one-class post-processing."
+        if predictions.pred_score is None and predictions.anomaly_map is None:
+            msg = "At least one of pred_score or anomaly_map must be provided."
+            raise ValueError(msg)
         pred_score = predictions.pred_score or torch.amax(predictions.anomaly_map, dim=(-2, -1))
         pred_score = self._normalize(pred_score, self.image_min, self.image_max, self.raw_image_threshold)
         anomaly_map = self._normalize(predictions.anomaly_map, self.pixel_min, self.pixel_max, self.raw_pixel_threshold)
@@ -118,13 +128,22 @@ class OneClassPostProcessor(PostProcessor):
         batch.pred_score = self._normalize(batch.pred_score, self.image_min, self.image_max, self.raw_image_threshold)
 
     @staticmethod
-    def _threshold(preds: torch.Tensor, threshold: float) -> torch.Tensor:
+    def _threshold(preds: torch.Tensor | None, threshold: float) -> torch.Tensor | None:
         """Apply thresholding to a single tensor."""
+        if preds is None:
+            return None
         return preds > threshold
 
     @staticmethod
-    def _normalize(preds: torch.Tensor, norm_min: float, norm_max: float, threshold: float) -> torch.Tensor:
+    def _normalize(
+        preds: torch.Tensor | None,
+        norm_min: float,
+        norm_max: float,
+        threshold: float,
+    ) -> torch.Tensor | None:
         """Normalize a tensor using the min, max, and threshold values."""
+        if preds is None:
+            return None
         preds = ((preds - threshold) / (norm_max - norm_min)) + 0.5
         preds = torch.minimum(preds, torch.tensor(1))
         return torch.maximum(preds, torch.tensor(0))
