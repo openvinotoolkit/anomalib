@@ -41,7 +41,7 @@ class Pipeline(ABC):
             parser = self.get_parser()
             args = parser.parse_args()
 
-        with Path(args.config).open() as file:
+        with Path(args.config).open(encoding="utf-8") as file:
             return yaml.safe_load(file)
 
     @abstractmethod

@@ -134,7 +134,7 @@ def get_cuda_version() -> str | None:
         # Check $CUDA_HOME/version.json file.
         version_file = Path(cuda_home) / "version.json"
         if version_file.is_file():
-            with Path(version_file).open() as file:
+            with Path(version_file).open(encoding="utf-8") as file:
                 data = json.load(file)
                 cuda_version = data.get("cuda", {}).get("version", None)
                 if cuda_version is not None:
