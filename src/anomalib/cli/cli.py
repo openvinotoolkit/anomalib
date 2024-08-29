@@ -154,7 +154,7 @@ class AnomalibCLI:
         parser.add_argument("--metrics.pixel", type=list[str] | str | None, default=None, required=False)
         parser.add_argument("--metrics.threshold", type=BaseThreshold | str, default="F1AdaptiveThreshold")
         parser.add_argument("--logging.log_graph", type=bool, help="Log the model to the logger", default=False)
-        if hasattr(parser, "subcommand") and parser.subcommand not in ("export", "predict"):
+        if hasattr(parser, "subcommand") and parser.subcommand not in {"export", "predict"}:
             parser.link_arguments("task", "data.init_args.task")
         parser.add_argument(
             "--default_root_dir",
@@ -278,7 +278,7 @@ class AnomalibCLI:
     def before_instantiate_classes(self) -> None:
         """Modify the configuration to properly instantiate classes and sets up tiler."""
         subcommand = self.config["subcommand"]
-        if subcommand in (*self.subcommands(), "train", "predict"):
+        if subcommand in {*self.subcommands(), "train", "predict"}:
             self.config[subcommand] = update_config(self.config[subcommand])
 
     def instantiate_classes(self) -> None:
@@ -288,7 +288,7 @@ class AnomalibCLI:
         But for subcommands we do not want to instantiate any trainer specific classes such as datamodule, model, etc
         This is because the subcommand is responsible for instantiating and executing code based on the passed config
         """
-        if self.config["subcommand"] in (*self.subcommands(), "predict"):  # trainer commands
+        if self.config["subcommand"] in {*self.subcommands(), "predict"}:  # trainer commands
             # since all classes are instantiated, the LightningCLI also creates an unused ``Trainer`` object.
             # the minor change here is that engine is instantiated instead of trainer
             self.config_init = self.parser.instantiate_classes(self.config)
@@ -301,7 +301,7 @@ class AnomalibCLI:
         else:
             self.config_init = self.parser.instantiate_classes(self.config)
             subcommand = self.config["subcommand"]
-            if subcommand in ("train", "export"):
+            if subcommand in {"train", "export"}:
                 self.instantiate_engine()
             if "model" in self.config_init[subcommand]:
                 self.model = self._get(self.config_init, "model")
@@ -359,7 +359,7 @@ class AnomalibCLI:
 
             install_kwargs = self.config.get("install", {})
             anomalib_install(**install_kwargs)
-        elif self.config["subcommand"] in (*self.subcommands(), "train", "export", "predict"):
+        elif self.config["subcommand"] in {*self.subcommands(), "train", "export", "predict"}:
             fn = getattr(self.engine, self.subcommand)
             fn_kwargs = self._prepare_subcommand_kwargs(self.subcommand)
             fn(**fn_kwargs)

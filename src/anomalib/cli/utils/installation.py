@@ -319,7 +319,7 @@ def get_torch_install_args(requirement: str | Requirement) -> list[str]:
         )
     install_args: list[str] = []
 
-    if platform.system() in ("Linux", "Windows"):
+    if platform.system() in {"Linux", "Windows"}:
         # Get the hardware suffix (eg., +cpu, +cu116 and +cu118 etc.)
         hardware_suffix = get_hardware_suffix(with_available_torch_build=True, torch_version=version)
 
@@ -339,7 +339,7 @@ def get_torch_install_args(requirement: str | Requirement) -> list[str]:
             torch_version,
             torchvision_requirement,
         ]
-    elif platform.system() in ("macos", "Darwin"):
+    elif platform.system() in {"macos", "Darwin"}:
         torch_version = str(requirement)
         install_args += [torch_version]
     else:

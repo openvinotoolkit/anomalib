@@ -42,7 +42,7 @@ class _TestAnomalibVideoDatamodule(_TestAnomalibDataModule):
         # We don't know the shape of the original image, so we only check that it is a list of 4 images.
         assert batch["original_image"].shape[0] == 4
 
-        if subset in ("val", "test"):
+        if subset in {"val", "test"}:
             assert len(batch["label"]) == 4
             assert batch["mask"].shape == (4, 256, 256)
             assert batch["mask"].shape == (4, 256, 256)

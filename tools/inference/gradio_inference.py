@@ -53,18 +53,17 @@ def get_inferencer(weight_path: Path, metadata: Path | None = None) -> Inference
     extension = weight_path.suffix
     inferencer: Inferencer
     module = import_module("anomalib.deploy")
-    if extension in (".pt", ".pth", ".ckpt"):
+    if extension in {".pt", ".pth", ".ckpt"}:
         torch_inferencer = module.TorchInferencer
         inferencer = torch_inferencer(path=weight_path)
 
-    elif extension in (".onnx", ".bin", ".xml"):
+    elif extension in {".onnx", ".bin", ".xml"}:
         if metadata is None:
             msg = "When using OpenVINO Inferencer, the following arguments are required: --metadata"
             raise ValueError(msg)
 
         openvino_inferencer = module.OpenVINOInferencer
         inferencer = openvino_inferencer(path=weight_path, metadata=metadata)
-
     else:
         msg = (
             "Model extension is not supported. "
