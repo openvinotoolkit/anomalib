@@ -724,9 +724,10 @@ class Engine:
             msg = f"Unknown type for dataloaders {type(dataloaders)}"
             raise TypeError(msg)
         if dataset is not None:
-            dataloaders.append(DataLoader(dataset))
+            dataloaders.append(DataLoader(dataset, collate_fn=dataset.collate_fn))
         if data_path is not None:
-            dataloaders.append(DataLoader(PredictDataset(data_path)))
+            dataset = PredictDataset(data_path)
+            dataloaders.append(DataLoader(dataset, collate_fn=dataset.collate_fn))
         dataloaders = dataloaders or None
 
         self._setup_dataset_task(dataloaders, datamodule)

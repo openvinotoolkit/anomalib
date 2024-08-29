@@ -6,7 +6,7 @@
 import copy
 import logging
 from abc import ABC
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from pathlib import Path
 
 import pandas as pd
@@ -18,7 +18,7 @@ from torchvision.tv_tensors import Mask
 
 from anomalib import TaskType
 from anomalib.data.utils import LabelName, read_image, read_mask
-from anomalib.dataclasses import ImageItem, Item
+from anomalib.dataclasses import ImageBatch, ImageItem, Item
 
 _EXPECTED_COLUMNS_CLASSIFICATION = ["image_path", "split"]
 _EXPECTED_COLUMNS_SEGMENTATION = [*_EXPECTED_COLUMNS_CLASSIFICATION, "mask_path"]
@@ -208,3 +208,12 @@ class AnomalibDataset(Dataset, ABC):
         dataset = copy.deepcopy(self)
         dataset.samples = pd.concat([self.samples, other_dataset.samples], ignore_index=True)
         return dataset
+
+    @property
+    def collate_fn(self) -> Callable:
+        """Get the collate function for the items returned by this dataset.
+
+        By default, the dataset is an image dataset, so we will return the ImageBatch's collate function.
+        Other dataset types should override this property.
+        """
+        return ImageBatch.collate

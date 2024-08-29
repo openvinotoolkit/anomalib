@@ -4,13 +4,11 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from abc import ABC
+from collections.abc import Callable
 from enum import Enum
-from typing import TYPE_CHECKING
 
 import torch
-from lightning.pytorch.utilities.types import EVAL_DATALOADERS, TRAIN_DATALOADERS
 from pandas import DataFrame
-from torch.utils.data.dataloader import DataLoader
 from torchvision.transforms.v2 import Transform
 from torchvision.transforms.v2.functional import to_dtype, to_dtype_video
 from torchvision.tv_tensors import Mask
@@ -21,9 +19,6 @@ from anomalib.data.base.dataset import AnomalibDataset
 from anomalib.data.utils import ValSplitMode
 from anomalib.data.utils.video import ClipsIndexer
 from anomalib.dataclasses import VideoBatch, VideoItem
-
-if TYPE_CHECKING:
-    from collections.abc import Callable
 
 
 class VideoTargetFrame(str, Enum):
@@ -176,6 +171,11 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
 
         return item
 
+    @property
+    def collate_fn(self) -> Callable:
+        """Return the collate function for video batches."""
+        return VideoBatch.collate
+
 
 class AnomalibVideoDataModule(AnomalibDataModule):
     """Base class for video data modules."""
@@ -206,33 +206,3 @@ class AnomalibVideoDataModule(AnomalibDataModule):
             raise ValueError(msg)
 
         self._create_val_split()
-
-    def train_dataloader(self) -> TRAIN_DATALOADERS:
-        """Get train dataloader."""
-        return DataLoader(
-            dataset=self.train_data,
-            shuffle=True,
-            batch_size=self.train_batch_size,
-            num_workers=self.num_workers,
-            collate_fn=VideoBatch.collate,
-        )
-
-    def val_dataloader(self) -> EVAL_DATALOADERS:
-        """Get validation dataloader."""
-        return DataLoader(
-            dataset=self.val_data,
-            shuffle=False,
-            batch_size=self.eval_batch_size,
-            num_workers=self.num_workers,
-            collate_fn=VideoBatch.collate,
-        )
-
-    def test_dataloader(self) -> EVAL_DATALOADERS:
-        """Get test dataloader."""
-        return DataLoader(
-            dataset=self.test_data,
-            shuffle=False,
-            batch_size=self.eval_batch_size,
-            num_workers=self.num_workers,
-            collate_fn=VideoBatch.collate,
-        )

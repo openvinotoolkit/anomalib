@@ -3,13 +3,14 @@
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from collections.abc import Callable
 from pathlib import Path
 
 from torch.utils.data.dataset import Dataset
 from torchvision.transforms.v2 import Transform
 
 from anomalib.data.utils import get_image_filenames, read_image
-from anomalib.dataclasses import ImageItem
+from anomalib.dataclasses import ImageBatch, ImageItem
 
 
 class PredictDataset(Dataset):
@@ -50,3 +51,8 @@ class PredictDataset(Dataset):
             image=image,
             image_path=str(image_filename),
         )
+
+    @property
+    def collate_fn(self) -> Callable:
+        """Get the collate function."""
+        return ImageBatch.collate
