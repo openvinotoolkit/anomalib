@@ -5,7 +5,7 @@
 
 import torch
 
-from .threshold import Threshold
+from .base import Threshold
 
 
 class ManualThreshold(Threshold):

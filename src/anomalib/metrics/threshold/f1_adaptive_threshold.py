@@ -9,7 +9,7 @@ import torch
 
 from anomalib.metrics.precision_recall_curve import BinaryPrecisionRecallCurve
 
-from .threshold import Threshold
+from .base import Threshold
 
 logger = logging.getLogger(__name__)
 
