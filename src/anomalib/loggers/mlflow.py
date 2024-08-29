@@ -1,5 +1,8 @@
 """MLFlow logger with add image interface."""
 
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
 import os
 from typing import Literal
 

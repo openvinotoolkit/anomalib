@@ -15,7 +15,7 @@ repos:
 
   # Ruff version.
   - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: "v0.5.1"
+    rev: "v0.6.2"
     hooks:
       # Run the linter.
       - id: ruff
@@ -27,7 +27,7 @@ repos:
 
   # python static type checking
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: "v1.10.1"
+    rev: "v1.11.2"
     hooks:
       - id: mypy
         additional_dependencies: [types-PyYAML, types-setuptools]
@@ -43,7 +43,7 @@ repos:
 
   # notebooks.
   - repo: https://github.com/nbQA-dev/nbQA
-    rev: 1.8.5
+    rev: 1.8.7
     hooks:
       - id: nbqa-ruff
         # Ignore unsorted imports. This is because jupyter notebooks can import
