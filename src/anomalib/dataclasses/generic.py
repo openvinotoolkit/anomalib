@@ -2,9 +2,9 @@
 
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Iterator
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, fields, is_dataclass, replace
 from types import NoneType
-from typing import ClassVar, Generic, TypeVar, get_args, get_type_hints
+from typing import Any, ClassVar, Generic, TypeVar, get_args, get_type_hints
 
 import numpy as np
 import torch
@@ -214,7 +214,32 @@ class _OutputFields(Generic[T, MaskT], ABC):
 
 
 @dataclass
+class UpdateMixin:
+    """Mixin class for dataclasses that allows for in-place replacement of attributes."""
+
+    def update(self, in_place: bool = True, **changes) -> Any:  # noqa: ANN401
+        """Replace fields in place and call __post_init__ to reinitialize the instance.
+
+        Parameters:
+        changes (dict): A dictionary of field names and their new values.
+        """
+        if not is_dataclass(self):
+            msg = "replace can only be used with dataclass instances"
+            raise TypeError(msg)
+
+        if in_place:
+            for field in fields(self):
+                if field.init and field.name in changes:
+                    setattr(self, field.name, changes[field.name])
+            if hasattr(self, "__post_init__"):
+                self.__post_init__()
+            return self
+        return replace(self, **changes)
+
+
+@dataclass
 class _GenericItem(
+    UpdateMixin,
     Generic[T, ImageT, MaskT, PathT],
     _OutputFields[T, MaskT],
     _InputFields[T, ImageT, MaskT, PathT],
@@ -224,6 +249,7 @@ class _GenericItem(
 
 @dataclass
 class _GenericBatch(
+    UpdateMixin,
     Generic[T, ImageT, MaskT, PathT],
     _OutputFields[T, MaskT],
     _InputFields[T, ImageT, MaskT, PathT],
