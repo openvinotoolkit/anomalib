@@ -19,7 +19,7 @@ from torch import nn
 from torchvision.transforms.v2 import Compose, Normalize, Resize, Transform
 
 from anomalib import LearningType
-from anomalib.dataclasses import Batch
+from anomalib.dataclasses import Batch, InferenceBatch
 from anomalib.metrics.threshold import BaseThreshold
 from anomalib.post_processing import OneClassPostProcessor, PostProcessor
 
@@ -79,7 +79,7 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
         initialization.
         """
 
-    def forward(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> Any:  # noqa: ANN401
+    def forward(self, batch: torch.Tensor, *args, **kwargs) -> InferenceBatch:
         """Perform the forward-pass by passing input tensor to the module.
 
         Args:
@@ -91,7 +91,9 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
             Tensor: Output tensor from the model.
         """
         del args, kwargs  # These variables are not used.
-        return self.model(batch)
+        batch = self.exportable_transform(batch)
+        batch = self.model(batch)
+        return self.post_processor(batch) if self.post_processor else batch
 
     def predict_step(
         self,

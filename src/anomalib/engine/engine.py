@@ -15,7 +15,6 @@ from lightning.pytorch.trainer import Trainer
 from lightning.pytorch.utilities.types import _EVALUATE_OUTPUT, _PREDICT_OUTPUT, EVAL_DATALOADERS, TRAIN_DATALOADERS
 from torch.utils.data import DataLoader, Dataset
 from torchmetrics import Metric
-from torchvision.transforms.v2 import Transform
 
 from anomalib import LearningType, TaskType
 from anomalib.callbacks.checkpoint import ModelCheckpoint
@@ -815,8 +814,6 @@ class Engine:
         export_type: ExportType | str,
         export_root: str | Path | None = None,
         input_size: tuple[int, int] | None = None,
-        transform: Transform | None = None,
-        post_processor: PostProcessor | None = None,
         compression_type: CompressionType | None = None,
         datamodule: AnomalibDataModule | None = None,
         metric: Metric | str | None = None,
@@ -832,12 +829,6 @@ class Engine:
                 exported to trainer.default_root_dir. Defaults to None.
             input_size (tuple[int, int] | None, optional): A statis input shape for the model, which is exported to ONNX
                 and OpenVINO format. Defaults to None.
-            transform (Transform | None, optional): Input transform to include in the exported model. If not provided,
-                the engine will try to use the default transform from the model.
-                Defaults to ``None``.
-            post_processor (PostProcessor | None, optional): Post-processor to include in the exported model.
-                If not provided, the engine will try to use the default post-processor from the model.
-                Defaults to ``None``.
             compression_type (CompressionType | None, optional): Compression type for OpenVINO exporting only.
                 Defaults to ``None``.
             datamodule (AnomalibDataModule | None, optional): Lightning datamodule.
@@ -893,22 +884,16 @@ class Engine:
         if export_type == ExportType.TORCH:
             exported_model_path = model.to_torch(
                 export_root=export_root,
-                transform=transform,
-                task=self.task,
             )
         elif export_type == ExportType.ONNX:
             exported_model_path = model.to_onnx(
                 export_root=export_root,
                 input_size=input_size,
-                transform=transform,
-                task=self.task,
             )
         elif export_type == ExportType.OPENVINO:
             exported_model_path = model.to_openvino(
                 export_root=export_root,
                 input_size=input_size,
-                transform=transform,
-                post_processor=post_processor,
                 task=self.task,
                 compression_type=compression_type,
                 datamodule=datamodule,
