@@ -177,12 +177,8 @@ class TestAPI:
                 and engine
         """
         # select task type
-        if model_name in ("rkde", "ai_vad"):
-            task_type = TaskType.DETECTION
-        elif model_name in ("ganomaly", "dfkde"):
-            task_type = TaskType.CLASSIFICATION
-        else:
-            task_type = TaskType.SEGMENTATION
+
+        task_type = TaskType.CLASSIFICATION if model_name in ("ganomaly", "dfkde") else TaskType.SEGMENTATION
 
         # set extra model args
         # TODO(ashwinvaidya17): Fix these Edge cases

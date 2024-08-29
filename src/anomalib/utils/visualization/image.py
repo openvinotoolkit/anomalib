@@ -46,9 +46,6 @@ class ImageResult:
     anomaly_map: np.ndarray | None = None
     gt_mask: np.ndarray | None = None
     pred_mask: np.ndarray | None = None
-    gt_boxes: np.ndarray | None = None
-    pred_boxes: np.ndarray | None = None
-    box_labels: np.ndarray | None = None
     normalize: InitVar[bool] = False
 
     def __post_init__(self, normalize: bool) -> None:
@@ -75,26 +72,15 @@ class ImageResult:
                 if self.segmentations.max() <= 1.0:
                     self.segmentations = (self.segmentations * 255).astype(np.uint8)
 
-        if self.pred_boxes is not None:
-            if self.box_labels is None:
-                msg = "Box labels must be provided when box locations are provided."
-                raise ValueError(msg)
-
-            self.normal_boxes = self.pred_boxes[~self.box_labels.astype(bool)]
-            self.anomalous_boxes = self.pred_boxes[self.box_labels.astype(bool)]
-
     def __repr__(self) -> str:
         """Return a string representation of the object."""
         repr_str = (
             f"ImageResult(image={self.image}, pred_score={self.pred_score}, pred_label={self.pred_label}, "
             f"anomaly_map={self.anomaly_map}, gt_mask={self.gt_mask}, "
-            f"gt_boxes={self.gt_boxes}, pred_boxes={self.pred_boxes}, box_labels={self.box_labels}"
         )
         repr_str += f", pred_mask={self.pred_mask}" if self.pred_mask is not None else ""
         repr_str += f", heat_map={self.heat_map}" if self.heat_map is not None else ""
         repr_str += f", segmentations={self.segmentations}" if self.segmentations is not None else ""
-        repr_str += f", normal_boxes={self.normal_boxes}" if self.normal_boxes is not None else ""
-        repr_str += f", anomalous_boxes={self.anomalous_boxes}" if self.anomalous_boxes is not None else ""
         repr_str += ")"
         return repr_str
 

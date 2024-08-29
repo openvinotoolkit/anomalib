@@ -43,7 +43,12 @@ class NumpyImageItem(
     def _validate_anomaly_map(self, anomaly_map: np.ndarray) -> np.ndarray:
         return anomaly_map
 
-    def _validate_pred_score(self, pred_score: np.ndarray) -> np.ndarray:
+    def _validate_pred_score(self, pred_score: np.ndarray | None) -> np.ndarray | None:
+        if pred_score is None:
+            return None
+        if pred_score.ndim == 1:
+            assert len(pred_score) == 1, f"Expected single value for pred_score, got {len(pred_score)}."
+            pred_score = pred_score[0]
         return pred_score
 
     def _validate_pred_mask(self, pred_mask: np.ndarray) -> np.ndarray:

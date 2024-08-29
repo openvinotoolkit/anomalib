@@ -10,7 +10,6 @@ from pathlib import Path
 
 import pytest
 
-from anomalib import TaskType
 from anomalib.models import Padim
 
 sys.path.append("tools/inference")
@@ -42,7 +41,6 @@ class TestTorchInferenceEntrypoint:
         model = Padim.load_from_checkpoint(_ckpt_path)
         model.to_torch(
             export_root=_ckpt_path.parent.parent.parent,
-            task=TaskType.SEGMENTATION,
         )
         arguments = get_parser().parse_args(
             [
