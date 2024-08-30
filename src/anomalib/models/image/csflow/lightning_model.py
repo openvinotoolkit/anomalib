@@ -13,6 +13,7 @@ import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 
 from anomalib import LearningType
+from anomalib.dataclasses import Batch
 from anomalib.models.components import AnomalyModule
 
 from .loss import CsFlowLoss
@@ -69,11 +70,11 @@ class Csflow(AnomalyModule):
         )
         self.model.feature_extractor.eval()
 
-    def training_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> STEP_OUTPUT:
+    def training_step(self, batch: Batch, *args, **kwargs) -> STEP_OUTPUT:
         """Perform the training step of CS-Flow.
 
         Args:
-            batch (dict[str, str | torch.Tensor]): Input batch
+            batch (Batch): Input batch
             args: Arguments.
             kwargs: Keyword arguments.
 
@@ -82,16 +83,16 @@ class Csflow(AnomalyModule):
         """
         del args, kwargs  # These variables are not used.
 
-        z_dist, jacobians = self.model(batch["image"])
+        z_dist, jacobians = self.model(batch.image)
         loss = self.loss(z_dist, jacobians)
         self.log("train_loss", loss.item(), on_epoch=True, prog_bar=True, logger=True)
         return {"loss": loss}
 
-    def validation_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> STEP_OUTPUT:
+    def validation_step(self, batch: Batch, *args, **kwargs) -> STEP_OUTPUT:
         """Perform the validation step for CS Flow.
 
         Args:
-            batch (torch.Tensor): Input batch
+            batch (Batch): Input batch
             args: Arguments.
             kwargs: Keyword arguments.
 
@@ -100,10 +101,8 @@ class Csflow(AnomalyModule):
         """
         del args, kwargs  # These variables are not used.
 
-        output = self.model(batch["image"])
-        batch["anomaly_maps"] = output["anomaly_map"]
-        batch["pred_scores"] = output["pred_score"]
-        return batch
+        predictions = self.model(batch.image)
+        return batch.update(**predictions._asdict())
 
     @property
     def trainer_arguments(self) -> dict[str, Any]:

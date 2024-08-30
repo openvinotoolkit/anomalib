@@ -14,6 +14,7 @@ from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torch import optim
 
 from anomalib import LearningType
+from anomalib.dataclasses import Batch
 from anomalib.models.components import AnomalyModule
 
 from .loss import STFPMLoss
@@ -45,13 +46,13 @@ class Stfpm(AnomalyModule):
         )
         self.loss = STFPMLoss()
 
-    def training_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> STEP_OUTPUT:
+    def training_step(self, batch: Batch, *args, **kwargs) -> STEP_OUTPUT:
         """Perform a training step of STFPM.
 
         For each batch, teacher and student and teacher features are extracted from the CNN.
 
         Args:
-          batch (dict[str, str | torch.Tensor]): Input batch.
+          batch (Batch): Input batch.
           args: Additional arguments.
           kwargs: Additional keyword arguments.
 
@@ -60,19 +61,19 @@ class Stfpm(AnomalyModule):
         """
         del args, kwargs  # These variables are not used.
 
-        teacher_features, student_features = self.model.forward(batch["image"])
+        teacher_features, student_features = self.model.forward(batch.image)
         loss = self.loss(teacher_features, student_features)
         self.log("train_loss", loss.item(), on_epoch=True, prog_bar=True, logger=True)
         return {"loss": loss}
 
-    def validation_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> STEP_OUTPUT:
+    def validation_step(self, batch: Batch, *args, **kwargs) -> STEP_OUTPUT:
         """Perform a validation Step of STFPM.
 
         Similar to the training step, student/teacher features are extracted from the CNN for each batch, and
         anomaly map is computed.
 
         Args:
-          batch (dict[str, str | torch.Tensor]): Input batch
+          batch (Batch): Input batch
           args: Additional arguments
           kwargs: Additional keyword arguments
 
@@ -82,8 +83,8 @@ class Stfpm(AnomalyModule):
         """
         del args, kwargs  # These variables are not used.
 
-        batch["anomaly_maps"] = self.model(batch["image"])
-        return batch
+        predictions = self.model(batch.image)
+        return batch.update(**predictions._asdict())
 
     @property
     def trainer_arguments(self) -> dict[str, Any]:

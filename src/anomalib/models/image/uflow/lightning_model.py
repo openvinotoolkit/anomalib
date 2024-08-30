@@ -12,11 +12,11 @@ from typing import Any
 import torch
 from lightning.pytorch.core.optimizer import LightningOptimizer
 from lightning.pytorch.utilities.types import STEP_OUTPUT
-from torch import Tensor
 from torch.optim.lr_scheduler import LRScheduler
 from torchvision.transforms.v2 import Compose, Normalize, Resize, Transform
 
 from anomalib import LearningType
+from anomalib.dataclasses import Batch
 from anomalib.models.components import AnomalyModule
 
 from .loss import UFlowLoss
@@ -73,18 +73,17 @@ class Uflow(AnomalyModule):
             permute_soft=self.permute_soft,
         )
 
-    def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:  # noqa: ARG002 | unused arguments
+    def training_step(self, batch: Batch, *args, **kwargs) -> STEP_OUTPUT:  # noqa: ARG002 | unused arguments
         """Training step."""
-        z, ljd = self.model(batch["image"])
+        z, ljd = self.model(batch.image)
         loss = self.loss(z, ljd)
         self.log_dict({"loss": loss}, on_step=True, on_epoch=False, prog_bar=False, logger=True)
         return {"loss": loss}
 
-    def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:  # noqa: ARG002 | unused arguments
+    def validation_step(self, batch: Batch, *args, **kwargs) -> STEP_OUTPUT:  # noqa: ARG002 | unused arguments
         """Validation step."""
-        anomaly_maps = self.model(batch["image"])
-        batch["anomaly_maps"] = anomaly_maps
-        return batch
+        predictions = self.model(batch.image)
+        return batch.update(**predictions._asdict())
 
     def configure_optimizers(self) -> tuple[list[LightningOptimizer], list[LRScheduler]]:
         """Return optimizer and scheduler."""

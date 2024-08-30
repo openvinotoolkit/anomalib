@@ -137,6 +137,7 @@ class ExportMixin:
         """
         export_root = _create_export_root(export_root, ExportType.ONNX)
         input_shape = torch.zeros((1, 3, *input_size)) if input_size else torch.zeros((1, 3, 1, 1))
+        input_shape = input_shape.to(self.device)
         dynamic_axes = (
             None if input_size else {"input": {0: "batch_size", 2: "height", 3: "weight"}, "output": {0: "batch_size"}}
         )

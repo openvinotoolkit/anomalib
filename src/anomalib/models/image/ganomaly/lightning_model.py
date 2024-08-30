@@ -129,7 +129,7 @@ class Ganomaly(AnomalyModule):
 
     def training_step(
         self,
-        batch: dict[str, str | torch.Tensor],
+        batch: Batch,
         batch_idx: int,
     ) -> STEP_OUTPUT:
         """Perform the training step.
@@ -146,7 +146,7 @@ class Ganomaly(AnomalyModule):
         d_opt, g_opt = self.optimizers()
 
         # forward pass
-        padded, fake, latent_i, latent_o = self.model(batch["image"])
+        padded, fake, latent_i, latent_o = self.model(batch.image)
         pred_real, _ = self.model.discriminator(padded)
 
         # generator update
@@ -191,10 +191,10 @@ class Ganomaly(AnomalyModule):
         """
         del args, kwargs  # Unused arguments.
 
-        batch.pred_score = self.model(batch.image)
-        self.max_scores = max(self.max_scores, torch.max(batch.pred_score))
-        self.min_scores = min(self.min_scores, torch.min(batch.pred_score))
-        return batch
+        predictions = self.model(batch.image)
+        self.max_scores = max(self.max_scores, torch.max(predictions.pred_score))
+        self.min_scores = min(self.min_scores, torch.min(predictions.pred_score))
+        return batch.update(**predictions._asdict())
 
     def on_validation_batch_end(
         self,

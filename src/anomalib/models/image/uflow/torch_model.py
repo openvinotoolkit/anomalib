@@ -8,6 +8,7 @@ from FrEIA import framework as ff
 from FrEIA import modules as fm
 from torch import nn
 
+from anomalib.dataclasses import InferenceBatch
 from anomalib.models.components.flow import AllInOneBlock
 
 from .anomaly_map import AnomalyMapGenerator
@@ -171,14 +172,15 @@ class UflowModel(nn.Module):
             in_node = nodes[-1]
         return nodes
 
-    def forward(self, image: torch.Tensor) -> torch.Tensor:
+    def forward(self, image: torch.Tensor) -> torch.Tensor | InferenceBatch:
         """Return anomaly map."""
         features = self.feature_extractor(image)
         z, ljd = self.encode(features)
 
         if self.training:
             return z, ljd
-        return self.anomaly_map_generator(z)
+        anomaly_map = self.anomaly_map_generator(z)
+        return InferenceBatch(anomaly_map=anomaly_map)
 
     def encode(self, features: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         """Return"""

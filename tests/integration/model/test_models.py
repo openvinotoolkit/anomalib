@@ -19,7 +19,7 @@ from anomalib.models import AnomalyModule, get_available_models, get_model
 
 def models() -> set[str]:
     """Return all available models."""
-    return get_available_models()
+    return [model for model in get_available_models() if model == "stfpm"]
 
 
 def export_types() -> list[ExportType]:

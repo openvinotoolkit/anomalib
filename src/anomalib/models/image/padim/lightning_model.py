@@ -7,7 +7,6 @@ Paper https://arxiv.org/abs/2011.08785
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-from dataclasses import replace
 
 import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
@@ -105,7 +104,7 @@ class Padim(MemoryBankMixin, AnomalyModule):
         del args, kwargs  # These variables are not used.
 
         predictions = self.model(batch.image)
-        return replace(batch, anomaly_map=predictions.anomaly_map)
+        return batch.update(**predictions._asdict())
 
     @property
     def trainer_arguments(self) -> dict[str, int | float]:

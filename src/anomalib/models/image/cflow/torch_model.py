@@ -9,6 +9,7 @@ import einops
 import torch
 from torch import nn
 
+from anomalib.dataclasses import InferenceBatch
 from anomalib.models.components import TimmFeatureExtractor
 
 from .anomaly_map import AnomalyMapGenerator
@@ -82,7 +83,7 @@ class CflowModel(nn.Module):
 
         self.anomaly_map_generator = AnomalyMapGenerator(pool_layers=self.pool_layers)
 
-    def forward(self, images: torch.Tensor) -> torch.Tensor:
+    def forward(self, images: torch.Tensor) -> InferenceBatch:
         """Forward-pass images into the network to extract encoder features and compute probability.
 
         Args:
@@ -150,4 +151,4 @@ class CflowModel(nn.Module):
         )
         self.decoders.train()
 
-        return output.to(images.device)
+        return InferenceBatch(anomaly_map=output.to(images.device))

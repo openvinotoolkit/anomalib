@@ -8,7 +8,6 @@ Paper https://arxiv.org/abs/2106.08265.
 
 import logging
 from collections.abc import Sequence
-from dataclasses import replace
 from typing import Any
 
 import torch
@@ -109,7 +108,7 @@ class Patchcore(MemoryBankMixin, AnomalyModule):
         # Get anomaly maps and predicted scores from the model.
         predictions = self.model(batch.image)
 
-        return replace(batch, pred_score=predictions.pred_score, anomaly_map=predictions.anomaly_map)
+        return batch.update(**predictions._asdict())
 
     @property
     def trainer_arguments(self) -> dict[str, Any]:
