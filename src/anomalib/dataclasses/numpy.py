@@ -1,5 +1,8 @@
 """Dataclasses for numpy data."""
 
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
 from dataclasses import dataclass
 
 import numpy as np

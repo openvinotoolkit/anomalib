@@ -1,5 +1,8 @@
 """Dataclasses for torch inputs and outputs."""
 
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
 from collections.abc import Callable, Sequence
 from dataclasses import asdict, dataclass, fields
 from typing import ClassVar, Generic, NamedTuple, TypeVar

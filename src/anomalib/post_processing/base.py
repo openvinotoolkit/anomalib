@@ -1,5 +1,8 @@
 """Base class for post-processor."""
 
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
 from abc import ABC, abstractmethod
 
 from lightning.pytorch import Callback

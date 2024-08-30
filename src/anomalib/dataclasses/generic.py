@@ -1,5 +1,8 @@
 """Generic dataclasses that can be implemented for different data types."""
 
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Iterator
 from dataclasses import asdict, dataclass, fields, is_dataclass, replace

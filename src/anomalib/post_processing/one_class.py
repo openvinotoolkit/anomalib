@@ -1,5 +1,8 @@
 """Post-processing module for anomaly detection models."""
 
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
 import torch
 from lightning import LightningModule, Trainer
 
