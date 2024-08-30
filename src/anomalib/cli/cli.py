@@ -19,7 +19,6 @@ from anomalib.cli.pipelines import PIPELINE_REGISTRY, pipeline_subcommands, run_
 from anomalib.cli.utils.help_formatter import CustomHelpFormatter, get_short_docstring
 from anomalib.cli.utils.openvino import add_openvino_export_arguments
 from anomalib.loggers import configure_logger
-from anomalib.post_processing import PostProcessor
 
 traceback.install()
 logger = logging.getLogger("anomalib.cli")
@@ -147,7 +146,6 @@ class AnomalibCLI:
             ``Engine`` class should be reflected manually.
         """
         parser.add_argument("--task", type=TaskType | str, default=TaskType.SEGMENTATION)
-        parser.add_argument("--post_processor", type=PostProcessor | None, default=None, required=False)
         parser.add_argument("--metrics.image", type=list[str] | str | None, default=None)
         parser.add_argument("--metrics.pixel", type=list[str] | str | None, default=None, required=False)
         parser.add_argument("--logging.log_graph", type=bool, help="Log the model to the logger", default=False)
@@ -243,7 +241,7 @@ class AnomalibCLI:
         added = parser.add_method_arguments(
             Engine,
             "export",
-            skip={"ov_args", "model", "datamodule", "post_processor"},
+            skip={"ov_args", "model", "datamodule"},
         )
         self.subcommand_method_arguments["export"] = added
         add_openvino_export_arguments(parser)
@@ -323,7 +321,6 @@ class AnomalibCLI:
 
         engine_args = {
             "task": self._get(self.config_init, "task"),
-            "post_processor": self._get(self.config_init, "post_processor"),
             "image_metrics": self._get(self.config_init, "metrics.image"),
             "pixel_metrics": self._get(self.config_init, "metrics.pixel"),
         }

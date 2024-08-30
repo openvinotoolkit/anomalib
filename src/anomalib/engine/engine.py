@@ -24,7 +24,6 @@ from anomalib.callbacks.visualizer import _VisualizationCallback
 from anomalib.data import AnomalibDataModule, AnomalibDataset, PredictDataset
 from anomalib.deploy import CompressionType, ExportType
 from anomalib.models import AnomalyModule
-from anomalib.post_processing import PostProcessor
 from anomalib.utils.path import create_versioned_dir
 from anomalib.utils.visualization import ImageVisualizer
 
@@ -117,7 +116,6 @@ class Engine:
     def __init__(
         self,
         callbacks: list[Callback] | None = None,
-        post_processor: PostProcessor | None = None,
         task: TaskType | str = TaskType.SEGMENTATION,
         image_metrics: list[str] | str | dict[str, dict[str, Any]] | None = None,
         pixel_metrics: list[str] | str | dict[str, dict[str, Any]] | None = None,
@@ -139,7 +137,6 @@ class Engine:
             **kwargs,
         )
 
-        self.post_processor = post_processor
         self.task = TaskType(task)
         self.image_metric_names = image_metrics if image_metrics else ["AUROC", "F1Max"]
 
@@ -375,12 +372,8 @@ class Engine:
             )
 
         # Add the post-processor callback.
-        if model.post_processor is None:
-            if self.post_processor is not None:
-                model.set_post_processor(self.post_processor)
-            else:
-                model.set_post_processor(model.default_post_processor())
-        _callbacks.append(model.post_processor)
+        if isinstance(model.post_processor, Callback):
+            _callbacks.append(model.post_processor)
 
         # Add the metrics callback.
         _callbacks.append(_MetricsCallback(self.task, self.image_metric_names, self.pixel_metric_names))

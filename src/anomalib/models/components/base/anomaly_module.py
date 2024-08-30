@@ -39,7 +39,7 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
     Acts as a base class for all the Anomaly Modules in the library.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, post_processor: PostProcessor | None = None) -> None:
         super().__init__()
         logger.info("Initializing %s model.", self.__class__.__name__)
 
@@ -51,7 +51,7 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
         self.image_metrics: AnomalibMetricCollection
         self.pixel_metrics: AnomalibMetricCollection
 
-        self._post_processor: PostProcessor | None = None
+        self.post_processor = post_processor or self.default_post_processor()
 
         self._transform: Transform | None = None
         self._input_size: tuple[int, int] | None = None
@@ -201,18 +201,6 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
             ],
         )
 
-    @property
-    def post_processor(self) -> PostProcessor | None:
-        """Return the post processor."""
-        return self._post_processor
-
-    def set_post_processor(self, post_processor: PostProcessor) -> None:
-        """Set the post processor.
-
-        We cannot use a setter here, because the post processor is an nn.Module.
-        """
-        self._post_processor = post_processor
-
     def default_post_processor(self) -> PostProcessor:
         """Default post processor.
 
@@ -246,7 +234,6 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
         Saves the transform to the checkpoint.
         """
         checkpoint["transform"] = self.transform
-        checkpoint["post_processor"] = self.post_processor
 
     def on_load_checkpoint(self, checkpoint: dict[str, Any]) -> None:
         """Called when loading the model from a checkpoint.
@@ -255,7 +242,6 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
         the state dict.
         """
         self._transform = checkpoint["transform"]
-        self._post_processor = checkpoint["post_processor"]
         self.setup("load_checkpoint")
 
     @classmethod
