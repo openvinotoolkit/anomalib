@@ -144,13 +144,13 @@ class WinClip(AnomalyModule):
         """
         return LearningType.FEW_SHOT if self.k_shot else LearningType.ZERO_SHOT
 
-    def state_dict(self) -> OrderedDict[str, Any]:
+    def state_dict(self, **kwargs) -> OrderedDict[str, Any]:
         """Return the state dict of the model.
 
         Before returning the state dict, we remove the parameters of the frozen backbone to reduce the size of the
         checkpoint.
         """
-        state_dict = super().state_dict()
+        state_dict = super().state_dict(**kwargs)
         for pattern in self.EXCLUDE_FROM_STATE_DICT:
             remove_keys = [key for key in state_dict if key.startswith(pattern)]
             for key in remove_keys:
