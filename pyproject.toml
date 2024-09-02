@@ -165,7 +165,6 @@ lint.ignore = [
     "A004", # import is shadowing a Python built-in
     "A005", # Module is shadowing a Python built-in
     "B909", # Mutation to loop iterable during iteration
-    "PLR6301", # could be a function, class method or static method
     "PLC2701", # Private name import
     "PLC0415", # import should be at the top of the file
     "PLR0917", # Too many positional arguments

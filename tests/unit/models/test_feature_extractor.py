@@ -29,7 +29,8 @@ class TestFeatureExtractor:
         "pretrained",
         [True, False],
     )
-    def test_timm_feature_extraction(self, backbone: str, pretrained: bool) -> None:
+    @staticmethod
+    def test_timm_feature_extraction(backbone: str, pretrained: bool) -> None:
         """Test if the feature extractor can be instantiated and if the output is as expected."""
         layers = ["layer1", "layer2", "layer3"]
         model = TimmFeatureExtractor(backbone=backbone, layers=layers, pre_trained=pretrained)
@@ -51,7 +52,8 @@ class TestFeatureExtractor:
         else:
             pass
 
-    def test_torchfx_feature_extraction(self) -> None:
+    @staticmethod
+    def test_torchfx_feature_extraction() -> None:
         """Test types of inputs for instantiating the feature extractor."""
         model = TorchFXFeatureExtractor("resnet18", ["layer1", "layer2", "layer3"])
         test_input = torch.rand((32, 3, 256, 256))
