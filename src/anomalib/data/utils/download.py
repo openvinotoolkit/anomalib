@@ -299,7 +299,7 @@ def extract(file_name: Path, root: Path) -> None:
                     zip_file.extract(file_info, root)
 
     # Safely extract tar files.
-    elif file_name.suffix in (".tar", ".gz", ".xz", ".tgz"):
+    elif file_name.suffix in {".tar", ".gz", ".xz", ".tgz"}:
         with tarfile.open(file_name) as tar_file:
             members = tar_file.getmembers()
             safe_members = [member for member in members if not is_file_potentially_dangerous(member.name)]

@@ -65,7 +65,7 @@ def get_verbosity_subcommand() -> dict:
         {'subcommand': 'train', 'help': True, 'verbosity': 1}
     """
     arguments: dict = {"subcommand": None, "help": False, "verbosity": 2}
-    if len(sys.argv) >= 2 and sys.argv[1] not in ("--help", "-h"):
+    if len(sys.argv) >= 2 and sys.argv[1] not in {"--help", "-h"}:
         arguments["subcommand"] = sys.argv[1]
     if "--help" in sys.argv or "-h" in sys.argv:
         arguments["help"] = True
@@ -252,7 +252,7 @@ class CustomHelpFormatter(RichHelpFormatter, DefaultHelpFormatter):
         """
         with self.console.capture() as capture:
             section = self._root_section
-            if self.subcommand in REQUIRED_ARGUMENTS and self.verbosity_level in (0, 1) and len(section.rich_items) > 1:
+            if self.subcommand in REQUIRED_ARGUMENTS and self.verbosity_level in {0, 1} and len(section.rich_items) > 1:
                 contents = render_guide(self.subcommand)
                 for content in contents:
                     self.console.print(content)
