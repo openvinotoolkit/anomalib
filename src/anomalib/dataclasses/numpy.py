@@ -47,10 +47,10 @@ class NumpyImageItem(
         if anomaly_map is None:
             return None
         assert isinstance(anomaly_map, np.ndarray), f"Anomaly map must be a numpy array, got {type(anomaly_map)}."
-        assert anomaly_map.ndim in [
+        assert anomaly_map.ndim in {
             2,
             3,
-        ], f"Anomaly map must have shape [H, W] or [1, H, W], got shape {anomaly_map.shape}."
+        }, f"Anomaly map must have shape [H, W] or [1, H, W], got shape {anomaly_map.shape}."
         if anomaly_map.ndim == 3:
             assert (
                 anomaly_map.shape[0] == 1
