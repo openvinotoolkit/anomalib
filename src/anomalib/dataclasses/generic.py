@@ -1,4 +1,10 @@
-"""Generic dataclasses that can be implemented for different data types."""
+"""Generic dataclasses that can be implemented for different data types.
+
+This module provides a set of generic dataclasses and mixins that can be used
+to define and validate various types of data fields used in Anomalib.
+The dataclasses are designed to be flexible and extensible, allowing for easy
+customization and validation of input and output data.
+"""
 
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -24,13 +30,19 @@ Instance = TypeVar("Instance")
 Value = TypeVar("Value")
 
 
-class FieldDescriptor(
-    Generic[Value],
-):
+class FieldDescriptor(Generic[Value]):
     """Descriptor for Anomalib's dataclass fields.
 
-    Using a descriptor ensures that the values of dataclass fields can be validated before being set.
-    This allows validation of the input data not only when it is first set, but also when it is updated.
+    Using a descriptor ensures that the values of dataclass fields can be
+    validated before being set. This allows validation of the input data not
+    only when it is first set, but also when it is updated.
+
+    Attributes:
+        validator_name (str | None): The name of the validator method to be
+            called when setting the value.
+            Defaults to ``None``.
+        default (Value | None): The default value for the field.
+            Defaults to ``None``.
     """
 
     def __init__(self, validator_name: str | None = None, default: Value | None = None) -> None:
@@ -56,7 +68,7 @@ class FieldDescriptor(
             raise AttributeError(msg)
         return instance.__dict__[self.name]
 
-    def __set__(self, instance: Instance, value: Value) -> None:
+    def __set__(self, instance: object, value: Value) -> None:
         """Set the value of the descriptor.
 
         First calls the validator method if available, then sets the value of the attribute.
