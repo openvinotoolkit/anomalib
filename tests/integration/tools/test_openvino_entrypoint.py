@@ -52,8 +52,6 @@ class TestOpenVINOInferenceEntrypoint:
             [
                 "--weights",
                 str(_ckpt_path.parent.parent) + "/openvino/model.bin",
-                "--metadata",
-                str(_ckpt_path.parent.parent) + "/openvino/metadata.json",
                 "--input",
                 get_dummy_inference_image,
                 "--output",

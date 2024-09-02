@@ -10,6 +10,7 @@ import torch
 from torch import nn
 from torch.nn import functional as F  # noqa: N812
 
+from anomalib.dataclasses import InferenceBatch
 from anomalib.models.components import MultiVariateGaussian, TimmFeatureExtractor
 from anomalib.models.components.feature_extractors import dryrun_find_featuremap_dims
 
@@ -138,15 +139,14 @@ class PadimModel(nn.Module):
             embeddings = self.tiler.untile(embeddings)
 
         if self.training:
-            output = embeddings
-        else:
-            output = self.anomaly_map_generator(
-                embedding=embeddings,
-                mean=self.gaussian.mean,
-                inv_covariance=self.gaussian.inv_covariance,
-                image_size=output_size,
-            )
-        return output
+            return embeddings
+        anomaly_map = self.anomaly_map_generator(
+            embedding=embeddings,
+            mean=self.gaussian.mean,
+            inv_covariance=self.gaussian.inv_covariance,
+            image_size=output_size,
+        )
+        return InferenceBatch(anomaly_map=anomaly_map)
 
     def generate_embedding(self, features: dict[str, torch.Tensor]) -> torch.Tensor:
         """Generate embedding from hierarchical feature map.

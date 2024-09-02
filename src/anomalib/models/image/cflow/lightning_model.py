@@ -22,6 +22,7 @@ from torch.nn import functional as F  # noqa: N812
 from torch.optim import Optimizer
 
 from anomalib import LearningType
+from anomalib.dataclasses import Batch
 from anomalib.models.components import AnomalyModule
 
 from .torch_model import CflowModel
@@ -100,7 +101,7 @@ class Cflow(AnomalyModule):
             lr=self.learning_rate,
         )
 
-    def training_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> STEP_OUTPUT:
+    def training_step(self, batch: Batch, *args, **kwargs) -> STEP_OUTPUT:
         """Perform the training step of CFLOW.
 
         For each batch, decoder layers are trained with a dynamic fiber batch size.
@@ -108,7 +109,7 @@ class Cflow(AnomalyModule):
             per batch of input images
 
         Args:
-            batch (dict[str, str | torch.Tensor]): Input batch
+            batch (Batch): Input batch
             *args: Arguments.
             **kwargs: Keyword arguments.
 
@@ -120,7 +121,7 @@ class Cflow(AnomalyModule):
 
         opt = self.optimizers()
 
-        images: torch.Tensor = batch["image"]
+        images: torch.Tensor = batch.image
         activation = self.model.encoder(images)
         avg_loss = torch.zeros([1], dtype=torch.float64).to(images.device)
 
@@ -175,7 +176,7 @@ class Cflow(AnomalyModule):
         self.log("train_loss", avg_loss.item(), on_epoch=True, prog_bar=True, logger=True)
         return {"loss": avg_loss}
 
-    def validation_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> STEP_OUTPUT:
+    def validation_step(self, batch: Batch, *args, **kwargs) -> STEP_OUTPUT:
         """Perform the validation step of CFLOW.
 
             Similar to the training step, encoder features
@@ -183,7 +184,7 @@ class Cflow(AnomalyModule):
             map is computed.
 
         Args:
-            batch (dict[str, str | torch.Tensor]): Input batch
+            batch (Batch): Input batch
             *args: Arguments.
             **kwargs: Keyword arguments.
 
@@ -194,8 +195,8 @@ class Cflow(AnomalyModule):
         """
         del args, kwargs  # These variables are not used.
 
-        batch["anomaly_maps"] = self.model(batch["image"])
-        return batch
+        predictions = self.model(batch.image)
+        return batch.update(**predictions._asdict())
 
     @property
     def trainer_arguments(self) -> dict[str, Any]:

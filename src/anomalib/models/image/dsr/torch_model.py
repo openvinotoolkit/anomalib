@@ -16,6 +16,8 @@ import torch
 import torch.nn.functional as F  # noqa: N812
 from torch import nn
 
+from anomalib.dataclasses import InferenceBatch
+
 
 class DsrModel(nn.Module):
     """DSR PyTorch model.
@@ -88,7 +90,7 @@ class DsrModel(nn.Module):
         self,
         batch: torch.Tensor,
         anomaly_map_to_generate: torch.Tensor | None = None,
-    ) -> dict[str, torch.Tensor]:
+    ) -> dict[str, torch.Tensor] | InferenceBatch:
         """Compute the anomaly mask from an input image.
 
         Args:
@@ -112,8 +114,6 @@ class DsrModel(nn.Module):
             If training phase 3:
                 - "anomaly_map": Reconstructed anomaly map
         """
-        outputs: dict[str, torch.Tensor]
-
         # Generate latent embeddings decoded image via general object decoder
         if anomaly_map_to_generate is None:
             # either evaluating or training phase 3
@@ -152,26 +152,25 @@ class DsrModel(nn.Module):
 
             # if training phase 3, return upsampled softmax mask
             if self.training:
-                outputs = {"anomaly_map": out_mask_sm_up}
+                return {"anomaly_map": out_mask_sm_up}
             # if testing, extract image score
-            else:
-                out_mask_averaged = torch.nn.functional.avg_pool2d(
-                    out_mask_sm[:, 1:, :, :],
-                    21,
-                    stride=1,
-                    padding=21 // 2,
-                ).detach()
-                image_score = torch.amax(out_mask_averaged, dim=(2, 3)).squeeze()
+            out_mask_averaged = torch.nn.functional.avg_pool2d(
+                out_mask_sm[:, 1:, :, :],
+                21,
+                stride=1,
+                padding=21 // 2,
+            ).detach()
+            image_score = torch.amax(out_mask_averaged, dim=(2, 3)).squeeze()
 
-                # prevent crash when image_score is a single value (batch size of 1)
-                if image_score.size() == torch.Size([]):
-                    image_score = image_score.unsqueeze(0)
+            # prevent crash when image_score is a single value (batch size of 1)
+            if image_score.size() == torch.Size([]):
+                image_score = image_score.unsqueeze(0)
 
-                out_mask_cv = out_mask_sm_up[:, 1, :, :]
+            out_mask_cv = out_mask_sm_up[:, 1, :, :]
 
-                outputs = {"anomaly_map": out_mask_cv, "pred_score": image_score}
+            return InferenceBatch(anomaly_map=out_mask_cv, pred_score=image_score)
 
-        elif anomaly_map_to_generate is not None and self.training:
+        if anomaly_map_to_generate is not None and self.training:
             # we are in phase two
 
             # Generate anomaly strength factors
@@ -218,7 +217,7 @@ class DsrModel(nn.Module):
             out_mask_sm = torch.softmax(out_mask, dim=1)
 
             # Outputs
-            outputs = {
+            return {
                 "recon_feat_hi": recon_feat_hi,
                 "recon_feat_lo": recon_feat_lo,
                 "embedding_bot": embd_bot,
@@ -227,11 +226,8 @@ class DsrModel(nn.Module):
                 "anomaly_map": out_mask_sm,
                 "true_anomaly_map": true_anomaly_map,
             }
-        else:
-            msg = "There should not be an anomaly map to generate when not training"
-            raise RuntimeError(msg)
-
-        return outputs
+        msg = "There should not be an anomaly map to generate when not training"
+        raise RuntimeError(msg)
 
 
 class SubspaceRestrictionModule(nn.Module):

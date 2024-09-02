@@ -14,6 +14,7 @@ from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torch import optim
 
 from anomalib import LearningType
+from anomalib.dataclasses import Batch
 from anomalib.models.components import AnomalyModule
 
 from .torch_model import FREModel
@@ -69,13 +70,13 @@ class Fre(AnomalyModule):
         """
         return optim.Adam(params=self.model.fre_model.parameters(), lr=1e-3)
 
-    def training_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> STEP_OUTPUT:
+    def training_step(self, batch: Batch, *args, **kwargs) -> STEP_OUTPUT:
         """Perform the training step of FRE.
 
         For each batch, features are extracted from the CNN.
 
         Args:
-            batch (dict[str, str | torch.Tensor]): Input batch
+            batch (Batch): Input batch
             args: Arguments.
             kwargs: Keyword arguments.
 
@@ -83,18 +84,18 @@ class Fre(AnomalyModule):
           Deep CNN features.
         """
         del args, kwargs  # These variables are not used.
-        features_in, features_out, _ = self.model.get_features(batch["image"])
+        features_in, features_out, _ = self.model.get_features(batch.image)
         loss = self.loss_fn(features_in, features_out)
         self.log("train_loss", loss.item(), on_epoch=True, prog_bar=True, logger=True)
         return {"loss": loss}
 
-    def validation_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> STEP_OUTPUT:
+    def validation_step(self, batch: Batch, *args, **kwargs) -> STEP_OUTPUT:
         """Perform the validation step of FRE.
 
         Similar to the training step, features are extracted from the CNN for each batch.
 
         Args:
-          batch (dict[str, str | torch.Tensor]): Input batch
+          batch (Batch): Input batch
           args: Arguments.
           kwargs: Keyword arguments.
 
@@ -103,8 +104,8 @@ class Fre(AnomalyModule):
         """
         del args, kwargs  # These variables are not used.
 
-        batch["pred_scores"], batch["anomaly_maps"] = self.model(batch["image"])
-        return batch
+        predictions = self.model(batch.image)
+        return batch.update(**predictions._asdict())
 
     @property
     def trainer_arguments(self) -> dict[str, Any]:

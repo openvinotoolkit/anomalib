@@ -9,6 +9,7 @@ import pytest
 from torchvision.transforms import v2
 
 from anomalib.data import PredictDataset
+from anomalib.dataclasses import ImageItem
 
 
 @pytest.fixture(scope="module")
@@ -31,11 +32,11 @@ class TestPredictDataset:
 
         # Check the first sample.
         sample = dataset[0]
-        assert isinstance(sample, dict)
-        assert "image" in sample
-        assert "image_path" in sample
-        assert sample["image"].shape == (3, 256, 256)
-        assert Path(sample["image_path"]).suffix == ".png"
+        assert isinstance(sample, ImageItem)
+        assert getattr(sample, "image", None) is not None
+        assert getattr(sample, "image_path", None) is not None
+        assert sample.image.shape == (3, 256, 256)
+        assert Path(sample.image_path).suffix == ".png"
 
     @staticmethod
     def test_transforms_applied(predict_dataset_path: Path) -> None:
@@ -48,4 +49,4 @@ class TestPredictDataset:
         sample = dataset[0]
 
         # Check that the image is resized to 512x512.
-        assert sample["image"].shape == (3, 512, 512)
+        assert sample.image.shape == (3, 512, 512)

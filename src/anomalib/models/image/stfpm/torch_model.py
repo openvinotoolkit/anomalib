@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING
 import torch
 from torch import nn
 
+from anomalib.dataclasses import InferenceBatch
 from anomalib.models.components import TimmFeatureExtractor
 
 from .anomaly_map import AnomalyMapGenerator
@@ -49,7 +50,10 @@ class STFPMModel(nn.Module):
 
         self.anomaly_map_generator = AnomalyMapGenerator()
 
-    def forward(self, images: torch.Tensor) -> torch.Tensor | dict[str, torch.Tensor] | tuple[dict[str, torch.Tensor]]:
+    def forward(
+        self,
+        images: torch.Tensor,
+    ) -> tuple[dict[str, torch.Tensor], dict[str, torch.Tensor]] | InferenceBatch:
         """Forward-pass images into the network.
 
         During the training mode the model extracts the features from the teacher and student networks.
@@ -74,12 +78,11 @@ class STFPMModel(nn.Module):
                 student_features[layer] = self.tiler.untile(data)
 
         if self.training:
-            output = teacher_features, student_features
-        else:
-            output = self.anomaly_map_generator(
-                teacher_features=teacher_features,
-                student_features=student_features,
-                image_size=output_size,
-            )
+            return teacher_features, student_features
+        anomaly_map = self.anomaly_map_generator(
+            teacher_features=teacher_features,
+            student_features=student_features,
+            image_size=output_size,
+        )
 
-        return output
+        return InferenceBatch(anomaly_map=anomaly_map)

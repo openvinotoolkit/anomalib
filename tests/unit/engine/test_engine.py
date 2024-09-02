@@ -62,25 +62,12 @@ class TestEngine:
             plugins: null
             sync_batchnorm: false
             reload_dataloaders_every_n_epochs: 0
-        normalization:
-            normalization_method: MIN_MAX
         task: SEGMENTATION
         metrics:
             image:
             - F1Score
             - AUROC
             pixel: null
-            threshold:
-                class_path: anomalib.metrics.F1AdaptiveThreshold
-                init_args:
-                    default_value: 0.5
-                    thresholds: null
-                    ignore_index: null
-                    validate_args: true
-                    compute_on_cpu: false
-                    dist_sync_on_step: false
-                    sync_on_compute: true
-                    compute_with_cache: true
         logging:
             log_graph: false
         default_root_dir: results

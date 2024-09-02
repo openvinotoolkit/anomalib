@@ -20,6 +20,7 @@ from torch.utils.data import DataLoader
 from torchvision.models.feature_extraction import create_feature_extractor
 from tqdm import tqdm
 
+from anomalib.dataclasses import InferenceBatch
 from anomalib.models.components import DynamicBufferMixin
 from anomalib.models.components.feature_extractors import dryrun_find_featuremap_dims
 
@@ -158,7 +159,7 @@ class CfaModel(DynamicBufferMixin):
         device = next(self.feature_extractor.parameters()).device
         with torch.no_grad():
             for i, data in enumerate(tqdm(data_loader)):
-                batch = data["image"].to(device)
+                batch = data.image.to(device)
                 features = self.feature_extractor(batch)
                 features = list(features.values())
                 target_features = self.descriptor(features)
@@ -219,14 +220,17 @@ class CfaModel(DynamicBufferMixin):
         target_features = self.descriptor(features)
         distance = self.compute_distance(target_features)
 
-        return (
-            distance
-            if self.training
-            else self.anomaly_map_generator(
-                distance=distance,
-                scale=target_features.shape[-2:],
-                image_size=input_tensor.shape[-2:],
-            )
+        if self.training:
+            return distance
+        anomaly_map = self.anomaly_map_generator(
+            distance=distance,
+            scale=target_features.shape[-2:],
+            image_size=input_tensor.shape[-2:],
+        )
+        pred_score = torch.amax(anomaly_map, dim=(-2, -1))
+        return InferenceBatch(
+            anomaly_map=anomaly_map,
+            pred_score=pred_score,
         )
 
 

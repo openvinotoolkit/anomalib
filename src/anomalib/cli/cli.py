@@ -30,7 +30,6 @@ try:
 
     from anomalib.data import AnomalibDataModule
     from anomalib.engine import Engine
-    from anomalib.metrics.threshold import Threshold
     from anomalib.models import AnomalyModule
     from anomalib.utils.config import update_config
 
@@ -148,13 +147,9 @@ class AnomalibCLI:
             Since ``Engine`` parameters are manually added, any change to the
             ``Engine`` class should be reflected manually.
         """
-        from anomalib.callbacks.normalization import get_normalization_callback
-
-        parser.add_function_arguments(get_normalization_callback, "normalization")
         parser.add_argument("--task", type=TaskType | str, default=TaskType.SEGMENTATION)
-        parser.add_argument("--metrics.image", type=list[str] | str | None, default=["F1Score", "AUROC"])
+        parser.add_argument("--metrics.image", type=list[str] | str | None, default=None)
         parser.add_argument("--metrics.pixel", type=list[str] | str | None, default=None, required=False)
-        parser.add_argument("--metrics.threshold", type=Threshold | str, default="F1AdaptiveThreshold")
         parser.add_argument("--logging.log_graph", type=bool, help="Log the model to the logger", default=False)
         if hasattr(parser, "subcommand") and parser.subcommand not in {"export", "predict"}:
             parser.link_arguments("task", "data.init_args.task")
@@ -296,7 +291,7 @@ class AnomalibCLI:
             self.config_init = self.parser.instantiate_classes(self.config)
             self.datamodule = self._get(self.config_init, "data")
             if isinstance(self.datamodule, Dataset):
-                self.datamodule = DataLoader(self.datamodule)
+                self.datamodule = DataLoader(self.datamodule, collate_fn=self.datamodule.collate_fn)
             self.model = self._get(self.config_init, "model")
             self._configure_optimizers_method_to_model()
             self.instantiate_engine()
@@ -327,8 +322,6 @@ class AnomalibCLI:
         from anomalib.callbacks import get_callbacks
 
         engine_args = {
-            "normalization": self._get(self.config_init, "normalization.normalization_method"),
-            "threshold": self._get(self.config_init, "metrics.threshold"),
             "task": self._get(self.config_init, "task"),
             "image_metrics": self._get(self.config_init, "metrics.image"),
             "pixel_metrics": self._get(self.config_init, "metrics.pixel"),

@@ -20,6 +20,7 @@ from torch import nn
 from torch.nn import functional as F  # noqa: N812
 from torchvision.models.efficientnet import EfficientNet_B5_Weights
 
+from anomalib.dataclasses import InferenceBatch
 from anomalib.models.components.feature_extractors import TorchFXFeatureExtractor
 
 from .anomaly_map import AnomalyMapGenerator, AnomalyMapMode
@@ -572,7 +573,7 @@ class CsFlowModel(nn.Module):
         )
         self.anomaly_map_generator = AnomalyMapGenerator(input_dims=self.input_dims, mode=AnomalyMapMode.ALL)
 
-    def forward(self, images: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+    def forward(self, images: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor] | InferenceBatch:
         """Forward method of the model.
 
         Args:
@@ -585,13 +586,11 @@ class CsFlowModel(nn.Module):
         """
         features = self.feature_extractor(images)
         if self.training:
-            output = self.graph(features)
-        else:
-            z_dist, _ = self.graph(features)  # Ignore Jacobians
-            anomaly_scores = self._compute_anomaly_scores(z_dist)
-            anomaly_maps = self.anomaly_map_generator(z_dist)
-            output = {"anomaly_map": anomaly_maps, "pred_score": anomaly_scores}
-        return output
+            return self.graph(features)
+        z_dist, _ = self.graph(features)  # Ignore Jacobians
+        anomaly_scores = self._compute_anomaly_scores(z_dist)
+        anomaly_maps = self.anomaly_map_generator(z_dist)
+        return InferenceBatch(anomaly_map=anomaly_maps, pred_score=anomaly_scores)
 
     @staticmethod
     def _compute_anomaly_scores(z_dists: torch.Tensor) -> torch.Tensor:

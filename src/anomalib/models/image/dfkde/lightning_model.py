@@ -11,6 +11,7 @@ import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 
 from anomalib import LearningType
+from anomalib.dataclasses import Batch
 from anomalib.models.components import AnomalyModule, MemoryBankMixin
 from anomalib.models.components.classification import FeatureScalingMethod
 
@@ -64,11 +65,11 @@ class Dfkde(MemoryBankMixin, AnomalyModule):
         """DFKDE doesn't require optimization, therefore returns no optimizers."""
         return
 
-    def training_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> None:
+    def training_step(self, batch: Batch, *args, **kwargs) -> None:
         """Perform the training step of DFKDE. For each batch, features are extracted from the CNN.
 
         Args:
-            batch (batch: dict[str, str | torch.Tensor]): Batch containing image filename, image, label and mask
+            batch (batch: Batch): Batch containing image filename, image, label and mask
             args: Arguments.
             kwargs: Keyword arguments.
 
@@ -77,7 +78,7 @@ class Dfkde(MemoryBankMixin, AnomalyModule):
         """
         del args, kwargs  # These variables are not used.
 
-        embedding = self.model(batch["image"])
+        embedding = self.model(batch.image)
         self.embeddings.append(embedding)
 
     def fit(self) -> None:
@@ -87,13 +88,13 @@ class Dfkde(MemoryBankMixin, AnomalyModule):
         logger.info("Fitting a KDE model to the embedding collected from the training set.")
         self.model.classifier.fit(embeddings)
 
-    def validation_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> STEP_OUTPUT:
+    def validation_step(self, batch: Batch, *args, **kwargs) -> STEP_OUTPUT:
         """Perform the validation step of DFKDE.
 
         Similar to the training step, features are extracted from the CNN for each batch.
 
         Args:
-            batch (dict[str, str | torch.Tensor]): Input batch
+            batch (Batch): Input batch
             args: Arguments.
             kwargs: Keyword arguments.
 
@@ -102,8 +103,8 @@ class Dfkde(MemoryBankMixin, AnomalyModule):
         """
         del args, kwargs  # These variables are not used.
 
-        batch["pred_scores"] = self.model(batch["image"])
-        return batch
+        predictions = self.model(batch.image)
+        return batch.update(**predictions._asdict())
 
     @property
     def trainer_arguments(self) -> dict[str, Any]:

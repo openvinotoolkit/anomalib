@@ -3,6 +3,8 @@
 # Copyright (C) 2023-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from dataclasses import fields
+
 import pytest
 
 from anomalib.data import AnomalibDataModule
@@ -22,22 +24,20 @@ class _TestAnomalibDepthDatamodule(_TestAnomalibDataModule):
         batch = next(iter(dataloader))
 
         # Check that the batch has the correct keys.
-        expected_keys = {"image_path", "depth_path", "label", "image", "depth_image"}
+        expected_fields = {"image_path", "depth_path", "gt_label", "image", "depth_map"}
 
-        if dataloader.dataset.task in {"detection", "segmentation"}:
-            expected_keys |= {"mask_path", "mask"}
+        if dataloader.dataset.task == "segmentation":
+            expected_fields |= {"mask_path", "gt_mask"}
 
-            if dataloader.dataset.task == "detection":
-                expected_keys |= {"boxes"}
-
-        assert batch.keys() == expected_keys
+        batch_fields = {field.name for field in fields(batch) if getattr(batch, field.name) is not None}
+        assert batch_fields == expected_fields
 
         # Check that the batch has the correct shape.
-        assert len(batch["image_path"]) == 4
-        assert len(batch["depth_path"]) == 4
-        assert batch["image"].shape == (4, 3, 256, 256)
-        assert batch["depth_image"].shape == (4, 3, 256, 256)
-        assert batch["label"].shape == (4,)
+        assert len(batch.image_path) == 4
+        assert len(batch.depth_path) == 4
+        assert batch.image.shape == (4, 3, 256, 256)
+        assert batch.depth_map.shape == (4, 3, 256, 256)
+        assert batch.gt_label.shape == (4,)
 
-        if dataloader.dataset.task in {"detection", "segmentation"}:
-            assert batch["mask"].shape == (4, 256, 256)
+        if dataloader.dataset.task == "segmentation":
+            assert batch.gt_mask.shape == (4, 256, 256)

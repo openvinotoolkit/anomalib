@@ -15,6 +15,7 @@ from torch import nn
 
 from anomalib import LearningType
 from anomalib.data.utils import Augmenter
+from anomalib.dataclasses import Batch
 from anomalib.models.components import AnomalyModule
 
 from .loss import DraemLoss
@@ -81,14 +82,14 @@ class Draem(AnomalyModule):
         self.model.reconstructive_subnetwork.encoder.mp4.register_forward_hook(get_activation("input"))
         self.model.reconstructive_subnetwork.encoder.block5.register_forward_hook(get_activation("output"))
 
-    def training_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> STEP_OUTPUT:
+    def training_step(self, batch: Batch, *args, **kwargs) -> STEP_OUTPUT:
         """Perform the training step of DRAEM.
 
         Feeds the original image and the simulated anomaly
         image through the network and computes the training loss.
 
         Args:
-            batch (dict[str, str | torch.Tensor]): Batch containing image filename, image, label and mask
+            batch (Batch): Batch containing image filename, image, label and mask
             args: Arguments.
             kwargs: Keyword arguments.
 
@@ -97,7 +98,7 @@ class Draem(AnomalyModule):
         """
         del args, kwargs  # These variables are not used.
 
-        input_image = batch["image"]
+        input_image = batch.image
         # Apply corruption to input image
         augmented_image, anomaly_mask = self.augmenter.augment_batch(input_image)
         # Generate model prediction
@@ -114,11 +115,11 @@ class Draem(AnomalyModule):
         self.log("train_loss", loss.item(), on_epoch=True, prog_bar=True, logger=True)
         return {"loss": loss}
 
-    def validation_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> STEP_OUTPUT:
+    def validation_step(self, batch: Batch, *args, **kwargs) -> STEP_OUTPUT:
         """Perform the validation step of DRAEM. The Softmax predictions of the anomalous class are used as anomaly map.
 
         Args:
-            batch (dict[str, str | torch.Tensor]): Batch of input images
+            batch (Batch): Batch of input images
             args: Arguments.
             kwargs: Keyword arguments.
 
@@ -127,9 +128,8 @@ class Draem(AnomalyModule):
         """
         del args, kwargs  # These variables are not used.
 
-        prediction = self.model(batch["image"])
-        batch["anomaly_maps"] = prediction
-        return batch
+        prediction = self.model(batch.image)
+        return batch.update(**prediction._asdict())
 
     @property
     def trainer_arguments(self) -> dict[str, Any]:

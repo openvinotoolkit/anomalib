@@ -13,6 +13,7 @@ from torch import nn
 from torch.nn.modules.linear import Identity
 from torchvision.transforms import Compose, ToPILImage
 
+from anomalib.dataclasses import InferenceBatch
 from anomalib.models.components import BufferListMixin, DynamicBufferMixin
 
 from .prompting import create_prompt_ensemble
@@ -223,7 +224,7 @@ class WinClipModel(DynamicBufferMixin, BufferListMixin, nn.Module):
         return pooled.reshape((n_masks, batch_size, -1)).permute(1, 0, 2)
 
     @torch.no_grad
-    def forward(self, batch: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+    def forward(self, batch: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor] | InferenceBatch:
         """Forward-pass through the model to obtain image and pixel scores.
 
         Args:
@@ -250,7 +251,7 @@ class WinClipModel(DynamicBufferMixin, BufferListMixin, nn.Module):
             size=batch.shape[-2:],
             mode="bilinear",
         )
-        return image_scores, pixel_scores.squeeze(1)
+        return InferenceBatch(pred_score=image_scores, anomaly_map=pixel_scores.squeeze(1))
 
     def _compute_zero_shot_scores(
         self,
