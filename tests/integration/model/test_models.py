@@ -178,7 +178,7 @@ class TestAPI:
         """
         # select task type
 
-        task_type = TaskType.CLASSIFICATION if model_name in ("ganomaly", "dfkde") else TaskType.SEGMENTATION
+        task_type = TaskType.CLASSIFICATION if model_name in {"ganomaly", "dfkde"} else TaskType.SEGMENTATION
 
         # set extra model args
         # TODO(ashwinvaidya17): Fix these Edge cases

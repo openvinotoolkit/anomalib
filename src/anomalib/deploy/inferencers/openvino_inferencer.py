@@ -200,7 +200,4 @@ class OpenVINOInferencer:
         predictions = self.model(image)
         pred_dict = self.post_process(predictions)
 
-        return NumpyImageBatch(
-            image=image,
-            **pred_dict,
-        )
+        return NumpyImageBatch(image=image, **pred_dict)

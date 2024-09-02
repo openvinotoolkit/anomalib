@@ -56,7 +56,7 @@ def get_inferencer(weight_path: Path) -> Inferencer:
         torch_inferencer = module.TorchInferencer
         inferencer = torch_inferencer(path=weight_path)
 
-    elif extension in (".onnx", ".bin", ".xml"):
+    elif extension in {".onnx", ".bin", ".xml"}:
         openvino_inferencer = module.OpenVINOInferencer
         inferencer = openvino_inferencer(path=weight_path)
 

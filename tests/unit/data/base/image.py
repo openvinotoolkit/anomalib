@@ -28,7 +28,7 @@ class _TestAnomalibImageDatamodule(_TestAnomalibDataModule):
         assert batch.image.shape == (4, 3, 256, 256)
         assert batch.gt_label.shape == (4,)
 
-        if dataloader.dataset.task in ("detection", "segmentation"):
+        if dataloader.dataset.task in {"detection", "segmentation"}:
             assert batch.gt_mask.shape == (4, 256, 256)
 
     @staticmethod
