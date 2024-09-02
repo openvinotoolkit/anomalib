@@ -54,12 +54,12 @@ def anomalib_install(option: str = "full", verbose: bool = False) -> int:
 
     # Parse requirements into torch and other requirements.
     # This is done to parse the correct version of torch (cpu/cuda).
-    torch_requirement, other_requirements = parse_requirements(requirements, skip_torch=option not in ("full", "core"))
+    torch_requirement, other_requirements = parse_requirements(requirements, skip_torch=option not in {"full", "core"})
 
     # Get install args for torch to install it from a specific index-url
     install_args: list[str] = []
     torch_install_args = []
-    if option in ("full", "core") and torch_requirement is not None:
+    if option in {"full", "core"} and torch_requirement is not None:
         torch_install_args = get_torch_install_args(torch_requirement)
 
     # Combine torch and other requirements.

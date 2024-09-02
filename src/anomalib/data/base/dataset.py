@@ -171,7 +171,7 @@ class AnomalibDataset(Dataset, ABC):
 
         if self.task == TaskType.CLASSIFICATION:
             item["image"] = self.transform(image) if self.transform else image
-        elif self.task in (TaskType.DETECTION, TaskType.SEGMENTATION):
+        elif self.task in {TaskType.DETECTION, TaskType.SEGMENTATION}:
             # Only Anomalous (1) images have masks in anomaly datasets
             # Therefore, create empty mask for Normal (0) images.
             mask = (
