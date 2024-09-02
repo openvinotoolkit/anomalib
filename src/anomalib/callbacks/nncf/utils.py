@@ -40,7 +40,7 @@ class InitLoader(PTInitializingDataLoader):
         loaded_item = next(self._data_loader_iter)
         return loaded_item["image"]
 
-    def get_inputs(self, dataloader_output: dict[str, str | torch.Tensor]) -> tuple[tuple, dict]:
+    def get_inputs(self, dataloader_output: dict[str, str | torch.Tensor]) -> tuple[tuple, dict]:  # noqa: PLR6301
         """Get input to model.
 
         Returns:
@@ -49,7 +49,7 @@ class InitLoader(PTInitializingDataLoader):
         """
         return (dataloader_output,), {}
 
-    def get_target(self, _):  # noqa: ANN001, ANN201
+    def get_target(self, _):  # noqa: ANN001, ANN201, PLR6301
         """Return structure for ground truth in loss criterion based on dataloader output.
 
         This implementation does not do anything and is a placeholder.

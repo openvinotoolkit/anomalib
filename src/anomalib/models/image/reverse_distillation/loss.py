@@ -10,7 +10,7 @@ from torch import nn
 class ReverseDistillationLoss(nn.Module):
     """Loss function for Reverse Distillation."""
 
-    def forward(self, encoder_features: list[torch.Tensor], decoder_features: list[torch.Tensor]) -> torch.Tensor:
+    def forward(self, encoder_features: list[torch.Tensor], decoder_features: list[torch.Tensor]) -> torch.Tensor:  # noqa: PLR6301
         """Compute cosine similarity loss based on features from encoder and decoder.
 
         Based on the official code:

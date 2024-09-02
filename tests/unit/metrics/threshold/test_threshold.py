@@ -12,7 +12,8 @@ from anomalib.metrics.threshold import BaseThreshold, Threshold
 class TestThreshold:
     """Test cases for the Threshold class."""
 
-    def test_threshold_abstract_methods(self) -> None:
+    @staticmethod
+    def test_threshold_abstract_methods() -> None:
         """Test that Threshold class raises NotImplementedError for abstract methods."""
         threshold = Threshold()
 
@@ -22,7 +23,8 @@ class TestThreshold:
         with pytest.raises(NotImplementedError, match="Subclass of Threshold must implement the update method"):
             threshold.update()
 
-    def test_threshold_initialization(self) -> None:
+    @staticmethod
+    def test_threshold_initialization() -> None:
         """Test that Threshold can be initialized without errors."""
         threshold = Threshold()
         assert isinstance(threshold, Metric)
@@ -31,7 +33,8 @@ class TestThreshold:
 class TestBaseThreshold:
     """Test cases for the BaseThreshold class."""
 
-    def test_base_threshold_deprecation_warning(self) -> None:
+    @staticmethod
+    def test_base_threshold_deprecation_warning() -> None:
         """Test that BaseThreshold class raises a DeprecationWarning."""
         with pytest.warns(
             DeprecationWarning,
@@ -39,12 +42,14 @@ class TestBaseThreshold:
         ):
             BaseThreshold()
 
-    def test_base_threshold_inheritance(self) -> None:
+    @staticmethod
+    def test_base_threshold_inheritance() -> None:
         """Test that BaseThreshold inherits from Threshold."""
         base_threshold = BaseThreshold()
         assert isinstance(base_threshold, Threshold)
 
-    def test_base_threshold_abstract_methods(self) -> None:
+    @staticmethod
+    def test_base_threshold_abstract_methods() -> None:
         """Test that BaseThreshold class raises NotImplementedError for abstract methods."""
         base_threshold = BaseThreshold()
 

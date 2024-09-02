@@ -14,11 +14,13 @@ class TestAnomalyModule:
     """Test AnomalyModule."""
 
     @pytest.fixture()
-    def fxt_model_config_folder_path(self) -> str:
+    @staticmethod
+    def fxt_model_config_folder_path() -> str:
         """Fixture that returns model config folder path."""
         return "configs/model"
 
-    def test_from_config_with_wrong_config_path(self) -> None:
+    @staticmethod
+    def test_from_config_with_wrong_config_path() -> None:
         """Test AnomalyModule.from_config with wrong model name."""
         with pytest.raises(FileNotFoundError):
             AnomalyModule.from_config(config_path="wrong_configs.yaml")
@@ -45,7 +47,8 @@ class TestAnomalyModule:
             "uflow",
         ],
     )
-    def test_from_config(self, model_name: str, fxt_model_config_folder_path: str) -> None:
+    @staticmethod
+    def test_from_config(model_name: str, fxt_model_config_folder_path: str) -> None:
         """Test AnomalyModule.from_config."""
         config_path = Path(fxt_model_config_folder_path) / f"{model_name}.yaml"
         model = AnomalyModule.from_config(config_path=config_path)

@@ -18,7 +18,8 @@ class TestEngine:
     """Test Engine."""
 
     @pytest.fixture()
-    def fxt_full_config_path(self, tmp_path: Path) -> Path:
+    @staticmethod
+    def fxt_full_config_path(tmp_path: Path) -> Path:
         """Fixture full configuration examples."""
         config_str = """
         seed_everything: true
@@ -118,7 +119,8 @@ class TestEngine:
             yaml.dump(config_dict, file)
         return config_file
 
-    def test_from_config(self, fxt_full_config_path: Path) -> None:
+    @staticmethod
+    def test_from_config(fxt_full_config_path: Path) -> None:
         """Test Engine.from_config."""
         with pytest.raises(FileNotFoundError):
             Engine.from_config(config_path="wrong_configs.yaml")

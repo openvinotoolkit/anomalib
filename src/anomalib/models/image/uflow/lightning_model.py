@@ -118,7 +118,7 @@ class Uflow(AnomalyModule):
         """
         return LearningType.ONE_CLASS
 
-    def configure_transforms(self, image_size: tuple[int, int] | None = None) -> Transform:
+    def configure_transforms(self, image_size: tuple[int, int] | None = None) -> Transform:  # noqa: PLR6301
         """Default transform for Padim."""
         if image_size is not None:
             logger.warning("Image size is not used in UFlow. The input image size is determined by the model.")

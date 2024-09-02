@@ -23,7 +23,7 @@ class Threshold(Metric):
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
 
-    def compute(self) -> torch.Tensor:
+    def compute(self) -> torch.Tensor:  # noqa: PLR6301
         """Compute the threshold.
 
         Returns:
@@ -32,7 +32,7 @@ class Threshold(Metric):
         msg = "Subclass of Threshold must implement the compute method"
         raise NotImplementedError(msg)
 
-    def update(self, *args, **kwargs) -> None:  # noqa: ARG002
+    def update(self, *args, **kwargs) -> None:  # noqa: ARG002, PLR6301
         """Update the metric state.
 
         Args:

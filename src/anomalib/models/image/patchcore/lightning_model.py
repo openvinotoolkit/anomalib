@@ -57,7 +57,7 @@ class Patchcore(MemoryBankMixin, AnomalyModule):
         self.coreset_sampling_ratio = coreset_sampling_ratio
         self.embeddings: list[torch.Tensor] = []
 
-    def configure_optimizers(self) -> None:
+    def configure_optimizers(self) -> None:  # noqa: PLR6301
         """Configure optimizers.
 
         Returns:
@@ -126,7 +126,7 @@ class Patchcore(MemoryBankMixin, AnomalyModule):
         """
         return LearningType.ONE_CLASS
 
-    def configure_transforms(self, image_size: tuple[int, int] | None = None) -> Transform:
+    def configure_transforms(self, image_size: tuple[int, int] | None = None) -> Transform:  # noqa: PLR6301
         """Default transform for Padim."""
         image_size = image_size or (256, 256)
         # scale center crop size proportional to image size

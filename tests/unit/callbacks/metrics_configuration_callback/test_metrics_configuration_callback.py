@@ -29,16 +29,16 @@ class _DummyAnomalyModule(AnomalyModule):
         self.image_threshold = F1AdaptiveThreshold()
         self.pixel_threshold = F1AdaptiveThreshold()
 
-    def test_step(self, **_kwdargs) -> None:
+    def test_step(self, **_kwdargs) -> None:  # noqa: PLR6301
         return None
 
-    def validation_epoch_end(self, **_kwdargs) -> None:
+    def validation_epoch_end(self, **_kwdargs) -> None:  # noqa: PLR6301
         return None
 
-    def test_epoch_end(self, **_kwdargs) -> None:
+    def test_epoch_end(self, **_kwdargs) -> None:  # noqa: PLR6301
         return None
 
-    def configure_optimizers(self) -> None:
+    def configure_optimizers(self) -> None:  # noqa: PLR6301
         return None
 
     @property

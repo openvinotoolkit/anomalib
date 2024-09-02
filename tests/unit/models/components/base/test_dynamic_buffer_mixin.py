@@ -41,18 +41,21 @@ def module() -> DynamicBufferModule:
 class TestDynamicBufferMixin:
     """Test the DynamicBufferMixin."""
 
-    def test_get_tensor_attribute_tensor(self, module: DynamicBufferModule) -> None:
+    @staticmethod
+    def test_get_tensor_attribute_tensor(module: DynamicBufferModule) -> None:
         """Test the get_tensor_attribute method with a tensor field."""
         tensor_attribute = module.get_tensor_attribute("tensor_attribute")
         assert isinstance(tensor_attribute, torch.Tensor)
         assert torch.equal(tensor_attribute, module.tensor_attribute)
 
-    def test_get_tensor_attribute_non_tensor(self, module: DynamicBufferModule) -> None:
+    @staticmethod
+    def test_get_tensor_attribute_non_tensor(module: DynamicBufferModule) -> None:
         """Test the get_tensor_attribute method with a non-tensor field."""
         with pytest.raises(ValueError, match="Attribute with name 'non_tensor_attribute' is not a torch Tensor"):
             module.get_tensor_attribute("non_tensor_attribute")
 
-    def test_load_from_state_dict(self, module: DynamicBufferModule) -> None:
+    @staticmethod
+    def test_load_from_state_dict(module: DynamicBufferModule) -> None:
         """Test updating the buffers from a state_dict."""
         state_dict = {
             "prefix_first_buffer": torch.zeros(5, 5),

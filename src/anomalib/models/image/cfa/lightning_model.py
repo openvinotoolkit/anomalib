@@ -104,7 +104,7 @@ class Cfa(AnomalyModule):
         batch["anomaly_maps"] = self.model(batch["image"])
         return batch
 
-    def backward(self, loss: torch.Tensor, *args, **kwargs) -> None:
+    def backward(self, loss: torch.Tensor, *args, **kwargs) -> None:  # noqa: PLR6301
         """Perform backward-pass for the CFA model.
 
         Args:

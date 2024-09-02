@@ -98,7 +98,7 @@ class _MetricsCallback(Callback):
                 pl_module.pixel_metrics = create_metric_collection(pixel_metric_names, "pixel_")
             self._set_threshold(pl_module)
 
-    def on_validation_epoch_start(
+    def on_validation_epoch_start(  # noqa: PLR6301
         self,
         trainer: Trainer,
         pl_module: AnomalyModule,
@@ -133,7 +133,7 @@ class _MetricsCallback(Callback):
         self._set_threshold(pl_module)
         self._log_metrics(pl_module)
 
-    def on_test_epoch_start(
+    def on_test_epoch_start(  # noqa: PLR6301
         self,
         trainer: Trainer,
         pl_module: AnomalyModule,
@@ -167,7 +167,8 @@ class _MetricsCallback(Callback):
 
         self._log_metrics(pl_module)
 
-    def _set_threshold(self, pl_module: AnomalyModule) -> None:
+    @staticmethod
+    def _set_threshold(pl_module: AnomalyModule) -> None:
         pl_module.image_metrics.set_threshold(pl_module.image_threshold.value.item())
         pl_module.pixel_metrics.set_threshold(pl_module.pixel_threshold.value.item())
 

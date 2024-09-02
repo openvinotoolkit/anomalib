@@ -33,7 +33,7 @@ class GraphLogger(Callback):
         >>> engine = Engine(logger=logger, callbacks=callbacks)
     """
 
-    def on_train_start(self, trainer: Trainer, pl_module: LightningModule) -> None:
+    def on_train_start(self, trainer: Trainer, pl_module: LightningModule) -> None:  # noqa: PLR6301
         """Log model graph to respective logger.
 
         Args:
@@ -47,7 +47,7 @@ class GraphLogger(Callback):
                 logger.watch(pl_module, log_graph=True, log="all")
                 break
 
-    def on_train_end(self, trainer: Trainer, pl_module: LightningModule) -> None:
+    def on_train_end(self, trainer: Trainer, pl_module: LightningModule) -> None:  # noqa: PLR6301
         """Unwatch model if configured for wandb and log it model graph in Tensorboard if specified.
 
         Args:

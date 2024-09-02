@@ -56,7 +56,7 @@ class ManualThreshold(Threshold):
         """
         return self.value
 
-    def update(self, *args, **kwargs) -> None:
+    def update(self, *args, **kwargs) -> None:  # noqa: PLR6301
         """Do nothing.
 
         Args:

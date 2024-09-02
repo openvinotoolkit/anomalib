@@ -18,37 +18,43 @@ from anomalib.models.image.winclip.utils import (
 class TestCosineSimilarity:
     """Unit tests for cosine similarity computation."""
 
-    def test_computation(self) -> None:
+    @staticmethod
+    def test_computation() -> None:
         """Test cosine similarity computation."""
         input1 = torch.tensor([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]])
         input2 = torch.tensor([[0.0, 1.0, 0.0], [1.0, 1.0, 0.0]])
         assert torch.allclose(cosine_similarity(input1, input2), torch.tensor([[[0.0000, 0.7071], [1.0000, 0.7071]]]))
 
-    def test_single_batch(self) -> None:
+    @staticmethod
+    def test_single_batch() -> None:
         """Test cosine similarity with single batch inputs."""
         input1 = torch.randn(1, 100, 128)
         input2 = torch.randn(1, 200, 128)
         assert cosine_similarity(input1, input2).shape == torch.Size([1, 100, 200])
 
-    def test_multi_batch(self) -> None:
+    @staticmethod
+    def test_multi_batch() -> None:
         """Test cosine similarity with multiple batch inputs."""
         input1 = torch.randn(10, 100, 128)
         input2 = torch.randn(10, 200, 128)
         assert cosine_similarity(input1, input2).shape == torch.Size([10, 100, 200])
 
-    def test_2d(self) -> None:
+    @staticmethod
+    def test_2d() -> None:
         """Test cosine similarity with 2D input."""
         input1 = torch.randn(100, 128)
         input2 = torch.randn(200, 128)
         assert cosine_similarity(input1, input2).shape == torch.Size([100, 200])
 
-    def test_2d_3d(self) -> None:
+    @staticmethod
+    def test_2d_3d() -> None:
         """Test cosine similarity with 2D and 3D input."""
         input1 = torch.randn(100, 128)
         input2 = torch.randn(1, 200, 128)
         assert cosine_similarity(input1, input2).shape == torch.Size([100, 200])
 
-    def test_3d_2d(self) -> None:
+    @staticmethod
+    def test_3d_2d() -> None:
         """Test cosine similarity with 3D and 2D input."""
         input1 = torch.randn(10, 100, 128)
         input2 = torch.randn(200, 128)

@@ -133,7 +133,8 @@ class _ThresholdCallback(Callback):
             msg = f"Invalid threshold config {threshold}"
             raise TypeError(msg)
 
-    def _get_threshold_from_config(self, threshold: DictConfig | str | dict[str, str | float]) -> Threshold:
+    @staticmethod
+    def _get_threshold_from_config(threshold: DictConfig | str | dict[str, str | float]) -> Threshold:
         """Return the instantiated threshold object.
 
         Example:
@@ -170,7 +171,8 @@ class _ThresholdCallback(Callback):
         class_ = getattr(module, class_path)
         return class_(**init_args)
 
-    def _reset(self, pl_module: AnomalyModule) -> None:
+    @staticmethod
+    def _reset(pl_module: AnomalyModule) -> None:
         pl_module.image_threshold.reset()
         pl_module.pixel_threshold.reset()
 
@@ -182,14 +184,16 @@ class _ThresholdCallback(Callback):
             output = output.cpu()
         return output
 
-    def _update(self, pl_module: AnomalyModule, outputs: STEP_OUTPUT) -> None:
+    @staticmethod
+    def _update(pl_module: AnomalyModule, outputs: STEP_OUTPUT) -> None:
         pl_module.image_threshold.cpu()
         pl_module.image_threshold.update(outputs["pred_scores"], outputs["label"].int())
         if "mask" in outputs and "anomaly_maps" in outputs:
             pl_module.pixel_threshold.cpu()
             pl_module.pixel_threshold.update(outputs["anomaly_maps"], outputs["mask"].int())
 
-    def _compute(self, pl_module: AnomalyModule) -> None:
+    @staticmethod
+    def _compute(pl_module: AnomalyModule) -> None:
         pl_module.image_threshold.compute()
         if pl_module.pixel_threshold._update_called:  # noqa: SLF001
             pl_module.pixel_threshold.compute()

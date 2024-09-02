@@ -104,7 +104,8 @@ class DummyImageGenerator:
 
         return image, mask
 
-    def save_image(self, filename: Path | str, image: np.ndarray, check_contrast: bool = False) -> None:
+    @staticmethod
+    def save_image(filename: Path | str, image: np.ndarray, check_contrast: bool = False) -> None:
         """Save image to filesystem.
 
         Args:

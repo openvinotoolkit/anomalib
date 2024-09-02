@@ -10,7 +10,7 @@ from torch import nn
 class CsFlowLoss(nn.Module):
     """Loss function for the CS-Flow Model Implementation."""
 
-    def forward(self, z_dist: torch.Tensor, jacobians: torch.Tensor) -> torch.Tensor:
+    def forward(self, z_dist: torch.Tensor, jacobians: torch.Tensor) -> torch.Tensor:  # noqa: PLR6301
         """Compute the loss CS-Flow.
 
         Args:

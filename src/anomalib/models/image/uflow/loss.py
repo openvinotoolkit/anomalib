@@ -10,7 +10,7 @@ from torch import Tensor, nn
 class UFlowLoss(nn.Module):
     """UFlow Loss."""
 
-    def forward(self, hidden_variables: list[Tensor], jacobians: list[Tensor]) -> Tensor:
+    def forward(self, hidden_variables: list[Tensor], jacobians: list[Tensor]) -> Tensor:  # noqa: PLR6301
         """Calculate the UFlow loss.
 
         Args:
