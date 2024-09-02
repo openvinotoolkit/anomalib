@@ -47,7 +47,7 @@ def get_return_nodes(backbone: str) -> list[str]:
         raise NotImplementedError(msg)
 
     return_nodes: list[str]
-    if backbone in ("resnet18", "wide_resnet50_2"):
+    if backbone in {"resnet18", "wide_resnet50_2"}:
         return_nodes = ["layer1", "layer2", "layer3"]
     elif backbone == "vgg19_bn":
         return_nodes = ["features.25", "features.38", "features.52"]

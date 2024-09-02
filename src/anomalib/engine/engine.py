@@ -474,7 +474,7 @@ class Engine:
             bool: Whether it is needed to run a validation sequence.
         """
         # validation before predict is only necessary for zero-/few-shot models
-        if model.learning_type not in [LearningType.ZERO_SHOT, LearningType.FEW_SHOT]:
+        if model.learning_type not in {LearningType.ZERO_SHOT, LearningType.FEW_SHOT}:
             return False
         # check if a checkpoint path is provided
         if ckpt_path is not None:
@@ -534,7 +534,7 @@ class Engine:
         self._setup_trainer(model)
         self._setup_dataset_task(train_dataloaders, val_dataloaders, datamodule)
         self._setup_transform(model, datamodule=datamodule, ckpt_path=ckpt_path)
-        if model.learning_type in [LearningType.ZERO_SHOT, LearningType.FEW_SHOT]:
+        if model.learning_type in {LearningType.ZERO_SHOT, LearningType.FEW_SHOT}:
             # if the model is zero-shot or few-shot, we only need to run validate for normalization and thresholding
             self.trainer.validate(model, val_dataloaders, datamodule=datamodule, ckpt_path=ckpt_path)
         else:
@@ -856,7 +856,7 @@ class Engine:
             datamodule,
         )
         self._setup_transform(model, datamodule=datamodule, ckpt_path=ckpt_path)
-        if model.learning_type in [LearningType.ZERO_SHOT, LearningType.FEW_SHOT]:
+        if model.learning_type in {LearningType.ZERO_SHOT, LearningType.FEW_SHOT}:
             # if the model is zero-shot or few-shot, we only need to run validate for normalization and thresholding
             self.trainer.validate(model, val_dataloaders, None, verbose=False, datamodule=datamodule)
         else:
