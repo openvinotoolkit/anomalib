@@ -62,7 +62,7 @@ class ToNumpyMixin(
 
 
 @dataclass
-class Item(Generic[ImageT], _GenericItem[torch.Tensor, ImageT, Mask, str]):
+class DatasetItem(Generic[ImageT], _GenericItem[torch.Tensor, ImageT, Mask, str]):
     """Dataclass for torch item."""
 
 
@@ -76,7 +76,7 @@ class Batch(Generic[ImageT], _GenericBatch[torch.Tensor, ImageT, Mask, list[str]
 class ImageItem(
     ToNumpyMixin[NumpyImageItem],
     _ImageInputFields[str],
-    Item[Image],
+    DatasetItem[Image],
 ):
     """Dataclass for torch image output item."""
 
@@ -105,10 +105,10 @@ class ImageItem(
         if gt_mask is None:
             return None
         assert isinstance(gt_mask, torch.Tensor), f"Ground truth mask must be a torch.Tensor, got {type(gt_mask)}."
-        assert gt_mask.ndim in [
+        assert gt_mask.ndim in {
             2,
             3,
-        ], f"Ground truth mask must have shape [H, W] or [1, H, W] got shape {gt_mask.shape}."
+        }, f"Ground truth mask must have shape [H, W] or [1, H, W] got shape {gt_mask.shape}."
         if gt_mask.ndim == 3:
             assert gt_mask.shape[0] == 1, f"Ground truth mask must have 1 channel, got {gt_mask.shape[0]}."
             gt_mask = gt_mask.squeeze(0)
@@ -123,10 +123,10 @@ class ImageItem(
         if anomaly_map is None:
             return None
         assert isinstance(anomaly_map, torch.Tensor), f"Anomaly map must be a torch.Tensor, got {type(anomaly_map)}."
-        assert anomaly_map.ndim in [
+        assert anomaly_map.ndim in {
             2,
             3,
-        ], f"Anomaly map must have shape [H, W] or [1, H, W], got shape {anomaly_map.shape}."
+        }, f"Anomaly map must have shape [H, W] or [1, H, W], got shape {anomaly_map.shape}."
         if anomaly_map.ndim == 3:
             assert (
                 anomaly_map.shape[0] == 1
@@ -151,10 +151,10 @@ class ImageItem(
         if pred_mask is None:
             return None
         assert isinstance(pred_mask, torch.Tensor), f"Predicted mask must be a torch.Tensor, got {type(pred_mask)}."
-        assert pred_mask.ndim in [
+        assert pred_mask.ndim in {
             2,
             3,
-        ], f"Predicted mask must have shape [H, W] or [1, H, W] got shape {pred_mask.shape}."
+        }, f"Predicted mask must have shape [H, W] or [1, H, W] got shape {pred_mask.shape}."
         if pred_mask.ndim == 3:
             assert pred_mask.shape[0] == 1, f"Predicted mask must have 1 channel, got {pred_mask.shape[0]}."
             pred_mask = pred_mask.squeeze(0)
@@ -193,7 +193,7 @@ class ImageBatch(
 
     def _validate_image(self, image: Image) -> Image:
         assert isinstance(image, torch.Tensor), f"Image must be a torch.Tensor, got {type(image)}."
-        assert image.ndim in [3, 4], f"Image must have shape [C, H, W] or [N, C, H, W], got shape {image.shape}."
+        assert image.ndim in {3, 4}, f"Image must have shape [C, H, W] or [N, C, H, W], got shape {image.shape}."
         if image.ndim == 3:
             image = image.unsqueeze(0)  # add batch dimension
         assert image.shape[1] == 3, f"Image must have 3 channels, got {image.shape[0]}."
@@ -219,11 +219,11 @@ class ImageBatch(
         if gt_mask is None:
             return None
         assert isinstance(gt_mask, torch.Tensor), f"Ground truth mask must be a torch.Tensor, got {type(gt_mask)}."
-        assert gt_mask.ndim in [
+        assert gt_mask.ndim in {
             2,
             3,
             4,
-        ], f"Ground truth mask must have shape [H, W] or [N, H, W] or [N, 1, H, W] got shape {gt_mask.shape}."
+        }, f"Ground truth mask must have shape [H, W] or [N, H, W] or [N, 1, H, W] got shape {gt_mask.shape}."
         if gt_mask.ndim == 2:
             assert (
                 self.batch_size == 1
@@ -259,11 +259,11 @@ class ImageBatch(
             except Exception as e:
                 msg = "Failed to convert anomaly_map to a torch.Tensor."
                 raise ValueError(msg) from e
-        assert anomaly_map.ndim in [
+        assert anomaly_map.ndim in {
             2,
             3,
             4,
-        ], f"Anomaly map must have shape [H, W] or [N, H, W] or [N, 1, H, W], got shape {anomaly_map.shape}."
+        }, f"Anomaly map must have shape [H, W] or [N, H, W] or [N, 1, H, W], got shape {anomaly_map.shape}."
         if anomaly_map.ndim == 2:
             assert (
                 self.batch_size == 1
@@ -294,7 +294,7 @@ class ImageBatch(
 class VideoItem(
     ToNumpyMixin[NumpyVideoItem],
     _VideoInputFields[torch.Tensor, Video, Mask, str],
-    Item[Video],
+    DatasetItem[Video],
 ):
     """Dataclass for torch video output item."""
 
@@ -402,7 +402,7 @@ class VideoBatch(
 class DepthItem(
     ToNumpyMixin[NumpyImageItem],
     _DepthInputFields[torch.Tensor, str],
-    Item[Image],
+    DatasetItem[Image],
 ):
     """Dataclass for torch depth output item."""
 
