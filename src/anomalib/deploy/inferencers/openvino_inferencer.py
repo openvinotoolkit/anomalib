@@ -118,7 +118,7 @@ class OpenVINOInferencer:
             model = core.read_model(model=path[0], weights=path[1])
         else:
             path = path if isinstance(path, Path) else Path(path)
-            if path.suffix in (".bin", ".xml"):
+            if path.suffix in {".bin", ".xml"}:
                 if path.suffix == ".bin":
                     bin_path, xml_path = path, path.with_suffix(".xml")
                 elif path.suffix == ".xml":
@@ -199,7 +199,4 @@ class OpenVINOInferencer:
         predictions = self.model(image)
         pred_dict = self.post_process(predictions)
 
-        return NumpyImageBatch(
-            image=image,
-            **pred_dict,
-        )
+        return NumpyImageBatch(image=image, **pred_dict)

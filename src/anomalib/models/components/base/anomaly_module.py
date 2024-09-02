@@ -20,7 +20,7 @@ from torchvision.transforms.v2 import Compose, Normalize, Resize, Transform
 
 from anomalib import LearningType
 from anomalib.dataclasses import Batch, InferenceBatch
-from anomalib.metrics.threshold import BaseThreshold
+from anomalib.metrics.threshold import Threshold
 from anomalib.post_processing import OneClassPostProcessor, PostProcessor
 
 from .export_mixin import ExportMixin
@@ -157,7 +157,7 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
 
         return super()._save_to_state_dict(destination, prefix, keep_vars)
 
-    def _get_instance(self, state_dict: OrderedDict[str, Any], dict_key: str) -> BaseThreshold:
+    def _get_instance(self, state_dict: OrderedDict[str, Any], dict_key: str) -> Threshold:
         """Get the threshold class from the ``state_dict``."""
         class_path = state_dict.pop(dict_key)
         module = importlib.import_module(".".join(class_path.split(".")[:-1]))
@@ -292,7 +292,7 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
         model_parser.add_argument("--task", type=TaskType | str, default=TaskType.SEGMENTATION)
         model_parser.add_argument("--metrics.image", type=list[str] | str | None, default=["F1Score", "AUROC"])
         model_parser.add_argument("--metrics.pixel", type=list[str] | str | None, default=None, required=False)
-        model_parser.add_argument("--metrics.threshold", type=BaseThreshold | str, default="F1AdaptiveThreshold")
+        model_parser.add_argument("--metrics.threshold", type=Threshold | str, default="F1AdaptiveThreshold")
         model_parser.add_class_arguments(Trainer, "trainer", fail_untyped=False, instantiate=False, sub_configs=True)
         args = ["--config", str(config_path)]
         for key, value in kwargs.items():

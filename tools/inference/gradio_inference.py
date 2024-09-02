@@ -52,11 +52,11 @@ def get_inferencer(weight_path: Path) -> Inferencer:
     extension = weight_path.suffix
     inferencer: Inferencer
     module = import_module("anomalib.deploy")
-    if extension in (".pt", ".pth", ".ckpt"):
+    if extension in {".pt", ".pth", ".ckpt"}:
         torch_inferencer = module.TorchInferencer
         inferencer = torch_inferencer(path=weight_path)
 
-    elif extension in (".onnx", ".bin", ".xml"):
+    elif extension in {".onnx", ".bin", ".xml"}:
         openvino_inferencer = module.OpenVINOInferencer
         inferencer = openvino_inferencer(path=weight_path)
 

@@ -178,14 +178,14 @@ class TestAPI:
         """
         # select task type
 
-        task_type = TaskType.CLASSIFICATION if model_name in ("ganomaly", "dfkde") else TaskType.SEGMENTATION
+        task_type = TaskType.CLASSIFICATION if model_name in {"ganomaly", "dfkde"} else TaskType.SEGMENTATION
 
         # set extra model args
         # TODO(ashwinvaidya17): Fix these Edge cases
         # https://github.com/openvinotoolkit/anomalib/issues/1478
 
         extra_args = {}
-        if model_name in ("rkde", "dfkde"):
+        if model_name in {"rkde", "dfkde"}:
             extra_args["n_pca_components"] = 2
         if model_name == "ai_vad":
             pytest.skip("Revisit AI-VAD test")
