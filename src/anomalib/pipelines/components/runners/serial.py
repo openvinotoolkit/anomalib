@@ -5,8 +5,7 @@
 
 import logging
 
-from rich import print
-from rich.progress import track
+from tqdm import tqdm
 
 from anomalib.pipelines.components.base import JobGenerator, Runner
 from anomalib.pipelines.types import GATHERED_RESULTS, PREV_STAGE_RESULT
@@ -29,7 +28,7 @@ class SerialRunner(Runner):
         results = []
         failures = False
         logger.info(f"Running job {self.generator.job_class.name}")
-        for job in track(self.generator(args, prev_stage_results), description=self.generator.job_class.name):
+        for job in tqdm(self.generator(args, prev_stage_results), desc=self.generator.job_class.name):
             try:
                 results.append(job.run())
             except Exception:  # noqa: PERF203
@@ -38,7 +37,7 @@ class SerialRunner(Runner):
         gathered_result = self.generator.job_class.collect(results)
         self.generator.job_class.save(gathered_result)
         if failures:
-            msg = f"[bold red]There were some errors with job {self.generator.job_class.name}[/bold red]"
+            msg = f"There were some errors with job {self.generator.job_class.name}"
             print(msg)
             logger.error(msg)
             raise SerialExecutionError(msg)

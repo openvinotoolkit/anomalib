@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any
 
 import torch
-from lightning.pytorch.callbacks import Callback, RichModelSummary, RichProgressBar
+from lightning.pytorch.callbacks import Callback
 from lightning.pytorch.loggers import Logger
 from lightning.pytorch.trainer import Trainer
 from lightning.pytorch.utilities.types import _EVALUATE_OUTPUT, _PREDICT_OUTPUT, EVAL_DATALOADERS, TRAIN_DATALOADERS
@@ -358,7 +358,7 @@ class Engine:
 
     def _setup_anomalib_callbacks(self, model: AnomalyModule) -> None:
         """Set up callbacks for the trainer."""
-        _callbacks: list[Callback] = [RichProgressBar(), RichModelSummary()]
+        _callbacks: list[Callback] = []
 
         # Add ModelCheckpoint if it is not in the callbacks list.
         has_checkpoint_callback = any(isinstance(c, ModelCheckpoint) for c in self._cache.args["callbacks"])
