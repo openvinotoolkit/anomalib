@@ -68,7 +68,7 @@ class TorchInferencer:
         Returns:
             torch.device: Device to use for inference.
         """
-        if device not in ("auto", "cpu", "cuda", "gpu"):
+        if device not in {"auto", "cpu", "cuda", "gpu"}:
             msg = f"Unknown device {device}"
             raise ValueError(msg)
 
@@ -90,7 +90,7 @@ class TorchInferencer:
         if isinstance(path, str):
             path = Path(path)
 
-        if path.suffix not in (".pt", ".pth"):
+        if path.suffix not in {".pt", ".pth"}:
             msg = f"Unknown torch checkpoint file format {path.suffix}. Make sure you save the Torch model."
             raise ValueError(msg)
 

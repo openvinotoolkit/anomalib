@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 
 import yaml
 from jsonargparse import ArgumentParser, Namespace
-from rich import print, traceback
+from rich import traceback
 
 from anomalib.utils.logging import redirect_logs
 
@@ -41,7 +41,7 @@ class Pipeline(ABC):
             parser = self.get_parser()
             args = parser.parse_args()
 
-        with Path(args.config).open() as file:
+        with Path(args.config).open(encoding="utf-8") as file:
             return yaml.safe_load(file)
 
     @abstractmethod
@@ -66,9 +66,9 @@ class Pipeline(ABC):
             except Exception:  # noqa: PERF203 catch all exception and allow try-catch in loop
                 logger.exception("An error occurred when running the runner.")
                 print(
-                    f"There were some errors when running [red]{runner.generator.job_class.name}[/red] with"
-                    f" [green]{runner.__class__.__name__}[/green]."
-                    f" Please check [magenta]{log_file}[/magenta] for more details.",
+                    f"There were some errors when running {runner.generator.job_class.name} with"
+                    f" {runner.__class__.__name__}."
+                    f" Please check {log_file} for more details.",
                 )
 
     @staticmethod

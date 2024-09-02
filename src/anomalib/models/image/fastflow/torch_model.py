@@ -125,11 +125,11 @@ class FastflowModel(nn.Module):
 
         self.input_size = input_size
 
-        if backbone in ("cait_m48_448", "deit_base_distilled_patch16_384"):
+        if backbone in {"cait_m48_448", "deit_base_distilled_patch16_384"}:
             self.feature_extractor = timm.create_model(backbone, pretrained=pre_trained)
             channels = [768]
             scales = [16]
-        elif backbone in ("resnet18", "wide_resnet50_2"):
+        elif backbone in {"resnet18", "wide_resnet50_2"}:
             self.feature_extractor = timm.create_model(
                 backbone,
                 pretrained=pre_trained,
