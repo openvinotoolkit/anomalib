@@ -321,7 +321,8 @@ class EfficientAd(AnomalyModule):
         """
         return LearningType.ONE_CLASS
 
-    def configure_transforms(self, image_size: tuple[int, int] | None = None) -> Transform:  # noqa: PLR6301
+    @staticmethod
+    def configure_transforms(image_size: tuple[int, int] | None = None) -> Transform:
         """Default transform for EfficientAd. Imagenet normalization applied in forward."""
         image_size = image_size or (256, 256)
         return Compose(

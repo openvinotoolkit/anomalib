@@ -41,7 +41,8 @@ class DummyModel(AnomalyModule):
         super().__init__()
         self.model = torch.nn.Linear(10, 10)
 
-    def configure_transforms(self, image_size: tuple[int, int] | None = None) -> Transform:  # noqa: PLR6301
+    @staticmethod
+    def configure_transforms(image_size: tuple[int, int] | None = None) -> Transform:
         """Return a Resize transform."""
         if image_size is None:
             image_size = (256, 256)

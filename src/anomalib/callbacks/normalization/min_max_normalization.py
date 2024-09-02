@@ -23,7 +23,8 @@ class _MinMaxNormalizationCallback(NormalizationCallback):
     Note: This callback is set within the Engine.
     """
 
-    def setup(self, trainer: Trainer, pl_module: AnomalyModule, stage: str | None = None) -> None:  # noqa: PLR6301
+    @staticmethod
+    def setup(trainer: Trainer, pl_module: AnomalyModule, stage: str | None = None) -> None:
         """Add min_max metrics to normalization metrics."""
         del trainer, stage  # These variables are not used.
 
@@ -48,7 +49,8 @@ class _MinMaxNormalizationCallback(NormalizationCallback):
                 msg = f"Expected normalization_metric {name} to be of type MinMax, got {type(metric)}"
                 raise TypeError(msg)
 
-    def on_test_start(self, trainer: Trainer, pl_module: AnomalyModule) -> None:  # noqa: PLR6301
+    @staticmethod
+    def on_test_start(trainer: Trainer, pl_module: AnomalyModule) -> None:
         """Call when the test begins."""
         del trainer  # `trainer` variable is not used.
 
@@ -56,15 +58,16 @@ class _MinMaxNormalizationCallback(NormalizationCallback):
             if metric is not None:
                 metric.set_threshold(0.5)
 
-    def on_validation_epoch_start(self, trainer: Trainer, pl_module: AnomalyModule) -> None:  # noqa: PLR6301
+    @staticmethod
+    def on_validation_epoch_start(trainer: Trainer, pl_module: AnomalyModule) -> None:
         """Call when the validation epoch begins."""
         del trainer  # `trainer` variable is not used.
 
         if hasattr(pl_module, "normalization_metrics"):
             pl_module.normalization_metrics.reset()
 
-    def on_validation_batch_end(  # noqa: PLR6301
-        self,
+    @staticmethod
+    def on_validation_batch_end(
         trainer: Trainer,
         pl_module: AnomalyModule,
         outputs: STEP_OUTPUT,

@@ -10,7 +10,8 @@ from torch import nn
 class FastflowLoss(nn.Module):
     """FastFlow Loss."""
 
-    def forward(self, hidden_variables: list[torch.Tensor], jacobians: list[torch.Tensor]) -> torch.Tensor:  # noqa: PLR6301
+    @staticmethod
+    def forward(hidden_variables: list[torch.Tensor], jacobians: list[torch.Tensor]) -> torch.Tensor:
         """Calculate the Fastflow loss.
 
         Args:

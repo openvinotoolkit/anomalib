@@ -98,11 +98,8 @@ class _MetricsCallback(Callback):
                 pl_module.pixel_metrics = create_metric_collection(pixel_metric_names, "pixel_")
             self._set_threshold(pl_module)
 
-    def on_validation_epoch_start(  # noqa: PLR6301
-        self,
-        trainer: Trainer,
-        pl_module: AnomalyModule,
-    ) -> None:
+    @staticmethod
+    def on_validation_epoch_start(trainer: Trainer, pl_module: AnomalyModule) -> None:
         del trainer  # Unused argument.
 
         pl_module.image_metrics.reset()
@@ -123,21 +120,14 @@ class _MetricsCallback(Callback):
             self._outputs_to_device(outputs)
             self._update_metrics(pl_module.image_metrics, pl_module.pixel_metrics, outputs)
 
-    def on_validation_epoch_end(
-        self,
-        trainer: Trainer,
-        pl_module: AnomalyModule,
-    ) -> None:
+    def on_validation_epoch_end(self, trainer: Trainer, pl_module: AnomalyModule) -> None:
         del trainer  # Unused argument.
 
         self._set_threshold(pl_module)
         self._log_metrics(pl_module)
 
-    def on_test_epoch_start(  # noqa: PLR6301
-        self,
-        trainer: Trainer,
-        pl_module: AnomalyModule,
-    ) -> None:
+    @staticmethod
+    def on_test_epoch_start(trainer: Trainer, pl_module: AnomalyModule) -> None:
         del trainer  # Unused argument.
 
         pl_module.image_metrics.reset()
@@ -158,11 +148,7 @@ class _MetricsCallback(Callback):
             self._outputs_to_device(outputs)
             self._update_metrics(pl_module.image_metrics, pl_module.pixel_metrics, outputs)
 
-    def on_test_epoch_end(
-        self,
-        trainer: Trainer,
-        pl_module: AnomalyModule,
-    ) -> None:
+    def on_test_epoch_end(self, trainer: Trainer, pl_module: AnomalyModule) -> None:
         del trainer  # Unused argument.
 
         self._log_metrics(pl_module)
