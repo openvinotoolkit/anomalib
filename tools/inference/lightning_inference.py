@@ -53,7 +53,7 @@ def infer(args: Namespace) -> None:
 
     # create the dataset
     dataset = PredictDataset(**args.data)
-    dataloader = DataLoader(dataset)
+    dataloader = DataLoader(dataset, collate_fn=dataset.collate_fn)
 
     engine.predict(model=model, dataloaders=[dataloader], ckpt_path=args.ckpt_path)
 

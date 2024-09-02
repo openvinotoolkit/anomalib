@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from abc import ABC
+from collections.abc import Callable
 
 import torch
 from PIL import Image
@@ -13,7 +14,8 @@ from torchvision.tv_tensors import Mask
 
 from anomalib import TaskType
 from anomalib.data.base.dataset import AnomalibDataset
-from anomalib.data.utils import LabelName, masks_to_boxes, read_depth_image
+from anomalib.data.utils import LabelName, read_depth_image
+from anomalib.dataclasses import DepthBatch, DepthItem
 
 
 class AnomalibDepthDataset(AnomalibDataset, ABC):
@@ -30,7 +32,7 @@ class AnomalibDepthDataset(AnomalibDataset, ABC):
 
         self.transform = transform
 
-    def __getitem__(self, index: int) -> dict[str, str | torch.Tensor]:
+    def __getitem__(self, index: int) -> DepthItem:
         """Return rgb image, depth image and mask.
 
         Args:
@@ -52,7 +54,7 @@ class AnomalibDepthDataset(AnomalibDataset, ABC):
             item["image"], item["depth_image"] = (
                 self.transform(image, depth_image) if self.transform else (image, depth_image)
             )
-        elif self.task in (TaskType.DETECTION, TaskType.SEGMENTATION):
+        elif self.task == TaskType.SEGMENTATION:
             # Only Anomalous (1) images have masks in anomaly datasets
             # Therefore, create empty mask for Normal (0) images.
             mask = (
@@ -65,12 +67,21 @@ class AnomalibDepthDataset(AnomalibDataset, ABC):
             )
             item["mask_path"] = mask_path
 
-            if self.task == TaskType.DETECTION:
-                # create boxes from masks for detection task
-                boxes, _ = masks_to_boxes(item["mask"])
-                item["boxes"] = boxes[0]
         else:
             msg = f"Unknown task type: {self.task}"
             raise ValueError(msg)
 
-        return item
+        return DepthItem(
+            image=item["image"],
+            depth_map=item["depth_image"],
+            gt_mask=item.get("mask"),
+            gt_label=item["label"],
+            image_path=image_path,
+            depth_path=depth_path,
+            mask_path=item.get("mask_path"),
+        )
+
+    @property
+    def collate_fn(self) -> Callable:
+        """Return the collate function for depth batches."""
+        return DepthBatch.collate

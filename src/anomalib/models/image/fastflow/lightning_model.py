@@ -13,6 +13,7 @@ from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torch import optim
 
 from anomalib import LearningType
+from anomalib.dataclasses import Batch
 from anomalib.models.components import AnomalyModule
 
 from .loss import FastflowLoss
@@ -68,7 +69,7 @@ class Fastflow(AnomalyModule):
             hidden_ratio=self.hidden_ratio,
         )
 
-    def training_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> STEP_OUTPUT:
+    def training_step(self, batch: Batch, *args, **kwargs) -> STEP_OUTPUT:
         """Perform the training step input and return the loss.
 
         Args:
@@ -81,12 +82,12 @@ class Fastflow(AnomalyModule):
         """
         del args, kwargs  # These variables are not used.
 
-        hidden_variables, jacobians = self.model(batch["image"])
+        hidden_variables, jacobians = self.model(batch.image)
         loss = self.loss(hidden_variables, jacobians)
         self.log("train_loss", loss.item(), on_epoch=True, prog_bar=True, logger=True)
         return {"loss": loss}
 
-    def validation_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> STEP_OUTPUT:
+    def validation_step(self, batch: Batch, *args, **kwargs) -> STEP_OUTPUT:
         """Perform the validation step and return the anomaly map.
 
         Args:
@@ -99,9 +100,8 @@ class Fastflow(AnomalyModule):
         """
         del args, kwargs  # These variables are not used.
 
-        anomaly_maps = self.model(batch["image"])
-        batch["anomaly_maps"] = anomaly_maps
-        return batch
+        predictions = self.model(batch.image)
+        return batch.update(**predictions._asdict())
 
     @property
     def trainer_arguments(self) -> dict[str, Any]:

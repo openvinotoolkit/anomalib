@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
+from dataclasses import asdict
 from enum import Enum
 from typing import Any
 
@@ -12,6 +13,7 @@ from lightning.pytorch import Callback, Trainer
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 
 from anomalib import TaskType
+from anomalib.dataclasses import Batch
 from anomalib.metrics import AnomalibMetricCollection, create_metric_collection
 from anomalib.models import AnomalyModule
 
@@ -96,7 +98,6 @@ class _MetricsCallback(Callback):
                         pl_module.pixel_metrics.add_metrics(new_metrics[name])
             else:
                 pl_module.pixel_metrics = create_metric_collection(pixel_metric_names, "pixel_")
-            self._set_threshold(pl_module)
 
     def on_validation_epoch_start(
         self,
@@ -120,7 +121,7 @@ class _MetricsCallback(Callback):
         del trainer, batch, batch_idx, dataloader_idx  # Unused arguments.
 
         if outputs is not None:
-            self._outputs_to_device(outputs)
+            outputs = self._outputs_to_device(outputs)
             self._update_metrics(pl_module.image_metrics, pl_module.pixel_metrics, outputs)
 
     def on_validation_epoch_end(
@@ -130,7 +131,6 @@ class _MetricsCallback(Callback):
     ) -> None:
         del trainer  # Unused argument.
 
-        self._set_threshold(pl_module)
         self._log_metrics(pl_module)
 
     def on_test_epoch_start(
@@ -155,7 +155,7 @@ class _MetricsCallback(Callback):
         del trainer, batch, batch_idx, dataloader_idx  # Unused arguments.
 
         if outputs is not None:
-            self._outputs_to_device(outputs)
+            outputs = self._outputs_to_device(outputs)
             self._update_metrics(pl_module.image_metrics, pl_module.pixel_metrics, outputs)
 
     def on_test_epoch_end(
@@ -167,10 +167,6 @@ class _MetricsCallback(Callback):
 
         self._log_metrics(pl_module)
 
-    def _set_threshold(self, pl_module: AnomalyModule) -> None:
-        pl_module.image_metrics.set_threshold(pl_module.image_threshold.value.item())
-        pl_module.pixel_metrics.set_threshold(pl_module.pixel_threshold.value.item())
-
     def _update_metrics(
         self,
         image_metric: AnomalibMetricCollection,
@@ -178,15 +174,17 @@ class _MetricsCallback(Callback):
         output: STEP_OUTPUT,
     ) -> None:
         image_metric.to(self.device)
-        image_metric.update(output["pred_scores"], output["label"].int())
-        if "mask" in output and "anomaly_maps" in output:
+        image_metric.update(output.pred_score, output.gt_label.int())
+        if output.gt_mask is not None and output.anomaly_map is not None:
             pixel_metric.to(self.device)
-            pixel_metric.update(torch.squeeze(output["anomaly_maps"]), torch.squeeze(output["mask"].int()))
+            pixel_metric.update(torch.squeeze(output.anomaly_map), torch.squeeze(output.gt_mask.int()))
 
     def _outputs_to_device(self, output: STEP_OUTPUT) -> STEP_OUTPUT | dict[str, Any]:
         if isinstance(output, dict):
             for key, value in output.items():
                 output[key] = self._outputs_to_device(value)
+        elif isinstance(output, Batch):
+            output = output.__class__(**self._outputs_to_device(asdict(output)))
         elif isinstance(output, torch.Tensor):
             output = output.to(self.device)
         return output

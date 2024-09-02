@@ -17,7 +17,9 @@ from torchvision.transforms.v2 import Compose, InterpolationMode, Normalize, Res
 
 from anomalib import LearningType
 from anomalib.data.predict import PredictDataset
+from anomalib.dataclasses import Batch
 from anomalib.models.components import AnomalyModule
+from anomalib.post_processing import OneClassPostProcessor
 
 from .torch_model import WinClipModel
 
@@ -111,7 +113,7 @@ class WinClip(AnomalyModule):
         """
         ref_images = torch.Tensor()
         for batch in dataloader:
-            images = batch["image"][: self.k_shot - ref_images.shape[0]]
+            images = batch.image[: self.k_shot - ref_images.shape[0]]
             ref_images = torch.cat((ref_images, images))
             if self.k_shot == ref_images.shape[0]:
                 break
@@ -122,11 +124,11 @@ class WinClip(AnomalyModule):
         """WinCLIP doesn't require optimization, therefore returns no optimizers."""
         return
 
-    def validation_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> dict:
+    def validation_step(self, batch: Batch, *args, **kwargs) -> dict:
         """Validation Step of WinCLIP."""
         del args, kwargs  # These variables are not used.
-        batch["pred_scores"], batch["anomaly_maps"] = self.model(batch["image"])
-        return batch
+        predictions = self.model(batch.image)
+        return batch.update(**predictions._asdict())
 
     @property
     def trainer_arguments(self) -> dict[str, int | float]:
@@ -142,13 +144,13 @@ class WinClip(AnomalyModule):
         """
         return LearningType.FEW_SHOT if self.k_shot else LearningType.ZERO_SHOT
 
-    def state_dict(self) -> OrderedDict[str, Any]:
+    def state_dict(self, **kwargs) -> OrderedDict[str, Any]:
         """Return the state dict of the model.
 
         Before returning the state dict, we remove the parameters of the frozen backbone to reduce the size of the
         checkpoint.
         """
-        state_dict = super().state_dict()
+        state_dict = super().state_dict(**kwargs)
         for pattern in self.EXCLUDE_FROM_STATE_DICT:
             remove_keys = [key for key in state_dict if key.startswith(pattern)]
             for key in remove_keys:
@@ -178,3 +180,7 @@ class WinClip(AnomalyModule):
                 Normalize(mean=(0.48145466, 0.4578275, 0.40821073), std=(0.26862954, 0.26130258, 0.27577711)),
             ],
         )
+
+    def default_post_processor(self) -> OneClassPostProcessor:
+        """Return the default post-processor for WinCLIP."""
+        return OneClassPostProcessor()

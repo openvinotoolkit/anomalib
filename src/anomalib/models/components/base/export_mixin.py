@@ -12,13 +12,15 @@ from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import torch
+from lightning.pytorch import LightningModule
 from torch import nn
 from torchmetrics import Metric
 from torchvision.transforms.v2 import Transform
 
 from anomalib import TaskType
 from anomalib.data import AnomalibDataModule
-from anomalib.deploy.export import CompressionType, ExportType, InferenceModel
+from anomalib.deploy.export import CompressionType, ExportType
+from anomalib.deploy.utils import make_transform_exportable
 from anomalib.metrics import create_metric_collection
 from anomalib.utils.exceptions import try_import
 
@@ -44,8 +46,6 @@ class ExportMixin:
     def to_torch(
         self,
         export_root: Path | str,
-        transform: Transform | None = None,
-        task: TaskType | None = None,
     ) -> Path:
         """Export AnomalibModel to torch.
 
@@ -53,6 +53,8 @@ class ExportMixin:
             export_root (Path): Path to the output folder.
             transform (Transform, optional): Input transforms used for the model. If not provided, the transform is
                 taken from the model.
+                Defaults to ``None``.
+            post_processor (nn.Module, optional): Post-processing module to apply to the model output.
                 Defaults to ``None``.
             task (TaskType | None): Task type.
                 Defaults to ``None``.
@@ -77,17 +79,13 @@ class ExportMixin:
 
             >>> model.to_torch(
             ...     export_root="path/to/export",
-            ...     transform=datamodule.test_data.transform,
             ...     task=datamodule.test_data.task,
             ... )
         """
-        transform = transform or self.transform or self.configure_transforms()
-        inference_model = InferenceModel(model=self.model, transform=transform)
         export_root = _create_export_root(export_root, ExportType.TORCH)
-        metadata = self._get_metadata(task=task)
         pt_model_path = export_root / "model.pt"
         torch.save(
-            obj={"model": inference_model, "metadata": metadata},
+            obj={"model": self},
             f=pt_model_path,
         )
         return pt_model_path
@@ -96,8 +94,6 @@ class ExportMixin:
         self,
         export_root: Path | str,
         input_size: tuple[int, int] | None = None,
-        transform: Transform | None = None,
-        task: TaskType | None = None,
     ) -> Path:
         """Export model to onnx.
 
@@ -107,6 +103,8 @@ class ExportMixin:
                 Defaults to None.
             transform (Transform, optional): Input transforms used for the model. If not provided, the transform is
                 taken from the model.
+                Defaults to ``None``.
+            post_processor (nn.Module, optional): Post-processing module to apply to the model output.
                 Defaults to ``None``.
             task (TaskType | None): Task type.
                 Defaults to ``None``.
@@ -137,23 +135,24 @@ class ExportMixin:
             ...     task="segmentation",
             ... )
         """
-        transform = transform or self.transform or self.configure_transforms()
-        inference_model = InferenceModel(model=self.model, transform=transform, disable_antialias=True)
         export_root = _create_export_root(export_root, ExportType.ONNX)
         input_shape = torch.zeros((1, 3, *input_size)) if input_size else torch.zeros((1, 3, 1, 1))
+        input_shape = input_shape.to(self.device)
         dynamic_axes = (
             None if input_size else {"input": {0: "batch_size", 2: "height", 3: "weight"}, "output": {0: "batch_size"}}
         )
-        _write_metadata_to_json(self._get_metadata(task), export_root)
         onnx_path = export_root / "model.onnx"
+        # apply pass through the model to get the output names
+        assert isinstance(self, LightningModule)  # mypy
+        output_names = [name for name, value in self.eval()(input_shape)._asdict().items() if value is not None]
         torch.onnx.export(
-            inference_model,
+            self,
             input_shape.to(self.device),
             str(onnx_path),
             opset_version=14,
             dynamic_axes=dynamic_axes,
             input_names=["input"],
-            output_names=["output"],
+            output_names=output_names,
         )
 
         return onnx_path
@@ -162,7 +161,6 @@ class ExportMixin:
         self,
         export_root: Path | str,
         input_size: tuple[int, int] | None = None,
-        transform: Transform | None = None,
         compression_type: CompressionType | None = None,
         datamodule: AnomalibDataModule | None = None,
         metric: Metric | str | None = None,
@@ -250,7 +248,7 @@ class ExportMixin:
         import openvino as ov
 
         with TemporaryDirectory() as onnx_directory:
-            model_path = self.to_onnx(onnx_directory, input_size, transform, task)
+            model_path = self.to_onnx(onnx_directory, input_size)
             export_root = _create_export_root(export_root, ExportType.OPENVINO)
             ov_model_path = export_root / "model.xml"
             ov_args = {} if ov_args is None else ov_args
@@ -262,7 +260,6 @@ class ExportMixin:
             # fp16 compression is enabled by default
             compress_to_fp16 = compression_type == CompressionType.FP16
             ov.save_model(model, ov_model_path, compress_to_fp16=compress_to_fp16)
-            _write_metadata_to_json(self._get_metadata(task), export_root)
 
         return ov_model_path
 
@@ -303,6 +300,7 @@ class ExportMixin:
         elif compression_type == CompressionType.INT8_PTQ:
             model = self._post_training_quantization_ov(model, datamodule)
         elif compression_type == CompressionType.INT8_ACQ:
+            assert task is not None, "Task must be provided for OpenVINO accuracy aware compression"
             model = self._accuracy_control_quantization_ov(model, datamodule, metric, task)
         else:
             msg = f"Unrecognized compression type: {compression_type}"
@@ -437,6 +435,11 @@ class ExportMixin:
                 metadata[key] = value.numpy().tolist()
 
         return metadata
+
+    @property
+    def exportable_transform(self) -> Transform:
+        """Return the exportable transform."""
+        return make_transform_exportable(self.transform)
 
 
 def _write_metadata_to_json(metadata: dict[str, Any], export_root: Path) -> None:

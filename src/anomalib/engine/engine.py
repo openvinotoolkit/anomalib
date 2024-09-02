@@ -15,23 +15,16 @@ from lightning.pytorch.trainer import Trainer
 from lightning.pytorch.utilities.types import _EVALUATE_OUTPUT, _PREDICT_OUTPUT, EVAL_DATALOADERS, TRAIN_DATALOADERS
 from torch.utils.data import DataLoader, Dataset
 from torchmetrics import Metric
-from torchvision.transforms.v2 import Transform
 
 from anomalib import LearningType, TaskType
 from anomalib.callbacks.checkpoint import ModelCheckpoint
 from anomalib.callbacks.metrics import _MetricsCallback
-from anomalib.callbacks.normalization import get_normalization_callback
-from anomalib.callbacks.normalization.base import NormalizationCallback
-from anomalib.callbacks.post_processor import _PostProcessorCallback
-from anomalib.callbacks.thresholding import _ThresholdCallback
 from anomalib.callbacks.timer import TimerCallback
 from anomalib.callbacks.visualizer import _VisualizationCallback
 from anomalib.data import AnomalibDataModule, AnomalibDataset, PredictDataset
 from anomalib.deploy import CompressionType, ExportType
 from anomalib.models import AnomalyModule
-from anomalib.utils.normalization import NormalizationMethod
 from anomalib.utils.path import create_versioned_dir
-from anomalib.utils.types import NORMALIZATION, THRESHOLD
 from anomalib.utils.visualization import ImageVisualizer
 
 logger = logging.getLogger(__name__)
@@ -123,8 +116,6 @@ class Engine:
     def __init__(
         self,
         callbacks: list[Callback] | None = None,
-        normalization: NORMALIZATION = NormalizationMethod.MIN_MAX,
-        threshold: THRESHOLD = "F1AdaptiveThreshold",
         task: TaskType | str = TaskType.SEGMENTATION,
         image_metrics: list[str] | str | dict[str, dict[str, Any]] | None = None,
         pixel_metrics: list[str] | str | dict[str, dict[str, Any]] | None = None,
@@ -146,15 +137,13 @@ class Engine:
             **kwargs,
         )
 
-        self.normalization = normalization
-        self.threshold = threshold
         self.task = TaskType(task)
-        self.image_metric_names = image_metrics if image_metrics else ["AUROC", "F1Score"]
+        self.image_metric_names = image_metrics if image_metrics else ["AUROC", "F1Max"]
 
         # pixel metrics are only used for segmentation tasks.
         self.pixel_metric_names = None
         if self.task == TaskType.SEGMENTATION:
-            self.pixel_metric_names = pixel_metrics if pixel_metrics is not None else ["AUROC", "F1Score"]
+            self.pixel_metric_names = pixel_metrics if pixel_metrics is not None else ["AUROC", "F1Max"]
 
         self._trainer: Trainer | None = None
 
@@ -187,44 +176,6 @@ class Engine:
             msg = "Trainer does not have a model assigned yet."
             raise UnassignedError(msg)
         return self.trainer.lightning_module
-
-    @property
-    def normalization_callback(self) -> NormalizationCallback | None:
-        """The ``NormalizationCallback`` callback in the trainer.callbacks list, or ``None`` if it doesn't exist.
-
-        Returns:
-            NormalizationCallback | None: Normalization callback, if available.
-
-        Raises:
-            ValueError: If there are multiple normalization callbacks.
-        """
-        callbacks = [callback for callback in self.trainer.callbacks if isinstance(callback, NormalizationCallback)]
-        if len(callbacks) > 1:
-            msg = (
-                f"Trainer can only have one normalization callback but multiple found: {callbacks}. "
-                "Please check your configuration. Exiting to avoid unexpected behavior."
-            )
-            raise ValueError(msg)
-        return callbacks[0] if len(callbacks) > 0 else None
-
-    @property
-    def threshold_callback(self) -> _ThresholdCallback | None:
-        """The ``ThresholdCallback`` callback in the trainer.callbacks list, or ``None`` if it doesn't exist.
-
-        Returns:
-            _ThresholdCallback | None: Threshold callback, if available.
-
-        Raises:
-            ValueError: If there are multiple threshold callbacks.
-        """
-        callbacks = [callback for callback in self.trainer.callbacks if isinstance(callback, _ThresholdCallback)]
-        if len(callbacks) > 1:
-            msg = (
-                f"Trainer can only have one thresholding callback but multiple found: {callbacks}. "
-                "Please check your configuration. Exiting to avoid unexpected behavior."
-            )
-            raise ValueError(msg)
-        return callbacks[0] if len(callbacks) > 0 else None
 
     @property
     def checkpoint_callback(self) -> ModelCheckpoint | None:
@@ -322,7 +273,7 @@ class Engine:
             self._cache.update(model)
 
         # Setup anomalib callbacks to be used with the trainer
-        self._setup_anomalib_callbacks()
+        self._setup_anomalib_callbacks(model)
 
         # Temporarily set devices to 1 to avoid issues with multiple processes
         self._cache.args["devices"] = 1
@@ -405,7 +356,7 @@ class Engine:
                 if not getattr(dataloader.dataset, "transform", None):
                     dataloader.dataset.transform = transform
 
-    def _setup_anomalib_callbacks(self) -> None:
+    def _setup_anomalib_callbacks(self, model: AnomalyModule) -> None:
         """Set up callbacks for the trainer."""
         _callbacks: list[Callback] = [RichProgressBar(), RichModelSummary()]
 
@@ -420,21 +371,16 @@ class Engine:
                 ),
             )
 
-        # Add the post-processor callbacks.
-        _callbacks.append(_PostProcessorCallback())
+        # Add the post-processor callback.
+        if isinstance(model.post_processor, Callback):
+            _callbacks.append(model.post_processor)
 
-        # Add the the normalization callback.
-        normalization_callback = get_normalization_callback(self.normalization)
-        if normalization_callback is not None:
-            _callbacks.append(normalization_callback)
-
-        # Add the thresholding and metrics callbacks.
-        _callbacks.append(_ThresholdCallback(self.threshold))
+        # Add the metrics callback.
         _callbacks.append(_MetricsCallback(self.task, self.image_metric_names, self.pixel_metric_names))
 
         _callbacks.append(
             _VisualizationCallback(
-                visualizers=ImageVisualizer(task=self.task, normalize=self.normalization == NormalizationMethod.NONE),
+                visualizers=ImageVisualizer(task=self.task, normalize=False),
                 save=True,
                 root=self._cache.args["default_root_dir"] / "images",
             ),
@@ -448,8 +394,6 @@ class Engine:
     def _should_run_validation(
         self,
         model: AnomalyModule,
-        dataloaders: EVAL_DATALOADERS | None,
-        datamodule: AnomalibDataModule | None,
         ckpt_path: str | Path | None,
     ) -> bool:
         """Check if we need to run validation to collect normalization statistics and thresholds.
@@ -477,13 +421,7 @@ class Engine:
         if model.learning_type not in [LearningType.ZERO_SHOT, LearningType.FEW_SHOT]:
             return False
         # check if a checkpoint path is provided
-        if ckpt_path is not None:
-            return False
-        # check if the model needs to be validated
-        needs_normalization = self.normalization_callback is not None and not hasattr(model, "normalization_metrics")
-        needs_thresholding = self.threshold_callback is not None and not hasattr(model, "image_threshold")
-        # check if the model can be validated (i.e. validation data is available)
-        return (needs_normalization or needs_thresholding) and (dataloaders is not None or datamodule is not None)
+        return ckpt_path is None
 
     def fit(
         self,
@@ -682,7 +620,7 @@ class Engine:
 
         self._setup_dataset_task(dataloaders)
         self._setup_transform(model or self.model, datamodule=datamodule, ckpt_path=ckpt_path)
-        if self._should_run_validation(model or self.model, dataloaders, datamodule, ckpt_path):
+        if self._should_run_validation(model or self.model, ckpt_path):
             logger.info("Running validation before testing to collect normalization metrics and/or thresholds.")
             self.trainer.validate(model, dataloaders, None, verbose=False, datamodule=datamodule)
         return self.trainer.test(model, dataloaders, ckpt_path, verbose, datamodule)
@@ -779,15 +717,16 @@ class Engine:
             msg = f"Unknown type for dataloaders {type(dataloaders)}"
             raise TypeError(msg)
         if dataset is not None:
-            dataloaders.append(DataLoader(dataset))
+            dataloaders.append(DataLoader(dataset, collate_fn=dataset.collate_fn))
         if data_path is not None:
-            dataloaders.append(DataLoader(PredictDataset(data_path)))
+            dataset = PredictDataset(data_path)
+            dataloaders.append(DataLoader(dataset, collate_fn=dataset.collate_fn))
         dataloaders = dataloaders or None
 
         self._setup_dataset_task(dataloaders, datamodule)
         self._setup_transform(model or self.model, datamodule=datamodule, dataloaders=dataloaders, ckpt_path=ckpt_path)
 
-        if self._should_run_validation(model or self.model, None, datamodule, ckpt_path):
+        if self._should_run_validation(model or self.model, ckpt_path):
             logger.info("Running validation before predicting to collect normalization metrics and/or thresholds.")
             self.trainer.validate(
                 model,
@@ -869,7 +808,6 @@ class Engine:
         export_type: ExportType | str,
         export_root: str | Path | None = None,
         input_size: tuple[int, int] | None = None,
-        transform: Transform | None = None,
         compression_type: CompressionType | None = None,
         datamodule: AnomalibDataModule | None = None,
         metric: Metric | str | None = None,
@@ -885,9 +823,6 @@ class Engine:
                 exported to trainer.default_root_dir. Defaults to None.
             input_size (tuple[int, int] | None, optional): A statis input shape for the model, which is exported to ONNX
                 and OpenVINO format. Defaults to None.
-            transform (Transform | None, optional): Input transform to include in the exported model. If not provided,
-                the engine will try to use the default transform from the model.
-                Defaults to ``None``.
             compression_type (CompressionType | None, optional): Compression type for OpenVINO exporting only.
                 Defaults to ``None``.
             datamodule (AnomalibDataModule | None, optional): Lightning datamodule.
@@ -943,21 +878,16 @@ class Engine:
         if export_type == ExportType.TORCH:
             exported_model_path = model.to_torch(
                 export_root=export_root,
-                transform=transform,
-                task=self.task,
             )
         elif export_type == ExportType.ONNX:
             exported_model_path = model.to_onnx(
                 export_root=export_root,
                 input_size=input_size,
-                transform=transform,
-                task=self.task,
             )
         elif export_type == ExportType.OPENVINO:
             exported_model_path = model.to_openvino(
                 export_root=export_root,
                 input_size=input_size,
-                transform=transform,
                 task=self.task,
                 compression_type=compression_type,
                 datamodule=datamodule,

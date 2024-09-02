@@ -9,6 +9,8 @@ Paper https://arxiv.org/pdf/2212.00789.pdf
 import torch
 from torch import nn
 
+from anomalib.dataclasses import InferenceBatch
+
 from .density import CombinedDensityEstimator
 from .features import FeatureExtractor
 from .flow import FlowExtractor
@@ -105,7 +107,7 @@ class AiVadModel(nn.Module):
             n_neighbors_deep=n_neighbors_deep,
         )
 
-    def forward(self, batch: torch.Tensor) -> tuple[list[torch.Tensor], list[torch.Tensor], list[torch.Tensor]]:
+    def forward(self, batch: torch.Tensor) -> InferenceBatch:
         """Forward pass through AI-VAD model.
 
         Args:
@@ -143,5 +145,14 @@ class AiVadModel(nn.Module):
             box_scores.append(box)
             image_scores.append(image)
 
-        box_locations = [batch_item["boxes"] for batch_item in regions]
-        return box_locations, box_scores, image_scores
+        anomaly_map = torch.stack(
+            [
+                torch.amax(region["masks"] * scores.view(-1, 1, 1, 1), dim=0)
+                for region, scores in zip(regions, box_scores, strict=False)
+            ],
+        )
+
+        return InferenceBatch(
+            pred_score=torch.stack(image_scores),
+            anomaly_map=anomaly_map,
+        )

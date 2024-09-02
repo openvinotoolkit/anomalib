@@ -6,7 +6,7 @@
 import copy
 import logging
 from abc import ABC
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from pathlib import Path
 
 import pandas as pd
@@ -17,7 +17,8 @@ from torchvision.transforms.v2 import Transform
 from torchvision.tv_tensors import Mask
 
 from anomalib import TaskType
-from anomalib.data.utils import LabelName, masks_to_boxes, read_image, read_mask
+from anomalib.data.utils import LabelName, read_image, read_mask
+from anomalib.dataclasses import ImageBatch, ImageItem, Item
 
 _EXPECTED_COLUMNS_CLASSIFICATION = ["image_path", "split"]
 _EXPECTED_COLUMNS_SEGMENTATION = [*_EXPECTED_COLUMNS_CLASSIFICATION, "mask_path"]
@@ -152,26 +153,25 @@ class AnomalibDataset(Dataset, ABC):
         """Check if the dataset contains any anomalous samples."""
         return LabelName.ABNORMAL in list(self.samples.label_index)
 
-    def __getitem__(self, index: int) -> dict[str, str | torch.Tensor]:
+    def __getitem__(self, index: int) -> Item:
         """Get dataset item for the index ``index``.
 
         Args:
             index (int): Index to get the item.
 
         Returns:
-            dict[str, str | torch.Tensor]: Dict of image tensor during training. Otherwise, Dict containing image path,
-                target path, image tensor, label and transformed bounding box.
+            DatasetItem: DatasetItem instance containing image and ground truth (if available).
         """
         image_path = self.samples.iloc[index].image_path
         mask_path = self.samples.iloc[index].mask_path
         label_index = self.samples.iloc[index].label_index
 
         image = read_image(image_path, as_tensor=True)
-        item = {"image_path": image_path, "label": label_index}
+        item = {"image_path": image_path, "gt_label": label_index}
 
         if self.task == TaskType.CLASSIFICATION:
             item["image"] = self.transform(image) if self.transform else image
-        elif self.task in (TaskType.DETECTION, TaskType.SEGMENTATION):
+        elif self.task == TaskType.SEGMENTATION:
             # Only Anomalous (1) images have masks in anomaly datasets
             # Therefore, create empty mask for Normal (0) images.
             mask = (
@@ -179,17 +179,19 @@ class AnomalibDataset(Dataset, ABC):
                 if label_index == LabelName.NORMAL
                 else read_mask(mask_path, as_tensor=True)
             )
-            item["image"], item["mask"] = self.transform(image, mask) if self.transform else (image, mask)
+            item["image"], item["gt_mask"] = self.transform(image, mask) if self.transform else (image, mask)
 
-            if self.task == TaskType.DETECTION:
-                # create boxes from masks for detection task
-                boxes, _ = masks_to_boxes(item["mask"])
-                item["boxes"] = boxes[0]
         else:
             msg = f"Unknown task type: {self.task}"
             raise ValueError(msg)
 
-        return item
+        return ImageItem(
+            image=item["image"],
+            gt_mask=item.get("gt_mask"),
+            gt_label=int(label_index),
+            image_path=image_path,
+            mask_path=mask_path,
+        )
 
     def __add__(self, other_dataset: "AnomalibDataset") -> "AnomalibDataset":
         """Concatenate this dataset with another dataset.
@@ -206,3 +208,12 @@ class AnomalibDataset(Dataset, ABC):
         dataset = copy.deepcopy(self)
         dataset.samples = pd.concat([self.samples, other_dataset.samples], ignore_index=True)
         return dataset
+
+    @property
+    def collate_fn(self) -> Callable:
+        """Get the collate function for the items returned by this dataset.
+
+        By default, the dataset is an image dataset, so we will return the ImageBatch's collate function.
+        Other dataset types should override this property.
+        """
+        return ImageBatch.collate

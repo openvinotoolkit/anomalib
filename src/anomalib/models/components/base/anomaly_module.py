@@ -12,21 +12,23 @@ from typing import TYPE_CHECKING, Any
 
 import lightning.pytorch as pl
 import torch
+from lightning.pytorch import Callback
 from lightning.pytorch.trainer.states import TrainerFn
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torch import nn
-from torchmetrics import MetricCollection
 from torchvision.transforms.v2 import Compose, Normalize, Resize, Transform
 
 from anomalib import LearningType
-from anomalib.metrics import AnomalibMetricCollection
+from anomalib.dataclasses import Batch, InferenceBatch
 from anomalib.metrics.threshold import BaseThreshold
+from anomalib.post_processing import OneClassPostProcessor, PostProcessor
 
 from .export_mixin import ExportMixin
 
 if TYPE_CHECKING:
     from lightning.pytorch.callbacks import Callback
 
+    from anomalib.metrics import AnomalibMetricCollection
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +39,7 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
     Acts as a base class for all the Anomaly Modules in the library.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, post_processor: PostProcessor | None = None) -> None:
         super().__init__()
         logger.info("Initializing %s model.", self.__class__.__name__)
 
@@ -46,13 +48,10 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
         self.loss: nn.Module
         self.callbacks: list[Callback]
 
-        self.image_threshold: BaseThreshold
-        self.pixel_threshold: BaseThreshold
-
-        self.normalization_metrics: MetricCollection
-
         self.image_metrics: AnomalibMetricCollection
         self.pixel_metrics: AnomalibMetricCollection
+
+        self.post_processor = post_processor or self.default_post_processor()
 
         self._transform: Transform | None = None
         self._input_size: tuple[int, int] | None = None
@@ -80,7 +79,7 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
         initialization.
         """
 
-    def forward(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> Any:  # noqa: ANN401
+    def forward(self, batch: torch.Tensor, *args, **kwargs) -> InferenceBatch:
         """Perform the forward-pass by passing input tensor to the module.
 
         Args:
@@ -92,16 +91,13 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
             Tensor: Output tensor from the model.
         """
         del args, kwargs  # These variables are not used.
-
-        return self.model(batch)
-
-    def validation_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> STEP_OUTPUT:
-        """To be implemented in the subclasses."""
-        raise NotImplementedError
+        batch = self.exportable_transform(batch)
+        batch = self.model(batch)
+        return self.post_processor(batch) if self.post_processor else batch
 
     def predict_step(
         self,
-        batch: dict[str, str | torch.Tensor],
+        batch: Batch,
         batch_idx: int,
         dataloader_idx: int = 0,
     ) -> STEP_OUTPUT:
@@ -122,11 +118,11 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
 
         return self.validation_step(batch, batch_idx)
 
-    def test_step(self, batch: dict[str, str | torch.Tensor], batch_idx: int, *args, **kwargs) -> STEP_OUTPUT:
+    def test_step(self, batch: Batch, batch_idx: int, *args, **kwargs) -> STEP_OUTPUT:
         """Calls validation_step for anomaly map/score calculation.
 
         Args:
-          batch (dict[str, str | torch.Tensor]): Input batch
+          batch (Batch): Input batch
           batch_idx (int): Batch index
           args: Arguments.
           kwargs: Keyword arguments.
@@ -160,60 +156,6 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
                 destination[f"{metric}_normalization_class"] = f"{metric_class.__module__}.{metric_class.__name__}"
 
         return super()._save_to_state_dict(destination, prefix, keep_vars)
-
-    def load_state_dict(self, state_dict: OrderedDict[str, Any], strict: bool = True) -> Any:  # noqa: ANN401
-        """Initialize auxiliary object."""
-        if "image_threshold_class" in state_dict:
-            self.image_threshold = self._get_instance(state_dict, "image_threshold_class")
-        if "pixel_threshold_class" in state_dict:
-            self.pixel_threshold = self._get_instance(state_dict, "pixel_threshold_class")
-
-        if "anomaly_maps_normalization_class" in state_dict:
-            self.anomaly_maps_normalization_metrics = self._get_instance(state_dict, "anomaly_maps_normalization_class")
-        if "box_scores_normalization_class" in state_dict:
-            self.box_scores_normalization_metrics = self._get_instance(state_dict, "box_scores_normalization_class")
-        if "pred_scores_normalization_class" in state_dict:
-            self.pred_scores_normalization_metrics = self._get_instance(state_dict, "pred_scores_normalization_class")
-
-        self.normalization_metrics = MetricCollection(
-            {
-                "anomaly_maps": self.anomaly_maps_normalization_metrics,
-                "box_scores": self.box_scores_normalization_metrics,
-                "pred_scores": self.pred_scores_normalization_metrics,
-            },
-        )
-        # Used to load metrics if there is any related data in state_dict
-        self._load_metrics(state_dict)
-
-        return super().load_state_dict(state_dict, strict)
-
-    def _load_metrics(self, state_dict: OrderedDict[str, torch.Tensor]) -> None:
-        """Load metrics from saved checkpoint."""
-        self._add_metrics("pixel", state_dict)
-        self._add_metrics("image", state_dict)
-
-    def _add_metrics(self, name: str, state_dict: OrderedDict[str, torch.Tensor]) -> None:
-        """Sets the pixel/image metrics.
-
-        Args:
-            name (str): is it pixel or image.
-            state_dict (OrderedDict[str, Tensor]): state dict of the model.
-        """
-        metric_keys = [key for key in state_dict if key.startswith(f"{name}_metrics")]
-        if any(metric_keys):
-            if not hasattr(self, f"{name}_metrics"):
-                setattr(self, f"{name}_metrics", AnomalibMetricCollection([], prefix=f"{name}_"))
-            metrics = getattr(self, f"{name}_metrics")
-            for key in metric_keys:
-                class_name = key.split(".")[1]
-                try:
-                    metrics_module = importlib.import_module("anomalib.metrics")
-                    metrics_cls = getattr(metrics_module, class_name)
-                except (ImportError, AttributeError) as exception:
-                    msg = f"Class {class_name} not found in module anomalib.metrics"
-                    raise ImportError(msg) from exception
-                logger.info("Loading %s metrics from state dict", class_name)
-                metrics.add_metrics(metrics_cls())
 
     def _get_instance(self, state_dict: OrderedDict[str, Any], dict_key: str) -> BaseThreshold:
         """Get the threshold class from the ``state_dict``."""
@@ -258,6 +200,17 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
                 Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
             ],
         )
+
+    def default_post_processor(self) -> PostProcessor:
+        """Default post processor.
+
+        Override in subclass for model-specific post-processing behaviour.
+        """
+        if self.learning_type == LearningType.ONE_CLASS:
+            return OneClassPostProcessor()
+        msg = f"No default post-processor available for model {self.__name__} with learning type {self.learning_type}. \
+              Please override the default_post_processor method in the model implementation."
+        raise NotImplementedError(msg)
 
     @property
     def input_size(self) -> tuple[int, int] | None:

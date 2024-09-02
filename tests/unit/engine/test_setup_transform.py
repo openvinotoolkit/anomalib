@@ -14,8 +14,10 @@ from torchvision.transforms.v2 import Resize, Transform
 
 from anomalib import LearningType, TaskType
 from anomalib.data import AnomalibDataModule, AnomalibDataset
+from anomalib.dataclasses import InferenceBatch
 from anomalib.engine import Engine
 from anomalib.models import AnomalyModule
+from anomalib.post_processing import PostProcessor
 
 
 class DummyDataset(AnomalibDataset):
@@ -32,6 +34,14 @@ class DummyDataset(AnomalibDataset):
     def __len__(self) -> int:
         """Return the length of the dataset."""
         return 1
+
+
+class DummyPostProcessor(PostProcessor):
+    """Dummy post-processor for testing the setup_transform method."""
+
+    def forward(self, batch: InferenceBatch) -> InferenceBatch:
+        """Return the batch unmodified."""
+        return batch
 
 
 class DummyModel(AnomalyModule):
@@ -54,6 +64,10 @@ class DummyModel(AnomalyModule):
     def learning_type(self) -> LearningType:
         """Return the learning type."""
         return LearningType.ZERO_SHOT
+
+    def default_post_processor(self) -> PostProcessor:
+        """Return a dummy post-processor."""
+        return DummyPostProcessor()
 
 
 class DummyDataModule(AnomalibDataModule):

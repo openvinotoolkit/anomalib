@@ -13,6 +13,8 @@ from torch import nn
 from torch.nn import functional as F  # noqa: N812
 from torchvision import transforms
 
+from anomalib.dataclasses import InferenceBatch
+
 logger = logging.getLogger(__name__)
 
 
@@ -354,7 +356,7 @@ class EfficientAdModel(nn.Module):
         batch: torch.Tensor,
         batch_imagenet: torch.Tensor | None = None,
         normalize: bool = True,
-    ) -> torch.Tensor | dict:
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor] | InferenceBatch:
         """Perform the forward-pass of the EfficientAd models.
 
         Args:
@@ -365,7 +367,24 @@ class EfficientAdModel(nn.Module):
         Returns:
             Tensor: Predictions
         """
-        image_size = batch.shape[-2:]
+        student_output, distance_st = self.compute_student_teacher_distance(batch)
+        if self.training:
+            return self.compute_losses(batch, batch_imagenet, distance_st)
+        map_st, map_stae = self.compute_maps(batch, student_output, distance_st, normalize)
+        map_combined = 0.5 * map_st + 0.5 * map_stae
+        return InferenceBatch(anomaly_map=map_combined)
+
+    def compute_student_teacher_distance(self, batch: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        """Compute the student-teacher distance vectors.
+
+        Args:
+            batch (torch.Tensor): Input images.
+            batch_imagenet (torch.Tensor): ImageNet batch. Defaults to None.
+            normalize (bool): Normalize anomaly maps or not
+
+        Returns:
+            Tensor: Predictions
+        """
         with torch.no_grad():
             teacher_output = self.teacher(batch)
             if self.is_set(self.mean_std):
@@ -373,34 +392,50 @@ class EfficientAdModel(nn.Module):
 
         student_output = self.student(batch)
         distance_st = torch.pow(teacher_output - student_output[:, : self.teacher_out_channels, :, :], 2)
+        return student_output, distance_st
 
-        if self.training:
-            # Student loss
-            distance_st = reduce_tensor_elems(distance_st)
-            d_hard = torch.quantile(distance_st, 0.999)
-            loss_hard = torch.mean(distance_st[distance_st >= d_hard])
-            student_output_penalty = self.student(batch_imagenet)[:, : self.teacher_out_channels, :, :]
-            loss_penalty = torch.mean(student_output_penalty**2)
-            loss_st = loss_hard + loss_penalty
+    def compute_losses(
+        self,
+        batch: torch.Tensor,
+        batch_imagenet: torch.Tensor,
+        distance_st: torch.Tensor,
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        """Compute the student-teacher loss and the autoencoder loss."""
+        # Student loss
+        distance_st = reduce_tensor_elems(distance_st)
+        d_hard = torch.quantile(distance_st, 0.999)
+        loss_hard = torch.mean(distance_st[distance_st >= d_hard])
+        student_output_penalty = self.student(batch_imagenet)[:, : self.teacher_out_channels, :, :]
+        loss_penalty = torch.mean(student_output_penalty**2)
+        loss_st = loss_hard + loss_penalty
 
-            # Autoencoder and Student AE Loss
-            aug_img = self.choose_random_aug_image(batch)
-            ae_output_aug = self.ae(aug_img, image_size)
+        # Autoencoder and Student AE Loss
+        aug_img = self.choose_random_aug_image(batch)
+        ae_output_aug = self.ae(aug_img, batch.shape[-2:])
 
-            with torch.no_grad():
-                teacher_output_aug = self.teacher(aug_img)
-                if self.is_set(self.mean_std):
-                    teacher_output_aug = (teacher_output_aug - self.mean_std["mean"]) / self.mean_std["std"]
+        with torch.no_grad():
+            teacher_output_aug = self.teacher(aug_img)
+            if self.is_set(self.mean_std):
+                teacher_output_aug = (teacher_output_aug - self.mean_std["mean"]) / self.mean_std["std"]
 
-            student_output_ae_aug = self.student(aug_img)[:, self.teacher_out_channels :, :, :]
+        student_output_ae_aug = self.student(aug_img)[:, self.teacher_out_channels :, :, :]
 
-            distance_ae = torch.pow(teacher_output_aug - ae_output_aug, 2)
-            distance_stae = torch.pow(ae_output_aug - student_output_ae_aug, 2)
+        distance_ae = torch.pow(teacher_output_aug - ae_output_aug, 2)
+        distance_stae = torch.pow(ae_output_aug - student_output_ae_aug, 2)
 
-            loss_ae = torch.mean(distance_ae)
-            loss_stae = torch.mean(distance_stae)
-            return (loss_st, loss_ae, loss_stae)
+        loss_ae = torch.mean(distance_ae)
+        loss_stae = torch.mean(distance_stae)
+        return (loss_st, loss_ae, loss_stae)
 
+    def compute_maps(
+        self,
+        batch: torch.Tensor,
+        student_output: torch.Tensor,
+        distance_st: torch.Tensor,
+        normalize: bool = True,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        """Compute the anomaly maps."""
+        image_size = batch.shape[-2:]
         # Eval mode.
         with torch.no_grad():
             ae_output = self.ae(batch, image_size)
@@ -421,6 +456,9 @@ class EfficientAdModel(nn.Module):
         if self.is_set(self.quantiles) and normalize:
             map_st = 0.1 * (map_st - self.quantiles["qa_st"]) / (self.quantiles["qb_st"] - self.quantiles["qa_st"])
             map_stae = 0.1 * (map_stae - self.quantiles["qa_ae"]) / (self.quantiles["qb_ae"] - self.quantiles["qa_ae"])
+        return map_st, map_stae
 
-        map_combined = 0.5 * map_st + 0.5 * map_stae
-        return {"anomaly_map": map_combined, "map_st": map_st, "map_ae": map_stae}
+    def get_maps(self, batch: torch.Tensor, normalize: bool = False) -> tuple[torch.Tensor, torch.Tensor]:
+        """Standalone function to compute anomaly maps."""
+        student_output, distance_st = self.compute_student_teacher_distance(batch)
+        return self.compute_maps(batch, student_output, distance_st, normalize)

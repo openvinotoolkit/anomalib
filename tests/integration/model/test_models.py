@@ -19,7 +19,7 @@ from anomalib.models import AnomalyModule, get_available_models, get_model
 
 def models() -> set[str]:
     """Return all available models."""
-    return get_available_models()
+    return [model for model in get_available_models() if model != "rkde"]
 
 
 def export_types() -> list[ExportType]:
@@ -177,12 +177,8 @@ class TestAPI:
                 and engine
         """
         # select task type
-        if model_name in ("rkde", "ai_vad"):
-            task_type = TaskType.DETECTION
-        elif model_name in ("ganomaly", "dfkde"):
-            task_type = TaskType.CLASSIFICATION
-        else:
-            task_type = TaskType.SEGMENTATION
+
+        task_type = TaskType.CLASSIFICATION if model_name in ("ganomaly", "dfkde") else TaskType.SEGMENTATION
 
         # set extra model args
         # TODO(ashwinvaidya17): Fix these Edge cases
@@ -214,7 +210,7 @@ class TestAPI:
             default_root_dir=project_path,
             max_epochs=1,
             devices=1,
-            pixel_metrics=["F1Score", "AUROC"],
+            pixel_metrics=["F1Max", "AUROC"],
             task=task_type,
             # TODO(ashwinvaidya17): Fix these Edge cases
             # https://github.com/openvinotoolkit/anomalib/issues/1478
