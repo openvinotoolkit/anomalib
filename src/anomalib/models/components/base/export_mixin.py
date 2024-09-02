@@ -330,13 +330,14 @@ class ExportMixin:
         if datamodule is None:
             msg = "Datamodule must be provided for OpenVINO INT8_PTQ compression"
             raise ValueError(msg)
+        datamodule.setup("fit")
 
         model_input = model.input(0)
 
         if model_input.partial_shape[0].is_static:
             datamodule.train_batch_size = model_input.shape[0]
 
-        dataloader = datamodule.train_dataloader()
+        dataloader = datamodule.val_dataloader()
         if len(dataloader.dataset) < 300:
             logger.warning(
                 f">300 images recommended for INT8 quantization, found only {len(dataloader.dataset)} images",
