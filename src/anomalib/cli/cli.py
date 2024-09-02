@@ -30,7 +30,7 @@ try:
 
     from anomalib.data import AnomalibDataModule
     from anomalib.engine import Engine
-    from anomalib.metrics.threshold import BaseThreshold
+    from anomalib.metrics.threshold import Threshold
     from anomalib.models import AnomalyModule
     from anomalib.utils.config import update_config
 
@@ -152,7 +152,7 @@ class AnomalibCLI:
         parser.add_argument("--task", type=TaskType | str, default=TaskType.SEGMENTATION)
         parser.add_argument("--metrics.image", type=list[str] | str | None, default=["F1Score", "AUROC"])
         parser.add_argument("--metrics.pixel", type=list[str] | str | None, default=None, required=False)
-        parser.add_argument("--metrics.threshold", type=BaseThreshold | str, default="F1AdaptiveThreshold")
+        parser.add_argument("--metrics.threshold", type=Threshold | str, default="F1AdaptiveThreshold")
         parser.add_argument("--logging.log_graph", type=bool, help="Log the model to the logger", default=False)
         if hasattr(parser, "subcommand") and parser.subcommand not in ("export", "predict"):
             parser.link_arguments("task", "data.init_args.task")
