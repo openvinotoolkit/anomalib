@@ -57,6 +57,14 @@ def make_synthetic_dataset(
         msg = f"{mask_dir} is not a folder."
         raise NotADirectoryError(msg)
 
+    # Add mask_path if it is not available
+    if "mask_path" not in source_samples.columns:
+        source_samples["mask_path"] = ""
+
+    # Add split if it is not available
+    if "split" not in source_samples.columns:
+        source_samples["split"] = Split.VAL
+
     # filter relevant columns
     source_samples = source_samples.filter(["image_path", "label", "label_index", "mask_path", "split"])
     # randomly select samples for augmentation

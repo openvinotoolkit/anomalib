@@ -32,11 +32,11 @@ class _TestAnomalibDepthDatamodule(_TestAnomalibDataModule):
         assert batch.keys() == expected_keys
 
         # Check that the batch has the correct shape.
-        assert len(batch["image_path"]) == 4
-        assert len(batch["depth_path"]) == 4
-        assert batch["image"].shape == (4, 3, 256, 256)
-        assert batch["depth_image"].shape == (4, 3, 256, 256)
-        assert batch["label"].shape == (4,)
+        assert len(batch["image_path"]) == 2
+        assert len(batch["depth_path"]) == 2
+        assert batch["image"].shape == (2, 3, 256, 256)
+        assert batch["depth_image"].shape == (2, 3, 256, 256)
+        assert batch["label"].shape == (2,)
 
         if dataloader.dataset.task in ("detection", "segmentation"):
-            assert batch["mask"].shape == (4, 256, 256)
+            assert batch["mask"].shape == (2, 256, 256)

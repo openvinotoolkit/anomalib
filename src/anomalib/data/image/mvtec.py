@@ -39,11 +39,13 @@ from anomalib.data.utils import (
     DownloadInfo,
     LabelName,
     Split,
+    SplitMode,
     TestSplitMode,
     ValSplitMode,
     download_and_extract,
     validate_path,
 )
+from anomalib.data.utils.split import resolve_split_mode
 
 logger = logging.getLogger(__name__)
 
@@ -260,13 +262,13 @@ class MVTec(AnomalibDataModule):
         eval_transform (Transform, optional): Transforms that should be applied to the input images during evaluation.
             Defaults to ``None``.
         test_split_mode (TestSplitMode): Setting that determines how the testing subset is obtained.
-            Defaults to ``TestSplitMode.FROM_DIR``.
+            Defaults to ``SplitMode.PREDEFINED``.
         test_split_ratio (float): Fraction of images from the train set that will be reserved for testing.
-            Defaults to ``0.2``.
+            Defaults to ``None``.
         val_split_mode (ValSplitMode): Setting that determines how the validation subset is obtained.
-            Defaults to ``ValSplitMode.SAME_AS_TEST``.
+            Defaults to ``SplitMode.AUTO``.
         val_split_ratio (float): Fraction of train or test images that will be reserved for validation.
-            Defaults to ``0.5``.
+            Defaults to ``None``.
         seed (int | None, optional): Seed which may be set to a fixed value for reproducibility.
             Defualts to ``None``.
 
@@ -316,12 +318,14 @@ class MVTec(AnomalibDataModule):
         transform: Transform | None = None,
         train_transform: Transform | None = None,
         eval_transform: Transform | None = None,
-        test_split_mode: TestSplitMode | str = TestSplitMode.FROM_DIR,
-        test_split_ratio: float = 0.2,
-        val_split_mode: ValSplitMode | str = ValSplitMode.SAME_AS_TEST,
-        val_split_ratio: float = 0.5,
+        test_split_mode: SplitMode | TestSplitMode | str = SplitMode.PREDEFINED,
+        test_split_ratio: float | None = None,
+        val_split_mode: SplitMode | ValSplitMode | str = SplitMode.AUTO,
+        val_split_ratio: float | None = None,
         seed: int | None = None,
     ) -> None:
+        test_split_mode = resolve_split_mode(test_split_mode)
+        val_split_mode = resolve_split_mode(val_split_mode)
         super().__init__(
             train_batch_size=train_batch_size,
             eval_batch_size=eval_batch_size,
@@ -360,6 +364,7 @@ class MVTec(AnomalibDataModule):
             root=self.root,
             category=self.category,
         )
+
         self.test_data = MVTecDataset(
             task=self.task,
             transform=self.eval_transform,
@@ -367,6 +372,10 @@ class MVTec(AnomalibDataModule):
             root=self.root,
             category=self.category,
         )
+        # MVTec AD dataset does not provide a validation set.
+        # Auto behaviour is to clone the test set as validation set.
+        if self.val_split_mode == SplitMode.AUTO:
+            self.val_data = self.test_data.clone()
 
     def prepare_data(self) -> None:
         """Download the dataset if not available.
