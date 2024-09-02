@@ -11,18 +11,18 @@ from .numpy import (
 )
 from .torch import (
     Batch,
+    DatasetItem,
     DepthBatch,
     DepthItem,
     ImageBatch,
     ImageItem,
     InferenceBatch,
-    Item,
     VideoBatch,
     VideoItem,
 )
 
 __all__ = [
-    "Item",
+    "DatasetItem",
     "Batch",
     "InferenceBatch",
     "ImageItem",
