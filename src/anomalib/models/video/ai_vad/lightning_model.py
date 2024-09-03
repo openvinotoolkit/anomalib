@@ -159,7 +159,8 @@ class AiVad(MemoryBankMixin, AnomalyModule):
         """
         return LearningType.ONE_CLASS
 
-    def configure_transforms(self, image_size: tuple[int, int] | None = None) -> Transform | None:
+    @staticmethod
+    def configure_transforms(image_size: tuple[int, int] | None = None) -> Transform | None:
         """AI-VAD does not need a transform, as the region- and feature-extractors apply their own transforms."""
         del image_size
         return None

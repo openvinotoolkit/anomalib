@@ -64,7 +64,8 @@ class AnomalibCLI:
         if run:
             self._run_subcommand()
 
-    def init_parser(self, **kwargs) -> ArgumentParser:
+    @staticmethod
+    def init_parser(**kwargs) -> ArgumentParser:
         """Method that instantiates the argument parser."""
         kwargs.setdefault("dump_header", [f"anomalib=={__version__}"])
         parser = ArgumentParser(formatter_class=CustomHelpFormatter, **kwargs)
@@ -139,7 +140,8 @@ class AnomalibCLI:
                 self.subcommand_parsers[subcommand] = sub_parser
                 parser_subcommands.add_subcommand(subcommand, sub_parser, help=value["description"])
 
-    def add_arguments_to_parser(self, parser: ArgumentParser) -> None:
+    @staticmethod
+    def add_arguments_to_parser(parser: ArgumentParser) -> None:
         """Extend trainer's arguments to add engine arguments.
 
         .. note::
@@ -399,8 +401,8 @@ class AnomalibCLI:
         """Export the model using engine's export method."""
         return self.engine.export
 
+    @staticmethod
     def _add_trainer_arguments_to_parser(
-        self,
         parser: ArgumentParser,
         add_optimizer: bool = False,
         add_scheduler: bool = False,
@@ -427,7 +429,8 @@ class AnomalibCLI:
                 **scheduler_kwargs,
             )
 
-    def _add_default_arguments_to_parser(self, parser: ArgumentParser) -> None:
+    @staticmethod
+    def _add_default_arguments_to_parser(parser: ArgumentParser) -> None:
         """Adds default arguments to the parser."""
         parser.add_argument(
             "--seed_everything",

@@ -248,7 +248,8 @@ class ConfigAdapter:
         """Create seed everything field in v1 config."""
         return {"seed_everything": bool(self.old_config["project"]["seed"])}
 
-    def add_ckpt_path_config(self) -> dict[str, Any]:
+    @staticmethod
+    def add_ckpt_path_config() -> dict[str, Any]:
         """Create checkpoint path directory in v1 config."""
         return {"ckpt_path": None}
 

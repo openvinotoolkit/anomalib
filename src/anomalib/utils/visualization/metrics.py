@@ -18,7 +18,8 @@ class MetricsVisualizer(BaseVisualizer):
     def __init__(self) -> None:
         super().__init__(VisualizationStep.STAGE_END)
 
-    def generate(self, **kwargs) -> Iterator[GeneratorResult]:
+    @staticmethod
+    def generate(**kwargs) -> Iterator[GeneratorResult]:
         """Generate metric plots and return them as an iterator."""
         pl_module: AnomalyModule = kwargs.get("pl_module", None)
         if pl_module is None:

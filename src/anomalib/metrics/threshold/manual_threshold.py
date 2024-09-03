@@ -56,7 +56,8 @@ class ManualThreshold(Threshold):
         """
         return self.value
 
-    def update(self, *args, **kwargs) -> None:
+    @staticmethod
+    def update(*args, **kwargs) -> None:
         """Do nothing.
 
         Args:

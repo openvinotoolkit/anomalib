@@ -310,8 +310,8 @@ class ExportMixin:
 
         return model
 
+    @staticmethod
     def _post_training_quantization_ov(
-        self,
         model: "CompiledModel",
         datamodule: AnomalibDataModule | None = None,
     ) -> "CompiledModel":
@@ -346,8 +346,8 @@ class ExportMixin:
         calibration_dataset = nncf.Dataset(dataloader, lambda x: x["image"])
         return nncf.quantize(model, calibration_dataset)
 
+    @staticmethod
     def _accuracy_control_quantization_ov(
-        self,
         model: "CompiledModel",
         datamodule: AnomalibDataModule | None = None,
         metric: Metric | str | None = None,

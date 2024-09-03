@@ -118,7 +118,8 @@ class ShanghaiTechTrainClipsIndexer(ClipsIndexer):
     clips indexer implementations are needed.
     """
 
-    def get_mask(self, idx: int) -> torch.Tensor | None:
+    @staticmethod
+    def get_mask(idx: int) -> torch.Tensor | None:
         """No masks available for training set."""
         del idx  # Unused argument
         return None

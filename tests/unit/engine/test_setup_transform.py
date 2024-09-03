@@ -41,17 +41,20 @@ class DummyModel(AnomalyModule):
         super().__init__()
         self.model = torch.nn.Linear(10, 10)
 
-    def configure_transforms(self, image_size: tuple[int, int] | None = None) -> Transform:
+    @staticmethod
+    def configure_transforms(image_size: tuple[int, int] | None = None) -> Transform:
         """Return a Resize transform."""
         if image_size is None:
             image_size = (256, 256)
         return Resize(image_size)
 
-    def trainer_arguments(self) -> dict:
+    @staticmethod
+    def trainer_arguments() -> dict:
         """Return an empty dictionary."""
         return {}
 
-    def learning_type(self) -> LearningType:
+    @staticmethod
+    def learning_type() -> LearningType:
         """Return the learning type."""
         return LearningType.ZERO_SHOT
 
@@ -107,7 +110,8 @@ class TestSetupTransform:
     """Tests for the `_setup_transform` method of the Anomalib Engine."""
 
     # test update single dataloader
-    def test_single_dataloader_default_transform(self) -> None:
+    @staticmethod
+    def test_single_dataloader_default_transform() -> None:
         """Tests if the default model transform is used when no transform is passed to the dataloader."""
         dataset = DummyDataset()
         dataloader = DataLoader(dataset, batch_size=1)
@@ -119,7 +123,8 @@ class TestSetupTransform:
         assert dataset.transform is not None
 
     # test update multiple dataloaders
-    def test_multiple_dataloaders_default_transform(self) -> None:
+    @staticmethod
+    def test_multiple_dataloaders_default_transform() -> None:
         """Tests if the default model transform is used when no transform is passed to the dataloader."""
         dataset = DummyDataset()
         dataloader = DataLoader(dataset, batch_size=1)
@@ -130,7 +135,8 @@ class TestSetupTransform:
         # after the setup_transform is called, the dataset should have the default transform from the model
         assert dataset.transform is not None
 
-    def test_single_dataloader_custom_transform(self) -> None:
+    @staticmethod
+    def test_single_dataloader_custom_transform() -> None:
         """Tests if the user-specified transform is used when passed to the dataloader."""
         transform = Transform()
         dataset = DummyDataset(transform=transform)
@@ -143,7 +149,8 @@ class TestSetupTransform:
         assert model.transform == transform
 
     # test if the user-specified transform is used when passed to the datamodule
-    def test_custom_transform(self) -> None:
+    @staticmethod
+    def test_custom_transform() -> None:
         """Tests if the user-specified transform is used when passed to the datamodule."""
         transform = Transform()
         datamodule = DummyDataModule(transform=transform)
@@ -157,7 +164,8 @@ class TestSetupTransform:
         assert model.transform == transform
 
     # test if the user-specified transform is used when passed to the datamodule
-    def test_custom_train_transform(self) -> None:
+    @staticmethod
+    def test_custom_train_transform() -> None:
         """Tests if the user-specified transform is used when passed to the datamodule as train_transform."""
         model = DummyModel()
         transform = Transform()
@@ -173,7 +181,8 @@ class TestSetupTransform:
         assert model.transform is not None
 
     # test if the user-specified transform is used when passed to the datamodule
-    def test_custom_eval_transform(self) -> None:
+    @staticmethod
+    def test_custom_eval_transform() -> None:
         """Tests if the user-specified transform is used when passed to the datamodule as eval_transform."""
         model = DummyModel()
         transform = Transform()
@@ -188,7 +197,8 @@ class TestSetupTransform:
         assert model.transform == transform
 
     # test update datamodule
-    def test_datamodule_default_transform(self) -> None:
+    @staticmethod
+    def test_datamodule_default_transform() -> None:
         """Tests if the default model transform is used when no transform is passed to the datamodule."""
         datamodule = DummyDataModule()
         model = DummyModel()
@@ -197,7 +207,8 @@ class TestSetupTransform:
         assert isinstance(model.transform, Transform)
 
     # test if image size is taken from datamodule
-    def test_datamodule_image_size(self) -> None:
+    @staticmethod
+    def test_datamodule_image_size() -> None:
         """Tests if the image size that is passed to the datamodule overwrites the default size from the model."""
         datamodule = DummyDataModule(image_size=(100, 100))
         model = DummyModel()
@@ -206,14 +217,16 @@ class TestSetupTransform:
         assert isinstance(model.transform, Resize)
         assert model.transform.size == [100, 100]
 
-    def test_transform_from_checkpoint(self, checkpoint_path: Path) -> None:
+    @staticmethod
+    def test_transform_from_checkpoint(checkpoint_path: Path) -> None:
         """Tests if the transform from the checkpoint is used."""
         model = DummyModel()
         Engine._setup_transform(model, ckpt_path=checkpoint_path)  # noqa: SLF001
         assert isinstance(model.transform, Resize)
         assert model.transform.size == [50, 50]
 
-    def test_precendence_datamodule(self, checkpoint_path: Path) -> None:
+    @staticmethod
+    def test_precendence_datamodule(checkpoint_path: Path) -> None:
         """Tests if transform from the datamodule goes first if both checkpoint and datamodule are provided."""
         transform = Transform()
         datamodule = DummyDataModule(transform=transform)
@@ -221,7 +234,8 @@ class TestSetupTransform:
         Engine._setup_transform(model, ckpt_path=checkpoint_path, datamodule=datamodule)  # noqa: SLF001
         assert model.transform == transform
 
-    def test_transform_already_assigned(self) -> None:
+    @staticmethod
+    def test_transform_already_assigned() -> None:
         """Tests if the transform from the model is used when the model already has a transform assigned."""
         transform = Transform()
         model = DummyModel()

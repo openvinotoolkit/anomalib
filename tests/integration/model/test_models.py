@@ -159,8 +159,8 @@ class TestAPI:
             export_type=export_type,
         )
 
+    @staticmethod
     def _get_objects(
-        self,
         model_name: str,
         dataset_path: Path,
         project_path: Path,
