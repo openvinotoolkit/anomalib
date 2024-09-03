@@ -27,8 +27,8 @@ class TestSetupWinClipModel:
         assert model.k_shot == 0
         assert getattr(model, "text_embeddings", None) is not None
 
-    @pytest.mark.parametrize("apply_transform", [True, False])
     @staticmethod
+    @pytest.mark.parametrize("apply_transform", [True, False])
     def test_few_shot_from_init(apply_transform: bool) -> None:
         """Test WinCLIP initialization from init in few-shot mode."""
         ref_images = torch.rand(2, 3, 240, 240)
@@ -37,8 +37,8 @@ class TestSetupWinClipModel:
         assert getattr(model, "text_embeddings", None) is not None
         assert getattr(model, "visual_embeddings", None) is not None
 
-    @pytest.mark.parametrize("apply_transform", [True, False])
     @staticmethod
+    @pytest.mark.parametrize("apply_transform", [True, False])
     def test_few_shot_from_setup(apply_transform: bool) -> None:
         """Test WinCLIP initialization from setup method in few-shot mode."""
         ref_images = torch.rand(2, 3, 240, 240)

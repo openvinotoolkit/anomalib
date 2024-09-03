@@ -134,6 +134,7 @@ class TestMakeMasks:
         target = torch.tensor([[0, 1, 3, 4], [1, 2, 4, 5], [3, 4, 6, 7], [4, 5, 7, 8]])
         assert torch.equal(make_masks(patch_grid_size, kernel_size), target)
 
+    @staticmethod
     @pytest.mark.parametrize(
         ("grid_size", "kernel_size", "stride", "target"),
         [
@@ -144,11 +145,11 @@ class TestMakeMasks:
             ((4, 4), 2, 2, (4, 4)),
         ],
     )
-    @staticmethod
     def test_shapes(grid_size: tuple[int, int], kernel_size: int, stride: int, target: tuple[int, int]) -> None:
         """Test mask generation for different grid sizes and kernel sizes."""
         assert make_masks(grid_size, kernel_size, stride).shape == target
 
+    @staticmethod
     @pytest.mark.parametrize(
         ("grid_size", "kernel_size"),
         [
@@ -157,7 +158,6 @@ class TestMakeMasks:
             ((4, 2), 3),
         ],
     )
-    @staticmethod
     def test_raises_error_when_window_size_larger_than_grid_size(
         grid_size: tuple[int, int],
         kernel_size: int,
