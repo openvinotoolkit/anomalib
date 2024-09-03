@@ -94,7 +94,39 @@ class FieldDescriptor(Generic[Value]):
 
 @dataclass
 class _InputFields(Generic[T, ImageT, MaskT, PathT], ABC):
-    """Generic dataclass that defines the standard input fields."""
+    """Generic dataclass that defines the standard input fields for Anomalib.
+
+    This abstract base class provides a structure for input data used in Anomalib,
+    a library for anomaly detection in images and videos. It defines common fields
+    used across various anomaly detection tasks and data types in Anomalib.
+
+    Subclasses must implement the abstract validation methods to define the
+    specific validation logic for each field based on the requirements of different
+    Anomalib models and data processing pipelines.
+
+    Examples:
+        Assuming a concrete implementation `DummyInput`:
+
+        >>> class DummyInput(_InputFields[int, Image, Mask, str]):
+        ...     # Implement actual validation
+
+        >>> # Create an input instance
+        >>> input_item = DummyInput(
+        ...     image=torch.rand(3, 224, 224),
+        ...     gt_label=1,
+        ...     gt_mask=torch.rand(224, 224) > 0.5,
+        ...     mask_path="path/to/mask.png"
+        ... )
+
+        >>> # Access fields
+        >>> image = input_item.image
+        >>> label = input_item.gt_label
+
+    Note:
+        This is an abstract base class and is not intended to be instantiated
+        directly. Concrete subclasses should implement all required validation
+        methods.
+    """
 
     image: FieldDescriptor[ImageT] = FieldDescriptor(validator_name="_validate_image")
     gt_label: FieldDescriptor[T | None] = FieldDescriptor(validator_name="_validate_gt_label")
@@ -123,11 +155,40 @@ class _InputFields(Generic[T, ImageT, MaskT, PathT], ABC):
 
 
 @dataclass
-class _ImageInputFields(
-    Generic[PathT],
-    ABC,
-):
-    """Generic dataclass that defines the image input fields."""
+class _ImageInputFields(Generic[PathT], ABC):
+    """Generic dataclass for image-specific input fields in Anomalib.
+
+    This class extends standard input fields with an ``image_path`` attribute for
+    image-based anomaly detection tasks. It allows Anomalib to work efficiently
+    with disk-stored image datasets, facilitating custom data loading strategies.
+
+    The ``image_path`` field uses a ``FieldDescriptor`` with a validation method.
+    Subclasses must implement ``_validate_image_path`` to ensure path validity
+    according to specific Anomalib model or dataset requirements.
+
+    This class is designed to complement ``_InputFields`` for comprehensive
+    image-based anomaly detection input in Anomalib.
+
+    Examples:
+        Assuming a concrete implementation ``DummyImageInput``:
+        >>> class DummyImageInput(_ImageInputFields):
+        ...     def _validate_image_path(self, image_path):
+        ...         return image_path  # Implement actual validation
+        ...     # Implement other required methods
+
+        >>> # Create an image input instance
+        >>> image_input = DummyImageInput(
+        ...     image_path="path/to/image.jpg"
+        ... )
+
+        >>> # Access image-specific field
+        >>> path = image_input.image_path
+
+    Note:
+        This is an abstract base class and is not intended to be instantiated
+        directly. Concrete subclasses should implement all required validation
+        methods.
+    """
 
     image_path: FieldDescriptor[PathT | None] = FieldDescriptor(validator_name="_validate_image_path")
 
@@ -138,11 +199,49 @@ class _ImageInputFields(
 
 
 @dataclass
-class _VideoInputFields(
-    Generic[T, ImageT, MaskT, PathT],
-    ABC,
-):
-    """Generic dataclass that defines the video input fields."""
+class _VideoInputFields(Generic[T, ImageT, MaskT, PathT], ABC):
+    """Generic dataclass that defines the video input fields for Anomalib.
+
+    This class extends standard input fields with attributes specific to video-based
+    anomaly detection tasks. It includes fields for original images, video paths,
+    target frames, frame sequences, and last frames.
+
+    Each field uses a ``FieldDescriptor`` with a corresponding validation method.
+    Subclasses must implement these abstract validation methods to ensure data
+    consistency with Anomalib's video processing requirements.
+
+    This class is designed to work alongside other input field classes to provide
+    comprehensive support for video-based anomaly detection in Anomalib.
+
+    Examples:
+        Assuming a concrete implementation ``DummyVideoInput``:
+
+        >>> class DummyVideoInput(_VideoInputFields):
+        ...     def _validate_original_image(self, original_image):
+        ...         return original_image  # Implement actual validation
+        ...     # Implement other required methods
+
+        >>> # Create a video input instance
+        >>> video_input = DummyVideoInput(
+        ...     original_image=torch.rand(3, 224, 224),
+        ...     video_path="path/to/video.mp4",
+        ...     target_frame=10,
+        ...     frames=torch.rand(3, 224, 224),
+        ...     last_frame=torch.rand(3, 224, 224)
+        ... )
+
+        >>> # Access video-specific fields
+        >>> original_image = video_input.original_image
+        >>> path = video_input.video_path
+        >>> target_frame = video_input.target_frame
+        >>> frames = video_input.frames
+        >>> last_frame = video_input.last_frame
+
+    Note:
+        This is an abstract base class and is not intended to be instantiated
+        directly. Concrete subclasses should implement all required validation
+        methods.
+    """
 
     original_image: FieldDescriptor[ImageT | None] = FieldDescriptor(validator_name="_validate_original_image")
     video_path: FieldDescriptor[PathT | None] = FieldDescriptor(validator_name="_validate_video_path")
@@ -177,12 +276,45 @@ class _VideoInputFields(
 
 
 @dataclass
-class _DepthInputFields(
-    Generic[T, PathT],
-    _ImageInputFields[PathT],
-    ABC,
-):
-    """Generic dataclass that defines the depth input fields."""
+class _DepthInputFields(Generic[T, PathT], _ImageInputFields[PathT], ABC):
+    """Generic dataclass that defines the depth input fields for Anomalib.
+
+    This class extends the standard input fields with a ``depth_map`` and
+    ``depth_path`` attribute for depth-based anomaly detection tasks. It allows
+    Anomalib to work efficiently with depth-based anomaly detection tasks,
+    facilitating custom data loading strategies.
+
+    The ``depth_map`` and ``depth_path`` fields use a ``FieldDescriptor`` with
+    corresponding validation methods. Subclasses must implement these abstract
+    validation methods to ensure data consistency with Anomalib's depth processing
+    requirements.
+
+    Examples:
+        Assuming a concrete implementation ``DummyDepthInput``:
+
+        >>> class DummyDepthInput(_DepthInputFields):
+        ...     def _validate_depth_map(self, depth_map):
+        ...         return depth_map  # Implement actual validation
+        ...     def _validate_depth_path(self, depth_path):
+        ...         return depth_path  # Implement actual validation
+        ...     # Implement other required methods
+
+        >>> # Create a depth input instance
+        >>> depth_input = DummyDepthInput(
+        ...     image_path="path/to/image.jpg",
+        ...     depth_map=torch.rand(224, 224),
+        ...     depth_path="path/to/depth.png"
+        ... )
+
+        >>> # Access depth-specific fields
+        >>> depth_map = depth_input.depth_map
+        >>> depth_path = depth_input.depth_path
+
+    Note:
+        This is an abstract base class and is not intended to be instantiated
+        directly. Concrete subclasses should implement all required validation
+        methods.
+    """
 
     depth_map: FieldDescriptor[T | None] = FieldDescriptor(validator_name="_validate_depth_map")
     depth_path: FieldDescriptor[PathT | None] = FieldDescriptor(validator_name="_validate_depth_path")
@@ -200,7 +332,47 @@ class _DepthInputFields(
 
 @dataclass
 class _OutputFields(Generic[T, MaskT], ABC):
-    """Generic dataclass that defines the standard output fields."""
+    """Generic dataclass that defines the standard output fields for Anomalib.
+
+    This class defines the standard output fields used in Anomalib, including
+    anomaly maps, predicted scores, predicted masks, and predicted labels.
+
+    Each field uses a ``FieldDescriptor`` with a corresponding validation method.
+    Subclasses must implement these abstract validation methods to ensure data
+    consistency with Anomalib's anomaly detection tasks.
+
+    Examples:
+        Assuming a concrete implementation ``DummyOutput``:
+
+        >>> class DummyOutput(_OutputFields):
+        ...     def _validate_anomaly_map(self, anomaly_map):
+        ...         return anomaly_map  # Implement actual validation
+        ...     def _validate_pred_score(self, pred_score):
+        ...         return pred_score  # Implement actual validation
+        ...     def _validate_pred_mask(self, pred_mask):
+        ...         return pred_mask  # Implement actual validation
+        ...     def _validate_pred_label(self, pred_label):
+        ...         return pred_label  # Implement actual validation
+
+        >>> # Create an output instance with predictions
+        >>> output = DummyOutput(
+        ...     anomaly_map=torch.rand(224, 224),
+        ...     pred_score=0.7,
+        ...     pred_mask=torch.rand(224, 224) > 0.5,
+        ...     pred_label=1
+        ... )
+
+        >>> # Access individual fields
+        >>> anomaly_map = output.anomaly_map
+        >>> score = output.pred_score
+        >>> mask = output.pred_mask
+        >>> label = output.pred_label
+
+    Note:
+        This is an abstract base class and is not intended to be instantiated
+        directly. Concrete subclasses should implement all required validation
+        methods.
+    """
 
     anomaly_map: FieldDescriptor[MaskT | None] = FieldDescriptor(validator_name="_validate_anomaly_map")
     pred_score: FieldDescriptor[T | None] = FieldDescriptor(validator_name="_validate_pred_score")
@@ -230,7 +402,34 @@ class _OutputFields(Generic[T, MaskT], ABC):
 
 @dataclass
 class UpdateMixin:
-    """Mixin class for dataclasses that allows for in-place replacement of attributes."""
+    """Mixin class for dataclasses that allows for in-place replacement of attributes.
+
+    This mixin class provides a method for updating dataclass instances in place or
+    by creating a new instance. It ensures that the updated instance is reinitialized
+    by calling the ``__post_init__`` method if it exists.
+
+    Examples:
+        Assuming a dataclass `DummyItem` that uses UpdateMixin:
+
+        >>> item = DummyItem(image=torch.rand(3, 224, 224), label=0)
+
+        >>> # In-place update
+        >>> item.update(label=1, pred_score=0.9)
+        >>> print(item.label, item.pred_score)
+        1 0.9
+
+        >>> # Create a new instance with updates
+        >>> new_item = item.update(in_place=False, image=torch.rand(3, 224, 224))
+        >>> print(id(item) != id(new_item))
+        True
+
+        >>> # Update with multiple fields
+        >>> item.update(label=2, pred_score=0.8, anomaly_map=torch.rand(224, 224))
+
+    The `update` method can be used to modify single or multiple fields, either
+    in-place or by creating a new instance. This flexibility is particularly useful
+    in data processing pipelines and when working with model predictions in Anomalib.
+    """
 
     def update(self, in_place: bool = True, **changes) -> Any:  # noqa: ANN401
         """Replace fields in place and call __post_init__ to reinitialize the instance.
@@ -259,7 +458,46 @@ class _GenericItem(
     _OutputFields[T, MaskT],
     _InputFields[T, ImageT, MaskT, PathT],
 ):
-    """Generic dataclass for a dataset item."""
+    """Generic dataclass for a single item in Anomalib datasets.
+
+    This class combines input and output fields for anomaly detection tasks,
+    providing a comprehensive representation of a single data item. It inherits
+    from ``_InputFields`` for standard input data and ``_OutputFields`` for
+    prediction results.
+
+    The class also includes the ``UpdateMixin``, allowing for easy updates of
+    field values. This is particularly useful during data processing pipelines
+    and when working with model predictions.
+
+    By using generic types, this class can accommodate various data types used
+    in different Anomalib models and datasets, ensuring flexibility and
+    reusability across the library.
+
+    Examples:
+        Assuming a concrete implementation ``DummyItem``:
+
+        >>> class DummyItem(_GenericItem):
+        ...     def _validate_image(self, image):
+        ...         return image  # Implement actual validation
+        ...     # Implement other required methods
+
+        >>> # Create a generic item instance
+        >>> item = DummyItem(
+        ...     image=torch.rand(3, 224, 224),
+        ...     gt_label=0,
+        ...     pred_score=0.3,
+        ...     anomaly_map=torch.rand(224, 224)
+        ... )
+
+        >>> # Access and update fields
+        >>> image = item.image
+        >>> item.update(pred_score=0.8, pred_label=1)
+
+    Note:
+        This is an abstract base class and is not intended to be instantiated
+        directly. Concrete subclasses should implement all required validation
+        methods.
+    """
 
 
 @dataclass
@@ -269,7 +507,47 @@ class _GenericBatch(
     _OutputFields[T, MaskT],
     _InputFields[T, ImageT, MaskT, PathT],
 ):
-    """Generic dataclass for a batch."""
+    """Generic dataclass for a batch of items in Anomalib datasets.
+
+    This class represents a batch of data items, combining both input and output
+    fields for anomaly detection tasks. It inherits from ``_InputFields`` for
+    input data and ``_OutputFields`` for prediction results, allowing it to
+    handle both training data and model outputs.
+
+    The class includes the ``UpdateMixin``, enabling easy updates of field values
+    across the entire batch. This is particularly useful for in-place modifications
+    during data processing or when updating predictions.
+
+    Examples:
+        Assuming a concrete implementation ``DummyBatch``:
+
+        >>> class DummyBatch(_GenericBatch):
+        ...     def _validate_image(self, image):
+        ...         return image  # Implement actual validation
+        ...     # Implement other required methods
+
+        >>> # Create a batch with input data
+        >>> batch = DummyBatch(
+        ...     image=torch.rand(32, 3, 224, 224),
+        ...     gt_label=torch.randint(0, 2, (32,))
+        ... )
+
+        >>> # Update the entire batch with new predictions
+        >>> batch.update(
+        ...     pred_score=torch.rand(32),
+        ...     anomaly_map=torch.rand(32, 224, 224)
+        ... )
+
+        >>> # Access individual fields
+        >>> images = batch.image
+        >>> labels = batch.gt_label
+        >>> predictions = batch.pred_score
+
+    Note:
+        This is an abstract base class and is not intended to be instantiated
+        directly. Concrete subclasses should implement all required validation
+        methods.
+    """
 
 
 ItemT = TypeVar("ItemT", bound="_GenericItem")
@@ -277,7 +555,39 @@ ItemT = TypeVar("ItemT", bound="_GenericItem")
 
 @dataclass
 class BatchIterateMixin(Generic[ItemT]):
-    """Generic dataclass for a batch."""
+    """Mixin class for iterating over batches of items in Anomalib datasets.
+
+    This class provides functionality to iterate over individual items within a
+    batch, convert batches to lists of items, and determine batch sizes. It's
+    designed to work with Anomalib's batch processing pipelines.
+
+    The mixin requires subclasses to define an ``item_class`` attribute, which
+    specifies the class used for individual items in the batch. This ensures
+    type consistency when iterating or converting batches.
+
+    Key features include:
+    - Iteration over batch items
+    - Conversion of batches to lists of individual items
+    - Batch size determination
+    - A class method for collating individual items into a batch
+
+    Examples:
+        Assuming a subclass `DummyBatch` with `DummyItem` as its item_class:
+
+        >>> batch = DummyBatch(images=[...], labels=[...])
+        >>> for item in batch:
+        ...     process_item(item)  # Iterate over items
+
+        >>> item_list = batch.items  # Convert batch to list of items
+
+        >>> batch_size = len(batch)  # Get batch size
+
+        >>> items = [DummyItem(...) for _ in range(5)]
+        >>> new_batch = DummyBatch.collate(items)  # Collate items into a batch
+
+    This mixin enhances batch handling capabilities in Anomalib, facilitating
+    efficient data processing and model interactions.
+    """
 
     item_class: ClassVar[Callable]
 
