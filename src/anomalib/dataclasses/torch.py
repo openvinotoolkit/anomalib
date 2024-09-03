@@ -1,4 +1,18 @@
-"""Dataclasses for torch inputs and outputs."""
+"""Torch-based dataclasses for Anomalib.
+
+This module provides PyTorch-based implementations of the generic dataclasses
+used in Anomalib. These classes are designed to work with PyTorch tensors for
+efficient data handling and processing in anomaly detection tasks.
+
+These classes extend the generic dataclasses defined in the Anomalib framework,
+providing concrete implementations that use PyTorch tensors for tensor-like data.
+They include methods for data validation and support operations specific to
+image, video, and depth data in the context of anomaly detection.
+
+Note:
+    When using these classes, ensure that the input data is in the correct
+    format (PyTorch tensors with appropriate shapes) to avoid validation errors.
+"""
 
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -36,10 +50,26 @@ class InferenceBatch(NamedTuple):
 
 
 @dataclass
-class ToNumpyMixin(
-    Generic[NumpyT],
-):
-    """Mixin for converting torch-based dataclasses to numpy."""
+class ToNumpyMixin(Generic[NumpyT]):
+    """Mixin for converting torch-based dataclasses to numpy.
+
+    This mixin provides functionality to convert PyTorch tensor data to numpy arrays.
+    It requires the subclass to define a 'numpy_class' attribute specifying the
+    corresponding numpy-based class.
+
+    Examples:
+        >>> from anomalib.dataclasses.numpy import NumpyImageItem
+        >>> @dataclass
+        ... class TorchImageItem(ToNumpyMixin[NumpyImageItem]):
+        ...     numpy_class = NumpyImageItem
+        ...     image: torch.Tensor
+        ...     gt_label: torch.Tensor
+
+        >>> torch_item = TorchImageItem(image=torch.rand(3, 224, 224), gt_label=torch.tensor(1))
+        >>> numpy_item = torch_item.to_numpy()
+        >>> isinstance(numpy_item, NumpyImageItem)
+        True
+    """
 
     numpy_class: ClassVar[Callable]
 
@@ -63,22 +93,83 @@ class ToNumpyMixin(
 
 @dataclass
 class DatasetItem(Generic[ImageT], _GenericItem[torch.Tensor, ImageT, Mask, str]):
-    """Dataclass for torch item."""
+    """Base dataclass for individual items in Anomalib datasets using PyTorch tensors.
+
+    This class extends the generic _GenericItem class to provide a PyTorch-specific
+    implementation for single data items in Anomalib datasets. It is designed to
+    handle various types of data (e.g., images, labels, masks) represented as
+    PyTorch tensors.
+
+    The class uses generic types to allow flexibility in the image representation,
+    which can vary depending on the specific use case (e.g., standard images, depth maps).
+
+    Attributes:
+        Inherited from _GenericItem, with PyTorch tensor and Mask types.
+
+    Note:
+        This class is typically subclassed to create more specific item types
+        (e.g., ImageItem, VideoItem) with additional fields and methods.
+    """
 
 
 @dataclass
 class Batch(Generic[ImageT], _GenericBatch[torch.Tensor, ImageT, Mask, list[str]]):
-    """Dataclass for torch batch."""
+    """Base dataclass for batches of items in Anomalib datasets using PyTorch tensors.
+
+    This class extends the generic _GenericBatch class to provide a PyTorch-specific
+    implementation for batches of data in Anomalib datasets. It is designed to
+    handle collections of data items (e.g., multiple images, labels, masks)
+    represented as PyTorch tensors.
+
+    The class uses generic types to allow flexibility in the image representation,
+    which can vary depending on the specific use case (e.g., standard images, depth maps).
+
+    Attributes:
+        Inherited from _GenericBatch, with PyTorch tensor and Mask types.
+
+    Note:
+        This class is typically subclassed to create more specific batch types
+        (e.g., ImageBatch, VideoBatch) with additional fields and methods.
+    """
 
 
-# torch image outputs
 @dataclass
 class ImageItem(
     ToNumpyMixin[NumpyImageItem],
     _ImageInputFields[str],
     DatasetItem[Image],
 ):
-    """Dataclass for torch image output item."""
+    """Dataclass for individual image items in Anomalib datasets using PyTorch tensors.
+
+    This class combines the functionality of ToNumpyMixin, _ImageInputFields, and
+    DatasetItem to represent single image data points in Anomalib. It includes
+    image-specific fields and provides methods for data validation and conversion
+    to numpy format.
+
+    The class is designed to work with PyTorch tensors and includes fields for
+    the image data, ground truth labels and masks, anomaly maps, and related metadata.
+
+    Attributes:
+        Inherited from _ImageInputFields and DatasetItem.
+
+    Methods:
+        Inherited from ToNumpyMixin, including to_numpy() for conversion to numpy format.
+
+    Examples:
+        >>> item = ImageItem(
+        ...     image=torch.rand(3, 224, 224),
+        ...     gt_label=torch.tensor(1),
+        ...     gt_mask=torch.rand(224, 224) > 0.5,
+        ...     image_path="path/to/image.jpg"
+        ... )
+
+        >>> print(item.image.shape)
+        torch.Size([3, 224, 224])
+
+        >>> numpy_item = item.to_numpy()
+        >>> print(type(numpy_item))
+        <class 'anomalib.dataclasses.numpy.NumpyImageItem'>
+    """
 
     numpy_class = NumpyImageItem
 
@@ -186,7 +277,35 @@ class ImageBatch(
     _ImageInputFields[list[str]],
     Batch[Image],
 ):
-    """Dataclass for torch image output batch."""
+    """Dataclass for batches of image items in Anomalib datasets using PyTorch tensors.
+
+    This class combines the functionality of ``ToNumpyMixin``, ``BatchIterateMixin``,
+    ``_ImageInputFields``, and ``Batch`` to represent collections of image data points in Anomalib.
+    It includes image-specific fields and provides methods for batch operations,
+    iteration over individual items, and conversion to numpy format.
+
+    The class is designed to work with PyTorch tensors and includes fields for
+    batches of image data, ground truth labels and masks, anomaly maps, and related metadata.
+
+    Examples:
+        >>> batch = ImageBatch(
+        ...     image=torch.rand(32, 3, 224, 224),
+        ...     gt_label=torch.randint(0, 2, (32,)),
+        ...     gt_mask=torch.rand(32, 224, 224) > 0.5,
+        ...     image_path=["path/to/image_{}.jpg".format(i) for i in range(32)]
+        ... )
+
+        >>> print(batch.image.shape)
+        torch.Size([32, 3, 224, 224])
+
+        >>> for item in batch:
+        ...     print(item.image.shape)
+        torch.Size([3, 224, 224])
+
+        >>> numpy_batch = batch.to_numpy()
+        >>> print(type(numpy_batch))
+        <class 'anomalib.dataclasses.numpy.NumpyImageBatch'>
+    """
 
     item_class = ImageItem
     numpy_class = NumpyImageBatch
@@ -296,7 +415,27 @@ class VideoItem(
     _VideoInputFields[torch.Tensor, Video, Mask, str],
     DatasetItem[Video],
 ):
-    """Dataclass for torch video output item."""
+    """Dataclass for torch video output item.
+
+    This class represents a single video item in Anomalib datasets using PyTorch tensors.
+    It combines the functionality of ToNumpyMixin, _VideoInputFields, and DatasetItem
+    to handle video data, including frames, labels, masks, and metadata.
+
+    Examples:
+        >>> item = VideoItem(
+        ...     image=torch.rand(10, 3, 224, 224),  # 10 frames
+        ...     gt_label=torch.tensor(1),
+        ...     gt_mask=torch.rand(10, 224, 224) > 0.5,
+        ...     video_path="path/to/video.mp4"
+        ... )
+
+        >>> print(item.image.shape)
+        torch.Size([10, 3, 224, 224])
+
+        >>> numpy_item = item.to_numpy()
+        >>> print(type(numpy_item))
+        <class 'anomalib.dataclasses.numpy.NumpyVideoItem'>
+    """
 
     numpy_class = NumpyVideoItem
 
@@ -352,7 +491,31 @@ class VideoBatch(
     _VideoInputFields[torch.Tensor, Video, Mask, list[str]],
     Batch[Video],
 ):
-    """Dataclass for torch video output batch."""
+    """Dataclass for torch video output batch.
+
+    This class represents a batch of video items in Anomalib datasets using PyTorch tensors.
+    It combines the functionality of ToNumpyMixin, BatchIterateMixin, _VideoInputFields,
+    and Batch to handle batches of video data, including frames, labels, masks, and metadata.
+
+    Examples:
+        >>> batch = VideoBatch(
+        ...     image=torch.rand(32, 10, 3, 224, 224),  # 32 videos, 10 frames each
+        ...     gt_label=torch.randint(0, 2, (32,)),
+        ...     gt_mask=torch.rand(32, 10, 224, 224) > 0.5,
+        ...     video_path=["path/to/video_{}.mp4".format(i) for i in range(32)]
+        ... )
+
+        >>> print(batch.image.shape)
+        torch.Size([32, 10, 3, 224, 224])
+
+        >>> for item in batch:
+        ...     print(item.image.shape)
+        torch.Size([10, 3, 224, 224])
+
+        >>> numpy_batch = batch.to_numpy()
+        >>> print(type(numpy_batch))
+        <class 'anomalib.dataclasses.numpy.NumpyVideoBatch'>
+    """
 
     item_class = VideoItem
     numpy_class = NumpyVideoBatch
@@ -404,7 +567,24 @@ class DepthItem(
     _DepthInputFields[torch.Tensor, str],
     DatasetItem[Image],
 ):
-    """Dataclass for torch depth output item."""
+    """Dataclass for torch depth output item.
+
+    This class represents a single depth item in Anomalib datasets using PyTorch tensors.
+    It combines the functionality of ToNumpyMixin, _DepthInputFields, and DatasetItem
+    to handle depth data, including depth maps, labels, and metadata.
+
+    Examples:
+        >>> item = DepthItem(
+        ...     image=torch.rand(3, 224, 224),
+        ...     gt_label=torch.tensor(1),
+        ...     depth_map=torch.rand(224, 224),
+        ...     image_path="path/to/image.jpg",
+        ...     depth_path="path/to/depth.png"
+        ... )
+
+        >>> print(item.image.shape, item.depth_map.shape)
+        torch.Size([3, 224, 224]) torch.Size([224, 224])
+    """
 
     numpy_class = NumpyImageItem
 
@@ -448,7 +628,28 @@ class DepthBatch(
     _DepthInputFields[torch.Tensor, list[str]],
     Batch[Image],
 ):
-    """Dataclass for torch depth output batch."""
+    """Dataclass for torch depth output batch.
+
+    This class represents a batch of depth items in Anomalib datasets using PyTorch tensors.
+    It combines the functionality of BatchIterateMixin, _DepthInputFields, and Batch
+    to handle batches of depth data, including depth maps, labels, and metadata.
+
+    Examples:
+        >>> batch = DepthBatch(
+        ...     image=torch.rand(32, 3, 224, 224),
+        ...     gt_label=torch.randint(0, 2, (32,)),
+        ...     depth_map=torch.rand(32, 224, 224),
+        ...     image_path=["path/to/image_{}.jpg".format(i) for i in range(32)],
+        ...     depth_path=["path/to/depth_{}.png".format(i) for i in range(32)]
+        ... )
+
+        >>> print(batch.image.shape, batch.depth_map.shape)
+        torch.Size([32, 3, 224, 224]) torch.Size([32, 224, 224])
+
+        >>> for item in batch:
+        ...     print(item.image.shape, item.depth_map.shape)
+        torch.Size([3, 224, 224]) torch.Size([224, 224])
+    """
 
     item_class = DepthItem
 
