@@ -567,7 +567,7 @@ class DepthItem(
     _DepthInputFields[torch.Tensor, str],
     DatasetItem[Image],
 ):
-    """Dataclass for torch depth output item.
+    """Dataclass for individual depth items in Anomalib datasets using PyTorch tensors.
 
     This class represents a single depth item in Anomalib datasets using PyTorch tensors.
     It combines the functionality of ToNumpyMixin, _DepthInputFields, and DatasetItem
