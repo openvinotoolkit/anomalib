@@ -415,7 +415,7 @@ class VideoItem(
     _VideoInputFields[torch.Tensor, Video, Mask, str],
     DatasetItem[Video],
 ):
-    """Dataclass for torch video output item.
+    """Dataclass for individual video items in Anomalib datasets using PyTorch tensors.
 
     This class represents a single video item in Anomalib datasets using PyTorch tensors.
     It combines the functionality of ToNumpyMixin, _VideoInputFields, and DatasetItem
