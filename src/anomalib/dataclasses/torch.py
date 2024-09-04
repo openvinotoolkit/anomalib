@@ -101,7 +101,7 @@ class DatasetItem(Generic[ImageT], _GenericItem[torch.Tensor, ImageT, Mask, str]
     PyTorch tensors.
 
     The class uses generic types to allow flexibility in the image representation,
-    which can vary depending on the specific use case (e.g., standard images, depth maps).
+    which can vary depending on the specific use case (e.g., standard images, video clips).
 
     Attributes:
         Inherited from _GenericItem, with PyTorch tensor and Mask types.
