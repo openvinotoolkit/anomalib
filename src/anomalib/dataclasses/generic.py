@@ -579,6 +579,8 @@ class BatchIterateMixin(Generic[ItemT]):
         ...     process_item(item)  # Iterate over items
 
         >>> item_list = batch.items  # Convert batch to list of items
+        >>> type(item_list[0])
+        <class 'DummyItem'>
 
         >>> batch_size = len(batch)  # Get batch size
 
