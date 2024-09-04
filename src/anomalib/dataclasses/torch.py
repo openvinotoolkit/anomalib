@@ -122,7 +122,7 @@ class Batch(Generic[ImageT], _GenericBatch[torch.Tensor, ImageT, Mask, list[str]
     represented as PyTorch tensors.
 
     The class uses generic types to allow flexibility in the image representation,
-    which can vary depending on the specific use case (e.g., standard images, depth maps).
+    which can vary depending on the specific use case (e.g., standard images, video clips).
 
     Attributes:
         Inherited from _GenericBatch, with PyTorch tensor and Mask types.
