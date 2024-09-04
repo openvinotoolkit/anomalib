@@ -491,7 +491,7 @@ class VideoBatch(
     _VideoInputFields[torch.Tensor, Video, Mask, list[str]],
     Batch[Video],
 ):
-    """Dataclass for torch video output batch.
+    """Dataclass for batches of image items in Anomalib datasets using PyTorch tensors.
 
     This class represents a batch of video items in Anomalib datasets using PyTorch tensors.
     It combines the functionality of ToNumpyMixin, BatchIterateMixin, _VideoInputFields,
