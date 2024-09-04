@@ -628,7 +628,7 @@ class DepthBatch(
     _DepthInputFields[torch.Tensor, list[str]],
     Batch[Image],
 ):
-    """Dataclass for torch depth output batch.
+    """Dataclass for batches of depth items in Anomalib datasets using PyTorch tensors.
 
     This class represents a batch of depth items in Anomalib datasets using PyTorch tensors.
     It combines the functionality of BatchIterateMixin, _DepthInputFields, and Batch
