@@ -106,7 +106,7 @@ def validate_pred_label(pred_label: np.ndarray | int) -> np.ndarray:
 
 
 # Batch-level label validation
-def validate_batch_label(gt_label: np.ndarray | Sequence[int] | None, batch_size: int) -> np.ndarray | None:
+def validate_batch_gt_label(gt_label: np.ndarray | Sequence[int] | None, batch_size: int) -> np.ndarray | None:
     """Validate and convert the input batch of labels to a boolean numpy array.
 
     Args:
