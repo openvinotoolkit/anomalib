@@ -7,7 +7,7 @@ import torch
 from torchvision.transforms.v2.functional import to_dtype_image
 from torchvision.tv_tensors import Image
 
-from anomalib.dataclasses.validate.tensor.common import validate_dimensions
+from anomalib.dataclasses.validate.tensor import validate_dimensions
 
 
 def validate_torch_image(image: torch.Tensor) -> Image:
