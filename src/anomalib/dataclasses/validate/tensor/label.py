@@ -1,11 +1,22 @@
-"""Validate torch label data."""
+"""Validate torch label data.
+
+This module contains functions for validating and converting label data
+in PyTorch tensors.
+
+Sections:
+- Item-level label validation
+- Batch-level label validation
+"""
 
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from collections.abc import Sequence
+
 import torch
 
 
+# Item-level label validation
 def validate_label(label: int | torch.Tensor) -> torch.Tensor:
     """Validate and convert the input label to a boolean PyTorch tensor.
 
@@ -115,3 +126,53 @@ def validate_pred_label(pred_label: torch.Tensor | int) -> torch.Tensor:
         msg = f"Predicted label must be a scalar, got shape {pred_label.shape}."
         raise ValueError(msg)
     return pred_label.to(torch.bool)
+
+
+# Batch-level label validation
+def validate_batch_label(gt_label: torch.Tensor | Sequence[int] | None, batch_size: int) -> torch.Tensor | None:
+    """Validate and convert the input batch of labels to a boolean PyTorch tensor.
+
+    Args:
+        gt_label: The input ground truth labels. Can be a PyTorch tensor, a sequence of integers, or None.
+        batch_size: The expected batch size.
+
+    Returns:
+        A boolean PyTorch tensor of validated labels, or None if the input was None.
+
+    Raises:
+        TypeError: If the input is not a PyTorch tensor or a sequence of integers.
+        ValueError: If the input shape or type is invalid.
+
+    Examples:
+        >>> import torch
+        >>> validate_batch_label(torch.tensor([0, 1, 1, 0]), 4)
+        tensor([False,  True,  True, False])
+
+        >>> validate_batch_label([0, 1, 1, 0], 4)
+        tensor([False,  True,  True, False])
+
+        >>> validate_batch_label(None, 4)
+        None
+
+        >>> validate_batch_label(torch.tensor([0.5, 1.5]), 2)
+        Traceback (most recent call last):
+            ...
+        ValueError: Ground truth label must be boolean or integer, got torch.float32.
+    """
+    if gt_label is None:
+        return None
+    if isinstance(gt_label, Sequence):
+        gt_label = torch.tensor(gt_label)
+    if not isinstance(gt_label, torch.Tensor):
+        msg = f"Ground truth label must be a sequence of integers or a torch.Tensor, got {type(gt_label)}."
+        raise TypeError(msg)
+    if gt_label.ndim != 1:
+        msg = f"Ground truth label must be a 1-dimensional vector, got shape {gt_label.shape}."
+        raise ValueError(msg)
+    if len(gt_label) != batch_size:
+        msg = f"Ground truth label must have length {batch_size}, got length {len(gt_label)}."
+        raise ValueError(msg)
+    if torch.is_floating_point(gt_label):
+        msg = f"Ground truth label must be boolean or integer, got {gt_label.dtype}."
+        raise ValueError(msg)
+    return gt_label.bool()
