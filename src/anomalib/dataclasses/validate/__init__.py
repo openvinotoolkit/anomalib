@@ -6,8 +6,8 @@
 # Numpy validation imports
 from .ndarray import validate_anomaly_map as validate_numpy_anomaly_map
 from .ndarray import validate_dimensions as validate_numpy_dimensions
-from .ndarray import validate_label as validate_numpy_label
-from .ndarray import validate_mask as validate_numpy_mask
+from .ndarray import validate_gt_label as validate_numpy_label
+from .ndarray import validate_gt_mask as validate_numpy_mask
 from .ndarray import validate_pred_label as validate_numpy_pred_label
 from .ndarray import validate_pred_mask as validate_numpy_pred_mask
 from .ndarray import validate_pred_score as validate_numpy_pred_score
@@ -19,8 +19,8 @@ from .path import validate_batch_path, validate_path
 from .tensor import validate_anomaly_map as validate_torch_anomaly_map
 from .tensor import validate_dimensions as validate_torch_dimensions
 from .tensor import validate_gt_label as validate_torch_gt_label
+from .tensor import validate_gt_mask as validate_torch_mask
 from .tensor import validate_image as validate_torch_image
-from .tensor import validate_mask as validate_torch_mask
 from .tensor import validate_pred_label as validate_torch_pred_label
 from .tensor import validate_pred_mask as validate_torch_pred_mask
 from .tensor import validate_pred_score as validate_torch_pred_score

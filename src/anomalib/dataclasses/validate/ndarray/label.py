@@ -14,7 +14,7 @@ import numpy as np
 
 
 # Item-level label validation
-def validate_label(label: int | np.ndarray) -> np.ndarray:
+def validate_gt_label(label: int | np.ndarray) -> np.ndarray:
     """Validate and convert the input label to a boolean numpy array.
 
     Args:

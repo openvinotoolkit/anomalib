@@ -13,7 +13,7 @@ from torchvision.tv_tensors import Mask
 
 
 # Item-level mask validation
-def validate_mask(mask: torch.Tensor) -> Mask:
+def validate_gt_mask(mask: torch.Tensor) -> Mask:
     """Validate and convert the input PyTorch mask.
 
     Args:

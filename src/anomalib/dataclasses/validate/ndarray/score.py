@@ -12,6 +12,56 @@ import numpy as np
 
 
 # Item-level anomaly map validation
+def validate_pred_score(pred_score: np.ndarray | float) -> np.ndarray:
+    """Validate and convert the input NumPy prediction score.
+
+    Args:
+        pred_score: The input prediction score to validate. Can be a NumPy array or float.
+
+    Returns:
+        The validated prediction score as a NumPy array.
+
+    Raises:
+        TypeError: If the input is not a NumPy array or float.
+        ValueError: If the prediction score is not a scalar.
+
+    Examples:
+        >>> import numpy as np
+        >>> from anomalib.data.io.validate import validate_numpy_pred_score
+
+        >>> # Scalar array input
+        >>> numpy_score = np.array(0.8)
+        >>> result = validate_numpy_pred_score(numpy_score)
+        >>> isinstance(result, np.ndarray) and result.dtype == np.float32
+        True
+        >>> result.item()
+        0.8
+
+        >>> # Float input
+        >>> result = validate_numpy_pred_score(0.7)
+        >>> isinstance(result, np.ndarray) and result.dtype == np.float32
+        True
+        >>> result.item()
+        0.7
+
+        >>> # Invalid input
+        >>> validate_numpy_pred_score(np.array([0.8, 0.9]))
+        Traceback (most recent call last):
+            ...
+        ValueError: Prediction score must be a scalar, got shape (2,).
+    """
+    if isinstance(pred_score, float):
+        pred_score = np.array(pred_score)
+    if not isinstance(pred_score, np.ndarray):
+        msg = f"Prediction score must be a np.ndarray or float, got {type(pred_score)}."
+        raise TypeError(msg)
+    pred_score = np.squeeze(pred_score)
+    if pred_score.ndim != 0:
+        msg = f"Prediction score must be a scalar, got shape {pred_score.shape}."
+        raise ValueError(msg)
+    return pred_score.astype(np.float32)
+
+
 def validate_anomaly_map(anomaly_map: np.ndarray) -> np.ndarray:
     """Validate and convert the input NumPy anomaly map.
 
@@ -64,59 +114,7 @@ def validate_anomaly_map(anomaly_map: np.ndarray) -> np.ndarray:
     return anomaly_map.astype(np.float32)
 
 
-def validate_pred_score(pred_score: np.ndarray | float) -> np.ndarray:
-    """Validate and convert the input NumPy prediction score.
-
-    Args:
-        pred_score: The input prediction score to validate. Can be a NumPy array or float.
-
-    Returns:
-        The validated prediction score as a NumPy array.
-
-    Raises:
-        TypeError: If the input is not a NumPy array or float.
-        ValueError: If the prediction score is not a scalar.
-
-    Examples:
-        >>> import numpy as np
-        >>> from anomalib.data.io.validate import validate_numpy_pred_score
-
-        >>> # Scalar array input
-        >>> numpy_score = np.array(0.8)
-        >>> result = validate_numpy_pred_score(numpy_score)
-        >>> isinstance(result, np.ndarray) and result.dtype == np.float32
-        True
-        >>> result.item()
-        0.8
-
-        >>> # Float input
-        >>> result = validate_numpy_pred_score(0.7)
-        >>> isinstance(result, np.ndarray) and result.dtype == np.float32
-        True
-        >>> result.item()
-        0.7
-
-        >>> # Invalid input
-        >>> validate_numpy_pred_score(np.array([0.8, 0.9]))
-        Traceback (most recent call last):
-            ...
-        ValueError: Prediction score must be a scalar, got shape (2,).
-    """
-    if isinstance(pred_score, float):
-        pred_score = np.array(pred_score)
-    if not isinstance(pred_score, np.ndarray):
-        msg = f"Prediction score must be a np.ndarray or float, got {type(pred_score)}."
-        raise TypeError(msg)
-    pred_score = np.squeeze(pred_score)
-    if pred_score.ndim != 0:
-        msg = f"Prediction score must be a scalar, got shape {pred_score.shape}."
-        raise ValueError(msg)
-    return pred_score.astype(np.float32)
-
-
 # Batch-level anomaly map validation
-
-
 def validate_batch_pred_score(pred_score: np.ndarray | None, batch_size: int) -> np.ndarray | None:
     """Validate and convert the input batch of numpy prediction scores.
 

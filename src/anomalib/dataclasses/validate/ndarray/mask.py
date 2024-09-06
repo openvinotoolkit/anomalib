@@ -12,7 +12,7 @@ import numpy as np
 
 
 # Item-level mask validation
-def validate_mask(mask: np.ndarray) -> np.ndarray:
+def validate_gt_mask(mask: np.ndarray) -> np.ndarray:
     """Validate and convert the input NumPy mask.
 
     Args:
@@ -122,7 +122,7 @@ def validate_pred_mask(pred_mask: np.ndarray) -> np.ndarray:
 
 
 # Batch-level mask validation
-def validate_batch_mask(gt_mask: np.ndarray | None, batch_size: int) -> np.ndarray | None:
+def validate_batch_gt_mask(gt_mask: np.ndarray | None, batch_size: int) -> np.ndarray | None:
     """Validate and convert the input batch of numpy masks.
 
     Args:

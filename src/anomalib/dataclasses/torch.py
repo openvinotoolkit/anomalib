@@ -30,8 +30,8 @@ from anomalib.dataclasses.validate.path import validate_batch_path, validate_pat
 from anomalib.dataclasses.validate.tensor import (
     validate_anomaly_map,
     validate_gt_label,
+    validate_gt_mask,
     validate_image,
-    validate_mask,
     validate_pred_label,
     validate_pred_mask,
     validate_pred_score,
@@ -191,7 +191,7 @@ class ImageItem(
         return validate_gt_label(gt_label) if gt_label else None
 
     def _validate_gt_mask(self, gt_mask: torch.Tensor | None) -> Mask | None:
-        return validate_mask(gt_mask) if gt_mask else None
+        return validate_gt_mask(gt_mask) if gt_mask else None
 
     def _validate_mask_path(self, mask_path: str | None) -> str | None:
         return validate_path(mask_path) if mask_path else None
