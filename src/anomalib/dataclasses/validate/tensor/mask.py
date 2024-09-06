@@ -123,7 +123,7 @@ def validate_pred_mask(pred_mask: torch.Tensor) -> Mask:
 
 
 # Batch mask validation
-def validate_batch_mask(gt_mask: torch.Tensor | None, batch_size: int) -> Mask | None:
+def validate_batch_gt_mask(gt_mask: torch.Tensor | None, batch_size: int) -> Mask | None:
     """Validate and convert the input batch of PyTorch masks.
 
     Args:

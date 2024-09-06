@@ -17,7 +17,7 @@ import torch
 
 
 # Item-level label validation
-def validate_label(label: int | torch.Tensor) -> torch.Tensor:
+def validate_gt_label(label: int | torch.Tensor) -> torch.Tensor:
     """Validate and convert the input label to a boolean PyTorch tensor.
 
     Args:
@@ -129,7 +129,7 @@ def validate_pred_label(pred_label: torch.Tensor | int) -> torch.Tensor:
 
 
 # Batch-level label validation
-def validate_batch_label(gt_label: torch.Tensor | Sequence[int] | None, batch_size: int) -> torch.Tensor | None:
+def validate_batch_gt_label(gt_label: torch.Tensor | Sequence[int] | None, batch_size: int) -> torch.Tensor | None:
     """Validate and convert the input batch of labels to a boolean PyTorch tensor.
 
     Args:

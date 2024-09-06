@@ -119,3 +119,55 @@ def validate_image(image: torch.Tensor) -> Image:
     scaled_image = to_dtype_image(validated_image, dtype=torch.float32, scale=True)
 
     return Image(scaled_image)
+
+
+# Batch-level image validation
+def validate_batch_image(image: torch.Tensor) -> Image:
+    """Validate and convert the input PyTorch tensor image or batch of images.
+
+    This function checks if the input is a valid image tensor and converts it to
+    a torchvision Image object. It accepts both single images and batches of images.
+
+    Args:
+        image: The input image(s). Should be a PyTorch tensor with shape
+               [C, H, W] for a single image or [N, C, H, W] for a batch of images.
+
+    Returns:
+        A torchvision Image object of the validated image(s).
+
+    Raises:
+        TypeError: If the input is not a PyTorch tensor.
+        ValueError: If the input shape or number of channels is invalid.
+
+    Examples:
+        >>> import torch
+        >>> # Single image
+        >>> single_image = torch.rand(3, 224, 224)
+        >>> result = validate_batch_image(single_image)
+        >>> result.shape
+        torch.Size([1, 3, 224, 224])
+
+        >>> # Batch of images
+        >>> batch_images = torch.rand(32, 3, 224, 224)
+        >>> result = validate_batch_image(batch_images)
+        >>> result.shape
+        torch.Size([32, 3, 224, 224])
+
+        >>> # Invalid number of channels
+        >>> validate_batch_image(torch.rand(5, 224, 224))
+        Traceback (most recent call last):
+            ...
+        ValueError: Invalid number of channels: 5. Expected 1, 3, or 4.
+    """
+    if not isinstance(image, torch.Tensor):
+        msg = f"Image must be a torch.Tensor, got {type(image)}."
+        raise TypeError(msg)
+    if image.ndim not in {3, 4}:
+        msg = f"Image must have shape [C, H, W] or [N, C, H, W], got shape {image.shape}."
+        raise ValueError(msg)
+    if image.ndim == 3:
+        image = image.unsqueeze(0)  # add batch dimension
+    if image.shape[1] not in {1, 3, 4}:
+        msg = f"Invalid number of channels: {image.shape[1]}. Expected 1, 3, or 4."
+        raise ValueError(msg)
+    return Image(image)

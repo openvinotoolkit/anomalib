@@ -25,11 +25,12 @@ import numpy as np
 import torch
 from torchvision.tv_tensors import Image, Mask, Video
 
-from anomalib.dataclasses.validate.path import validate_path
+from anomalib.dataclasses.validate import tensor
+from anomalib.dataclasses.validate.path import validate_batch_path, validate_path
 from anomalib.dataclasses.validate.tensor import (
     validate_anomaly_map,
+    validate_gt_label,
     validate_image,
-    validate_label,
     validate_mask,
     validate_pred_label,
     validate_pred_mask,
@@ -187,7 +188,7 @@ class ImageItem(
         return validate_image(image)
 
     def _validate_gt_label(self, gt_label: torch.Tensor | int | None) -> torch.Tensor | None:
-        return validate_label(gt_label) if gt_label else None
+        return validate_gt_label(gt_label) if gt_label else None
 
     def _validate_gt_mask(self, gt_mask: torch.Tensor | None) -> Mask | None:
         return validate_mask(gt_mask) if gt_mask else None
@@ -254,87 +255,19 @@ class ImageBatch(
     numpy_class = NumpyImageBatch
 
     def _validate_image(self, image: Image) -> Image:
-        assert isinstance(image, torch.Tensor), f"Image must be a torch.Tensor, got {type(image)}."
-        assert image.ndim in {3, 4}, f"Image must have shape [C, H, W] or [N, C, H, W], got shape {image.shape}."
-        if image.ndim == 3:
-            image = image.unsqueeze(0)  # add batch dimension
-        assert image.shape[1] == 3, f"Image must have 3 channels, got {image.shape[0]}."
-        return Image(image, dtype=torch.float32)
+        return tensor.validate_batch_image(image)
 
-    def _validate_gt_label(self, gt_label: torch.Tensor | Sequence[int] | None) -> torch.Tensor:
-        if gt_label is None:
-            return None
-        if isinstance(gt_label, Sequence):
-            gt_label = torch.tensor(gt_label)
-        assert isinstance(
-            gt_label,
-            torch.Tensor,
-        ), f"Ground truth label must be a sequence of integers or a torch.Tensor, got {type(gt_label)}."
-        assert gt_label.ndim == 1, f"Ground truth label must be a 1-dimensional vector, got shape {gt_label.shape}."
-        assert (
-            len(gt_label) == self.batch_size
-        ), f"Ground truth label must have length {self.batch_size}, got length {len(gt_label)}."
-        assert not torch.is_floating_point(gt_label), f"Ground truth label must be boolean or integer, got {gt_label}."
-        return gt_label.bool()
+    def _validate_gt_label(self, gt_label: torch.Tensor | Sequence[int] | None) -> torch.Tensor | None:
+        return tensor.validate_batch_gt_label(gt_label, self.batch_size)
 
     def _validate_gt_mask(self, gt_mask: Mask | None) -> Mask | None:
-        if gt_mask is None:
-            return None
-        assert isinstance(gt_mask, torch.Tensor), f"Ground truth mask must be a torch.Tensor, got {type(gt_mask)}."
-        assert gt_mask.ndim in {
-            2,
-            3,
-            4,
-        }, f"Ground truth mask must have shape [H, W] or [N, H, W] or [N, 1, H, W] got shape {gt_mask.shape}."
-        if gt_mask.ndim == 2:
-            assert (
-                self.batch_size == 1
-            ), f"Invalid shape for gt_mask. Got mask shape {gt_mask.shape} for batch size {self.batch_size}."
-            gt_mask = gt_mask.unsqueeze(0)
-        if gt_mask.ndim == 3:
-            assert (
-                gt_mask.shape[0] == self.batch_size
-            ), f"Invalid shape for gt_mask. Got mask shape {gt_mask.shape} for batch size {self.batch_size}."
-        if gt_mask.ndim == 4:
-            assert gt_mask.shape[1] == 1, f"Ground truth mask must have 1 channel, got {gt_mask.shape[1]}."
-            gt_mask = gt_mask.squeeze(1)
-        return Mask(gt_mask, dtype=torch.bool)
+        return tensor.validate_batch_gt_mask(gt_mask, self.batch_size)
 
-    def _validate_mask_path(self, mask_path: Sequence[str] | Sequence[str] | None) -> list[str] | None:
-        if mask_path is None:
-            return None
-        assert isinstance(
-            mask_path,
-            Sequence,
-        ), f"Mask path must be a sequence of paths or strings, got {type(mask_path)}."
-        assert (
-            len(mask_path) == self.batch_size
-        ), f"Invalid length for mask_path. Got length {len(mask_path)} for batch size {self.batch_size}."
-        return [str(path) for path in mask_path]
+    def _validate_mask_path(self, mask_path: str | Sequence[str] | None) -> list[str] | None:
+        return validate_batch_path(mask_path)
 
     def _validate_anomaly_map(self, anomaly_map: torch.Tensor | np.ndarray | None) -> torch.Tensor | None:
-        if anomaly_map is None:
-            return None
-        if not isinstance(anomaly_map, torch.Tensor):
-            try:
-                anomaly_map = torch.tensor(anomaly_map)
-            except Exception as e:
-                msg = "Failed to convert anomaly_map to a torch.Tensor."
-                raise ValueError(msg) from e
-        assert anomaly_map.ndim in {
-            2,
-            3,
-            4,
-        }, f"Anomaly map must have shape [H, W] or [N, H, W] or [N, 1, H, W], got shape {anomaly_map.shape}."
-        if anomaly_map.ndim == 2:
-            assert (
-                self.batch_size == 1
-            ), f"Invalid shape for anomaly_map. Got mask shape {anomaly_map.shape} for batch size {self.batch_size}."
-            anomaly_map = anomaly_map.unsqueeze(0)
-        if anomaly_map.ndim == 4:
-            assert anomaly_map.shape[1] == 1, f"Anomaly map must have 1 channel, got {anomaly_map.shape[1]}."
-            anomaly_map = anomaly_map.squeeze(1)
-        return Mask(anomaly_map, dtype=torch.float32)
+        return tensor.validate_batch_anomaly_map(anomaly_map, self.batch_size)
 
     def _validate_pred_score(self, pred_score: torch.Tensor | None) -> torch.Tensor | None:
         if pred_score is None and self.anomaly_map is not None:

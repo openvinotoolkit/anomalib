@@ -8,6 +8,7 @@ Sections:
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+import numpy as np
 import torch
 from torchvision.tv_tensors import Mask
 
@@ -160,7 +161,7 @@ def validate_batch_pred_score(pred_score: torch.Tensor | None, batch_size: int) 
     return pred_score.to(torch.float32)
 
 
-def validate_batch_anomaly_map(anomaly_map: torch.Tensor | None, batch_size: int) -> Mask | None:
+def validate_batch_anomaly_map(anomaly_map: torch.Tensor | np.ndarray | None, batch_size: int) -> Mask | None:
     """Validate and convert the input batch of PyTorch anomaly maps.
 
     Args:
@@ -195,8 +196,11 @@ def validate_batch_anomaly_map(anomaly_map: torch.Tensor | None, batch_size: int
     if anomaly_map is None:
         return None
     if not isinstance(anomaly_map, torch.Tensor):
-        msg = f"Anomaly map must be a torch.Tensor, got {type(anomaly_map)}."
-        raise TypeError(msg)
+        try:
+            anomaly_map = torch.tensor(anomaly_map)
+        except Exception as e:
+            msg = "Anomaly map must be a torch.Tensor. Tried to convert to torch.Tensor but failed."
+            raise ValueError(msg) from e
     if anomaly_map.ndim not in {2, 3, 4}:
         msg = f"Anomaly map must have shape [H, W] or [N, H, W] or [N, 1, H, W], got shape {anomaly_map.shape}."
         raise ValueError(msg)
