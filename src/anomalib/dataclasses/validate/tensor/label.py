@@ -176,3 +176,47 @@ def validate_batch_label(gt_label: torch.Tensor | Sequence[int] | None, batch_si
         msg = f"Ground truth label must be boolean or integer, got {gt_label.dtype}."
         raise ValueError(msg)
     return gt_label.bool()
+
+
+def validate_batch_pred_label(pred_label: torch.Tensor | None, batch_size: int) -> torch.Tensor | None:
+    """Validate and convert the input batch of PyTorch predicted labels.
+
+    Args:
+        pred_label: The input predicted labels. Can be a PyTorch tensor or None.
+        batch_size: The expected batch size.
+
+    Returns:
+        A PyTorch tensor of validated predicted labels, or None if the input was None.
+
+    Raises:
+        TypeError: If the input is not a PyTorch tensor.
+        ValueError: If the input shape is invalid.
+
+    Examples:
+        >>> import torch
+        >>> pred_label = torch.randint(0, 2, (4,))
+        >>> result = validate_batch_pred_label(pred_label, 4)
+        >>> result.shape
+        torch.Size([4])
+
+        >>> validate_batch_pred_label(None, 4)
+        None
+
+        >>> validate_batch_pred_label(torch.rand(4, 1), 4)
+        Traceback (most recent call last):
+            ...
+        ValueError: Predicted label must be a 1-dimensional vector, got shape torch.Size([4, 1]).
+    """
+    if pred_label is None:
+        return None
+    if not isinstance(pred_label, torch.Tensor):
+        msg = f"Predicted label must be a torch.Tensor, got {type(pred_label)}."
+        raise TypeError(msg)
+    pred_label = pred_label.squeeze()
+    if pred_label.ndim != 1:
+        msg = f"Predicted label must be a 1-dimensional vector, got shape {pred_label.shape}."
+        raise ValueError(msg)
+    if len(pred_label) != batch_size:
+        msg = f"Predicted label must have length {batch_size}, got length {len(pred_label)}."
+        raise ValueError(msg)
+    return pred_label.to(torch.bool)

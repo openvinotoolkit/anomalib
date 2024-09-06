@@ -1,4 +1,9 @@
-"""Validate torch image data."""
+"""Validate torch image data.
+
+Sections:
+    - Item-level image validation
+    - Batch-level image validation
+"""
 
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -8,6 +13,7 @@ from torchvision.transforms.v2.functional import to_dtype_image
 from torchvision.tv_tensors import Image
 
 
+# Item-level image validation
 def validate_dimensions(data: torch.Tensor, expected_dims: int) -> torch.Tensor:
     """Validate and correct the dimensions and channel order of the PyTorch tensor.
 
