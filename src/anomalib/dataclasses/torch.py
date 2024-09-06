@@ -111,7 +111,7 @@ class DatasetItem(Generic[ImageT], _GenericItem[torch.Tensor, ImageT, Mask, str]
     PyTorch tensors.
 
     The class uses generic types to allow flexibility in the image representation,
-    which can vary depending on the specific use case (e.g., standard images, depth maps).
+    which can vary depending on the specific use case (e.g., standard images, video clips).
 
     Attributes:
         Inherited from _GenericItem, with PyTorch tensor and Mask types.
@@ -132,7 +132,7 @@ class Batch(Generic[ImageT], _GenericBatch[torch.Tensor, ImageT, Mask, list[str]
     represented as PyTorch tensors.
 
     The class uses generic types to allow flexibility in the image representation,
-    which can vary depending on the specific use case (e.g., standard images, depth maps).
+    which can vary depending on the specific use case (e.g., standard images, video clips).
 
     Attributes:
         Inherited from _GenericBatch, with PyTorch tensor and Mask types.
@@ -358,7 +358,7 @@ class VideoItem(
     _VideoInputFields[torch.Tensor, Video, Mask, str],
     DatasetItem[Video],
 ):
-    """Dataclass for torch video output item.
+    """Dataclass for individual video items in Anomalib datasets using PyTorch tensors.
 
     This class represents a single video item in Anomalib datasets using PyTorch tensors.
     It combines the functionality of ToNumpyMixin, _VideoInputFields, and DatasetItem
@@ -434,7 +434,7 @@ class VideoBatch(
     _VideoInputFields[torch.Tensor, Video, Mask, list[str]],
     Batch[Video],
 ):
-    """Dataclass for torch video output batch.
+    """Dataclass for batches of video items in Anomalib datasets using PyTorch tensors.
 
     This class represents a batch of video items in Anomalib datasets using PyTorch tensors.
     It combines the functionality of ToNumpyMixin, BatchIterateMixin, _VideoInputFields,
@@ -510,7 +510,7 @@ class DepthItem(
     _DepthInputFields[torch.Tensor, str],
     DatasetItem[Image],
 ):
-    """Dataclass for torch depth output item.
+    """Dataclass for individual depth items in Anomalib datasets using PyTorch tensors.
 
     This class represents a single depth item in Anomalib datasets using PyTorch tensors.
     It combines the functionality of ToNumpyMixin, _DepthInputFields, and DatasetItem
@@ -571,7 +571,7 @@ class DepthBatch(
     _DepthInputFields[torch.Tensor, list[str]],
     Batch[Image],
 ):
-    """Dataclass for torch depth output batch.
+    """Dataclass for batches of depth items in Anomalib datasets using PyTorch tensors.
 
     This class represents a batch of depth items in Anomalib datasets using PyTorch tensors.
     It combines the functionality of BatchIterateMixin, _DepthInputFields, and Batch
