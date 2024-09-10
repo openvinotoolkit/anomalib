@@ -37,6 +37,9 @@ from .datamodules.video import Avenue, ShanghaiTech, UCSDped, VideoDataFormat
 
 # Datasets
 from .datasets import AnomalibDataset
+from .datasets.depth import Folder3DDataset, MVTec3DDataset
+from .datasets.image import BTechDataset, FolderDataset, KolektorDataset, MVTecDataset, VisaDataset
+from .datasets.video import AvenueDataset, ShanghaiTechDataset, UCSDpedDataset
 from .predict import PredictDataset
 from .utils import LabelName
 
@@ -100,6 +103,16 @@ __all__ = [
     "NumpyVideoBatch",
     # Anomalib datasets
     "AnomalibDataset",
+    "Folder3DDataset",
+    "MVTec3DDataset",
+    "BTechDataset",
+    "FolderDataset",
+    "KolektorDataset",
+    "MVTecDataset",
+    "VisaDataset",
+    "AvenueDataset",
+    "ShanghaiTechDataset",
+    "UCSDpedDataset",
     "PredictDataset",
     # Anomalib datamodules
     "AnomalibDataModule",
