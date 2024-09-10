@@ -20,7 +20,7 @@ from torchvision.transforms.v2 import Transform
 from tqdm import tqdm
 
 from anomalib import TaskType
-from anomalib.data.base import AnomalibDataModule, AnomalibDataset
+from anomalib.data.datamodules.base import AnomalibDataModule, AnomalibDataset
 from anomalib.data.utils import (
     DownloadInfo,
     LabelName,

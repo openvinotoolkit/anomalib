@@ -19,7 +19,7 @@ from pandas import DataFrame, Series
 from torchvision.transforms.v2 import Compose
 
 from anomalib import TaskType
-from anomalib.data.base.dataset import AnomalibDataset
+from anomalib.data.datamodules.base.dataset import AnomalibDataset
 from anomalib.data.utils import Augmenter, Split, read_image
 
 logger = logging.getLogger(__name__)

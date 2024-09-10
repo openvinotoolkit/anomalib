@@ -14,11 +14,12 @@ from torchvision.transforms.v2.functional import to_dtype, to_dtype_video
 from torchvision.tv_tensors import Mask
 
 from anomalib import TaskType
-from anomalib.data.base.datamodule import AnomalibDataModule
-from anomalib.data.base.dataset import AnomalibDataset
+from anomalib.data.datamodules.base.datamodule import AnomalibDataModule
 from anomalib.data.utils import ValSplitMode
 from anomalib.data.utils.video import ClipsIndexer
 from anomalib.dataclasses import VideoBatch, VideoItem
+
+from .dataset import AnomalibDataset
 
 
 class VideoTargetFrame(str, Enum):

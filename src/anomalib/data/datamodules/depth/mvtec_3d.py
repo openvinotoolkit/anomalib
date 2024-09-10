@@ -27,7 +27,7 @@ from pandas import DataFrame
 from torchvision.transforms.v2 import Transform
 
 from anomalib import TaskType
-from anomalib.data.base import AnomalibDataModule, AnomalibDepthDataset
+from anomalib.data.datamodules.base import AnomalibDataModule, AnomalibDepthDataset
 from anomalib.data.errors import MisMatchError
 from anomalib.data.utils import (
     DownloadInfo,

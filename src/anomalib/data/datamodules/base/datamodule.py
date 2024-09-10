@@ -20,7 +20,7 @@ from anomalib.data.utils.synthetic import SyntheticAnomalyDataset
 if TYPE_CHECKING:
     from pandas import DataFrame
 
-    from anomalib.data.base.dataset import AnomalibDataset
+    from .dataset import AnomalibDataset
 
 logger = logging.getLogger(__name__)
 

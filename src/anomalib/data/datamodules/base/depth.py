@@ -13,9 +13,10 @@ from torchvision.transforms.v2 import Transform
 from torchvision.tv_tensors import Mask
 
 from anomalib import TaskType
-from anomalib.data.base.dataset import AnomalibDataset
 from anomalib.data.utils import LabelName, read_depth_image
 from anomalib.dataclasses import DepthBatch, DepthItem
+
+from .dataset import AnomalibDataset
 
 
 class AnomalibDepthDataset(AnomalibDataset, ABC):

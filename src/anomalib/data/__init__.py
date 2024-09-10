@@ -12,12 +12,12 @@ from omegaconf import DictConfig, ListConfig
 
 from anomalib.utils.config import to_tuple
 
-from .base import AnomalibDataModule, AnomalibDataset
-from .depth import DepthDataFormat, Folder3D, MVTec3D
-from .image import BTech, Folder, ImageDataFormat, Kolektor, MVTec, Visa
+from .datamodules.base import AnomalibDataModule, AnomalibDataset
+from .datamodules.depth import DepthDataFormat, Folder3D, MVTec3D
+from .datamodules.image import BTech, Folder, ImageDataFormat, Kolektor, MVTec, Visa
+from .datamodules.video import Avenue, ShanghaiTech, UCSDped, VideoDataFormat
 from .predict import PredictDataset
 from .utils import LabelName
-from .video import Avenue, ShanghaiTech, UCSDped, VideoDataFormat
 
 logger = logging.getLogger(__name__)
 

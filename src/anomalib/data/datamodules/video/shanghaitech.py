@@ -29,8 +29,7 @@ from pandas import DataFrame
 from torchvision.transforms.v2 import Transform
 
 from anomalib import TaskType
-from anomalib.data.base import AnomalibVideoDataModule, AnomalibVideoDataset
-from anomalib.data.base.video import VideoTargetFrame
+from anomalib.data.datamodules.base.video import AnomalibVideoDataModule, AnomalibVideoDataset, VideoTargetFrame
 from anomalib.data.utils import (
     DownloadInfo,
     Split,
