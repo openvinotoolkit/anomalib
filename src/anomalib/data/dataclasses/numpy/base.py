@@ -12,7 +12,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from anomalib.data.generic import _GenericBatch, _GenericItem
+from anomalib.data.dataclasses.generic import _GenericBatch, _GenericItem
 
 
 @dataclass

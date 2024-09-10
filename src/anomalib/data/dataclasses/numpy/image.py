@@ -7,8 +7,8 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from anomalib.data.generic import BatchIterateMixin, _ImageInputFields
-from anomalib.data.numpy.base import NumpyBatch, NumpyItem
+from anomalib.data.dataclasses.generic import BatchIterateMixin, _ImageInputFields
+from anomalib.data.dataclasses.numpy.base import NumpyBatch, NumpyItem
 
 
 @dataclass

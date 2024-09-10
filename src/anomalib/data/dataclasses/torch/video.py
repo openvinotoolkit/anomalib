@@ -13,10 +13,10 @@ from dataclasses import dataclass, fields
 import torch
 from torchvision.tv_tensors import Image, Mask, Video
 
-from anomalib.data.generic import BatchIterateMixin, _VideoInputFields
-from anomalib.data.numpy.video import NumpyVideoBatch, NumpyVideoItem
-from anomalib.data.torch.base import Batch, DatasetItem, ToNumpyMixin
-from anomalib.data.torch.image import ImageItem
+from anomalib.data.dataclasses.generic import BatchIterateMixin, _VideoInputFields
+from anomalib.data.dataclasses.numpy.video import NumpyVideoBatch, NumpyVideoItem
+from anomalib.data.dataclasses.torch.base import Batch, DatasetItem, ToNumpyMixin
+from anomalib.data.dataclasses.torch.image import ImageItem
 
 
 @dataclass

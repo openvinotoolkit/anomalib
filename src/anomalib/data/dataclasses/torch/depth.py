@@ -13,9 +13,9 @@ from dataclasses import dataclass
 import torch
 from torchvision.tv_tensors import Image, Mask
 
-from anomalib.data.generic import BatchIterateMixin, _DepthInputFields
-from anomalib.data.numpy.image import NumpyImageItem
-from anomalib.data.torch.base import Batch, DatasetItem, ToNumpyMixin
+from anomalib.data.dataclasses.generic import BatchIterateMixin, _DepthInputFields
+from anomalib.data.dataclasses.numpy.image import NumpyImageItem
+from anomalib.data.dataclasses.torch.base import Batch, DatasetItem, ToNumpyMixin
 
 
 @dataclass
