@@ -1,4 +1,4 @@
-"""Anomalib Video Datasets."""
+"""Anomalib Video Data Modules."""
 
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0

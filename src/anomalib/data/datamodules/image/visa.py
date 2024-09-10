@@ -1,14 +1,15 @@
-"""Visual Anomaly (VisA) Dataset (CC BY-NC-SA 4.0).
+"""Visual Anomaly (VisA) Data Module.
 
 Description:
-    This script contains PyTorch Dataset, Dataloader and PyTorch
-        Lightning DataModule for the Visual Anomal (VisA) dataset.
-    If the dataset is not on the file system, the script downloads and
-        extracts the dataset and create PyTorch data objects.
+    This script contains PyTorch Lightning DataModule for the Visual Anomal
+    (VisA) dataset. If the dataset is not on the file system, the script
+    downloads and extracts the dataset and create PyTorch data objects.
+
 License:
     The VisA dataset is released under the Creative Commons
     Attribution-NonCommercial-ShareAlike 4.0 International License
     (CC BY-NC-SA 4.0)(https://creativecommons.org/licenses/by-nc-sa/4.0/).
+
 Reference:
     - Zou, Y., Jeong, J., Pemula, L., Zhang, D., & Dabeer, O. (2022). SPot-the-Difference
       Self-supervised Pre-training for Anomaly Detection and Segmentation. In European
@@ -30,7 +31,8 @@ import cv2
 from torchvision.transforms.v2 import Transform
 
 from anomalib import TaskType
-from anomalib.data.datamodules.base import AnomalibDataModule, AnomalibDataset
+from anomalib.data.datamodules.base import AnomalibDataModule
+from anomalib.data.datasets import VisaDataset
 from anomalib.data.utils import (
     DownloadInfo,
     Split,
@@ -39,106 +41,13 @@ from anomalib.data.utils import (
     download_and_extract,
 )
 
-from .mvtec import make_mvtec_dataset
-
 logger = logging.getLogger(__name__)
-
-EXTENSIONS = (".png", ".jpg", ".JPG")
 
 DOWNLOAD_INFO = DownloadInfo(
     name="VisA",
     url="https://amazon-visual-anomaly.s3.us-west-2.amazonaws.com/VisA_20220922.tar",
     hashsum="2eb8690c803ab37de0324772964100169ec8ba1fa3f7e94291c9ca673f40f362",
 )
-
-CATEGORIES = (
-    "candle",
-    "capsules",
-    "cashew",
-    "chewinggum",
-    "fryum",
-    "macaroni1",
-    "macaroni2",
-    "pcb1",
-    "pcb2",
-    "pcb3",
-    "pcb4",
-    "pipe_fryum",
-)
-
-
-class VisaDataset(AnomalibDataset):
-    """VisA dataset class.
-
-    Args:
-        task (TaskType): Task type, ``classification``, ``detection`` or ``segmentation``
-        root (str | Path): Path to the root of the dataset
-        category (str): Sub-category of the dataset, e.g. 'candle'
-        transform (Transform, optional): Transforms that should be applied to the input images.
-            Defaults to ``None``.
-        split (str | Split | None): Split of the dataset, usually Split.TRAIN or Split.TEST
-            Defaults to ``None``.
-
-    Examples:
-        To create a Visa dataset for classification:
-
-        .. code-block:: python
-
-            from anomalib.data.image.visa import VisaDataset
-            from anomalib.data.utils.transforms import get_transforms
-
-            transform = get_transforms(image_size=256)
-            dataset = VisaDataset(
-                task="classification",
-                transform=transform,
-                split="train",
-                root="./datasets/visa/visa_pytorch/",
-                category="candle",
-            )
-            dataset.setup()
-            dataset[0].keys()
-
-            # Output
-            dict_keys(['image_path', 'label', 'image'])
-
-        If you want to use the dataset for segmentation, you can use the same
-        code as above, with the task set to ``segmentation``. The dataset will
-        then have a ``mask`` key in the output dictionary.
-
-        .. code-block:: python
-
-            from anomalib.data.image.visa import VisaDataset
-            from anomalib.data.utils.transforms import get_transforms
-
-            transform = get_transforms(image_size=256)
-            dataset = VisaDataset(
-                task="segmentation",
-                transform=transform,
-                split="train",
-                root="./datasets/visa/visa_pytorch/",
-                category="candle",
-            )
-            dataset.setup()
-            dataset[0].keys()
-
-            # Output
-            dict_keys(['image_path', 'label', 'image', 'mask_path', 'mask'])
-
-    """
-
-    def __init__(
-        self,
-        task: TaskType,
-        root: str | Path,
-        category: str,
-        transform: Transform | None = None,
-        split: str | Split | None = None,
-    ) -> None:
-        super().__init__(task=task, transform=transform)
-
-        self.root_category = Path(root) / category
-        self.split = split
-        self.samples = make_mvtec_dataset(self.root_category, split=self.split, extensions=EXTENSIONS)
 
 
 class Visa(AnomalibDataModule):

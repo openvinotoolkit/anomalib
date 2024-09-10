@@ -12,7 +12,7 @@ from omegaconf import DictConfig, ListConfig
 
 from anomalib.utils.config import to_tuple
 
-from .datamodules.base import AnomalibDataModule, AnomalibDataset
+from .datamodules.base import AnomalibDataModule
 from .datamodules.depth import DepthDataFormat, Folder3D, MVTec3D
 from .datamodules.image import BTech, Folder, ImageDataFormat, Kolektor, MVTec, Visa
 from .datamodules.video import Avenue, ShanghaiTech, UCSDped, VideoDataFormat
@@ -63,7 +63,6 @@ def get_datamodule(config: DictConfig | ListConfig | dict) -> AnomalibDataModule
 
 
 __all__ = [
-    "AnomalibDataset",
     "AnomalibDataModule",
     "DepthDataFormat",
     "ImageDataFormat",
