@@ -18,8 +18,8 @@ from torchvision.transforms.v2 import Transform
 from tqdm import tqdm
 
 from anomalib import TaskType
-from anomalib.data.datamodules.base import AnomalibDataModule
-from anomalib.data.datasets import BTechDataset
+from anomalib.data.datamodules.base.image import AnomalibDataModule
+from anomalib.data.datasets.image.btech import BTechDataset
 from anomalib.data.utils import (
     DownloadInfo,
     Split,

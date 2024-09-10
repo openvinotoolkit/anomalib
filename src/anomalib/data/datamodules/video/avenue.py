@@ -24,9 +24,9 @@ import scipy.io
 from torchvision.transforms.v2 import Transform
 
 from anomalib import TaskType
-from anomalib.data.datamodules.base import AnomalibVideoDataModule
-from anomalib.data.datasets import AvenueDataset
+from anomalib.data.datamodules.base.video import AnomalibVideoDataModule
 from anomalib.data.datasets.base.video import VideoTargetFrame
+from anomalib.data.datasets.video.avenue import AvenueDataset
 from anomalib.data.utils import (
     DownloadInfo,
     Split,

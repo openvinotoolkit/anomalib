@@ -10,9 +10,9 @@ from shutil import move
 from torchvision.transforms.v2 import Transform
 
 from anomalib import TaskType
-from anomalib.data.datamodules.base import AnomalibVideoDataModule
-from anomalib.data.datasets import UCSDpedDataset
+from anomalib.data.datamodules.base.video import AnomalibVideoDataModule
 from anomalib.data.datasets.base.video import VideoTargetFrame
+from anomalib.data.datasets.video.ucsd_ped import UCSDpedDataset
 from anomalib.data.utils import DownloadInfo, Split, ValSplitMode, download_and_extract
 
 logger = logging.getLogger(__name__)

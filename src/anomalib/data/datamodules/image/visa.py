@@ -31,8 +31,8 @@ import cv2
 from torchvision.transforms.v2 import Transform
 
 from anomalib import TaskType
-from anomalib.data.datamodules.base import AnomalibDataModule
-from anomalib.data.datasets import VisaDataset
+from anomalib.data.datamodules.base.image import AnomalibDataModule
+from anomalib.data.datasets.image.visa import VisaDataset
 from anomalib.data.utils import (
     DownloadInfo,
     Split,

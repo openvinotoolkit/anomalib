@@ -25,8 +25,8 @@ from pathlib import Path
 from torchvision.transforms.v2 import Transform
 
 from anomalib import TaskType
-from anomalib.data.datamodules.base import AnomalibDataModule
-from anomalib.data.datasets import MVTec3DDataset
+from anomalib.data.datamodules.base.image import AnomalibDataModule
+from anomalib.data.datasets.depth.mvtec_3d import MVTec3DDataset
 from anomalib.data.utils import (
     DownloadInfo,
     Split,

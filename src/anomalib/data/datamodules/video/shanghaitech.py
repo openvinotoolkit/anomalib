@@ -23,9 +23,9 @@ from shutil import move
 from torchvision.transforms.v2 import Transform
 
 from anomalib import TaskType
-from anomalib.data.datamodules.base import AnomalibVideoDataModule
-from anomalib.data.datasets import ShanghaiTechDataset
+from anomalib.data.datamodules.base.video import AnomalibVideoDataModule
 from anomalib.data.datasets.base.video import VideoTargetFrame
+from anomalib.data.datasets.video.shanghaitech import ShanghaiTechDataset
 from anomalib.data.utils import (
     DownloadInfo,
     Split,
