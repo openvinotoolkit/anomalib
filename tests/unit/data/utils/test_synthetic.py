@@ -9,7 +9,7 @@ from pathlib import Path
 import pytest
 
 from anomalib import TaskType
-from anomalib.data.image.folder import FolderDataset
+from anomalib.data.datamodules.image.folder import FolderDataset
 from anomalib.data.utils.synthetic import SyntheticAnomalyDataset
 
 
