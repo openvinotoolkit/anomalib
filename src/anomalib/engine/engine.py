@@ -23,6 +23,7 @@ from anomalib.callbacks.timer import TimerCallback
 from anomalib.callbacks.visualizer import _VisualizationCallback
 from anomalib.data import AnomalibDataModule, AnomalibDataset, PredictDataset
 from anomalib.deploy import CompressionType, ExportType
+from anomalib.metrics import AnomalibMetricCollection, AUROC, F1Max
 from anomalib.models import AnomalyModule
 from anomalib.utils.path import create_versioned_dir
 from anomalib.utils.visualization import ImageVisualizer
@@ -138,12 +139,15 @@ class Engine:
         )
 
         self.task = TaskType(task)
-        self.image_metric_names = image_metrics if image_metrics else ["AUROC", "F1Max"]
+        # self.image_metric_names = image_metrics if image_metrics else ["AUROC", "F1Max"]
+        image_metrics = AnomalibMetricCollection(["pred_score", "gt_label"], [AUROC(), F1Max()], prefix="image_")
+        pixel_metrics = AnomalibMetricCollection(["anomaly_map", "gt_mask"], [AUROC(), F1Max()], prefix="pixel_")
+        self.metrics = [image_metrics, pixel_metrics]
 
         # pixel metrics are only used for segmentation tasks.
-        self.pixel_metric_names = None
-        if self.task == TaskType.SEGMENTATION:
-            self.pixel_metric_names = pixel_metrics if pixel_metrics is not None else ["AUROC", "F1Max"]
+        # self.pixel_metric_names = None
+        # if self.task == TaskType.SEGMENTATION:
+        #     self.pixel_metric_names = pixel_metrics if pixel_metrics is not None else ["AUROC", "F1Max"]
 
         self._trainer: Trainer | None = None
 
@@ -376,7 +380,7 @@ class Engine:
             _callbacks.append(model.post_processor)
 
         # Add the metrics callback.
-        _callbacks.append(_MetricsCallback(self.task, self.image_metric_names, self.pixel_metric_names))
+        _callbacks.append(_MetricsCallback(self.metrics))
 
         _callbacks.append(
             _VisualizationCallback(

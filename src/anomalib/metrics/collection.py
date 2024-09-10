@@ -4,15 +4,18 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from torchmetrics import MetricCollection
+from typing import Sequence
+from anomalib.data import Batch
 
 
 class AnomalibMetricCollection(MetricCollection):
     """Extends the MetricCollection class for use in the Anomalib pipeline."""
 
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, batch_keys: Sequence[str], *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self._update_called = False
         self._threshold = 0.5
+        self.batch_keys = batch_keys
 
     def set_threshold(self, threshold_value: float) -> None:
         """Update the threshold value for all metrics that have the threshold attribute."""
@@ -25,6 +28,10 @@ class AnomalibMetricCollection(MetricCollection):
         """Add data to the metrics."""
         super().update(*args, **kwargs)
         self._update_called = True
+
+    def update_from_batch(self, batch: Batch):
+        values = [getattr(batch, key) for key in self.batch_keys]
+        self.update(*values)
 
     @property
     def update_called(self) -> bool:

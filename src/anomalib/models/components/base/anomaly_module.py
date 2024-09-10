@@ -48,8 +48,8 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
         self.loss: nn.Module
         self.callbacks: list[Callback]
 
-        self.image_metrics: AnomalibMetricCollection
-        self.pixel_metrics: AnomalibMetricCollection
+        # self.image_metrics: AnomalibMetricCollection
+        # self.pixel_metrics: AnomalibMetricCollection
 
         self.post_processor = post_processor or self.default_post_processor()
 

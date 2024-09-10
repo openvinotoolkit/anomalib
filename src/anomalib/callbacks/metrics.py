@@ -9,6 +9,7 @@ from enum import Enum
 from typing import Any
 
 import torch
+from torchmetrics import Metric, MetricCollection
 from lightning.pytorch import Callback, Trainer
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 
@@ -16,6 +17,7 @@ from anomalib import TaskType
 from anomalib.data import Batch
 from anomalib.metrics import AnomalibMetricCollection, create_metric_collection
 from anomalib.models import AnomalyModule
+from torch.nn import ModuleList
 
 logger = logging.getLogger(__name__)
 
@@ -44,67 +46,17 @@ class _MetricsCallback(Callback):
 
     def __init__(
         self,
-        task: TaskType | str = TaskType.SEGMENTATION,
-        image_metrics: list[str] | str | dict[str, dict[str, Any]] | None = None,
-        pixel_metrics: list[str] | str | dict[str, dict[str, Any]] | None = None,
-        device: Device = Device.CPU,
+        metrics: list[AnomalibMetricCollection],
+        compute_on_cpu = True,
     ) -> None:
         super().__init__()
-        self.task = TaskType(task)
-        self.image_metric_names = image_metrics
-        self.pixel_metric_names = pixel_metrics
-        self.device = device
+        if compute_on_cpu:
+            self.metrics_to_cpu(metrics)
+        self.metrics = metrics
 
-    def setup(
-        self,
-        trainer: Trainer,
-        pl_module: AnomalyModule,
-        stage: str | None = None,
-    ) -> None:
-        """Set image and pixel-level AnomalibMetricsCollection within Anomalib Model.
-
-        Args:
-            trainer (pl.Trainer): PyTorch Lightning Trainer
-            pl_module (AnomalyModule): Anomalib Model that inherits pl LightningModule.
-            stage (str | None, optional): fit, validate, test or predict. Defaults to None.
-        """
-        del trainer, stage  # These variables are not used.
-
-        image_metric_names = [] if self.image_metric_names is None else self.image_metric_names
-        if isinstance(image_metric_names, str):
-            image_metric_names = [image_metric_names]
-
-        pixel_metric_names: list[str] | dict[str, dict[str, Any]]
-        if self.pixel_metric_names is None:
-            pixel_metric_names = []
-        elif self.task == TaskType.CLASSIFICATION:
-            pixel_metric_names = []
-            logger.warning(
-                "Cannot perform pixel-level evaluation when task type is classification. "
-                "Ignoring the following pixel-level metrics: %s",
-                self.pixel_metric_names,
-            )
-        else:
-            pixel_metric_names = (
-                self.pixel_metric_names if not isinstance(self.pixel_metric_names, str) else [self.pixel_metric_names]
-            )
-
-        if isinstance(pl_module, AnomalyModule):
-            pl_module.image_metrics = create_metric_collection(image_metric_names, "image_")
-            if hasattr(pl_module, "pixel_metrics"):  # incase metrics are loaded from model checkpoint
-                new_metrics = create_metric_collection(pixel_metric_names)
-                for name in new_metrics:
-                    if name not in pl_module.pixel_metrics:
-                        pl_module.pixel_metrics.add_metrics(new_metrics[name])
-            else:
-                pl_module.pixel_metrics = create_metric_collection(pixel_metric_names, "pixel_")
-
-    @staticmethod
-    def on_validation_epoch_start(trainer: Trainer, pl_module: AnomalyModule) -> None:
-        del trainer  # Unused argument.
-
-        pl_module.image_metrics.reset()
-        pl_module.pixel_metrics.reset()
+    def setup(self, trainer: Trainer, pl_module: AnomalyModule, stage: str) -> None:
+        del trainer, stage
+        pl_module.metrics = ModuleList(self.metrics)
 
     def on_validation_batch_end(
         self,
@@ -115,23 +67,18 @@ class _MetricsCallback(Callback):
         batch_idx: int,
         dataloader_idx: int = 0,
     ) -> None:
-        del trainer, batch, batch_idx, dataloader_idx  # Unused arguments.
+        del trainer, outputs, batch_idx, dataloader_idx, pl_module  # Unused arguments.
+        for metric in self.metrics:
+            metric.update_from_batch(batch)
 
-        if outputs is not None:
-            outputs = self._outputs_to_device(outputs)
-            self._update_metrics(pl_module.image_metrics, pl_module.pixel_metrics, outputs)
-
-    def on_validation_epoch_end(self, trainer: Trainer, pl_module: AnomalyModule) -> None:
-        del trainer  # Unused argument.
-
-        self._log_metrics(pl_module)
-
-    @staticmethod
-    def on_test_epoch_start(trainer: Trainer, pl_module: AnomalyModule) -> None:
-        del trainer  # Unused argument.
-
-        pl_module.image_metrics.reset()
-        pl_module.pixel_metrics.reset()
+    def on_validation_epoch_end(
+        self,
+        trainer: Trainer,
+        pl_module: AnomalyModule,
+    ) -> None:
+        del trainer, pl_module  # Unused argument.
+        for metric_collection in self.metrics:
+            self.log_dict(metric_collection, prog_bar=True)
 
     def on_test_batch_end(
         self,
@@ -142,44 +89,23 @@ class _MetricsCallback(Callback):
         batch_idx: int,
         dataloader_idx: int = 0,
     ) -> None:
-        del trainer, batch, batch_idx, dataloader_idx  # Unused arguments.
+        del trainer, outputs, batch_idx, dataloader_idx, pl_module  # Unused arguments.
+        for metric in self.metrics:
+            metric.update_from_batch(batch)
 
-        if outputs is not None:
-            outputs = self._outputs_to_device(outputs)
-            self._update_metrics(pl_module.image_metrics, pl_module.pixel_metrics, outputs)
-
-    def on_test_epoch_end(self, trainer: Trainer, pl_module: AnomalyModule) -> None:
-        del trainer  # Unused argument.
-
-        self._log_metrics(pl_module)
-
-    def _update_metrics(
+    def on_test_epoch_end(
         self,
-        image_metric: AnomalibMetricCollection,
-        pixel_metric: AnomalibMetricCollection,
-        output: STEP_OUTPUT,
+        trainer: Trainer,
+        pl_module: AnomalyModule,
     ) -> None:
-        image_metric.to(self.device)
-        image_metric.update(output.pred_score, output.gt_label.int())
-        if output.gt_mask is not None and output.anomaly_map is not None:
-            pixel_metric.to(self.device)
-            pixel_metric.update(torch.squeeze(output.anomaly_map), torch.squeeze(output.gt_mask.int()))
+        del trainer, pl_module  # Unused argument.
+        for metric_collection in self.metrics:
+            self.log_dict(metric_collection, prog_bar=True)
 
-    def _outputs_to_device(self, output: STEP_OUTPUT) -> STEP_OUTPUT | dict[str, Any]:
-        if isinstance(output, dict):
-            for key, value in output.items():
-                output[key] = self._outputs_to_device(value)
-        elif isinstance(output, Batch):
-            output = output.__class__(**self._outputs_to_device(asdict(output)))
-        elif isinstance(output, torch.Tensor):
-            output = output.to(self.device)
-        return output
-
-    @staticmethod
-    def _log_metrics(pl_module: AnomalyModule) -> None:
-        """Log computed performance metrics."""
-        if pl_module.pixel_metrics._update_called:  # noqa: SLF001
-            pl_module.log_dict(pl_module.pixel_metrics, prog_bar=True)
-            pl_module.log_dict(pl_module.image_metrics, prog_bar=False)
+    def metrics_to_cpu(self, metrics: Metric | MetricCollection | list[MetricCollection]) -> None:
+        if isinstance(metrics, Metric):
+            metrics.compute_on_cpu = True
         else:
-            pl_module.log_dict(pl_module.image_metrics, prog_bar=True)
+            metrics = metrics if isinstance(metrics, list) else metrics.values()
+            for metric in metrics:
+                self.metrics_to_cpu(metric)
