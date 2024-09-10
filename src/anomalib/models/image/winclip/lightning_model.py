@@ -16,8 +16,8 @@ from torch.utils.data import DataLoader
 from torchvision.transforms.v2 import Compose, InterpolationMode, Normalize, Resize, Transform
 
 from anomalib import LearningType
+from anomalib.data import Batch
 from anomalib.data.predict import PredictDataset
-from anomalib.dataclasses import Batch
 from anomalib.models.components import AnomalyModule
 from anomalib.post_processing import OneClassPostProcessor
 

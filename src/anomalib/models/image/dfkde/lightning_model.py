@@ -11,7 +11,7 @@ import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 
 from anomalib import LearningType
-from anomalib.dataclasses import Batch
+from anomalib.data import Batch
 from anomalib.models.components import AnomalyModule, MemoryBankMixin
 from anomalib.models.components.classification import FeatureScalingMethod
 

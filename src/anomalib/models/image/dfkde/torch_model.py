@@ -10,7 +10,7 @@ import torch
 from torch import nn
 from torch.nn import functional as F  # noqa: N812
 
-from anomalib.dataclasses import InferenceBatch
+from anomalib.data import InferenceBatch
 from anomalib.models.components import TimmFeatureExtractor
 from anomalib.models.components.classification import FeatureScalingMethod, KDEClassifier
 

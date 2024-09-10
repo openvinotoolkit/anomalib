@@ -9,7 +9,7 @@ Paper https://arxiv.org/pdf/2212.00789.pdf
 import torch
 from torch import nn
 
-from anomalib.dataclasses import InferenceBatch
+from anomalib.data import InferenceBatch
 
 from .density import CombinedDensityEstimator
 from .features import FeatureExtractor

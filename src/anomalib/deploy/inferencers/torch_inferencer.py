@@ -8,8 +8,8 @@ from pathlib import Path
 import torch
 from torch import nn
 
+from anomalib.data import ImageBatch
 from anomalib.data.utils import read_image
-from anomalib.dataclasses import ImageBatch
 
 
 class TorchInferencer:

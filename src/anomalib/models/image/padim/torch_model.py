@@ -10,7 +10,7 @@ import torch
 from torch import nn
 from torch.nn import functional as F  # noqa: N812
 
-from anomalib.dataclasses import InferenceBatch
+from anomalib.data import InferenceBatch
 from anomalib.models.components import MultiVariateGaussian, TimmFeatureExtractor
 from anomalib.models.components.feature_extractors import dryrun_find_featuremap_dims
 

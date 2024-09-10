@@ -12,10 +12,31 @@ from omegaconf import DictConfig, ListConfig
 
 from anomalib.utils.config import to_tuple
 
+# Dataclasses
+from .dataclasses import (
+    Batch,
+    DatasetItem,
+    DepthBatch,
+    DepthItem,
+    ImageBatch,
+    ImageItem,
+    InferenceBatch,
+    NumpyImageBatch,
+    NumpyImageItem,
+    NumpyVideoBatch,
+    NumpyVideoItem,
+    VideoBatch,
+    VideoItem,
+)
+
+# Datamodules
 from .datamodules.base import AnomalibDataModule
 from .datamodules.depth import DepthDataFormat, Folder3D, MVTec3D
 from .datamodules.image import BTech, Folder, ImageDataFormat, Kolektor, MVTec, Visa
 from .datamodules.video import Avenue, ShanghaiTech, UCSDped, VideoDataFormat
+
+# Datasets
+from .datasets import AnomalibDataset
 from .predict import PredictDataset
 from .utils import LabelName
 
@@ -63,6 +84,24 @@ def get_datamodule(config: DictConfig | ListConfig | dict) -> AnomalibDataModule
 
 
 __all__ = [
+    # Anomalib dataclasses
+    "DatasetItem",
+    "Batch",
+    "InferenceBatch",
+    "ImageItem",
+    "ImageBatch",
+    "VideoItem",
+    "VideoBatch",
+    "DepthItem",
+    "DepthBatch",
+    "NumpyImageItem",
+    "NumpyImageBatch",
+    "NumpyVideoItem",
+    "NumpyVideoBatch",
+    # Anomalib datasets
+    "AnomalibDataset",
+    "PredictDataset",
+    # Anomalib datamodules
     "AnomalibDataModule",
     "DepthDataFormat",
     "ImageDataFormat",
@@ -71,7 +110,6 @@ __all__ = [
     "BTech",
     "Folder",
     "Folder3D",
-    "PredictDataset",
     "Kolektor",
     "MVTec",
     "MVTec3D",

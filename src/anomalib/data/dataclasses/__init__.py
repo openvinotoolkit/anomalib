@@ -53,6 +53,12 @@ from .torch import (
 )
 
 __all__ = [
+    # Numpy
+    "NumpyImageItem",
+    "NumpyImageBatch",
+    "NumpyVideoItem",
+    "NumpyVideoBatch",
+    # Torch
     "DatasetItem",
     "Batch",
     "InferenceBatch",
@@ -60,10 +66,6 @@ __all__ = [
     "ImageBatch",
     "VideoItem",
     "VideoBatch",
-    "NumpyImageItem",
-    "NumpyImageBatch",
-    "NumpyVideoItem",
-    "NumpyVideoBatch",
     "DepthItem",
     "DepthBatch",
 ]

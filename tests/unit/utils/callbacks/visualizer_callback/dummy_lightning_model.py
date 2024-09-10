@@ -10,7 +10,7 @@ import torch
 from torch import nn
 
 from anomalib import LearningType
-from anomalib.dataclasses import ImageBatch, InferenceBatch
+from anomalib.data import ImageBatch, InferenceBatch
 from anomalib.models.components import AnomalyModule
 from anomalib.post_processing import PostProcessor
 

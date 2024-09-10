@@ -11,8 +11,8 @@ from typing import TYPE_CHECKING, Any
 import numpy as np
 from openvino.runtime.utils.data_helpers.wrappers import OVDict
 
+from anomalib.data import NumpyImageBatch
 from anomalib.data.utils import read_image
-from anomalib.dataclasses import NumpyImageBatch
 
 logger = logging.getLogger("anomalib")
 

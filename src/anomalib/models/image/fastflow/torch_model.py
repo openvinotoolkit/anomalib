@@ -18,7 +18,7 @@ from timm.models.cait import Cait
 from timm.models.vision_transformer import VisionTransformer
 from torch import nn
 
-from anomalib.dataclasses import InferenceBatch
+from anomalib.data import InferenceBatch
 from anomalib.models.components.flow import AllInOneBlock
 
 from .anomaly_map import AnomalyMapGenerator

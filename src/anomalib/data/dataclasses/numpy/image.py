@@ -1,18 +1,4 @@
-"""Numpy-based dataclasses for Anomalib.
-
-This module provides numpy-based implementations of the generic dataclasses
-used in Anomalib. These classes are designed to work with numpy arrays for
-efficient data handling and processing in anomaly detection tasks.
-
-The module includes the following main classes:
-
-- NumpyItem: Represents a single item in Anomalib datasets using numpy arrays.
-- NumpyBatch: Represents a batch of items in Anomalib datasets using numpy arrays.
-- NumpyImageItem: Represents a single image item with additional image-specific fields.
-- NumpyImageBatch: Represents a batch of image items with batch operations.
-- NumpyVideoItem: Represents a single video item with video-specific fields.
-- NumpyVideoBatch: Represents a batch of video items with video-specific operations.
-"""
+"""Numpy-based image dataclasses for Anomalib."""
 
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -21,28 +7,8 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from .generic import BatchIterateMixin, _GenericBatch, _GenericItem, _ImageInputFields, _VideoInputFields
-
-
-@dataclass
-class NumpyItem(_GenericItem[np.ndarray, np.ndarray, np.ndarray, str]):
-    """Dataclass for a single item in Anomalib datasets using numpy arrays.
-
-    This class extends _GenericItem for numpy-based data representation. It includes
-    both input data (e.g., images, labels) and output data (e.g., predictions,
-    anomaly maps) as numpy arrays. It is suitable for numpy-based processing
-    pipelines in Anomalib.
-    """
-
-
-@dataclass
-class NumpyBatch(_GenericBatch[np.ndarray, np.ndarray, np.ndarray, list[str]]):
-    """Dataclass for a batch of items in Anomalib datasets using numpy arrays.
-
-    This class extends _GenericBatch for batches of numpy-based data. It represents
-    multiple data points for batch processing in anomaly detection tasks. It includes
-    an additional dimension for batch size in all tensor-like fields.
-    """
+from anomalib.data.generic import BatchIterateMixin, _ImageInputFields
+from anomalib.data.numpy.base import NumpyBatch, NumpyItem
 
 
 @dataclass
@@ -175,56 +141,3 @@ class NumpyImageBatch(BatchIterateMixin[NumpyImageItem], _ImageInputFields[list[
 
     def _validate_image_path(self, image_path: list[str]) -> list[str]:
         return image_path
-
-
-@dataclass
-class NumpyVideoItem(_VideoInputFields[np.ndarray, np.ndarray, np.ndarray, str], NumpyItem):
-    """Dataclass for a single video item in Anomalib datasets using numpy arrays.
-
-    This class combines _VideoInputFields and NumpyItem for video-based anomaly detection.
-    It includes video-specific fields and validation methods to ensure proper formatting
-    for Anomalib's video-based models.
-    """
-
-    def _validate_image(self, image: np.ndarray) -> np.ndarray:
-        return image
-
-    def _validate_gt_label(self, gt_label: np.ndarray) -> np.ndarray:
-        return gt_label
-
-    def _validate_gt_mask(self, gt_mask: np.ndarray) -> np.ndarray:
-        return gt_mask
-
-    def _validate_mask_path(self, mask_path: str) -> str:
-        return mask_path
-
-
-@dataclass
-class NumpyVideoBatch(
-    BatchIterateMixin[NumpyVideoItem],
-    _VideoInputFields[np.ndarray, np.ndarray, np.ndarray, list[str]],
-    NumpyBatch,
-):
-    """Dataclass for a batch of video items in Anomalib datasets using numpy arrays.
-
-    This class combines BatchIterateMixin, _VideoInputFields, and NumpyBatch for batches
-    of video data. It supports batch operations and iteration over individual NumpyVideoItems.
-    It ensures proper formatting for Anomalib's video-based models.
-    """
-
-    item_class = NumpyVideoItem
-
-    def _validate_image(self, image: np.ndarray) -> np.ndarray:
-        return image
-
-    def _validate_gt_label(self, gt_label: np.ndarray) -> np.ndarray:
-        return gt_label
-
-    def _validate_gt_mask(self, gt_mask: np.ndarray) -> np.ndarray:
-        return gt_mask
-
-    def _validate_mask_path(self, mask_path: list[str]) -> list[str]:
-        return mask_path
-
-    def _validate_anomaly_map(self, anomaly_map: np.ndarray) -> np.ndarray:
-        return anomaly_map

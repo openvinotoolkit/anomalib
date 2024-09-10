@@ -16,7 +16,7 @@ import torch
 import torch.nn.functional as F  # noqa: N812
 from torch import nn
 
-from anomalib.dataclasses import InferenceBatch
+from anomalib.data import InferenceBatch
 
 
 class DsrModel(nn.Module):
