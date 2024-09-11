@@ -18,8 +18,8 @@ from torchvision.datasets import ImageFolder
 from torchvision.transforms.v2 import CenterCrop, Compose, Normalize, RandomGrayscale, Resize, ToTensor, Transform
 
 from anomalib import LearningType
+from anomalib.data import Batch
 from anomalib.data.utils import DownloadInfo, download_and_extract
-from anomalib.dataclasses import Batch
 from anomalib.models.components import AnomalyModule
 
 from .torch_model import EfficientAdModel, EfficientAdModelSize, reduce_tensor_elems

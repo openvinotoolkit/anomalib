@@ -14,8 +14,8 @@ import math
 import torch
 from torch import nn
 
+from anomalib.data import InferenceBatch
 from anomalib.data.utils.image import pad_nextpow2
-from anomalib.dataclasses import InferenceBatch
 
 
 class Encoder(nn.Module):

@@ -6,7 +6,7 @@
 import torch
 from lightning import LightningModule, Trainer
 
-from anomalib.dataclasses import Batch, InferenceBatch
+from anomalib.data import Batch, InferenceBatch
 from anomalib.metrics import F1AdaptiveThreshold, MinMax
 
 from .base import PostProcessor

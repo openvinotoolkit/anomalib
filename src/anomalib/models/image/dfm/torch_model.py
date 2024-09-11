@@ -9,7 +9,7 @@ import torch
 from torch import nn
 from torch.nn import functional as F  # noqa: N812
 
-from anomalib.dataclasses import InferenceBatch
+from anomalib.data import InferenceBatch
 from anomalib.models.components import PCA, DynamicBufferMixin, TimmFeatureExtractor
 
 

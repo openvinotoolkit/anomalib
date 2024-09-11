@@ -19,7 +19,7 @@ from torch import nn
 from torchvision.transforms.v2 import Compose, Normalize, Resize, Transform
 
 from anomalib import LearningType
-from anomalib.dataclasses import Batch, InferenceBatch
+from anomalib.data import Batch, InferenceBatch
 from anomalib.metrics.threshold import Threshold
 from anomalib.post_processing import OneClassPostProcessor, PostProcessor
 

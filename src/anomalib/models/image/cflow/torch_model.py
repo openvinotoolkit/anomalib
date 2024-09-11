@@ -9,7 +9,7 @@ import einops
 import torch
 from torch import nn
 
-from anomalib.dataclasses import InferenceBatch
+from anomalib.data import InferenceBatch
 from anomalib.models.components import TimmFeatureExtractor
 
 from .anomaly_map import AnomalyMapGenerator

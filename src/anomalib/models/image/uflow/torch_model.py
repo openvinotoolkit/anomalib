@@ -8,7 +8,7 @@ from FrEIA import framework as ff
 from FrEIA import modules as fm
 from torch import nn
 
-from anomalib.dataclasses import InferenceBatch
+from anomalib.data import InferenceBatch
 from anomalib.models.components.flow import AllInOneBlock
 
 from .anomaly_map import AnomalyMapGenerator
