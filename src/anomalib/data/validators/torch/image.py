@@ -17,45 +17,37 @@ class ImageValidator:
     """Validate torch.Tensor data for images."""
 
     @staticmethod
-    def validate_image(image: torch.Tensor) -> Image:
-        """Validate and convert the input image tensor.
+    def validate_image(image: torch.Tensor) -> torch.Tensor:
+        """Validate the image tensor.
 
         Args:
             image (torch.Tensor): Input image tensor.
 
         Returns:
-            Image: Validated and converted image.
+            torch.Tensor: Validated image tensor.
 
         Raises:
             TypeError: If the input is not a torch.Tensor.
-            ValueError: If the image shape or number of channels is invalid.
+            ValueError: If the image tensor does not have the correct shape.
 
         Examples:
             >>> import torch
-            >>> from anomalib.dataclasses.validators import ImageValidator
-            >>> tensor = torch.rand(3, 224, 224)
-            >>> validated_image = ImageValidator.validate_image(tensor)
-            >>> isinstance(validated_image, Image)
-            True
+            >>> from anomalib.data.validators import ImageValidator
+            >>> image = torch.rand(3, 256, 256)
+            >>> validated_image = ImageValidator.validate_image(image)
             >>> validated_image.shape
-            torch.Size([1, 3, 224, 224])
+            torch.Size([3, 256, 256])
         """
         if not isinstance(image, torch.Tensor):
             msg = f"Image must be a torch.Tensor, got {type(image)}."
             raise TypeError(msg)
-
-        if image.ndim not in {3, 4}:
-            msg = f"Image must have shape [C, H, W] or [N, C, H, W], got shape {image.shape}."
+        if image.ndim != 3:
+            msg = f"Image must have shape [C, H, W], got shape {image.shape}."
             raise ValueError(msg)
-
-        if image.ndim == 3:
-            image = image.unsqueeze(0)  # add batch dimension
-
-        if image.shape[1] not in {1, 3, 4}:
-            msg = f"Invalid number of channels: {image.shape[1]}. Expected 1, 3, or 4."
+        if image.shape[0] != 3:
+            msg = f"Image must have 3 channels, got {image.shape[0]}."
             raise ValueError(msg)
-
-        return Image(to_dtype_image(image, dtype=torch.float32, scale=True))
+        return to_dtype_image(image, torch.float32, scale=True)
 
     @staticmethod
     def validate_gt_label(label: int | torch.Tensor | None) -> torch.Tensor | None:
@@ -86,17 +78,17 @@ class ImageValidator:
         if label is None:
             return None
         if isinstance(label, int):
-            return torch.tensor(label, dtype=torch.bool)
-        if isinstance(label, torch.Tensor):
-            if label.ndim != 0:
-                msg = f"Ground truth label must be a scalar, got shape {label.shape}."
-                raise ValueError(msg)
-            if torch.is_floating_point(label):
-                msg = f"Ground truth label must be boolean or integer, got {label.dtype}."
-                raise ValueError(msg)
-            return label.bool()
-        msg = f"Ground truth label must be an integer or a torch.Tensor, got {type(label)}."
-        raise TypeError(msg)
+            label = torch.tensor(label)
+        if not isinstance(label, torch.Tensor):
+            msg = f"Ground truth label must be an integer or a torch.Tensor, got {type(label)}."
+            raise TypeError(msg)
+        if label.ndim != 0:
+            msg = f"Ground truth label must be a scalar, got shape {label.shape}."
+            raise ValueError(msg)
+        if torch.is_floating_point(label):
+            msg = f"Ground truth label must be boolean or integer, got {label.dtype}."
+            raise TypeError(msg)
+        return label.bool()
 
     @staticmethod
     def validate_gt_mask(mask: torch.Tensor | None) -> Mask | None:
@@ -125,14 +117,14 @@ class ImageValidator:
         if mask is None:
             return None
         if not isinstance(mask, torch.Tensor):
-            msg = f"Ground truth mask must be a torch.Tensor, got {type(mask)}."
+            msg = f"Mask must be a torch.Tensor, got {type(mask)}."
             raise TypeError(msg)
         if mask.ndim not in {2, 3}:
-            msg = f"Ground truth mask must have shape [H, W] or [1, H, W], got shape {mask.shape}."
+            msg = f"Mask must have shape [H, W] or [1, H, W] got shape {mask.shape}."
             raise ValueError(msg)
         if mask.ndim == 3:
             if mask.shape[0] != 1:
-                msg = f"Ground truth mask must have 1 channel, got {mask.shape[0]}."
+                msg = f"Mask must have 1 channel, got {mask.shape[0]}."
                 raise ValueError(msg)
             mask = mask.squeeze(0)
         return Mask(mask, dtype=torch.bool)
@@ -171,10 +163,11 @@ class ImageValidator:
             raise ValueError(msg)
         if anomaly_map.ndim == 3:
             if anomaly_map.shape[0] != 1:
-                msg = f"Anomaly map must have 1 channel, got {anomaly_map.shape[0]}."
+                msg = f"Anomaly map with 3 dimensions must have 1 channel, got {anomaly_map.shape[0]}."
                 raise ValueError(msg)
             anomaly_map = anomaly_map.squeeze(0)
-        return Mask(anomaly_map)
+
+        return Mask(anomaly_map, dtype=torch.float32)
 
     @staticmethod
     def validate_image_path(image_path: str | None) -> str | None:
@@ -215,11 +208,15 @@ class ImageValidator:
         return validate_path(mask_path) if mask_path else None
 
     @staticmethod
-    def validate_pred_score(pred_score: torch.Tensor | float | None) -> torch.Tensor | None:
+    def validate_pred_score(
+        pred_score: torch.Tensor | float | None,
+        anomaly_map: torch.Tensor | None = None,
+    ) -> torch.Tensor | None:
         """Validate the prediction score.
 
         Args:
             pred_score (torch.Tensor | float | None): Input prediction score.
+            anomaly_map (torch.Tensor | None): Input anomaly map.
 
         Returns:
             torch.Tensor | None: Validated prediction score as a float32 tensor, or None.
@@ -244,16 +241,19 @@ class ImageValidator:
             True
         """
         if pred_score is None:
-            return None
-        if isinstance(pred_score, float):
-            pred_score = torch.tensor(pred_score)
+            return torch.amax(anomaly_map, dim=(-2, -1)) if anomaly_map else None
+
         if not isinstance(pred_score, torch.Tensor):
-            msg = f"Prediction score must be a torch.Tensor, float, or None, got {type(pred_score)}."
-            raise TypeError(msg)
+            try:
+                pred_score = torch.tensor(pred_score)
+            except Exception as e:
+                msg = "Failed to convert pred_score to a torch.Tensor."
+                raise ValueError(msg) from e
         pred_score = pred_score.squeeze()
         if pred_score.ndim != 0:
-            msg = f"Prediction score must be a scalar, got shape {pred_score.shape}."
+            msg = f"Predicted score must be a scalar, got shape {pred_score.shape}."
             raise ValueError(msg)
+
         return pred_score.to(torch.float32)
 
     @staticmethod
@@ -265,6 +265,7 @@ class ImageValidator:
 
         Returns:
             Mask | None: Validated prediction mask, or None.
+
 
         Examples:
             >>> import torch
@@ -303,8 +304,11 @@ class ImageValidator:
         if pred_label is None:
             return None
         if not isinstance(pred_label, torch.Tensor):
-            msg = f"Predicted label must be a torch.Tensor, got {type(pred_label)}."
-            raise TypeError(msg)
+            try:
+                pred_label = torch.tensor(pred_label)
+            except Exception as e:
+                msg = "Failed to convert pred_score to a torch.Tensor."
+                raise ValueError(msg) from e
         pred_label = pred_label.squeeze()
         if pred_label.ndim != 0:
             msg = f"Predicted label must be a scalar, got shape {pred_label.shape}."

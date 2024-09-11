@@ -13,12 +13,12 @@ from dataclasses import dataclass
 
 import numpy as np
 import torch
-from torchvision.transforms.v2.functional import to_dtype_image
 from torchvision.tv_tensors import Image, Mask
 
 from anomalib.data.dataclasses.generic import BatchIterateMixin, _ImageInputFields
 from anomalib.data.dataclasses.numpy.image import NumpyImageBatch, NumpyImageItem
 from anomalib.data.dataclasses.torch.base import Batch, DatasetItem, ToNumpyMixin
+from anomalib.data.validators.torch.image import ImageValidator
 
 
 @dataclass
@@ -61,101 +61,32 @@ class ImageItem(
 
     numpy_class = NumpyImageItem
 
-    def _validate_image(self, image: torch.Tensor) -> Image:
-        assert isinstance(image, torch.Tensor), f"Image must be a torch.Tensor, got {type(image)}."
-        assert image.ndim == 3, f"Image must have shape [C, H, W], got shape {image.shape}."
-        assert image.shape[0] == 3, f"Image must have 3 channels, got {image.shape[0]}."
-        return to_dtype_image(image, torch.float32, scale=True)
+    def _validate_image(self, image: torch.Tensor) -> torch.Tensor:
+        return ImageValidator.validate_image(image)
 
-    def _validate_gt_label(self, gt_label: torch.Tensor | int | None) -> torch.Tensor:
-        if gt_label is None:
-            return None
-        if isinstance(gt_label, int):
-            gt_label = torch.tensor(gt_label)
-        assert isinstance(
-            gt_label,
-            torch.Tensor,
-        ), f"Ground truth label must be an integer or a torch.Tensor, got {type(gt_label)}."
-        assert gt_label.ndim == 0, f"Ground truth label must be a scalar, got shape {gt_label.shape}."
-        assert not torch.is_floating_point(gt_label), f"Ground truth label must be boolean or integer, got {gt_label}."
-        return gt_label.bool()
+    def _validate_gt_label(self, gt_label: torch.Tensor | int | None) -> torch.Tensor | None:
+        return ImageValidator.validate_gt_label(gt_label)
 
     def _validate_gt_mask(self, gt_mask: torch.Tensor | None) -> Mask | None:
-        if gt_mask is None:
-            return None
-        assert isinstance(gt_mask, torch.Tensor), f"Ground truth mask must be a torch.Tensor, got {type(gt_mask)}."
-        assert gt_mask.ndim in {
-            2,
-            3,
-        }, f"Ground truth mask must have shape [H, W] or [1, H, W] got shape {gt_mask.shape}."
-        if gt_mask.ndim == 3:
-            assert gt_mask.shape[0] == 1, f"Ground truth mask must have 1 channel, got {gt_mask.shape[0]}."
-            gt_mask = gt_mask.squeeze(0)
-        return Mask(gt_mask, dtype=torch.bool)
+        return ImageValidator.validate_gt_mask(gt_mask)
 
     def _validate_mask_path(self, mask_path: str | None) -> str | None:
-        if mask_path is None:
-            return None
-        return str(mask_path)
+        return ImageValidator.validate_mask_path(mask_path)
 
     def _validate_anomaly_map(self, anomaly_map: torch.Tensor | None) -> Mask | None:
-        if anomaly_map is None:
-            return None
-        assert isinstance(anomaly_map, torch.Tensor), f"Anomaly map must be a torch.Tensor, got {type(anomaly_map)}."
-        assert anomaly_map.ndim in {
-            2,
-            3,
-        }, f"Anomaly map must have shape [H, W] or [1, H, W], got shape {anomaly_map.shape}."
-        if anomaly_map.ndim == 3:
-            assert (
-                anomaly_map.shape[0] == 1
-            ), f"Anomaly map with 3 dimensions must have 1 channel, got {anomaly_map.shape[0]}."
-            anomaly_map = anomaly_map.squeeze(0)
-        return Mask(anomaly_map, dtype=torch.float32)
+        return ImageValidator.validate_anomaly_map(anomaly_map)
 
     def _validate_pred_score(self, pred_score: torch.Tensor | np.ndarray | None) -> torch.Tensor | None:
-        if pred_score is None:
-            return torch.amax(self.anomaly_map, dim=(-2, -1)) if self.anomaly_map is not None else None
-        if not isinstance(pred_score, torch.Tensor):
-            try:
-                pred_score = torch.tensor(pred_score)
-            except Exception as e:
-                msg = "Failed to convert pred_score to a torch.Tensor."
-                raise ValueError(msg) from e
-        pred_score = pred_score.squeeze()
-        assert pred_score.ndim == 0, f"Predicted score must be a scalar, got shape {pred_score.shape}."
-        return pred_score.to(torch.float32)
+        return ImageValidator.validate_pred_score(pred_score, self.anomaly_map)
 
     def _validate_pred_mask(self, pred_mask: torch.Tensor | None) -> Mask | None:
-        if pred_mask is None:
-            return None
-        assert isinstance(pred_mask, torch.Tensor), f"Predicted mask must be a torch.Tensor, got {type(pred_mask)}."
-        assert pred_mask.ndim in {
-            2,
-            3,
-        }, f"Predicted mask must have shape [H, W] or [1, H, W] got shape {pred_mask.shape}."
-        if pred_mask.ndim == 3:
-            assert pred_mask.shape[0] == 1, f"Predicted mask must have 1 channel, got {pred_mask.shape[0]}."
-            pred_mask = pred_mask.squeeze(0)
-        return Mask(pred_mask, dtype=torch.bool)
+        return ImageValidator.validate_pred_mask(pred_mask)
 
     def _validate_pred_label(self, pred_label: torch.Tensor | np.ndarray | None) -> torch.Tensor | None:
-        if pred_label is None:
-            return None
-        if not isinstance(pred_label, torch.Tensor):
-            try:
-                pred_label = torch.tensor(pred_label)
-            except Exception as e:
-                msg = "Failed to convert pred_score to a torch.Tensor."
-                raise ValueError(msg) from e
-        pred_label = pred_label.squeeze()
-        assert pred_label.ndim == 0, f"Predicted label must be a scalar, got shape {pred_label.shape}."
-        return pred_label.to(torch.bool)
+        return ImageValidator.validate_pred_label(pred_label)
 
     def _validate_image_path(self, image_path: str | None) -> str | None:
-        if image_path is None:
-            return None
-        return str(image_path)
+        return ImageValidator.validate_image_path(image_path)
 
 
 @dataclass
