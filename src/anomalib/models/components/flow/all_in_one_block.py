@@ -330,7 +330,8 @@ class AllInOneBlock(InvertibleModule):
 
         return (x_out,), log_jac_det
 
-    def output_dims(self, input_dims: list[tuple[int]]) -> list[tuple[int]]:
+    @staticmethod
+    def output_dims(input_dims: list[tuple[int]]) -> list[tuple[int]]:
         """Output dimensions of the layer.
 
         Args:

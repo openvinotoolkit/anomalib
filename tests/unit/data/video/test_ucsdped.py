@@ -16,12 +16,14 @@ class TestUCSDped(_TestAnomalibVideoDatamodule):
     """UCSDped Datamodule Unit Tests."""
 
     @pytest.fixture()
-    def clip_length_in_frames(self) -> int:
+    @staticmethod
+    def clip_length_in_frames() -> int:
         """Return the number of frames in each clip."""
         return 2
 
     @pytest.fixture()
-    def datamodule(self, dataset_path: Path, task_type: TaskType, clip_length_in_frames: int) -> UCSDped:
+    @staticmethod
+    def datamodule(dataset_path: Path, task_type: TaskType, clip_length_in_frames: int) -> UCSDped:
         """Create and return a UCSDped datamodule."""
         _datamodule = UCSDped(
             root=dataset_path / "ucsdped",
@@ -39,6 +41,7 @@ class TestUCSDped(_TestAnomalibVideoDatamodule):
         return _datamodule
 
     @pytest.fixture()
-    def fxt_data_config_path(self) -> str:
+    @staticmethod
+    def fxt_data_config_path() -> str:
         """Return the path to the test data config."""
         return "configs/data/ucsd_ped.yaml"

@@ -17,7 +17,8 @@ class TestConfigAdapter:
             and comparing it to the expected v1 config.
     """
 
-    def test_config_adapter(self, project_path: Path) -> None:
+    @staticmethod
+    def test_config_adapter(project_path: Path) -> None:
         """Test the ConfigAdapter upgrade_all method.
 
         Test the ConfigAdapter class by upgrading and saving a v0 config to v1,

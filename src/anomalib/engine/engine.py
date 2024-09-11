@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 import torch
-from lightning.pytorch.callbacks import Callback, RichModelSummary, RichProgressBar
+from lightning.pytorch.callbacks import Callback
 from lightning.pytorch.loggers import Logger
 from lightning.pytorch.trainer import Trainer
 from lightning.pytorch.utilities.types import _EVALUATE_OUTPUT, _PREDICT_OUTPUT, EVAL_DATALOADERS, TRAIN_DATALOADERS
@@ -474,7 +474,7 @@ class Engine:
 
     def _setup_anomalib_callbacks(self) -> None:
         """Set up callbacks for the trainer."""
-        _callbacks: list[Callback] = [RichProgressBar(), RichModelSummary()]
+        _callbacks: list[Callback] = []
 
         # Add ModelCheckpoint if it is not in the callbacks list.
         has_checkpoint_callback = any(isinstance(c, ModelCheckpoint) for c in self._cache.args["callbacks"])
@@ -541,7 +541,7 @@ class Engine:
             bool: Whether it is needed to run a validation sequence.
         """
         # validation before predict is only necessary for zero-/few-shot models
-        if model.learning_type not in [LearningType.ZERO_SHOT, LearningType.FEW_SHOT]:
+        if model.learning_type not in {LearningType.ZERO_SHOT, LearningType.FEW_SHOT}:
             return False
         # check if a checkpoint path is provided
         if ckpt_path is not None:
@@ -601,7 +601,7 @@ class Engine:
         self._setup_trainer(model)
         self._setup_dataset_task(train_dataloaders, val_dataloaders, datamodule)
         self._setup_transform(model, datamodule=datamodule, ckpt_path=ckpt_path)
-        if model.learning_type in [LearningType.ZERO_SHOT, LearningType.FEW_SHOT]:
+        if model.learning_type in {LearningType.ZERO_SHOT, LearningType.FEW_SHOT}:
             # if the model is zero-shot or few-shot, we only need to run validate for normalization and thresholding
             self.trainer.validate(model, val_dataloaders, datamodule=datamodule, ckpt_path=ckpt_path)
         else:
@@ -923,7 +923,7 @@ class Engine:
             datamodule,
         )
         self._setup_transform(model, datamodule=datamodule, ckpt_path=ckpt_path)
-        if model.learning_type in [LearningType.ZERO_SHOT, LearningType.FEW_SHOT]:
+        if model.learning_type in {LearningType.ZERO_SHOT, LearningType.FEW_SHOT}:
             # if the model is zero-shot or few-shot, we only need to run validate for normalization and thresholding
             self.trainer.validate(model, val_dataloaders, None, verbose=False, datamodule=datamodule)
         else:
@@ -979,22 +979,22 @@ class Engine:
         CLI Usage:
             1. To export as a torch ``.pt`` file you can run the following command.
                 ```python
-                anomalib export --model Padim --export_mode torch --ckpt_path <PATH_TO_CHECKPOINT>
+                anomalib export --model Padim --export_type torch --ckpt_path <PATH_TO_CHECKPOINT>
                 ```
             2. To export as an ONNX ``.onnx`` file you can run the following command.
                 ```python
-                anomalib export --model Padim --export_mode onnx --ckpt_path <PATH_TO_CHECKPOINT> \
+                anomalib export --model Padim --export_type onnx --ckpt_path <PATH_TO_CHECKPOINT> \
                 --input_size "[256,256]"
                 ```
             3. To export as an OpenVINO ``.xml`` and ``.bin`` file you can run the following command.
                 ```python
-                anomalib export --model Padim --export_mode openvino --ckpt_path <PATH_TO_CHECKPOINT> \
-                --input_size "[256,256] --compression_type "fp16"
+                anomalib export --model Padim --export_type openvino --ckpt_path <PATH_TO_CHECKPOINT> \
+                --input_size "[256,256] --compression_type FP16
                 ```
             4. You can also quantize OpenVINO model with the following.
                 ```python
-                anomalib export --model Padim --export_mode openvino --ckpt_path <PATH_TO_CHECKPOINT> \
-                --input_size "[256,256]" --compression_type "int8_ptq" --data MVTec
+                anomalib export --model Padim --export_type openvino --ckpt_path <PATH_TO_CHECKPOINT> \
+                --input_size "[256,256]" --compression_type INT8_PTQ --data MVTec
                 ```
         """
         export_type = ExportType(export_type)

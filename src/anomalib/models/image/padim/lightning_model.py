@@ -122,7 +122,8 @@ class Padim(MemoryBankMixin, AnomalyModule):
         """
         return LearningType.ONE_CLASS
 
-    def configure_transforms(self, image_size: tuple[int, int] | None = None) -> Transform:
+    @staticmethod
+    def configure_transforms(image_size: tuple[int, int] | None = None) -> Transform:
         """Default transform for Padim."""
         image_size = image_size or (256, 256)
         return Compose(
