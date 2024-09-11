@@ -9,7 +9,7 @@ import pytest
 
 from anomalib import TaskType
 from anomalib.data import UCSDped
-from tests.unit.data.base.video import _TestAnomalibVideoDatamodule
+from tests.unit.data.datamodule import _TestAnomalibVideoDatamodule
 
 
 class TestUCSDped(_TestAnomalibVideoDatamodule):

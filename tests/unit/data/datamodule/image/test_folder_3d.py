@@ -9,7 +9,7 @@ import pytest
 
 from anomalib import TaskType
 from anomalib.data import Folder3D
-from tests.unit.data.base import _TestAnomalibDepthDatamodule
+from tests.unit.data.datamodule import _TestAnomalibDepthDatamodule
 
 
 class TestFolder3D(_TestAnomalibDepthDatamodule):

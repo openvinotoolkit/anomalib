@@ -9,7 +9,7 @@ import pytest
 
 from anomalib import TaskType
 from anomalib.data import MVTec3D
-from tests.unit.data.base import _TestAnomalibDepthDatamodule
+from tests.unit.data.datamodule import _TestAnomalibDepthDatamodule
 
 
 class TestMVTec3D(_TestAnomalibDepthDatamodule):

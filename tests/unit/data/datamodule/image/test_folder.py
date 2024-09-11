@@ -9,7 +9,7 @@ import pytest
 
 from anomalib import TaskType
 from anomalib.data import Folder
-from tests.unit.data.base.image import _TestAnomalibImageDatamodule
+from tests.unit.data.datamodule import _TestAnomalibImageDatamodule
 
 
 class TestFolder(_TestAnomalibImageDatamodule):
