@@ -15,7 +15,7 @@ from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torchvision.transforms.v2 import CenterCrop, Compose, Normalize, Resize, Transform
 
 from anomalib import LearningType
-from anomalib.dataclasses import Batch
+from anomalib.data import Batch
 from anomalib.models.components import AnomalyModule, MemoryBankMixin
 from anomalib.post_processing.one_class import OneClassPostProcessor
 

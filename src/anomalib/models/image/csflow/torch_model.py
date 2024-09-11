@@ -20,7 +20,7 @@ from torch import nn
 from torch.nn import functional as F  # noqa: N812
 from torchvision.models.efficientnet import EfficientNet_B5_Weights
 
-from anomalib.dataclasses import InferenceBatch
+from anomalib.data import InferenceBatch
 from anomalib.models.components.feature_extractors import TorchFXFeatureExtractor
 
 from .anomaly_map import AnomalyMapGenerator, AnomalyMapMode

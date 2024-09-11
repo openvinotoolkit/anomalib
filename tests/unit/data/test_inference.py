@@ -8,8 +8,7 @@ from pathlib import Path
 import pytest
 from torchvision.transforms import v2
 
-from anomalib.data import PredictDataset
-from anomalib.dataclasses import ImageItem
+from anomalib.data import ImageItem, PredictDataset
 
 
 @pytest.fixture(scope="module")

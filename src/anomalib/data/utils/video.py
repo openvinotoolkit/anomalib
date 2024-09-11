@@ -11,7 +11,7 @@ import cv2
 import torch
 from torchvision.datasets.video_utils import VideoClips
 
-from anomalib.dataclasses import VideoItem
+from anomalib.data import VideoItem
 
 
 class ClipsIndexer(VideoClips, ABC):

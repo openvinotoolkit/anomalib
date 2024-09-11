@@ -13,7 +13,7 @@ from torch import nn
 from torch.nn import functional as F  # noqa: N812
 from torchvision import transforms
 
-from anomalib.dataclasses import InferenceBatch
+from anomalib.data import InferenceBatch
 
 logger = logging.getLogger(__name__)
 

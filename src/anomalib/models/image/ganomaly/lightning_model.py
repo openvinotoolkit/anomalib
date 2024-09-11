@@ -14,7 +14,7 @@ from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torch import optim
 
 from anomalib import LearningType
-from anomalib.dataclasses import Batch
+from anomalib.data import Batch
 from anomalib.models.components import AnomalyModule
 
 from .loss import DiscriminatorLoss, GeneratorLoss

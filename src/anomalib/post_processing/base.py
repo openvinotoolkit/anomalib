@@ -8,7 +8,7 @@ from abc import ABC, abstractmethod
 from lightning.pytorch import Callback
 from torch import nn
 
-from anomalib.dataclasses import InferenceBatch
+from anomalib.data import InferenceBatch
 
 
 class PostProcessor(nn.Module, Callback, ABC):

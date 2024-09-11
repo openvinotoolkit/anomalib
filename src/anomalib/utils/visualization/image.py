@@ -15,8 +15,8 @@ import numpy as np
 from skimage.segmentation import mark_boundaries
 
 from anomalib import TaskType
+from anomalib.data import ImageItem, NumpyImageItem, VideoItem
 from anomalib.data.utils import read_image
-from anomalib.dataclasses import ImageItem, NumpyImageItem, VideoItem
 from anomalib.utils.post_processing import (
     add_anomalous_label,
     add_normal_label,

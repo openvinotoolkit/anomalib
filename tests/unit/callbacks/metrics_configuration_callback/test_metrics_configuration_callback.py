@@ -12,7 +12,7 @@ from torchvision.transforms.v2 import Resize
 
 from anomalib import LearningType
 from anomalib.callbacks.metrics import _MetricsCallback
-from anomalib.dataclasses import InferenceBatch
+from anomalib.data import InferenceBatch
 from anomalib.metrics import AnomalibMetricCollection
 from anomalib.metrics.threshold import F1AdaptiveThreshold
 from anomalib.models.components import AnomalyModule

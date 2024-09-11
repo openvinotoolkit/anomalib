@@ -16,7 +16,7 @@ from torch.optim.lr_scheduler import LRScheduler
 from torchvision.transforms.v2 import Compose, Normalize, Resize, Transform
 
 from anomalib import LearningType
-from anomalib.dataclasses import Batch
+from anomalib.data import Batch
 from anomalib.models.components import AnomalyModule
 
 from .loss import UFlowLoss
