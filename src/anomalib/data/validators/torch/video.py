@@ -875,19 +875,20 @@ class VideoBatchValidator:
         Examples:
             >>> import torch
             >>> from anomalib.data.validators import VideoBatchValidator
-            >>> frame_indices = torch.tensor([[0, 1, 2], [3, 4, 5]])
+            >>> frame_indices = torch.tensor([[0], [1], [2], [3], [4], [5]])
             >>> validated_indices = VideoBatchValidator.validate_frames(frame_indices)
             >>> print(validated_indices)
-            tensor([[0, 1, 2],
-                    [3, 4, 5]])
+            tensor([0, 1, 2, 3, 4, 5])
         """
         if frames is None:
             return None
         if not isinstance(frames, torch.Tensor):
             msg = f"Frames must be a torch.Tensor, got {type(frames)}."
             raise TypeError(msg)
-        if frames.ndim != 2:
-            msg = f"Frames must be a 2D tensor, got shape {frames.shape}."
+        if frames.ndim == 2 and frames.shape[1] == 1:
+            frames = frames.squeeze(1)
+        if frames.ndim != 1:
+            msg = f"Frames must be a 1D tensor or a 2D tensor with shape (N, 1), got shape {frames.shape}."
             raise ValueError(msg)
         if not torch.all(frames >= 0):
             msg = "All frame indices must be non-negative."
