@@ -320,277 +320,134 @@ class ImageBatchValidator:
     """Validate torch.Tensor data for batches of images."""
 
     @staticmethod
-    def validate_image(images: torch.Tensor) -> Image:
-        """Validate and convert a batch of image tensors.
-
-        Args:
-            images (torch.Tensor): Input batch of image tensors.
-
-        Returns:
-            Image: Validated and converted batch of images.
-
-        Raises:
-            TypeError: If the input is not a torch.Tensor.
-            ValueError: If the image shape or number of channels is invalid.
-
-        Examples:
-            >>> import torch
-            >>> tensor = torch.rand(4, 3, 224, 224)  # Batch of 4 images
-            >>> validated_images = ImageBatchValidator.validate_image(tensor)
-            >>> isinstance(validated_images, Image)
-            True
-            >>> validated_images.shape
-            torch.Size([4, 3, 224, 224])
-        """
-        if not isinstance(images, torch.Tensor):
-            msg = f"Images must be a torch.Tensor, got {type(images)}."
-            raise TypeError(msg)
-
-        if images.ndim != 4:
-            msg = f"Images must have shape [N, C, H, W], got shape {images.shape}."
-            raise ValueError(msg)
-
-        if images.shape[1] not in {1, 3, 4}:
-            msg = f"Invalid number of channels: {images.shape[1]}. Expected 1, 3, or 4."
-            raise ValueError(msg)
-
-        return Image(to_dtype_image(images, dtype=torch.float32, scale=True))
+    def validate_image(image: torch.Tensor) -> Image:
+        """Validate the image for a batch."""
+        assert isinstance(image, torch.Tensor), f"Image must be a torch.Tensor, got {type(image)}."
+        assert image.ndim in {3, 4}, f"Image must have shape [C, H, W] or [N, C, H, W], got shape {image.shape}."
+        if image.ndim == 3:
+            image = image.unsqueeze(0)  # add batch dimension
+        assert image.shape[1] == 3, f"Image must have 3 channels, got {image.shape[0]}."
+        return Image(image, dtype=torch.float32)
 
     @staticmethod
-    def validate_gt_label(labels: torch.Tensor | Sequence[int] | None) -> torch.Tensor | None:
-        """Validate the ground truth labels for a batch.
-
-        Args:
-            labels (torch.Tensor | list[int] | None): Input ground truth labels.
-
-        Returns:
-            torch.Tensor | None: Validated ground truth labels as a boolean tensor, or None.
-
-        Raises:
-            TypeError: If the input is not a torch.Tensor or list[int].
-            ValueError: If the labels shape is invalid.
-
-        Examples:
-            >>> labels = torch.tensor([0, 1, 1, 0])
-            >>> validated_labels = ImageBatchValidator.validate_gt_label(labels)
-            >>> validated_labels
-            tensor([False,  True,  True, False])
-        """
-        if labels is None:
+    def validate_gt_label(gt_label: torch.Tensor | Sequence[int] | None, batch_size: int) -> torch.Tensor | None:
+        """Validate the ground truth label for a batch."""
+        if gt_label is None:
             return None
-        if isinstance(labels, list):
-            labels = torch.tensor(labels)
-        if not isinstance(labels, torch.Tensor):
-            msg = f"Ground truth labels must be a torch.Tensor or list[int], got {type(labels)}."
-            raise TypeError(msg)
-        if labels.ndim != 1:
-            msg = f"Ground truth labels must be 1-dimensional, got shape {labels.shape}."
-            raise ValueError(msg)
-        return labels.to(torch.bool)
+        if isinstance(gt_label, Sequence):
+            gt_label = torch.tensor(gt_label)
+        assert isinstance(
+            gt_label,
+            torch.Tensor,
+        ), f"Ground truth label must be a sequence of integers or a torch.Tensor, got {type(gt_label)}."
+        assert gt_label.ndim == 1, f"Ground truth label must be a 1-dimensional vector, got shape {gt_label.shape}."
+        assert (
+            len(gt_label) == batch_size
+        ), f"Ground truth label must have length {batch_size}, got length {len(gt_label)}."
+        assert not torch.is_floating_point(gt_label), f"Ground truth label must be boolean or integer, got {gt_label}."
+        return gt_label.bool()
 
     @staticmethod
-    def validate_gt_mask(masks: torch.Tensor | None) -> Mask | None:
-        """Validate a batch of ground truth masks.
-
-        Args:
-            masks (torch.Tensor | None): Input batch of ground truth masks.
-
-        Returns:
-            Mask | None: Validated batch of ground truth masks, or None.
-
-        Raises:
-            TypeError: If the input is not a torch.Tensor.
-            ValueError: If the mask shape is invalid.
-
-        Examples:
-            >>> masks = torch.randint(0, 2, (4, 1, 224, 224))  # Batch of 4 masks
-            >>> validated_masks = ImageBatchValidator.validate_gt_mask(masks)
-            >>> isinstance(validated_masks, Mask)
-            True
-            >>> validated_masks.shape
-            torch.Size([4, 224, 224])
-        """
-        if masks is None:
+    def validate_gt_mask(gt_mask: torch.Tensor | None, batch_size: int) -> Mask | None:
+        """Validate the ground truth mask for a batch."""
+        if gt_mask is None:
             return None
-        if not isinstance(masks, torch.Tensor):
-            msg = f"Ground truth masks must be a torch.Tensor, got {type(masks)}."
-            raise TypeError(msg)
-        if masks.ndim not in {3, 4}:
-            msg = f"Ground truth masks must have shape [N, H, W] or [N, 1, H, W], got shape {masks.shape}."
-            raise ValueError(msg)
-        if masks.ndim == 4 and masks.shape[1] != 1:
-            msg = f"Ground truth masks must have 1 channel, got {masks.shape[1]}."
-            raise ValueError(msg)
-
-        return Mask(masks.squeeze(1) if masks.ndim == 4 else masks, dtype=torch.bool)
-
-    @staticmethod
-    def validate_anomaly_map(anomaly_map: torch.Tensor | np.ndarray | None) -> Mask | None:
-        """Validate a batch of anomaly maps.
-
-        Args:
-            anomaly_map (torch.Tensor | np.ndarray | None): Input batch of anomaly maps.
-
-        Returns:
-            Mask | None: Validated batch of anomaly maps as a Mask, or None.
-
-        Raises:
-            TypeError: If the input is not a torch.Tensor or np.ndarray.
-            ValueError: If the anomaly map shape is invalid.
-
-        Examples:
-            >>> anomaly_map = torch.rand(4, 1, 224, 224)  # Batch of 4 anomaly maps
-            >>> validated_map = ImageBatchValidator.validate_anomaly_map(anomaly_map)
-            >>> isinstance(validated_map, Mask)
-            True
-            >>> validated_map.shape
-            torch.Size([4, 224, 224])
-        """
-        if anomaly_map is None:
-            return None
-        if isinstance(anomaly_map, np.ndarray):
-            anomaly_map = torch.from_numpy(anomaly_map)
-        if not isinstance(anomaly_map, torch.Tensor):
-            msg = f"Anomaly map must be a torch.Tensor or np.ndarray, got {type(anomaly_map)}."
-            raise TypeError(msg)
-        if anomaly_map.ndim not in {3, 4}:
-            msg = f"Anomaly maps must have shape [N, H, W] or [N, 1, H, W], got shape {anomaly_map.shape}."
-            raise ValueError(msg)
-        if anomaly_map.ndim == 4 and anomaly_map.shape[1] != 1:
-            msg = f"Anomaly maps must have 1 channel, got {anomaly_map.shape[1]}."
-            raise ValueError(msg)
-
-        return Mask(anomaly_map.squeeze(1) if anomaly_map.ndim == 4 else anomaly_map)
+        assert isinstance(gt_mask, torch.Tensor), f"Ground truth mask must be a torch.Tensor, got {type(gt_mask)}."
+        assert gt_mask.ndim in {
+            2,
+            3,
+            4,
+        }, f"Ground truth mask must have shape [H, W] or [N, H, W] or [N, 1, H, W] got shape {gt_mask.shape}."
+        if gt_mask.ndim == 2:
+            assert (
+                batch_size == 1
+            ), f"Invalid shape for gt_mask. Got mask shape {gt_mask.shape} for batch size {batch_size}."
+            gt_mask = gt_mask.unsqueeze(0)
+        if gt_mask.ndim == 3:
+            assert (
+                gt_mask.shape[0] == batch_size
+            ), f"Invalid shape for gt_mask. Got mask shape {gt_mask.shape} for batch size {batch_size}."
+        if gt_mask.ndim == 4:
+            assert gt_mask.shape[1] == 1, f"Ground truth mask must have 1 channel, got {gt_mask.shape[1]}."
+            gt_mask = gt_mask.squeeze(1)
+        return Mask(gt_mask, dtype=torch.bool)
 
     @staticmethod
-    def validate_image_path(image_paths: list[str] | None) -> list[str] | None:
-        """Validate the image paths for a batch.
-
-        Args:
-            image_paths (list[str] | None): Input image paths.
-
-        Returns:
-            list[str] | None: Validated image paths, or None.
-
-        Examples:
-            >>> paths = ["/path/to/image1.jpg", "/path/to/image2.jpg"]
-            >>> validated_paths = ImageBatchValidator.validate_image_path(paths)
-            >>> validated_paths == paths
-            True
-        """
-        if image_paths is None:
-            return None
-        return [validate_path(path) for path in image_paths]
-
-    @staticmethod
-    def validate_mask_path(mask_path: Sequence[str] | None) -> list[str] | None:
-        """Validate the mask paths for a batch.
-
-        Args:
-            mask_path (list[str] | None): Input mask paths.
-
-        Returns:
-            list[str] | None: Validated mask paths, or None.
-
-        Examples:
-            >>> paths = ["/path/to/mask1.png", "/path/to/mask2.png"]
-            >>> validated_paths = ImageBatchValidator.validate_mask_path(paths)
-            >>> validated_paths == paths
-            True
-        """
+    def validate_mask_path(mask_path: Sequence[str] | None, batch_size: int) -> list[str] | None:
+        """Validate the mask paths for a batch."""
         if mask_path is None:
             return None
-        return [validate_path(path) for path in mask_path]
+        assert isinstance(
+            mask_path,
+            Sequence,
+        ), f"Mask path must be a sequence of paths or strings, got {type(mask_path)}."
+        assert (
+            len(mask_path) == batch_size
+        ), f"Invalid length for mask_path. Got length {len(mask_path)} for batch size {batch_size}."
+        return [str(path) for path in mask_path]
 
     @staticmethod
-    def validate_pred_score(pred_score: torch.Tensor | Sequence[float] | None) -> torch.Tensor | None:
-        """Validate the prediction scores for a batch.
-
-        Args:
-            pred_score (torch.Tensor | Sequence[float] | None): Input prediction scores.
-
-        Returns:
-            torch.Tensor | None: Validated prediction scores as a float32 tensor, or None.
-
-        Raises:
-            TypeError: If the input is not a torch.Tensor, Sequence[float], or None.
-            ValueError: If the prediction scores are not 1-dimensional.
-
-        Examples:
-            >>> scores = torch.tensor([0.8, 0.2, 0.6, 0.4])
-            >>> validated_scores = ImageBatchValidator.validate_pred_score(scores)
-            >>> validated_scores
-            tensor([0.8000, 0.2000, 0.6000, 0.4000])
-            >>> scores_list = [0.8, 0.2, 0.6, 0.4]
-            >>> validated_scores = ImageBatchValidator.validate_pred_score(scores_list)
-            >>> validated_scores
-            tensor([0.8000, 0.2000, 0.6000, 0.4000])
-            >>> validated_scores = ImageBatchValidator.validate_pred_score(None)
-            >>> validated_scores is None
-            True
-        """
-        if pred_score is None:
+    def validate_anomaly_map(anomaly_map: torch.Tensor | np.ndarray | None, batch_size: int) -> Mask | None:
+        """Validate the anomaly map for a batch."""
+        if anomaly_map is None:
             return None
+        if not isinstance(anomaly_map, torch.Tensor):
+            try:
+                anomaly_map = torch.tensor(anomaly_map)
+            except Exception as e:
+                msg = "Failed to convert anomaly_map to a torch.Tensor."
+                raise ValueError(msg) from e
+        assert anomaly_map.ndim in {
+            2,
+            3,
+            4,
+        }, f"Anomaly map must have shape [H, W] or [N, H, W] or [N, 1, H, W], got shape {anomaly_map.shape}."
+        if anomaly_map.ndim == 2:
+            assert (
+                batch_size == 1
+            ), f"Invalid shape for anomaly_map. Got mask shape {anomaly_map.shape} for batch size {batch_size}."
+            anomaly_map = anomaly_map.unsqueeze(0)
+        if anomaly_map.ndim == 4:
+            assert anomaly_map.shape[1] == 1, f"Anomaly map must have 1 channel, got {anomaly_map.shape[1]}."
+            anomaly_map = anomaly_map.squeeze(1)
+        return Mask(anomaly_map, dtype=torch.float32)
+
+    @staticmethod
+    def validate_pred_score(
+        pred_score: torch.Tensor | Sequence[float] | None,
+        anomaly_map: torch.Tensor | None,
+    ) -> torch.Tensor | None:
+        """Validate the prediction scores for a batch."""
+        if pred_score is None:
+            return torch.amax(anomaly_map, dim=(-2, -1)) if anomaly_map is not None else None
+
         if isinstance(pred_score, Sequence) and not isinstance(pred_score, torch.Tensor):
             pred_score = torch.tensor(pred_score)
-        if not isinstance(pred_score, torch.Tensor):
-            msg = f"Prediction scores must be a torch.Tensor, Sequence[float], or None, got {type(pred_score)}."
-            raise TypeError(msg)
-        if pred_score.ndim != 1:
-            msg = f"Prediction scores must be 1-dimensional, got shape {pred_score.shape}."
-            raise ValueError(msg)
+        assert isinstance(
+            pred_score,
+            torch.Tensor,
+        ), f"Prediction scores must be a torch.Tensor or Sequence[float], got {type(pred_score)}."
+        assert pred_score.ndim == 1, f"Prediction scores must be 1-dimensional, got shape {pred_score.shape}."
         return pred_score.to(torch.float32)
 
     @staticmethod
+    def validate_pred_mask(pred_mask: torch.Tensor | None, batch_size: int) -> Mask | None:
+        """Validate the prediction mask for a batch."""
+        return ImageBatchValidator.validate_gt_mask(pred_mask, batch_size)  # We can reuse the gt_mask validation
+
+    @staticmethod
     def validate_pred_label(pred_label: torch.Tensor | None) -> torch.Tensor | None:
-        """Validate the prediction labels for a batch.
-
-        Args:
-            pred_label (torch.Tensor | None): Input prediction labels.
-
-        Returns:
-            torch.Tensor | None: Validated prediction labels as a boolean tensor, or None.
-
-        Raises:
-            TypeError: If the input is not a torch.Tensor.
-            ValueError: If the prediction labels are not 1-dimensional.
-
-        Examples:
-            >>> labels = torch.tensor([1, 0, 1, 0])
-            >>> validated_labels = ImageBatchValidator.validate_pred_labels(labels)
-            >>> validated_labels
-            tensor([ True, False,  True, False])
-        """
+        """Validate the prediction label for a batch."""
         if pred_label is None:
             return None
-        if not isinstance(pred_label, torch.Tensor):
-            msg = f"Predicted labels must be a torch.Tensor, got {type(pred_label)}."
-            raise TypeError(msg)
-        if pred_label.ndim != 1:
-            msg = f"Predicted labels must be 1-dimensional, got shape {pred_label.shape}."
-            raise ValueError(msg)
+        assert isinstance(pred_label, torch.Tensor), f"Predicted label must be a torch.Tensor, got {type(pred_label)}."
+        assert pred_label.ndim == 1, f"Predicted label must be 1-dimensional, got shape {pred_label.shape}."
         return pred_label.to(torch.bool)
 
     @staticmethod
-    def validate_pred_mask(pred_mask: torch.Tensor | None) -> Mask | None:
-        """Validate a batch of prediction masks.
-
-        Args:
-            pred_mask (torch.Tensor | None): Input batch of prediction masks.
-
-        Returns:
-            Mask | None: Validated batch of prediction masks, or None.
-
-        Raises:
-            TypeError: If the input is not a torch.Tensor.
-            ValueError: If the mask shape is invalid.
-
-        Examples:
-            >>> pred_mask = torch.randint(0, 2, (4, 1, 224, 224))  # Batch of 4 prediction masks
-            >>> validated_mask = ImageBatchValidator.validate_pred_mask(pred_mask)
-            >>> isinstance(validated_mask, Mask)
-            True
-            >>> validated_mask.shape
-            torch.Size([4, 224, 224])
-        """
-        return ImageBatchValidator.validate_gt_mask(pred_mask)  # We can reuse the gt_mask validation
+    def validate_image_path(image_path: list[str] | None) -> list[str] | None:
+        """Validate the image paths for a batch."""
+        if image_path is None:
+            return None
+        assert isinstance(image_path, list), f"Image path must be a list of strings, got {type(image_path)}."
+        return [str(path) for path in image_path]
