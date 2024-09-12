@@ -17,6 +17,7 @@ from anomalib.data.dataclasses.generic import BatchIterateMixin, _VideoInputFiel
 from anomalib.data.dataclasses.numpy.video import NumpyVideoBatch, NumpyVideoItem
 from anomalib.data.dataclasses.torch.base import Batch, DatasetItem, ToNumpyMixin
 from anomalib.data.dataclasses.torch.image import ImageItem
+from anomalib.data.validators.torch.video import VideoValidator
 
 
 @dataclass
@@ -49,44 +50,44 @@ class VideoItem(
 
     numpy_class = NumpyVideoItem
 
-    def _validate_image(self, image: Image) -> Video:
-        return image
+    def _validate_image(self, image: Image) -> Image:
+        return VideoValidator.validate_image(image)
 
-    def _validate_gt_label(self, gt_label: torch.Tensor) -> torch.Tensor:
-        return gt_label
+    def _validate_gt_label(self, gt_label: torch.Tensor | None) -> torch.Tensor | None:
+        return VideoValidator.validate_gt_label(gt_label)
 
-    def _validate_gt_mask(self, gt_mask: Mask) -> Mask:
-        return gt_mask
+    def _validate_gt_mask(self, gt_mask: Mask | None) -> Mask | None:
+        return VideoValidator.validate_gt_mask(gt_mask)
 
-    def _validate_mask_path(self, mask_path: str) -> str:
-        return mask_path
+    def _validate_mask_path(self, mask_path: str | None) -> str | None:
+        return VideoValidator.validate_mask_path(mask_path)
 
     def _validate_anomaly_map(self, anomaly_map: torch.Tensor) -> torch.Tensor | None:
-        return anomaly_map
+        return VideoValidator.validate_anomaly_map(anomaly_map)
 
     def _validate_pred_score(self, pred_score: torch.Tensor | None) -> torch.Tensor | None:
-        return pred_score
+        return VideoValidator.validate_pred_score(pred_score)
 
     def _validate_pred_mask(self, pred_mask: torch.Tensor) -> torch.Tensor | None:
-        return pred_mask
+        return VideoValidator.validate_pred_mask(pred_mask)
 
     def _validate_pred_label(self, pred_label: torch.Tensor) -> torch.Tensor | None:
-        return pred_label
+        return VideoValidator.validate_pred_label(pred_label)
 
-    def _validate_original_image(self, original_image: Video) -> Video:
-        return original_image
+    def _validate_original_image(self, original_image: torch.Tensor | Video | None) -> torch.Tensor | Video | None:
+        return VideoValidator.validate_original_image(original_image)
 
-    def _validate_video_path(self, video_path: str) -> str:
-        return video_path
+    def _validate_video_path(self, video_path: str | None) -> str | None:
+        return VideoValidator.validate_video_path(video_path)
 
-    def _validate_target_frame(self, target_frame: torch.Tensor) -> torch.Tensor:
-        return target_frame
+    def _validate_target_frame(self, target_frame: torch.Tensor | None) -> torch.Tensor | None:
+        return VideoValidator.validate_target_frame(target_frame)
 
-    def _validate_frames(self, frames: torch.Tensor) -> torch.Tensor:
-        return frames
+    def _validate_frames(self, frames: torch.Tensor | None) -> torch.Tensor | None:
+        return VideoValidator.validate_frames(frames)
 
-    def _validate_last_frame(self, last_frame: torch.Tensor) -> torch.Tensor:
-        return last_frame
+    def _validate_last_frame(self, last_frame: torch.Tensor | None) -> torch.Tensor | None:
+        return VideoValidator.validate_last_frame(last_frame)
 
     def to_image(self) -> ImageItem:
         """Convert the video item to an image item."""
