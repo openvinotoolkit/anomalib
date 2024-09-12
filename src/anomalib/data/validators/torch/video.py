@@ -7,7 +7,7 @@ import torch
 from torchvision.transforms.v2.functional import to_dtype_image
 from torchvision.tv_tensors import Image, Mask, Video
 
-from anomalib.data.validators.path import validate_path
+from anomalib.data.validators.path import validate_batch_path, validate_path
 
 
 class VideoValidator:
@@ -481,3 +481,450 @@ class VideoValidator:
             return last_frame
         msg = f"Last frame must be an int or a torch.Tensor, got {type(last_frame)}."
         raise TypeError(msg)
+
+
+class VideoBatchValidator:
+    """Validate torch.Tensor data for video batches."""
+
+    @staticmethod
+    def validate_image(image: Video) -> Video:
+        """Validate the video batch tensor.
+
+        Args:
+            image (Video): Input video batch tensor.
+
+        Returns:
+            Video: Validated video batch tensor.
+
+        Raises:
+            TypeError: If the input is not a torch.Tensor.
+            ValueError: If the tensor does not have the correct dimensions or number of channels.
+
+        Examples:
+            >>> import torch
+            >>> from torchvision.tv_tensors import Video
+            >>> from anomalib.data.validators import VideoBatchValidator
+            >>> video_batch = Video(torch.rand(2, 10, 3, 224, 224))  # 2 videos, 10 frames each
+            >>> validated_batch = VideoBatchValidator.validate_image(video_batch)
+            >>> print(validated_batch.shape)
+            torch.Size([2, 10, 3, 224, 224])
+        """
+        if not isinstance(image, torch.Tensor):
+            msg = f"Video batch must be a torch.Tensor, got {type(image)}."
+            raise TypeError(msg)
+
+        if image.dim() not in {4, 5}:  # (B, C, H, W) or (B, T, C, H, W)
+            msg = (
+                "Video batch must have 4 dimensions (B, C, H, W) for single frame images "
+                f"or 5 dimensions (B, T, C, H, W) for multi-frame videos, got {image.dim()}."
+            )
+            raise ValueError(msg)
+
+        if image.dim() == 5 and image.shape[2] not in {1, 3}:
+            msg = f"Video batch must have 1 or 3 channels, got {image.shape[2]}."
+            raise ValueError(msg)
+        if image.dim() == 4 and image.shape[1] not in {1, 3}:
+            msg = f"Image batch must have 1 or 3 channels, got {image.shape[1]}."
+            raise ValueError(msg)
+
+        return to_dtype_image(image, torch.float32, scale=True)
+
+    @staticmethod
+    def validate_gt_label(label: torch.Tensor | None) -> torch.Tensor | None:
+        """Validate the ground truth labels for a batch.
+
+        Args:
+            label (torch.Tensor | None): Input ground truth labels.
+
+        Returns:
+            torch.Tensor | None: Validated ground truth labels.
+
+        Raises:
+            TypeError: If the input is not a torch.Tensor or has an invalid dtype.
+
+        Examples:
+            >>> import torch
+            >>> from anomalib.data.validators import VideoBatchValidator
+            >>> gt_labels = torch.tensor([0, 1, 1, 0])
+            >>> validated_labels = VideoBatchValidator.validate_gt_label(gt_labels)
+            >>> print(validated_labels)
+            tensor([False,  True,  True, False])
+        """
+        if label is None:
+            return None
+        if not isinstance(label, torch.Tensor):
+            msg = f"Ground truth labels must be a torch.Tensor, got {type(label)}."
+            raise TypeError(msg)
+        if torch.is_floating_point(label):
+            msg = f"Ground truth labels must be boolean or integer, got {label.dtype}."
+            raise TypeError(msg)
+        return label.bool()
+
+    @staticmethod
+    def validate_gt_mask(mask: torch.Tensor | None) -> Mask | None:
+        """Validate the ground truth masks for a batch.
+
+        Args:
+            mask (torch.Tensor | None): Input ground truth masks.
+
+        Returns:
+            Mask | None: Validated ground truth masks.
+
+        Raises:
+            TypeError: If the input is not a torch.Tensor.
+            ValueError: If the mask has an invalid shape.
+
+        Examples:
+            >>> import torch
+            >>> from anomalib.data.validators import VideoBatchValidator
+            >>> gt_masks = torch.rand(2, 10, 224, 224) > 0.5  # 2 videos, 10 frames each
+            >>> validated_masks = VideoBatchValidator.validate_gt_mask(gt_masks)
+            >>> print(validated_masks.shape)
+            torch.Size([2, 10, 224, 224])
+            >>> single_frame_masks = torch.rand(4, 456, 256) > 0.5  # 4 single-frame images
+            >>> validated_single_frame = VideoBatchValidator.validate_gt_mask(single_frame_masks)
+            >>> print(validated_single_frame.shape)
+            torch.Size([4, 456, 256])
+        """
+        if mask is None:
+            return None
+        if not isinstance(mask, torch.Tensor):
+            msg = f"Masks must be a torch.Tensor, got {type(mask)}."
+            raise TypeError(msg)
+        if mask.ndim not in {3, 4, 5}:
+            msg = f"Masks must have shape [B, H, W], [B, T, H, W] or [B, T, 1, H, W], got shape {mask.shape}."
+            raise ValueError(msg)
+        if mask.ndim == 5:
+            if mask.shape[2] != 1:
+                msg = f"Masks must have 1 channel, got {mask.shape[2]}."
+                raise ValueError(msg)
+            mask = mask.squeeze(2)
+
+        return Mask(mask, dtype=torch.bool)
+
+    @staticmethod
+    def validate_mask_path(mask_path: list[str] | None) -> list[str] | None:
+        """Validate the mask paths for a batch.
+
+        Args:
+            mask_path (list[str] | None): Input mask paths.
+
+        Returns:
+            list[str] | None: Validated mask paths.
+
+        Raises:
+            TypeError: If the input is not a list of strings.
+
+        Examples:
+            >>> from anomalib.data.validators import VideoBatchValidator
+            >>> mask_paths = ["path/to/mask1.png", "path/to/mask2.png"]
+            >>> validated_paths = VideoBatchValidator.validate_mask_path(mask_paths)
+            >>> print(validated_paths)
+            ['path/to/mask1.png', 'path/to/mask2.png']
+        """
+        return validate_batch_path(mask_path)
+
+    @staticmethod
+    def validate_anomaly_map(anomaly_map: torch.Tensor | None) -> Mask | None:
+        """Validate the anomaly maps for a batch.
+
+        Args:
+            anomaly_map (torch.Tensor | None): Input anomaly maps.
+
+        Returns:
+            Mask | None: Validated anomaly maps.
+
+        Raises:
+            TypeError: If the input is not a torch.Tensor.
+            ValueError: If the anomaly map has an invalid shape.
+
+        Examples:
+            >>> import torch
+            >>> from anomalib.data.validators import VideoBatchValidator
+            >>> anomaly_maps = torch.rand(2, 10, 224, 224)  # 2 videos, 10 frames each
+            >>> validated_maps = VideoBatchValidator.validate_anomaly_map(anomaly_maps)
+            >>> print(validated_maps.shape)
+            torch.Size([2, 10, 224, 224])
+        """
+        if anomaly_map is None:
+            return None
+        if not isinstance(anomaly_map, torch.Tensor):
+            msg = f"Anomaly maps must be a torch.Tensor, got {type(anomaly_map)}."
+            raise TypeError(msg)
+        if anomaly_map.ndim not in {4, 5}:
+            msg = f"Anomaly maps must have shape [B, T, H, W] or [B, T, 1, H, W], got shape {anomaly_map.shape}."
+            raise ValueError(msg)
+        if anomaly_map.ndim == 5:
+            if anomaly_map.shape[2] != 1:
+                msg = f"Anomaly maps must have 1 channel, got {anomaly_map.shape[2]}."
+                raise ValueError(msg)
+            anomaly_map = anomaly_map.squeeze(2)
+        return Mask(anomaly_map, dtype=torch.float32)
+
+    @staticmethod
+    def validate_pred_score(
+        pred_score: torch.Tensor | None,
+        anomaly_map: torch.Tensor | None = None,
+    ) -> torch.Tensor | None:
+        """Validate the prediction scores for a batch.
+
+        Args:
+            pred_score (torch.Tensor | None): Input prediction scores.
+            anomaly_map (torch.Tensor | None): Input anomaly map (optional).
+
+        Returns:
+            torch.Tensor | None: Validated prediction scores.
+
+        Raises:
+            ValueError: If the prediction scores have an invalid shape or cannot be converted to a tensor.
+
+        Examples:
+            >>> import torch
+            >>> from anomalib.data.validators import VideoBatchValidator
+            >>> pred_scores = torch.tensor([0.1, 0.9, 0.3, 0.7])
+            >>> validated_scores = VideoBatchValidator.validate_pred_score(pred_scores)
+            >>> print(validated_scores)
+            tensor([0.1000, 0.9000, 0.3000, 0.7000])
+        """
+        if pred_score is None:
+            return torch.amax(anomaly_map, dim=(-3, -2, -1)) if anomaly_map is not None else None
+
+        if not isinstance(pred_score, torch.Tensor):
+            try:
+                pred_score = torch.tensor(pred_score)
+            except Exception as e:
+                msg = "Failed to convert pred_score to a torch.Tensor."
+                raise ValueError(msg) from e
+        if pred_score.ndim != 1:
+            msg = f"Predicted scores must be a 1D tensor, got shape {pred_score.shape}."
+            raise ValueError(msg)
+
+        return pred_score.to(torch.float32)
+
+    @staticmethod
+    def validate_pred_mask(pred_mask: torch.Tensor | None) -> Mask | None:
+        """Validate the prediction masks for a batch.
+
+        Args:
+            pred_mask (torch.Tensor | None): Input prediction masks.
+
+        Returns:
+            Mask | None: Validated prediction masks.
+
+        Examples:
+            >>> import torch
+            >>> from anomalib.data.validators import VideoBatchValidator
+            >>> pred_masks = torch.rand(2, 10, 224, 224) > 0.5  # 2 videos, 10 frames each
+            >>> validated_masks = VideoBatchValidator.validate_pred_mask(pred_masks)
+            >>> print(validated_masks.shape)
+            torch.Size([2, 10, 224, 224])
+        """
+        return VideoBatchValidator.validate_gt_mask(pred_mask)  # Reuse gt_mask validation
+
+    @staticmethod
+    def validate_pred_label(pred_label: torch.Tensor | None) -> torch.Tensor | None:
+        """Validate the prediction labels for a batch.
+
+        Args:
+            pred_label (torch.Tensor | None): Input prediction labels.
+
+        Returns:
+            torch.Tensor | None: Validated prediction labels.
+
+        Raises:
+            ValueError: If the prediction labels have an invalid shape or cannot be converted to a tensor.
+
+        Examples:
+            >>> import torch
+            >>> from anomalib.data.validators import VideoBatchValidator
+            >>> pred_labels = torch.tensor([0, 1, 1, 0])
+            >>> validated_labels = VideoBatchValidator.validate_pred_label(pred_labels)
+            >>> print(validated_labels)
+            tensor([False,  True,  True, False])
+        """
+        if pred_label is None:
+            return None
+        if not isinstance(pred_label, torch.Tensor):
+            try:
+                pred_label = torch.tensor(pred_label)
+            except Exception as e:
+                msg = "Failed to convert pred_label to a torch.Tensor."
+                raise ValueError(msg) from e
+        if pred_label.ndim != 1:
+            msg = f"Predicted labels must be a 1D tensor, got shape {pred_label.shape}."
+            raise ValueError(msg)
+        return pred_label.to(torch.bool)
+
+    @staticmethod
+    def validate_original_image(original_image: torch.Tensor | Video | None) -> torch.Tensor | Video | None:
+        """Validate the original videos for a batch.
+
+        Args:
+            original_image (torch.Tensor | Video | None): Input original videos.
+
+        Returns:
+            torch.Tensor | Video | None: Validated original videos.
+
+        Raises:
+            TypeError: If the input is not a torch.Tensor or torchvision Video object.
+            ValueError: If the video has an invalid shape or number of channels.
+
+        Examples:
+            >>> import torch
+            >>> from torchvision.tv_tensors import Video
+            >>> from anomalib.data.validators import VideoBatchValidator
+            >>> original_videos = Video(torch.rand(2, 10, 3, 224, 224))  # 2 videos, 10 frames each
+            >>> validated_videos = VideoBatchValidator.validate_original_image(original_videos)
+            >>> print(validated_videos.shape)
+            torch.Size([2, 10, 3, 224, 224])
+        """
+        if original_image is None:
+            return None
+
+        if not isinstance(original_image, torch.Tensor | Video):
+            msg = f"Original image must be a torch.Tensor or torchvision Video object, got {type(original_image)}."
+            raise TypeError(msg)
+
+        if original_image.ndim not in {4, 5}:  # (B, C, H, W) or (B, T, C, H, W)
+            msg = (
+                "Original image/video must have shape [B, C, H, W] for single frame or "
+                f"[B, T, C, H, W] for multi-frame, got shape {original_image.shape}."
+            )
+            raise ValueError(msg)
+
+        if original_image.ndim == 4:
+            # Add a temporal dimension for single frame videos
+            original_image = original_image.unsqueeze(1)
+        if original_image.shape[2] != 3:
+            msg = f"Original video must have 3 channels, got {original_image.shape[2]}."
+            raise ValueError(msg)
+
+        return original_image
+
+    @staticmethod
+    def validate_video_path(video_path: list[str] | None) -> list[str] | None:
+        """Validate the video paths for a batch.
+
+        Args:
+            video_path (list[str] | None): Input video paths.
+
+        Returns:
+            list[str] | None: Validated video paths.
+
+        Raises:
+            TypeError: If the input is not a list of strings.
+
+        Examples:
+            >>> from anomalib.data.validators import VideoBatchValidator
+            >>> video_paths = ["path/to/video1.mp4", "path/to/video2.mp4"]
+            >>> validated_paths = VideoBatchValidator.validate_video_path(video_paths)
+            >>> print(validated_paths)
+            ['path/to/video1.mp4', 'path/to/video2.mp4']
+        """
+        return validate_batch_path(video_path)
+
+    @staticmethod
+    def validate_target_frame(target_frame: torch.Tensor | None) -> torch.Tensor | None:
+        """Validate the target frame indices for a batch.
+
+        Args:
+            target_frame (torch.Tensor | None): Input target frame indices.
+
+        Returns:
+            torch.Tensor | None: Validated target frame indices.
+
+        Raises:
+            TypeError: If the input is not a torch.Tensor.
+            ValueError: If the target frame indices are invalid.
+
+        Examples:
+            >>> import torch
+            >>> from anomalib.data.validators import VideoBatchValidator
+            >>> target_frames = torch.tensor([5, 8, 3, 7])
+            >>> validated_frames = VideoBatchValidator.validate_target_frame(target_frames)
+            >>> print(validated_frames)
+            tensor([5, 8, 3, 7])
+        """
+        if target_frame is None:
+            return None
+        if not isinstance(target_frame, torch.Tensor):
+            msg = f"Target frame must be a torch.Tensor, got {type(target_frame)}."
+            raise TypeError(msg)
+        if target_frame.ndim != 1:
+            msg = f"Target frame must be a 1D tensor, got shape {target_frame.shape}."
+            raise ValueError(msg)
+        if not torch.all(target_frame >= 0):
+            msg = "Target frame indices must be non-negative."
+            raise ValueError(msg)
+        return target_frame.to(torch.int64)
+
+    @staticmethod
+    def validate_frames(frames: torch.Tensor | None) -> torch.Tensor | None:
+        """Validate the frame indices for a batch.
+
+        Args:
+            frames (torch.Tensor | None): Input frame indices.
+
+        Returns:
+            torch.Tensor | None: Validated frame indices.
+
+        Raises:
+            TypeError: If the input is not a torch.Tensor.
+            ValueError: If the frame indices are invalid.
+
+        Examples:
+            >>> import torch
+            >>> from anomalib.data.validators import VideoBatchValidator
+            >>> frame_indices = torch.tensor([[0, 1, 2], [3, 4, 5]])
+            >>> validated_indices = VideoBatchValidator.validate_frames(frame_indices)
+            >>> print(validated_indices)
+            tensor([[0, 1, 2],
+                    [3, 4, 5]])
+        """
+        if frames is None:
+            return None
+        if not isinstance(frames, torch.Tensor):
+            msg = f"Frames must be a torch.Tensor, got {type(frames)}."
+            raise TypeError(msg)
+        if frames.ndim != 2:
+            msg = f"Frames must be a 2D tensor, got shape {frames.shape}."
+            raise ValueError(msg)
+        if not torch.all(frames >= 0):
+            msg = "All frame indices must be non-negative."
+            raise ValueError(msg)
+        return frames.to(torch.int64)
+
+    @staticmethod
+    def validate_last_frame(last_frame: torch.Tensor | None) -> torch.Tensor | None:
+        """Validate the last frame indices for a batch.
+
+        Args:
+            last_frame (torch.Tensor | None): Input last frame indices.
+
+        Returns:
+            torch.Tensor | None: Validated last frame indices.
+
+        Raises:
+            TypeError: If the input is not a torch.Tensor.
+            ValueError: If the last frame indices are invalid.
+
+        Examples:
+            >>> import torch
+            >>> from anomalib.data.validators import VideoBatchValidator
+            >>> last_frames = torch.tensor([9, 12, 15, 10])
+            >>> validated_last_frames = VideoBatchValidator.validate_last_frame(last_frames)
+            >>> print(validated_last_frames)
+            tensor([ 9, 12, 15, 10])
+        """
+        if last_frame is None:
+            return None
+        if not isinstance(last_frame, torch.Tensor):
+            msg = f"Last frame must be a torch.Tensor, got {type(last_frame)}."
+            raise TypeError(msg)
+        if last_frame.ndim != 1:
+            msg = f"Last frame must be a 1D tensor, got shape {last_frame.shape}."
+            raise ValueError(msg)
+        if not torch.all(last_frame >= 0):
+            msg = "Last frame indices must be non-negative."
+            raise ValueError(msg)
+        return last_frame.to(torch.int64)
