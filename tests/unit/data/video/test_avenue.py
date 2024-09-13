@@ -16,12 +16,14 @@ class TestAvenue(_TestAnomalibVideoDatamodule):
     """Avenue Datamodule Unit Tests."""
 
     @pytest.fixture()
-    def clip_length_in_frames(self) -> int:
+    @staticmethod
+    def clip_length_in_frames() -> int:
         """Return the number of frames in each clip."""
         return 2
 
     @pytest.fixture()
-    def datamodule(self, dataset_path: Path, task_type: TaskType, clip_length_in_frames: int) -> Avenue:
+    @staticmethod
+    def datamodule(dataset_path: Path, task_type: TaskType, clip_length_in_frames: int) -> Avenue:
         """Create and return a Avenue datamodule."""
         _datamodule = Avenue(
             root=dataset_path / "avenue",
@@ -40,6 +42,7 @@ class TestAvenue(_TestAnomalibVideoDatamodule):
         return _datamodule
 
     @pytest.fixture()
-    def fxt_data_config_path(self) -> str:
+    @staticmethod
+    def fxt_data_config_path() -> str:
         """Return the path to the test data config."""
         return "configs/data/avenue.yaml"

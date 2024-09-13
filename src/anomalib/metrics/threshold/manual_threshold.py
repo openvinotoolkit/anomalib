@@ -5,10 +5,10 @@
 
 import torch
 
-from .base import BaseThreshold
+from .base import Threshold
 
 
-class ManualThreshold(BaseThreshold):
+class ManualThreshold(Threshold):
     """Initialize Manual Threshold.
 
     Args:
@@ -56,7 +56,8 @@ class ManualThreshold(BaseThreshold):
         """
         return self.value
 
-    def update(self, *args, **kwargs) -> None:
+    @staticmethod
+    def update(*args, **kwargs) -> None:
         """Do nothing.
 
         Args:

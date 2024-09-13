@@ -25,7 +25,7 @@ def add_openvino_export_arguments(parser: ArgumentParser) -> None:
         ov_parser = get_common_cli_parser()
         # remove redundant keys from mo keys
         for arg in ov_parser._actions:  # noqa: SLF001
-            if arg.dest in ("help", "input_model", "output_dir"):
+            if arg.dest in {"help", "input_model", "output_dir"}:
                 continue
             group.add_argument(f"--ov_args.{arg.dest}", type=arg.type, default=arg.default, help=arg.help)
     else:

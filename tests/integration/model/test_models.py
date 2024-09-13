@@ -159,8 +159,8 @@ class TestAPI:
             export_type=export_type,
         )
 
+    @staticmethod
     def _get_objects(
-        self,
         model_name: str,
         dataset_path: Path,
         project_path: Path,
@@ -177,9 +177,9 @@ class TestAPI:
                 and engine
         """
         # select task type
-        if model_name in ("rkde", "ai_vad"):
+        if model_name in {"rkde", "ai_vad"}:
             task_type = TaskType.DETECTION
-        elif model_name in ("ganomaly", "dfkde"):
+        elif model_name in {"ganomaly", "dfkde"}:
             task_type = TaskType.CLASSIFICATION
         else:
             task_type = TaskType.SEGMENTATION
@@ -189,7 +189,7 @@ class TestAPI:
         # https://github.com/openvinotoolkit/anomalib/issues/1478
 
         extra_args = {}
-        if model_name in ("rkde", "dfkde"):
+        if model_name in {"rkde", "dfkde"}:
             extra_args["n_pca_components"] = 2
         if model_name == "ai_vad":
             pytest.skip("Revisit AI-VAD test")

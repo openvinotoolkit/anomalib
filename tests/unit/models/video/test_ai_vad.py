@@ -11,7 +11,8 @@ from anomalib.models.video.ai_vad import AiVad
 class TestAiVadFeatureExtractor:
     """Test if the different feature extractors of the AiVad model can handle edge case without bbox detections."""
 
-    def test_velocity_extractor(self) -> None:
+    @staticmethod
+    def test_velocity_extractor() -> None:
         """Test velocity extractor submodule."""
         pl_module = AiVad()
         velocity_feature_extractor = pl_module.model.feature_extractor.velocity_extractor
@@ -24,7 +25,8 @@ class TestAiVadFeatureExtractor:
         # features should be empty because there are no boxes
         assert velocity_features.numel() == 0
 
-    def test_deep_feature_extractor(self) -> None:
+    @staticmethod
+    def test_deep_feature_extractor() -> None:
         """Test deep feature extractor submodule."""
         pl_module = AiVad()
         deep_feature_extractor = pl_module.model.feature_extractor.deep_extractor
@@ -38,7 +40,8 @@ class TestAiVadFeatureExtractor:
         # features should be empty because there are no boxes
         assert deep_features.numel() == 0
 
-    def test_pose_feature_extractor(self) -> None:
+    @staticmethod
+    def test_pose_feature_extractor() -> None:
         """Test pose feature extractor submodule."""
         pl_module = AiVad()
         pose_feature_extractor = pl_module.model.feature_extractor.pose_extractor

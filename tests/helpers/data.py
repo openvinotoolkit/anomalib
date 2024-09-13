@@ -104,7 +104,8 @@ class DummyImageGenerator:
 
         return image, mask
 
-    def save_image(self, filename: Path | str, image: np.ndarray, check_contrast: bool = False) -> None:
+    @staticmethod
+    def save_image(filename: Path | str, image: np.ndarray, check_contrast: bool = False) -> None:
         """Save image to filesystem.
 
         Args:
@@ -503,7 +504,7 @@ class DummyVideoDatasetGenerator(DummyDatasetGenerator):
         train_path = self.dataset_root / train_dir
         train_path.mkdir(exist_ok=True, parents=True)
         for clip_idx in range(self.num_train):
-            clip_path = train_path / f"{clip_idx+1:02}.avi"
+            clip_path = train_path / f"{clip_idx + 1:02}.avi"
             frames, _ = self.video_generator.generate_video(length=32, first_label=LabelName.NORMAL, p_state_switch=0)
             fourcc = cv2.VideoWriter_fourcc("F", "M", "P", "4")
             writer = cv2.VideoWriter(str(clip_path), fourcc, 30, self.frame_shape)
@@ -517,8 +518,8 @@ class DummyVideoDatasetGenerator(DummyDatasetGenerator):
         gt_path = self.dataset_root / ground_truth_dir / "testing_label_mask"
 
         for clip_idx in range(self.num_test):
-            clip_path = test_path / f"{clip_idx+1:02}.avi"
-            mask_path = gt_path / f"{clip_idx+1}_label"
+            clip_path = test_path / f"{clip_idx + 1:02}.avi"
+            mask_path = gt_path / f"{clip_idx + 1}_label"
             mask_path.mkdir(exist_ok=True, parents=True)
             frames, masks = self.video_generator.generate_video(length=32, p_state_switch=0.2)
             fourcc = cv2.VideoWriter_fourcc("F", "M", "P", "4")
