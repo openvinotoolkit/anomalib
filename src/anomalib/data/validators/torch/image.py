@@ -534,7 +534,7 @@ class ImageBatchValidator:
 
         Raises:
             TypeError: If the input is not a torch.Tensor or Sequence[float].
-            ValueError: If the prediction scores are not 1-dimensional.
+            ValueError: If the prediction scores have an invalid shape.
 
         Examples:
             >>> import torch
@@ -552,10 +552,10 @@ class ImageBatchValidator:
         if not isinstance(pred_score, torch.Tensor):
             msg = f"Prediction scores must be a torch.Tensor or Sequence[float], got {type(pred_score)}."
             raise TypeError(msg)
-        if pred_score.ndim != 1:
-            msg = f"Prediction scores must be 1-dimensional, got shape {pred_score.shape}."
+        if pred_score.ndim > 2 or (pred_score.ndim == 2 and pred_score.shape[1] != 1):
+            msg = f"Prediction scores must be 1-dimensional or have shape (N, 1), got shape {pred_score.shape}."
             raise ValueError(msg)
-        return pred_score.to(torch.float32)
+        return pred_score.squeeze().to(torch.float32)
 
     @staticmethod
     def validate_pred_mask(pred_mask: torch.Tensor | None, batch_size: int) -> Mask | None:
