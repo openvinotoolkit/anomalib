@@ -590,7 +590,7 @@ class ImageBatchValidator:
 
         Raises:
             TypeError: If the input is not a torch.Tensor.
-            ValueError: If the prediction label is not 1-dimensional.
+            ValueError: If the prediction label has an invalid shape.
 
         Examples:
             >>> import torch
@@ -605,8 +605,8 @@ class ImageBatchValidator:
         if not isinstance(pred_label, torch.Tensor):
             msg = f"Predicted label must be a torch.Tensor, got {type(pred_label)}."
             raise TypeError(msg)
-        if pred_label.ndim != 1:
-            msg = f"Predicted label must be 1-dimensional, got shape {pred_label.shape}."
+        if pred_label.ndim > 1:
+            msg = f"Predicted label must be 0-dimensional or 1-dimensional, got shape {pred_label.shape}."
             raise ValueError(msg)
         return pred_label.to(torch.bool)
 
