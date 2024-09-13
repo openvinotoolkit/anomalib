@@ -50,55 +50,68 @@ class VideoItem(
 
     numpy_class = NumpyVideoItem
 
-    def validate_image(self, image: Video) -> Video:
+    @staticmethod
+    def validate_image(image: Video) -> Video:
         """Validate the image."""
         return VideoValidator.validate_image(image)
 
-    def validate_gt_label(self, gt_label: torch.Tensor | None) -> torch.Tensor | None:
+    @staticmethod
+    def validate_gt_label(gt_label: torch.Tensor | None) -> torch.Tensor | None:
         """Validate the ground truth label."""
         return VideoValidator.validate_gt_label(gt_label)
 
-    def validate_gt_mask(self, gt_mask: Mask | None) -> Mask | None:
+    @staticmethod
+    def validate_gt_mask(gt_mask: Mask | None) -> Mask | None:
         """Validate the ground truth mask."""
         return VideoValidator.validate_gt_mask(gt_mask)
 
-    def validate_mask_path(self, mask_path: str | None) -> str | None:
+    @staticmethod
+    def validate_mask_path(mask_path: str | None) -> str | None:
         """Validate the mask path."""
         return VideoValidator.validate_mask_path(mask_path)
 
-    def validate_anomaly_map(self, anomaly_map: torch.Tensor) -> torch.Tensor | None:
+    @staticmethod
+    def validate_anomaly_map(anomaly_map: torch.Tensor) -> torch.Tensor | None:
         """Validate the anomaly map."""
         return VideoValidator.validate_anomaly_map(anomaly_map)
 
-    def validate_pred_score(self, pred_score: torch.Tensor | None) -> torch.Tensor | None:
+    @staticmethod
+    def validate_pred_score(pred_score: torch.Tensor | None) -> torch.Tensor | None:
         """Validate the prediction score."""
         return VideoValidator.validate_pred_score(pred_score)
 
-    def validate_pred_mask(self, pred_mask: torch.Tensor) -> torch.Tensor | None:
+    @staticmethod
+    def validate_pred_mask(pred_mask: torch.Tensor) -> torch.Tensor | None:
         """Validate the prediction mask."""
         return VideoValidator.validate_pred_mask(pred_mask)
 
-    def validate_pred_label(self, pred_label: torch.Tensor) -> torch.Tensor | None:
+    @staticmethod
+    def validate_pred_label(pred_label: torch.Tensor) -> torch.Tensor | None:
         """Validate the prediction label."""
         return VideoValidator.validate_pred_label(pred_label)
 
-    def validate_original_image(self, original_image: torch.Tensor | Video | None) -> torch.Tensor | Video | None:
+    @staticmethod
+    def validate_original_image(original_image: torch.Tensor | Video | None) -> torch.Tensor | Video | None:
         """Validate the original image."""
         return VideoValidator.validate_original_image(original_image)
 
-    def validate_video_path(self, video_path: str | None) -> str | None:
+    @staticmethod
+    def validate_video_path(video_path: str | None) -> str | None:
         """Validate the video path."""
         return VideoValidator.validate_video_path(video_path)
 
-    def validate_target_frame(self, target_frame: torch.Tensor | None) -> torch.Tensor | None:
+    @staticmethod
+    def validate_target_frame(target_frame: torch.Tensor | None) -> torch.Tensor | None:
         """Validate the target frame."""
         return VideoValidator.validate_target_frame(target_frame)
 
-    def validate_frames(self, frames: torch.Tensor | None) -> torch.Tensor | None:
+    @staticmethod
+    def validate_frames(frames: torch.Tensor | None) -> torch.Tensor | None:
         """Validate the frames."""
         return VideoValidator.validate_frames(frames)
 
-    def validate_last_frame(self, last_frame: torch.Tensor | None) -> torch.Tensor | None:
+    @staticmethod
+    def validate_last_frame(last_frame: torch.Tensor | None) -> torch.Tensor | None:
         """Validate the last frame."""
         return VideoValidator.validate_last_frame(last_frame)
 
@@ -144,54 +157,67 @@ class VideoBatch(
     item_class = VideoItem
     numpy_class = NumpyVideoBatch
 
-    def validate_image(self, image: Video) -> Video:
+    @staticmethod
+    def validate_image(image: Video) -> Video:
         """Validate the image."""
         return VideoBatchValidator.validate_image(image)
 
-    def validate_gt_label(self, gt_label: torch.Tensor | None) -> torch.Tensor | None:
+    @staticmethod
+    def validate_gt_label(gt_label: torch.Tensor | None) -> torch.Tensor | None:
         """Validate the ground truth label."""
         return VideoBatchValidator.validate_gt_label(gt_label)
 
-    def validate_gt_mask(self, gt_mask: Mask | None) -> Mask | None:
+    @staticmethod
+    def validate_gt_mask(gt_mask: Mask | None) -> Mask | None:
         """Validate the ground truth mask."""
         return VideoBatchValidator.validate_gt_mask(gt_mask)
 
-    def validate_mask_path(self, mask_path: list[str] | None) -> list[str] | None:
+    @staticmethod
+    def validate_mask_path(mask_path: list[str] | None) -> list[str] | None:
         """Validate the mask path."""
         return VideoBatchValidator.validate_mask_path(mask_path)
 
-    def validate_anomaly_map(self, anomaly_map: torch.Tensor | None) -> torch.Tensor | None:
+    @staticmethod
+    def validate_anomaly_map(anomaly_map: torch.Tensor | None) -> torch.Tensor | None:
         """Validate the anomaly map."""
         return VideoBatchValidator.validate_anomaly_map(anomaly_map)
 
-    def validate_pred_score(self, pred_score: torch.Tensor | None) -> torch.Tensor | None:
+    @staticmethod
+    def validate_pred_score(pred_score: torch.Tensor | None) -> torch.Tensor | None:
         """Validate the prediction score."""
         return VideoBatchValidator.validate_pred_score(pred_score)
 
-    def validate_pred_mask(self, pred_mask: torch.Tensor | None) -> torch.Tensor | None:
+    @staticmethod
+    def validate_pred_mask(pred_mask: torch.Tensor | None) -> torch.Tensor | None:
         """Validate the prediction mask."""
         return VideoBatchValidator.validate_pred_mask(pred_mask)
 
-    def validate_pred_label(self, pred_label: torch.Tensor | None) -> torch.Tensor | None:
+    @staticmethod
+    def validate_pred_label(pred_label: torch.Tensor | None) -> torch.Tensor | None:
         """Validate the prediction label."""
         return VideoBatchValidator.validate_pred_label(pred_label)
 
-    def validate_original_image(self, original_image: torch.Tensor | Video | None) -> torch.Tensor | Video | None:
+    @staticmethod
+    def validate_original_image(original_image: torch.Tensor | Video | None) -> torch.Tensor | Video | None:
         """Validate the original image."""
         return VideoBatchValidator.validate_original_image(original_image)
 
-    def validate_video_path(self, video_path: list[str] | None) -> list[str] | None:
+    @staticmethod
+    def validate_video_path(video_path: list[str] | None) -> list[str] | None:
         """Validate the video path."""
         return VideoBatchValidator.validate_video_path(video_path)
 
-    def validate_target_frame(self, target_frame: torch.Tensor | None) -> torch.Tensor | None:
+    @staticmethod
+    def validate_target_frame(target_frame: torch.Tensor | None) -> torch.Tensor | None:
         """Validate the target frame."""
         return VideoBatchValidator.validate_target_frame(target_frame)
 
-    def validate_frames(self, frames: torch.Tensor | None) -> torch.Tensor | None:
+    @staticmethod
+    def validate_frames(frames: torch.Tensor | None) -> torch.Tensor | None:
         """Validate the frames."""
         return VideoBatchValidator.validate_frames(frames)
 
-    def validate_last_frame(self, last_frame: torch.Tensor | None) -> torch.Tensor | None:
+    @staticmethod
+    def validate_last_frame(last_frame: torch.Tensor | None) -> torch.Tensor | None:
         """Validate the last frame."""
         return VideoBatchValidator.validate_last_frame(last_frame)

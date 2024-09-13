@@ -105,7 +105,8 @@ class Cfa(AnomalyModule):
         predictions = self.model(batch.image)
         return batch.update(**predictions._asdict())
 
-    def backward(self, loss: torch.Tensor, *args, **kwargs) -> None:
+    @staticmethod
+    def backward(loss: torch.Tensor, *args, **kwargs) -> None:
         """Perform backward-pass for the CFA model.
 
         Args:

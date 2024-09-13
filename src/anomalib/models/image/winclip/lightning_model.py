@@ -170,7 +170,8 @@ class WinClip(AnomalyModule):
             state_dict.update(restore_dict)
         return super().load_state_dict(state_dict, strict)
 
-    def configure_transforms(self, image_size: tuple[int, int] | None = None) -> Transform:
+    @staticmethod
+    def configure_transforms(image_size: tuple[int, int] | None = None) -> Transform:
         """Configure the default transforms used by the model."""
         if image_size is not None:
             logger.warning("Image size is not used in WinCLIP. The input image size is determined by the model.")
@@ -181,6 +182,7 @@ class WinClip(AnomalyModule):
             ],
         )
 
-    def default_post_processor(self) -> OneClassPostProcessor:
+    @staticmethod
+    def default_post_processor() -> OneClassPostProcessor:
         """Return the default post-processor for WinCLIP."""
         return OneClassPostProcessor()

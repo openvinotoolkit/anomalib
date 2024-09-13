@@ -272,7 +272,8 @@ class ParallelPermute(InvertibleModule):
 
         return [input_tensor[i][:, self.perm_inv[i]] for i in range(self.n_inputs)], 0.0
 
-    def output_dims(self, input_dims: list[tuple[int]]) -> list[tuple[int]]:
+    @staticmethod
+    def output_dims(input_dims: list[tuple[int]]) -> list[tuple[int]]:
         """Return the output dimensions of the module."""
         return input_dims
 
@@ -403,7 +404,8 @@ class ParallelGlowCouplingLayer(InvertibleModule):
         # Since Jacobians are only used for computing loss and summed in the loss, the idea is to sum them here
         return [z_dist0, z_dist1, z_dist2], torch.stack([jac0, jac1, jac2], dim=1).sum()
 
-    def output_dims(self, input_dims: list[tuple[int]]) -> list[tuple[int]]:
+    @staticmethod
+    def output_dims(input_dims: list[tuple[int]]) -> list[tuple[int]]:
         """Output dimensions of the module."""
         return input_dims
 
@@ -590,7 +592,8 @@ class CsFlowModel(nn.Module):
         anomaly_maps = self.anomaly_map_generator(z_dist)
         return InferenceBatch(anomaly_map=anomaly_maps, pred_score=anomaly_scores)
 
-    def _compute_anomaly_scores(self, z_dists: torch.Tensor) -> torch.Tensor:
+    @staticmethod
+    def _compute_anomaly_scores(z_dists: torch.Tensor) -> torch.Tensor:
         """Get anomaly scores from the latent distribution.
 
         Args:

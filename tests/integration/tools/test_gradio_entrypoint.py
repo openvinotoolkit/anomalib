@@ -24,7 +24,8 @@ class TestGradioInferenceEntrypoint:
     """
 
     @pytest.fixture()
-    def get_functions(self) -> tuple[Callable, Callable]:
+    @staticmethod
+    def get_functions() -> tuple[Callable, Callable]:
         """Get functions from Gradio_inference.py."""
         if find_spec("gradio_inference") is not None:
             from tools.inference.gradio_inference import get_inferencer, get_parser
@@ -33,8 +34,8 @@ class TestGradioInferenceEntrypoint:
             raise ImportError(msg)
         return get_parser, get_inferencer
 
+    @staticmethod
     def test_torch_inference(
-        self,
         get_functions: tuple[Callable, Callable],
         ckpt_path: Callable[[str], Path],
     ) -> None:
@@ -56,8 +57,8 @@ class TestGradioInferenceEntrypoint:
         )
         assert isinstance(inferencer(arguments.weights), TorchInferencer)
 
+    @staticmethod
     def test_openvino_inference(
-        self,
         get_functions: tuple[Callable, Callable],
         ckpt_path: Callable[[str], Path],
     ) -> None:

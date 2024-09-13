@@ -97,7 +97,7 @@ class NumpyImageValidator:
         if label.ndim != 0:
             msg = f"Ground truth label must be a scalar, got shape {label.shape}."
             raise ValueError(msg)
-        if not np.issubdtype(label.dtype, np.integer):
+        if not np.issubdtype(label.dtype, np.integer) and not np.issubdtype(label.dtype, bool):
             msg = f"Ground truth label must be boolean or integer, got {label.dtype}."
             raise TypeError(msg)
         return label.astype(bool)

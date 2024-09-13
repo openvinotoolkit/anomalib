@@ -308,8 +308,8 @@ class ExportMixin:
 
         return model
 
+    @staticmethod
     def _post_training_quantization_ov(
-        self,
         model: "CompiledModel",
         datamodule: AnomalibDataModule | None = None,
     ) -> "CompiledModel":
@@ -328,13 +328,14 @@ class ExportMixin:
         if datamodule is None:
             msg = "Datamodule must be provided for OpenVINO INT8_PTQ compression"
             raise ValueError(msg)
+        datamodule.setup("fit")
 
         model_input = model.input(0)
 
         if model_input.partial_shape[0].is_static:
             datamodule.train_batch_size = model_input.shape[0]
 
-        dataloader = datamodule.train_dataloader()
+        dataloader = datamodule.val_dataloader()
         if len(dataloader.dataset) < 300:
             logger.warning(
                 f">300 images recommended for INT8 quantization, found only {len(dataloader.dataset)} images",
@@ -343,8 +344,8 @@ class ExportMixin:
         calibration_dataset = nncf.Dataset(dataloader, lambda x: x["image"])
         return nncf.quantize(model, calibration_dataset)
 
+    @staticmethod
     def _accuracy_control_quantization_ov(
-        self,
         model: "CompiledModel",
         datamodule: AnomalibDataModule | None = None,
         metric: Metric | str | None = None,
@@ -371,6 +372,8 @@ class ExportMixin:
         if datamodule is None:
             msg = "Datamodule must be provided for OpenVINO INT8_PTQ compression"
             raise ValueError(msg)
+        datamodule.setup("fit")
+
         if metric is None:
             msg = "Metric must be provided for OpenVINO INT8_ACQ compression"
             raise ValueError(msg)
@@ -381,14 +384,14 @@ class ExportMixin:
             datamodule.train_batch_size = model_input.shape[0]
             datamodule.eval_batch_size = model_input.shape[0]
 
-        dataloader = datamodule.train_dataloader()
+        dataloader = datamodule.val_dataloader()
         if len(dataloader.dataset) < 300:
             logger.warning(
                 f">300 images recommended for INT8 quantization, found only {len(dataloader.dataset)} images",
             )
 
         calibration_dataset = nncf.Dataset(dataloader, lambda x: x["image"])
-        validation_dataset = nncf.Dataset(datamodule.val_dataloader())
+        validation_dataset = nncf.Dataset(datamodule.test_dataloader())
 
         if isinstance(metric, str):
             metric = create_metric_collection([metric])[metric]

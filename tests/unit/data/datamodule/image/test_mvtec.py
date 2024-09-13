@@ -16,7 +16,8 @@ class TestMVTec(_TestAnomalibImageDatamodule):
     """MVTec Datamodule Unit Tests."""
 
     @pytest.fixture()
-    def datamodule(self, dataset_path: Path, task_type: TaskType) -> MVTec:
+    @staticmethod
+    def datamodule(dataset_path: Path, task_type: TaskType) -> MVTec:
         """Create and return a MVTec datamodule."""
         _datamodule = MVTec(
             root=dataset_path / "mvtec",
@@ -31,6 +32,7 @@ class TestMVTec(_TestAnomalibImageDatamodule):
         return _datamodule
 
     @pytest.fixture()
-    def fxt_data_config_path(self) -> str:
+    @staticmethod
+    def fxt_data_config_path() -> str:
         """Return the path to the test data config."""
         return "configs/data/mvtec.yaml"

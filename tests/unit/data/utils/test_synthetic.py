@@ -47,24 +47,28 @@ def synthetic_dataset_from_samples(folder_dataset: FolderDataset) -> SyntheticAn
 class TestSyntheticAnomalyDataset:
     """Test SyntheticAnomalyDataset class."""
 
-    def test_create_synthetic_dataset(self, synthetic_dataset: SyntheticAnomalyDataset) -> None:
+    @staticmethod
+    def test_create_synthetic_dataset(synthetic_dataset: SyntheticAnomalyDataset) -> None:
         """Tests if the image and mask files listed in the synthetic dataset exist."""
         assert all(Path(path).exists() for path in synthetic_dataset.samples.image_path)
         assert all(Path(path).exists() for path in synthetic_dataset.samples.mask_path)
 
-    def test_create_from_dataset(self, synthetic_dataset_from_samples: SyntheticAnomalyDataset) -> None:
+    @staticmethod
+    def test_create_from_dataset(synthetic_dataset_from_samples: SyntheticAnomalyDataset) -> None:
         """Test if the synthetic dataset is instantiated correctly from samples df."""
         assert all(Path(path).exists() for path in synthetic_dataset_from_samples.samples.image_path)
         assert all(Path(path).exists() for path in synthetic_dataset_from_samples.samples.mask_path)
 
-    def test_copy(self, synthetic_dataset: SyntheticAnomalyDataset) -> None:
+    @staticmethod
+    def test_copy(synthetic_dataset: SyntheticAnomalyDataset) -> None:
         """Tests if the dataset is copied correctly, and files still exist after original instance is deleted."""
         synthetic_dataset_cp = copy(synthetic_dataset)
         assert all(synthetic_dataset.samples == synthetic_dataset_cp.samples)
         del synthetic_dataset
         assert synthetic_dataset_cp.root.exists()
 
-    def test_cleanup(self, folder_dataset: FolderDataset) -> None:
+    @staticmethod
+    def test_cleanup(folder_dataset: FolderDataset) -> None:
         """Tests if the temporary directory is cleaned up when the instance is deleted."""
         synthetic_dataset = SyntheticAnomalyDataset.from_dataset(folder_dataset)
         root = synthetic_dataset.root

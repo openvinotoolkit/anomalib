@@ -118,7 +118,7 @@ class Inferencer(ABC):
 
         return anomaly_maps, float(pred_scores)
 
-    def _load_metadata(self, path: str | Path | dict | None = None) -> dict | DictConfig:
+    def _load_metadata(self, path: str | Path | dict | None = None) -> dict | DictConfig:  # noqa: PLR6301
         """Load the meta data from the given path.
 
         Args:

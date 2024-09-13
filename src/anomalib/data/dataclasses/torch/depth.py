@@ -46,47 +46,58 @@ class DepthItem(
 
     numpy_class = NumpyImageItem
 
-    def validate_image(self, image: Image) -> Image:
+    @staticmethod
+    def validate_image(image: Image) -> Image:
         """Validate the image."""
         return DepthValidator.validate_image(image)
 
-    def validate_gt_label(self, gt_label: torch.Tensor | None) -> torch.Tensor | None:
+    @staticmethod
+    def validate_gt_label(gt_label: torch.Tensor | None) -> torch.Tensor | None:
         """Validate the ground truth label."""
         return DepthValidator.validate_gt_label(gt_label)
 
-    def validate_gt_mask(self, gt_mask: Mask | None) -> Mask | None:
+    @staticmethod
+    def validate_gt_mask(gt_mask: Mask | None) -> Mask | None:
         """Validate the ground truth mask."""
         return DepthValidator.validate_gt_mask(gt_mask)
 
-    def validate_mask_path(self, mask_path: str | None) -> str | None:
+    @staticmethod
+    def validate_mask_path(mask_path: str | None) -> str | None:
         """Validate the mask path."""
         return DepthValidator.validate_mask_path(mask_path)
 
-    def validate_anomaly_map(self, anomaly_map: torch.Tensor | None) -> torch.Tensor | None:
+    @staticmethod
+    def validate_anomaly_map(anomaly_map: torch.Tensor | None) -> torch.Tensor | None:
         """Validate the anomaly map."""
         return DepthValidator.validate_anomaly_map(anomaly_map)
 
-    def validate_pred_score(self, pred_score: torch.Tensor | None) -> torch.Tensor | None:
+    @staticmethod
+    def validate_pred_score(pred_score: torch.Tensor | None) -> torch.Tensor | None:
         """Validate the prediction score."""
         return DepthValidator.validate_pred_score(pred_score)
 
-    def validate_pred_mask(self, pred_mask: torch.Tensor | None) -> torch.Tensor | None:
+    @staticmethod
+    def validate_pred_mask(pred_mask: torch.Tensor | None) -> torch.Tensor | None:
         """Validate the prediction mask."""
         return DepthValidator.validate_pred_mask(pred_mask)
 
-    def validate_pred_label(self, pred_label: torch.Tensor | None) -> torch.Tensor | None:
+    @staticmethod
+    def validate_pred_label(pred_label: torch.Tensor | None) -> torch.Tensor | None:
         """Validate the prediction label."""
         return DepthValidator.validate_pred_label(pred_label)
 
-    def validate_image_path(self, image_path: str | None) -> str | None:
+    @staticmethod
+    def validate_image_path(image_path: str | None) -> str | None:
         """Validate the image path."""
         return DepthValidator.validate_image_path(image_path)
 
-    def validate_depth_map(self, depth_map: torch.Tensor | None) -> torch.Tensor | None:
+    @staticmethod
+    def validate_depth_map(depth_map: torch.Tensor | None) -> torch.Tensor | None:
         """Validate the depth map."""
         return DepthValidator.validate_depth_map(depth_map)
 
-    def validate_depth_path(self, depth_path: str | None) -> str | None:
+    @staticmethod
+    def validate_depth_path(depth_path: str | None) -> str | None:
         """Validate the depth path."""
         return DepthValidator.validate_depth_path(depth_path)
 
@@ -122,7 +133,8 @@ class DepthBatch(
 
     item_class = DepthItem
 
-    def validate_image(self, image: Image) -> Image:
+    @staticmethod
+    def validate_image(image: Image) -> Image:
         """Validate the image."""
         return DepthBatchValidator.validate_image(image)
 
@@ -150,11 +162,13 @@ class DepthBatch(
         """Validate the prediction mask."""
         return DepthBatchValidator.validate_pred_mask(pred_mask, self.batch_size)
 
-    def validate_pred_label(self, pred_label: torch.Tensor | None) -> torch.Tensor | None:
+    @staticmethod
+    def validate_pred_label(pred_label: torch.Tensor | None) -> torch.Tensor | None:
         """Validate the prediction label."""
         return DepthBatchValidator.validate_pred_label(pred_label)
 
-    def validate_image_path(self, image_path: list[str] | None) -> list[str] | None:
+    @staticmethod
+    def validate_image_path(image_path: list[str] | None) -> list[str] | None:
         """Validate the image path."""
         return DepthBatchValidator.validate_image_path(image_path)
 
@@ -162,6 +176,7 @@ class DepthBatch(
         """Validate the depth map."""
         return DepthBatchValidator.validate_depth_map(depth_map, self.batch_size)
 
-    def validate_depth_path(self, depth_path: list[str] | None) -> list[str] | None:
+    @staticmethod
+    def validate_depth_path(depth_path: list[str] | None) -> list[str] | None:
         """Validate the depth path."""
         return DepthBatchValidator.validate_depth_path(depth_path)

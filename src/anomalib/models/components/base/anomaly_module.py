@@ -157,7 +157,8 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
 
         return super()._save_to_state_dict(destination, prefix, keep_vars)
 
-    def _get_instance(self, state_dict: OrderedDict[str, Any], dict_key: str) -> Threshold:
+    @staticmethod
+    def _get_instance(state_dict: OrderedDict[str, Any], dict_key: str) -> Threshold:
         """Get the threshold class from the ``state_dict``."""
         class_path = state_dict.pop(dict_key)
         module = importlib.import_module(".".join(class_path.split(".")[:-1]))
@@ -182,7 +183,7 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
         """Update the transform linked to the model instance."""
         self._transform = transform
 
-    def configure_transforms(self, image_size: tuple[int, int] | None = None) -> Transform:
+    def configure_transforms(self, image_size: tuple[int, int] | None = None) -> Transform:  # noqa: PLR6301
         """Default transforms.
 
         The default transform is resize to 256x256 and normalize to ImageNet stats. Individual models can override

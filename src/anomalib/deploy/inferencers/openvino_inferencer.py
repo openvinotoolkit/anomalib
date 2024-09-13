@@ -141,7 +141,8 @@ class OpenVINOInferencer:
 
         return input_blob, output_blob, compile_model
 
-    def pre_process(self, image: np.ndarray) -> np.ndarray:
+    @staticmethod
+    def pre_process(image: np.ndarray) -> np.ndarray:
         """Pre-process the input image by applying transformations.
 
         Args:

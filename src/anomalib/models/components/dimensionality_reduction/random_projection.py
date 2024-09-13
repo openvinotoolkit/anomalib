@@ -98,7 +98,8 @@ class SparseRandomProjection:
 
         return components
 
-    def _johnson_lindenstrauss_min_dim(self, n_samples: int, eps: float = 0.1) -> int | np.integer:
+    @staticmethod
+    def _johnson_lindenstrauss_min_dim(n_samples: int, eps: float = 0.1) -> int | np.integer:
         """Find a 'safe' number of components to randomly project to.
 
         Ref eqn 2.1 https://cseweb.ucsd.edu/~dasgupta/papers/jl.pdf

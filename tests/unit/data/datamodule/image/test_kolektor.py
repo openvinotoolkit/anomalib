@@ -16,7 +16,8 @@ class TestKolektor(_TestAnomalibImageDatamodule):
     """Kolektor Datamodule Unit Tests."""
 
     @pytest.fixture()
-    def datamodule(self, dataset_path: Path, task_type: TaskType) -> Kolektor:
+    @staticmethod
+    def datamodule(dataset_path: Path, task_type: TaskType) -> Kolektor:
         """Create and return a BTech datamodule."""
         _datamodule = Kolektor(
             root=dataset_path / "kolektor",
@@ -32,6 +33,7 @@ class TestKolektor(_TestAnomalibImageDatamodule):
         return _datamodule
 
     @pytest.fixture()
-    def fxt_data_config_path(self) -> str:
+    @staticmethod
+    def fxt_data_config_path() -> str:
         """Return the path to the test data config."""
         return "configs/data/kolektor.yaml"

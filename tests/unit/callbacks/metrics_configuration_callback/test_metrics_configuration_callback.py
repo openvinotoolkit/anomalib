@@ -22,7 +22,7 @@ from anomalib.post_processing import PostProcessor
 class DummyPostProcessor(PostProcessor):
     """Dummy post-processor for testing."""
 
-    def forward(self, batch: InferenceBatch) -> InferenceBatch:
+    def forward(self, batch: InferenceBatch) -> InferenceBatch:  # noqa: PLR6301
         """Dummy forward method."""
         return batch
 
@@ -36,16 +36,20 @@ class _DummyAnomalyModule(AnomalyModule):
         self.image_threshold = F1AdaptiveThreshold()
         self.pixel_threshold = F1AdaptiveThreshold()
 
-    def test_step(self, **_kwdargs) -> None:
+    @staticmethod
+    def test_step(**_kwdargs) -> None:
         return None
 
-    def validation_epoch_end(self, **_kwdargs) -> None:
+    @staticmethod
+    def validation_epoch_end(**_kwdargs) -> None:
         return None
 
-    def test_epoch_end(self, **_kwdargs) -> None:
+    @staticmethod
+    def test_epoch_end(**_kwdargs) -> None:
         return None
 
-    def configure_optimizers(self) -> None:
+    @staticmethod
+    def configure_optimizers() -> None:
         return None
 
     @property
