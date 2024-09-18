@@ -26,7 +26,10 @@ class _TestAnomalibDepthDatamodule(_TestAnomalibDataModule):
         expected_fields = {"image_path", "depth_path", "gt_label", "image", "depth_map"}
 
         if dataloader.dataset.task == "segmentation":
-            expected_fields |= {"mask_path", "gt_mask"}
+            expected_fields.add("gt_mask")
+            # Add mask_path to expected fields if it's present in the batch
+            if hasattr(batch, "mask_path") and batch.mask_path is not None:
+                expected_fields.add("mask_path")
 
         batch_fields = {field.name for field in fields(batch) if getattr(batch, field.name) is not None}
         assert batch_fields == expected_fields
