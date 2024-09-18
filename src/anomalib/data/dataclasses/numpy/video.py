@@ -20,16 +20,20 @@ class NumpyVideoItem(_VideoInputFields[np.ndarray, np.ndarray, np.ndarray, str],
     for Anomalib's video-based models.
     """
 
-    def _validate_image(self, image: np.ndarray) -> np.ndarray:
+    @staticmethod
+    def _validate_image(image: np.ndarray) -> np.ndarray:
         return image
 
-    def _validate_gt_label(self, gt_label: np.ndarray) -> np.ndarray:
+    @staticmethod
+    def _validate_gt_label(gt_label: np.ndarray) -> np.ndarray:
         return gt_label
 
-    def _validate_gt_mask(self, gt_mask: np.ndarray) -> np.ndarray:
+    @staticmethod
+    def _validate_gt_mask(gt_mask: np.ndarray) -> np.ndarray:
         return gt_mask
 
-    def _validate_mask_path(self, mask_path: str) -> str:
+    @staticmethod
+    def _validate_mask_path(mask_path: str) -> str:
         return mask_path
 
 
@@ -48,17 +52,22 @@ class NumpyVideoBatch(
 
     item_class = NumpyVideoItem
 
-    def _validate_image(self, image: np.ndarray) -> np.ndarray:
+    @staticmethod
+    def _validate_image(image: np.ndarray) -> np.ndarray:
         return image
 
-    def _validate_gt_label(self, gt_label: np.ndarray) -> np.ndarray:
+    @staticmethod
+    def _validate_gt_label(gt_label: np.ndarray) -> np.ndarray:
         return gt_label
 
-    def _validate_gt_mask(self, gt_mask: np.ndarray) -> np.ndarray:
+    @staticmethod
+    def _validate_gt_mask(gt_mask: np.ndarray) -> np.ndarray:
         return gt_mask
 
-    def _validate_mask_path(self, mask_path: list[str]) -> list[str]:
+    @staticmethod
+    def _validate_mask_path(mask_path: list[str]) -> list[str]:
         return mask_path
 
-    def _validate_anomaly_map(self, anomaly_map: np.ndarray) -> np.ndarray:
+    @staticmethod
+    def _validate_anomaly_map(anomaly_map: np.ndarray) -> np.ndarray:
         return anomaly_map

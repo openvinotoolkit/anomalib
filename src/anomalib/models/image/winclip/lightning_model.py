@@ -182,6 +182,7 @@ class WinClip(AnomalyModule):
             ],
         )
 
-    def default_post_processor(self) -> OneClassPostProcessor:
+    @staticmethod
+    def default_post_processor() -> OneClassPostProcessor:
         """Return the default post-processor for WinCLIP."""
         return OneClassPostProcessor()

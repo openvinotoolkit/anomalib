@@ -36,22 +36,27 @@ class NumpyImageItem(_ImageInputFields[str], NumpyItem):
         >>> path = item.image_path
     """
 
-    def _validate_image(self, image: np.ndarray) -> np.ndarray:
+    @staticmethod
+    def _validate_image(image: np.ndarray) -> np.ndarray:
         assert image.ndim == 3, f"Expected 3D image, got {image.ndim}D image."
         if image.shape[0] == 3:
             image = image.transpose(1, 2, 0)
         return image
 
-    def _validate_gt_label(self, gt_label: np.ndarray) -> np.ndarray:
+    @staticmethod
+    def _validate_gt_label(gt_label: np.ndarray) -> np.ndarray:
         return gt_label
 
-    def _validate_gt_mask(self, gt_mask: np.ndarray) -> np.ndarray:
+    @staticmethod
+    def _validate_gt_mask(gt_mask: np.ndarray) -> np.ndarray:
         return gt_mask
 
-    def _validate_mask_path(self, mask_path: str) -> str:
+    @staticmethod
+    def _validate_mask_path(mask_path: str) -> str:
         return mask_path
 
-    def _validate_anomaly_map(self, anomaly_map: np.ndarray | None) -> np.ndarray | None:
+    @staticmethod
+    def _validate_anomaly_map(anomaly_map: np.ndarray | None) -> np.ndarray | None:
         if anomaly_map is None:
             return None
         assert isinstance(anomaly_map, np.ndarray), f"Anomaly map must be a numpy array, got {type(anomaly_map)}."
@@ -66,7 +71,8 @@ class NumpyImageItem(_ImageInputFields[str], NumpyItem):
             anomaly_map = anomaly_map.squeeze(0)
         return anomaly_map.astype(np.float32)
 
-    def _validate_pred_score(self, pred_score: np.ndarray | None) -> np.ndarray | None:
+    @staticmethod
+    def _validate_pred_score(pred_score: np.ndarray | None) -> np.ndarray | None:
         if pred_score is None:
             return None
         if pred_score.ndim == 1:
@@ -74,13 +80,16 @@ class NumpyImageItem(_ImageInputFields[str], NumpyItem):
             pred_score = pred_score[0]
         return pred_score
 
-    def _validate_pred_mask(self, pred_mask: np.ndarray) -> np.ndarray:
+    @staticmethod
+    def _validate_pred_mask(pred_mask: np.ndarray) -> np.ndarray:
         return pred_mask
 
-    def _validate_pred_label(self, pred_label: np.ndarray) -> np.ndarray:
+    @staticmethod
+    def _validate_pred_label(pred_label: np.ndarray) -> np.ndarray:
         return pred_label
 
-    def _validate_image_path(self, image_path: str) -> str:
+    @staticmethod
+    def _validate_image_path(image_path: str) -> str:
         return image_path
 
 
@@ -115,29 +124,38 @@ class NumpyImageBatch(BatchIterateMixin[NumpyImageItem], _ImageInputFields[list[
 
     item_class = NumpyImageItem
 
-    def _validate_image(self, image: np.ndarray) -> np.ndarray:
+    @staticmethod
+    def _validate_image(image: np.ndarray) -> np.ndarray:
         return image
 
-    def _validate_gt_label(self, gt_label: np.ndarray) -> np.ndarray:
+    @staticmethod
+    def _validate_gt_label(gt_label: np.ndarray) -> np.ndarray:
         return gt_label
 
-    def _validate_gt_mask(self, gt_mask: np.ndarray) -> np.ndarray:
+    @staticmethod
+    def _validate_gt_mask(gt_mask: np.ndarray) -> np.ndarray:
         return gt_mask
 
-    def _validate_mask_path(self, mask_path: list[str]) -> list[str]:
+    @staticmethod
+    def _validate_mask_path(mask_path: list[str]) -> list[str]:
         return mask_path
 
-    def _validate_anomaly_map(self, anomaly_map: np.ndarray) -> np.ndarray:
+    @staticmethod
+    def _validate_anomaly_map(anomaly_map: np.ndarray) -> np.ndarray:
         return anomaly_map
 
-    def _validate_pred_score(self, pred_score: np.ndarray) -> np.ndarray:
+    @staticmethod
+    def _validate_pred_score(pred_score: np.ndarray) -> np.ndarray:
         return pred_score
 
-    def _validate_pred_mask(self, pred_mask: np.ndarray) -> np.ndarray:
+    @staticmethod
+    def _validate_pred_mask(pred_mask: np.ndarray) -> np.ndarray:
         return pred_mask
 
-    def _validate_pred_label(self, pred_label: np.ndarray) -> np.ndarray:
+    @staticmethod
+    def _validate_pred_label(pred_label: np.ndarray) -> np.ndarray:
         return pred_label
 
-    def _validate_image_path(self, image_path: list[str]) -> list[str]:
+    @staticmethod
+    def _validate_image_path(image_path: list[str]) -> list[str]:
         return image_path

@@ -45,37 +45,48 @@ class DepthItem(
 
     numpy_class = NumpyImageItem
 
-    def _validate_image(self, image: Image) -> Image:
+    @staticmethod
+    def _validate_image(image: Image) -> Image:
         return image
 
-    def _validate_gt_label(self, gt_label: torch.Tensor) -> torch.Tensor:
+    @staticmethod
+    def _validate_gt_label(gt_label: torch.Tensor) -> torch.Tensor:
         return gt_label
 
-    def _validate_gt_mask(self, gt_mask: Mask) -> Mask:
+    @staticmethod
+    def _validate_gt_mask(gt_mask: Mask) -> Mask:
         return gt_mask
 
-    def _validate_mask_path(self, mask_path: str) -> str:
+    @staticmethod
+    def _validate_mask_path(mask_path: str) -> str:
         return mask_path
 
-    def _validate_anomaly_map(self, anomaly_map: torch.Tensor) -> torch.Tensor:
+    @staticmethod
+    def _validate_anomaly_map(anomaly_map: torch.Tensor) -> torch.Tensor:
         return anomaly_map
 
-    def _validate_pred_score(self, pred_score: torch.Tensor) -> torch.Tensor:
+    @staticmethod
+    def _validate_pred_score(pred_score: torch.Tensor) -> torch.Tensor:
         return pred_score
 
-    def _validate_pred_mask(self, pred_mask: torch.Tensor) -> torch.Tensor:
+    @staticmethod
+    def _validate_pred_mask(pred_mask: torch.Tensor) -> torch.Tensor:
         return pred_mask
 
-    def _validate_pred_label(self, pred_label: torch.Tensor) -> torch.Tensor:
+    @staticmethod
+    def _validate_pred_label(pred_label: torch.Tensor) -> torch.Tensor:
         return pred_label
 
-    def _validate_image_path(self, image_path: str) -> str:
+    @staticmethod
+    def _validate_image_path(image_path: str) -> str:
         return image_path
 
-    def _validate_depth_map(self, depth_map: torch.Tensor) -> torch.Tensor:
+    @staticmethod
+    def _validate_depth_map(depth_map: torch.Tensor) -> torch.Tensor:
         return depth_map
 
-    def _validate_depth_path(self, depth_path: str) -> str:
+    @staticmethod
+    def _validate_depth_path(depth_path: str) -> str:
         return depth_path
 
 
@@ -110,35 +121,46 @@ class DepthBatch(
 
     item_class = DepthItem
 
-    def _validate_image(self, image: Image) -> Image:
+    @staticmethod
+    def _validate_image(image: Image) -> Image:
         return image
 
-    def _validate_gt_label(self, gt_label: torch.Tensor) -> torch.Tensor:
+    @staticmethod
+    def _validate_gt_label(gt_label: torch.Tensor) -> torch.Tensor:
         return gt_label
 
-    def _validate_gt_mask(self, gt_mask: Mask) -> Mask:
+    @staticmethod
+    def _validate_gt_mask(gt_mask: Mask) -> Mask:
         return gt_mask
 
-    def _validate_mask_path(self, mask_path: list[str]) -> list[str]:
+    @staticmethod
+    def _validate_mask_path(mask_path: list[str]) -> list[str]:
         return mask_path
 
-    def _validate_anomaly_map(self, anomaly_map: torch.Tensor) -> torch.Tensor:
+    @staticmethod
+    def _validate_anomaly_map(anomaly_map: torch.Tensor) -> torch.Tensor:
         return anomaly_map
 
-    def _validate_pred_score(self, pred_score: torch.Tensor) -> torch.Tensor:
+    @staticmethod
+    def _validate_pred_score(pred_score: torch.Tensor) -> torch.Tensor:
         return pred_score
 
-    def _validate_pred_mask(self, pred_mask: torch.Tensor) -> torch.Tensor:
+    @staticmethod
+    def _validate_pred_mask(pred_mask: torch.Tensor) -> torch.Tensor:
         return pred_mask
 
-    def _validate_pred_label(self, pred_label: torch.Tensor) -> torch.Tensor:
+    @staticmethod
+    def _validate_pred_label(pred_label: torch.Tensor) -> torch.Tensor:
         return pred_label
 
-    def _validate_image_path(self, image_path: list[str]) -> list[str]:
+    @staticmethod
+    def _validate_image_path(image_path: list[str]) -> list[str]:
         return image_path
 
-    def _validate_depth_map(self, depth_map: torch.Tensor) -> torch.Tensor:
+    @staticmethod
+    def _validate_depth_map(depth_map: torch.Tensor) -> torch.Tensor:
         return depth_map
 
-    def _validate_depth_path(self, depth_path: list[str]) -> list[str]:
+    @staticmethod
+    def _validate_depth_path(depth_path: list[str]) -> list[str]:
         return depth_path

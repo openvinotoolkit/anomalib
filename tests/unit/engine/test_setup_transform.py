@@ -38,7 +38,8 @@ class DummyDataset(AnomalibDataset):
 class DummyPostProcessor(PostProcessor):
     """Dummy post-processor for testing the setup_transform method."""
 
-    def forward(self, batch: InferenceBatch) -> InferenceBatch:
+    @staticmethod
+    def forward(batch: InferenceBatch) -> InferenceBatch:
         """Return the batch unmodified."""
         return batch
 
@@ -67,7 +68,8 @@ class DummyModel(AnomalyModule):
         """Return the learning type."""
         return LearningType.ZERO_SHOT
 
-    def default_post_processor(self) -> PostProcessor:
+    @staticmethod
+    def default_post_processor() -> PostProcessor:
         """Return a dummy post-processor."""
         return DummyPostProcessor()
 

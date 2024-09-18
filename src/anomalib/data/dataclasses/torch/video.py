@@ -49,43 +49,56 @@ class VideoItem(
 
     numpy_class = NumpyVideoItem
 
-    def _validate_image(self, image: Image) -> Video:
+    @staticmethod
+    def _validate_image(image: Image) -> Video:
         return image
 
-    def _validate_gt_label(self, gt_label: torch.Tensor) -> torch.Tensor:
+    @staticmethod
+    def _validate_gt_label(gt_label: torch.Tensor) -> torch.Tensor:
         return gt_label
 
-    def _validate_gt_mask(self, gt_mask: Mask) -> Mask:
+    @staticmethod
+    def _validate_gt_mask(gt_mask: Mask) -> Mask:
         return gt_mask
 
-    def _validate_mask_path(self, mask_path: str) -> str:
+    @staticmethod
+    def _validate_mask_path(mask_path: str) -> str:
         return mask_path
 
-    def _validate_anomaly_map(self, anomaly_map: torch.Tensor) -> torch.Tensor | None:
+    @staticmethod
+    def _validate_anomaly_map(anomaly_map: torch.Tensor) -> torch.Tensor | None:
         return anomaly_map
 
-    def _validate_pred_score(self, pred_score: torch.Tensor | None) -> torch.Tensor | None:
+    @staticmethod
+    def _validate_pred_score(pred_score: torch.Tensor | None) -> torch.Tensor | None:
         return pred_score
 
-    def _validate_pred_mask(self, pred_mask: torch.Tensor) -> torch.Tensor | None:
+    @staticmethod
+    def _validate_pred_mask(pred_mask: torch.Tensor) -> torch.Tensor | None:
         return pred_mask
 
-    def _validate_pred_label(self, pred_label: torch.Tensor) -> torch.Tensor | None:
+    @staticmethod
+    def _validate_pred_label(pred_label: torch.Tensor) -> torch.Tensor | None:
         return pred_label
 
-    def _validate_original_image(self, original_image: Video) -> Video:
+    @staticmethod
+    def _validate_original_image(original_image: Video) -> Video:
         return original_image
 
-    def _validate_video_path(self, video_path: str) -> str:
+    @staticmethod
+    def _validate_video_path(video_path: str) -> str:
         return video_path
 
-    def _validate_target_frame(self, target_frame: torch.Tensor) -> torch.Tensor:
+    @staticmethod
+    def _validate_target_frame(target_frame: torch.Tensor) -> torch.Tensor:
         return target_frame
 
-    def _validate_frames(self, frames: torch.Tensor) -> torch.Tensor:
+    @staticmethod
+    def _validate_frames(frames: torch.Tensor) -> torch.Tensor:
         return frames
 
-    def _validate_last_frame(self, last_frame: torch.Tensor) -> torch.Tensor:
+    @staticmethod
+    def _validate_last_frame(last_frame: torch.Tensor) -> torch.Tensor:
         return last_frame
 
     def to_image(self) -> ImageItem:
@@ -130,41 +143,54 @@ class VideoBatch(
     item_class = VideoItem
     numpy_class = NumpyVideoBatch
 
-    def _validate_image(self, image: Image) -> Video:
+    @staticmethod
+    def _validate_image(image: Image) -> Video:
         return image
 
-    def _validate_gt_label(self, gt_label: torch.Tensor) -> torch.Tensor:
+    @staticmethod
+    def _validate_gt_label(gt_label: torch.Tensor) -> torch.Tensor:
         return gt_label
 
-    def _validate_gt_mask(self, gt_mask: Mask) -> Mask:
+    @staticmethod
+    def _validate_gt_mask(gt_mask: Mask) -> Mask:
         return gt_mask
 
-    def _validate_mask_path(self, mask_path: list[str]) -> list[str]:
+    @staticmethod
+    def _validate_mask_path(mask_path: list[str]) -> list[str]:
         return mask_path
 
-    def _validate_anomaly_map(self, anomaly_map: torch.Tensor) -> torch.Tensor:
+    @staticmethod
+    def _validate_anomaly_map(anomaly_map: torch.Tensor) -> torch.Tensor:
         return anomaly_map
 
-    def _validate_pred_score(self, pred_score: torch.Tensor) -> torch.Tensor:
+    @staticmethod
+    def _validate_pred_score(pred_score: torch.Tensor) -> torch.Tensor:
         return pred_score
 
-    def _validate_pred_mask(self, pred_mask: torch.Tensor) -> torch.Tensor:
+    @staticmethod
+    def _validate_pred_mask(pred_mask: torch.Tensor) -> torch.Tensor:
         return pred_mask
 
-    def _validate_pred_label(self, pred_label: torch.Tensor) -> torch.Tensor:
+    @staticmethod
+    def _validate_pred_label(pred_label: torch.Tensor) -> torch.Tensor:
         return pred_label
 
-    def _validate_original_image(self, original_image: Video) -> Video:
+    @staticmethod
+    def _validate_original_image(original_image: Video) -> Video:
         return original_image
 
-    def _validate_video_path(self, video_path: list[str]) -> list[str]:
+    @staticmethod
+    def _validate_video_path(video_path: list[str]) -> list[str]:
         return video_path
 
-    def _validate_target_frame(self, target_frame: torch.Tensor) -> torch.Tensor:
+    @staticmethod
+    def _validate_target_frame(target_frame: torch.Tensor) -> torch.Tensor:
         return target_frame
 
-    def _validate_frames(self, frames: torch.Tensor) -> torch.Tensor:
+    @staticmethod
+    def _validate_frames(frames: torch.Tensor) -> torch.Tensor:
         return frames
 
-    def _validate_last_frame(self, last_frame: torch.Tensor) -> torch.Tensor:
+    @staticmethod
+    def _validate_last_frame(last_frame: torch.Tensor) -> torch.Tensor:
         return last_frame

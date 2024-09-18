@@ -170,6 +170,7 @@ class AiVad(MemoryBankMixin, AnomalyModule):
         del image_size
         return None
 
-    def default_post_processor(self) -> PostProcessor:
+    @staticmethod
+    def default_post_processor() -> PostProcessor:
         """Return the default post-processor for AI-VAD."""
         return OneClassPostProcessor()

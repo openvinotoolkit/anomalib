@@ -157,7 +157,8 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
 
         return super()._save_to_state_dict(destination, prefix, keep_vars)
 
-    def _get_instance(self, state_dict: OrderedDict[str, Any], dict_key: str) -> Threshold:
+    @staticmethod
+    def _get_instance(state_dict: OrderedDict[str, Any], dict_key: str) -> Threshold:
         """Get the threshold class from the ``state_dict``."""
         class_path = state_dict.pop(dict_key)
         module = importlib.import_module(".".join(class_path.split(".")[:-1]))
