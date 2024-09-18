@@ -19,7 +19,7 @@ from anomalib.models import AnomalyModule, get_available_models, get_model
 
 def models() -> set[str]:
     """Return all available models."""
-    return [model for model in get_available_models() if model != "rkde"]
+    return {model for model in get_available_models() if model != "rkde"}
 
 
 def export_types() -> list[ExportType]:
