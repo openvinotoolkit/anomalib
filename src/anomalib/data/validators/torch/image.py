@@ -209,7 +209,7 @@ class ImageValidator:
 
     @staticmethod
     def validate_pred_score(
-        pred_score: torch.Tensor | float | None,
+        pred_score: torch.Tensor | np.ndarray | float | None,
         anomaly_map: torch.Tensor | None = None,
     ) -> torch.Tensor | None:
         """Validate the prediction score.
@@ -280,7 +280,7 @@ class ImageValidator:
         return ImageValidator.validate_gt_mask(pred_mask)  # We can reuse the gt_mask validation
 
     @staticmethod
-    def validate_pred_label(pred_label: torch.Tensor | None) -> torch.Tensor | None:
+    def validate_pred_label(pred_label: torch.Tensor | np.ndarray | float | None) -> torch.Tensor | None:
         """Validate the prediction label.
 
         Args:
