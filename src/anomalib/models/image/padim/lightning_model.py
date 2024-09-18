@@ -15,7 +15,7 @@ from torchvision.transforms.v2 import Compose, Normalize, Resize, Transform
 from anomalib import LearningType
 from anomalib.data import Batch
 from anomalib.models.components import AnomalyModule, MemoryBankMixin
-from anomalib.post_processing.one_class import OneClassPostProcessor, PostProcessor
+from anomalib.post_processing.one_class import OneClassPostProcessor
 
 from .torch_model import PadimModel
 
@@ -135,6 +135,7 @@ class Padim(MemoryBankMixin, AnomalyModule):
             ],
         )
 
-    def default_post_processor(self) -> PostProcessor:
+    @staticmethod
+    def default_post_processor() -> OneClassPostProcessor:
         """Return the default post-processor for PADIM."""
         return OneClassPostProcessor()

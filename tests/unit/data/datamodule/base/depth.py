@@ -8,8 +8,7 @@ from dataclasses import fields
 import pytest
 
 from anomalib.data import AnomalibDataModule
-
-from .base import _TestAnomalibDataModule
+from tests.unit.data.datamodule.base.base import _TestAnomalibDataModule
 
 
 class _TestAnomalibDepthDatamodule(_TestAnomalibDataModule):

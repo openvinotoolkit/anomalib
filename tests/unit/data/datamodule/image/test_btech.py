@@ -1,4 +1,4 @@
-"""Unit Tests - Kolektor Datamodule."""
+"""Unit Tests - BTech Datamodule."""
 
 # Copyright (C) 2023-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -8,19 +8,20 @@ from pathlib import Path
 import pytest
 
 from anomalib import TaskType
-from anomalib.data import Kolektor
-from tests.unit.data.base.image import _TestAnomalibImageDatamodule
+from anomalib.data import BTech
+from tests.unit.data.datamodule.base.image import _TestAnomalibImageDatamodule
 
 
-class TestKolektor(_TestAnomalibImageDatamodule):
-    """Kolektor Datamodule Unit Tests."""
+class TestBTech(_TestAnomalibImageDatamodule):
+    """MVTec Datamodule Unit Tests."""
 
     @pytest.fixture()
     @staticmethod
-    def datamodule(dataset_path: Path, task_type: TaskType) -> Kolektor:
+    def datamodule(dataset_path: Path, task_type: TaskType) -> BTech:
         """Create and return a BTech datamodule."""
-        _datamodule = Kolektor(
-            root=dataset_path / "kolektor",
+        _datamodule = BTech(
+            root=dataset_path / "btech",
+            category="dummy",
             task=task_type,
             image_size=256,
             train_batch_size=4,
@@ -36,4 +37,4 @@ class TestKolektor(_TestAnomalibImageDatamodule):
     @staticmethod
     def fxt_data_config_path() -> str:
         """Return the path to the test data config."""
-        return "configs/data/kolektor.yaml"
+        return "configs/data/btech.yaml"

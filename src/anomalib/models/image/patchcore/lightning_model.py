@@ -140,7 +140,8 @@ class Patchcore(MemoryBankMixin, AnomalyModule):
             ],
         )
 
-    def default_post_processor(self) -> OneClassPostProcessor:
+    @staticmethod
+    def default_post_processor() -> OneClassPostProcessor:
         """Return the default post-processor for the model.
 
         Returns:

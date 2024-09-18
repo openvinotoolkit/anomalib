@@ -22,7 +22,8 @@ from anomalib.post_processing import PostProcessor
 class DummyPostProcessor(PostProcessor):
     """Dummy post-processor for testing."""
 
-    def forward(self, batch: InferenceBatch) -> InferenceBatch:
+    @staticmethod
+    def forward(batch: InferenceBatch) -> InferenceBatch:
         """Dummy forward method."""
         return batch
 
