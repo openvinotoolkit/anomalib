@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from torchvision.transforms.v2.functional import to_dtype_image
-from torchvision.tv_tensors import Image, Mask, Video
+from torchvision.tv_tensors import Mask, Video
 
 import torch
 from anomalib.data.validators.path import validate_batch_path, validate_path
@@ -14,7 +14,7 @@ class VideoValidator:
     """Validate torch.Tensor data for videos."""
 
     @staticmethod
-    def validate_image(image: Image) -> Image:
+    def validate_image(image: torch.Tensor) -> torch.Tensor:
         """Validate the video tensor.
 
         Args:
@@ -440,17 +440,17 @@ class VideoValidator:
         return frames
 
     @staticmethod
-    def validate_last_frame(last_frame: torch.Tensor | int | None) -> torch.Tensor | int | None:
+    def validate_last_frame(last_frame: torch.Tensor | int | float | None) -> torch.Tensor | int | None:
         """Validate the last frame index.
 
         Args:
-            last_frame (torch.Tensor | int | None): Input last frame index.
+            last_frame (torch.Tensor | int | float | None): Input last frame index.
 
         Returns:
             torch.Tensor | int | None: Validated last frame index, or None.
 
         Raises:
-            TypeError: If the input is not a torch.Tensor or int.
+            TypeError: If the input is not a torch.Tensor, int, or float.
             ValueError: If the last frame index is negative.
 
         Examples:
@@ -458,15 +458,19 @@ class VideoValidator:
             >>> validated_frame = VideoValidator.validate_last_frame(5)
             >>> print(validated_frame)
             5
+            >>> validated_float = VideoValidator.validate_last_frame(5.7)
+            >>> print(validated_float)
+            5
             >>> import torch
-            >>> tensor_frame = torch.tensor(10)
+            >>> tensor_frame = torch.tensor(10.3)
             >>> validated_tensor = VideoValidator.validate_last_frame(tensor_frame)
             >>> print(validated_tensor)
             tensor(10)
         """
         if last_frame is None:
             return None
-        if isinstance(last_frame, int):
+        if isinstance(last_frame, int | float):
+            last_frame = int(last_frame)
             if last_frame < 0:
                 msg = f"Last frame index must be non-negative, got {last_frame}."
                 raise ValueError(msg)
@@ -475,11 +479,12 @@ class VideoValidator:
             if last_frame.numel() != 1:
                 msg = f"Last frame must be a scalar tensor, got shape {last_frame.shape}."
                 raise ValueError(msg)
+            last_frame = last_frame.int()
             if last_frame.item() < 0:
                 msg = f"Last frame index must be non-negative, got {last_frame.item()}."
                 raise ValueError(msg)
             return last_frame
-        msg = f"Last frame must be an int or a torch.Tensor, got {type(last_frame)}."
+        msg = f"Last frame must be an int, float, or a torch.Tensor, got {type(last_frame)}."
         raise TypeError(msg)
 
 
@@ -912,7 +917,7 @@ class VideoBatchValidator:
         Examples:
             >>> import torch
             >>> from anomalib.data.validators import VideoBatchValidator
-            >>> last_frames = torch.tensor([9, 12, 15, 10])
+            >>> last_frames = torch.tensor([9.5, 12.2, 15.8, 10.0])
             >>> validated_last_frames = VideoBatchValidator.validate_last_frame(last_frames)
             >>> print(validated_last_frames)
             tensor([ 9, 12, 15, 10])
@@ -925,7 +930,8 @@ class VideoBatchValidator:
         if last_frame.ndim != 1:
             msg = f"Last frame must be a 1D tensor, got shape {last_frame.shape}."
             raise ValueError(msg)
+        last_frame = last_frame.int()
         if not torch.all(last_frame >= 0):
             msg = "Last frame indices must be non-negative."
             raise ValueError(msg)
-        return last_frame.to(torch.int64)
+        return last_frame
