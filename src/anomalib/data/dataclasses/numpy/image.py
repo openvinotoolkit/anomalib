@@ -107,7 +107,7 @@ class NumpyImageBatch(BatchIterateMixin[NumpyImageItem], _ImageInputFields[list[
 
     @staticmethod
     def _validate_image(image: np.ndarray) -> np.ndarray:
-        return NumpyImageValidator.validate_image(image)
+        return NumpyImageBatchValidator.validate_image(image)
 
     def _validate_gt_label(self, gt_label: np.ndarray | None) -> np.ndarray | None:
         return NumpyImageBatchValidator.validate_gt_label(gt_label, batch_size=self.batch_size)

@@ -520,21 +520,23 @@ class ImageBatchValidator:
 
     @staticmethod
     def validate_pred_score(
-        pred_score: torch.Tensor | Sequence[float] | None,
+        pred_score: torch.Tensor | None,
         anomaly_map: torch.Tensor | None,
     ) -> torch.Tensor | None:
-        """Validate the prediction scores for a batch.
+        """Validate or compute the prediction scores for a batch.
+
+        This method either returns the provided prediction scores or computes them from the anomaly map
+        if the prediction scores are not provided.
 
         Args:
-            pred_score (torch.Tensor | Sequence[float] | None): Input prediction scores.
-            anomaly_map (torch.Tensor | None): Input anomaly map.
+            pred_score (torch.Tensor | None): Input prediction scores. If None, scores will be computed
+                from the anomaly map.
+            anomaly_map (torch.Tensor | None): Input anomaly map. Used to compute prediction scores
+                if pred_score is None.
 
         Returns:
-            torch.Tensor | None: Validated prediction scores as a float tensor, or None.
-
-        Raises:
-            TypeError: If the input is not a torch.Tensor or Sequence[float].
-            ValueError: If the prediction scores have an invalid shape.
+            torch.Tensor | None: Validated or computed prediction scores as a float tensor, or None if
+            both pred_score and anomaly_map are None.
 
         Examples:
             >>> import torch
@@ -543,19 +545,15 @@ class ImageBatchValidator:
             >>> validated_score = ImageBatchValidator.validate_pred_score(pred_score, anomaly_map=None)
             >>> print(validated_score)
             tensor([0.1000, 0.2000, 0.3000, 0.4000])
-        """
-        if pred_score is None:
-            return torch.amax(anomaly_map, dim=(-2, -1)) if anomaly_map is not None else None
 
-        if isinstance(pred_score, Sequence) and not isinstance(pred_score, torch.Tensor):
-            pred_score = torch.tensor(pred_score)
-        if not isinstance(pred_score, torch.Tensor):
-            msg = f"Prediction scores must be a torch.Tensor or Sequence[float], got {type(pred_score)}."
-            raise TypeError(msg)
-        if pred_score.ndim > 2 or (pred_score.ndim == 2 and pred_score.shape[1] != 1):
-            msg = f"Prediction scores must be 1-dimensional or have shape (N, 1), got shape {pred_score.shape}."
-            raise ValueError(msg)
-        return pred_score.squeeze().to(torch.float32)
+            >>> anomaly_map = torch.rand(4, 224, 224)
+            >>> computed_score = ImageBatchValidator.validate_pred_score(None, anomaly_map)
+            >>> print(computed_score.shape)
+            torch.Size([4])
+        """
+        if pred_score is None and anomaly_map is not None:
+            return torch.amax(anomaly_map, dim=(-2, -1))
+        return pred_score
 
     @staticmethod
     def validate_pred_mask(pred_mask: torch.Tensor | None, batch_size: int) -> Mask | None:
@@ -595,7 +593,7 @@ class ImageBatchValidator:
         Examples:
             >>> import torch
             >>> from anomalib.data.validators.torch.image import ImageBatchValidator
-            >>> pred_label = torch.tensor([1, 0, 1, 1])
+            >>> pred_label = torch.tensor([[1], [0], [1], [1]])
             >>> validated_label = ImageBatchValidator.validate_pred_label(pred_label)
             >>> print(validated_label)
             tensor([ True, False,  True,  True])
@@ -605,9 +603,13 @@ class ImageBatchValidator:
         if not isinstance(pred_label, torch.Tensor):
             msg = f"Predicted label must be a torch.Tensor, got {type(pred_label)}."
             raise TypeError(msg)
-        if pred_label.ndim > 1:
-            msg = f"Predicted label must be 0-dimensional or 1-dimensional, got shape {pred_label.shape}."
+        if pred_label.ndim > 2:
+            msg = f"Predicted label must be 1-dimensional or 2-dimensional, got shape {pred_label.shape}."
             raise ValueError(msg)
+        if pred_label.ndim == 2 and pred_label.shape[1] != 1:
+            msg = f"Predicted label with 2 dimensions must have shape [N, 1], got shape {pred_label.shape}."
+            raise ValueError(msg)
+
         return pred_label.to(torch.bool)
 
     @staticmethod

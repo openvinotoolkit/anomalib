@@ -344,17 +344,28 @@ class NumpyImageBatchValidator:
             >>> validated_grayscale = NumpyImageBatchValidator.validate_image(grayscale_batch)
             >>> validated_grayscale.shape
             (32, 224, 224, 1)
+            >>> torch_style_batch = np.random.rand(32, 3, 224, 224)
+            >>> validated_torch_style = NumpyImageBatchValidator.validate_image(torch_style_batch)
+            >>> validated_torch_style.shape
+            (32, 224, 224, 3)
         """
+        # Check if the image is a numpy array
         if not isinstance(image, np.ndarray):
             msg = f"Image batch must be a numpy.ndarray, got {type(image)}."
             raise TypeError(msg)
+        # Check if the image has the correct number of dimensions
         if image.ndim not in {3, 4}:
             msg = f"Image batch must have shape [N, H, W] or [N, H, W, C], got shape {image.shape}."
             raise ValueError(msg)
+        # Handle 3D grayscale images
         if image.ndim == 3:
             image = image[..., np.newaxis]
-        if image.shape[3] not in {1, 3}:
-            msg = f"Image batch must have 1 or 3 channels, got {image.shape[3]}."
+        # Handle torch style (N, C, H, W) and rearrange if necessary
+        if image.shape[1] in {1, 3} and image.shape[3] not in {1, 3}:
+            image = np.transpose(image, (0, 2, 3, 1))
+        # Check if the image has the correct number of channels
+        if image.shape[-1] not in {1, 3}:
+            msg = f"Image batch must have 1 or 3 channels, got {image.shape[-1]}."
             raise ValueError(msg)
         return image.astype(np.float32)
 
@@ -424,6 +435,10 @@ class NumpyImageBatchValidator:
             (4, 224, 224)
             >>> validated_masks.dtype
             dtype('bool')
+            >>> torch_style_masks = np.random.randint(0, 2, (4, 1, 224, 224))
+            >>> validated_torch_style = NumpyImageBatchValidator.validate_gt_mask(torch_style_masks, 4)
+            >>> validated_torch_style.shape
+            (4, 224, 224, 1)
         """
         if gt_mask is None:
             return None
@@ -433,9 +448,15 @@ class NumpyImageBatchValidator:
         if gt_mask.ndim not in {3, 4}:
             msg = f"Ground truth mask batch must have shape [N, H, W] or [N, H, W, 1], got shape {gt_mask.shape}."
             raise ValueError(msg)
+
+        # Check if the mask is in [N, H, W, 1] format and rearrange if necessary
+        if gt_mask.ndim == 4 and gt_mask.shape[3] != 1:
+            gt_mask = np.transpose(gt_mask, (0, 2, 3, 1))
+
         if gt_mask.ndim == 4 and gt_mask.shape[3] != 1:
             msg = f"Ground truth mask batch must have 1 channel, got {gt_mask.shape[3]}."
             raise ValueError(msg)
+
         if gt_mask.shape[0] != batch_size:
             msg = f"Ground truth mask batch must have {batch_size} items, got {gt_mask.shape[0]}."
             raise ValueError(msg)
@@ -501,6 +522,10 @@ class NumpyImageBatchValidator:
             (4, 224, 224)
             >>> validated_maps.dtype
             dtype('float32')
+            >>> torch_style_maps = np.random.rand(4, 1, 224, 224)
+            >>> validated_torch_style = NumpyImageBatchValidator.validate_anomaly_map(torch_style_maps, 4)
+            >>> validated_torch_style.shape
+            (4, 224, 224, 1)
         """
         if anomaly_map is None:
             return None
@@ -510,9 +535,9 @@ class NumpyImageBatchValidator:
         if anomaly_map.ndim not in {3, 4}:
             msg = f"Anomaly map batch must have shape [N, H, W] or [N, H, W, 1], got shape {anomaly_map.shape}."
             raise ValueError(msg)
-        if anomaly_map.ndim == 4 and anomaly_map.shape[3] != 1:
-            msg = f"Anomaly map batch must have 1 channel, got {anomaly_map.shape[3]}."
-            raise ValueError(msg)
+        # Check if the anomaly map is in [N, C, H, W] format and rearrange if necessary
+        if anomaly_map.ndim == 4 and anomaly_map.shape[1] not in {1, 3}:
+            anomaly_map = np.transpose(anomaly_map, (0, 2, 3, 1))
         if anomaly_map.shape[0] != batch_size:
             msg = f"Anomaly map batch must have {batch_size} items, got {anomaly_map.shape[0]}."
             raise ValueError(msg)
@@ -530,7 +555,7 @@ class NumpyImageBatchValidator:
 
         Raises:
             TypeError: If the input is not a numpy.ndarray.
-            ValueError: If the prediction score batch is not 1-dimensional.
+            ValueError: If the prediction score batch is not 1-dimensional or 2-dimensional.
 
         Examples:
             >>> import numpy as np
@@ -538,17 +563,25 @@ class NumpyImageBatchValidator:
             >>> scores = np.array([0.1, 0.8, 0.3, 0.6])
             >>> validated_scores = NumpyImageBatchValidator.validate_pred_score(scores)
             >>> validated_scores
-            array([0.1, 0.8, 0.3, 0.6])
+            array([0.1, 0.8, 0.3, 0.6], dtype=float32)
+            >>> scores_2d = np.array([[0.1], [0.8], [0.3], [0.6]])
+            >>> validated_scores_2d = NumpyImageBatchValidator.validate_pred_score(scores_2d)
+            >>> validated_scores_2d
+            array([[0.1],
+                   [0.8],
+                   [0.3],
+                   [0.6]], dtype=float32)
         """
         if pred_score is None:
             return None
         if not isinstance(pred_score, np.ndarray):
             msg = f"Prediction score batch must be a numpy.ndarray, got {type(pred_score)}."
             raise TypeError(msg)
-        if pred_score.ndim != 1:
-            msg = f"Prediction score batch must be 1-dimensional, got shape {pred_score.shape}."
+        if pred_score.ndim not in {1, 2}:
+            msg = f"Prediction score batch must be 1D or 2D, got shape {pred_score.shape}."
             raise ValueError(msg)
-        return pred_score
+
+        return pred_score.astype(np.float32)
 
     @staticmethod
     def validate_pred_mask(pred_mask: np.ndarray | None, batch_size: int) -> np.ndarray | None:
@@ -574,6 +607,10 @@ class NumpyImageBatchValidator:
             (4, 224, 224)
             >>> validated_masks.dtype
             dtype('bool')
+            >>> torch_style_masks = np.random.randint(0, 2, (4, 1, 224, 224))
+            >>> validated_torch_style = NumpyImageBatchValidator.validate_pred_mask(torch_style_masks, 4)
+            >>> validated_torch_style.shape
+            (4, 224, 224, 1)
         """
         return NumpyImageBatchValidator.validate_gt_mask(pred_mask, batch_size)
 
@@ -589,7 +626,7 @@ class NumpyImageBatchValidator:
 
         Raises:
             TypeError: If the input is not a numpy.ndarray.
-            ValueError: If the prediction label batch is not 1-dimensional.
+            ValueError: If the prediction label batch is not 1-dimensional or 2-dimensional.
 
         Examples:
             >>> import numpy as np
@@ -598,14 +635,21 @@ class NumpyImageBatchValidator:
             >>> validated_labels = NumpyImageBatchValidator.validate_pred_label(labels)
             >>> validated_labels
             array([False,  True,  True, False])
+            >>> labels_2d = np.array([[0], [1], [1], [0]])
+            >>> validated_labels_2d = NumpyImageBatchValidator.validate_pred_label(labels_2d)
+            >>> validated_labels_2d
+            array([[False],
+                   [ True],
+                   [ True],
+                   [False]])
         """
         if pred_label is None:
             return None
         if not isinstance(pred_label, np.ndarray):
             msg = f"Prediction label batch must be a numpy.ndarray, got {type(pred_label)}."
             raise TypeError(msg)
-        if pred_label.ndim != 1:
-            msg = f"Prediction label batch must be 1-dimensional, got shape {pred_label.shape}."
+        if pred_label.ndim not in {1, 2}:
+            msg = f"Prediction label batch must be 1D or 2D, got shape {pred_label.shape}."
             raise ValueError(msg)
         return pred_label.astype(bool)
 
@@ -628,6 +672,8 @@ class NumpyImageBatchValidator:
             >>> validated_paths = NumpyImageBatchValidator.validate_image_path(paths)
             >>> validated_paths
             ['image1.jpg', 'image2.jpg', 'image3.jpg']
+            >>> NumpyImageBatchValidator.validate_image_path(['image1.jpg', 2, 'image3.jpg'])
+            ['image1.jpg', '2', 'image3.jpg']
         """
         if image_path is None:
             return None

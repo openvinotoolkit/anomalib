@@ -157,11 +157,11 @@ class ImageBatch(
     def _validate_pred_score(self, pred_score: torch.Tensor | None) -> torch.Tensor | None:
         return ImageBatchValidator.validate_pred_score(pred_score, self.anomaly_map)
 
-    def _validate_pred_mask(self, pred_mask: torch.Tensor) -> torch.Tensor | None:
+    def _validate_pred_mask(self, pred_mask: torch.Tensor | None) -> torch.Tensor | None:
         return ImageBatchValidator.validate_pred_mask(pred_mask, self.batch_size)
 
     @staticmethod
-    def _validate_pred_label(pred_label: torch.Tensor) -> torch.Tensor | None:
+    def _validate_pred_label(pred_label: torch.Tensor | None) -> torch.Tensor | None:
         return ImageBatchValidator.validate_pred_label(pred_label)
 
     @staticmethod
