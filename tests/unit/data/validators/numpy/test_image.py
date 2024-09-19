@@ -65,7 +65,7 @@ class TestNumpyImageValidator:
         validated_label = self.validator.validate_gt_label(label)
         assert isinstance(validated_label, np.ndarray)
         assert validated_label.dtype == bool
-        assert validated_label is True
+        assert validated_label.item() is True  # Use .item() to compare the scalar value
 
     def test_validate_gt_label_none(self) -> None:
         """Test validation of a None ground truth label."""
