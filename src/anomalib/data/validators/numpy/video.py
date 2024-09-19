@@ -20,7 +20,7 @@ class NumpyVideoValidator:
             image (np.ndarray): Input video array to validate.
 
         Returns:
-            np.ndarray: Validated video array as float32.
+            np.ndarray: Validated video array as float32 with an added time dimension if not present.
 
         Raises:
             TypeError: If the input is not a numpy array.
@@ -37,16 +37,19 @@ class NumpyVideoValidator:
         if not isinstance(image, np.ndarray):
             msg = f"Video must be a numpy.ndarray, got {type(image)}."
             raise TypeError(msg)
-        if image.ndim not in {3, 4}:
-            msg = f"Video must have 3 or 4 dimensions, got shape {image.shape}."
-            raise ValueError(msg)
+
         if image.ndim == 3:
-            if image.shape[2] not in {1, 3}:
-                msg = f"Video must have 1 or 3 channels for single frame, got {image.shape[2]}."
-                raise ValueError(msg)
-        elif image.ndim == 4 and image.shape[3] not in {1, 3}:
+            # Add time dimension for single frame
+            image = np.expand_dims(image, axis=0)
+
+        if image.ndim != 4:
+            msg = f"Video must have 4 dimensions [T, H, W, C], got shape {image.shape}."
+            raise ValueError(msg)
+
+        if image.shape[3] not in {1, 3}:
             msg = f"Video must have 1 or 3 channels, got {image.shape[3]}."
             raise ValueError(msg)
+
         return image.astype(np.float32)
 
     @staticmethod
