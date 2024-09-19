@@ -348,25 +348,38 @@ class NumpyImageBatchValidator:
             >>> validated_torch_style = NumpyImageBatchValidator.validate_image(torch_style_batch)
             >>> validated_torch_style.shape
             (32, 224, 224, 3)
+            >>> single_image = np.zeros((224, 224, 3))
+            >>> validated_single = NumpyImageBatchValidator.validate_image(single_image)
+            >>> validated_single.shape
+            (1, 224, 224, 3)
         """
         # Check if the image is a numpy array
         if not isinstance(image, np.ndarray):
             msg = f"Image batch must be a numpy.ndarray, got {type(image)}."
             raise TypeError(msg)
+
+        # Handle single image input
+        if image.ndim == 2 or (image.ndim == 3 and image.shape[-1] in {1, 3}):
+            image = image[np.newaxis, ...]
+
         # Check if the image has the correct number of dimensions
         if image.ndim not in {3, 4}:
             msg = f"Image batch must have shape [N, H, W] or [N, H, W, C], got shape {image.shape}."
             raise ValueError(msg)
+
         # Handle 3D grayscale images
         if image.ndim == 3:
             image = image[..., np.newaxis]
+
         # Handle torch style (N, C, H, W) and rearrange if necessary
         if image.shape[1] in {1, 3} and image.shape[3] not in {1, 3}:
             image = np.transpose(image, (0, 2, 3, 1))
+
         # Check if the image has the correct number of channels
         if image.shape[-1] not in {1, 3}:
             msg = f"Image batch must have 1 or 3 channels, got {image.shape[-1]}."
             raise ValueError(msg)
+
         return image.astype(np.float32)
 
     @staticmethod
