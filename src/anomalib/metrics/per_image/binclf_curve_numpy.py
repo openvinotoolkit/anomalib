@@ -20,29 +20,11 @@ from functools import partial
 import numpy as np
 from numpy import ndarray
 
-try:
-    import numba  # noqa: F401
-except ImportError:
-    HAS_NUMBA = False
-else:
-    HAS_NUMBA = True
-
-
-if HAS_NUMBA:
-    from . import _binclf_curve_numba
-
 from . import _validate
 
 logger = logging.getLogger(__name__)
 
 # =========================================== CONSTANTS ===========================================
-
-
-class BinclfAlgorithm(Enum):
-    """Algorithm to use (relates to the low-level implementation)."""
-
-    PYTHON: str = "python"
-    NUMBA: str = "numba"
 
 
 class BinclfThreshsChoice(Enum):
@@ -95,8 +77,8 @@ def _validate_is_gts_batch(gts_batch: ndarray) -> None:
 # =========================================== PYTHON VERSION ===========================================
 
 
-def _binclf_one_curve_python(scores: ndarray, gts: ndarray, threshs: ndarray) -> ndarray:
-    """One binary classification matrix at each threshold (PYTHON implementation).
+def _binclf_one_curve(scores: ndarray, gts: ndarray, threshs: ndarray) -> ndarray:
+    """One binary classification matrix at each threshold.
 
     In the case where the thresholds are given (i.e. not considering all possible thresholds based on the scores),
     this weird-looking function is faster than the two options in `torchmetrics` on the CPU:
@@ -167,10 +149,10 @@ def _binclf_one_curve_python(scores: ndarray, gts: ndarray, threshs: ndarray) ->
     ).transpose(0, 2, 1)
 
 
-_binclf_multiple_curves_python = np.vectorize(_binclf_one_curve_python, signature="(n),(n),(k)->(k,2,2)")
-_binclf_multiple_curves_python.__doc__ = """
-Multiple binary classification matrix at each threshold (PYTHON implementation).
-vectorized version of `_binclf_one_curve_python` (see above)
+_binclf_multiple_curves = np.vectorize(_binclf_one_curve, signature="(n),(n),(k)->(k,2,2)")
+_binclf_multiple_curves.__doc__ = """
+Multiple binary classification matrix at each threshold.
+vectorized version of `_binclf_one_curve` (see above)
 """
 
 # =========================================== INTERFACE ===========================================
@@ -180,7 +162,6 @@ def binclf_multiple_curves(
     scores_batch: ndarray,
     gts_batch: ndarray,
     threshs: ndarray,
-    algorithm: BinclfAlgorithm | str = BinclfAlgorithm.NUMBA.value,
 ) -> ndarray:
     """Multiple binary classification matrix (per-instance scope) at each threshold (shared).
 
@@ -220,23 +201,12 @@ def binclf_multiple_curves(
 
         Thresholds are sorted in ascending order.
     """
-    algorithm = BinclfAlgorithm(algorithm)
     _validate_is_scores_batch(scores_batch)
     _validate_is_gts_batch(gts_batch)
     _validate.is_same_shape(scores_batch, gts_batch)
     _validate.is_threshs(threshs)
 
-    if algorithm == BinclfAlgorithm.NUMBA:
-        if HAS_NUMBA:
-            return _binclf_curve_numba.binclf_multiple_curves_numba(scores_batch, gts_batch, threshs)
-
-        logger.warning(
-            f"Algorithm '{BinclfAlgorithm.NUMBA.value}' was selected, but Numba is not installed. "
-            f"Falling back to '{BinclfAlgorithm.PYTHON.value}' implementation.",
-            "Notice that the performance will be slower. Consider installing Numba for faster computation.",
-        )
-
-    return _binclf_multiple_curves_python(scores_batch, gts_batch, threshs)
+    return _binclf_multiple_curves(scores_batch, gts_batch, threshs)
 
 
 # ========================================= PER-IMAGE BINCLF CURVE =========================================
@@ -258,7 +228,6 @@ def _get_threshs_minmax_linspace(anomaly_maps: ndarray, num_threshs: int) -> nda
 def per_image_binclf_curve(
     anomaly_maps: ndarray,
     masks: ndarray,
-    algorithm: BinclfAlgorithm | str = BinclfAlgorithm.NUMBA.value,
     threshs_choice: BinclfThreshsChoice | str = BinclfThreshsChoice.MINMAX_LINSPACE.value,
     threshs_given: ndarray | None = None,
     num_threshs: int | None = None,
@@ -268,7 +237,6 @@ def per_image_binclf_curve(
     Args:
         anomaly_maps (ndarray): Anomaly score maps of shape (N, H, W)
         masks (ndarray): Binary ground truth masks of shape (N, H, W)
-        algorithm (str, optional): Algorithm to use. Defaults to ALGORITHM_NUMBA.
         threshs_choice (str, optional): Sequence of thresholds to use. Defaults to THRESH_SEQUENCE_MINMAX_LINSPACE.
         #
         # `threshs_choice`-dependent arguments
@@ -308,7 +276,6 @@ def per_image_binclf_curve(
 
             Thresholds are sorted in ascending order.
     """
-    BinclfAlgorithm(algorithm)
     threshs_choice = BinclfThreshsChoice(threshs_choice)
     _validate.is_anomaly_maps(anomaly_maps)
     _validate.is_masks(masks)
@@ -350,7 +317,7 @@ def per_image_binclf_curve(
     scores_batch = anomaly_maps.reshape(anomaly_maps.shape[0], -1)
     gts_batch = masks.reshape(masks.shape[0], -1).astype(bool)  # make sure it is boolean
 
-    binclf_curves = binclf_multiple_curves(scores_batch, gts_batch, threshs, algorithm=algorithm)
+    binclf_curves = binclf_multiple_curves(scores_batch, gts_batch, threshs)
 
     num_images = anomaly_maps.shape[0]
 

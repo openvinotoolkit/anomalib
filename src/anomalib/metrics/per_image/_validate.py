@@ -171,7 +171,7 @@ def is_masks(masks: ndarray) -> None:
     if masks.dtype.kind == "b":
         pass
 
-    elif masks.dtype.kind in ("i", "u"):
+    elif masks.dtype.kind in {"i", "u"}:
         masks_unique_vals = np.unique(masks)
         if np.any((masks_unique_vals != 0) & (masks_unique_vals != 1)):
             msg = (
@@ -243,7 +243,7 @@ def is_images_classes(images_classes: ndarray) -> None:
 
     if images_classes.dtype.kind == "b":
         pass
-    elif images_classes.dtype.kind in ("i", "u"):
+    elif images_classes.dtype.kind in {"i", "u"}:
         unique_vals = np.unique(images_classes)
         if np.any((unique_vals != 0) & (unique_vals != 1)):
             msg = (

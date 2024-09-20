@@ -252,7 +252,6 @@ def test_pimo_numpy(
         anomaly_maps,
         masks,
         num_threshs=7,
-        binclf_algorithm="numba",
     )
     _do_test_pimo_outputs(
         threshs,
@@ -297,14 +296,12 @@ def test_pimo(
         anomaly_maps,
         masks,
         num_threshs=7,
-        binclf_algorithm="numba",
     )
     do_assertions(pimoresult)
 
     # metric interface
     metric = pimo.PIMO(
         num_threshs=7,
-        binclf_algorithm="numba",
     )
     metric.update(anomaly_maps, masks)
     pimoresult = metric.compute()
@@ -361,7 +358,6 @@ def test_aupimo_values_numpy(
         anomaly_maps,
         masks,
         num_threshs=7,
-        binclf_algorithm="numba",
         fpr_bounds=fpr_bounds,
         force=True,
     )
@@ -428,7 +424,6 @@ def test_aupimo_values(
         anomaly_maps,
         masks,
         num_threshs=7,
-        binclf_algorithm="numba",
         fpr_bounds=fpr_bounds,
         force=True,
     )
@@ -437,7 +432,6 @@ def test_aupimo_values(
     # metric interface
     metric = pimo.AUPIMO(
         num_threshs=7,
-        binclf_algorithm="numba",
         fpr_bounds=fpr_bounds,
         return_average=False,
         force=True,
@@ -449,7 +443,6 @@ def test_aupimo_values(
     # metric interface
     metric = pimo.AUPIMO(
         num_threshs=7,
-        binclf_algorithm="numba",
         fpr_bounds=fpr_bounds,
         return_average=True,  # only return the average AUPIMO
         force=True,
@@ -474,7 +467,6 @@ def test_aupimo_edge(
             anomaly_maps,
             masks,
             num_threshs=10,
-            binclf_algorithm="numba",
             force=False,
             **fpr_bounds,
         )
@@ -484,7 +476,6 @@ def test_aupimo_edge(
             anomaly_maps,
             masks,
             num_threshs=10,
-            binclf_algorithm="numba",
             force=True,
             **fpr_bounds,
         )
@@ -494,8 +485,6 @@ def test_aupimo_edge(
     pimo_numpy.aupimo_scores(
         anomaly_maps * rng.uniform(1.0, 1.1, size=anomaly_maps.shape),
         masks,
-        # num_threshs=,
-        binclf_algorithm="numba",
         force=False,
         **fpr_bounds,
     )
@@ -515,7 +504,6 @@ def test_pimoresult_object(
         anomaly_maps,
         masks,
         num_threshs=7,
-        binclf_algorithm="numba",
         **optional_kwargs,
     )
 
@@ -560,7 +548,6 @@ def test_aupimoresult_object(
         anomaly_maps,
         masks,
         num_threshs=7,
-        binclf_algorithm="numba",
         fpr_bounds=(1e-5, 1e-4),
         force=True,
         **optional_kwargs,

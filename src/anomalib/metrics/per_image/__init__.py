@@ -8,7 +8,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from .binclf_curve import per_image_binclf_curve, per_image_fpr, per_image_tpr
-from .binclf_curve_numpy import BinclfAlgorithm, BinclfThreshsChoice
+from .binclf_curve_numpy import BinclfThreshsChoice
 from .pimo import AUPIMO, PIMO, AUPIMOResult, PIMOResult, aupimo_scores, pimo_curves
 from .utils import (
     compare_models_pairwise_ttest_rel,
@@ -20,7 +20,6 @@ from .utils_numpy import StatsOutliersPolicy, StatsRepeatedPolicy
 
 __all__ = [
     # constants
-    "BinclfAlgorithm",
     "BinclfThreshsChoice",
     "StatsOutliersPolicy",
     "StatsRepeatedPolicy",

@@ -21,7 +21,7 @@ import torch
 from torch import Tensor
 
 from . import _validate, binclf_curve_numpy
-from .binclf_curve_numpy import BinclfAlgorithm, BinclfThreshsChoice
+from .binclf_curve_numpy import BinclfThreshsChoice
 
 # =========================================== ARGS VALIDATION ===========================================
 
@@ -47,7 +47,6 @@ def _validate_is_binclf_curves(binclf_curves: Tensor, valid_threshs: Tensor | No
 def per_image_binclf_curve(
     anomaly_maps: Tensor,
     masks: Tensor,
-    algorithm: BinclfAlgorithm | str = BinclfAlgorithm.NUMBA,
     threshs_choice: BinclfThreshsChoice | str = BinclfThreshsChoice.MINMAX_LINSPACE,
     threshs_given: Tensor | None = None,
     num_threshs: int | None = None,
@@ -59,7 +58,6 @@ def per_image_binclf_curve(
     Args:
         anomaly_maps (Tensor): Anomaly score maps of shape (N, H, W [, D, ...])
         masks (Tensor): Binary ground truth masks of shape (N, H, W [, D, ...])
-        algorithm (str, optional): Algorithm to use. Defaults to ALGORITHM_NUMBA.
         threshs_choice (str, optional): Sequence of thresholds to use. Defaults to THRESH_SEQUENCE_MINMAX_LINSPACE.
         return_result_object (bool, optional): Whether to return a `PerImageBinClfCurveResult` object. Defaults to True.
 
@@ -115,7 +113,6 @@ def per_image_binclf_curve(
     threshs_array, binclf_curves_array = binclf_curve_numpy.per_image_binclf_curve(
         anomaly_maps=anomaly_maps_array,
         masks=masks_array,
-        algorithm=algorithm,
         threshs_choice=threshs_choice,
         threshs_given=threshs_given_array,
         num_threshs=num_threshs,

@@ -53,7 +53,6 @@ from anomalib.data.utils.image import duplicate_filename
 from anomalib.data.utils.path import validate_path
 
 from . import _validate, pimo_numpy, utils
-from .binclf_curve_numpy import BinclfAlgorithm
 from .utils import StatsOutliersPolicy, StatsRepeatedPolicy
 
 logger = logging.getLogger(__name__)
@@ -544,7 +543,6 @@ def pimo_curves(
     anomaly_maps: Tensor,
     masks: Tensor,
     num_threshs: int,
-    binclf_algorithm: BinclfAlgorithm | str = BinclfAlgorithm.NUMBA.value,
     paths: list[str] | None = None,
 ) -> PIMOResult:
     """Compute the Per-IMage Overlap (PIMO, pronounced pee-mo) curves.
@@ -569,7 +567,6 @@ def pimo_curves(
         anomaly_maps: floating point anomaly score maps of shape (N, H, W)
         masks: binary (bool or int) ground truth masks of shape (N, H, W)
         num_threshs: number of thresholds to compute (K)
-        binclf_algorithm: algorithm to compute the binary classifier curve (see `binclf_curve_numpy.Algorithm`)
         paths: paths to the source images to which the PIMO curves correspond. Default: None.
 
     Returns:
@@ -589,7 +586,6 @@ def pimo_curves(
         anomaly_maps_array,
         masks_array,
         num_threshs,
-        binclf_algorithm=binclf_algorithm,
     )
     # _ is `image_classes` -- not needed here because it's a property in the result object
 
@@ -616,7 +612,6 @@ def aupimo_scores(
     anomaly_maps: Tensor,
     masks: Tensor,
     num_threshs: int = 300_000,
-    binclf_algorithm: BinclfAlgorithm | str = BinclfAlgorithm.NUMBA.value,
     fpr_bounds: tuple[float, float] = (1e-5, 1e-4),
     force: bool = False,
     paths: list[str] | None = None,
@@ -642,7 +637,6 @@ def aupimo_scores(
         anomaly_maps: floating point anomaly score maps of shape (N, H, W)
         masks: binary (bool or int) ground truth masks of shape (N, H, W)
         num_threshs: number of thresholds to compute (K)
-        binclf_algorithm: algorithm to compute the binary classifier curve (see `binclf_curve_numpy.Algorithm`)
         fpr_bounds: lower and upper bounds of the FPR integration range
         force: whether to force the computation despite bad conditions
         paths: paths to the source images to which the AUPIMO scores correspond.
@@ -662,11 +656,9 @@ def aupimo_scores(
         anomaly_maps_array,
         masks_array,
         num_threshs,
-        binclf_algorithm=binclf_algorithm,
         fpr_bounds=fpr_bounds,
         force=force,
     )
-
     # tensors are build with `torch.from_numpy` and so the returned tensors
     # will share the same memory as the numpy arrays
     device = anomaly_maps.device
@@ -750,7 +742,7 @@ class PIMO(Metric):
     @property
     def num_images(self) -> int:
         """Number of images."""
-        return sum([am.shape[0] for am in self.anomaly_maps])
+        return sum(am.shape[0] for am in self.anomaly_maps)
 
     @property
     def image_classes(self) -> Tensor:
@@ -760,13 +752,11 @@ class PIMO(Metric):
     def __init__(
         self,
         num_threshs: int,
-        binclf_algorithm: BinclfAlgorithm | str = BinclfAlgorithm.NUMBA.value,
     ) -> None:
         """Per-Image Overlap (PIMO) curve.
 
         Args:
             num_threshs: number of thresholds used to compute the PIMO curve (K)
-            binclf_algorithm: algorithm to compute the binary classification curve (see `binclf_curve_numpy.Algorithm`)
         """
         super().__init__()
 
@@ -780,9 +770,6 @@ class PIMO(Metric):
 
         _validate.is_num_threshs_gte2(num_threshs)
         self.num_threshs = num_threshs
-
-        # validate binclf_algorithm and get string
-        self.binclf_algorithm = BinclfAlgorithm(binclf_algorithm).value
 
         self.add_state("anomaly_maps", default=[], dist_reduce_fx="cat")
         self.add_state("masks", default=[], dist_reduce_fx="cat")
@@ -817,7 +804,6 @@ class PIMO(Metric):
             anomaly_maps,
             masks,
             self.num_threshs,
-            binclf_algorithm=self.binclf_algorithm,
         )
 
 
@@ -845,7 +831,6 @@ class AUPIMO(PIMO):
 
     Args:
         num_threshs: number of thresholds to compute (K)
-        binclf_algorithm: algorithm to compute the binary classifier curve (see `binclf_curve_numpy.Algorithm`)
         fpr_bounds: lower and upper bounds of the FPR integration range
         force: whether to force the computation despite bad conditions
 
@@ -897,7 +882,6 @@ class AUPIMO(PIMO):
     def __init__(
         self,
         num_threshs: int = 300_000,
-        binclf_algorithm: BinclfAlgorithm | str = BinclfAlgorithm.NUMBA.value,
         fpr_bounds: tuple[float, float] = (1e-5, 1e-4),
         return_average: bool = True,
         force: bool = False,
@@ -906,15 +890,11 @@ class AUPIMO(PIMO):
 
         Args:
             num_threshs: [passed to parent `PIMO`] number of thresholds used to compute the PIMO curve
-            binclf_algorithm: [passed to parent `PIMO`] algorithm to compute the binary classification curve
             fpr_bounds: lower and upper bounds of the FPR integration range
             return_average: if True, return the average AUPIMO score; if False, return all the individual AUPIMO scores
             force: if True, force the computation of the AUPIMO scores even in bad conditions (e.g. few points)
         """
-        super().__init__(
-            num_threshs=num_threshs,
-            binclf_algorithm=binclf_algorithm,
-        )
+        super().__init__(num_threshs=num_threshs)
 
         # other validations are done in PIMO.__init__()
 
@@ -945,7 +925,6 @@ class AUPIMO(PIMO):
             anomaly_maps,
             masks,
             self.num_threshs,
-            binclf_algorithm=self.binclf_algorithm,
             fpr_bounds=self.fpr_bounds,
             force=force,
         )

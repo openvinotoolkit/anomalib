@@ -1,4 +1,4 @@
-"""Tests for per-image binary classification curves using numpy and numba versions."""
+"""Tests for per-image binary classification curves using numpy version."""
 
 # Original Code
 # https://github.com/jpcbertoldo/aupimo
@@ -16,10 +16,6 @@ from numpy import ndarray
 from torch import Tensor
 
 from anomalib.metrics.per_image import binclf_curve, binclf_curve_numpy
-from anomalib.metrics.per_image.binclf_curve_numpy import HAS_NUMBA
-
-if HAS_NUMBA:
-    from anomalib.metrics.per_image import _binclf_curve_numba
 
 
 def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
@@ -98,7 +94,7 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
         axis=0,
     ).astype(int)
 
-    if metafunc.function is test__binclf_one_curve_python or metafunc.function is test__binclf_one_curve_numba:
+    if metafunc.function is test__binclf_one_curve:
         metafunc.parametrize(
             argnames=("pred", "gt", "threshs", "expected"),
             argvalues=[
@@ -118,10 +114,7 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
     binclf_curves_threshs_too_high = np.stack([expected_anom_threshs_too_high, expected_norm_threshs_too_high], axis=0)
     binclf_curves_threshs_too_low = np.stack([expected_anom_threshs_too_low, expected_norm_threshs_too_low], axis=0)
 
-    if (
-        metafunc.function is test__binclf_multiple_curves_python
-        or metafunc.function is test__binclf_multiple_curves_numba
-    ):
+    if metafunc.function is test__binclf_multiple_curves:
         metafunc.parametrize(
             argnames=("preds", "gts", "threshs", "expecteds"),
             argvalues=[
@@ -144,39 +137,30 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
                 (10 * preds, gts, 10 * threshs, binclf_curves),
             ],
         )
-        metafunc.parametrize(
-            argnames=("algorithm",),
-            argvalues=[
-                ("python",),
-                ("numba",),
-            ],
-        )
 
     if metafunc.function is test_binclf_multiple_curves_validations:
         metafunc.parametrize(
             argnames=("args", "kwargs", "exception"),
             argvalues=[
                 # `scores` and `gts` must be 2D
-                ([preds.reshape(2, 2, 2), gts, threshs], {"algorithm": "numba"}, ValueError),
-                ([preds, gts.flatten(), threshs], {"algorithm": "numba"}, ValueError),
+                ([preds.reshape(2, 2, 2), gts, threshs], {}, ValueError),
+                ([preds, gts.flatten(), threshs], {}, ValueError),
                 # `threshs` must be 1D
-                ([preds, gts, threshs.reshape(2, 2)], {"algorithm": "numba"}, ValueError),
+                ([preds, gts, threshs.reshape(2, 2)], {}, ValueError),
                 # `scores` and `gts` must have the same shape
-                ([preds, gts[:1], threshs], {"algorithm": "numba"}, ValueError),
-                ([preds[:, :2], gts, threshs], {"algorithm": "numba"}, ValueError),
+                ([preds, gts[:1], threshs], {}, ValueError),
+                ([preds[:, :2], gts, threshs], {}, ValueError),
                 # `scores` be of type float
-                ([preds.astype(int), gts, threshs], {"algorithm": "numba"}, TypeError),
+                ([preds.astype(int), gts, threshs], {}, TypeError),
                 # `gts` be of type bool
-                ([preds, gts.astype(int), threshs], {"algorithm": "numba"}, TypeError),
+                ([preds, gts.astype(int), threshs], {}, TypeError),
                 # `threshs` be of type float
-                ([preds, gts, threshs.astype(int)], {"algorithm": "numba"}, TypeError),
+                ([preds, gts, threshs.astype(int)], {}, TypeError),
                 # `threshs` must be sorted in ascending order
-                ([preds, gts, np.flip(threshs)], {"algorithm": "numba"}, ValueError),
-                ([preds, gts, np.concatenate([threshs[-2:], threshs[:2]])], {"algorithm": "numba"}, ValueError),
+                ([preds, gts, np.flip(threshs)], {}, ValueError),
+                ([preds, gts, np.concatenate([threshs[-2:], threshs[:2]])], {}, ValueError),
                 # `threshs` must be unique
-                ([preds, gts, np.sort(np.concatenate([threshs, threshs]))], {"algorithm": "numba"}, ValueError),
-                # invalid `algorithm`
-                ([preds, gts, threshs], {"algorithm": "blurp"}, ValueError),
+                ([preds, gts, np.sort(np.concatenate([threshs, threshs]))], {}, ValueError),
             ],
         )
 
@@ -267,15 +251,6 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
             ],
         )
 
-    if metafunc.function is test_per_image_binclf_curve_numpy or metafunc.function is test_per_image_binclf_curve_torch:
-        metafunc.parametrize(
-            argnames=("algorithm",),
-            argvalues=[
-                ("python",),
-                ("numba",),
-            ],
-        )
-
     if metafunc.function is test_per_image_binclf_curve_numpy_validations:
         metafunc.parametrize(
             argnames=("args", "exception"),
@@ -297,10 +272,8 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
         metafunc.parametrize(
             argnames=("kwargs",),
             argvalues=[
-                ({"algorithm": "numba", "threshs_choice": "given", "threshs_given": threshs, "num_threshs": None},),
                 (
                     {
-                        "algorithm": "python",
                         "threshs_choice": "minmax-linspace",
                         "threshs_given": None,
                         "num_threshs": len(threshs),
@@ -317,7 +290,7 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
                 # invalid `threshs_choice`
                 (
                     [preds, gts],
-                    {"algorithm": "glfrb", "threshs_choice": "given", "threshs_given": threshs, "num_threshs": None},
+                    {"threshs_choice": "glfrb", "threshs_given": threshs, "num_threshs": None},
                     ValueError,
                 ),
             ],
@@ -345,43 +318,21 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
 # LOW-LEVEL FUNCTIONS (PYTHON)
 
 
-def test__binclf_one_curve_python(pred: ndarray, gt: ndarray, threshs: ndarray, expected: ndarray) -> None:
-    """Test if `_binclf_one_curve_python()` returns the expected values."""
-    computed = binclf_curve_numpy._binclf_one_curve_python(pred, gt, threshs)
+def test__binclf_one_curve(pred: ndarray, gt: ndarray, threshs: ndarray, expected: ndarray) -> None:
+    """Test if `_binclf_one_curve()` returns the expected values."""
+    computed = binclf_curve_numpy._binclf_one_curve(pred, gt, threshs)
     assert computed.shape == (threshs.size, 2, 2)
     assert (computed == expected).all()
 
 
-def test__binclf_multiple_curves_python(
+def test__binclf_multiple_curves(
     preds: ndarray,
     gts: ndarray,
     threshs: ndarray,
     expecteds: ndarray,
 ) -> None:
-    """Test if `_binclf_multiple_curves_python()` returns the expected values."""
-    computed = binclf_curve_numpy._binclf_multiple_curves_python(preds, gts, threshs)
-    assert computed.shape == (preds.shape[0], threshs.size, 2, 2)
-    assert (computed == expecteds).all()
-
-
-# ==================================================================================================
-# LOW-LEVEL FUNCTIONS (NUMBA)
-
-
-def test__binclf_one_curve_numba(pred: ndarray, gt: ndarray, threshs: ndarray, expected: ndarray) -> None:
-    """Test if `_binclf_one_curve_numba()` returns the expected values."""
-    if not HAS_NUMBA:
-        pytest.skip("Numba is not available.")
-    computed = _binclf_curve_numba.binclf_one_curve_numba(pred, gt, threshs)
-    assert computed.shape == (threshs.size, 2, 2)
-    assert (computed == expected).all()
-
-
-def test__binclf_multiple_curves_numba(preds: ndarray, gts: ndarray, threshs: ndarray, expecteds: ndarray) -> None:
-    """Test if `_binclf_multiple_curves_python()` returns the expected values."""
-    if not HAS_NUMBA:
-        pytest.skip("Numba is not available.")
-    computed = _binclf_curve_numba.binclf_multiple_curves_numba(preds, gts, threshs)
+    """Test if `_binclf_multiple_curves()` returns the expected values."""
+    computed = binclf_curve_numpy.binclf_multiple_curves(preds, gts, threshs)
     assert computed.shape == (preds.shape[0], threshs.size, 2, 2)
     assert (computed == expecteds).all()
 
@@ -395,33 +346,31 @@ def test_binclf_multiple_curves(
     gts: ndarray,
     threshs: ndarray,
     expected_binclf_curves: ndarray,
-    algorithm: str,
 ) -> None:
     """Test if `binclf_multiple_curves()` returns the expected values."""
     computed = binclf_curve_numpy.binclf_multiple_curves(
         preds,
         gts,
         threshs,
-        algorithm=algorithm,
     )
     assert computed.shape == expected_binclf_curves.shape
     assert (computed == expected_binclf_curves).all()
 
     # it's ok to have the threhsholds beyond the range of the preds
-    binclf_curve_numpy.binclf_multiple_curves(preds, gts, 2 * threshs, algorithm=algorithm)
+    binclf_curve_numpy.binclf_multiple_curves(preds, gts, 2 * threshs)
 
     # or inside the bounds without reaching them
-    binclf_curve_numpy.binclf_multiple_curves(preds, gts, 0.5 * threshs, algorithm=algorithm)
+    binclf_curve_numpy.binclf_multiple_curves(preds, gts, 0.5 * threshs)
 
     # it's also ok to have more threshs than unique values in the preds
     # add the values in between the threshs
     threshs_unncessary = 0.5 * (threshs[:-1] + threshs[1:])
     threshs_unncessary = np.concatenate([threshs_unncessary, threshs])
     threshs_unncessary = np.sort(threshs_unncessary)
-    binclf_curve_numpy.binclf_multiple_curves(preds, gts, threshs_unncessary, algorithm=algorithm)
+    binclf_curve_numpy.binclf_multiple_curves(preds, gts, threshs_unncessary)
 
     # or less
-    binclf_curve_numpy.binclf_multiple_curves(preds, gts, threshs[1:3], algorithm=algorithm)
+    binclf_curve_numpy.binclf_multiple_curves(preds, gts, threshs[1:3])
 
 
 def test_binclf_multiple_curves_validations(args: list, kwargs: dict, exception: Exception) -> None:
@@ -433,7 +382,6 @@ def test_binclf_multiple_curves_validations(args: list, kwargs: dict, exception:
 def test_per_image_binclf_curve_numpy(
     anomaly_maps: ndarray,
     masks: ndarray,
-    algorithm: str,
     threshs_choice: str,
     threshs_given: ndarray | None,
     num_threshs: int | None,
@@ -444,7 +392,6 @@ def test_per_image_binclf_curve_numpy(
     computed_threshs, computed_binclf_curves = binclf_curve_numpy.per_image_binclf_curve(
         anomaly_maps,
         masks,
-        algorithm=algorithm,
         threshs_choice=threshs_choice,
         threshs_given=threshs_given,
         num_threshs=num_threshs,
@@ -491,7 +438,6 @@ def test_rate_metrics_numpy(binclf_curves: ndarray, expected_fprs: ndarray, expe
 def test_per_image_binclf_curve_torch(
     anomaly_maps: Tensor,
     masks: Tensor,
-    algorithm: str,
     threshs_choice: str,
     threshs_given: Tensor | None,
     num_threshs: int | None,
@@ -502,7 +448,6 @@ def test_per_image_binclf_curve_torch(
     computed_threshs, computed_binclf_curves = binclf_curve.per_image_binclf_curve(
         anomaly_maps,
         masks,
-        algorithm=algorithm,
         threshs_choice=threshs_choice,
         threshs_given=threshs_given,
         num_threshs=num_threshs,

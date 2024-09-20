@@ -66,7 +66,7 @@ def _validate_is_image_class(image_class: int) -> None:
         msg = f"Expected image class to be an int (0 for 'normal', 1 for 'anomalous'), but got {type(image_class)}."
         raise TypeError(msg)
 
-    if image_class not in (0, 1):
+    if image_class not in {0, 1}:
         msg = f"Expected image class to be either 0 for 'normal' or 1 for 'anomalous', but got {image_class}."
         raise ValueError(msg)
 
@@ -236,7 +236,7 @@ def per_image_scores_stats(
     boxplot_stats = mpl.cbook.boxplot_stats(per_image_scores)[0]  # [0] is for the only boxplot
 
     # remove unnecessary keys
-    boxplot_stats = {name: value for name, value in boxplot_stats.items() if name not in ("iqr", "cilo", "cihi")}
+    boxplot_stats = {name: value for name, value in boxplot_stats.items() if name not in {"iqr", "cilo", "cihi"}}
 
     # unroll `fliers` (outliers), remove unnecessary ones according to `outliers_policy`,
     # then add them to `boxplot_stats` with unique keys
@@ -244,13 +244,13 @@ def per_image_scores_stats(
     outliers_lo = outliers[outliers < boxplot_stats["med"]]
     outliers_hi = outliers[outliers > boxplot_stats["med"]]
 
-    if outliers_policy in (StatsOutliersPolicy.HI, StatsOutliersPolicy.BOTH):
+    if outliers_policy in {StatsOutliersPolicy.HI, StatsOutliersPolicy.BOTH}:
         boxplot_stats = {
             **boxplot_stats,
             **{f"outhi_{idx:06}": value for idx, value in enumerate(outliers_hi)},
         }
 
-    if outliers_policy in (StatsOutliersPolicy.LO, StatsOutliersPolicy.BOTH):
+    if outliers_policy in {StatsOutliersPolicy.LO, StatsOutliersPolicy.BOTH}:
         boxplot_stats = {
             **boxplot_stats,
             **{f"outlo_{idx:06}": value for idx, value in enumerate(outliers_lo)},
@@ -378,7 +378,7 @@ def compare_models_pairwise_ttest_rel(
             values_j,
             alternative=alternative,
         ).pvalue
-        confidences[(model_i, model_j)] = 1.0 - float(pvalue)
+        confidences[model_i, model_j] = 1.0 - float(pvalue)
 
     return models_ordered, confidences
 
@@ -476,6 +476,6 @@ def compare_models_pairwise_wilcoxon(
             pvalue = 1.0
         else:
             pvalue = scipy.stats.wilcoxon(diff, alternative=alternative).pvalue
-        confidences[(model_i, model_j)] = 1.0 - float(pvalue)
+        confidences[model_i, model_j] = 1.0 - float(pvalue)
 
     return models_ordered, confidences
