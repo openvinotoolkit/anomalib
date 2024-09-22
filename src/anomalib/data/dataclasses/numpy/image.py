@@ -38,39 +38,39 @@ class NumpyImageItem(_ImageInputFields[str], NumpyItem):
     """
 
     @staticmethod
-    def validate_image(image: np.ndarray) -> np.ndarray:
+    def _validate_image(image: np.ndarray) -> np.ndarray:
         return NumpyImageValidator.validate_image(image)
 
     @staticmethod
-    def validate_gt_label(gt_label: np.ndarray | None) -> np.ndarray | None:
+    def _validate_gt_label(gt_label: np.ndarray | None) -> np.ndarray | None:
         return NumpyImageValidator.validate_gt_label(gt_label)
 
     @staticmethod
-    def validate_gt_mask(gt_mask: np.ndarray | None) -> np.ndarray | None:
+    def _validate_gt_mask(gt_mask: np.ndarray | None) -> np.ndarray | None:
         return NumpyImageValidator.validate_gt_mask(gt_mask)
 
     @staticmethod
-    def validate_mask_path(mask_path: str | None) -> str | None:
+    def _validate_mask_path(mask_path: str | None) -> str | None:
         return NumpyImageValidator.validate_mask_path(mask_path)
 
     @staticmethod
-    def validate_anomaly_map(anomaly_map: np.ndarray | None) -> np.ndarray | None:
+    def _validate_anomaly_map(anomaly_map: np.ndarray | None) -> np.ndarray | None:
         return NumpyImageValidator.validate_anomaly_map(anomaly_map)
 
     @staticmethod
-    def validate_pred_score(pred_score: np.ndarray | None) -> np.ndarray | None:
+    def _validate_pred_score(pred_score: np.ndarray | None) -> np.ndarray | None:
         return NumpyImageValidator.validate_pred_score(pred_score)
 
     @staticmethod
-    def validate_pred_mask(pred_mask: np.ndarray | None) -> np.ndarray | None:
+    def _validate_pred_mask(pred_mask: np.ndarray | None) -> np.ndarray | None:
         return NumpyImageValidator.validate_pred_mask(pred_mask)
 
     @staticmethod
-    def validate_pred_label(pred_label: np.ndarray | None) -> np.ndarray | None:
+    def _validate_pred_label(pred_label: np.ndarray | None) -> np.ndarray | None:
         return NumpyImageValidator.validate_pred_label(pred_label)
 
     @staticmethod
-    def validate_image_path(image_path: str | None) -> str | None:
+    def _validate_image_path(image_path: str | None) -> str | None:
         return NumpyImageValidator.validate_image_path(image_path)
 
 
@@ -106,32 +106,32 @@ class NumpyImageBatch(BatchIterateMixin[NumpyImageItem], _ImageInputFields[list[
     item_class = NumpyImageItem
 
     @staticmethod
-    def validate_image(image: np.ndarray) -> np.ndarray:
+    def _validate_image(image: np.ndarray) -> np.ndarray:
         return NumpyImageBatchValidator.validate_image(image)
 
-    def validate_gt_label(self, gt_label: np.ndarray | None) -> np.ndarray | None:
+    def _validate_gt_label(self, gt_label: np.ndarray | None) -> np.ndarray | None:
         return NumpyImageBatchValidator.validate_gt_label(gt_label, batch_size=self.batch_size)
 
-    def validate_gt_mask(self, gt_mask: np.ndarray | None) -> np.ndarray | None:
+    def _validate_gt_mask(self, gt_mask: np.ndarray | None) -> np.ndarray | None:
         return NumpyImageBatchValidator.validate_gt_mask(gt_mask, batch_size=self.batch_size)
 
-    def validate_mask_path(self, mask_path: list[str] | None) -> list[str] | None:
+    def _validate_mask_path(self, mask_path: list[str] | None) -> list[str] | None:
         return NumpyImageBatchValidator.validate_mask_path(mask_path, batch_size=self.batch_size)
 
-    def validate_anomaly_map(self, anomaly_map: np.ndarray | None) -> np.ndarray | None:
+    def _validate_anomaly_map(self, anomaly_map: np.ndarray | None) -> np.ndarray | None:
         return NumpyImageBatchValidator.validate_anomaly_map(anomaly_map, batch_size=self.batch_size)
 
     @staticmethod
-    def validate_pred_score(pred_score: np.ndarray | None) -> np.ndarray | None:
+    def _validate_pred_score(pred_score: np.ndarray | None) -> np.ndarray | None:
         return NumpyImageBatchValidator.validate_pred_score(pred_score)
 
-    def validate_pred_mask(self, pred_mask: np.ndarray | None) -> np.ndarray | None:
+    def _validate_pred_mask(self, pred_mask: np.ndarray | None) -> np.ndarray | None:
         return NumpyImageBatchValidator.validate_pred_mask(pred_mask, batch_size=self.batch_size)
 
     @staticmethod
-    def validate_pred_label(pred_label: np.ndarray | None) -> np.ndarray | None:
+    def _validate_pred_label(pred_label: np.ndarray | None) -> np.ndarray | None:
         return NumpyImageBatchValidator.validate_pred_label(pred_label)
 
     @staticmethod
-    def validate_image_path(image_path: list[str] | None) -> list[str] | None:
+    def _validate_image_path(image_path: list[str] | None) -> list[str] | None:
         return NumpyImageBatchValidator.validate_image_path(image_path)
