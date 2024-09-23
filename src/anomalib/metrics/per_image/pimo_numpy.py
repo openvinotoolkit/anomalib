@@ -17,7 +17,7 @@ import numpy as np
 from numpy import ndarray
 
 from . import _validate, binclf_curve_numpy
-from .binclf_curve_numpy import BinclfAlgorithm, BinclfThreshsChoice
+from .binclf_curve_numpy import BinclfThreshsChoice
 
 logger = logging.getLogger(__name__)
 
@@ -72,7 +72,6 @@ def pimo_curves(
     anomaly_maps: ndarray,
     masks: ndarray,
     num_threshs: int,
-    binclf_algorithm: BinclfAlgorithm | str = BinclfAlgorithm.NUMBA.value,
 ) -> tuple[ndarray, ndarray, ndarray, ndarray]:
     """Compute the Per-IMage Overlap (PIMO, pronounced pee-mo) curves.
 
@@ -92,7 +91,6 @@ def pimo_curves(
         anomaly_maps: floating point anomaly score maps of shape (N, H, W)
         masks: binary (bool or int) ground truth masks of shape (N, H, W)
         num_threshs: number of thresholds to compute (K)
-        binclf_algorithm: algorithm to compute the binary classifier curve (see `binclf_curve_numpy.Algorithm`)
 
     Returns:
         tuple[ndarray, ndarray, ndarray, ndarray]:
@@ -102,11 +100,10 @@ def pimo_curves(
             [3] image classes of shape (N,) with values 0 (normal) or 1 (anomalous)
     """
     # validate the strings are valid
-    BinclfAlgorithm(binclf_algorithm)
     _validate.is_num_threshs_gte2(num_threshs)
-    _validate.is_anomaly_maps(anomaly_maps)
-    _validate.is_masks(masks)
-    _validate.is_same_shape(anomaly_maps, masks)
+    _validate.is_anomaly_maps(anomaly_maps)  # redundant
+    _validate.is_masks(masks)  # redundant
+    _validate.is_same_shape(anomaly_maps, masks)  # redundant
     _validate_has_at_least_one_anomalous_image(masks)
     _validate_has_at_least_one_normal_image(masks)
 
@@ -126,7 +123,6 @@ def pimo_curves(
     threshs, binclf_curves = binclf_curve_numpy.per_image_binclf_curve(
         anomaly_maps=anomaly_maps,
         masks=masks,
-        algorithm=binclf_algorithm,
         threshs_choice=BinclfThreshsChoice.GIVEN.value,
         threshs_given=threshs,
         num_threshs=None,
@@ -160,7 +156,6 @@ def aupimo_scores(
     anomaly_maps: ndarray,
     masks: ndarray,
     num_threshs: int = 300_000,
-    binclf_algorithm: BinclfAlgorithm | str = BinclfAlgorithm.NUMBA,
     fpr_bounds: tuple[float, float] = (1e-5, 1e-4),
     force: bool = False,
 ) -> tuple[ndarray, ndarray, ndarray, ndarray, ndarray, int]:
@@ -181,7 +176,6 @@ def aupimo_scores(
         anomaly_maps: floating point anomaly score maps of shape (N, H, W)
         masks: binary (bool or int) ground truth masks of shape (N, H, W)
         num_threshs: number of thresholds to compute (K)
-        binclf_algorithm: algorithm to compute the binary classifier curve (see `binclf_curve_numpy.Algorithm`)
         fpr_bounds: lower and upper bounds of the FPR integration range
         force: whether to force the computation despite bad conditions
 
@@ -201,7 +195,6 @@ def aupimo_scores(
         anomaly_maps=anomaly_maps,
         masks=masks,
         num_threshs=num_threshs,
-        binclf_algorithm=binclf_algorithm,
     )
     try:
         _validate.is_threshs(threshs)
@@ -303,7 +296,7 @@ def aupimo_scores(
             "Try increasing `num_threshs`.",
         )
 
-    aucs: ndarray = np.trapezoid(per_image_tprs_bounded, x=shared_fpr_bounded_log, axis=1)
+    aucs: ndarray = np.trapz(per_image_tprs_bounded, x=shared_fpr_bounded_log, axis=1)  # noqa: NPY201 deprecated in Numpy 2.0
 
     # normalize, then clip(0, 1) makes sure that the values are in [0, 1] in case of numerical errors
     normalization_factor = aupimo_normalizing_factor(fpr_bounds)

@@ -84,8 +84,7 @@ test = [
     "coverage[toml]",
     "tox",
 ]
-extra = ["numba>=0.58.1"]
-full = ["anomalib[core,openvino,loggers,notebooks,extra]"]
+full = ["anomalib[core,openvino,loggers,notebooks]"]
 dev = ["anomalib[full,docs,test]"]
 
 [project.scripts]
