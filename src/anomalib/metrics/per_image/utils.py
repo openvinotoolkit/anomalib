@@ -245,8 +245,8 @@ def per_image_scores_stats(
 
     Outliers are handled according to `outliers_policy`:
         - None | "none": do not include outliers.
-        - "hi": only include high outliers.
-        - "lo": only include low outliers.
+        - "high": only include high outliers.
+        - "low": only include low outliers.
         - "both": include both high and low outliers.
 
     ** IMAGE INDEX **

@@ -118,9 +118,9 @@ def test_per_image_scores_stats() -> None:
 
     stats = per_image_scores_stats(scores, outliers_policy=StatsOutliersPolicy.BOTH)
     assert len(stats) == 6
-    stats = per_image_scores_stats(scores, outliers_policy=StatsOutliersPolicy.LO)
+    stats = per_image_scores_stats(scores, outliers_policy=StatsOutliersPolicy.LOW)
     assert len(stats) == 6
-    stats = per_image_scores_stats(scores, outliers_policy=StatsOutliersPolicy.HI)
+    stats = per_image_scores_stats(scores, outliers_policy=StatsOutliersPolicy.HIGH)
     assert len(stats) == 6
     stats = per_image_scores_stats(scores, outliers_policy=StatsOutliersPolicy.NONE)
     assert len(stats) == 6

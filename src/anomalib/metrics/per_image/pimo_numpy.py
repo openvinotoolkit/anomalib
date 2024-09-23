@@ -11,7 +11,6 @@ Details: `anomalib.metrics.per_image.pimo`.
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-from enum import Enum
 
 import numpy as np
 from numpy import ndarray
@@ -20,14 +19,6 @@ from . import _validate, binclf_curve_numpy
 from .binclf_curve_numpy import BinclfThreshsChoice
 
 logger = logging.getLogger(__name__)
-
-# =========================================== CONSTANTS ===========================================
-
-
-class PIMOSharedFPRMetric(Enum):
-    """Shared FPR metric (x-axis of the PIMO curve)."""
-
-    MEAN_PERIMAGE_FPR: str = "mean-per-image-fpr"
 
 
 # =========================================== AUX ===========================================
@@ -381,23 +372,3 @@ def aupimo_normalizing_factor(fpr_bounds: tuple[float, float]) -> float:
     fpr_lower_bound, fpr_upper_bound = fpr_bounds
     # the log's base must be the same as the one used in the integration!
     return float(np.log(fpr_upper_bound / fpr_lower_bound))
-
-
-def aupimo_random_model_score(fpr_bounds: tuple[float, float]) -> float:
-    """AUPIMO of a theoretical random model.
-
-    "Random model" means that there is no discrimination between normal and anomalous pixels/patches/images.
-    It corresponds to assuming the functions T = F.
-
-    For the FPR bounds (1e-5, 1e-4), the random model AUPIMO is ~4e-5.
-
-    Args:
-        fpr_bounds: lower and upper bounds of the FPR integration range.
-
-    Returns:
-        float: the AUPIMO score.
-    """
-    _validate.is_rate_range(fpr_bounds)
-    fpr_lower_bound, fpr_upper_bound = fpr_bounds
-    integral_value = fpr_upper_bound - fpr_lower_bound
-    return float(integral_value / aupimo_normalizing_factor(fpr_bounds))

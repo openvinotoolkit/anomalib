@@ -7,9 +7,6 @@
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-import tempfile
-from pathlib import Path
-
 import numpy as np
 import pytest
 import torch
@@ -18,8 +15,6 @@ from torch import Tensor
 
 from anomalib.metrics.per_image import pimo, pimo_numpy
 from anomalib.metrics.per_image.pimo import AUPIMOResult, PIMOResult
-
-from .test_utils import assert_statsdict_stuff
 
 
 def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
@@ -185,12 +180,6 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
                 (None,),
             ],
         )
-
-    if metafunc.function is test_pimoresult_object or metafunc.function is test_aupimoresult_object:
-        anomaly_maps = torch.from_numpy(anomaly_maps)
-        masks = torch.from_numpy(masks)
-        metafunc.parametrize(argnames=("anomaly_maps", "masks"), argvalues=[(anomaly_maps, masks)])
-        metafunc.parametrize(argnames=("paths",), argvalues=[(None,), (["/path/to/a", "/path/to/b", "/path/to/c"],)])
 
 
 def _do_test_pimo_outputs(
@@ -488,104 +477,3 @@ def test_aupimo_edge(
         force=False,
         **fpr_bounds,
     )
-
-
-def test_pimoresult_object(
-    anomaly_maps: Tensor,
-    masks: Tensor,
-    paths: list[str] | None,
-) -> None:
-    """Test if `PIMOResult` can be converted to other formats and back."""
-    optional_kwargs = {}
-    if paths is not None:
-        optional_kwargs["paths"] = paths
-
-    pimoresult = pimo.pimo_curves(
-        anomaly_maps,
-        masks,
-        num_threshs=7,
-        **optional_kwargs,
-    )
-
-    _ = pimoresult.num_threshs
-    _ = pimoresult.num_images
-    _ = pimoresult.image_classes
-
-    # object -> dict -> object
-    dic = pimoresult.to_dict()
-    assert isinstance(dic, dict)
-    pimoresult_from_dict = PIMOResult.from_dict(dic)
-    assert isinstance(pimoresult_from_dict, PIMOResult)
-    # values should be the same
-    assert torch.allclose(pimoresult_from_dict.threshs, pimoresult.threshs)
-    assert torch.allclose(pimoresult_from_dict.shared_fpr, pimoresult.shared_fpr)
-    assert torch.allclose(pimoresult_from_dict.per_image_tprs, pimoresult.per_image_tprs, equal_nan=True)
-
-    # object -> file -> object
-    with tempfile.TemporaryDirectory() as tmpdir:
-        file_path = Path(tmpdir) / "pimo.pt"
-        pimoresult.save(str(file_path))
-        assert file_path.exists()
-        pimoresult_from_load = PIMOResult.load(str(file_path))
-    assert isinstance(pimoresult_from_load, PIMOResult)
-    # values should be the same
-    assert torch.allclose(pimoresult_from_load.threshs, pimoresult.threshs)
-    assert torch.allclose(pimoresult_from_load.shared_fpr, pimoresult.shared_fpr)
-    assert torch.allclose(pimoresult_from_load.per_image_tprs, pimoresult.per_image_tprs, equal_nan=True)
-
-
-def test_aupimoresult_object(
-    anomaly_maps: Tensor,
-    masks: Tensor,
-    paths: list[str] | None,
-) -> None:
-    """Test if `AUPIMOResult` can be converted to other formats and back."""
-    optional_kwargs = {}
-    if paths is not None:
-        optional_kwargs["paths"] = paths
-
-    _, aupimoresult = pimo.aupimo_scores(
-        anomaly_maps,
-        masks,
-        num_threshs=7,
-        fpr_bounds=(1e-5, 1e-4),
-        force=True,
-        **optional_kwargs,
-    )
-
-    # call properties
-    _ = aupimoresult.num_images
-    _ = aupimoresult.image_classes
-    _ = aupimoresult.fpr_bounds
-    _ = aupimoresult.thresh_bounds
-
-    # object -> dict -> object
-    dic = aupimoresult.to_dict()
-    assert isinstance(dic, dict)
-    aupimoresult_from_dict = AUPIMOResult.from_dict(dic)
-    assert isinstance(aupimoresult_from_dict, AUPIMOResult)
-    # values should be the same
-    assert aupimoresult_from_dict.fpr_bounds == aupimoresult.fpr_bounds
-    assert aupimoresult_from_dict.num_threshs == aupimoresult.num_threshs
-    assert aupimoresult_from_dict.thresh_bounds == aupimoresult.thresh_bounds
-    assert torch.allclose(aupimoresult_from_dict.aupimos, aupimoresult.aupimos, equal_nan=True)
-
-    # object -> file -> object
-    with tempfile.TemporaryDirectory() as tmpdir:
-        file_path = Path(tmpdir) / "aupimo.json"
-        aupimoresult.save(str(file_path))
-        assert file_path.exists()
-        aupimoresult_from_load = AUPIMOResult.load(str(file_path))
-    assert isinstance(aupimoresult_from_load, AUPIMOResult)
-    # values should be the same
-    assert aupimoresult_from_load.fpr_bounds == aupimoresult.fpr_bounds
-    assert aupimoresult_from_load.num_threshs == aupimoresult.num_threshs
-    assert aupimoresult_from_load.thresh_bounds == aupimoresult.thresh_bounds
-    assert torch.allclose(aupimoresult_from_load.aupimos, aupimoresult.aupimos, equal_nan=True)
-
-    # statistics
-    stats = aupimoresult.stats()
-    assert len(stats) == 6
-
-    for statdic in stats:
-        assert_statsdict_stuff(statdic, 2)

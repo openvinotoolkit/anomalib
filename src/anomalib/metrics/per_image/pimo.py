@@ -39,25 +39,19 @@ so often times the Tensor arguments will be converted to ndarray and then valida
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-import json
 import logging
 from collections.abc import Sequence
 from dataclasses import dataclass, field
-from pathlib import Path
 
 import torch
 from torch import Tensor
 from torchmetrics import Metric
 
-from anomalib.data.utils.image import duplicate_filename
 from anomalib.data.utils.path import validate_path
 
-from . import _validate, pimo_numpy, utils
-from .utils import StatsOutliersPolicy, StatsRepeatedPolicy
+from . import _validate, pimo_numpy
 
 logger = logging.getLogger(__name__)
-
-# =========================================== AUX ===========================================
 
 
 def _images_classes_from_masks(masks: Tensor) -> Tensor:
@@ -256,60 +250,6 @@ class PIMOResult:
             fpr_level,
         )
 
-    def to_dict(self) -> dict[str, Tensor | str]:
-        """Return a dictionary with the result object's attributes."""
-        dic = {
-            "threshs": self.threshs,
-            "shared_fpr": self.shared_fpr,
-            "per_image_tprs": self.per_image_tprs,
-        }
-        if self.paths is not None:
-            dic["paths"] = self.paths
-        return dic
-
-    @classmethod
-    def from_dict(cls: type["PIMOResult"], dic: dict[str, Tensor | str | list[str]]) -> "PIMOResult":
-        """Return a result object from a dictionary."""
-        try:
-            return cls(**dic)  # type: ignore[arg-type]
-
-        except TypeError as ex:
-            msg = f"Invalid input dictionary for {cls.__name__} object. Cause: {ex}."
-            raise TypeError(msg) from ex
-
-    def save(self, file_path: str | Path) -> None:
-        """Save to a `.pt` file.
-
-        Args:
-            file_path: path to the `.pt` file where to save the PIMO result.
-                       If the file already exists, a numerical suffix is added to the filename.
-        """
-        validate_path(file_path, should_exist=False, accepted_extensions=(".pt",))
-        file_path = duplicate_filename(file_path)
-        payload = self.to_dict()
-        torch.save(payload, file_path)
-
-    @classmethod
-    def load(cls: type["PIMOResult"], file_path: str | Path) -> "PIMOResult":
-        """Load from a `.pt` file.
-
-        Args:
-            file_path: path to the `.pt` file where to load the PIMO result.
-        """
-        validate_path(file_path, accepted_extensions=(".pt",))
-        payload = torch.load(file_path)
-        if not isinstance(payload, dict):
-            msg = f"Invalid content in file {file_path}. Must be a dictionary."
-            raise TypeError(msg)
-        # for compatibility with the original code
-        if "shared_fpr_metric" in payload:
-            del payload["shared_fpr_metric"]
-        try:
-            return cls.from_dict(payload)
-        except TypeError as ex:
-            msg = f"Invalid content in file {file_path}. Cause: {ex}."
-            raise TypeError(msg) from ex
-
 
 @dataclass
 class AUPIMOResult:
@@ -448,97 +388,8 @@ class AUPIMOResult:
             paths=paths,
         )
 
-    def to_dict(self) -> dict[str, Tensor | str | float | int]:
-        """Return a dictionary with the result object's attributes."""
-        dic = {
-            "fpr_lower_bound": self.fpr_lower_bound,
-            "fpr_upper_bound": self.fpr_upper_bound,
-            "num_threshs": self.num_threshs,
-            "thresh_lower_bound": self.thresh_lower_bound,
-            "thresh_upper_bound": self.thresh_upper_bound,
-            "aupimos": self.aupimos,
-        }
-        if self.paths is not None:
-            dic["paths"] = self.paths
-        return dic
-
-    @classmethod
-    def from_dict(cls: type["AUPIMOResult"], dic: dict[str, Tensor | str | float | int | list[str]]) -> "AUPIMOResult":
-        """Return a result object from a dictionary."""
-        try:
-            return cls(**dic)  # type: ignore[arg-type]
-
-        except TypeError as ex:
-            msg = f"Invalid input dictionary for {cls.__name__} object. Cause: {ex}."
-            raise TypeError(msg) from ex
-
-    def save(self, file_path: str | Path) -> None:
-        """Save to a `.json` file.
-
-        Args:
-            file_path: path to the `.json` file where to save the AUPIMO result.
-                       If the file already exists, a numerical suffix is added to the filename.
-        """
-        validate_path(file_path, should_exist=False, accepted_extensions=(".json",))
-        file_path = duplicate_filename(file_path)
-        file_path = Path(file_path)
-        payload = self.to_dict()
-        aupimos: Tensor = payload["aupimos"]
-        payload["aupimos"] = aupimos.numpy().tolist()
-        with file_path.open("w") as f:
-            json.dump(payload, f, indent=4)
-
-    @classmethod
-    def load(cls: type["AUPIMOResult"], file_path: str | Path) -> "AUPIMOResult":
-        """Load from a `.json` file.
-
-        Args:
-            file_path: path to the `.json` file where to load the AUPIMO result.
-        """
-        validate_path(file_path, accepted_extensions=(".json",))
-        file_path = Path(file_path)
-        with file_path.open("r") as f:
-            payload = json.load(f)
-        if not isinstance(payload, dict):
-            file_path = str(file_path)
-            msg = f"Invalid payload in file {file_path}. Must be a dictionary."
-            raise TypeError(msg)
-        payload["aupimos"] = torch.tensor(payload["aupimos"], dtype=torch.float64)
-        # for compatibility with the original code
-        if "shared_fpr_metric" in payload:
-            del payload["shared_fpr_metric"]
-        try:
-            return cls.from_dict(payload)
-        except (TypeError, ValueError) as ex:
-            msg = f"Invalid payload in file {file_path}. Cause: {ex}."
-            raise TypeError(msg) from ex
-
-    def stats(
-        self,
-        outliers_policy: str | StatsOutliersPolicy = StatsOutliersPolicy.NONE.value,
-        repeated_policy: str | StatsRepeatedPolicy = StatsRepeatedPolicy.AVOID.value,
-        repeated_replacement_atol: float = 1e-2,
-    ) -> list[dict[str, str | int | float]]:
-        """Return the AUPIMO statistics.
-
-        See `anomalib.metrics.per_image.utils.per_image_scores_stats` for details.
-
-        Returns:
-            list[dict[str, str | int | float]]: AUPIMO statistics
-        """
-        return utils.per_image_scores_stats(
-            self.aupimos,
-            self.image_classes,
-            only_class=1,
-            outliers_policy=outliers_policy,
-            repeated_policy=repeated_policy,
-            repeated_replacement_atol=repeated_replacement_atol,
-        )
-
 
 # =========================================== FUNCTIONAL ===========================================
-
-
 def pimo_curves(
     anomaly_maps: Tensor,
     masks: Tensor,
@@ -856,23 +707,6 @@ class AUPIMO(PIMO):
             float: the normalization factor (>0).
         """
         return pimo_numpy.aupimo_normalizing_factor(fpr_bounds)
-
-    @staticmethod
-    def random_model_score(fpr_bounds: tuple[float, float]) -> float:
-        """AUPIMO of a theoretical random model.
-
-        "Random model" means that there is no discrimination between normal and anomalous pixels/patches/images.
-        It corresponds to assuming the functions T = F.
-
-        For the FPR bounds (1e-5, 1e-4), the random model AUPIMO is ~4e-5.
-
-        Args:
-            fpr_bounds: lower and upper bounds of the FPR integration range.
-
-        Returns:
-            float: the AUPIMO score.
-        """
-        return pimo_numpy.aupimo_random_model_score(fpr_bounds)
 
     def __repr__(self) -> str:
         """Show the metric name and its integration bounds."""
