@@ -209,12 +209,9 @@ class DepthValidator:
         return ImageValidator.validate_anomaly_map(anomaly_map)
 
     @staticmethod
-    def validate_pred_score(
-        pred_score: torch.Tensor | float | None,
-        anomaly_map: torch.Tensor | None = None,
-    ) -> torch.Tensor | None:
+    def validate_pred_score(pred_score: torch.Tensor | float | None) -> torch.Tensor | None:
         """Validate the prediction score."""
-        return ImageValidator.validate_pred_score(pred_score, anomaly_map)
+        return ImageValidator.validate_pred_score(pred_score)
 
     @staticmethod
     def validate_pred_mask(pred_mask: torch.Tensor | None) -> Mask | None:
@@ -430,11 +427,10 @@ class DepthBatchValidator:
 
     @staticmethod
     def validate_pred_score(
-        pred_score: torch.Tensor | Sequence[float] | None,
-        anomaly_map: torch.Tensor | None,
+        pred_score: torch.Tensor | np.ndarray | float | None,
     ) -> torch.Tensor | None:
         """Validate the prediction scores for a batch."""
-        return ImageBatchValidator.validate_pred_score(pred_score, anomaly_map)
+        return ImageBatchValidator.validate_pred_score(pred_score)
 
     @staticmethod
     def validate_pred_mask(pred_mask: torch.Tensor | None) -> Mask | None:

@@ -210,13 +210,11 @@ class ImageValidator:
     @staticmethod
     def validate_pred_score(
         pred_score: torch.Tensor | np.ndarray | float | None,
-        anomaly_map: torch.Tensor | None = None,
     ) -> torch.Tensor | None:
         """Validate the prediction score.
 
         Args:
             pred_score (torch.Tensor | float | None): Input prediction score.
-            anomaly_map (torch.Tensor | None): Input anomaly map.
 
         Returns:
             torch.Tensor | None: Validated prediction score as a float32 tensor, or None.
@@ -241,7 +239,7 @@ class ImageValidator:
             True
         """
         if pred_score is None:
-            return torch.amax(anomaly_map, dim=(-2, -1)) if anomaly_map else None
+            return None
 
         if not isinstance(pred_score, torch.Tensor):
             try:
@@ -249,10 +247,6 @@ class ImageValidator:
             except Exception as e:
                 msg = "Failed to convert pred_score to a torch.Tensor."
                 raise ValueError(msg) from e
-        pred_score = pred_score.squeeze()
-        if pred_score.ndim != 0:
-            msg = f"Predicted score must be a scalar, got shape {pred_score.shape}."
-            raise ValueError(msg)
 
         return pred_score.to(torch.float32)
 
@@ -501,40 +495,45 @@ class ImageBatchValidator:
 
     @staticmethod
     def validate_pred_score(
-        pred_score: torch.Tensor | None,
-        anomaly_map: torch.Tensor | None,
+        pred_score: torch.Tensor | np.ndarray | Sequence[float] | None,
     ) -> torch.Tensor | None:
-        """Validate or compute the prediction scores for a batch.
-
-        This method either returns the provided prediction scores or computes them from the anomaly map
-        if the prediction scores are not provided.
+        """Validate the prediction scores for a batch.
 
         Args:
-            pred_score (torch.Tensor | None): Input prediction scores. If None, scores will be computed
-                from the anomaly map.
-            anomaly_map (torch.Tensor | None): Input anomaly map. Used to compute prediction scores
-                if pred_score is None.
+            pred_score (torch.Tensor | Sequence[float] | None): Input prediction scores.
 
         Returns:
-            torch.Tensor | None: Validated or computed prediction scores as a float tensor, or None if
-            both pred_score and anomaly_map are None.
+            torch.Tensor | None: Validated prediction scores as a float32 tensor, or None.
+
+        Raises:
+            TypeError: If the input is neither a sequence of floats, torch.Tensor, nor None.
+            ValueError: If the prediction scores are not a 1-dimensional tensor or sequence.
 
         Examples:
             >>> import torch
             >>> from anomalib.data.validators.torch.image import ImageBatchValidator
-            >>> pred_score = torch.tensor([0.1, 0.2, 0.3, 0.4])
-            >>> validated_score = ImageBatchValidator.validate_pred_score(pred_score, anomaly_map=None)
-            >>> print(validated_score)
-            tensor([0.1000, 0.2000, 0.3000, 0.4000])
-
-            >>> anomaly_map = torch.rand(4, 224, 224)
-            >>> computed_score = ImageBatchValidator.validate_pred_score(None, anomaly_map)
-            >>> print(computed_score.shape)
-            torch.Size([4])
+            >>> scores = [0.8, 0.7, 0.9]
+            >>> validated_scores = ImageBatchValidator.validate_pred_score(scores)
+            >>> validated_scores
+            tensor([0.8000, 0.7000, 0.9000])
+            >>> score_tensor = torch.tensor([0.8, 0.7, 0.9])
+            >>> validated_scores = ImageBatchValidator.validate_pred_score(score_tensor)
+            >>> validated_scores
+            tensor([0.8000, 0.7000, 0.9000])
         """
-        if pred_score is None and anomaly_map is not None:
-            return torch.amax(anomaly_map, dim=(-2, -1))
-        return pred_score
+        if pred_score is None:
+            return None
+
+        if isinstance(pred_score, Sequence):
+            pred_score = torch.tensor(pred_score)
+        if not isinstance(pred_score, torch.Tensor):
+            try:
+                pred_score = torch.tensor(pred_score)
+            except Exception as e:
+                msg = "Failed to convert pred_score to a torch.Tensor."
+                raise ValueError(msg) from e
+
+        return pred_score.to(torch.float32)
 
     @staticmethod
     def validate_pred_mask(pred_mask: torch.Tensor | None) -> Mask | None:

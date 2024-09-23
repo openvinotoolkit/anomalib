@@ -140,7 +140,7 @@ class DepthBatch(
         return DepthBatchValidator.validate_anomaly_map(anomaly_map)
 
     def validate_pred_score(self, pred_score: torch.Tensor | Sequence[float] | None) -> torch.Tensor | None:
-        return DepthBatchValidator.validate_pred_score(pred_score, self.anomaly_map)
+        return DepthBatchValidator.validate_pred_score(pred_score)
 
     def validate_pred_mask(self, pred_mask: torch.Tensor | None) -> torch.Tensor | None:
         return DepthBatchValidator.validate_pred_mask(pred_mask)

@@ -219,14 +219,13 @@ class TestImageBatchValidator:  # noqa: PLR0904
     def test_validate_pred_score_valid(self) -> None:
         """Test validation of valid prediction scores."""
         scores = torch.tensor([0.1, 0.2, 0.3, 0.4])
-        validated_scores = self.validator.validate_pred_score(scores, anomaly_map=None)
+        validated_scores = self.validator.validate_pred_score(scores)
         assert torch.equal(validated_scores, scores)
 
-    def test_validate_pred_score_none_with_anomaly_map(self) -> None:
-        """Test validation of None prediction scores with anomaly map."""
-        anomaly_map = torch.rand(4, 224, 224)
-        computed_scores = self.validator.validate_pred_score(None, anomaly_map)
-        assert computed_scores.shape == (4,)
+    def test_validate_pred_score_none(self) -> None:
+        """Test validation of None prediction scores."""
+        computed_scores = self.validator.validate_pred_score(None)
+        assert computed_scores is None
 
     def test_validate_pred_label_valid(self) -> None:
         """Test validation of valid prediction labels."""
