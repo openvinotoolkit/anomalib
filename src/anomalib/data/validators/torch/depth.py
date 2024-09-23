@@ -269,12 +269,11 @@ class DepthBatchValidator:
         return Image(to_dtype_image(image, torch.float32, scale=True))
 
     @staticmethod
-    def validate_gt_label(gt_label: torch.Tensor | Sequence[int] | None, batch_size: int) -> torch.Tensor | None:
+    def validate_gt_label(gt_label: torch.Tensor | Sequence[int] | None) -> torch.Tensor | None:
         """Validate the ground truth label for a batch.
 
         Args:
             gt_label (torch.Tensor | Sequence[int] | None): Input ground truth label.
-            batch_size (int): Expected batch size.
 
         Returns:
             torch.Tensor | None: Validated ground truth label as a boolean tensor, or None.
@@ -287,19 +286,18 @@ class DepthBatchValidator:
             >>> import torch
             >>> from anomalib.data.validators import DepthBatchValidator
             >>> gt_label = torch.tensor([0, 1, 1, 0])
-            >>> validated_label = DepthBatchValidator.validate_gt_label(gt_label, batch_size=4)
+            >>> validated_label = DepthBatchValidator.validate_gt_label(gt_label)
             >>> print(validated_label)
             tensor([False,  True,  True, False])
         """
-        return ImageBatchValidator.validate_gt_label(gt_label, batch_size)
+        return ImageBatchValidator.validate_gt_label(gt_label)
 
     @staticmethod
-    def validate_gt_mask(gt_mask: torch.Tensor | None, batch_size: int) -> Mask | None:
+    def validate_gt_mask(gt_mask: torch.Tensor | None) -> Mask | None:
         """Validate the ground truth mask for a batch.
 
         Args:
             gt_mask (torch.Tensor | None): Input ground truth mask.
-            batch_size (int): Expected batch size.
 
         Returns:
             Mask | None: Validated ground truth mask as a torchvision Mask object, or None.
@@ -312,19 +310,18 @@ class DepthBatchValidator:
             >>> import torch
             >>> from anomalib.data.validators import DepthBatchValidator
             >>> gt_mask = torch.randint(0, 2, (4, 224, 224))
-            >>> validated_mask = DepthBatchValidator.validate_gt_mask(gt_mask, batch_size=4)
+            >>> validated_mask = DepthBatchValidator.validate_gt_mask(gt_mask)
             >>> print(validated_mask.shape)
             torch.Size([4, 224, 224])
         """
-        return ImageBatchValidator.validate_gt_mask(gt_mask, batch_size)
+        return ImageBatchValidator.validate_gt_mask(gt_mask)
 
     @staticmethod
-    def validate_mask_path(mask_path: Sequence[str] | None, batch_size: int) -> list[str] | None:
+    def validate_mask_path(mask_path: Sequence[str] | None) -> list[str] | None:
         """Validate the mask paths for a batch.
 
         Args:
             mask_path (Sequence[str] | None): Input sequence of mask paths.
-            batch_size (int): Expected batch size.
 
         Returns:
             list[str] | None: Validated list of mask paths, or None.
@@ -336,11 +333,11 @@ class DepthBatchValidator:
         Examples:
             >>> from anomalib.data.validators import DepthBatchValidator
             >>> mask_paths = ["path/to/mask_1.png", "path/to/mask_2.png"]
-            >>> validated_paths = DepthBatchValidator.validate_mask_path(mask_paths, batch_size=2)
+            >>> validated_paths = DepthBatchValidator.validate_mask_path(mask_paths)
             >>> print(validated_paths)
             ['path/to/mask_1.png', 'path/to/mask_2.png']
         """
-        return ImageBatchValidator.validate_mask_path(mask_path, batch_size)
+        return ImageBatchValidator.validate_mask_path(mask_path)
 
     @staticmethod
     def validate_image_path(image_path: list[str] | None) -> list[str] | None:
@@ -365,12 +362,11 @@ class DepthBatchValidator:
         return ImageBatchValidator.validate_image_path(image_path)
 
     @staticmethod
-    def validate_depth_map(depth_map: torch.Tensor | None, batch_size: int) -> torch.Tensor | None:
+    def validate_depth_map(depth_map: torch.Tensor | None) -> torch.Tensor | None:
         """Validate the depth map for a batch.
 
         Args:
             depth_map (torch.Tensor | None): Input depth map.
-            batch_size (int): Expected batch size.
 
         Returns:
             torch.Tensor | None: Validated depth map, or None.
@@ -383,7 +379,7 @@ class DepthBatchValidator:
             >>> import torch
             >>> from anomalib.data.validators import DepthBatchValidator
             >>> depth_map = torch.rand(4, 224, 224)
-            >>> validated_map = DepthBatchValidator.validate_depth_map(depth_map, batch_size=4)
+            >>> validated_map = DepthBatchValidator.validate_depth_map(depth_map)
             >>> print(validated_map.shape)
             torch.Size([4, 224, 224])
         """
@@ -394,9 +390,6 @@ class DepthBatchValidator:
             raise TypeError(msg)
         if depth_map.ndim not in {3, 4}:
             msg = f"Depth map must have shape [N, H, W] or [N, C, H, W], got shape {depth_map.shape}."
-            raise ValueError(msg)
-        if depth_map.shape[0] != batch_size:
-            msg = f"Depth map batch size must be {batch_size}, got {depth_map.shape[0]}."
             raise ValueError(msg)
         if depth_map.ndim == 4 and depth_map.shape[1] != 1 and depth_map.shape[1] != 3:
             msg = f"Depth map with 4 dimensions must have 1 or 3 channels, got {depth_map.shape[1]}."
@@ -431,9 +424,9 @@ class DepthBatchValidator:
         return [validate_path(path) for path in depth_path]
 
     @staticmethod
-    def validate_anomaly_map(anomaly_map: torch.Tensor | np.ndarray | None, batch_size: int) -> Mask | None:
+    def validate_anomaly_map(anomaly_map: torch.Tensor | np.ndarray | None) -> Mask | None:
         """Validate the anomaly map for a batch."""
-        return ImageBatchValidator.validate_anomaly_map(anomaly_map, batch_size)
+        return ImageBatchValidator.validate_anomaly_map(anomaly_map)
 
     @staticmethod
     def validate_pred_score(
@@ -444,9 +437,9 @@ class DepthBatchValidator:
         return ImageBatchValidator.validate_pred_score(pred_score, anomaly_map)
 
     @staticmethod
-    def validate_pred_mask(pred_mask: torch.Tensor | None, batch_size: int) -> Mask | None:
+    def validate_pred_mask(pred_mask: torch.Tensor | None) -> Mask | None:
         """Validate the prediction mask for a batch."""
-        return ImageBatchValidator.validate_pred_mask(pred_mask, batch_size)
+        return ImageBatchValidator.validate_pred_mask(pred_mask)
 
     @staticmethod
     def validate_pred_label(pred_label: torch.Tensor | None) -> torch.Tensor | None:

@@ -355,12 +355,11 @@ class ImageBatchValidator:
         return Image(image, dtype=torch.float32)
 
     @staticmethod
-    def validate_gt_label(gt_label: torch.Tensor | Sequence[int] | None, batch_size: int) -> torch.Tensor | None:
+    def validate_gt_label(gt_label: torch.Tensor | Sequence[int] | None) -> torch.Tensor | None:
         """Validate the ground truth label for a batch.
 
         Args:
             gt_label (torch.Tensor | Sequence[int] | None): Input ground truth label.
-            batch_size (int): Expected batch size.
 
         Returns:
             torch.Tensor | None: Validated ground truth label as a boolean tensor, or None.
@@ -373,7 +372,7 @@ class ImageBatchValidator:
             >>> import torch
             >>> from anomalib.data.validators.torch.image import ImageBatchValidator
             >>> gt_label = torch.tensor([0, 1, 1, 0])
-            >>> validated_label = ImageBatchValidator.validate_gt_label(gt_label, batch_size=4)
+            >>> validated_label = ImageBatchValidator.validate_gt_label(gt_label)
             >>> print(validated_label)
             tensor([False,  True,  True, False])
         """
@@ -387,21 +386,17 @@ class ImageBatchValidator:
         if gt_label.ndim != 1:
             msg = f"Ground truth label must be a 1-dimensional vector, got shape {gt_label.shape}."
             raise ValueError(msg)
-        if len(gt_label) != batch_size:
-            msg = f"Ground truth label must have length {batch_size}, got length {len(gt_label)}."
-            raise ValueError(msg)
         if torch.is_floating_point(gt_label):
             msg = f"Ground truth label must be boolean or integer, got {gt_label}."
             raise ValueError(msg)
         return gt_label.bool()
 
     @staticmethod
-    def validate_gt_mask(gt_mask: torch.Tensor | None, batch_size: int) -> Mask | None:
+    def validate_gt_mask(gt_mask: torch.Tensor | None) -> Mask | None:
         """Validate the ground truth mask for a batch.
 
         Args:
             gt_mask (torch.Tensor | None): Input ground truth mask.
-            batch_size (int): Expected batch size.
 
         Returns:
             Mask | None: Validated ground truth mask as a torchvision Mask object, or None.
@@ -414,7 +409,7 @@ class ImageBatchValidator:
             >>> import torch
             >>> from anomalib.data.validators.torch.image import ImageBatchValidator
             >>> gt_mask = torch.randint(0, 2, (4, 224, 224))
-            >>> validated_mask = ImageBatchValidator.validate_gt_mask(gt_mask, batch_size=4)
+            >>> validated_mask = ImageBatchValidator.validate_gt_mask(gt_mask)
             >>> print(validated_mask.shape)
             torch.Size([4, 224, 224])
         """
@@ -427,13 +422,7 @@ class ImageBatchValidator:
             msg = f"Ground truth mask must have shape [H, W] or [N, H, W] or [N, 1, H, W] got shape {gt_mask.shape}."
             raise ValueError(msg)
         if gt_mask.ndim == 2:
-            if batch_size != 1:
-                msg = f"Invalid shape for gt_mask. Got mask shape {gt_mask.shape} for batch size {batch_size}."
-                raise ValueError(msg)
             gt_mask = gt_mask.unsqueeze(0)
-        if gt_mask.ndim == 3 and gt_mask.shape[0] != batch_size:
-            msg = f"Invalid shape for gt_mask. Got mask shape {gt_mask.shape} for batch size {batch_size}."
-            raise ValueError(msg)
         if gt_mask.ndim == 4:
             if gt_mask.shape[1] != 1:
                 msg = f"Ground truth mask must have 1 channel, got {gt_mask.shape[1]}."
@@ -442,12 +431,11 @@ class ImageBatchValidator:
         return Mask(gt_mask, dtype=torch.bool)
 
     @staticmethod
-    def validate_mask_path(mask_path: Sequence[str] | None, batch_size: int) -> list[str] | None:
+    def validate_mask_path(mask_path: Sequence[str] | None) -> list[str] | None:
         """Validate the mask paths for a batch.
 
         Args:
             mask_path (Sequence[str] | None): Input sequence of mask paths.
-            batch_size (int): Expected batch size.
 
         Returns:
             list[str] | None: Validated list of mask paths, or None.
@@ -459,7 +447,7 @@ class ImageBatchValidator:
         Examples:
             >>> from anomalib.data.validators.torch.image import ImageBatchValidator
             >>> mask_paths = ["path/to/mask_1.png", "path/to/mask_2.png"]
-            >>> validated_paths = ImageBatchValidator.validate_mask_path(mask_paths, batch_size=2)
+            >>> validated_paths = ImageBatchValidator.validate_mask_path(mask_paths)
             >>> print(validated_paths)
             ['path/to/mask_1.png', 'path/to/mask_2.png']
         """
@@ -468,18 +456,14 @@ class ImageBatchValidator:
         if not isinstance(mask_path, Sequence):
             msg = f"Mask path must be a sequence of paths or strings, got {type(mask_path)}."
             raise TypeError(msg)
-        if len(mask_path) != batch_size:
-            msg = f"Invalid length for mask_path. Got length {len(mask_path)} for batch size {batch_size}."
-            raise ValueError(msg)
         return [str(path) for path in mask_path]
 
     @staticmethod
-    def validate_anomaly_map(anomaly_map: torch.Tensor | np.ndarray | None, batch_size: int) -> Mask | None:
+    def validate_anomaly_map(anomaly_map: torch.Tensor | np.ndarray | None) -> Mask | None:
         """Validate the anomaly map for a batch.
 
         Args:
             anomaly_map (torch.Tensor | np.ndarray | None): Input anomaly map.
-            batch_size (int): Expected batch size.
 
         Returns:
             Mask | None: Validated anomaly map as a torchvision Mask object, or None.
@@ -491,7 +475,7 @@ class ImageBatchValidator:
             >>> import torch
             >>> from anomalib.data.validators.torch.image import ImageBatchValidator
             >>> anomaly_map = torch.rand(4, 224, 224)
-            >>> validated_map = ImageBatchValidator.validate_anomaly_map(anomaly_map, batch_size=4)
+            >>> validated_map = ImageBatchValidator.validate_anomaly_map(anomaly_map)
             >>> print(validated_map.shape)
             torch.Size([4, 224, 224])
         """
@@ -507,9 +491,6 @@ class ImageBatchValidator:
             msg = f"Anomaly map must have shape [H, W] or [N, H, W] or [N, 1, H, W], got shape {anomaly_map.shape}."
             raise ValueError(msg)
         if anomaly_map.ndim == 2:
-            if batch_size != 1:
-                msg = f"Invalid shape for anomaly_map. Got mask shape {anomaly_map.shape} for batch size {batch_size}."
-                raise ValueError(msg)
             anomaly_map = anomaly_map.unsqueeze(0)
         if anomaly_map.ndim == 4:
             if anomaly_map.shape[1] != 1:
@@ -556,12 +537,11 @@ class ImageBatchValidator:
         return pred_score
 
     @staticmethod
-    def validate_pred_mask(pred_mask: torch.Tensor | None, batch_size: int) -> Mask | None:
+    def validate_pred_mask(pred_mask: torch.Tensor | None) -> Mask | None:
         """Validate the prediction mask for a batch.
 
         Args:
             pred_mask (torch.Tensor | None): Input prediction mask.
-            batch_size (int): Expected batch size.
 
         Returns:
             Mask | None: Validated prediction mask as a torchvision Mask object, or None.
@@ -570,11 +550,11 @@ class ImageBatchValidator:
             >>> import torch
             >>> from anomalib.data.validators.torch.image import ImageBatchValidator
             >>> pred_mask = torch.randint(0, 2, (4, 224, 224))
-            >>> validated_mask = ImageBatchValidator.validate_pred_mask(pred_mask, batch_size=4)
+            >>> validated_mask = ImageBatchValidator.validate_pred_mask(pred_mask)
             >>> print(validated_mask.shape)
             torch.Size([4, 224, 224])
         """
-        return ImageBatchValidator.validate_gt_mask(pred_mask, batch_size)  # We can reuse the gt_mask validation
+        return ImageBatchValidator.validate_gt_mask(pred_mask)  # We can reuse the gt_mask validation
 
     @staticmethod
     def validate_pred_label(pred_label: torch.Tensor | None) -> torch.Tensor | None:

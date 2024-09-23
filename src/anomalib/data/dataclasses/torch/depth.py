@@ -128,22 +128,22 @@ class DepthBatch(
         return DepthBatchValidator.validate_image(image)
 
     def validate_gt_label(self, gt_label: torch.Tensor | None) -> torch.Tensor | None:
-        return DepthBatchValidator.validate_gt_label(gt_label, self.batch_size)
+        return DepthBatchValidator.validate_gt_label(gt_label)
 
     def validate_gt_mask(self, gt_mask: Mask | None) -> Mask | None:
-        return DepthBatchValidator.validate_gt_mask(gt_mask, self.batch_size)
+        return DepthBatchValidator.validate_gt_mask(gt_mask)
 
     def validate_mask_path(self, mask_path: list[str] | None) -> list[str] | None:
-        return DepthBatchValidator.validate_mask_path(mask_path, self.batch_size)
+        return DepthBatchValidator.validate_mask_path(mask_path)
 
     def validate_anomaly_map(self, anomaly_map: torch.Tensor | None) -> torch.Tensor | None:
-        return DepthBatchValidator.validate_anomaly_map(anomaly_map, self.batch_size)
+        return DepthBatchValidator.validate_anomaly_map(anomaly_map)
 
     def validate_pred_score(self, pred_score: torch.Tensor | Sequence[float] | None) -> torch.Tensor | None:
         return DepthBatchValidator.validate_pred_score(pred_score, self.anomaly_map)
 
     def validate_pred_mask(self, pred_mask: torch.Tensor | None) -> torch.Tensor | None:
-        return DepthBatchValidator.validate_pred_mask(pred_mask, self.batch_size)
+        return DepthBatchValidator.validate_pred_mask(pred_mask)
 
     @staticmethod
     def validate_pred_label(pred_label: torch.Tensor | None) -> torch.Tensor | None:
@@ -154,7 +154,7 @@ class DepthBatch(
         return DepthBatchValidator.validate_image_path(image_path)
 
     def validate_depth_map(self, depth_map: torch.Tensor | None) -> torch.Tensor | None:
-        return DepthBatchValidator.validate_depth_map(depth_map, self.batch_size)
+        return DepthBatchValidator.validate_depth_map(depth_map)
 
     @staticmethod
     def validate_depth_path(depth_path: list[str] | None) -> list[str] | None:

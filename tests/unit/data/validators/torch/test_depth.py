@@ -153,63 +153,63 @@ class TestDepthBatchValidator:  # noqa: PLR0904
     def test_validate_gt_label_valid(self) -> None:
         """Test validation of valid ground truth labels."""
         labels = torch.tensor([0, 1, 1, 0])
-        validated_labels = self.validator.validate_gt_label(labels, batch_size=4)
+        validated_labels = self.validator.validate_gt_label(labels)
         assert isinstance(validated_labels, torch.Tensor)
         assert validated_labels.dtype == torch.bool
         assert torch.equal(validated_labels, torch.tensor([False, True, True, False]))
 
     def test_validate_gt_label_none(self) -> None:
         """Test validation of None ground truth labels."""
-        assert self.validator.validate_gt_label(None, batch_size=4) is None
+        assert self.validator.validate_gt_label(None) is None
 
     def test_validate_gt_label_invalid_type(self) -> None:
         """Test validation of ground truth labels with invalid type."""
         with pytest.raises(ValueError, match="too many dimensions 'str'"):
-            self.validator.validate_gt_label(["0", "1"], batch_size=2)
+            self.validator.validate_gt_label(["0", "1"])
 
     def test_validate_gt_label_invalid_dimensions(self) -> None:
         """Test validation of ground truth labels with invalid dimensions."""
         with pytest.raises(ValueError, match="Ground truth label must be a 1-dimensional vector"):
-            self.validator.validate_gt_label(torch.tensor([[0, 1], [1, 0]]), batch_size=2)
+            self.validator.validate_gt_label(torch.tensor([[0, 1], [1, 0]]))
 
     def test_validate_gt_mask_valid(self) -> None:
         """Test validation of valid ground truth masks."""
         masks = torch.randint(0, 2, (4, 224, 224))
-        validated_masks = self.validator.validate_gt_mask(masks, batch_size=4)
+        validated_masks = self.validator.validate_gt_mask(masks)
         assert isinstance(validated_masks, Mask)
         assert validated_masks.shape == (4, 224, 224)
         assert validated_masks.dtype == torch.bool
 
     def test_validate_gt_mask_none(self) -> None:
         """Test validation of None ground truth masks."""
-        assert self.validator.validate_gt_mask(None, batch_size=4) is None
+        assert self.validator.validate_gt_mask(None) is None
 
     def test_validate_gt_mask_invalid_type(self) -> None:
         """Test validation of ground truth masks with invalid type."""
         with pytest.raises(TypeError, match="Ground truth mask must be a torch.Tensor"):
-            self.validator.validate_gt_mask([torch.zeros(224, 224)], batch_size=1)
+            self.validator.validate_gt_mask([torch.zeros(224, 224)])
 
     def test_validate_gt_mask_invalid_dimensions(self) -> None:
         """Test validation of ground truth masks with invalid dimensions."""
         with pytest.raises(ValueError, match="Ground truth mask must have 1 channel, got 2."):
-            self.validator.validate_gt_mask(torch.zeros(4, 2, 224, 224), batch_size=4)
+            self.validator.validate_gt_mask(torch.zeros(4, 2, 224, 224))
 
     def test_validate_anomaly_map_valid(self) -> None:
         """Test validation of a valid anomaly map batch."""
         anomaly_map = torch.rand(4, 224, 224)
-        validated_map = self.validator.validate_anomaly_map(anomaly_map, batch_size=4)
+        validated_map = self.validator.validate_anomaly_map(anomaly_map)
         assert isinstance(validated_map, Mask)
         assert validated_map.shape == (4, 224, 224)
         assert validated_map.dtype == torch.float32
 
     def test_validate_anomaly_map_none(self) -> None:
         """Test validation of a None anomaly map batch."""
-        assert self.validator.validate_anomaly_map(None, batch_size=4) is None
+        assert self.validator.validate_anomaly_map(None) is None
 
     def test_validate_anomaly_map_invalid_shape(self) -> None:
         """Test validation of an anomaly map batch with invalid shape."""
         with pytest.raises(ValueError, match="Anomaly map must have 1 channel, got 2."):
-            self.validator.validate_anomaly_map(torch.rand(4, 2, 224, 224), batch_size=4)
+            self.validator.validate_anomaly_map(torch.rand(4, 2, 224, 224))
 
     def test_validate_pred_score_valid(self) -> None:
         """Test validation of valid prediction scores."""
