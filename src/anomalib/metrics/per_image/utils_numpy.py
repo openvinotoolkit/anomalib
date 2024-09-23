@@ -29,14 +29,14 @@ class StatsOutliersPolicy(Enum):
     from the Q1 and Q3 quartiles (respectively low and high outliers). The IQR is the difference between Q3 and Q1.
 
     None | "none": do not include outliers.
-    "hi": only include high outliers.
-    "lo": only include low outliers.
+    "high": only include high outliers.
+    "low": only include low outliers.
     "both": include both high and low outliers.
     """
 
     NONE: str = "none"
-    HI: str = "hi"
-    LO: str = "lo"
+    HIGH: str = "high"
+    LOW: str = "low"
     BOTH: str = "both"
 
 
@@ -158,8 +158,8 @@ def per_image_scores_stats(
 
     Outliers are handled according to `outliers_policy`:
         - None | "none": do not include outliers.
-        - "hi": only include high outliers.
-        - "lo": only include low outliers.
+        - "high": only include high outliers.
+        - "low": only include low outliers.
         - "both": include both high and low outliers.
 
     ** IMAGE INDEX **
@@ -244,13 +244,13 @@ def per_image_scores_stats(
     outliers_lo = outliers[outliers < boxplot_stats["med"]]
     outliers_hi = outliers[outliers > boxplot_stats["med"]]
 
-    if outliers_policy in {StatsOutliersPolicy.HI, StatsOutliersPolicy.BOTH}:
+    if outliers_policy in {StatsOutliersPolicy.HIGH, StatsOutliersPolicy.BOTH}:
         boxplot_stats = {
             **boxplot_stats,
             **{f"outhi_{idx:06}": value for idx, value in enumerate(outliers_hi)},
         }
 
-    if outliers_policy in {StatsOutliersPolicy.LO, StatsOutliersPolicy.BOTH}:
+    if outliers_policy in {StatsOutliersPolicy.LOW, StatsOutliersPolicy.BOTH}:
         boxplot_stats = {
             **boxplot_stats,
             **{f"outlo_{idx:06}": value for idx, value in enumerate(outliers_lo)},
