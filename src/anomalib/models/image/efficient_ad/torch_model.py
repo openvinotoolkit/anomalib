@@ -372,9 +372,11 @@ class EfficientAdModel(nn.Module):
         student_output, distance_st = self.compute_student_teacher_distance(batch)
         if self.training:
             return self.compute_losses(batch, batch_imagenet, distance_st)
+
         map_st, map_stae = self.compute_maps(batch, student_output, distance_st, normalize)
-        map_combined = 0.5 * map_st + 0.5 * map_stae
-        return InferenceBatch(anomaly_map=map_combined)
+        anomaly_map = 0.5 * map_st + 0.5 * map_stae
+        pred_score = torch.amax(anomaly_map, dim=(-2, -1))
+        return InferenceBatch(pred_score=pred_score, anomaly_map=anomaly_map)
 
     def compute_student_teacher_distance(self, batch: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         """Compute the student-teacher distance vectors.

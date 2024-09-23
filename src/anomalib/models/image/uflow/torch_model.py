@@ -179,8 +179,10 @@ class UflowModel(nn.Module):
 
         if self.training:
             return z, ljd
+
         anomaly_map = self.anomaly_map_generator(z)
-        return InferenceBatch(anomaly_map=anomaly_map)
+        pred_score = torch.amax(anomaly_map, dim=(-2, -1))
+        return InferenceBatch(pred_score=pred_score, anomaly_map=anomaly_map)
 
     def encode(self, features: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         """Return"""
