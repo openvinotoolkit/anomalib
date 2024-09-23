@@ -92,24 +92,24 @@ class NumpyDepthBatchValidator:
         return NumpyImageBatchValidator.validate_image(image)
 
     @staticmethod
-    def validate_gt_label(gt_label: np.ndarray | Sequence[int] | None, batch_size: int) -> np.ndarray | None:
+    def validate_gt_label(gt_label: np.ndarray | Sequence[int] | None) -> np.ndarray | None:
         """Validate the ground truth label batch."""
-        return NumpyImageBatchValidator.validate_gt_label(gt_label, batch_size)
+        return NumpyImageBatchValidator.validate_gt_label(gt_label)
 
     @staticmethod
-    def validate_gt_mask(gt_mask: np.ndarray | None, batch_size: int) -> np.ndarray | None:
+    def validate_gt_mask(gt_mask: np.ndarray | None) -> np.ndarray | None:
         """Validate the ground truth mask batch."""
-        return NumpyImageBatchValidator.validate_gt_mask(gt_mask, batch_size)
+        return NumpyImageBatchValidator.validate_gt_mask(gt_mask)
 
     @staticmethod
-    def validate_mask_path(mask_path: Sequence[str] | None, batch_size: int) -> list[str] | None:
+    def validate_mask_path(mask_path: Sequence[str] | None) -> list[str] | None:
         """Validate the mask paths for a batch."""
-        return NumpyImageBatchValidator.validate_mask_path(mask_path, batch_size)
+        return NumpyImageBatchValidator.validate_mask_path(mask_path)
 
     @staticmethod
-    def validate_anomaly_map(anomaly_map: np.ndarray | None, batch_size: int) -> np.ndarray | None:
+    def validate_anomaly_map(anomaly_map: np.ndarray | None) -> np.ndarray | None:
         """Validate the anomaly map batch."""
-        return NumpyImageBatchValidator.validate_anomaly_map(anomaly_map, batch_size)
+        return NumpyImageBatchValidator.validate_anomaly_map(anomaly_map)
 
     @staticmethod
     def validate_pred_score(pred_score: np.ndarray | None) -> np.ndarray | None:
@@ -117,9 +117,9 @@ class NumpyDepthBatchValidator:
         return NumpyImageBatchValidator.validate_pred_score(pred_score)
 
     @staticmethod
-    def validate_pred_mask(pred_mask: np.ndarray | None, batch_size: int) -> np.ndarray | None:
+    def validate_pred_mask(pred_mask: np.ndarray | None) -> np.ndarray | None:
         """Validate the prediction mask batch."""
-        return NumpyImageBatchValidator.validate_pred_mask(pred_mask, batch_size)
+        return NumpyImageBatchValidator.validate_pred_mask(pred_mask)
 
     @staticmethod
     def validate_pred_label(pred_label: np.ndarray | None) -> np.ndarray | None:
@@ -132,7 +132,7 @@ class NumpyDepthBatchValidator:
         return NumpyImageBatchValidator.validate_image_path(image_path)
 
     @staticmethod
-    def validate_depth_map(depth_map: np.ndarray | None, batch_size: int) -> np.ndarray | None:
+    def validate_depth_map(depth_map: np.ndarray | None) -> np.ndarray | None:
         """Validate the depth map batch."""
         if depth_map is None:
             return None
@@ -141,9 +141,6 @@ class NumpyDepthBatchValidator:
             raise TypeError(msg)
         if depth_map.ndim not in {3, 4}:
             msg = f"Depth map batch must have shape [N, H, W] or [N, H, W, 1], got shape {depth_map.shape}."
-            raise ValueError(msg)
-        if depth_map.shape[0] != batch_size:
-            msg = f"Depth map batch size must be {batch_size}, got {depth_map.shape[0]}."
             raise ValueError(msg)
         if depth_map.ndim == 4 and depth_map.shape[3] != 1:
             msg = f"Depth map batch with 4 dimensions must have 1 channel, got {depth_map.shape[3]}."

@@ -114,11 +114,6 @@ class TestDepthValidator:
         """Test validation of a None prediction score."""
         assert self.validator.validate_pred_score(None) is None
 
-    def test_validate_pred_score_invalid_shape(self) -> None:
-        """Test validation of a prediction score with invalid shape."""
-        with pytest.raises(ValueError, match="Predicted score must be a scalar"):
-            self.validator.validate_pred_score(torch.tensor([0.8, 0.9]))
-
 
 class TestDepthBatchValidator:  # noqa: PLR0904
     """Test DepthBatchValidator."""

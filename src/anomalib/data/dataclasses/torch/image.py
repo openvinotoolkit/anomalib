@@ -8,12 +8,9 @@ tensors for efficient data handling and processing in anomaly detection tasks.
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from collections.abc import Sequence
 from dataclasses import dataclass
 
-import numpy as np
-import torch
-from torchvision.tv_tensors import Image, Mask
+from torchvision.tv_tensors import Image
 
 from anomalib.data.dataclasses.generic import BatchIterateMixin, _ImageInputFields
 from anomalib.data.dataclasses.numpy.image import NumpyImageBatch, NumpyImageItem
@@ -24,6 +21,7 @@ from anomalib.data.validators.torch.image import ImageBatchValidator, ImageValid
 @dataclass
 class ImageItem(
     ToNumpyMixin[NumpyImageItem],
+    ImageValidator,
     _ImageInputFields[str],
     DatasetItem[Image],
 ):
@@ -61,47 +59,12 @@ class ImageItem(
 
     numpy_class = NumpyImageItem
 
-    @staticmethod
-    def validate_image(image: torch.Tensor) -> torch.Tensor:
-        return ImageValidator.validate_image(image)
-
-    @staticmethod
-    def validate_gt_label(gt_label: torch.Tensor | int | None) -> torch.Tensor | None:
-        return ImageValidator.validate_gt_label(gt_label)
-
-    @staticmethod
-    def validate_gt_mask(gt_mask: torch.Tensor | None) -> Mask | None:
-        return ImageValidator.validate_gt_mask(gt_mask)
-
-    @staticmethod
-    def validate_mask_path(mask_path: str | None) -> str | None:
-        return ImageValidator.validate_mask_path(mask_path)
-
-    @staticmethod
-    def validate_anomaly_map(anomaly_map: torch.Tensor | None) -> Mask | None:
-        return ImageValidator.validate_anomaly_map(anomaly_map)
-
-    @staticmethod
-    def validate_pred_score(pred_score: torch.Tensor | np.ndarray | float | None) -> torch.Tensor | None:
-        return ImageValidator.validate_pred_score(pred_score)
-
-    @staticmethod
-    def validate_pred_mask(pred_mask: torch.Tensor | None) -> torch.Tensor | None:
-        return ImageValidator.validate_pred_mask(pred_mask)
-
-    @staticmethod
-    def validate_pred_label(pred_label: torch.Tensor | np.ndarray | float | None) -> torch.Tensor | None:
-        return ImageValidator.validate_pred_label(pred_label)
-
-    @staticmethod
-    def validate_image_path(image_path: str | None) -> str | None:
-        return ImageValidator.validate_image_path(image_path)
-
 
 @dataclass
 class ImageBatch(
     ToNumpyMixin[NumpyImageBatch],
     BatchIterateMixin[ImageItem],
+    ImageBatchValidator,
     _ImageInputFields[list[str]],
     Batch[Image],
 ):
@@ -137,33 +100,3 @@ class ImageBatch(
 
     item_class = ImageItem
     numpy_class = NumpyImageBatch
-
-    @staticmethod
-    def validate_image(image: Image) -> Image:
-        return ImageBatchValidator.validate_image(image)
-
-    def validate_gt_label(self, gt_label: torch.Tensor | Sequence[int] | None) -> torch.Tensor | None:
-        return ImageBatchValidator.validate_gt_label(gt_label)
-
-    def validate_gt_mask(self, gt_mask: Mask | None) -> Mask | None:
-        return ImageBatchValidator.validate_gt_mask(gt_mask)
-
-    def validate_mask_path(self, mask_path: Sequence[str] | Sequence[str] | None) -> list[str] | None:
-        return ImageBatchValidator.validate_mask_path(mask_path)
-
-    def validate_anomaly_map(self, anomaly_map: torch.Tensor | np.ndarray | None) -> torch.Tensor | None:
-        return ImageBatchValidator.validate_anomaly_map(anomaly_map)
-
-    def validate_pred_score(self, pred_score: torch.Tensor | None) -> torch.Tensor | None:
-        return ImageBatchValidator.validate_pred_score(pred_score)
-
-    def validate_pred_mask(self, pred_mask: torch.Tensor | None) -> torch.Tensor | None:
-        return ImageBatchValidator.validate_pred_mask(pred_mask)
-
-    @staticmethod
-    def validate_pred_label(pred_label: torch.Tensor | None) -> torch.Tensor | None:
-        return ImageBatchValidator.validate_pred_label(pred_label)
-
-    @staticmethod
-    def validate_image_path(image_path: list[str]) -> list[str] | None:
-        return ImageBatchValidator.validate_image_path(image_path)

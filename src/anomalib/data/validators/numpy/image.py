@@ -383,12 +383,11 @@ class NumpyImageBatchValidator:
         return image.astype(np.float32)
 
     @staticmethod
-    def validate_gt_label(gt_label: np.ndarray | Sequence[int] | None, batch_size: int) -> np.ndarray | None:
+    def validate_gt_label(gt_label: np.ndarray | Sequence[int] | None) -> np.ndarray | None:
         """Validate the ground truth label batch.
 
         Args:
             gt_label (np.ndarray | Sequence[int] | None): Input ground truth label batch.
-            batch_size (int): Expected batch size.
 
         Returns:
             np.ndarray | None: Validated ground truth label batch as a boolean array, or None.
@@ -401,11 +400,11 @@ class NumpyImageBatchValidator:
             >>> import numpy as np
             >>> from anomalib.data.validators.numpy.image import NumpyImageBatchValidator
             >>> labels = np.array([0, 1, 1, 0])
-            >>> validated_labels = NumpyImageBatchValidator.validate_gt_label(labels, 4)
+            >>> validated_labels = NumpyImageBatchValidator.validate_gt_label(labels)
             >>> validated_labels
             array([False,  True,  True, False])
             >>> list_labels = [1, 0, 1, 1]
-            >>> validated_list = NumpyImageBatchValidator.validate_gt_label(list_labels, 4)
+            >>> validated_list = NumpyImageBatchValidator.validate_gt_label(list_labels)
             >>> validated_list
             array([ True, False,  True,  True])
         """
@@ -419,18 +418,14 @@ class NumpyImageBatchValidator:
         if gt_label.ndim != 1:
             msg = f"Ground truth label batch must be 1-dimensional, got shape {gt_label.shape}."
             raise ValueError(msg)
-        if len(gt_label) != batch_size:
-            msg = f"Ground truth label batch must have length {batch_size}, got length {len(gt_label)}."
-            raise ValueError(msg)
         return gt_label.astype(bool)
 
     @staticmethod
-    def validate_gt_mask(gt_mask: np.ndarray | None, batch_size: int) -> np.ndarray | None:
+    def validate_gt_mask(gt_mask: np.ndarray | None) -> np.ndarray | None:
         """Validate the ground truth mask batch.
 
         Args:
             gt_mask (np.ndarray | None): Input ground truth mask batch.
-            batch_size (int): Expected batch size.
 
         Returns:
             np.ndarray | None: Validated ground truth mask batch as a boolean array, or None.
@@ -443,13 +438,13 @@ class NumpyImageBatchValidator:
             >>> import numpy as np
             >>> from anomalib.data.validators.numpy.image import NumpyImageBatchValidator
             >>> masks = np.random.randint(0, 2, (4, 224, 224))
-            >>> validated_masks = NumpyImageBatchValidator.validate_gt_mask(masks, 4)
+            >>> validated_masks = NumpyImageBatchValidator.validate_gt_mask(masks)
             >>> validated_masks.shape
             (4, 224, 224)
             >>> validated_masks.dtype
             dtype('bool')
             >>> torch_style_masks = np.random.randint(0, 2, (4, 1, 224, 224))
-            >>> validated_torch_style = NumpyImageBatchValidator.validate_gt_mask(torch_style_masks, 4)
+            >>> validated_torch_style = NumpyImageBatchValidator.validate_gt_mask(torch_style_masks)
             >>> validated_torch_style.shape
             (4, 224, 224, 1)
         """
@@ -470,18 +465,14 @@ class NumpyImageBatchValidator:
             msg = f"Ground truth mask batch must have 1 channel, got {gt_mask.shape[3]}."
             raise ValueError(msg)
 
-        if gt_mask.shape[0] != batch_size:
-            msg = f"Ground truth mask batch must have {batch_size} items, got {gt_mask.shape[0]}."
-            raise ValueError(msg)
         return gt_mask.astype(bool)
 
     @staticmethod
-    def validate_mask_path(mask_path: Sequence[str] | None, batch_size: int) -> list[str] | None:
+    def validate_mask_path(mask_path: Sequence[str] | None) -> list[str] | None:
         """Validate the mask paths for a batch.
 
         Args:
             mask_path (Sequence[str] | None): Input sequence of mask paths.
-            batch_size (int): Expected batch size.
 
         Returns:
             list[str] | None: Validated list of mask paths, or None.
@@ -493,7 +484,7 @@ class NumpyImageBatchValidator:
         Examples:
             >>> from anomalib.data.validators.numpy.image import NumpyImageBatchValidator
             >>> paths = ['mask1.png', 'mask2.png', 'mask3.png', 'mask4.png']
-            >>> validated_paths = NumpyImageBatchValidator.validate_mask_path(paths, 4)
+            >>> validated_paths = NumpyImageBatchValidator.validate_mask_path(paths)
             >>> validated_paths
             ['mask1.png', 'mask2.png', 'mask3.png', 'mask4.png']
             >>> NumpyImageBatchValidator.validate_mask_path(['mask1.png', 'mask2.png'], 4)
@@ -506,18 +497,14 @@ class NumpyImageBatchValidator:
         if not isinstance(mask_path, Sequence):
             msg = f"Mask path must be a sequence of paths or strings, got {type(mask_path)}."
             raise TypeError(msg)
-        if len(mask_path) != batch_size:
-            msg = f"Invalid length for mask_path. Got length {len(mask_path)} for batch size {batch_size}."
-            raise ValueError(msg)
         return [str(path) for path in mask_path]
 
     @staticmethod
-    def validate_anomaly_map(anomaly_map: np.ndarray | None, batch_size: int) -> np.ndarray | None:
+    def validate_anomaly_map(anomaly_map: np.ndarray | None) -> np.ndarray | None:
         """Validate the anomaly map batch.
 
         Args:
             anomaly_map (np.ndarray | None): Input anomaly map batch.
-            batch_size (int): Expected batch size.
 
         Returns:
             np.ndarray | None: Validated anomaly map batch, or None.
@@ -530,13 +517,13 @@ class NumpyImageBatchValidator:
             >>> import numpy as np
             >>> from anomalib.data.validators.numpy.image import NumpyImageBatchValidator
             >>> anomaly_maps = np.random.rand(4, 224, 224)
-            >>> validated_maps = NumpyImageBatchValidator.validate_anomaly_map(anomaly_maps, 4)
+            >>> validated_maps = NumpyImageBatchValidator.validate_anomaly_map(anomaly_maps)
             >>> validated_maps.shape
             (4, 224, 224)
             >>> validated_maps.dtype
             dtype('float32')
             >>> torch_style_maps = np.random.rand(4, 1, 224, 224)
-            >>> validated_torch_style = NumpyImageBatchValidator.validate_anomaly_map(torch_style_maps, 4)
+            >>> validated_torch_style = NumpyImageBatchValidator.validate_anomaly_map(torch_style_maps)
             >>> validated_torch_style.shape
             (4, 224, 224, 1)
         """
@@ -551,9 +538,6 @@ class NumpyImageBatchValidator:
         # Check if the anomaly map is in [N, C, H, W] format and rearrange if necessary
         if anomaly_map.ndim == 4 and anomaly_map.shape[1] not in {1, 3}:
             anomaly_map = np.transpose(anomaly_map, (0, 2, 3, 1))
-        if anomaly_map.shape[0] != batch_size:
-            msg = f"Anomaly map batch must have {batch_size} items, got {anomaly_map.shape[0]}."
-            raise ValueError(msg)
         return anomaly_map.astype(np.float32)
 
     @staticmethod
@@ -597,12 +581,11 @@ class NumpyImageBatchValidator:
         return pred_score.astype(np.float32)
 
     @staticmethod
-    def validate_pred_mask(pred_mask: np.ndarray | None, batch_size: int) -> np.ndarray | None:
+    def validate_pred_mask(pred_mask: np.ndarray | None) -> np.ndarray | None:
         """Validate the prediction mask batch.
 
         Args:
             pred_mask (np.ndarray | None): Input prediction mask batch.
-            batch_size (int): Expected batch size.
 
         Returns:
             np.ndarray | None: Validated prediction mask batch, or None.
@@ -615,17 +598,17 @@ class NumpyImageBatchValidator:
             >>> import numpy as np
             >>> from anomalib.data.validators.numpy.image import NumpyImageBatchValidator
             >>> masks = np.random.randint(0, 2, (4, 224, 224))
-            >>> validated_masks = NumpyImageBatchValidator.validate_pred_mask(masks, 4)
+            >>> validated_masks = NumpyImageBatchValidator.validate_pred_mask(masks)
             >>> validated_masks.shape
             (4, 224, 224)
             >>> validated_masks.dtype
             dtype('bool')
             >>> torch_style_masks = np.random.randint(0, 2, (4, 1, 224, 224))
-            >>> validated_torch_style = NumpyImageBatchValidator.validate_pred_mask(torch_style_masks, 4)
+            >>> validated_torch_style = NumpyImageBatchValidator.validate_pred_mask(torch_style_masks)
             >>> validated_torch_style.shape
             (4, 224, 224, 1)
         """
-        return NumpyImageBatchValidator.validate_gt_mask(pred_mask, batch_size)
+        return NumpyImageBatchValidator.validate_gt_mask(pred_mask)
 
     @staticmethod
     def validate_pred_label(pred_label: np.ndarray | None) -> np.ndarray | None:

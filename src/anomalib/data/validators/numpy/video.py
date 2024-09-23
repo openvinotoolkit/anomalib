@@ -392,12 +392,11 @@ class NumpyVideoBatchValidator:
         return image.astype(np.float32)
 
     @staticmethod
-    def validate_gt_label(gt_label: np.ndarray | Sequence[int] | None, batch_size: int) -> np.ndarray | None:
+    def validate_gt_label(gt_label: np.ndarray | Sequence[int] | None) -> np.ndarray | None:
         """Validate the ground truth label batch.
 
         Args:
             gt_label (np.ndarray | Sequence[int] | None): Input ground truth label batch to validate.
-            batch_size (int): Expected batch size.
 
         Returns:
             np.ndarray | None: Validated ground truth label batch as boolean numpy array, or None if input is None.
@@ -410,8 +409,7 @@ class NumpyVideoBatchValidator:
             >>> import numpy as np
             >>> validator = NumpyVideoBatchValidator()
             >>> labels = [0, 1, 1, 0]
-            >>> batch_size = 4
-            >>> validated_labels = validator.validate_gt_label(labels, batch_size)
+            >>> validated_labels = validator.validate_gt_label(labels)
             >>> print(validated_labels, validated_labels.dtype)
             [False  True  True False] bool
         """
@@ -425,18 +423,14 @@ class NumpyVideoBatchValidator:
         if gt_label.ndim != 1:
             msg = f"Ground truth label batch must be 1-dimensional, got shape {gt_label.shape}."
             raise ValueError(msg)
-        if gt_label.shape[0] != batch_size:
-            msg = f"Ground truth label batch size must be {batch_size}, got {gt_label.shape[0]}."
-            raise ValueError(msg)
         return gt_label.astype(bool)
 
     @staticmethod
-    def validate_gt_mask(gt_mask: np.ndarray | None, batch_size: int) -> np.ndarray | None:
+    def validate_gt_mask(gt_mask: np.ndarray | None) -> np.ndarray | None:
         """Validate the ground truth mask batch.
 
         Args:
             gt_mask (np.ndarray | None): Input ground truth mask batch to validate.
-            batch_size (int): Expected batch size.
 
         Returns:
             np.ndarray | None: Validated ground truth mask batch as boolean numpy array, or None if input is None.
@@ -449,8 +443,7 @@ class NumpyVideoBatchValidator:
             >>> import numpy as np
             >>> validator = NumpyVideoBatchValidator()
             >>> masks = np.random.randint(0, 2, size=(2, 5, 224, 224))  # [N, T, H, W]
-            >>> batch_size = 2
-            >>> validated_masks = validator.validate_gt_mask(masks, batch_size)
+            >>> validated_masks = validator.validate_gt_mask(masks)
             >>> print(validated_masks.shape, validated_masks.dtype)
             (2, 5, 224, 224) bool
         """
@@ -462,21 +455,17 @@ class NumpyVideoBatchValidator:
         if gt_mask.ndim not in {4, 5}:
             msg = f"Ground truth mask batch must have shape [N, T, H, W] or [N, T, H, W, 1], got shape {gt_mask.shape}."
             raise ValueError(msg)
-        if gt_mask.shape[0] != batch_size:
-            msg = f"Ground truth mask batch size must be {batch_size}, got {gt_mask.shape[0]}."
-            raise ValueError(msg)
         if gt_mask.ndim == 5 and gt_mask.shape[4] != 1:
             msg = f"Ground truth mask batch must have 1 channel, got {gt_mask.shape[4]}."
             raise ValueError(msg)
         return gt_mask.astype(bool)
 
     @staticmethod
-    def validate_mask_path(mask_path: Sequence[str] | None, batch_size: int) -> list[str] | None:
+    def validate_mask_path(mask_path: Sequence[str] | None) -> list[str] | None:
         """Validate the mask paths for a batch.
 
         Args:
             mask_path (Sequence[str] | None): Input mask paths to validate.
-            batch_size (int): Expected batch size.
 
         Returns:
             list[str] | None: Validated mask paths, or None if input is None.
@@ -484,20 +473,18 @@ class NumpyVideoBatchValidator:
         Example:
             >>> validator = NumpyVideoBatchValidator()
             >>> paths = ["/path/to/mask1.png", "/path/to/mask2.png"]
-            >>> batch_size = 2
-            >>> validated_paths = validator.validate_mask_path(paths, batch_size)
+            >>> validated_paths = validator.validate_mask_path(paths)
             >>> print(validated_paths)
             ['/path/to/mask1.png', '/path/to/mask2.png']
         """
-        return validate_batch_path(mask_path, batch_size)
+        return validate_batch_path(mask_path)
 
     @staticmethod
-    def validate_anomaly_map(anomaly_map: np.ndarray | None, batch_size: int) -> np.ndarray | None:
+    def validate_anomaly_map(anomaly_map: np.ndarray | None) -> np.ndarray | None:
         """Validate the anomaly map batch.
 
         Args:
             anomaly_map (np.ndarray | None): Input anomaly map batch to validate.
-            batch_size (int): Expected batch size.
 
         Returns:
             np.ndarray | None: Validated anomaly map batch as float32 numpy array, or None if input is None.
@@ -510,8 +497,7 @@ class NumpyVideoBatchValidator:
             >>> import numpy as np
             >>> validator = NumpyVideoBatchValidator()
             >>> anomaly_maps = np.random.rand(2, 5, 224, 224)  # [N, T, H, W]
-            >>> batch_size = 2
-            >>> validated_maps = validator.validate_anomaly_map(anomaly_maps, batch_size)
+            >>> validated_maps = validator.validate_anomaly_map(anomaly_maps)
             >>> print(validated_maps.shape, validated_maps.dtype)
             (2, 5, 224, 224) float32
         """
@@ -522,9 +508,6 @@ class NumpyVideoBatchValidator:
             raise TypeError(msg)
         if anomaly_map.ndim not in {4, 5}:
             msg = f"Anomaly map batch must have shape [N, T, H, W] or [N, T, H, W, 1], got shape {anomaly_map.shape}."
-            raise ValueError(msg)
-        if anomaly_map.shape[0] != batch_size:
-            msg = f"Anomaly map batch size must be {batch_size}, got {anomaly_map.shape[0]}."
             raise ValueError(msg)
         if anomaly_map.ndim == 5 and anomaly_map.shape[4] != 1:
             msg = f"Anomaly map batch must have 1 channel, got {anomaly_map.shape[4]}."
@@ -564,12 +547,11 @@ class NumpyVideoBatchValidator:
         return pred_score.astype(np.float32)
 
     @staticmethod
-    def validate_pred_mask(pred_mask: np.ndarray | None, batch_size: int) -> np.ndarray | None:
+    def validate_pred_mask(pred_mask: np.ndarray | None) -> np.ndarray | None:
         """Validate the prediction mask batch.
 
         Args:
             pred_mask (np.ndarray | None): Input prediction mask batch to validate.
-            batch_size (int): Expected batch size.
 
         Returns:
             np.ndarray | None: Validated prediction mask batch as boolean numpy array, or None if input is None.
@@ -578,12 +560,11 @@ class NumpyVideoBatchValidator:
             >>> import numpy as np
             >>> validator = NumpyVideoBatchValidator()
             >>> masks = np.random.randint(0, 2, size=(2, 5, 224, 224))  # [N, T, H, W]
-            >>> batch_size = 2
-            >>> validated_masks = validator.validate_pred_mask(masks, batch_size)
+            >>> validated_masks = validator.validate_pred_mask(masks)
             >>> print(validated_masks.shape, validated_masks.dtype)
             (2, 5, 224, 224) bool
         """
-        return NumpyVideoBatchValidator.validate_gt_mask(pred_mask, batch_size)
+        return NumpyVideoBatchValidator.validate_gt_mask(pred_mask)
 
     @staticmethod
     def validate_pred_label(pred_label: np.ndarray | None) -> np.ndarray | None:
