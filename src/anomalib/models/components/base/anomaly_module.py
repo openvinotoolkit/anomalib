@@ -22,6 +22,9 @@ from anomalib import LearningType
 from anomalib.data import Batch, InferenceBatch
 from anomalib.metrics.threshold import Threshold
 from anomalib.post_processing import OneClassPostProcessor, PostProcessor
+from anomalib.metrics.evaluator import Evaluator
+from anomalib.metrics.collection import MetricWrapper
+from torchmetrics import AUROC, F1Score
 
 from .export_mixin import ExportMixin
 
@@ -39,7 +42,7 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
     Acts as a base class for all the Anomaly Modules in the library.
     """
 
-    def __init__(self, post_processor: PostProcessor | None = None) -> None:
+    def __init__(self, post_processor: PostProcessor | None = None, evaluator: Evaluator | None = None) -> None:
         super().__init__()
         logger.info("Initializing %s model.", self.__class__.__name__)
 
@@ -48,10 +51,8 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
         self.loss: nn.Module
         self.callbacks: list[Callback]
 
-        # self.image_metrics: AnomalibMetricCollection
-        # self.pixel_metrics: AnomalibMetricCollection
-
         self.post_processor = post_processor or self.default_post_processor()
+        self.evaluator = evaluator or self.default_evaluator()
 
         self._transform: Transform | None = None
         self._input_size: tuple[int, int] | None = None
@@ -211,6 +212,18 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
         msg = f"No default post-processor available for model {self.__name__} with learning type {self.learning_type}. \
               Please override the default_post_processor method in the model implementation."
         raise NotImplementedError(msg)
+
+    def default_evaluator(self) -> Evaluator:
+        """Default evaluator.
+
+        Override in subclass for model-specific evaluator behaviour.
+        """
+        image_auroc = MetricWrapper(["pred_score", "gt_label"], [AUROC(task="binary")], prefix="image_")
+        image_f1score = MetricWrapper(["pred_label", "gt_label"], [F1Score(task="binary")], prefix="image_")
+        pixel_auroc = MetricWrapper(["anomaly_map", "gt_mask"], [AUROC(task="binary")], prefix="pixel_")
+        pixel_f1score = MetricWrapper(["pred_mask", "gt_mask"], [F1Score(task="binary")], prefix="pixel_")
+        test_metrics = [image_auroc, image_f1score, pixel_auroc, pixel_f1score]
+        return Evaluator(test_metrics=test_metrics)
 
     @property
     def input_size(self) -> tuple[int, int] | None:

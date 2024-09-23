@@ -15,7 +15,7 @@ from lightning.pytorch.utilities.types import STEP_OUTPUT
 
 from anomalib import TaskType
 from anomalib.data import Batch
-from anomalib.metrics import AnomalibMetricCollection, create_metric_collection
+from anomalib.metrics import MetricWrapper, create_metric_collection
 from anomalib.models import AnomalyModule
 from torch.nn import ModuleList
 
@@ -46,17 +46,17 @@ class _MetricsCallback(Callback):
 
     def __init__(
         self,
-        metrics: list[AnomalibMetricCollection],
+        # metrics: list[AnomalibMetricCollection],
         compute_on_cpu = True,
     ) -> None:
         super().__init__()
-        if compute_on_cpu:
-            self.metrics_to_cpu(metrics)
-        self.metrics = metrics
+        self.compute_on_cpu = compute_on_cpu
 
     def setup(self, trainer: Trainer, pl_module: AnomalyModule, stage: str) -> None:
         del trainer, stage
-        pl_module.metrics = ModuleList(self.metrics)
+        if self.compute_on_cpu:
+            self.metrics_to_cpu(pl_module.val_metrics)
+            self.metrics_to_cpu(pl_module.test_metrics)
 
     def on_validation_batch_end(
         self,
@@ -67,17 +67,17 @@ class _MetricsCallback(Callback):
         batch_idx: int,
         dataloader_idx: int = 0,
     ) -> None:
-        del trainer, outputs, batch_idx, dataloader_idx, pl_module  # Unused arguments.
-        for metric in self.metrics:
-            metric.update_from_batch(batch)
+        del trainer, outputs, batch_idx, dataloader_idx  # Unused arguments.
+        for metric in pl_module.val_metrics:
+            metric.update(batch)
 
     def on_validation_epoch_end(
         self,
         trainer: Trainer,
         pl_module: AnomalyModule,
     ) -> None:
-        del trainer, pl_module  # Unused argument.
-        for metric_collection in self.metrics:
+        del trainer  # Unused argument.
+        for metric_collection in pl_module.val_metrics:
             self.log_dict(metric_collection, prog_bar=True)
 
     def on_test_batch_end(
@@ -89,23 +89,23 @@ class _MetricsCallback(Callback):
         batch_idx: int,
         dataloader_idx: int = 0,
     ) -> None:
-        del trainer, outputs, batch_idx, dataloader_idx, pl_module  # Unused arguments.
-        for metric in self.metrics:
-            metric.update_from_batch(batch)
+        del trainer, outputs, batch_idx, dataloader_idx  # Unused arguments.
+        for metric in pl_module.test_metrics:
+            metric.update(batch)
 
     def on_test_epoch_end(
         self,
         trainer: Trainer,
         pl_module: AnomalyModule,
     ) -> None:
-        del trainer, pl_module  # Unused argument.
-        for metric_collection in self.metrics:
+        del trainer  # Unused argument.
+        for metric_collection in pl_module.test_metrics:
             self.log_dict(metric_collection, prog_bar=True)
 
     def metrics_to_cpu(self, metrics: Metric | MetricCollection | list[MetricCollection]) -> None:
         if isinstance(metrics, Metric):
             metrics.compute_on_cpu = True
         else:
-            metrics = metrics if isinstance(metrics, list) else metrics.values()
+            metrics = metrics if isinstance(metrics, (list, ModuleList)) else metrics.values()
             for metric in metrics:
                 self.metrics_to_cpu(metric)

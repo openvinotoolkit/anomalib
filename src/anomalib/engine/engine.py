@@ -14,7 +14,7 @@ from lightning.pytorch.loggers import Logger
 from lightning.pytorch.trainer import Trainer
 from lightning.pytorch.utilities.types import _EVALUATE_OUTPUT, _PREDICT_OUTPUT, EVAL_DATALOADERS, TRAIN_DATALOADERS
 from torch.utils.data import DataLoader, Dataset
-from torchmetrics import Metric
+from torchmetrics import Metric, F1Score
 
 from anomalib import LearningType, TaskType
 from anomalib.callbacks.checkpoint import ModelCheckpoint
@@ -23,7 +23,7 @@ from anomalib.callbacks.timer import TimerCallback
 from anomalib.callbacks.visualizer import _VisualizationCallback
 from anomalib.data import AnomalibDataModule, AnomalibDataset, PredictDataset
 from anomalib.deploy import CompressionType, ExportType
-from anomalib.metrics import AnomalibMetricCollection, AUROC, F1Max
+from anomalib.metrics import MetricWrapper, AUROC, F1Max
 from anomalib.models import AnomalyModule
 from anomalib.utils.path import create_versioned_dir
 from anomalib.utils.visualization import ImageVisualizer
@@ -120,6 +120,8 @@ class Engine:
         task: TaskType | str = TaskType.SEGMENTATION,
         image_metrics: list[str] | str | dict[str, dict[str, Any]] | None = None,
         pixel_metrics: list[str] | str | dict[str, dict[str, Any]] | None = None,
+        val_metrics: list[MetricWrapper] | None = None,
+        test_metrics: list[MetricWrapper] | None = None,
         logger: Logger | Iterable[Logger] | bool | None = None,
         default_root_dir: str | Path = "results",
         **kwargs,
@@ -139,15 +141,6 @@ class Engine:
         )
 
         self.task = TaskType(task)
-        # self.image_metric_names = image_metrics if image_metrics else ["AUROC", "F1Max"]
-        image_metrics = AnomalibMetricCollection(["pred_score", "gt_label"], [AUROC(), F1Max()], prefix="image_")
-        pixel_metrics = AnomalibMetricCollection(["anomaly_map", "gt_mask"], [AUROC(), F1Max()], prefix="pixel_")
-        self.metrics = [image_metrics, pixel_metrics]
-
-        # pixel metrics are only used for segmentation tasks.
-        # self.pixel_metric_names = None
-        # if self.task == TaskType.SEGMENTATION:
-        #     self.pixel_metric_names = pixel_metrics if pixel_metrics is not None else ["AUROC", "F1Max"]
 
         self._trainer: Trainer | None = None
 
@@ -380,7 +373,7 @@ class Engine:
             _callbacks.append(model.post_processor)
 
         # Add the metrics callback.
-        _callbacks.append(_MetricsCallback(self.metrics))
+        _callbacks.append(model.evaluator)
 
         _callbacks.append(
             _VisualizationCallback(

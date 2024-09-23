@@ -13,7 +13,7 @@ from torchvision.transforms.v2 import Resize
 from anomalib import LearningType
 from anomalib.callbacks.metrics import _MetricsCallback
 from anomalib.data import InferenceBatch
-from anomalib.metrics import AnomalibMetricCollection
+from anomalib.metrics import MetricWrapper
 from anomalib.metrics.threshold import F1AdaptiveThreshold
 from anomalib.models.components import AnomalyModule
 from anomalib.post_processing import PostProcessor
@@ -98,9 +98,9 @@ def test_metric_collection_configuration_callback(config_from_yaml: str, tmpdir:
 
     assert isinstance(
         dummy_anomaly_module.image_metrics,
-        AnomalibMetricCollection,
+        MetricWrapper,
     ), f"{dummy_anomaly_module.image_metrics}"
     assert isinstance(
         dummy_anomaly_module.pixel_metrics,
-        AnomalibMetricCollection,
+        MetricWrapper,
     ), f"{dummy_anomaly_module.pixel_metrics}"

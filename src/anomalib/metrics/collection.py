@@ -8,37 +8,20 @@ from typing import Sequence
 from anomalib.data import Batch
 
 
-class AnomalibMetricCollection(MetricCollection):
+class MetricWrapper(MetricCollection):
     """Extends the MetricCollection class for use in the Anomalib pipeline."""
 
-    def __init__(self, batch_keys: Sequence[str], *args, **kwargs) -> None:
+    def __init__(self, field_names: Sequence[str], *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self._update_called = False
-        self._threshold = 0.5
-        self.batch_keys = batch_keys
+        self.field_names = field_names
 
-    def set_threshold(self, threshold_value: float) -> None:
-        """Update the threshold value for all metrics that have the threshold attribute."""
-        self._threshold = threshold_value
-        for metric in self.values():
-            if hasattr(metric, "threshold"):
-                metric.threshold = threshold_value
-
-    def update(self, *args, **kwargs) -> None:
-        """Add data to the metrics."""
-        super().update(*args, **kwargs)
+    def update(self, batch: Batch, *args, **kwargs):
+        values = [getattr(batch, key) for key in self.field_names]
+        super().update(*values, *args, **kwargs)
         self._update_called = True
-
-    def update_from_batch(self, batch: Batch):
-        values = [getattr(batch, key) for key in self.batch_keys]
-        self.update(*values)
 
     @property
     def update_called(self) -> bool:
         """Returns a boolean indicating if the update method has been called at least once."""
         return self._update_called
-
-    @property
-    def threshold(self) -> float:
-        """Return the value of the anomaly threshold."""
-        return self._threshold

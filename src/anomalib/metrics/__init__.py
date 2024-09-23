@@ -15,7 +15,7 @@ from .anomaly_score_distribution import AnomalyScoreDistribution
 from .aupr import AUPR
 from .aupro import AUPRO
 from .auroc import AUROC
-from .collection import AnomalibMetricCollection
+from .collection import MetricWrapper
 from .f1_max import F1Max
 from .f1_score import F1Score
 from .min_max import MinMax
@@ -40,7 +40,7 @@ __all__ = [
 logger = logging.getLogger(__name__)
 
 
-def metric_collection_from_names(metric_names: list[str], prefix: str | None) -> AnomalibMetricCollection:
+def metric_collection_from_names(metric_names: list[str], prefix: str | None) -> MetricWrapper:
     """Create a metric collection from a list of metric names.
 
     The function will first try to retrieve the metric from the metrics defined in Anomalib metrics module,
@@ -54,7 +54,7 @@ def metric_collection_from_names(metric_names: list[str], prefix: str | None) ->
         AnomalibMetricCollection: Collection of metrics.
     """
     metrics_module = importlib.import_module("anomalib.metrics")
-    metrics = AnomalibMetricCollection([], prefix=prefix)
+    metrics = MetricWrapper([], prefix=prefix)
     for metric_name in metric_names:
         if hasattr(metrics_module, metric_name):
             metric_cls = getattr(metrics_module, metric_name)
@@ -112,7 +112,7 @@ def _get_class_from_path(class_path: str) -> Callable:
     return getattr(module, class_name)
 
 
-def metric_collection_from_dicts(metrics: dict[str, dict[str, Any]], prefix: str | None) -> AnomalibMetricCollection:
+def metric_collection_from_dicts(metrics: dict[str, dict[str, Any]], prefix: str | None) -> MetricWrapper:
     """Create a metric collection from a dict of "metric name" -> "metric specifications".
 
     Example:
@@ -158,13 +158,13 @@ def metric_collection_from_dicts(metrics: dict[str, dict[str, Any]], prefix: str
         kwargs = dict_["init_args"]
         cls = _get_class_from_path(class_path)
         metrics_collection[name] = cls(**kwargs)
-    return AnomalibMetricCollection(metrics_collection, prefix=prefix)
+    return MetricWrapper(metrics_collection, prefix=prefix)
 
 
 def create_metric_collection(
     metrics: list[str] | dict[str, dict[str, Any]],
     prefix: str | None = None,
-) -> AnomalibMetricCollection:
+) -> MetricWrapper:
     """Create a metric collection from a list of metric names or dictionaries.
 
     This function will dispatch the actual creation to the appropriate function depending on the input type:
