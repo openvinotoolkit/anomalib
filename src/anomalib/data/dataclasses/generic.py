@@ -133,23 +133,27 @@ class _InputFields(Generic[T, ImageT, MaskT, PathT], ABC):
     gt_mask: FieldDescriptor[MaskT | None] = FieldDescriptor(validator_name="validate_gt_mask")
     mask_path: FieldDescriptor[PathT | None] = FieldDescriptor(validator_name="validate_mask_path")
 
+    @staticmethod
     @abstractmethod
-    def validate_image(self, image: ImageT) -> ImageT:
+    def validate_image(image: ImageT) -> ImageT:
         """Validate the image."""
         raise NotImplementedError
 
+    @staticmethod
     @abstractmethod
-    def validate_gt_mask(self, gt_mask: MaskT) -> MaskT | None:
+    def validate_gt_mask(gt_mask: MaskT) -> MaskT | None:
         """Validate the ground truth mask."""
         raise NotImplementedError
 
+    @staticmethod
     @abstractmethod
-    def validate_mask_path(self, mask_path: PathT) -> PathT | None:
+    def validate_mask_path(mask_path: PathT) -> PathT | None:
         """Validate the mask path."""
         raise NotImplementedError
 
+    @staticmethod
     @abstractmethod
-    def validate_gt_label(self, gt_label: T) -> T | None:
+    def validate_gt_label(gt_label: T) -> T | None:
         """Validate the ground truth label."""
         raise NotImplementedError
 
@@ -192,8 +196,9 @@ class _ImageInputFields(Generic[PathT], ABC):
 
     image_path: FieldDescriptor[PathT | None] = FieldDescriptor(validator_name="validate_image_path")
 
+    @staticmethod
     @abstractmethod
-    def validate_image_path(self, image_path: PathT) -> PathT | None:
+    def validate_image_path(image_path: PathT) -> PathT | None:
         """Validate the image path."""
         raise NotImplementedError
 
@@ -249,28 +254,33 @@ class _VideoInputFields(Generic[T, ImageT, MaskT, PathT], ABC):
     frames: FieldDescriptor[T | None] = FieldDescriptor(validator_name="validate_frames")
     last_frame: FieldDescriptor[T | None] = FieldDescriptor(validator_name="validate_last_frame")
 
+    @staticmethod
     @abstractmethod
-    def validate_original_image(self, original_image: ImageT) -> ImageT | None:
+    def validate_original_image(original_image: ImageT) -> ImageT | None:
         """Validate the original image."""
         raise NotImplementedError
 
+    @staticmethod
     @abstractmethod
-    def validate_video_path(self, video_path: PathT) -> PathT | None:
+    def validate_video_path(video_path: PathT) -> PathT | None:
         """Validate the video path."""
         raise NotImplementedError
 
+    @staticmethod
     @abstractmethod
-    def validate_target_frame(self, target_frame: T) -> T | None:
+    def validate_target_frame(target_frame: T) -> T | None:
         """Validate the target frame."""
         raise NotImplementedError
 
+    @staticmethod
     @abstractmethod
-    def validate_frames(self, frames: T) -> T | None:
+    def validate_frames(frames: T) -> T | None:
         """Validate the frames."""
         raise NotImplementedError
 
+    @staticmethod
     @abstractmethod
-    def validate_last_frame(self, last_frame: T) -> T | None:
+    def validate_last_frame(last_frame: T) -> T | None:
         """Validate the last frame."""
         raise NotImplementedError
 
@@ -319,13 +329,15 @@ class _DepthInputFields(Generic[T, PathT], _ImageInputFields[PathT], ABC):
     depth_map: FieldDescriptor[T | None] = FieldDescriptor(validator_name="validate_depth_map")
     depth_path: FieldDescriptor[PathT | None] = FieldDescriptor(validator_name="validate_depth_path")
 
+    @staticmethod
     @abstractmethod
-    def validate_depth_map(self, depth_map: ImageT) -> ImageT | None:
+    def validate_depth_map(depth_map: ImageT) -> ImageT | None:
         """Validate the depth map."""
         raise NotImplementedError
 
+    @staticmethod
     @abstractmethod
-    def validate_depth_path(self, depth_path: PathT) -> PathT | None:
+    def validate_depth_path(depth_path: PathT) -> PathT | None:
         """Validate the depth path."""
         raise NotImplementedError
 
@@ -379,23 +391,27 @@ class _OutputFields(Generic[T, MaskT], ABC):
     pred_mask: FieldDescriptor[MaskT | None] = FieldDescriptor(validator_name="validate_pred_mask")
     pred_label: FieldDescriptor[T | None] = FieldDescriptor(validator_name="validate_pred_label")
 
+    @staticmethod
     @abstractmethod
-    def validate_anomaly_map(self, anomaly_map: MaskT) -> MaskT | None:
+    def validate_anomaly_map(anomaly_map: MaskT) -> MaskT | None:
         """Validate the anomaly map."""
         raise NotImplementedError
 
+    @staticmethod
     @abstractmethod
-    def validate_pred_score(self, pred_score: T) -> T | None:
+    def validate_pred_score(pred_score: T) -> T | None:
         """Validate the predicted score."""
         raise NotImplementedError
 
+    @staticmethod
     @abstractmethod
-    def validate_pred_mask(self, pred_mask: MaskT) -> MaskT | None:
+    def validate_pred_mask(pred_mask: MaskT) -> MaskT | None:
         """Validate the predicted mask."""
         raise NotImplementedError
 
+    @staticmethod
     @abstractmethod
-    def validate_pred_label(self, pred_label: T) -> T | None:
+    def validate_pred_label(pred_label: T) -> T | None:
         """Validate the predicted label."""
         raise NotImplementedError
 
