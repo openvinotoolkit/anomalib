@@ -174,7 +174,7 @@ class DFMModel(nn.Module):
             Tensor: Scores
         """
         feature_vector, feature_shapes = self.get_features(batch)
-        score, score_map = self.score(feature_vector.view(feature_vector.shape[:2]), feature_shapes)
-        if score_map is not None:
-            score_map = F.interpolate(score_map, size=batch.shape[-2:], mode="bilinear", align_corners=False)
-        return InferenceBatch(pred_score=score, anomaly_map=score_map)
+        pred_score, anomaly_map = self.score(feature_vector.view(feature_vector.shape[:2]), feature_shapes)
+        if anomaly_map is not None:
+            anomaly_map = F.interpolate(anomaly_map, size=batch.shape[-2:], mode="bilinear", align_corners=False)
+        return InferenceBatch(pred_score=pred_score, anomaly_map=anomaly_map)

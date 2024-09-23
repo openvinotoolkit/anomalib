@@ -166,9 +166,9 @@ class DsrModel(nn.Module):
             if image_score.size() == torch.Size([]):
                 image_score = image_score.unsqueeze(0)
 
-            out_mask_cv = out_mask_sm_up[:, 1, :, :]
+            anomaly_map = out_mask_sm_up[:, 1, :, :]
 
-            return InferenceBatch(anomaly_map=out_mask_cv, pred_score=image_score)
+            return InferenceBatch(pred_score=image_score, anomaly_map=anomaly_map)
 
         if anomaly_map_to_generate is not None and self.training:
             # we are in phase two
