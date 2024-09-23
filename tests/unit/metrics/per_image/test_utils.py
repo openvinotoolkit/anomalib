@@ -88,7 +88,7 @@ def assert_statsdict_stuff(statdic: dict, max_image_idx: int) -> None:
     """Assert stuff about a `statdic`."""
     assert "stat_name" in statdic
     stat_name = statdic["stat_name"]
-    assert stat_name in ("mean", "med", "q1", "q3", "whishi", "whislo") or stat_name.startswith(
+    assert stat_name in {"mean", "med", "q1", "q3", "whishi", "whislo"} or stat_name.startswith(
         ("outlo_", "outhi_"),
     )
     assert "stat_value" in statdic
