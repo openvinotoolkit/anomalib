@@ -68,7 +68,7 @@ class TestNumpyDepthBatchValidator:
     def test_validate_depth_map_valid(self) -> None:
         """Test validation of a valid depth map batch."""
         depth_map_batch = np.zeros((32, 224, 224), dtype=np.float32)
-        validated_batch = self.validator.validate_depth_map(depth_map_batch, batch_size=32)
+        validated_batch = self.validator.validate_depth_map(depth_map_batch)
         assert isinstance(validated_batch, np.ndarray)
         assert validated_batch.shape == (32, 224, 224)
         assert validated_batch.dtype == np.float32
@@ -76,22 +76,17 @@ class TestNumpyDepthBatchValidator:
     def test_validate_depth_map_invalid_type(self) -> None:
         """Test validation of a depth map batch with invalid type."""
         with pytest.raises(TypeError, match="Depth map batch must be a numpy array"):
-            self.validator.validate_depth_map([1, 2, 3], batch_size=3)
+            self.validator.validate_depth_map([1, 2, 3])
 
     def test_validate_depth_map_invalid_dimensions(self) -> None:
         """Test validation of a depth map batch with invalid dimensions."""
         with pytest.raises(ValueError, match="Depth map batch must have shape"):
-            self.validator.validate_depth_map(np.zeros((32, 224)), batch_size=32)
-
-    def test_validate_depth_map_invalid_batch_size(self) -> None:
-        """Test validation of a depth map batch with invalid batch size."""
-        with pytest.raises(ValueError, match="Depth map batch size must be"):
-            self.validator.validate_depth_map(np.zeros((32, 224, 224)), batch_size=64)
+            self.validator.validate_depth_map(np.zeros((32, 224)))
 
     def test_validate_depth_map_4d_valid(self) -> None:
         """Test validation of a valid 4D depth map batch."""
         depth_map_batch = np.zeros((32, 224, 224, 1), dtype=np.float32)
-        validated_batch = self.validator.validate_depth_map(depth_map_batch, batch_size=32)
+        validated_batch = self.validator.validate_depth_map(depth_map_batch)
         assert isinstance(validated_batch, np.ndarray)
         assert validated_batch.shape == (32, 224, 224, 1)
         assert validated_batch.dtype == np.float32
@@ -99,7 +94,7 @@ class TestNumpyDepthBatchValidator:
     def test_validate_depth_map_4d_invalid(self) -> None:
         """Test validation of an invalid 4D depth map batch."""
         with pytest.raises(ValueError, match="Depth map batch with 4 dimensions must have 1 channel"):
-            self.validator.validate_depth_map(np.zeros((32, 224, 224, 3)), batch_size=32)
+            self.validator.validate_depth_map(np.zeros((32, 224, 224, 3)))
 
     def test_validate_depth_path_valid(self) -> None:
         """Test validation of valid depth paths."""

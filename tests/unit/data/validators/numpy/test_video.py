@@ -132,40 +132,33 @@ class TestNumpyVideoBatchValidator:
     def test_validate_gt_label_valid(self) -> None:
         """Test validation of valid ground truth labels."""
         labels = np.array([0, 1])
-        batch_size = 2
-        validated_labels = self.validator.validate_gt_label(labels, batch_size=batch_size)
+        validated_labels = self.validator.validate_gt_label(labels)
         assert isinstance(validated_labels, np.ndarray)
         assert validated_labels.dtype == bool
         assert np.array_equal(validated_labels, np.array([False, True]))
 
     def test_validate_gt_label_none(self) -> None:
         """Test validation of None ground truth labels."""
-        assert self.validator.validate_gt_label(None, batch_size=2) is None
+        assert self.validator.validate_gt_label(None) is None
 
     def test_validate_gt_label_invalid_type(self) -> None:
         """Test validation of ground truth labels with invalid type."""
-        # Test with batch_size provided
-        # This test case no longer raises an error
-        validated_labels = self.validator.validate_gt_label(["0", "1"], batch_size=2)
+        validated_labels = self.validator.validate_gt_label(["0", "1"])
         assert validated_labels is not None
         assert isinstance(validated_labels, np.ndarray)
         assert validated_labels.dtype == bool
         assert np.array_equal(validated_labels, np.array([False, True]))
 
-        # Test without batch_size
-        with pytest.raises(TypeError):
-            self.validator.validate_gt_label(["0", "1"])
-
     def test_validate_gt_label_invalid_dimensions(self) -> None:
         """Test validation of ground truth labels with invalid dimensions."""
         with pytest.raises(ValueError, match="Ground truth label batch must be 1-dimensional, got shape \\(2, 2\\)"):
-            self.validator.validate_gt_label(np.array([[0, 1], [1, 0]]), batch_size=2)
+            self.validator.validate_gt_label(np.array([[0, 1], [1, 0]]))
 
     def test_validate_gt_label_invalid_dtype(self) -> None:
         """Test validation of ground truth labels with invalid dtype."""
         # Test that float labels are converted to boolean
         labels = np.array([0.5, 1.5])
-        validated_labels = self.validator.validate_gt_label(labels, batch_size=2)
+        validated_labels = self.validator.validate_gt_label(labels)
         assert isinstance(validated_labels, np.ndarray)
         assert validated_labels.dtype == bool
         assert np.array_equal(validated_labels, np.array([True, True]))

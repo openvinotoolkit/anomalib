@@ -171,18 +171,18 @@ class TestNumpyImageBatchValidator:
     def test_validate_gt_label_valid(self) -> None:
         """Test validation of valid ground truth labels."""
         labels = np.array([0, 1, 1, 0])
-        validated_labels = self.validator.validate_gt_label(labels, batch_size=4)
+        validated_labels = self.validator.validate_gt_label(labels)
         assert isinstance(validated_labels, np.ndarray)
         assert validated_labels.dtype == bool
         assert np.array_equal(validated_labels, np.array([False, True, True, False]))
 
     def test_validate_gt_label_none(self) -> None:
         """Test validation of None ground truth labels."""
-        assert self.validator.validate_gt_label(None, batch_size=4) is None
+        assert self.validator.validate_gt_label(None) is None
 
     def test_validate_gt_label_valid_string_input(self) -> None:
         """Test validation of ground truth labels with string input."""
-        validated_labels = self.validator.validate_gt_label(["0", "1"], batch_size=2)
+        validated_labels = self.validator.validate_gt_label(["0", "1"])
         assert isinstance(validated_labels, np.ndarray)
         assert validated_labels.dtype == bool
         assert np.array_equal(validated_labels, np.array([False, True]))
@@ -190,26 +190,26 @@ class TestNumpyImageBatchValidator:
     def test_validate_gt_label_invalid_dimensions(self) -> None:
         """Test validation of ground truth labels with invalid dimensions."""
         with pytest.raises(ValueError, match="Ground truth label batch must be 1-dimensional"):
-            self.validator.validate_gt_label(np.array([[0, 1], [1, 0]]), batch_size=2)
+            self.validator.validate_gt_label(np.array([[0, 1], [1, 0]]))
 
     def test_validate_gt_mask_valid(self) -> None:
         """Test validation of valid ground truth masks."""
         masks = np.zeros((4, 224, 224), dtype=np.uint8)
-        validated_masks = self.validator.validate_gt_mask(masks, batch_size=4)
+        validated_masks = self.validator.validate_gt_mask(masks)
         assert isinstance(validated_masks, np.ndarray)
         assert validated_masks.shape == (4, 224, 224)
         assert validated_masks.dtype == bool
 
     def test_validate_gt_mask_none(self) -> None:
         """Test validation of None ground truth masks."""
-        assert self.validator.validate_gt_mask(None, batch_size=4) is None
+        assert self.validator.validate_gt_mask(None) is None
 
     def test_validate_gt_mask_invalid_type(self) -> None:
         """Test validation of ground truth masks with invalid type."""
         with pytest.raises(TypeError, match="Ground truth mask batch must be a numpy.ndarray"):
-            self.validator.validate_gt_mask([np.zeros((224, 224))], batch_size=1)
+            self.validator.validate_gt_mask([np.zeros((224, 224))])
 
     def test_validate_gt_mask_invalid_dimensions(self) -> None:
         """Test validation of ground truth masks with invalid dimensions."""
         with pytest.raises(ValueError, match="Ground truth mask batch must have 1 channel, got 224"):
-            self.validator.validate_gt_mask(np.zeros((4, 224, 224, 224)), batch_size=4)
+            self.validator.validate_gt_mask(np.zeros((4, 224, 224, 224)))
