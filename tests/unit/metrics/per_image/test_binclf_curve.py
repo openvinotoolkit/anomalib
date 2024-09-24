@@ -9,88 +9,87 @@
 
 # ruff: noqa: SLF001, PT011
 
-import numpy as np
 import pytest
-from numpy import ndarray
+import torch
 
-from anomalib.metrics.per_image import binclf_curve_numpy
+from anomalib.metrics.per_image import binclf_curve
 
 
 def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
     """Generate test cases."""
-    pred = np.arange(1, 5, dtype=np.float32)
-    threshs = np.arange(1, 5, dtype=np.float32)
+    pred = torch.arange(1, 5, dtype=torch.float32)
+    threshs = torch.arange(1, 5, dtype=torch.float32)
 
-    gt_norm = np.zeros(4).astype(bool)
-    gt_anom = np.concatenate([np.zeros(2), np.ones(2)]).astype(bool)
+    gt_norm = torch.zeros(4).to(bool)
+    gt_anom = torch.concatenate([torch.zeros(2), torch.ones(2)]).to(bool)
 
     # in the case where thresholds are all unique values in the predictions
-    expected_norm = np.stack(
+    expected_norm = torch.stack(
         [
-            np.array([[0, 4], [0, 0]]),
-            np.array([[1, 3], [0, 0]]),
-            np.array([[2, 2], [0, 0]]),
-            np.array([[3, 1], [0, 0]]),
+            torch.tensor([[0, 4], [0, 0]]),
+            torch.tensor([[1, 3], [0, 0]]),
+            torch.tensor([[2, 2], [0, 0]]),
+            torch.tensor([[3, 1], [0, 0]]),
         ],
         axis=0,
-    ).astype(int)
-    expected_anom = np.stack(
+    ).to(int)
+    expected_anom = torch.stack(
         [
-            np.array([[0, 2], [0, 2]]),
-            np.array([[1, 1], [0, 2]]),
-            np.array([[2, 0], [0, 2]]),
-            np.array([[2, 0], [1, 1]]),
+            torch.tensor([[0, 2], [0, 2]]),
+            torch.tensor([[1, 1], [0, 2]]),
+            torch.tensor([[2, 0], [0, 2]]),
+            torch.tensor([[2, 0], [1, 1]]),
         ],
         axis=0,
-    ).astype(int)
+    ).to(int)
 
-    expected_tprs_norm = np.array([np.nan, np.nan, np.nan, np.nan])
-    expected_tprs_anom = np.array([1.0, 1.0, 1.0, 0.5])
-    expected_tprs = np.stack([expected_tprs_anom, expected_tprs_norm], axis=0).astype(np.float64)
+    expected_tprs_norm = torch.tensor([torch.nan, torch.nan, torch.nan, torch.nan])
+    expected_tprs_anom = torch.tensor([1.0, 1.0, 1.0, 0.5])
+    expected_tprs = torch.stack([expected_tprs_anom, expected_tprs_norm], axis=0).to(torch.float64)
 
-    expected_fprs_norm = np.array([1.0, 0.75, 0.5, 0.25])
-    expected_fprs_anom = np.array([1.0, 0.5, 0.0, 0.0])
-    expected_fprs = np.stack([expected_fprs_anom, expected_fprs_norm], axis=0).astype(np.float64)
+    expected_fprs_norm = torch.tensor([1.0, 0.75, 0.5, 0.25])
+    expected_fprs_anom = torch.tensor([1.0, 0.5, 0.0, 0.0])
+    expected_fprs = torch.stack([expected_fprs_anom, expected_fprs_norm], axis=0).to(torch.float64)
 
     # in the case where all thresholds are higher than the highest prediction
-    expected_norm_threshs_too_high = np.stack(
+    expected_norm_threshs_too_high = torch.stack(
         [
-            np.array([[4, 0], [0, 0]]),
-            np.array([[4, 0], [0, 0]]),
-            np.array([[4, 0], [0, 0]]),
-            np.array([[4, 0], [0, 0]]),
+            torch.tensor([[4, 0], [0, 0]]),
+            torch.tensor([[4, 0], [0, 0]]),
+            torch.tensor([[4, 0], [0, 0]]),
+            torch.tensor([[4, 0], [0, 0]]),
         ],
         axis=0,
-    ).astype(int)
-    expected_anom_threshs_too_high = np.stack(
+    ).to(int)
+    expected_anom_threshs_too_high = torch.stack(
         [
-            np.array([[2, 0], [2, 0]]),
-            np.array([[2, 0], [2, 0]]),
-            np.array([[2, 0], [2, 0]]),
-            np.array([[2, 0], [2, 0]]),
+            torch.tensor([[2, 0], [2, 0]]),
+            torch.tensor([[2, 0], [2, 0]]),
+            torch.tensor([[2, 0], [2, 0]]),
+            torch.tensor([[2, 0], [2, 0]]),
         ],
         axis=0,
-    ).astype(int)
+    ).to(int)
 
     # in the case where all thresholds are lower than the lowest prediction
-    expected_norm_threshs_too_low = np.stack(
+    expected_norm_threshs_too_low = torch.stack(
         [
-            np.array([[0, 4], [0, 0]]),
-            np.array([[0, 4], [0, 0]]),
-            np.array([[0, 4], [0, 0]]),
-            np.array([[0, 4], [0, 0]]),
+            torch.tensor([[0, 4], [0, 0]]),
+            torch.tensor([[0, 4], [0, 0]]),
+            torch.tensor([[0, 4], [0, 0]]),
+            torch.tensor([[0, 4], [0, 0]]),
         ],
         axis=0,
-    ).astype(int)
-    expected_anom_threshs_too_low = np.stack(
+    ).to(int)
+    expected_anom_threshs_too_low = torch.stack(
         [
-            np.array([[0, 2], [0, 2]]),
-            np.array([[0, 2], [0, 2]]),
-            np.array([[0, 2], [0, 2]]),
-            np.array([[0, 2], [0, 2]]),
+            torch.tensor([[0, 2], [0, 2]]),
+            torch.tensor([[0, 2], [0, 2]]),
+            torch.tensor([[0, 2], [0, 2]]),
+            torch.tensor([[0, 2], [0, 2]]),
         ],
         axis=0,
-    ).astype(int)
+    ).to(int)
 
     if metafunc.function is test__binclf_one_curve:
         metafunc.parametrize(
@@ -106,11 +105,14 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
             ],
         )
 
-    preds = np.stack([pred, pred], axis=0)
-    gts = np.stack([gt_anom, gt_norm], axis=0)
-    binclf_curves = np.stack([expected_anom, expected_norm], axis=0)
-    binclf_curves_threshs_too_high = np.stack([expected_anom_threshs_too_high, expected_norm_threshs_too_high], axis=0)
-    binclf_curves_threshs_too_low = np.stack([expected_anom_threshs_too_low, expected_norm_threshs_too_low], axis=0)
+    preds = torch.stack([pred, pred], axis=0)
+    gts = torch.stack([gt_anom, gt_norm], axis=0)
+    binclf_curves = torch.stack([expected_anom, expected_norm], axis=0)
+    binclf_curves_threshs_too_high = torch.stack(
+        [expected_anom_threshs_too_high, expected_norm_threshs_too_high],
+        axis=0,
+    )
+    binclf_curves_threshs_too_low = torch.stack([expected_anom_threshs_too_low, expected_norm_threshs_too_low], axis=0)
 
     if metafunc.function is test__binclf_multiple_curves:
         metafunc.parametrize(
@@ -149,16 +151,16 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
                 ([preds, gts[:1], threshs], {}, ValueError),
                 ([preds[:, :2], gts, threshs], {}, ValueError),
                 # `scores` be of type float
-                ([preds.astype(int), gts, threshs], {}, TypeError),
+                ([preds.to(int), gts, threshs], {}, TypeError),
                 # `gts` be of type bool
-                ([preds, gts.astype(int), threshs], {}, TypeError),
+                ([preds, gts.to(int), threshs], {}, TypeError),
                 # `threshs` be of type float
-                ([preds, gts, threshs.astype(int)], {}, TypeError),
+                ([preds, gts, threshs.to(int)], {}, TypeError),
                 # `threshs` must be sorted in ascending order
-                ([preds, gts, np.flip(threshs)], {}, ValueError),
-                ([preds, gts, np.concatenate([threshs[-2:], threshs[:2]])], {}, ValueError),
+                ([preds, gts, torch.flip(threshs, dims=[0])], {}, ValueError),
+                ([preds, gts, torch.concatenate([threshs[-2:], threshs[:2]])], {}, ValueError),
                 # `threshs` must be unique
-                ([preds, gts, np.sort(np.concatenate([threshs, threshs]))], {}, ValueError),
+                ([preds, gts, torch.sort(torch.concatenate([threshs, threshs]))[0]], {}, ValueError),
             ],
         )
 
@@ -167,7 +169,7 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
     preds = preds.reshape(2, 2, 2)
     gts = gts.reshape(2, 2, 2)
 
-    per_image_binclf_curves_numpy_argvalues = [
+    per_image_binclf_curves_argvalues = [
         # `threshs_choice` = "given"
         (
             preds,
@@ -208,7 +210,7 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
         ),
         (
             2 * preds,
-            gts.astype(int),  # this is ok
+            gts.to(int),  # this is ok
             "minmax-linspace",
             None,
             len(threshs),
@@ -217,7 +219,7 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
         ),
     ]
 
-    if metafunc.function is test_per_image_binclf_curve_numpy:
+    if metafunc.function is test_per_image_binclf_curve:
         metafunc.parametrize(
             argnames=(
                 "anomaly_maps",
@@ -228,10 +230,10 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
                 "expected_threshs",
                 "expected_binclf_curves",
             ),
-            argvalues=per_image_binclf_curves_numpy_argvalues,
+            argvalues=per_image_binclf_curves_argvalues,
         )
 
-    if metafunc.function is test_per_image_binclf_curve_numpy_validations:
+    if metafunc.function is test_per_image_binclf_curve_validations:
         metafunc.parametrize(
             argnames=("args", "exception"),
             argvalues=[
@@ -242,11 +244,11 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
                 ([preds, gts[:1]], ValueError),
                 ([preds[:, :1], gts], ValueError),
                 # `scores` be of type float
-                ([preds.astype(int), gts], TypeError),
+                ([preds.to(int), gts], TypeError),
                 # `gts` be of type bool or int
-                ([preds, gts.astype(float)], TypeError),
+                ([preds, gts.to(float)], TypeError),
                 # `threshs` be of type float
-                ([preds, gts, threshs.astype(int)], TypeError),
+                ([preds, gts, threshs.to(int)], TypeError),
             ],
         )
         metafunc.parametrize(
@@ -263,7 +265,7 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
         )
 
     # same as above but testing other validations
-    if metafunc.function is test_per_image_binclf_curve_numpy_validations_alt:
+    if metafunc.function is test_per_image_binclf_curve_validations_alt:
         metafunc.parametrize(
             argnames=("args", "kwargs", "exception"),
             argvalues=[
@@ -276,7 +278,7 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
             ],
         )
 
-    if metafunc.function is test_rate_metrics_numpy:
+    if metafunc.function is test_rate_metrics:
         metafunc.parametrize(
             argnames=("binclf_curves", "expected_fprs", "expected_tprs"),
             argvalues=[
@@ -290,22 +292,22 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
 # LOW-LEVEL FUNCTIONS (PYTHON)
 
 
-def test__binclf_one_curve(pred: ndarray, gt: ndarray, threshs: ndarray, expected: ndarray) -> None:
+def test__binclf_one_curve(pred: torch.Tensor, gt: torch.Tensor, threshs: torch.Tensor, expected: torch.Tensor) -> None:
     """Test if `_binclf_one_curve()` returns the expected values."""
-    computed = binclf_curve_numpy._binclf_one_curve(pred, gt, threshs)
-    assert computed.shape == (threshs.size, 2, 2)
-    assert (computed == expected).all()
+    computed = binclf_curve._binclf_one_curve(pred, gt, threshs)
+    assert computed.shape == (threshs.numel(), 2, 2)
+    assert (computed == expected.numpy()).all()
 
 
 def test__binclf_multiple_curves(
-    preds: ndarray,
-    gts: ndarray,
-    threshs: ndarray,
-    expecteds: ndarray,
+    preds: torch.Tensor,
+    gts: torch.Tensor,
+    threshs: torch.Tensor,
+    expecteds: torch.Tensor,
 ) -> None:
     """Test if `_binclf_multiple_curves()` returns the expected values."""
-    computed = binclf_curve_numpy.binclf_multiple_curves(preds, gts, threshs)
-    assert computed.shape == (preds.shape[0], threshs.size, 2, 2)
+    computed = binclf_curve.binclf_multiple_curves(preds, gts, threshs)
+    assert computed.shape == (preds.shape[0], threshs.numel(), 2, 2)
     assert (computed == expecteds).all()
 
 
@@ -314,13 +316,13 @@ def test__binclf_multiple_curves(
 
 
 def test_binclf_multiple_curves(
-    preds: ndarray,
-    gts: ndarray,
-    threshs: ndarray,
-    expected_binclf_curves: ndarray,
+    preds: torch.Tensor,
+    gts: torch.Tensor,
+    threshs: torch.Tensor,
+    expected_binclf_curves: torch.Tensor,
 ) -> None:
     """Test if `binclf_multiple_curves()` returns the expected values."""
-    computed = binclf_curve_numpy.binclf_multiple_curves(
+    computed = binclf_curve.binclf_multiple_curves(
         preds,
         gts,
         threshs,
@@ -329,39 +331,39 @@ def test_binclf_multiple_curves(
     assert (computed == expected_binclf_curves).all()
 
     # it's ok to have the threhsholds beyond the range of the preds
-    binclf_curve_numpy.binclf_multiple_curves(preds, gts, 2 * threshs)
+    binclf_curve.binclf_multiple_curves(preds, gts, 2 * threshs)
 
     # or inside the bounds without reaching them
-    binclf_curve_numpy.binclf_multiple_curves(preds, gts, 0.5 * threshs)
+    binclf_curve.binclf_multiple_curves(preds, gts, 0.5 * threshs)
 
     # it's also ok to have more threshs than unique values in the preds
     # add the values in between the threshs
     threshs_unncessary = 0.5 * (threshs[:-1] + threshs[1:])
-    threshs_unncessary = np.concatenate([threshs_unncessary, threshs])
-    threshs_unncessary = np.sort(threshs_unncessary)
-    binclf_curve_numpy.binclf_multiple_curves(preds, gts, threshs_unncessary)
+    threshs_unncessary = torch.concatenate([threshs_unncessary, threshs])
+    threshs_unncessary = torch.sort(threshs_unncessary)[0]
+    binclf_curve.binclf_multiple_curves(preds, gts, threshs_unncessary)
 
     # or less
-    binclf_curve_numpy.binclf_multiple_curves(preds, gts, threshs[1:3])
+    binclf_curve.binclf_multiple_curves(preds, gts, threshs[1:3])
 
 
 def test_binclf_multiple_curves_validations(args: list, kwargs: dict, exception: Exception) -> None:
     """Test if `_binclf_multiple_curves_python()` raises the expected errors."""
     with pytest.raises(exception):
-        binclf_curve_numpy.binclf_multiple_curves(*args, **kwargs)
+        binclf_curve.binclf_multiple_curves(*args, **kwargs)
 
 
-def test_per_image_binclf_curve_numpy(
-    anomaly_maps: ndarray,
-    masks: ndarray,
+def test_per_image_binclf_curve(
+    anomaly_maps: torch.Tensor,
+    masks: torch.Tensor,
     threshs_choice: str,
-    threshs_given: ndarray | None,
+    threshs_given: torch.Tensor | None,
     num_threshs: int | None,
-    expected_threshs: ndarray,
-    expected_binclf_curves: ndarray,
+    expected_threshs: torch.Tensor,
+    expected_binclf_curves: torch.Tensor,
 ) -> None:
     """Test if `per_image_binclf_curve()` returns the expected values."""
-    computed_threshs, computed_binclf_curves = binclf_curve_numpy.per_image_binclf_curve(
+    computed_threshs, computed_binclf_curves = binclf_curve.per_image_binclf_curve(
         anomaly_maps,
         masks,
         threshs_choice=threshs_choice,
@@ -380,24 +382,28 @@ def test_per_image_binclf_curve_numpy(
     assert (computed_binclf_curves == expected_binclf_curves).all()
 
 
-def test_per_image_binclf_curve_numpy_validations(args: list, kwargs: dict, exception: Exception) -> None:
+def test_per_image_binclf_curve_validations(args: list, kwargs: dict, exception: Exception) -> None:
     """Test if `per_image_binclf_curve()` raises the expected errors."""
     with pytest.raises(exception):
-        binclf_curve_numpy.per_image_binclf_curve(*args, **kwargs)
+        binclf_curve.per_image_binclf_curve(*args, **kwargs)
 
 
-def test_per_image_binclf_curve_numpy_validations_alt(args: list, kwargs: dict, exception: Exception) -> None:
+def test_per_image_binclf_curve_validations_alt(args: list, kwargs: dict, exception: Exception) -> None:
     """Test if `per_image_binclf_curve()` raises the expected errors."""
-    test_per_image_binclf_curve_numpy_validations(args, kwargs, exception)
+    test_per_image_binclf_curve_validations(args, kwargs, exception)
 
 
-def test_rate_metrics_numpy(binclf_curves: ndarray, expected_fprs: ndarray, expected_tprs: ndarray) -> None:
+def test_rate_metrics(
+    binclf_curves: torch.Tensor,
+    expected_fprs: torch.Tensor,
+    expected_tprs: torch.Tensor,
+) -> None:
     """Test if rate metrics are computed correctly."""
-    tprs = binclf_curve_numpy.per_image_tpr(binclf_curves)
-    fprs = binclf_curve_numpy.per_image_fpr(binclf_curves)
+    tprs = binclf_curve.per_image_tpr(binclf_curves)
+    fprs = binclf_curve.per_image_fpr(binclf_curves)
 
     assert tprs.shape == expected_tprs.shape
     assert fprs.shape == expected_fprs.shape
 
-    assert np.allclose(tprs, expected_tprs, equal_nan=True)
-    assert np.allclose(fprs, expected_fprs, equal_nan=True)
+    assert torch.allclose(tprs, expected_tprs, equal_nan=True)
+    assert torch.allclose(fprs, expected_fprs, equal_nan=True)

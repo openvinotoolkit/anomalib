@@ -1,7 +1,5 @@
 """Utils for validating arguments and results.
 
-`torch` is imported in the functions that use it, so this module can be used in numpy-standalone mode.
-
 TODO(jpcbertoldo): Move validations to a common place and reuse them across the codebase.
 https://github.com/openvinotoolkit/anomalib/issues/2093
 """
@@ -13,21 +11,8 @@ https://github.com/openvinotoolkit/anomalib/issues/2093
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Any
-
-import numpy as np
-from numpy import ndarray
-
-
-def is_tensor(tensor: Any, argname: str | None = None) -> None:  # noqa: ANN401
-    """Validate that `tensor` is a `torch.Tensor`."""
-    from torch import Tensor
-
-    argname = f"'{argname}'" if argname is not None else "argument"
-
-    if not isinstance(tensor, Tensor):
-        msg = f"Expected {argname} to be a tensor, but got {type(tensor)}"
-        raise TypeError(msg)
+import torch
+from torch import Tensor
 
 
 def is_num_threshs_gte2(num_threshs: int) -> None:
@@ -98,22 +83,22 @@ def is_rate_range(bounds: tuple[float, float]) -> None:
         raise ValueError(msg)
 
 
-def is_threshs(threshs: ndarray) -> None:
+def is_threshs(threshs: Tensor) -> None:
     """Validate that the thresholds are valid and monotonically increasing."""
-    if not isinstance(threshs, ndarray):
-        msg = f"Expected thresholds to be an ndarray, but got {type(threshs)}"
+    if not isinstance(threshs, Tensor):
+        msg = f"Expected thresholds to be an Tensor, but got {type(threshs)}"
         raise TypeError(msg)
 
     if threshs.ndim != 1:
         msg = f"Expected thresholds to be 1D, but got {threshs.ndim}"
         raise ValueError(msg)
 
-    if threshs.dtype.kind != "f":
-        msg = f"Expected thresholds to be of float type, but got ndarray with dtype {threshs.dtype}"
+    if not threshs.dtype.is_floating_point:
+        msg = f"Expected thresholds to be of float type, but got Tensor with dtype {threshs.dtype}"
         raise TypeError(msg)
 
     # make sure they are strictly increasing
-    if not np.all(np.diff(threshs) > 0):
+    if not torch.all(torch.diff(threshs) > 0):
         msg = "Expected thresholds to be strictly increasing, but it is not."
         raise ValueError(msg)
 
@@ -142,55 +127,55 @@ def is_thresh_bounds(thresh_bounds: tuple[float, float]) -> None:
         raise ValueError(msg)
 
 
-def is_anomaly_maps(anomaly_maps: ndarray) -> None:
-    if not isinstance(anomaly_maps, ndarray):
-        msg = f"Expected anomaly maps to be an ndarray, but got {type(anomaly_maps)}"
+def is_anomaly_maps(anomaly_maps: Tensor) -> None:
+    if not isinstance(anomaly_maps, Tensor):
+        msg = f"Expected anomaly maps to be an Tensor, but got {type(anomaly_maps)}"
         raise TypeError(msg)
 
     if anomaly_maps.ndim != 3:
         msg = f"Expected anomaly maps have 3 dimensions (N, H, W), but got {anomaly_maps.ndim} dimensions"
         raise ValueError(msg)
 
-    if anomaly_maps.dtype.kind != "f":
+    if not anomaly_maps.dtype.is_floating_point:
         msg = (
-            "Expected anomaly maps to be an floating ndarray with anomaly scores,"
-            f" but got ndarray with dtype {anomaly_maps.dtype}"
+            "Expected anomaly maps to be an floating Tensor with anomaly scores,"
+            f" but got Tensor with dtype {anomaly_maps.dtype}"
         )
         raise TypeError(msg)
 
 
-def is_masks(masks: ndarray) -> None:
-    if not isinstance(masks, ndarray):
-        msg = f"Expected masks to be an ndarray, but got {type(masks)}"
+def is_masks(masks: Tensor) -> None:
+    if not isinstance(masks, Tensor):
+        msg = f"Expected masks to be an Tensor, but got {type(masks)}"
         raise TypeError(msg)
 
     if masks.ndim != 3:
         msg = f"Expected masks have 3 dimensions (N, H, W), but got {masks.ndim} dimensions"
         raise ValueError(msg)
 
-    if masks.dtype.kind == "b":
+    if masks.dtype == torch.bool:
         pass
-
-    elif masks.dtype.kind in {"i", "u"}:
-        masks_unique_vals = np.unique(masks)
-        if np.any((masks_unique_vals != 0) & (masks_unique_vals != 1)):
+    elif masks.dtype.is_floating_point:
+        msg = (
+            "Expected masks to be an integer or boolean Tensor with ground truth labels, "
+            f"but got Tensor with dtype {masks.dtype}"
+        )
+        raise TypeError(msg)
+    else:
+        # assumes the type to be (signed or unsigned) integer
+        # this will change with the dataclass refactor
+        masks_unique_vals = torch.unique(masks)
+        if torch.any((masks_unique_vals != 0) & (masks_unique_vals != 1)):
             msg = (
-                "Expected masks to be a *binary* ndarray with ground truth labels, "
-                f"but got ndarray with unique values {sorted(masks_unique_vals)}"
+                "Expected masks to be a *binary* Tensor with ground truth labels, "
+                f"but got Tensor with unique values {sorted(masks_unique_vals)}"
             )
             raise ValueError(msg)
 
-    else:
-        msg = (
-            "Expected masks to be an integer or boolean ndarray with ground truth labels, "
-            f"but got ndarray with dtype {masks.dtype}"
-        )
-        raise TypeError(msg)
 
-
-def is_binclf_curves(binclf_curves: ndarray, valid_threshs: ndarray | None) -> None:
-    if not isinstance(binclf_curves, ndarray):
-        msg = f"Expected binclf curves to be an ndarray, but got {type(binclf_curves)}"
+def is_binclf_curves(binclf_curves: Tensor, valid_threshs: Tensor | None) -> None:
+    if not isinstance(binclf_curves, Tensor):
+        msg = f"Expected binclf curves to be an Tensor, but got {type(binclf_curves)}"
         raise TypeError(msg)
 
     if binclf_curves.ndim != 4:
@@ -201,7 +186,7 @@ def is_binclf_curves(binclf_curves: ndarray, valid_threshs: ndarray | None) -> N
         msg = f"Expected binclf curves to have shape (..., 2, 2), but got {binclf_curves.shape}"
         raise ValueError(msg)
 
-    if binclf_curves.dtype != np.int64:
+    if binclf_curves.dtype != torch.int64:
         msg = f"Expected binclf curves to have dtype int64, but got {binclf_curves.dtype}."
         raise TypeError(msg)
 
@@ -232,47 +217,49 @@ def is_binclf_curves(binclf_curves: ndarray, valid_threshs: ndarray | None) -> N
         raise RuntimeError(msg)
 
 
-def is_images_classes(images_classes: ndarray) -> None:
-    if not isinstance(images_classes, ndarray):
-        msg = f"Expected image classes to be an ndarray, but got {type(images_classes)}."
+def is_images_classes(images_classes: Tensor) -> None:
+    if not isinstance(images_classes, Tensor):
+        msg = f"Expected image classes to be an Tensor, but got {type(images_classes)}."
         raise TypeError(msg)
 
     if images_classes.ndim != 1:
         msg = f"Expected image classes to be 1D, but got {images_classes.ndim}D."
         raise ValueError(msg)
 
-    if images_classes.dtype.kind == "b":
+    if images_classes.dtype == torch.bool:
         pass
-    elif images_classes.dtype.kind in {"i", "u"}:
-        unique_vals = np.unique(images_classes)
-        if np.any((unique_vals != 0) & (unique_vals != 1)):
-            msg = (
-                "Expected image classes to be a *binary* ndarray with ground truth labels, "
-                f"but got ndarray with unique values {sorted(unique_vals)}"
-            )
-            raise ValueError(msg)
-    else:
+    elif images_classes.dtype.is_floating_point:
         msg = (
-            "Expected image classes to be an integer or boolean ndarray with ground truth labels, "
-            f"but got ndarray with dtype {images_classes.dtype}"
+            "Expected image classes to be an integer or boolean Tensor with ground truth labels, "
+            f"but got Tensor with dtype {images_classes.dtype}"
         )
         raise TypeError(msg)
+    else:
+        # assumes the type to be (signed or unsigned) integer
+        # this will change with the dataclass refactor
+        unique_vals = torch.unique(images_classes)
+        if torch.any((unique_vals != 0) & (unique_vals != 1)):
+            msg = (
+                "Expected image classes to be a *binary* Tensor with ground truth labels, "
+                f"but got Tensor with unique values {sorted(unique_vals)}"
+            )
+            raise ValueError(msg)
 
 
-def is_rates(rates: ndarray, nan_allowed: bool) -> None:
-    if not isinstance(rates, ndarray):
-        msg = f"Expected rates to be an ndarray, but got {type(rates)}."
+def is_rates(rates: Tensor, nan_allowed: bool) -> None:
+    if not isinstance(rates, Tensor):
+        msg = f"Expected rates to be an Tensor, but got {type(rates)}."
         raise TypeError(msg)
 
     if rates.ndim != 1:
         msg = f"Expected rates to be 1D, but got {rates.ndim}D."
         raise ValueError(msg)
 
-    if rates.dtype.kind != "f":
+    if not rates.dtype.is_floating_point:
         msg = f"Expected rates to have dtype of float type, but got {rates.dtype}."
         raise ValueError(msg)
 
-    isnan_mask = np.isnan(rates)
+    isnan_mask = torch.isnan(rates)
     if nan_allowed:
         # if they are all nan, then there is nothing to validate
         if isnan_mask.all():
@@ -293,11 +280,11 @@ def is_rates(rates: ndarray, nan_allowed: bool) -> None:
         raise ValueError(msg)
 
 
-def is_rate_curve(rate_curve: ndarray, nan_allowed: bool, decreasing: bool) -> None:
+def is_rate_curve(rate_curve: Tensor, nan_allowed: bool, decreasing: bool) -> None:
     is_rates(rate_curve, nan_allowed=nan_allowed)
 
-    diffs = np.diff(rate_curve)
-    diffs_valid = diffs[~np.isnan(diffs)] if nan_allowed else diffs
+    diffs = torch.diff(rate_curve)
+    diffs_valid = diffs[~torch.isnan(diffs)] if nan_allowed else diffs
 
     if decreasing and (diffs_valid > 0).any():
         msg = "Expected rate curve to be monotonically decreasing, but got non-monotonically decreasing values."
@@ -308,20 +295,20 @@ def is_rate_curve(rate_curve: ndarray, nan_allowed: bool, decreasing: bool) -> N
         raise ValueError(msg)
 
 
-def is_per_image_rate_curves(rate_curves: ndarray, nan_allowed: bool, decreasing: bool | None) -> None:
-    if not isinstance(rate_curves, ndarray):
-        msg = f"Expected per-image rate curves to be an ndarray, but got {type(rate_curves)}."
+def is_per_image_rate_curves(rate_curves: Tensor, nan_allowed: bool, decreasing: bool | None) -> None:
+    if not isinstance(rate_curves, Tensor):
+        msg = f"Expected per-image rate curves to be an Tensor, but got {type(rate_curves)}."
         raise TypeError(msg)
 
     if rate_curves.ndim != 2:
         msg = f"Expected per-image rate curves to be 2D, but got {rate_curves.ndim}D."
         raise ValueError(msg)
 
-    if rate_curves.dtype.kind != "f":
+    if not rate_curves.dtype.is_floating_point:
         msg = f"Expected per-image rate curves to have dtype of float type, but got {rate_curves.dtype}."
         raise ValueError(msg)
 
-    isnan_mask = np.isnan(rate_curves)
+    isnan_mask = torch.isnan(rate_curves)
     if nan_allowed:
         # if they are all nan, then there is nothing to validate
         if isnan_mask.all():
@@ -344,8 +331,8 @@ def is_per_image_rate_curves(rate_curves: ndarray, nan_allowed: bool, decreasing
     if decreasing is None:
         return
 
-    diffs = np.diff(rate_curves, axis=1)
-    diffs_valid = diffs[~np.isnan(diffs)] if nan_allowed else diffs
+    diffs = torch.diff(rate_curves, axis=1)
+    diffs_valid = diffs[~torch.isnan(diffs)] if nan_allowed else diffs
 
     if decreasing and (diffs_valid > 0).any():
         msg = (

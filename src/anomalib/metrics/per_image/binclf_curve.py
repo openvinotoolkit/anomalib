@@ -18,6 +18,7 @@ from enum import Enum
 from functools import partial
 
 import numpy as np
+import torch
 from numpy import ndarray
 
 from . import _validate
@@ -38,16 +39,16 @@ class BinclfThreshsChoice(Enum):
 # =========================================== ARGS VALIDATION ===========================================
 
 
-def _validate_is_scores_batch(scores_batch: ndarray) -> None:
-    """scores_batch (ndarray): floating (N, D)."""
-    if not isinstance(scores_batch, ndarray):
-        msg = f"Expected `scores_batch` to be an ndarray, but got {type(scores_batch)}"
+def _validate_is_scores_batch(scores_batch: torch.Tensor) -> None:
+    """scores_batch (torch.Tensor): floating (N, D)."""
+    if not isinstance(scores_batch, torch.Tensor):
+        msg = f"Expected `scores_batch` to be an torch.Tensor, but got {type(scores_batch)}"
         raise TypeError(msg)
 
-    if scores_batch.dtype.kind != "f":
+    if not scores_batch.dtype.is_floating_point:
         msg = (
-            "Expected `scores_batch` to be an floating ndarray with anomaly scores_batch,"
-            f" but got ndarray with dtype {scores_batch.dtype}"
+            "Expected `scores_batch` to be an floating torch.Tensor with anomaly scores_batch,"
+            f" but got torch.Tensor with dtype {scores_batch.dtype}"
         )
         raise TypeError(msg)
 
@@ -56,16 +57,16 @@ def _validate_is_scores_batch(scores_batch: ndarray) -> None:
         raise ValueError(msg)
 
 
-def _validate_is_gts_batch(gts_batch: ndarray) -> None:
-    """gts_batch (ndarray): boolean (N, D)."""
-    if not isinstance(gts_batch, ndarray):
-        msg = f"Expected `gts_batch` to be an ndarray, but got {type(gts_batch)}"
+def _validate_is_gts_batch(gts_batch: torch.Tensor) -> None:
+    """gts_batch (torch.Tensor): boolean (N, D)."""
+    if not isinstance(gts_batch, torch.Tensor):
+        msg = f"Expected `gts_batch` to be an torch.Tensor, but got {type(gts_batch)}"
         raise TypeError(msg)
 
-    if gts_batch.dtype.kind != "b":
+    if gts_batch.dtype != torch.bool:
         msg = (
-            "Expected `gts_batch` to be an boolean ndarray with anomaly scores_batch,"
-            f" but got ndarray with dtype {gts_batch.dtype}"
+            "Expected `gts_batch` to be an boolean torch.Tensor with anomaly scores_batch,"
+            f" but got torch.Tensor with dtype {gts_batch.dtype}"
         )
         raise TypeError(msg)
 
@@ -74,19 +75,14 @@ def _validate_is_gts_batch(gts_batch: ndarray) -> None:
         raise ValueError(msg)
 
 
-# =========================================== PYTHON VERSION ===========================================
-
-
 def _binclf_one_curve(scores: ndarray, gts: ndarray, threshs: ndarray) -> ndarray:
-    """One binary classification matrix at each threshold.
+    """One binary classification matrix at each threshold (PYTHON implementation).
 
     In the case where the thresholds are given (i.e. not considering all possible thresholds based on the scores),
     this weird-looking function is faster than the two options in `torchmetrics` on the CPU:
         - `_binary_precision_recall_curve_update_vectorized`
         - `_binary_precision_recall_curve_update_loop`
-
     (both in module `torchmetrics.functional.classification.precision_recall_curve` in `torchmetrics==1.1.0`).
-
     Note: VALIDATION IS NOT DONE HERE. Make sure to validate the arguments before calling this function.
 
     Args:
@@ -96,7 +92,6 @@ def _binclf_one_curve(scores: ndarray, gts: ndarray, threshs: ndarray) -> ndarra
 
     Returns:
         ndarray: Binary classification matrix curve (K, 2, 2)
-
         Details: `anomalib.metrics.per_image.binclf_curve_numpy.binclf_multiple_curves`.
     """
     num_th = len(threshs)
@@ -149,20 +144,11 @@ def _binclf_one_curve(scores: ndarray, gts: ndarray, threshs: ndarray) -> ndarra
     ).transpose(0, 2, 1)
 
 
-_binclf_multiple_curves = np.vectorize(_binclf_one_curve, signature="(n),(n),(k)->(k,2,2)")
-_binclf_multiple_curves.__doc__ = """
-Multiple binary classification matrix at each threshold.
-vectorized version of `_binclf_one_curve` (see above)
-"""
-
-# =========================================== INTERFACE ===========================================
-
-
 def binclf_multiple_curves(
-    scores_batch: ndarray,
-    gts_batch: ndarray,
-    threshs: ndarray,
-) -> ndarray:
+    scores_batch: torch.Tensor,
+    gts_batch: torch.Tensor,
+    threshs: torch.Tensor,
+) -> torch.Tensor:
     """Multiple binary classification matrix (per-instance scope) at each threshold (shared).
 
     This is a wrapper around `_binclf_multiple_curves_python` and `_binclf_multiple_curves_numba`.
@@ -171,13 +157,12 @@ def binclf_multiple_curves(
     Note: predicted as positive condition is `score >= thresh`.
 
     Args:
-        scores_batch (ndarray): Anomaly scores (N, D,).
-        gts_batch (ndarray): Binary (bool) ground truth of shape (N, D,).
-        threshs (ndarray): Sequence of thresholds in ascending order (K,).
-        algorithm (str, optional): Algorithm to use. Defaults to ALGORITHM_NUMBA.
+        scores_batch (torch.Tensor): Anomaly scores (N, D,).
+        gts_batch (torch.Tensor): Binary (bool) ground truth of shape (N, D,).
+        threshs (torch.Tensor): Sequence of thresholds in ascending order (K,).
 
     Returns:
-        ndarray: Binary classification matrix curves (N, K, 2, 2)
+        torch.Tensor: Binary classification matrix curves (N, K, 2, 2)
 
         The last two dimensions are the confusion matrix (ground truth, predictions)
         So for each thresh it gives:
@@ -205,14 +190,20 @@ def binclf_multiple_curves(
     _validate_is_gts_batch(gts_batch)
     _validate.is_same_shape(scores_batch, gts_batch)
     _validate.is_threshs(threshs)
-
-    return _binclf_multiple_curves(scores_batch, gts_batch, threshs)
+    # TODO(ashwinvaidya17): this is kept as numpy for now because it is much faster.
+    # TEMP-0
+    result = np.vectorize(_binclf_one_curve, signature="(n),(n),(k)->(k,2,2)")(
+        scores_batch.detach().cpu().numpy(),
+        gts_batch.detach().cpu().numpy(),
+        threshs.detach().cpu().numpy(),
+    )
+    return torch.from_numpy(result).to(scores_batch.device)
 
 
 # ========================================= PER-IMAGE BINCLF CURVE =========================================
 
 
-def _get_threshs_minmax_linspace(anomaly_maps: ndarray, num_threshs: int) -> ndarray:
+def _get_threshs_minmax_linspace(anomaly_maps: torch.Tensor, num_threshs: int) -> torch.Tensor:
     """Get thresholds linearly spaced between the min and max of the anomaly maps."""
     _validate.is_num_threshs_gte2(num_threshs)
     # this operation can be a bit expensive
@@ -222,33 +213,33 @@ def _get_threshs_minmax_linspace(anomaly_maps: ndarray, num_threshs: int) -> nda
     except ValueError as ex:
         msg = f"Invalid threshold bounds computed from the given anomaly maps. Cause: {ex}"
         raise ValueError(msg) from ex
-    return np.linspace(thresh_low, thresh_high, num_threshs, dtype=anomaly_maps.dtype)
+    return torch.linspace(thresh_low, thresh_high, num_threshs, dtype=anomaly_maps.dtype)
 
 
 def per_image_binclf_curve(
-    anomaly_maps: ndarray,
-    masks: ndarray,
+    anomaly_maps: torch.Tensor,
+    masks: torch.Tensor,
     threshs_choice: BinclfThreshsChoice | str = BinclfThreshsChoice.MINMAX_LINSPACE.value,
-    threshs_given: ndarray | None = None,
+    threshs_given: torch.Tensor | None = None,
     num_threshs: int | None = None,
-) -> tuple[ndarray, ndarray]:
+) -> tuple[torch.Tensor, torch.Tensor]:
     """Compute the binary classification matrix of each image in the batch for multiple thresholds (shared).
 
     Args:
-        anomaly_maps (ndarray): Anomaly score maps of shape (N, H, W)
-        masks (ndarray): Binary ground truth masks of shape (N, H, W)
+        anomaly_maps (torch.Tensor): Anomaly score maps of shape (N, H, W)
+        masks (torch.Tensor): Binary ground truth masks of shape (N, H, W)
         threshs_choice (str, optional): Sequence of thresholds to use. Defaults to THRESH_SEQUENCE_MINMAX_LINSPACE.
         #
         # `threshs_choice`-dependent arguments
         #
         # THRESH_SEQUENCE_GIVEN
-        threshs_given (ndarray, optional): Sequence of thresholds to use.
+        threshs_given (torch.Tensor, optional): Sequence of thresholds to use.
         #
         # THRESH_SEQUENCE_MINMAX_LINSPACE
         num_threshs (int, optional): Number of thresholds between the min and max of the anomaly maps.
 
     Returns:
-        tuple[ndarray, ndarray]:
+        tuple[torch.Tensor, torch.Tensor]:
             [0] Thresholds of shape (K,) and dtype is the same as `anomaly_maps.dtype`.
 
             [1] Binary classification matrices of shape (N, K, 2, 2)
@@ -281,7 +272,7 @@ def per_image_binclf_curve(
     _validate.is_masks(masks)
     _validate.is_same_shape(anomaly_maps, masks)
 
-    threshs: ndarray
+    threshs: torch.Tensor
 
     if threshs_choice == BinclfThreshsChoice.GIVEN:
         assert threshs_given is not None
@@ -291,7 +282,7 @@ def per_image_binclf_curve(
                 "Argument `num_threshs` was given, "
                 f"but it is ignored because `threshs_choice` is '{threshs_choice.value}'.",
             )
-        threshs = threshs_given.astype(anomaly_maps.dtype)
+        threshs = threshs_given.to(anomaly_maps.dtype)
 
     elif threshs_choice == BinclfThreshsChoice.MINMAX_LINSPACE:
         assert num_threshs is not None
@@ -315,7 +306,7 @@ def per_image_binclf_curve(
 
     # keep the batch dimension and flatten the rest
     scores_batch = anomaly_maps.reshape(anomaly_maps.shape[0], -1)
-    gts_batch = masks.reshape(masks.shape[0], -1).astype(bool)  # make sure it is boolean
+    gts_batch = masks.reshape(masks.shape[0], -1).to(bool)  # make sure it is boolean
 
     binclf_curves = binclf_multiple_curves(scores_batch, gts_batch, threshs)
 
@@ -343,7 +334,7 @@ def per_image_binclf_curve(
 # =========================================== RATE METRICS ===========================================
 
 
-def per_image_tpr(binclf_curves: ndarray) -> ndarray:
+def per_image_tpr(binclf_curves: torch.Tensor) -> torch.Tensor:
     """True positive rates (TPR) for image for each thresh.
 
     TPR = TP / P = TP / (TP + FN)
@@ -353,10 +344,10 @@ def per_image_tpr(binclf_curves: ndarray) -> ndarray:
     P: positives (TP + FN)
 
     Args:
-        binclf_curves (ndarray): Binary classification matrix curves (N, K, 2, 2). See `per_image_binclf_curve`.
+        binclf_curves (torch.Tensor): Binary classification matrix curves (N, K, 2, 2). See `per_image_binclf_curve`.
 
     Returns:
-        ndarray: shape (N, K), dtype float64
+        torch.Tensor: shape (N, K), dtype float64
         N: number of images
         K: number of thresholds
 
@@ -367,10 +358,10 @@ def per_image_tpr(binclf_curves: ndarray) -> ndarray:
     pos = binclf_curves[..., 1, :].sum(axis=2)  # 2 was the 3 originally
 
     # tprs will be nan if pos == 0 (normal image), which is expected
-    return tps.astype(np.float64) / pos.astype(np.float64)
+    return tps.to(torch.float64) / pos.to(torch.float64)
 
 
-def per_image_fpr(binclf_curves: ndarray) -> ndarray:
+def per_image_fpr(binclf_curves: torch.Tensor) -> torch.Tensor:
     """False positive rates (TPR) for image for each thresh.
 
     FPR = FP / N = FP / (FP + TN)
@@ -380,10 +371,10 @@ def per_image_fpr(binclf_curves: ndarray) -> ndarray:
     N: negatives (FP + TN)
 
     Args:
-        binclf_curves (ndarray): Binary classification matrix curves (N, K, 2, 2). See `per_image_binclf_curve`.
+        binclf_curves (torch.Tensor): Binary classification matrix curves (N, K, 2, 2). See `per_image_binclf_curve`.
 
     Returns:
-        ndarray: shape (N, K), dtype float64
+        torch.Tensor: shape (N, K), dtype float64
         N: number of images
         K: number of thresholds
 
@@ -394,4 +385,4 @@ def per_image_fpr(binclf_curves: ndarray) -> ndarray:
     neg = binclf_curves[..., 0, :].sum(axis=2)  # 2 was the 3 originally
 
     # it can be `nan` if an anomalous image is fully covered by the mask
-    return fps.astype(np.float64) / neg.astype(np.float64)
+    return fps.to(torch.float64) / neg.to(torch.float64)
