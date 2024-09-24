@@ -7,18 +7,22 @@
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+import itertools
 import logging
 from collections import OrderedDict
 from copy import deepcopy
 from typing import TYPE_CHECKING
 
+import matplotlib as mpl
 import pandas as pd
+import scipy
+import scipy.stats
 import torch
 from pandas import DataFrame
 from torch import Tensor
 
-from . import _validate, utils_numpy
-from .utils_numpy import StatsOutliersPolicy, StatsRepeatedPolicy
+from . import _validate
+from .enums import StatsAlternativeHypothesis, StatsOutliersPolicy, StatsRepeatedPolicy
 
 if TYPE_CHECKING:
     from .pimo import AUPIMOResult
@@ -26,7 +30,18 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+
 # =========================================== ARGS VALIDATION ===========================================
+def _validate_is_per_image_scores(per_image_scores: torch.Tensor) -> None:
+    if per_image_scores.ndim != 1:
+        msg = f"Expected per-image scores to be 1D, but got {per_image_scores.ndim}D."
+        raise ValueError(msg)
+
+
+def _validate_is_image_class(image_class: int) -> None:
+    if image_class not in {0, 1}:
+        msg = f"Expected image class to be either 0 for 'normal' or 1 for 'anomalous', but got {image_class}."
+        raise ValueError(msg)
 
 
 def _validate_is_models_ordered(models_ordered: tuple[str, ...]) -> None:
@@ -294,26 +309,100 @@ def per_image_scores_stats(
 
         The list is sorted by increasing `stat_value`.
     """
-    _validate.is_tensor(per_image_scores, "per_image_scores")
-    per_image_scores_array = per_image_scores.detach().cpu().numpy()
-
-    if images_classes is not None:
-        _validate.is_tensor(images_classes, "images_classes")
-        images_classes_array = images_classes.detach().cpu().numpy()
-
-    else:
-        images_classes_array = None
-
     # other validations happen inside `utils_numpy.per_image_scores_stats`
 
-    return utils_numpy.per_image_scores_stats(
-        per_image_scores_array,
-        images_classes_array,
-        only_class=only_class,
-        outliers_policy=outliers_policy,
-        repeated_policy=repeated_policy,
-        repeated_replacement_atol=repeated_replacement_atol,
-    )
+    outliers_policy = StatsOutliersPolicy(outliers_policy)
+    repeated_policy = StatsRepeatedPolicy(repeated_policy)
+    _validate_is_per_image_scores(per_image_scores)
+
+    # restrain the images to the class `only_class` if given, else use all images
+    if images_classes is None:
+        images_selection_mask = torch.ones_like(per_image_scores, dtype=bool)
+
+    elif only_class is not None:
+        _validate.is_images_classes(images_classes)
+        _validate.is_same_shape(per_image_scores, images_classes)
+        _validate_is_image_class(only_class)
+        images_selection_mask = images_classes == only_class
+
+    else:
+        images_selection_mask = torch.ones_like(per_image_scores, dtype=bool)
+
+    # indexes in `per_image_scores` are referred to as `candidate_idx`
+    # while the indexes in the original array are referred to as `image_idx`
+    #  - `candidate_idx` works for `per_image_scores` and `candidate2image_idx` (see below)
+    #  - `image_idx` works for `images_classes` and `images_idxs_selected`
+    per_image_scores = per_image_scores[images_selection_mask]
+    # converts `candidate_idx` to `image_idx`
+    candidate2image_idx = torch.nonzero(images_selection_mask, as_tuple=True)[0]
+
+    # function used in `matplotlib.boxplot`
+    boxplot_stats = mpl.cbook.boxplot_stats(per_image_scores)[0]  # [0] is for the only boxplot
+
+    # remove unnecessary keys
+    boxplot_stats = {name: value for name, value in boxplot_stats.items() if name not in {"iqr", "cilo", "cihi"}}
+
+    # unroll `fliers` (outliers), remove unnecessary ones according to `outliers_policy`,
+    # then add them to `boxplot_stats` with unique keys
+    outliers = boxplot_stats.pop("fliers")
+    outliers_lo = outliers[outliers < boxplot_stats["med"]]
+    outliers_hi = outliers[outliers > boxplot_stats["med"]]
+
+    if outliers_policy in {StatsOutliersPolicy.HIGH, StatsOutliersPolicy.BOTH}:
+        boxplot_stats = {
+            **boxplot_stats,
+            **{f"outhi_{idx:06}": value for idx, value in enumerate(outliers_hi)},
+        }
+
+    if outliers_policy in {StatsOutliersPolicy.LOW, StatsOutliersPolicy.BOTH}:
+        boxplot_stats = {
+            **boxplot_stats,
+            **{f"outlo_{idx:06}": value for idx, value in enumerate(outliers_lo)},
+        }
+
+    # state variables for the stateful function `append_record` below
+    images_idxs_selected: set[int] = set()
+    records: list[dict[str, str | int | float]] = []
+
+    def append_record(stat_name: str, stat_value: float) -> None:
+        candidates_sorted = torch.abs(per_image_scores - stat_value).argsort()
+        candidate_idx = candidates_sorted[0]
+        image_idx = candidate2image_idx[candidate_idx]
+
+        # handle repeated values
+        if image_idx not in images_idxs_selected or repeated_policy == StatsRepeatedPolicy.NONE:
+            pass
+
+        elif repeated_policy == StatsRepeatedPolicy.AVOID:
+            for other_candidate_idx in candidates_sorted:
+                other_candidate_image_idx = candidate2image_idx[other_candidate_idx]
+                if other_candidate_image_idx in images_idxs_selected:
+                    continue
+                # if the code reaches here, it means that `other_candidate_image_idx` is not in `images_idxs_selected`
+                # i.e. this image has not been selected yet, so it can be used
+                other_candidate_score = per_image_scores[other_candidate_idx]
+                # if the other candidate is not too far from the value, use it
+                # note that the first choice has not changed, so if no other is selected in the loop
+                # it will be the first choice
+                if torch.isclose(other_candidate_score, stat_value, atol=repeated_replacement_atol):
+                    candidate_idx = other_candidate_idx
+                    image_idx = other_candidate_image_idx
+                    break
+
+        images_idxs_selected.add(image_idx)
+        records.append(
+            {
+                "stat_name": stat_name,
+                "stat_value": float(stat_value),
+                "image_idx": int(image_idx),
+                "score": float(per_image_scores[candidate_idx]),
+            },
+        )
+
+    # loop over the stats from the lowest to the highest value
+    for stat, val in sorted(boxplot_stats.items(), key=lambda x: x[1]):
+        append_record(stat, val)
+    return sorted(records, key=lambda r: r["score"])
 
 
 def compare_models_pairwise_ttest_rel(
@@ -374,14 +463,44 @@ def compare_models_pairwise_ttest_rel(
     scores_per_model_items = [
         (
             model_name,
-            (scores if isinstance(scores, Tensor) else scores.aupimos).detach().cpu().numpy(),
+            (scores if isinstance(scores, Tensor) else scores.aupimos),
         )
         for model_name, scores in scores_per_model.items()
     ]
     cls = OrderedDict if isinstance(scores_per_model, OrderedDict) else dict
     scores_per_model_with_arrays = cls(scores_per_model_items)
 
-    return utils_numpy.compare_models_pairwise_ttest_rel(scores_per_model_with_arrays, alternative, higher_is_better)
+    _validate_is_scores_per_model(scores_per_model_with_arrays)
+    StatsAlternativeHypothesis(alternative)
+
+    # remove nan values; list of items keeps the order of the OrderedDict
+    scores_per_model_nonan_items = [
+        (model_name, scores[~torch.isnan(scores)]) for model_name, scores in scores_per_model_with_arrays.items()
+    ]
+
+    # sort models by average value if not an ordered dictionary
+    # position 0 is assumed the best model
+    if isinstance(scores_per_model_with_arrays, OrderedDict):
+        scores_per_model_nonan = OrderedDict(scores_per_model_nonan_items)
+    else:
+        scores_per_model_nonan = OrderedDict(
+            sorted(scores_per_model_nonan_items, key=lambda kv: kv[1].mean(), reverse=higher_is_better),
+        )
+
+    models_ordered = tuple(scores_per_model_nonan.keys())
+    models_pairs = list(itertools.permutations(models_ordered, 2))
+    confidences: dict[tuple[str, str], float] = {}
+    for model_i, model_j in models_pairs:
+        values_i = scores_per_model_nonan[model_i]
+        values_j = scores_per_model_nonan[model_j]
+        pvalue = scipy.stats.ttest_rel(
+            values_i,
+            values_j,
+            alternative=alternative,
+        ).pvalue
+        confidences[model_i, model_j] = 1.0 - float(pvalue)
+
+    return models_ordered, confidences
 
 
 def compare_models_pairwise_wilcoxon(
@@ -391,6 +510,7 @@ def compare_models_pairwise_wilcoxon(
     | OrderedDict[str, "AUPIMOResult"],
     alternative: str,
     higher_is_better: bool,
+    atol: float | None = 1e-3,
 ) -> tuple[tuple[str, ...], dict[tuple[str, str], float]]:
     """Compare all pairs of models using the Wilcoxon signed-rank test (non-parametric).
 
@@ -444,14 +564,57 @@ def compare_models_pairwise_wilcoxon(
     scores_per_model_items = [
         (
             model_name,
-            (scores if isinstance(scores, Tensor) else scores.aupimos).detach().cpu().numpy(),
+            (scores if isinstance(scores, Tensor) else scores.aupimos),
         )
         for model_name, scores in scores_per_model.items()
     ]
     cls = OrderedDict if isinstance(scores_per_model, OrderedDict) else dict
     scores_per_model_with_arrays = cls(scores_per_model_items)
 
-    return utils_numpy.compare_models_pairwise_wilcoxon(scores_per_model_with_arrays, alternative, higher_is_better)
+    _validate_is_scores_per_model(scores_per_model_with_arrays)
+    StatsAlternativeHypothesis(alternative)
+
+    # remove nan values; list of items keeps the order of the OrderedDict
+    scores_per_model_nonan_items = [
+        (model_name, scores[~torch.isnan(scores)]) for model_name, scores in scores_per_model_with_arrays.items()
+    ]
+
+    # sort models by average value if not an ordered dictionary
+    # position 0 is assumed the best model
+    if isinstance(scores_per_model_with_arrays, OrderedDict):
+        scores_per_model_nonan = OrderedDict(scores_per_model_nonan_items)
+    else:
+        # these average ranks will NOT consider `atol` because we want to rank the models anyway
+        scores_nonan = torch.stack([v for _, v in scores_per_model_nonan_items], axis=0)
+        avg_ranks = scipy.stats.rankdata(
+            -scores_nonan if higher_is_better else scores_nonan,
+            method="average",
+            axis=0,
+        ).mean(axis=1)
+        # ascending order, lower score is better --> best to worst model
+        argsort_avg_ranks = avg_ranks.argsort()
+        scores_per_model_nonan = OrderedDict(scores_per_model_nonan_items[idx] for idx in argsort_avg_ranks)
+
+    models_ordered = tuple(scores_per_model_nonan.keys())
+    models_pairs = list(itertools.permutations(models_ordered, 2))
+    confidences: dict[tuple[str, str], float] = {}
+    for model_i, model_j in models_pairs:
+        values_i = scores_per_model_nonan[model_i]
+        values_j = scores_per_model_nonan[model_j]
+        diff = values_i - values_j
+
+        if atol is not None:
+            # make the difference null if below the tolerance
+            diff[torch.abs(diff) <= atol] = 0.0
+
+        # extreme case
+        if (diff == 0).all():  # noqa: SIM108
+            pvalue = 1.0
+        else:
+            pvalue = scipy.stats.wilcoxon(diff, alternative=alternative).pvalue
+        confidences[model_i, model_j] = 1.0 - float(pvalue)
+
+    return models_ordered, confidences
 
 
 def format_pairwise_tests_results(

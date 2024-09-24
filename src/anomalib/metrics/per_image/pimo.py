@@ -44,65 +44,45 @@ from collections.abc import Sequence
 from dataclasses import dataclass, field
 
 import torch
-from torch import Tensor
 from torchmetrics import Metric
 
 from anomalib.data.utils.path import validate_path
 
-from . import _validate, pimo_numpy
+from . import _validate, functional
 
 logger = logging.getLogger(__name__)
 
 
-def _images_classes_from_masks(masks: Tensor) -> Tensor:
+def _images_classes_from_masks(masks: torch.Tensor) -> torch.Tensor:
     masks = torch.concat(masks, dim=0)
     device = masks.device
-    image_classes = pimo_numpy._images_classes_from_masks(masks.numpy())  # noqa: SLF001
+    image_classes = functional._images_classes_from_masks(masks)  # noqa: SLF001
     return torch.from_numpy(image_classes, device=device)
 
 
 # =========================================== ARGS VALIDATION ===========================================
 
 
-def _validate_is_anomaly_maps(anomaly_maps: Tensor) -> None:
-    _validate.is_tensor(anomaly_maps, argname="anomaly_maps")
-    _validate.is_anomaly_maps(anomaly_maps.numpy())
+def _validate_is_shared_fpr(shared_fpr: torch.Tensor, nan_allowed: bool = False, decreasing: bool = True) -> None:
+    _validate.is_rate_curve(shared_fpr, nan_allowed=nan_allowed, decreasing=decreasing)
 
 
-def _validate_is_masks(masks: Tensor) -> None:
-    _validate.is_tensor(masks, argname="masks")
-    _validate.is_masks(masks.numpy())
+def _validate_is_image_classes(image_classes: torch.Tensor) -> None:
+    _validate.is_images_classes(image_classes)
 
 
-def _validate_is_threshs(threshs: Tensor) -> None:
-    _validate.is_tensor(threshs, argname="threshs")
-    _validate.is_threshs(threshs.numpy())
-
-
-def _validate_is_shared_fpr(shared_fpr: Tensor, nan_allowed: bool = False, decreasing: bool = True) -> None:
-    _validate.is_tensor(shared_fpr, argname="shared_fpr")
-    _validate.is_rate_curve(shared_fpr.numpy(), nan_allowed=nan_allowed, decreasing=decreasing)
-
-
-def _validate_is_image_classes(image_classes: Tensor) -> None:
-    _validate.is_tensor(image_classes, argname="image_classes")
-    _validate.is_images_classes(image_classes.numpy())
-
-
-def _validate_is_per_image_tprs(per_image_tprs: Tensor, image_classes: Tensor) -> None:
+def _validate_is_per_image_tprs(per_image_tprs: torch.Tensor, image_classes: torch.Tensor) -> None:
     _validate_is_image_classes(image_classes)
-    _validate.is_tensor(per_image_tprs, argname="per_image_tprs")
-
     # general validations
     _validate.is_per_image_rate_curves(
-        per_image_tprs.numpy(),
+        per_image_tprs,
         nan_allowed=True,  # normal images have NaN TPRs
         decreasing=None,  # not checked here
     )
 
     # specific to anomalous images
     _validate.is_per_image_rate_curves(
-        per_image_tprs[image_classes == 1].numpy(),
+        per_image_tprs[image_classes == 1],
         nan_allowed=False,
         decreasing=True,
     )
@@ -114,9 +94,8 @@ def _validate_is_per_image_tprs(per_image_tprs: Tensor, image_classes: Tensor) -
         raise ValueError(msg)
 
 
-def _validate_is_aupimos(aupimos: Tensor) -> None:
-    _validate.is_tensor(aupimos, argname="aupimos")
-    _validate.is_rates(aupimos.numpy(), nan_allowed=True)
+def _validate_is_aupimos(aupimos: torch.Tensor) -> None:
+    _validate.is_rates(aupimos, nan_allowed=True)
 
 
 def _validate_is_source_images_paths(paths: Sequence[str], expected_num_paths: int | None) -> None:
@@ -169,16 +148,17 @@ class PIMOResult:
         - TPR: True Positive Rate
 
     Attributes:
-        threshs (Tensor): sequence of K (monotonically increasing) thresholds used to compute the PIMO curve
-        shared_fpr (Tensor): K values of the shared FPR metric at the corresponding thresholds
-        per_image_tprs (Tensor): for each of the N images, the K values of in-image TPR at the corresponding thresholds
+        threshs (torch.Tensor): sequence of K (monotonically increasing) thresholds used to compute the PIMO curve
+        shared_fpr (torch.Tensor): K values of the shared FPR metric at the corresponding thresholds
+        per_image_tprs (torch.Tensor): for each of the N images, the K values of in-image TPR at the corresponding
+            thresholds
         paths (list[str]) (optional): [metadata] paths to the source images to which the PIMO curves correspond
     """
 
     # data
-    threshs: Tensor = field(repr=False)  # shape => (K,)
-    shared_fpr: Tensor = field(repr=False)  # shape => (K,)
-    per_image_tprs: Tensor = field(repr=False)  # shape => (N, K)
+    threshs: torch.Tensor = field(repr=False)  # shape => (K,)
+    shared_fpr: torch.Tensor = field(repr=False)  # shape => (K,)
+    per_image_tprs: torch.Tensor = field(repr=False)  # shape => (N, K)
 
     # optional metadata
     paths: list[str] | None = field(repr=False, default=None)
@@ -194,7 +174,7 @@ class PIMOResult:
         return self.per_image_tprs.shape[0]
 
     @property
-    def image_classes(self) -> Tensor:
+    def image_classes(self) -> torch.Tensor:
         """Image classes (0: normal, 1: anomalous).
 
         Deduced from the per-image TPRs.
@@ -205,7 +185,7 @@ class PIMOResult:
     def __post_init__(self) -> None:
         """Validate the inputs for the result object are consistent."""
         try:
-            _validate_is_threshs(self.threshs)
+            _validate.is_threshs(self.threshs)
             _validate_is_shared_fpr(self.shared_fpr, nan_allowed=False)
             _validate_is_per_image_tprs(self.per_image_tprs, self.image_classes)
 
@@ -244,9 +224,9 @@ class PIMOResult:
                 [1] threshold
                 [2] the actual shared FPR value at the returned threshold
         """
-        return pimo_numpy.thresh_at_shared_fpr_level(
-            self.threshs.numpy(),
-            self.shared_fpr.numpy(),
+        return functional.thresh_at_shared_fpr_level(
+            self.threshs,
+            self.shared_fpr,
             fpr_level,
         )
 
@@ -264,7 +244,7 @@ class AUPIMOResult:
                             should not be confused with the number of thresholds used to compute the PIMO curve
         thresh_lower_bound (float): LOWER threshold bound --> corresponds to the UPPER FPR bound
         thresh_upper_bound (float): UPPER threshold bound --> corresponds to the LOWER FPR bound
-        aupimos (Tensor): values of AUPIMO scores (1 per image)
+        aupimos (torch.Tensor): values of AUPIMO scores (1 per image)
     """
 
     # metadata
@@ -275,7 +255,7 @@ class AUPIMOResult:
     # data
     thresh_lower_bound: float = field(repr=False)
     thresh_upper_bound: float = field(repr=False)
-    aupimos: Tensor = field(repr=False)  # shape => (N,)
+    aupimos: torch.Tensor = field(repr=False)  # shape => (N,)
 
     # optional metadata
     paths: list[str] | None = field(repr=False, default=None)
@@ -296,7 +276,7 @@ class AUPIMOResult:
         return int((self.image_classes == 1).sum())
 
     @property
-    def image_classes(self) -> Tensor:
+    def image_classes(self) -> torch.Tensor:
         """Image classes (0: normal, 1: anomalous)."""
         # if an instance has `nan` aupimo it's because it's a normal image
         return self.aupimos.isnan().to(torch.int32)
@@ -339,7 +319,7 @@ class AUPIMOResult:
         pimoresult: PIMOResult,
         fpr_bounds: tuple[float, float],
         num_threshs_auc: int,
-        aupimos: Tensor,
+        aupimos: torch.Tensor,
         paths: list[str] | None = None,
     ) -> "AUPIMOResult":
         """Return an AUPIMO result object from a PIMO result object.
@@ -391,8 +371,8 @@ class AUPIMOResult:
 
 # =========================================== FUNCTIONAL ===========================================
 def pimo_curves(
-    anomaly_maps: Tensor,
-    masks: Tensor,
+    anomaly_maps: torch.Tensor,
+    masks: torch.Tensor,
     num_threshs: int,
     paths: list[str] | None = None,
 ) -> PIMOResult:
@@ -423,33 +403,16 @@ def pimo_curves(
     Returns:
         PIMOResult: PIMO curves dataclass object. See `PIMOResult` for details.
     """
-    _validate_is_anomaly_maps(anomaly_maps)
-    anomaly_maps_array = anomaly_maps.detach().cpu().numpy()
-
-    _validate_is_masks(masks)
-    masks_array = masks.detach().cpu().numpy()
-
     if paths is not None:
         _validate_is_source_images_paths(paths, expected_num_paths=anomaly_maps.shape[0])
 
     # other validations are done in the numpy code
-    threshs_array, shared_fpr_array, per_image_tprs_array, _ = pimo_numpy.pimo_curves(
-        anomaly_maps_array,
-        masks_array,
+    threshs, shared_fpr, per_image_tprs, _ = functional.pimo_curves(
+        anomaly_maps,
+        masks,
         num_threshs,
     )
     # _ is `image_classes` -- not needed here because it's a property in the result object
-
-    # tensors are build with `torch.from_numpy` and so the returned tensors
-    # will share the same memory as the numpy arrays
-    device = anomaly_maps.device
-    # N: number of images, K: number of thresholds
-    # shape => (K,)
-    threshs = torch.from_numpy(threshs_array).to(device)
-    # shape => (K,)
-    shared_fpr = torch.from_numpy(shared_fpr_array).to(device)
-    # shape => (N, K)
-    per_image_tprs = torch.from_numpy(per_image_tprs_array).to(device)
 
     return PIMOResult(
         threshs=threshs,
@@ -460,8 +423,8 @@ def pimo_curves(
 
 
 def aupimo_scores(
-    anomaly_maps: Tensor,
-    masks: Tensor,
+    anomaly_maps: torch.Tensor,
+    masks: torch.Tensor,
     num_threshs: int = 300_000,
     fpr_bounds: tuple[float, float] = (1e-5, 1e-4),
     force: bool = False,
@@ -495,33 +458,18 @@ def aupimo_scores(
     Returns:
         tuple[PIMOResult, AUPIMOResult]: PIMO and AUPIMO results dataclass objects. See `PIMOResult` and `AUPIMOResult`.
     """
-    anomaly_maps_array = anomaly_maps.detach().cpu().numpy()
-    masks_array = masks.detach().cpu().numpy()
-
     if paths is not None:
         _validate_is_source_images_paths(paths, expected_num_paths=anomaly_maps.shape[0])
 
     # other validations are done in the numpy code
 
-    threshs_array, shared_fpr_array, per_image_tprs_array, _, aupimos_array, num_threshs_auc = pimo_numpy.aupimo_scores(
-        anomaly_maps_array,
-        masks_array,
+    threshs, shared_fpr, per_image_tprs, _, aupimos, num_threshs_auc = functional.aupimo_scores(
+        anomaly_maps,
+        masks,
         num_threshs,
         fpr_bounds=fpr_bounds,
         force=force,
     )
-    # tensors are build with `torch.from_numpy` and so the returned tensors
-    # will share the same memory as the numpy arrays
-    device = anomaly_maps.device
-    # N: number of images, K: number of thresholds
-    # shape => (K,)
-    threshs = torch.from_numpy(threshs_array).to(device)
-    # shape => (K,)
-    shared_fpr = torch.from_numpy(shared_fpr_array).to(device)
-    # shape => (N, K)
-    per_image_tprs = torch.from_numpy(per_image_tprs_array).to(device)
-    # shape => (N,)
-    aupimos = torch.from_numpy(aupimos_array).to(device)
 
     pimoresult = PIMOResult(
         threshs=threshs,
@@ -582,8 +530,8 @@ class PIMO(Metric):
     num_threshs: int
     binclf_algorithm: str
 
-    anomaly_maps: list[Tensor]
-    masks: list[Tensor]
+    anomaly_maps: list[torch.Tensor]
+    masks: list[torch.Tensor]
 
     @property
     def _is_empty(self) -> bool:
@@ -596,7 +544,7 @@ class PIMO(Metric):
         return sum(am.shape[0] for am in self.anomaly_maps)
 
     @property
-    def image_classes(self) -> Tensor:
+    def image_classes(self) -> torch.Tensor:
         """Image classes (0: normal, 1: anomalous)."""
         return _images_classes_from_masks(self.masks)
 
@@ -625,15 +573,15 @@ class PIMO(Metric):
         self.add_state("anomaly_maps", default=[], dist_reduce_fx="cat")
         self.add_state("masks", default=[], dist_reduce_fx="cat")
 
-    def update(self, anomaly_maps: Tensor, masks: Tensor) -> None:
+    def update(self, anomaly_maps: torch.Tensor, masks: torch.Tensor) -> None:
         """Update lists of anomaly maps and masks.
 
         Args:
-            anomaly_maps (Tensor): predictions of the model (ndim == 2, float)
-            masks (Tensor): ground truth masks (ndim == 2, binary)
+            anomaly_maps (torch.Tensor): predictions of the model (ndim == 2, float)
+            masks (torch.Tensor): ground truth masks (ndim == 2, binary)
         """
-        _validate_is_anomaly_maps(anomaly_maps)
-        _validate_is_masks(masks)
+        _validate.is_anomaly_maps(anomaly_maps)
+        _validate.is_masks(masks)
         _validate.is_same_shape(anomaly_maps, masks)
         self.anomaly_maps.append(anomaly_maps)
         self.masks.append(masks)
@@ -706,7 +654,7 @@ class AUPIMO(PIMO):
         Returns:
             float: the normalization factor (>0).
         """
-        return pimo_numpy.aupimo_normalizing_factor(fpr_bounds)
+        return functional.aupimo_normalizing_factor(fpr_bounds)
 
     def __repr__(self) -> str:
         """Show the metric name and its integration bounds."""

@@ -13,10 +13,10 @@ Details: `anomalib.metrics.per_image.pimo`.
 import logging
 
 import numpy as np
-from numpy import ndarray
+import torch
 
-from . import _validate, binclf_curve_numpy
-from .binclf_curve_numpy import BinclfThreshsChoice
+from . import _validate, binclf_curve
+from .binclf_curve import BinclfThreshsChoice
 
 logger = logging.getLogger(__name__)
 
@@ -24,30 +24,30 @@ logger = logging.getLogger(__name__)
 # =========================================== AUX ===========================================
 
 
-def _images_classes_from_masks(masks: ndarray) -> ndarray:
+def _images_classes_from_masks(masks: torch.Tensor) -> torch.Tensor:
     """Deduce the image classes from the masks."""
     _validate.is_masks(masks)
-    return (masks == 1).any(axis=(1, 2)).astype(np.int32)
+    return (masks == 1).any(axis=(1, 2)).to(torch.int32)
 
 
 # =========================================== ARGS VALIDATION ===========================================
 
 
-def _validate_has_at_least_one_anomalous_image(masks: ndarray) -> None:
+def _validate_has_at_least_one_anomalous_image(masks: torch.Tensor) -> None:
     image_classes = _images_classes_from_masks(masks)
     if (image_classes == 1).sum() == 0:
         msg = "Expected at least one ANOMALOUS image, but found none."
         raise ValueError(msg)
 
 
-def _validate_has_at_least_one_normal_image(masks: ndarray) -> None:
+def _validate_has_at_least_one_normal_image(masks: torch.Tensor) -> None:
     image_classes = _images_classes_from_masks(masks)
     if (image_classes == 0).sum() == 0:
         msg = "Expected at least one NORMAL image, but found none."
         raise ValueError(msg)
 
 
-def _joint_validate_threshs_shared_fpr(threshs: ndarray, shared_fpr: ndarray) -> None:
+def _joint_validate_threshs_shared_fpr(threshs: torch.Tensor, shared_fpr: torch.Tensor) -> None:
     if threshs.shape[0] != shared_fpr.shape[0]:
         msg = (
             "Expected `threshs` and `shared_fpr` to have the same number of elements, "
@@ -60,10 +60,10 @@ def _joint_validate_threshs_shared_fpr(threshs: ndarray, shared_fpr: ndarray) ->
 
 
 def pimo_curves(
-    anomaly_maps: ndarray,
-    masks: ndarray,
+    anomaly_maps: torch.Tensor,
+    masks: torch.Tensor,
     num_threshs: int,
-) -> tuple[ndarray, ndarray, ndarray, ndarray]:
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
     """Compute the Per-IMage Overlap (PIMO, pronounced pee-mo) curves.
 
     PIMO is a curve of True Positive Rate (TPR) values on each image across multiple anomaly score thresholds.
@@ -84,7 +84,7 @@ def pimo_curves(
         num_threshs: number of thresholds to compute (K)
 
     Returns:
-        tuple[ndarray, ndarray, ndarray, ndarray]:
+        tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
             [0] thresholds of shape (K,) in ascending order
             [1] shared FPR values of shape (K,) in descending order (indices correspond to the thresholds)
             [2] per-image TPR curves of shape (N, K), axis 1 in descending order (indices correspond to the thresholds)
@@ -92,9 +92,9 @@ def pimo_curves(
     """
     # validate the strings are valid
     _validate.is_num_threshs_gte2(num_threshs)
-    _validate.is_anomaly_maps(anomaly_maps)  # redundant
-    _validate.is_masks(masks)  # redundant
-    _validate.is_same_shape(anomaly_maps, masks)  # redundant
+    _validate.is_anomaly_maps(anomaly_maps)
+    _validate.is_masks(masks)
+    _validate.is_same_shape(anomaly_maps, masks)
     _validate_has_at_least_one_anomalous_image(masks)
     _validate_has_at_least_one_normal_image(masks)
 
@@ -104,14 +104,14 @@ def pimo_curves(
     # therefore getting a better resolution in terms of FPR quantization
     # otherwise the function `binclf_curve_numpy.per_image_binclf_curve` would have the range of thresholds
     # computed from all the images (normal + anomalous)
-    threshs = binclf_curve_numpy._get_threshs_minmax_linspace(  # noqa: SLF001
+    threshs = binclf_curve._get_threshs_minmax_linspace(  # noqa: SLF001
         anomaly_maps[image_classes == 0],
         num_threshs,
     )
 
     # N: number of images, K: number of thresholds
     # shapes are (K,) and (N, K, 2, 2)
-    threshs, binclf_curves = binclf_curve_numpy.per_image_binclf_curve(
+    threshs, binclf_curves = binclf_curve.per_image_binclf_curve(
         anomaly_maps=anomaly_maps,
         masks=masks,
         threshs_choice=BinclfThreshsChoice.GIVEN.value,
@@ -119,10 +119,10 @@ def pimo_curves(
         num_threshs=None,
     )
 
-    shared_fpr: ndarray
+    shared_fpr: torch.Tensor
     # mean-per-image-fpr on normal images
     # shape -> (N, K)
-    per_image_fprs_normals = binclf_curve_numpy.per_image_fpr(binclf_curves[image_classes == 0])
+    per_image_fprs_normals = binclf_curve.per_image_fpr(binclf_curves[image_classes == 0])
     try:
         _validate.is_per_image_rate_curves(per_image_fprs_normals, nan_allowed=False, decreasing=True)
     except ValueError as ex:
@@ -135,7 +135,7 @@ def pimo_curves(
     shared_fpr = per_image_fprs_normals.mean(axis=0)
 
     # shape -> (N, K)
-    per_image_tprs = binclf_curve_numpy.per_image_tpr(binclf_curves)
+    per_image_tprs = binclf_curve.per_image_tpr(binclf_curves)
 
     return threshs, shared_fpr, per_image_tprs, image_classes
 
@@ -144,12 +144,12 @@ def pimo_curves(
 
 
 def aupimo_scores(
-    anomaly_maps: ndarray,
-    masks: ndarray,
+    anomaly_maps: torch.Tensor,
+    masks: torch.Tensor,
     num_threshs: int = 300_000,
     fpr_bounds: tuple[float, float] = (1e-5, 1e-4),
     force: bool = False,
-) -> tuple[ndarray, ndarray, ndarray, ndarray, ndarray, int]:
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, int]:
     """Compute the PIMO curves and their Area Under the Curve (i.e. AUPIMO) scores.
 
     Scores are computed from the integration of the PIMO curves within the given FPR bounds, then normalized to [0, 1].
@@ -171,7 +171,7 @@ def aupimo_scores(
         force: whether to force the computation despite bad conditions
 
     Returns:
-        tuple[ndarray, ndarray, ndarray, ndarray, ndarray]:
+        tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
             [0] thresholds of shape (K,) in ascending order
             [1] shared FPR values of shape (K,) in descending order (indices correspond to the thresholds)
             [2] per-image TPR curves of shape (N, K), axis 1 in descending order (indices correspond to the thresholds)
@@ -211,13 +211,21 @@ def aupimo_scores(
         fpr_upper_bound,
     )
 
-    if not np.isclose(fpr_lower_bound_defacto, fpr_lower_bound, rtol=(rtol := 1e-2)):
+    if not torch.isclose(
+        fpr_lower_bound_defacto,
+        torch.tensor(fpr_lower_bound, dtype=fpr_lower_bound_defacto.dtype, device=fpr_lower_bound_defacto.device),
+        rtol=(rtol := 1e-2),
+    ):
         logger.warning(
             "The lower bound of the shared FPR integration range is not exactly achieved. "
             f"Expected {fpr_lower_bound} but got {fpr_lower_bound_defacto}, which is not within {rtol=}.",
         )
 
-    if not np.isclose(fpr_upper_bound_defacto, fpr_upper_bound, rtol=rtol):
+    if not torch.isclose(
+        fpr_upper_bound_defacto,
+        torch.tensor(fpr_upper_bound, dtype=fpr_upper_bound_defacto.dtype, device=fpr_upper_bound_defacto.device),
+        rtol=rtol,
+    ):
         logger.warning(
             "The upper bound of the shared FPR integration range is not exactly achieved. "
             f"Expected {fpr_upper_bound} but got {fpr_upper_bound_defacto}, which is not within {rtol=}.",
@@ -237,18 +245,18 @@ def aupimo_scores(
         raise RuntimeError(msg)
 
     # limit the curves to the integration range [lbound, ubound]
-    shared_fpr_bounded: ndarray = shared_fpr[thresh_lower_bound_idx : (thresh_upper_bound_idx + 1)]
-    per_image_tprs_bounded: ndarray = per_image_tprs[:, thresh_lower_bound_idx : (thresh_upper_bound_idx + 1)]
+    shared_fpr_bounded: torch.Tensor = shared_fpr[thresh_lower_bound_idx : (thresh_upper_bound_idx + 1)]
+    per_image_tprs_bounded: torch.Tensor = per_image_tprs[:, thresh_lower_bound_idx : (thresh_upper_bound_idx + 1)]
 
     # `shared_fpr` and `tprs` are in descending order; `flip()` reverts to ascending order
-    shared_fpr_bounded = np.flip(shared_fpr_bounded)
-    per_image_tprs_bounded = np.flip(per_image_tprs_bounded, axis=1)
+    shared_fpr_bounded = torch.flip(shared_fpr_bounded, dims=[0])
+    per_image_tprs_bounded = torch.flip(per_image_tprs_bounded, dims=[1])
 
     # the log's base does not matter because it's a constant factor canceled by normalization factor
-    shared_fpr_bounded_log = np.log(shared_fpr_bounded)
+    shared_fpr_bounded_log = torch.log(shared_fpr_bounded)
 
     # deal with edge cases
-    invalid_shared_fpr = ~np.isfinite(shared_fpr_bounded_log)
+    invalid_shared_fpr = ~torch.isfinite(shared_fpr_bounded_log)
 
     if invalid_shared_fpr.all():
         msg = (
@@ -287,7 +295,7 @@ def aupimo_scores(
             "Try increasing `num_threshs`.",
         )
 
-    aucs: ndarray = np.trapz(per_image_tprs_bounded, x=shared_fpr_bounded_log, axis=1)  # noqa: NPY201 deprecated in Numpy 2.0
+    aucs: torch.Tensor = torch.trapezoid(per_image_tprs_bounded, x=shared_fpr_bounded_log, axis=1)
 
     # normalize, then clip(0, 1) makes sure that the values are in [0, 1] in case of numerical errors
     normalization_factor = aupimo_normalizing_factor(fpr_bounds)
@@ -299,7 +307,11 @@ def aupimo_scores(
 # =========================================== AUX ===========================================
 
 
-def thresh_at_shared_fpr_level(threshs: ndarray, shared_fpr: ndarray, fpr_level: float) -> tuple[int, float, float]:
+def thresh_at_shared_fpr_level(
+    threshs: torch.Tensor,
+    shared_fpr: torch.Tensor,
+    fpr_level: float,
+) -> tuple[int, float, torch.Tensor]:
     """Return the threshold and its index at the given shared FPR level.
 
     Three cases are possible:
@@ -342,13 +354,13 @@ def thresh_at_shared_fpr_level(threshs: ndarray, shared_fpr: ndarray, fpr_level:
     # fpr_level == 0 or 1 are special case
     # because there may be multiple solutions, and the chosen should their MINIMUM/MAXIMUM respectively
     if fpr_level == 0.0:
-        index = np.min(np.where(shared_fpr == fpr_level))
+        index = torch.min(torch.where(shared_fpr == fpr_level)[0])
 
     elif fpr_level == 1.0:
-        index = np.max(np.where(shared_fpr == fpr_level))
+        index = torch.max(torch.where(shared_fpr == fpr_level)[0])
 
     else:
-        index = np.argmin(np.abs(shared_fpr - fpr_level))
+        index = torch.argmin(torch.abs(shared_fpr - fpr_level))
 
     index = int(index)
     fpr_level_defacto = shared_fpr[index]
