@@ -88,7 +88,7 @@ class NumpyImageValidator:
         """
         if label is None:
             return None
-        if isinstance(label, int):
+        if isinstance(label, int | np.bool_):
             label = np.array(label)
         if not isinstance(label, np.ndarray):
             msg = f"Ground truth label must be an integer or a numpy.ndarray, got {type(label)}."
