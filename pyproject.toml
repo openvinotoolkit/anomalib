@@ -60,7 +60,7 @@ loggers = [
     "comet-ml>=3.31.7",
     "gradio>=4",
     "tensorboard",
-    "wandb>=0.12.17,<=0.15.9",
+    "wandb>=0.12.17",
     "mlflow >=1.0.0",
 ]
 notebooks = ["gitpython", "ipykernel", "ipywidgets", "notebook"]
