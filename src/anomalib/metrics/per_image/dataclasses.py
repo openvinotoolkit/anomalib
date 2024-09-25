@@ -25,21 +25,21 @@ class PIMOResult:
         - TPR: True Positive Rate
 
     Attributes:
-        threshs (torch.Tensor): sequence of K (monotonically increasing) thresholds used to compute the PIMO curve
+        thresholds (torch.Tensor): sequence of K (monotonically increasing) thresholds used to compute the PIMO curve
         shared_fpr (torch.Tensor): K values of the shared FPR metric at the corresponding thresholds
         per_image_tprs (torch.Tensor): for each of the N images, the K values of in-image TPR at the corresponding
             thresholds
     """
 
     # data
-    threshs: torch.Tensor = field(repr=False)  # shape => (K,)
+    thresholds: torch.Tensor = field(repr=False)  # shape => (K,)
     shared_fpr: torch.Tensor = field(repr=False)  # shape => (K,)
     per_image_tprs: torch.Tensor = field(repr=False)  # shape => (N, K)
 
     @property
-    def num_threshs(self) -> int:
+    def num_threshsholds(self) -> int:
         """Number of thresholds."""
-        return self.threshs.shape[0]
+        return self.thresholds.shape[0]
 
     @property
     def num_images(self) -> int:
@@ -58,7 +58,7 @@ class PIMOResult:
     def __post_init__(self) -> None:
         """Validate the inputs for the result object are consistent."""
         try:
-            _validate.is_threshs(self.threshs)
+            _validate.is_threshs(self.thresholds)
             _validate.is_rate_curve(self.shared_fpr, nan_allowed=False, decreasing=True)  # is_shared_apr
             _validate.is_per_image_tprs(self.per_image_tprs, self.image_classes)
 
@@ -66,17 +66,17 @@ class PIMOResult:
             msg = f"Invalid inputs for {self.__class__.__name__} object. Cause: {ex}."
             raise TypeError(msg) from ex
 
-        if self.threshs.shape != self.shared_fpr.shape:
+        if self.thresholds.shape != self.shared_fpr.shape:
             msg = (
                 f"Invalid {self.__class__.__name__} object. Attributes have inconsistent shapes: "
-                f"{self.threshs.shape=} != {self.shared_fpr.shape=}."
+                f"{self.thresholds.shape=} != {self.shared_fpr.shape=}."
             )
             raise TypeError(msg)
 
-        if self.threshs.shape[0] != self.per_image_tprs.shape[1]:
+        if self.thresholds.shape[0] != self.per_image_tprs.shape[1]:
             msg = (
                 f"Invalid {self.__class__.__name__} object. Attributes have inconsistent shapes: "
-                f"{self.threshs.shape[0]=} != {self.per_image_tprs.shape[1]=}."
+                f"{self.thresholds.shape[0]=} != {self.per_image_tprs.shape[1]=}."
             )
             raise TypeError(msg)
 
@@ -95,7 +95,7 @@ class PIMOResult:
                 [2] the actual shared FPR value at the returned threshold
         """
         return functional.thresh_at_shared_fpr_level(
-            self.threshs,
+            self.thresholds,
             self.shared_fpr,
             fpr_level,
         )

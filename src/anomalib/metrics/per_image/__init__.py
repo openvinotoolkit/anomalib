@@ -7,7 +7,7 @@
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from .enums import BinclfThreshsChoice, StatsOutliersPolicy, StatsRepeatedPolicy
+from .enums import StatsOutliersPolicy, StatsRepeatedPolicy, ThresholdMethod
 from .pimo import AUPIMO, PIMO, AUPIMOResult, PIMOResult
 from .utils import (
     compare_models_pairwise_ttest_rel,
@@ -18,7 +18,7 @@ from .utils import (
 
 __all__ = [
     # constants
-    "BinclfThreshsChoice",
+    "ThresholdMethod",
     "StatsOutliersPolicy",
     "StatsRepeatedPolicy",
     # result classes

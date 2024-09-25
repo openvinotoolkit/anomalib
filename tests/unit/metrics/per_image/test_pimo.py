@@ -209,7 +209,7 @@ def test_pimo(
     """Test if `pimo()` returns the expected values."""
 
     def do_assertions(pimoresult: PIMOResult) -> None:
-        threshs = pimoresult.threshs
+        threshs = pimoresult.thresholds
         shared_fpr = pimoresult.shared_fpr
         per_image_tprs = pimoresult.per_image_tprs
         image_classes = pimoresult.image_classes
@@ -284,7 +284,7 @@ def test_aupimo_values(
 
         # test data
         # from pimo result
-        threshs = pimoresult.threshs
+        threshs = pimoresult.thresholds
         shared_fpr = pimoresult.shared_fpr
         per_image_tprs = pimoresult.per_image_tprs
         image_classes = pimoresult.image_classes

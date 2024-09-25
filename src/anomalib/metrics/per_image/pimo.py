@@ -164,7 +164,7 @@ class PIMO(Metric):
             self.num_threshs,
         )
         return PIMOResult(
-            threshs=threshs,
+            thresholds=threshs,
             shared_fpr=shared_fpr,
             per_image_tprs=per_image_tprs,
         )
@@ -278,13 +278,13 @@ class AUPIMO(PIMO):
             force=force,
         )
 
-        pimoresult = PIMOResult(
-            threshs=threshs,
+        pimo_result = PIMOResult(
+            thresholds=threshs,
             shared_fpr=shared_fpr,
             per_image_tprs=per_image_tprs,
         )
-        aupimoresult = AUPIMOResult.from_pimoresult(
-            pimoresult,
+        aupimo_result = AUPIMOResult.from_pimoresult(
+            pimo_result,
             fpr_bounds=self.fpr_bounds,
             # not `num_threshs`!
             # `num_threshs` is the number of thresholds used to compute the PIMO curve
@@ -294,6 +294,6 @@ class AUPIMO(PIMO):
         )
         if self.return_average:
             # normal images have NaN AUPIMO scores
-            is_nan = torch.isnan(aupimoresult.aupimos)
-            return aupimoresult.aupimos[~is_nan].mean()
-        return pimoresult, aupimoresult
+            is_nan = torch.isnan(aupimo_result.aupimos)
+            return aupimo_result.aupimos[~is_nan].mean()
+        return pimo_result, aupimo_result

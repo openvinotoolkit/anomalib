@@ -16,7 +16,7 @@ import numpy as np
 import torch
 
 from . import _validate, binclf_curve
-from .enums import BinclfThreshsChoice
+from .enums import ThresholdMethod
 from .utils import images_classes_from_masks
 
 logger = logging.getLogger(__name__)
@@ -77,7 +77,7 @@ def pimo_curves(
     threshs, binclf_curves = binclf_curve.per_image_binclf_curve(
         anomaly_maps=anomaly_maps,
         masks=masks,
-        threshs_choice=BinclfThreshsChoice.GIVEN.value,
+        threshs_choice=ThresholdMethod.GIVEN.value,
         threshs_given=threshs,
         num_threshs=None,
     )

@@ -21,7 +21,7 @@ import torch
 from numpy import ndarray
 
 from . import _validate
-from .enums import BinclfThreshsChoice
+from .enums import ThresholdMethod
 
 logger = logging.getLogger(__name__)
 
@@ -170,7 +170,7 @@ def _get_threshs_minmax_linspace(anomaly_maps: torch.Tensor, num_threshs: int) -
 def per_image_binclf_curve(
     anomaly_maps: torch.Tensor,
     masks: torch.Tensor,
-    threshs_choice: BinclfThreshsChoice | str = BinclfThreshsChoice.MINMAX_LINSPACE.value,
+    threshs_choice: ThresholdMethod | str = ThresholdMethod.MINMAX_LINSPACE.value,
     threshs_given: torch.Tensor | None = None,
     num_threshs: int | None = None,
 ) -> tuple[torch.Tensor, torch.Tensor]:
@@ -218,14 +218,14 @@ def per_image_binclf_curve(
 
             Thresholds are sorted in ascending order.
     """
-    threshs_choice = BinclfThreshsChoice(threshs_choice)
+    threshs_choice = ThresholdMethod(threshs_choice)
     _validate.is_anomaly_maps(anomaly_maps)
     _validate.is_masks(masks)
     _validate.is_same_shape(anomaly_maps, masks)
 
     threshs: torch.Tensor
 
-    if threshs_choice == BinclfThreshsChoice.GIVEN:
+    if threshs_choice == ThresholdMethod.GIVEN:
         assert threshs_given is not None
         _validate.is_threshs(threshs_given)
         if num_threshs is not None:
@@ -235,7 +235,7 @@ def per_image_binclf_curve(
             )
         threshs = threshs_given.to(anomaly_maps.dtype)
 
-    elif threshs_choice == BinclfThreshsChoice.MINMAX_LINSPACE:
+    elif threshs_choice == ThresholdMethod.MINMAX_LINSPACE:
         assert num_threshs is not None
         if threshs_given is not None:
             logger.warning(
@@ -245,12 +245,12 @@ def per_image_binclf_curve(
         # `num_threshs` is validated in the function below
         threshs = _get_threshs_minmax_linspace(anomaly_maps, num_threshs)
 
-    elif threshs_choice == BinclfThreshsChoice.MEAN_FPR_OPTIMIZED:
+    elif threshs_choice == ThresholdMethod.MEAN_FPR_OPTIMIZED:
         raise NotImplementedError(f"TODO implement {threshs_choice.value}")  # noqa: EM102
 
     else:
         msg = (
-            f"Expected `threshs_choice` to be from {list(BinclfThreshsChoice.__members__)},"
+            f"Expected `threshs_choice` to be from {list(ThresholdMethod.__members__)},"
             f" but got '{threshs_choice.value}'"
         )
         raise NotImplementedError(msg)

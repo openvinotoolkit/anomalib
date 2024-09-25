@@ -8,7 +8,7 @@
 from enum import Enum
 
 
-class BinclfThreshsChoice(Enum):
+class ThresholdMethod(Enum):
     """Sequence of thresholds to use."""
 
     GIVEN: str = "given"
