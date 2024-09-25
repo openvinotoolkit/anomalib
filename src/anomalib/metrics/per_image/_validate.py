@@ -13,13 +13,10 @@ https://github.com/openvinotoolkit/anomalib/issues/2093
 
 import logging
 from collections import OrderedDict
-from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
 import torch
 from torch import Tensor
-
-from anomalib.data.utils.path import validate_path
 
 from .utils import images_classes_from_masks
 
@@ -447,40 +444,6 @@ def is_per_image_tprs(per_image_tprs: torch.Tensor, image_classes: torch.Tensor)
         raise ValueError(msg)
 
 
-def is_source_images_paths(paths: Sequence[str], expected_num_paths: int | None) -> None:
-    if not isinstance(paths, list):
-        msg = f"Expected paths to be a list, but got {type(paths)}."
-        raise TypeError(msg)
-
-    for idx, path in enumerate(paths):
-        try:
-            msg = f"Invalid path at index {idx}: {path}"
-            validate_path(
-                path,
-                # not necessary to exist because the metric can be computed
-                # directly from the anomaly maps and masks, without the images
-                should_exist=False,
-            )
-
-        except TypeError as ex:
-            raise TypeError(msg) from ex
-
-        except ValueError as ex:
-            raise ValueError(msg) from ex
-
-        if not isinstance(path, str):
-            # this will eventually be serialized to a file, so we don't want pathlib objects keep it simple
-            msg = f"Expected path to be a string, but got {type(path)}."
-            raise TypeError(msg)
-
-    if expected_num_paths is None:
-        return
-
-    if len(paths) != expected_num_paths:
-        msg = f"Invalid `paths` argument. Expected {expected_num_paths} paths, but got {len(paths)} instead."
-        raise ValueError(msg)
-
-
 def is_per_image_scores(per_image_scores: torch.Tensor) -> None:
     if per_image_scores.ndim != 1:
         msg = f"Expected per-image scores to be 1D, but got {per_image_scores.ndim}D."
@@ -601,7 +564,6 @@ def is_scores_per_model_tensor(scores_per_model: dict[str, Tensor] | OrderedDict
 
 def is_scores_per_model_aupimoresult(
     scores_per_model: dict[str, "AUPIMOResult"] | OrderedDict[str, "AUPIMOResult"],
-    missing_paths_ok: bool,
 ) -> None:
     first_key_value = None
 
@@ -619,21 +581,6 @@ def is_scores_per_model_aupimoresult(
                 f"{first_aupimoresult.fpr_bounds} ({first_model_name})."
             )
             raise ValueError(msg)
-
-    available_paths = [tuple(scores.paths) for scores in scores_per_model.values() if scores.paths is not None]
-
-    if len(set(available_paths)) > 1:
-        msg = (
-            "Expected AUPIMOResult objects in scores per model to have the same paths, "
-            "but got different paths for different models."
-        )
-        raise ValueError(msg)
-
-    if len(available_paths) != len(scores_per_model):
-        msg = "Some models have paths, while others are missing them."
-        if not missing_paths_ok:
-            raise ValueError(msg)
-        logger.warning(msg)
 
 
 def is_scores_per_model(
@@ -680,4 +627,4 @@ def is_scores_per_model(
         {model_name: scores.aupimos for model_name, scores in scores_per_model.items()},
     )
 
-    is_scores_per_model_aupimoresult(scores_per_model, missing_paths_ok=True)
+    is_scores_per_model_aupimoresult(scores_per_model)

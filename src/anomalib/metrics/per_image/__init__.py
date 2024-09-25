@@ -8,7 +8,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from .enums import BinclfThreshsChoice, StatsOutliersPolicy, StatsRepeatedPolicy
-from .pimo import AUPIMO, PIMO, AUPIMOResult, PIMOResult, aupimo_scores, pimo_curves
+from .pimo import AUPIMO, PIMO, AUPIMOResult, PIMOResult
 from .utils import (
     compare_models_pairwise_ttest_rel,
     compare_models_pairwise_wilcoxon,
@@ -24,9 +24,6 @@ __all__ = [
     # result classes
     "PIMOResult",
     "AUPIMOResult",
-    # functional interfaces
-    "pimo_curves",
-    "aupimo_scores",
     # torchmetrics interfaces
     "PIMO",
     "AUPIMO",

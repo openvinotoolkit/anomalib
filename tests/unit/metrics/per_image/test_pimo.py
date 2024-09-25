@@ -224,14 +224,6 @@ def test_pimo(
             expected_image_classes,
         )
 
-    # functional interface
-    pimoresult = pimo.pimo_curves(
-        anomaly_maps,
-        masks,
-        num_threshs=7,
-    )
-    do_assertions(pimoresult)
-
     # metric interface
     metric = pimo.PIMO(
         num_threshs=7,
@@ -313,16 +305,6 @@ def test_aupimo_values(
         thresh_lower_bound = aupimoresult.thresh_lower_bound
         thresh_upper_bound = aupimoresult.thresh_upper_bound
         assert anomaly_maps.min() <= thresh_lower_bound < thresh_upper_bound <= anomaly_maps.max()
-
-    # functional interface
-    pimoresult_from_functional, aupimoresult_from_functional = pimo.aupimo_scores(
-        anomaly_maps,
-        masks,
-        num_threshs=7,
-        fpr_bounds=fpr_bounds,
-        force=True,
-    )
-    do_assertions(pimoresult_from_functional, aupimoresult_from_functional)
 
     # metric interface
     metric = pimo.AUPIMO(

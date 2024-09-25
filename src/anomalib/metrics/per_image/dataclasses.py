@@ -29,16 +29,12 @@ class PIMOResult:
         shared_fpr (torch.Tensor): K values of the shared FPR metric at the corresponding thresholds
         per_image_tprs (torch.Tensor): for each of the N images, the K values of in-image TPR at the corresponding
             thresholds
-        paths (list[str]) (optional): [metadata] paths to the source images to which the PIMO curves correspond
     """
 
     # data
     threshs: torch.Tensor = field(repr=False)  # shape => (K,)
     shared_fpr: torch.Tensor = field(repr=False)  # shape => (K,)
     per_image_tprs: torch.Tensor = field(repr=False)  # shape => (N, K)
-
-    # optional metadata
-    paths: list[str] | None = field(repr=False, default=None)
 
     @property
     def num_threshs(self) -> int:
@@ -65,9 +61,6 @@ class PIMOResult:
             _validate.is_threshs(self.threshs)
             _validate.is_rate_curve(self.shared_fpr, nan_allowed=False, decreasing=True)  # is_shared_apr
             _validate.is_per_image_tprs(self.per_image_tprs, self.image_classes)
-
-            if self.paths is not None:
-                _validate.is_source_images_paths(self.paths, expected_num_paths=self.per_image_tprs.shape[0])
 
         except (TypeError, ValueError) as ex:
             msg = f"Invalid inputs for {self.__class__.__name__} object. Cause: {ex}."
@@ -134,9 +127,6 @@ class AUPIMOResult:
     thresh_upper_bound: float = field(repr=False)
     aupimos: torch.Tensor = field(repr=False)  # shape => (N,)
 
-    # optional metadata
-    paths: list[str] | None = field(repr=False, default=None)
-
     @property
     def num_images(self) -> int:
         """Number of images."""
@@ -184,9 +174,6 @@ class AUPIMOResult:
 
             _validate.is_thresh_bounds((self.thresh_lower_bound, self.thresh_upper_bound))
 
-            if self.paths is not None:
-                _validate.is_source_images_paths(self.paths, expected_num_paths=self.aupimos.shape[0])
-
         except (TypeError, ValueError) as ex:
             msg = f"Invalid inputs for {self.__class__.__name__} object. Cause: {ex}."
             raise TypeError(msg) from ex
@@ -198,7 +185,6 @@ class AUPIMOResult:
         fpr_bounds: tuple[float, float],
         num_threshs_auc: int,
         aupimos: torch.Tensor,
-        paths: list[str] | None = None,
     ) -> "AUPIMOResult":
         """Return an AUPIMO result object from a PIMO result object.
 
@@ -225,12 +211,6 @@ class AUPIMOResult:
             msg = "Expected all anomalous images to have valid AUPIMOs (not nan), but some have NaN values."
             raise TypeError(msg)
 
-        if pimoresult.paths is not None:
-            paths = pimoresult.paths
-
-        elif paths is not None:
-            _validate.is_source_images_paths(paths, expected_num_paths=pimoresult.num_images)
-
         fpr_lower_bound, fpr_upper_bound = fpr_bounds
         # recall: fpr upper/lower bounds are the same as the thresh lower/upper bounds
         _, thresh_lower_bound, __ = pimoresult.thresh_at(fpr_upper_bound)
@@ -243,5 +223,4 @@ class AUPIMOResult:
             thresh_lower_bound=float(thresh_lower_bound),
             thresh_upper_bound=float(thresh_upper_bound),
             aupimos=aupimos,
-            paths=paths,
         )

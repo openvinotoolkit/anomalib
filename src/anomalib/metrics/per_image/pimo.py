@@ -157,10 +157,16 @@ class PIMO(Metric):
             raise RuntimeError(msg)
         anomaly_maps = torch.concat(self.anomaly_maps, dim=0)
         masks = torch.concat(self.masks, dim=0)
-        return pimo_curves(
+
+        threshs, shared_fpr, per_image_tprs, _ = functional.pimo_curves(
             anomaly_maps,
             masks,
             self.num_threshs,
+        )
+        return PIMOResult(
+            threshs=threshs,
+            shared_fpr=shared_fpr,
+            per_image_tprs=per_image_tprs,
         )
 
 
@@ -261,134 +267,33 @@ class AUPIMO(PIMO):
         anomaly_maps = torch.concat(self.anomaly_maps, dim=0)
         masks = torch.concat(self.masks, dim=0)
         force = force if force is not None else self.force
-        pimoresult, aupimoresult = aupimo_scores(
+
+        # other validations are done in the numpy code
+
+        threshs, shared_fpr, per_image_tprs, _, aupimos, num_threshs_auc = functional.aupimo_scores(
             anomaly_maps,
             masks,
             self.num_threshs,
             fpr_bounds=self.fpr_bounds,
             force=force,
         )
+
+        pimoresult = PIMOResult(
+            threshs=threshs,
+            shared_fpr=shared_fpr,
+            per_image_tprs=per_image_tprs,
+        )
+        aupimoresult = AUPIMOResult.from_pimoresult(
+            pimoresult,
+            fpr_bounds=self.fpr_bounds,
+            # not `num_threshs`!
+            # `num_threshs` is the number of thresholds used to compute the PIMO curve
+            # this is the number of thresholds used to compute the AUPIMO integral
+            num_threshs_auc=num_threshs_auc,
+            aupimos=aupimos,
+        )
         if self.return_average:
             # normal images have NaN AUPIMO scores
             is_nan = torch.isnan(aupimoresult.aupimos)
             return aupimoresult.aupimos[~is_nan].mean()
         return pimoresult, aupimoresult
-
-
-def pimo_curves(
-    anomaly_maps: torch.Tensor,
-    masks: torch.Tensor,
-    num_threshs: int,
-    paths: list[str] | None = None,
-) -> PIMOResult:
-    """Compute the Per-IMage Overlap (PIMO, pronounced pee-mo) curves.
-
-    This torch interface is a wrapper around the numpy code.
-    The tensors are converted to numpy arrays and then passed and validated in the numpy code.
-    The results are converted back to tensors and wrapped in an dataclass object.
-
-    PIMO is a curve of True Positive Rate (TPR) values on each image across multiple anomaly score thresholds.
-    The anomaly score thresholds are indexed by a (cross-image shared) value of False Positive Rate (FPR) measure on
-    the normal images.
-
-    Details: `anomalib.metrics.per_image.pimo`.
-
-    Args' notation:
-        N: number of images
-        H: image height
-        W: image width
-        K: number of thresholds
-
-    Args:
-        anomaly_maps: floating point anomaly score maps of shape (N, H, W)
-        masks: binary (bool or int) ground truth masks of shape (N, H, W)
-        num_threshs: number of thresholds to compute (K)
-        paths: paths to the source images to which the PIMO curves correspond. Default: None.
-
-    Returns:
-        PIMOResult: PIMO curves dataclass object. See `PIMOResult` for details.
-    """
-    if paths is not None:
-        _validate.is_source_images_paths(paths, expected_num_paths=anomaly_maps.shape[0])
-
-    # other validations are done in the numpy code
-    threshs, shared_fpr, per_image_tprs, _ = functional.pimo_curves(
-        anomaly_maps,
-        masks,
-        num_threshs,
-    )
-    # _ is `image_classes` -- not needed here because it's a property in the result object
-
-    return PIMOResult(
-        threshs=threshs,
-        shared_fpr=shared_fpr,
-        per_image_tprs=per_image_tprs,
-        paths=paths,
-    )
-
-
-def aupimo_scores(
-    anomaly_maps: torch.Tensor,
-    masks: torch.Tensor,
-    num_threshs: int = 300_000,
-    fpr_bounds: tuple[float, float] = (1e-5, 1e-4),
-    force: bool = False,
-    paths: list[str] | None = None,
-) -> tuple[PIMOResult, AUPIMOResult]:
-    """Compute the PIMO curves and their Area Under the Curve (i.e. AUPIMO) scores.
-
-    This torch interface is a wrapper around the numpy code.
-    The tensors are converted to numpy arrays and then passed and validated in the numpy code.
-    The results are converted back to tensors and wrapped in an dataclass object.
-
-    Scores are computed from the integration of the PIMO curves within the given FPR bounds, then normalized to [0, 1].
-    It can be thought of as the average TPR of the PIMO curves within the given FPR bounds.
-
-    Details: `anomalib.metrics.per_image.pimo`.
-
-    Args' notation:
-        N: number of images
-        H: image height
-        W: image width
-        K: number of thresholds
-
-    Args:
-        anomaly_maps: floating point anomaly score maps of shape (N, H, W)
-        masks: binary (bool or int) ground truth masks of shape (N, H, W)
-        num_threshs: number of thresholds to compute (K)
-        fpr_bounds: lower and upper bounds of the FPR integration range
-        force: whether to force the computation despite bad conditions
-        paths: paths to the source images to which the AUPIMO scores correspond.
-
-    Returns:
-        tuple[PIMOResult, AUPIMOResult]: PIMO and AUPIMO results dataclass objects. See `PIMOResult` and `AUPIMOResult`.
-    """
-    if paths is not None:
-        _validate.is_source_images_paths(paths, expected_num_paths=anomaly_maps.shape[0])
-
-    # other validations are done in the numpy code
-
-    threshs, shared_fpr, per_image_tprs, _, aupimos, num_threshs_auc = functional.aupimo_scores(
-        anomaly_maps,
-        masks,
-        num_threshs,
-        fpr_bounds=fpr_bounds,
-        force=force,
-    )
-
-    pimoresult = PIMOResult(
-        threshs=threshs,
-        shared_fpr=shared_fpr,
-        per_image_tprs=per_image_tprs,
-        paths=paths,
-    )
-    aupimoresult = AUPIMOResult.from_pimoresult(
-        pimoresult,
-        fpr_bounds=fpr_bounds,
-        # not `num_threshs`!
-        # `num_threshs` is the number of thresholds used to compute the PIMO curve
-        # this is the number of thresholds used to compute the AUPIMO integral
-        num_threshs_auc=num_threshs_auc,
-        aupimos=aupimos,
-    )
-    return pimoresult, aupimoresult
