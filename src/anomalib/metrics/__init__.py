@@ -20,7 +20,7 @@ from .collection import AnomalibMetricCollection
 from .f1_max import F1Max
 from .f1_score import F1Score
 from .min_max import MinMax
-from .per_image import AUPIMO, PIMO, aupimo_scores, pimo_curves
+from .per_image import AUPIMO, PIMO
 from .precision_recall_curve import BinaryPrecisionRecallCurve
 from .pro import PRO
 from .threshold import F1AdaptiveThreshold, ManualThreshold
@@ -38,8 +38,6 @@ __all__ = [
     "MinMax",
     "PRO",
     "per_image",
-    "pimo_curves",
-    "aupimo_scores",
     "PIMO",
     "AUPIMO",
 ]

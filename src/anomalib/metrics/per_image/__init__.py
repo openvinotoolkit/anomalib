@@ -7,9 +7,8 @@
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from .binclf_curve import BinclfThreshsChoice
-from .enums import StatsOutliersPolicy, StatsRepeatedPolicy
-from .pimo import AUPIMO, PIMO, AUPIMOResult, PIMOResult, aupimo_scores, pimo_curves
+from .enums import StatsOutliersPolicy, StatsRepeatedPolicy, ThresholdMethod
+from .pimo import AUPIMO, PIMO, AUPIMOResult, PIMOResult
 from .utils import (
     compare_models_pairwise_ttest_rel,
     compare_models_pairwise_wilcoxon,
@@ -19,15 +18,12 @@ from .utils import (
 
 __all__ = [
     # constants
-    "BinclfThreshsChoice",
+    "ThresholdMethod",
     "StatsOutliersPolicy",
     "StatsRepeatedPolicy",
     # result classes
     "PIMOResult",
     "AUPIMOResult",
-    # functional interfaces
-    "pimo_curves",
-    "aupimo_scores",
     # torchmetrics interfaces
     "PIMO",
     "AUPIMO",

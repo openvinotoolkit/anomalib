@@ -8,6 +8,14 @@
 from enum import Enum
 
 
+class ThresholdMethod(Enum):
+    """Sequence of thresholds to use."""
+
+    GIVEN: str = "given"
+    MINMAX_LINSPACE: str = "minmax-linspace"
+    MEAN_FPR_OPTIMIZED: str = "mean-fpr-optimized"
+
+
 class StatsOutliersPolicy(Enum):
     """How to handle outliers in per-image metrics boxplots. Use them? Only high? Only low? Both?
 

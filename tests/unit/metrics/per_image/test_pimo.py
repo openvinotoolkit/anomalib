@@ -209,7 +209,7 @@ def test_pimo(
     """Test if `pimo()` returns the expected values."""
 
     def do_assertions(pimoresult: PIMOResult) -> None:
-        threshs = pimoresult.threshs
+        threshs = pimoresult.thresholds
         shared_fpr = pimoresult.shared_fpr
         per_image_tprs = pimoresult.per_image_tprs
         image_classes = pimoresult.image_classes
@@ -223,14 +223,6 @@ def test_pimo(
             expected_per_image_tprs,
             expected_image_classes,
         )
-
-    # functional interface
-    pimoresult = pimo.pimo_curves(
-        anomaly_maps,
-        masks,
-        num_threshs=7,
-    )
-    do_assertions(pimoresult)
 
     # metric interface
     metric = pimo.PIMO(
@@ -292,7 +284,7 @@ def test_aupimo_values(
 
         # test data
         # from pimo result
-        threshs = pimoresult.threshs
+        threshs = pimoresult.thresholds
         shared_fpr = pimoresult.shared_fpr
         per_image_tprs = pimoresult.per_image_tprs
         image_classes = pimoresult.image_classes
@@ -313,16 +305,6 @@ def test_aupimo_values(
         thresh_lower_bound = aupimoresult.thresh_lower_bound
         thresh_upper_bound = aupimoresult.thresh_upper_bound
         assert anomaly_maps.min() <= thresh_lower_bound < thresh_upper_bound <= anomaly_maps.max()
-
-    # functional interface
-    pimoresult_from_functional, aupimoresult_from_functional = pimo.aupimo_scores(
-        anomaly_maps,
-        masks,
-        num_threshs=7,
-        fpr_bounds=fpr_bounds,
-        force=True,
-    )
-    do_assertions(pimoresult_from_functional, aupimoresult_from_functional)
 
     # metric interface
     metric = pimo.AUPIMO(

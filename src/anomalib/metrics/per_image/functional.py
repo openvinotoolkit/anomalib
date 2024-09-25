@@ -16,47 +16,10 @@ import numpy as np
 import torch
 
 from . import _validate, binclf_curve
-from .binclf_curve import BinclfThreshsChoice
+from .enums import ThresholdMethod
+from .utils import images_classes_from_masks
 
 logger = logging.getLogger(__name__)
-
-
-# =========================================== AUX ===========================================
-
-
-def _images_classes_from_masks(masks: torch.Tensor) -> torch.Tensor:
-    """Deduce the image classes from the masks."""
-    _validate.is_masks(masks)
-    return (masks == 1).any(axis=(1, 2)).to(torch.int32)
-
-
-# =========================================== ARGS VALIDATION ===========================================
-
-
-def _validate_has_at_least_one_anomalous_image(masks: torch.Tensor) -> None:
-    image_classes = _images_classes_from_masks(masks)
-    if (image_classes == 1).sum() == 0:
-        msg = "Expected at least one ANOMALOUS image, but found none."
-        raise ValueError(msg)
-
-
-def _validate_has_at_least_one_normal_image(masks: torch.Tensor) -> None:
-    image_classes = _images_classes_from_masks(masks)
-    if (image_classes == 0).sum() == 0:
-        msg = "Expected at least one NORMAL image, but found none."
-        raise ValueError(msg)
-
-
-def _joint_validate_threshs_shared_fpr(threshs: torch.Tensor, shared_fpr: torch.Tensor) -> None:
-    if threshs.shape[0] != shared_fpr.shape[0]:
-        msg = (
-            "Expected `threshs` and `shared_fpr` to have the same number of elements, "
-            f"but got {threshs.shape[0]} != {shared_fpr.shape[0]}"
-        )
-        raise ValueError(msg)
-
-
-# =========================================== PIMO ===========================================
 
 
 def pimo_curves(
@@ -95,10 +58,10 @@ def pimo_curves(
     _validate.is_anomaly_maps(anomaly_maps)
     _validate.is_masks(masks)
     _validate.is_same_shape(anomaly_maps, masks)
-    _validate_has_at_least_one_anomalous_image(masks)
-    _validate_has_at_least_one_normal_image(masks)
+    _validate.has_at_least_one_anomalous_image(masks)
+    _validate.has_at_least_one_normal_image(masks)
 
-    image_classes = _images_classes_from_masks(masks)
+    image_classes = images_classes_from_masks(masks)
 
     # the thresholds are computed here so that they can be restrained to the normal images
     # therefore getting a better resolution in terms of FPR quantization
@@ -114,7 +77,7 @@ def pimo_curves(
     threshs, binclf_curves = binclf_curve.per_image_binclf_curve(
         anomaly_maps=anomaly_maps,
         masks=masks,
-        threshs_choice=BinclfThreshsChoice.GIVEN.value,
+        threshs_choice=ThresholdMethod.GIVEN.value,
         threshs_given=threshs,
         num_threshs=None,
     )
@@ -332,7 +295,7 @@ def thresh_at_shared_fpr_level(
     """
     _validate.is_threshs(threshs)
     _validate.is_rate_curve(shared_fpr, nan_allowed=False, decreasing=True)
-    _joint_validate_threshs_shared_fpr(threshs, shared_fpr)
+    _validate.joint_validate_threshs_shared_fpr(threshs, shared_fpr)
     _validate.is_rate(fpr_level, zero_ok=True, one_ok=True)
 
     shared_fpr_min, shared_fpr_max = shared_fpr.min(), shared_fpr.max()

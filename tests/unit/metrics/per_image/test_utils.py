@@ -42,7 +42,6 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
         "thresh_lower_bound": 1.0,
         "thresh_upper_bound": 2.0,
     }
-    fake_paths = [f"/path/to/file_{i}" for i in range(num_images)]
     scores_per_model_dicts = [
         ({"a": aucs1, "b": aucs2},),
         ({"a": aucs1, "b": aucs2, "c": aucs3},),
@@ -56,9 +55,9 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
         ),
         (
             {
-                "a": AUPIMOResult(**{**mock_aupimoresult_stuff, "aupimos": aucs1, "paths": fake_paths}),
-                "b": AUPIMOResult(**{**mock_aupimoresult_stuff, "aupimos": aucs2, "paths": fake_paths}),
-                "c": AUPIMOResult(**{**mock_aupimoresult_stuff, "aupimos": aucs3, "paths": fake_paths}),
+                "a": AUPIMOResult(**{**mock_aupimoresult_stuff, "aupimos": aucs1}),
+                "b": AUPIMOResult(**{**mock_aupimoresult_stuff, "aupimos": aucs2}),
+                "c": AUPIMOResult(**{**mock_aupimoresult_stuff, "aupimos": aucs3}),
             },
         ),
     ]

@@ -14,7 +14,6 @@ The thresholds are shared by all instances/images, but their binclf are computed
 
 import itertools
 import logging
-from enum import Enum
 from functools import partial
 
 import numpy as np
@@ -22,57 +21,9 @@ import torch
 from numpy import ndarray
 
 from . import _validate
+from .enums import ThresholdMethod
 
 logger = logging.getLogger(__name__)
-
-# =========================================== CONSTANTS ===========================================
-
-
-class BinclfThreshsChoice(Enum):
-    """Sequence of thresholds to use."""
-
-    GIVEN: str = "given"
-    MINMAX_LINSPACE: str = "minmax-linspace"
-    MEAN_FPR_OPTIMIZED: str = "mean-fpr-optimized"
-
-
-# =========================================== ARGS VALIDATION ===========================================
-
-
-def _validate_is_scores_batch(scores_batch: torch.Tensor) -> None:
-    """scores_batch (torch.Tensor): floating (N, D)."""
-    if not isinstance(scores_batch, torch.Tensor):
-        msg = f"Expected `scores_batch` to be an torch.Tensor, but got {type(scores_batch)}"
-        raise TypeError(msg)
-
-    if not scores_batch.dtype.is_floating_point:
-        msg = (
-            "Expected `scores_batch` to be an floating torch.Tensor with anomaly scores_batch,"
-            f" but got torch.Tensor with dtype {scores_batch.dtype}"
-        )
-        raise TypeError(msg)
-
-    if scores_batch.ndim != 2:
-        msg = f"Expected `scores_batch` to be 2D, but got {scores_batch.ndim}"
-        raise ValueError(msg)
-
-
-def _validate_is_gts_batch(gts_batch: torch.Tensor) -> None:
-    """gts_batch (torch.Tensor): boolean (N, D)."""
-    if not isinstance(gts_batch, torch.Tensor):
-        msg = f"Expected `gts_batch` to be an torch.Tensor, but got {type(gts_batch)}"
-        raise TypeError(msg)
-
-    if gts_batch.dtype != torch.bool:
-        msg = (
-            "Expected `gts_batch` to be an boolean torch.Tensor with anomaly scores_batch,"
-            f" but got torch.Tensor with dtype {gts_batch.dtype}"
-        )
-        raise TypeError(msg)
-
-    if gts_batch.ndim != 2:
-        msg = f"Expected `gts_batch` to be 2D, but got {gts_batch.ndim}"
-        raise ValueError(msg)
 
 
 def _binclf_one_curve(scores: ndarray, gts: ndarray, threshs: ndarray) -> ndarray:
@@ -186,8 +137,8 @@ def binclf_multiple_curves(
 
         Thresholds are sorted in ascending order.
     """
-    _validate_is_scores_batch(scores_batch)
-    _validate_is_gts_batch(gts_batch)
+    _validate.is_scores_batch(scores_batch)
+    _validate.is_gts_batch(gts_batch)
     _validate.is_same_shape(scores_batch, gts_batch)
     _validate.is_threshs(threshs)
     # TODO(ashwinvaidya17): this is kept as numpy for now because it is much faster.
@@ -219,7 +170,7 @@ def _get_threshs_minmax_linspace(anomaly_maps: torch.Tensor, num_threshs: int) -
 def per_image_binclf_curve(
     anomaly_maps: torch.Tensor,
     masks: torch.Tensor,
-    threshs_choice: BinclfThreshsChoice | str = BinclfThreshsChoice.MINMAX_LINSPACE.value,
+    threshs_choice: ThresholdMethod | str = ThresholdMethod.MINMAX_LINSPACE.value,
     threshs_given: torch.Tensor | None = None,
     num_threshs: int | None = None,
 ) -> tuple[torch.Tensor, torch.Tensor]:
@@ -267,14 +218,14 @@ def per_image_binclf_curve(
 
             Thresholds are sorted in ascending order.
     """
-    threshs_choice = BinclfThreshsChoice(threshs_choice)
+    threshs_choice = ThresholdMethod(threshs_choice)
     _validate.is_anomaly_maps(anomaly_maps)
     _validate.is_masks(masks)
     _validate.is_same_shape(anomaly_maps, masks)
 
     threshs: torch.Tensor
 
-    if threshs_choice == BinclfThreshsChoice.GIVEN:
+    if threshs_choice == ThresholdMethod.GIVEN:
         assert threshs_given is not None
         _validate.is_threshs(threshs_given)
         if num_threshs is not None:
@@ -284,7 +235,7 @@ def per_image_binclf_curve(
             )
         threshs = threshs_given.to(anomaly_maps.dtype)
 
-    elif threshs_choice == BinclfThreshsChoice.MINMAX_LINSPACE:
+    elif threshs_choice == ThresholdMethod.MINMAX_LINSPACE:
         assert num_threshs is not None
         if threshs_given is not None:
             logger.warning(
@@ -294,12 +245,12 @@ def per_image_binclf_curve(
         # `num_threshs` is validated in the function below
         threshs = _get_threshs_minmax_linspace(anomaly_maps, num_threshs)
 
-    elif threshs_choice == BinclfThreshsChoice.MEAN_FPR_OPTIMIZED:
+    elif threshs_choice == ThresholdMethod.MEAN_FPR_OPTIMIZED:
         raise NotImplementedError(f"TODO implement {threshs_choice.value}")  # noqa: EM102
 
     else:
         msg = (
-            f"Expected `threshs_choice` to be from {list(BinclfThreshsChoice.__members__)},"
+            f"Expected `threshs_choice` to be from {list(ThresholdMethod.__members__)},"
             f" but got '{threshs_choice.value}'"
         )
         raise NotImplementedError(msg)
@@ -329,9 +280,6 @@ def per_image_binclf_curve(
         raise RuntimeError(msg) from ex
 
     return threshs, binclf_curves
-
-
-# =========================================== RATE METRICS ===========================================
 
 
 def per_image_tpr(binclf_curves: torch.Tensor) -> torch.Tensor:
