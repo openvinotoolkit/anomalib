@@ -55,7 +55,8 @@ class Dsr(AnomalyModule):
 
         self.second_phase: int
 
-    def prepare_pretrained_model(self) -> Path:
+    @staticmethod
+    def prepare_pretrained_model() -> Path:
         """Download pre-trained models if they don't exist."""
         pretrained_models_dir = Path("./pre_trained/")
         if not (pretrained_models_dir / "vq_model_pretrained_128_4096.pckl").is_file():

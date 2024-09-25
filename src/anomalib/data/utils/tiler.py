@@ -181,7 +181,7 @@ class Tiler:
                 msg,
             )
 
-        if self.mode not in (ImageUpscaleMode.PADDING, ImageUpscaleMode.INTERPOLATION):
+        if self.mode not in {ImageUpscaleMode.PADDING, ImageUpscaleMode.INTERPOLATION}:
             msg = f"Unknown tiling mode {self.mode}. Available modes are padding and interpolation"
             raise ValueError(msg)
 

@@ -1,7 +1,7 @@
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # SETUP CONFIGURATION.                                                        #
 [build-system]
-requires = ["setuptools>=42", "wheel"]
+requires = ["setuptools>=64.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -46,7 +46,7 @@ core = [
     "matplotlib>=3.4.3",
     "opencv-python>=4.5.3.56",
     "pandas>=1.1.0",
-    "timm<=1.0.7,>=1.0.7",
+    "timm",
     "lightning>=2.2",
     "torch>=2",
     "torchmetrics>=1.3.2",
@@ -68,7 +68,7 @@ docs = [
     "myst-parser",
     "nbsphinx",
     "pandoc",
-    "sphinx<8.0",  # 7.0 breaks readthedocs builds.
+    "sphinx",
     "sphinx_autodoc_typehints",
     "sphinx_book_theme",
     "sphinx-copybutton",
@@ -96,8 +96,11 @@ version = { attr = "anomalib.__version__" }
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # RUFF CONFIGURATION                                                          #
 [tool.ruff]
+# Enable preview features
+preview = true
+
 # Enable rules
-select = [
+lint.select = [
     "F",    # Pyflakes (`F`)
     "E",    # pycodestyle error (`E`)
     "W",    # pycodestyle warning (`W`)
@@ -148,7 +151,7 @@ select = [
     # "LOG",  # flake8-logging (`LOG`) - ERROR: Unknown rule selector: `LOG`
 ]
 
-ignore = [
+lint.ignore = [
     # pydocstyle
     "D107", # Missing docstring in __init__
 
@@ -157,6 +160,30 @@ ignore = [
     "PLR2004", # consider replacing with a constant variable
     "PLR0912", # Too many branches
     "PLR0915", # Too many statements
+
+    # NOTE: Disable the following rules for now.
+    "A004", # import is shadowing a Python built-in
+    "A005", # Module is shadowing a Python built-in
+    "B909", # Mutation to loop iterable during iteration
+    "PLC2701", # Private name import
+    "PLC0415", # import should be at the top of the file
+    "PLR0917", # Too many positional arguments
+    "E226", # Missing whitespace around arithmetic operator
+    "E266", # Too many leading `#` before block comment
+
+    "F822", # Undefined name `` in `__all__`
+
+    "PGH004", # Use specific rule codes when using 'ruff: noqa'
+    "PT001", # Use @pytest.fixture over @pytest.fixture()
+    "PLR6104", # Use `*=` to perform an augmented assignment directly
+    "PLR0914", # Too many local variables
+    "PLC0206", # Extracting value from dictionary without calling `.items()`
+    "PLC1901", # can be simplified
+
+    "RUF021", # Parenthesize the `and` subexpression
+    "RUF022", # Apply an isort-style sorting to '__all__'
+    "S404", # `subprocess` module is possibly insecure
+    # End of disable rules
 
     # flake8-annotations
     "ANN101", # Missing-type-self
@@ -178,8 +205,8 @@ ignore = [
 ]
 
 # Allow autofix for all enabled rules (when `--fix`) is provided.
-fixable = ["ALL"]
-unfixable = []
+lint.fixable = ["ALL"]
+lint.unfixable = []
 
 # Exclude a variety of commonly ignored directories.
 exclude = [
@@ -209,7 +236,7 @@ exclude = [
 line-length = 120
 
 # Allow unused variables when underscore-prefixed.
-dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+lint.dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
 
 # Assume Python 3.10.
 target-version = "py310"
@@ -217,14 +244,22 @@ target-version = "py310"
 # Allow imports relative to the "src" and "tests" directories.
 src = ["src", "tests"]
 
-[tool.ruff.mccabe]
+[tool.ruff.lint.mccabe]
 # Unlike Flake8, default to a complexity level of 10.
 max-complexity = 15
 
 
-[tool.ruff.pydocstyle]
+[tool.ruff.lint.pydocstyle]
 convention = "google"
 
+[tool.ruff.lint.flake8-copyright]
+notice-rgx = """
+# Copyright \\(C\\) (\\d{4}(-\\d{4})?) Intel Corporation
+# SPDX-License-Identifier: Apache-2\\.0
+"""
+
+[tool.ruff.lint.per-file-ignores]
+"notebooks/**/*" = ["CPY001"]
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # MYPY CONFIGURATION.                                                         #

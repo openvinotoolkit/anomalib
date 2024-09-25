@@ -1,5 +1,8 @@
 """Unit tests for Anomalib's Gaussian Mixture Model."""
 
+# Copyright (C) 2022-2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
 import logging
 
 import torch

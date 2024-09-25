@@ -35,10 +35,10 @@ class ModelCheckpoint(LightningCheckpoint):
         Overrides the parent method to allow saving during both the ``FITTING`` and ``VALIDATING`` states, and to allow
         saving when the global step and last_global_step_saved are both 0 (only for zero-/few-shot models).
         """
-        is_zero_or_few_shot = trainer.model.learning_type in [LearningType.ZERO_SHOT, LearningType.FEW_SHOT]
+        is_zero_or_few_shot = trainer.lightning_module.learning_type in {LearningType.ZERO_SHOT, LearningType.FEW_SHOT}
         return (
             bool(trainer.fast_dev_run)  # disable checkpointing with fast_dev_run
-            or trainer.state.fn not in [TrainerFn.FITTING, TrainerFn.VALIDATING]  # don't save anything during non-fit
+            or trainer.state.fn not in {TrainerFn.FITTING, TrainerFn.VALIDATING}  # don't save anything during non-fit
             or trainer.sanity_checking  # don't save anything during sanity check
             or (self._last_global_step_saved == trainer.global_step and not is_zero_or_few_shot)
         )
@@ -52,7 +52,7 @@ class ModelCheckpoint(LightningCheckpoint):
         if self._save_on_train_epoch_end is not None:
             return self._save_on_train_epoch_end
 
-        if trainer.model.learning_type in [LearningType.ZERO_SHOT, LearningType.FEW_SHOT]:
+        if trainer.lightning_module.learning_type in {LearningType.ZERO_SHOT, LearningType.FEW_SHOT}:
             return False
 
         return super()._should_save_on_train_epoch_end(trainer)

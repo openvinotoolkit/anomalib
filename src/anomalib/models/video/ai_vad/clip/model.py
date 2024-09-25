@@ -45,13 +45,11 @@ class Bottleneck(nn.Module):
         if stride > 1 or inplanes != planes * Bottleneck.expansion:
             # downsampling layer is prepended with an avgpool, and the subsequent convolution has stride 1
             self.downsample = nn.Sequential(
-                OrderedDict(
-                    [
-                        ("-1", nn.AvgPool2d(stride)),
-                        ("0", nn.Conv2d(inplanes, planes * self.expansion, 1, stride=1, bias=False)),
-                        ("1", nn.BatchNorm2d(planes * self.expansion)),
-                    ]
-                )
+                OrderedDict([
+                    ("-1", nn.AvgPool2d(stride)),
+                    ("0", nn.Conv2d(inplanes, planes * self.expansion, 1, stride=1, bias=False)),
+                    ("1", nn.BatchNorm2d(planes * self.expansion)),
+                ])
             )
 
     def forward(self, x: torch.Tensor):
@@ -192,13 +190,11 @@ class ResidualAttentionBlock(nn.Module):
         self.attn = nn.MultiheadAttention(d_model, n_head)
         self.ln_1 = LayerNorm(d_model)
         self.mlp = nn.Sequential(
-            OrderedDict(
-                [
-                    ("c_fc", nn.Linear(d_model, d_model * 4)),
-                    ("gelu", QuickGELU()),
-                    ("c_proj", nn.Linear(d_model * 4, d_model)),
-                ]
-            )
+            OrderedDict([
+                ("c_fc", nn.Linear(d_model, d_model * 4)),
+                ("gelu", QuickGELU()),
+                ("c_proj", nn.Linear(d_model * 4, d_model)),
+            ])
         )
         self.ln_2 = LayerNorm(d_model)
         self.attn_mask = attn_mask
@@ -430,9 +426,9 @@ def build_model(state_dict: dict):
 
     if vit:
         vision_width = state_dict["visual.conv1.weight"].shape[0]
-        vision_layers = len(
-            [k for k in state_dict.keys() if k.startswith("visual.") and k.endswith(".attn.in_proj_weight")]
-        )
+        vision_layers = len([
+            k for k in state_dict.keys() if k.startswith("visual.") and k.endswith(".attn.in_proj_weight")
+        ])
         vision_patch_size = state_dict["visual.conv1.weight"].shape[-1]
         grid_size = round((state_dict["visual.positional_embedding"].shape[0] - 1) ** 0.5)
         image_resolution = vision_patch_size * grid_size

@@ -26,7 +26,7 @@ from anomalib.cli.utils.installation import (
 def requirements_file() -> Path:
     """Create a temporary requirements file with some example requirements."""
     requirements = ["numpy==1.19.5", "opencv-python-headless>=4.5.1.48"]
-    with tempfile.NamedTemporaryFile(mode="w", delete=False) as f:
+    with tempfile.NamedTemporaryFile(mode="w", delete=False, encoding="utf-8") as f:
         f.write("\n".join(requirements))
         return Path(f.name)
 
