@@ -31,212 +31,6 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-# =========================================== ARGS VALIDATION ===========================================
-def _validate_is_per_image_scores(per_image_scores: torch.Tensor) -> None:
-    if per_image_scores.ndim != 1:
-        msg = f"Expected per-image scores to be 1D, but got {per_image_scores.ndim}D."
-        raise ValueError(msg)
-
-
-def _validate_is_image_class(image_class: int) -> None:
-    if image_class not in {0, 1}:
-        msg = f"Expected image class to be either 0 for 'normal' or 1 for 'anomalous', but got {image_class}."
-        raise ValueError(msg)
-
-
-def _validate_is_models_ordered(models_ordered: tuple[str, ...]) -> None:
-    if not isinstance(models_ordered, tuple):
-        msg = f"Expected models ordered to be a tuple, but got {type(models_ordered)}."
-        raise TypeError(msg)
-
-    if len(models_ordered) < 2:
-        msg = f"Expected models ordered to have at least 2 models, but got {len(models_ordered)}."
-        raise ValueError(msg)
-
-    for model_name in models_ordered:
-        if not isinstance(model_name, str):
-            msg = f"Expected model name to be a string, but got {type(model_name)} for model {model_name}."
-            raise TypeError(msg)
-
-        if model_name == "":
-            msg = "Expected model name to be non-empty, but got empty string."
-            raise ValueError(msg)
-
-    num_redundant_models = len(models_ordered) - len(set(models_ordered))
-    if num_redundant_models > 0:
-        msg = f"Expected models ordered to have unique models, but got {num_redundant_models} redundant models."
-        raise ValueError(msg)
-
-
-def _validate_is_confidences(confidences: dict[tuple[str, str], float]) -> None:
-    if not isinstance(confidences, dict):
-        msg = f"Expected confidences to be a dict, but got {type(confidences)}."
-        raise TypeError(msg)
-
-    for (model1, model2), confidence in confidences.items():
-        if not isinstance(model1, str):
-            msg = f"Expected model name to be a string, but got {type(model1)} for model {model1}."
-            raise TypeError(msg)
-
-        if not isinstance(model2, str):
-            msg = f"Expected model name to be a string, but got {type(model2)} for model {model2}."
-            raise TypeError(msg)
-
-        if not isinstance(confidence, float):
-            msg = f"Expected confidence to be a float, but got {type(confidence)} for models {model1} and {model2}."
-            raise TypeError(msg)
-
-        if not (0 <= confidence <= 1):
-            msg = f"Expected confidence to be between 0 and 1, but got {confidence} for models {model1} and {model2}."
-            raise ValueError(msg)
-
-
-def _joint_validate_models_ordered_and_confidences(
-    models_ordered: tuple[str, ...],
-    confidences: dict[tuple[str, str], float],
-) -> None:
-    num_models = len(models_ordered)
-    expected_num_pairs = num_models * (num_models - 1)
-
-    if len(confidences) != expected_num_pairs:
-        msg = f"Expected {expected_num_pairs} pairs of models, but got {len(confidences)} pairs of models."
-        raise ValueError(msg)
-
-    models_in_confidences = {model for pair_models in confidences for model in pair_models}
-
-    diff = set(models_ordered).symmetric_difference(models_in_confidences)
-    if len(diff) > 0:
-        msg = (
-            "Expected models in confidences to be the same as models ordered, but got models missing in one"
-            f"of them: {diff}."
-        )
-        raise ValueError(msg)
-
-
-def _validate_is_scores_per_model_tensor(scores_per_model: dict[str, Tensor] | OrderedDict[str, Tensor]) -> None:
-    first_key_value = None
-
-    for model_name, scores in scores_per_model.items():
-        if scores.ndim != 1:
-            msg = f"Expected scores to be 1D, but got {scores.ndim}D for model {model_name}."
-            raise ValueError(msg)
-
-        num_valid_scores = scores[~torch.isnan(scores)].numel()
-
-        if num_valid_scores < 1:
-            msg = f"Expected at least 1 non-nan score, but got {num_valid_scores} for model {model_name}."
-            raise ValueError(msg)
-
-        if first_key_value is None:
-            first_key_value = (model_name, scores)
-            continue
-
-        first_model_name, first_scores = first_key_value
-
-        # same shape
-        if scores.shape[0] != first_scores.shape[0]:
-            msg = (
-                "Expected scores to have the same number of scores, "
-                f"but got ({model_name}) {scores.shape[0]} != {first_scores.shape[0]} ({first_model_name})."
-            )
-            raise ValueError(msg)
-
-        # `nan` at the same indices
-        if (torch.isnan(scores) != torch.isnan(first_scores)).any():
-            msg = (
-                "Expected `nan` values, if any, to be at the same indices, "
-                f"but there are differences between models {model_name} and {first_model_name}."
-            )
-            raise ValueError(msg)
-
-
-def _validate_is_scores_per_model_aupimoresult(
-    scores_per_model: dict[str, "AUPIMOResult"] | OrderedDict[str, "AUPIMOResult"],
-    missing_paths_ok: bool,
-) -> None:
-    first_key_value = None
-
-    for model_name, aupimoresult in scores_per_model.items():
-        if first_key_value is None:
-            first_key_value = (model_name, aupimoresult)
-            continue
-
-        first_model_name, first_aupimoresult = first_key_value
-
-        if aupimoresult.fpr_bounds != first_aupimoresult.fpr_bounds:
-            msg = (
-                "Expected AUPIMOResult objects in scores per model to have the same FPR bounds, "
-                f"but got ({model_name}) {aupimoresult.fpr_bounds} != "
-                f"{first_aupimoresult.fpr_bounds} ({first_model_name})."
-            )
-            raise ValueError(msg)
-
-    available_paths = [tuple(scores.paths) for scores in scores_per_model.values() if scores.paths is not None]
-
-    if len(set(available_paths)) > 1:
-        msg = (
-            "Expected AUPIMOResult objects in scores per model to have the same paths, "
-            "but got different paths for different models."
-        )
-        raise ValueError(msg)
-
-    if len(available_paths) != len(scores_per_model):
-        msg = "Some models have paths, while others are missing them."
-        if not missing_paths_ok:
-            raise ValueError(msg)
-        logger.warning(msg)
-
-
-def _validate_is_scores_per_model(
-    scores_per_model: dict[str, Tensor]
-    | OrderedDict[str, Tensor]
-    | dict[str, "AUPIMOResult"]
-    | OrderedDict[str, "AUPIMOResult"],
-) -> None:
-    # it has to be imported here to avoid circular imports
-    from .pimo import AUPIMOResult
-
-    if not isinstance(scores_per_model, dict | OrderedDict):
-        msg = f"Expected scores per model to be a dictionary or ordered dictionary, but got {type(scores_per_model)}."
-        raise TypeError(msg)
-
-    if len(scores_per_model) < 2:
-        msg = f"Expected scores per model to have at least 2 models, but got {len(scores_per_model)}."
-        raise ValueError(msg)
-
-    if not all(isinstance(model_name, str) for model_name in scores_per_model):
-        msg = "Expected scores per model to have model names (strings) as keys."
-        raise TypeError(msg)
-
-    first_instance = next(iter(scores_per_model.values()))
-
-    if (
-        isinstance(first_instance, Tensor)
-        and any(not isinstance(scores, Tensor) for scores in scores_per_model.values())
-    ) or (
-        isinstance(first_instance, AUPIMOResult)
-        and any(not isinstance(scores, AUPIMOResult) for scores in scores_per_model.values())
-    ):
-        msg = (
-            "Values in the scores per model dict must have the same type for values (Tensor or AUPIMOResult), "
-            "but more than one type was found."
-        )
-        raise TypeError(msg)
-
-    if isinstance(first_instance, Tensor):
-        _validate_is_scores_per_model_tensor(scores_per_model)
-        return
-
-    _validate_is_scores_per_model_tensor(
-        {model_name: scores.aupimos for model_name, scores in scores_per_model.items()},
-    )
-
-    _validate_is_scores_per_model_aupimoresult(scores_per_model, missing_paths_ok=True)
-
-
-# =========================================== FUNCTIONS ===========================================
-
-
 def per_image_scores_stats(
     per_image_scores: Tensor,
     images_classes: Tensor | None = None,
@@ -313,7 +107,7 @@ def per_image_scores_stats(
 
     outliers_policy = StatsOutliersPolicy(outliers_policy)
     repeated_policy = StatsRepeatedPolicy(repeated_policy)
-    _validate_is_per_image_scores(per_image_scores)
+    _validate.is_per_image_scores(per_image_scores)
 
     # restrain the images to the class `only_class` if given, else use all images
     if images_classes is None:
@@ -322,7 +116,7 @@ def per_image_scores_stats(
     elif only_class is not None:
         _validate.is_images_classes(images_classes)
         _validate.is_same_shape(per_image_scores, images_classes)
-        _validate_is_image_class(only_class)
+        _validate.is_image_class(only_class)
         images_selection_mask = images_classes == only_class
 
     else:
@@ -459,7 +253,7 @@ def compare_models_pairwise_ttest_rel(
                     - if `two-sided`: model[i] != model[j]
                 in termos of average score.
     """
-    _validate_is_scores_per_model(scores_per_model)
+    _validate.is_scores_per_model(scores_per_model)
     scores_per_model_items = [
         (
             model_name,
@@ -470,7 +264,7 @@ def compare_models_pairwise_ttest_rel(
     cls = OrderedDict if isinstance(scores_per_model, OrderedDict) else dict
     scores_per_model_with_arrays = cls(scores_per_model_items)
 
-    _validate_is_scores_per_model(scores_per_model_with_arrays)
+    _validate.is_scores_per_model(scores_per_model_with_arrays)
     StatsAlternativeHypothesis(alternative)
 
     # remove nan values; list of items keeps the order of the OrderedDict
@@ -560,7 +354,7 @@ def compare_models_pairwise_wilcoxon(
                     - if `two-sided`: model[i] != model[j]
                     in terms of average ranks (not scores!).
     """
-    _validate_is_scores_per_model(scores_per_model)
+    _validate.is_scores_per_model(scores_per_model)
     scores_per_model_items = [
         (
             model_name,
@@ -571,7 +365,7 @@ def compare_models_pairwise_wilcoxon(
     cls = OrderedDict if isinstance(scores_per_model, OrderedDict) else dict
     scores_per_model_with_arrays = cls(scores_per_model_items)
 
-    _validate_is_scores_per_model(scores_per_model_with_arrays)
+    _validate.is_scores_per_model(scores_per_model_with_arrays)
     StatsAlternativeHypothesis(alternative)
 
     # remove nan values; list of items keeps the order of the OrderedDict
@@ -665,9 +459,9 @@ def format_pairwise_tests_results(
             model compared to itself.
 
     """
-    _validate_is_models_ordered(models_ordered)
-    _validate_is_confidences(confidences)
-    _joint_validate_models_ordered_and_confidences(models_ordered, confidences)
+    _validate.is_models_ordered(models_ordered)
+    _validate.is_confidences(confidences)
+    _validate.joint_validate_models_ordered_and_confidences(models_ordered, confidences)
     confidences = deepcopy(confidences)
     confidences.update({(model, model): torch.nan for model in models_ordered})
     # `df` stands for `dataframe`
@@ -682,3 +476,8 @@ def format_pairwise_tests_results(
     # now it is a square dataframe with models as index and columns, and confidence as values
     confdf = confdf.sort_index(axis=0, ascending=top_to_bottom)
     return confdf.sort_index(axis=1, ascending=left_to_right)
+
+
+def images_classes_from_masks(masks: torch.Tensor) -> torch.Tensor:
+    """Deduce the image classes from the masks."""
+    return (masks == 1).any(axis=(1, 2)).to(torch.int32)

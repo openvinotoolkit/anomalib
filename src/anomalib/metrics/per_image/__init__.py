@@ -7,8 +7,7 @@
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from .binclf_curve import BinclfThreshsChoice
-from .enums import StatsOutliersPolicy, StatsRepeatedPolicy
+from .enums import BinclfThreshsChoice, StatsOutliersPolicy, StatsRepeatedPolicy
 from .pimo import AUPIMO, PIMO, AUPIMOResult, PIMOResult, aupimo_scores, pimo_curves
 from .utils import (
     compare_models_pairwise_ttest_rel,
