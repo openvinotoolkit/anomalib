@@ -148,6 +148,11 @@ class TestAPI:
             # https://github.com/openvinotoolkit/anomalib/issues/1513
             pytest.skip(f"{model_name} fails to convert to OpenVINO")
 
+        # TODO(samet-akcay, ashwinvaidya17): Fix this test after fixing the issue
+        # https://github.com/openvinotoolkit/anomalib/issues/2047
+        if model_name == "cs_flow" and export_type == ExportType.OPENVINO:
+            pytest.skip(f"{model_name} is not supported for OpenVINO export")
+
         model, dataset, engine = self._get_objects(
             model_name=model_name,
             dataset_path=dataset_path,
