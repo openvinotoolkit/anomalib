@@ -168,20 +168,19 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
         if "pixel_threshold_class" in state_dict:
             self.pixel_threshold = self._get_instance(state_dict, "pixel_threshold_class")
 
-        if "anomaly_maps_normalization_class" in state_dict:
-            self.anomaly_maps_normalization_metrics = self._get_instance(state_dict, "anomaly_maps_normalization_class")
-        if "box_scores_normalization_class" in state_dict:
-            self.box_scores_normalization_metrics = self._get_instance(state_dict, "box_scores_normalization_class")
+        # check only for pred score normalization metrics, because if this one is present, all others are too
         if "pred_scores_normalization_class" in state_dict:
+            self.box_scores_normalization_metrics = self._get_instance(state_dict, "box_scores_normalization_class")
+            self.anomaly_maps_normalization_metrics = self._get_instance(state_dict, "anomaly_maps_normalization_class")
             self.pred_scores_normalization_metrics = self._get_instance(state_dict, "pred_scores_normalization_class")
 
-        self.normalization_metrics = MetricCollection(
-            {
-                "anomaly_maps": self.anomaly_maps_normalization_metrics,
-                "box_scores": self.box_scores_normalization_metrics,
-                "pred_scores": self.pred_scores_normalization_metrics,
-            },
-        )
+            self.normalization_metrics = MetricCollection(
+                {
+                    "anomaly_maps": self.anomaly_maps_normalization_metrics,
+                    "box_scores": self.box_scores_normalization_metrics,
+                    "pred_scores": self.pred_scores_normalization_metrics,
+                },
+            )
         # Used to load metrics if there is any related data in state_dict
         self._load_metrics(state_dict)
 
