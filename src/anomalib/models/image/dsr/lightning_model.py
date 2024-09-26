@@ -13,6 +13,7 @@ from typing import Any
 import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT, OptimizerLRScheduler
 from torch import Tensor
+from torchvision.transforms.v2 import Compose, Resize, Transform
 
 from anomalib import LearningType
 from anomalib.data.utils import DownloadInfo, download_and_extract
@@ -191,3 +192,13 @@ class Dsr(AnomalyModule):
             LearningType: Learning type of the model.
         """
         return LearningType.ONE_CLASS
+
+    @staticmethod
+    def configure_transforms(image_size: tuple[int, int] | None = None) -> Transform:
+        """Default transform for DSR. Normalization is not needed as the images are scaled to [0, 1] in Dataset."""
+        image_size = image_size or (256, 256)
+        return Compose(
+            [
+                Resize(image_size, antialias=True),
+            ],
+        )
