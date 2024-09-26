@@ -154,9 +154,9 @@ def binclf_multiple_curves(
 # ========================================= PER-IMAGE BINCLF CURVE =========================================
 
 
-def _get_threshs_minmax_linspace(anomaly_maps: torch.Tensor, num_threshs: int) -> torch.Tensor:
+def _get_threshs_minmax_linspace(anomaly_maps: torch.Tensor, num_thresholds: int) -> torch.Tensor:
     """Get thresholds linearly spaced between the min and max of the anomaly maps."""
-    _validate.is_num_threshs_gte2(num_threshs)
+    _validate.is_num_threshs_gte2(num_thresholds)
     # this operation can be a bit expensive
     thresh_low, thresh_high = thresh_bounds = (anomaly_maps.min().item(), anomaly_maps.max().item())
     try:
@@ -164,7 +164,7 @@ def _get_threshs_minmax_linspace(anomaly_maps: torch.Tensor, num_threshs: int) -
     except ValueError as ex:
         msg = f"Invalid threshold bounds computed from the given anomaly maps. Cause: {ex}"
         raise ValueError(msg) from ex
-    return torch.linspace(thresh_low, thresh_high, num_threshs, dtype=anomaly_maps.dtype)
+    return torch.linspace(thresh_low, thresh_high, num_thresholds, dtype=anomaly_maps.dtype)
 
 
 def per_image_binclf_curve(

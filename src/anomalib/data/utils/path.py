@@ -146,7 +146,7 @@ def validate_path(
     path: str | Path,
     base_dir: str | Path | None = None,
     should_exist: bool = True,
-    accepted_extensions: tuple[str, ...] | None = None,
+    extensions: tuple[str, ...] | None = None,
 ) -> Path:
     """Validate the path.
 
@@ -154,7 +154,7 @@ def validate_path(
         path (str | Path): Path to validate.
         base_dir (str | Path): Base directory to restrict file access.
         should_exist (bool): If True, do not raise an exception if the path does not exist.
-        accepted_extensions (tuple[str, ...] | None): Accepted extensions for the path. An exception is raised if the
+        extensions (tuple[str, ...] | None): Accepted extensions for the path. An exception is raised if the
             path does not have one of the accepted extensions. If None, no check is performed. Defaults to None.
 
     Returns:
@@ -221,8 +221,8 @@ def validate_path(
             raise PermissionError(msg)
 
     # Check if the path has one of the accepted extensions
-    if accepted_extensions is not None and path.suffix not in accepted_extensions:
-        msg = f"Path extension is not accepted. Accepted extensions: {accepted_extensions}. Path: {path}"
+    if extensions is not None and path.suffix not in extensions:
+        msg = f"Path extension is not accepted. Accepted extensions: {extensions}. Path: {path}"
         raise ValueError(msg)
 
     return path

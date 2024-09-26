@@ -139,10 +139,6 @@ def is_thresh_bounds(thresh_bounds: tuple[float, float]) -> None:
 
 
 def is_anomaly_maps(anomaly_maps: Tensor) -> None:
-    if not isinstance(anomaly_maps, Tensor):
-        msg = f"Expected anomaly maps to be an Tensor, but got {type(anomaly_maps)}"
-        raise TypeError(msg)
-
     if anomaly_maps.ndim != 3:
         msg = f"Expected anomaly maps have 3 dimensions (N, H, W), but got {anomaly_maps.ndim} dimensions"
         raise ValueError(msg)
@@ -156,10 +152,6 @@ def is_anomaly_maps(anomaly_maps: Tensor) -> None:
 
 
 def is_masks(masks: Tensor) -> None:
-    if not isinstance(masks, Tensor):
-        msg = f"Expected masks to be an Tensor, but got {type(masks)}"
-        raise TypeError(msg)
-
     if masks.ndim != 3:
         msg = f"Expected masks have 3 dimensions (N, H, W), but got {masks.ndim} dimensions"
         raise ValueError(msg)
@@ -185,10 +177,6 @@ def is_masks(masks: Tensor) -> None:
 
 
 def is_binclf_curves(binclf_curves: Tensor, valid_threshs: Tensor | None) -> None:
-    if not isinstance(binclf_curves, Tensor):
-        msg = f"Expected binclf curves to be an Tensor, but got {type(binclf_curves)}"
-        raise TypeError(msg)
-
     if binclf_curves.ndim != 4:
         msg = f"Expected binclf curves to be 4D, but got {binclf_curves.ndim}D"
         raise ValueError(msg)
@@ -229,10 +217,6 @@ def is_binclf_curves(binclf_curves: Tensor, valid_threshs: Tensor | None) -> Non
 
 
 def is_images_classes(images_classes: Tensor) -> None:
-    if not isinstance(images_classes, Tensor):
-        msg = f"Expected image classes to be an Tensor, but got {type(images_classes)}."
-        raise TypeError(msg)
-
     if images_classes.ndim != 1:
         msg = f"Expected image classes to be 1D, but got {images_classes.ndim}D."
         raise ValueError(msg)
@@ -258,10 +242,6 @@ def is_images_classes(images_classes: Tensor) -> None:
 
 
 def is_rates(rates: Tensor, nan_allowed: bool) -> None:
-    if not isinstance(rates, Tensor):
-        msg = f"Expected rates to be an Tensor, but got {type(rates)}."
-        raise TypeError(msg)
-
     if rates.ndim != 1:
         msg = f"Expected rates to be 1D, but got {rates.ndim}D."
         raise ValueError(msg)
@@ -307,10 +287,6 @@ def is_rate_curve(rate_curve: Tensor, nan_allowed: bool, decreasing: bool) -> No
 
 
 def is_per_image_rate_curves(rate_curves: Tensor, nan_allowed: bool, decreasing: bool | None) -> None:
-    if not isinstance(rate_curves, Tensor):
-        msg = f"Expected per-image rate curves to be an Tensor, but got {type(rate_curves)}."
-        raise TypeError(msg)
-
     if rate_curves.ndim != 2:
         msg = f"Expected per-image rate curves to be 2D, but got {rate_curves.ndim}D."
         raise ValueError(msg)
