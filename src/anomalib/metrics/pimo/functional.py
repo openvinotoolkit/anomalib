@@ -15,7 +15,7 @@ import logging
 import numpy as np
 import torch
 
-from . import _validate, binclf_curve
+from . import _validate, binary_classification_curve
 from .enums import ThresholdMethod
 from .utils import images_classes_from_masks
 
@@ -67,14 +67,14 @@ def pimo_curves(
     # therefore getting a better resolution in terms of FPR quantization
     # otherwise the function `binclf_curve_numpy.per_image_binclf_curve` would have the range of thresholds
     # computed from all the images (normal + anomalous)
-    threshs = binclf_curve._get_threshs_minmax_linspace(  # noqa: SLF001
+    threshs = binary_classification_curve._get_threshs_minmax_linspace(  # noqa: SLF001
         anomaly_maps[image_classes == 0],
         num_threshs,
     )
 
     # N: number of images, K: number of thresholds
     # shapes are (K,) and (N, K, 2, 2)
-    threshs, binclf_curves = binclf_curve.per_image_binclf_curve(
+    threshs, binclf_curves = binary_classification_curve.per_image_binary_classification_curve(
         anomaly_maps=anomaly_maps,
         masks=masks,
         threshs_choice=ThresholdMethod.GIVEN.value,
@@ -85,7 +85,7 @@ def pimo_curves(
     shared_fpr: torch.Tensor
     # mean-per-image-fpr on normal images
     # shape -> (N, K)
-    per_image_fprs_normals = binclf_curve.per_image_fpr(binclf_curves[image_classes == 0])
+    per_image_fprs_normals = binary_classification_curve.per_image_fpr(binclf_curves[image_classes == 0])
     try:
         _validate.is_per_image_rate_curves(per_image_fprs_normals, nan_allowed=False, decreasing=True)
     except ValueError as ex:
@@ -98,7 +98,7 @@ def pimo_curves(
     shared_fpr = per_image_fprs_normals.mean(axis=0)
 
     # shape -> (N, K)
-    per_image_tprs = binclf_curve.per_image_tpr(binclf_curves)
+    per_image_tprs = binary_classification_curve.per_image_tpr(binclf_curves)
 
     return threshs, shared_fpr, per_image_tprs, image_classes
 

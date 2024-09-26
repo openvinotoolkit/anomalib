@@ -12,7 +12,7 @@
 import pytest
 import torch
 
-from anomalib.metrics.pimo import binclf_curve
+from anomalib.metrics.pimo import binary_classification_curve
 
 
 def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
@@ -294,7 +294,7 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
 
 def test__binclf_one_curve(pred: torch.Tensor, gt: torch.Tensor, threshs: torch.Tensor, expected: torch.Tensor) -> None:
     """Test if `_binclf_one_curve()` returns the expected values."""
-    computed = binclf_curve._binclf_one_curve(pred, gt, threshs)
+    computed = binary_classification_curve._binary_classification_one_curve(pred, gt, threshs)
     assert computed.shape == (threshs.numel(), 2, 2)
     assert (computed == expected.numpy()).all()
 
@@ -306,7 +306,7 @@ def test__binclf_multiple_curves(
     expecteds: torch.Tensor,
 ) -> None:
     """Test if `_binclf_multiple_curves()` returns the expected values."""
-    computed = binclf_curve.binclf_multiple_curves(preds, gts, threshs)
+    computed = binary_classification_curve.binary_classification_multiple_curves(preds, gts, threshs)
     assert computed.shape == (preds.shape[0], threshs.numel(), 2, 2)
     assert (computed == expecteds).all()
 
@@ -322,7 +322,7 @@ def test_binclf_multiple_curves(
     expected_binclf_curves: torch.Tensor,
 ) -> None:
     """Test if `binclf_multiple_curves()` returns the expected values."""
-    computed = binclf_curve.binclf_multiple_curves(
+    computed = binary_classification_curve.binary_classification_multiple_curves(
         preds,
         gts,
         threshs,
@@ -331,26 +331,26 @@ def test_binclf_multiple_curves(
     assert (computed == expected_binclf_curves).all()
 
     # it's ok to have the threhsholds beyond the range of the preds
-    binclf_curve.binclf_multiple_curves(preds, gts, 2 * threshs)
+    binary_classification_curve.binary_classification_multiple_curves(preds, gts, 2 * threshs)
 
     # or inside the bounds without reaching them
-    binclf_curve.binclf_multiple_curves(preds, gts, 0.5 * threshs)
+    binary_classification_curve.binary_classification_multiple_curves(preds, gts, 0.5 * threshs)
 
     # it's also ok to have more threshs than unique values in the preds
     # add the values in between the threshs
     threshs_unncessary = 0.5 * (threshs[:-1] + threshs[1:])
     threshs_unncessary = torch.concatenate([threshs_unncessary, threshs])
     threshs_unncessary = torch.sort(threshs_unncessary)[0]
-    binclf_curve.binclf_multiple_curves(preds, gts, threshs_unncessary)
+    binary_classification_curve.binary_classification_multiple_curves(preds, gts, threshs_unncessary)
 
     # or less
-    binclf_curve.binclf_multiple_curves(preds, gts, threshs[1:3])
+    binary_classification_curve.binary_classification_multiple_curves(preds, gts, threshs[1:3])
 
 
 def test_binclf_multiple_curves_validations(args: list, kwargs: dict, exception: Exception) -> None:
     """Test if `_binclf_multiple_curves_python()` raises the expected errors."""
     with pytest.raises(exception):
-        binclf_curve.binclf_multiple_curves(*args, **kwargs)
+        binary_classification_curve.binary_classification_multiple_curves(*args, **kwargs)
 
 
 def test_per_image_binclf_curve(
@@ -363,7 +363,7 @@ def test_per_image_binclf_curve(
     expected_binclf_curves: torch.Tensor,
 ) -> None:
     """Test if `per_image_binclf_curve()` returns the expected values."""
-    computed_threshs, computed_binclf_curves = binclf_curve.per_image_binclf_curve(
+    computed_threshs, computed_binclf_curves = binary_classification_curve.per_image_binary_classification_curve(
         anomaly_maps,
         masks,
         threshs_choice=threshs_choice,
@@ -385,7 +385,7 @@ def test_per_image_binclf_curve(
 def test_per_image_binclf_curve_validations(args: list, kwargs: dict, exception: Exception) -> None:
     """Test if `per_image_binclf_curve()` raises the expected errors."""
     with pytest.raises(exception):
-        binclf_curve.per_image_binclf_curve(*args, **kwargs)
+        binary_classification_curve.per_image_binary_classification_curve(*args, **kwargs)
 
 
 def test_per_image_binclf_curve_validations_alt(args: list, kwargs: dict, exception: Exception) -> None:
@@ -399,8 +399,8 @@ def test_rate_metrics(
     expected_tprs: torch.Tensor,
 ) -> None:
     """Test if rate metrics are computed correctly."""
-    tprs = binclf_curve.per_image_tpr(binclf_curves)
-    fprs = binclf_curve.per_image_fpr(binclf_curves)
+    tprs = binary_classification_curve.per_image_tpr(binclf_curves)
+    fprs = binary_classification_curve.per_image_fpr(binclf_curves)
 
     assert tprs.shape == expected_tprs.shape
     assert fprs.shape == expected_fprs.shape

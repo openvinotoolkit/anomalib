@@ -26,7 +26,7 @@ from .enums import ThresholdMethod
 logger = logging.getLogger(__name__)
 
 
-def _binclf_one_curve(scores: ndarray, gts: ndarray, threshs: ndarray) -> ndarray:
+def _binary_classification_one_curve(scores: ndarray, gts: ndarray, threshs: ndarray) -> ndarray:
     """One binary classification matrix at each threshold (PYTHON implementation).
 
     In the case where the thresholds are given (i.e. not considering all possible thresholds based on the scores),
@@ -95,7 +95,7 @@ def _binclf_one_curve(scores: ndarray, gts: ndarray, threshs: ndarray) -> ndarra
     ).transpose(0, 2, 1)
 
 
-def binclf_multiple_curves(
+def binary_classification_multiple_curves(
     scores_batch: torch.Tensor,
     gts_batch: torch.Tensor,
     threshs: torch.Tensor,
@@ -143,15 +143,12 @@ def binclf_multiple_curves(
     _validate.is_threshs(threshs)
     # TODO(ashwinvaidya17): this is kept as numpy for now because it is much faster.
     # TEMP-0
-    result = np.vectorize(_binclf_one_curve, signature="(n),(n),(k)->(k,2,2)")(
+    result = np.vectorize(_binary_classification_one_curve, signature="(n),(n),(k)->(k,2,2)")(
         scores_batch.detach().cpu().numpy(),
         gts_batch.detach().cpu().numpy(),
         threshs.detach().cpu().numpy(),
     )
     return torch.from_numpy(result).to(scores_batch.device)
-
-
-# ========================================= PER-IMAGE BINCLF CURVE =========================================
 
 
 def _get_threshs_minmax_linspace(anomaly_maps: torch.Tensor, num_thresholds: int) -> torch.Tensor:
@@ -167,7 +164,7 @@ def _get_threshs_minmax_linspace(anomaly_maps: torch.Tensor, num_thresholds: int
     return torch.linspace(thresh_low, thresh_high, num_thresholds, dtype=anomaly_maps.dtype)
 
 
-def per_image_binclf_curve(
+def per_image_binary_classification_curve(
     anomaly_maps: torch.Tensor,
     masks: torch.Tensor,
     threshs_choice: ThresholdMethod | str = ThresholdMethod.MINMAX_LINSPACE.value,
@@ -259,7 +256,7 @@ def per_image_binclf_curve(
     scores_batch = anomaly_maps.reshape(anomaly_maps.shape[0], -1)
     gts_batch = masks.reshape(masks.shape[0], -1).to(bool)  # make sure it is boolean
 
-    binclf_curves = binclf_multiple_curves(scores_batch, gts_batch, threshs)
+    binclf_curves = binary_classification_multiple_curves(scores_batch, gts_batch, threshs)
 
     num_images = anomaly_maps.shape[0]
 
