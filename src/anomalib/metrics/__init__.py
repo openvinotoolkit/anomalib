@@ -15,9 +15,8 @@ from .anomaly_score_distribution import AnomalyScoreDistribution
 from .aupr import AUPR
 from .aupro import AUPRO
 from .auroc import AUROC
-from .collection import MetricWrapper
-from .f1_max import F1Max
-from .f1_score import F1Score
+from .base import AnomalibMetric, MetricWrapper
+from .f1_score import F1Score, F1Max
 from .min_max import MinMax
 from .precision_recall_curve import BinaryPrecisionRecallCurve
 from .pro import PRO
@@ -27,6 +26,7 @@ __all__ = [
     "AUROC",
     "AUPR",
     "AUPRO",
+    "AnomalibMetric",
     "AnomalyScoreDistribution",
     "BinaryPrecisionRecallCurve",
     "F1AdaptiveThreshold",

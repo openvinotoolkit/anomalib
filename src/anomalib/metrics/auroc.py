@@ -5,13 +5,14 @@
 
 import torch
 from matplotlib.figure import Figure
+from anomalib.metrics.base import AnomalibMetric
 from torchmetrics.classification.roc import BinaryROC
 from torchmetrics.utilities.compute import auc
 
 from .plotting_utils import plot_figure
 
 
-class AUROC(BinaryROC):
+class _AUROC(BinaryROC):
     """Area under the ROC curve.
 
     Examples:
@@ -99,3 +100,6 @@ class AUROC(BinaryROC):
         )
 
         return fig, title
+
+class AUROC(AnomalibMetric, _AUROC):
+    pass
