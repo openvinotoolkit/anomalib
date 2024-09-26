@@ -3,15 +3,16 @@
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Any, Sequence
+from collections.abc import Sequence
+
 from torchmetrics import Metric, MetricCollection
-from torchmetrics.classification import BinaryF1Score
+
 from anomalib.data import Batch
 
 
 class AnomalibMetric:
     """Base class for metrics in Anomalib.
-    
+
     This class is designed to be a base class for all metrics in Anomalib. It
     adds the ability to update the metric with a Batch object, which is a
     container for the predictions and targets of a model. When instantiating
@@ -28,14 +29,14 @@ class AnomalibMetric:
 
     def __init_subclass__(cls, **kwargs) -> None:
         del kwargs
-        assert issubclass(cls, (Metric, MetricCollection)), "AnomalibMetric must be a subclass of torchmetrics.Metric or torchmetrics.MetricCollection"
+        assert issubclass(
+            cls, (Metric, MetricCollection)
+        ), "AnomalibMetric must be a subclass of torchmetrics.Metric or torchmetrics.MetricCollection"
 
     def update(self, batch: Batch, *args, **kwargs):
         values = [getattr(batch, key) for key in self.fields]
         super().update(*values, *args, **kwargs)
 
-class MetricWrapper(AnomalibMetric, MetricCollection):
-    pass
 
-class F1Score(AnomalibMetric, BinaryF1Score):
+class MetricWrapper(AnomalibMetric, MetricCollection):
     pass
