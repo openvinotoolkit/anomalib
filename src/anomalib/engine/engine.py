@@ -14,16 +14,15 @@ from lightning.pytorch.loggers import Logger
 from lightning.pytorch.trainer import Trainer
 from lightning.pytorch.utilities.types import _EVALUATE_OUTPUT, _PREDICT_OUTPUT, EVAL_DATALOADERS, TRAIN_DATALOADERS
 from torch.utils.data import DataLoader, Dataset
-from torchmetrics import Metric, F1Score
+from torchmetrics import Metric
 
 from anomalib import LearningType, TaskType
 from anomalib.callbacks.checkpoint import ModelCheckpoint
-from anomalib.callbacks.metrics import _MetricsCallback
 from anomalib.callbacks.timer import TimerCallback
 from anomalib.callbacks.visualizer import _VisualizationCallback
 from anomalib.data import AnomalibDataModule, AnomalibDataset, PredictDataset
 from anomalib.deploy import CompressionType, ExportType
-from anomalib.metrics import MetricWrapper, AUROC, F1Max
+from anomalib.metrics import MetricWrapper
 from anomalib.models import AnomalyModule
 from anomalib.utils.path import create_versioned_dir
 from anomalib.utils.visualization import ImageVisualizer
