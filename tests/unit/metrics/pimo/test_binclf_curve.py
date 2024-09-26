@@ -12,7 +12,7 @@
 import pytest
 import torch
 
-from anomalib.metrics.per_image import binclf_curve
+from anomalib.metrics.pimo import binclf_curve
 
 
 def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:

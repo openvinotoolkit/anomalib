@@ -14,7 +14,7 @@ import pytest
 import torch
 from torch import Tensor
 
-from anomalib.metrics.per_image import (
+from anomalib.metrics.pimo import (
     AUPIMOResult,
     StatsOutliersPolicy,
     StatsRepeatedPolicy,
