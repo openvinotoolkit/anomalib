@@ -1,6 +1,7 @@
 import torch
 from torchmetrics import Metric
-from torchmetrics.classification import BinaryF1Score, BinaryPrecisionRecallCurve
+from torchmetrics.classification import BinaryF1Score
+from .precision_recall_curve import BinaryPrecisionRecallCurve
 
 from anomalib.metrics.base import AnomalibMetric
 
