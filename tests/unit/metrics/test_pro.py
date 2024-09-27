@@ -7,7 +7,8 @@ import torch
 from torchvision.transforms import RandomAffine
 
 from anomalib.data.utils import random_2d_perlin
-from anomalib.metrics.pro import PRO, connected_components_cpu, connected_components_gpu
+from anomalib.metrics.pro import _PRO as PRO
+from anomalib.metrics.pro import connected_components_cpu, connected_components_gpu
 
 
 def test_pro() -> None:

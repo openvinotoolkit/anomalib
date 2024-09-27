@@ -43,8 +43,9 @@ class Draem(AnomalyModule):
         sspcab_lambda: float = 0.1,
         anomaly_source_path: str | None = None,
         beta: float | tuple[float, float] = (0.1, 1.0),
+        **kwargs,
     ) -> None:
-        super().__init__()
+        super().__init__(**kwargs)
 
         self.augmenter = Augmenter(anomaly_source_path, beta=beta)
         self.model = DraemModel(sspcab=enable_sspcab)

@@ -41,8 +41,8 @@ class Dsr(AnomalyModule):
         upsampling_train_ratio (float): Ratio of training steps for the upsampling module. Defaults to 0.7
     """
 
-    def __init__(self, latent_anomaly_strength: float = 0.2, upsampling_train_ratio: float = 0.7) -> None:
-        super().__init__()
+    def __init__(self, latent_anomaly_strength: float = 0.2, upsampling_train_ratio: float = 0.7, **kwargs) -> None:
+        super().__init__(**kwargs)
 
         self.automatic_optimization = False
         self.upsampling_train_ratio = upsampling_train_ratio

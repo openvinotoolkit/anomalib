@@ -26,6 +26,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
+- Implement new design for metrics by @djdameln https://github.com/openvinotoolkit/anomalib/pull/2326
 - Set permissions for github workflows by @djdameln in https://github.com/openvinotoolkit/anomalib/pull/2127
 - Update timm requirement from <=1.0.3,>=0.5.4 to >=0.5.4,<=1.0.7 by @dependabot in https://github.com/openvinotoolkit/anomalib/pull/2151
 - 🚀 Use gh actions runners for pre-commit checks by @ashwinvaidya17 in https://github.com/openvinotoolkit/anomalib/pull/2160

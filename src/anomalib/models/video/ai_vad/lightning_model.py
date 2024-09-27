@@ -77,8 +77,9 @@ class AiVad(MemoryBankMixin, AnomalyModule):
         n_components_velocity: int = 2,
         n_neighbors_pose: int = 1,
         n_neighbors_deep: int = 1,
+        **kwargs,
     ) -> None:
-        super().__init__()
+        super().__init__(**kwargs)
 
         self.model = AiVadModel(
             box_score_thresh=box_score_thresh,
