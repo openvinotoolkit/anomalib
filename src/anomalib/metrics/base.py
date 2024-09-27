@@ -75,6 +75,9 @@ class AnomalibMetric:
 
     def update(self, batch: Batch, *args, **kwargs):
         """Update the metric with the specified fields from the Batch object."""
+        for key in self.fields:
+            if getattr(batch, key, None) is None:
+                raise ValueError(f"Batch object is missing required field: {key}")
         values = [getattr(batch, key) for key in self.fields]
         super().update(*values, *args, **kwargs)
 
