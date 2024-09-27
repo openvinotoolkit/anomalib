@@ -21,7 +21,8 @@ class _DummyModel(nn.Module): ...
 class DummyPostProcessor(PostProcessor):
     """Dummy post-processor for testing."""
 
-    def forward(self, batch: InferenceBatch) -> InferenceBatch:
+    @staticmethod
+    def forward(batch: InferenceBatch) -> InferenceBatch:
         """Dummy forward method."""
         return batch
 
@@ -71,6 +72,7 @@ class DummyModule(AnomalyModule):
         """Returns the learning type."""
         return LearningType.ZERO_SHOT
 
-    def default_post_processor(self) -> PostProcessor:
+    @staticmethod
+    def default_post_processor() -> PostProcessor:
         """Returns a dummy post-processor."""
         return DummyPostProcessor()

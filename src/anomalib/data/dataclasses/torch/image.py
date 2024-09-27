@@ -61,13 +61,15 @@ class ImageItem(
 
     numpy_class = NumpyImageItem
 
-    def _validate_image(self, image: torch.Tensor) -> Image:
+    @staticmethod
+    def _validate_image(image: torch.Tensor) -> Image:
         assert isinstance(image, torch.Tensor), f"Image must be a torch.Tensor, got {type(image)}."
         assert image.ndim == 3, f"Image must have shape [C, H, W], got shape {image.shape}."
         assert image.shape[0] == 3, f"Image must have 3 channels, got {image.shape[0]}."
         return to_dtype_image(image, torch.float32, scale=True)
 
-    def _validate_gt_label(self, gt_label: torch.Tensor | int | None) -> torch.Tensor:
+    @staticmethod
+    def _validate_gt_label(gt_label: torch.Tensor | int | None) -> torch.Tensor:
         if gt_label is None:
             return None
         if isinstance(gt_label, int):
@@ -80,7 +82,8 @@ class ImageItem(
         assert not torch.is_floating_point(gt_label), f"Ground truth label must be boolean or integer, got {gt_label}."
         return gt_label.bool()
 
-    def _validate_gt_mask(self, gt_mask: torch.Tensor | None) -> Mask | None:
+    @staticmethod
+    def _validate_gt_mask(gt_mask: torch.Tensor | None) -> Mask | None:
         if gt_mask is None:
             return None
         assert isinstance(gt_mask, torch.Tensor), f"Ground truth mask must be a torch.Tensor, got {type(gt_mask)}."
@@ -93,12 +96,14 @@ class ImageItem(
             gt_mask = gt_mask.squeeze(0)
         return Mask(gt_mask, dtype=torch.bool)
 
-    def _validate_mask_path(self, mask_path: str | None) -> str | None:
+    @staticmethod
+    def _validate_mask_path(mask_path: str | None) -> str | None:
         if mask_path is None:
             return None
         return str(mask_path)
 
-    def _validate_anomaly_map(self, anomaly_map: torch.Tensor | None) -> Mask | None:
+    @staticmethod
+    def _validate_anomaly_map(anomaly_map: torch.Tensor | None) -> Mask | None:
         if anomaly_map is None:
             return None
         assert isinstance(anomaly_map, torch.Tensor), f"Anomaly map must be a torch.Tensor, got {type(anomaly_map)}."
@@ -126,7 +131,8 @@ class ImageItem(
         assert pred_score.ndim == 0, f"Predicted score must be a scalar, got shape {pred_score.shape}."
         return pred_score.to(torch.float32)
 
-    def _validate_pred_mask(self, pred_mask: torch.Tensor | None) -> Mask | None:
+    @staticmethod
+    def _validate_pred_mask(pred_mask: torch.Tensor | None) -> Mask | None:
         if pred_mask is None:
             return None
         assert isinstance(pred_mask, torch.Tensor), f"Predicted mask must be a torch.Tensor, got {type(pred_mask)}."
@@ -139,7 +145,8 @@ class ImageItem(
             pred_mask = pred_mask.squeeze(0)
         return Mask(pred_mask, dtype=torch.bool)
 
-    def _validate_pred_label(self, pred_label: torch.Tensor | np.ndarray | None) -> torch.Tensor | None:
+    @staticmethod
+    def _validate_pred_label(pred_label: torch.Tensor | np.ndarray | None) -> torch.Tensor | None:
         if pred_label is None:
             return None
         if not isinstance(pred_label, torch.Tensor):
@@ -152,7 +159,8 @@ class ImageItem(
         assert pred_label.ndim == 0, f"Predicted label must be a scalar, got shape {pred_label.shape}."
         return pred_label.to(torch.bool)
 
-    def _validate_image_path(self, image_path: str | None) -> str | None:
+    @staticmethod
+    def _validate_image_path(image_path: str | None) -> str | None:
         if image_path is None:
             return None
         return str(image_path)
@@ -198,7 +206,8 @@ class ImageBatch(
     item_class = ImageItem
     numpy_class = NumpyImageBatch
 
-    def _validate_image(self, image: Image) -> Image:
+    @staticmethod
+    def _validate_image(image: Image) -> Image:
         assert isinstance(image, torch.Tensor), f"Image must be a torch.Tensor, got {type(image)}."
         assert image.ndim in {3, 4}, f"Image must have shape [C, H, W] or [N, C, H, W], got shape {image.shape}."
         if image.ndim == 3:
@@ -286,11 +295,14 @@ class ImageBatch(
             return torch.amax(self.anomaly_map, dim=(-2, -1))
         return pred_score
 
-    def _validate_pred_mask(self, pred_mask: torch.Tensor) -> torch.Tensor | None:
+    @staticmethod
+    def _validate_pred_mask(pred_mask: torch.Tensor) -> torch.Tensor | None:
         return pred_mask
 
-    def _validate_pred_label(self, pred_label: torch.Tensor) -> torch.Tensor | None:
+    @staticmethod
+    def _validate_pred_label(pred_label: torch.Tensor) -> torch.Tensor | None:
         return pred_label
 
-    def _validate_image_path(self, image_path: list[str]) -> list[str] | None:
+    @staticmethod
+    def _validate_image_path(image_path: list[str]) -> list[str] | None:
         return image_path

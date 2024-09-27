@@ -382,8 +382,8 @@ class Engine:
         # Combine the callbacks, and update the trainer callbacks.
         self._cache.args["callbacks"] = _callbacks + self._cache.args["callbacks"]
 
+    @staticmethod
     def _should_run_validation(
-        self,
         model: AnomalyModule,
         ckpt_path: str | Path | None,
     ) -> bool:
