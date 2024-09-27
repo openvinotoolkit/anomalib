@@ -116,8 +116,6 @@ class Engine:
         self,
         callbacks: list[Callback] | None = None,
         task: TaskType | str = TaskType.SEGMENTATION,
-        image_metrics: list[str] | str | dict[str, dict[str, Any]] | None = None,
-        pixel_metrics: list[str] | str | dict[str, dict[str, Any]] | None = None,
         logger: Logger | Iterable[Logger] | bool | None = None,
         default_root_dir: str | Path = "results",
         **kwargs,
