@@ -12,6 +12,7 @@ from lightning.pytorch.utilities.types import STEP_OUTPUT
 
 from anomalib import LearningType
 from anomalib.data import Batch
+from anomalib.metrics import AUROC, Evaluator, F1Score
 from anomalib.models.components import AnomalyModule, MemoryBankMixin
 from anomalib.models.components.classification import FeatureScalingMethod
 
@@ -120,3 +121,11 @@ class Dfkde(MemoryBankMixin, AnomalyModule):
             LearningType: Learning type of the model.
         """
         return LearningType.ONE_CLASS
+
+    @staticmethod
+    def default_evaluator() -> Evaluator:
+        """Default evaluator for DFKE."""
+        image_auroc = AUROC(fields=["pred_score", "gt_label"], prefix="image_")
+        image_f1score = F1Score(fields=["pred_label", "gt_label"], prefix="image_")
+        test_metrics = [image_auroc, image_f1score]
+        return Evaluator(test_metrics=test_metrics)

@@ -15,6 +15,7 @@ from torch import optim
 
 from anomalib import LearningType
 from anomalib.data import Batch
+from anomalib.metrics import AUROC, Evaluator, F1Score
 from anomalib.models.components import AnomalyModule
 
 from .loss import DiscriminatorLoss, GeneratorLoss
@@ -259,3 +260,11 @@ class Ganomaly(AnomalyModule):
             LearningType: Learning type of the model.
         """
         return LearningType.ONE_CLASS
+
+    @staticmethod
+    def default_evaluator() -> Evaluator:
+        """Default evaluator for GANomaly."""
+        image_auroc = AUROC(fields=["pred_score", "gt_label"], prefix="image_")
+        image_f1score = F1Score(fields=["pred_label", "gt_label"], prefix="image_")
+        test_metrics = [image_auroc, image_f1score]
+        return Evaluator(test_metrics=test_metrics)
