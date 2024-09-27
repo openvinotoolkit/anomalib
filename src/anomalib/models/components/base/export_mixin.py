@@ -19,6 +19,7 @@ from anomalib import TaskType
 from anomalib.data import AnomalibDataModule
 from anomalib.deploy.export import CompressionType, ExportType
 from anomalib.utils.exceptions import try_import
+from anomalib.deploy.utils import make_transform_exportable
 
 if TYPE_CHECKING:
     from importlib.util import find_spec
@@ -397,6 +398,10 @@ class ExportMixin:
 
         return nncf.quantize_with_accuracy_control(model, calibration_dataset, validation_dataset, val_fn)
 
+    @property
+    def exportable_transform(self) -> Transform:
+        """Return the exportable transform."""
+        return make_transform_exportable(self.transform)
 
 def _create_export_root(export_root: str | Path, export_type: ExportType) -> Path:
     """Create export directory.
