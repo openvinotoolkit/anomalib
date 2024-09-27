@@ -8,23 +8,22 @@ from collections.abc import Sequence
 from torchmetrics import Metric, MetricCollection
 
 from anomalib.data import Batch
-from typing import Callable
 
 
 class AnomalibMetric:
     """Base class for metrics in Anomalib.
 
     This class is designed to make any torchmetrics metric compatible with the
-    Anomalib framework. An Anomalib version of any torchmetrics metric can be created 
-    by inheriting from this class and the desired torchmetrics metric. For example, to 
+    Anomalib framework. An Anomalib version of any torchmetrics metric can be created
+    by inheriting from this class and the desired torchmetrics metric. For example, to
     create an Anomalib version of the BinaryF1Score metric, the user can create a new
     class that inherits from AnomalibMetric and BinaryF1Score.
 
     The AnomalibMetric class adds the ability to update the metric with a Batch
-    object instead of individual prediction and target tensors. To use this feature, 
-    the user must provide a list of fields as constructor arguments when instantiating 
-    the metric. When the metric is updated with a Batch object, it will extract the 
-    values of these fields from the Batch object and pass them to the `update` method 
+    object instead of individual prediction and target tensors. To use this feature,
+    the user must provide a list of fields as constructor arguments when instantiating
+    the metric. When the metric is updated with a Batch object, it will extract the
+    values of these fields from the Batch object and pass them to the `update` method
     of the metric.
 
     Args:
@@ -37,7 +36,7 @@ class AnomalibMetric:
         >>> from anomalib.metrics import AnomalibMetric
         >>> from anomalib.data import ImageBatch
         >>> import torch
-        >>> 
+        >>>
         >>> class F1Score(AnomalibMetric, BinaryF1Score):
         ...     pass
         ...
@@ -48,14 +47,14 @@ class AnomalibMetric:
         ...     pred_label=torch.tensor([0, 0, 0, 1]),
         ...     gt_label=torch.tensor([0, 0, 1, 1])),
         ... )
-        >>> 
+        >>>
         >>> # The AnomalibMetric class allows us to update the metric by passing a Batch
         >>> # object directly.
         >>> f1_score.update(batch)
         >>> f1_score.compute()
         tensor(0.6667)
-        >>> 
-        >>> # specifying the field names allows us to distinguish between image and 
+        >>>
+        >>> # specifying the field names allows us to distinguish between image and
         >>> # pixel metrics.
         >>> image_f1_score = F1Score(fields=["pred_label", "gt_label"], prefix="image_")
         >>> pixel_f1_score = F1Score(fields=[pred_mask", "gt_mask"], prefix="pixel_")
@@ -70,21 +69,23 @@ class AnomalibMetric:
         """Check that the subclass implements the torchmetrics.Metric interface."""
         del kwargs
         assert issubclass(
-            cls, (Metric, MetricCollection)
+            cls,
+            (Metric | MetricCollection),
         ), "AnomalibMetric must be a subclass of torchmetrics.Metric or torchmetrics.MetricCollection"
 
-    def update(self, batch: Batch, *args, **kwargs):
+    def update(self, batch: Batch, *args, **kwargs) -> None:
         """Update the metric with the specified fields from the Batch object."""
         for key in self.fields:
             if getattr(batch, key, None) is None:
-                raise ValueError(f"Batch object is missing required field: {key}")
+                msg = f"Batch object is missing required field: {key}"
+                raise ValueError(msg)
         values = [getattr(batch, key) for key in self.fields]
-        super().update(*values, *args, **kwargs)
+        super().update(*values, *args, **kwargs)  # type: ignore[misc]
 
 
-def create_anomalib_metric(metric_cls: Callable):
+def create_anomalib_metric(metric_cls: type) -> type:
     """Create an Anomalib version of a torchmetrics metric.
-    
+
     This function creates an Anomalib version of a torchmetrics metric by inheriting
     from the AnomalibMetric class and the specified torchmetrics metric class. The
     resulting class will have the same name as the input metric class and will inherit
@@ -92,20 +93,20 @@ def create_anomalib_metric(metric_cls: Callable):
 
     Args:
         metric_cls (Callable): The torchmetrics metric class to wrap.
-    
+
     Returns:
         AnomalibMetric: An Anomalib version of the input metric class.
 
     Examples:
         >>> from torchmetrics.classification import BinaryF1Score
         >>> from anomalib.metrics import create_anomalib_metric
-        >>> 
+        >>>
         >>> F1Score = create_anomalib_metric(BinaryF1Score)
         >>> # This is equivalent to the following class definition:
         >>> # class F1Score(AnomalibMetric, BinaryF1Score): ...
-        >>> 
+        >>>
         >>> f1_score = F1Score(fields=["pred_label", "gt_label"])
-        >>> 
+        >>>
         >>> # The AnomalibMetric class allows us to update the metric by passing a Batch
         >>> # object directly.
         >>> f1_score.update(batch)

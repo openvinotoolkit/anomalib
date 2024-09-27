@@ -67,8 +67,9 @@ class Cflow(AnomalyModule):
         clamp_alpha: float = 1.9,
         permute_soft: bool = False,
         lr: float = 0.0001,
+        **kwargs,
     ) -> None:
-        super().__init__()
+        super().__init__(**kwargs)
 
         self.model: CflowModel = CflowModel(
             backbone=backbone,

@@ -109,5 +109,5 @@ class _AUPR(BinaryPrecisionRecallCurve):
         return fig, title
 
 
-class AUPR(AnomalibMetric, _AUPR):
+class AUPR(AnomalibMetric, _AUPR):  # type: ignore[misc]
     """Wrapper to add AnomalibMetric functionality to AUPR metric."""

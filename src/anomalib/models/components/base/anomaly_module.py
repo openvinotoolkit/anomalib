@@ -3,10 +3,8 @@
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-import importlib
 import logging
 from abc import ABC, abstractmethod
-from collections import OrderedDict
 from collections.abc import Sequence
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -145,28 +143,6 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
         """Arguments used to override the trainer parameters so as to train the model correctly."""
         raise NotImplementedError
 
-    def _save_to_state_dict(self, destination: OrderedDict, prefix: str, keep_vars: bool) -> None:
-        if hasattr(self, "image_threshold"):
-            destination["image_threshold_class"] = (
-                f"{self.image_threshold.__class__.__module__}.{self.image_threshold.__class__.__name__}"
-            )
-        if hasattr(self, "pixel_threshold"):
-            destination["pixel_threshold_class"] = (
-                f"{self.pixel_threshold.__class__.__module__}.{self.pixel_threshold.__class__.__name__}"
-            )
-        if hasattr(self, "normalization_metrics"):
-            for metric in self.normalization_metrics:
-                metric_class = self.normalization_metrics[metric].__class__
-                destination[f"{metric}_normalization_class"] = f"{metric_class.__module__}.{metric_class.__name__}"
-
-        return super()._save_to_state_dict(destination, prefix, keep_vars)
-
-    def _get_instance(self, state_dict: OrderedDict[str, Any], dict_key: str) -> Threshold:
-        """Get the threshold class from the ``state_dict``."""
-        class_path = state_dict.pop(dict_key)
-        module = importlib.import_module(".".join(class_path.split(".")[:-1]))
-        return getattr(module, class_path.split(".")[-1])()
-
     @property
     @abstractmethod
     def learning_type(self) -> LearningType:
@@ -216,7 +192,8 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
               Please override the default_post_processor method in the model implementation."
         raise NotImplementedError(msg)
 
-    def default_evaluator(self) -> Evaluator:
+    @staticmethod
+    def default_evaluator() -> Evaluator:
         """Default evaluator.
 
         Override in subclass for model-specific evaluator behaviour.
@@ -232,7 +209,7 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
         """Configure metrics.
 
         Args:
-            metric (AnomalibMetric | Sequence[AnomalibMetric] | Evaluator | None): Metric to configure.
+            metrics (AnomalibMetric | Sequence[AnomalibMetric] | Evaluator | None): Metric to configure.
 
         Returns:
             Evaluator: Configured evaluator.

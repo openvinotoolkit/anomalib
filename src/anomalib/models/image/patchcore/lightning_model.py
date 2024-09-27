@@ -47,8 +47,9 @@ class Patchcore(MemoryBankMixin, AnomalyModule):
         pre_trained: bool = True,
         coreset_sampling_ratio: float = 0.1,
         num_neighbors: int = 9,
+        **kwargs,
     ) -> None:
-        super().__init__()
+        super().__init__(**kwargs)
 
         self.model: PatchcoreModel = PatchcoreModel(
             backbone=backbone,
@@ -140,7 +141,8 @@ class Patchcore(MemoryBankMixin, AnomalyModule):
             ],
         )
 
-    def default_post_processor(self) -> OneClassPostProcessor:
+    @staticmethod
+    def default_post_processor() -> OneClassPostProcessor:
         """Return the default post-processor for the model.
 
         Returns:

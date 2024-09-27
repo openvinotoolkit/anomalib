@@ -294,5 +294,5 @@ class _AUPRO(Metric):
         return old_y[idx] + slope[idx] * (new_x - old_x[idx])
 
 
-class AUPRO(AnomalibMetric, _AUPRO):
+class AUPRO(AnomalibMetric, _AUPRO):  # type: ignore[misc]
     """Wrapper to add AnomalibMetric functionality to AUPRO metric."""

@@ -28,7 +28,15 @@ __all__ = ["Uflow"]
 
 
 class Uflow(AnomalyModule):
-    """PL Lightning Module for the UFLOW algorithm."""
+    """Uflow model.
+
+    Args:
+        backbone (str): Backbone name.
+        flow_steps (int): Number of flow steps.
+        affine_clamp (float): Affine clamp.
+        affine_subnet_channels_ratio (float): Affine subnet channels ratio.
+        permute_soft (bool): Whether to use soft permutation.
+    """
 
     def __init__(
         self,
@@ -37,17 +45,9 @@ class Uflow(AnomalyModule):
         affine_clamp: float = 2.0,
         affine_subnet_channels_ratio: float = 1.0,
         permute_soft: bool = False,
+        **kwargs,
     ) -> None:
-        """Uflow model.
-
-        Args:
-            backbone (str): Backbone name.
-            flow_steps (int): Number of flow steps.
-            affine_clamp (float): Affine clamp.
-            affine_subnet_channels_ratio (float): Affine subnet channels ratio.
-            permute_soft (bool): Whether to use soft permutation.
-        """
-        super().__init__()
+        super().__init__(**kwargs)
 
         self.backbone = backbone
         self.flow_steps = flow_steps

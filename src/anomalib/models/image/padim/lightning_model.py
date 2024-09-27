@@ -45,7 +45,7 @@ class Padim(MemoryBankMixin, AnomalyModule):
         layers: list[str] = ["layer1", "layer2", "layer3"],  # noqa: B006
         pre_trained: bool = True,
         n_features: int | None = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         super().__init__(**kwargs)
 
@@ -136,6 +136,7 @@ class Padim(MemoryBankMixin, AnomalyModule):
             ],
         )
 
-    def default_post_processor(self) -> PostProcessor:
+    @staticmethod
+    def default_post_processor() -> PostProcessor:
         """Return the default post-processor for PADIM."""
         return OneClassPostProcessor()

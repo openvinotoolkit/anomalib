@@ -127,5 +127,5 @@ def pro_score(predictions: torch.Tensor, comps: torch.Tensor, threshold: float =
     return recall_tensor.sum() / (n_comps - 1)
 
 
-class PRO(AnomalibMetric, _PRO):
+class PRO(AnomalibMetric, _PRO):  # type: ignore[misc]
     """Wrapper to add AnomalibMetric functionality to PRO metric."""

@@ -1,9 +1,15 @@
+"""F1 Score and F1Max Metrics for Binary Classification Tasks."""
+
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
 import torch
 from torchmetrics import Metric
 from torchmetrics.classification import BinaryF1Score
-from .precision_recall_curve import BinaryPrecisionRecallCurve
 
 from anomalib.metrics.base import AnomalibMetric
+
+from .precision_recall_curve import BinaryPrecisionRecallCurve
 
 
 class F1Score(AnomalibMetric, BinaryF1Score):
@@ -97,5 +103,5 @@ class _F1Max(Metric):
         self.precision_recall_curve.reset()
 
 
-class F1Max(AnomalibMetric, _F1Max):
+class F1Max(AnomalibMetric, _F1Max):  # type: ignore[misc]
     """Wrapper to add AnomalibMetric functionality to F1Max metric."""

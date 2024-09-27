@@ -44,8 +44,9 @@ class Csflow(AnomalyModule):
         n_coupling_blocks: int = 4,
         clamp: int = 3,
         num_channels: int = 3,
+        **kwargs,
     ) -> None:
-        super().__init__()
+        super().__init__(**kwargs)
 
         self.cross_conv_hidden_channels = cross_conv_hidden_channels
         self.n_coupling_blocks = n_coupling_blocks

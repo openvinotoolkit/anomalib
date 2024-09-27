@@ -103,5 +103,5 @@ class _AUROC(BinaryROC):
         return fig, title
 
 
-class AUROC(AnomalibMetric, _AUROC):
+class AUROC(AnomalibMetric, _AUROC):  # type: ignore[misc]
     """Wrapper to add AnomalibMetric functionality to AUROC metric."""

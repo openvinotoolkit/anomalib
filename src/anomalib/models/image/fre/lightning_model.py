@@ -49,8 +49,9 @@ class Fre(AnomalyModule):
         pooling_kernel_size: int = 2,
         input_dim: int = 65536,
         latent_dim: int = 220,
+        **kwargs,
     ) -> None:
-        super().__init__()
+        super().__init__(**kwargs)
 
         self.model: FREModel = FREModel(
             backbone=backbone,

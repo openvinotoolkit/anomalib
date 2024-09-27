@@ -50,8 +50,9 @@ class WinClip(AnomalyModule):
         k_shot: int = 0,
         scales: tuple = (2, 3),
         few_shot_source: Path | str | None = None,
+        **kwargs,
     ) -> None:
-        super().__init__()
+        super().__init__(**kwargs)
         self.model = WinClipModel(scales=scales, apply_transform=False)
         self.class_name = class_name
         self.k_shot = k_shot
@@ -182,6 +183,7 @@ class WinClip(AnomalyModule):
             ],
         )
 
-    def default_post_processor(self) -> OneClassPostProcessor:
+    @staticmethod
+    def default_post_processor() -> OneClassPostProcessor:
         """Return the default post-processor for WinCLIP."""
         return OneClassPostProcessor()
