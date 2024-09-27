@@ -63,11 +63,6 @@ class TestEngine:
             sync_batchnorm: false
             reload_dataloaders_every_n_epochs: 0
         task: SEGMENTATION
-        metrics:
-            image:
-            - F1Score
-            - AUROC
-            pixel: null
         logging:
             log_graph: false
         default_root_dir: results
