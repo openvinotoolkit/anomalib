@@ -14,7 +14,7 @@ from torch.utils.data import DataLoader
 from anomalib import TaskType
 from anomalib.data import ImageBatch, MVTec, PredictDataset
 from anomalib.engine import Engine
-from anomalib.models import get_model
+from anomalib.models import Padim
 from anomalib.utils.visualization.image import _ImageGrid
 
 
@@ -48,7 +48,8 @@ class TestVisualizer:
     ) -> None:
         """Test combination of model/visualizer/mode on only 1 epoch as a sanity check before merge."""
         _ckpt_path: Path = ckpt_path("Padim")
-        model = get_model("padim")
+        # model = get_model("padim")
+        model = Padim(metrics=[])
         engine = Engine(
             default_root_dir=project_path,
             fast_dev_run=True,

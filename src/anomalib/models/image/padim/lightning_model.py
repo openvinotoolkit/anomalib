@@ -45,8 +45,9 @@ class Padim(MemoryBankMixin, AnomalyModule):
         layers: list[str] = ["layer1", "layer2", "layer3"],  # noqa: B006
         pre_trained: bool = True,
         n_features: int | None = None,
+        **kwargs
     ) -> None:
-        super().__init__()
+        super().__init__(**kwargs)
 
         self.model: PadimModel = PadimModel(
             backbone=backbone,

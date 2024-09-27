@@ -32,9 +32,9 @@ class DummyModule(AnomalyModule):
     TODO(ashwinvaidya17): Remove this when the DummyModels have been refactored.
     """
 
-    def __init__(self, dataset_path: Path) -> None:
+    def __init__(self, dataset_path: Path, **kwargs) -> None:
         """Initializes the dummy model."""
-        super().__init__()
+        super().__init__(**kwargs)
         self.model = _DummyModel()
         self.task = "segmentation"
         self.mode = "full"
