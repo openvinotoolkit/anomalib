@@ -14,6 +14,7 @@ from torch import optim
 
 from anomalib import LearningType
 from anomalib.data import Batch
+from anomalib.metrics import AUROC, Evaluator, F1Score
 from anomalib.models.components import AnomalyModule
 
 from .loss import FastflowLoss
@@ -129,3 +130,22 @@ class Fastflow(AnomalyModule):
             LearningType: Learning type of the model.
         """
         return LearningType.ONE_CLASS
+
+    @staticmethod
+    def default_evaluator() -> Evaluator:
+        """Default evaluator.
+
+        Override in subclass for model-specific evaluator behaviour.
+        """
+        # val metrics (needed for early stopping)
+        image_auroc = AUROC(fields=["pred_score", "gt_label"], prefix="image_")
+        pixel_auroc = AUROC(fields=["anomaly_map", "gt_mask"], prefix="pixel_")
+        val_metrics = [image_auroc, pixel_auroc]
+
+        # test_metrics
+        image_auroc = AUROC(fields=["pred_score", "gt_label"], prefix="image_")
+        image_f1score = F1Score(fields=["pred_label", "gt_label"], prefix="image_")
+        pixel_auroc = AUROC(fields=["anomaly_map", "gt_mask"], prefix="pixel_")
+        pixel_f1score = F1Score(fields=["pred_mask", "gt_mask"], prefix="pixel_")
+        test_metrics = [image_auroc, image_f1score, pixel_auroc, pixel_f1score]
+        return Evaluator(val_metrics=val_metrics, test_metrics=test_metrics)
