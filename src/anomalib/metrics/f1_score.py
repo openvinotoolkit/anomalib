@@ -1,12 +1,12 @@
-
 import torch
-from anomalib.metrics.base import AnomalibMetric
 from torchmetrics import Metric
 from torchmetrics.classification import BinaryF1Score, BinaryPrecisionRecallCurve
 
+from anomalib.metrics.base import AnomalibMetric
+
 
 class F1Score(AnomalibMetric, BinaryF1Score):
-    pass
+    """Wrapper to add AnomalibMetric functionality to F1Score metric."""
 
 
 class _F1Max(Metric):
@@ -97,4 +97,4 @@ class _F1Max(Metric):
 
 
 class F1Max(AnomalibMetric, _F1Max):
-    pass
+    """Wrapper to add AnomalibMetric functionality to F1Max metric."""

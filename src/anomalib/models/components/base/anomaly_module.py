@@ -20,18 +20,16 @@ from torchvision.transforms.v2 import Compose, Normalize, Resize, Transform
 
 from anomalib import LearningType
 from anomalib.data import Batch, InferenceBatch
-from anomalib.metrics import F1Score, AUROC
+from anomalib.metrics import AUROC, F1Score
+from anomalib.metrics.evaluator import Evaluator
 from anomalib.metrics.threshold import Threshold
 from anomalib.post_processing import OneClassPostProcessor, PostProcessor
-from anomalib.metrics.evaluator import Evaluator
-from anomalib.metrics.collection import MetricWrapper
 
 from .export_mixin import ExportMixin
 
 if TYPE_CHECKING:
     from lightning.pytorch.callbacks import Callback
 
-    from anomalib.metrics import AnomalibMetricCollection
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +40,11 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
     Acts as a base class for all the Anomaly Modules in the library.
     """
 
-    def __init__(self, post_processor: PostProcessor | None = None, evaluator: Evaluator | None = None) -> None:
+    def __init__(
+        self,
+        post_processor: PostProcessor | None = None,
+        evaluator: Evaluator | None = None,
+    ) -> None:
         super().__init__()
         logger.info("Initializing %s model.", self.__class__.__name__)
 

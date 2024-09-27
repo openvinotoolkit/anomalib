@@ -10,8 +10,10 @@ from torchmetrics.utilities.data import dim_zero_cat
 
 from anomalib.utils.cv import connected_components_cpu, connected_components_gpu
 
+from .base import AnomalibMetric
 
-class PRO(Metric):
+
+class _PRO(Metric):
     """Per-Region Overlap (PRO) Score.
 
     This metric computes the macro average of the per-region overlap between the
@@ -123,3 +125,7 @@ def pro_score(predictions: torch.Tensor, comps: torch.Tensor, threshold: float =
         ignore_index=0,
     )
     return recall_tensor.sum() / (n_comps - 1)
+
+
+class PRO(AnomalibMetric, _PRO):
+    """Wrapper to add AnomalibMetric functionality to PRO metric."""

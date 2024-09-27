@@ -22,7 +22,6 @@ from anomalib.callbacks.timer import TimerCallback
 from anomalib.callbacks.visualizer import _VisualizationCallback
 from anomalib.data import AnomalibDataModule, AnomalibDataset, PredictDataset
 from anomalib.deploy import CompressionType, ExportType
-from anomalib.metrics import MetricWrapper
 from anomalib.models import AnomalyModule
 from anomalib.utils.path import create_versioned_dir
 from anomalib.utils.visualization import ImageVisualizer
@@ -119,8 +118,6 @@ class Engine:
         task: TaskType | str = TaskType.SEGMENTATION,
         image_metrics: list[str] | str | dict[str, dict[str, Any]] | None = None,
         pixel_metrics: list[str] | str | dict[str, dict[str, Any]] | None = None,
-        val_metrics: list[MetricWrapper] | None = None,
-        test_metrics: list[MetricWrapper] | None = None,
         logger: Logger | Iterable[Logger] | bool | None = None,
         default_root_dir: str | Path = "results",
         **kwargs,

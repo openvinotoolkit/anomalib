@@ -15,11 +15,12 @@ from torchmetrics.utilities.data import dim_zero_cat
 
 from anomalib.metrics.pro import connected_components_cpu, connected_components_gpu
 
+from .base import AnomalibMetric
 from .binning import thresholds_between_0_and_1, thresholds_between_min_and_max
 from .plotting_utils import plot_figure
 
 
-class AUPRO(Metric):
+class _AUPRO(Metric):
     """Area under per region overlap (AUPRO) Metric.
 
     Args:
@@ -291,3 +292,7 @@ class AUPRO(Metric):
 
         # perform actual linear interpolation
         return old_y[idx] + slope[idx] * (new_x - old_x[idx])
+
+
+class AUPRO(AnomalibMetric, _AUPRO):
+    """Wrapper to add AnomalibMetric functionality to AUPRO metric."""

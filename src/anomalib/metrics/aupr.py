@@ -9,10 +9,11 @@ from torchmetrics.classification import BinaryPrecisionRecallCurve
 from torchmetrics.utilities.compute import auc
 from torchmetrics.utilities.data import dim_zero_cat
 
+from .base import AnomalibMetric
 from .plotting_utils import plot_figure
 
 
-class AUPR(BinaryPrecisionRecallCurve):
+class _AUPR(BinaryPrecisionRecallCurve):
     """Area under the PR curve.
 
     This metric computes the area under the precision-recall curve.
@@ -106,3 +107,7 @@ class AUPR(BinaryPrecisionRecallCurve):
         )
 
         return fig, title
+
+
+class AUPR(AnomalibMetric, _AUPR):
+    """Wrapper to add AnomalibMetric functionality to AUPR metric."""
