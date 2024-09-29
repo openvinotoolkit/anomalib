@@ -5,6 +5,8 @@
 
 from typing import TYPE_CHECKING
 
+from anomalib.data.utils import ValSplitMode
+
 if TYPE_CHECKING:
     from pathlib import Path
 
@@ -54,64 +56,59 @@ class TrainTiledEnsemble(Pipeline):
         normalization_stage = NormalizationStage(args["normalization_stage"])
         model_args = args["TrainModels"]["model"]
 
+        train_job_generator = TrainModelJobGenerator(
+            seed=seed,
+            accelerator=accelerator,
+            root_dir=self.root_dir,
+            tiling_args=tiling_args,
+            data_args=data_args,
+            normalization_stage=normalization_stage,
+        )
+
+        predict_job_generator = PredictJobGenerator(
+            data_source=PredictData.VAL,
+            seed=seed,
+            accelerator=accelerator,
+            root_dir=self.root_dir,
+            tiling_args=tiling_args,
+            data_args=data_args,
+            model_args=model_args,
+            normalization_stage=normalization_stage,
+        )
+
+        # 1. train
         if accelerator == "cuda":
-            runners.extend(
-                [
-                    ParallelRunner(
-                        TrainModelJobGenerator(
-                            seed=seed,
-                            accelerator=accelerator,
-                            root_dir=self.root_dir,
-                            tiling_args=tiling_args,
-                            data_args=data_args,
-                            normalization_stage=normalization_stage,
-                        ),
-                        n_jobs=torch.cuda.device_count(),
-                    ),
-                    ParallelRunner(
-                        PredictJobGenerator(
-                            data_source=PredictData.VAL,
-                            seed=seed,
-                            accelerator=accelerator,
-                            root_dir=self.root_dir,
-                            tiling_args=tiling_args,
-                            data_args=data_args,
-                            model_args=model_args,
-                            normalization_stage=normalization_stage,
-                        ),
-                        n_jobs=torch.cuda.device_count(),
-                    ),
-                ],
+            runners.append(
+                ParallelRunner(
+                    train_job_generator,
+                    n_jobs=torch.cuda.device_count(),
+                ),
             )
         else:
-            runners.extend(
-                [
-                    SerialRunner(
-                        TrainModelJobGenerator(
-                            seed=seed,
-                            accelerator=accelerator,
-                            root_dir=self.root_dir,
-                            tiling_args=tiling_args,
-                            data_args=data_args,
-                            normalization_stage=normalization_stage,
-                        ),
-                    ),
-                    SerialRunner(
-                        PredictJobGenerator(
-                            data_source=PredictData.VAL,
-                            seed=seed,
-                            accelerator=accelerator,
-                            root_dir=self.root_dir,
-                            tiling_args=tiling_args,
-                            data_args=data_args,
-                            model_args=model_args,
-                            normalization_stage=normalization_stage,
-                        ),
-                    ),
-                ],
+            runners.append(
+                SerialRunner(
+                    train_job_generator,
+                ),
             )
+
+        if data_args["init_args"]["val_split_mode"] == ValSplitMode.NONE:
+            logger.warning("No validation set provided, skipping statistics calculation.")
+            return runners
+
+        # 2. predict using validation data
+        if accelerator == "cuda":
+            runners.append(
+                ParallelRunner(predict_job_generator, n_jobs=torch.cuda.device_count()),
+            )
+        else:
+            runners.append(
+                SerialRunner(predict_job_generator),
+            )
+
+        # 3. merge predictions
         runners.append(SerialRunner(MergeJobGenerator(tiling_args=tiling_args, data_args=data_args)))
 
+        # 4. (optional) smooth seams
         if args["SeamSmoothing"]["apply"]:
             runners.append(
                 SerialRunner(
@@ -119,6 +116,7 @@ class TrainTiledEnsemble(Pipeline):
                 ),
             )
 
+        # 5. calculate statistics used for inference
         runners.append(SerialRunner(StatisticsJobGenerator(self.root_dir)))
 
         return runners

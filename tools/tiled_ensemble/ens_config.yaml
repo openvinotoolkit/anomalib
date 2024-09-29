@@ -34,16 +34,15 @@ SeamSmoothing:
 
 TrainModels:
   model:
-    class_path: Fastflow
+    class_path: Padim
 
   metrics:
     pixel: AUROC
-
-  trainer:
-    max_epochs: 500
-    callbacks:
-      - class_path: lightning.pytorch.callbacks.EarlyStopping
-        init_args:
-          patience: 1
-          monitor: pixel_AUROC
-          mode: max
+#  trainer:
+#    max_epochs: 500
+#    callbacks:
+#      - class_path: lightning.pytorch.callbacks.EarlyStopping
+#        init_args:
+#          patience: 1
+#          monitor: pixel_AUROC
+#          mode: max
