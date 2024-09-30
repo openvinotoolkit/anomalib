@@ -18,7 +18,6 @@ from functools import partial
 
 import numpy as np
 import torch
-from numpy import ndarray
 
 from . import _validate
 from .enums import ThresholdMethod
@@ -26,8 +25,8 @@ from .enums import ThresholdMethod
 logger = logging.getLogger(__name__)
 
 
-def _binclf_one_curve(scores: ndarray, gts: ndarray, threshs: ndarray) -> ndarray:
-    """One binary classification matrix at each threshold (PYTHON implementation).
+def _binary_classification_curve(scores: np.ndarray, gts: np.ndarray, threshs: np.ndarray) -> np.ndarray:
+    """One binary classification matrix at each threshold.
 
     In the case where the thresholds are given (i.e. not considering all possible thresholds based on the scores),
     this weird-looking function is faster than the two options in `torchmetrics` on the CPU:
@@ -37,12 +36,12 @@ def _binclf_one_curve(scores: ndarray, gts: ndarray, threshs: ndarray) -> ndarra
     Note: VALIDATION IS NOT DONE HERE. Make sure to validate the arguments before calling this function.
 
     Args:
-        scores (ndarray): Anomaly scores (D,).
-        gts (ndarray): Binary (bool) ground truth of shape (D,).
-        threshs (ndarray): Sequence of thresholds in ascending order (K,).
+        scores (np.ndarray): Anomaly scores (D,).
+        gts (np.ndarray): Binary (bool) ground truth of shape (D,).
+        threshs (np.ndarray): Sequence of thresholds in ascending order (K,).
 
     Returns:
-        ndarray: Binary classification matrix curve (K, 2, 2)
+        np.ndarray: Binary classification matrix curve (K, 2, 2)
         Details: `anomalib.metrics.per_image.binclf_curve_numpy.binclf_multiple_curves`.
     """
     num_th = len(threshs)
@@ -95,14 +94,14 @@ def _binclf_one_curve(scores: ndarray, gts: ndarray, threshs: ndarray) -> ndarra
     ).transpose(0, 2, 1)
 
 
-def binclf_multiple_curves(
+def binary_classification_curve(
     scores_batch: torch.Tensor,
     gts_batch: torch.Tensor,
     threshs: torch.Tensor,
 ) -> torch.Tensor:
-    """Multiple binary classification matrix (per-instance scope) at each threshold (shared).
+    """Returns a binary classification matrix at each threshold for each image in the batch.
 
-    This is a wrapper around `_binclf_multiple_curves_python` and `_binclf_multiple_curves_numba`.
+    This is a wrapper around `_binary_classification_curve`.
     Validation of the arguments is done here (not in the actual implementation functions).
 
     Note: predicted as positive condition is `score >= thresh`.
@@ -143,7 +142,7 @@ def binclf_multiple_curves(
     _validate.is_threshs(threshs)
     # TODO(ashwinvaidya17): this is kept as numpy for now because it is much faster.
     # TEMP-0
-    result = np.vectorize(_binclf_one_curve, signature="(n),(n),(k)->(k,2,2)")(
+    result = np.vectorize(_binary_classification_curve, signature="(n),(n),(k)->(k,2,2)")(
         scores_batch.detach().cpu().numpy(),
         gts_batch.detach().cpu().numpy(),
         threshs.detach().cpu().numpy(),
@@ -151,12 +150,9 @@ def binclf_multiple_curves(
     return torch.from_numpy(result).to(scores_batch.device)
 
 
-# ========================================= PER-IMAGE BINCLF CURVE =========================================
-
-
-def _get_threshs_minmax_linspace(anomaly_maps: torch.Tensor, num_threshs: int) -> torch.Tensor:
+def _get_threshs_minmax_linspace(anomaly_maps: torch.Tensor, num_thresholds: int) -> torch.Tensor:
     """Get thresholds linearly spaced between the min and max of the anomaly maps."""
-    _validate.is_num_threshs_gte2(num_threshs)
+    _validate.is_num_threshs_gte2(num_thresholds)
     # this operation can be a bit expensive
     thresh_low, thresh_high = thresh_bounds = (anomaly_maps.min().item(), anomaly_maps.max().item())
     try:
@@ -164,17 +160,17 @@ def _get_threshs_minmax_linspace(anomaly_maps: torch.Tensor, num_threshs: int) -
     except ValueError as ex:
         msg = f"Invalid threshold bounds computed from the given anomaly maps. Cause: {ex}"
         raise ValueError(msg) from ex
-    return torch.linspace(thresh_low, thresh_high, num_threshs, dtype=anomaly_maps.dtype)
+    return torch.linspace(thresh_low, thresh_high, num_thresholds, dtype=anomaly_maps.dtype)
 
 
-def per_image_binclf_curve(
+def threshold_and_binary_classification_curve(
     anomaly_maps: torch.Tensor,
     masks: torch.Tensor,
     threshs_choice: ThresholdMethod | str = ThresholdMethod.MINMAX_LINSPACE.value,
     threshs_given: torch.Tensor | None = None,
     num_threshs: int | None = None,
 ) -> tuple[torch.Tensor, torch.Tensor]:
-    """Compute the binary classification matrix of each image in the batch for multiple thresholds (shared).
+    """Return thresholds and binary classification matrix at each threshold for each image in the batch.
 
     Args:
         anomaly_maps (torch.Tensor): Anomaly score maps of shape (N, H, W)
@@ -259,7 +255,7 @@ def per_image_binclf_curve(
     scores_batch = anomaly_maps.reshape(anomaly_maps.shape[0], -1)
     gts_batch = masks.reshape(masks.shape[0], -1).to(bool)  # make sure it is boolean
 
-    binclf_curves = binclf_multiple_curves(scores_batch, gts_batch, threshs)
+    binclf_curves = binary_classification_curve(scores_batch, gts_batch, threshs)
 
     num_images = anomaly_maps.shape[0]
 

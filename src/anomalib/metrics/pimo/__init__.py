@@ -9,12 +9,6 @@
 
 from .enums import StatsOutliersPolicy, StatsRepeatedPolicy, ThresholdMethod
 from .pimo import AUPIMO, PIMO, AUPIMOResult, PIMOResult
-from .utils import (
-    compare_models_pairwise_ttest_rel,
-    compare_models_pairwise_wilcoxon,
-    format_pairwise_tests_results,
-    per_image_scores_stats,
-)
 
 __all__ = [
     # constants
@@ -27,9 +21,4 @@ __all__ = [
     # torchmetrics interfaces
     "PIMO",
     "AUPIMO",
-    # utils
-    "compare_models_pairwise_ttest_rel",
-    "compare_models_pairwise_wilcoxon",
-    "format_pairwise_tests_results",
-    "per_image_scores_stats",
 ]

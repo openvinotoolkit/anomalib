@@ -13,8 +13,7 @@ import pytest
 import torch
 from torch import Tensor
 
-from anomalib.metrics.per_image import functional, pimo
-from anomalib.metrics.per_image.pimo import AUPIMOResult, PIMOResult
+from anomalib.metrics.pimo import AUPIMOResult, PIMOResult, functional, pimo
 
 
 def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
