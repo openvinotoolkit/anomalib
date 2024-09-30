@@ -26,8 +26,8 @@ from .enums import ThresholdMethod
 logger = logging.getLogger(__name__)
 
 
-def _binary_classification_one_curve(scores: ndarray, gts: ndarray, threshs: ndarray) -> ndarray:
-    """One binary classification matrix at each threshold (PYTHON implementation).
+def _binary_classification_curve(scores: ndarray, gts: ndarray, threshs: ndarray) -> ndarray:
+    """One binary classification matrix at each threshold.
 
     In the case where the thresholds are given (i.e. not considering all possible thresholds based on the scores),
     this weird-looking function is faster than the two options in `torchmetrics` on the CPU:
@@ -95,7 +95,7 @@ def _binary_classification_one_curve(scores: ndarray, gts: ndarray, threshs: nda
     ).transpose(0, 2, 1)
 
 
-def binary_classification_multiple_curves(
+def binary_classification_curve_batch(
     scores_batch: torch.Tensor,
     gts_batch: torch.Tensor,
     threshs: torch.Tensor,
@@ -143,7 +143,7 @@ def binary_classification_multiple_curves(
     _validate.is_threshs(threshs)
     # TODO(ashwinvaidya17): this is kept as numpy for now because it is much faster.
     # TEMP-0
-    result = np.vectorize(_binary_classification_one_curve, signature="(n),(n),(k)->(k,2,2)")(
+    result = np.vectorize(_binary_classification_curve, signature="(n),(n),(k)->(k,2,2)")(
         scores_batch.detach().cpu().numpy(),
         gts_batch.detach().cpu().numpy(),
         threshs.detach().cpu().numpy(),
@@ -256,7 +256,7 @@ def per_image_binary_classification_curve(
     scores_batch = anomaly_maps.reshape(anomaly_maps.shape[0], -1)
     gts_batch = masks.reshape(masks.shape[0], -1).to(bool)  # make sure it is boolean
 
-    binclf_curves = binary_classification_multiple_curves(scores_batch, gts_batch, threshs)
+    binclf_curves = binary_classification_curve_batch(scores_batch, gts_batch, threshs)
 
     num_images = anomaly_maps.shape[0]
 

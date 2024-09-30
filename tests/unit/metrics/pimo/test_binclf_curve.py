@@ -294,7 +294,7 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
 
 def test__binclf_one_curve(pred: torch.Tensor, gt: torch.Tensor, threshs: torch.Tensor, expected: torch.Tensor) -> None:
     """Test if `_binclf_one_curve()` returns the expected values."""
-    computed = binary_classification_curve._binary_classification_one_curve(pred, gt, threshs)
+    computed = binary_classification_curve._binary_classification_curve(pred, gt, threshs)
     assert computed.shape == (threshs.numel(), 2, 2)
     assert (computed == expected.numpy()).all()
 
@@ -306,7 +306,7 @@ def test__binclf_multiple_curves(
     expecteds: torch.Tensor,
 ) -> None:
     """Test if `_binclf_multiple_curves()` returns the expected values."""
-    computed = binary_classification_curve.binary_classification_multiple_curves(preds, gts, threshs)
+    computed = binary_classification_curve.binary_classification_curve_batch(preds, gts, threshs)
     assert computed.shape == (preds.shape[0], threshs.numel(), 2, 2)
     assert (computed == expecteds).all()
 
@@ -322,7 +322,7 @@ def test_binclf_multiple_curves(
     expected_binclf_curves: torch.Tensor,
 ) -> None:
     """Test if `binclf_multiple_curves()` returns the expected values."""
-    computed = binary_classification_curve.binary_classification_multiple_curves(
+    computed = binary_classification_curve.binary_classification_curve_batch(
         preds,
         gts,
         threshs,
@@ -331,26 +331,26 @@ def test_binclf_multiple_curves(
     assert (computed == expected_binclf_curves).all()
 
     # it's ok to have the threhsholds beyond the range of the preds
-    binary_classification_curve.binary_classification_multiple_curves(preds, gts, 2 * threshs)
+    binary_classification_curve.binary_classification_curve_batch(preds, gts, 2 * threshs)
 
     # or inside the bounds without reaching them
-    binary_classification_curve.binary_classification_multiple_curves(preds, gts, 0.5 * threshs)
+    binary_classification_curve.binary_classification_curve_batch(preds, gts, 0.5 * threshs)
 
     # it's also ok to have more threshs than unique values in the preds
     # add the values in between the threshs
     threshs_unncessary = 0.5 * (threshs[:-1] + threshs[1:])
     threshs_unncessary = torch.concatenate([threshs_unncessary, threshs])
     threshs_unncessary = torch.sort(threshs_unncessary)[0]
-    binary_classification_curve.binary_classification_multiple_curves(preds, gts, threshs_unncessary)
+    binary_classification_curve.binary_classification_curve_batch(preds, gts, threshs_unncessary)
 
     # or less
-    binary_classification_curve.binary_classification_multiple_curves(preds, gts, threshs[1:3])
+    binary_classification_curve.binary_classification_curve_batch(preds, gts, threshs[1:3])
 
 
 def test_binclf_multiple_curves_validations(args: list, kwargs: dict, exception: Exception) -> None:
     """Test if `_binclf_multiple_curves_python()` raises the expected errors."""
     with pytest.raises(exception):
-        binary_classification_curve.binary_classification_multiple_curves(*args, **kwargs)
+        binary_classification_curve.binary_classification_curve_batch(*args, **kwargs)
 
 
 def test_per_image_binclf_curve(

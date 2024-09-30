@@ -9,7 +9,6 @@
 
 from .enums import StatsOutliersPolicy, StatsRepeatedPolicy, ThresholdMethod
 from .pimo import AUPIMO, PIMO, AUPIMOResult, PIMOResult
-from .utils import per_image_scores_stats
 
 __all__ = [
     # constants
@@ -22,6 +21,4 @@ __all__ = [
     # torchmetrics interfaces
     "PIMO",
     "AUPIMO",
-    # utils
-    "per_image_scores_stats",
 ]
