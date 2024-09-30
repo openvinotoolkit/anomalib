@@ -11,7 +11,6 @@ from typing import Any
 import torchmetrics
 from omegaconf import DictConfig, ListConfig
 
-from . import pimo
 from .anomaly_score_distribution import AnomalyScoreDistribution
 from .aupr import AUPR
 from .aupro import AUPRO
@@ -37,7 +36,6 @@ __all__ = [
     "ManualThreshold",
     "MinMax",
     "PRO",
-    "pimo",
     "PIMO",
     "AUPIMO",
 ]

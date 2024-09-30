@@ -179,9 +179,9 @@ class AUPIMOResult:
             raise TypeError(msg) from ex
 
     @classmethod
-    def from_pimoresult(
+    def from_pimo_result(
         cls: type["AUPIMOResult"],
-        pimoresult: PIMOResult,
+        pimo_result: PIMOResult,
         fpr_bounds: tuple[float, float],
         num_threshs_auc: int,
         aupimos: torch.Tensor,
@@ -189,32 +189,32 @@ class AUPIMOResult:
         """Return an AUPIMO result object from a PIMO result object.
 
         Args:
-            pimoresult: PIMO result object
+            pimo_result: PIMO result object
             fpr_bounds: lower and upper bounds of the FPR integration range
             num_threshs_auc: number of thresholds used to effectively compute AUPIMO;
                          NOT the number of thresholds used to compute the PIMO curve!
             aupimos: AUPIMO scores
             paths: paths to the source images to which the AUPIMO scores correspond.
         """
-        if pimoresult.per_image_tprs.shape[0] != aupimos.shape[0]:
+        if pimo_result.per_image_tprs.shape[0] != aupimos.shape[0]:
             msg = (
                 f"Invalid {cls.__name__} object. Attributes have inconsistent shapes: "
-                f"there are {pimoresult.per_image_tprs.shape[0]} PIMO curves but {aupimos.shape[0]} AUPIMO scores."
+                f"there are {pimo_result.per_image_tprs.shape[0]} PIMO curves but {aupimos.shape[0]} AUPIMO scores."
             )
             raise TypeError(msg)
 
-        if not torch.isnan(aupimos[pimoresult.image_classes == 0]).all():
+        if not torch.isnan(aupimos[pimo_result.image_classes == 0]).all():
             msg = "Expected all normal images to have NaN AUPIMOs, but some have non-NaN values."
             raise TypeError(msg)
 
-        if torch.isnan(aupimos[pimoresult.image_classes == 1]).any():
+        if torch.isnan(aupimos[pimo_result.image_classes == 1]).any():
             msg = "Expected all anomalous images to have valid AUPIMOs (not nan), but some have NaN values."
             raise TypeError(msg)
 
         fpr_lower_bound, fpr_upper_bound = fpr_bounds
         # recall: fpr upper/lower bounds are the same as the thresh lower/upper bounds
-        _, thresh_lower_bound, __ = pimoresult.thresh_at(fpr_upper_bound)
-        _, thresh_upper_bound, __ = pimoresult.thresh_at(fpr_lower_bound)
+        _, thresh_lower_bound, __ = pimo_result.thresh_at(fpr_upper_bound)
+        _, thresh_upper_bound, __ = pimo_result.thresh_at(fpr_lower_bound)
         # `_` is the threshold's index, `__` is the actual fpr value
         return cls(
             fpr_lower_bound=fpr_lower_bound,

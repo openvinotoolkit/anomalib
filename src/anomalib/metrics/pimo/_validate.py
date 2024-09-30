@@ -89,22 +89,22 @@ def is_rate_range(bounds: tuple[float, float]) -> None:
         raise ValueError(msg)
 
 
-def is_threshs(threshs: Tensor) -> None:
+def is_threshs(thresholds: Tensor) -> None:
     """Validate that the thresholds are valid and monotonically increasing."""
-    if not isinstance(threshs, Tensor):
-        msg = f"Expected thresholds to be an Tensor, but got {type(threshs)}"
+    if not isinstance(thresholds, Tensor):
+        msg = f"Expected thresholds to be an Tensor, but got {type(thresholds)}"
         raise TypeError(msg)
 
-    if threshs.ndim != 1:
-        msg = f"Expected thresholds to be 1D, but got {threshs.ndim}"
+    if thresholds.ndim != 1:
+        msg = f"Expected thresholds to be 1D, but got {thresholds.ndim}"
         raise ValueError(msg)
 
-    if not threshs.dtype.is_floating_point:
-        msg = f"Expected thresholds to be of float type, but got Tensor with dtype {threshs.dtype}"
+    if not thresholds.dtype.is_floating_point:
+        msg = f"Expected thresholds to be of float type, but got Tensor with dtype {thresholds.dtype}"
         raise TypeError(msg)
 
     # make sure they are strictly increasing
-    if not torch.all(torch.diff(threshs) > 0):
+    if not torch.all(torch.diff(thresholds) > 0):
         msg = "Expected thresholds to be strictly increasing, but it is not."
         raise ValueError(msg)
 
@@ -383,11 +383,11 @@ def has_at_least_one_normal_image(masks: torch.Tensor) -> None:
         raise ValueError(msg)
 
 
-def joint_validate_threshs_shared_fpr(threshs: torch.Tensor, shared_fpr: torch.Tensor) -> None:
-    if threshs.shape[0] != shared_fpr.shape[0]:
+def joint_validate_threshs_shared_fpr(thresholds: torch.Tensor, shared_fpr: torch.Tensor) -> None:
+    if thresholds.shape[0] != shared_fpr.shape[0]:
         msg = (
-            "Expected `threshs` and `shared_fpr` to have the same number of elements, "
-            f"but got {threshs.shape[0]} != {shared_fpr.shape[0]}"
+            "Expected `thresholds` and `shared_fpr` to have the same number of elements, "
+            f"but got {thresholds.shape[0]} != {shared_fpr.shape[0]}"
         )
         raise ValueError(msg)
 

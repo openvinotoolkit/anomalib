@@ -25,7 +25,7 @@ from .enums import ThresholdMethod
 logger = logging.getLogger(__name__)
 
 
-def _binary_classification_curve(scores: np.ndarray, gts: np.ndarray, threshs: np.ndarray) -> np.ndarray:
+def _binary_classification_curve(scores: np.ndarray, gts: np.ndarray, thresholds: np.ndarray) -> np.ndarray:
     """One binary classification matrix at each threshold.
 
     In the case where the thresholds are given (i.e. not considering all possible thresholds based on the scores),
@@ -38,13 +38,13 @@ def _binary_classification_curve(scores: np.ndarray, gts: np.ndarray, threshs: n
     Args:
         scores (np.ndarray): Anomaly scores (D,).
         gts (np.ndarray): Binary (bool) ground truth of shape (D,).
-        threshs (np.ndarray): Sequence of thresholds in ascending order (K,).
+        thresholds (np.ndarray): Sequence of thresholds in ascending order (K,).
 
     Returns:
         np.ndarray: Binary classification matrix curve (K, 2, 2)
         Details: `anomalib.metrics.per_image.binclf_curve_numpy.binclf_multiple_curves`.
     """
-    num_th = len(threshs)
+    num_th = len(thresholds)
 
     # POSITIVES
     scores_positives = scores[gts]
@@ -65,7 +65,7 @@ def _binary_classification_curve(scores: np.ndarray, gts: np.ndarray, threshs: n
         return score < thresh
 
     # it will progressively drop the scores that are below the current thresh
-    for thresh_idx, thresh in enumerate(threshs):
+    for thresh_idx, thresh in enumerate(thresholds):
         # UPDATE POSITIVES
         # < becasue it is the same as ~(>=)
         num_drop = sum(1 for _ in itertools.takewhile(partial(score_less_than_thresh, thresh=thresh), scores_positives))
@@ -84,7 +84,7 @@ def _binary_classification_curve(scores: np.ndarray, gts: np.ndarray, threshs: n
     fns = num_pos * np.ones((num_th,), dtype=np.int64) - tps
     tns = num_neg * np.ones((num_th,), dtype=np.int64) - fps
 
-    # sequence of dimensions is (threshs, true class, predicted class) (see docstring)
+    # sequence of dimensions is (thresholds, true class, predicted class) (see docstring)
     return np.stack(
         [
             np.stack([tns, fps], axis=-1),
@@ -97,7 +97,7 @@ def _binary_classification_curve(scores: np.ndarray, gts: np.ndarray, threshs: n
 def binary_classification_curve(
     scores_batch: torch.Tensor,
     gts_batch: torch.Tensor,
-    threshs: torch.Tensor,
+    thresholds: torch.Tensor,
 ) -> torch.Tensor:
     """Returns a binary classification matrix at each threshold for each image in the batch.
 
@@ -109,7 +109,7 @@ def binary_classification_curve(
     Args:
         scores_batch (torch.Tensor): Anomaly scores (N, D,).
         gts_batch (torch.Tensor): Binary (bool) ground truth of shape (N, D,).
-        threshs (torch.Tensor): Sequence of thresholds in ascending order (K,).
+        thresholds (torch.Tensor): Sequence of thresholds in ascending order (K,).
 
     Returns:
         torch.Tensor: Binary classification matrix curves (N, K, 2, 2)
@@ -132,20 +132,20 @@ def binary_classification_curve(
         Counts are relative to each instance (i.e. from 0 to D, e.g. the total is the number of pixels in the image).
 
         Thresholds are shared across all instances, so all confusion matrices, for instance,
-        at position [:, 0, :, :] are relative to the 1st threshold in `threshs`.
+        at position [:, 0, :, :] are relative to the 1st threshold in `thresholds`.
 
         Thresholds are sorted in ascending order.
     """
     _validate.is_scores_batch(scores_batch)
     _validate.is_gts_batch(gts_batch)
     _validate.is_same_shape(scores_batch, gts_batch)
-    _validate.is_threshs(threshs)
+    _validate.is_threshs(thresholds)
     # TODO(ashwinvaidya17): this is kept as numpy for now because it is much faster.
     # TEMP-0
     result = np.vectorize(_binary_classification_curve, signature="(n),(n),(k)->(k,2,2)")(
         scores_batch.detach().cpu().numpy(),
         gts_batch.detach().cpu().numpy(),
-        threshs.detach().cpu().numpy(),
+        thresholds.detach().cpu().numpy(),
     )
     return torch.from_numpy(result).to(scores_batch.device)
 
@@ -210,7 +210,7 @@ def threshold_and_binary_classification_curve(
             The numbers in each confusion matrix are the counts of pixels in the image (not the ratios).
 
             Thresholds are shared across all images, so all confusion matrices, for instance,
-            at position [:, 0, :, :] are relative to the 1st threshold in `threshs`.
+            at position [:, 0, :, :] are relative to the 1st threshold in `thresholds`.
 
             Thresholds are sorted in ascending order.
     """
@@ -219,7 +219,7 @@ def threshold_and_binary_classification_curve(
     _validate.is_masks(masks)
     _validate.is_same_shape(anomaly_maps, masks)
 
-    threshs: torch.Tensor
+    thresholds: torch.Tensor
 
     if threshs_choice == ThresholdMethod.GIVEN:
         assert threshs_given is not None
@@ -229,7 +229,7 @@ def threshold_and_binary_classification_curve(
                 "Argument `num_threshs` was given, "
                 f"but it is ignored because `threshs_choice` is '{threshs_choice.value}'.",
             )
-        threshs = threshs_given.to(anomaly_maps.dtype)
+        thresholds = threshs_given.to(anomaly_maps.dtype)
 
     elif threshs_choice == ThresholdMethod.MINMAX_LINSPACE:
         assert num_threshs is not None
@@ -239,7 +239,7 @@ def threshold_and_binary_classification_curve(
                 f"but it is ignored because `threshs_choice` is '{threshs_choice.value}'.",
             )
         # `num_threshs` is validated in the function below
-        threshs = _get_threshs_minmax_linspace(anomaly_maps, num_threshs)
+        thresholds = _get_threshs_minmax_linspace(anomaly_maps, num_threshs)
 
     elif threshs_choice == ThresholdMethod.MEAN_FPR_OPTIMIZED:
         raise NotImplementedError(f"TODO implement {threshs_choice.value}")  # noqa: EM102
@@ -255,12 +255,12 @@ def threshold_and_binary_classification_curve(
     scores_batch = anomaly_maps.reshape(anomaly_maps.shape[0], -1)
     gts_batch = masks.reshape(masks.shape[0], -1).to(bool)  # make sure it is boolean
 
-    binclf_curves = binary_classification_curve(scores_batch, gts_batch, threshs)
+    binclf_curves = binary_classification_curve(scores_batch, gts_batch, thresholds)
 
     num_images = anomaly_maps.shape[0]
 
     try:
-        _validate.is_binclf_curves(binclf_curves, valid_threshs=threshs)
+        _validate.is_binclf_curves(binclf_curves, valid_threshs=thresholds)
 
         # these two validations cannot be done in `_validate.binclf_curves` because it does not have access to the
         # original shapes of `anomaly_maps`
@@ -275,7 +275,7 @@ def threshold_and_binary_classification_curve(
         msg = f"Invalid `binclf_curves` was computed. Cause: {ex}"
         raise RuntimeError(msg) from ex
 
-    return threshs, binclf_curves
+    return thresholds, binclf_curves
 
 
 def per_image_tpr(binclf_curves: torch.Tensor) -> torch.Tensor:
@@ -297,7 +297,7 @@ def per_image_tpr(binclf_curves: torch.Tensor) -> torch.Tensor:
 
         Thresholds are sorted in ascending order, so TPR is in descending order.
     """
-    # shape: (num images, num threshs)
+    # shape: (num images, num thresholds)
     tps = binclf_curves[..., 1, 1]
     pos = binclf_curves[..., 1, :].sum(axis=2)  # 2 was the 3 originally
 
@@ -324,7 +324,7 @@ def per_image_fpr(binclf_curves: torch.Tensor) -> torch.Tensor:
 
         Thresholds are sorted in ascending order, so FPR is in descending order.
     """
-    # shape: (num images, num threshs)
+    # shape: (num images, num thresholds)
     fps = binclf_curves[..., 0, 1]
     neg = binclf_curves[..., 0, :].sum(axis=2)  # 2 was the 3 originally
 

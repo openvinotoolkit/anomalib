@@ -167,7 +167,7 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
 
 
 def _do_test_pimo_outputs(
-    threshs: Tensor,
+    thresholds: Tensor,
     shared_fpr: Tensor,
     per_image_tprs: Tensor,
     image_classes: Tensor,
@@ -186,12 +186,12 @@ def _do_test_pimo_outputs(
     assert isinstance(expected_image_classes, Tensor)
     allclose = torch.allclose
 
-    assert threshs.ndim == 1
+    assert thresholds.ndim == 1
     assert shared_fpr.ndim == 1
     assert per_image_tprs.ndim == 2
     assert tuple(image_classes.shape) == (3,)
 
-    assert allclose(threshs, expected_threshs)
+    assert allclose(thresholds, expected_threshs)
     assert allclose(shared_fpr, expected_shared_fpr)
     assert allclose(per_image_tprs, expected_per_image_tprs, equal_nan=True)
     assert (image_classes == expected_image_classes).all()
@@ -207,13 +207,13 @@ def test_pimo(
 ) -> None:
     """Test if `pimo()` returns the expected values."""
 
-    def do_assertions(pimoresult: PIMOResult) -> None:
-        threshs = pimoresult.thresholds
-        shared_fpr = pimoresult.shared_fpr
-        per_image_tprs = pimoresult.per_image_tprs
-        image_classes = pimoresult.image_classes
+    def do_assertions(pimo_result: PIMOResult) -> None:
+        thresholds = pimo_result.thresholds
+        shared_fpr = pimo_result.shared_fpr
+        per_image_tprs = pimo_result.per_image_tprs
+        image_classes = pimo_result.image_classes
         _do_test_pimo_outputs(
-            threshs,
+            thresholds,
             shared_fpr,
             per_image_tprs,
             image_classes,
@@ -228,12 +228,12 @@ def test_pimo(
         num_threshs=7,
     )
     metric.update(anomaly_maps, masks)
-    pimoresult = metric.compute()
-    do_assertions(pimoresult)
+    pimo_result = metric.compute()
+    do_assertions(pimo_result)
 
 
 def _do_test_aupimo_outputs(
-    threshs: Tensor,
+    thresholds: Tensor,
     shared_fpr: Tensor,
     per_image_tprs: Tensor,
     image_classes: Tensor,
@@ -245,7 +245,7 @@ def _do_test_aupimo_outputs(
     expected_aupimos: Tensor,
 ) -> None:
     _do_test_pimo_outputs(
-        threshs,
+        thresholds,
         shared_fpr,
         per_image_tprs,
         image_classes,
@@ -273,24 +273,24 @@ def test_aupimo_values(
 ) -> None:
     """Test if `aupimo()` returns the expected values."""
 
-    def do_assertions(pimoresult: PIMOResult, aupimoresult: AUPIMOResult) -> None:
+    def do_assertions(pimo_result: PIMOResult, aupimo_result: AUPIMOResult) -> None:
         # test metadata
-        assert aupimoresult.fpr_bounds == fpr_bounds
+        assert aupimo_result.fpr_bounds == fpr_bounds
         # recall: this one is not the same as the number of thresholds in the curve
         # this is the number of thresholds used to compute the integral in `aupimo()`
         # always less because of the integration bounds
-        assert aupimoresult.num_threshs < 7
+        assert aupimo_result.num_threshs < 7
 
         # test data
         # from pimo result
-        threshs = pimoresult.thresholds
-        shared_fpr = pimoresult.shared_fpr
-        per_image_tprs = pimoresult.per_image_tprs
-        image_classes = pimoresult.image_classes
+        thresholds = pimo_result.thresholds
+        shared_fpr = pimo_result.shared_fpr
+        per_image_tprs = pimo_result.per_image_tprs
+        image_classes = pimo_result.image_classes
         # from aupimo result
-        aupimos = aupimoresult.aupimos
+        aupimos = aupimo_result.aupimos
         _do_test_aupimo_outputs(
-            threshs,
+            thresholds,
             shared_fpr,
             per_image_tprs,
             image_classes,
@@ -301,8 +301,8 @@ def test_aupimo_values(
             expected_image_classes,
             expected_aupimos,
         )
-        thresh_lower_bound = aupimoresult.thresh_lower_bound
-        thresh_upper_bound = aupimoresult.thresh_upper_bound
+        thresh_lower_bound = aupimo_result.thresh_lower_bound
+        thresh_upper_bound = aupimo_result.thresh_upper_bound
         assert anomaly_maps.min() <= thresh_lower_bound < thresh_upper_bound <= anomaly_maps.max()
 
     # metric interface
@@ -313,8 +313,8 @@ def test_aupimo_values(
         force=True,
     )
     metric.update(anomaly_maps, masks)
-    pimoresult_from_metric, aupimoresult_from_metric = metric.compute()
-    do_assertions(pimoresult_from_metric, aupimoresult_from_metric)
+    pimo_result_from_metric, aupimo_result_from_metric = metric.compute()
+    do_assertions(pimo_result_from_metric, aupimo_result_from_metric)
 
     # metric interface
     metric = pimo.AUPIMO(
@@ -338,7 +338,7 @@ def test_aupimo_edge(
     fpr_bounds = {"fpr_bounds": fpr_bounds} if fpr_bounds is not None else {}
 
     # not enough points on the curve
-    # 10 threshs / 6 decades = 1.6 threshs per decade < 3
+    # 10 thresholds / 6 decades = 1.6 thresholds per decade < 3
     with pytest.raises(RuntimeError):  # force=False --> raise error
         functional.aupimo_scores(
             anomaly_maps,
@@ -358,7 +358,7 @@ def test_aupimo_edge(
         )
     assert "Computation was forced!" in caplog.text
 
-    # default number of points on the curve (300k threshs) should be enough
+    # default number of points on the curve (300k thresholds) should be enough
     torch.manual_seed(42)
     functional.aupimo_scores(
         anomaly_maps * torch.FloatTensor(anomaly_maps.shape).uniform_(1.0, 1.1),

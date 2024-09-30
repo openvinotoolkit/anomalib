@@ -73,18 +73,18 @@ def pimo_curves(
     # therefore getting a better resolution in terms of FPR quantization
     # otherwise the function `binclf_curve_numpy.per_image_binclf_curve` would have the range of thresholds
     # computed from all the images (normal + anomalous)
-    threshs = _get_threshs_minmax_linspace(
+    thresholds = _get_threshs_minmax_linspace(
         anomaly_maps[image_classes == 0],
         num_threshs,
     )
 
     # N: number of images, K: number of thresholds
     # shapes are (K,) and (N, K, 2, 2)
-    threshs, binclf_curves = threshold_and_binary_classification_curve(
+    thresholds, binclf_curves = threshold_and_binary_classification_curve(
         anomaly_maps=anomaly_maps,
         masks=masks,
         threshs_choice=ThresholdMethod.GIVEN.value,
-        threshs_given=threshs,
+        threshs_given=thresholds,
         num_threshs=None,
     )
 
@@ -106,7 +106,7 @@ def pimo_curves(
     # shape -> (N, K)
     per_image_tprs = per_image_tpr(binclf_curves)
 
-    return threshs, shared_fpr, per_image_tprs, image_classes
+    return thresholds, shared_fpr, per_image_tprs, image_classes
 
 
 # =========================================== AUPIMO ===========================================
@@ -151,13 +151,13 @@ def aupimo_scores(
     _validate.is_rate_range(fpr_bounds)
 
     # other validations are done in the `pimo` function
-    threshs, shared_fpr, per_image_tprs, image_classes = pimo_curves(
+    thresholds, shared_fpr, per_image_tprs, image_classes = pimo_curves(
         anomaly_maps=anomaly_maps,
         masks=masks,
         num_threshs=num_threshs,
     )
     try:
-        _validate.is_threshs(threshs)
+        _validate.is_threshs(thresholds)
         _validate.is_rate_curve(shared_fpr, nan_allowed=False, decreasing=True)
         _validate.is_images_classes(image_classes)
         _validate.is_per_image_rate_curves(per_image_tprs[image_classes == 1], nan_allowed=False, decreasing=True)
@@ -170,12 +170,12 @@ def aupimo_scores(
 
     # get the threshold indices where the fpr bounds are achieved
     fpr_lower_bound_thresh_idx, _, fpr_lower_bound_defacto = thresh_at_shared_fpr_level(
-        threshs,
+        thresholds,
         shared_fpr,
         fpr_lower_bound,
     )
     fpr_upper_bound_thresh_idx, _, fpr_upper_bound_defacto = thresh_at_shared_fpr_level(
-        threshs,
+        thresholds,
         shared_fpr,
         fpr_upper_bound,
     )
@@ -270,14 +270,14 @@ def aupimo_scores(
     normalization_factor = aupimo_normalizing_factor(fpr_bounds)
     aucs = (aucs / normalization_factor).clip(0, 1)
 
-    return threshs, shared_fpr, per_image_tprs, image_classes, aucs, num_points_integral
+    return thresholds, shared_fpr, per_image_tprs, image_classes, aucs, num_points_integral
 
 
 # =========================================== AUX ===========================================
 
 
 def thresh_at_shared_fpr_level(
-    threshs: torch.Tensor,
+    thresholds: torch.Tensor,
     shared_fpr: torch.Tensor,
     fpr_level: float,
 ) -> tuple[int, float, torch.Tensor]:
@@ -289,7 +289,7 @@ def thresh_at_shared_fpr_level(
     - 0 < fpr_level < 1: the threshold that achieves the closest (higher or lower) FPR to `fpr_level` is returned
 
     Args:
-        threshs: thresholds at which the shared FPR was computed.
+        thresholds: thresholds at which the shared FPR was computed.
         shared_fpr: shared FPR values.
         fpr_level: shared FPR value at which to get the threshold.
 
@@ -299,9 +299,9 @@ def thresh_at_shared_fpr_level(
             [1] threshold
             [2] the actual shared FPR value at the returned threshold
     """
-    _validate.is_threshs(threshs)
+    _validate.is_threshs(thresholds)
     _validate.is_rate_curve(shared_fpr, nan_allowed=False, decreasing=True)
-    _validate.joint_validate_threshs_shared_fpr(threshs, shared_fpr)
+    _validate.joint_validate_threshs_shared_fpr(thresholds, shared_fpr)
     _validate.is_rate(fpr_level, zero_ok=True, one_ok=True)
 
     shared_fpr_min, shared_fpr_max = shared_fpr.min(), shared_fpr.max()
@@ -333,7 +333,7 @@ def thresh_at_shared_fpr_level(
 
     index = int(index)
     fpr_level_defacto = shared_fpr[index]
-    thresh = threshs[index]
+    thresh = thresholds[index]
     return index, thresh, fpr_level_defacto
 
 

@@ -106,10 +106,7 @@ class PIMO(Metric):
         """Image classes (0: normal, 1: anomalous)."""
         return functional.images_classes_from_masks(self.masks)
 
-    def __init__(
-        self,
-        num_threshs: int,
-    ) -> None:
+    def __init__(self, num_threshs: int) -> None:
         """Per-Image Overlap (PIMO) curve.
 
         Args:
@@ -158,13 +155,13 @@ class PIMO(Metric):
         anomaly_maps = torch.concat(self.anomaly_maps, dim=0)
         masks = torch.concat(self.masks, dim=0)
 
-        threshs, shared_fpr, per_image_tprs, _ = functional.pimo_curves(
+        thresholds, shared_fpr, per_image_tprs, _ = functional.pimo_curves(
             anomaly_maps,
             masks,
             self.num_threshs,
         )
         return PIMOResult(
-            thresholds=threshs,
+            thresholds=thresholds,
             shared_fpr=shared_fpr,
             per_image_tprs=per_image_tprs,
         )
@@ -270,7 +267,7 @@ class AUPIMO(PIMO):
 
         # other validations are done in the numpy code
 
-        threshs, shared_fpr, per_image_tprs, _, aupimos, num_threshs_auc = functional.aupimo_scores(
+        thresholds, shared_fpr, per_image_tprs, _, aupimos, num_threshs_auc = functional.aupimo_scores(
             anomaly_maps,
             masks,
             self.num_threshs,
@@ -279,11 +276,11 @@ class AUPIMO(PIMO):
         )
 
         pimo_result = PIMOResult(
-            thresholds=threshs,
+            thresholds=thresholds,
             shared_fpr=shared_fpr,
             per_image_tprs=per_image_tprs,
         )
-        aupimo_result = AUPIMOResult.from_pimoresult(
+        aupimo_result = AUPIMOResult.from_pimo_result(
             pimo_result,
             fpr_bounds=self.fpr_bounds,
             # not `num_threshs`!
