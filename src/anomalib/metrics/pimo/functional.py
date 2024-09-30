@@ -17,12 +17,12 @@ import torch
 
 from . import _validate
 from .binary_classification_curve import (
+    ThresholdMethod,
     _get_threshs_minmax_linspace,
     per_image_fpr,
     per_image_tpr,
     threshold_and_binary_classification_curve,
 )
-from .enums import ThresholdMethod
 from .utils import images_classes_from_masks
 
 logger = logging.getLogger(__name__)

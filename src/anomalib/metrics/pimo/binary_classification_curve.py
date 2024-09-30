@@ -14,15 +14,23 @@ The thresholds are shared by all instances/images, but their binclf are computed
 
 import itertools
 import logging
+from enum import Enum
 from functools import partial
 
 import numpy as np
 import torch
 
 from . import _validate
-from .enums import ThresholdMethod
 
 logger = logging.getLogger(__name__)
+
+
+class ThresholdMethod(Enum):
+    """Sequence of thresholds to use."""
+
+    GIVEN: str = "given"
+    MINMAX_LINSPACE: str = "minmax-linspace"
+    MEAN_FPR_OPTIMIZED: str = "mean-fpr-optimized"
 
 
 def _binary_classification_curve(scores: np.ndarray, gts: np.ndarray, thresholds: np.ndarray) -> np.ndarray:
