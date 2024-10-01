@@ -147,7 +147,7 @@ def binary_classification_curve(
     _validate.is_scores_batch(scores_batch)
     _validate.is_gts_batch(gts_batch)
     _validate.is_same_shape(scores_batch, gts_batch)
-    _validate.is_threshs(thresholds)
+    _validate.is_valid_threshold(thresholds)
     # TODO(ashwinvaidya17): this is kept as numpy for now because it is much faster.
     # TEMP-0
     result = np.vectorize(_binary_classification_curve, signature="(n),(n),(k)->(k,2,2)")(
@@ -158,13 +158,13 @@ def binary_classification_curve(
     return torch.from_numpy(result).to(scores_batch.device)
 
 
-def _get_threshs_minmax_linspace(anomaly_maps: torch.Tensor, num_thresholds: int) -> torch.Tensor:
+def _get_linspaced_thresholds(anomaly_maps: torch.Tensor, num_thresholds: int) -> torch.Tensor:
     """Get thresholds linearly spaced between the min and max of the anomaly maps."""
-    _validate.is_num_threshs_gte2(num_thresholds)
+    _validate.is_num_thresholds_gte2(num_thresholds)
     # this operation can be a bit expensive
     thresh_low, thresh_high = thresh_bounds = (anomaly_maps.min().item(), anomaly_maps.max().item())
     try:
-        _validate.is_thresh_bounds(thresh_bounds)
+        _validate.validate_threshold_bounds(thresh_bounds)
     except ValueError as ex:
         msg = f"Invalid threshold bounds computed from the given anomaly maps. Cause: {ex}"
         raise ValueError(msg) from ex
@@ -174,20 +174,20 @@ def _get_threshs_minmax_linspace(anomaly_maps: torch.Tensor, num_thresholds: int
 def threshold_and_binary_classification_curve(
     anomaly_maps: torch.Tensor,
     masks: torch.Tensor,
-    threshs_choice: ThresholdMethod | str = ThresholdMethod.MINMAX_LINSPACE,
-    threshs_given: torch.Tensor | None = None,
-    num_threshs: int | None = None,
+    threshold_choice: ThresholdMethod | str = ThresholdMethod.MINMAX_LINSPACE,
+    thresholds: torch.Tensor | None = None,
+    num_thresholds: int | None = None,
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """Return thresholds and binary classification matrix at each threshold for each image in the batch.
 
     Args:
         anomaly_maps (torch.Tensor): Anomaly score maps of shape (N, H, W)
         masks (torch.Tensor): Binary ground truth masks of shape (N, H, W)
-        threshs_choice (str, optional): Sequence of thresholds to use. Defaults to THRESH_SEQUENCE_MINMAX_LINSPACE.
-        threshs_given (torch.Tensor, optional): Sequence of thresholds to use.
-            Only applicable when threshs_choice is THRESH_SEQUENCE_GIVEN.
-        num_threshs (int, optional): Number of thresholds between the min and max of the anomaly maps.
-            Only applicable when threshs_choice is THRESH_SEQUENCE_MINMAX_LINSPACE.
+        threshold_choice (str, optional): Sequence of thresholds to use. Defaults to THRESH_SEQUENCE_MINMAX_LINSPACE.
+        thresholds (torch.Tensor, optional): Sequence of thresholds to use.
+            Only applicable when threshold_choice is THRESH_SEQUENCE_GIVEN.
+        num_thresholds (int, optional): Number of thresholds between the min and max of the anomaly maps.
+            Only applicable when threshold_choice is THRESH_SEQUENCE_MINMAX_LINSPACE.
 
     Returns:
         tuple[torch.Tensor, torch.Tensor]:
@@ -218,40 +218,38 @@ def threshold_and_binary_classification_curve(
 
             Thresholds are sorted in ascending order.
     """
-    threshs_choice = ThresholdMethod(threshs_choice)
+    threshold_choice = ThresholdMethod(threshold_choice)
     _validate.is_anomaly_maps(anomaly_maps)
     _validate.is_masks(masks)
     _validate.is_same_shape(anomaly_maps, masks)
 
-    thresholds: torch.Tensor
-
-    if threshs_choice == ThresholdMethod.GIVEN:
-        assert threshs_given is not None
-        _validate.is_threshs(threshs_given)
-        if num_threshs is not None:
+    if threshold_choice == ThresholdMethod.GIVEN:
+        assert thresholds is not None
+        _validate.is_valid_threshold(thresholds)
+        if num_thresholds is not None:
             logger.warning(
-                "Argument `num_threshs` was given, "
-                f"but it is ignored because `threshs_choice` is '{threshs_choice.value}'.",
+                "Argument `num_thresholds` was given, "
+                f"but it is ignored because `thresholds_choice` is '{threshold_choice.value}'.",
             )
-        thresholds = threshs_given.to(anomaly_maps.dtype)
+        thresholds = thresholds.to(anomaly_maps.dtype)
 
-    elif threshs_choice == ThresholdMethod.MINMAX_LINSPACE:
-        assert num_threshs is not None
-        if threshs_given is not None:
+    elif threshold_choice == ThresholdMethod.MINMAX_LINSPACE:
+        assert num_thresholds is not None
+        if thresholds is not None:
             logger.warning(
-                "Argument `threshs_given` was given, "
-                f"but it is ignored because `threshs_choice` is '{threshs_choice.value}'.",
+                "Argument `thresholds_given` was given, "
+                f"but it is ignored because `thresholds_choice` is '{threshold_choice.value}'.",
             )
-        # `num_threshs` is validated in the function below
-        thresholds = _get_threshs_minmax_linspace(anomaly_maps, num_threshs)
+        # `num_thresholds` is validated in the function below
+        thresholds = _get_linspaced_thresholds(anomaly_maps, num_thresholds)
 
-    elif threshs_choice == ThresholdMethod.MEAN_FPR_OPTIMIZED:
-        raise NotImplementedError(f"TODO implement {threshs_choice.value}")  # noqa: EM102
+    elif threshold_choice == ThresholdMethod.MEAN_FPR_OPTIMIZED:
+        raise NotImplementedError(f"TODO implement {threshold_choice.value}")  # noqa: EM102
 
     else:
         msg = (
             f"Expected `threshs_choice` to be from {list(ThresholdMethod.__members__)},"
-            f" but got '{threshs_choice.value}'"
+            f" but got '{threshold_choice.value}'"
         )
         raise NotImplementedError(msg)
 
@@ -264,7 +262,7 @@ def threshold_and_binary_classification_curve(
     num_images = anomaly_maps.shape[0]
 
     try:
-        _validate.is_binclf_curves(binclf_curves, valid_threshs=thresholds)
+        _validate.is_binclf_curves(binclf_curves, valid_thresholds=thresholds)
 
         # these two validations cannot be done in `_validate.binclf_curves` because it does not have access to the
         # original shapes of `anomaly_maps`
