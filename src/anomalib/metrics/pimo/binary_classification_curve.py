@@ -174,7 +174,7 @@ def _get_threshs_minmax_linspace(anomaly_maps: torch.Tensor, num_thresholds: int
 def threshold_and_binary_classification_curve(
     anomaly_maps: torch.Tensor,
     masks: torch.Tensor,
-    threshs_choice: ThresholdMethod | str = ThresholdMethod.MINMAX_LINSPACE.value,
+    threshs_choice: ThresholdMethod | str = ThresholdMethod.MINMAX_LINSPACE,
     threshs_given: torch.Tensor | None = None,
     num_threshs: int | None = None,
 ) -> tuple[torch.Tensor, torch.Tensor]:
@@ -184,14 +184,10 @@ def threshold_and_binary_classification_curve(
         anomaly_maps (torch.Tensor): Anomaly score maps of shape (N, H, W)
         masks (torch.Tensor): Binary ground truth masks of shape (N, H, W)
         threshs_choice (str, optional): Sequence of thresholds to use. Defaults to THRESH_SEQUENCE_MINMAX_LINSPACE.
-        #
-        # `threshs_choice`-dependent arguments
-        #
-        # THRESH_SEQUENCE_GIVEN
         threshs_given (torch.Tensor, optional): Sequence of thresholds to use.
-        #
-        # THRESH_SEQUENCE_MINMAX_LINSPACE
+            Only applicable when threshs_choice is THRESH_SEQUENCE_GIVEN.
         num_threshs (int, optional): Number of thresholds between the min and max of the anomaly maps.
+            Only applicable when threshs_choice is THRESH_SEQUENCE_MINMAX_LINSPACE.
 
     Returns:
         tuple[torch.Tensor, torch.Tensor]:
