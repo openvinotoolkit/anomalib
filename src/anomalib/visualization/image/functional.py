@@ -36,7 +36,7 @@ def dynamic_font_size(image_size: tuple[int, int], min_size: int = 20, max_size:
 def add_text_to_image(
     image: Image.Image,
     text: str,
-    font_type: str = "arial.ttf",
+    font_type: str | None = None,
     font_size: int | None = None,
     text_color: tuple[int, int, int] | str = "white",
     background_color: tuple[int, ...] | str | None = (0, 0, 0, 128),  # Default to semi-transparent black
@@ -52,9 +52,9 @@ def add_text_to_image(
         font_size = dynamic_font_size(image.size)
 
     try:
-        font = ImageFont.truetype(font_type, font_size)
+        font = ImageFont.truetype(font_type, font_size) if font_type else ImageFont.load_default()
     except OSError:
-        logger.warning("Failed to load font. Using default font.")
+        logger.warning(f"Failed to load font '{font_type}'. Using default font.")
         font = ImageFont.load_default()
 
     # Calculate text size and position
@@ -155,7 +155,6 @@ def overlay_images(
     """
     # Ensure base image is in RGBA mode
     base = base.convert("RGBA")
-    result = base
 
     if not isinstance(overlay, list):
         overlay = [overlay]
@@ -165,20 +164,29 @@ def overlay_images(
         overlayed_image = ov.convert("RGBA")
 
         # Resize overlay image to match base image size if necessary
-        if result.size != overlayed_image.size:
-            overlayed_image = overlayed_image.resize(result.size)
+        if base.size != overlayed_image.size:
+            overlayed_image = overlayed_image.resize(base.size)
 
-        # Create a new image blending the result with the current overlay
-        result = Image.blend(result, overlayed_image, alpha)
+        # Create a mask for non-black pixels in the overlay
+        mask = overlayed_image.split()[3]  # Get the alpha channel
+        mask = mask.point(lambda p: p > 0 and 255)  # Create binary mask
+
+        # Blend only the non-black pixels of the overlay with the base image
+        blended = Image.composite(
+            image1=Image.blend(base, overlayed_image, alpha),
+            image2=base,
+            mask=mask,
+        )
+        base = blended
 
     # Ensure the final result is in RGB mode for compatibility
-    return result.convert("RGB")
+    return base.convert("RGB")
 
 
 def visualize_anomaly_map(
     anomaly_map: Image.Image | torch.Tensor,
-    normalize: bool = True,
     colormap: bool = True,
+    normalize: bool = False,
 ) -> Image.Image:
     """Visualize the anomaly map.
 
@@ -187,8 +195,8 @@ def visualize_anomaly_map(
 
     Args:
         anomaly_map (Image.Image | torch.Tensor): The input anomaly map as a PIL Image or torch Tensor.
-        normalize (bool, optional): Whether to normalize the anomaly map. Defaults to True.
         colormap (bool, optional): Whether to apply a colormap to the anomaly map. Defaults to True.
+        normalize (bool, optional): Whether to normalize the anomaly map. Defaults to False.
 
     Returns:
         Image.Image: The visualized anomaly map as a PIL Image in RGB mode.
@@ -319,15 +327,17 @@ def visualize_field(
     field: str,
     value: torch.Tensor,
     *,  # Mark the following arguments as keyword-only
-    colormap: bool = False,
-    normalize: bool = True,
+    colormap: bool = True,
+    normalize: bool = False,
 ) -> Image.Image | None:
     """Visualize a single field of an ImageItem."""
     if field == "image":
         msg = "Image visualization is not implemented yet"
         raise NotImplementedError(msg)
-    if field in {"gt_mask", "pred_mask"}:
+    if field in {"gt_mask"}:
         image = visualize_mask(value)
+    if field in {"pred_mask"}:
+        image = visualize_mask(value, color=(255, 0, 0))
     if field == "anomaly_map":
         image = visualize_anomaly_map(value, normalize=normalize, colormap=colormap)
 
@@ -340,16 +350,23 @@ def visualize_image_item(
     *,  # Mark the following arguments as keyword-only
     field_size: tuple[int, int] = (256, 256),
     overlay_fields: list[tuple[str, list[str]]] | None = None,
-    alpha: float = 0.5,
+    alpha: float = 0.2,
     colormap: bool = True,
-    normalize: bool = True,
+    normalize: bool = False,
 ) -> Image.Image | None:
     """Visualize specified fields of an ImageItem with optional field overlays."""
     images = []
     field_images = {}
 
-    # Visualize individual fields
-    for field in fields:
+    # Collect all fields that need to be visualized
+    all_fields = set(fields)
+    if overlay_fields:
+        for base, overlays in overlay_fields:
+            all_fields.add(base)
+            all_fields.update(overlays)
+
+    # Visualize all required fields
+    for field in all_fields:
         # NOTE: Once pre-processing is implemented, remove this if-else block
         if field == "image":
             image = Image.open(item.image_path)
@@ -361,24 +378,26 @@ def visualize_image_item(
             image = image.resize(field_size)
             field_images[field] = image
 
-            # Add title only for non-overlay fields
-            if field not in [f for _, overlay_list in overlay_fields or [] for f in overlay_list]:
+            if field in fields:
                 title = convert_to_title_case(field)
                 image = add_text_to_image(image, title)
-            images.append(image)
+                images.append(image)
 
     # Process overlay fields
     if overlay_fields:
         for base, overlays in overlay_fields:
             if base in field_images:
                 base_image = field_images[base].copy()
-                for overlay in overlays:
-                    if overlay in field_images:
-                        base_image = overlay_images(base_image, field_images[overlay], alpha)
+                valid_overlays = [overlay for overlay in overlays if overlay in field_images]
+                for overlay in valid_overlays:
+                    base_image = overlay_images(base_image, field_images[overlay], alpha)
 
-                title = f"{convert_to_title_case(base)} + {'+'.join(convert_to_title_case(o) for o in overlays)}"
-                base_image = add_text_to_image(base_image, title)
-                images.append(base_image)
+                if valid_overlays:
+                    title = (
+                        f"{convert_to_title_case(base)} + {'+'.join(convert_to_title_case(o) for o in valid_overlays)}"
+                    )
+                    base_image = add_text_to_image(base_image, title)
+                    images.append(base_image)
 
     if not images:
         logger.warning("No valid fields to visualize.")

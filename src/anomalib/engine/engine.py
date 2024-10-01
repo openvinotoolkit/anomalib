@@ -20,12 +20,11 @@ from anomalib import LearningType, TaskType
 from anomalib.callbacks.checkpoint import ModelCheckpoint
 from anomalib.callbacks.metrics import _MetricsCallback
 from anomalib.callbacks.timer import TimerCallback
-from anomalib.callbacks.visualizer import _VisualizationCallback
 from anomalib.data import AnomalibDataModule, AnomalibDataset, PredictDataset
 from anomalib.deploy import CompressionType, ExportType
 from anomalib.models import AnomalyModule
 from anomalib.utils.path import create_versioned_dir
-from anomalib.utils.visualization import ImageVisualizer
+from anomalib.visualization import ImageVisualizer
 
 logger = logging.getLogger(__name__)
 
@@ -378,13 +377,9 @@ class Engine:
         # Add the metrics callback.
         _callbacks.append(_MetricsCallback(self.task, self.image_metric_names, self.pixel_metric_names))
 
-        _callbacks.append(
-            _VisualizationCallback(
-                visualizers=ImageVisualizer(task=self.task, normalize=False),
-                save=True,
-                root=self._cache.args["default_root_dir"] / "images",
-            ),
-        )
+        # Add the image visualizer callback if it is passed by the user.
+        if not any(isinstance(callback, ImageVisualizer) for callback in self._cache.args["callbacks"]):
+            _callbacks.append(ImageVisualizer())
 
         _callbacks.append(TimerCallback())
 
