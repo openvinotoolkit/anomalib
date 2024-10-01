@@ -58,7 +58,7 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
     expected_fprs = torch.stack([expected_fprs_anom, expected_fprs_norm], axis=0).to(torch.float64)
 
     # in the case where all thresholds are higher than the highest prediction
-    expected_norm_threshs_too_high = torch.stack(
+    expected_norm_thresholds_too_high = torch.stack(
         [
             torch.tensor([[4, 0], [0, 0]]),
             torch.tensor([[4, 0], [0, 0]]),
@@ -67,7 +67,7 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
         ],
         axis=0,
     ).to(int)
-    expected_anom_threshs_too_high = torch.stack(
+    expected_anom_thresholds_too_high = torch.stack(
         [
             torch.tensor([[2, 0], [2, 0]]),
             torch.tensor([[2, 0], [2, 0]]),
@@ -78,7 +78,7 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
     ).to(int)
 
     # in the case where all thresholds are lower than the lowest prediction
-    expected_norm_threshs_too_low = torch.stack(
+    expected_norm_thresholds_too_low = torch.stack(
         [
             torch.tensor([[0, 4], [0, 0]]),
             torch.tensor([[0, 4], [0, 0]]),
@@ -87,7 +87,7 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
         ],
         axis=0,
     ).to(int)
-    expected_anom_threshs_too_low = torch.stack(
+    expected_anom_thresholds_too_low = torch.stack(
         [
             torch.tensor([[0, 2], [0, 2]]),
             torch.tensor([[0, 2], [0, 2]]),
@@ -104,21 +104,24 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
                 (pred, gt_anom, thresholds[:3], expected_anom[:3]),
                 (pred, gt_anom, thresholds, expected_anom),
                 (pred, gt_norm, thresholds, expected_norm),
-                (pred, gt_norm, 10 * thresholds, expected_norm_threshs_too_high),
-                (pred, gt_anom, 10 * thresholds, expected_anom_threshs_too_high),
-                (pred, gt_norm, 0.001 * thresholds, expected_norm_threshs_too_low),
-                (pred, gt_anom, 0.001 * thresholds, expected_anom_threshs_too_low),
+                (pred, gt_norm, 10 * thresholds, expected_norm_thresholds_too_high),
+                (pred, gt_anom, 10 * thresholds, expected_anom_thresholds_too_high),
+                (pred, gt_norm, 0.001 * thresholds, expected_norm_thresholds_too_low),
+                (pred, gt_anom, 0.001 * thresholds, expected_anom_thresholds_too_low),
             ],
         )
 
     preds = torch.stack([pred, pred], axis=0)
     gts = torch.stack([gt_anom, gt_norm], axis=0)
     binclf_curves = torch.stack([expected_anom, expected_norm], axis=0)
-    binclf_curves_threshs_too_high = torch.stack(
-        [expected_anom_threshs_too_high, expected_norm_threshs_too_high],
+    binclf_curves_thresholds_too_high = torch.stack(
+        [expected_anom_thresholds_too_high, expected_norm_thresholds_too_high],
         axis=0,
     )
-    binclf_curves_threshs_too_low = torch.stack([expected_anom_threshs_too_low, expected_norm_threshs_too_low], axis=0)
+    binclf_curves_thresholds_too_low = torch.stack(
+        [expected_anom_thresholds_too_low, expected_norm_thresholds_too_low],
+        axis=0,
+    )
 
     if metafunc.function is test__binclf_multiple_curves:
         metafunc.parametrize(
@@ -176,7 +179,7 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
     gts = gts.reshape(2, 2, 2)
 
     per_image_binclf_curves_argvalues = [
-        # `threshs_choice` = "given"
+        # `thresholds_choice` = "given"
         (
             preds,
             gts,
@@ -193,7 +196,7 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
             10 * thresholds,
             2,
             10 * thresholds,
-            binclf_curves_threshs_too_high,
+            binclf_curves_thresholds_too_high,
         ),
         (
             preds,
@@ -202,9 +205,9 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
             0.01 * thresholds,
             None,
             0.01 * thresholds,
-            binclf_curves_threshs_too_low,
+            binclf_curves_thresholds_too_low,
         ),
-        # `threshs_choice` = 'minmax-linspace'"
+        # `thresholds_choice` = 'minmax-linspace'"
         (
             preds,
             gts,
@@ -230,10 +233,10 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
             argnames=(
                 "anomaly_maps",
                 "masks",
-                "threshs_choice",
-                "threshs_given",
-                "num_threshs",
-                "expected_threshs",
+                "threshold_choice",
+                "thresholds",
+                "num_thresholds",
+                "expected_thresholds",
                 "expected_binclf_curves",
             ),
             argvalues=per_image_binclf_curves_argvalues,
@@ -262,9 +265,9 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
             argvalues=[
                 (
                     {
-                        "threshs_choice": "minmax-linspace",
-                        "threshs_given": None,
-                        "num_threshs": len(thresholds),
+                        "threshold_choice": "minmax-linspace",
+                        "thresholds": None,
+                        "num_thresholds": len(thresholds),
                     },
                 ),
             ],
@@ -275,10 +278,10 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
         metafunc.parametrize(
             argnames=("args", "kwargs", "exception"),
             argvalues=[
-                # invalid `threshs_choice`
+                # invalid `thresholds_choice`
                 (
                     [preds, gts],
-                    {"threshs_choice": "glfrb", "threshs_given": thresholds, "num_threshs": None},
+                    {"threshold_choice": "glfrb", "thresholds": thresholds, "num_thresholds": None},
                     ValueError,
                 ),
             ],
@@ -349,10 +352,10 @@ def test_binclf_multiple_curves(
 
     # it's also ok to have more thresholds than unique values in the preds
     # add the values in between the thresholds
-    threshs_unncessary = 0.5 * (thresholds[:-1] + thresholds[1:])
-    threshs_unncessary = torch.concatenate([threshs_unncessary, thresholds])
-    threshs_unncessary = torch.sort(threshs_unncessary)[0]
-    binary_classification_curve(preds, gts, threshs_unncessary)
+    thresholds_unncessary = 0.5 * (thresholds[:-1] + thresholds[1:])
+    thresholds_unncessary = torch.concatenate([thresholds_unncessary, thresholds])
+    thresholds_unncessary = torch.sort(thresholds_unncessary)[0]
+    binary_classification_curve(preds, gts, thresholds_unncessary)
 
     # or less
     binary_classification_curve(preds, gts, thresholds[1:3])
@@ -367,25 +370,25 @@ def test_binclf_multiple_curves_validations(args: list, kwargs: dict, exception:
 def test_per_image_binclf_curve(
     anomaly_maps: torch.Tensor,
     masks: torch.Tensor,
-    threshs_choice: str,
-    threshs_given: torch.Tensor | None,
-    num_threshs: int | None,
-    expected_threshs: torch.Tensor,
+    threshold_choice: str,
+    thresholds: torch.Tensor | None,
+    num_thresholds: int | None,
+    expected_thresholds: torch.Tensor,
     expected_binclf_curves: torch.Tensor,
 ) -> None:
     """Test if `per_image_binclf_curve()` returns the expected values."""
-    computed_threshs, computed_binclf_curves = threshold_and_binary_classification_curve(
+    computed_thresholds, computed_binclf_curves = threshold_and_binary_classification_curve(
         anomaly_maps,
         masks,
-        threshs_choice=threshs_choice,
-        threshs_given=threshs_given,
-        num_threshs=num_threshs,
+        threshold_choice=threshold_choice,
+        thresholds=thresholds,
+        num_thresholds=num_thresholds,
     )
 
     # thresholds
-    assert computed_threshs.shape == expected_threshs.shape
-    assert computed_threshs.dtype == computed_threshs.dtype
-    assert (computed_threshs == expected_threshs).all()
+    assert computed_thresholds.shape == expected_thresholds.shape
+    assert computed_thresholds.dtype == computed_thresholds.dtype
+    assert (computed_thresholds == expected_thresholds).all()
 
     # binclf_curves
     assert computed_binclf_curves.shape == expected_binclf_curves.shape

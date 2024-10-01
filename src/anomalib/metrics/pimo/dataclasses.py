@@ -58,7 +58,7 @@ class PIMOResult:
     def __post_init__(self) -> None:
         """Validate the inputs for the result object are consistent."""
         try:
-            _validate.is_threshs(self.thresholds)
+            _validate.is_valid_threshold(self.thresholds)
             _validate.is_rate_curve(self.shared_fpr, nan_allowed=False, decreasing=True)  # is_shared_apr
             _validate.is_per_image_tprs(self.per_image_tprs, self.image_classes)
 
@@ -110,7 +110,7 @@ class AUPIMOResult:
     Attributes:
         fpr_lower_bound (float): [metadata] LOWER bound of the FPR integration range
         fpr_upper_bound (float): [metadata] UPPER bound of the FPR integration range
-        num_threshs (int): [metadata] number of thresholds used to effectively compute AUPIMO;
+        num_thresholds (int): [metadata] number of thresholds used to effectively compute AUPIMO;
                             should not be confused with the number of thresholds used to compute the PIMO curve
         thresh_lower_bound (float): LOWER threshold bound --> corresponds to the UPPER FPR bound
         thresh_upper_bound (float): UPPER threshold bound --> corresponds to the LOWER FPR bound
@@ -120,7 +120,7 @@ class AUPIMOResult:
     # metadata
     fpr_lower_bound: float
     fpr_upper_bound: float
-    num_threshs: int
+    num_thresholds: int
 
     # data
     thresh_lower_bound: float = field(repr=False)
@@ -169,10 +169,10 @@ class AUPIMOResult:
         try:
             _validate.is_rate_range((self.fpr_lower_bound, self.fpr_upper_bound))
             # TODO(jpcbertoldo): warn when it's too low (use parameters from the numpy code)  # noqa: TD003
-            _validate.is_num_threshs_gte2(self.num_threshs)
+            _validate.is_num_thresholds_gte2(self.num_thresholds)
             _validate.is_rates(self.aupimos, nan_allowed=True)  # validate is_aupimos
 
-            _validate.is_thresh_bounds((self.thresh_lower_bound, self.thresh_upper_bound))
+            _validate.validate_threshold_bounds((self.thresh_lower_bound, self.thresh_upper_bound))
 
         except (TypeError, ValueError) as ex:
             msg = f"Invalid inputs for {self.__class__.__name__} object. Cause: {ex}."
@@ -183,7 +183,7 @@ class AUPIMOResult:
         cls: type["AUPIMOResult"],
         pimo_result: PIMOResult,
         fpr_bounds: tuple[float, float],
-        num_threshs_auc: int,
+        num_thresholds_auc: int,
         aupimos: torch.Tensor,
     ) -> "AUPIMOResult":
         """Return an AUPIMO result object from a PIMO result object.
@@ -191,7 +191,7 @@ class AUPIMOResult:
         Args:
             pimo_result: PIMO result object
             fpr_bounds: lower and upper bounds of the FPR integration range
-            num_threshs_auc: number of thresholds used to effectively compute AUPIMO;
+            num_thresholds_auc: number of thresholds used to effectively compute AUPIMO;
                          NOT the number of thresholds used to compute the PIMO curve!
             aupimos: AUPIMO scores
             paths: paths to the source images to which the AUPIMO scores correspond.
@@ -219,7 +219,7 @@ class AUPIMOResult:
         return cls(
             fpr_lower_bound=fpr_lower_bound,
             fpr_upper_bound=fpr_upper_bound,
-            num_threshs=num_threshs_auc,
+            num_thresholds=num_thresholds_auc,
             thresh_lower_bound=float(thresh_lower_bound),
             thresh_upper_bound=float(thresh_upper_bound),
             aupimos=aupimos,

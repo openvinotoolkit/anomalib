@@ -18,7 +18,7 @@ import torch
 from . import _validate
 from .binary_classification_curve import (
     ThresholdMethod,
-    _get_threshs_minmax_linspace,
+    _get_linspaced_thresholds,
     per_image_fpr,
     per_image_tpr,
     threshold_and_binary_classification_curve,
@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 def pimo_curves(
     anomaly_maps: torch.Tensor,
     masks: torch.Tensor,
-    num_threshs: int,
+    num_thresholds: int,
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
     """Compute the Per-IMage Overlap (PIMO, pronounced pee-mo) curves.
 
@@ -50,7 +50,7 @@ def pimo_curves(
     Args:
         anomaly_maps: floating point anomaly score maps of shape (N, H, W)
         masks: binary (bool or int) ground truth masks of shape (N, H, W)
-        num_threshs: number of thresholds to compute (K)
+        num_thresholds: number of thresholds to compute (K)
 
     Returns:
         tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
@@ -60,7 +60,7 @@ def pimo_curves(
             [3] image classes of shape (N,) with values 0 (normal) or 1 (anomalous)
     """
     # validate the strings are valid
-    _validate.is_num_threshs_gte2(num_threshs)
+    _validate.is_num_thresholds_gte2(num_thresholds)
     _validate.is_anomaly_maps(anomaly_maps)
     _validate.is_masks(masks)
     _validate.is_same_shape(anomaly_maps, masks)
@@ -73,9 +73,9 @@ def pimo_curves(
     # therefore getting a better resolution in terms of FPR quantization
     # otherwise the function `binclf_curve_numpy.per_image_binclf_curve` would have the range of thresholds
     # computed from all the images (normal + anomalous)
-    thresholds = _get_threshs_minmax_linspace(
+    thresholds = _get_linspaced_thresholds(
         anomaly_maps[image_classes == 0],
-        num_threshs,
+        num_thresholds,
     )
 
     # N: number of images, K: number of thresholds
@@ -83,9 +83,9 @@ def pimo_curves(
     thresholds, binclf_curves = threshold_and_binary_classification_curve(
         anomaly_maps=anomaly_maps,
         masks=masks,
-        threshs_choice=ThresholdMethod.GIVEN.value,
-        threshs_given=thresholds,
-        num_threshs=None,
+        threshold_choice=ThresholdMethod.GIVEN.value,
+        thresholds=thresholds,
+        num_thresholds=None,
     )
 
     shared_fpr: torch.Tensor
@@ -115,7 +115,7 @@ def pimo_curves(
 def aupimo_scores(
     anomaly_maps: torch.Tensor,
     masks: torch.Tensor,
-    num_threshs: int = 300_000,
+    num_thresholds: int = 300_000,
     fpr_bounds: tuple[float, float] = (1e-5, 1e-4),
     force: bool = False,
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, int]:
@@ -135,7 +135,7 @@ def aupimo_scores(
     Args:
         anomaly_maps: floating point anomaly score maps of shape (N, H, W)
         masks: binary (bool or int) ground truth masks of shape (N, H, W)
-        num_threshs: number of thresholds to compute (K)
+        num_thresholds: number of thresholds to compute (K)
         fpr_bounds: lower and upper bounds of the FPR integration range
         force: whether to force the computation despite bad conditions
 
@@ -154,10 +154,10 @@ def aupimo_scores(
     thresholds, shared_fpr, per_image_tprs, image_classes = pimo_curves(
         anomaly_maps=anomaly_maps,
         masks=masks,
-        num_threshs=num_threshs,
+        num_thresholds=num_thresholds,
     )
     try:
-        _validate.is_threshs(thresholds)
+        _validate.is_valid_threshold(thresholds)
         _validate.is_rate_curve(shared_fpr, nan_allowed=False, decreasing=True)
         _validate.is_images_classes(image_classes)
         _validate.is_per_image_rate_curves(per_image_tprs[image_classes == 1], nan_allowed=False, decreasing=True)
@@ -248,9 +248,9 @@ def aupimo_scores(
 
     if num_points_integral <= 30:
         msg = (
-            "Cannot compute AUPIMO because the shared fpr integration range doesnt have enough points. "
+            "Cannot compute AUPIMO because the shared fpr integration range doesn't have enough points. "
             f"Found {num_points_integral} points in the integration range. "
-            "Try increasing `num_threshs`."
+            "Try increasing `num_thresholds`."
         )
         if not force:
             raise RuntimeError(msg)
@@ -259,9 +259,9 @@ def aupimo_scores(
 
     if num_points_integral < 300:
         logger.warning(
-            "The AUPIMO may be inaccurate because the shared fpr integration range doesnt have enough points. "
+            "The AUPIMO may be inaccurate because the shared fpr integration range doesn't have enough points. "
             f"Found {num_points_integral} points in the integration range. "
-            "Try increasing `num_threshs`.",
+            "Try increasing `num_thresholds`.",
         )
 
     aucs: torch.Tensor = torch.trapezoid(per_image_tprs_bounded, x=shared_fpr_bounded_log, axis=1)
@@ -299,9 +299,9 @@ def thresh_at_shared_fpr_level(
             [1] threshold
             [2] the actual shared FPR value at the returned threshold
     """
-    _validate.is_threshs(thresholds)
+    _validate.is_valid_threshold(thresholds)
     _validate.is_rate_curve(shared_fpr, nan_allowed=False, decreasing=True)
-    _validate.joint_validate_threshs_shared_fpr(thresholds, shared_fpr)
+    _validate.joint_validate_thresholds_shared_fpr(thresholds, shared_fpr)
     _validate.is_rate(fpr_level, zero_ok=True, one_ok=True)
 
     shared_fpr_min, shared_fpr_max = shared_fpr.min(), shared_fpr.max()

@@ -21,14 +21,14 @@ from .utils import images_classes_from_masks
 logger = logging.getLogger(__name__)
 
 
-def is_num_threshs_gte2(num_threshs: int) -> None:
+def is_num_thresholds_gte2(num_thresholds: int) -> None:
     """Validate the number of thresholds is a positive integer >= 2."""
-    if not isinstance(num_threshs, int):
-        msg = f"Expected the number of thresholds to be an integer, but got {type(num_threshs)}"
+    if not isinstance(num_thresholds, int):
+        msg = f"Expected the number of thresholds to be an integer, but got {type(num_thresholds)}"
         raise TypeError(msg)
 
-    if num_threshs < 2:
-        msg = f"Expected the number of thresholds to be larger than 1, but got {num_threshs}"
+    if num_thresholds < 2:
+        msg = f"Expected the number of thresholds to be larger than 1, but got {num_thresholds}"
         raise ValueError(msg)
 
 
@@ -89,7 +89,7 @@ def is_rate_range(bounds: tuple[float, float]) -> None:
         raise ValueError(msg)
 
 
-def is_threshs(thresholds: Tensor) -> None:
+def is_valid_threshold(thresholds: Tensor) -> None:
     """Validate that the thresholds are valid and monotonically increasing."""
     if not isinstance(thresholds, Tensor):
         msg = f"Expected thresholds to be an Tensor, but got {type(thresholds)}"
@@ -109,16 +109,16 @@ def is_threshs(thresholds: Tensor) -> None:
         raise ValueError(msg)
 
 
-def is_thresh_bounds(thresh_bounds: tuple[float, float]) -> None:
-    if not isinstance(thresh_bounds, tuple):
-        msg = f"Expected threshold bounds to be a tuple, but got {type(thresh_bounds)}."
+def validate_threshold_bounds(threshold_bounds: tuple[float, float]) -> None:
+    if not isinstance(threshold_bounds, tuple):
+        msg = f"Expected threshold bounds to be a tuple, but got {type(threshold_bounds)}."
         raise TypeError(msg)
 
-    if len(thresh_bounds) != 2:
-        msg = f"Expected threshold bounds to be a tuple of length 2, but got {len(thresh_bounds)}."
+    if len(threshold_bounds) != 2:
+        msg = f"Expected threshold bounds to be a tuple of length 2, but got {len(threshold_bounds)}."
         raise ValueError(msg)
 
-    lower, upper = thresh_bounds
+    lower, upper = threshold_bounds
 
     if not isinstance(lower, float):
         msg = f"Expected lower threshold bound to be a float, but got {type(lower)}."
@@ -171,7 +171,7 @@ def is_masks(masks: Tensor) -> None:
             raise ValueError(msg)
 
 
-def is_binclf_curves(binclf_curves: Tensor, valid_threshs: Tensor | None) -> None:
+def is_binclf_curves(binclf_curves: Tensor, valid_thresholds: Tensor | None) -> None:
     if binclf_curves.ndim != 4:
         msg = f"Expected binclf curves to be 4D, but got {binclf_curves.ndim}D"
         raise ValueError(msg)
@@ -188,25 +188,25 @@ def is_binclf_curves(binclf_curves: Tensor, valid_threshs: Tensor | None) -> Non
         msg = "Expected binclf curves to have non-negative values, but got negative values."
         raise ValueError(msg)
 
-    neg = binclf_curves[:, :, 0, :].sum(axis=-1)  # (num_images, num_threshs)
+    neg = binclf_curves[:, :, 0, :].sum(axis=-1)  # (num_images, num_thresholds)
 
     if (neg != neg[:, :1]).any():
         msg = "Expected binclf curves to have the same number of negatives per image for every thresh."
         raise ValueError(msg)
 
-    pos = binclf_curves[:, :, 1, :].sum(axis=-1)  # (num_images, num_threshs)
+    pos = binclf_curves[:, :, 1, :].sum(axis=-1)  # (num_images, num_thresholds)
 
     if (pos != pos[:, :1]).any():
         msg = "Expected binclf curves to have the same number of positives per image for every thresh."
         raise ValueError(msg)
 
-    if valid_threshs is None:
+    if valid_thresholds is None:
         return
 
-    if binclf_curves.shape[1] != valid_threshs.shape[0]:
+    if binclf_curves.shape[1] != valid_thresholds.shape[0]:
         msg = (
             "Expected the binclf curves to have as many confusion matrices as the thresholds sequence, "
-            f"but got {binclf_curves.shape[1]} and {valid_threshs.shape[0]}"
+            f"but got {binclf_curves.shape[1]} and {valid_thresholds.shape[0]}"
         )
         raise RuntimeError(msg)
 
@@ -383,7 +383,7 @@ def has_at_least_one_normal_image(masks: torch.Tensor) -> None:
         raise ValueError(msg)
 
 
-def joint_validate_threshs_shared_fpr(thresholds: torch.Tensor, shared_fpr: torch.Tensor) -> None:
+def joint_validate_thresholds_shared_fpr(thresholds: torch.Tensor, shared_fpr: torch.Tensor) -> None:
     if thresholds.shape[0] != shared_fpr.shape[0]:
         msg = (
             "Expected `thresholds` and `shared_fpr` to have the same number of elements, "

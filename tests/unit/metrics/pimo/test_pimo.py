@@ -22,7 +22,7 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
     All functions are parametrized with the same setting: 1 normal and 2 anomalous images.
     The anomaly maps are the same for all functions, but the masks are different.
     """
-    expected_threshs = torch.arange(1, 7 + 1, dtype=torch.float32)
+    expected_thresholds = torch.arange(1, 7 + 1, dtype=torch.float32)
     shape = (1000, 1000)  # (H, W), 1 million pixels
 
     # --- normal ---
@@ -66,7 +66,7 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
             (
                 anomaly_maps,
                 masks,
-                expected_threshs,
+                expected_thresholds,
                 expected_shared_fpr,
                 expected_per_image_tprs,
                 expected_image_classes,
@@ -74,7 +74,7 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
             (
                 10 * anomaly_maps,
                 masks,
-                10 * expected_threshs,
+                10 * expected_thresholds,
                 expected_shared_fpr,
                 expected_per_image_tprs,
                 expected_image_classes,
@@ -84,7 +84,7 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
             argnames=(
                 "anomaly_maps",
                 "masks",
-                "expected_threshs",
+                "expected_thresholds",
                 "expected_shared_fpr",
                 "expected_per_image_tprs",
                 "expected_image_classes",
@@ -171,7 +171,7 @@ def _do_test_pimo_outputs(
     shared_fpr: Tensor,
     per_image_tprs: Tensor,
     image_classes: Tensor,
-    expected_threshs: Tensor,
+    expected_thresholds: Tensor,
     expected_shared_fpr: Tensor,
     expected_per_image_tprs: Tensor,
     expected_image_classes: Tensor,
@@ -180,7 +180,7 @@ def _do_test_pimo_outputs(
     assert isinstance(shared_fpr, Tensor)
     assert isinstance(per_image_tprs, Tensor)
     assert isinstance(image_classes, Tensor)
-    assert isinstance(expected_threshs, Tensor)
+    assert isinstance(expected_thresholds, Tensor)
     assert isinstance(expected_shared_fpr, Tensor)
     assert isinstance(expected_per_image_tprs, Tensor)
     assert isinstance(expected_image_classes, Tensor)
@@ -191,7 +191,7 @@ def _do_test_pimo_outputs(
     assert per_image_tprs.ndim == 2
     assert tuple(image_classes.shape) == (3,)
 
-    assert allclose(thresholds, expected_threshs)
+    assert allclose(thresholds, expected_thresholds)
     assert allclose(shared_fpr, expected_shared_fpr)
     assert allclose(per_image_tprs, expected_per_image_tprs, equal_nan=True)
     assert (image_classes == expected_image_classes).all()
@@ -200,7 +200,7 @@ def _do_test_pimo_outputs(
 def test_pimo(
     anomaly_maps: Tensor,
     masks: Tensor,
-    expected_threshs: Tensor,
+    expected_thresholds: Tensor,
     expected_shared_fpr: Tensor,
     expected_per_image_tprs: Tensor,
     expected_image_classes: Tensor,
@@ -217,7 +217,7 @@ def test_pimo(
             shared_fpr,
             per_image_tprs,
             image_classes,
-            expected_threshs,
+            expected_thresholds,
             expected_shared_fpr,
             expected_per_image_tprs,
             expected_image_classes,
@@ -225,7 +225,7 @@ def test_pimo(
 
     # metric interface
     metric = pimo.PIMO(
-        num_threshs=7,
+        num_thresholds=7,
     )
     metric.update(anomaly_maps, masks)
     pimo_result = metric.compute()
@@ -238,7 +238,7 @@ def _do_test_aupimo_outputs(
     per_image_tprs: Tensor,
     image_classes: Tensor,
     aupimos: Tensor,
-    expected_threshs: Tensor,
+    expected_thresholds: Tensor,
     expected_shared_fpr: Tensor,
     expected_per_image_tprs: Tensor,
     expected_image_classes: Tensor,
@@ -249,7 +249,7 @@ def _do_test_aupimo_outputs(
         shared_fpr,
         per_image_tprs,
         image_classes,
-        expected_threshs,
+        expected_thresholds,
         expected_shared_fpr,
         expected_per_image_tprs,
         expected_image_classes,
@@ -265,7 +265,7 @@ def test_aupimo_values(
     anomaly_maps: torch.Tensor,
     masks: torch.Tensor,
     fpr_bounds: tuple[float, float],
-    expected_threshs: torch.Tensor,
+    expected_thresholds: torch.Tensor,
     expected_shared_fpr: torch.Tensor,
     expected_per_image_tprs: torch.Tensor,
     expected_image_classes: torch.Tensor,
@@ -279,7 +279,7 @@ def test_aupimo_values(
         # recall: this one is not the same as the number of thresholds in the curve
         # this is the number of thresholds used to compute the integral in `aupimo()`
         # always less because of the integration bounds
-        assert aupimo_result.num_threshs < 7
+        assert aupimo_result.num_thresholds < 7
 
         # test data
         # from pimo result
@@ -295,7 +295,7 @@ def test_aupimo_values(
             per_image_tprs,
             image_classes,
             aupimos,
-            expected_threshs,
+            expected_thresholds,
             expected_shared_fpr,
             expected_per_image_tprs,
             expected_image_classes,
@@ -307,7 +307,7 @@ def test_aupimo_values(
 
     # metric interface
     metric = pimo.AUPIMO(
-        num_threshs=7,
+        num_thresholds=7,
         fpr_bounds=fpr_bounds,
         return_average=False,
         force=True,
@@ -318,7 +318,7 @@ def test_aupimo_values(
 
     # metric interface
     metric = pimo.AUPIMO(
-        num_threshs=7,
+        num_thresholds=7,
         fpr_bounds=fpr_bounds,
         return_average=True,  # only return the average AUPIMO
         force=True,
@@ -343,7 +343,7 @@ def test_aupimo_edge(
         functional.aupimo_scores(
             anomaly_maps,
             masks,
-            num_threshs=10,
+            num_thresholds=10,
             force=False,
             **fpr_bounds,
         )
@@ -352,7 +352,7 @@ def test_aupimo_edge(
         functional.aupimo_scores(
             anomaly_maps,
             masks,
-            num_threshs=10,
+            num_thresholds=10,
             force=True,
             **fpr_bounds,
         )
