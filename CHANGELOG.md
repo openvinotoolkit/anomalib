@@ -10,6 +10,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
+- 🔨 Allow passing metrics objects directly to `create_metrics_collection` by @ashwinvaidya17 in https://github.com/openvinotoolkit/anomalib/pull/2212
+
 ### Deprecated
 
 ### Fixed
