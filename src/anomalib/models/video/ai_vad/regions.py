@@ -3,7 +3,6 @@
 # Copyright (C) 2023-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 import torch
 from torch import nn
 from torchvision.models.detection import MaskRCNN_ResNet50_FPN_V2_Weights, maskrcnn_resnet50_fpn_v2
@@ -74,18 +73,18 @@ class RegionExtractor(nn.Module):
             regions = self.backbone(last_frame)
 
         if self.enable_foreground_detections:
-            regions = self.add_foreground_boxes(
-                regions,
-                first_frame,
-                last_frame,
-                self.foreground_kernel_size,
-                self.foreground_binary_threshold,
+            regions = self._add_foreground_boxes(
+                regions=regions,
+                first_frame=first_frame,
+                last_frame=last_frame,
+                kernel_size=self.foreground_kernel_size,
+                binary_threshold=self.foreground_binary_threshold,
             )
 
         return self.post_process_bbox_detections(regions)
 
-    def add_foreground_boxes(
-        self,
+    @staticmethod
+    def _add_foreground_boxes(
         regions: list[dict[str, torch.Tensor]],
         first_frame: torch.Tensor,
         last_frame: torch.Tensor,

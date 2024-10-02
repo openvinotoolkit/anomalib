@@ -52,7 +52,7 @@ class AnomalibDepthDataset(AnomalibDataset, ABC):
             item["image"], item["depth_image"] = (
                 self.transform(image, depth_image) if self.transform else (image, depth_image)
             )
-        elif self.task in (TaskType.DETECTION, TaskType.SEGMENTATION):
+        elif self.task in {TaskType.DETECTION, TaskType.SEGMENTATION}:
             # Only Anomalous (1) images have masks in anomaly datasets
             # Therefore, create empty mask for Normal (0) images.
             mask = (

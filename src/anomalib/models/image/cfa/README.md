@@ -16,7 +16,7 @@ Coupled-hypersphere-based Feature Adaptation (CFA) localizes anomalies using fea
 
 ## Usage
 
-`python tools/train.py --model cfa`
+`anomalib train --model Cfa --data MVTec --data.category <category>`
 
 ## Benchmark
 

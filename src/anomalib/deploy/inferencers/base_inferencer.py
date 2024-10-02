@@ -3,7 +3,6 @@
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any, cast
@@ -102,24 +101,24 @@ class Inferencer(ABC):
                 visualized and predicted scores.
         """
         # min max normalization
-        if "min" in metadata and "max" in metadata:
-            if anomaly_maps is not None:
+        if "pred_scores.min" in metadata and "pred_scores.max" in metadata:
+            if anomaly_maps is not None and "anomaly_maps.max" in metadata:
                 anomaly_maps = normalize_min_max(
                     anomaly_maps,
                     metadata["pixel_threshold"],
-                    metadata["min"],
-                    metadata["max"],
+                    metadata["anomaly_maps.min"],
+                    metadata["anomaly_maps.max"],
                 )
             pred_scores = normalize_min_max(
                 pred_scores,
                 metadata["image_threshold"],
-                metadata["min"],
-                metadata["max"],
+                metadata["pred_scores.min"],
+                metadata["pred_scores.max"],
             )
 
         return anomaly_maps, float(pred_scores)
 
-    def _load_metadata(self, path: str | Path | dict | None = None) -> dict | DictConfig:
+    def _load_metadata(self, path: str | Path | dict | None = None) -> dict | DictConfig:  # noqa: PLR6301
         """Load the meta data from the given path.
 
         Args:

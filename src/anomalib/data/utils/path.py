@@ -3,7 +3,6 @@
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 import os
 import re
 from enum import Enum
@@ -143,13 +142,20 @@ def contains_non_printable_characters(path: str | Path) -> bool:
     return not printable_pattern.match(str(path))
 
 
-def validate_path(path: str | Path, base_dir: str | Path | None = None, should_exist: bool = True) -> Path:
+def validate_path(
+    path: str | Path,
+    base_dir: str | Path | None = None,
+    should_exist: bool = True,
+    extensions: tuple[str, ...] | None = None,
+) -> Path:
     """Validate the path.
 
     Args:
         path (str | Path): Path to validate.
         base_dir (str | Path): Base directory to restrict file access.
         should_exist (bool): If True, do not raise an exception if the path does not exist.
+        extensions (tuple[str, ...] | None): Accepted extensions for the path. An exception is raised if the
+            path does not have one of the accepted extensions. If None, no check is performed. Defaults to None.
 
     Returns:
         Path: Validated path.
@@ -213,6 +219,11 @@ def validate_path(path: str | Path, base_dir: str | Path | None = None, should_e
         if not (os.access(path, os.R_OK) or os.access(path, os.X_OK)):
             msg = f"Read or execute permissions denied for the path: {path}"
             raise PermissionError(msg)
+
+    # Check if the path has one of the accepted extensions
+    if extensions is not None and path.suffix not in extensions:
+        msg = f"Path extension is not accepted. Accepted extensions: {extensions}. Path: {path}"
+        raise ValueError(msg)
 
     return path
 

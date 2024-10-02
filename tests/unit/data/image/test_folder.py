@@ -19,7 +19,8 @@ class TestFolder(_TestAnomalibImageDatamodule):
     """
 
     @pytest.fixture()
-    def datamodule(self, dataset_path: Path, task_type: TaskType) -> Folder:
+    @staticmethod
+    def datamodule(dataset_path: Path, task_type: TaskType) -> Folder:
         """Create and return a Folder datamodule."""
         # Make sure to use a mask directory for segmentation. Folder datamodule
         # expects a relative directory to the root.
@@ -41,3 +42,9 @@ class TestFolder(_TestAnomalibImageDatamodule):
         _datamodule.setup()
 
         return _datamodule
+
+    @pytest.fixture()
+    @staticmethod
+    def fxt_data_config_path() -> str:
+        """Return the path to the test data config."""
+        return "configs/data/folder.yaml"

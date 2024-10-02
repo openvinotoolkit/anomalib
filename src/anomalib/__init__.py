@@ -5,7 +5,7 @@
 
 from enum import Enum
 
-__version__ = "1.1.0dev"
+__version__ = "1.2.0dev"
 
 
 class LearningType(str, Enum):

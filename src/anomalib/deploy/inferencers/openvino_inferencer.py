@@ -3,7 +3,6 @@
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 import logging
 from importlib.util import find_spec
 from pathlib import Path
@@ -23,10 +22,10 @@ from .base_inferencer import Inferencer
 logger = logging.getLogger("anomalib")
 
 if find_spec("openvino") is not None:
-    import openvino.runtime as ov
+    import openvino as ov
 
     if TYPE_CHECKING:
-        from openvino.runtime import CompiledModel
+        from openvino import CompiledModel
 else:
     logger.warning("OpenVINO is not installed. Please install OpenVINO to use OpenVINOInferencer.")
 
@@ -128,7 +127,7 @@ class OpenVINOInferencer(Inferencer):
             model = core.read_model(model=path[0], weights=path[1])
         else:
             path = path if isinstance(path, Path) else Path(path)
-            if path.suffix in (".bin", ".xml"):
+            if path.suffix in {".bin", ".xml"}:
                 if path.suffix == ".bin":
                     bin_path, xml_path = path, path.with_suffix(".xml")
                 elif path.suffix == ".xml":
@@ -151,7 +150,8 @@ class OpenVINOInferencer(Inferencer):
 
         return input_blob, output_blob, compile_model
 
-    def pre_process(self, image: np.ndarray) -> np.ndarray:
+    @staticmethod
+    def pre_process(image: np.ndarray) -> np.ndarray:
         """Pre-process the input image by applying transformations.
 
         Args:
@@ -280,7 +280,7 @@ class OpenVINOInferencer(Inferencer):
 
         if task in (TaskType.CLASSIFICATION, TaskType.EXPLANATION):
             _, pred_score = self._normalize(pred_scores=pred_score, metadata=metadata)
-        elif task in (TaskType.SEGMENTATION, TaskType.DETECTION):
+        elif task in {TaskType.SEGMENTATION, TaskType.DETECTION}:
             if "pixel_threshold" in metadata:
                 pred_mask = (anomaly_map >= metadata["pixel_threshold"]).astype(np.uint8)
 

@@ -8,7 +8,6 @@ Paper https://arxiv.org/abs/2206.04325
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 import logging
 from typing import Any
 
@@ -105,7 +104,8 @@ class Cfa(AnomalyModule):
         batch["anomaly_maps"] = self.model(batch["image"])
         return batch
 
-    def backward(self, loss: torch.Tensor, *args, **kwargs) -> None:
+    @staticmethod
+    def backward(loss: torch.Tensor, *args, **kwargs) -> None:
         """Perform backward-pass for the CFA model.
 
         Args:

@@ -3,7 +3,6 @@
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 from collections.abc import Sequence
 from enum import Enum
 from itertools import product
@@ -182,7 +181,7 @@ class Tiler:
                 msg,
             )
 
-        if self.mode not in (ImageUpscaleMode.PADDING, ImageUpscaleMode.INTERPOLATION):
+        if self.mode not in {ImageUpscaleMode.PADDING, ImageUpscaleMode.INTERPOLATION}:
             msg = f"Unknown tiling mode {self.mode}. Available modes are padding and interpolation"
             raise ValueError(msg)
 

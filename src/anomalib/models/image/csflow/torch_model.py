@@ -90,7 +90,7 @@ class CrossConvolutions(nn.Module):
         )
         self.conv_scale0_1 = nn.Conv2d(
             channels_hidden * 1,
-            channels,  #
+            channels,
             kernel_size=kernel_size,
             padding=pad,
             bias=not batch_norm,
@@ -99,7 +99,7 @@ class CrossConvolutions(nn.Module):
         )
         self.conv_scale1_1 = nn.Conv2d(
             channels_hidden * 1,
-            channels,  #
+            channels,
             kernel_size=kernel_size,
             padding=pad * 1,
             bias=not batch_norm,
@@ -108,7 +108,7 @@ class CrossConvolutions(nn.Module):
         )
         self.conv_scale2_1 = nn.Conv2d(
             channels_hidden * 1,
-            channels,  #
+            channels,
             kernel_size=kernel_size,
             padding=pad,
             bias=not batch_norm,
@@ -271,7 +271,8 @@ class ParallelPermute(InvertibleModule):
 
         return [input_tensor[i][:, self.perm_inv[i]] for i in range(self.n_inputs)], 0.0
 
-    def output_dims(self, input_dims: list[tuple[int]]) -> list[tuple[int]]:
+    @staticmethod
+    def output_dims(input_dims: list[tuple[int]]) -> list[tuple[int]]:
         """Return the output dimensions of the module."""
         return input_dims
 
@@ -402,7 +403,8 @@ class ParallelGlowCouplingLayer(InvertibleModule):
         # Since Jacobians are only used for computing loss and summed in the loss, the idea is to sum them here
         return [z_dist0, z_dist1, z_dist2], torch.stack([jac0, jac1, jac2], dim=1).sum()
 
-    def output_dims(self, input_dims: list[tuple[int]]) -> list[tuple[int]]:
+    @staticmethod
+    def output_dims(input_dims: list[tuple[int]]) -> list[tuple[int]]:
         """Output dimensions of the module."""
         return input_dims
 
@@ -588,10 +590,11 @@ class CsFlowModel(nn.Module):
             z_dist, _ = self.graph(features)  # Ignore Jacobians
             anomaly_scores = self._compute_anomaly_scores(z_dist)
             anomaly_maps = self.anomaly_map_generator(z_dist)
-            output = anomaly_maps, anomaly_scores
+            output = {"anomaly_map": anomaly_maps, "pred_score": anomaly_scores}
         return output
 
-    def _compute_anomaly_scores(self, z_dists: torch.Tensor) -> torch.Tensor:
+    @staticmethod
+    def _compute_anomaly_scores(z_dists: torch.Tensor) -> torch.Tensor:
         """Get anomaly scores from the latent distribution.
 
         Args:

@@ -3,7 +3,6 @@
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
@@ -81,7 +80,7 @@ class TorchInferencer(Inferencer):
         Returns:
             torch.device: Device to use for inference.
         """
-        if device not in ("auto", "cpu", "cuda", "gpu"):
+        if device not in {"auto", "cpu", "cuda", "gpu"}:
             msg = f"Unknown device {device}"
             raise ValueError(msg)
 
@@ -103,7 +102,7 @@ class TorchInferencer(Inferencer):
         if isinstance(path, str):
             path = Path(path)
 
-        if path.suffix not in (".pt", ".pth"):
+        if path.suffix not in {".pt", ".pth"}:
             msg = f"Unknown torch checkpoint file format {path.suffix}. Make sure you save the Torch model."
             raise ValueError(msg)
 

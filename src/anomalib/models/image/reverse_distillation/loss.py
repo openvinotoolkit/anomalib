@@ -3,7 +3,6 @@
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 import torch
 from torch import nn
 
@@ -11,7 +10,8 @@ from torch import nn
 class ReverseDistillationLoss(nn.Module):
     """Loss function for Reverse Distillation."""
 
-    def forward(self, encoder_features: list[torch.Tensor], decoder_features: list[torch.Tensor]) -> torch.Tensor:
+    @staticmethod
+    def forward(encoder_features: list[torch.Tensor], decoder_features: list[torch.Tensor]) -> torch.Tensor:
         """Compute cosine similarity loss based on features from encoder and decoder.
 
         Based on the official code:

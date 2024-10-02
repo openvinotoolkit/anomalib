@@ -16,7 +16,7 @@ During testing, a similar step is followed but this time the cosine distance bet
 
 ## Usage
 
-`python tools/train.py --model reverse_distillation`
+`anomalib train --model ReverseDistillation --data MVTec --data.category <category>`
 
 ## Benchmark
 

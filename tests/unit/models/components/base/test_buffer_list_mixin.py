@@ -3,7 +3,6 @@
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 import pytest
 import torch
 
@@ -36,25 +35,29 @@ def module() -> BufferListModule:
 class TestBufferListMixin:
     """Test the BufferListMixin module."""
 
-    def test_get_buffer_list(self, module: BufferListModule) -> None:
+    @staticmethod
+    def test_get_buffer_list(module: BufferListModule) -> None:
         """Test retrieving the tensor_list."""
         assert isinstance(module.tensor_list, list)
         assert all(isinstance(tensor, torch.Tensor) for tensor in module.tensor_list)
 
-    def test_set_buffer_list(self, module: BufferListModule) -> None:
+    @staticmethod
+    def test_set_buffer_list(module: BufferListModule) -> None:
         """Test setting/updating the tensor_list."""
         tensor_list = [torch.rand(3) for _ in range(3)]
         module.tensor_list = tensor_list
         assert tensor_lists_are_equal(module.tensor_list, tensor_list)
 
-    def test_buffer_list_device_placement(self, module: BufferListModule) -> None:
+    @staticmethod
+    def test_buffer_list_device_placement(module: BufferListModule) -> None:
         """Test if the device of the buffer list is updated with the module."""
         module.cuda()
         assert all(tensor.is_cuda for tensor in module.tensor_list)
         module.cpu()
         assert all(tensor.is_cpu for tensor in module.tensor_list)
 
-    def test_persistent_buffer_list(self) -> None:
+    @staticmethod
+    def test_persistent_buffer_list(module: BufferListModule) -> None:
         """Test if the buffer_list is persistent when re-loading the state dict."""
         # create a module, assign the buffer list and get the state dict
         module = BufferListModule()
@@ -67,7 +70,8 @@ class TestBufferListMixin:
         # assert that the previously set buffer list has been restored
         assert tensor_lists_are_equal(module.tensor_list, tensor_list)
 
-    def test_non_persistent_buffer_list(self) -> None:
+    @staticmethod
+    def test_non_persistent_buffer_list(module: BufferListModule) -> None:
         """Test if the buffer_list is persistent when re-loading the state dict."""
         # create a module, assign the buffer list and get the state dict
         module = BufferListModule()

@@ -1,0 +1,19 @@
+class TrainJobGenerator(JobGenerator):
+    """Generate TrainJob."""
+
+    def generate_jobs(
+        self,
+        args: dict | None = None,
+        prev_stage_result: None = None,
+    ) -> Generator[TrainJob, None, None]:
+        """Generate Jobs via random selection."""
+        for _ in range(args["experiments"]):
+            lr: float = np.random.uniform(args["lr"][0], args["lr"][1])
+            backbone: str = np.random.choice(args["backbone"])
+            stride: int = np.random.choice(args["stride"])
+            yield TrainJob(lr=lr, backbone=backbone, stride=stride)
+
+    @property
+    def job_class(self) -> type:
+        """Return the job class."""
+        return TrainJob

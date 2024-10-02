@@ -1,5 +1,3 @@
-# REMARK: CODE WAS TAKEN FROM https://github.com/eliahuhorwitz/3D-ADS/blob/main/utils/au_pro_util.py
-
 """Utils for testing AUPRO metric.
 
 Code based on the official MVTec 3D-AD evaluation code found at
@@ -8,6 +6,12 @@ Utility functions that compute a PRO curve and its definite integral, given
 pairs of anomaly and ground truth maps.
 The PRO curve can also be integrated up to a constant integration limit.
 """
+
+# Copyright (C) 2022-2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+# Original code was taken from https://github.com/eliahuhorwitz/3D-ADS/blob/main/utils/au_pro_util.py
+
 import logging
 from bisect import bisect
 

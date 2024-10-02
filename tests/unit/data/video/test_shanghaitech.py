@@ -3,7 +3,6 @@
 # Copyright (C) 2023-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 from pathlib import Path
 
 import pytest
@@ -17,12 +16,14 @@ class TestShanghaiTech(_TestAnomalibVideoDatamodule):
     """ShanghaiTech Datamodule Unit Tests."""
 
     @pytest.fixture()
-    def clip_length_in_frames(self) -> int:
+    @staticmethod
+    def clip_length_in_frames() -> int:
         """Return the number of frames in each clip."""
         return 2
 
     @pytest.fixture()
-    def datamodule(self, dataset_path: Path, task_type: TaskType, clip_length_in_frames: int) -> ShanghaiTech:
+    @staticmethod
+    def datamodule(dataset_path: Path, task_type: TaskType, clip_length_in_frames: int) -> ShanghaiTech:
         """Create and return a Shanghai datamodule."""
         _datamodule = ShanghaiTech(
             root=dataset_path / "shanghaitech",
@@ -39,3 +40,9 @@ class TestShanghaiTech(_TestAnomalibVideoDatamodule):
         _datamodule.setup()
 
         return _datamodule
+
+    @pytest.fixture()
+    @staticmethod
+    def fxt_data_config_path() -> str:
+        """Return the path to the test data config."""
+        return "configs/data/shanghaitech.yaml"

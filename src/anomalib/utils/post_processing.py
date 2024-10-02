@@ -3,7 +3,6 @@
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 import math
 
 import cv2
@@ -36,7 +35,7 @@ def add_label(
     img_height, img_width, _ = image.shape
 
     font = cv2.FONT_HERSHEY_PLAIN
-    text = label_name if confidence is None else f"{label_name} ({confidence*100:.0f}%)"
+    text = label_name if confidence is None else f"{label_name} ({confidence * 100:.0f}%)"
 
     # get font sizing
     font_scale = min(img_width, img_height) * font_scale

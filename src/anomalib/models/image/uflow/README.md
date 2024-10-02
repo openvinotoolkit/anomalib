@@ -52,7 +52,7 @@ In order to obtain the same exact results, although the architecture parameters 
 
 ## Usage
 
-`python tools/train.py --model uflow`
+`anomalib train --model Uflow --data MVTec --data.category <category>`
 
 ## Download data
 

@@ -6,7 +6,6 @@ This script creates a custom dataset from a folder.
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 from pathlib import Path
 
 from pandas import DataFrame, isna

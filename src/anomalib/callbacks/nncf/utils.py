@@ -3,7 +3,6 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 import logging
 from copy import copy
 from typing import TYPE_CHECKING, Any
@@ -41,7 +40,8 @@ class InitLoader(PTInitializingDataLoader):
         loaded_item = next(self._data_loader_iter)
         return loaded_item["image"]
 
-    def get_inputs(self, dataloader_output: dict[str, str | torch.Tensor]) -> tuple[tuple, dict]:
+    @staticmethod
+    def get_inputs(dataloader_output: dict[str, str | torch.Tensor]) -> tuple[tuple, dict]:
         """Get input to model.
 
         Returns:
@@ -50,7 +50,8 @@ class InitLoader(PTInitializingDataLoader):
         """
         return (dataloader_output,), {}
 
-    def get_target(self, _):  # noqa: ANN001, ANN201
+    @staticmethod
+    def get_target(_) -> None:  # noqa: ANN001
         """Return structure for ground truth in loss criterion based on dataloader output.
 
         This implementation does not do anything and is a placeholder.

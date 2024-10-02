@@ -146,8 +146,8 @@ class _VisualizationCallback(Callback):
     def on_predict_end(self, trainer: Trainer, pl_module: AnomalyModule) -> None:
         return self.on_test_end(trainer, pl_module)
 
+    @staticmethod
     def _add_to_logger(
-        self,
         result: GeneratorResult,
         module: AnomalyModule,
         trainer: Trainer,

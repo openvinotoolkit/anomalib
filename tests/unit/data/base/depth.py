@@ -11,8 +11,9 @@ from .base import _TestAnomalibDataModule
 
 
 class _TestAnomalibDepthDatamodule(_TestAnomalibDataModule):
+    @staticmethod
     @pytest.mark.parametrize("subset", ["train", "val", "test"])
-    def test_get_item_returns_correct_keys_and_shapes(self, datamodule: AnomalibDataModule, subset: str) -> None:
+    def test_get_item_returns_correct_keys_and_shapes(subset: str, datamodule: AnomalibDataModule) -> None:
         """Test that the datamodule __getitem__ returns the correct keys and shapes."""
         # Get the dataloader.
         dataloader = getattr(datamodule, f"{subset}_dataloader")()
@@ -23,7 +24,7 @@ class _TestAnomalibDepthDatamodule(_TestAnomalibDataModule):
         # Check that the batch has the correct keys.
         expected_keys = {"image_path", "depth_path", "label", "image", "depth_image"}
 
-        if dataloader.dataset.task in ("detection", "segmentation"):
+        if dataloader.dataset.task in {"detection", "segmentation"}:
             expected_keys |= {"mask_path", "mask"}
 
             if dataloader.dataset.task == "detection":
@@ -38,5 +39,5 @@ class _TestAnomalibDepthDatamodule(_TestAnomalibDataModule):
         assert batch["depth_image"].shape == (4, 3, 256, 256)
         assert batch["label"].shape == (4,)
 
-        if dataloader.dataset.task in ("detection", "segmentation"):
+        if dataloader.dataset.task in {"detection", "segmentation"}:
             assert batch["mask"].shape == (4, 256, 256)

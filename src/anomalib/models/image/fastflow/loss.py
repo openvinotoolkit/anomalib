@@ -3,7 +3,6 @@
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 import torch
 from torch import nn
 
@@ -11,7 +10,8 @@ from torch import nn
 class FastflowLoss(nn.Module):
     """FastFlow Loss."""
 
-    def forward(self, hidden_variables: list[torch.Tensor], jacobians: list[torch.Tensor]) -> torch.Tensor:
+    @staticmethod
+    def forward(hidden_variables: list[torch.Tensor], jacobians: list[torch.Tensor]) -> torch.Tensor:
         """Calculate the Fastflow loss.
 
         Args:
