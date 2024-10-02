@@ -19,6 +19,7 @@ from .collection import AnomalibMetricCollection
 from .f1_max import F1Max
 from .f1_score import F1Score
 from .min_max import MinMax
+from .pimo import AUPIMO, PIMO
 from .precision_recall_curve import BinaryPrecisionRecallCurve
 from .pro import PRO
 from .threshold import F1AdaptiveThreshold, ManualThreshold
@@ -35,6 +36,8 @@ __all__ = [
     "ManualThreshold",
     "MinMax",
     "PRO",
+    "PIMO",
+    "AUPIMO",
 ]
 
 logger = logging.getLogger(__name__)
