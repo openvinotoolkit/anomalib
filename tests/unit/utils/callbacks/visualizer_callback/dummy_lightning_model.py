@@ -54,6 +54,7 @@ class DummyModule(AnomalyModule):
             image=torch.rand((1, 3, 100, 100)).to(self.device),
             gt_mask=torch.zeros((1, 100, 100)).to(self.device),
             anomaly_map=torch.ones((1, 100, 100)).to(self.device),
+            pred_score=torch.Tensor([1.0]),
             gt_label=torch.Tensor([0]).int().to(self.device),
             pred_label=torch.Tensor([0]).int().to(self.device),
             pred_mask=torch.zeros((1, 100, 100)).to(self.device),

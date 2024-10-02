@@ -587,10 +587,11 @@ class CsFlowModel(nn.Module):
         features = self.feature_extractor(images)
         if self.training:
             return self.graph(features)
+
         z_dist, _ = self.graph(features)  # Ignore Jacobians
         anomaly_scores = self._compute_anomaly_scores(z_dist)
         anomaly_maps = self.anomaly_map_generator(z_dist)
-        return InferenceBatch(anomaly_map=anomaly_maps, pred_score=anomaly_scores)
+        return InferenceBatch(pred_score=anomaly_scores, anomaly_map=anomaly_maps)
 
     @staticmethod
     def _compute_anomaly_scores(z_dists: torch.Tensor) -> torch.Tensor:

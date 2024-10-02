@@ -11,16 +11,18 @@ tensors for efficient data handling and processing in anomaly detection tasks.
 from dataclasses import dataclass
 
 import torch
-from torchvision.tv_tensors import Image, Mask
+from torchvision.tv_tensors import Image
 
 from anomalib.data.dataclasses.generic import BatchIterateMixin, _DepthInputFields
 from anomalib.data.dataclasses.numpy.image import NumpyImageItem
 from anomalib.data.dataclasses.torch.base import Batch, DatasetItem, ToNumpyMixin
+from anomalib.data.validators.torch.depth import DepthBatchValidator, DepthValidator
 
 
 @dataclass
 class DepthItem(
     ToNumpyMixin[NumpyImageItem],
+    DepthValidator,
     _DepthInputFields[torch.Tensor, str],
     DatasetItem[Image],
 ):
@@ -45,54 +47,11 @@ class DepthItem(
 
     numpy_class = NumpyImageItem
 
-    @staticmethod
-    def _validate_image(image: Image) -> Image:
-        return image
-
-    @staticmethod
-    def _validate_gt_label(gt_label: torch.Tensor) -> torch.Tensor:
-        return gt_label
-
-    @staticmethod
-    def _validate_gt_mask(gt_mask: Mask) -> Mask:
-        return gt_mask
-
-    @staticmethod
-    def _validate_mask_path(mask_path: str) -> str:
-        return mask_path
-
-    @staticmethod
-    def _validate_anomaly_map(anomaly_map: torch.Tensor) -> torch.Tensor:
-        return anomaly_map
-
-    @staticmethod
-    def _validate_pred_score(pred_score: torch.Tensor) -> torch.Tensor:
-        return pred_score
-
-    @staticmethod
-    def _validate_pred_mask(pred_mask: torch.Tensor) -> torch.Tensor:
-        return pred_mask
-
-    @staticmethod
-    def _validate_pred_label(pred_label: torch.Tensor) -> torch.Tensor:
-        return pred_label
-
-    @staticmethod
-    def _validate_image_path(image_path: str) -> str:
-        return image_path
-
-    @staticmethod
-    def _validate_depth_map(depth_map: torch.Tensor) -> torch.Tensor:
-        return depth_map
-
-    @staticmethod
-    def _validate_depth_path(depth_path: str) -> str:
-        return depth_path
-
 
 @dataclass
 class DepthBatch(
     BatchIterateMixin[DepthItem],
+    DepthBatchValidator,
     _DepthInputFields[torch.Tensor, list[str]],
     Batch[Image],
 ):
@@ -120,47 +79,3 @@ class DepthBatch(
     """
 
     item_class = DepthItem
-
-    @staticmethod
-    def _validate_image(image: Image) -> Image:
-        return image
-
-    @staticmethod
-    def _validate_gt_label(gt_label: torch.Tensor) -> torch.Tensor:
-        return gt_label
-
-    @staticmethod
-    def _validate_gt_mask(gt_mask: Mask) -> Mask:
-        return gt_mask
-
-    @staticmethod
-    def _validate_mask_path(mask_path: list[str]) -> list[str]:
-        return mask_path
-
-    @staticmethod
-    def _validate_anomaly_map(anomaly_map: torch.Tensor) -> torch.Tensor:
-        return anomaly_map
-
-    @staticmethod
-    def _validate_pred_score(pred_score: torch.Tensor) -> torch.Tensor:
-        return pred_score
-
-    @staticmethod
-    def _validate_pred_mask(pred_mask: torch.Tensor) -> torch.Tensor:
-        return pred_mask
-
-    @staticmethod
-    def _validate_pred_label(pred_label: torch.Tensor) -> torch.Tensor:
-        return pred_label
-
-    @staticmethod
-    def _validate_image_path(image_path: list[str]) -> list[str]:
-        return image_path
-
-    @staticmethod
-    def _validate_depth_map(depth_map: torch.Tensor) -> torch.Tensor:
-        return depth_map
-
-    @staticmethod
-    def _validate_depth_path(depth_path: list[str]) -> list[str]:
-        return depth_path

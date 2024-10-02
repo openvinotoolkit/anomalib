@@ -9,10 +9,15 @@ import numpy as np
 
 from anomalib.data.dataclasses.generic import BatchIterateMixin, _VideoInputFields
 from anomalib.data.dataclasses.numpy.base import NumpyBatch, NumpyItem
+from anomalib.data.validators.numpy.video import NumpyVideoBatchValidator, NumpyVideoValidator
 
 
 @dataclass
-class NumpyVideoItem(_VideoInputFields[np.ndarray, np.ndarray, np.ndarray, str], NumpyItem):
+class NumpyVideoItem(
+    NumpyVideoValidator,
+    _VideoInputFields[np.ndarray, np.ndarray, np.ndarray, str],
+    NumpyItem,
+):
     """Dataclass for a single video item in Anomalib datasets using numpy arrays.
 
     This class combines _VideoInputFields and NumpyItem for video-based anomaly detection.
@@ -20,26 +25,11 @@ class NumpyVideoItem(_VideoInputFields[np.ndarray, np.ndarray, np.ndarray, str],
     for Anomalib's video-based models.
     """
 
-    @staticmethod
-    def _validate_image(image: np.ndarray) -> np.ndarray:
-        return image
-
-    @staticmethod
-    def _validate_gt_label(gt_label: np.ndarray) -> np.ndarray:
-        return gt_label
-
-    @staticmethod
-    def _validate_gt_mask(gt_mask: np.ndarray) -> np.ndarray:
-        return gt_mask
-
-    @staticmethod
-    def _validate_mask_path(mask_path: str) -> str:
-        return mask_path
-
 
 @dataclass
 class NumpyVideoBatch(
     BatchIterateMixin[NumpyVideoItem],
+    NumpyVideoBatchValidator,
     _VideoInputFields[np.ndarray, np.ndarray, np.ndarray, list[str]],
     NumpyBatch,
 ):
@@ -51,23 +41,3 @@ class NumpyVideoBatch(
     """
 
     item_class = NumpyVideoItem
-
-    @staticmethod
-    def _validate_image(image: np.ndarray) -> np.ndarray:
-        return image
-
-    @staticmethod
-    def _validate_gt_label(gt_label: np.ndarray) -> np.ndarray:
-        return gt_label
-
-    @staticmethod
-    def _validate_gt_mask(gt_mask: np.ndarray) -> np.ndarray:
-        return gt_mask
-
-    @staticmethod
-    def _validate_mask_path(mask_path: list[str]) -> list[str]:
-        return mask_path
-
-    @staticmethod
-    def _validate_anomaly_map(anomaly_map: np.ndarray) -> np.ndarray:
-        return anomaly_map

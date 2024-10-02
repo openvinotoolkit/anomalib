@@ -204,7 +204,8 @@ class FastflowModel(nn.Module):
             return hidden_variables, log_jacobians
 
         anomaly_map = self.anomaly_map_generator(hidden_variables)
-        return InferenceBatch(anomaly_map=anomaly_map)
+        pred_score = torch.amax(anomaly_map, dim=(-2, -1))
+        return InferenceBatch(pred_score=pred_score, anomaly_map=anomaly_map)
 
     def _get_cnn_features(self, input_tensor: torch.Tensor) -> list[torch.Tensor]:
         """Get CNN-based features.

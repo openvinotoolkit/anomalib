@@ -79,10 +79,11 @@ class STFPMModel(nn.Module):
 
         if self.training:
             return teacher_features, student_features
+
         anomaly_map = self.anomaly_map_generator(
             teacher_features=teacher_features,
             student_features=student_features,
             image_size=output_size,
         )
-
-        return InferenceBatch(anomaly_map=anomaly_map)
+        pred_score = torch.amax(anomaly_map, dim=(-2, -1))
+        return InferenceBatch(pred_score=pred_score, anomaly_map=anomaly_map)
