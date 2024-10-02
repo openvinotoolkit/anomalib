@@ -14,6 +14,10 @@ from .efficient_ad import EfficientAd
 from .fastflow import Fastflow
 from .fre import Fre
 from .ganomaly import Ganomaly
+from .llava import Llava
+from .llava_next import Llavanext
+from .llm import Llm
+from .llm_ollama import Llmollama
 from .padim import Padim
 from .patchcore import Patchcore
 from .reverse_distillation import ReverseDistillation
@@ -41,4 +45,8 @@ __all__ = [
     "Stfpm",
     "Uflow",
     "WinClip",
+    "Llm",
+    "Llmollama",
+    "Llava",
+    "Llavanext",
 ]
