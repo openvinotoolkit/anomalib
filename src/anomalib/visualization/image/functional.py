@@ -378,6 +378,7 @@ def visualize_image_item(
             image = image.resize(field_size)
             field_images[field] = image
 
+            # Process fields
             if field in fields:
                 title = convert_to_title_case(field)
                 image = add_text_to_image(image, title)
