@@ -390,6 +390,11 @@ def visualize_image_item(
             if base in field_images:
                 base_image = field_images[base].copy()
                 valid_overlays = [overlay for overlay in overlays if overlay in field_images]
+                invalid_overlays = set(overlays) - set(valid_overlays)
+
+                if invalid_overlays:
+                    logger.warning("Invalid overlays: %s", invalid_overlays)
+
                 for overlay in valid_overlays:
                     base_image = overlay_images(base_image, field_images[overlay], alpha)
 
