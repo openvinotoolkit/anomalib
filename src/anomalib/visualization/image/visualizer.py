@@ -166,8 +166,8 @@ class ImageVisualizer(Callback):
                 filename = generate_output_filename(
                     input_path=item.image_path or "",
                     output_path=self.output_dir,
-                    dataset_name=getattr(trainer.test_dataloaders.dataset, "name", "") or "",
-                    category=getattr(trainer.test_dataloaders.dataset, "category", "") or "",
+                    dataset_name=getattr(trainer.datamodule, "name", "") or "",
+                    category=getattr(trainer.datamodule, "category", "") or "",
                 )
 
                 # Save the image to the specified filename

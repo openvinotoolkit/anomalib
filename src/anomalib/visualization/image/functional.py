@@ -418,7 +418,7 @@ def visualize_mask(
             mask = mask.to(torch.uint8) * 255
         mask = to_pil_image(mask)
 
-    if not isinstance(mask, Image.Image):
+    if mask and not isinstance(mask, Image.Image):
         msg = "Mask must be a PIL Image"
         raise TypeError(msg)
 
