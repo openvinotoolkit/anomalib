@@ -4,10 +4,11 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
+from typing import Literal
 
 import torch
 import torch.nn.functional as F  # noqa: N812
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageFont
 from torchvision.transforms.functional import to_pil_image
 
 from anomalib.data import ImageItem
@@ -139,49 +140,193 @@ def apply_colormap(image: Image.Image) -> Image.Image:
     return colored_image.convert("RGB")  # Convert back to RGB for display
 
 
+def draw_mask_contours(
+    image: Image.Image,
+    mask: Image.Image,
+    color: tuple[int, int, int] = (255, 0, 0),
+) -> Image.Image:
+    """Draw contours of a mask on an input image using PIL.
+
+    Args:
+        image (Image.Image): The base image on which to draw contours.
+        mask (Image.Image): The mask image used to find contours.
+        color (tuple[int, int, int], optional): RGB color for the contours. Defaults to (255, 0, 0) (red).
+
+    Returns:
+        Image.Image: A new image with mask contours drawn on it.
+
+    Examples:
+        >>> from PIL import Image, ImageDraw
+
+        >>> input_img = Image.new('RGB', (100, 100), color='white')
+
+        >>> mask_img = Image.new('L', (100, 100), color=0)
+        >>> draw = ImageDraw.Draw(mask_img)
+        >>> draw.rectangle([25, 25, 75, 75], fill=255)
+
+        >>> result = draw_contours(input_img, mask_img, color=(0, 255, 0))
+        >>> result.show()
+    """
+    # Ensure mask is binary
+    mask = mask.convert("L")
+
+    # Find edges of the mask
+    edges = mask.filter(ImageFilter.FIND_EDGES)
+
+    # Create a colored version of the edges
+    colored_edges = Image.new("RGB", image.size, color)
+    colored_edges.putalpha(edges.convert("L"))
+
+    # Composite the colored edges onto the input image
+    return Image.alpha_composite(image.convert("RGBA"), colored_edges)
+
+
+def fill_mask_area(
+    image: Image.Image,
+    mask: Image.Image,
+    color: tuple[int, int, int] = (255, 0, 0),
+    alpha: float = 0.5,
+) -> Image.Image:
+    """Fill a mask area on an image with a color.
+
+    This function takes an input image and a mask, converts them to the appropriate
+    modes, adjusts the alpha of the mask, and then composites a color onto the image
+    using the adjusted mask.
+
+    Args:
+        image (Image.Image): The input image to overlay the mask on.
+        mask (Image.Image): The mask to be overlaid on the image.
+        color (tuple[int, int, int], optional): The color of the overlay. Defaults to (255, 0, 0).
+        alpha (float, optional): The alpha value for the overlay. Defaults to 0.5.
+
+    Returns:
+        Image.Image: A new image with the mask overlaid on the input image.
+
+    Examples:
+        >>> from PIL import Image, ImageDraw
+
+        >>> # Create a sample input image (white background)
+        >>> input_img = Image.new('RGB', (100, 100), color='white')
+        >>> # Create a sample mask (a rectangle)
+        >>> mask_img = Image.new('L', (100, 100), color=0)
+        >>> draw = ImageDraw.Draw(mask_img)
+        >>> draw.rectangle([25, 25, 75, 75], fill=255)
+        >>> result = overlay_mask(input_img, mask_img, alpha=0.3)
+        >>> result.show()  # Display the result
+
+        # To compare original and result side by side:
+        >>> comparison = Image.new('RGB', (input_img.width * 2, input_img.height))
+        >>> comparison.paste(input_img, (0, 0))
+        >>> comparison.paste(result, (input_img.width, 0))
+        >>> comparison.show()  # Display the comparison
+    """
+    # Ensure input image is in RGBA mode
+    image = image.convert("RGBA")
+
+    # Ensure mask is in grayscale mode
+    mask = mask.convert("L")
+
+    # Adjust the alpha of the mask
+    alpha_mask = Image.new("L", mask.size, int(255 * alpha))
+    adjusted_mask = ImageChops.multiply(mask, alpha_mask)
+
+    # Create a solid color image for the overlay
+    overlay = Image.new("RGBA", image.size, color)
+
+    # Composite the overlay onto the input using the adjusted mask
+    return Image.composite(overlay, image, adjusted_mask)
+
+
+def overlay_mask(
+    image: Image.Image,
+    mask: Image.Image,
+    alpha: float = 0.2,
+    color: tuple[int, int, int] = (255, 0, 0),
+    mode: Literal["contour", "fill"] = "contour",
+) -> Image.Image:
+    """Overlay a mask on an image.
+
+    Args:
+        image (Image.Image): The base image.
+        mask (Image.Image): The mask to overlay.
+        alpha (float): The alpha value for blending (0.0 to 1.0).
+        color (tuple[int, int, int]): The color of the overlay.
+        mode (Literal["contour", "fill"]): The mode of the overlay.
+            ``contour`` draws contours on the mask.
+            ``fill`` fills the mask area with color.
+            Defaults to ``contour``.
+
+    Returns:
+        Image.Image: The overlaid image.
+
+    Examples:
+        >>> from PIL import Image, ImageDraw
+
+        >>> input_img = Image.new('RGB', (100, 100), color='white')
+        >>> mask_img = Image.new('L', (100, 100), color=0)
+        >>> draw = ImageDraw.Draw(mask_img)
+        >>> draw.rectangle([25, 25, 75, 75], fill=255)
+
+        >>> result = overlay_mask(input_img, mask_img, mode="contour")
+        >>> result.show()
+
+        >>> result = overlay_mask(input_img, mask_img, mode="fill")
+        >>> result.show()
+    """
+    if mode == "contour":
+        return draw_mask_contours(image, mask, color=color)
+    if mode == "fill":
+        return fill_mask_area(image, mask, color=color, alpha=alpha)
+
+    msg = f"Invalid overlay mode: {mode}. Allowed modes are 'contour' or 'fill'."
+    raise ValueError(msg)
+
+
 def overlay_images(
     base: Image.Image,
     overlay: Image.Image | list[Image.Image],
-    alpha: float,
+    *,  # Mark the following arguments as keyword-only
+    alpha: float = 0.2,
+    color: tuple[int, int, int] = (255, 0, 0),
+    mask_overlay_mode: Literal["contour", "fill"] = "contour",
 ) -> Image.Image:
     """Overlay multiple images on top of a base image with a specified alpha value.
+
+    If the overlay is a mask (L mode), draw its contours on the image instead.
 
     Args:
         base: The base PIL Image.
         overlay: PIL Image or list of PIL Images to overlay on top of the base image.
         alpha: The alpha value for blending (0.0 to 1.0).
+        color: Contour color for the mask. If None, the mask is returned as is.
+        mask_overlay_mode: Mode of the overlay mask.
+            ``contour`` draws contours on the mask.
+            ``fill`` fills the mask area with color.
+            Defaults to ``contour``.
 
     Returns:
         A new PIL Image with all overlays applied.
     """
-    # Ensure base image is in RGBA mode
-    base = base.convert("RGBA")
+    # Ensure base image is in RGB mode
+    base = base.convert("RGB")
 
     if not isinstance(overlay, list):
         overlay = [overlay]
 
     for ov in overlay:
-        # Ensure overlay image is in RGBA mode
-        overlayed_image = ov.convert("RGBA")
+        if ov.mode == "L":
+            # L modes are masks, so we can draw contours or overlay them.
+            base = overlay_mask(base, ov, alpha=alpha, color=color, mode=mask_overlay_mode)
+        else:
+            # Ensure overlay image is in RGB mode and resize if necessary
+            colored_overlay = ov.convert("RGB")
+            if base.size != colored_overlay.size:
+                colored_overlay = colored_overlay.resize(base.size)
 
-        # Resize overlay image to match base image size if necessary
-        if base.size != overlayed_image.size:
-            overlayed_image = overlayed_image.resize(base.size)
+            # Blend the overlay with the base image
+            base = Image.blend(base, colored_overlay, alpha)
 
-        # Create a mask for non-black pixels in the overlay
-        mask = overlayed_image.split()[3]  # Get the alpha channel
-        mask = mask.point(lambda p: p > 0 and 255)  # Create binary mask
-
-        # Blend only the non-black pixels of the overlay with the base image
-        blended = Image.composite(
-            image1=Image.blend(base, overlayed_image, alpha),
-            image2=base,
-            mask=mask,
-        )
-        base = blended
-
-    # Ensure the final result is in RGB mode for compatibility
-    return base.convert("RGB")
+    return base
 
 
 def visualize_anomaly_map(
@@ -232,12 +377,15 @@ def visualize_anomaly_map(
     return apply_colormap(image) if colormap else image.convert("RGB")
 
 
-def visualize_mask(mask: Image.Image | torch.Tensor, color: tuple[int, int, int] = (255, 255, 255)) -> Image.Image:
+def visualize_mask(
+    mask: Image.Image | torch.Tensor,
+    color: tuple[int, int, int] | None = None,
+) -> Image.Image:
     """Visualize a mask by applying a color to it.
 
     Args:
         mask (Image.Image | torch.Tensor): The input mask. Can be a PIL Image or a PyTorch tensor.
-        color (tuple[int, int, int], optional): The color to apply to the mask. Defaults to (255, 255, 255) (white).
+        color (tuple[int, int, int], optional): The color to apply to the mask. If None, the mask is returned as is.
 
     Returns:
         Image.Image: The visualized mask as a PIL Image.
@@ -335,10 +483,8 @@ def visualize_field(
     if field == "image":
         msg = "Image visualization is not implemented yet"
         raise NotImplementedError(msg)
-    if field in {"gt_mask"}:
+    if field in {"gt_mask", "pred_mask"}:
         image = visualize_mask(value)
-    if field in {"pred_mask"}:
-        image = visualize_mask(value, color=(255, 0, 0))
     if field == "anomaly_map":
         image = visualize_anomaly_map(value, normalize=normalize, colormap=colormap)
 
@@ -347,7 +493,7 @@ def visualize_field(
 
 def visualize_image_item(
     item: ImageItem,
-    fields: list[str],
+    fields: list[str] | None = None,
     *,  # Mark the following arguments as keyword-only
     field_size: tuple[int, int] = (256, 256),
     overlay_fields: list[tuple[str, list[str]]] | None = None,
@@ -360,11 +506,15 @@ def visualize_image_item(
     field_images = {}
 
     # Collect all fields that need to be visualized
-    all_fields = set(fields)
+    all_fields = set(fields or [])
     if overlay_fields:
         for base, overlays in overlay_fields:
             all_fields.add(base)
             all_fields.update(overlays)
+
+    # If no fields to visualize, return None
+    if not all_fields:
+        return None
 
     # Visualize all required fields
     for field in all_fields:
@@ -380,7 +530,7 @@ def visualize_image_item(
             field_images[field] = image
 
             # Process fields
-            if field in fields:
+            if fields and field in fields:
                 title = convert_to_title_case(field)
                 image = add_text_to_image(image, title)
                 images.append(image)
@@ -397,7 +547,7 @@ def visualize_image_item(
                     logger.warning("Invalid overlays: %s", invalid_overlays)
 
                 for overlay in valid_overlays:
-                    base_image = overlay_images(base_image, field_images[overlay], alpha)
+                    base_image = overlay_images(base_image, field_images[overlay], alpha=alpha)
 
                 if valid_overlays:
                     title = (
