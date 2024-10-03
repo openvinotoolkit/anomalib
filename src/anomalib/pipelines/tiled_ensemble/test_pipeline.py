@@ -57,7 +57,7 @@ class TestTiledEnsemble(Pipeline):
         tiling_args = args["tiling"]
         data_args = args["data"]
         normalization_stage = NormalizationStage(args["normalization_stage"])
-        threshold_stage = ThresholdStage(args["threshold_stage"])
+        threshold_stage = ThresholdStage(args["thresholding"]["stage"])
         model_args = args["TrainModels"]["model"]
         task = args["data"]["init_args"]["task"]
         metrics = args["TrainModels"]["metrics"]

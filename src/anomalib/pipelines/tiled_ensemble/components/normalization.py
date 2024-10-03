@@ -33,7 +33,7 @@ class NormalizationJob(Job):
         self.predictions = predictions
         self.root_dir = root_dir
 
-    def run(self, task_id: int | None = None) -> list[Any]:
+    def run(self, task_id: int | None = None) -> list[Any] | None:
         """Run normalization job which normalizes image, pixel and box scores.
 
         Args:

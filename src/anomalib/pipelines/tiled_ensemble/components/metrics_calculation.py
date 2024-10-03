@@ -27,7 +27,7 @@ class MetricsCalculationJob(Job):
 
     Args:
         accelerator (str): Accelerator (device) to use.
-        predictions (list[Any]): List of predictions.
+        predictions (list[Any]): List of batch predictions.
         root_dir (Path): Root directory to save checkpoints, stats and images.
         image_metrics (AnomalibMetricCollection): Collection of all image-level metrics.
         pixel_metrics (AnomalibMetricCollection): Collection of all pixel-level metrics.

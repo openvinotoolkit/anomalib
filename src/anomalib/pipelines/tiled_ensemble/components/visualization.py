@@ -32,7 +32,7 @@ class VisualizationJob(Job):
 
     name = "Visualize"
 
-    def __init__(self, predictions: list, root_dir: Path, task: TaskType, normalize: bool) -> None:
+    def __init__(self, predictions: list[Any] | None, root_dir: Path, task: TaskType, normalize: bool) -> None:
         super().__init__()
         self.predictions = predictions
         self.root_dir = root_dir / "images"

@@ -30,7 +30,7 @@ class MergeJob(Job):
 
     name = "Merge"
 
-    def __init__(self, predictions: EnsemblePredictions, tiler: EnsembleTiler) -> None:
+    def __init__(self, predictions: EnsemblePredictions | None, tiler: EnsembleTiler) -> None:
         super().__init__()
         self.predictions = predictions
         self.tiler = tiler

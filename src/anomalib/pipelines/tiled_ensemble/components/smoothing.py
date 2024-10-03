@@ -36,7 +36,7 @@ class SmoothingJob(Job):
     def __init__(
         self,
         accelerator: str,
-        predictions: list[Any],
+        predictions: list[Any] | None,
         width_factor: float,
         filter_sigma: float,
         tiler: EnsembleTiler,

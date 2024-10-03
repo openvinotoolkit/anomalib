@@ -38,7 +38,7 @@ class ThresholdingJob(Job):
         self.image_threshold = image_threshold
         self.pixel_threshold = pixel_threshold
 
-    def run(self, task_id: int | None = None) -> list[Any]:
+    def run(self, task_id: int | None = None) -> list[Any] | None:
         """Run job that produces prediction labels from scores.
 
         Args:

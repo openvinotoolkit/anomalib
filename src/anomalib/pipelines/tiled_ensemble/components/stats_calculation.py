@@ -10,10 +10,13 @@ from pathlib import Path
 from typing import Any
 
 import torch
+from omegaconf import DictConfig, ListConfig
 from torchmetrics import MetricCollection
 from tqdm import tqdm
 
-from anomalib.metrics import F1AdaptiveThreshold, MinMax
+from anomalib.callbacks.thresholding import _ThresholdCallback
+from anomalib.metrics import MinMax
+from anomalib.metrics.threshold import Threshold
 from anomalib.pipelines.components import Job, JobGenerator
 from anomalib.pipelines.types import GATHERED_RESULTS, RUN_RESULTS
 
@@ -30,10 +33,18 @@ class StatisticsJob(Job):
 
     name = "Stats"
 
-    def __init__(self, predictions: list[Any] | None, root_dir: Path) -> None:
+    def __init__(
+        self,
+        predictions: list[Any] | None,
+        root_dir: Path,
+        image_threshold: Threshold,
+        pixel_threshold: Threshold,
+    ) -> None:
         super().__init__()
         self.predictions = predictions
         self.root_dir = root_dir
+        self.image_threshold = image_threshold
+        self.pixel_threshold = pixel_threshold
 
     def run(self, task_id: int | None = None) -> dict:
         """Run job that calculates statistics needed in post-processing steps.
@@ -53,8 +64,6 @@ class StatisticsJob(Job):
                 "pred_scores": MinMax().cpu(),
             },
         )
-        image_threshold = F1AdaptiveThreshold()
-        pixel_threshold = F1AdaptiveThreshold()
         pixel_update_called = False
 
         logger.info("Starting post-processing statistics calculation.")
@@ -69,16 +78,16 @@ class StatisticsJob(Job):
                 minmax["pred_scores"](data["pred_scores"])
 
             # update thresholds
-            image_threshold.update(data["pred_scores"], data["label"].int())
+            self.image_threshold.update(data["pred_scores"], data["label"].int())
             if "mask" in data and "anomaly_maps" in data:
-                pixel_threshold.update(torch.squeeze(data["anomaly_maps"]), torch.squeeze(data["mask"].int()))
+                self.pixel_threshold.update(torch.squeeze(data["anomaly_maps"]), torch.squeeze(data["mask"].int()))
                 pixel_update_called = True
 
-        image_threshold.compute()
+        self.image_threshold.compute()
         if pixel_update_called:
-            pixel_threshold.compute()
+            self.pixel_threshold.compute()
         else:
-            pixel_threshold.value = image_threshold.value
+            self.pixel_threshold.value = self.image_threshold.value
 
         min_max_vals = {}
         for pred_name, pred_metric in minmax.items():
@@ -90,8 +99,8 @@ class StatisticsJob(Job):
         # return stats with save path that is later used to save statistics.
         return {
             "minmax": min_max_vals,
-            "image_threshold": image_threshold.value.item(),
-            "pixel_threshold": pixel_threshold.value.item(),
+            "image_threshold": self.image_threshold.value.item(),
+            "pixel_threshold": self.pixel_threshold.value.item(),
             "save_path": (self.root_dir / "weights" / "lightning" / "stats.json"),
         }
 
@@ -124,8 +133,13 @@ class StatisticsJobGenerator(JobGenerator):
         root_dir (Path): Root directory where statistics file will be saved (in weights folder).
     """
 
-    def __init__(self, root_dir: Path) -> None:
+    def __init__(
+        self,
+        root_dir: Path,
+        thresholding_method: DictConfig | str | ListConfig | list[dict[str, str | float]],
+    ) -> None:
         self.root_dir = root_dir
+        self.threshold = thresholding_method
 
     @property
     def job_class(self) -> type:
@@ -148,4 +162,22 @@ class StatisticsJobGenerator(JobGenerator):
         """
         del args  # not needed here
 
-        yield StatisticsJob(prev_stage_result, self.root_dir)
+        # get threshold class based config
+        if isinstance(self.threshold, str | DictConfig):
+            # single method provided
+            image_threshold = _ThresholdCallback._get_threshold_from_config(self.threshold)
+            pixel_threshold = image_threshold.clone()
+        elif isinstance(self.threshold, ListConfig | list):
+            # image and pixel method specified separately
+            image_threshold = _ThresholdCallback._get_threshold_from_config(self.threshold[0])
+            pixel_threshold = _ThresholdCallback._get_threshold_from_config(self.threshold[1])
+        else:
+            msg = f"Invalid threshold config {self.threshold}"
+            raise TypeError(msg)
+
+        yield StatisticsJob(
+            predictions=prev_stage_result,
+            root_dir=self.root_dir,
+            image_threshold=image_threshold,
+            pixel_threshold=pixel_threshold,
+        )
