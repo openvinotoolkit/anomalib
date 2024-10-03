@@ -1,6 +1,6 @@
 """EnsembleTiler tests"""
 
-# Copyright (C) 2023 Intel Corporation
+# Copyright (C) 2023-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 import copy
@@ -8,32 +8,23 @@ import copy
 import pytest
 import torch
 from omegaconf import OmegaConf
+from anomalib.pipelines.tiled_ensemble.components.utils.helper_functions import get_ensemble_tiler
 
-from tools.tiled_ensemble.ensemble_tiler import EnsembleTiler
-
-tiler_config = OmegaConf.create(
-    {
-        "ensemble": {
-            "tiling": {
-                "tile_size": 256,
-                "stride": 256,
-            }
+tiler_config = {
+        "tiling": {
+            "tile_size": 256,
+            "stride": 256,
         },
-        "dataset": {"image_size": 512},
+        "data": {"init_args": {"image_size": 512}},
     }
-)
 
-tiler_config_overlap = OmegaConf.create(
-    {
-        "ensemble": {
-            "tiling": {
-                "tile_size": 256,
-                "stride": 128,
-            }
+tiler_config_overlap = {
+        "tiling": {
+            "tile_size": 256,
+            "stride": 128,
         },
-        "dataset": {"image_size": 512},
+        "data": {"init_args": {"image_size": 512}},
     }
-)
 
 
 @pytest.mark.parametrize(
@@ -47,12 +38,8 @@ tiler_config_overlap = OmegaConf.create(
 )
 def test_basic_tile_for_ensemble(input_shape, config, expected_shape):
     config = copy.deepcopy(config)
-    config.dataset.image_size = input_shape[-1]
-    tiler = EnsembleTiler(
-        tile_size=config.ensemble.tiling.tile_size,
-        stride=config.ensemble.tiling.stride,
-        image_size=config.dataset.image_size,
-    )
+    config["data"]["init_args"]["image_size"] = input_shape[-1]
+    tiler = get_ensemble_tiler(config["tiling"], config["data"])
 
     images = torch.rand(size=input_shape)
     tiled = tiler.tile(images)
@@ -71,13 +58,9 @@ def test_basic_tile_for_ensemble(input_shape, config, expected_shape):
 )
 def test_basic_tile_reconstruction(input_shape, config):
     config = copy.deepcopy(config)
-    config.dataset.image_size = input_shape[-1]
+    config["data"]["init_args"]["image_size"] = input_shape[-1]
 
-    tiler = EnsembleTiler(
-        tile_size=config.ensemble.tiling.tile_size,
-        stride=config.ensemble.tiling.stride,
-        image_size=config.dataset.image_size,
-    )
+    tiler = get_ensemble_tiler(config["tiling"], config["data"])
 
     images = torch.rand(size=input_shape)
     tiled = tiler.tile(images.clone())
@@ -96,18 +79,10 @@ def test_basic_tile_reconstruction(input_shape, config):
 )
 def test_untile_different_instance(input_shape, config):
     config = copy.deepcopy(config)
-    config.dataset.image_size = input_shape[-1]
-    tiler_1 = EnsembleTiler(
-        tile_size=config.ensemble.tiling.tile_size,
-        stride=config.ensemble.tiling.stride,
-        image_size=config.dataset.image_size,
-    )
+    config["data"]["init_args"]["image_size"] = input_shape[-1]
+    tiler_1 = get_ensemble_tiler(config["tiling"], config["data"])
 
-    tiler_2 = EnsembleTiler(
-        tile_size=config.ensemble.tiling.tile_size,
-        stride=config.ensemble.tiling.stride,
-        image_size=config.dataset.image_size,
-    )
+    tiler_2 = get_ensemble_tiler(config["tiling"], config["data"])
 
     images = torch.rand(size=input_shape)
     tiled = tiler_1.tile(images.clone())
