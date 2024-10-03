@@ -472,13 +472,14 @@ def visualize_field(
     *,  # Mark the following arguments as keyword-only
     colormap: bool = True,
     normalize: bool = False,
+    color: tuple[int, int, int] | None = None,
 ) -> Image.Image | None:
     """Visualize a single field of an ImageItem."""
     if field == "image":
         msg = "Image visualization is not implemented yet"
         raise NotImplementedError(msg)
     if field in {"gt_mask", "pred_mask"}:
-        image = visualize_mask(value)
+        image = visualize_mask(value, color=color)
     if field == "anomaly_map":
         image = visualize_anomaly_map(value, normalize=normalize, colormap=colormap)
 
