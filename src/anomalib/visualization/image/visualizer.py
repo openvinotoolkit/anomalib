@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from pathlib import Path
+from typing import Any
 
 from lightning.pytorch import Callback, Trainer
 
@@ -11,7 +12,12 @@ from anomalib.data import ImageBatch
 from anomalib.models import AnomalyModule
 from anomalib.utils.path import generate_output_filename
 
-from .functional import visualize_image_item
+from .item_visualizer import (
+    DEFAULT_FIELDS_CONFIG,
+    DEFAULT_OVERLAY_FIELDS_CONFIG,
+    DEFAULT_TEXT_CONFIG,
+    visualize_image_item,
+)
 
 
 class ImageVisualizer(Callback):
@@ -22,82 +28,111 @@ class ImageVisualizer(Callback):
 
     Args:
         fields (list[str] | None): List of fields to visualize.
-            Defaults to ``["image", "gt_mask"]``.
+            Defaults to ["image", "gt_mask"].
         overlay_fields (list[tuple[str, list[str]]] | None): List of tuples specifying fields to overlay.
-            Defaults to ``[("image", ["anomaly_map"]), ("image", ["pred_mask"])]``.
+            Defaults to [("image", ["anomaly_map"]), ("image", ["pred_mask"])].
         field_size (tuple[int, int]): Size of each field in the visualization.
-            Defaults to ``(256, 256)``.
-        alpha (float): Alpha value for overlay blending.
-            Defaults to ``0.2``.
-        colormap (bool): Whether to apply a colormap to the anomaly maps.
-            Defaults to ``True``.
-        normalize (bool): Whether to normalize the anomaly maps.
-            Defaults to ``False``.
+            Defaults to (256, 256).
+        field_config (dict[str, dict[str, Any]]): Custom configurations for field visualization.
+            Defaults to DEFAULT_FIELD_CONFIG.
+        overlay_field_config (dict[str, dict[str, Any]]): Custom configurations for field overlays.
+            Defaults to DEFAULT_OVERLAY_CONFIG.
+        text_config (dict[str, Any]): Configuration for text overlay.
+            Defaults to DEFAULT_TEXT_CONFIG.
         output_dir (str | Path | None): Directory to save the visualizations.
-            Defaults to ``None``.
+            Defaults to None.
 
     Examples:
-        >>> from anomalib.visualization import ImageVisualizer
-        >>> from anomalib.data import MVTec
-        >>> from anomalib.models import Patchcore
-        >>> from anomalib.engine import Engine
-
-        >>> # Create a basic visualizer
+        Basic usage with default settings:
         >>> visualizer = ImageVisualizer()
 
-        >>> # Create a visualizer with custom settings and fields
+        Customizing fields to visualize:
         >>> visualizer = ImageVisualizer(
-        ...     fields=["image", "gt_mask", "anomaly_map", "pred_mask"],  # Customize fields
-        ...     overlay_fields=[("image", ["anomaly_map"]), ("image", ["pred_mask"])],  # Customize overlays
-        ...     field_size=(512, 512),
-        ...     alpha=0.5,
-        ...     colormap=True,
-        ...     output_dir="./output/visualizations"
+        ...     fields=["image", "gt_mask", "anomaly_map"],
+        ...     overlay_fields=[("image", ["anomaly_map"])]
         ... )
 
-        >>> # Set up your model, data and engine
-        >>> model = Patchcore()
-        >>> datamodule = MVTec()
-        >>> engine = Engine(callbacks=[visualizer])
+        Adjusting field size:
+        >>> visualizer = ImageVisualizer(field_size=(512, 512))
 
-        >>> # Fit and test the model
-        >>> trainer.fit(model, datamodule)
-        >>> trainer.test(model, datamodule)
+        Customizing anomaly map visualization:
+        >>> visualizer = ImageVisualizer(
+        ...     field_config={
+        ...         "anomaly_map": {"colormap": True, "normalize": True}
+        ...     }
+        ... )
 
-        After testing, you'll find the visualizations in the specified output directory.
-        Each image will contain the fields specified in 'fields' and 'overlay_fields'.
+        Modifying overlay appearance:
+        >>> visualizer = ImageVisualizer(
+        ...     overlay_field_config={
+        ...         "pred_mask": {"alpha": 0.7, "color": (255, 0, 0), "mode": "fill"},
+        ...         "anomaly_map": {"alpha": 0.5, "color": (0, 255, 0), "mode": "contour"}
+        ...     }
+        ... )
 
-        You can also use the visualizer during prediction:
-        trainer.predict(model, datamodule)
+        Customizing text overlay:
+        >>> visualizer = ImageVisualizer(
+        ...     text_config={
+        ...         "font": "arial.ttf",
+        ...         "size": 20,
+        ...         "color": "yellow",
+        ...         "background": (0, 0, 0, 200)
+        ...     }
+        ... )
 
-        This will generate similar visualizations for the prediction data.
+        Specifying output directory:
+        >>> visualizer = ImageVisualizer(output_dir="./output/visualizations")
+
+        Advanced configuration combining multiple customizations:
+        >>> visualizer = ImageVisualizer(
+        ...     fields=["image", "gt_mask", "anomaly_map", "pred_mask"],
+        ...     overlay_fields=[("image", ["anomaly_map"]), ("image", ["pred_mask"])],
+        ...     field_size=(384, 384),
+        ...     field_config={
+        ...         "anomaly_map": {"colormap": True, "normalize": True},
+        ...         "pred_mask": {"color": (0, 0, 255)}
+        ...     },
+        ...     overlay_field_config={
+        ...         "anomaly_map": {"alpha": 0.6, "mode": "fill"},
+        ...         "pred_mask": {"alpha": 0.7, "mode": "contour"}
+        ...     },
+        ...     text_config={
+        ...         "font": "times.ttf",
+        ...         "size": 24,
+        ...         "color": "white",
+        ...         "background": (0, 0, 0, 180)
+        ...     },
+        ...     output_dir="./custom_visualizations"
+        ... )
 
     Note:
-        - The visualizer automatically handles both test and predict scenarios.
-        - It saves the visualizations to the specified output directory or to a default
-          location if not specified.
-        - The 'fields' and 'overlay_fields' arguments allow for customization of the
-          visualization layout. You can include or exclude specific fields based on
-          your requirements.
+        - The 'fields' parameter determines which individual fields are visualized.
+        - The 'overlay_fields' parameter specifies which fields should be overlaid on others.
+        - Field configurations in 'field_config' affect how individual fields are visualized.
+        - Overlay configurations in 'overlay_field_config' determine how fields are blended when overlaid.
+        - Text configurations in 'text_config' control the appearance of text labels on visualizations.
+        - If 'output_dir' is not specified, visualizations will be saved in a default location.
+
+    For more details on available options for each configuration, refer to the documentation
+    of the `visualize_image_item`, `visualize_field`, and related functions.
     """
 
     def __init__(
         self,
         fields: list[str] | None = None,
-        *,
         overlay_fields: list[tuple[str, list[str]]] | None = None,
         field_size: tuple[int, int] = (256, 256),
-        alpha: float = 0.2,
-        colormap: bool = True,
-        normalize: bool = False,
+        field_config: dict[str, dict[str, Any]] | None = None,
+        overlay_field_config: dict[str, dict[str, Any]] | None = None,
+        text_config: dict[str, Any] | None = None,
         output_dir: str | Path | None = None,
     ) -> None:
         self.fields = fields or ["image", "gt_mask"]
         self.overlay_fields = overlay_fields or [("image", ["anomaly_map"]), ("image", ["pred_mask"])]
         self.field_size = field_size
-        self.alpha = alpha
-        self.colormap = colormap
-        self.normalize = normalize
+        self.field_config = {**DEFAULT_FIELDS_CONFIG, **(field_config or {})}
+        self.overlay_field_config = {**DEFAULT_OVERLAY_FIELDS_CONFIG, **(overlay_field_config or {})}
+        self.text_config = {**DEFAULT_TEXT_CONFIG, **(text_config or {})}
         self.output_dir = output_dir
 
     def on_test_batch_end(
@@ -120,9 +155,10 @@ class ImageVisualizer(Callback):
                 item,
                 fields=self.fields,
                 overlay_fields=self.overlay_fields,
-                alpha=self.alpha,
-                colormap=self.colormap,
-                normalize=self.normalize,
+                field_size=self.field_size,
+                fields_config=self.field_config,
+                overlay_fields_config=self.overlay_field_config,
+                text_config=self.text_config,
             )
 
             if image is not None:

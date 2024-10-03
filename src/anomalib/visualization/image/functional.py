@@ -11,11 +11,6 @@ import torch.nn.functional as F  # noqa: N812
 from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageFont
 from torchvision.transforms.functional import to_pil_image
 
-from anomalib.data import ImageItem
-from anomalib.utils.path import convert_to_title_case
-
-# Set up logging
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
@@ -38,10 +33,10 @@ def dynamic_font_size(image_size: tuple[int, int], min_size: int = 20, max_size:
 def add_text_to_image(
     image: Image.Image,
     text: str,
-    font_type: str | None = None,
-    font_size: int | None = None,
-    text_color: tuple[int, int, int] | str = "white",
-    background_color: tuple[int, ...] | str | None = (0, 0, 0, 128),  # Default to semi-transparent black
+    font: str | None = None,
+    size: int | None = None,
+    color: tuple[int, int, int] | str = "white",
+    background: tuple[int, ...] | str | None = (0, 0, 0, 128),  # Default to semi-transparent black
     position: tuple[int, int] = (10, 10),
     padding: int = 3,
 ) -> Image.Image:
@@ -50,26 +45,26 @@ def add_text_to_image(
     overlay = Image.new("RGBA", image.size, (0, 0, 0, 0))
     draw = ImageDraw.Draw(overlay)
 
-    if font_size is None:
-        font_size = dynamic_font_size(image.size)
+    if size is None:
+        size = dynamic_font_size(image.size)
 
     try:
-        font = ImageFont.truetype(font_type, font_size) if font_type else ImageFont.load_default()
+        image_font = ImageFont.truetype(font, size) if font else ImageFont.load_default()
     except OSError:
-        logger.warning(f"Failed to load font '{font_type}'. Using default font.")
-        font = ImageFont.load_default()
+        logger.warning(f"Failed to load font '{font}'. Using default font.")
+        image_font = ImageFont.load_default()
 
     # Calculate text size and position
-    text_bbox = draw.textbbox(position, text, font=font)
+    text_bbox = draw.textbbox(position, text, font=image_font)
     text_position = position
     background_bbox = (text_bbox[0] - padding, text_bbox[1] - padding, text_bbox[2] + padding, text_bbox[3] + padding)
 
     # Draw background if specified
-    if background_color is not None:
-        draw.rectangle(background_bbox, fill=background_color)
+    if background is not None:
+        draw.rectangle(background_bbox, fill=background)
 
     # Draw text
-    draw.text(text_position, text, font=font, fill=text_color)
+    draw.text(text_position, text, font=image_font, fill=color)
 
     # Composite the overlay onto the original image
     return Image.alpha_composite(image.convert("RGBA"), overlay).convert("RGB")
@@ -288,7 +283,7 @@ def overlay_images(
     *,  # Mark the following arguments as keyword-only
     alpha: float = 0.2,
     color: tuple[int, int, int] = (255, 0, 0),
-    mask_overlay_mode: Literal["contour", "fill"] = "contour",
+    mode: Literal["contour", "fill"] = "contour",
 ) -> Image.Image:
     """Overlay multiple images on top of a base image with a specified alpha value.
 
@@ -299,8 +294,7 @@ def overlay_images(
         overlay: PIL Image or list of PIL Images to overlay on top of the base image.
         alpha: The alpha value for blending (0.0 to 1.0).
         color: Contour color for the mask. If None, the mask is returned as is.
-        mask_overlay_mode: Mode of the overlay mask.
-            ``contour`` draws contours on the mask.
+        mode: Mode of the overlay mask. ``contour`` draws contours on the mask.
             ``fill`` fills the mask area with color.
             Defaults to ``contour``.
 
@@ -316,7 +310,7 @@ def overlay_images(
     for ov in overlay:
         if ov.mode == "L":
             # L modes are masks, so we can draw contours or overlay them.
-            base = overlay_mask(base, ov, alpha=alpha, color=color, mode=mask_overlay_mode)
+            base = overlay_mask(base, ov, alpha=alpha, color=color, mode=mode)
         else:
             # Ensure overlay image is in RGB mode and resize if necessary
             colored_overlay = ov.convert("RGB")
@@ -489,75 +483,3 @@ def visualize_field(
         image = visualize_anomaly_map(value, normalize=normalize, colormap=colormap)
 
     return image
-
-
-def visualize_image_item(
-    item: ImageItem,
-    fields: list[str] | None = None,
-    *,  # Mark the following arguments as keyword-only
-    field_size: tuple[int, int] = (256, 256),
-    overlay_fields: list[tuple[str, list[str]]] | None = None,
-    alpha: float = 0.2,
-    colormap: bool = True,
-    normalize: bool = False,
-) -> Image.Image | None:
-    """Visualize specified fields of an ImageItem with optional field overlays."""
-    images = []
-    field_images = {}
-
-    # Collect all fields that need to be visualized
-    all_fields = set(fields or [])
-    if overlay_fields:
-        for base, overlays in overlay_fields:
-            all_fields.add(base)
-            all_fields.update(overlays)
-
-    # If no fields to visualize, return None
-    if not all_fields:
-        return None
-
-    # Visualize all required fields
-    for field in all_fields:
-        # NOTE: Once pre-processing is implemented, remove this if-else block
-        if field == "image":
-            image = Image.open(item.image_path)
-        else:
-            value = getattr(item, field)
-            image = visualize_field(field, value, colormap=colormap, normalize=normalize)
-
-        if image:
-            image = image.resize(field_size)
-            field_images[field] = image
-
-            # Process fields
-            if fields and field in fields:
-                title = convert_to_title_case(field)
-                image = add_text_to_image(image, title)
-                images.append(image)
-
-    # Process overlay fields
-    if overlay_fields:
-        for base, overlays in overlay_fields:
-            if base in field_images:
-                base_image = field_images[base].copy()
-                valid_overlays = [overlay for overlay in overlays if overlay in field_images]
-                invalid_overlays = set(overlays) - set(valid_overlays)
-
-                if invalid_overlays:
-                    logger.warning("Invalid overlays: %s", invalid_overlays)
-
-                for overlay in valid_overlays:
-                    base_image = overlay_images(base_image, field_images[overlay], alpha=alpha)
-
-                if valid_overlays:
-                    title = (
-                        f"{convert_to_title_case(base)} + {'+'.join(convert_to_title_case(o) for o in valid_overlays)}"
-                    )
-                    base_image = add_text_to_image(base_image, title)
-                    images.append(base_image)
-
-    if not images:
-        logger.warning("No valid fields to visualize.")
-        return None
-
-    return create_image_grid(images, nrow=len(images))
