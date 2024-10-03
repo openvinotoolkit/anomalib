@@ -142,7 +142,6 @@ class MetricsCalculationJobGenerator(JobGenerator):
 
     def configure_ensemble_metrics(
         self,
-        task: TaskType = TaskType.SEGMENTATION,
         image_metrics: list[str] | dict[str, dict[str, Any]] | None = None,
         pixel_metrics: list[str] | dict[str, dict[str, Any]] | None = None,
     ) -> tuple[AnomalibMetricCollection, AnomalibMetricCollection]:
@@ -161,7 +160,7 @@ class MetricsCalculationJobGenerator(JobGenerator):
 
         if pixel_metrics is None:
             pixel_metrics = []
-        elif task == TaskType.CLASSIFICATION:
+        elif self.task == TaskType.CLASSIFICATION:
             pixel_metrics = []
             logger.warning(
                 "Cannot perform pixel-level evaluation when task type is classification. "
@@ -198,12 +197,10 @@ class MetricsCalculationJobGenerator(JobGenerator):
 
         image_metrics_config = self.metrics.get("image", None)
         pixel_metrics_config = self.metrics.get("pixel", None)
-        task = self.task
 
         image_threshold, pixel_threshold = get_threshold_values(self.normalization_stage, self.root_dir)
 
         image_metrics, pixel_metrics = self.configure_ensemble_metrics(
-            task=task,
             image_metrics=image_metrics_config,
             pixel_metrics=pixel_metrics_config,
         )
