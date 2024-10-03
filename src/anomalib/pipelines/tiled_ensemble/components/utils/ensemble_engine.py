@@ -55,7 +55,7 @@ class TiledEnsembleEngine(Engine):
         return create_versioned_dir(root_dir) if versioned_dir else root_dir / "latest"
 
     def _setup_anomalib_callbacks(self) -> None:
-        """Modified method to set up callbacks for the trainer used for individual models."""
+        """Modified method to enable individual model training. It's called when Trainer is being set up."""
         _callbacks: list[Callback] = [RichModelSummary()]
 
         # Add ModelCheckpoint if it is not in the callbacks list.
@@ -78,7 +78,8 @@ class TiledEnsembleEngine(Engine):
         if normalization_callback is not None:
             _callbacks.append(normalization_callback)
 
-        # Add the thresholding and metrics callbacks, because individual model might still need this for early stop.
+        # Add the thresholding and metrics callbacks in all cases,
+        # because individual model might still need this for early stop.
         _callbacks.append(_ThresholdCallback(self.threshold))
         _callbacks.append(_MetricsCallback(self.task, self.image_metric_names, self.pixel_metric_names))
 

@@ -137,7 +137,7 @@ def get_ensemble_engine(
     trainer_kwargs.pop("default_root_dir", None)
     trainer_kwargs.pop("devices", None)
 
-    # create engine for specific tile location and fit the model
+    # create engine for specific tile location
     engine = TiledEnsembleEngine(
         tile_index=tile_index,
         normalization=normalization,
