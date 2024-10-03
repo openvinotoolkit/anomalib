@@ -3,8 +3,8 @@ accelerator: "cpu"
 default_root_dir: "results"
 
 tiling:
-  tile_size: [128, 128]
-  stride: 128
+  tile_size: [50, 50]
+  stride: 50
 
 normalization_stage: image # on what level we normalize, options: [tile, image, none]
 threshold_stage: image # stage at which we apply threshold, options: [tile, image]
@@ -17,7 +17,7 @@ data:
     train_batch_size: 32
     eval_batch_size: 32
     num_workers: 0
-    task: classification
+    task: segmentation
     transform: null
     train_transform: null
     eval_transform: null
@@ -25,7 +25,7 @@ data:
     test_split_ratio: 0.2
     val_split_mode: same_as_test
     val_split_ratio: 0.5
-    image_size: [128, 256]
+    image_size: [100, 100]
 
 SeamSmoothing:
   apply: True # if this is applied, area around tile seams are is smoothed
