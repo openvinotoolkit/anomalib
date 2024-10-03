@@ -3,26 +3,25 @@
 # Copyright (C) 2023-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-import pytest
 import copy
-
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
+import pytest
 import torch
-from torch import Tensor
 
 from anomalib.metrics import AnomalibMetricCollection
-
 from anomalib.pipelines.tiled_ensemble.components import MetricsCalculationJobGenerator
 from anomalib.pipelines.tiled_ensemble.components.utils import NormalizationStage
 
-mock_predictions = [{
-    "pred_scores": torch.ones(50),
-    "label": torch.ones(50),
-    "anomaly_maps": torch.ones(10, 50),
-    "mask": torch.ones(10, 50),
-}]
+mock_predictions = [
+    {
+        "pred_scores": torch.ones(50),
+        "label": torch.ones(50),
+        "anomaly_maps": torch.ones(10, 50),
+        "mask": torch.ones(10, 50),
+    },
+]
 
 
 @pytest.fixture(scope="module")
@@ -34,7 +33,7 @@ def get_ensemble_metrics_job(get_ensemble_config):
             root_dir=Path(tmp_dir),
             task=config["data"]["init_args"]["task"],
             metrics=config["TrainModels"]["metrics"],
-            normalization_stage=NormalizationStage(config["normalization_stage"])
+            normalization_stage=NormalizationStage(config["normalization_stage"]),
         )
 
     return next(metrics.generate_jobs(prev_stage_result=copy.deepcopy(mock_predictions))), tmp_dir

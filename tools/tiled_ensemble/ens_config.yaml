@@ -7,12 +7,14 @@ tiling:
   stride: 128
 
 normalization_stage: image # on what level we normalize, options: [tile, image, none]
-threshold_stage: image # stage at which we apply threshold, options: [tile, image]
+thresholding:
+  method: F1AdaptiveThreshold # refer to documentation for thresholding methods
+  stage: image # stage at which we apply threshold, options: [tile, image]
 
 data:
   class_path: anomalib.data.MVTec
   init_args:
-    root: ../datasets/MVTec
+    root: ./datasets/MVTec
     category: bottle
     train_batch_size: 32
     eval_batch_size: 32
@@ -38,6 +40,7 @@ TrainModels:
 
   metrics:
     pixel: AUROC
+    image: AUROC
 #  trainer:
 #    max_epochs: 500
 #    callbacks:

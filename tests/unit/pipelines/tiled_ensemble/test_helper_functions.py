@@ -3,24 +3,24 @@
 # Copyright (C) 2023-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-import pytest
-from jsonargparse import Namespace
-from tempfile import TemporaryDirectory
 import json
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
+import pytest
+from jsonargparse import Namespace
 from lightning.pytorch.callbacks import EarlyStopping
 
 from anomalib.callbacks.normalization import _MinMaxNormalizationCallback
 from anomalib.pipelines.tiled_ensemble.components.utils import NormalizationStage
-from anomalib.pipelines.tiled_ensemble.components.utils.ensemble_tiling import TileCollater, EnsembleTiler
+from anomalib.pipelines.tiled_ensemble.components.utils.ensemble_tiling import EnsembleTiler, TileCollater
 from anomalib.pipelines.tiled_ensemble.components.utils.helper_functions import (
     get_ensemble_datamodule,
+    get_ensemble_engine,
     get_ensemble_model,
     get_ensemble_tiler,
-    parse_trainer_kwargs,
-    get_ensemble_engine,
     get_threshold_values,
+    parse_trainer_kwargs,
 )
 
 
@@ -43,7 +43,6 @@ class TestHelperFunctions:
 
     def test_tiler(self, get_ensemble_config):
         config = get_ensemble_config
-
 
         tiler = get_ensemble_tiler(config["tiling"], config["data"])
         assert isinstance(tiler, EnsembleTiler)

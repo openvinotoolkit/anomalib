@@ -5,12 +5,15 @@
 
 from pathlib import Path
 
+import pytest
 import torch
 import yaml
-import pytest
 
-from anomalib.pipelines.tiled_ensemble.components.utils.helper_functions import get_ensemble_tiler, get_ensemble_model, \
-    get_ensemble_datamodule
+from anomalib.pipelines.tiled_ensemble.components.utils.helper_functions import (
+    get_ensemble_datamodule,
+    get_ensemble_model,
+    get_ensemble_tiler,
+)
 from anomalib.pipelines.tiled_ensemble.components.utils.prediction_data import EnsemblePredictions
 from anomalib.pipelines.tiled_ensemble.components.utils.prediction_merging import PredictionMergingMechanism
 
@@ -27,12 +30,14 @@ def get_tiler(get_ensemble_config):
 
     return get_ensemble_tiler(config["tiling"], config["data"])
 
+
 @pytest.fixture(scope="module")
 def get_model(get_ensemble_config, get_tiler):
     config = get_ensemble_config
     tiler = get_tiler
 
     return get_ensemble_model(config["TrainModels"]["model"], tiler)
+
 
 @pytest.fixture(scope="module")
 def get_datamodule(get_ensemble_config, get_tiler):
@@ -42,6 +47,7 @@ def get_datamodule(get_ensemble_config, get_tiler):
     datamodule.setup()
 
     return datamodule
+
 
 @pytest.fixture(scope="module")
 def get_ensemble_predictions(get_datamodule, get_ensemble_config):

@@ -7,24 +7,24 @@ import copy
 
 import pytest
 import torch
-from omegaconf import OmegaConf
+
 from anomalib.pipelines.tiled_ensemble.components.utils.helper_functions import get_ensemble_tiler
 
 tiler_config = {
-        "tiling": {
-            "tile_size": 256,
-            "stride": 256,
-        },
-        "data": {"init_args": {"image_size": 512}},
-    }
+    "tiling": {
+        "tile_size": 256,
+        "stride": 256,
+    },
+    "data": {"init_args": {"image_size": 512}},
+}
 
 tiler_config_overlap = {
-        "tiling": {
-            "tile_size": 256,
-            "stride": 128,
-        },
-        "data": {"init_args": {"image_size": 512}},
-    }
+    "tiling": {
+        "tile_size": 256,
+        "stride": 128,
+    },
+    "data": {"init_args": {"image_size": 512}},
+}
 
 
 @pytest.mark.parametrize(
