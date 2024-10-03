@@ -33,10 +33,10 @@ class ImageVisualizer(Callback):
             Defaults to [("image", ["anomaly_map"]), ("image", ["pred_mask"])].
         field_size (tuple[int, int]): Size of each field in the visualization.
             Defaults to (256, 256).
-        field_config (dict[str, dict[str, Any]]): Custom configurations for field visualization.
-            Defaults to DEFAULT_FIELD_CONFIG.
-        overlay_field_config (dict[str, dict[str, Any]]): Custom configurations for field overlays.
-            Defaults to DEFAULT_OVERLAY_CONFIG.
+        fields_config (dict[str, dict[str, Any]]): Custom configurations for field visualization.
+            Defaults to DEFAULT_FIELDS_CONFIG.
+        overlay_fields_config (dict[str, dict[str, Any]]): Custom configurations for field overlays.
+            Defaults to DEFAULT_OVERLAY_FIELDS_CONFIG.
         text_config (dict[str, Any]): Configuration for text overlay.
             Defaults to DEFAULT_TEXT_CONFIG.
         output_dir (str | Path | None): Directory to save the visualizations.
@@ -57,14 +57,14 @@ class ImageVisualizer(Callback):
 
         Customizing anomaly map visualization:
         >>> visualizer = ImageVisualizer(
-        ...     field_config={
+        ...     fields_config={
         ...         "anomaly_map": {"colormap": True, "normalize": True}
         ...     }
         ... )
 
         Modifying overlay appearance:
         >>> visualizer = ImageVisualizer(
-        ...     overlay_field_config={
+        ...     overlay_fields_config={
         ...         "pred_mask": {"alpha": 0.7, "color": (255, 0, 0), "mode": "fill"},
         ...         "anomaly_map": {"alpha": 0.5, "color": (0, 255, 0), "mode": "contour"}
         ...     }
@@ -88,11 +88,11 @@ class ImageVisualizer(Callback):
         ...     fields=["image", "gt_mask", "anomaly_map", "pred_mask"],
         ...     overlay_fields=[("image", ["anomaly_map"]), ("image", ["pred_mask"])],
         ...     field_size=(384, 384),
-        ...     field_config={
+        ...     fields_config={
         ...         "anomaly_map": {"colormap": True, "normalize": True},
         ...         "pred_mask": {"color": (0, 0, 255)}
         ...     },
-        ...     overlay_field_config={
+        ...     overlay_fields_config={
         ...         "anomaly_map": {"alpha": 0.6, "mode": "fill"},
         ...         "pred_mask": {"alpha": 0.7, "mode": "contour"}
         ...     },
@@ -108,8 +108,8 @@ class ImageVisualizer(Callback):
     Note:
         - The 'fields' parameter determines which individual fields are visualized.
         - The 'overlay_fields' parameter specifies which fields should be overlaid on others.
-        - Field configurations in 'field_config' affect how individual fields are visualized.
-        - Overlay configurations in 'overlay_field_config' determine how fields are blended when overlaid.
+        - Field configurations in 'fields_config' affect how individual fields are visualized.
+        - Overlay configurations in 'overlay_fields_config' determine how fields are blended when overlaid.
         - Text configurations in 'text_config' control the appearance of text labels on visualizations.
         - If 'output_dir' is not specified, visualizations will be saved in a default location.
 
@@ -122,16 +122,16 @@ class ImageVisualizer(Callback):
         fields: list[str] | None = None,
         overlay_fields: list[tuple[str, list[str]]] | None = None,
         field_size: tuple[int, int] = (256, 256),
-        field_config: dict[str, dict[str, Any]] | None = None,
-        overlay_field_config: dict[str, dict[str, Any]] | None = None,
+        fields_config: dict[str, dict[str, Any]] | None = None,
+        overlay_fields_config: dict[str, dict[str, Any]] | None = None,
         text_config: dict[str, Any] | None = None,
         output_dir: str | Path | None = None,
     ) -> None:
         self.fields = fields or ["image", "gt_mask"]
         self.overlay_fields = overlay_fields or [("image", ["anomaly_map"]), ("image", ["pred_mask"])]
         self.field_size = field_size
-        self.field_config = {**DEFAULT_FIELDS_CONFIG, **(field_config or {})}
-        self.overlay_field_config = {**DEFAULT_OVERLAY_FIELDS_CONFIG, **(overlay_field_config or {})}
+        self.fields_config = {**DEFAULT_FIELDS_CONFIG, **(fields_config or {})}
+        self.overlay_fields_config = {**DEFAULT_OVERLAY_FIELDS_CONFIG, **(overlay_fields_config or {})}
         self.text_config = {**DEFAULT_TEXT_CONFIG, **(text_config or {})}
         self.output_dir = output_dir
 
@@ -156,8 +156,8 @@ class ImageVisualizer(Callback):
                 fields=self.fields,
                 overlay_fields=self.overlay_fields,
                 field_size=self.field_size,
-                fields_config=self.field_config,
-                overlay_fields_config=self.overlay_field_config,
+                fields_config=self.fields_config,
+                overlay_fields_config=self.overlay_fields_config,
                 text_config=self.text_config,
             )
 
