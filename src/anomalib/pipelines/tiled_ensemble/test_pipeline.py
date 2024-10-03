@@ -33,7 +33,7 @@ class TestTiledEnsemble(Pipeline):
     """
 
     def __init__(self, root_dir: Path) -> None:
-        self.root_dir = root_dir
+        self.root_dir = Path(root_dir)
 
     def _setup_runners(self, args: dict) -> list[Runner]:
         """Set up the runners for the pipeline.

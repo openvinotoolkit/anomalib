@@ -3,8 +3,9 @@
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from argparse import ArgumentParser
 from pathlib import Path
+
+from jsonargparse import ArgumentParser
 
 from anomalib.pipelines.tiled_ensemble import TestTiledEnsemble
 
@@ -24,4 +25,4 @@ if __name__ == "__main__":
     print("Running tiled ensemble test pipeline.")
     # pass the path to root dir with checkpoints
     test_pipeline = TestTiledEnsemble(args.root)
-    test_pipeline.run(args.config)
+    test_pipeline.run(args)
