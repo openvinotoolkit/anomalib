@@ -24,6 +24,7 @@ from .reverse_distillation import ReverseDistillation
 from .rkde import Rkde
 from .stfpm import Stfpm
 from .uflow import Uflow
+from .vlm import VlmAd
 from .winclip import WinClip
 
 __all__ = [
@@ -44,6 +45,7 @@ __all__ = [
     "Rkde",
     "Stfpm",
     "Uflow",
+    "VlmAd",
     "WinClip",
     "Llm",
     "Llmollama",
