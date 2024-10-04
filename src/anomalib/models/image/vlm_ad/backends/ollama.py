@@ -9,12 +9,12 @@ Ensure that ollama is running. On linux: `ollama serve`
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-from dataclasses import dataclass
 from pathlib import Path
 
 from anomalib.utils.exceptions import try_import
 
 from .base import Backend
+from .dataclasses import Prompt
 
 if try_import("ollama"):
     from ollama import chat
@@ -23,14 +23,6 @@ else:
     chat = None
 
 logger = logging.getLogger(__name__)
-
-
-@dataclass
-class Prompt:
-    """Ollama prompt."""
-
-    few_shot: str
-    predict: str
 
 
 class Ollama(Backend):
@@ -64,6 +56,14 @@ class Ollama(Backend):
             ),
         )
 
+    @staticmethod
+    def _generate_message(content: str, images: list[str] | None) -> dict:
+        """Generate a message."""
+        message = {"role": "user", "content": content}
+        if images:
+            message["images"] = images
+        return message
+
     def predict(self, image: str | Path) -> str:
         """Predict the anomaly label."""
         if not chat:
@@ -74,13 +74,16 @@ class Ollama(Backend):
 
         # few-shot
         if len(self._ref_images_encoded) > 0:
-            messages.append({
-                "role": "user",
-                "images": self._ref_images_encoded,
-                "content": self.prompt.few_shot,
-            })
+            messages.append(
+                self._generate_message(
+                    content=self.prompt.few_shot,
+                    images=self._ref_images_encoded,
+                ),
+            )
 
-        messages.append({"role": "user", "images": [image_encoded], "content": self.prompt.predict})
+        messages.append(
+            self._generate_message(content=self.prompt.predict, images=[image_encoded]),
+        )
 
         response = chat(
             model=self.model_name,

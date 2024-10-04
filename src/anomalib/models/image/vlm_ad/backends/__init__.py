@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from .base import Backend
+from .chat_gpt import ChatGPT
 from .ollama import Ollama
 
-__all__ = ["Backend", "Ollama"]
+__all__ = ["Backend", "ChatGPT", "Ollama"]

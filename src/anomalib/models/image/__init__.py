@@ -16,15 +16,13 @@ from .fre import Fre
 from .ganomaly import Ganomaly
 from .llava import Llava
 from .llava_next import Llavanext
-from .llm import Llm
-from .llm_ollama import Llmollama
 from .padim import Padim
 from .patchcore import Patchcore
 from .reverse_distillation import ReverseDistillation
 from .rkde import Rkde
 from .stfpm import Stfpm
 from .uflow import Uflow
-from .vlm import VlmAd
+from .vlm_ad import VlmAd
 from .winclip import WinClip
 
 __all__ = [
@@ -47,8 +45,6 @@ __all__ = [
     "Uflow",
     "VlmAd",
     "WinClip",
-    "Llm",
-    "Llmollama",
     "Llava",
     "Llavanext",
 ]

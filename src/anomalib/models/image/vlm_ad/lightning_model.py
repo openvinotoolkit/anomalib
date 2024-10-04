@@ -12,7 +12,7 @@ from torch.utils.data import DataLoader
 from anomalib import LearningType
 from anomalib.models import AnomalyModule
 
-from .backends import Backend, Ollama
+from .backends import Backend, ChatGPT, Ollama
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +21,7 @@ class VlmAdBackend(Enum):
     """Supported VLM backends."""
 
     OLLAMA = "ollama"
+    CHATGPT = "chatgpt"
 
 
 class VlmAd(AnomalyModule):
@@ -42,6 +43,8 @@ class VlmAd(AnomalyModule):
         match backend:
             case VlmAdBackend.OLLAMA:
                 return Ollama()
+            case VlmAdBackend.CHATGPT:
+                return ChatGPT(api_key=api_key)
             case _:
                 msg = f"Unsupported VLM backend: {backend}"
                 raise ValueError(msg)
@@ -62,13 +65,21 @@ class VlmAd(AnomalyModule):
                 if count == self.k_shot:
                     return
 
-    def validation_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> dict:
+    def validation_step(
+        self,
+        batch: dict[str, str | torch.Tensor],
+        *args,
+        **kwargs,
+    ) -> dict:
         """Validation step."""
         del args, kwargs  # These variables are not used.
         responses = [(self.vlm_backend.predict(img_path)) for img_path in batch["image_path"]]
 
         batch["str_output"] = responses
-        batch["pred_scores"] = torch.tensor([1.0 if r.startswith("Y") else 0.0 for r in responses], device=self.device)
+        batch["pred_scores"] = torch.tensor(
+            [1.0 if r.startswith("Y") else 0.0 for r in responses],
+            device=self.device,
+        )
         return batch
 
     @property
@@ -85,4 +96,6 @@ class VlmAd(AnomalyModule):
     def configure_transforms(image_size: tuple[int, int] | None = None) -> None:
         """This modes does not require any transforms."""
         if image_size is not None:
-            logger.warning("Ignoring image_size argument as each backend has its own transforms.")
+            logger.warning(
+                "Ignoring image_size argument as each backend has its own transforms.",
+            )
