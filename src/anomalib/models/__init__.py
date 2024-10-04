@@ -26,7 +26,6 @@ from .image import (
     Ganomaly,
     Llava,
     Llavanext,
-    Llm,
     Padim,
     Patchcore,
     ReverseDistillation,
@@ -64,7 +63,6 @@ __all__ = [
     "AiVad",
     "VlmAd",
     "WinClip",
-    "Llm",
     "Llava",
     "Llavanext",
 ]
