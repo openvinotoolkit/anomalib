@@ -11,7 +11,7 @@ class Backend(ABC):
     """Base backend."""
 
     @abstractmethod
-    def __init__(self, api_key: str | None = None) -> None:
+    def __init__(self, model_name: str, api_key: str | None = None) -> None:
         """Initialize the backend."""
 
     @abstractmethod

@@ -56,7 +56,7 @@ core = [
     "open-clip-torch>=2.23.0,<2.26.1",
 ]
 openvino = ["openvino>=2024.0", "nncf>=2.10.0", "onnx>=1.16.0"]
-vlm = ["ollama", "transformers"]
+vlm = ["ollama", "openai", "transformers"]
 loggers = [
     "comet-ml>=3.31.7",
     "gradio>=4",
