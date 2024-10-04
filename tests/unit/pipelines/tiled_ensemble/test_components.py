@@ -1,11 +1,17 @@
-"""Test working of tile merging mechanism"""
+"""Test working of tiled ensemble pipeline components"""
+
+import copy
+from pathlib import Path
+
+import pytest
 
 # Copyright (C) 2023-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
-
 import torch
 
 from anomalib.data import get_datamodule
+from anomalib.metrics import F1AdaptiveThreshold, ManualThreshold
+from anomalib.pipelines.tiled_ensemble.components import StatisticsJobGenerator
 
 
 class TestMerging:
@@ -81,3 +87,43 @@ class TestMerging:
         assert "pred_boxes" in merged
         assert "box_scores" in merged
         assert "box_labels" in merged
+
+
+class TestStatsCalculation:
+    @pytest.mark.parametrize(
+        "threshold_str, threshold_cls",
+        (["F1AdaptiveThreshold", F1AdaptiveThreshold], ["ManualThreshold", ManualThreshold]),
+    )
+    def test_threshold_method(self, threshold_str, threshold_cls, get_ensemble_config):
+        config = copy.deepcopy(get_ensemble_config)
+        config["thresholding"]["method"] = threshold_str
+
+        stats_job_generator = StatisticsJobGenerator(Path("mock"), threshold_str)
+        stats_job = next(stats_job_generator.generate_jobs(None, None))
+
+        assert isinstance(stats_job.image_threshold, threshold_cls)
+
+    def test_stats(self, project_path):
+        mock_preds = [
+            {
+                "pred_scores": torch.rand(4),
+                "label": torch.ones(4),
+                "box_scores": [torch.rand(1) for _ in range(4)],
+                "anomaly_maps": torch.rand(4, 1, 50, 50),
+                "mask": torch.ones(4, 1, 50, 50),
+            },
+        ]
+
+        stats_job_generator = StatisticsJobGenerator(project_path, "F1AdaptiveThreshold")
+        stats_job = next(stats_job_generator.generate_jobs(None, mock_preds))
+
+        results = stats_job.run(None)
+
+        assert "minmax" in results
+        assert "image_threshold" in results
+        assert "pixel_threshold" in results
+
+        # save as it's removed from results
+        save_path = results["save_path"]
+        stats_job.save(results)
+        assert Path(save_path).exists()
