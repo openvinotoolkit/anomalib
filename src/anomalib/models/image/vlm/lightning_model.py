@@ -17,24 +17,30 @@ from .backends import Backend, Ollama
 logger = logging.getLogger(__name__)
 
 
-class VLMBackend(Enum):
+class VlmAdBackend(Enum):
     """Supported VLM backends."""
 
     OLLAMA = "ollama"
 
 
-class Vlm(AnomalyModule):
+class VlmAd(AnomalyModule):
     """Visual anomaly model."""
 
-    def __init__(self, backend: VLMBackend = VLMBackend.OLLAMA, api_key: str | None = None, k_shot: int = 3) -> None:
+    def __init__(
+        self,
+        backend: VlmAdBackend | str = VlmAdBackend.OLLAMA,
+        api_key: str | None = None,
+        k_shot: int = 3,
+    ) -> None:
         super().__init__()
         self.k_shot = k_shot
+        backend = VlmAdBackend(backend)
         self.vlm_backend: Backend = self._setup_vlm(backend, api_key)
 
     @staticmethod
-    def _setup_vlm(backend: VLMBackend, api_key: str | None) -> Backend:
+    def _setup_vlm(backend: VlmAdBackend, api_key: str | None) -> Backend:
         match backend:
-            case VLMBackend.OLLAMA:
+            case VlmAdBackend.OLLAMA:
                 return Ollama()
             case _:
                 msg = f"Unsupported VLM backend: {backend}"
