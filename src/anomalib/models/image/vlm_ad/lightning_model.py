@@ -12,7 +12,7 @@ from torch.utils.data import DataLoader
 from anomalib import LearningType
 from anomalib.models import AnomalyModule
 
-from .backends import Backend, ChatGPT, Ollama
+from .backends import Backend, ChatGPT, Huggingface, Ollama
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +22,7 @@ class VlmAdBackend(Enum):
 
     OLLAMA = "ollama"
     CHATGPT = "chatgpt"
+    HUGGINGFACE = "huggingface"
 
 
 class VlmAd(AnomalyModule):
@@ -45,6 +46,8 @@ class VlmAd(AnomalyModule):
                 return Ollama()
             case VlmAdBackend.CHATGPT:
                 return ChatGPT(api_key=api_key)
+            case VlmAdBackend.HUGGINGFACE:
+                return Huggingface()
             case _:
                 msg = f"Unsupported VLM backend: {backend}"
                 raise ValueError(msg)
