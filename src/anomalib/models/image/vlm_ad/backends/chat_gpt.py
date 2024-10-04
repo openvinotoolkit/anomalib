@@ -6,6 +6,7 @@
 import base64
 import logging
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from anomalib.utils.exceptions import try_import
 
@@ -14,9 +15,11 @@ from .dataclasses import Prompt
 
 if try_import("openai"):
     from openai import OpenAI
-    from openai.types.chat import ChatCompletion
 else:
     OpenAI = None
+
+if TYPE_CHECKING:
+    from openai.types.chat import ChatCompletion
 
 logger = logging.getLogger(__name__)
 
