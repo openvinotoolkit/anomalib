@@ -65,13 +65,21 @@ class VlmAd(AnomalyModule):
                 if count == self.k_shot:
                     return
 
-    def validation_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> dict:
+    def validation_step(
+        self,
+        batch: dict[str, str | torch.Tensor],
+        *args,
+        **kwargs,
+    ) -> dict:
         """Validation step."""
         del args, kwargs  # These variables are not used.
         responses = [(self.vlm_backend.predict(img_path)) for img_path in batch["image_path"]]
 
         batch["str_output"] = responses
-        batch["pred_scores"] = torch.tensor([1.0 if r.startswith("Y") else 0.0 for r in responses], device=self.device)
+        batch["pred_scores"] = torch.tensor(
+            [1.0 if r.startswith("Y") else 0.0 for r in responses],
+            device=self.device,
+        )
         return batch
 
     @property
@@ -88,4 +96,6 @@ class VlmAd(AnomalyModule):
     def configure_transforms(image_size: tuple[int, int] | None = None) -> None:
         """This modes does not require any transforms."""
         if image_size is not None:
-            logger.warning("Ignoring image_size argument as each backend has its own transforms.")
+            logger.warning(
+                "Ignoring image_size argument as each backend has its own transforms.",
+            )
