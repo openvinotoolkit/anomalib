@@ -55,10 +55,13 @@ def test_data_unchanged(get_ensemble_metrics_job):
         assert values.equal(mock_predictions[0][name]), f"{name} changed"
 
 
-def test_metric_save(get_ensemble_metrics_job):
+def test_metric_results_save(get_ensemble_metrics_job):
     metrics_job, tmp_dir = get_ensemble_metrics_job
 
     result = metrics_job.run()
-    metrics_job.save(result)
 
+    assert "pixel_AUROC" in result
+    assert "image_AUROC" in result
+
+    metrics_job.save(result)
     assert (Path(tmp_dir) / "metric_results.csv").exists()
