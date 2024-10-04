@@ -5,6 +5,7 @@
 
 from .base import Backend
 from .chat_gpt import ChatGPT
+from .huggingface import Huggingface
 from .ollama import Ollama
 
-__all__ = ["Backend", "ChatGPT", "Ollama"]
+__all__ = ["Backend", "ChatGPT", "Huggingface", "Ollama"]

@@ -74,16 +74,9 @@ class Ollama(Backend):
 
         # few-shot
         if len(self._ref_images_encoded) > 0:
-            messages.append(
-                self._generate_message(
-                    content=self.prompt.few_shot,
-                    images=self._ref_images_encoded,
-                ),
-            )
+            messages.append(self._generate_message(content=self.prompt.few_shot, images=self._ref_images_encoded))
 
-        messages.append(
-            self._generate_message(content=self.prompt.predict, images=[image_encoded]),
-        )
+        messages.append(self._generate_message(content=self.prompt.predict, images=[image_encoded]))
 
         response = chat(
             model=self.model_name,
