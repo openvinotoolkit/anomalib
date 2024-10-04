@@ -4,7 +4,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-from enum import Enum
 
 import torch
 from torch.utils.data import DataLoader
@@ -13,16 +12,9 @@ from anomalib import LearningType
 from anomalib.models import AnomalyModule
 
 from .backends import Backend, ChatGPT, Huggingface, Ollama
+from .utils import Prompt, VLMModel
 
 logger = logging.getLogger(__name__)
-
-
-class VlmAdBackend(Enum):
-    """Supported VLM backends."""
-
-    OLLAMA = "ollama"
-    CHATGPT = "chatgpt"
-    HUGGINGFACE = "huggingface"
 
 
 class VlmAd(AnomalyModule):
@@ -30,27 +22,29 @@ class VlmAd(AnomalyModule):
 
     def __init__(
         self,
-        backend: VlmAdBackend | str = VlmAdBackend.OLLAMA,
+        model: VLMModel | str = VLMModel.LLAMA_OLLAMA,
         api_key: str | None = None,
         k_shot: int = 3,
     ) -> None:
         super().__init__()
         self.k_shot = k_shot
-        backend = VlmAdBackend(backend)
-        self.vlm_backend: Backend = self._setup_vlm(backend, api_key)
+        model = VLMModel(model)
+        self.vlm_backend: Backend = self._setup_vlm(model, api_key)
 
     @staticmethod
-    def _setup_vlm(backend: VlmAdBackend, api_key: str | None) -> Backend:
-        match backend:
-            case VlmAdBackend.OLLAMA:
-                return Ollama()
-            case VlmAdBackend.CHATGPT:
-                return ChatGPT(api_key=api_key)
-            case VlmAdBackend.HUGGINGFACE:
-                return Huggingface()
-            case _:
-                msg = f"Unsupported VLM backend: {backend}"
+    def _setup_vlm(model: VLMModel, api_key: str | None) -> Backend:
+        if model == VLMModel.LLAMA_OLLAMA:
+            return Ollama(model_name=model.value)
+        if model == VLMModel.GPT_4O_MINI:
+            if api_key is None:
+                msg = f"ChatGPT API key is required to use {model.value} model."
                 raise ValueError(msg)
+            return ChatGPT(api_key=api_key, model_name=model.value)
+        if model in {VLMModel.VICUNA_7B_HF, VLMModel.VICUNA_13B_HF, VLMModel.MISTRAL_7B_HF}:
+            return Huggingface(model_name=model.value)
+
+        msg = f"Unsupported VLM model: {model}"
+        raise ValueError(msg)
 
     def _setup(self) -> None:
         if self.k_shot:
@@ -68,10 +62,27 @@ class VlmAd(AnomalyModule):
                 if count == self.k_shot:
                     return
 
+    @property
+    def prompt(self) -> Prompt:
+        """Get the prompt."""
+        return Prompt(
+            predict=(
+                "You are given an image. It is either normal or anomalous."
+                " First say 'YES' if the image is anomalous, or 'NO' if it is normal.\n"
+                "Then give the reason for your decision.\n"
+                "For example, 'YES: The image has a crack on the wall.'"
+            ),
+            few_shot=(
+                "These are a few examples of normal picture without any anomalies."
+                " You have to use these to determine if the image I provide in the next"
+                " chat is normal or anomalous."
+            ),
+        )
+
     def validation_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> dict:
         """Validation step."""
         del args, kwargs  # These variables are not used.
-        responses = [(self.vlm_backend.predict(img_path)) for img_path in batch["image_path"]]
+        responses = [(self.vlm_backend.predict(img_path, self.prompt)) for img_path in batch["image_path"]]
 
         batch["str_output"] = responses
         batch["pred_scores"] = torch.tensor([1.0 if r.startswith("Y") else 0.0 for r in responses], device=self.device)

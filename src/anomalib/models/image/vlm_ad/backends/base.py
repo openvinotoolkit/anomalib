@@ -6,12 +6,14 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
 
+from anomalib.models.image.vlm_ad.utils import Prompt
+
 
 class Backend(ABC):
     """Base backend."""
 
     @abstractmethod
-    def __init__(self, model_name: str, api_key: str | None = None) -> None:
+    def __init__(self, model_name: str) -> None:
         """Initialize the backend."""
 
     @abstractmethod
@@ -19,5 +21,5 @@ class Backend(ABC):
         """Add reference images for k-shot."""
 
     @abstractmethod
-    def predict(self, image: str | Path) -> str:
+    def predict(self, image: str | Path, prompt: Prompt) -> str:
         """Predict the anomaly label."""
