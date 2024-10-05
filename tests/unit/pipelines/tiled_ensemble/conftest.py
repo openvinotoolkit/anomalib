@@ -87,9 +87,9 @@ def get_tile_predictions(get_datamodule, get_ensemble_config):
 def get_batch_predictions():
     mock_data = {
         "image": torch.rand((5, 3, 100, 100)),
-        "mask": torch.zeros((5, 100, 100)),
+        "mask": (torch.rand((5, 100, 100)) > 0.5).type(torch.float32),
         "anomaly_maps": torch.rand((5, 1, 100, 100)),
-        "label": torch.zeros(5),
+        "label": torch.Tensor([0, 1, 1, 0, 1]),
         "pred_scores": torch.ones(5),
         "pred_labels": torch.ones(5),
         "pred_masks": torch.zeros((5, 100, 100)),

@@ -12,7 +12,7 @@ import torch
 from anomalib.data import get_datamodule
 from anomalib.metrics import F1AdaptiveThreshold, ManualThreshold
 from anomalib.pipelines.tiled_ensemble.components import MetricsCalculationJobGenerator, StatisticsJobGenerator, \
-    SmoothingJobGenerator
+    SmoothingJobGenerator, NormalizationJobGenerator
 from anomalib.pipelines.tiled_ensemble.components.smoothing import SmoothingJob
 from anomalib.pipelines.tiled_ensemble.components.utils import NormalizationStage
 
@@ -106,7 +106,7 @@ class TestStatsCalculation:
 
         assert isinstance(stats_job.image_threshold, threshold_cls)
 
-    def test_stats(self, project_path):
+    def test_stats_run(self, project_path):
         mock_preds = [
             {
                 "pred_scores": torch.rand(4),
@@ -120,7 +120,7 @@ class TestStatsCalculation:
         stats_job_generator = StatisticsJobGenerator(project_path, "F1AdaptiveThreshold")
         stats_job = next(stats_job_generator.generate_jobs(None, mock_preds))
 
-        results = stats_job.run(None)
+        results = stats_job.run()
 
         assert "minmax" in results
         assert "image_threshold" in results
@@ -130,6 +130,55 @@ class TestStatsCalculation:
         save_path = results["save_path"]
         stats_job.save(results)
         assert Path(save_path).exists()
+
+    @pytest.mark.parametrize(
+        "key, values",
+        [
+            ("anomaly_maps", [torch.rand(5, 1, 50, 50), torch.rand(5, 1, 50, 50)]),
+            ("box_scores", [[torch.rand(1) for _ in range(5)], [torch.rand(1) for _ in range(5)]]),
+            ("pred_scores", [torch.rand(5), torch.rand(5)]),
+        ],
+    )
+    def test_minmax(self, key, values):
+        # add given keys to test all possible sources of minmax
+        data = [
+            {"pred_scores": torch.rand(5), "label": torch.ones(5), key: values[0]},
+            {"pred_scores": torch.rand(5), "label": torch.ones(5), key: values[1]},
+        ]
+
+        stats_job_generator = StatisticsJobGenerator(Path("mock"), "F1AdaptiveThreshold")
+        stats_job = next(stats_job_generator.generate_jobs(None, data))
+        results = stats_job.run()
+
+        if isinstance(values[0], list):
+            values[0] = torch.cat(values[0])
+            values[1] = torch.cat(values[1])
+        values = torch.stack(values)
+
+        assert results["minmax"][key]["min"] == torch.min(values)
+        assert results["minmax"][key]["max"] == torch.max(values)
+
+    @pytest.mark.parametrize(
+        ["labels", "preds", "target_threshold"],
+        [
+            (torch.Tensor([0, 0, 0, 1, 1]), torch.Tensor([2.3, 1.6, 2.6, 7.9, 3.3]), 3.3),  # standard case
+            (torch.Tensor([1, 0, 0, 0]), torch.Tensor([4, 3, 2, 1]), 4),  # 100% recall for all thresholds
+        ],
+    )
+    def test_threshold(self, labels, preds, target_threshold):
+        data = [{
+            "label": labels,
+            "mask": labels,
+            "pred_scores": preds,
+            "anomaly_maps": preds,
+        }]
+
+        stats_job_generator = StatisticsJobGenerator(Path("mock"), "F1AdaptiveThreshold")
+        stats_job = next(stats_job_generator.generate_jobs(None, data))
+        results = stats_job.run()
+
+        assert round(results["image_threshold"], 5) == target_threshold
+        assert round(results["pixel_threshold"], 5) == target_threshold
 
 
 class TestMetrics:
@@ -225,4 +274,55 @@ class TestJoinSmoothing:
 
         # non-join section shouldn't be changed
         assert smoothed["anomaly_maps"][:, :, 0, 0].equal(original_data[0]["anomaly_maps"][:, :, 0, 0])
+
+
+class TestNormalization:
+
+    @pytest.fixture(scope="class")
+    def calculate_metrics(self, get_ensemble_config):
+        config = get_ensemble_config
+
+        def calculate(predictions):
+            metrics = MetricsCalculationJobGenerator(
+                config["accelerator"],
+                root_dir=Path("mock"),
+                task=config["data"]["init_args"]["task"],
+                metrics=config["TrainModels"]["metrics"],
+                normalization_stage=NormalizationStage(config["normalization_stage"]),
+            )
+
+            return next(metrics.generate_jobs(prev_stage_result=predictions)).run()
+
+        return calculate
+
+    def test_normalization(self, get_batch_predictions, project_path, calculate_metrics):
+        original_predictions = copy.deepcopy(get_batch_predictions)
+
+        results = calculate_metrics(predictions=original_predictions)
+        results.pop("save_path")
+
+        # # get and save stats using stats job on predictions
+        stats_job_generator = StatisticsJobGenerator(project_path,
+                                                     "F1AdaptiveThreshold")
+        stats_job = next(stats_job_generator.generate_jobs(prev_stage_result=original_predictions))
+        stats = stats_job.run()
+        stats_job.save(stats)
+
+        # normalize predictions based on obtained stats
+        norm_job_generator = NormalizationJobGenerator(root_dir=project_path)
+        # copy as this changes preds
+        norm_job = next(norm_job_generator.generate_jobs(prev_stage_result=copy.deepcopy(original_predictions)))
+        normalized_predictions = norm_job.run()
+
+        norm_results = calculate_metrics(predictions=normalized_predictions)
+
+        for metric_name, value in results.items():
+            assert round(value, 3) == round(norm_results[metric_name], 3)
+
+        # norm_stats_job = next(stats_job_generator.generate_jobs(prev_stage_result=normalized_predictions))
+        # norm_stats = norm_stats_job.run()
+        #
+        # # new threshold should be at 0.5 if data was successfully normalized
+        # assert norm_stats["image_threshold"] == 0.5
+        # assert norm_stats["pixel_threshold"] == 0.5
 
