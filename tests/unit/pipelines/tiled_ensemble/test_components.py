@@ -11,7 +11,9 @@ import torch
 
 from anomalib.data import get_datamodule
 from anomalib.metrics import F1AdaptiveThreshold, ManualThreshold
-from anomalib.pipelines.tiled_ensemble.components import MetricsCalculationJobGenerator, StatisticsJobGenerator
+from anomalib.pipelines.tiled_ensemble.components import MetricsCalculationJobGenerator, StatisticsJobGenerator, \
+    SmoothingJobGenerator
+from anomalib.pipelines.tiled_ensemble.components.smoothing import SmoothingJob
 from anomalib.pipelines.tiled_ensemble.components.utils import NormalizationStage
 
 
@@ -160,3 +162,67 @@ class TestMetrics:
 
         metrics_job.save(result)
         assert (Path(tmp_dir) / "metric_results.csv").exists()
+
+
+class TestJoinSmoothing:
+    """Test JoinSmoothing job respnsible for smoothing area at tile seams."""
+
+    @pytest.fixture(scope="class")
+    def get_join_smoothing_job(self, get_ensemble_config, get_batch_predictions):
+        config = get_ensemble_config
+        job_gen = SmoothingJobGenerator(accelerator=config["accelerator"],
+                                        tiling_args=config["tiling"],
+                                        data_args=config["data"])
+        # copy since smoothing changes data
+        mock_predictions = copy.deepcopy(get_batch_predictions)
+        job = next(job_gen.generate_jobs(config["SeamSmoothing"], mock_predictions))
+        return job
+
+    def test_mask(self, get_join_smoothing_job):
+        smooth = get_join_smoothing_job
+
+        join_index = smooth.tiler.tile_size_h, smooth.tiler.tile_size_w
+
+        # join should be covered by True
+        assert smooth.seam_mask[join_index]
+
+        # non-join region should be false
+        assert not smooth.seam_mask[0, 0]
+        assert not smooth.seam_mask[-1, -1]
+
+    def test_mask_overlapping(self, get_ensemble_config, get_batch_predictions):
+        config = copy.deepcopy(get_ensemble_config)
+        # tile size = 50, stride = 25 -> overlapping
+        config["tiling"]["stride"] = 25
+        job_gen = SmoothingJobGenerator(accelerator=config["accelerator"],
+                                        tiling_args=config["tiling"],
+                                        data_args=config["data"])
+        # copy since smoothing changes data
+        mock_predictions = copy.deepcopy(get_batch_predictions)
+        smooth = next(job_gen.generate_jobs(config["SeamSmoothing"], mock_predictions))
+
+        join_index = smooth.tiler.stride_h, smooth.tiler.stride_w
+
+        # overlap join should be covered by True
+        assert smooth.seam_mask[join_index]
+        assert smooth.seam_mask[-join_index[0], -join_index[1]]
+
+        # non-join region should be false
+        assert not smooth.seam_mask[0, 0]
+        assert not smooth.seam_mask[-1, -1]
+
+    def test_smoothing(self, get_join_smoothing_job, get_batch_predictions):
+        original_data = get_batch_predictions
+        # fixture makes a copy of data
+        smooth = get_join_smoothing_job
+
+        # take first batch
+        smoothed = smooth.run()[0]
+        join_index = smooth.tiler.tile_size_h, smooth.tiler.tile_size_w
+
+        # join sections should be processed
+        assert not smoothed["anomaly_maps"][:, :, join_index].equal(original_data[0]["anomaly_maps"][:, :, join_index])
+
+        # non-join section shouldn't be changed
+        assert smoothed["anomaly_maps"][:, :, 0, 0].equal(original_data[0]["anomaly_maps"][:, :, 0, 0])
+
