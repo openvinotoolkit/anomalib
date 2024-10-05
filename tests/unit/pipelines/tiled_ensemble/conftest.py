@@ -50,7 +50,7 @@ def get_datamodule(get_ensemble_config, get_tiler):
 
 
 @pytest.fixture(scope="module")
-def get_ensemble_predictions(get_datamodule, get_ensemble_config):
+def get_tile_predictions(get_datamodule, get_ensemble_config):
     datamodule = get_datamodule
 
     data = EnsemblePredictions()
@@ -84,9 +84,27 @@ def get_ensemble_predictions(get_datamodule, get_ensemble_config):
 
 
 @pytest.fixture(scope="module")
-def get_merging_mechanism(get_ensemble_predictions, get_tiler):
+def get_batch_predictions():
+    mock_data = {
+        "image": torch.rand((5, 3, 100, 100)),
+        "mask": torch.zeros((5, 100, 100)),
+        "anomaly_maps": torch.rand((5, 1, 100, 100)),
+        "label": torch.zeros(5),
+        "pred_scores": torch.ones(5),
+        "pred_labels": torch.ones(5),
+        "pred_masks": torch.zeros((5, 100, 100)),
+        "pred_boxes": [torch.rand(1, 4) for _ in range(5)],
+        "box_labels": [torch.tensor([0.5]) for _ in range(5)],
+        "box_scores": [torch.tensor([0.5]) for _ in range(5)],
+    }
+
+    return [mock_data, mock_data]
+
+
+@pytest.fixture(scope="module")
+def get_merging_mechanism(get_tile_predictions, get_tiler):
     tiler = get_tiler
-    predictions = get_ensemble_predictions
+    predictions = get_tile_predictions
 
     joiner = PredictionMergingMechanism(predictions, tiler)
 

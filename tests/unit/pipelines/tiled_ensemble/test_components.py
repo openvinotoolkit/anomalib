@@ -1,17 +1,18 @@
 """Test working of tiled ensemble pipeline components"""
 
-import copy
-from pathlib import Path
-
-import pytest
-
 # Copyright (C) 2023-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
+import copy
+from pathlib import Path
+from tempfile import TemporaryDirectory
+
+import pytest
 import torch
 
 from anomalib.data import get_datamodule
 from anomalib.metrics import F1AdaptiveThreshold, ManualThreshold
-from anomalib.pipelines.tiled_ensemble.components import StatisticsJobGenerator
+from anomalib.pipelines.tiled_ensemble.components import MetricsCalculationJobGenerator, StatisticsJobGenerator
+from anomalib.pipelines.tiled_ensemble.components.utils import NormalizationStage
 
 
 class TestMerging:
@@ -127,3 +128,35 @@ class TestStatsCalculation:
         save_path = results["save_path"]
         stats_job.save(results)
         assert Path(save_path).exists()
+
+
+class TestMetrics:
+    """Test ensemble metrics."""
+
+    @pytest.fixture(scope="class")
+    @staticmethod
+    def get_ensemble_metrics_job(get_ensemble_config, get_batch_predictions):
+        config = get_ensemble_config
+        with TemporaryDirectory() as tmp_dir:
+            metrics = MetricsCalculationJobGenerator(
+                config["accelerator"],
+                root_dir=Path(tmp_dir),
+                task=config["data"]["init_args"]["task"],
+                metrics=config["TrainModels"]["metrics"],
+                normalization_stage=NormalizationStage(config["normalization_stage"]),
+            )
+
+        mock_predictions = get_batch_predictions
+
+        return next(metrics.generate_jobs(prev_stage_result=copy.deepcopy(mock_predictions))), tmp_dir
+
+    def test_metrics(self, get_ensemble_metrics_job):
+        metrics_job, tmp_dir = get_ensemble_metrics_job
+
+        result = metrics_job.run()
+
+        assert "pixel_AUROC" in result
+        assert "image_AUROC" in result
+
+        metrics_job.save(result)
+        assert (Path(tmp_dir) / "metric_results.csv").exists()
