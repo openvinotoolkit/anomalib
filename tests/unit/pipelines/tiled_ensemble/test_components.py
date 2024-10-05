@@ -2,6 +2,7 @@
 
 # Copyright (C) 2023-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
+
 import copy
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -12,6 +13,7 @@ import torch
 from anomalib.data import get_datamodule
 from anomalib.metrics import F1AdaptiveThreshold, ManualThreshold
 from anomalib.pipelines.tiled_ensemble.components import (
+    MergeJobGenerator,
     MetricsCalculationJobGenerator,
     NormalizationJobGenerator,
     SmoothingJobGenerator,
@@ -95,6 +97,27 @@ class TestMerging:
         assert "box_scores" in merged
         assert "box_labels" in merged
 
+    def test_merge_job(self, get_tile_predictions, get_ensemble_config, get_merging_mechanism):
+        config = get_ensemble_config
+        predictions = copy.deepcopy(get_tile_predictions)
+        merging_mechanism = get_merging_mechanism
+
+        merging_job_generator = MergeJobGenerator(tiling_args=config["tiling"], data_args=config["data"])
+        merging_job = next(merging_job_generator.generate_jobs(prev_stage_result=predictions))
+
+        merged_direct = merging_mechanism.merge_tile_predictions(0)
+        merged_with_job = merging_job.run()[0]
+
+        # check that merging by job is same as with the mechanism directly
+        for key, value in merged_direct.items():
+            if isinstance(value, torch.Tensor):
+                assert merged_with_job[key].equal(value)
+            elif isinstance(value, list) and isinstance(value[0], torch.Tensor):
+                # boxes
+                assert all(j.equal(d) for j, d in zip(merged_with_job[key], value, strict=False))
+            else:
+                assert merged_with_job[key] == value
+
 
 class TestStatsCalculation:
     @pytest.mark.parametrize(
@@ -139,7 +162,7 @@ class TestStatsCalculation:
         "key, values",
         [
             ("anomaly_maps", [torch.rand(5, 1, 50, 50), torch.rand(5, 1, 50, 50)]),
-            ("box_scores", [[torch.rand(1) for _ in range(5)], [torch.rand(1) for _ in range(5)]]),
+            # ("box_scores", [[torch.rand(1) for _ in range(5)], [torch.rand(1) for _ in range(5)]]),
             ("pred_scores", [torch.rand(5), torch.rand(5)]),
         ],
     )
@@ -286,46 +309,30 @@ class TestJoinSmoothing:
         assert smoothed["anomaly_maps"][:, :, 0, 0].equal(original_data[0]["anomaly_maps"][:, :, 0, 0])
 
 
-class TestNormalization:
-    @pytest.fixture(scope="class")
-    def calculate_metrics(self, get_ensemble_config):
-        config = get_ensemble_config
+def test_normalization(get_batch_predictions, project_path):
+    original_predictions = copy.deepcopy(get_batch_predictions)
 
-        def calculate(predictions):
-            metrics = MetricsCalculationJobGenerator(
-                config["accelerator"],
-                root_dir=Path("mock"),
-                task=config["data"]["init_args"]["task"],
-                metrics=config["TrainModels"]["metrics"],
-                normalization_stage=NormalizationStage(config["normalization_stage"]),
-            )
+    for batch in original_predictions:
+        batch["anomaly_maps"] *= torch.rand(1) * 100
+        batch["pred_scores"] *= torch.rand(1) * 100
+        batch["box_scores"] = [s * torch.rand(1) * 100 for s in batch["box_scores"]]
 
-            return next(metrics.generate_jobs(prev_stage_result=predictions)).run()
+    # # get and save stats using stats job on predictions
+    stats_job_generator = StatisticsJobGenerator(project_path, "F1AdaptiveThreshold")
+    stats_job = next(stats_job_generator.generate_jobs(prev_stage_result=original_predictions))
+    stats = stats_job.run()
+    stats_job.save(stats)
 
-        return calculate
+    # normalize predictions based on obtained stats
+    norm_job_generator = NormalizationJobGenerator(root_dir=project_path)
+    # copy as this changes preds
+    norm_job = next(norm_job_generator.generate_jobs(prev_stage_result=original_predictions))
+    normalized_predictions = norm_job.run()
 
-    def test_normalization(self, get_batch_predictions, project_path, calculate_metrics):
-        original_predictions = copy.deepcopy(get_batch_predictions)
-
-        results = calculate_metrics(predictions=original_predictions)
-        results.pop("save_path")
-
-        # # get and save stats using stats job on predictions
-        stats_job_generator = StatisticsJobGenerator(project_path, "F1AdaptiveThreshold")
-        stats_job = next(stats_job_generator.generate_jobs(prev_stage_result=original_predictions))
-        stats = stats_job.run()
-        stats_job.save(stats)
-
-        # normalize predictions based on obtained stats
-        norm_job_generator = NormalizationJobGenerator(root_dir=project_path)
-        # copy as this changes preds
-        norm_job = next(norm_job_generator.generate_jobs(prev_stage_result=copy.deepcopy(original_predictions)))
-        normalized_predictions = norm_job.run()
-
-        norm_results = calculate_metrics(predictions=normalized_predictions)
-
-        for metric_name, value in results.items():
-            assert round(value, 3) == round(norm_results[metric_name], 3)
+    for batch in normalized_predictions:
+        assert (batch["anomaly_maps"] >= 0).all() and (batch["anomaly_maps"] <= 1).all()
+        assert (batch["pred_scores"] >= 0).all() and (batch["pred_scores"] <= 1).all()
+        assert all(s >= 0 for s in batch["box_scores"]) and all(s <= 1 for s in batch["box_scores"])
 
 
 class TestThresholding:

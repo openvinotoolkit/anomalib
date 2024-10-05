@@ -92,12 +92,12 @@ def get_batch_predictions():
         "mask": (torch.rand((5, 100, 100)) > 0.5).type(torch.float32),
         "anomaly_maps": torch.rand((5, 1, 100, 100)),
         "label": torch.Tensor([0, 1, 1, 0, 1]),
-        "pred_scores": torch.ones(5),
+        "pred_scores": torch.rand(5),
         "pred_labels": torch.ones(5),
         "pred_masks": torch.zeros((5, 100, 100)),
         "pred_boxes": [torch.rand(1, 4) for _ in range(5)],
         "box_labels": [torch.tensor([0.5]) for _ in range(5)],
-        "box_scores": [torch.tensor([0.5]) for _ in range(5)],
+        "box_scores": [torch.rand(1) for _ in range(5)],
     }
 
     return [mock_data, mock_data]
