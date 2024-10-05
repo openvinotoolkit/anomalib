@@ -3,7 +3,9 @@
 # Copyright (C) 2023-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+import json
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
 import pytest
 import torch
@@ -109,3 +111,21 @@ def get_merging_mechanism(get_tile_predictions, get_tiler):
     joiner = PredictionMergingMechanism(predictions, tiler)
 
     return joiner
+
+
+@pytest.fixture(scope="module")
+def get_mock_stats_dir(get_ensemble_config):
+    with TemporaryDirectory() as temp_dir:
+        stats = {
+            "minmax": {"min": 0, "max": 1},
+            "image_threshold": 0.1111,
+            "pixel_threshold": 0.1111,
+        }
+        stats_path = Path(temp_dir) / "weights" / "lightning" / "stats.json"
+        stats_path.parent.mkdir(parents=True)
+
+        # save mock statistics
+        with stats_path.open("w", encoding="utf-8") as stats_file:
+            json.dump(stats, stats_file, ensure_ascii=False, indent=4)
+
+        yield Path(temp_dir)
