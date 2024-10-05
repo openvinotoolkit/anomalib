@@ -90,7 +90,7 @@ class MergeJobGenerator(JobGenerator):
         self,
         args: dict | None = None,
         prev_stage_result: EnsemblePredictions | None = None,
-    ) -> Generator[Job, None, None]:
+    ) -> Generator[MergeJob, None, None]:
         """Return a generator producing a single merging job.
 
         Args:
@@ -98,7 +98,7 @@ class MergeJobGenerator(JobGenerator):
             prev_stage_result (EnsemblePredictions): Ensemble predictions from predict step.
 
         Returns:
-            Generator[Job, None, None]: MergeJob generator
+            Generator[MergeJob, None, None]: MergeJob generator
         """
         del args  # args not used here
 

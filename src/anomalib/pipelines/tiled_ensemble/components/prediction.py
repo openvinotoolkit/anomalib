@@ -166,13 +166,17 @@ class PredictJobGenerator(JobGenerator):
         self,
         args: dict | None = None,
         prev_stage_result: PREV_STAGE_RESULT = None,
-    ) -> Generator[Job, None, None]:
-        """Generate predict jobs for each tile location.
+    ) -> Generator[PredictJob, None, None]:
+        """
+        Generate predict jobs for each tile location.
 
         Args:
             args (dict): Dict with config passed to training.
             prev_stage_result (dict[tuple[int, int], TiledEnsembleEngine] | None):
                 if called after train job this contains engines with individual models, otherwise load from checkpoints.
+
+        Returns:
+            Generator[PredictJob, None, None]: PredictJob generator.
         """
         del args  # args not used here
 

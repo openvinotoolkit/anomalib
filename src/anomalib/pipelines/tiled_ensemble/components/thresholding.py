@@ -105,7 +105,7 @@ class ThresholdingJobGenerator(JobGenerator):
         self,
         args: dict | None = None,
         prev_stage_result: list[Any] | None = None,
-    ) -> Generator[Job, None, None]:
+    ) -> Generator[ThresholdingJob, None, None]:
         """Return a generator producing a single thresholding job.
 
         Args:
@@ -113,7 +113,7 @@ class ThresholdingJobGenerator(JobGenerator):
             prev_stage_result (list[Any]): Ensemble predictions from previous step.
 
         Returns:
-            Generator[Job, None, None]: ThresholdingJob generator.
+            Generator[ThresholdingJob, None, None]: ThresholdingJob generator.
         """
         del args  # args not used here
 

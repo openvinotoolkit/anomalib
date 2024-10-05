@@ -150,7 +150,7 @@ class StatisticsJobGenerator(JobGenerator):
         self,
         args: dict | None = None,
         prev_stage_result: list[Any] | None = None,
-    ) -> Generator[Job, None, None]:
+    ) -> Generator[StatisticsJob, None, None]:
         """Return a generator producing a single stats calculating job.
 
         Args:
@@ -158,7 +158,7 @@ class StatisticsJobGenerator(JobGenerator):
             prev_stage_result (list[Any]): Ensemble predictions from previous step.
 
         Returns:
-            Generator[Job, None, None]: StatisticsJob generator.
+            Generator[StatisticsJob, None, None]: StatisticsJob generator.
         """
         del args  # not needed here
 

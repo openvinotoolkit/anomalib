@@ -148,7 +148,6 @@ class MetricsCalculationJobGenerator(JobGenerator):
         """Configure image and pixel metrics and put them into a collection.
 
         Args:
-            task (TaskType): Task type of the current run.
             image_metrics (list[str] | None): List of image-level metric names.
             pixel_metrics (list[str] | None): List of pixel-level metric names.
 
@@ -183,7 +182,7 @@ class MetricsCalculationJobGenerator(JobGenerator):
         self,
         args: dict | None = None,
         prev_stage_result: PREV_STAGE_RESULT = None,
-    ) -> Generator[Job, None, None]:
+    ) -> Generator[MetricsCalculationJob, None, None]:
         """Make a generator that yields a single metrics calculation job.
 
         Args:
@@ -191,7 +190,7 @@ class MetricsCalculationJobGenerator(JobGenerator):
             prev_stage_result: ensemble predictions from previous step.
 
         Returns:
-            Generator[Job, None, None]: MetricsCalculationJob generator
+            Generator[MetricsCalculationJob, None, None]: MetricsCalculationJob generator
         """
         del args  # args not used here
 

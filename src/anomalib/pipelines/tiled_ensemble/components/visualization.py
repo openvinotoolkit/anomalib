@@ -101,7 +101,7 @@ class VisualizationJobGenerator(JobGenerator):
         self,
         args: dict | None = None,
         prev_stage_result: list[Any] | None = None,
-    ) -> Generator[Job, None, None]:
+    ) -> Generator[VisualizationJob, None, None]:
         """Return a generator producing a single visualization job.
 
         Args:
@@ -109,7 +109,7 @@ class VisualizationJobGenerator(JobGenerator):
             prev_stage_result (list[Any]): Ensemble predictions from previous step.
 
         Returns:
-            Generator[Job, None, None]: VisualizationJob generator
+            Generator[VisualizationJob, None, None]: VisualizationJob generator
         """
         del args  # args not used here
 

@@ -110,7 +110,7 @@ class NormalizationJobGenerator(JobGenerator):
         self,
         args: dict | None = None,
         prev_stage_result: list[Any] | None = None,
-    ) -> Generator[Job, None, None]:
+    ) -> Generator[NormalizationJob, None, None]:
         """Return a generator producing a single normalization job.
 
         Args:
@@ -118,7 +118,7 @@ class NormalizationJobGenerator(JobGenerator):
             prev_stage_result (list[Any]): Ensemble predictions from previous step.
 
         Returns:
-            Generator[Job, None, None]: NormalizationJob generator.
+            Generator[NormalizationJob, None, None]: NormalizationJob generator.
         """
         del args  # not needed here
 

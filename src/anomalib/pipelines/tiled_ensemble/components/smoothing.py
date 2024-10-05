@@ -139,7 +139,7 @@ class SmoothingJobGenerator(JobGenerator):
         self,
         args: dict | None = None,
         prev_stage_result: list[Any] | None = None,
-    ) -> Generator[Job, None, None]:
+    ) -> Generator[SmoothingJob, None, None]:
         """Return a generator producing a single seam smoothing job.
 
         Args:
@@ -147,7 +147,7 @@ class SmoothingJobGenerator(JobGenerator):
             prev_stage_result (list[Any]): Ensemble predictions from previous step.
 
         Returns:
-            Generator[Job, None, None]: SmoothingJob generator
+            Generator[SmoothingJob, None, None]: SmoothingJob generator
         """
         if args is None:
             msg = "SeamSmoothing job requires config args"

@@ -150,12 +150,15 @@ class TrainModelJobGenerator(JobGenerator):
         self,
         args: dict | None = None,
         prev_stage_result: PREV_STAGE_RESULT = None,
-    ) -> Generator[Job, None, None]:
+    ) -> Generator[TrainModelJob, None, None]:
         """Generate training jobs for each tile location.
 
         Args:
             args (dict): Dict with config passed to training.
             prev_stage_result (None): Not used here.
+
+        Returns:
+            Generator[TrainModelJob, None, None]: TrainModelJob generator
         """
         del prev_stage_result  # Not needed for this job
         if args is None:
