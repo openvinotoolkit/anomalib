@@ -11,9 +11,13 @@ import torch
 
 from anomalib.data import get_datamodule
 from anomalib.metrics import F1AdaptiveThreshold, ManualThreshold
-from anomalib.pipelines.tiled_ensemble.components import MetricsCalculationJobGenerator, StatisticsJobGenerator, \
-    SmoothingJobGenerator, NormalizationJobGenerator
-from anomalib.pipelines.tiled_ensemble.components.smoothing import SmoothingJob
+from anomalib.pipelines.tiled_ensemble.components import (
+    MetricsCalculationJobGenerator,
+    NormalizationJobGenerator,
+    SmoothingJobGenerator,
+    StatisticsJobGenerator,
+    ThresholdingJobGenerator,
+)
 from anomalib.pipelines.tiled_ensemble.components.utils import NormalizationStage
 
 
@@ -166,12 +170,14 @@ class TestStatsCalculation:
         ],
     )
     def test_threshold(self, labels, preds, target_threshold):
-        data = [{
-            "label": labels,
-            "mask": labels,
-            "pred_scores": preds,
-            "anomaly_maps": preds,
-        }]
+        data = [
+            {
+                "label": labels,
+                "mask": labels,
+                "pred_scores": preds,
+                "anomaly_maps": preds,
+            },
+        ]
 
         stats_job_generator = StatisticsJobGenerator(Path("mock"), "F1AdaptiveThreshold")
         stats_job = next(stats_job_generator.generate_jobs(None, data))
@@ -219,9 +225,11 @@ class TestJoinSmoothing:
     @pytest.fixture(scope="class")
     def get_join_smoothing_job(self, get_ensemble_config, get_batch_predictions):
         config = get_ensemble_config
-        job_gen = SmoothingJobGenerator(accelerator=config["accelerator"],
-                                        tiling_args=config["tiling"],
-                                        data_args=config["data"])
+        job_gen = SmoothingJobGenerator(
+            accelerator=config["accelerator"],
+            tiling_args=config["tiling"],
+            data_args=config["data"],
+        )
         # copy since smoothing changes data
         mock_predictions = copy.deepcopy(get_batch_predictions)
         job = next(job_gen.generate_jobs(config["SeamSmoothing"], mock_predictions))
@@ -243,9 +251,11 @@ class TestJoinSmoothing:
         config = copy.deepcopy(get_ensemble_config)
         # tile size = 50, stride = 25 -> overlapping
         config["tiling"]["stride"] = 25
-        job_gen = SmoothingJobGenerator(accelerator=config["accelerator"],
-                                        tiling_args=config["tiling"],
-                                        data_args=config["data"])
+        job_gen = SmoothingJobGenerator(
+            accelerator=config["accelerator"],
+            tiling_args=config["tiling"],
+            data_args=config["data"],
+        )
         # copy since smoothing changes data
         mock_predictions = copy.deepcopy(get_batch_predictions)
         smooth = next(job_gen.generate_jobs(config["SeamSmoothing"], mock_predictions))
@@ -277,7 +287,6 @@ class TestJoinSmoothing:
 
 
 class TestNormalization:
-
     @pytest.fixture(scope="class")
     def calculate_metrics(self, get_ensemble_config):
         config = get_ensemble_config
@@ -302,8 +311,7 @@ class TestNormalization:
         results.pop("save_path")
 
         # # get and save stats using stats job on predictions
-        stats_job_generator = StatisticsJobGenerator(project_path,
-                                                     "F1AdaptiveThreshold")
+        stats_job_generator = StatisticsJobGenerator(project_path, "F1AdaptiveThreshold")
         stats_job = next(stats_job_generator.generate_jobs(prev_stage_result=original_predictions))
         stats = stats_job.run()
         stats_job.save(stats)
@@ -319,10 +327,62 @@ class TestNormalization:
         for metric_name, value in results.items():
             assert round(value, 3) == round(norm_results[metric_name], 3)
 
-        # norm_stats_job = next(stats_job_generator.generate_jobs(prev_stage_result=normalized_predictions))
-        # norm_stats = norm_stats_job.run()
-        #
-        # # new threshold should be at 0.5 if data was successfully normalized
-        # assert norm_stats["image_threshold"] == 0.5
-        # assert norm_stats["pixel_threshold"] == 0.5
 
+class TestThresholding:
+    """Test tiled ensemble thresholding stage."""
+
+    @pytest.fixture(scope="class")
+    def get_threshold_job(self, get_mock_stats_dir):
+        thresh_job_generator = ThresholdingJobGenerator(
+            root_dir=get_mock_stats_dir,
+            normalization_stage=NormalizationStage.IMAGE,
+        )
+
+        def thresh_helper(preds):
+            thresh_job = next(thresh_job_generator.generate_jobs(prev_stage_result=preds))
+            return thresh_job.run()
+
+        return thresh_helper
+
+    def test_score_threshold(self, get_threshold_job):
+        thresholding = get_threshold_job
+
+        data = [{"pred_scores": torch.tensor([0.7, 0.8, 0.1, 0.33, 0.5])}]
+
+        thresholded = thresholding(data)[0]
+
+        assert thresholded["pred_labels"].equal(torch.tensor([True, True, False, False, True]))
+
+    def test_mask_threshold(self, get_threshold_job):
+        thresholding = get_threshold_job
+
+        data = [
+            {
+                "pred_scores": torch.tensor([0.7, 0.8, 0.1, 0.33, 0.5]),
+                "anomaly_maps": torch.tensor([[0.7, 0.8, 0.1], [0.33, 0.5, 0.1]]),
+            },
+        ]
+
+        thresholded = thresholding(data)[0]
+
+        assert thresholded["pred_masks"].equal(torch.tensor([[True, True, False], [False, True, False]]))
+        assert "pred_boxes" in thresholded
+        assert "box_scores" in thresholded
+        assert "box_labels" in thresholded
+
+    def test_box_threshold(self, get_threshold_job):
+        thresholding = get_threshold_job
+
+        data = [
+            {
+                "pred_scores": torch.tensor([0.7, 0.8, 0.1, 0.33, 0.5]),
+                "box_scores": [torch.tensor([0.6]), torch.tensor([0.1, 0.69])],
+            },
+        ]
+
+        thresholded = thresholding(data)[0]
+
+        assert "box_labels" in thresholded
+
+        assert thresholded["box_labels"][0].equal(torch.tensor([True]))
+        assert thresholded["box_labels"][1].equal(torch.tensor([False, True]))
