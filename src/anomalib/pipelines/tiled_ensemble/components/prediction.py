@@ -167,8 +167,7 @@ class PredictJobGenerator(JobGenerator):
         args: dict | None = None,
         prev_stage_result: PREV_STAGE_RESULT = None,
     ) -> Generator[PredictJob, None, None]:
-        """
-        Generate predict jobs for each tile location.
+        """Generate predict jobs for each tile location.
 
         Args:
             args (dict): Dict with config passed to training.
