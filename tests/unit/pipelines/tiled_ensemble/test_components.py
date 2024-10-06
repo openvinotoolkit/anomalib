@@ -189,6 +189,7 @@ class TestStatsCalculation:
         ("key", "values"),
         [
             ("anomaly_maps", [torch.rand(5, 1, 50, 50), torch.rand(5, 1, 50, 50)]),
+            # TODO: uncomment when fixed
             # ("box_scores", [[torch.rand(1) for _ in range(5)], [torch.rand(1) for _ in range(5)]]),
             ("pred_scores", [torch.rand(5), torch.rand(5)]),
         ],
@@ -246,7 +247,8 @@ class TestMetrics:
     @pytest.fixture(scope="class")
     @staticmethod
     def get_ensemble_metrics_job(
-        get_ensemble_config: dict, get_batch_predictions: list[dict]
+        get_ensemble_config: dict,
+        get_batch_predictions: list[dict],
     ) -> tuple[MetricsCalculationJob, str]:
         """Return Metrics calculation job and path to directory where metrics csv will be saved."""
         config = get_ensemble_config

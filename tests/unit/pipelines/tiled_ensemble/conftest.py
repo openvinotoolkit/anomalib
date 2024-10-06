@@ -118,7 +118,8 @@ def get_batch_predictions() -> list[dict]:
 
 @pytest.fixture(scope="module")
 def get_merging_mechanism(
-    get_tile_predictions: EnsemblePredictions, get_tiler: EnsembleTiler
+    get_tile_predictions: EnsemblePredictions,
+    get_tiler: EnsembleTiler,
 ) -> PredictionMergingMechanism:
     """Return ensemble prediction merging mechanism object."""
     tiler = get_tiler

@@ -73,8 +73,8 @@ class StatisticsJob(Job):
             if "anomaly_maps" in data:
                 minmax["anomaly_maps"](data["anomaly_maps"])
             if "box_scores" in data:
+                # TODO: uncomment once PR fixes this
                 # minmax["box_scores"](torch.cat(data["box_scores"]))
-                # TODO - fix minmax?
                 pass
             if "pred_scores" in data:
                 minmax["pred_scores"](data["pred_scores"])
