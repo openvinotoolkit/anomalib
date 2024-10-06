@@ -30,7 +30,7 @@ class MergeJob(Job):
 
     name = "Merge"
 
-    def __init__(self, predictions: EnsemblePredictions | None, tiler: EnsembleTiler) -> None:
+    def __init__(self, predictions: EnsemblePredictions, tiler: EnsembleTiler) -> None:
         super().__init__()
         self.predictions = predictions
         self.tiler = tiler
@@ -103,4 +103,8 @@ class MergeJobGenerator(JobGenerator):
         del args  # args not used here
 
         tiler = get_ensemble_tiler(self.tiling_args, self.data_args)
-        yield MergeJob(prev_stage_result, tiler)
+        if prev_stage_result is not None:
+            yield MergeJob(prev_stage_result, tiler)
+        else:
+            msg = "Merging job requires tile level predictions from previous step."
+            raise ValueError(msg)

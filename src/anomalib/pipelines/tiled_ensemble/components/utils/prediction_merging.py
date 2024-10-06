@@ -64,24 +64,24 @@ class PredictionMergingMechanism:
 
         if tile_key == "mask":
             # in case of ground truth masks, we don't have channels
-            merged_size = (
+            merged_size = [
                 self.tiler.num_patches_h,
                 self.tiler.num_patches_w,
                 batch_size,
                 self.tiler.tile_size_h,
                 self.tiler.tile_size_w,
-            )
+            ]
         else:
             # all tiles beside masks also have channels
             num_channels = first_tiles.shape[1]
-            merged_size = (
+            merged_size = [
                 self.tiler.num_patches_h,
                 self.tiler.num_patches_w,
                 batch_size,
                 int(num_channels),
                 self.tiler.tile_size_h,
                 self.tiler.tile_size_w,
-            )
+            ]
 
         # create new empty tensor for merged tiles
         merged_masks = torch.zeros(size=merged_size, device=device)

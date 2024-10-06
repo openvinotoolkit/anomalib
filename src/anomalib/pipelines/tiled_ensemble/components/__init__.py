@@ -11,6 +11,7 @@ from .prediction import PredictJobGenerator
 from .smoothing import SmoothingJobGenerator
 from .stats_calculation import StatisticsJobGenerator
 from .thresholding import ThresholdingJobGenerator
+from .utils import NormalizationStage, PredictData, ThresholdStage
 from .visualization import VisualizationJobGenerator
 
 __all__ = [

@@ -167,12 +167,12 @@ class StatisticsJobGenerator(JobGenerator):
         # get threshold class based config
         if isinstance(self.threshold, str | DictConfig):
             # single method provided
-            image_threshold = _ThresholdCallback._get_threshold_from_config(self.threshold)
+            image_threshold = _ThresholdCallback._get_threshold_from_config(self.threshold)  # noqa: SLF001
             pixel_threshold = image_threshold.clone()
         elif isinstance(self.threshold, ListConfig | list):
             # image and pixel method specified separately
-            image_threshold = _ThresholdCallback._get_threshold_from_config(self.threshold[0])
-            pixel_threshold = _ThresholdCallback._get_threshold_from_config(self.threshold[1])
+            image_threshold = _ThresholdCallback._get_threshold_from_config(self.threshold[0])  # noqa: SLF001
+            pixel_threshold = _ThresholdCallback._get_threshold_from_config(self.threshold[1])  # noqa: SLF001
         else:
             msg = f"Invalid threshold config {self.threshold}"
             raise TypeError(msg)

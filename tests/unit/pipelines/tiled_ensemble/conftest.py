@@ -1,4 +1,4 @@
-"""Fixtures that are used in tiled ensemble testing"""
+"""Fixtures that are used in tiled ensemble testing."""
 
 # Copyright (C) 2023-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -11,6 +11,9 @@ import pytest
 import torch
 import yaml
 
+from anomalib.data import AnomalibDataModule
+from anomalib.models import AnomalyModule
+from anomalib.pipelines.tiled_ensemble.components.utils.ensemble_tiling import EnsembleTiler
 from anomalib.pipelines.tiled_ensemble.components.utils.helper_functions import (
     get_ensemble_datamodule,
     get_ensemble_model,
@@ -21,7 +24,8 @@ from anomalib.pipelines.tiled_ensemble.components.utils.prediction_merging impor
 
 
 @pytest.fixture(scope="module")
-def get_ensemble_config(dataset_path):
+def get_ensemble_config(dataset_path: Path) -> dict:
+    """Return ensemble dummy config dict with corrected dataset path to dummy temp dir."""
     with Path("tests/unit/pipelines/tiled_ensemble/dummy_config.yaml").open(encoding="utf-8") as file:
         config = yaml.safe_load(file)
         # dummy dataset
@@ -31,14 +35,16 @@ def get_ensemble_config(dataset_path):
 
 
 @pytest.fixture(scope="module")
-def get_tiler(get_ensemble_config):
+def get_tiler(get_ensemble_config: dict) -> EnsembleTiler:
+    """Return EnsembleTiler object based on test dummy config."""
     config = get_ensemble_config
 
     return get_ensemble_tiler(config["tiling"], config["data"])
 
 
 @pytest.fixture(scope="module")
-def get_model(get_ensemble_config, get_tiler):
+def get_model(get_ensemble_config: dict, get_tiler: EnsembleTiler) -> AnomalyModule:
+    """Return model prepared for tiled ensemble training."""
     config = get_ensemble_config
     tiler = get_tiler
 
@@ -46,7 +52,8 @@ def get_model(get_ensemble_config, get_tiler):
 
 
 @pytest.fixture(scope="module")
-def get_datamodule(get_ensemble_config, get_tiler):
+def get_datamodule(get_ensemble_config: dict, get_tiler: EnsembleTiler) -> AnomalibDataModule:
+    """Return ensemble datamodule."""
     config = get_ensemble_config
     tiler = get_tiler
     datamodule = get_ensemble_datamodule(config, tiler, (0, 0))
@@ -56,7 +63,8 @@ def get_datamodule(get_ensemble_config, get_tiler):
 
 
 @pytest.fixture(scope="module")
-def get_tile_predictions(get_datamodule, get_ensemble_config):
+def get_tile_predictions(get_datamodule: AnomalibDataModule) -> EnsemblePredictions:
+    """Return tile predictions inside EnsemblePredictions object."""
     datamodule = get_datamodule
 
     data = EnsemblePredictions()
@@ -90,7 +98,8 @@ def get_tile_predictions(get_datamodule, get_ensemble_config):
 
 
 @pytest.fixture(scope="module")
-def get_batch_predictions():
+def get_batch_predictions() -> list[dict]:
+    """Return mock batched predictions."""
     mock_data = {
         "image": torch.rand((5, 3, 100, 100)),
         "mask": (torch.rand((5, 100, 100)) > 0.5).type(torch.float32),
@@ -108,20 +117,34 @@ def get_batch_predictions():
 
 
 @pytest.fixture(scope="module")
-def get_merging_mechanism(get_tile_predictions, get_tiler):
+def get_merging_mechanism(
+    get_tile_predictions: EnsemblePredictions, get_tiler: EnsembleTiler
+) -> PredictionMergingMechanism:
+    """Return ensemble prediction merging mechanism object."""
     tiler = get_tiler
     predictions = get_tile_predictions
-
-    joiner = PredictionMergingMechanism(predictions, tiler)
-
-    return joiner
+    return PredictionMergingMechanism(predictions, tiler)
 
 
 @pytest.fixture(scope="module")
-def get_mock_stats_dir(get_ensemble_config):
+def get_mock_stats_dir() -> Path:
+    """Get temp dir containing statistics."""
     with TemporaryDirectory() as temp_dir:
         stats = {
-            "minmax": {"min": 0, "max": 1},
+            "minmax": {
+                "anomaly_maps": {
+                    "min": 1.9403648376464844,
+                    "max": 209.91940307617188,
+                },
+                "box_scores": {
+                    "min": 0.5,
+                    "max": 0.45,
+                },
+                "pred_scores": {
+                    "min": 9.390382766723633,
+                    "max": 209.91940307617188,
+                },
+            },
             "image_threshold": 0.1111,
             "pixel_threshold": 0.1111,
         }

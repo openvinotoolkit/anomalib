@@ -32,7 +32,7 @@ class VisualizationJob(Job):
 
     name = "Visualize"
 
-    def __init__(self, predictions: list[Any] | None, root_dir: Path, task: TaskType, normalize: bool) -> None:
+    def __init__(self, predictions: list[Any], root_dir: Path, task: TaskType, normalize: bool) -> None:
         super().__init__()
         self.predictions = predictions
         self.root_dir = root_dir / "images"
@@ -57,7 +57,12 @@ class VisualizationJob(Job):
         for data in tqdm(self.predictions, desc="Visualizing"):
             for result in visualizer(outputs=data):
                 # Finally image path is root/defect_type/image_name
-                file_path = Path(result.file_name)
+                if result.file_name is not None:
+                    file_path = Path(result.file_name)
+                else:
+                    msg = "file_path should exist in returned Visualizer."
+                    raise ValueError(msg)
+
                 root = self.root_dir / file_path.parent.name
                 filename = file_path.name
 
@@ -113,4 +118,8 @@ class VisualizationJobGenerator(JobGenerator):
         """
         del args  # args not used here
 
-        yield VisualizationJob(prev_stage_result, self.root_dir, self.task, self.normalize)
+        if prev_stage_result is not None:
+            yield VisualizationJob(prev_stage_result, self.root_dir, self.task, self.normalize)
+        else:
+            msg = "Visualization job requires tile level predictions from previous step."
+            raise ValueError(msg)

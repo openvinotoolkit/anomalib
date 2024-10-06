@@ -1,4 +1,4 @@
-"""Test ensemble helper functions"""
+"""Test ensemble helper functions."""
 
 # Copyright (C) 2023-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -23,29 +23,37 @@ from anomalib.pipelines.tiled_ensemble.components.utils.helper_functions import 
 
 
 class TestHelperFunctions:
-    """Test ensemble helper functions"""
+    """Test ensemble helper functions."""
 
-    def test_ensemble_datamodule(self, get_ensemble_config, get_tiler):
+    @staticmethod
+    def test_ensemble_datamodule(get_ensemble_config: dict, get_tiler: EnsembleTiler) -> None:
+        """Test that datamodule is created and has correct collate function."""
         config = get_ensemble_config
         tiler = get_tiler
         datamodule = get_ensemble_datamodule(config, tiler, (0, 0))
 
         assert isinstance(datamodule.collate_fn, TileCollater)
 
-    def test_ensemble_model(self, get_ensemble_config, get_tiler):
+    @staticmethod
+    def test_ensemble_model(get_ensemble_config: dict, get_tiler: EnsembleTiler) -> None:
+        """Test that model is successfully created with correct input shape."""
         config = get_ensemble_config
         tiler = get_tiler
         model = get_ensemble_model(config["TrainModels"]["model"], tiler)
 
         assert model.input_size == tuple(config["tiling"]["tile_size"])
 
-    def test_tiler(self, get_ensemble_config):
+    @staticmethod
+    def test_tiler(get_ensemble_config: dict) -> None:
+        """Test that tiler is successfully instantiated."""
         config = get_ensemble_config
 
         tiler = get_ensemble_tiler(config["tiling"], config["data"])
         assert isinstance(tiler, EnsembleTiler)
 
-    def test_trainer_kwargs(self, get_ensemble_config):
+    @staticmethod
+    def test_trainer_kwargs(get_ensemble_config: dict) -> None:
+        """Test that objects are correctly constructed from kwargs."""
         config = get_ensemble_config
 
         objects = parse_trainer_kwargs(config["TrainModels"]["trainer"])
@@ -53,11 +61,13 @@ class TestHelperFunctions:
         # verify that early stopping is parsed and added to callbacks
         assert isinstance(objects.callbacks[0], EarlyStopping)
 
+    @staticmethod
     @pytest.mark.parametrize(
         "normalization_stage",
         [NormalizationStage.NONE, NormalizationStage.IMAGE, NormalizationStage.TILE],
     )
-    def test_threshold_values(self, normalization_stage, get_mock_stats_dir):
+    def test_threshold_values(normalization_stage: NormalizationStage, get_mock_stats_dir: Path) -> None:
+        """Test that threshold values are correctly set based on normalization stage."""
         stats_dir = get_mock_stats_dir
 
         i_thresh, p_thresh = get_threshold_values(normalization_stage, stats_dir)
@@ -72,11 +82,13 @@ class TestHelperFunctions:
 class TestEnsembleEngine:
     """Test ensemble engine configuration."""
 
+    @staticmethod
     @pytest.mark.parametrize(
         "normalization_stage",
         [NormalizationStage.NONE, NormalizationStage.IMAGE, NormalizationStage.TILE],
     )
-    def test_normalisation(self, normalization_stage):
+    def test_normalisation(normalization_stage: NormalizationStage) -> None:
+        """Test that normalization callback is correctly initialized."""
         engine = get_ensemble_engine(
             tile_index=(0, 0),
             accelerator="cpu",
@@ -85,10 +97,16 @@ class TestEnsembleEngine:
             normalization_stage=normalization_stage,
         )
 
-        engine._setup_anomalib_callbacks()
+        engine._setup_anomalib_callbacks()  # noqa: SLF001
 
         # verify that only in case of tile level normalization the callback is present
         if normalization_stage == NormalizationStage.TILE:
-            assert any(map(lambda x: isinstance(x, _MinMaxNormalizationCallback), engine._cache.args["callbacks"]))
+            assert any(
+                isinstance(x, _MinMaxNormalizationCallback)
+                for x in engine._cache.args["callbacks"]  # noqa: SLF001
+            )
         else:
-            assert not any(map(lambda x: isinstance(x, _MinMaxNormalizationCallback), engine._cache.args["callbacks"]))
+            assert not any(
+                isinstance(x, _MinMaxNormalizationCallback)
+                for x in engine._cache.args["callbacks"]  # noqa: SLF001
+            )

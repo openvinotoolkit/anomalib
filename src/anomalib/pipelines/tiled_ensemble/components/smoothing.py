@@ -36,7 +36,7 @@ class SmoothingJob(Job):
     def __init__(
         self,
         accelerator: str,
-        predictions: list[Any] | None,
+        predictions: list[Any],
         width_factor: float,
         filter_sigma: float,
         tiler: EnsembleTiler,
@@ -154,10 +154,14 @@ class SmoothingJobGenerator(JobGenerator):
             raise ValueError(msg)
         # tiler is used to determine where seams appear
         tiler = get_ensemble_tiler(self.tiling_args, self.data_args)
-        yield SmoothingJob(
-            accelerator=self.accelerator,
-            predictions=prev_stage_result,
-            width_factor=args["width"],
-            filter_sigma=args["sigma"],
-            tiler=tiler,
-        )
+        if prev_stage_result is not None:
+            yield SmoothingJob(
+                accelerator=self.accelerator,
+                predictions=prev_stage_result,
+                width_factor=args["width"],
+                filter_sigma=args["sigma"],
+                tiler=tiler,
+            )
+        else:
+            msg = "Join smoothing job requires tile level predictions from previous step."
+            raise ValueError(msg)

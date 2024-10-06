@@ -1,4 +1,4 @@
-"""Test all prediction storage classes"""
+"""Test tiled prediction storage class."""
 
 # Copyright (C) 2023-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -14,8 +14,11 @@ from anomalib.pipelines.tiled_ensemble.components.utils.prediction_data import E
 
 
 class TestPredictionData:
+    """Test EnsemblePredictions class, used for tiled prediction storage."""
+
     @staticmethod
-    def store_all(data: EnsemblePredictions, datamodule: AnomalibDataModule):
+    def store_all(data: EnsemblePredictions, datamodule: AnomalibDataModule) -> dict:
+        """Store the tiled predictions in the EnsemblePredictions object."""
         tile_dict = {}
         for tile_index in [(0, 0), (0, 1), (1, 0), (1, 1)]:
             datamodule.collate_fn.tile_index = tile_index
@@ -35,8 +38,8 @@ class TestPredictionData:
         return tile_dict
 
     @staticmethod
-    def verify_equal(name: str, tile_dict: dict, storage: EnsemblePredictions, eq_funct: Callable):
-        """Verify that all data at same tile index and same batch index matches"""
+    def verify_equal(name: str, tile_dict: dict, storage: EnsemblePredictions, eq_funct: Callable) -> bool:
+        """Verify that all data at same tile index and same batch index matches."""
         batch_num = len(tile_dict[0, 0])
 
         for batch_i in range(batch_num):
@@ -56,10 +59,11 @@ class TestPredictionData:
 
         return True
 
-    def test_prediction_object(self, get_ensemble_config, get_datamodule):
+    def test_prediction_object(self, get_datamodule: AnomalibDataModule) -> None:
+        """Test prediction storage class."""
         datamodule = get_datamodule
         storage = EnsemblePredictions()
         original = self.store_all(storage, datamodule)
 
-        for name in original[0, 0][0].keys():
+        for name in original[0, 0][0]:
             assert self.verify_equal(name, original, storage, torch.equal), f"{name} doesn't match"

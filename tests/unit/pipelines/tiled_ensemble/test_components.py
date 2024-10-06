@@ -1,4 +1,4 @@
-"""Test working of tiled ensemble pipeline components"""
+"""Test working of tiled ensemble pipeline components."""
 
 # Copyright (C) 2023-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -20,11 +20,19 @@ from anomalib.pipelines.tiled_ensemble.components import (
     StatisticsJobGenerator,
     ThresholdingJobGenerator,
 )
+from anomalib.pipelines.tiled_ensemble.components.metrics_calculation import MetricsCalculationJob
+from anomalib.pipelines.tiled_ensemble.components.smoothing import SmoothingJob
 from anomalib.pipelines.tiled_ensemble.components.utils import NormalizationStage
+from anomalib.pipelines.tiled_ensemble.components.utils.prediction_data import EnsemblePredictions
+from anomalib.pipelines.tiled_ensemble.components.utils.prediction_merging import PredictionMergingMechanism
 
 
 class TestMerging:
-    def test_tile_merging(self, get_ensemble_config, get_merging_mechanism):
+    """Test merging mechanism and merging job."""
+
+    @staticmethod
+    def test_tile_merging(get_ensemble_config: dict, get_merging_mechanism: PredictionMergingMechanism) -> None:
+        """Test tiled data merging."""
         config = get_ensemble_config
         merger = get_merging_mechanism
 
@@ -42,7 +50,9 @@ class TestMerging:
         merged_mask = merger.merge_tiles(batch, "mask")
         assert merged_mask.equal(original_data["mask"])
 
-    def test_label_and_score_merging(self, get_merging_mechanism):
+    @staticmethod
+    def test_label_and_score_merging(get_merging_mechanism: PredictionMergingMechanism) -> None:
+        """Test label and score merging."""
         merger = get_merging_mechanism
         scores = torch.rand(4, 10)
         labels = scores > 0.5
@@ -59,7 +69,9 @@ class TestMerging:
 
         assert merged["pred_labels"].equal(labels.any(dim=0))
 
-    def test_box_merging(self, get_merging_mechanism):
+    @staticmethod
+    def test_box_merging(get_merging_mechanism: PredictionMergingMechanism) -> None:
+        """Test box merging by collecting boxes from tiles into single tensor."""
         merger = get_merging_mechanism
 
         mock_data = {
@@ -85,7 +97,9 @@ class TestMerging:
         assert merged["box_scores"][1].shape == (1,)
         assert merged["box_labels"][1].shape == (1,)
 
-    def test_box_merging_from_anomap(self, get_merging_mechanism):
+    @staticmethod
+    def test_box_merging_from_anomap(get_merging_mechanism: PredictionMergingMechanism) -> None:
+        """Test box merging by recalculation from anomaly maps."""
         merger = get_merging_mechanism
 
         mock_anomaly_maps = torch.rand(2, 1, 50, 50)
@@ -97,7 +111,13 @@ class TestMerging:
         assert "box_scores" in merged
         assert "box_labels" in merged
 
-    def test_merge_job(self, get_tile_predictions, get_ensemble_config, get_merging_mechanism):
+    @staticmethod
+    def test_merge_job(
+        get_tile_predictions: EnsemblePredictions,
+        get_ensemble_config: dict,
+        get_merging_mechanism: PredictionMergingMechanism,
+    ) -> None:
+        """Test merging job execution."""
         config = get_ensemble_config
         predictions = copy.deepcopy(get_tile_predictions)
         merging_mechanism = get_merging_mechanism
@@ -120,11 +140,15 @@ class TestMerging:
 
 
 class TestStatsCalculation:
+    """Test post-processing statistics calculations."""
+
+    @staticmethod
     @pytest.mark.parametrize(
-        "threshold_str, threshold_cls",
-        (["F1AdaptiveThreshold", F1AdaptiveThreshold], ["ManualThreshold", ManualThreshold]),
+        ("threshold_str", "threshold_cls"),
+        [("F1AdaptiveThreshold", F1AdaptiveThreshold), ("ManualThreshold", ManualThreshold)],
     )
-    def test_threshold_method(self, threshold_str, threshold_cls, get_ensemble_config):
+    def test_threshold_method(threshold_str: str, threshold_cls: type, get_ensemble_config: dict) -> None:
+        """Test that correct thresholding method is used."""
         config = copy.deepcopy(get_ensemble_config)
         config["thresholding"]["method"] = threshold_str
 
@@ -133,7 +157,9 @@ class TestStatsCalculation:
 
         assert isinstance(stats_job.image_threshold, threshold_cls)
 
-    def test_stats_run(self, project_path):
+    @staticmethod
+    def test_stats_run(project_path) -> None:
+        """Test execution of statistics calc. job."""
         mock_preds = [
             {
                 "pred_scores": torch.rand(4),
@@ -158,15 +184,17 @@ class TestStatsCalculation:
         stats_job.save(results)
         assert Path(save_path).exists()
 
+    @staticmethod
     @pytest.mark.parametrize(
-        "key, values",
+        ("key", "values"),
         [
             ("anomaly_maps", [torch.rand(5, 1, 50, 50), torch.rand(5, 1, 50, 50)]),
             # ("box_scores", [[torch.rand(1) for _ in range(5)], [torch.rand(1) for _ in range(5)]]),
             ("pred_scores", [torch.rand(5), torch.rand(5)]),
         ],
     )
-    def test_minmax(self, key, values):
+    def test_minmax(key: str, values: list) -> None:
+        """Test minmax stats calculation."""
         # add given keys to test all possible sources of minmax
         data = [
             {"pred_scores": torch.rand(5), "label": torch.ones(5), key: values[0]},
@@ -185,14 +213,16 @@ class TestStatsCalculation:
         assert results["minmax"][key]["min"] == torch.min(values)
         assert results["minmax"][key]["max"] == torch.max(values)
 
+    @staticmethod
     @pytest.mark.parametrize(
-        ["labels", "preds", "target_threshold"],
+        ("labels", "preds", "target_threshold"),
         [
             (torch.Tensor([0, 0, 0, 1, 1]), torch.Tensor([2.3, 1.6, 2.6, 7.9, 3.3]), 3.3),  # standard case
             (torch.Tensor([1, 0, 0, 0]), torch.Tensor([4, 3, 2, 1]), 4),  # 100% recall for all thresholds
         ],
     )
-    def test_threshold(self, labels, preds, target_threshold):
+    def test_threshold(labels: torch.Tensor, preds: torch.Tensor, target_threshold: float) -> None:
+        """Test threshold calculation job."""
         data = [
             {
                 "label": labels,
@@ -215,7 +245,10 @@ class TestMetrics:
 
     @pytest.fixture(scope="class")
     @staticmethod
-    def get_ensemble_metrics_job(get_ensemble_config, get_batch_predictions):
+    def get_ensemble_metrics_job(
+        get_ensemble_config: dict, get_batch_predictions: list[dict]
+    ) -> tuple[MetricsCalculationJob, str]:
+        """Return Metrics calculation job and path to directory where metrics csv will be saved."""
         config = get_ensemble_config
         with TemporaryDirectory() as tmp_dir:
             metrics = MetricsCalculationJobGenerator(
@@ -230,23 +263,33 @@ class TestMetrics:
 
         return next(metrics.generate_jobs(prev_stage_result=copy.deepcopy(mock_predictions))), tmp_dir
 
-    def test_metrics(self, get_ensemble_metrics_job):
-        metrics_job, tmp_dir = get_ensemble_metrics_job
+    @staticmethod
+    def test_metrics_result(get_ensemble_metrics_job: tuple[MetricsCalculationJob, str]) -> None:
+        """Test metrics result."""
+        metrics_job, _ = get_ensemble_metrics_job
 
         result = metrics_job.run()
 
         assert "pixel_AUROC" in result
         assert "image_AUROC" in result
 
+    @staticmethod
+    def test_metrics_saving(get_ensemble_metrics_job: tuple[MetricsCalculationJob, str]) -> None:
+        """Test metrics saving to csv."""
+        metrics_job, tmp_dir = get_ensemble_metrics_job
+
+        result = metrics_job.run()
         metrics_job.save(result)
         assert (Path(tmp_dir) / "metric_results.csv").exists()
 
 
 class TestJoinSmoothing:
-    """Test JoinSmoothing job respnsible for smoothing area at tile seams."""
+    """Test JoinSmoothing job responsible for smoothing area at tile seams."""
 
     @pytest.fixture(scope="class")
-    def get_join_smoothing_job(self, get_ensemble_config, get_batch_predictions):
+    @staticmethod
+    def get_join_smoothing_job(get_ensemble_config: dict, get_batch_predictions: list[dict]) -> SmoothingJob:
+        """Make and return SmoothingJob instance."""
         config = get_ensemble_config
         job_gen = SmoothingJobGenerator(
             accelerator=config["accelerator"],
@@ -255,22 +298,25 @@ class TestJoinSmoothing:
         )
         # copy since smoothing changes data
         mock_predictions = copy.deepcopy(get_batch_predictions)
-        job = next(job_gen.generate_jobs(config["SeamSmoothing"], mock_predictions))
-        return job
+        return next(job_gen.generate_jobs(config["SeamSmoothing"], mock_predictions))
 
-    def test_mask(self, get_join_smoothing_job):
+    @staticmethod
+    def test_mask(get_join_smoothing_job: SmoothingJob) -> None:
+        """Test seam mask in case where tiles don't overlap."""
         smooth = get_join_smoothing_job
 
         join_index = smooth.tiler.tile_size_h, smooth.tiler.tile_size_w
 
-        # join should be covered by True
+        # seam should be covered by True
         assert smooth.seam_mask[join_index]
 
-        # non-join region should be false
+        # non-seam region should be false
         assert not smooth.seam_mask[0, 0]
         assert not smooth.seam_mask[-1, -1]
 
-    def test_mask_overlapping(self, get_ensemble_config, get_batch_predictions):
+    @staticmethod
+    def test_mask_overlapping(get_ensemble_config: dict, get_batch_predictions: list[dict]) -> None:
+        """Test seam mask in case where tiles overlap."""
         config = copy.deepcopy(get_ensemble_config)
         # tile size = 50, stride = 25 -> overlapping
         config["tiling"]["stride"] = 25
@@ -279,21 +325,22 @@ class TestJoinSmoothing:
             tiling_args=config["tiling"],
             data_args=config["data"],
         )
-        # copy since smoothing changes data
         mock_predictions = copy.deepcopy(get_batch_predictions)
         smooth = next(job_gen.generate_jobs(config["SeamSmoothing"], mock_predictions))
 
         join_index = smooth.tiler.stride_h, smooth.tiler.stride_w
 
-        # overlap join should be covered by True
+        # overlap seam should be covered by True
         assert smooth.seam_mask[join_index]
         assert smooth.seam_mask[-join_index[0], -join_index[1]]
 
-        # non-join region should be false
+        # non-seam region should be false
         assert not smooth.seam_mask[0, 0]
         assert not smooth.seam_mask[-1, -1]
 
-    def test_smoothing(self, get_join_smoothing_job, get_batch_predictions):
+    @staticmethod
+    def test_smoothing(get_join_smoothing_job: SmoothingJob, get_batch_predictions: list[dict]) -> None:
+        """Test smoothing job run."""
         original_data = get_batch_predictions
         # fixture makes a copy of data
         smooth = get_join_smoothing_job
@@ -309,13 +356,14 @@ class TestJoinSmoothing:
         assert smoothed["anomaly_maps"][:, :, 0, 0].equal(original_data[0]["anomaly_maps"][:, :, 0, 0])
 
 
-def test_normalization(get_batch_predictions, project_path):
+def test_normalization(get_batch_predictions: list[dict], project_path: Path) -> None:
+    """Test normalization step."""
     original_predictions = copy.deepcopy(get_batch_predictions)
 
     for batch in original_predictions:
-        batch["anomaly_maps"] *= torch.rand(1) * 100
-        batch["pred_scores"] *= torch.rand(1) * 100
-        batch["box_scores"] = [s * torch.rand(1) * 100 for s in batch["box_scores"]]
+        batch["anomaly_maps"] *= 100
+        batch["pred_scores"] *= 100
+        batch["box_scores"] = [s * 100 for s in batch["box_scores"]]
 
     # # get and save stats using stats job on predictions
     stats_job_generator = StatisticsJobGenerator(project_path, "F1AdaptiveThreshold")
@@ -330,28 +378,37 @@ def test_normalization(get_batch_predictions, project_path):
     normalized_predictions = norm_job.run()
 
     for batch in normalized_predictions:
-        assert (batch["anomaly_maps"] >= 0).all() and (batch["anomaly_maps"] <= 1).all()
-        assert (batch["pred_scores"] >= 0).all() and (batch["pred_scores"] <= 1).all()
-        assert all(s >= 0 for s in batch["box_scores"]) and all(s <= 1 for s in batch["box_scores"])
+        assert (batch["anomaly_maps"] >= 0).all()
+        assert (batch["anomaly_maps"] <= 1).all()
+
+        assert (batch["pred_scores"] >= 0).all()
+        assert (batch["pred_scores"] <= 1).all()
+
+        assert all(s >= 0 for s in batch["box_scores"])
+        assert all(s <= 1 for s in batch["box_scores"])
 
 
 class TestThresholding:
     """Test tiled ensemble thresholding stage."""
 
     @pytest.fixture(scope="class")
-    def get_threshold_job(self, get_mock_stats_dir):
+    @staticmethod
+    def get_threshold_job(get_mock_stats_dir: Path) -> callable:
+        """Return a function that takes prediction data and runs threshold job."""
         thresh_job_generator = ThresholdingJobGenerator(
             root_dir=get_mock_stats_dir,
             normalization_stage=NormalizationStage.IMAGE,
         )
 
-        def thresh_helper(preds):
+        def thresh_helper(preds: dict) -> list | None:
             thresh_job = next(thresh_job_generator.generate_jobs(prev_stage_result=preds))
             return thresh_job.run()
 
         return thresh_helper
 
-    def test_score_threshold(self, get_threshold_job):
+    @staticmethod
+    def test_score_threshold(get_threshold_job: callable) -> None:
+        """Test anomaly score thresholding."""
         thresholding = get_threshold_job
 
         data = [{"pred_scores": torch.tensor([0.7, 0.8, 0.1, 0.33, 0.5])}]
@@ -360,7 +417,9 @@ class TestThresholding:
 
         assert thresholded["pred_labels"].equal(torch.tensor([True, True, False, False, True]))
 
-    def test_mask_threshold(self, get_threshold_job):
+    @staticmethod
+    def test_anomap_threshold(get_threshold_job: callable) -> None:
+        """Test anomaly map thresholding."""
         thresholding = get_threshold_job
 
         data = [
@@ -377,7 +436,9 @@ class TestThresholding:
         assert "box_scores" in thresholded
         assert "box_labels" in thresholded
 
-    def test_box_threshold(self, get_threshold_job):
+    @staticmethod
+    def test_box_threshold(get_threshold_job: callable) -> None:
+        """Test box thresholding."""
         thresholding = get_threshold_job
 
         data = [
