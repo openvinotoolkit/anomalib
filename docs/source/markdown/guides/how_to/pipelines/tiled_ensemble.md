@@ -7,56 +7,56 @@ The tiled ensemble is compatible with any existing anomaly detection model witho
 
 ![Tiled ensemble flow](../../../../images/tiled_ensemble/ensemble_flow.png)
 
-TODO: rewrite for new v1 implementation
+```{note}
+This feature is experimental, meaning that some things might not work as expected.
+For any problems refer to [Issues](https://github.com/openvinotoolkit/anomalib/issues) and feel free to ask any question in [Discussions](https://github.com/openvinotoolkit/anomalib/discussions).
+```
 
-# Training
+## Training
 
-Training of tiled ensemble can be done with training script using the following command:
+Training of tiled ensemble can be done with training script located inside `tools/tiled_ensemble` directory:
 
 ```{code-block} bash
 
 python tools/tiled_ensemble/train_ensemble.py \
-    --ensemble_config tools/tiled_ensemble/ens_config.yaml
+    --config tools/tiled_ensemble/ens_config.yaml
 ```
 
-By default padim model is trained on bottle category. Another model can be passed like in following example:
+By default, Padim model is trained on MVTec AD bottle category using image size of 256x256 with non-overlapping 128x128 tiles.
+Use the [config file](#ensemble-configuration) to change these parameters.
 
-```{code-block} bash
-
-python tools/tiled_ensemble/train_ensemble.py \
-    --model fastflow \
-    --ensemble_config tools/tiled_ensemble/ens_config.yaml
-```
-
-Or using a path to config:
-
-```{code-block} bash
-
-python tools/tiled_ensemble/train_ensemble.py \
-    --model_config src/anomalib/models/padim/config.yaml \
-    --ensemble_config tools/tiled_ensemble/ens_config.yaml
-
-```
-
-# Evaluation
+## Evaluation
 
 To evaluate the trained tiled ensemble on test data, run the following script:
 
 ```{code-block} bash
 
-python tools/tiled_ensemble/test_ensemble.py \
-    --ensemble_config tools/tiled_ensemble/ens_config.yaml \
-    --weight_folder path_to_weights
+python tools/tiled_ensemble/eval.py \
+    --config tools/tiled_ensemble/ens_config.yaml \
+    --root path_to_results_dir
 
 ```
 
-In this case, path to weights should be the one inside results, where checkpoints are saved. Usually that is inside `results/padim/mvtec/bottle/run/weights/lightning`.
+In this case, root should point to the directory containing training results. Usually that is inside `results/padim/mvtec/bottle/runX`.
 
-Same as with training, `--model` or `--model_config` can be used.
+## Ensemble configuration
 
-# Ensemble configuration
+Ensemble is configured using the yaml file located inside `tools/tiled_ensemble` directory.
+The first part of the config file contains general settings, followed by tiled ensemble specific settings.
 
-Ensemble is configured using yaml file located inside `tools/tiled_ensemble` directory.
+### General
+
+General settings at the top of the config file are used to set up the random `seed`, `accelerator` (device) and the path to where results will be saved `default_root_dir`.
+
+```{code-block} yaml
+seed: 42
+accelerator: "gpu"
+default_root_dir: "results"
+```
+
+### Tiling
+
+This section contains the following settings:
 
 ```{code-block} yaml
 
@@ -65,68 +65,94 @@ tiling:
     stride: 256
 ```
 
-Tiling section determines tile size and stride. Another important parameter is image_size from base model config file. It determines the original size of the image.
-This image is then split into tiles, where each tile is of shape set by `tile_size` and tiles are taken with step set by `stride`.
-Having image_size: 512, tile_size: 256, and stride: 256, results in 4 non-overlapping tile locations.
+These settings determine the tile size and stride. Another important parameter is image_size from `data` section later in the config. It determines the original size of the image.
+
+Input image is split into tiles, where each tile is of shape set by `tile_size` and tiles are taken with step set by `stride`.
+For example: having image_size: 512, tile_size: 256, and stride: 256, results in 4 non-overlapping tile locations.
+
+### Normalization and thresholding
+
+Next up are the normalization and thresholding settings:
 
 ```{code-block} yaml
-
-predictions:
-    storage: memory # options: [memory, file_system, memory_downscaled]
-    downscale_factor: 0.5
+normalization_stage: image
+thresholding:
+  method: F1AdaptiveThreshold
+  stage: image
 ```
 
-Predictions section determines how ensemble predictions are stored.
-There are 3 options for storage:
-
-- memory - predictions are stored in memory,
-- file_system - predictions are stored in the file system,
-- memory_downscaled - predictions are downscaled and stored in memory where `downscale_factor` determines downscaling.
-
-More details about storage can be found in `prediction_data` docstrings.
-
-```{code-block} yaml
-
-post_processing:
-    normalization: image # options: [tile, image, none]
-    smooth_joins:
-        apply: True
-        sigma: 2
-        width: 0.1
-```
-
-Post processing section determines how normalization and smoothing of tile joins is handled.
+These determine how the normalization and thresholding of predictions is handled.
 
 Predictions can either be normalized by each tile location separately (`tile` option), when all predictions are joined (`image` option), or normalization can be skipped (with `none` option).
 
-There is an option to apply tile join smoothing, where `width` determines percentage of region around the join where smoothing by Gaussian filter with given `sigma` will be applied.
+For thresholding we can also specify this stage, but it is limited to `tile` and `image`. Another setting for thresholding is the method used which can be specified as a string or by the class path.
+
+### Data
+
+The `data` section is used to configure the input `image_size` and other parameters for the dataset used.
 
 ```{code-block} yaml
-
-metrics:
-    image:
-        - F1Score
-        - AUROC
-    pixel:
-        - F1Score
-        - AUROC
-    threshold:
-        stage: image # options: [tile, image]
-        method: adaptive #options: [adaptive, manual]
-        manual_image: null
-        manual_pixel: null
+data:
+  class_path: anomalib.data.MVTec
+  init_args:
+    root: ./datasets/MVTec
+    category: bottle
+    train_batch_size: 32
+    eval_batch_size: 32
+    num_workers: 8
+    task: segmentation
+    transform: null
+    train_transform: null
+    eval_transform: null
+    test_split_mode: from_dir
+    test_split_ratio: 0.2
+    val_split_mode: same_as_test
+    val_split_ratio: 0.5
+    image_size: [256, 256]
 ```
 
-Metrics section overrides the one in model config. It works in the same way but in this case thresholding stage is also determined.
-Thresholding is done during training tile wise in every case. But we can also re-do it once all the tiles are joined with `image` option.
+Refer to [Data](../../reference/data/image/index.md) for more details on parameters.
+
+### SeamSmoothing
+
+This section contains settings for `SeamSmoothing` block of pipeline:
 
 ```{code-block} yaml
+SeamSmoothing:
+  apply: True
+  sigma: 2
+  width: 0.1
 
-visualization:
-    show_images: False # show images on the screen
-    save_images: True # save images to the file system
-    image_save_path: null # path to which images will be saved
-    mode: full # options: ["full", "simple"]
 ```
 
-Visualization section overrides the one in model config and serves a function of setting up visualizer of final joined predictions.
+SeamSmoothing job is responsible for smoothing of regions where tiles meet - called tile seams. This step is only included if `apply` is set to `True`.
+
+`width` determines percentage of region around the seam where smoothing by Gaussian filter with given `sigma` will be applied.
+
+### TrainModels
+
+The last section `TrainModels` contains the setup for model training.
+
+```{code-block} yaml
+TrainModels:
+  model:
+    class_path: Fastflow
+
+  metrics:
+    pixel: AUROC
+    image: AUROC
+
+  trainer:
+    max_epochs: 500
+    callbacks:
+      - class_path: lightning.pytorch.callbacks.EarlyStopping
+        init_args:
+          patience: 42
+          monitor: pixel_AUROC
+          mode: max
+```
+
+First the `model` is specified. Refer to [Models](../../reference/models/image/index.md) for more details on the model parameters.
+
+Next part specifies the metrics which will be used for evaluation.
+Finally, the _optional_ `trainer` parameters can be used to control the training process. Refer to [Engine](../../reference/engine/index.md) for more details.
