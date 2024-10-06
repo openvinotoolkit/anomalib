@@ -25,8 +25,8 @@ from anomalib.pipelines.tiled_ensemble.components.utils import NormalizationStag
 logger = logging.getLogger(__name__)
 
 
-class TestTiledEnsemble(Pipeline):
-    """Tiled ensemble testing pipeline.
+class EvalTiledEnsemble(Pipeline):
+    """Tiled ensemble evaluation pipeline.
 
     Args:
         root_dir (Path): Path to root dir of run that contains checkpoints.
@@ -40,7 +40,7 @@ class TestTiledEnsemble(Pipeline):
 
         This pipeline consists of jobs used to test/evaluate tiled ensemble:
         Prediction on test data > merging of predictions > (optional) seam smoothing
-        > Normalization > Thresholding (if option for image-stage is used)
+        > (optional) Normalization > (optional) Thresholding
         > Visualisation of predictions > Metrics calculation.
 
         Returns:
@@ -62,39 +62,34 @@ class TestTiledEnsemble(Pipeline):
         task = args["data"]["init_args"]["task"]
         metrics = args["TrainModels"]["metrics"]
 
+        predict_job_generator = PredictJobGenerator(
+            PredictData.TEST,
+            seed=seed,
+            accelerator=accelerator,
+            root_dir=self.root_dir,
+            tiling_args=tiling_args,
+            data_args=data_args,
+            model_args=model_args,
+            normalization_stage=normalization_stage,
+        )
+        # 1. predict using test data
         if accelerator == "cuda":
             runners.append(
                 ParallelRunner(
-                    PredictJobGenerator(
-                        PredictData.TEST,
-                        seed=seed,
-                        accelerator=accelerator,
-                        root_dir=self.root_dir,
-                        tiling_args=tiling_args,
-                        data_args=data_args,
-                        model_args=model_args,
-                        normalization_stage=normalization_stage,
-                    ),
+                    predict_job_generator,
                     n_jobs=torch.cuda.device_count(),
                 ),
             )
         else:
             runners.append(
                 SerialRunner(
-                    PredictJobGenerator(
-                        PredictData.TEST,
-                        seed=seed,
-                        accelerator=accelerator,
-                        root_dir=self.root_dir,
-                        tiling_args=tiling_args,
-                        data_args=data_args,
-                        model_args=model_args,
-                        normalization_stage=normalization_stage,
-                    ),
+                    predict_job_generator,
                 ),
             )
+        # 2. merge predictions
         runners.append(SerialRunner(MergeJobGenerator(tiling_args=tiling_args, data_args=data_args)))
 
+        # 3. (optional) smooth seams
         if args["SeamSmoothing"]["apply"]:
             runners.append(
                 SerialRunner(
@@ -102,14 +97,18 @@ class TestTiledEnsemble(Pipeline):
                 ),
             )
 
+        # 4. (optional) normalize
         if normalization_stage == NormalizationStage.IMAGE:
             runners.append(SerialRunner(NormalizationJobGenerator(self.root_dir)))
+        # 5. (optional) threshold to get labels from scores
         if threshold_stage == ThresholdStage.IMAGE:
             runners.append(SerialRunner(ThresholdingJobGenerator(self.root_dir, normalization_stage)))
 
+        # 6. visualize predictions
         runners.append(
             SerialRunner(VisualizationJobGenerator(self.root_dir, task=task, normalization_stage=normalization_stage)),
         )
+        # calculate metrics
         runners.append(
             SerialRunner(
                 MetricsCalculationJobGenerator(

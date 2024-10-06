@@ -10,7 +10,7 @@ import pytest
 import yaml
 from tox.pytest import CaptureFixture
 
-from anomalib.pipelines.tiled_ensemble import TestTiledEnsemble, TrainTiledEnsemble
+from anomalib.pipelines.tiled_ensemble import EvalTiledEnsemble, TrainTiledEnsemble
 
 
 @pytest.fixture(scope="module")
@@ -43,7 +43,7 @@ def test_train(get_mock_environment: Path, capsys: CaptureFixture) -> None:
 
 def test_predict(get_mock_environment: Path, capsys: CaptureFixture) -> None:
     """Test prediction with the tiled ensemble."""
-    predict_pipeline = TestTiledEnsemble(root_dir=get_mock_environment / "padim" / "MVTec" / "dummy" / "v0")
+    predict_pipeline = EvalTiledEnsemble(root_dir=get_mock_environment / "padim" / "MVTec" / "dummy" / "v0")
     predict_parser = predict_pipeline.get_parser()
     args = predict_parser.parse_args(["--config", str(get_mock_environment / "tiled_ensemble.yaml")])
     predict_pipeline.run(args)

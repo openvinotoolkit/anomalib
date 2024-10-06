@@ -7,7 +7,7 @@ from pathlib import Path
 
 from jsonargparse import ArgumentParser
 
-from anomalib.pipelines.tiled_ensemble import TestTiledEnsemble
+from anomalib.pipelines.tiled_ensemble import EvalTiledEnsemble
 
 
 def get_parser() -> ArgumentParser:
@@ -24,5 +24,5 @@ if __name__ == "__main__":
 
     print("Running tiled ensemble test pipeline.")
     # pass the path to root dir with checkpoints
-    test_pipeline = TestTiledEnsemble(args.root)
+    test_pipeline = EvalTiledEnsemble(args.root)
     test_pipeline.run(args)
