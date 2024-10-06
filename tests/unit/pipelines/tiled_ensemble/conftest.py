@@ -21,9 +21,13 @@ from anomalib.pipelines.tiled_ensemble.components.utils.prediction_merging impor
 
 
 @pytest.fixture(scope="module")
-def get_ensemble_config():
+def get_ensemble_config(dataset_path):
     with Path("tests/unit/pipelines/tiled_ensemble/dummy_config.yaml").open(encoding="utf-8") as file:
-        return yaml.safe_load(file)
+        config = yaml.safe_load(file)
+        # dummy dataset
+        config["data"]["init_args"]["root"] = dataset_path / "mvtec"
+
+        return config
 
 
 @pytest.fixture(scope="module")

@@ -48,7 +48,6 @@ class TestTiler:
 
         assert tiled.shape == expected_shape
 
-
     @pytest.mark.parametrize(
         "input_shape, config",
         [
@@ -70,7 +69,6 @@ class TestTiler:
 
         assert images.shape == untiled.shape
         assert images.equal(untiled)
-
 
     @pytest.mark.parametrize(
         "input_shape, config",

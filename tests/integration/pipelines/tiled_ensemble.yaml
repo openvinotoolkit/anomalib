@@ -14,8 +14,8 @@ thresholding:
 data:
   class_path: anomalib.data.MVTec
   init_args:
-    root: ../datasets/MVTec
-    category: bottle
+    root: toBeSetup
+    category: dummy
     train_batch_size: 32
     eval_batch_size: 32
     num_workers: 0
