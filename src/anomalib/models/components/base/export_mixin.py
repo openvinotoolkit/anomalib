@@ -142,7 +142,9 @@ class ExportMixin:
         export_root = _create_export_root(export_root, ExportType.ONNX)
         input_shape = torch.zeros((1, 3, *input_size)) if input_size else torch.zeros((1, 3, 1, 1))
         dynamic_axes = (
-            None if input_size else {"input": {0: "batch_size", 2: "height", 3: "weight"}, "output": {0: "batch_size"}}
+            {"input": {0: "batch_size"}, "output": {0: "batch_size"}}
+            if input_size
+            else {"input": {0: "batch_size", 2: "height", 3: "weight"}, "output": {0: "batch_size"}}
         )
         _write_metadata_to_json(self._get_metadata(task), export_root)
         onnx_path = export_root / "model.onnx"
