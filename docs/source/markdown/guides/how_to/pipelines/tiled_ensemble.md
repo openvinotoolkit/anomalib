@@ -1,20 +1,20 @@
 # Tiled ensemble
 
-This tutorial will show you how to use **The Tiled Ensemble** ([Paper link](https://openaccess.thecvf.com/content/CVPR2024W/VAND/html/Rolih_Divide_and_Conquer_High-Resolution_Industrial_Anomaly_Detection_via_Memory_Efficient_CVPRW_2024_paper.html)).
+This guide will show you how to use **The Tiled Ensemble** method for anomaly detection. For more details, refer to the official [Paper](https://openaccess.thecvf.com/content/CVPR2024W/VAND/html/Rolih_Divide_and_Conquer_High-Resolution_Industrial_Anomaly_Detection_via_Memory_Efficient_CVPRW_2024_paper.html).
 
-The tiled ensemble approach reduces memory consumption by dividing the input images into a grid of tiles and training a dedicated model for each tile location.
-The tiled ensemble is compatible with any existing anomaly detection model without the need for any modification of the underlying architecture.
+The tiled ensemble approach reduces memory consumption by dividing input images into a grid of tiles and training a dedicated model for each tile location.
+It is compatible with any existing image anomaly detection model without the need for any modification of the underlying architecture.
 
 ![Tiled ensemble flow](../../../../images/tiled_ensemble/ensemble_flow.png)
 
 ```{note}
-This feature is experimental, meaning that some things might not work as expected.
+This feature is experimental and may not work as expected.
 For any problems refer to [Issues](https://github.com/openvinotoolkit/anomalib/issues) and feel free to ask any question in [Discussions](https://github.com/openvinotoolkit/anomalib/discussions).
 ```
 
 ## Training
 
-Training of tiled ensemble can be done with training script located inside `tools/tiled_ensemble` directory:
+You can train a tiled ensemble using the training script located inside `tools/tiled_ensemble` directory:
 
 ```{code-block} bash
 
@@ -22,12 +22,12 @@ python tools/tiled_ensemble/train_ensemble.py \
     --config tools/tiled_ensemble/ens_config.yaml
 ```
 
-By default, Padim model is trained on MVTec AD bottle category using image size of 256x256 with non-overlapping 128x128 tiles.
-Use the [config file](#ensemble-configuration) to change these parameters.
+By default, the Padim model is trained on **MVTec AD bottle** category using image size of 256x256, divided into non-overlapping 128x128 tiles.
+You can modify these parameters in the [config file](#ensemble-configuration).
 
 ## Evaluation
 
-To evaluate the trained tiled ensemble on test data, run the following script:
+After training, you can evaluate the tiled ensemble on test data using:
 
 ```{code-block} bash
 
@@ -37,12 +37,12 @@ python tools/tiled_ensemble/eval.py \
 
 ```
 
-In this case, root should point to the directory containing training results. Usually that is inside `results/padim/mvtec/bottle/runX`.
+Ensure that `root` points to the directory containing the training results, typically `results/padim/mvtec/bottle/runX`.
 
 ## Ensemble configuration
 
-Ensemble is configured using the yaml file located inside `tools/tiled_ensemble` directory.
-The first part of the config file contains general settings, followed by tiled ensemble specific settings.
+Tiled ensemble is configured using `ens_config.yaml` file in the `tools/tiled_ensemble` directory.
+It contains general settings and tiled ensemble specific settings.
 
 ### General
 
@@ -56,7 +56,7 @@ default_root_dir: "results"
 
 ### Tiling
 
-This section contains the following settings:
+This section contains the following settings, used for image tiling:
 
 ```{code-block} yaml
 
@@ -81,11 +81,9 @@ thresholding:
   stage: image
 ```
 
-These determine how the normalization and thresholding of predictions is handled.
+- **Normalization**: Can be applied per each tile location separately (`tile` option), after combining prediction (`image` option), or skipped (`none` option).
 
-Predictions can either be normalized by each tile location separately (`tile` option), when all predictions are joined (`image` option), or normalization can be skipped (with `none` option).
-
-For thresholding we can also specify this stage, but it is limited to `tile` and `image`. Another setting for thresholding is the method used which can be specified as a string or by the class path.
+- **Thresholding**: Can also be applied at different stages, but it is limited to `tile` and `image`. Another setting for thresholding is the method used. It can be specified as a string or by the class path.
 
 ### Data
 
@@ -125,13 +123,15 @@ SeamSmoothing:
 
 ```
 
-SeamSmoothing job is responsible for smoothing of regions where tiles meet - called tile seams. This step is only included if `apply` is set to `True`.
+SeamSmoothing job is responsible for smoothing of regions where tiles meet - called tile seams.
 
-`width` determines percentage of region around the seam where smoothing by Gaussian filter with given `sigma` will be applied.
+- **apply**: If True, smoothing will be applied.
+- **sigma**: Controls the sigma of Gaussian filter used for smoothing.
+- **width**: Sets the percentage of the region around the seam to be smoothed.
 
 ### TrainModels
 
-The last section `TrainModels` contains the setup for model training.
+The last section `TrainModels` contains the setup for model training:
 
 ```{code-block} yaml
 TrainModels:
@@ -152,7 +152,6 @@ TrainModels:
           mode: max
 ```
 
-First the `model` is specified. Refer to [Models](../../reference/models/image/index.md) for more details on the model parameters.
-
-Next part specifies the metrics which will be used for evaluation.
-Finally, the _optional_ `trainer` parameters can be used to control the training process. Refer to [Engine](../../reference/engine/index.md) for more details.
+- **Model**: Specifies the model used. Refer to [Models](../../reference/models/image/index.md) for more details on the model parameters.
+- **Metrics**: Defines evaluation metrics for pixel and image level.
+- **Trainer**: _optional_ parameters, used to control the training process. Refer to [Engine](../../reference/engine/index.md) for more details.
