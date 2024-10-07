@@ -32,7 +32,7 @@ from anomalib.models import AnomalyModule
 from anomalib.utils.normalization import NormalizationMethod
 from anomalib.utils.path import create_versioned_dir
 from anomalib.utils.types import NORMALIZATION, THRESHOLD
-from anomalib.utils.visualization import ImageVisualizer
+from anomalib.utils.visualization import BaseVisualizer, ExplanationVisualizer, ImageVisualizer
 
 logger = logging.getLogger(__name__)
 
@@ -432,9 +432,15 @@ class Engine:
         _callbacks.append(_ThresholdCallback(self.threshold))
         _callbacks.append(_MetricsCallback(self.task, self.image_metric_names, self.pixel_metric_names))
 
+        visualizer: BaseVisualizer
+        if self.task == TaskType.EXPLANATION:
+            visualizer = ExplanationVisualizer()
+        else:
+            visualizer = ImageVisualizer(task=self.task, normalize=self.normalization == NormalizationMethod.NONE)
+
         _callbacks.append(
             _VisualizationCallback(
-                visualizers=ImageVisualizer(task=self.task, normalize=self.normalization == NormalizationMethod.NONE),
+                visualizers=visualizer,
                 save=True,
                 root=self._cache.args["default_root_dir"] / "images",
             ),
