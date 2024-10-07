@@ -170,7 +170,7 @@ class AnomalibDataset(Dataset, ABC):
         image = read_image(image_path, as_tensor=True)
         item = {"image_path": image_path, "label": label_index}
 
-        if self.task in (TaskType.CLASSIFICATION, TaskType.EXPLANATION):
+        if self.task in {TaskType.CLASSIFICATION, TaskType.EXPLANATION}:
             item["image"] = self.transform(image) if self.transform else image
         elif self.task in {TaskType.DETECTION, TaskType.SEGMENTATION}:
             # Only Anomalous (1) images have masks in anomaly datasets

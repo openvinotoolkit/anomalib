@@ -278,7 +278,7 @@ class OpenVINOInferencer(Inferencer):
             pred_idx = pred_score >= metadata["image_threshold"]
             pred_label = LabelName.ABNORMAL if pred_idx else LabelName.NORMAL
 
-        if task in (TaskType.CLASSIFICATION, TaskType.EXPLANATION):
+        if task in {TaskType.CLASSIFICATION, TaskType.EXPLANATION}:
             _, pred_score = self._normalize(pred_scores=pred_score, metadata=metadata)
         elif task in {TaskType.SEGMENTATION, TaskType.DETECTION}:
             if "pixel_threshold" in metadata:
