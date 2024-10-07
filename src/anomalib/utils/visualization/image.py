@@ -211,11 +211,6 @@ class ImageVisualizer(BaseVisualizer):
             if image_result.gt_boxes is not None:
                 gt_image = draw_boxes(np.copy(image_result.image), image_result.gt_boxes, color=(255, 0, 0))
                 image_grid.add_image(image=gt_image, color_map="gray", title="Ground Truth")
-                image_grid.add_image(
-                    image=gt_image,
-                    color_map="gray",
-                    title="Ground Truth",
-                )
             else:
                 image_grid.add_image(image_result.image, "Image")
             pred_image = draw_boxes(np.copy(image_result.image), image_result.normal_boxes, color=(0, 255, 0))
@@ -228,17 +223,10 @@ class ImageVisualizer(BaseVisualizer):
 
             image_grid.add_image(image_result.image, "Image")
             if image_result.gt_mask is not None:
-                image_grid.add_image(
-                    image=image_result.gt_mask,
-                    color_map="gray",
-                    title="Ground Truth",
-                )
+                image_grid.add_image(image=image_result.gt_mask, color_map="gray", title="Ground Truth")
             image_grid.add_image(image_result.heat_map, "Predicted Heat Map")
-            image_grid.add_image(image=image_result.gt_mask, color_map="gray", title="Ground Truth")
-            image_grid.add_image(
-                image=image_result.segmentations,
-                title="Segmentation Result",
-            )
+            image_grid.add_image(image=image_result.pred_mask, color_map="gray", title="Predicted Mask")
+            image_grid.add_image(image=image_result.segmentations, title="Segmentation Result")
         elif self.task == TaskType.CLASSIFICATION:
             image_grid.add_image(image_result.image, title="Image")
             if image_result.heat_map is not None:
@@ -248,15 +236,6 @@ class ImageVisualizer(BaseVisualizer):
             else:
                 image_classified = add_normal_label(image_result.image, 1 - image_result.pred_score)
             image_grid.add_image(image=image_classified, title="Prediction")
-        elif self.task == TaskType.EXPLANATION:
-            image_classified = add_normal_label(
-                image_result.image,
-                1 - image_result.pred_score,
-            )
-            image_grid.add_image(
-                image_classified,
-                title="Explanation of Image",
-            )
 
         return image_grid.generate()
 
@@ -345,7 +324,6 @@ class _ImageGrid:
             axis.imshow(image_dict["image"], image_dict["color_map"], vmin=0, vmax=255)
             if image_dict["title"] is not None:
                 axis.title.set_text(image_dict["title"])
-
         self.figure.canvas.draw()
         # convert canvas to numpy array to prepare for visualization with opencv
         img = np.frombuffer(self.figure.canvas.tostring_rgb(), dtype=np.uint8)
