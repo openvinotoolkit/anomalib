@@ -48,7 +48,8 @@ class ExplanationVisualizer(BaseVisualizer):
         text_canvas: Image = self._get_explanation_image(width, height, image, explanation)
         label_canvas: Image = self._get_label_image(explanation)
 
-        final_width, final_height = text_canvas.size[0], height + text_canvas.size[1]
+        final_width = max(text_canvas.size[0], width)
+        final_height = height + text_canvas.size[1]
         combined_image = Image.new("RGB", (final_width, final_height), (255, 255, 255))
         combined_image.paste(image, (self.padding, 0))
         combined_image.paste(label_canvas, (10, 10))
