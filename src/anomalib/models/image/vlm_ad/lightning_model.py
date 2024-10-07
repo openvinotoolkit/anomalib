@@ -83,8 +83,7 @@ class VlmAd(AnomalyModule):
         """Validation step."""
         del args, kwargs  # These variables are not used.
         responses = [(self.vlm_backend.predict(img_path, self.prompt)) for img_path in batch["image_path"]]
-
-        batch["str_output"] = responses
+        batch["explanation"] = responses
         batch["pred_scores"] = torch.tensor([1.0 if r.startswith("Y") else 0.0 for r in responses], device=self.device)
         return batch
 
