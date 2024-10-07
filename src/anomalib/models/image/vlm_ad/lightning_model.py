@@ -36,9 +36,6 @@ class VlmAd(AnomalyModule):
         if model == VLMModel.LLAMA_OLLAMA:
             return Ollama(model_name=model.value)
         if model == VLMModel.GPT_4O_MINI:
-            if api_key is None:
-                msg = f"ChatGPT API key is required to use {model.value} model."
-                raise ValueError(msg)
             return ChatGPT(api_key=api_key, model_name=model.value)
         if model in {VLMModel.VICUNA_7B_HF, VLMModel.VICUNA_13B_HF, VLMModel.MISTRAL_7B_HF}:
             return Huggingface(model_name=model.value)
