@@ -5,8 +5,11 @@
 
 import base64
 import logging
+import os
 from pathlib import Path
 from typing import TYPE_CHECKING
+
+from dotenv import load_dotenv
 
 from anomalib.models.image.vlm_ad.utils import Prompt
 from anomalib.utils.exceptions import try_import
@@ -27,12 +30,12 @@ logger = logging.getLogger(__name__)
 class ChatGPT(Backend):
     """ChatGPT backend."""
 
-    def __init__(self, api_key: str, model_name: str) -> None:
+    def __init__(self, model_name: str, api_key: str | None = None) -> None:
         """Initialize the ChatGPT backend."""
-        self.api_key = api_key
         self._ref_images_encoded: list[str] = []
         self.model_name: str = model_name
         self._client: OpenAI | None = None
+        self.api_key = self._get_api_key(api_key)
 
     @property
     def client(self) -> OpenAI:
@@ -86,3 +89,16 @@ class ChatGPT(Backend):
         """Encode the image to base64."""
         image = Path(image)
         return base64.b64encode(image.read_bytes()).decode("utf-8")
+
+    def _get_api_key(self, api_key: str | None = None) -> str:
+        if api_key is None:
+            load_dotenv()
+            api_key = os.getenv("OPENAI_API_KEY")
+        if api_key is None:
+            msg = (
+                f"OpenAI API key must be provided to use {self.model_name}."
+                " Please provide the API key in the constructor, or set the OPENAI_API_KEY environment variable"
+                " or in a `.env` file."
+            )
+            raise ValueError(msg)
+        return api_key
