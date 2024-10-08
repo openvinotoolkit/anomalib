@@ -11,7 +11,7 @@ from typing import Any, Literal
 
 import torch
 import torch.nn.functional as F  # noqa: N812
-from PIL import Image, ImageChops, ImageDraw, ImageEnhance, ImageFilter, ImageFont
+from PIL import Image, ImageDraw, ImageEnhance, ImageFilter, ImageFont
 from torchvision.transforms.functional import to_pil_image
 
 logger = logging.getLogger(__name__)
