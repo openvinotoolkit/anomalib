@@ -120,7 +120,7 @@ class AUPIMOResult:
     # metadata
     fpr_lower_bound: float
     fpr_upper_bound: float
-    num_thresholds: int
+    num_thresholds: int | None
 
     # data
     thresh_lower_bound: float = field(repr=False)
@@ -169,7 +169,8 @@ class AUPIMOResult:
         try:
             _validate.is_rate_range((self.fpr_lower_bound, self.fpr_upper_bound))
             # TODO(jpcbertoldo): warn when it's too low (use parameters from the numpy code)  # noqa: TD003
-            _validate.is_num_thresholds_gte2(self.num_thresholds)
+            if self.num_thresholds is not None:
+                _validate.is_num_thresholds_gte2(self.num_thresholds)
             _validate.is_rates(self.aupimos, nan_allowed=True)  # validate is_aupimos
 
             _validate.validate_threshold_bounds((self.thresh_lower_bound, self.thresh_upper_bound))
@@ -194,7 +195,6 @@ class AUPIMOResult:
             num_thresholds_auc: number of thresholds used to effectively compute AUPIMO;
                          NOT the number of thresholds used to compute the PIMO curve!
             aupimos: AUPIMO scores
-            paths: paths to the source images to which the AUPIMO scores correspond.
         """
         if pimo_result.per_image_tprs.shape[0] != aupimos.shape[0]:
             msg = (
