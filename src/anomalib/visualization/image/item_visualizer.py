@@ -249,18 +249,16 @@ def visualize_image_item(
     text_config = {**DEFAULT_TEXT_CONFIG, **(text_config or {})}
     add_text = text_config.pop("enable", True)
 
-    all_fields = OrderedDict.fromkeys(fields or [])
-    overlay_map = OrderedDict((base, overlays) for base, overlays in (overlay_fields or []))
+    all_fields = set(fields or [])
+    if overlay_fields:
+        for base, overlays in overlay_fields:
+            all_fields.add(base)
+            all_fields.update(overlays)
 
-    for base, overlays in overlay_map.items():
-        all_fields[base] = None
-        all_fields.update((overlay, None) for overlay in overlays)
-
-    field_images = OrderedDict()
+    field_images = {}
     output_images: list[Image.Image] = []
 
     for field in all_fields:
-        # NOTE: Use get_visualize_function for image reading once pre-processing is done in the model.
         if field == "image":
             image = Image.open(item.image_path).convert("RGB")
         else:
@@ -271,17 +269,20 @@ def visualize_image_item(
         if image:
             field_images[field] = image.resize(field_size)
 
-            if field in (fields or []):
+    if fields:
+        for field in fields:
+            if field in field_images:
                 output_image = field_images[field].copy()
                 if add_text:
                     output_image = add_text_to_image(output_image, convert_to_title_case(field), **text_config)
                 output_images.append(output_image)
 
-    for base, overlays in overlay_map.items():
-        if base in field_images:
-            base_image = field_images[base].copy()
-            for overlay in overlays:
-                if overlay in field_images:
+    if overlay_fields:
+        for base, overlays in overlay_fields:
+            if base in field_images:
+                base_image = field_images[base].copy()
+                valid_overlays = [overlay for overlay in overlays if overlay in field_images]
+                for overlay in valid_overlays:
                     overlay_config = overlay_fields_config.get(overlay, {})
                     visualize_func = get_visualize_function(overlay)
                     overlay_image = visualize_func(getattr(item, overlay), **overlay_config)
@@ -291,12 +292,10 @@ def visualize_image_item(
                         alpha=overlay_config.get("alpha", 0.5),
                     )
 
-            if add_text:
-                base_image = add_text_to_image(
-                    base_image,
-                    f"{convert_to_title_case(base)} + {'+'.join(convert_to_title_case(o) for o in overlays)}",
-                    **text_config,
-                )
-            output_images.append(base_image)
+                if valid_overlays:
+                    if add_text:
+                        title = f"{convert_to_title_case(base)} + {'+'.join(convert_to_title_case(o) for o in valid_overlays)}"
+                        base_image = add_text_to_image(base_image, title, **text_config)
+                    output_images.append(base_image)
 
     return create_image_grid(output_images, nrow=len(output_images)) if output_images else None

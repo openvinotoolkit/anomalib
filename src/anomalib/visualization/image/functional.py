@@ -228,9 +228,7 @@ def overlay_images(
     if not isinstance(overlays, list):
         overlays = [overlays]
 
-    if not isinstance(alpha, list):
-        alphas = [alpha]
-
+    alphas = [alpha] * len(overlays) if not isinstance(alpha, list) else alpha
     for overlay, overlay_alpha in zip(overlays, alphas, strict=False):
         base = overlay_image(base, overlay, alpha=overlay_alpha)
 
