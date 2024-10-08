@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
+from collections import OrderedDict
 from typing import Any
 
 from PIL import Image
@@ -13,8 +14,8 @@ from anomalib.utils.path import convert_to_title_case
 from anomalib.visualization.image.functional import (
     add_text_to_image,
     create_image_grid,
+    get_visualize_function,
     overlay_images,
-    visualize_field,
 )
 
 logger = logging.getLogger(__name__)
@@ -40,7 +41,7 @@ DEFAULT_TEXT_CONFIG = {
 }
 
 
-def visualize_image_item(  # noqa: C901 - NOTE: Complexity is 17/15, to be refactored.
+def visualize_image_item(
     item: ImageItem,
     fields: list[str] | None = None,
     overlay_fields: list[tuple[str, list[str]]] | None = None,
@@ -49,151 +50,253 @@ def visualize_image_item(  # noqa: C901 - NOTE: Complexity is 17/15, to be refac
     overlay_fields_config: dict[str, dict[str, Any]] = DEFAULT_OVERLAY_FIELDS_CONFIG,
     text_config: dict[str, Any] = DEFAULT_TEXT_CONFIG,
 ) -> Image.Image | None:
-    """Visualize specified fields of an ImageItem with configurable field, overlay, and text options.
+    """Visualizes specified fields of an ImageItem with configurable options.
+
+    This function creates visualizations for individual fields and overlays of an ImageItem.
+    It supports customization of field visualization, overlay composition, and text annotations.
 
     Args:
-        item (ImageItem): The ImageItem to visualize.
-        fields (list[str] | None): List of fields to visualize individually. Order is preserved in output.
-        overlay_fields (list[tuple[str, list[str]]] | None): List of tuples specifying which fields to overlay.
-        field_size (tuple[int, int]): Size to resize each field image.
-        fields_config (dict[str, dict[str, Any]]): Custom configurations for field visualization.
-        overlay_fields_config (dict[str, dict[str, Any]]): Custom configurations for field overlays.
-        text_config (dict[str, Any]): Configuration for text overlay.
-            Use {"enable": False} to disable text, or specify font options.
-            Default is {"enable": True, "font": None, "size": None, "color": "white", "background": (0, 0, 0, 128)}.
+        item: An ImageItem instance containing the data to visualize.
+        fields: A list of field names to visualize individually. If None, no individual
+            fields are visualized.
+        overlay_fields: A list of tuples, each containing a base field and a list of
+            fields to overlay on it. If None, no overlays are created.
+        field_size: A tuple (width, height) specifying the size of each visualized field.
+        fields_config: A dictionary of field-specific visualization configurations.
+        overlay_fields_config: A dictionary of overlay-specific configurations.
+        text_config: A dictionary of text annotation configurations.
 
     Returns:
-        Image.Image | None: The visualized image grid, or None if no valid fields.
+        A PIL Image containing the visualized fields and overlays, or None if no
+        valid fields to visualize.
+
+    Raises:
+        AttributeError: If a specified field doesn't exist in the ImageItem.
+        ValueError: If an invalid configuration is provided.
 
     Examples:
         Basic usage with default settings:
-        >>> item = ImageItem(...)  # Your ImageItem instance
-        >>> visualized = visualize_image_item(item)
+        >>> item = ImageItem(image_path="image.jpg", gt_mask=mask, pred_mask=pred, anomaly_map=amap)
+        >>> result = visualize_image_item(item, fields=["image", "gt_mask", "pred_mask", "anomaly_map"])
 
-        Customizing fields to visualize:
-        >>> visualized = visualize_image_item(
+        Visualizing specific fields:
+        >>> result = visualize_image_item(item, fields=["image", "anomaly_map"])
+
+        Creating an overlay:
+        >>> result = visualize_image_item(
         ...     item,
-        ...     fields=["image", "gt_mask", "anomaly_map"],
+        ...     fields=["image"],
         ...     overlay_fields=[("image", ["anomaly_map"])]
         ... )
 
-        Adjusting field size:
-        >>> visualized = visualize_image_item(item, field_size=(512, 512))
-
-        Customizing anomaly map visualization:
-        >>> visualized = visualize_image_item(
+        Multiple overlays:
+        >>> result = visualize_image_item(
         ...     item,
+        ...     overlay_fields=[
+        ...         ("image", ["gt_mask"]),
+        ...         ("image", ["pred_mask"]),
+        ...         ("image", ["anomaly_map"])
+        ...     ]
+        ... )
+
+        Customizing field visualization:
+        >>> result = visualize_image_item(
+        ...     item,
+        ...     fields=["image", "anomaly_map"],
         ...     fields_config={
         ...         "anomaly_map": {"colormap": True, "normalize": True}
         ...     }
         ... )
 
-        Modifying overlay appearance:
-        >>> visualized = visualize_image_item(
+        Adjusting overlay transparency:
+        >>> result = visualize_image_item(
         ...     item,
+        ...     overlay_fields=[("image", ["gt_mask", "pred_mask"])],
         ...     overlay_fields_config={
-        ...         "pred_mask": {"alpha": 0.7, "color": (255, 0, 0), "mode": "fill"},
-        ...         "anomaly_map": {"alpha": 0.5, "color": (0, 255, 0), "mode": "contour"}
+        ...         "gt_mask": {"alpha": 0.3},
+        ...         "pred_mask": {"alpha": 0.7}
         ...     }
         ... )
 
-        Customizing text overlay:
-        >>> visualized = visualize_image_item(
+        Customizing text annotations:
+        >>> result = visualize_image_item(
         ...     item,
+        ...     fields=["image", "gt_mask"],
         ...     text_config={
         ...         "font": "arial.ttf",
         ...         "size": 20,
         ...         "color": "yellow",
-        ...         "background": (0, 0, 0, 200)
+        ...         "background": (0, 0, 0, 180)
         ...     }
         ... )
 
-        Advanced configuration combining multiple customizations:
-        >>> visualized = visualize_image_item(
+        Disabling text annotations:
+        >>> result = visualize_image_item(
         ...     item,
-        ...     fields=["image", "gt_mask", "anomaly_map", "pred_mask"],
-        ...     overlay_fields=[("image", ["anomaly_map"]), ("image", ["pred_mask"])],
+        ...     fields=["image", "gt_mask"],
+        ...     text_config={"enable": False}
+        ... )
+
+        Combining multiple customizations:
+        >>> result = visualize_image_item(
+        ...     item,
+        ...     fields=["image", "gt_mask", "pred_mask"],
+        ...     overlay_fields=[("image", ["anomaly_map"])],
         ...     field_size=(384, 384),
         ...     fields_config={
         ...         "anomaly_map": {"colormap": True, "normalize": True},
-        ...         "pred_mask": {"color": (0, 0, 255)}
         ...     },
         ...     overlay_fields_config={
-        ...         "anomaly_map": {"alpha": 0.6, "mode": "fill"},
-        ...         "pred_mask": {"alpha": 0.7, "mode": "contour"}
+        ...         "anomaly_map": {"colormap": True},
         ...     },
         ...     text_config={
         ...         "font": "times.ttf",
         ...         "size": 24,
         ...         "color": "white",
-        ...         "background": (0, 0, 0, 180)
+        ...         "background": (0, 0, 0, 200)
         ...     }
         ... )
+
+        Handling missing fields gracefully:
+        >>> item_no_pred = ImageItem(image_path="image.jpg", gt_mask=mask, anomaly_map=amap)
+        >>> result = visualize_image_item(
+        ...     item_no_pred,
+        ...     fields=["image", "gt_mask", "pred_mask", "anomaly_map"]
+        ... )
+        # This will visualize all available fields, skipping 'pred_mask'
+
+        Custom ordering of fields and overlays:
+        >>> result = visualize_image_item(
+        ...     item,
+        ...     fields=["anomaly_map", "image", "gt_mask"],
+        ...     overlay_fields=[
+        ...         ("image", ["pred_mask"]),
+        ...         ("image", ["gt_mask", "anomaly_map"]),
+        ...     ]
+        ... )
+        # This will maintain the specified order in the output
+
+        Different masking strategies:
+
+        1. Binary mask visualization:
+        >>> result = visualize_image_item(
+        ...     item,
+        ...     fields=["gt_mask", "pred_mask"],
+        ...     fields_config={
+        ...         "gt_mask": {"mode": "binary"},
+        ...         "pred_mask": {"mode": "binary"}
+        ...     }
+        ... )
+
+        2. Contour mask visualization:
+        >>> result = visualize_image_item(
+        ...     item,
+        ...     fields=["gt_mask", "pred_mask"],
+        ...     fields_config={
+        ...         "gt_mask": {"mode": "contour", "color": (0, 255, 0)},
+        ...         "pred_mask": {"mode": "contour", "color": (255, 0, 0)}
+        ...     }
+        ... )
+
+        3. Filled mask visualization:
+        >>> result = visualize_image_item(
+        ...     item,
+        ...     fields=["gt_mask", "pred_mask"],
+        ...     fields_config={
+        ...         "gt_mask": {"mode": "fill", "color": (0, 255, 0), "alpha": 0.5},
+        ...         "pred_mask": {"mode": "fill", "color": (255, 0, 0), "alpha": 0.5}
+        ...     }
+        ... )
+
+        4. Mixed masking strategies:
+        >>> result = visualize_image_item(
+        ...     item,
+        ...     fields=["image"],
+        ...     overlay_fields=[("image", ["gt_mask", "pred_mask"])],
+        ...     overlay_fields_config={
+        ...         "gt_mask": {"mode": "contour", "color": (0, 255, 0), "alpha": 0.7},
+        ...         "pred_mask": {"mode": "fill", "color": (255, 0, 0), "alpha": 0.3}
+        ...     }
+        ... )
+
+        5. Combining masking strategies with anomaly map:
+        >>> result = visualize_image_item(
+        ...     item,
+        ...     fields=["image", "anomaly_map"],
+        ...     overlay_fields=[("image", ["gt_mask", "pred_mask"])],
+        ...     fields_config={
+        ...         "anomaly_map": {"colormap": True, "normalize": True}
+        ...     },
+        ...     overlay_fields_config={
+        ...         "gt_mask": {"mode": "contour", "color": (0, 255, 0), "alpha": 0.7},
+        ...         "pred_mask": {"mode": "fill", "color": (255, 0, 0), "alpha": 0.3}
+        ...     }
+        ... )
+
+    Note:
+        - The function preserves the order of fields as specified in the input.
+        - If a field is not available in the ImageItem, it will be skipped without raising an error.
+        - The function uses default configurations if not provided, which can be overridden
+          by passing custom configurations.
+        - For mask visualization, the 'mode' parameter in fields_config or overlay_fields_config
+          determines how the mask is displayed:
+            * 'binary': Shows the mask as a black and white image
+            * 'contour': Displays only the contours of the mask
+            * 'fill': Fills the mask area with a specified color and transparency
     """
-    # Merge default and custom configurations
     fields_config = {**DEFAULT_FIELDS_CONFIG, **(fields_config or {})}
     overlay_fields_config = {**DEFAULT_OVERLAY_FIELDS_CONFIG, **(overlay_fields_config or {})}
-
-    # Merge default and custom text configurations
     text_config = {**DEFAULT_TEXT_CONFIG, **(text_config or {})}
     add_text = text_config.pop("enable", True)
 
-    field_images: dict[str, Image.Image] = {}
+    all_fields = OrderedDict.fromkeys(fields or [])
+    overlay_map = OrderedDict((base, overlays) for base, overlays in (overlay_fields or []))
+
+    for base, overlays in overlay_map.items():
+        all_fields[base] = None
+        all_fields.update((overlay, None) for overlay in overlays)
+
+    field_images = OrderedDict()
     output_images: list[Image.Image] = []
 
-    # Collect all fields that need to be visualized
-    all_fields = set(fields or [])
-    if overlay_fields:
-        for base, overlays in overlay_fields:
-            all_fields.add(base)
-            all_fields.update(overlays)
-
-    # Visualize all required fields
     for field in all_fields:
-        # NOTE: Use ``visualize_field`` for image reading once pre-processing is done in the model.
+        # NOTE: Use get_visualize_function for image reading once pre-processing is done in the model.
         if field == "image":
-            image = Image.open(item.image_path)
+            image = Image.open(item.image_path).convert("RGB")
         else:
-            value = getattr(item, field)
             field_config = fields_config.get(field, {})
-            image = visualize_field(field, value, **field_config)
+            visualize_func = get_visualize_function(field)
+            image = visualize_func(getattr(item, field), **field_config)
 
         if image:
-            image = image.resize(field_size)
-            field_images[field] = image
+            field_images[field] = image.resize(field_size)
 
-    # Process individual fields
-    if fields:
-        for field in fields:
-            if field in field_images:
-                image = field_images[field].copy()
+            if field in (fields or []):
+                output_image = field_images[field].copy()
                 if add_text:
-                    title = convert_to_title_case(field)
-                    image = add_text_to_image(image, title, **text_config)
-                output_images.append(image)
+                    output_image = add_text_to_image(output_image, convert_to_title_case(field), **text_config)
+                output_images.append(output_image)
 
-    # Process overlay fields
-    if overlay_fields:
-        for base, overlays in overlay_fields:
-            if base in field_images:
-                base_image = field_images[base].copy()
-                valid_overlays = [overlay for overlay in overlays if overlay in field_images]
+    for base, overlays in overlay_map.items():
+        if base in field_images:
+            base_image = field_images[base].copy()
+            for overlay in overlays:
+                if overlay in field_images:
+                    overlay_config = overlay_fields_config.get(overlay, {})
+                    visualize_func = get_visualize_function(overlay)
+                    overlay_image = visualize_func(getattr(item, overlay), **overlay_config)
+                    base_image = overlay_images(
+                        base_image,
+                        overlay_image,
+                        alpha=overlay_config.get("alpha", 0.5),
+                    )
 
-                for overlay in valid_overlays:
-                    overlay_field_config = overlay_fields_config.get(overlay, {})
-                    base_image = overlay_images(base_image, field_images[overlay], **overlay_field_config)
+            if add_text:
+                base_image = add_text_to_image(
+                    base_image,
+                    f"{convert_to_title_case(base)} + {'+'.join(convert_to_title_case(o) for o in overlays)}",
+                    **text_config,
+                )
+            output_images.append(base_image)
 
-                if valid_overlays:
-                    if add_text:
-                        title = (
-                            f"{convert_to_title_case(base)} + "
-                            f"{'+'.join(convert_to_title_case(o) for o in valid_overlays)}"
-                        )
-                        base_image = add_text_to_image(base_image, title, **text_config)
-                    output_images.append(base_image)
-
-    if not output_images:
-        logger.warning("No valid fields to visualize.")
-        return None
-
-    return create_image_grid(output_images, nrow=len(output_images))
+    return create_image_grid(output_images, nrow=len(output_images)) if output_images else None
