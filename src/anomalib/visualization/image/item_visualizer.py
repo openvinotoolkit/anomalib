@@ -4,7 +4,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-from collections import OrderedDict
 from typing import Any
 
 from PIL import Image
@@ -28,8 +27,8 @@ DEFAULT_FIELDS_CONFIG = {
 }
 
 DEFAULT_OVERLAY_FIELDS_CONFIG = {
-    "gt_mask": {"color": (255, 255, 255), "alpha": 0.5, "mode": "contour"},
-    "pred_mask": {"color": (255, 0, 0), "alpha": 0.5, "mode": "contour"},
+    "gt_mask": {"color": (255, 255, 255), "alpha": 1.0, "mode": "contour"},
+    "pred_mask": {"color": (255, 0, 0), "alpha": 1.0, "mode": "contour"},
 }
 
 DEFAULT_TEXT_CONFIG = {
@@ -250,52 +249,40 @@ def visualize_image_item(
     add_text = text_config.pop("enable", True)
 
     all_fields = set(fields or [])
-    if overlay_fields:
-        for base, overlays in overlay_fields:
-            all_fields.add(base)
-            all_fields.update(overlays)
+    all_fields.update(field for base, overlays in (overlay_fields or []) for field in [base, *overlays])
 
     field_images = {}
-    output_images: list[Image.Image] = []
+    output_images = []
 
     for field in all_fields:
-        if field == "image":
-            image = Image.open(item.image_path).convert("RGB")
-        else:
-            field_config = fields_config.get(field, {})
-            visualize_func = get_visualize_function(field)
-            image = visualize_func(getattr(item, field), **field_config)
-
+        image = (
+            # NOTE: use get_visualize_function(field) when input transforms are introduced in models.
+            Image.open(item.image_path).convert("RGB")
+            if field == "image"
+            else get_visualize_function(field)(getattr(item, field), **fields_config.get(field, {}))
+        )
         if image:
             field_images[field] = image.resize(field_size)
 
-    if fields:
-        for field in fields:
-            if field in field_images:
-                output_image = field_images[field].copy()
-                if add_text:
-                    output_image = add_text_to_image(output_image, convert_to_title_case(field), **text_config)
-                output_images.append(output_image)
+    for field in fields or []:
+        if field in field_images:
+            output_image = field_images[field].copy()
+            if add_text:
+                output_image = add_text_to_image(output_image, convert_to_title_case(field), **text_config)
+            output_images.append(output_image)
 
-    if overlay_fields:
-        for base, overlays in overlay_fields:
-            if base in field_images:
-                base_image = field_images[base].copy()
-                valid_overlays = [overlay for overlay in overlays if overlay in field_images]
-                for overlay in valid_overlays:
-                    overlay_config = overlay_fields_config.get(overlay, {})
-                    visualize_func = get_visualize_function(overlay)
-                    overlay_image = visualize_func(getattr(item, overlay), **overlay_config)
-                    base_image = overlay_images(
-                        base_image,
-                        overlay_image,
-                        alpha=overlay_config.get("alpha", 0.5),
-                    )
+    for base, overlays in overlay_fields or []:
+        if base in field_images:
+            base_image = field_images[base].copy()
+            valid_overlays = [o for o in overlays if o in field_images]
+            for overlay in valid_overlays:
+                overlay_config = overlay_fields_config.get(overlay, {})
+                overlay_image = get_visualize_function(overlay)(getattr(item, overlay), **overlay_config)
+                base_image = overlay_images(base_image, overlay_image, alpha=overlay_config.get("alpha", 0.5))
 
-                if valid_overlays:
-                    if add_text:
-                        title = f"{convert_to_title_case(base)} + {'+'.join(convert_to_title_case(o) for o in valid_overlays)}"
-                        base_image = add_text_to_image(base_image, title, **text_config)
-                    output_images.append(base_image)
+            if valid_overlays and add_text:
+                title = f"{convert_to_title_case(base)} + {'+'.join(convert_to_title_case(o) for o in valid_overlays)}"
+                base_image = add_text_to_image(base_image, title, **text_config)
+            output_images.append(base_image)
 
     return create_image_grid(output_images, nrow=len(output_images)) if output_images else None
