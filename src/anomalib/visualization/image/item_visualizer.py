@@ -255,12 +255,16 @@ def visualize_image_item(
     output_images = []
 
     for field in all_fields:
-        image = (
+        image: Image.Image | None = None
+        if field == "image":
             # NOTE: use get_visualize_function(field) when input transforms are introduced in models.
-            Image.open(item.image_path).convert("RGB")
-            if field == "image"
-            else get_visualize_function(field)(getattr(item, field), **fields_config.get(field, {}))
-        )
+            image = Image.open(item.image_path).convert("RGB")
+        else:
+            field_value = getattr(item, field, None)
+            if field_value is not None:
+                image = get_visualize_function(field)(field_value, **fields_config.get(field, {}))
+            else:
+                logger.warning(f"Field '{field}' is None in ImageItem. Skipping visualization.")
         if image:
             field_images[field] = image.resize(field_size)
 
@@ -277,8 +281,12 @@ def visualize_image_item(
             valid_overlays = [o for o in overlays if o in field_images]
             for overlay in valid_overlays:
                 overlay_config = overlay_fields_config.get(overlay, {})
-                overlay_image = get_visualize_function(overlay)(getattr(item, overlay), **overlay_config)
-                base_image = overlay_images(base_image, overlay_image, alpha=overlay_config.get("alpha", 0.5))
+                overlay_value = getattr(item, overlay, None)
+                if overlay_value is not None:
+                    overlay_image = get_visualize_function(overlay)(overlay_value, **overlay_config)
+                    base_image = overlay_images(base_image, overlay_image, alpha=overlay_config.get("alpha", 0.5))
+                else:
+                    logger.warning(f"Field '{overlay}' is None in ImageItem. Skipping visualization.")
 
             if valid_overlays and add_text:
                 title = f"{convert_to_title_case(base)} + {'+'.join(convert_to_title_case(o) for o in valid_overlays)}"
