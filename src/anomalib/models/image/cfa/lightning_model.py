@@ -17,6 +17,7 @@ from lightning.pytorch.utilities.types import STEP_OUTPUT
 from anomalib import LearningType
 from anomalib.data import Batch
 from anomalib.models.components import AnomalyModule
+from anomalib.pre_processing import PreProcessor
 
 from .loss import CfaLoss
 from .torch_model import CfaModel
@@ -42,6 +43,9 @@ class Cfa(AnomalyModule):
             Defaults to ``3``.
         radius (float): Radius of the hypersphere to search the soft boundary.
             Defaults to ``1e-5``.
+        pre_processor (PreProcessor, optional): Pre-processor for the model.
+            This is used to pre-process the input data before it is passed to the model.
+            Defaults to ``None``.
     """
 
     def __init__(
@@ -52,8 +56,9 @@ class Cfa(AnomalyModule):
         num_nearest_neighbors: int = 3,
         num_hard_negative_features: int = 3,
         radius: float = 1e-5,
+        pre_processor: PreProcessor | None = None,
     ) -> None:
-        super().__init__()
+        super().__init__(pre_processor=pre_processor)
         self.model: CfaModel = CfaModel(
             backbone=backbone,
             gamma_c=gamma_c,

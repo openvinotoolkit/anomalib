@@ -15,6 +15,7 @@ from torch import optim
 from anomalib import LearningType
 from anomalib.data import Batch
 from anomalib.models.components import AnomalyModule
+from anomalib.pre_processing import PreProcessor
 
 from .loss import FastflowLoss
 from .torch_model import FastflowModel
@@ -33,7 +34,10 @@ class Fastflow(AnomalyModule):
         conv3x3_only (bool, optinoal): Use only conv3x3 in fast_flow model.
             Defaults to ``False``.
         hidden_ratio (float, optional): Ratio to calculate hidden var channels.
-            Defaults to ``1.0`.
+            Defaults to ``1.0``.
+        pre_processor (PreProcessor, optional): Pre-processor for the model.
+            This is used to pre-process the input data before it is passed to the model.
+            Defaults to ``None``.
     """
 
     def __init__(
@@ -43,8 +47,9 @@ class Fastflow(AnomalyModule):
         flow_steps: int = 8,
         conv3x3_only: bool = False,
         hidden_ratio: float = 1.0,
+        pre_processor: PreProcessor | None = None,
     ) -> None:
-        super().__init__()
+        super().__init__(pre_processor=pre_processor)
 
         self.backbone = backbone
         self.pre_trained = pre_trained

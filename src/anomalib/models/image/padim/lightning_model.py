@@ -10,12 +10,13 @@ import logging
 
 import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
-from torchvision.transforms.v2 import Compose, Normalize, Resize, Transform
+from torchvision.transforms.v2 import Compose, Normalize, Resize
 
 from anomalib import LearningType
 from anomalib.data import Batch
 from anomalib.models.components import AnomalyModule, MemoryBankMixin
 from anomalib.post_processing.one_class import OneClassPostProcessor
+from anomalib.pre_processing import PreProcessor
 
 from .torch_model import PadimModel
 
@@ -37,6 +38,9 @@ class Padim(MemoryBankMixin, AnomalyModule):
         n_features (int, optional): Number of features to retain in the dimension reduction step.
             Default values from the paper are available for: resnet18 (100), wide_resnet50_2 (550).
             Defaults to ``None``.
+        pre_processor (PreProcessor, optional): Pre-processor for the model.
+            This is used to pre-process the input data before it is passed to the model.
+            Defaults to ``None``.
     """
 
     def __init__(
@@ -45,8 +49,9 @@ class Padim(MemoryBankMixin, AnomalyModule):
         layers: list[str] = ["layer1", "layer2", "layer3"],  # noqa: B006
         pre_trained: bool = True,
         n_features: int | None = None,
+        pre_processor: PreProcessor | None = None,
     ) -> None:
-        super().__init__()
+        super().__init__(pre_processor=pre_processor)
 
         self.model: PadimModel = PadimModel(
             backbone=backbone,
@@ -125,14 +130,14 @@ class Padim(MemoryBankMixin, AnomalyModule):
         return LearningType.ONE_CLASS
 
     @staticmethod
-    def configure_transforms(image_size: tuple[int, int] | None = None) -> Transform:
-        """Default transform for Padim."""
+    def configure_pre_processor(image_size: tuple[int, int] | None = None) -> PreProcessor:
+        """Default pre-processor for Padim."""
         image_size = image_size or (256, 256)
-        return Compose(
-            [
+        return PreProcessor(
+            transform=Compose([
                 Resize(image_size, antialias=True),
                 Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-            ],
+            ]),
         )
 
     @staticmethod

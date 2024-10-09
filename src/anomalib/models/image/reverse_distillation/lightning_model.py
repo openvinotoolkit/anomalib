@@ -15,6 +15,7 @@ from torch import optim
 from anomalib import LearningType
 from anomalib.data import Batch
 from anomalib.models.components import AnomalyModule
+from anomalib.pre_processing import PreProcessor
 
 from .anomaly_map import AnomalyMapGenerationMode
 from .loss import ReverseDistillationLoss
@@ -33,6 +34,9 @@ class ReverseDistillation(AnomalyModule):
             Defaults to ``AnomalyMapGenerationMode.ADD``.
         pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.
             Defaults to ``True``.
+        pre_processor (PreProcessor, optional): Pre-processor for the model.
+            This is used to pre-process the input data before it is passed to the model.
+            Defaults to ``None``.
     """
 
     def __init__(
@@ -41,8 +45,9 @@ class ReverseDistillation(AnomalyModule):
         layers: Sequence[str] = ("layer1", "layer2", "layer3"),
         anomaly_map_mode: AnomalyMapGenerationMode = AnomalyMapGenerationMode.ADD,
         pre_trained: bool = True,
+        pre_processor: PreProcessor | None = None,
     ) -> None:
-        super().__init__()
+        super().__init__(pre_processor=pre_processor)
 
         self.backbone = backbone
         self.pre_trained = pre_trained

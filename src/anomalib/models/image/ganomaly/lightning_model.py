@@ -16,6 +16,7 @@ from torch import optim
 from anomalib import LearningType
 from anomalib.data import Batch
 from anomalib.models.components import AnomalyModule
+from anomalib.pre_processing import PreProcessor
 
 from .loss import DiscriminatorLoss, GeneratorLoss
 from .torch_model import GanomalyModel
@@ -49,6 +50,9 @@ class Ganomaly(AnomalyModule):
             Defaults to ``0.5``.
         beta2 (float, optional): Adam beta2.
             Defaults to ``0.999``.
+        pre_processor (PreProcessor, optional): Pre-processor for the model.
+            This is used to pre-process the input data before it is passed to the model.
+            Defaults to ``None``.
     """
 
     def __init__(
@@ -64,8 +68,9 @@ class Ganomaly(AnomalyModule):
         lr: float = 0.0002,
         beta1: float = 0.5,
         beta2: float = 0.999,
+        pre_processor: PreProcessor | None = None,
     ) -> None:
-        super().__init__()
+        super().__init__(pre_processor=pre_processor)
 
         self.n_features = n_features
         self.latent_vec_size = latent_vec_size

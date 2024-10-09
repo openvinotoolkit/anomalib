@@ -7,6 +7,7 @@ import importlib
 import logging
 from abc import ABC, abstractmethod
 from collections import OrderedDict
+from collections.abc import Sequence
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -22,12 +23,11 @@ from anomalib import LearningType
 from anomalib.data import Batch, InferenceBatch
 from anomalib.metrics.threshold import Threshold
 from anomalib.post_processing import OneClassPostProcessor, PostProcessor
+from anomalib.pre_processing import PreProcessor
 
 from .export_mixin import ExportMixin
 
 if TYPE_CHECKING:
-    from lightning.pytorch.callbacks import Callback
-
     from anomalib.metrics import AnomalibMetricCollection
 
 logger = logging.getLogger(__name__)
@@ -39,7 +39,11 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
     Acts as a base class for all the Anomaly Modules in the library.
     """
 
-    def __init__(self, post_processor: PostProcessor | None = None) -> None:
+    def __init__(
+        self,
+        pre_processor: PreProcessor | None = None,
+        post_processor: PostProcessor | None = None,
+    ) -> None:
         super().__init__()
         logger.info("Initializing %s model.", self.__class__.__name__)
 
@@ -51,6 +55,7 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
         self.image_metrics: AnomalibMetricCollection
         self.pixel_metrics: AnomalibMetricCollection
 
+        self.pre_processor = pre_processor or self.configure_pre_processor()
         self.post_processor = post_processor or self.default_post_processor()
 
         self._transform: Transform | None = None
@@ -78,6 +83,10 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
         in the `__init__` method because it requires some information or data that is not available at the time of
         initialization.
         """
+
+    def configure_callbacks(self) -> Sequence[Callback] | Callback:
+        """Configure default callbacks for AnomalyModule."""
+        return [self.pre_processor]
 
     def forward(self, batch: torch.Tensor, *args, **kwargs) -> InferenceBatch:
         """Perform the forward-pass by passing input tensor to the module.
@@ -183,23 +192,23 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
         """Update the transform linked to the model instance."""
         self._transform = transform
 
-    def configure_transforms(self, image_size: tuple[int, int] | None = None) -> Transform:  # noqa: PLR6301
-        """Default transforms.
+    def configure_pre_processor(self, image_size: tuple[int, int] | None = None) -> PreProcessor:  # noqa: PLR6301
+        """Configure the pre-processor.
 
-        The default transform is resize to 256x256 and normalize to ImageNet stats. Individual models can override
-        this method to provide custom transforms.
+        The default pre-processor is resize to 256x256 and normalize to ImageNet stats. Individual models can override
+        this method to provide custom transforms and pre-processing pipelines.
         """
         logger.warning(
-            "No implementation of `configure_transforms` was provided in the Lightning model. Using default "
+            "No implementation of `configure_pre_processor` was provided in the Lightning model. Using default "
             "transforms from the base class. This may not be suitable for your use case. Please override "
-            "`configure_transforms` in your model.",
+            "`configure_pre_processor` in your model.",
         )
         image_size = image_size or (256, 256)
-        return Compose(
-            [
+        return PreProcessor(
+            transform=Compose([
                 Resize(image_size, antialias=True),
                 Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-            ],
+            ]),
         )
 
     def default_post_processor(self) -> PostProcessor:
@@ -220,7 +229,7 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
         The effective input size is the size of the input tensor after the transform has been applied. If the transform
         is not set, or if the transform does not change the shape of the input tensor, this method will return None.
         """
-        transform = self.transform or self.configure_transforms()
+        transform = self.transform or self.configure_pre_processor()
         if transform is None:
             return None
         dummy_input = torch.zeros(1, 3, 1, 1)
