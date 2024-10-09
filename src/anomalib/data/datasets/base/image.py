@@ -179,7 +179,7 @@ class AnomalibDataset(Dataset, ABC):
                 if label_index == LabelName.NORMAL
                 else read_mask(mask_path, as_tensor=True)
             )
-            item["image"], item["gt_mask"] = self.transform(image, mask) if self.transform else (image, mask)
+            item["image"], item["gt_mask"] = image, mask
 
         else:
             msg = f"Unknown task type: {self.task}"
