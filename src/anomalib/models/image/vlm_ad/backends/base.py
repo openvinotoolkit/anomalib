@@ -23,3 +23,8 @@ class Backend(ABC):
     @abstractmethod
     def predict(self, image: str | Path, prompt: Prompt) -> str:
         """Predict the anomaly label."""
+
+    @property
+    @abstractmethod
+    def reference_image_count(self) -> int:
+        """Get the number of reference images."""

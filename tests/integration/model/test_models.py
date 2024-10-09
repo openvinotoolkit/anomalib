@@ -180,7 +180,7 @@ class TestAPI:
         # select task type
         if model_name in {"rkde", "ai_vad"}:
             task_type = TaskType.DETECTION
-        elif model_name in {"ganomaly", "dfkde"}:
+        elif model_name in {"ganomaly", "dfkde", "vlm_ad"}:
             task_type = TaskType.CLASSIFICATION
         else:
             task_type = TaskType.SEGMENTATION

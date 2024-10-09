@@ -75,6 +75,11 @@ class Huggingface(Backend):
         """Add reference images for k-shot."""
         self._ref_images.append(Image.open(image))
 
+    @property
+    def reference_image_count(self) -> int:
+        """Get the number of reference images."""
+        return len(self._ref_images)
+
     def predict(self, image_path: str | Path, prompt: Prompt) -> str:
         """Predict the anomaly label."""
         image = Image.open(image_path)

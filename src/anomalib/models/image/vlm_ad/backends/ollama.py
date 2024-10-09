@@ -37,6 +37,11 @@ class Ollama(Backend):
         """Encode the image to base64."""
         self._ref_images_encoded.append(_encode_image(image))
 
+    @property
+    def reference_image_count(self) -> int:
+        """Get the number of reference images."""
+        return len(self._ref_images_encoded)
+
     @staticmethod
     def _generate_message(content: str, images: list[str] | None) -> dict:
         """Generate a message."""

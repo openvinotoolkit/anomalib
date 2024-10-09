@@ -24,7 +24,7 @@ class VlmAd(AnomalyModule):
         self,
         model: VLMModel | str = VLMModel.LLAMA_OLLAMA,
         api_key: str | None = None,
-        k_shot: int = 3,
+        k_shot: int = 0,
     ) -> None:
         super().__init__()
         self.k_shot = k_shot
@@ -44,19 +44,17 @@ class VlmAd(AnomalyModule):
         raise ValueError(msg)
 
     def _setup(self) -> None:
-        if self.k_shot:
+        if self.k_shot > 0 and self.vlm_backend.reference_image_count != self.k_shot:
             logger.info("Collecting reference images from training dataset.")
             dataloader = self.trainer.datamodule.train_dataloader()
             self.collect_reference_images(dataloader)
 
     def collect_reference_images(self, dataloader: DataLoader) -> None:
         """Collect reference images for few-shot inference."""
-        count = 0
         for batch in dataloader:
             for img_path in batch["image_path"]:
                 self.vlm_backend.add_reference_images(img_path)
-                count += 1
-                if count == self.k_shot:
+                if self.vlm_backend.reference_image_count == self.k_shot:
                     return
 
     @property

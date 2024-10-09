@@ -51,6 +51,11 @@ class ChatGPT(Backend):
         """Add reference images for k-shot."""
         self._ref_images_encoded.append(self._encode_image_to_url(image))
 
+    @property
+    def reference_image_count(self) -> int:
+        """Get the number of reference images."""
+        return len(self._ref_images_encoded)
+
     def predict(self, image: str | Path, prompt: Prompt) -> str:
         """Predict the anomaly label."""
         image_encoded = self._encode_image_to_url(image)
