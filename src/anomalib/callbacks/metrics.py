@@ -78,9 +78,8 @@ class _MetricsCallback(Callback):
         elif self.task == TaskType.CLASSIFICATION:
             pixel_metric_names = []
             logger.warning(
-                "Cannot perform pixel-level evaluation when task type is classification. "
-                "Ignoring the following pixel-level metrics: %s",
-                self.pixel_metric_names,
+                "Cannot perform pixel-level evaluation when task type is {self.task.value}. "
+                f"Ignoring the following pixel-level metrics: {self.pixel_metric_names}",
             )
         else:
             pixel_metric_names = (
