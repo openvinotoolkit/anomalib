@@ -182,8 +182,6 @@ class TestAPI:
             task_type = TaskType.DETECTION
         elif model_name in {"ganomaly", "dfkde"}:
             task_type = TaskType.CLASSIFICATION
-        elif model_name == "vlm_ad":
-            task_type = TaskType.EXPLANATION
         else:
             task_type = TaskType.SEGMENTATION
 
