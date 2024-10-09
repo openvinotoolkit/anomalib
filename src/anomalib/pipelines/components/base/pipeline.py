@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 class Pipeline(ABC):
     """Base class for pipeline."""
 
-    def _get_args(self, args: Namespace) -> dict:
+    def _get_args(self, args: Namespace | None) -> dict:
         """Get pipeline arguments by parsing the config file.
 
         Args:
