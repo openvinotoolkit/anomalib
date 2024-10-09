@@ -119,6 +119,8 @@ class AnomalibDataModule(LightningDataModule, ABC):
 
         self._is_setup = False  # flag to track if setup has been called from the trainer
 
+        self.collate_fn = collate_fn
+
     @property
     def name(self) -> str:
         """Name of the datamodule."""
@@ -224,6 +226,7 @@ class AnomalibDataModule(LightningDataModule, ABC):
             shuffle=True,
             batch_size=self.train_batch_size,
             num_workers=self.num_workers,
+            collate_fn=self.collate_fn,
         )
 
     def val_dataloader(self) -> EVAL_DATALOADERS:
@@ -233,7 +236,7 @@ class AnomalibDataModule(LightningDataModule, ABC):
             shuffle=False,
             batch_size=self.eval_batch_size,
             num_workers=self.num_workers,
-            collate_fn=collate_fn,
+            collate_fn=self.collate_fn,
         )
 
     def test_dataloader(self) -> EVAL_DATALOADERS:
@@ -243,7 +246,7 @@ class AnomalibDataModule(LightningDataModule, ABC):
             shuffle=False,
             batch_size=self.eval_batch_size,
             num_workers=self.num_workers,
-            collate_fn=collate_fn,
+            collate_fn=self.collate_fn,
         )
 
     def predict_dataloader(self) -> EVAL_DATALOADERS:
