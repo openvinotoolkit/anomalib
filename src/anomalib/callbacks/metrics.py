@@ -75,7 +75,7 @@ class _MetricsCallback(Callback):
         pixel_metric_names: list[str] | dict[str, dict[str, Any]]
         if self.pixel_metric_names is None:
             pixel_metric_names = []
-        elif self.task in TaskType.CLASSIFICATION:
+        elif self.task == TaskType.CLASSIFICATION:
             pixel_metric_names = []
             logger.warning(
                 "Cannot perform pixel-level evaluation when task type is {self.task.value}. "
