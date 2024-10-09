@@ -936,6 +936,10 @@ class Engine:
                 --input_size "[256,256]" --compression_type INT8_PTQ --data MVTec
                 ```
         """
+        if self.task == TaskType.EXPLANATION:
+            logging.error("Exporting explanation models is not supported.")
+            return None
+
         export_type = ExportType(export_type)
         self._setup_trainer(model)
         if ckpt_path:
