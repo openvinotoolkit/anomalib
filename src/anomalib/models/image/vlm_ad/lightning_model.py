@@ -99,3 +99,31 @@ class VlmAd(AnomalyModule):
         """This modes does not require any transforms."""
         if image_size is not None:
             logger.warning("Ignoring image_size argument as each backend has its own transforms.")
+
+    @staticmethod
+    def _export_not_supported_message() -> None:
+        logging.warning("Exporting the model is not supported for VLM-AD model. Skipping...")
+
+    def to_torch(  # type: ignore[override]
+        self,
+        *_,
+        **__,
+    ) -> None:
+        """Skip export to torch."""
+        return self._export_not_supported_message()
+
+    def to_onnx(  # type: ignore[override]
+        self,
+        *_,
+        **__,
+    ) -> None:
+        """Skip export to onnx."""
+        return self._export_not_supported_message()
+
+    def to_openvino(  # type: ignore[override]
+        self,
+        *_,
+        **__,
+    ) -> None:
+        """Skip export to openvino."""
+        return self._export_not_supported_message()

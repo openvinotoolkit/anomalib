@@ -322,7 +322,7 @@ class Engine:
             self._cache.update(model)
 
         # Setup anomalib callbacks to be used with the trainer
-        self._setup_anomalib_callbacks()
+        self._setup_anomalib_callbacks(model)
 
         # Temporarily set devices to 1 to avoid issues with multiple processes
         self._cache.args["devices"] = 1
@@ -405,7 +405,7 @@ class Engine:
                 if not getattr(dataloader.dataset, "transform", None):
                     dataloader.dataset.transform = transform
 
-    def _setup_anomalib_callbacks(self) -> None:
+    def _setup_anomalib_callbacks(self, model: AnomalyModule) -> None:
         """Set up callbacks for the trainer."""
         _callbacks: list[Callback] = []
 
@@ -433,7 +433,9 @@ class Engine:
         _callbacks.append(_MetricsCallback(self.task, self.image_metric_names, self.pixel_metric_names))
 
         visualizer: BaseVisualizer
-        if self.task == TaskType.EXPLANATION:
+
+        # TODO(ashwinvaidya17): temporary  # noqa: TD003 ignoring as visualizer is getting a complete overhaul
+        if model.__class__.__name__ == "VlmAd":
             visualizer = ExplanationVisualizer()
         else:
             visualizer = ImageVisualizer(task=self.task, normalize=self.normalization == NormalizationMethod.NONE)

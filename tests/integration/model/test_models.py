@@ -7,6 +7,7 @@ Tests the models using API. The weight paths from the trained models are used fo
 # SPDX-License-Identifier: Apache-2.0
 
 from pathlib import Path
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -209,6 +210,11 @@ class TestAPI:
             )
 
         model = get_model(model_name, **extra_args)
+
+        if model_name == "vlm_ad":
+            model.vlm_backend = MagicMock()
+            model.vlm_backend.predict.return_value = "YES: Because reasons..."
+
         engine = Engine(
             logger=False,
             default_root_dir=project_path,
