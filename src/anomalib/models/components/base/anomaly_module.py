@@ -17,7 +17,7 @@ from lightning.pytorch import Callback
 from lightning.pytorch.trainer.states import TrainerFn
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torch import nn
-from torchvision.transforms.v2 import Compose, Normalize, Resize, Transform
+from torchvision.transforms.v2 import Compose, Normalize, Resize
 
 from anomalib import LearningType
 from anomalib.data import Batch, InferenceBatch
@@ -58,7 +58,6 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
         self.pre_processor = pre_processor or self.configure_pre_processor()
         self.post_processor = post_processor or self.default_post_processor()
 
-        self._transform: Transform | None = None
         self._input_size: tuple[int, int] | None = None
 
         self._is_setup = False  # flag to track if setup has been called from the trainer
@@ -180,19 +179,6 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
         """Learning type of the model."""
         raise NotImplementedError
 
-    @property
-    def transform(self) -> Transform:
-        """Retrieve the model-specific transform.
-
-        If a transform has been set using `set_transform`, it will be returned. Otherwise, we will use the
-        model-specific default transform, conditioned on the input size.
-        """
-        return self._transform
-
-    def set_transform(self, transform: Transform) -> None:
-        """Update the transform linked to the model instance."""
-        self._transform = transform
-
     def configure_pre_processor(self, image_size: tuple[int, int] | None = None) -> PreProcessor:  # noqa: PLR6301
         """Configure the pre-processor.
 
@@ -230,30 +216,12 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
         The effective input size is the size of the input tensor after the transform has been applied. If the transform
         is not set, or if the transform does not change the shape of the input tensor, this method will return None.
         """
-        transform = self.transform or self.configure_pre_processor()
+        transform = self.pre_processor.test_transform
         if transform is None:
             return None
         dummy_input = torch.zeros(1, 3, 1, 1)
         output_shape = transform(dummy_input).shape[-2:]
-        if output_shape == (1, 1):
-            return None
-        return output_shape[-2:]
-
-    def on_save_checkpoint(self, checkpoint: dict[str, Any]) -> None:
-        """Called when saving the model to a checkpoint.
-
-        Saves the transform to the checkpoint.
-        """
-        checkpoint["transform"] = self.transform
-
-    def on_load_checkpoint(self, checkpoint: dict[str, Any]) -> None:
-        """Called when loading the model from a checkpoint.
-
-        Loads the transform from the checkpoint and calls setup to ensure that the torch model is built before loading
-        the state dict.
-        """
-        self._transform = checkpoint["transform"]
-        self.setup("load_checkpoint")
+        return None if output_shape == (1, 1) else output_shape[-2:]
 
     @classmethod
     def from_config(
