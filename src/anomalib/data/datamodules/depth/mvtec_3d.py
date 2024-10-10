@@ -22,8 +22,6 @@ Reference:
 import logging
 from pathlib import Path
 
-from torchvision.transforms.v2 import Transform
-
 from anomalib import TaskType
 from anomalib.data.datamodules.base.image import AnomalibDataModule
 from anomalib.data.datasets.depth.mvtec_3d import MVTec3DDataset
@@ -62,13 +60,9 @@ class MVTec3D(AnomalibDataModule):
             Defaults to ``8``.
         task (TaskType): Task type, 'classification', 'detection' or 'segmentation'
             Defaults to ``TaskType.SEGMENTATION``.
-        image_size (tuple[int, int], optional): Size to which input images should be resized.
+        test_split_mode (TestSplitMode): Setting that determines how the testing subset is obtained.
             Defaults to ``None``.
-        transform (Transform, optional): Transforms that should be applied to the input images.
-            Defaults to ``None``.
-        train_transform (Transform, optional): Transforms that should be applied to the input images during training.
-            Defaults to ``None``.
-        eval_transform (Transform, optional): Transforms that should be applied to the input images during evaluation.
+        test_split_ratio (float): Fraction of images from the train set that will be reserved for testing.
             Defaults to ``None``.
         test_split_mode (TestSplitMode): Setting that determines how the testing subset is obtained.
             Defaults to ``TestSplitMode.FROM_DIR``.
@@ -90,10 +84,6 @@ class MVTec3D(AnomalibDataModule):
         eval_batch_size: int = 32,
         num_workers: int = 8,
         task: TaskType | str = TaskType.SEGMENTATION,
-        image_size: tuple[int, int] | None = None,
-        transform: Transform | None = None,
-        train_transform: Transform | None = None,
-        eval_transform: Transform | None = None,
         test_split_mode: TestSplitMode | str = TestSplitMode.FROM_DIR,
         test_split_ratio: float = 0.2,
         val_split_mode: ValSplitMode | str = ValSplitMode.SAME_AS_TEST,
@@ -104,10 +94,6 @@ class MVTec3D(AnomalibDataModule):
             train_batch_size=train_batch_size,
             eval_batch_size=eval_batch_size,
             num_workers=num_workers,
-            image_size=image_size,
-            transform=transform,
-            train_transform=train_transform,
-            eval_transform=eval_transform,
             test_split_mode=test_split_mode,
             test_split_ratio=test_split_ratio,
             val_split_mode=val_split_mode,
@@ -122,14 +108,12 @@ class MVTec3D(AnomalibDataModule):
     def _setup(self, _stage: str | None = None) -> None:
         self.train_data = MVTec3DDataset(
             task=self.task,
-            transform=self.train_transform,
             split=Split.TRAIN,
             root=self.root,
             category=self.category,
         )
         self.test_data = MVTec3DDataset(
             task=self.task,
-            transform=self.eval_transform,
             split=Split.TEST,
             root=self.root,
             category=self.category,

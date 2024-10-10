@@ -15,6 +15,7 @@ from lightning.pytorch.utilities.types import STEP_OUTPUT
 from anomalib import LearningType
 from anomalib.models.components import AnomalyModule, MemoryBankMixin
 from anomalib.models.components.classification import FeatureScalingMethod
+from anomalib.pre_processing import PreProcessor
 
 from .region_extractor import RoiStage
 from .torch_model import RkdeModel
@@ -44,6 +45,9 @@ class Rkde(MemoryBankMixin, AnomalyModule):
             Defaults to ``FeatureScalingMethod.SCALE``.
         max_training_points (int, optional): Maximum number of training points to fit the KDE model.
             Defaults to ``40000``.
+        pre_processor (PreProcessor, optional): Pre-processor for the model.
+            This is used to pre-process the input data before it is passed to the model.
+            Defaults to ``None``.
     """
 
     def __init__(
@@ -56,8 +60,9 @@ class Rkde(MemoryBankMixin, AnomalyModule):
         n_pca_components: int = 16,
         feature_scaling_method: FeatureScalingMethod = FeatureScalingMethod.SCALE,
         max_training_points: int = 40000,
+        pre_processor: PreProcessor | None = None,
     ) -> None:
-        super().__init__()
+        super().__init__(pre_processor=pre_processor)
 
         self.model: RkdeModel = RkdeModel(
             roi_stage=roi_stage,

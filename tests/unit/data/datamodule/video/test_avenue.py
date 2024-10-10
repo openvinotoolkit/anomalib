@@ -29,7 +29,6 @@ class TestAvenue(_TestAnomalibVideoDatamodule):
             root=dataset_path / "avenue",
             gt_dir=dataset_path / "avenue" / "ground_truth_demo",
             clip_length_in_frames=clip_length_in_frames,
-            image_size=256,
             task=task_type,
             num_workers=0,
             train_batch_size=4,

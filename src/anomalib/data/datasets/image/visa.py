@@ -21,8 +21,6 @@ Reference:
 
 from pathlib import Path
 
-from torchvision.transforms.v2 import Transform
-
 from anomalib import TaskType
 from anomalib.data.datasets import AnomalibDataset
 from anomalib.data.datasets.image.mvtec import make_mvtec_dataset
@@ -52,8 +50,6 @@ class VisaDataset(AnomalibDataset):
         task (TaskType): Task type, ``classification``, ``detection`` or ``segmentation``
         root (str | Path): Path to the root of the dataset
         category (str): Sub-category of the dataset, e.g. 'candle'
-        transform (Transform, optional): Transforms that should be applied to the input images.
-            Defaults to ``None``.
         split (str | Split | None): Split of the dataset, usually Split.TRAIN or Split.TEST
             Defaults to ``None``.
 
@@ -63,12 +59,9 @@ class VisaDataset(AnomalibDataset):
         .. code-block:: python
 
             from anomalib.data.image.visa import VisaDataset
-            from anomalib.data.utils.transforms import get_transforms
 
-            transform = get_transforms(image_size=256)
             dataset = VisaDataset(
                 task="classification",
-                transform=transform,
                 split="train",
                 root="./datasets/visa/visa_pytorch/",
                 category="candle",
@@ -86,12 +79,9 @@ class VisaDataset(AnomalibDataset):
         .. code-block:: python
 
             from anomalib.data.image.visa import VisaDataset
-            from anomalib.data.utils.transforms import get_transforms
 
-            transform = get_transforms(image_size=256)
             dataset = VisaDataset(
                 task="segmentation",
-                transform=transform,
                 split="train",
                 root="./datasets/visa/visa_pytorch/",
                 category="candle",
@@ -109,10 +99,9 @@ class VisaDataset(AnomalibDataset):
         task: TaskType,
         root: str | Path,
         category: str,
-        transform: Transform | None = None,
         split: str | Split | None = None,
     ) -> None:
-        super().__init__(task=task, transform=transform)
+        super().__init__(task)
 
         self.root_category = Path(root) / category
         self.split = split

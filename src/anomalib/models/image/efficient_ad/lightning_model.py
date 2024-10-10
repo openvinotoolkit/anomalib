@@ -15,12 +15,13 @@ import tqdm
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torch.utils.data import DataLoader
 from torchvision.datasets import ImageFolder
-from torchvision.transforms.v2 import CenterCrop, Compose, Normalize, RandomGrayscale, Resize, ToTensor, Transform
+from torchvision.transforms.v2 import CenterCrop, Compose, Normalize, RandomGrayscale, Resize, ToTensor
 
 from anomalib import LearningType
 from anomalib.data import Batch
 from anomalib.data.utils import DownloadInfo, download_and_extract
 from anomalib.models.components import AnomalyModule
+from anomalib.pre_processing import PreProcessor
 
 from .torch_model import EfficientAdModel, EfficientAdModelSize, reduce_tensor_elems
 
@@ -58,6 +59,9 @@ class EfficientAd(AnomalyModule):
         pad_maps (bool): relevant if padding is set to False. In this case, pad_maps = True pads the
             output anomaly maps so that their size matches the size in the padding = True case.
             Defaults to ``True``.
+        pre_processor (PreProcessor, optional): Pre-processor for the model.
+            This is used to pre-process the input data before it is passed to the model.
+            Defaults to ``None``.
     """
 
     def __init__(
@@ -69,8 +73,9 @@ class EfficientAd(AnomalyModule):
         weight_decay: float = 0.00001,
         padding: bool = False,
         pad_maps: bool = True,
+        pre_processor: PreProcessor | None = None,
     ) -> None:
-        super().__init__()
+        super().__init__(pre_processor=pre_processor)
 
         self.imagenet_dir = Path(imagenet_dir)
         if not isinstance(model_size, EfficientAdModelSize):
@@ -203,6 +208,13 @@ class EfficientAd(AnomalyModule):
         qb = torch.quantile(maps_flat, q=0.995).to(self.device)
         return qa, qb
 
+    @staticmethod
+    def configure_pre_processor(image_size: tuple[int, int] | None = None) -> PreProcessor:
+        """Default transform for EfficientAd. Imagenet normalization applied in forward."""
+        image_size = image_size or (256, 256)
+        transform = Compose([Resize(image_size, antialias=True)])
+        return PreProcessor(transform=transform)
+
     def configure_optimizers(self) -> torch.optim.Optimizer:
         """Configure optimizers."""
         optimizer = torch.optim.Adam(
@@ -318,13 +330,3 @@ class EfficientAd(AnomalyModule):
             LearningType: Learning type of the model.
         """
         return LearningType.ONE_CLASS
-
-    @staticmethod
-    def configure_transforms(image_size: tuple[int, int] | None = None) -> Transform:
-        """Default transform for EfficientAd. Imagenet normalization applied in forward."""
-        image_size = image_size or (256, 256)
-        return Compose(
-            [
-                Resize(image_size, antialias=True),
-            ],
-        )

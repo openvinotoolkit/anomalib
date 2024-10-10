@@ -29,7 +29,6 @@ class TestShanghaiTech(_TestAnomalibVideoDatamodule):
             root=dataset_path / "shanghaitech",
             scene=1,
             clip_length_in_frames=clip_length_in_frames,
-            image_size=(256, 256),
             train_batch_size=4,
             eval_batch_size=4,
             num_workers=0,

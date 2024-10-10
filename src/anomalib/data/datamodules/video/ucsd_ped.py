@@ -7,8 +7,6 @@ import logging
 from pathlib import Path
 from shutil import move
 
-from torchvision.transforms.v2 import Transform
-
 from anomalib import TaskType
 from anomalib.data.datamodules.base.video import AnomalibVideoDataModule
 from anomalib.data.datasets.base.video import VideoTargetFrame
@@ -34,16 +32,10 @@ class UCSDped(AnomalibVideoDataModule):
         frames_between_clips (int, optional): Number of frames between each consecutive video clip.
         target_frame (VideoTargetFrame): Specifies the target frame in the video clip, used for ground truth retrieval
         task (TaskType): Task type, 'classification', 'detection' or 'segmentation'
-        image_size (tuple[int, int], optional): Size to which input images should be resized.
+        train_batch_size (int, optional): Training batch size.
             Defaults to ``None``.
-        transform (Transform, optional): Transforms that should be applied to the input images.
+        eval_batch_size (int, optional): Test batch size.
             Defaults to ``None``.
-        train_transform (Transform, optional): Transforms that should be applied to the input images during training.
-            Defaults to ``None``.
-        eval_transform (Transform, optional): Transforms that should be applied to the input images during evaluation.
-            Defaults to ``None``.
-        train_batch_size (int, optional): Training batch size. Defaults to 32.
-        eval_batch_size (int, optional): Test batch size. Defaults to 32.
         num_workers (int, optional): Number of workers. Defaults to 8.
         val_split_mode (ValSplitMode): Setting that determines how the validation subset is obtained.
         val_split_ratio (float): Fraction of train or test images that will be reserved for validation.
@@ -58,10 +50,6 @@ class UCSDped(AnomalibVideoDataModule):
         frames_between_clips: int = 10,
         target_frame: VideoTargetFrame = VideoTargetFrame.LAST,
         task: TaskType | str = TaskType.SEGMENTATION,
-        image_size: tuple[int, int] | None = None,
-        transform: Transform | None = None,
-        train_transform: Transform | None = None,
-        eval_transform: Transform | None = None,
         train_batch_size: int = 8,
         eval_batch_size: int = 8,
         num_workers: int = 8,
@@ -73,10 +61,6 @@ class UCSDped(AnomalibVideoDataModule):
             train_batch_size=train_batch_size,
             eval_batch_size=eval_batch_size,
             num_workers=num_workers,
-            image_size=image_size,
-            transform=transform,
-            train_transform=train_transform,
-            eval_transform=eval_transform,
             val_split_mode=val_split_mode,
             val_split_ratio=val_split_ratio,
             seed=seed,
@@ -93,7 +77,6 @@ class UCSDped(AnomalibVideoDataModule):
     def _setup(self, _stage: str | None = None) -> None:
         self.train_data = UCSDpedDataset(
             task=self.task,
-            transform=self.train_transform,
             clip_length_in_frames=self.clip_length_in_frames,
             frames_between_clips=self.frames_between_clips,
             target_frame=self.target_frame,
@@ -104,7 +87,6 @@ class UCSDped(AnomalibVideoDataModule):
 
         self.test_data = UCSDpedDataset(
             task=self.task,
-            transform=self.eval_transform,
             clip_length_in_frames=self.clip_length_in_frames,
             frames_between_clips=self.frames_between_clips,
             target_frame=self.target_frame,

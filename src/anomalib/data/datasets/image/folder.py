@@ -10,7 +10,6 @@ from collections.abc import Sequence
 from pathlib import Path
 
 from pandas import DataFrame
-from torchvision.transforms.v2 import Transform
 
 from anomalib import TaskType
 from anomalib.data.datasets.base.image import AnomalibDataset
@@ -27,8 +26,6 @@ class FolderDataset(AnomalibDataset):
     Args:
         name (str): Name of the dataset. This is used to name the datamodule, especially when logging/saving.
         task (TaskType): Task type. (``classification``, ``detection`` or ``segmentation``).
-        transform (Transform, optional): Transforms that should be applied to the input images.
-            Defaults to ``None``.
         normal_dir (str | Path | Sequence): Path to the directory containing normal images.
         root (str | Path | None): Root folder of the dataset.
             Defaults to ``None``.
@@ -52,12 +49,7 @@ class FolderDataset(AnomalibDataset):
 
     Examples:
         Assume that we would like to use this ``FolderDataset`` to create a dataset from a folder for a classification
-        task. We could first create the transforms,
-
-        >>> from anomalib.data.utils import InputNormalizationMethod, get_transforms
-        >>> transform = get_transforms(image_size=256, normalization=InputNormalizationMethod.NONE)
-
-        We could then create the dataset as follows,
+        task.
 
         .. code-block:: python
 
@@ -65,7 +57,6 @@ class FolderDataset(AnomalibDataset):
                 normal_dir=dataset_root / "good",
                 abnormal_dir=dataset_root / "crack",
                 split="train",
-                transform=transform,
                 task=TaskType.CLASSIFICATION,
             )
 
@@ -76,7 +67,6 @@ class FolderDataset(AnomalibDataset):
         name: str,
         task: TaskType,
         normal_dir: str | Path | Sequence[str | Path],
-        transform: Transform | None = None,
         root: str | Path | None = None,
         abnormal_dir: str | Path | Sequence[str | Path] | None = None,
         normal_test_dir: str | Path | Sequence[str | Path] | None = None,
@@ -84,7 +74,7 @@ class FolderDataset(AnomalibDataset):
         split: str | Split | None = None,
         extensions: tuple[str, ...] | None = None,
     ) -> None:
-        super().__init__(task, transform)
+        super().__init__(task)
 
         self._name = name
         self.split = split

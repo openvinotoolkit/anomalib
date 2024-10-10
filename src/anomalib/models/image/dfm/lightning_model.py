@@ -15,6 +15,7 @@ from lightning.pytorch.utilities.types import STEP_OUTPUT
 from anomalib import LearningType
 from anomalib.data import Batch
 from anomalib.models.components import AnomalyModule, MemoryBankMixin
+from anomalib.pre_processing import PreProcessor
 
 from .torch_model import DFMModel
 
@@ -37,6 +38,9 @@ class Dfm(MemoryBankMixin, AnomalyModule):
             Defaults to ``0.97``.
         score_type (str, optional): Scoring type. Options are `fre` and `nll`.
             Defaults to ``fre``.
+        pre_processor (PreProcessor, optional): Pre-processor for the model.
+            This is used to pre-process the input data before it is passed to the model.
+            Defaults to ``None``.
     """
 
     def __init__(
@@ -47,8 +51,9 @@ class Dfm(MemoryBankMixin, AnomalyModule):
         pooling_kernel_size: int = 4,
         pca_level: float = 0.97,
         score_type: str = "fre",
+        pre_processor: PreProcessor | None = None,
     ) -> None:
-        super().__init__()
+        super().__init__(pre_processor=pre_processor)
 
         self.model: DFMModel = DFMModel(
             backbone=backbone,

@@ -20,7 +20,6 @@ import numpy as np
 import scipy
 import torch
 from pandas import DataFrame
-from torchvision.transforms.v2 import Transform
 
 from anomalib import TaskType
 from anomalib.data.datasets.base.video import AnomalibVideoDataset, VideoTargetFrame
@@ -47,18 +46,14 @@ class AvenueDataset(AnomalibVideoDataset):
             Defaults to ``1``.
         target_frame (VideoTargetFrame): Specifies the target frame in the video clip, used for ground truth retrieval.
             Defaults to ``VideoTargetFrame.LAST``.
-        transform (Transform, optional): Transforms that should be applied to the input images.
-            Defaults to ``None``.
 
     Examples:
         To create an Avenue dataset to train a classification model:
 
         .. code-block:: python
 
-            transform = A.Compose([A.Resize(256, 256), A.pytorch.ToTensorV2()])
             dataset = AvenueDataset(
                 task="classification",
-                transform=transform,
                 split="train",
                 root="./datasets/avenue/",
             )
@@ -74,7 +69,6 @@ class AvenueDataset(AnomalibVideoDataset):
 
             dataset = AvenueDataset(
                 task="segmentation",
-                transform=transform,
                 split="test",
                 root="./datasets/avenue/",
             )
@@ -92,7 +86,6 @@ class AvenueDataset(AnomalibVideoDataset):
 
             dataset = AvenueDataset(
                 task="classification",
-                transform=transform,
                 split="test",
                 root="./datasets/avenue/",
                 clip_length_in_frames=1,
@@ -114,7 +107,6 @@ class AvenueDataset(AnomalibVideoDataset):
         gt_dir: Path | str = "./datasets/avenue/ground_truth_demo",
         clip_length_in_frames: int = 2,
         frames_between_clips: int = 1,
-        transform: Transform | None = None,
         target_frame: VideoTargetFrame = VideoTargetFrame.LAST,
     ) -> None:
         super().__init__(
@@ -122,7 +114,6 @@ class AvenueDataset(AnomalibVideoDataset):
             clip_length_in_frames=clip_length_in_frames,
             frames_between_clips=frames_between_clips,
             target_frame=target_frame,
-            transform=transform,
         )
 
         self.root = root if isinstance(root, Path) else Path(root)
