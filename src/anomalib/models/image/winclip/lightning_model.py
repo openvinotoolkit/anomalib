@@ -79,7 +79,7 @@ class WinClip(AnomalyModule):
         if self.k_shot:
             if self.few_shot_source:
                 logger.info("Loading reference images from %s", self.few_shot_source)
-                reference_dataset = PredictDataset(self.few_shot_source)
+                reference_dataset = PredictDataset(self.few_shot_source, transform=self.pre_processor.test_transform)
                 dataloader = DataLoader(reference_dataset, batch_size=1, shuffle=False)
             else:
                 logger.info("Collecting reference images from training dataset")
@@ -181,12 +181,11 @@ class WinClip(AnomalyModule):
         if image_size is not None:
             logger.warning("Image size is not used in WinCLIP. The input image size is determined by the model.")
 
-        return PreProcessor(
-            transform=Compose([
-                Resize((240, 240), antialias=True, interpolation=InterpolationMode.BICUBIC),
-                Normalize(mean=(0.48145466, 0.4578275, 0.40821073), std=(0.26862954, 0.26130258, 0.27577711)),
-            ]),
-        )
+        transform = Compose([
+            Resize((240, 240), antialias=True, interpolation=InterpolationMode.BICUBIC),
+            Normalize(mean=(0.48145466, 0.4578275, 0.40821073), std=(0.26862954, 0.26130258, 0.27577711)),
+        ])
+        return PreProcessor(val_transform=transform, test_transform=transform)
 
     @staticmethod
     def default_post_processor() -> OneClassPostProcessor:

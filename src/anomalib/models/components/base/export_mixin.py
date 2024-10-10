@@ -22,6 +22,7 @@ from anomalib.data import AnomalibDataModule
 from anomalib.deploy.export import CompressionType, ExportType
 from anomalib.deploy.utils import make_transform_exportable
 from anomalib.metrics import create_metric_collection
+from anomalib.pre_processing import PreProcessor
 from anomalib.utils.exceptions import try_import
 
 if TYPE_CHECKING:
@@ -39,8 +40,8 @@ class ExportMixin:
     """This mixin allows exporting models to torch and ONNX/OpenVINO."""
 
     model: nn.Module
-    transform: Transform
-    configure_transforms: Callable
+    pre_processor: PreProcessor
+    configure_pre_processor: Callable
     device: torch.device
 
     def to_torch(
@@ -440,9 +441,10 @@ class ExportMixin:
         return metadata
 
     @property
-    def exportable_transform(self) -> Transform:
+    def exportable_transform(self) -> Transform | None:
         """Return the exportable transform."""
-        return make_transform_exportable(self.transform)
+        transform = self.pre_processor.test_transform
+        return make_transform_exportable(transform) if transform else None
 
 
 def _write_metadata_to_json(metadata: dict[str, Any], export_root: Path) -> None:

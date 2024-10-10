@@ -16,6 +16,7 @@ from tempfile import mkdtemp
 import cv2
 import pandas as pd
 from pandas import DataFrame, Series
+from torchvision.transforms.v2 import Compose
 
 from anomalib import TaskType
 from anomalib.data.datasets.base.image import AnomalibDataset
@@ -79,7 +80,7 @@ def make_synthetic_dataset(
         Returns:
             Series: DataFrame row with updated information about the augmented image.
         """
-        # read  image
+        # read and transform image
         image = read_image(sample.image_path, as_tensor=True)
         # apply anomalous perturbation
         aug_im, mask = augmenter.augment_batch(image.unsqueeze(0))
@@ -113,11 +114,12 @@ class SyntheticAnomalyDataset(AnomalibDataset):
 
     Args:
         task (str): Task type, either "classification" or "segmentation".
+        transform (A.Compose): Transform object describing the transforms that are applied to the inputs.
         source_samples (DataFrame): Normal samples to which the anomalous augmentations will be applied.
     """
 
-    def __init__(self, task: TaskType, source_samples: DataFrame) -> None:
-        super().__init__(task)
+    def __init__(self, task: TaskType, transform: Compose, source_samples: DataFrame) -> None:
+        super().__init__(task, transform)
 
         self.source_samples = source_samples
 
@@ -144,7 +146,7 @@ class SyntheticAnomalyDataset(AnomalibDataset):
             dataset (AnomalibDataset): Dataset consisting of only normal images that will be converrted to a synthetic
                 anomalous dataset with a 50/50 normal anomalous split.
         """
-        return cls(task=dataset.task, source_samples=dataset.samples)
+        return cls(task=dataset.task, transform=dataset.transform, source_samples=dataset.samples)
 
     def __copy__(self) -> "SyntheticAnomalyDataset":
         """Return a shallow copy of the dataset object and prevents cleanup when original object is deleted."""

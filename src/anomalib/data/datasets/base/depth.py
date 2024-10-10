@@ -9,6 +9,7 @@ from collections.abc import Callable
 import torch
 from PIL import Image
 from torchvision.transforms.functional import to_tensor
+from torchvision.transforms.v2 import Transform
 from torchvision.tv_tensors import Mask
 
 from anomalib import TaskType
@@ -23,10 +24,14 @@ class AnomalibDepthDataset(AnomalibDataset, ABC):
 
     Args:
         task (str): Task type, either 'classification' or 'segmentation'
+        transform (Transform, optional): Transforms that should be applied to the input images.
+            Defaults to ``None``.
     """
 
-    def __init__(self, task: TaskType) -> None:
-        super().__init__(task)
+    def __init__(self, task: TaskType, transform: Transform | None = None) -> None:
+        super().__init__(task, transform)
+
+        self.transform = transform
 
     def __getitem__(self, index: int) -> DepthItem:
         """Return rgb image, depth image and mask.
@@ -47,7 +52,9 @@ class AnomalibDepthDataset(AnomalibDataset, ABC):
         item = {"image_path": image_path, "depth_path": depth_path, "label": label_index}
 
         if self.task == TaskType.CLASSIFICATION:
-            item["image"], item["depth_image"] = image, depth_image
+            item["image"], item["depth_image"] = (
+                self.transform(image, depth_image) if self.transform else (image, depth_image)
+            )
         elif self.task == TaskType.SEGMENTATION:
             # Only Anomalous (1) images have masks in anomaly datasets
             # Therefore, create empty mask for Normal (0) images.
@@ -56,8 +63,11 @@ class AnomalibDepthDataset(AnomalibDataset, ABC):
                 if label_index == LabelName.NORMAL
                 else Mask(to_tensor(Image.open(mask_path)).squeeze())
             )
-            item["image"], item["depth_image"], item["mask"] = image, depth_image, mask
+            item["image"], item["depth_image"], item["mask"] = (
+                self.transform(image, depth_image, mask) if self.transform else (image, depth_image, mask)
+            )
             item["mask_path"] = mask_path
+
         else:
             msg = f"Unknown task type: {self.task}"
             raise ValueError(msg)

@@ -13,6 +13,7 @@ import pandas as pd
 import torch
 from pandas import DataFrame
 from torch.utils.data import Dataset
+from torchvision.transforms.v2 import Transform
 from torchvision.tv_tensors import Mask
 
 from anomalib import TaskType
@@ -57,11 +58,14 @@ class AnomalibDataset(Dataset, ABC):
 
     Args:
         task (str): Task type, either 'classification' or 'segmentation'
+        transform (Transform, optional): Transforms that should be applied to the input images.
+            Defaults to ``None``.
     """
 
-    def __init__(self, task: TaskType | str) -> None:
+    def __init__(self, task: TaskType | str, transform: Transform | None = None) -> None:
         super().__init__()
         self.task = TaskType(task)
+        self.transform = transform
         self._samples: DataFrame | None = None
         self._category: str | None = None
 
@@ -166,7 +170,7 @@ class AnomalibDataset(Dataset, ABC):
         item = {"image_path": image_path, "gt_label": label_index}
 
         if self.task == TaskType.CLASSIFICATION:
-            item["image"] = image
+            item["image"] = self.transform(image) if self.transform else image
         elif self.task == TaskType.SEGMENTATION:
             # Only Anomalous (1) images have masks in anomaly datasets
             # Therefore, create empty mask for Normal (0) images.
@@ -175,7 +179,7 @@ class AnomalibDataset(Dataset, ABC):
                 if label_index == LabelName.NORMAL
                 else read_mask(mask_path, as_tensor=True)
             )
-            item["image"], item["gt_mask"] = image, mask
+            item["image"], item["gt_mask"] = self.transform(image, mask) if self.transform else (image, mask)
 
         else:
             msg = f"Unknown task type: {self.task}"
