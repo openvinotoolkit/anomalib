@@ -1,8 +1,10 @@
 """Image/video generator."""
 
+
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+import textwrap
 from collections.abc import Iterator
 from enum import Enum
 from pathlib import Path
@@ -39,6 +41,7 @@ class ImageResult:
         image: np.ndarray,
         pred_score: float,
         pred_label: str,
+        text_descr: str | None = None,
         anomaly_map: np.ndarray | None = None,
         gt_mask: np.ndarray | None = None,
         pred_mask: np.ndarray | None = None,
@@ -47,6 +50,7 @@ class ImageResult:
         box_labels: np.ndarray | None = None,
         normalize: bool = False,
     ) -> None:
+        self.text_descr = text_descr
         self.anomaly_map = anomaly_map
         self.box_labels = box_labels
         self.gt_boxes = gt_boxes
@@ -93,6 +97,7 @@ class ImageResult:
         repr_str += f", segmentations={self.segmentations}" if self.segmentations is not None else ""
         repr_str += f", normal_boxes={self.normal_boxes}" if self.normal_boxes is not None else ""
         repr_str += f", anomalous_boxes={self.anomalous_boxes}" if self.anomalous_boxes is not None else ""
+        repr_str += f", text_descr={self.text_descr}" if self.text_descr is not None else ""
         repr_str += ")"
         return repr_str
 
@@ -160,6 +165,7 @@ class ImageVisualizer(BaseVisualizer):
 
             image_result = ImageResult(
                 image=image,
+                text_descr=batch["str_output"][i] if "str_output" in batch else None,
                 pred_score=batch["pred_scores"][i].cpu().numpy().item() if "pred_scores" in batch else None,
                 pred_label=batch["pred_labels"][i].cpu().numpy().item() if "pred_labels" in batch else None,
                 anomaly_map=batch["anomaly_maps"][i].cpu().numpy() if "anomaly_maps" in batch else None,
@@ -236,6 +242,15 @@ class ImageVisualizer(BaseVisualizer):
             else:
                 image_classified = add_normal_label(image_result.image, 1 - image_result.pred_score)
             image_grid.add_image(image=image_classified, title="Prediction")
+        elif self.task == TaskType.VISUAL_PROMPTING:
+            description = ""
+            if image_result.text_descr:
+                description = image_result.text_descr
+            if image_result.pred_label:
+                image_classified = add_anomalous_label(image_result.image, image_result.pred_score)
+            else:
+                image_classified = add_normal_label(image_result.image, 1 - image_result.pred_score)
+            image_grid.add_image(image_classified, title=description)
 
         return image_grid.generate()
 
@@ -274,6 +289,22 @@ class ImageVisualizer(BaseVisualizer):
             else:
                 image_classified = add_normal_label(image_result.image, 1 - image_result.pred_score)
             return image_classified
+
+        if self.task == TaskType.VISUAL_PROMPTING:
+            image_grid = _ImageGrid()
+            description = ""
+            if image_result.text_descr:
+                description = image_result.text_descr
+
+            if image_result.pred_label:
+                image_classified = add_anomalous_label(image_result.image, image_result.pred_score)
+            else:
+                image_classified = add_normal_label(image_result.image, 1 - image_result.pred_score)
+
+            image_grid.add_image(image_classified, title=description)
+
+            return image_grid.generate()
+
         msg = f"Unknown task type: {self.task}"
         raise ValueError(msg)
 
@@ -290,7 +321,12 @@ class _ImageGrid:
         self.figure: matplotlib.figure.Figure | None = None
         self.axis: Axes | np.ndarray | None = None
 
-    def add_image(self, image: np.ndarray, title: str | None = None, color_map: str | None = None) -> None:
+    def add_image(
+        self,
+        image: np.ndarray,
+        title: str | None = None,
+        color_map: str | None = None,
+    ) -> None:
         """Add an image to the grid.
 
         Args:
@@ -323,7 +359,15 @@ class _ImageGrid:
             axis.axes.yaxis.set_visible(b=False)
             axis.imshow(image_dict["image"], image_dict["color_map"], vmin=0, vmax=255)
             if image_dict["title"] is not None:
-                axis.title.set_text(image_dict["title"])
+                wrapped_text = textwrap.fill(
+                    image_dict["title"],
+                    width=70 // num_cols,
+                )  # Adjust 'width' based on your subplot size and preference
+
+                axis.set_title(wrapped_text, fontsize=10)
+
+                self.figure.subplots_adjust(top=0.7)
+
         self.figure.canvas.draw()
         # convert canvas to numpy array to prepare for visualization with opencv
         img = np.frombuffer(self.figure.canvas.tostring_rgb(), dtype=np.uint8)
