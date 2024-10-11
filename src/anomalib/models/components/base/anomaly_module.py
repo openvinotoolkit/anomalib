@@ -83,6 +83,15 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
         initialization.
         """
 
+    def on_load_checkpoint(self, checkpoint: dict[str, Any]) -> None:
+        """Called when loading a checkpoint.
+
+        This method is called to ensure that the `TorchModel` is built before
+        loading the state dict.
+        """
+        del checkpoint  # `checkpoint` variable is not used.
+        self.setup(stage="load_checkpoint")
+
     def configure_callbacks(self) -> Sequence[Callback] | Callback:
         """Configure default callbacks for AnomalyModule."""
         return [self.pre_processor]
@@ -216,7 +225,7 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
         The effective input size is the size of the input tensor after the transform has been applied. If the transform
         is not set, or if the transform does not change the shape of the input tensor, this method will return None.
         """
-        transform = self.pre_processor.test_transform
+        transform = self.pre_processor.train_transform
         if transform is None:
             return None
         dummy_input = torch.zeros(1, 3, 1, 1)
