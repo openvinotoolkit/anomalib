@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Any
 import numpy as np
 import torch
 from pandas import DataFrame
+from torchvision.transforms.v2 import Transform
 
 from anomalib import TaskType
 from anomalib.data.datasets.base.video import AnomalibVideoDataset, VideoTargetFrame
@@ -32,6 +33,8 @@ class UCSDpedDataset(AnomalibVideoDataset):
         clip_length_in_frames (int, optional): Number of video frames in each clip.
         frames_between_clips (int, optional): Number of frames between each consecutive video clip.
         target_frame (VideoTargetFrame): Specifies the target frame in the video clip, used for ground truth retrieval.
+        transform (Transform | None, optional): Transforms that should be applied to the input images.
+            Defaults to ``None``.
     """
 
     def __init__(
@@ -43,12 +46,14 @@ class UCSDpedDataset(AnomalibVideoDataset):
         clip_length_in_frames: int = 2,
         frames_between_clips: int = 10,
         target_frame: VideoTargetFrame = VideoTargetFrame.LAST,
+        transform: Transform | None = None,
     ) -> None:
         super().__init__(
             task=task,
             clip_length_in_frames=clip_length_in_frames,
             frames_between_clips=frames_between_clips,
             target_frame=target_frame,
+            transform=transform,
         )
 
         self.root_category = Path(root) / category

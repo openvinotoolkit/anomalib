@@ -29,6 +29,7 @@ from collections.abc import Sequence
 from pathlib import Path
 
 from pandas import DataFrame
+from torchvision.transforms.v2 import Transform
 
 from anomalib import TaskType
 from anomalib.data.datasets.base import AnomalibDataset
@@ -65,6 +66,8 @@ class MVTecDataset(AnomalibDataset):
         category (str): Sub-category of the dataset, e.g. 'bottle'
             Defaults to ``bottle``.
         split (str | Split | None): Split of the dataset, usually Split.TRAIN or Split.TEST
+            Defaults to ``None``.
+        transform (Transform | None, optional): Transforms that should be applied to the input images.
             Defaults to ``None``.
 
     Examples:
@@ -105,8 +108,9 @@ class MVTecDataset(AnomalibDataset):
         root: Path | str = "./datasets/MVTec",
         category: str = "bottle",
         split: str | Split | None = None,
+        transform: Transform | None = None,
     ) -> None:
-        super().__init__(task)
+        super().__init__(task, transform)
 
         self.root_category = Path(root) / Path(category)
         self.category = category

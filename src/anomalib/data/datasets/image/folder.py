@@ -10,6 +10,7 @@ from collections.abc import Sequence
 from pathlib import Path
 
 from pandas import DataFrame
+from torchvision.transforms.v2 import Transform
 
 from anomalib import TaskType
 from anomalib.data.datasets.base.image import AnomalibDataset
@@ -39,6 +40,8 @@ class FolderDataset(AnomalibDataset):
             Defaults to ``None``.
         split (str | Split | None): Fixed subset split that follows from folder structure on file system.
             Choose from [Split.FULL, Split.TRAIN, Split.TEST]
+            Defaults to ``None``.
+        transform (Transform | None, optional): Transforms that should be applied to the input images.
             Defaults to ``None``.
         extensions (tuple[str, ...] | None, optional): Type of the image extensions to read from the directory.
             Defaults to ``None``.
@@ -72,9 +75,10 @@ class FolderDataset(AnomalibDataset):
         normal_test_dir: str | Path | Sequence[str | Path] | None = None,
         mask_dir: str | Path | Sequence[str | Path] | None = None,
         split: str | Split | None = None,
+        transform: Transform | None = None,
         extensions: tuple[str, ...] | None = None,
     ) -> None:
-        super().__init__(task)
+        super().__init__(task, transform)
 
         self._name = name
         self.split = split

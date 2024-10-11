@@ -13,6 +13,7 @@ from pathlib import Path
 
 import pandas as pd
 from pandas.core.frame import DataFrame
+from torchvision.transforms.v2 import Transform
 
 from anomalib import TaskType
 from anomalib.data.datasets.base.image import AnomalibDataset
@@ -27,6 +28,7 @@ class BTechDataset(AnomalibDataset):
     Args:
         root: Path to the BTech dataset
         category: Name of the BTech category.
+        transform: Transform to apply to the input images.
         split: 'train', 'val' or 'test'
         task: ``classification``, ``detection`` or ``segmentation``
         create_validation_set: Create a validation subset in addition to the train and test subsets
@@ -63,10 +65,11 @@ class BTechDataset(AnomalibDataset):
         self,
         root: str | Path,
         category: str,
+        transform: Transform | None = None,
         split: str | Split | None = None,
         task: TaskType | str = TaskType.SEGMENTATION,
     ) -> None:
-        super().__init__(task)
+        super().__init__(task, transform)
 
         self.root_category = Path(root) / category
         self.split = split

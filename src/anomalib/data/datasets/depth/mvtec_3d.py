@@ -23,6 +23,7 @@ from collections.abc import Sequence
 from pathlib import Path
 
 from pandas import DataFrame
+from torchvision.transforms.v2 import Transform
 
 from anomalib import TaskType
 from anomalib.data.datasets.base.depth import AnomalibDepthDataset
@@ -44,6 +45,8 @@ class MVTec3DDataset(AnomalibDepthDataset):
             Defaults to ``"bagel"``.
         split (str | Split | None): Split of the dataset, usually Split.TRAIN or Split.TEST
             Defaults to ``None``.
+        transform (Transform | None, optional): Transforms that should be applied to the input images.
+            Defaults to ``None``.
     """
 
     def __init__(
@@ -52,8 +55,9 @@ class MVTec3DDataset(AnomalibDepthDataset):
         root: Path | str = "./datasets/MVTec3D",
         category: str = "bagel",
         split: str | Split | None = None,
+        transform: Transform | None = None,
     ) -> None:
-        super().__init__(task)
+        super().__init__(task, transform)
 
         self.root_category = Path(root) / Path(category)
         self.split = split

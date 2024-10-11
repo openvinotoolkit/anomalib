@@ -9,6 +9,7 @@ This script creates a custom dataset from a folder.
 from pathlib import Path
 
 from pandas import DataFrame, isna
+from torchvision.transforms.v2 import Transform
 
 from anomalib import TaskType
 from anomalib.data.datasets.base.depth import AnomalibDepthDataset
@@ -46,6 +47,8 @@ class Folder3DDataset(AnomalibDepthDataset):
         split (str | Split | None): Fixed subset split that follows from folder structure on file system.
             Choose from [Split.FULL, Split.TRAIN, Split.TEST]
             Defaults to ``None``.
+        transform (Transform | None, optional): Transforms that should be applied to the input images.
+            Defaults to ``None``.
         extensions (tuple[str, ...] | None, optional): Type of the image extensions to read from the directory.
             Defaults to ``None``.
 
@@ -67,9 +70,10 @@ class Folder3DDataset(AnomalibDepthDataset):
         abnormal_depth_dir: str | Path | None = None,
         normal_test_depth_dir: str | Path | None = None,
         split: str | Split | None = None,
+        transform: Transform | None = None,
         extensions: tuple[str, ...] | None = None,
     ) -> None:
-        super().__init__(task)
+        super().__init__(task, transform)
 
         self._name = name
         self.split = split

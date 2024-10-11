@@ -21,6 +21,8 @@ Reference:
 
 from pathlib import Path
 
+from torchvision.transforms.v2 import Transform
+
 from anomalib import TaskType
 from anomalib.data.datasets import AnomalibDataset
 from anomalib.data.datasets.image.mvtec import make_mvtec_dataset
@@ -51,6 +53,8 @@ class VisaDataset(AnomalibDataset):
         root (str | Path): Path to the root of the dataset
         category (str): Sub-category of the dataset, e.g. 'candle'
         split (str | Split | None): Split of the dataset, usually Split.TRAIN or Split.TEST
+            Defaults to ``None``.
+        transform (Transform | None, optional): Transforms that should be applied to the input images.
             Defaults to ``None``.
 
     Examples:
@@ -100,8 +104,9 @@ class VisaDataset(AnomalibDataset):
         root: str | Path,
         category: str,
         split: str | Split | None = None,
+        transform: Transform | None = None,
     ) -> None:
-        super().__init__(task)
+        super().__init__(task, transform)
 
         self.root_category = Path(root) / category
         self.split = split

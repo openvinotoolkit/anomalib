@@ -23,6 +23,7 @@ import numpy as np
 from cv2 import imread
 from pandas import DataFrame
 from sklearn.model_selection import train_test_split
+from torchvision.transforms.v2 import Transform
 
 from anomalib import TaskType
 from anomalib.data.datasets import AnomalibDataset
@@ -39,6 +40,7 @@ class KolektorDataset(AnomalibDataset):
             Defaults to ``./datasets/kolektor``.
         split (str | Split | None): Split of the dataset, usually Split.TRAIN or Split.TEST
             Defaults to ``None``.
+        transform (Transform | None, optional): Transforms that should be applied to the input images.
     """
 
     def __init__(
@@ -46,8 +48,9 @@ class KolektorDataset(AnomalibDataset):
         task: TaskType,
         root: Path | str = "./datasets/kolektor",
         split: str | Split | None = None,
+        transform: Transform | None = None,
     ) -> None:
-        super().__init__(task)
+        super().__init__(task, transform)
 
         self.root = root
         self.split = split
