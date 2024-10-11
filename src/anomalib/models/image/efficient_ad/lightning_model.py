@@ -255,9 +255,12 @@ class EfficientAd(AnomalyModule):
         if self.trainer.datamodule.train_batch_size != 1:
             msg = "train_batch_size for EfficientAd should be 1."
             raise ValueError(msg)
-        if self._transform and any(isinstance(transform, Normalize) for transform in self._transform.transforms):
-            msg = "Transforms for EfficientAd should not contain Normalize."
-            raise ValueError(msg)
+
+        if self.pre_processor.train_transform:
+            transforms = self.pre_processor.train_transform.transforms
+            if transforms and any(isinstance(transform, Normalize) for transform in transforms):
+                msg = "Transforms for EfficientAd should not contain Normalize."
+                raise ValueError(msg)
 
         sample = next(iter(self.trainer.train_dataloader))
         image_size = sample.image.shape[-2:]
