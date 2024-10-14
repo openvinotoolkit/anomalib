@@ -21,9 +21,6 @@ body:
       description: What are the main goals of this epic?
     validations:
       required: true
-  - type: markdown
-    attributes:
-      value: "## Tasks Breakdown"
   - type: textarea
     id: tasks
     attributes:
