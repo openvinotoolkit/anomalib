@@ -36,7 +36,7 @@ body:
         - [ ] Task 4: 
         - [ ] Task 5: 
     validations:
-      required: false
+      required: true
   - type: markdown
     attributes:
       value: "Remember to create separate issues for each task and link them to this epic."
