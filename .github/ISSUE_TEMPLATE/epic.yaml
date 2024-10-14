@@ -21,13 +21,6 @@ body:
       description: What are the main goals of this epic?
     validations:
       required: true
-  - type: textarea
-    id: acceptance-criteria
-    attributes:
-      label: Acceptance Criteria
-      description: List the high-level acceptance criteria for this epic
-    validations:
-      required: true
   - type: markdown
     attributes:
       value: "## Tasks Breakdown"
