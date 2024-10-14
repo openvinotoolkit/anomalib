@@ -1,0 +1,30 @@
+name: Epic
+description: A large body of work that can be broken down into smaller stories
+title: "[EPIC] "
+labels: ["epic"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: "## Epic Description"
+  - type: textarea
+    id: description
+    attributes:
+      label: Describe the epic
+      description: Provide a clear and concise description of what this epic encompasses
+    validations:
+      required: true
+  - type: textarea
+    id: goals
+    attributes:
+      label: Goals
+      description: What are the main goals of this epic?
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance Criteria
+      description: List the high-level acceptance criteria for this epic
+    validations:
+      required: true
