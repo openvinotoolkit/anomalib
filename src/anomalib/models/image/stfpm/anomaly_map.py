@@ -15,8 +15,8 @@ class AnomalyMapGenerator(nn.Module):
         super().__init__()
         self.distance = torch.nn.PairwiseDistance(p=2, keepdim=True)
 
+    @staticmethod
     def compute_layer_map(
-        self,
         teacher_features: torch.Tensor,
         student_features: torch.Tensor,
         image_size: tuple[int, int] | torch.Size,

@@ -48,7 +48,8 @@ class AnomalyMapGenerator(nn.Module):
         distances = distances.reshape(batch, 1, height, width)
         return distances.clamp(0).sqrt()
 
-    def up_sample(self, distance: torch.Tensor, image_size: tuple[int, int] | torch.Size) -> torch.Tensor:
+    @staticmethod
+    def up_sample(distance: torch.Tensor, image_size: tuple[int, int] | torch.Size) -> torch.Tensor:
         """Up sample anomaly score to match the input image size.
 
         Args:

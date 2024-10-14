@@ -10,15 +10,22 @@ import pytest
 from anomalib.models.components.base import AnomalyModule
 
 
+@pytest.fixture(scope="class")
+def model_config_folder_path() -> str:
+    """Fixture that returns model config folder path."""
+    return "configs/model"
+
+
 class TestAnomalyModule:
     """Test AnomalyModule."""
 
-    @pytest.fixture()
-    def fxt_model_config_folder_path(self) -> str:
-        """Fixture that returns model config folder path."""
-        return "configs/model"
+    @pytest.fixture(autouse=True)
+    def setup(self, model_config_folder_path: str) -> None:
+        """Setup test AnomalyModule."""
+        self.model_config_folder_path = model_config_folder_path
 
-    def test_from_config_with_wrong_config_path(self) -> None:
+    @staticmethod
+    def test_from_config_with_wrong_config_path() -> None:
         """Test AnomalyModule.from_config with wrong model name."""
         with pytest.raises(FileNotFoundError):
             AnomalyModule.from_config(config_path="wrong_configs.yaml")
@@ -45,9 +52,9 @@ class TestAnomalyModule:
             "uflow",
         ],
     )
-    def test_from_config(self, model_name: str, fxt_model_config_folder_path: str) -> None:
+    def test_from_config(self, model_name: str) -> None:
         """Test AnomalyModule.from_config."""
-        config_path = Path(fxt_model_config_folder_path) / f"{model_name}.yaml"
+        config_path = Path(self.model_config_folder_path) / f"{model_name}.yaml"
         model = AnomalyModule.from_config(config_path=config_path)
         assert model is not None
         assert isinstance(model, AnomalyModule)

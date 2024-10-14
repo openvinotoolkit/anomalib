@@ -14,7 +14,8 @@ from .generator import BenchmarkJobGenerator
 class Benchmark(Pipeline):
     """Benchmarking pipeline."""
 
-    def _setup_runners(self, args: dict) -> list[Runner]:
+    @staticmethod
+    def _setup_runners(args: dict) -> list[Runner]:
         """Setup the runners for the pipeline."""
         accelerators = args["accelerator"] if isinstance(args["accelerator"], list) else [args["accelerator"]]
         runners: list[Runner] = []

@@ -8,9 +8,6 @@ import multiprocessing
 from concurrent.futures import ProcessPoolExecutor
 from typing import TYPE_CHECKING
 
-from rich import print
-from rich.progress import Progress, TaskID
-
 from anomalib.pipelines.components.base import JobGenerator, Runner
 from anomalib.pipelines.types import GATHERED_RESULTS, PREV_STAGE_RESULT
 
@@ -51,16 +48,12 @@ class ParallelRunner(Runner):
         super().__init__(generator)
         self.n_jobs = n_jobs
         self.processes: dict[int, Future | None] = {}
-        self.progress = Progress()
-        self.task_id: TaskID
         self.results: list[dict] = []
         self.failures = False
 
     def run(self, args: dict, prev_stage_results: PREV_STAGE_RESULT = None) -> GATHERED_RESULTS:
         """Run the job in parallel."""
-        self.task_id = self.progress.add_task(self.generator.job_class.name, total=None)
-        self.progress.start()
-        self.processes = {i: None for i in range(self.n_jobs)}
+        self.processes = dict.fromkeys(range(self.n_jobs))
 
         with ProcessPoolExecutor(max_workers=self.n_jobs, mp_context=multiprocessing.get_context("spawn")) as executor:
             for job in self.generator(args, prev_stage_results):
@@ -71,12 +64,10 @@ class ParallelRunner(Runner):
                 self.processes[index] = executor.submit(job.run, task_id=index)
             self._await_cleanup_processes(blocking=True)
 
-        self.progress.update(self.task_id, completed=1, total=1)
-        self.progress.stop()
         gathered_result = self.generator.job_class.collect(self.results)
         self.generator.job_class.save(gathered_result)
         if self.failures:
-            msg = f"[bold red]There were some errors with job {self.generator.job_class.name}[/bold red]"
+            msg = f"There were some errors with job {self.generator.job_class.name}"
             print(msg)
             logger.error(msg)
             raise ParallelExecutionError(msg)
@@ -97,4 +88,3 @@ class ParallelRunner(Runner):
                     logger.exception("An exception occurred while getting the process result.")
                     self.failures = True
                 self.processes[index] = None
-                self.progress.update(self.task_id, advance=1)

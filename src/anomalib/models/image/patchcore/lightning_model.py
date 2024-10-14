@@ -57,7 +57,8 @@ class Patchcore(MemoryBankMixin, AnomalyModule):
         self.coreset_sampling_ratio = coreset_sampling_ratio
         self.embeddings: list[torch.Tensor] = []
 
-    def configure_optimizers(self) -> None:
+    @staticmethod
+    def configure_optimizers() -> None:
         """Configure optimizers.
 
         Returns:
@@ -126,7 +127,8 @@ class Patchcore(MemoryBankMixin, AnomalyModule):
         """
         return LearningType.ONE_CLASS
 
-    def configure_transforms(self, image_size: tuple[int, int] | None = None) -> Transform:
+    @staticmethod
+    def configure_transforms(image_size: tuple[int, int] | None = None) -> Transform:
         """Default transform for Padim."""
         image_size = image_size or (256, 256)
         # scale center crop size proportional to image size

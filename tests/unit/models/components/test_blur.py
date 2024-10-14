@@ -1,5 +1,8 @@
 """Test if our implementation produces same result as kornia."""
 
+# Copyright (C) 2022-2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
 import pytest
 import torch
 from kornia.filters import GaussianBlur2d as korniaGaussianBlur2d
