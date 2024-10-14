@@ -1,12 +1,12 @@
-name: Epic
+name: 🎯 Epic
 description: A large body of work that can be broken down into smaller stories
-title: "[EPIC] "
+title: "🎯 [EPIC] "
 labels: ["epic"]
 assignees: []
 body:
   - type: markdown
     attributes:
-      value: "## Epic Description"
+      value: "## 🎯 Epic Description"
   - type: textarea
     id: description
     attributes:
@@ -22,9 +22,18 @@ body:
     validations:
       required: true
   - type: textarea
-    id: acceptance-criteria
+    id: tasks
     attributes:
-      label: Acceptance Criteria
-      description: List the high-level acceptance criteria for this epic
+      label: Tasks
+      description: Break down the epic into smaller tasks. Add or remove tasks as needed.
+      value: |
+        - [ ] Task 1: 
+        - [ ] Task 2: 
+        - [ ] Task 3: 
+        - [ ] Task 4: 
+        - [ ] Task 5: 
     validations:
       required: true
+  - type: markdown
+    attributes:
+      value: "Remember to create separate issues for each task and link them to this epic."
