@@ -1,0 +1,69 @@
+name: 📖 User Story
+description: A small, self-contained unit of development work describing a feature from an end-user perspective
+title: "📖 [STORY] "
+labels: ["user-story"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: "## 📖 User Story Description"
+  - type: textarea
+    id: user-story
+    attributes:
+      label: User Story
+      description: As a [type of user], I want [an action] so that [a benefit/a value]
+      placeholder: As a computer vision researcher, I want to implement a new anomaly detection algorithm so that I can improve detection accuracy for industrial defect scenarios.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance Criteria
+      description: List the acceptance criteria for this user story
+      placeholder: |
+        1. The new algorithm is implemented and integrated into the anomalib framework
+        2. Unit tests are written and pass for the new implementation
+        3. Performance benchmarks show improvement over existing methods on specified datasets
+        4. Documentation is updated to include usage instructions and theory behind the new algorithm
+        5. An example notebook is provided demonstrating the algorithm's application
+    validations:
+      required: true
+  - type: input
+    id: story-points
+    attributes:
+      label: Story Points
+      description: Estimate the complexity of this story (e.g., 1, 2, 3, 5, 8, 13)
+    validations:
+      required: true
+  - type: input
+    id: epic-link
+    attributes:
+      label: Related Epic
+      description: If this story is part of an epic, provide the epic's issue number (e.g., #123)
+    validations:
+      required: false
+  - type: dropdown
+    id: model-category
+    attributes:
+      label: Category
+      description: Select the category this story primarily relates to
+      options:
+        - Data
+        - Anomaly Detection Algorithms
+        - Pre-processing
+        - Post-processing
+        - Evaluation Metrics
+        - Visualization
+        - Performance Optimization
+        - API/Interface
+        - Documentation
+        - Others
+    validations:
+      required: true
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: Add any other context, background, or relevant research papers about the user story here
+    validations:
+      required: false
