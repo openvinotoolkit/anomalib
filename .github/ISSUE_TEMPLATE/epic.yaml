@@ -1,0 +1,39 @@
+name: 🎯 Epic
+description: A large body of work that can be broken down into smaller stories
+title: "🎯 [EPIC] "
+labels: ["epic"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: "## 🎯 Epic Description"
+  - type: textarea
+    id: description
+    attributes:
+      label: Describe the epic
+      description: Provide a clear and concise description of what this epic encompasses
+    validations:
+      required: true
+  - type: textarea
+    id: goals
+    attributes:
+      label: Goals
+      description: What are the main goals of this epic?
+    validations:
+      required: true
+  - type: textarea
+    id: tasks
+    attributes:
+      label: Tasks
+      description: Break down the epic into smaller tasks. Add or remove tasks as needed.
+      value: |
+        - [ ] Task 1:
+        - [ ] Task 2:
+        - [ ] Task 3:
+        - [ ] Task 4:
+        - [ ] Task 5:
+    validations:
+      required: true
+  - type: markdown
+    attributes:
+      value: "Remember to create separate issues for each task and link them to this epic."
