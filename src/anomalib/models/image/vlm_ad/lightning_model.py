@@ -29,10 +29,10 @@ class VlmAd(AnomalyModule):
         super().__init__()
         self.k_shot = k_shot
         model = VLMModel(model)
-        self.vlm_backend: Backend = self._setup_vlm(model, api_key)
+        self.vlm_backend: Backend = self._setup_vlm_backend(model, api_key)
 
     @staticmethod
-    def _setup_vlm(model: VLMModel, api_key: str | None) -> Backend:
+    def _setup_vlm_backend(model: VLMModel, api_key: str | None) -> Backend:
         if model == VLMModel.LLAMA_OLLAMA:
             return Ollama(model_name=model.value)
         if model == VLMModel.GPT_4O_MINI:
@@ -44,7 +44,7 @@ class VlmAd(AnomalyModule):
         raise ValueError(msg)
 
     def _setup(self) -> None:
-        if self.k_shot > 0 and self.vlm_backend.reference_image_count != self.k_shot:
+        if self.k_shot > 0 and self.vlm_backend.num_reference_images != self.k_shot:
             logger.info("Collecting reference images from training dataset.")
             dataloader = self.trainer.datamodule.train_dataloader()
             self.collect_reference_images(dataloader)
@@ -54,7 +54,7 @@ class VlmAd(AnomalyModule):
         for batch in dataloader:
             for img_path in batch["image_path"]:
                 self.vlm_backend.add_reference_images(img_path)
-                if self.vlm_backend.reference_image_count == self.k_shot:
+                if self.vlm_backend.num_reference_images == self.k_shot:
                     return
 
     @property
@@ -110,18 +110,10 @@ class VlmAd(AnomalyModule):
         """Skip export to torch."""
         return self._export_not_supported_message()
 
-    def to_onnx(  # type: ignore[override]
-        self,
-        *_,
-        **__,
-    ) -> None:
+    def to_onnx(self, *_, **__) -> None:  # type: ignore[override]
         """Skip export to onnx."""
         return self._export_not_supported_message()
 
-    def to_openvino(  # type: ignore[override]
-        self,
-        *_,
-        **__,
-    ) -> None:
+    def to_openvino(self, *_, **__) -> None:  # type: ignore[override]
         """Skip export to openvino."""
         return self._export_not_supported_message()

@@ -6,15 +6,15 @@
 import logging
 from pathlib import Path
 
+from lightning_utilities.core.imports import package_available
 from PIL import Image
 from transformers.modeling_utils import PreTrainedModel
 
 from anomalib.models.image.vlm_ad.utils import Prompt
-from anomalib.utils.exceptions import try_import
 
 from .base import Backend
 
-if try_import("transformers"):
+if package_available("transformers"):
     import transformers
     from transformers.modeling_utils import PreTrainedModel
     from transformers.processing_utils import ProcessorMixin
@@ -31,11 +31,8 @@ class Huggingface(Backend):
     def __init__(
         self,
         model_name: str,
-        api_key: str | None = None,
     ) -> None:
         """Initialize the Huggingface backend."""
-        if api_key:
-            logger.warning("API key is not required for Huggingface backend.")
         self.model_name: str = model_name
         self._ref_images: list[str] = []
         self._processor: ProcessorMixin | None = None
@@ -76,7 +73,7 @@ class Huggingface(Backend):
         self._ref_images.append(Image.open(image))
 
     @property
-    def reference_image_count(self) -> int:
+    def num_reference_images(self) -> int:
         """Get the number of reference images."""
         return len(self._ref_images)
 

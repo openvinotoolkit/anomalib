@@ -26,5 +26,5 @@ class Backend(ABC):
 
     @property
     @abstractmethod
-    def reference_image_count(self) -> int:
+    def num_reference_images(self) -> int:
         """Get the number of reference images."""

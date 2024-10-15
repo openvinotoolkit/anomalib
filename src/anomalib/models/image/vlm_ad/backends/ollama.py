@@ -3,6 +3,7 @@
 Assumes that the Ollama service is running in the background.
 See: https://github.com/ollama/ollama
 Ensure that ollama is running. On linux: `ollama serve`
+On Mac and Windows ensure that the ollama service is running by launching from the application list.
 """
 
 # Copyright (C) 2024 Intel Corporation
@@ -11,12 +12,13 @@ Ensure that ollama is running. On linux: `ollama serve`
 import logging
 from pathlib import Path
 
+from lightning_utilities.core.imports import package_available
+
 from anomalib.models.image.vlm_ad.utils import Prompt
-from anomalib.utils.exceptions import try_import
 
 from .base import Backend
 
-if try_import("ollama"):
+if package_available("ollama"):
     from ollama import chat
     from ollama._client import _encode_image
 else:
@@ -38,7 +40,7 @@ class Ollama(Backend):
         self._ref_images_encoded.append(_encode_image(image))
 
     @property
-    def reference_image_count(self) -> int:
+    def num_reference_images(self) -> int:
         """Get the number of reference images."""
         return len(self._ref_images_encoded)
 

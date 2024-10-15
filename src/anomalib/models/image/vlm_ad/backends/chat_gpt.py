@@ -10,13 +10,13 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from dotenv import load_dotenv
+from lightning_utilities.core.imports import package_available
 
 from anomalib.models.image.vlm_ad.utils import Prompt
-from anomalib.utils.exceptions import try_import
 
 from .base import Backend
 
-if try_import("openai"):
+if package_available("openai"):
     from openai import OpenAI
 else:
     OpenAI = None
@@ -52,7 +52,7 @@ class ChatGPT(Backend):
         self._ref_images_encoded.append(self._encode_image_to_url(image))
 
     @property
-    def reference_image_count(self) -> int:
+    def num_reference_images(self) -> int:
         """Get the number of reference images."""
         return len(self._ref_images_encoded)
 
