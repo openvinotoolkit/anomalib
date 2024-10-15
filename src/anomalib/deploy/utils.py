@@ -8,11 +8,13 @@ from torchvision.transforms.v2 import CenterCrop, Compose, Resize, Transform
 from anomalib.data.transforms import ExportableCenterCrop
 
 
-def make_transform_exportable(transform: Transform) -> Transform:
+def get_exportable_transform(transform: Transform | None) -> Transform | None:
     """Get exportable transform.
 
     Some transforms are not supported by ONNX/OpenVINO, so we need to replace them with exportable versions.
     """
+    if transform is None:
+        return None
     transform = disable_antialiasing(transform)
     return convert_centercrop(transform)
 

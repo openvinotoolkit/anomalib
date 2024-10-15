@@ -8,6 +8,7 @@ from torch import nn
 from torchvision.transforms.v2 import Transform
 
 from anomalib.data.dataclasses.torch.base import Batch
+from anomalib.deploy.utils import get_exportable_transform
 
 
 class PreProcessor(nn.Module, Callback):
@@ -31,9 +32,9 @@ class PreProcessor(nn.Module, Callback):
             )
             raise ValueError(msg)
 
-        self.train_transform = train_transform or transform
-        self.val_transform = val_transform or transform
-        self.test_transform = test_transform or transform
+        self.train_transform = get_exportable_transform(train_transform or transform)
+        self.val_transform = get_exportable_transform(val_transform or transform)
+        self.test_transform = get_exportable_transform(test_transform or transform)
 
     def on_train_batch_start(
         self,

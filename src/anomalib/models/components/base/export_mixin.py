@@ -15,12 +15,10 @@ import torch
 from lightning.pytorch import LightningModule
 from torch import nn
 from torchmetrics import Metric
-from torchvision.transforms.v2 import Transform
 
 from anomalib import TaskType
 from anomalib.data import AnomalibDataModule
 from anomalib.deploy.export import CompressionType, ExportType
-from anomalib.deploy.utils import make_transform_exportable
 from anomalib.metrics import create_metric_collection
 from anomalib.pre_processing import PreProcessor
 from anomalib.utils.exceptions import try_import
@@ -439,12 +437,6 @@ class ExportMixin:
                 metadata[key] = value.numpy().tolist()
 
         return metadata
-
-    @property
-    def exportable_transform(self) -> Transform | None:
-        """Return the exportable transform."""
-        transform = self.pre_processor.test_transform
-        return make_transform_exportable(transform) if transform else None
 
 
 def _write_metadata_to_json(metadata: dict[str, Any], export_root: Path) -> None:
