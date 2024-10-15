@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import torch
+from lightning_utilities.core.imports import package_available
 from torch import nn
 from torchmetrics import Metric
 from torchvision.transforms.v2 import Transform
@@ -20,7 +21,6 @@ from anomalib import TaskType
 from anomalib.data import AnomalibDataModule
 from anomalib.deploy.export import CompressionType, ExportType, InferenceModel
 from anomalib.metrics import create_metric_collection
-from anomalib.utils.exceptions import try_import
 
 if TYPE_CHECKING:
     from importlib.util import find_spec
@@ -245,7 +245,7 @@ class ExportMixin:
             ...     task="segmentation",
             ... )
         """
-        if not try_import("openvino"):
+        if not package_available("openvino"):
             logger.exception("Could not find OpenVINO. Please check OpenVINO installation.")
             raise ModuleNotFoundError
 
@@ -294,7 +294,7 @@ class ExportMixin:
         Returns:
             model (CompiledModel): Model in the OpenVINO format compressed with NNCF quantization.
         """
-        if not try_import("nncf"):
+        if not package_available("nncf"):
             logger.exception("Could not find NCCF. Please check NNCF installation.")
             raise ModuleNotFoundError
 
