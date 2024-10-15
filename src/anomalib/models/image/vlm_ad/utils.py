@@ -15,7 +15,7 @@ class Prompt:
     predict: str
 
 
-class VLMModel(Enum):
+class ModelName(Enum):
     """List of supported models."""
 
     LLAMA_OLLAMA = "llava"

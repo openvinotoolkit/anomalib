@@ -12,7 +12,7 @@ from anomalib import LearningType
 from anomalib.models import AnomalyModule
 
 from .backends import Backend, ChatGPT, Huggingface, Ollama
-from .utils import Prompt, VLMModel
+from .utils import ModelName, Prompt
 
 logger = logging.getLogger(__name__)
 
@@ -22,22 +22,22 @@ class VlmAd(AnomalyModule):
 
     def __init__(
         self,
-        model: VLMModel | str = VLMModel.LLAMA_OLLAMA,
+        model: ModelName | str = ModelName.LLAMA_OLLAMA,
         api_key: str | None = None,
         k_shot: int = 0,
     ) -> None:
         super().__init__()
         self.k_shot = k_shot
-        model = VLMModel(model)
+        model = ModelName(model)
         self.vlm_backend: Backend = self._setup_vlm_backend(model, api_key)
 
     @staticmethod
-    def _setup_vlm_backend(model: VLMModel, api_key: str | None) -> Backend:
-        if model == VLMModel.LLAMA_OLLAMA:
+    def _setup_vlm_backend(model: ModelName, api_key: str | None) -> Backend:
+        if model == ModelName.LLAMA_OLLAMA:
             return Ollama(model_name=model.value)
-        if model == VLMModel.GPT_4O_MINI:
+        if model == ModelName.GPT_4O_MINI:
             return ChatGPT(api_key=api_key, model_name=model.value)
-        if model in {VLMModel.VICUNA_7B_HF, VLMModel.VICUNA_13B_HF, VLMModel.MISTRAL_7B_HF}:
+        if model in {ModelName.VICUNA_7B_HF, ModelName.VICUNA_13B_HF, ModelName.MISTRAL_7B_HF}:
             return Huggingface(model_name=model.value)
 
         msg = f"Unsupported VLM model: {model}"
