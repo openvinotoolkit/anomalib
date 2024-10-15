@@ -102,11 +102,7 @@ class VlmAd(AnomalyModule):
     def _export_not_supported_message() -> None:
         logging.warning("Exporting the model is not supported for VLM-AD model. Skipping...")
 
-    def to_torch(  # type: ignore[override]
-        self,
-        *_,
-        **__,
-    ) -> None:
+    def to_torch(self, *_, **__) -> None:  # type: ignore[override]
         """Skip export to torch."""
         return self._export_not_supported_message()
 
