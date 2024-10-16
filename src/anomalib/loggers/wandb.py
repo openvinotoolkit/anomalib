@@ -9,13 +9,12 @@ import numpy as np
 from lightning.fabric.utilities.types import _PATH
 from lightning.pytorch.loggers.wandb import WandbLogger
 from lightning.pytorch.utilities import rank_zero_only
+from lightning_utilities.core.imports import package_available
 from matplotlib.figure import Figure
-
-from anomalib.utils.exceptions import try_import
 
 from .base import ImageLoggerBase
 
-if try_import("wandb"):
+if package_available("wandb"):
     import wandb
 
 if TYPE_CHECKING:
