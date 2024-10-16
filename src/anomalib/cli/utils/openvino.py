@@ -6,13 +6,12 @@
 import logging
 
 from jsonargparse import ArgumentParser
-
-from anomalib.utils.exceptions import try_import
+from lightning_utilities.core.imports import package_available
 
 logger = logging.getLogger(__name__)
 
 
-if try_import("openvino"):
+if package_available("openvino"):
     from openvino.tools.ovc.cli_parser import get_common_cli_parser
 else:
     get_common_cli_parser = None
