@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING, Any
 import numpy as np
 import torch
 from lightning.pytorch import LightningModule
+from lightning_utilities.core.imports import package_available
 from torch import nn
 from torchmetrics import Metric
 from torchvision.transforms.v2 import Transform
@@ -22,7 +23,6 @@ from anomalib.data import AnomalibDataModule
 from anomalib.deploy.export import CompressionType, ExportType
 from anomalib.deploy.utils import make_transform_exportable
 from anomalib.metrics import create_metric_collection
-from anomalib.utils.exceptions import try_import
 
 if TYPE_CHECKING:
     from importlib.util import find_spec
@@ -139,7 +139,9 @@ class ExportMixin:
         input_shape = torch.zeros((1, 3, *input_size)) if input_size else torch.zeros((1, 3, 1, 1))
         input_shape = input_shape.to(self.device)
         dynamic_axes = (
-            None if input_size else {"input": {0: "batch_size", 2: "height", 3: "weight"}, "output": {0: "batch_size"}}
+            {"input": {0: "batch_size"}, "output": {0: "batch_size"}}
+            if input_size
+            else {"input": {0: "batch_size", 2: "height", 3: "weight"}, "output": {0: "batch_size"}}
         )
         onnx_path = export_root / "model.onnx"
         # apply pass through the model to get the output names
@@ -241,7 +243,7 @@ class ExportMixin:
             ...     task="segmentation",
             ... )
         """
-        if not try_import("openvino"):
+        if not package_available("openvino"):
             logger.exception("Could not find OpenVINO. Please check OpenVINO installation.")
             raise ModuleNotFoundError
 
@@ -289,7 +291,7 @@ class ExportMixin:
         Returns:
             model (CompiledModel): Model in the OpenVINO format compressed with NNCF quantization.
         """
-        if not try_import("nncf"):
+        if not package_available("nncf"):
             logger.exception("Could not find NCCF. Please check NNCF installation.")
             raise ModuleNotFoundError
 
