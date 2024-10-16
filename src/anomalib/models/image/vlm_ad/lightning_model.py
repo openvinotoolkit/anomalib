@@ -32,15 +32,15 @@ class VlmAd(AnomalyModule):
         self.vlm_backend: Backend = self._setup_vlm_backend(model, api_key)
 
     @staticmethod
-    def _setup_vlm_backend(model: ModelName, api_key: str | None) -> Backend:
-        if model == ModelName.LLAMA_OLLAMA:
-            return Ollama(model_name=model.value)
-        if model == ModelName.GPT_4O_MINI:
-            return ChatGPT(api_key=api_key, model_name=model.value)
-        if model in {ModelName.VICUNA_7B_HF, ModelName.VICUNA_13B_HF, ModelName.MISTRAL_7B_HF}:
-            return Huggingface(model_name=model.value)
+    def _setup_vlm_backend(model_name: ModelName, api_key: str | None) -> Backend:
+        if model_name == ModelName.LLAMA_OLLAMA:
+            return Ollama(model_name=model_name.value)
+        if model_name == ModelName.GPT_4O_MINI:
+            return ChatGPT(api_key=api_key, model_name=model_name.value)
+        if model_name in {ModelName.VICUNA_7B_HF, ModelName.VICUNA_13B_HF, ModelName.MISTRAL_7B_HF}:
+            return Huggingface(model_name=model_name.value)
 
-        msg = f"Unsupported VLM model: {model}"
+        msg = f"Unsupported VLM model: {model_name}"
         raise ValueError(msg)
 
     def _setup(self) -> None:
