@@ -47,7 +47,7 @@ class AvenueDataset(AnomalibVideoDataset):
             Defaults to ``1``.
         target_frame (VideoTargetFrame): Specifies the target frame in the video clip, used for ground truth retrieval.
             Defaults to ``VideoTargetFrame.LAST``.
-        transform (Transform, optional): Transforms that should be applied to the input images.
+        transform (Transform | None, optional): Transforms that should be applied to the input images.
             Defaults to ``None``.
 
     Examples:
@@ -55,10 +55,8 @@ class AvenueDataset(AnomalibVideoDataset):
 
         .. code-block:: python
 
-            transform = A.Compose([A.Resize(256, 256), A.pytorch.ToTensorV2()])
             dataset = AvenueDataset(
                 task="classification",
-                transform=transform,
                 split="train",
                 root="./datasets/avenue/",
             )
@@ -74,7 +72,6 @@ class AvenueDataset(AnomalibVideoDataset):
 
             dataset = AvenueDataset(
                 task="segmentation",
-                transform=transform,
                 split="test",
                 root="./datasets/avenue/",
             )
@@ -92,7 +89,6 @@ class AvenueDataset(AnomalibVideoDataset):
 
             dataset = AvenueDataset(
                 task="classification",
-                transform=transform,
                 split="test",
                 root="./datasets/avenue/",
                 clip_length_in_frames=1,
@@ -114,8 +110,8 @@ class AvenueDataset(AnomalibVideoDataset):
         gt_dir: Path | str = "./datasets/avenue/ground_truth_demo",
         clip_length_in_frames: int = 2,
         frames_between_clips: int = 1,
-        transform: Transform | None = None,
         target_frame: VideoTargetFrame = VideoTargetFrame.LAST,
+        transform: Transform | None = None,
     ) -> None:
         super().__init__(
             task=task,

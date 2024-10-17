@@ -14,6 +14,7 @@ from anomalib import LearningType
 from anomalib.data import Batch
 from anomalib.models.components import AnomalyModule, MemoryBankMixin
 from anomalib.models.components.classification import FeatureScalingMethod
+from anomalib.pre_processing import PreProcessor
 
 from .torch_model import DfkdeModel
 
@@ -46,8 +47,9 @@ class Dfkde(MemoryBankMixin, AnomalyModule):
         n_pca_components: int = 16,
         feature_scaling_method: FeatureScalingMethod = FeatureScalingMethod.SCALE,
         max_training_points: int = 40000,
+        pre_processor: PreProcessor | None = None,
     ) -> None:
-        super().__init__()
+        super().__init__(pre_processor=pre_processor)
 
         self.model = DfkdeModel(
             layers=layers,
