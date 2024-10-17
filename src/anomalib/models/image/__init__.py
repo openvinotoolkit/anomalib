@@ -17,6 +17,7 @@ from .ganomaly import Ganomaly
 from .padim import Padim
 from .patchcore import Patchcore
 from .reverse_distillation import ReverseDistillation
+from .revisiting_rd import RevisitingReverseDistillation
 from .rkde import Rkde
 from .stfpm import Stfpm
 from .uflow import Uflow
@@ -37,6 +38,7 @@ __all__ = [
     "Padim",
     "Patchcore",
     "ReverseDistillation",
+    "RevisitingReverseDistillation",
     "Rkde",
     "Stfpm",
     "Uflow",
