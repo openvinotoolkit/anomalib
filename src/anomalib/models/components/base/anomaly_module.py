@@ -108,6 +108,7 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
             Tensor: Output tensor from the model.
         """
         del args, kwargs  # These variables are not used.
+        batch = self.pre_processor(batch) if self.pre_processor else batch
         batch = self.model(batch)
         return self.post_processor(batch) if self.post_processor else batch
 
