@@ -20,9 +20,11 @@ from anomalib import TaskType
 from anomalib.data.utils import LabelName, masks_to_boxes, read_image, read_mask
 
 _EXPECTED_COLUMNS_CLASSIFICATION = ["image_path", "split"]
+_EXPECTED_COLUMNS_VISUAL_PROMPTING = ["image_path", "split"]
 _EXPECTED_COLUMNS_SEGMENTATION = [*_EXPECTED_COLUMNS_CLASSIFICATION, "mask_path"]
 _EXPECTED_COLUMNS_PERTASK = {
     "classification": _EXPECTED_COLUMNS_CLASSIFICATION,
+    "visual prompting": _EXPECTED_COLUMNS_VISUAL_PROMPTING,
     "segmentation": _EXPECTED_COLUMNS_SEGMENTATION,
     "detection": _EXPECTED_COLUMNS_SEGMENTATION,
 }
@@ -169,7 +171,7 @@ class AnomalibDataset(Dataset, ABC):
         image = read_image(image_path, as_tensor=True)
         item = {"image_path": image_path, "label": label_index}
 
-        if self.task == TaskType.CLASSIFICATION:
+        if self.task in (TaskType.CLASSIFICATION, TaskType.VISUAL_PROMPTING):
             item["image"] = self.transform(image) if self.transform else image
         elif self.task in {TaskType.DETECTION, TaskType.SEGMENTATION}:
             # Only Anomalous (1) images have masks in anomaly datasets

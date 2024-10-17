@@ -22,3 +22,4 @@ class TaskType(str, Enum):
     CLASSIFICATION = "classification"
     DETECTION = "detection"
     SEGMENTATION = "segmentation"
+    VISUAL_PROMPTING = "visual prompting"
