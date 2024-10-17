@@ -88,7 +88,7 @@ class PreProcessor(nn.Module, Callback):
         self.val_transform = get_exportable_transform(val_transform or transform)
         self.test_transform = get_exportable_transform(test_transform or transform)
 
-        self.current_transform = self.train_transform  # Default to train transform
+        self.current_transform = self.test_transform  # Default to test transform
 
     def forward(self, batch: Batch | torch.Tensor) -> Batch | torch.Tensor:
         """Apply transforms to the batch."""
