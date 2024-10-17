@@ -36,6 +36,17 @@ def make_datumaro_dataset(root: str | Path, split: str | Split | None = None) ->
         split (str | Split | None): Split of the dataset, usually Split.TRAIN or Split.TEST.
             Defaults to ``None``.
 
+    Examples:
+        >>> root = Path("path/to/dataset")
+        >>> samples = make_datumaro_dataset(root)
+        >>> samples.head()
+            image_path	label	label_index	split	mask_path
+        0	path/to/dataset...	Normal	0	Split.TRAIN
+        1	path/to/dataset...	Normal	0	Split.TRAIN
+        2	path/to/dataset...	Normal	0	Split.TRAIN
+        3	path/to/dataset...	Normal	0	Split.TRAIN
+        4	path/to/dataset...	Normal	0	Split.TRAIN
+
 
     Returns:
         DataFrame: an output dataframe containing samples for the requested split (ie., train or test).
@@ -86,6 +97,21 @@ class DatumaroDataset(AnomalibDataset):
             Defaults to ``None``.
         split (str | Split | None): Split of the dataset, usually Split.TRAIN or Split.TEST
             Defaults to ``None``.
+
+
+    Examples:
+        .. code-block:: python
+
+            from anomalib.data.image.datumaro import DatumaroDataset
+            from torchvision.transforms.v2 import Resize
+
+            dataset = DatumaroDataset(root=root,
+                task="classification",
+                transform=Resize((256, 256)),
+            )
+            print(dataset[0].keys())
+            # Output: dict_keys(['dm_format_version', 'infos', 'categories', 'items'])
+
     """
 
     def __init__(
@@ -131,6 +157,21 @@ class Datumaro(AnomalibDataModule):
             Defaults to ``0.5``.
         seed (int | None, optional): Seed which may be set to a fixed value for reproducibility.
             Defualts to ``None``.
+
+    Examples:
+        To create a Datumaro datamodule
+
+        >>> from pathlib import Path
+        >>> from torchvision.transforms.v2 import Resize
+        >>> root = Path("path/to/dataset")
+        >>> datamodule = Datumaro(root, transform=Resize((256, 256)))
+        >>> datamodule.setup()
+        >>> i, data = next(enumerate(datamodule.train_dataloader()))
+        >>> data.keys()
+        dict_keys(['image_path', 'label', 'image'])
+
+        >>> data["image"].shape
+        torch.Size([32, 3, 256, 256])
     """
 
     def __init__(
