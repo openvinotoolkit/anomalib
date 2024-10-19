@@ -1,7 +1,7 @@
 """Compute Anomaly map."""
 
 # Original Code
-# Copyright (c) 2022 hq-deng
+# Copyright (c) 2024 Tran Dinh Tien
 # https://github.com/tientrandinh/Revisiting-Reverse-Distillation
 # SPDX-License-Identifier: MIT
 #
@@ -35,7 +35,7 @@ class AnomalyMapGenerator(nn.Module):
             Defaults to ``4``.
         mode (AnomalyMapGenerationMode, optional): Operation used to generate anomaly map.
             Options are ``AnomalyMapGenerationMode.ADD`` and ``AnomalyMapGenerationMode.MULTIPLY``.
-            Defaults to ``AnomalyMapGenerationMode.MULTIPLY``.
+            Defaults to ``MULTIPLY``.
 
     Raises:
         ValueError: In case modes other than multiply and add are passed.
