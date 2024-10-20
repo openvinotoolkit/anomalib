@@ -28,6 +28,7 @@ from .utils import images_classes_from_masks
 logger = logging.getLogger(__name__)
 
 
+# TODO(jpcbertoldo): implement changes here  # noqa: TD003
 def pimo_curves(
     anomaly_maps: torch.Tensor,
     masks: torch.Tensor,
@@ -112,6 +113,7 @@ def pimo_curves(
 # =========================================== AUPIMO ===========================================
 
 
+# TODO(jpcbertoldo): implement changes here  # noqa: TD003
 def aupimo_scores(
     anomaly_maps: torch.Tensor,
     masks: torch.Tensor,
