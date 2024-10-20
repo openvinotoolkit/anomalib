@@ -13,6 +13,7 @@ from anomalib.models.components import TimmFeatureExtractor
 
 from .anomaly_map import AnomalyMapGenerationMode, AnomalyMapGenerator
 from .components import get_bottleneck_layer, get_decoder
+from .loss import MultiProjectionLayer
 
 if TYPE_CHECKING:
     from anomalib.data.utils.tiler import Tiler
@@ -43,12 +44,11 @@ class RevisitingReverseDistillationModel(nn.Module):
     ) -> None:
         super().__init__()
         self.tiler: Tiler | None = None
-
         encoder_backbone = backbone
         self.encoder = TimmFeatureExtractor(backbone=encoder_backbone, pre_trained=pre_trained, layers=layers)
         self.bottleneck = get_bottleneck_layer(backbone)
         self.decoder = get_decoder(backbone)
-
+        self.proj_layer = MultiProjectionLayer(base=64)
         self.anomaly_map_generator = AnomalyMapGenerator(image_size=input_size, mode=anomaly_map_mode)
 
     def forward(self, images: torch.Tensor) -> torch.Tensor | list[torch.Tensor] | tuple[list[torch.Tensor]]:
@@ -65,22 +65,19 @@ class RevisitingReverseDistillationModel(nn.Module):
                 in training mode, else anomaly maps.
         """
         self.encoder.eval()
-
         if self.tiler:
             images = self.tiler.tile(images)
         encoder_features = self.encoder(images)
         encoder_features = list(encoder_features.values())
-        decoder_features = self.decoder(self.bottleneck(encoder_features))
-
+        feature_space = self.proj_layer(encoder_features)
+        decoder_features = self.decoder(self.bottleneck(feature_space))
         if self.tiler:
             for i, features in enumerate(encoder_features):
                 encoder_features[i] = self.tiler.untile(features)
             for i, features in enumerate(decoder_features):
                 decoder_features[i] = self.tiler.untile(features)
-
         if self.training:
             output = encoder_features, decoder_features
         else:
             output = self.anomaly_map_generator(encoder_features, decoder_features)
-
         return output
