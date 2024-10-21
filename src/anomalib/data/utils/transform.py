@@ -28,20 +28,14 @@ def set_datamodule_transform(datamodule: AnomalibDataModule, transform: Transfor
         >>> from anomalib.data import MVTec
         >>> from anomalib.data.utils.transform import set_datamodule_transform
 
-        >>> # Create a datamodule
+        >>> # Create a datamodule and check its transform
         >>> datamodule = MVTec(root="path/to/dataset", category="bottle")
-
-        >>> # Setup the datamodule (initially, there are no custom transforms)
         >>> datamodule.setup()
         >>> print(datamodule.train_data.transform)  # Output: None or default transform
 
-        >>> # Define a custom transform
+        >>> # Define a custom transform and set it for the training stage
         >>> custom_transform = Compose([Resize((224, 224)), ToTensor()])
-
-        >>> # Set the custom transform for the training stage
         >>> set_datamodule_transform(datamodule, custom_transform, "train")
-
-        >>> # Verify that the transform has been set
         >>> print(datamodule.train_data.transform)  # Output: Compose([Resize((224, 224)), ToTensor()])
 
         >>> # You can also set transforms for validation and test stages
@@ -78,10 +72,8 @@ def set_dataloader_transform(dataloader: DataLoader | Sequence[DataLoader], tran
         >>> dataset = MVTecDataset(root="./datasets/MVTec", category="bottle", task="segmentation")
         >>> dataloader = DataLoader(dataset, batch_size=32)
 
-        >>> # Define a custom transform
+        >>> # Define a custom transform and set it for a single DataLoader
         >>> custom_transform = Compose([Resize((224, 224)), ToTensor()])
-
-        >>> # Set the transform for a single DataLoader
         >>> set_dataloader_transform(dataloader, custom_transform)
         >>> print(dataloader.dataset.transform)  # Output: Compose([Resize((224, 224)), ToTensor()])
 
