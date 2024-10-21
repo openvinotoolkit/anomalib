@@ -13,10 +13,11 @@ from concurrent.futures import ThreadPoolExecutor
 from itertools import product
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 import requests
 import torch
-from pandas import DataFrame
+from pandas import DataFrame, Series
 
 from .dataclasses import AUPIMOResult
 
@@ -334,5 +335,13 @@ def get_aupimo_benchmark(
         .reset_index(drop=True)
         .astype({"sample_index": int, "aupimo": float, "path": "string"})
     )
+
+    def get_average_aupimo(row: Series) -> float:
+        model = row["model"]  # noqa: F841
+        dataset = row["dataset"]  # noqa: F841
+        aupimos = data_per_image.query("model == @model and dataset == @dataset")["aupimo"]
+        return np.nanmean(aupimos)
+
+    data_per_set["aupimo_mean"] = data_per_set.apply(get_average_aupimo, axis=1)
 
     return data_per_set, data_per_image
