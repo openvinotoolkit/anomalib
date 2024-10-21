@@ -85,25 +85,19 @@ class PreProcessor(nn.Module, Callback):
             raise ValueError(msg)
 
         self.train_transform = train_transform or transform
-        self.val_transform = get_exportable_transform(val_transform or transform)
-        self.test_transform = get_exportable_transform(test_transform or transform)
+        self.val_transform = val_transform or transform
+        self.test_transform = test_transform or transform
 
-        self.current_transform = self.test_transform  # Default to test transform
+        self.exportable_transform = get_exportable_transform(self.test_transform)
 
-    def forward(self, batch: Batch | torch.Tensor) -> Batch | torch.Tensor:
-        """Apply transforms to the batch."""
-        if self.current_transform:
-            if isinstance(batch, Batch):
-                image, gt_mask = self.current_transform(batch.image, batch.gt_mask)
-                batch.update(image=image, gt_mask=gt_mask)
-            else:
-                batch = self.current_transform(batch)
-        return batch
+    def forward(self, batch: torch.Tensor) -> torch.Tensor:
+        """Apply transforms to the batch of tensors for inference.
 
-    def on_train_start(self, trainer: Trainer, pl_module: LightningModule) -> None:
-        """Set the current transform to the train transform."""
-        del trainer, pl_module  # Unused parameters
-        self.current_transform = self.train_transform
+        This forward-pass is only used after the model is exported.
+        Within the Lightning training/validation/testing loops, the transforms are applied
+        in the `on_*_batch_start` methods.
+        """
+        return self.exportable_transform(batch) if self.exportable_transform else batch
 
     def on_train_batch_start(
         self,
@@ -114,12 +108,9 @@ class PreProcessor(nn.Module, Callback):
     ) -> None:
         """Apply transforms to the training batch."""
         del trainer, pl_module, batch_idx  # Unused parameters
-        self(batch)
-
-    def on_validation_start(self, trainer: Trainer, pl_module: LightningModule) -> None:
-        """Set the current transform to the validation transform."""
-        del trainer, pl_module  # Unused parameters
-        self.current_transform = self.val_transform
+        if self.train_transform:
+            image, gt_mask = self.train_transform(batch.image, batch.gt_mask)
+            batch.update(image=image, gt_mask=gt_mask)
 
     def on_validation_batch_start(
         self,
@@ -131,12 +122,9 @@ class PreProcessor(nn.Module, Callback):
     ) -> None:
         """Apply transforms to the validation batch."""
         del trainer, pl_module, batch_idx, dataloader_idx  # Unused parameters
-        self(batch)
-
-    def on_test_start(self, trainer: Trainer, pl_module: LightningModule) -> None:
-        """Set the current transform to the test transform."""
-        del trainer, pl_module  # Unused parameters
-        self.current_transform = self.test_transform
+        if self.val_transform:
+            image, gt_mask = self.val_transform(batch.image, batch.gt_mask)
+            batch.update(image=image, gt_mask=gt_mask)
 
     def on_test_batch_start(
         self,
@@ -148,12 +136,9 @@ class PreProcessor(nn.Module, Callback):
     ) -> None:
         """Apply transforms to the test batch."""
         del trainer, pl_module, batch_idx, dataloader_idx  # Unused parameters
-        self(batch)
-
-    def on_predict_start(self, trainer: Trainer, pl_module: LightningModule) -> None:
-        """Set the current transform to the test transform."""
-        del trainer, pl_module  # Unused parameters
-        self.current_transform = self.test_transform
+        if self.test_transform:
+            image, gt_mask = self.test_transform(batch.image, batch.gt_mask)
+            batch.update(image=image, gt_mask=gt_mask)
 
     def on_predict_batch_start(
         self,
@@ -163,6 +148,5 @@ class PreProcessor(nn.Module, Callback):
         batch_idx: int,
         dataloader_idx: int = 0,
     ) -> None:
-        """Apply transforms to the predict batch."""
-        del trainer, pl_module, batch_idx, dataloader_idx  # Unused parameters
-        self(batch)
+        """Apply transforms to the predict batch, which is the same as test batch."""
+        self.on_test_batch_start(trainer, pl_module, batch, batch_idx, dataloader_idx)
