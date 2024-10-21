@@ -5,10 +5,12 @@
 
 import torch
 from lightning import Callback, LightningModule, Trainer
+from lightning.pytorch.trainer.states import TrainerFn
 from torch import nn
 from torchvision.transforms.v2 import Transform
 
 from anomalib.data.dataclasses.torch.base import Batch
+from anomalib.data.utils.transform import set_dataloader_transform, set_datamodule_transform
 from anomalib.deploy.utils import get_exportable_transform
 
 
@@ -87,8 +89,35 @@ class PreProcessor(nn.Module, Callback):
         self.train_transform = train_transform or transform
         self.val_transform = val_transform or transform
         self.test_transform = test_transform or transform
+        self.predict_transform = self.test_transform
 
         self.exportable_transform = get_exportable_transform(self.test_transform)
+
+    def setup(self, trainer: Trainer, pl_module: LightningModule, stage: str) -> None:
+        """Set the transforms for datamodule or dataloaders.
+
+        The model-specific transforms are configured within PreProcessor and stored in
+        model implementation. This method sets the transforms for the datamodule or
+        dataloaders.
+
+        Args:
+            trainer: The Lightning trainer.
+            pl_module: The Lightning module.
+            stage: The stage (e.g., 'fit', 'train', 'val', 'test', 'predict').
+        """
+        super().setup(trainer, pl_module, stage)
+        stage = TrainerFn(stage).value  # This is to convert the stage to a string
+        stages = ["train", "val"] if stage == "fit" else [stage]
+        for current_stage in stages:
+            transform = getattr(self, f"{current_stage}_transform")
+            if transform:
+                if hasattr(trainer, "datamodule"):
+                    set_datamodule_transform(trainer.datamodule, transform, current_stage)
+                elif hasattr(trainer, f"{current_stage}_dataloaders"):
+                    set_dataloader_transform(getattr(trainer, f"{current_stage}_dataloaders"), transform)
+                else:
+                    msg = f"Trainer does not have a datamodule or {current_stage}_dataloaders attribute"
+                    raise ValueError(msg)
 
     def forward(self, batch: torch.Tensor) -> torch.Tensor:
         """Apply transforms to the batch of tensors for inference.
