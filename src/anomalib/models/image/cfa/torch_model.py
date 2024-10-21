@@ -226,9 +226,11 @@ class CfaModel(DynamicBufferMixin):
             distance=distance,
             scale=target_features.shape[-2:],
             image_size=input_tensor.shape[-2:],
-        )
+        ).squeeze()
+        pred_score = torch.amax(anomaly_map, dim=(-2, -1))
         return InferenceBatch(
             anomaly_map=anomaly_map,
+            pred_score=pred_score,
         )
 
 
