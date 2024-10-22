@@ -14,6 +14,7 @@ from anomalib.callbacks.normalization import get_normalization_callback
 from anomalib.callbacks.post_processor import _PostProcessorCallback
 from anomalib.callbacks.thresholding import _ThresholdCallback
 from anomalib.engine import Engine
+from anomalib.models import AnomalyModule
 from anomalib.utils.path import create_versioned_dir
 
 logger = logging.getLogger(__name__)
@@ -54,7 +55,7 @@ class TiledEnsembleEngine(Engine):
         root_dir = Path(args["default_root_dir"]) / model_name / dataset_name / category
         return create_versioned_dir(root_dir) if versioned_dir else root_dir / "latest"
 
-    def _setup_anomalib_callbacks(self) -> None:
+    def _setup_anomalib_callbacks(self, model: AnomalyModule) -> None:
         """Modified method to enable individual model training. It's called when Trainer is being set up."""
         _callbacks: list[Callback] = [RichModelSummary()]
 
