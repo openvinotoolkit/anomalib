@@ -70,48 +70,6 @@ class TestMerging:
         assert merged["pred_labels"].equal(labels.any(dim=0))
 
     @staticmethod
-    def test_box_merging(get_merging_mechanism: PredictionMergingMechanism) -> None:
-        """Test box merging by collecting boxes from tiles into single tensor."""
-        merger = get_merging_mechanism
-
-        mock_data = {
-            (0, 0): {
-                "pred_boxes": [torch.ones(2, 4), torch.zeros(0, 4)],
-                "box_scores": [torch.ones(2), torch.tensor([])],
-                "box_labels": [torch.ones(2).type(torch.bool), torch.tensor([])],
-            },
-            (0, 1): {
-                "pred_boxes": [torch.ones(1, 4), torch.ones(1, 4)],
-                "box_scores": [torch.ones(1), torch.ones(1)],
-                "box_labels": [torch.ones(1).type(torch.bool), torch.ones(1).type(torch.bool)],
-            },
-        }
-
-        merged = merger.merge_boxes(mock_data)
-
-        assert merged["pred_boxes"][0].shape == (3, 4)
-        assert merged["box_scores"][0].shape == (3,)
-        assert merged["box_labels"][0].shape == (3,)
-
-        assert merged["pred_boxes"][1].shape == (1, 4)
-        assert merged["box_scores"][1].shape == (1,)
-        assert merged["box_labels"][1].shape == (1,)
-
-    @staticmethod
-    def test_box_merging_from_anomap(get_merging_mechanism: PredictionMergingMechanism) -> None:
-        """Test box merging by recalculation from anomaly maps."""
-        merger = get_merging_mechanism
-
-        mock_anomaly_maps = torch.rand(2, 1, 50, 50)
-        mock_anomaly_masks = mock_anomaly_maps > 0.5
-
-        merged = merger.generate_boxes(mock_anomaly_maps, mock_anomaly_masks)
-
-        assert "pred_boxes" in merged
-        assert "box_scores" in merged
-        assert "box_labels" in merged
-
-    @staticmethod
     def test_merge_job(
         get_tile_predictions: EnsemblePredictions,
         get_ensemble_config: dict,
@@ -158,13 +116,12 @@ class TestStatsCalculation:
         assert isinstance(stats_job.image_threshold, threshold_cls)
 
     @staticmethod
-    def test_stats_run(project_path) -> None:
+    def test_stats_run(project_path: Path) -> None:
         """Test execution of statistics calc. job."""
         mock_preds = [
             {
                 "pred_scores": torch.rand(4),
                 "label": torch.ones(4),
-                "box_scores": [torch.rand(1) for _ in range(4)],
                 "anomaly_maps": torch.rand(4, 1, 50, 50),
                 "mask": torch.ones(4, 1, 50, 50),
             },
@@ -189,8 +146,6 @@ class TestStatsCalculation:
         ("key", "values"),
         [
             ("anomaly_maps", [torch.rand(5, 1, 50, 50), torch.rand(5, 1, 50, 50)]),
-            # TODO: uncomment when fixed
-            # ("box_scores", [[torch.rand(1) for _ in range(5)], [torch.rand(1) for _ in range(5)]]),
             ("pred_scores", [torch.rand(5), torch.rand(5)]),
         ],
     )
@@ -365,7 +320,6 @@ def test_normalization(get_batch_predictions: list[dict], project_path: Path) ->
     for batch in original_predictions:
         batch["anomaly_maps"] *= 100
         batch["pred_scores"] *= 100
-        batch["box_scores"] = [s * 100 for s in batch["box_scores"]]
 
     # # get and save stats using stats job on predictions
     stats_job_generator = StatisticsJobGenerator(project_path, "F1AdaptiveThreshold")
@@ -385,9 +339,6 @@ def test_normalization(get_batch_predictions: list[dict], project_path: Path) ->
 
         assert (batch["pred_scores"] >= 0).all()
         assert (batch["pred_scores"] <= 1).all()
-
-        assert all(s >= 0 for s in batch["box_scores"])
-        assert all(s <= 1 for s in batch["box_scores"])
 
 
 class TestThresholding:
@@ -434,25 +385,3 @@ class TestThresholding:
         thresholded = thresholding(data)[0]
 
         assert thresholded["pred_masks"].equal(torch.tensor([[True, True, False], [False, True, False]]))
-        assert "pred_boxes" in thresholded
-        assert "box_scores" in thresholded
-        assert "box_labels" in thresholded
-
-    @staticmethod
-    def test_box_threshold(get_threshold_job: callable) -> None:
-        """Test box thresholding."""
-        thresholding = get_threshold_job
-
-        data = [
-            {
-                "pred_scores": torch.tensor([0.7, 0.8, 0.1, 0.33, 0.5]),
-                "box_scores": [torch.tensor([0.6]), torch.tensor([0.1, 0.69])],
-            },
-        ]
-
-        thresholded = thresholding(data)[0]
-
-        assert "box_labels" in thresholded
-
-        assert thresholded["box_labels"][0].equal(torch.tensor([True]))
-        assert thresholded["box_labels"][1].equal(torch.tensor([False, True]))

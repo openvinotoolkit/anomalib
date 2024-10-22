@@ -10,6 +10,7 @@ from jsonargparse import Namespace
 from lightning.pytorch.callbacks import EarlyStopping
 
 from anomalib.callbacks.normalization import _MinMaxNormalizationCallback
+from anomalib.models import AnomalyModule
 from anomalib.pipelines.tiled_ensemble.components.utils import NormalizationStage
 from anomalib.pipelines.tiled_ensemble.components.utils.ensemble_tiling import EnsembleTiler, TileCollater
 from anomalib.pipelines.tiled_ensemble.components.utils.helper_functions import (
@@ -87,7 +88,7 @@ class TestEnsembleEngine:
         "normalization_stage",
         [NormalizationStage.NONE, NormalizationStage.IMAGE, NormalizationStage.TILE],
     )
-    def test_normalisation(normalization_stage: NormalizationStage) -> None:
+    def test_normalisation(normalization_stage: NormalizationStage, get_model: AnomalyModule) -> None:
         """Test that normalization callback is correctly initialized."""
         engine = get_ensemble_engine(
             tile_index=(0, 0),
@@ -97,7 +98,7 @@ class TestEnsembleEngine:
             normalization_stage=normalization_stage,
         )
 
-        engine._setup_anomalib_callbacks()  # noqa: SLF001
+        engine._setup_anomalib_callbacks(get_model)  # noqa: SLF001
 
         # verify that only in case of tile level normalization the callback is present
         if normalization_stage == NormalizationStage.TILE:

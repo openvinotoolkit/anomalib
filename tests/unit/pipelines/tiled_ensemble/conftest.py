@@ -74,7 +74,6 @@ def get_tile_predictions(get_datamodule: AnomalibDataModule) -> EnsemblePredicti
 
         tile_prediction = []
         batch = next(iter(datamodule.test_dataloader()))
-        batch_size = batch["image"].shape[0]
 
         # make mock labels and scores
         batch["pred_scores"] = torch.rand(batch["label"].shape)
@@ -85,10 +84,6 @@ def get_tile_predictions(get_datamodule: AnomalibDataModule) -> EnsemblePredicti
         # set mock pred mask to mask but add channel
         batch["pred_masks"] = batch["mask"].clone().unsqueeze(1)
 
-        # make mock boxes
-        batch["pred_boxes"] = [torch.rand(1, 4) for _ in range(batch_size)]
-        batch["box_scores"] = [torch.rand(1) for _ in range(batch_size)]
-        batch["box_labels"] = [bs > 0.5 for bs in batch["box_scores"]]
         tile_prediction.append(batch)
 
         # store to prediction storage object
@@ -108,9 +103,6 @@ def get_batch_predictions() -> list[dict]:
         "pred_scores": torch.rand(5),
         "pred_labels": torch.ones(5),
         "pred_masks": torch.zeros((5, 100, 100)),
-        "pred_boxes": [torch.rand(1, 4) for _ in range(5)],
-        "box_labels": [torch.tensor([0.5]) for _ in range(5)],
-        "box_scores": [torch.rand(1) for _ in range(5)],
     }
 
     return [mock_data, mock_data]

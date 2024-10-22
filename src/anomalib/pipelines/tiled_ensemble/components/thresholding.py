@@ -8,10 +8,8 @@ from collections.abc import Generator
 from pathlib import Path
 from typing import Any
 
-import torch
 from tqdm import tqdm
 
-from anomalib.data.utils import masks_to_boxes
 from anomalib.pipelines.components import Job, JobGenerator
 from anomalib.pipelines.types import GATHERED_RESULTS, RUN_RESULTS
 
@@ -56,17 +54,6 @@ class ThresholdingJob(Job):
                 data["pred_labels"] = data["pred_scores"] >= self.image_threshold
             if "anomaly_maps" in data:
                 data["pred_masks"] = data["anomaly_maps"] >= self.pixel_threshold
-                if "pred_boxes" not in data:
-                    data["pred_boxes"], data["box_scores"] = masks_to_boxes(
-                        data["pred_masks"],
-                        data["anomaly_maps"],
-                    )
-                    data["box_labels"] = [torch.ones(boxes.shape[0]) for boxes in data["pred_boxes"]]
-            # apply thresholding to boxes
-            if "box_scores" in data and "box_labels" not in data:
-                # apply threshold to assign normal/anomalous label to boxes
-                is_anomalous = [scores > self.pixel_threshold for scores in data["box_scores"]]
-                data["box_labels"] = [labels.int() for labels in is_anomalous]
 
         return self.predictions
 

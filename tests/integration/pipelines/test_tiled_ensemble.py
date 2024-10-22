@@ -8,7 +8,6 @@ from tempfile import TemporaryDirectory
 
 import pytest
 import yaml
-from tox.pytest import CaptureFixture
 
 from anomalib.pipelines.tiled_ensemble import EvalTiledEnsemble, TrainTiledEnsemble
 
@@ -30,7 +29,7 @@ def get_mock_environment(dataset_path: Path) -> Path:
         yield Path(temp_dir)
 
 
-def test_train(get_mock_environment: Path, capsys: CaptureFixture) -> None:
+def test_train(get_mock_environment: Path, capsys: pytest.CaptureFixture) -> None:
     """Test training of the tiled ensemble."""
     train_pipeline = TrainTiledEnsemble()
     train_parser = train_pipeline.get_parser()
@@ -41,7 +40,7 @@ def test_train(get_mock_environment: Path, capsys: CaptureFixture) -> None:
     assert not any(line.startswith("There were some errors") for line in out.split("\n"))
 
 
-def test_predict(get_mock_environment: Path, capsys: CaptureFixture) -> None:
+def test_predict(get_mock_environment: Path, capsys: pytest.CaptureFixture) -> None:
     """Test prediction with the tiled ensemble."""
     predict_pipeline = EvalTiledEnsemble(root_dir=get_mock_environment / "padim" / "MVTec" / "dummy" / "v0")
     predict_parser = predict_pipeline.get_parser()

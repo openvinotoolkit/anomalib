@@ -68,11 +68,6 @@ class NormalizationJob(Job):
                     minmax["anomaly_maps"]["min"],
                     minmax["anomaly_maps"]["max"],
                 )
-            if "box_scores" in data:
-                data["box_scores"] = [
-                    normalize(scores, pixel_threshold, minmax["box_scores"]["min"], minmax["box_scores"]["max"])
-                    for scores in data["box_scores"]
-                ]
 
         return self.predictions
 

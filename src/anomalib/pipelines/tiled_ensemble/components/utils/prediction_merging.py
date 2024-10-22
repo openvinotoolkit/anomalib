@@ -6,8 +6,6 @@
 import torch
 from torch import Tensor
 
-from anomalib.data.utils import masks_to_boxes
-
 from .ensemble_tiling import EnsembleTiler
 from .prediction_data import EnsemblePredictions
 
@@ -103,80 +101,6 @@ class PredictionMergingMechanism:
 
         return merged_output
 
-    def merge_boxes(self, batch_data: dict) -> dict:
-        """Merge boxes data from all tiles. This includes pred_boxes, box_scores and box_labels.
-
-        Joining is done by stacking boxes from all tiles.
-
-        Args:
-            batch_data (dict): Dictionary containing all tile predictions of current batch.
-
-        Returns:
-            dict: Dictionary with merged boxes, box scores and box labels.
-        """
-        # batch of tiles with index (0, 0) always exists, so we use it to get some basic information
-        batch_size = len(batch_data[0, 0]["pred_boxes"])
-
-        # create array of placeholder arrays, that will contain all boxes for each image
-        boxes: list[list[Tensor]] = [[] for _ in range(batch_size)]
-        scores: list[list[Tensor]] = [[] for _ in range(batch_size)]
-        labels: list[list[Tensor]] = [[] for _ in range(batch_size)]
-
-        # go over all tiles and add box data tensor to belonging array
-        for (tile_i, tile_j), curr_tile_pred in batch_data.items():
-            for i in range(batch_size):
-                # boxes have form [x_1, y_1, x_2, y_2]
-                curr_boxes = curr_tile_pred["pred_boxes"][i]
-
-                # tile position offset
-                offset_w = self.tiler.tile_size_w * tile_j
-                offset_h = self.tiler.tile_size_h * tile_i
-
-                # offset in x-axis
-                curr_boxes[:, 0] += offset_w
-                curr_boxes[:, 2] += offset_w
-
-                # offset in y-axis
-                curr_boxes[:, 1] += offset_h
-                curr_boxes[:, 3] += offset_h
-
-                boxes[i].append(curr_boxes)
-                scores[i].append(curr_tile_pred["box_scores"][i])
-                labels[i].append(curr_tile_pred["box_labels"][i])
-
-        # arrays with box data for each batch
-        merged_boxes: dict[str, list[Tensor]] = {"pred_boxes": [], "box_scores": [], "box_labels": []}
-        for i in range(batch_size):
-            # n in this case represents number of predicted boxes
-            # stack boxes into form [n, 4] (vertical stack)
-            merged_boxes["pred_boxes"].append(torch.vstack(boxes[i]))
-            # stack scores and labels into form [n] (horizontal stack)
-            merged_boxes["box_scores"].append(torch.hstack(scores[i]))
-            merged_boxes["box_labels"].append(torch.hstack(labels[i]))
-
-        return merged_boxes
-
-    @staticmethod
-    def generate_boxes(anomaly_maps: torch.Tensor, pred_masks: torch.Tensor) -> dict:
-        """Merge box predictions from tiled data by recalculating them from merged anomaly maps.
-
-        This produces pred_boxes, box_scores and box_labels.
-
-        Args:
-            anomaly_maps (torch.Tensor): Merged anomaly maps.
-            pred_masks (torch.Tensor): Merged predicted anomaly masks.
-
-        Returns:
-            dict: Dictionary with merged boxes, box scores and box labels.
-        """
-        pred_boxes, box_scores = masks_to_boxes(
-            pred_masks,
-            anomaly_maps,
-        )
-        box_labels = [torch.ones(boxes.shape[0]) for boxes in pred_boxes]
-
-        return {"pred_boxes": pred_boxes, "box_scores": box_scores, "box_labels": box_labels}
-
     def merge_labels_and_scores(self, batch_data: dict) -> dict[str, Tensor]:
         """Join scores and their corresponding label predictions from all tiles for each image.
 
@@ -239,20 +163,5 @@ class PredictionMergingMechanism:
         merged_scores_and_labels = self.merge_labels_and_scores(current_batch_data)
         merged_predictions["pred_labels"] = merged_scores_and_labels["pred_labels"]
         merged_predictions["pred_scores"] = merged_scores_and_labels["pred_scores"]
-
-        if "pred_boxes" in current_batch_data[0, 0]:
-            if "anomaly_maps" in merged_predictions:
-                # if anomaly maps are predicted, generate new boxes from anomaly maps instead of merging
-                merged_box_data = self.generate_boxes(
-                    merged_predictions["anomaly_maps"],
-                    merged_predictions["pred_masks"],
-                )
-            else:
-                # otherwise merge boxes for each image
-                merged_box_data = self.merge_boxes(current_batch_data)
-
-            merged_predictions["pred_boxes"] = merged_box_data["pred_boxes"]
-            merged_predictions["box_scores"] = merged_box_data["box_scores"]
-            merged_predictions["box_labels"] = merged_box_data["box_labels"]
 
         return merged_predictions

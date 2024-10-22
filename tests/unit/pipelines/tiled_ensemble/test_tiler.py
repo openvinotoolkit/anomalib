@@ -8,7 +8,6 @@ import copy
 import pytest
 import torch
 
-from anomalib import TaskType
 from anomalib.data import AnomalibDataModule
 from anomalib.pipelines.tiled_ensemble.components.utils.helper_functions import get_ensemble_tiler
 
@@ -118,16 +117,3 @@ class TestTileCollater:
         batch = next(iter(datamodule.train_dataloader()))
         assert batch["image"].shape[1:] == (3, tile_w, tile_h)
         assert batch["mask"].shape[1:] == (tile_w, tile_h)
-
-    @staticmethod
-    def test_collate_box_data(get_datamodule: AnomalibDataModule) -> None:
-        """Test that default collate function is called and boxes are collated."""
-        # datamodule with tile collater
-        datamodule = get_datamodule
-        datamodule.train_data.task = TaskType.DETECTION
-
-        batch = next(iter(datamodule.train_dataloader()))
-
-        # assert that base collate function was called
-        assert isinstance(batch["boxes"], list)
-        assert isinstance(batch["boxes"][0], torch.Tensor)
