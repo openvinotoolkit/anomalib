@@ -4,12 +4,12 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-from importlib.util import find_spec
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import cv2
 import numpy as np
+from lightning_utilities.core.imports import package_available
 from omegaconf import DictConfig
 from PIL import Image
 
@@ -94,11 +94,10 @@ class OpenVINOInferencer(Inferencer):
         task: str | None = None,
         config: dict | None = None,
     ) -> None:
-        try:
-            import openvino as ov
-        except ImportError:
-            logger.warning("OpenVINO is not installed. Please install OpenVINO to use OpenVINOInferencer.")
-            raise
+        if not package_available("openvino"):
+            msg = "OpenVINO is not installed. Please install OpenVINO to use OpenVINOInferencer."
+            raise ImportError(msg)
+
         self.device = device
 
         self.config = config
@@ -107,7 +106,7 @@ class OpenVINOInferencer(Inferencer):
 
         self.task = TaskType(task) if task else TaskType(self.metadata["task"])
 
-    def load_model(self, path: str | Path | tuple[bytes, bytes]) -> tuple[Any, Any, "CompiledModel"]:
+    def load_model(self, path: str | Path | tuple[bytes, bytes]) -> tuple[Any, Any, Any]:
         """Load the OpenVINO model.
 
         Args:
