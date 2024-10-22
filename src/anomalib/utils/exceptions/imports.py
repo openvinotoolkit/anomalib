@@ -18,6 +18,15 @@ def try_import(import_path: str) -> bool:
     Returns:
         bool: True if import succeeds, False otherwise.
     """
+    import warnings
+
+    warnings.warn(
+        "The 'try_import' function is deprecated and will be removed in v2.0.0. "
+        "Use 'package_available' from lightning-utilities instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+
     try:
         import_module(import_path)
     except ImportError:
