@@ -21,14 +21,6 @@ from .base_inferencer import Inferencer
 
 logger = logging.getLogger("anomalib")
 
-if find_spec("openvino") is not None:
-    import openvino as ov
-
-    if TYPE_CHECKING:
-        from openvino import CompiledModel
-else:
-    logger.warning("OpenVINO is not installed. Please install OpenVINO to use OpenVINOInferencer.")
-
 
 class OpenVINOInferencer(Inferencer):
     """OpenVINO implementation for the inference.
@@ -102,6 +94,11 @@ class OpenVINOInferencer(Inferencer):
         task: str | None = None,
         config: dict | None = None,
     ) -> None:
+        try:
+            import openvino as ov
+        except ImportError:
+            logger.warning("OpenVINO is not installed. Please install OpenVINO to use OpenVINOInferencer.")
+            raise
         self.device = device
 
         self.config = config
@@ -121,6 +118,8 @@ class OpenVINOInferencer(Inferencer):
             [tuple[str, str, ExecutableNetwork]]: Input and Output blob names
                 together with the Executable network.
         """
+        import openvino as ov
+
         core = ov.Core()
         # If tuple of bytes is passed
         if isinstance(path, tuple):
