@@ -15,6 +15,19 @@ from anomalib.utils.logging import hide_output
 from .job import BenchmarkJob
 
 
+def flatten_dict(d: dict | object, key: str = "", output: dict | None = None) -> dict:
+    """Flatten a dictionary by dot-connecting the hierarchical keys."""
+    # B006 Do not use mutable data structures for argument defaults.
+    if output is None:
+        output = {}
+    if isinstance(d, dict):
+        for k, v in d.items():
+            flatten_dict(v, f"{key}.{k}" if key != "" else k, output)
+    else:
+        output[key] = d
+    return output
+
+
 class BenchmarkJobGenerator(JobGenerator):
     """Generate BenchmarkJob.
 
@@ -39,9 +52,12 @@ class BenchmarkJobGenerator(JobGenerator):
         """Return iterator based on the arguments."""
         del previous_stage_result  # Not needed for this job
         for _container in get_iterator_from_grid_dict(args):
+            # Pass experimental configs as a flatten dictionary to the job runner.
+            flat_cfg = flatten_dict(_container)
             yield BenchmarkJob(
                 accelerator=self.accelerator,
                 seed=_container["seed"],
                 model=get_model(_container["model"]),
                 datamodule=get_datamodule(_container["data"]),
+                flat_cfg=flat_cfg,
             )
