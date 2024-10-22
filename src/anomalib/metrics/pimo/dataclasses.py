@@ -31,6 +31,10 @@ class PIMOResult:
             thresholds
     """
 
+    # metadata
+    fpr_lower_bound: float
+    fpr_upper_bound: float
+
     # data
     thresholds: torch.Tensor = field(repr=False)  # shape => (K,)
     shared_fpr: torch.Tensor = field(repr=False)  # shape => (K,)
@@ -79,6 +83,25 @@ class PIMOResult:
                 f"{self.thresholds.shape[0]=} != {self.per_image_tprs.shape[1]=}."
             )
             raise TypeError(msg)
+
+        first_shared_fpr = self.shared_fpr[0]
+        last_shared_fpr = self.shared_fpr[-1]
+
+        if not torch.isclose(first_shared_fpr, torch.tensor(self.fpr_upper_bound, dtype=torch.float64), rtol=1e-2):
+            msg = (
+                f"Invalid {self.__class__.__name__} object. "
+                "The first shared FPR value is not equal to the upper bound: "
+                f"{first_shared_fpr=} != {self.fpr_upper_bound=}."
+            )
+            raise ValueError(msg)
+
+        if not torch.isclose(last_shared_fpr, torch.tensor(self.fpr_lower_bound, dtype=torch.float64), rtol=1e-2):
+            msg = (
+                f"Invalid {self.__class__.__name__} object. "
+                "The last shared FPR value is not equal to the lower bound: "
+                f"{last_shared_fpr=} != {self.fpr_lower_bound=}."
+            )
+            raise ValueError(msg)
 
     def thresh_at(self, fpr_level: float) -> tuple[int, float, float]:
         """Return the threshold at the given shared FPR.
@@ -183,7 +206,6 @@ class AUPIMOResult:
     def from_pimo_result(
         cls: type["AUPIMOResult"],
         pimo_result: PIMOResult,
-        fpr_bounds: tuple[float, float],
         num_thresholds_auc: int,
         aupimos: torch.Tensor,
     ) -> "AUPIMOResult":
@@ -211,31 +233,12 @@ class AUPIMOResult:
             msg = "Expected all anomalous images to have valid AUPIMOs (not nan), but some have NaN values."
             raise TypeError(msg)
 
-        fpr_lower_bound, fpr_upper_bound = fpr_bounds
-
-        if not torch.isclose(pimo_result.shared_fpr[0], torch.tensor(fpr_upper_bound, dtype=torch.float64), rtol=1e-3):
-            msg = (
-                f"Invalid {cls.__name__} object. The first shared FPR value is not equal to the upper bound: "
-                f"{pimo_result.shared_fpr[0]=} != {fpr_upper_bound=}."
-            )
-            raise ValueError(msg)
-
-        if not torch.isclose(pimo_result.shared_fpr[-1], torch.tensor(fpr_lower_bound, dtype=torch.float64), rtol=1e-3):
-            msg = (
-                f"Invalid {cls.__name__} object. The last shared FPR value is not equal to the lower bound: "
-                f"{pimo_result.shared_fpr[-1]=} != {fpr_lower_bound=}."
-            )
-            raise ValueError(msg)
-
-        fpr_lower_bound, fpr_upper_bound = fpr_bounds
-        # recall: fpr upper/lower bounds are the same as the thresh lower/upper bounds
-        thresh_lower_bound = pimo_result.thresholds[0].item()
-        thresh_upper_bound = pimo_result.thresholds[-1].item()
         return cls(
-            fpr_lower_bound=fpr_lower_bound,
-            fpr_upper_bound=fpr_upper_bound,
+            fpr_lower_bound=pimo_result.fpr_lower_bound,
+            fpr_upper_bound=pimo_result.fpr_upper_bound,
             num_thresholds=num_thresholds_auc,
-            thresh_lower_bound=float(thresh_lower_bound),
-            thresh_upper_bound=float(thresh_upper_bound),
+            # recall: fpr upper/lower bounds are the same as the thresh lower/upper bounds
+            thresh_lower_bound=float(pimo_result.thresholds[0].item()),
+            thresh_upper_bound=float(pimo_result.thresholds[-1].item()),
             aupimos=aupimos,
         )

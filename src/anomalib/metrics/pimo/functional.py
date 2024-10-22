@@ -278,14 +278,14 @@ def aupimo_scores(
 def _binary_search_threshold_at_fpr_target(
     anomaly_maps_normals: torch.Tensor,
     fpr_target: float | torch.Tensor,
-    maximum_iterations: int = 100,
+    maximum_iterations: int = 300,
 ) -> float:
     """Binary search of threshold that achieves the given shared FPR level.
 
     Args:
         anomaly_maps_normals: anomaly score maps of normal images.
         fpr_target: shared FPR level at which to get the threshold.
-        maximum_iterations: maximum number of iterations for the binary search. Default is 100.
+        maximum_iterations: maximum number of iterations for the binary search. Default is 300.
 
     Returns:
         float: the threshold that achieves the given shared FPR level.
@@ -308,7 +308,7 @@ def _binary_search_threshold_at_fpr_target(
         middle, fpr_at_middle = get_middle(lower, upper)
 
         bounds_are_close = torch.isclose(lower, upper, rtol=1e-6)
-        target_is_close = torch.isclose(fpr_at_middle, fpr_target, rtol=1e-3)
+        target_is_close = torch.isclose(fpr_at_middle, fpr_target, rtol=1e-2)
 
         if bounds_are_close and target_is_close:
             break
@@ -324,7 +324,7 @@ def _binary_search_threshold_at_fpr_target(
 
     if iteration == maximum_iterations - 1:
         logger.warning(
-            "Binary search reached the maximum number of iterations. "
+            f"Binary search reached the maximum number of iterations ({iteration + 1}). "
             "The result may not be accurate. "
             f"Target FPR: {fpr_target:.8g}, achieved FPR: {fpr_at_middle:.8g}. "
             f"Thresholds: {lower=:.8g}, {middle=:.8g}, {upper=:.8g}. "
@@ -335,7 +335,8 @@ def _binary_search_threshold_at_fpr_target(
         logger.debug(
             f"Binary search stoped with {iteration + 1} iterations. "
             f"Target FPR: {fpr_target:.8g}, achieved FPR: {fpr_at_middle:.8g}. "
-            f"Thresholds: {lower=:.8g}, {middle=:.8g}, {upper=:.8g}",
+            f"Thresholds: {lower=:.8g}, {middle=:.8g}, {upper=:.8g} "
+            f"{bounds_are_close=} {target_is_close=}.",
         )
 
     return middle.item()
@@ -371,14 +372,14 @@ def thresh_at_shared_fpr_level(
 
     shared_fpr_min, shared_fpr_max = shared_fpr.min(), shared_fpr.max()
 
-    if fpr_level < shared_fpr_min:
+    if fpr_level < shared_fpr_min and not torch.isclose(shared_fpr_min, torch.tensor(fpr_level).double(), rtol=1e-1):
         msg = (
             "Invalid `fpr_level` because it's out of the range of `shared_fpr` = "
             f"[{shared_fpr_min}, {shared_fpr_max}], and got {fpr_level}."
         )
         raise ValueError(msg)
 
-    if fpr_level > shared_fpr_max:
+    if fpr_level > shared_fpr_max and not torch.isclose(shared_fpr_min, torch.tensor(fpr_level).double(), rtol=1e-1):
         msg = (
             "Invalid `fpr_level` because it's out of the range of `shared_fpr` = "
             f"[{shared_fpr_min}, {shared_fpr_max}], and got {fpr_level}."

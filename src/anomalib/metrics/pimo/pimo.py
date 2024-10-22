@@ -166,6 +166,8 @@ class PIMO(Metric):
             num_thresholds=self.num_thresholds,
         )
         return PIMOResult(
+            fpr_lower_bound=self.fpr_bounds[0],
+            fpr_upper_bound=self.fpr_bounds[1],
             thresholds=thresholds,
             shared_fpr=shared_fpr,
             per_image_tprs=per_image_tprs,
@@ -277,13 +279,14 @@ class AUPIMO(PIMO):
         )
 
         pimo_result = PIMOResult(
+            fpr_lower_bound=self.fpr_bounds[0],
+            fpr_upper_bound=self.fpr_bounds[1],
             thresholds=thresholds,
             shared_fpr=shared_fpr,
             per_image_tprs=per_image_tprs,
         )
         aupimo_result = AUPIMOResult.from_pimo_result(
             pimo_result,
-            fpr_bounds=self.fpr_bounds,
             # not `num_thresholds`!
             # `num_thresholds` is the number of thresholds used to compute the PIMO curve
             # this is the number of thresholds used to compute the AUPIMO integral
