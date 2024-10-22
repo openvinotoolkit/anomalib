@@ -4,7 +4,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from pathlib import Path
-from tempfile import TemporaryDirectory
 
 import pytest
 import yaml
@@ -12,21 +11,23 @@ import yaml
 from anomalib.pipelines.tiled_ensemble import EvalTiledEnsemble, TrainTiledEnsemble
 
 
-@pytest.fixture(scope="module")
-def get_mock_environment(dataset_path: Path) -> Path:
+@pytest.fixture(scope="session")
+def get_mock_environment(dataset_path: Path, project_path: Path) -> Path:
     """Return mock directory for testing with datapath setup to dummy data."""
-    with TemporaryDirectory() as temp_dir:
-        with Path("tests/integration/pipelines/tiled_ensemble.yaml").open(encoding="utf-8") as file:
-            config = yaml.safe_load(file)
+    ens_temp_dir = project_path / "ens_tmp"
+    ens_temp_dir.mkdir(exist_ok=True)
 
-        # use separate project temp dir to avoid messing with other tests
-        config["default_root_dir"] = temp_dir
-        config["data"]["init_args"]["root"] = str(dataset_path / "mvtec")
+    with Path("tests/integration/pipelines/tiled_ensemble.yaml").open(encoding="utf-8") as file:
+        config = yaml.safe_load(file)
 
-        with (Path(temp_dir) / "tiled_ensemble.yaml").open("w", encoding="utf-8") as file:
-            yaml.safe_dump(config, file)
+    # use separate project temp dir to avoid messing with other tests
+    config["default_root_dir"] = str(ens_temp_dir)
+    config["data"]["init_args"]["root"] = str(dataset_path / "mvtec")
 
-        yield Path(temp_dir)
+    with (Path(ens_temp_dir) / "tiled_ensemble.yaml").open("w", encoding="utf-8") as file:
+        yaml.safe_dump(config, file)
+
+    return Path(ens_temp_dir)
 
 
 def test_train(get_mock_environment: Path, capsys: pytest.CaptureFixture) -> None:
@@ -42,7 +43,7 @@ def test_train(get_mock_environment: Path, capsys: pytest.CaptureFixture) -> Non
 
 def test_predict(get_mock_environment: Path, capsys: pytest.CaptureFixture) -> None:
     """Test prediction with the tiled ensemble."""
-    predict_pipeline = EvalTiledEnsemble(root_dir=get_mock_environment / "padim" / "mvtec" / "dummy" / "v0")
+    predict_pipeline = EvalTiledEnsemble(root_dir=get_mock_environment / "Padim" / "mvtec" / "dummy" / "v0")
     predict_parser = predict_pipeline.get_parser()
     args = predict_parser.parse_args(["--config", str(get_mock_environment / "tiled_ensemble.yaml")])
     predict_pipeline.run(args)
