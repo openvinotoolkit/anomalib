@@ -9,3 +9,6 @@ anomalib train --model Patchcore --data anomalib.data.MVTec --data.category tran
 
 # Train by using a config file.
 anomalib train --config <path/to/config>
+
+# Continue training from a checkpoint
+anomalib train --config <path/to/config> --ckpt_path <path/to/checkpoint.ckpt>
