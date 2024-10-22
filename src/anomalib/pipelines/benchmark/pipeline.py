@@ -20,7 +20,7 @@ class Benchmark(Pipeline):
         accelerators = args["accelerator"] if isinstance(args["accelerator"], list) else [args["accelerator"]]
         runners: list[Runner] = []
         for accelerator in accelerators:
-            if accelerator not in ["cpu", "cuda"]:
+            if accelerator not in {"cpu", "cuda"}:
                 msg = f"Unsupported accelerator: {accelerator}"
                 raise ValueError(msg)
             device_count = torch.cuda.device_count()
