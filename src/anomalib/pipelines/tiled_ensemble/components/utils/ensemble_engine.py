@@ -57,6 +57,8 @@ class TiledEnsembleEngine(Engine):
 
     def _setup_anomalib_callbacks(self, model: AnomalyModule) -> None:
         """Modified method to enable individual model training. It's called when Trainer is being set up."""
+        del model  # not used here
+
         _callbacks: list[Callback] = [RichModelSummary()]
 
         # Add ModelCheckpoint if it is not in the callbacks list.
