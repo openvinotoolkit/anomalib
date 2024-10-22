@@ -210,8 +210,8 @@ class PredictJobGenerator(JobGenerator):
             dataloader = datamodule.test_dataloader()
             if self.data_source == PredictData.VAL:
                 dataloader = datamodule.val_dataloader()
-            # TODO #2254: - this is tweak to avoid problem in engine:388 - I think if model has transforms
-            # that should be preferred over dataset transforms?
+            # TODO(blaz-r): - this is tweak to avoid problem in engine:388
+            # 2254
             dataloader.dataset.transform = None
 
             # pass root_dir to engine so all models in ensemble have the same root dir
