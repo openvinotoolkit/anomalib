@@ -32,23 +32,21 @@ class AnomalibDataModule(LightningDataModule, ABC):
         train_batch_size (int): Batch size used by the train dataloader.
         eval_batch_size (int): Batch size used by the val and test dataloaders.
         num_workers (int): Number of workers used by the train, val and test dataloaders.
-        val_split_mode (ValSplitMode | str): Determines how the validation split is obtained.
+        val_split_mode (ValSplitMode): Determines how the validation split is obtained.
             Options: [none, same_as_test, from_test, synthetic]
         val_split_ratio (float): Fraction of the train or test images held our for validation.
-        test_split_mode (TestSplitMode | str | None, optional): Determines how the test split is obtained.
+        test_split_mode (Optional[TestSplitMode], optional): Determines how the test split is obtained.
             Options: [none, from_dir, synthetic].
             Defaults to ``None``.
-        test_split_ratio (float | None, optional): Fraction of the train images held out for testing.
+        test_split_ratio (float): Fraction of the train images held out for testing.
             Defaults to ``None``.
-        image_size (tuple[int, int] | None, optional): Size to which input images should be resized.
+        image_size (tuple[int, int], optional): Size to which input images should be resized.
             Defaults to ``None``.
-        transform (Transform | None, optional): Transforms that should be applied to the input images.
+        transform (Transform, optional): Transforms that should be applied to the input images.
             Defaults to ``None``.
-        train_transform (Transform | None, optional): Transforms that should be applied to the input images
-            during training.
+        train_transform (Transform, optional): Transforms that should be applied to the input images during training.
             Defaults to ``None``.
-        eval_transform (Transform | None, optional): Transforms that should be applied to the input images
-            during evaluation.
+        eval_transform (Transform, optional): Transforms that should be applied to the input images during evaluation.
             Defaults to ``None``.
         seed (int | None, optional): Seed used during random subset splitting.
             Defaults to ``None``.

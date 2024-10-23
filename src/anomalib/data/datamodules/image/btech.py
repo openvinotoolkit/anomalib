@@ -79,13 +79,12 @@ class BTech(AnomalibDataModule):
         >>> datamodule = BTech(
         ...     root="./datasets/BTech",
         ...     category="01",
-        ...     image_size=(256, 256),
+        ...     image_size=256,
         ...     train_batch_size=32,
         ...     eval_batch_size=32,
         ...     num_workers=8,
-        ...     transform=None,
-        ...     train_transform=None,
-        ...     eval_transform=None,
+        ...     transform_config_train=None,
+        ...     transform_config_eval=None,
         ... )
         >>> datamodule.setup()
 

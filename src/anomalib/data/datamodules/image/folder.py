@@ -22,90 +22,104 @@ class Folder(AnomalibDataModule):
 
     Args:
         name (str): Name of the dataset. This is used to name the datamodule, especially when logging/saving.
-        normal_dir (str | Path | Sequence[str | Path]): Path to the directory containing normal images.
-        root (str | Path | None): Path to the root folder containing normal and abnormal dirs. Defaults to ``None``.
-        abnormal_dir (str | Path | Sequence[str | Path] | None): Path to the directory containing abnormal images.
+        normal_dir (str | Path | Sequence): Name of the directory containing normal images.
+        root (str | Path | None): Path to the root folder containing normal and abnormal dirs.
             Defaults to ``None``.
-        normal_test_dir (str | Path | Sequence[str | Path] | None): Path to the directory containing
-            normal images for the test dataset. Defaults to ``None``.
-        mask_dir (str | Path | Sequence[str | Path] | None): Path to the directory containing
-            the mask annotations. Defaults to ``None``.
-        normal_split_ratio (float): Ratio to split normal training images and add to the
-            test set in case test set doesn't contain any normal images. Defaults to 0.2.
-        extensions (tuple[str, ...] | None): Type of the image extensions to read from the
-            directory. Defaults to ``None``.
-        train_batch_size (int): Training batch size. Defaults to 32.
-        eval_batch_size (int): Validation, test and predict batch size. Defaults to 32.
-        num_workers (int): Number of workers. Defaults to 8.
-        task (TaskType | str): Task type. Could be ``classification``, ``detection`` or ``segmentation``.
-            Defaults to ``TaskType.SEGMENTATION``.
-        image_size (tuple[int, int] | None): Size to which input images should be resized. Defaults to ``None``.
-        transform (Transform | None): Transforms that should be applied to the input images. Defaults to ``None``.
-        train_transform (Transform | None): Transforms that should be applied to the input images during training.
+        abnormal_dir (str | Path | None | Sequence): Name of the directory containing abnormal images.
             Defaults to ``None``.
-        eval_transform (Transform | None): Transforms that should be applied to the input images during evaluation.
+        normal_test_dir (str | Path | Sequence | None, optional): Path to the directory containing
+            normal images for the test dataset.
             Defaults to ``None``.
-        test_split_mode (TestSplitMode | str): Setting that determines how the testing subset is obtained.
+        mask_dir (str | Path | Sequence | None, optional): Path to the directory containing
+            the mask annotations.
+            Defaults to ``None``.
+        normal_split_ratio (float, optional): Ratio to split normal training images and add to the
+            test set in case test set doesn't contain any normal images.
+            Defaults to 0.2.
+        extensions (tuple[str, ...] | None, optional): Type of the image extensions to read from the
+            directory.
+            Defaults to ``None``.
+        train_batch_size (int, optional): Training batch size.
+            Defaults to ``32``.
+        eval_batch_size (int, optional): Validation, test and predict batch size.
+            Defaults to ``32``.
+        num_workers (int, optional): Number of workers.
+            Defaults to ``8``.
+        task (TaskType, optional): Task type. Could be ``classification``, ``detection`` or ``segmentation``.
+            Defaults to ``segmentation``.
+        image_size (tuple[int, int], optional): Size to which input images should be resized.
+            Defaults to ``None``.
+        transform (Transform, optional): Transforms that should be applied to the input images.
+            Defaults to ``None``.
+        train_transform (Transform, optional): Transforms that should be applied to the input images during training.
+            Defaults to ``None``.
+        eval_transform (Transform, optional): Transforms that should be applied to the input images during evaluation.
+            Defaults to ``None``.
+        test_split_mode (TestSplitMode): Setting that determines how the testing subset is obtained.
             Defaults to ``TestSplitMode.FROM_DIR``.
         test_split_ratio (float): Fraction of images from the train set that will be reserved for testing.
-            Defaults to 0.2.
-        val_split_mode (ValSplitMode | str): Setting that determines how the validation subset is obtained.
+            Defaults to ``0.2``.
+        val_split_mode (ValSplitMode): Setting that determines how the validation subset is obtained.
             Defaults to ``ValSplitMode.FROM_TEST``.
         val_split_ratio (float): Fraction of train or test images that will be reserved for validation.
-            Defaults to 0.5.
-        seed (int | None): Seed used during random subset splitting. Defaults to ``None``.
+            Defaults to ``0.5``.
+        seed (int | None, optional): Seed used during random subset splitting.
+            Defaults to ``None``.
 
     Examples:
-        The following code demonstrates how to use the ``Folder`` datamodule:
-
-        >>> from pathlib import Path
-        >>> from anomalib.data import Folder
-        >>> from anomalib import TaskType
-
-        >>> dataset_root = Path("./sample_dataset")
-        >>> folder_datamodule = Folder(
-        ...     name="my_folder_dataset",
-        ...     root=dataset_root,
-        ...     normal_dir="good",
-        ...     abnormal_dir="crack",
-        ...     task=TaskType.SEGMENTATION,
-        ...     mask_dir=dataset_root / "mask" / "crack",
-        ...     image_size=(256, 256),
-        ...     train_batch_size=32,
-        ...     eval_batch_size=32,
-        ...     num_workers=8,
-        ... )
-        >>> folder_datamodule.setup()
-
-        >>> # Access the training images
-        >>> train_dataloader = folder_datamodule.train_dataloader()
-        >>> batch = next(iter(train_dataloader))
-        >>> print(batch.keys(), batch["image"].shape)
-
-        >>> # Access the test images
-        >>> test_dataloader = folder_datamodule.test_dataloader()
-        >>> batch = next(iter(test_dataloader))
-        >>> print(batch.keys(), batch["image"].shape)
-
-    Note:
-        The dataset is expected to have a structure similar to:
+        The following code demonstrates how to use the ``Folder`` datamodule. Assume that the dataset is structured
+        as follows:
 
         .. code-block:: bash
 
-            sample_dataset/
-            ├── good/
-            │   ├── normal_image1.jpg
-            │   ├── normal_image2.jpg
-            │   └── ...
-            ├── crack/
-            │   ├── anomaly_image1.jpg
-            │   ├── anomaly_image2.jpg
-            │   └── ...
-            └── mask/
-                └── crack/
-                    ├── anomaly_mask1.png
-                    ├── anomaly_mask2.png
-                    └── ...
+            $ tree sample_dataset
+            sample_dataset
+            ├── colour
+            │   ├── 00.jpg
+            │   ├── ...
+            │   └── x.jpg
+            ├── crack
+            │   ├── 00.jpg
+            │   ├── ...
+            │   └── y.jpg
+            ├── good
+            │   ├── ...
+            │   └── z.jpg
+            ├── LICENSE
+            └── mask
+                ├── colour
+                │   ├── ...
+                │   └── x.jpg
+                └── crack
+                    ├── ...
+                    └── y.jpg
+
+        .. code-block:: python
+
+            folder_datamodule = Folder(
+                root=dataset_root,
+                normal_dir="good",
+                abnormal_dir="crack",
+                task=TaskType.SEGMENTATION,
+                mask_dir=dataset_root / "mask" / "crack",
+                image_size=256,
+                normalization=InputNormalizationMethod.NONE,
+            )
+            folder_datamodule.setup()
+
+        To access the training images,
+
+        .. code-block:: python
+
+            >> i, data = next(enumerate(folder_datamodule.train_dataloader()))
+            >> print(data.keys(), data["image"].shape)
+
+        To access the test images,
+
+        .. code-block:: python
+
+            >> i, data = next(enumerate(folder_datamodule.test_dataloader()))
+            >> print(data.keys(), data["image"].shape)
     """
 
     def __init__(
