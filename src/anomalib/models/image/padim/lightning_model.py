@@ -10,7 +10,6 @@ import logging
 
 import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
-from torchvision.transforms.v2 import Compose, Normalize, Resize
 
 from anomalib import LearningType
 from anomalib.data import Batch
@@ -128,17 +127,6 @@ class Padim(MemoryBankMixin, AnomalyModule):
             LearningType: Learning type of the model.
         """
         return LearningType.ONE_CLASS
-
-    @staticmethod
-    def configure_pre_processor(image_size: tuple[int, int] | None = None) -> PreProcessor:
-        """Default pre-processor for Padim."""
-        image_size = image_size or (256, 256)
-        return PreProcessor(
-            transform=Compose([
-                Resize(image_size, antialias=True),
-                Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-            ]),
-        )
 
     @staticmethod
     def default_post_processor() -> OneClassPostProcessor:
