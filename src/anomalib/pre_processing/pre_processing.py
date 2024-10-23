@@ -3,15 +3,29 @@
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from typing import TYPE_CHECKING
+
 import torch
 from lightning import Callback, LightningModule, Trainer
 from lightning.pytorch.trainer.states import TrainerFn
 from torch import nn
+from torch.utils.data import DataLoader
 from torchvision.transforms.v2 import Transform
 
 from anomalib.data.dataclasses.torch.base import Batch
-from anomalib.data.utils.transform import set_dataloader_transform, set_datamodule_transform
 from anomalib.deploy.utils import get_exportable_transform
+
+from .utils.transform import (
+    get_dataloaders_transforms,
+    get_datamodule_transforms,
+    set_dataloaders_transforms,
+    set_datamodule_transforms,
+)
+
+if TYPE_CHECKING:
+    from lightning.pytorch.utilities.types import EVAL_DATALOADERS, TRAIN_DATALOADERS
+
+    from anomalib.data import AnomalibDataModule
 
 
 class PreProcessor(nn.Module, Callback):
@@ -34,6 +48,12 @@ class PreProcessor(nn.Module, Callback):
 
     Notes:
         If only `transform` is provided, it will be used for all stages (train, val, test).
+
+        Priority of transforms:
+        1. Explicitly set PreProcessor transforms (highest priority)
+        2. Datamodule transforms (if PreProcessor has no transforms)
+        3. Dataloader transforms (if neither PreProcessor nor datamodule have transforms)
+        4. Default transforms (lowest priority)
 
     Examples:
         >>> from torchvision.transforms.v2 import Compose, Resize, ToTensor
@@ -90,39 +110,74 @@ class PreProcessor(nn.Module, Callback):
         self.val_transform = val_transform or transform
         self.test_transform = test_transform or transform
         self.predict_transform = self.test_transform
-
         self.exportable_transform = get_exportable_transform(self.test_transform)
 
-    def setup(self, trainer: Trainer, pl_module: LightningModule, stage: str) -> None:
-        """Set the transforms for datamodule or dataloaders.
+    def setup_transforms(
+        self,
+        datamodule: "AnomalibDataModule | None" = None,
+        dataloaders: "EVAL_DATALOADERS | TRAIN_DATALOADERS | None" = None,
+    ) -> None:
+        """Set up and propagate transforms according to priority rules.
 
-        The model-specific transforms are configured within PreProcessor and stored in
-        model implementation. This method sets the transforms for the datamodule or
-        dataloaders.
+        Args:
+            datamodule: DataModule that might contain transforms.
+            dataloaders: Dataloaders that might contain transforms.
+        """
+        if isinstance(dataloaders, DataLoader):
+            dataloaders = [dataloaders]
+
+        # If PreProcessor has transforms, propagate them to datamodule or dataloaders
+        if any([self.train_transform, self.val_transform, self.test_transform]):
+            transforms = {
+                "train": self.train_transform,
+                "val": self.val_transform,
+                "test": self.test_transform,
+            }
+
+            if datamodule:
+                set_datamodule_transforms(datamodule, transforms)
+            if dataloaders:
+                set_dataloaders_transforms(dataloaders, transforms)
+            return
+
+        # Try to get transforms from datamodule
+        if datamodule:
+            datamodule_transforms = get_datamodule_transforms(datamodule)
+            if datamodule_transforms:
+                self.train_transform = datamodule_transforms.get("train")
+                self.val_transform = datamodule_transforms.get("val")
+                self.test_transform = datamodule_transforms.get("test")
+                self.predict_transform = self.test_transform
+                self.exportable_transform = get_exportable_transform(self.test_transform)
+                return
+
+        # Try to get transforms from dataloaders
+        if dataloaders:
+            dataloaders_transforms = get_dataloaders_transforms(dataloaders)
+            if dataloaders_transforms:
+                self.train_transform = dataloaders_transforms.get("train")
+                self.val_transform = dataloaders_transforms.get("val")
+                self.test_transform = dataloaders_transforms.get("test")
+                self.predict_transform = self.test_transform
+                self.exportable_transform = get_exportable_transform(self.test_transform)
+
+    def setup(self, trainer: Trainer, pl_module: LightningModule, stage: str) -> None:
+        """Configure transforms at the start of each stage.
 
         Args:
             trainer: The Lightning trainer.
             pl_module: The Lightning module.
-            stage: The stage (e.g., 'fit', 'train', 'val', 'test', 'predict').
+            stage: The stage (e.g., 'fit', 'validate', 'test', 'predict').
         """
-        super().setup(trainer, pl_module, stage)
-        stage = TrainerFn(stage).value  # Make sure ``stage`` is a str
-        stage_transforms = {
-            "fit": self.train_transform,
-            "validate": self.val_transform,
-            "test": self.test_transform,
-            "predict": self.predict_transform,
-        }
-        transform = stage_transforms.get(stage)
+        stage = TrainerFn(stage).value  # Convert string to TrainerFn enum
 
-        if transform:
-            if hasattr(trainer, "datamodule"):
-                set_datamodule_transform(trainer.datamodule, transform, stage)
-            elif hasattr(trainer, f"{stage}_dataloaders"):
-                set_dataloader_transform(getattr(trainer, f"{stage}_dataloaders"), transform)
-            else:
-                msg = f"Trainer does not have a datamodule or {stage}_dataloaders attribute"
-                raise ValueError(msg)
+        if hasattr(trainer, "datamodule"):
+            self.setup_transforms(datamodule=trainer.datamodule)
+        elif hasattr(trainer, f"{stage}_dataloaders"):
+            dataloaders = getattr(trainer, f"{stage}_dataloaders")
+            self.setup_transforms(dataloaders=dataloaders)
+
+        super().setup(trainer, pl_module, stage)
 
     def forward(self, batch: torch.Tensor) -> torch.Tensor:
         """Apply transforms to the batch of tensors for inference.
