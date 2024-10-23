@@ -6,7 +6,7 @@
 import logging
 from collections.abc import Iterable
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import torch
 from lightning.pytorch.callbacks import Callback
@@ -315,6 +315,72 @@ class Engine:
         root_dir = Path(self._cache.args["default_root_dir"]) / model.name / dataset_name / category
         self._cache.args["default_root_dir"] = create_versioned_dir(root_dir) if versioned_dir else root_dir / "latest"
 
+    def _setup_device(self) -> None:
+        """TO BE DEPRECATED: Setup the device for the trainer.
+
+        This method configures the device (GPU) to be used by the trainer.
+        It handles various input formats for device specification and
+        ensures compatibility with the current single-GPU limitation.
+
+        Note:
+            This method is a temporary solution until multi-GPU support
+            is added to Anomalib.
+
+        Todo:
+            Add Multi-GPU support to Anomalib.
+            https://github.com/openvinotoolkit/anomalib/issues/1449
+
+        Raises:
+            ValueError: If an invalid device specification is provided.
+        """
+        accelerator = self._cache.args.get("accelerator")
+        devices = self._cache.args.get("devices")
+
+        # Only proceed with GPU setup if the accelerator is set to "gpu"
+        if accelerator != "gpu":
+            return
+
+        # Helper function to log warning and return single GPU specification
+        def use_single_gpu(message: str) -> Literal[1]:
+            """Log a warning and return a single GPU specification."""
+            logger.warning(f"{message} Defaulting to a single GPU.")
+            return 1  # Let Lightning choose the GPU
+
+        # Handle various input types
+        if devices is None:
+            self._cache.args["devices"] = 1
+            logger.info("No specific GPU selected. Using Lightning's default selection.")
+        elif isinstance(devices, int):
+            if devices > 1 or devices <= 0:  # Treat 0 and negative values (except -1) as a request for all GPUs
+                message = f"Multiple GPUs requested ({devices}), but multi-GPU is not supported."
+                self._cache.args["devices"] = use_single_gpu(message)
+            else:  # devices == 1
+                self._cache.args["devices"] = 1  # Let Lightning choose the GPU
+        elif isinstance(devices, str):
+            if devices.lower() in ("-1", "auto", "0"):
+                self._cache.args["devices"] = use_single_gpu("All GPUs requested, but multi-GPU is not supported.")
+            elif "," in devices:
+                message = f"Multiple GPUs specified ({devices}), but multi-GPU is not supported."
+                self._cache.args["devices"] = use_single_gpu(message)
+            else:
+                try:
+                    gpu_id = int(devices)
+                    self._cache.args["devices"] = (
+                        [gpu_id] if gpu_id > 0 else use_single_gpu(f"Invalid GPU specification: {devices}.")
+                    )
+                except ValueError:
+                    self._cache.args["devices"] = use_single_gpu(f"Invalid GPU specification: {devices}.")
+        elif isinstance(devices, list):
+            if len(devices) > 1:
+                message = f"Multiple GPUs specified {devices}, but multi-GPU is not supported."
+                self._cache.args["devices"] = use_single_gpu(message)
+            elif len(devices) == 1:
+                self._cache.args["devices"] = devices  # Keep the single GPU specified
+            else:  # Empty list
+                self._cache.args["devices"] = use_single_gpu("Empty list provided for 'devices'.")
+        else:
+            self._cache.args["devices"] = use_single_gpu(f"Unrecognized 'devices' format: {devices}.")
+
     def _setup_trainer(self, model: AnomalyModule) -> None:
         """Instantiate the trainer based on the model parameters."""
         # Check if the cache requires an update
@@ -324,8 +390,9 @@ class Engine:
         # Setup anomalib callbacks to be used with the trainer
         self._setup_anomalib_callbacks(model)
 
-        # Temporarily set devices to 1 to avoid issues with multiple processes
-        self._cache.args["devices"] = 1
+        # TODO (ashwinvaidya17, djdameln, samet-akcay): Remove this when multi-GPU support is added to Anomalib
+        # https://github.com/openvinotoolkit/anomalib/issues/1449
+        self._setup_device()
 
         # Instantiate the trainer if it is not already instantiated
         if self._trainer is None:
