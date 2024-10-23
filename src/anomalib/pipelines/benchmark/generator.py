@@ -10,22 +10,10 @@ from anomalib.models import get_model
 from anomalib.pipelines.components import JobGenerator
 from anomalib.pipelines.components.utils import get_iterator_from_grid_dict
 from anomalib.pipelines.types import PREV_STAGE_RESULT
+from anomalib.utils.config import flatten_dict
 from anomalib.utils.logging import hide_output
 
 from .job import BenchmarkJob
-
-
-def flatten_dict(d: dict | object, key: str = "", output: dict | None = None) -> dict:
-    """Flatten a dictionary by dot-connecting the hierarchical keys."""
-    # B006 Do not use mutable data structures for argument defaults.
-    if output is None:
-        output = {}
-    if isinstance(d, dict):
-        for k, v in d.items():
-            flatten_dict(v, f"{key}.{k}" if key != "" else k, output)
-    else:
-        output[key] = d
-    return output
 
 
 class BenchmarkJobGenerator(JobGenerator):
