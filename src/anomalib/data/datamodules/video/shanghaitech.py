@@ -20,6 +20,8 @@ import logging
 from pathlib import Path
 from shutil import move
 
+from torchvision.transforms.v2 import Transform
+
 from anomalib import TaskType
 from anomalib.data.datamodules.base.video import AnomalibVideoDataModule
 from anomalib.data.datasets.base.video import VideoTargetFrame
@@ -51,6 +53,14 @@ class ShanghaiTech(AnomalibVideoDataModule):
         frames_between_clips (int, optional): Number of frames between each consecutive video clip.
         target_frame (VideoTargetFrame): Specifies the target frame in the video clip, used for ground truth retrieval
         task TaskType): Task type, 'classification', 'detection' or 'segmentation'
+        image_size (tuple[int, int], optional): Size to which input images should be resized.
+            Defaults to ``None``.
+        transform (Transform, optional): Transforms that should be applied to the input images.
+            Defaults to ``None``.
+        train_transform (Transform, optional): Transforms that should be applied to the input images during training.
+            Defaults to ``None``.
+        eval_transform (Transform, optional): Transforms that should be applied to the input images during evaluation.
+            Defaults to ``None``.
         train_batch_size (int, optional): Training batch size. Defaults to 32.
         eval_batch_size (int, optional): Test batch size. Defaults to 32.
         num_workers (int, optional): Number of workers. Defaults to 8.
@@ -67,6 +77,10 @@ class ShanghaiTech(AnomalibVideoDataModule):
         frames_between_clips: int = 1,
         target_frame: VideoTargetFrame = VideoTargetFrame.LAST,
         task: TaskType | str = TaskType.SEGMENTATION,
+        image_size: tuple[int, int] | None = None,
+        transform: Transform | None = None,
+        train_transform: Transform | None = None,
+        eval_transform: Transform | None = None,
         train_batch_size: int = 32,
         eval_batch_size: int = 32,
         num_workers: int = 8,
@@ -78,6 +92,10 @@ class ShanghaiTech(AnomalibVideoDataModule):
             train_batch_size=train_batch_size,
             eval_batch_size=eval_batch_size,
             num_workers=num_workers,
+            image_size=image_size,
+            transform=transform,
+            train_transform=train_transform,
+            eval_transform=eval_transform,
             val_split_mode=val_split_mode,
             val_split_ratio=val_split_ratio,
             seed=seed,
@@ -94,6 +112,7 @@ class ShanghaiTech(AnomalibVideoDataModule):
     def _setup(self, _stage: str | None = None) -> None:
         self.train_data = ShanghaiTechDataset(
             task=self.task,
+            transform=self.train_transform,
             clip_length_in_frames=self.clip_length_in_frames,
             frames_between_clips=self.frames_between_clips,
             target_frame=self.target_frame,
@@ -104,6 +123,7 @@ class ShanghaiTech(AnomalibVideoDataModule):
 
         self.test_data = ShanghaiTechDataset(
             task=self.task,
+            transform=self.eval_transform,
             clip_length_in_frames=self.clip_length_in_frames,
             frames_between_clips=self.frames_between_clips,
             target_frame=self.target_frame,

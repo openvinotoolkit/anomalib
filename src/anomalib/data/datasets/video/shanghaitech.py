@@ -42,7 +42,7 @@ class ShanghaiTechDataset(AnomalibVideoDataset):
         clip_length_in_frames (int, optional): Number of video frames in each clip.
         frames_between_clips (int, optional): Number of frames between each consecutive video clip.
         target_frame (VideoTargetFrame): Specifies the target frame in the video clip, used for ground truth retrieval.
-        transform (Transform | None, optional): Transforms that should be applied to the input images.
+        transform (Transform, optional): Transforms that should be applied to the input images.
             Defaults to ``None``.
     """
 

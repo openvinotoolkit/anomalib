@@ -65,18 +65,21 @@ class MVTecDataset(AnomalibDataset):
             Defaults to ``./datasets/MVTec``.
         category (str): Sub-category of the dataset, e.g. 'bottle'
             Defaults to ``bottle``.
-        split (str | Split | None): Split of the dataset, usually Split.TRAIN or Split.TEST
+        transform (Transform, optional): Transforms that should be applied to the input images.
             Defaults to ``None``.
-        transform (Transform | None, optional): Transforms that should be applied to the input images.
+        split (str | Split | None): Split of the dataset, usually Split.TRAIN or Split.TEST
             Defaults to ``None``.
 
     Examples:
         .. code-block:: python
 
             from anomalib.data.image.mvtec import MVTecDataset
+            from anomalib.data.utils.transforms import get_transforms
 
+            transform = get_transforms(image_size=256)
             dataset = MVTecDataset(
                 task="classification",
+                transform=transform,
                 root='./datasets/MVTec',
                 category='zipper',
             )
@@ -107,10 +110,10 @@ class MVTecDataset(AnomalibDataset):
         task: TaskType,
         root: Path | str = "./datasets/MVTec",
         category: str = "bottle",
-        split: str | Split | None = None,
         transform: Transform | None = None,
+        split: str | Split | None = None,
     ) -> None:
-        super().__init__(task, transform)
+        super().__init__(task=task, transform=transform)
 
         self.root_category = Path(root) / Path(category)
         self.category = category

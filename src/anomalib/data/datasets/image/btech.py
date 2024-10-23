@@ -28,15 +28,19 @@ class BTechDataset(AnomalibDataset):
     Args:
         root: Path to the BTech dataset
         category: Name of the BTech category.
-        transform: Transform to apply to the input images.
+        transform (Transform, optional): Transforms that should be applied to the input images.
+            Defaults to ``None``.
         split: 'train', 'val' or 'test'
         task: ``classification``, ``detection`` or ``segmentation``
         create_validation_set: Create a validation subset in addition to the train and test subsets
 
     Examples:
         >>> from anomalib.data.image.btech import BTechDataset
+        >>> from anomalib.data.utils.transforms import get_transforms
+        >>> transform = get_transforms(image_size=256)
         >>> dataset = BTechDataset(
         ...     task="classification",
+        ...     transform=transform,
         ...     root='./datasets/BTech',
         ...     category='01',
         ... )
