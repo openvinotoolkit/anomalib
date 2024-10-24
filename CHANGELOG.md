@@ -16,6 +16,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Changed
 
 - Add duration of experiments in seconds in the benchmark CSV result by [mzweilin](https://github.com/mzweilin) in https://github.com/openvinotoolkit/anomalib/pull/2392
+- Export flat configurations in benchmark CSV results by [mzweilin](https://github.com/mzweilin) in https://github.com/openvinotoolkit/anomalib/pull/2391
 
 ### Deprecated
 

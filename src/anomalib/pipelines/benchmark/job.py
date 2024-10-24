@@ -32,16 +32,25 @@ class BenchmarkJob(Job):
         model (AnomalyModule): The model to use.
         datamodule (AnomalibDataModule): The data module to use.
         seed (int): The seed to use.
+        flat_cfg (dict): The flat dictionary of configs with dotted keys.
     """
 
     name = "benchmark"
 
-    def __init__(self, accelerator: str, model: AnomalyModule, datamodule: AnomalibDataModule, seed: int) -> None:
+    def __init__(
+        self,
+        accelerator: str,
+        model: AnomalyModule,
+        datamodule: AnomalibDataModule,
+        seed: int,
+        flat_cfg: dict,
+    ) -> None:
         super().__init__()
         self.accelerator = accelerator
         self.model = model
         self.datamodule = datamodule
         self.seed = seed
+        self.flat_cfg = flat_cfg
 
     @hide_output
     def run(
@@ -74,12 +83,9 @@ class BenchmarkJob(Job):
         # TODO(ashwinvaidya17): Restore throughput
         # https://github.com/openvinotoolkit/anomalib/issues/2054
         output = {
-            "seed": self.seed,
             "accelerator": self.accelerator,
-            "model": self.model.__class__.__name__,
-            "data": self.datamodule.__class__.__name__,
-            "category": self.datamodule.category,
             **durations,
+            **self.flat_cfg,
             **test_results[0],
         }
         logger.info(f"Completed with result {output}")
