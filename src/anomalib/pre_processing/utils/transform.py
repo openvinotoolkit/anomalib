@@ -6,56 +6,10 @@
 from collections.abc import Sequence
 
 from torch.utils.data import DataLoader
-from torchvision.transforms.v2 import Transform
+from torchvision.transforms.v2 import CenterCrop, Compose, Resize, Transform
 
 from anomalib.data import AnomalibDataModule
-
-
-def set_datamodule_transform(datamodule: AnomalibDataModule, transform: Transform, stage: str) -> None:
-    """Set a transform for a specific stage in a AnomalibDataModule.
-
-    Args:
-        datamodule: The AnomalibDataModule to set the transform for.
-        transform: The transform to set.
-        stage: The stage to set the transform for.
-
-    Note:
-        The stage parameter maps to dataset attributes as follows:
-        - 'fit' -> 'train_data'
-        - 'validate' -> 'val_data'
-        - 'test' -> 'test_data'
-        - 'predict' -> 'test_data'
-    """
-    stage_datasets = {
-        "fit": "train_data",
-        "validate": "val_data",
-        "test": "test_data",
-        "predict": "test_data",
-    }
-
-    dataset_attr = stage_datasets.get(stage)
-    if dataset_attr and hasattr(datamodule, dataset_attr):
-        dataset = getattr(datamodule, dataset_attr)
-        if hasattr(dataset, "transform"):
-            dataset.transform = transform
-
-
-def set_dataloader_transform(dataloader: DataLoader | Sequence[DataLoader], transform: Transform) -> None:
-    """Set a transform for a dataloader or list of dataloaders.
-
-    Args:
-        dataloader: The dataloader(s) to set the transform for.
-        transform: The transform to set.
-    """
-    if isinstance(dataloader, DataLoader):
-        if hasattr(dataloader.dataset, "transform"):
-            dataloader.dataset.transform = transform
-    elif isinstance(dataloader, Sequence):
-        for dl in dataloader:
-            set_dataloader_transform(dl, transform)
-    else:
-        msg = f"Unsupported dataloader type: {type(dataloader)}"
-        raise TypeError(msg)
+from anomalib.data.transforms import ExportableCenterCrop
 
 
 def get_stage_transform(stage: str, transforms: dict[str, Transform | None]) -> Transform | None:
@@ -159,3 +113,88 @@ def set_dataloaders_transforms(dataloaders: Sequence[DataLoader], transforms: di
                 transform = transforms.get(stage_mapping[stage])
                 if transform is not None:
                     set_dataloader_transform([loader], transform)
+
+
+def set_datamodule_transform(datamodule: AnomalibDataModule, transform: Transform, stage: str) -> None:
+    """Set a transform for a specific stage in a AnomalibDataModule.
+
+    Args:
+        datamodule: The AnomalibDataModule to set the transform for.
+        transform: The transform to set.
+        stage: The stage to set the transform for.
+
+    Note:
+        The stage parameter maps to dataset attributes as follows:
+        - 'fit' -> 'train_data'
+        - 'validate' -> 'val_data'
+        - 'test' -> 'test_data'
+        - 'predict' -> 'test_data'
+    """
+    stage_datasets = {
+        "fit": "train_data",
+        "validate": "val_data",
+        "test": "test_data",
+        "predict": "test_data",
+    }
+
+    dataset_attr = stage_datasets.get(stage)
+    if dataset_attr and hasattr(datamodule, dataset_attr):
+        dataset = getattr(datamodule, dataset_attr)
+        if hasattr(dataset, "transform"):
+            dataset.transform = transform
+
+
+def set_dataloader_transform(dataloader: DataLoader | Sequence[DataLoader], transform: Transform) -> None:
+    """Set a transform for a dataloader or list of dataloaders.
+
+    Args:
+        dataloader: The dataloader(s) to set the transform for.
+        transform: The transform to set.
+    """
+    if isinstance(dataloader, DataLoader):
+        if hasattr(dataloader.dataset, "transform"):
+            dataloader.dataset.transform = transform
+    elif isinstance(dataloader, Sequence):
+        for dl in dataloader:
+            set_dataloader_transform(dl, transform)
+    else:
+        msg = f"Unsupported dataloader type: {type(dataloader)}"
+        raise TypeError(msg)
+
+
+def get_exportable_transform(transform: Transform | None) -> Transform | None:
+    """Get exportable transform.
+
+    Some transforms are not supported by ONNX/OpenVINO, so we need to replace them with exportable versions.
+    """
+    if transform is None:
+        return None
+    transform = disable_antialiasing(transform)
+    return convert_centercrop(transform)
+
+
+def disable_antialiasing(transform: Transform) -> Transform:
+    """Disable antialiasing in Resize transforms.
+
+    Resizing with antialiasing is not supported by ONNX, so we need to disable it.
+    """
+    if isinstance(transform, Resize):
+        transform.antialias = False
+    if isinstance(transform, Compose):
+        for tr in transform.transforms:
+            disable_antialiasing(tr)
+    return transform
+
+
+def convert_centercrop(transform: Transform) -> Transform:
+    """Convert CenterCrop to ExportableCenterCrop.
+
+    Torchvision's CenterCrop is not supported by ONNX, so we need to replace it with our own ExportableCenterCrop.
+    """
+    if isinstance(transform, CenterCrop):
+        transform = ExportableCenterCrop(size=transform.size)
+    if isinstance(transform, Compose):
+        for index in range(len(transform.transforms)):
+            tr = transform.transforms[index]
+            transform.transforms[index] = convert_centercrop(tr)
+    return transform

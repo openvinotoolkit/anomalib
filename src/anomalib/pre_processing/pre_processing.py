@@ -13,11 +13,11 @@ from torch.utils.data import DataLoader
 from torchvision.transforms.v2 import Transform
 
 from anomalib.data.dataclasses.torch.base import Batch
-from anomalib.deploy.utils import get_exportable_transform
 
 from .utils.transform import (
     get_dataloaders_transforms,
     get_datamodule_transforms,
+    get_exportable_transform,
     set_dataloaders_transforms,
     set_datamodule_transforms,
 )

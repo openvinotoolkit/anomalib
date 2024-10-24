@@ -248,8 +248,13 @@ class AnomalibDataModule(LightningDataModule, ABC):
         """
         if self._train_transform:
             return self._train_transform
-        if getattr(self, "trainer", None) and self.trainer.lightning_module and self.trainer.lightning_module.transform:
-            return self.trainer.lightning_module.transform
+        if (
+            getattr(self, "trainer", None)
+            and self.trainer.lightning_module
+            and hasattr(self.trainer.lightning_module, "pre_processor")
+            and hasattr(self.trainer.lightning_module.pre_processor, "train_transform")
+        ):
+            return self.trainer.lightning_module.pre_processor.train_transform
         if self.image_size:
             return Resize(self.image_size, antialias=True)
         return None
@@ -262,8 +267,13 @@ class AnomalibDataModule(LightningDataModule, ABC):
         """
         if self._eval_transform:
             return self._eval_transform
-        if getattr(self, "trainer", None) and self.trainer.lightning_module and self.trainer.lightning_module.transform:
-            return self.trainer.lightning_module.transform
+        if (
+            getattr(self, "trainer", None)
+            and self.trainer.lightning_module
+            and hasattr(self.trainer.lightning_module, "pre_processor")
+            and hasattr(self.trainer.lightning_module.pre_processor, "test_transform")
+        ):
+            return self.trainer.lightning_module.pre_processor.test_transform
         if self.image_size:
             return Resize(self.image_size, antialias=True)
         return None

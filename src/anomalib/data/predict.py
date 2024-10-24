@@ -47,7 +47,10 @@ class PredictDataset(Dataset):
         if self.transform:
             image = self.transform(image)
 
-        return ImageItem(image=image, image_path=str(image_filename))
+        return ImageItem(
+            image=image,
+            image_path=str(image_filename),
+        )
 
     @property
     def collate_fn(self) -> Callable:
