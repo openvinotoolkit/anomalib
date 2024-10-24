@@ -1,0 +1,52 @@
+seed: 42
+accelerator: "cpu"
+default_root_dir: "results"
+
+tiling:
+  tile_size: [50, 50]
+  stride: 50
+
+normalization_stage: image # on what level we normalize, options: [tile, image, none]
+thresholding:
+  method: F1AdaptiveThreshold # refer to documentation for thresholding methods
+  stage: image # stage at which we apply threshold, options: [tile, image]
+
+data:
+  class_path: anomalib.data.MVTec
+  init_args:
+    root: toBeSetup
+    category: dummy
+    train_batch_size: 32
+    eval_batch_size: 32
+    num_workers: 0
+    task: segmentation
+    transform: null
+    train_transform: null
+    eval_transform: null
+    test_split_mode: from_dir
+    test_split_ratio: 0.2
+    val_split_mode: same_as_test
+    val_split_ratio: 0.5
+    image_size: [100, 100]
+
+SeamSmoothing:
+  apply: True # if this is applied, area around tile seams are is smoothed
+  sigma: 2 # sigma of gaussian filter used to smooth this area
+  width: 0.1 # width factor, multiplied by tile dimension gives the region width around seam which will be smoothed
+
+TrainModels:
+  model:
+    class_path: Fastflow
+
+  metrics:
+    pixel: AUROC
+    image: AUROC
+
+  trainer:
+    max_epochs: 1
+    callbacks:
+      - class_path: lightning.pytorch.callbacks.EarlyStopping
+        init_args:
+          patience: 1
+          monitor: pixel_AUROC
+          mode: max
