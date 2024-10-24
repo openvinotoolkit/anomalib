@@ -3,8 +3,11 @@
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from unittest.mock import MagicMock
+
 import pytest
 import torch
+from torch.utils.data import DataLoader
 from torchvision.transforms.v2 import Compose, Resize, ToDtype, ToImage
 from torchvision.tv_tensors import Image, Mask
 
@@ -95,3 +98,52 @@ class TestPreProcessor:
         test_batch = ImageBatch(image=Image(torch.rand(3, 256, 256)), gt_mask=Mask(torch.zeros(256, 256)))
         pre_processor.on_test_batch_start(None, None, test_batch, 0)
         assert test_batch.image.shape == (1, 3, 288, 288)
+
+    def test_setup_transforms_from_datamodule(self) -> None:
+        """Test setup method when transforms are obtained from datamodule."""
+        # Mock datamodule with transforms
+        datamodule = MagicMock()
+        datamodule.train_transform = self.common_transform
+        datamodule.eval_transform = self.common_transform
+
+        pre_processor = PreProcessor()
+        pre_processor.setup_transforms(datamodule=datamodule)
+
+        assert pre_processor.train_transform == self.common_transform
+        assert pre_processor.val_transform == self.common_transform
+        assert pre_processor.test_transform == self.common_transform
+
+    def test_setup_transforms_from_dataloaders(self) -> None:
+        """Test setup method when transforms are obtained from dataloaders."""
+        # Mock dataloader with dataset having a transform
+        dataloader = MagicMock()
+        dataloader.dataset.transform = self.common_transform
+
+        pre_processor = PreProcessor()
+        pre_processor.setup_transforms(dataloaders=[dataloader])
+
+        assert pre_processor.train_transform == self.common_transform
+        assert pre_processor.val_transform == self.common_transform
+        assert pre_processor.test_transform == self.common_transform
+
+    def test_setup_transforms_priority(self) -> None:
+        """Test setup method prioritizes PreProcessor transforms over datamodule/dataloaders."""
+        # Mock datamodule
+        datamodule = MagicMock()
+        datamodule.train_transform = Compose([Resize((128, 128)), ToImage(), ToDtype(torch.float32, scale=True)])
+        datamodule.eval_transform = Compose([Resize((128, 128)), ToImage(), ToDtype(torch.float32, scale=True)])
+
+        # Mock dataloader
+        dataset_mock = MagicMock()
+        dataset_mock.transform = Compose([Resize((64, 64)), ToImage(), ToDtype(torch.float32, scale=True)])
+        dataloader = MagicMock(spec=DataLoader)
+        dataloader.dataset = dataset_mock
+
+        # Initialize PreProcessor with a custom transform
+        pre_processor = PreProcessor(transform=self.common_transform)
+        pre_processor.setup_transforms(datamodule=datamodule, dataloaders=[dataloader])
+
+        # Ensure PreProcessor's own transform is used
+        assert pre_processor.train_transform == self.common_transform
+        assert pre_processor.val_transform == self.common_transform
+        assert pre_processor.test_transform == self.common_transform
