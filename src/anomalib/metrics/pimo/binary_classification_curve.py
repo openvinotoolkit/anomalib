@@ -158,7 +158,7 @@ def binary_classification_curve(
     return torch.from_numpy(result).to(scores_batch.device)
 
 
-def _get_linspaced_thresholds(anomaly_maps: torch.Tensor, num_thresholds: int) -> torch.Tensor:
+def _get_minmax_linspaced_thresholds(anomaly_maps: torch.Tensor, num_thresholds: int) -> torch.Tensor:
     """Get thresholds linearly spaced between the min and max of the anomaly maps."""
     _validate.is_num_thresholds_gte2(num_thresholds)
     # this operation can be a bit expensive
@@ -241,7 +241,7 @@ def threshold_and_binary_classification_curve(
                 f"but it is ignored because `thresholds_choice` is '{threshold_choice.value}'.",
             )
         # `num_thresholds` is validated in the function below
-        thresholds = _get_linspaced_thresholds(anomaly_maps, num_thresholds)
+        thresholds = _get_minmax_linspaced_thresholds(anomaly_maps, num_thresholds)
 
     elif threshold_choice == ThresholdMethod.MEAN_FPR_OPTIMIZED:
         raise NotImplementedError(f"TODO implement {threshold_choice.value}")  # noqa: EM102
