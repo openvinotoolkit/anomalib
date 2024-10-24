@@ -148,8 +148,6 @@ class AnomalibCLI:
             ``Engine`` class should be reflected manually.
         """
         parser.add_argument("--task", type=TaskType | str, default=TaskType.SEGMENTATION)
-        parser.add_argument("--metrics.image", type=list[str] | str | None, default=None)
-        parser.add_argument("--metrics.pixel", type=list[str] | str | None, default=None, required=False)
         parser.add_argument("--logging.log_graph", type=bool, help="Log the model to the logger", default=False)
         if hasattr(parser, "subcommand") and parser.subcommand not in {"export", "predict"}:
             parser.link_arguments("task", "data.init_args.task")
@@ -323,8 +321,6 @@ class AnomalibCLI:
 
         engine_args = {
             "task": self._get(self.config_init, "task"),
-            "image_metrics": self._get(self.config_init, "metrics.image"),
-            "pixel_metrics": self._get(self.config_init, "metrics.pixel"),
         }
         trainer_config = {**self._get(self.config_init, "trainer", default={}), **engine_args}
         key = "callbacks"

@@ -47,8 +47,9 @@ class Dfm(MemoryBankMixin, AnomalyModule):
         pooling_kernel_size: int = 4,
         pca_level: float = 0.97,
         score_type: str = "fre",
+        **kwargs,
     ) -> None:
-        super().__init__()
+        super().__init__(**kwargs)
 
         self.model: DFMModel = DFMModel(
             backbone=backbone,

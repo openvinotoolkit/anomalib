@@ -52,8 +52,9 @@ class Cfa(AnomalyModule):
         num_nearest_neighbors: int = 3,
         num_hard_negative_features: int = 3,
         radius: float = 1e-5,
+        **kwargs,
     ) -> None:
-        super().__init__()
+        super().__init__(**kwargs)
         self.model: CfaModel = CfaModel(
             backbone=backbone,
             gamma_c=gamma_c,

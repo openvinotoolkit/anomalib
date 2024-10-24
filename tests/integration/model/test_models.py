@@ -210,7 +210,6 @@ class TestAPI:
             default_root_dir=project_path,
             max_epochs=1,
             devices=1,
-            pixel_metrics=["F1Max", "AUROC"],
             task=task_type,
             # TODO(ashwinvaidya17): Fix these Edge cases
             # https://github.com/openvinotoolkit/anomalib/issues/1478

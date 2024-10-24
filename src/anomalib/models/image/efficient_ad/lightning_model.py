@@ -69,8 +69,9 @@ class EfficientAd(AnomalyModule):
         weight_decay: float = 0.00001,
         padding: bool = False,
         pad_maps: bool = True,
+        **kwargs,
     ) -> None:
-        super().__init__()
+        super().__init__(**kwargs)
 
         self.imagenet_dir = Path(imagenet_dir)
         if not isinstance(model_size, EfficientAdModelSize):

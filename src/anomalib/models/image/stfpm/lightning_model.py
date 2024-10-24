@@ -37,8 +37,9 @@ class Stfpm(AnomalyModule):
         self,
         backbone: str = "resnet18",
         layers: Sequence[str] = ("layer1", "layer2", "layer3"),
+        **kwargs,
     ) -> None:
-        super().__init__()
+        super().__init__(**kwargs)
 
         self.model = STFPMModel(
             backbone=backbone,
