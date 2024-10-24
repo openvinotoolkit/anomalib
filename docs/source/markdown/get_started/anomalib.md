@@ -17,7 +17,7 @@ The installer can be installed using the following commands:
 :::{tab-item} API
 :sync: label-1
 
-```{literalinclude} ../../snippets/install/pypi.txt
+```{literalinclude} /snippets/install/pypi.txt
 :language: bash
 ```
 
@@ -26,7 +26,7 @@ The installer can be installed using the following commands:
 :::{tab-item} Source
 :sync: label-2
 
-```{literalinclude} ../../snippets/install/source.txt
+```{literalinclude} /snippets/install/source.txt
 :language: bash
 ```
 
@@ -42,7 +42,7 @@ The next section demonstrates how to install the full package using the CLI inst
 :::::{dropdown} Installing the Full Package
 After installing anomalib, you can install the full package using the following commands:
 
-```{literalinclude} ../../snippets/install/anomalib_help.txt
+```{literalinclude} /snippets/install/anomalib_help.txt
 :language: bash
 ```
 
@@ -50,14 +50,14 @@ As can be seen above, the only available sub-command is `install` at the moment.
 The `install` sub-command has options to install either the full package or the
 specific components of the package.
 
-```{literalinclude} ../../snippets/install/anomalib_install_help.txt
+```{literalinclude} /snippets/install/anomalib_install_help.txt
 :language: bash
 ```
 
 By default the `install` sub-command installs the full package. If you want to
 install only the specific components of the package, you can use the `--option` flag.
 
-```{literalinclude} ../../snippets/install/anomalib_install.txt
+```{literalinclude} /snippets/install/anomalib_install.txt
 :language: bash
 ```
 
@@ -66,13 +66,15 @@ After following these steps, your environment will be ready to use anomalib!
 
 ## {octicon}`mortar-board` Training
 
-Anomalib supports both API and CLI-based training. The API is more flexible and allows for more customization, while the CLI training utilizes command line interfaces, and might be easier for those who would like to use anomalib off-the-shelf.
+Anomalib supports both API and CLI-based training. The API is more flexible
+and allows for more customization, while the CLI training utilizes command line
+interfaces, and might be easier for those who would like to use anomalib off-the-shelf.
 
 ::::{tab-set}
 
 :::{tab-item} API
 
-```{literalinclude} ../../snippets/train/api/default.txt
+```{literalinclude} /snippets/train/api/default.txt
 :language: python
 ```
 
@@ -80,7 +82,7 @@ Anomalib supports both API and CLI-based training. The API is more flexible and 
 
 :::{tab-item} CLI
 
-```{literalinclude} ../../snippets/train/cli/default.txt
+```{literalinclude} /snippets/train/cli/default.txt
 :language: bash
 ```
 
@@ -100,7 +102,7 @@ Anomalib includes multiple inferencing scripts, including Torch, Lightning, Grad
 :::{tab-item} API
 :sync: label-1
 
-```{literalinclude} ../../snippets/inference/api/lightning.txt
+```{literalinclude} /snippets/inference/api/lightning.txt
 :language: python
 ```
 
@@ -109,7 +111,7 @@ Anomalib includes multiple inferencing scripts, including Torch, Lightning, Grad
 :::{tab-item} CLI
 :sync: label-2
 
-```{literalinclude} ../../snippets/inference/cli/lightning.txt
+```{literalinclude} /snippets/inference/cli/lightning.txt
 :language: bash
 ```
 
@@ -201,7 +203,7 @@ Anomalib supports hyper-parameter optimization using [wandb](https://wandb.ai/) 
 
 :::{tab-item} CLI
 
-```{literalinclude} ../../snippets/pipelines/hpo/cli.txt
+```{literalinclude} /snippets/pipelines/hpo/cli.txt
 :language: bash
 ```
 
@@ -209,7 +211,7 @@ Anomalib supports hyper-parameter optimization using [wandb](https://wandb.ai/) 
 
 :::{tab-item} API
 
-```{literalinclude} ../../snippets/pipelines/hpo/api.txt
+```{literalinclude} /snippets/pipelines/hpo/api.txt
 :language: bash
 ```
 
@@ -233,7 +235,7 @@ To run a training experiment with experiment tracking, you will need the followi
 
 By using the configuration file above, you can run the experiment with the following command:
 
-```{literalinclude} ../../snippets/logging/cli.txt
+```{literalinclude} /snippets/logging/cli.txt
 :language: bash
 ```
 
@@ -241,7 +243,7 @@ By using the configuration file above, you can run the experiment with the follo
 
 :::{tab-item} API
 
-```{literalinclude} ../../snippets/logging/api.txt
+```{literalinclude} /snippets/logging/api.txt
 :language: bash
 ```
 

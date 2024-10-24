@@ -8,11 +8,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+- Add `VlmAd` metric by [Bepitic](https://github.com/Bepitic) and refactored by [ashwinvaidya17](https://github.com/ashwinvaidya17) in https://github.com/openvinotoolkit/anomalib/pull/2344
 - Add `Datumaro` annotation format support by @ashwinvaidya17 in https://github.com/openvinotoolkit/anomalib/pull/2377
 - Add `AUPIMO` tutorials notebooks in https://github.com/openvinotoolkit/anomalib/pull/2330 and https://github.com/openvinotoolkit/anomalib/pull/2336
 - Add `AUPIMO` metric by [jpcbertoldo](https://github.com/jpcbertoldo) in https://github.com/openvinotoolkit/anomalib/pull/1726 and refactored by [ashwinvaidya17](https://github.com/ashwinvaidya17) in https://github.com/openvinotoolkit/anomalib/pull/2329
 
 ### Changed
+
+- Add duration of experiments in seconds in the benchmark CSV result by [mzweilin](https://github.com/mzweilin) in https://github.com/openvinotoolkit/anomalib/pull/2392
 
 ### Deprecated
 
