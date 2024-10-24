@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
+import time
 from datetime import datetime
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -57,6 +58,7 @@ class BenchmarkJob(Job):
         task_id: int | None = None,
     ) -> dict[str, Any]:
         """Run the benchmark."""
+        job_start_time = time.time()
         devices: str | list[int] = "auto"
         if task_id is not None:
             devices = [task_id]
@@ -68,12 +70,21 @@ class BenchmarkJob(Job):
                 devices=devices,
                 default_root_dir=temp_dir,
             )
+            fit_start_time = time.time()
             engine.fit(self.model, self.datamodule)
+            test_start_time = time.time()
             test_results = engine.test(self.model, self.datamodule)
+        job_end_time = time.time()
+        durations = {
+            "job_duration": job_end_time - job_start_time,
+            "fit_duration": test_start_time - fit_start_time,
+            "test_duration": job_end_time - test_start_time,
+        }
         # TODO(ashwinvaidya17): Restore throughput
         # https://github.com/openvinotoolkit/anomalib/issues/2054
         output = {
             "accelerator": self.accelerator,
+            **durations,
             **self.flat_cfg,
             **test_results[0],
         }
