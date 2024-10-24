@@ -5,19 +5,21 @@
 
 import logging
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from lightning_utilities.core.imports import package_available
 from PIL import Image
-from transformers.modeling_utils import PreTrainedModel
 
 from anomalib.models.image.vlm_ad.utils import Prompt
 
 from .base import Backend
 
-if package_available("transformers"):
-    import transformers
+if TYPE_CHECKING:
     from transformers.modeling_utils import PreTrainedModel
     from transformers.processing_utils import ProcessorMixin
+
+if package_available("transformers"):
+    import transformers
 else:
     transformers = None
 
@@ -39,7 +41,7 @@ class Huggingface(Backend):
         self._model: PreTrainedModel | None = None
 
     @property
-    def processor(self) -> ProcessorMixin:
+    def processor(self) -> "ProcessorMixin":
         """Get the Huggingface processor."""
         if self._processor is None:
             if transformers is None:
@@ -49,7 +51,7 @@ class Huggingface(Backend):
         return self._processor
 
     @property
-    def model(self) -> PreTrainedModel:
+    def model(self) -> "PreTrainedModel":
         """Get the Huggingface model."""
         if self._model is None:
             if transformers is None:
