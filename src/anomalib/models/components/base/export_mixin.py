@@ -16,13 +16,12 @@ from lightning.pytorch import LightningModule
 from lightning_utilities.core.imports import package_available
 from torch import nn
 from torchmetrics import Metric
-from torchvision.transforms.v2 import Transform
 
 from anomalib import TaskType
 from anomalib.data import AnomalibDataModule
 from anomalib.deploy.export import CompressionType, ExportType
-from anomalib.deploy.utils import make_transform_exportable
 from anomalib.metrics import create_metric_collection
+from anomalib.pre_processing import PreProcessor
 
 if TYPE_CHECKING:
     from importlib.util import find_spec
@@ -39,8 +38,8 @@ class ExportMixin:
     """This mixin allows exporting models to torch and ONNX/OpenVINO."""
 
     model: nn.Module
-    transform: Transform
-    configure_transforms: Callable
+    pre_processor: PreProcessor
+    configure_pre_processor: Callable
     device: torch.device
 
     def to_torch(
@@ -141,7 +140,7 @@ class ExportMixin:
         dynamic_axes = (
             {"input": {0: "batch_size"}, "output": {0: "batch_size"}}
             if input_size
-            else {"input": {0: "batch_size", 2: "height", 3: "weight"}, "output": {0: "batch_size"}}
+            else {"input": {0: "batch_size", 2: "height", 3: "width"}, "output": {0: "batch_size"}}
         )
         onnx_path = export_root / "model.onnx"
         # apply pass through the model to get the output names
@@ -440,11 +439,6 @@ class ExportMixin:
                 metadata[key] = value.numpy().tolist()
 
         return metadata
-
-    @property
-    def exportable_transform(self) -> Transform:
-        """Return the exportable transform."""
-        return make_transform_exportable(self.transform)
 
 
 def _write_metadata_to_json(metadata: dict[str, Any], export_root: Path) -> None:

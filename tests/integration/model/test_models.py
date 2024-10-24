@@ -187,12 +187,9 @@ class TestAPI:
         extra_args = {}
         if model_name in {"rkde", "dfkde"}:
             extra_args["n_pca_components"] = 2
+
         if model_name == "ai_vad":
             pytest.skip("Revisit AI-VAD test")
-
-        # select dataset
-        elif model_name == "win_clip":
-            dataset = MVTec(root=dataset_path / "mvtec", category="dummy", image_size=240, task=task_type)
         else:
             # EfficientAd requires that the batch size be lesser than the number of images in the dataset.
             # This is so that the LR step size is not 0.

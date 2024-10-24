@@ -29,7 +29,6 @@ class TestFolder3D(_TestAnomalibDepthDatamodule):
             normal_depth_dir="train/good/xyz",
             abnormal_depth_dir="test/bad/xyz",
             normal_test_depth_dir="test/good/xyz",
-            image_size=256,
             train_batch_size=4,
             eval_batch_size=4,
             num_workers=0,

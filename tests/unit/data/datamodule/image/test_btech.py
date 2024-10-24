@@ -23,7 +23,6 @@ class TestBTech(_TestAnomalibImageDatamodule):
             root=dataset_path / "btech",
             category="dummy",
             task=task_type,
-            image_size=256,
             train_batch_size=4,
             eval_batch_size=4,
         )

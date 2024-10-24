@@ -27,6 +27,7 @@ model:
     beta:
       - 0.1
       - 1.0
+    pre_processor: null
 normalization:
   normalization_method: min_max
 metrics:

@@ -16,6 +16,7 @@ from torch import optim
 from anomalib import LearningType
 from anomalib.data import Batch
 from anomalib.models.components import AnomalyModule
+from anomalib.pre_processing import PreProcessor
 
 from .torch_model import FREModel
 
@@ -39,6 +40,9 @@ class Fre(AnomalyModule):
         latent_dim (int, optional): Reduced size of feature after applying dimensionality reduction
             via shallow linear autoencoder.
             Defaults to ``220``.
+        pre_processor (PreProcessor, optional): Pre-processor for the model.
+            This is used to pre-process the input data before it is passed to the model.
+            Defaults to ``None``.
     """
 
     def __init__(
@@ -49,8 +53,9 @@ class Fre(AnomalyModule):
         pooling_kernel_size: int = 2,
         input_dim: int = 65536,
         latent_dim: int = 220,
+        pre_processor: PreProcessor | None = None,
     ) -> None:
-        super().__init__()
+        super().__init__(pre_processor=pre_processor)
 
         self.model: FREModel = FREModel(
             backbone=backbone,

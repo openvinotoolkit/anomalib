@@ -23,7 +23,6 @@ class TestMVTec3D(_TestAnomalibDepthDatamodule):
             root=dataset_path / "mvtec_3d",
             category="dummy",
             task=task_type,
-            image_size=256,
             train_batch_size=4,
             eval_batch_size=4,
             num_workers=0,
