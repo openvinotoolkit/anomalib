@@ -74,10 +74,8 @@ def redirect_logs(log_file: str) -> None:
     """
     Path(log_file).parent.mkdir(exist_ok=True, parents=True)
     logger_file_handler = logging.FileHandler(log_file)
-    root_logger = logging.getLogger()
-    root_logger.setLevel(logging.DEBUG)
     format_string = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-    logging.basicConfig(format=format_string, level=logging.DEBUG, handlers=[logger_file_handler])
+    logging.basicConfig(format=format_string, handlers=[logger_file_handler])
     logging.captureWarnings(capture=True)
     # remove other handlers from all loggers
     loggers = [logging.getLogger(name) for name in logging.root.manager.loggerDict]
