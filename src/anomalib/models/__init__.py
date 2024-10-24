@@ -31,6 +31,7 @@ from .image import (
     Rkde,
     Stfpm,
     Uflow,
+    VlmAd,
     WinClip,
 )
 from .video import AiVad
@@ -60,6 +61,7 @@ __all__ = [
     "Stfpm",
     "Uflow",
     "AiVad",
+    "VlmAd",
     "WinClip",
 ]
 
