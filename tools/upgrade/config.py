@@ -27,6 +27,7 @@ from typing import Any
 import yaml
 
 from anomalib.models import convert_snake_to_pascal_case
+from anomalib.utils.config import to_tuple
 
 
 def get_class_signature(module_path: str, class_name: str) -> inspect.Signature:
@@ -142,6 +143,9 @@ class ConfigAdapter:
             init_args,
             self.old_config["dataset"],
         )
+
+        # Input size is a list in the old config, convert it to a tuple
+        init_args["image_size"] = to_tuple(init_args["image_size"])
 
         return {
             "data": {

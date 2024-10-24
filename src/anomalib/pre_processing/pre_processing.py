@@ -169,7 +169,7 @@ class PreProcessor(nn.Module, Callback):
             pl_module: The Lightning module.
             stage: The stage (e.g., 'fit', 'validate', 'test', 'predict').
         """
-        stage = TrainerFn(stage).value  # Convert string to TrainerFn enum
+        stage = TrainerFn(stage).value  # Ensure stage is str
 
         if hasattr(trainer, "datamodule"):
             self.setup_transforms(datamodule=trainer.datamodule)
