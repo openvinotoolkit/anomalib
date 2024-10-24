@@ -196,7 +196,7 @@ class CfaModel(DynamicBufferMixin):
         f_c = 2 * torch.matmul(target_oriented_features, (self.memory_bank.to(features.device)))
         return features + centers - f_c
 
-    def forward(self, input_tensor: torch.Tensor) -> torch.Tensor:
+    def forward(self, input_tensor: torch.Tensor) -> torch.Tensor | InferenceBatch:
         """Forward pass.
 
         Args:
@@ -222,16 +222,14 @@ class CfaModel(DynamicBufferMixin):
 
         if self.training:
             return distance
+
         anomaly_map = self.anomaly_map_generator(
             distance=distance,
             scale=target_features.shape[-2:],
             image_size=input_tensor.shape[-2:],
         ).squeeze()
         pred_score = torch.amax(anomaly_map, dim=(-2, -1))
-        return InferenceBatch(
-            anomaly_map=anomaly_map,
-            pred_score=pred_score,
-        )
+        return InferenceBatch(pred_score=pred_score, anomaly_map=anomaly_map)
 
 
 class Descriptor(nn.Module):

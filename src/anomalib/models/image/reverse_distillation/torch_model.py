@@ -81,6 +81,7 @@ class ReverseDistillationModel(nn.Module):
 
         if self.training:
             return encoder_features, decoder_features
-        anomaly_map = self.anomaly_map_generator(encoder_features, decoder_features)
 
-        return InferenceBatch(anomaly_map=anomaly_map)
+        anomaly_map = self.anomaly_map_generator(encoder_features, decoder_features)
+        pred_score = torch.amax(anomaly_map, dim=(-2, -1))
+        return InferenceBatch(pred_score=pred_score, anomaly_map=anomaly_map)

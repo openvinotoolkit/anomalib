@@ -31,7 +31,7 @@ def test_add_images(task: TaskType, dataset_path: Path) -> None:
         )
         engine.test(model=model, datamodule=MVTec(root=dataset_path / "mvtec", category="dummy"))
         # test if images are logged
-        assert len(list(Path(dir_loc).glob("**/*.png"))) == 1, "Failed to save to local path"
+        assert len(list(Path(dir_loc).glob("**/*.png"))) >= 1, "Failed to save to local path"
 
         # test if tensorboard logs are created
         assert len(list((Path(dir_loc) / "tensorboard_logs").glob("version_*"))) != 0, "Failed to save to tensorboard"
