@@ -34,6 +34,7 @@ dependencies = [
     "jsonargparse[signatures]>=4.27.7",
     "docstring_parser",     # CLI help-formatter
     "rich_argparse",        # CLI help-formatter
+    "lightning-utilities",
 ]
 
 [project.optional-dependencies]
@@ -293,11 +294,15 @@ pythonpath = "src"
 # COVERAGE CONFIGURATION                                                      #
 [tool.coverage.report]
 exclude_lines = [
-    "except ImportError",
+    "pragma: no cover",
+    "def __repr__",
+    "raise NotImplementedError",
+    "if TYPE_CHECKING:",
+    "@abstractmethod",
+    "pass",
     "raise ImportError",
-    "except ApiException",
-    "raise ApiException",
     "raise ValueError",
+    "except ImportError:",
 ]
 
 [tool.coverage.paths]
