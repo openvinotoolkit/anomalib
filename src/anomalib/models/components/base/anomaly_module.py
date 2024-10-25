@@ -204,11 +204,6 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
         The default pre-processor is resize to 256x256 and normalize to ImageNet stats. Individual models can override
         this method to provide custom transforms and pre-processing pipelines.
         """
-        logger.warning(
-            "No implementation of `configure_pre_processor` was provided in the Lightning model. Using default "
-            "transforms from the base class. This may not be suitable for your use case. Please override "
-            "`configure_pre_processor` in your model.",
-        )
         image_size = image_size or (256, 256)
         return PreProcessor(
             transform=Compose([
