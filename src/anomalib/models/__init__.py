@@ -58,9 +58,9 @@ __all__ = [
     "Rkde",
     "Stfpm",
     "Uflow",
-    "AiVad",
     "VlmAd",
     "WinClip",
+    "AiVad",
 ]
 
 logger = logging.getLogger(__name__)
