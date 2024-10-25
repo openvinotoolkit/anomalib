@@ -20,7 +20,6 @@ from anomalib import TaskType
 from anomalib.data import AnomalibDataModule
 from anomalib.deploy.export import CompressionType, ExportType
 from anomalib.deploy.utils import make_transform_exportable
-from anomalib.utils.exceptions import try_import
 
 if TYPE_CHECKING:
     from importlib.util import find_spec
