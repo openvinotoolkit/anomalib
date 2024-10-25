@@ -109,35 +109,18 @@ class PreProcessor(nn.Module, Callback):
         self.train_transform = train_transform or transform
         self.val_transform = val_transform or transform
         self.test_transform = test_transform or transform
-        self.predict_transform = self.test_transform
         self.exportable_transform = get_exportable_transform(self.test_transform)
 
-    def setup_transforms(
-        self,
-        datamodule: "AnomalibDataModule | None" = None,
-        dataloaders: "EVAL_DATALOADERS | TRAIN_DATALOADERS | None" = None,
-    ) -> None:
-        """Set up and propagate transforms according to priority rules.
-
-        Args:
-            datamodule: DataModule that might contain transforms.
-            dataloaders: Dataloaders that might contain transforms.
-        """
-        if isinstance(dataloaders, DataLoader):
-            dataloaders = [dataloaders]
-
-        # If PreProcessor has transforms, propagate them to datamodule or dataloaders
+    def setup_datamodule_transforms(self, datamodule: "AnomalibDataModule") -> None:
+        """Set up datamodule transforms."""
+        # If PreProcessor has transforms, propagate them to datamodule
         if any([self.train_transform, self.val_transform, self.test_transform]):
             transforms = {
                 "train": self.train_transform,
                 "val": self.val_transform,
                 "test": self.test_transform,
             }
-
-            if datamodule:
-                set_datamodule_transforms(datamodule, transforms)
-            if dataloaders:
-                set_dataloaders_transforms(dataloaders, transforms)
+            set_datamodule_transforms(datamodule, transforms)
             return
 
         # Try to get transforms from datamodule
@@ -147,9 +130,23 @@ class PreProcessor(nn.Module, Callback):
                 self.train_transform = datamodule_transforms.get("train")
                 self.val_transform = datamodule_transforms.get("val")
                 self.test_transform = datamodule_transforms.get("test")
-                self.predict_transform = self.test_transform
                 self.exportable_transform = get_exportable_transform(self.test_transform)
                 return
+
+    def setup_dataloader_transforms(self, dataloaders: "EVAL_DATALOADERS | TRAIN_DATALOADERS") -> None:
+        """Set up dataloader transforms."""
+        if isinstance(dataloaders, DataLoader):
+            dataloaders = [dataloaders]
+
+        # If PreProcessor has transforms, propagate them to dataloaders
+        if any([self.train_transform, self.val_transform, self.test_transform]):
+            transforms = {
+                "train": self.train_transform,
+                "val": self.val_transform,
+                "test": self.test_transform,
+            }
+            set_dataloaders_transforms(dataloaders, transforms)
+            return
 
         # Try to get transforms from dataloaders
         if dataloaders:
@@ -158,7 +155,6 @@ class PreProcessor(nn.Module, Callback):
                 self.train_transform = dataloaders_transforms.get("train")
                 self.val_transform = dataloaders_transforms.get("val")
                 self.test_transform = dataloaders_transforms.get("test")
-                self.predict_transform = self.test_transform
                 self.exportable_transform = get_exportable_transform(self.test_transform)
 
     def setup(self, trainer: Trainer, pl_module: LightningModule, stage: str) -> None:
@@ -172,10 +168,10 @@ class PreProcessor(nn.Module, Callback):
         stage = TrainerFn(stage).value  # Ensure stage is str
 
         if hasattr(trainer, "datamodule"):
-            self.setup_transforms(datamodule=trainer.datamodule)
+            self.setup_datamodule_transforms(datamodule=trainer.datamodule)
         elif hasattr(trainer, f"{stage}_dataloaders"):
             dataloaders = getattr(trainer, f"{stage}_dataloaders")
-            self.setup_transforms(dataloaders=dataloaders)
+            self.setup_dataloader_transforms(dataloaders=dataloaders)
 
         super().setup(trainer, pl_module, stage)
 
