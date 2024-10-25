@@ -366,7 +366,8 @@ class Engine:
             _callbacks.append(model.post_processor)
 
         # Add the metrics callback.
-        _callbacks.append(model.evaluator)
+        if isinstance(model.evaluator, Callback):
+            _callbacks.append(model.evaluator)
 
         # Add the image visualizer callback if it is passed by the user.
         if not any(isinstance(callback, ImageVisualizer) for callback in self._cache.args["callbacks"]):

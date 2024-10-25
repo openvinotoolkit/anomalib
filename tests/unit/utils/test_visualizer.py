@@ -48,7 +48,7 @@ class TestVisualizer:
     ) -> None:
         """Test combination of model/visualizer/mode on only 1 epoch as a sanity check before merge."""
         _ckpt_path: Path = ckpt_path("Padim")
-        model = Padim(metrics=[])
+        model = Padim(evaluator=False)
         engine = Engine(
             default_root_dir=project_path,
             fast_dev_run=True,
