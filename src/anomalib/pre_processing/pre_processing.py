@@ -109,6 +109,7 @@ class PreProcessor(nn.Module, Callback):
         self.train_transform = train_transform or transform
         self.val_transform = val_transform or transform
         self.test_transform = test_transform or transform
+        self.predict_transform = self.test_transform
         self.exportable_transform = get_exportable_transform(self.test_transform)
 
     def setup_datamodule_transforms(self, datamodule: "AnomalibDataModule") -> None:
@@ -130,6 +131,7 @@ class PreProcessor(nn.Module, Callback):
                 self.train_transform = datamodule_transforms.get("train")
                 self.val_transform = datamodule_transforms.get("val")
                 self.test_transform = datamodule_transforms.get("test")
+                self.predict_transform = self.test_transform
                 self.exportable_transform = get_exportable_transform(self.test_transform)
                 return
 
@@ -155,6 +157,7 @@ class PreProcessor(nn.Module, Callback):
                 self.train_transform = dataloaders_transforms.get("train")
                 self.val_transform = dataloaders_transforms.get("val")
                 self.test_transform = dataloaders_transforms.get("test")
+                self.predict_transform = self.test_transform
                 self.exportable_transform = get_exportable_transform(self.test_transform)
 
     def setup(self, trainer: Trainer, pl_module: LightningModule, stage: str) -> None:
@@ -231,4 +234,6 @@ class PreProcessor(nn.Module, Callback):
         dataloader_idx: int = 0,
     ) -> None:
         """Apply transforms to the predict batch, which is the same as test batch."""
-        self.on_test_batch_start(trainer, pl_module, batch, batch_idx, dataloader_idx)
+        del trainer, pl_module, batch_idx, dataloader_idx  # Unused parameters
+        if self.predict_transform:
+            batch.image, batch.gt_mask = self.predict_transform(batch.image, batch.gt_mask)
