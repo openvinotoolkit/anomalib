@@ -194,8 +194,7 @@ class PreProcessor(nn.Module, Callback):
         """Apply transforms to the training batch."""
         del trainer, pl_module, batch_idx  # Unused parameters
         if self.train_transform:
-            image, gt_mask = self.train_transform(batch.image, batch.gt_mask)
-            batch.update(image=image, gt_mask=gt_mask)
+            batch.image, batch.gt_mask = self.train_transform(batch.image, batch.gt_mask)
 
     def on_validation_batch_start(
         self,
@@ -208,8 +207,7 @@ class PreProcessor(nn.Module, Callback):
         """Apply transforms to the validation batch."""
         del trainer, pl_module, batch_idx, dataloader_idx  # Unused parameters
         if self.val_transform:
-            image, gt_mask = self.val_transform(batch.image, batch.gt_mask)
-            batch.update(image=image, gt_mask=gt_mask)
+            batch.image, batch.gt_mask = self.val_transform(batch.image, batch.gt_mask)
 
     def on_test_batch_start(
         self,
@@ -222,8 +220,7 @@ class PreProcessor(nn.Module, Callback):
         """Apply transforms to the test batch."""
         del trainer, pl_module, batch_idx, dataloader_idx  # Unused parameters
         if self.test_transform:
-            image, gt_mask = self.test_transform(batch.image, batch.gt_mask)
-            batch.update(image=image, gt_mask=gt_mask)
+            batch.image, batch.gt_mask = self.test_transform(batch.image, batch.gt_mask)
 
     def on_predict_batch_start(
         self,
