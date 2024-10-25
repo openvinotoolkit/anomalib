@@ -5,7 +5,7 @@
 
 import json
 import logging
-from collections.abc import Callable, Iterable
+from collections.abc import Iterable
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING, Any
@@ -21,7 +21,6 @@ from anomalib import TaskType
 from anomalib.data import AnomalibDataModule
 from anomalib.deploy.export import CompressionType, ExportType
 from anomalib.metrics import create_metric_collection
-from anomalib.pre_processing import PreProcessor
 
 if TYPE_CHECKING:
     from importlib.util import find_spec
@@ -38,8 +37,6 @@ class ExportMixin:
     """This mixin allows exporting models to torch and ONNX/OpenVINO."""
 
     model: nn.Module
-    pre_processor: PreProcessor
-    configure_pre_processor: Callable
     device: torch.device
 
     def to_torch(
