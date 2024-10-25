@@ -585,9 +585,11 @@ class ImageBatchValidator:
         if pred_label.ndim > 2:
             msg = f"Predicted label must be 1-dimensional or 2-dimensional, got shape {pred_label.shape}."
             raise ValueError(msg)
-        if pred_label.ndim == 2 and pred_label.shape[1] != 1:
-            msg = f"Predicted label with 2 dimensions must have shape [N, 1], got shape {pred_label.shape}."
-            raise ValueError(msg)
+        if pred_label.ndim == 2:
+            if not (pred_label.shape[0] == 1 or pred_label.shape[1] == 1):
+                msg = f"Predicted label with 2 dimensions must have shape [N, 1], got shape {pred_label.shape}."
+                raise ValueError(msg)
+            pred_label = pred_label.squeeze()
 
         return pred_label.to(torch.bool)
 
