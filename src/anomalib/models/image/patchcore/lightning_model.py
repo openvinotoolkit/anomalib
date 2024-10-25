@@ -51,7 +51,7 @@ class Patchcore(MemoryBankMixin, AnomalyModule):
         pre_trained: bool = True,
         coreset_sampling_ratio: float = 0.1,
         num_neighbors: int = 9,
-        pre_processor: PreProcessor | None = None,
+        pre_processor: PreProcessor | bool = True,
     ) -> None:
         super().__init__(pre_processor=pre_processor)
 

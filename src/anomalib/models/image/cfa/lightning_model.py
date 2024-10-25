@@ -56,7 +56,7 @@ class Cfa(AnomalyModule):
         num_nearest_neighbors: int = 3,
         num_hard_negative_features: int = 3,
         radius: float = 1e-5,
-        pre_processor: PreProcessor | None = None,
+        pre_processor: PreProcessor | bool = True,
     ) -> None:
         super().__init__(pre_processor=pre_processor)
         self.model: CfaModel = CfaModel(

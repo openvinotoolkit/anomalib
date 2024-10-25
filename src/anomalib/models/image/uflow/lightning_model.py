@@ -38,7 +38,7 @@ class Uflow(AnomalyModule):
         affine_clamp: float = 2.0,
         affine_subnet_channels_ratio: float = 1.0,
         permute_soft: bool = False,
-        pre_processor: PreProcessor | None = None,
+        pre_processor: PreProcessor | bool = True,
     ) -> None:
         """Uflow model.
 

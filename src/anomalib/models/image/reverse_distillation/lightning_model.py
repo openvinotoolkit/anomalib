@@ -45,7 +45,7 @@ class ReverseDistillation(AnomalyModule):
         layers: Sequence[str] = ("layer1", "layer2", "layer3"),
         anomaly_map_mode: AnomalyMapGenerationMode = AnomalyMapGenerationMode.ADD,
         pre_trained: bool = True,
-        pre_processor: PreProcessor | None = None,
+        pre_processor: PreProcessor | bool = True,
     ) -> None:
         super().__init__(pre_processor=pre_processor)
 

@@ -51,7 +51,7 @@ class Dfm(MemoryBankMixin, AnomalyModule):
         pooling_kernel_size: int = 4,
         pca_level: float = 0.97,
         score_type: str = "fre",
-        pre_processor: PreProcessor | None = None,
+        pre_processor: PreProcessor | bool = True,
     ) -> None:
         super().__init__(pre_processor=pre_processor)
 

@@ -48,7 +48,7 @@ class Draem(AnomalyModule):
         sspcab_lambda: float = 0.1,
         anomaly_source_path: str | None = None,
         beta: float | tuple[float, float] = (0.1, 1.0),
-        pre_processor: PreProcessor | None = None,
+        pre_processor: PreProcessor | bool = True,
     ) -> None:
         super().__init__(pre_processor=pre_processor)
 

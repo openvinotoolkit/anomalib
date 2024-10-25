@@ -45,7 +45,7 @@ class Csflow(AnomalyModule):
         n_coupling_blocks: int = 4,
         clamp: int = 3,
         num_channels: int = 3,
-        pre_processor: PreProcessor | None = None,
+        pre_processor: PreProcessor | bool = True,
     ) -> None:
         super().__init__(pre_processor=pre_processor)
 

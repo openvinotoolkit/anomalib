@@ -53,7 +53,7 @@ class Fre(AnomalyModule):
         pooling_kernel_size: int = 2,
         input_dim: int = 65536,
         latent_dim: int = 220,
-        pre_processor: PreProcessor | None = None,
+        pre_processor: PreProcessor | bool = True,
     ) -> None:
         super().__init__(pre_processor=pre_processor)
 

@@ -68,7 +68,7 @@ class Ganomaly(AnomalyModule):
         lr: float = 0.0002,
         beta1: float = 0.5,
         beta2: float = 0.999,
-        pre_processor: PreProcessor | None = None,
+        pre_processor: PreProcessor | bool = True,
     ) -> None:
         super().__init__(pre_processor=pre_processor)
 

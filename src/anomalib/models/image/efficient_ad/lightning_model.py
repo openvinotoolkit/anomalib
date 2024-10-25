@@ -73,7 +73,7 @@ class EfficientAd(AnomalyModule):
         weight_decay: float = 0.00001,
         padding: bool = False,
         pad_maps: bool = True,
-        pre_processor: PreProcessor | None = None,
+        pre_processor: PreProcessor | bool = True,
     ) -> None:
         super().__init__(pre_processor=pre_processor)
 

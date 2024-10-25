@@ -47,7 +47,7 @@ class Fastflow(AnomalyModule):
         flow_steps: int = 8,
         conv3x3_only: bool = False,
         hidden_ratio: float = 1.0,
-        pre_processor: PreProcessor | None = None,
+        pre_processor: PreProcessor | bool = True,
     ) -> None:
         super().__init__(pre_processor=pre_processor)
 

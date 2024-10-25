@@ -41,7 +41,7 @@ class Stfpm(AnomalyModule):
         self,
         backbone: str = "resnet18",
         layers: Sequence[str] = ("layer1", "layer2", "layer3"),
-        pre_processor: PreProcessor | None = None,
+        pre_processor: PreProcessor | bool = True,
     ) -> None:
         super().__init__(pre_processor=pre_processor)
 

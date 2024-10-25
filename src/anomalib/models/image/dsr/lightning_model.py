@@ -50,7 +50,7 @@ class Dsr(AnomalyModule):
         self,
         latent_anomaly_strength: float = 0.2,
         upsampling_train_ratio: float = 0.7,
-        pre_processor: PreProcessor | None = None,
+        pre_processor: PreProcessor | bool = True,
     ) -> None:
         super().__init__(pre_processor=pre_processor)
 

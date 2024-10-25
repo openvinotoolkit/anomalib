@@ -80,7 +80,7 @@ class AiVad(MemoryBankMixin, AnomalyModule):
         n_components_velocity: int = 2,
         n_neighbors_pose: int = 1,
         n_neighbors_deep: int = 1,
-        pre_processor: PreProcessor | None = None,
+        pre_processor: PreProcessor | bool = True,
     ) -> None:
         super().__init__(pre_processor=pre_processor)
 

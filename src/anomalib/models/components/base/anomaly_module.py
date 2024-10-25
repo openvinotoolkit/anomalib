@@ -41,7 +41,7 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
 
     def __init__(
         self,
-        pre_processor: PreProcessor | None = None,
+        pre_processor: PreProcessor | bool = True,
         post_processor: PostProcessor | None = None,
     ) -> None:
         super().__init__()
@@ -55,7 +55,18 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
         self.image_metrics: AnomalibMetricCollection
         self.pixel_metrics: AnomalibMetricCollection
 
-        self.pre_processor = pre_processor or self.configure_pre_processor()
+        # Handle pre-processor
+        # True -> use default pre-processor
+        # False -> no pre-processor
+        # PreProcessor -> use the provided pre-processor
+        if isinstance(pre_processor, PreProcessor):
+            self.pre_processor = pre_processor
+        elif isinstance(pre_processor, bool):
+            self.pre_processor = self.configure_pre_processor()
+        else:
+            msg = f"Invalid pre-processor type: {type(pre_processor)}"
+            raise TypeError(msg)
+
         self.post_processor = post_processor or self.default_post_processor()
 
         self._input_size: tuple[int, int] | None = None

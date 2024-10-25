@@ -54,7 +54,7 @@ class WinClip(AnomalyModule):
         k_shot: int = 0,
         scales: tuple = (2, 3),
         few_shot_source: Path | str | None = None,
-        pre_processor: PreProcessor | None = None,
+        pre_processor: PreProcessor | bool = True,
     ) -> None:
         super().__init__(pre_processor=pre_processor)
         self.model = WinClipModel(scales=scales, apply_transform=False)

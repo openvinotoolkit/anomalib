@@ -58,7 +58,7 @@ class Cflow(AnomalyModule):
 
     def __init__(
         self,
-        pre_processor: PreProcessor | None = None,
+        pre_processor: PreProcessor | bool = True,
         backbone: str = "wide_resnet50_2",
         layers: Sequence[str] = ("layer2", "layer3", "layer4"),
         pre_trained: bool = True,
