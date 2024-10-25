@@ -46,17 +46,30 @@ class Evaluator(nn.Module, Callback):
 
     def __init__(
         self,
-        val_metrics: Sequence[AnomalibMetric] = [],
-        test_metrics: Sequence[AnomalibMetric] = [],
+        val_metrics: AnomalibMetric | Sequence[AnomalibMetric] | None = None,
+        test_metrics: AnomalibMetric | Sequence[AnomalibMetric] | None = None,
         compute_on_cpu: bool = True,
         **kwargs,
     ) -> None:
         super().__init__(**kwargs)
-        self.val_metrics = ModuleList(val_metrics)
-        self.test_metrics = ModuleList(test_metrics)
+        self.val_metrics = ModuleList(self.validate_metrics(val_metrics))
+        self.test_metrics = ModuleList(self.validate_metrics(test_metrics))
+
         if compute_on_cpu:
             self.metrics_to_cpu(self.val_metrics)
             self.metrics_to_cpu(self.test_metrics)
+
+    @staticmethod
+    def validate_metrics(metrics: AnomalibMetric | Sequence[AnomalibMetric] | None) -> Sequence[AnomalibMetric]:
+        """Validate metrics."""
+        if metrics is None:
+            return []
+        if isinstance(metrics, AnomalibMetric):
+            return [metrics]
+        if not isinstance(metrics, Sequence):
+            msg = f"metrics must be an AnomalibMetric or a list of AnomalibMetrics, got {type(metrics)}"
+            raise TypeError(msg)
+        return metrics
 
     def on_validation_batch_end(
         self,
