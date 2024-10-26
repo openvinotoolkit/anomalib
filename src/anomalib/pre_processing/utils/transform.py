@@ -87,7 +87,7 @@ def set_datamodule_transforms(datamodule: AnomalibDataModule, transforms: dict[s
     for stage in ["fit", "validate", "test", "predict"]:
         transform = get_stage_transform(stage, transforms)
         if transform is not None:
-            set_datamodule_transform(datamodule, transform, stage)
+            set_datamodule_stage_transform(datamodule, transform, stage)
 
 
 def set_dataloaders_transforms(dataloaders: Sequence[DataLoader], transforms: dict[str, Transform | None]) -> None:
@@ -115,7 +115,7 @@ def set_dataloaders_transforms(dataloaders: Sequence[DataLoader], transforms: di
                     set_dataloader_transform([loader], transform)
 
 
-def set_datamodule_transform(datamodule: AnomalibDataModule, transform: Transform, stage: str) -> None:
+def set_datamodule_stage_transform(datamodule: AnomalibDataModule, transform: Transform, stage: str) -> None:
     """Set a transform for a specific stage in a AnomalibDataModule.
 
     Args:
@@ -170,7 +170,7 @@ def get_exportable_transform(transform: Transform | None) -> Transform | None:
     if transform is None:
         return None
     transform = disable_antialiasing(transform)
-    return convert_centercrop(transform)
+    return convert_center_crop_transform(transform)
 
 
 def disable_antialiasing(transform: Transform) -> Transform:
@@ -186,7 +186,7 @@ def disable_antialiasing(transform: Transform) -> Transform:
     return transform
 
 
-def convert_centercrop(transform: Transform) -> Transform:
+def convert_center_crop_transform(transform: Transform) -> Transform:
     """Convert CenterCrop to ExportableCenterCrop.
 
     Torchvision's CenterCrop is not supported by ONNX, so we need to replace it with our own ExportableCenterCrop.
@@ -196,5 +196,5 @@ def convert_centercrop(transform: Transform) -> Transform:
     if isinstance(transform, Compose):
         for index in range(len(transform.transforms)):
             tr = transform.transforms[index]
-            transform.transforms[index] = convert_centercrop(tr)
+            transform.transforms[index] = convert_center_crop_transform(tr)
     return transform

@@ -10,7 +10,7 @@ from torchvision.transforms.v2 import CenterCrop, Compose, Resize, ToTensor
 
 from anomalib.data.transforms import ExportableCenterCrop
 from anomalib.pre_processing.utils.transform import (
-    convert_centercrop,
+    convert_center_crop_transform,
     disable_antialiasing,
     get_exportable_transform,
     set_dataloader_transform,
@@ -89,15 +89,15 @@ def test_convert_centercrop() -> None:
     """Test the convert_centercrop function."""
     # Test with CenterCrop transform
     center_crop = CenterCrop((224, 224))
-    converted_crop = convert_centercrop(center_crop)
+    converted_crop = convert_center_crop_transform(center_crop)
     assert isinstance(converted_crop, ExportableCenterCrop)
     assert converted_crop.size == list(center_crop.size)
 
     # Test with Compose transform
     compose = Compose([Resize((256, 256)), CenterCrop((224, 224))])
-    converted_compose = convert_centercrop(compose)
+    converted_compose = convert_center_crop_transform(compose)
     assert isinstance(converted_compose.transforms[1], ExportableCenterCrop)
 
     # Test with non-CenterCrop transform
     resize = Resize((224, 224))
-    assert convert_centercrop(resize) == resize
+    assert convert_center_crop_transform(resize) == resize
