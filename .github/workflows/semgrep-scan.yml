@@ -1,0 +1,47 @@
+name: Semgrep Scan
+
+on:
+  workflow_call:
+    inputs:
+      rules:
+        description: "Semgrep rules to use (e.g., p/default)"
+        required: false
+        type: string
+        default: "p/default"
+      extra-args:
+        description: "Additional arguments to pass to semgrep"
+        required: false
+        type: string
+        default: ""
+      upload-sarif:
+        description: "Whether to upload SARIF results"
+        required: false
+        type: boolean
+        default: true
+    secrets:
+      semgrep-token:
+        description: "Semgrep App token for private repositories or custom rules"
+        required: false
+
+jobs:
+  semgrep-scan:
+    name: Semgrep Security Scan
+    runs-on: ubuntu-latest
+    container:
+      image: returntocorp/semgrep
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Semgrep scan
+        run: |
+          semgrep ci ${{ inputs.extra-args }}
+        env:
+          SEMGREP_APP_TOKEN: ${{ secrets.semgrep-token }}
+          SEMGREP_RULES: ${{ inputs.rules }}
+
+      - name: Upload SARIF file
+        if: inputs.upload-sarif
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: semgrep.sarif
