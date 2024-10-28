@@ -3,7 +3,7 @@ name: Security Checks
 on:
   pull_request: {}
   push:
-    branches: ["main"]
+    branches: ["main", "feature/*"]
   schedule:
     - cron: "0 0 * * 0" # Run every Sunday at midnight
 
