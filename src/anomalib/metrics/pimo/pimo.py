@@ -44,13 +44,15 @@ import logging
 import torch
 from torchmetrics import Metric
 
+from anomalib.metrics.base import AnomalibMetric
+
 from . import _validate, functional
 from .dataclasses import AUPIMOResult, PIMOResult
 
 logger = logging.getLogger(__name__)
 
 
-class PIMO(Metric):
+class _PIMO(Metric):
     """Per-IMage Overlap (PIMO, pronounced pee-mo) curves.
 
     This torchmetrics interface is a wrapper around the functional interface, which is a wrapper around the numpy code.
@@ -167,7 +169,11 @@ class PIMO(Metric):
         )
 
 
-class AUPIMO(PIMO):
+class PIMO(AnomalibMetric, _PIMO):  # type: ignore[misc]
+    """Wrapper to add AnomalibMetric functionality to PIMO metric."""
+
+
+class _AUPIMO(_PIMO):
     """Area Under the Per-Image Overlap (PIMO) curve.
 
     This torchmetrics interface is a wrapper around the functional interface, which is a wrapper around the numpy code.
@@ -294,3 +300,7 @@ class AUPIMO(PIMO):
             is_nan = torch.isnan(aupimo_result.aupimos)
             return aupimo_result.aupimos[~is_nan].mean()
         return pimo_result, aupimo_result
+
+
+class AUPIMO(AnomalibMetric, _AUPIMO):  # type: ignore[misc]
+    """Wrapper to add AnomalibMetric functionality to AUPIMO metric."""
