@@ -60,7 +60,17 @@ class AnomalibMetric:
         >>> pixel_f1_score = F1Score(fields=[pred_mask", "gt_mask"], prefix="pixel_")
     """
 
-    def __init__(self, fields: Sequence[str], prefix: str = "", **kwargs) -> None:
+    default_fields: Sequence[str]
+
+    def __init__(self, fields: Sequence[str] | None = None, prefix: str = "", **kwargs) -> None:
+        fields = fields or getattr(self, "default_fields", None)
+        if fields is None:
+            msg = (
+                f"Batch fields must be provided for metric {self.__class__}. "
+                "Use the `fields` argument to specify which fields from the "
+                "batch object should be used to update the metric."
+            )
+            raise ValueError(msg)
         self.fields = fields
         self.name = prefix + self.__class__.__name__
         super().__init__(**kwargs)

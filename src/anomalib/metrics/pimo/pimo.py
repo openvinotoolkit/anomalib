@@ -172,6 +172,8 @@ class _PIMO(Metric):
 class PIMO(AnomalibMetric, _PIMO):  # type: ignore[misc]
     """Wrapper to add AnomalibMetric functionality to PIMO metric."""
 
+    default_fields = ("anomaly_map", "gt_mask")
+
 
 class _AUPIMO(_PIMO):
     """Area Under the Per-Image Overlap (PIMO) curve.
@@ -304,3 +306,5 @@ class _AUPIMO(_PIMO):
 
 class AUPIMO(AnomalibMetric, _AUPIMO):  # type: ignore[misc]
     """Wrapper to add AnomalibMetric functionality to AUPIMO metric."""
+
+    default_fields = ("anomaly_map", "gt_mask")
