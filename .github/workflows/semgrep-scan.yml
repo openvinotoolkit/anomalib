@@ -43,13 +43,16 @@ jobs:
           if [ -n "${{ inputs.severity }}" ]; then
             export SEMGREP_SEVERITY=${{ inputs.severity }}
           fi
-          semgrep ci ${{ inputs.extra-args }}
+          # Generate both console output and SARIF file
+          semgrep ci ${{ inputs.extra-args }} --sarif > semgrep.sarif
+
         env:
           SEMGREP_APP_TOKEN: ${{ secrets.semgrep-token }}
           SEMGREP_RULES: ${{ inputs.rules }}
 
       - name: Upload SARIF file
         if: inputs.upload-sarif
-        uses: github/codeql-action/upload-sarif@v2
+        uses: github/codeql-action/upload-sarif@v3 # Updated to v3
         with:
           sarif_file: semgrep.sarif
+          wait-for-processing: true # Ensures the upload completes before moving on
