@@ -8,6 +8,11 @@ on:
         required: false
         type: string
         default: "p/default"
+      severity:
+        description: "Minimum severity level (ERROR, WARNING, INFO)"
+        required: false
+        type: string
+        default: ""
       extra-args:
         description: "Additional arguments to pass to semgrep"
         required: false
@@ -35,6 +40,9 @@ jobs:
 
       - name: Run Semgrep scan
         run: |
+          if [ -n "${{ inputs.severity }}" ]; then
+            export SEMGREP_SEVERITY=${{ inputs.severity }}
+          fi
           semgrep ci ${{ inputs.extra-args }}
         env:
           SEMGREP_APP_TOKEN: ${{ secrets.semgrep-token }}

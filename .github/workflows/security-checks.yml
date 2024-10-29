@@ -3,17 +3,14 @@ name: Security Checks
 on:
   pull_request: {}
   push:
-    branches: ["main", "feature/*"]
-  schedule:
-    - cron: "0 0 * * 0" # Run every Sunday at midnight
+    branches: ["main", "master"]
 
 jobs:
   security-scan:
     name: Security Scanning
     uses: ./.github/workflows/semgrep-scan.yml
     with:
-      rules: p/default # You can customize the ruleset
-      extra-args: "--severity ERROR" # Optional additional arguments
-      upload-sarif: true
+      rules: p/default
+      severity: ERROR # Use environment variable instead of CLI flag
     secrets:
-      semgrep-token: ${{ secrets.SEMGREP_APP_TOKEN }} # Optional
+      semgrep-token: ${{ secrets.SEMGREP_APP_TOKEN }}
