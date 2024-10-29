@@ -198,10 +198,11 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
         """Learning type of the model."""
         raise NotImplementedError
 
-    @staticmethod
+    @classmethod
     def configure_pre_processor(
+        cls,
         image_size: tuple[int, int] | None = None,
-        **kwargs: Any,  # noqa: ANN401, ARG004
+        **kwargs: Any,  # noqa: ANN401, ARG003
     ) -> PreProcessor:
         """Configure the pre-processor.
 

@@ -64,13 +64,19 @@ class Patchcore(MemoryBankMixin, AnomalyModule):
         self.coreset_sampling_ratio = coreset_sampling_ratio
         self.embeddings: list[torch.Tensor] = []
 
-    @staticmethod
-    def configure_pre_processor(image_size: tuple[int, int] | None = None) -> PreProcessor:
+    @classmethod
+    def configure_pre_processor(
+        cls,
+        image_size: tuple[int, int] | None = None,
+        center_crop_size: tuple[int, int] | None = None,
+    ) -> PreProcessor:
         """Default transform for Padim."""
         image_size = image_size or (256, 256)
-        # scale center crop size proportional to image size
-        height, width = image_size
-        center_crop_size = (int(height * (224 / 256)), int(width * (224 / 256)))
+        if center_crop_size is None:
+            # scale center crop size proportional to image size
+            height, width = image_size
+            center_crop_size = (int(height * (224 / 256)), int(width * (224 / 256)))
+
         transform = Compose([
             Resize(image_size, antialias=True),
             CenterCrop(center_crop_size),
