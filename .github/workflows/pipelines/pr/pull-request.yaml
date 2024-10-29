@@ -2,11 +2,7 @@ name: Pull Request Checks
 
 on:
   pull_request:
-    branches: [main, master]
-    paths-ignore:
-      - "**.md"
-      - "docs/**"
-      - ".github/**"
+    branches: [main]
   workflow_dispatch:
     inputs:
       branch:
