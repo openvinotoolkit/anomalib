@@ -21,7 +21,6 @@ from shutil import move
 
 import cv2
 import scipy.io
-from torchvision.transforms.v2 import Transform
 
 from anomalib import TaskType
 from anomalib.data.datamodules.base.video import AnomalibVideoDataModule

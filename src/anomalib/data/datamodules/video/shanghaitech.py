@@ -20,8 +20,6 @@ import logging
 from pathlib import Path
 from shutil import move
 
-from torchvision.transforms.v2 import Transform
-
 from anomalib import TaskType
 from anomalib.data.datamodules.base.video import AnomalibVideoDataModule
 from anomalib.data.datasets.base.video import VideoTargetFrame

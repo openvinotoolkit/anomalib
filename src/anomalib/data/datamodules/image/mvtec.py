@@ -28,8 +28,6 @@ References:
 import logging
 from pathlib import Path
 
-from torchvision.transforms.v2 import Transform
-
 from anomalib import TaskType
 from anomalib.data.datamodules.base.image import AnomalibDataModule
 from anomalib.data.datasets.image.mvtec import MVTecDataset

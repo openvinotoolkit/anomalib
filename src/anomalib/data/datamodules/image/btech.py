@@ -14,7 +14,6 @@ import shutil
 from pathlib import Path
 
 import cv2
-from torchvision.transforms.v2 import Transform
 from tqdm import tqdm
 
 from anomalib import TaskType

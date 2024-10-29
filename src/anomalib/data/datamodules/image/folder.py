@@ -9,8 +9,6 @@ This script creates a custom Lightning DataModule from a folder.
 from collections.abc import Sequence
 from pathlib import Path
 
-from torchvision.transforms.v2 import Transform
-
 from anomalib import TaskType
 from anomalib.data.datamodules.base.image import AnomalibDataModule
 from anomalib.data.datasets.image.folder import FolderDataset

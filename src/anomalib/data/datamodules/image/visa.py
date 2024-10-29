@@ -28,7 +28,6 @@ import shutil
 from pathlib import Path
 
 import cv2
-from torchvision.transforms.v2 import Transform
 
 from anomalib import TaskType
 from anomalib.data.datamodules.base.image import AnomalibDataModule

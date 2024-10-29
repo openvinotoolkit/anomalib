@@ -12,7 +12,6 @@ from lightning.pytorch import LightningDataModule
 from lightning.pytorch.trainer.states import TrainerFn
 from lightning.pytorch.utilities.types import EVAL_DATALOADERS, TRAIN_DATALOADERS
 from torch.utils.data.dataloader import DataLoader
-from torchvision.transforms.v2 import Resize, Transform
 
 from anomalib.data.utils import TestSplitMode, ValSplitMode, random_split, split_by_label
 from anomalib.data.utils.synthetic import SyntheticAnomalyDataset
