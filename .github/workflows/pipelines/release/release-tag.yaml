@@ -1,0 +1,43 @@
+name: Release Tag Verification
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to verify (v*)"
+        required: true
+        default: "v1.0.0"
+      run-additional-checks:
+        description: "Run additional verification checks"
+        type: boolean
+        default: false
+
+jobs:
+  verify-release-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify Release PR Checks
+        run: |
+          TAG=${{ github.event.inputs.tag || github.ref_name }}
+          echo "Verifying release tag: ${TAG}"
+
+  static-analysis:
+    name: Final Static Analysis
+    uses: ./.github/workflows/components/static-analysis/semgrep.yml@main
+    with:
+      scan-type: thorough
+      rules: p/ci,p/security-audit,p/secrets
+      severity: INFO
+      upload-artifact: true
+    secrets:
+      semgrep-token: ${{ secrets.SEMGREP_APP_TOKEN }}
+
+  additional-verification:
+    if: github.event.inputs.run-additional-checks == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Additional Checks
+        run: echo "Run additional verification checks"

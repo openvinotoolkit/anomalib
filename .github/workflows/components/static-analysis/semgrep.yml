@@ -1,0 +1,115 @@
+name: Semgrep Analysis
+
+on:
+  workflow_call:
+    inputs:
+      scan-type:
+        description: "Type of scan: quick (PR) or thorough (release)"
+        required: true
+        type: string
+        default: "quick"
+      rules:
+        description: "Semgrep rulesets to use"
+        required: false
+        type: string
+        default: "p/default"
+      severity:
+        description: "Minimum severity level (ERROR, WARNING, INFO)"
+        required: false
+        type: string
+        default: "WARNING"
+      upload-artifact:
+        description: "Whether to upload results as artifact"
+        required: false
+        type: boolean
+        default: true
+    secrets:
+      semgrep-token:
+        description: "Semgrep App token"
+        required: false
+
+jobs:
+  semgrep-scan:
+    name: Semgrep Analysis
+    runs-on: ubuntu-latest
+    container:
+      image: returntocorp/semgrep
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Required for git-changes mode
+
+      - name: Configure scan settings
+        id: config
+        run: |
+          # Set scan configuration based on type
+          if [ "${{ inputs.scan-type }}" = "thorough" ]; then
+            echo "Running thorough scan for release..."
+            echo "scan_args=" >> $GITHUB_OUTPUT
+            echo "rules=${{ inputs.rules }},p/security-audit,p/secrets,p/supply-chain" >> $GITHUB_OUTPUT
+          else
+            echo "Running quick scan for PR..."
+            echo "scan_args=--git-changes HEAD~1" >> $GITHUB_OUTPUT
+            echo "rules=${{ inputs.rules }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run Semgrep scan
+        id: semgrep
+        run: |
+          # Set severity level
+          export SEMGREP_SEVERITY=${{ inputs.severity }}
+
+          # Run scan with configured settings
+          semgrep ci \
+            ${{ steps.config.outputs.scan_args }} \
+            --sarif > semgrep.sarif \
+            --json > semgrep-results.json \
+            --output report.txt
+
+          # Generate markdown summary
+          {
+            echo "### Semgrep Analysis Results"
+            echo "Scan type: ${{ inputs.scan-type }}"
+            echo "Rules: ${{ steps.config.outputs.rules }}"
+            echo "Severity: ${{ inputs.severity }}"
+            echo ""
+            echo "\`\`\`"
+            cat report.txt
+            echo "\`\`\`"
+          } > summary.md
+        env:
+          SEMGREP_APP_TOKEN: ${{ secrets.semgrep-token }}
+          SEMGREP_RULES: ${{ steps.config.outputs.rules }}
+
+      - name: Upload SARIF file
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: semgrep.sarif
+          wait-for-processing: true
+
+      - name: Upload scan results
+        if: inputs.upload-artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: semgrep-${{ inputs.scan-type }}-results
+          path: |
+            semgrep.sarif
+            semgrep-results.json
+            report.txt
+            summary.md
+          retention-days: 90
+
+      - name: Add PR comment
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const summary = fs.readFileSync('summary.md', 'utf8');
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: summary
+            });

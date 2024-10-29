@@ -1,0 +1,79 @@
+name: Release PR Checks
+
+on:
+  pull_request:
+    branches: [main, master]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - ".github/**"
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "Release branch to check (release/v*)"
+        required: true
+        default: "release/v1.0.0"
+      skip-checks:
+        description: "Comma-separated list of checks to skip"
+        required: false
+        default: ""
+      additional-rules:
+        description: "Additional Semgrep rules to include"
+        required: false
+        default: ""
+
+jobs:
+  check-branch:
+    name: Check Release Branch
+    runs-on: ubuntu-latest
+    if: startsWith(github.head_ref, 'release/v') || github.event_name == 'workflow_dispatch'
+    outputs:
+      is_release_branch: ${{ startsWith(github.head_ref, 'release/v') || github.event_name == 'workflow_dispatch' }}
+      version: ${{ steps.get-version.outputs.version }}
+    steps:
+      - name: Get version from branch name
+        id: get-version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            BRANCH="${{ github.event.inputs.branch }}"
+          else
+            BRANCH="${GITHUB_HEAD_REF}"
+          fi
+          VERSION=${BRANCH#release/v}
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "Processing release version: ${VERSION}"
+
+  static-analysis:
+    needs: check-branch
+    if: needs.check-branch.outputs.is_release_branch == 'true'
+    name: Static Code Analysis
+    uses: ./.github/workflows/components/static-analysis/semgrep.yml@main
+    with:
+      scan-type: thorough
+      rules: ${{ format('p/ci,p/security-audit,p/secrets{0}', github.event.inputs.additional-rules && format(',{0}', github.event.inputs.additional-rules) || '') }}
+      severity: INFO
+      upload-artifact: true
+    secrets:
+      semgrep-token: ${{ secrets.SEMGREP_APP_TOKEN }}
+
+  dependencies:
+    needs: check-branch
+    if: |
+      needs.check-branch.outputs.is_release_branch == 'true' &&
+      !contains(github.event.inputs.skip-checks, 'dependencies')
+    name: Dependencies Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dependency Checks
+        run: echo "Add dependency checks here"
+
+  documentation:
+    needs: check-branch
+    if: |
+      needs.check-branch.outputs.is_release_branch == 'true' &&
+      !contains(github.event.inputs.skip-checks, 'documentation')
+    name: Documentation Verification
+    runs-on: ubuntu-latest
+    steps:
+      - name: Documentation Checks
+        run: echo "Add documentation checks here"
