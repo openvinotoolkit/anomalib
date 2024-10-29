@@ -208,8 +208,8 @@ class EfficientAd(AnomalyModule):
         qb = torch.quantile(maps_flat, q=0.995).to(self.device)
         return qa, qb
 
-    @staticmethod
-    def configure_pre_processor(image_size: tuple[int, int] | None = None) -> PreProcessor:
+    @classmethod
+    def configure_pre_processor(cls, image_size: tuple[int, int] | None = None) -> PreProcessor:
         """Default transform for EfficientAd. Imagenet normalization applied in forward."""
         image_size = image_size or (256, 256)
         transform = Compose([Resize(image_size, antialias=True)])

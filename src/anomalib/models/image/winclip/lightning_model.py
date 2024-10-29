@@ -175,8 +175,8 @@ class WinClip(AnomalyModule):
             state_dict.update(restore_dict)
         return super().load_state_dict(state_dict, strict)
 
-    @staticmethod
-    def configure_pre_processor(image_size: tuple[int, int] | None = None) -> PreProcessor:
+    @classmethod
+    def configure_pre_processor(cls, image_size: tuple[int, int] | None = None) -> PreProcessor:
         """Configure the default pre-processor used by the model."""
         if image_size is not None:
             logger.warning("Image size is not used in WinCLIP. The input image size is determined by the model.")

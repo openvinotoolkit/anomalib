@@ -78,8 +78,8 @@ class Uflow(AnomalyModule):
             permute_soft=self.permute_soft,
         )
 
-    @staticmethod
-    def configure_pre_processor(image_size: tuple[int, int] | None = None) -> PreProcessor:
+    @classmethod
+    def configure_pre_processor(cls, image_size: tuple[int, int] | None = None) -> PreProcessor:
         """Default pre-processor for UFlow."""
         if image_size is not None:
             logger.warning("Image size is not used in UFlow. The input image size is determined by the model.")

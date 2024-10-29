@@ -199,11 +199,7 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
         raise NotImplementedError
 
     @classmethod
-    def configure_pre_processor(
-        cls,
-        image_size: tuple[int, int] | None = None,
-        **kwargs: Any,  # noqa: ANN401, ARG003
-    ) -> PreProcessor:
+    def configure_pre_processor(cls, image_size: tuple[int, int] | None = None) -> PreProcessor:
         """Configure the pre-processor.
 
         The default pre-processor resizes images to 256x256 and normalizes using ImageNet statistics.

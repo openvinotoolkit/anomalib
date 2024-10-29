@@ -168,8 +168,8 @@ class AiVad(MemoryBankMixin, AnomalyModule):
         """
         return LearningType.ONE_CLASS
 
-    @staticmethod
-    def configure_pre_processor(image_size: tuple[int, int] | None = None) -> PreProcessor:
+    @classmethod
+    def configure_pre_processor(cls, image_size: tuple[int, int] | None = None) -> PreProcessor:
         """Configure the pre-processor for AI-VAD.
 
         AI-VAD does not need a pre-processor or transforms, as the region- and
