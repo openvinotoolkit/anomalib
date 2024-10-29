@@ -123,7 +123,7 @@ class Dfkde(MemoryBankMixin, AnomalyModule):
         return LearningType.ONE_CLASS
 
     @staticmethod
-    def default_evaluator() -> Evaluator:
+    def configure_evaluator() -> Evaluator:
         """Default evaluator for DFKE."""
         image_auroc = AUROC(fields=["pred_score", "gt_label"], prefix="image_")
         image_f1score = F1Score(fields=["pred_label", "gt_label"], prefix="image_")
