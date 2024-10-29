@@ -20,13 +20,7 @@ from tqdm import tqdm
 from anomalib import TaskType
 from anomalib.data.datamodules.base.image import AnomalibDataModule
 from anomalib.data.datasets.image.btech import BTechDataset
-from anomalib.data.utils import (
-    DownloadInfo,
-    Split,
-    TestSplitMode,
-    ValSplitMode,
-    download_and_extract,
-)
+from anomalib.data.utils import DownloadInfo, Split, TestSplitMode, ValSplitMode, download_and_extract
 
 logger = logging.getLogger(__name__)
 
@@ -53,14 +47,6 @@ class BTech(AnomalibDataModule):
             Defaults to ``8``.
         task (TaskType, optional): Task type.
             Defaults to ``TaskType.SEGMENTATION``.
-        image_size (tuple[int, int], optional): Size to which input images should be resized.
-            Defaults to ``None``.
-        transform (Transform, optional): Transforms that should be applied to the input images.
-            Defaults to ``None``.
-        train_transform (Transform, optional): Transforms that should be applied to the input images during training.
-            Defaults to ``None``.
-        eval_transform (Transform, optional): Transforms that should be applied to the input images during evaluation.
-            Defaults to ``None``.
         test_split_mode (TestSplitMode, optional): Setting that determines how the testing subset is obtained.
             Defaults to ``TestSplitMode.FROM_DIR``.
         test_split_ratio (float, optional): Fraction of images from the train set that will be reserved for testing.
@@ -79,12 +65,9 @@ class BTech(AnomalibDataModule):
         >>> datamodule = BTech(
         ...     root="./datasets/BTech",
         ...     category="01",
-        ...     image_size=256,
         ...     train_batch_size=32,
         ...     eval_batch_size=32,
         ...     num_workers=8,
-        ...     transform_config_train=None,
-        ...     transform_config_eval=None,
         ... )
         >>> datamodule.setup()
 
@@ -121,10 +104,6 @@ class BTech(AnomalibDataModule):
         eval_batch_size: int = 32,
         num_workers: int = 8,
         task: TaskType | str = TaskType.SEGMENTATION,
-        image_size: tuple[int, int] | None = None,
-        transform: Transform | None = None,
-        train_transform: Transform | None = None,
-        eval_transform: Transform | None = None,
         test_split_mode: TestSplitMode | str = TestSplitMode.FROM_DIR,
         test_split_ratio: float = 0.2,
         val_split_mode: ValSplitMode | str = ValSplitMode.SAME_AS_TEST,
@@ -135,10 +114,6 @@ class BTech(AnomalibDataModule):
             train_batch_size=train_batch_size,
             eval_batch_size=eval_batch_size,
             num_workers=num_workers,
-            image_size=image_size,
-            transform=transform,
-            train_transform=train_transform,
-            eval_transform=eval_transform,
             test_split_mode=test_split_mode,
             test_split_ratio=test_split_ratio,
             val_split_mode=val_split_mode,
@@ -153,14 +128,12 @@ class BTech(AnomalibDataModule):
     def _setup(self, _stage: str | None = None) -> None:
         self.train_data = BTechDataset(
             task=self.task,
-            transform=self.train_transform,
             split=Split.TRAIN,
             root=self.root,
             category=self.category,
         )
         self.test_data = BTechDataset(
             task=self.task,
-            transform=self.eval_transform,
             split=Split.TEST,
             root=self.root,
             category=self.category,
