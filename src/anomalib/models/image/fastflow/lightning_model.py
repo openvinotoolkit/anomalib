@@ -132,7 +132,7 @@ class Fastflow(AnomalyModule):
         return LearningType.ONE_CLASS
 
     @staticmethod
-    def default_evaluator() -> Evaluator:
+    def configure_evaluator() -> Evaluator:
         """Default evaluator.
 
         Override in subclass for model-specific evaluator behaviour.
