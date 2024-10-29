@@ -35,7 +35,7 @@ jobs:
     # Run if it's a regular PR or manually triggered
     if: needs.check-pr-type.outputs.is_regular_pr == 'true' || github.event_name == 'workflow_dispatch'
     name: Static Analysis
-    uses: ./.github/workflows/components/static-analysis/semgrep.yml@main
+    uses: ./.github/workflows/components/static-analysis/semgrep.yaml
     with:
       scan-type: ${{ github.event.inputs.scan-type || 'quick' }}
       rules: p/default
