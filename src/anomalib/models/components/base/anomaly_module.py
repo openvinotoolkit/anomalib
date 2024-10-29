@@ -70,7 +70,6 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
         self.post_processor = post_processor or self.default_post_processor()
 
         self._input_size: tuple[int, int] | None = None
-
         self._is_setup = False  # flag to track if setup has been called from the trainer
 
     @property
@@ -93,15 +92,6 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
         in the `__init__` method because it requires some information or data that is not available at the time of
         initialization.
         """
-
-    def on_load_checkpoint(self, checkpoint: dict[str, Any]) -> None:
-        """Called when loading a checkpoint.
-
-        This method is called to ensure that the `TorchModel` is built before
-        loading the state dict.
-        """
-        del checkpoint  # `checkpoint` variable is not used.
-        self.setup(stage="load_checkpoint")
 
     def configure_callbacks(self) -> Sequence[Callback] | Callback:
         """Configure default callbacks for AnomalyModule."""

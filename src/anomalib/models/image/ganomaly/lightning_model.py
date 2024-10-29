@@ -72,6 +72,10 @@ class Ganomaly(AnomalyModule):
     ) -> None:
         super().__init__(pre_processor=pre_processor)
 
+        if self.input_size is None:
+            msg = "GANomaly needs input size to build torch model."
+            raise ValueError(msg)
+
         self.n_features = n_features
         self.latent_vec_size = latent_vec_size
         self.extra_layers = extra_layers
@@ -82,6 +86,15 @@ class Ganomaly(AnomalyModule):
 
         self.min_scores: torch.Tensor = torch.tensor(float("inf"), dtype=torch.float32)  # pylint: disable=not-callable
         self.max_scores: torch.Tensor = torch.tensor(float("-inf"), dtype=torch.float32)  # pylint: disable=not-callable
+
+        self.model = GanomalyModel(
+            input_size=self.input_size,
+            num_input_channels=3,
+            n_features=self.n_features,
+            latent_vec_size=self.latent_vec_size,
+            extra_layers=self.extra_layers,
+            add_final_conv_layer=self.add_final_conv_layer,
+        )
 
         self.generator_loss = GeneratorLoss(wadv, wcon, wenc)
         self.discriminator_loss = DiscriminatorLoss()
@@ -94,20 +107,6 @@ class Ganomaly(AnomalyModule):
         self.beta2 = beta2
 
         self.model: GanomalyModel
-
-    def _setup(self) -> None:
-        if self.input_size is None:
-            msg = "GANomaly needs input size to build torch model."
-            raise ValueError(msg)
-
-        self.model = GanomalyModel(
-            input_size=self.input_size,
-            num_input_channels=3,
-            n_features=self.n_features,
-            latent_vec_size=self.latent_vec_size,
-            extra_layers=self.extra_layers,
-            add_final_conv_layer=self.add_final_conv_layer,
-        )
 
     def _reset_min_max(self) -> None:
         """Reset min_max scores."""

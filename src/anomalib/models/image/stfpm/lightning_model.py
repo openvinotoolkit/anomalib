@@ -45,10 +45,7 @@ class Stfpm(AnomalyModule):
     ) -> None:
         super().__init__(pre_processor=pre_processor)
 
-        self.model = STFPMModel(
-            backbone=backbone,
-            layers=layers,
-        )
+        self.model = STFPMModel(backbone=backbone, layers=layers)
         self.loss = STFPMLoss()
 
     def training_step(self, batch: Batch, *args, **kwargs) -> STEP_OUTPUT:

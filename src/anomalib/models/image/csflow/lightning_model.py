@@ -49,19 +49,14 @@ class Csflow(AnomalyModule):
     ) -> None:
         super().__init__(pre_processor=pre_processor)
 
+        if self.input_size is None:
+            msg = "CsFlow needs input size to build torch model."
+            raise ValueError(msg)
+
         self.cross_conv_hidden_channels = cross_conv_hidden_channels
         self.n_coupling_blocks = n_coupling_blocks
         self.clamp = clamp
         self.num_channels = num_channels
-
-        self.loss = CsFlowLoss()
-
-        self.model: CsFlowModel
-
-    def _setup(self) -> None:
-        if self.input_size is None:
-            msg = "CsFlow needs input size to build torch model."
-            raise ValueError(msg)
 
         self.model = CsFlowModel(
             input_size=self.input_size,
@@ -71,6 +66,7 @@ class Csflow(AnomalyModule):
             num_channels=self.num_channels,
         )
         self.model.feature_extractor.eval()
+        self.loss = CsFlowLoss()
 
     def training_step(self, batch: Batch, *args, **kwargs) -> STEP_OUTPUT:
         """Perform the training step of CS-Flow.

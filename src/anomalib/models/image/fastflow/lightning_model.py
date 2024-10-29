@@ -51,19 +51,15 @@ class Fastflow(AnomalyModule):
     ) -> None:
         super().__init__(pre_processor=pre_processor)
 
+        if self.input_size is None:
+            msg = "Fastflow needs input size to build torch model."
+            raise ValueError(msg)
+
         self.backbone = backbone
         self.pre_trained = pre_trained
         self.flow_steps = flow_steps
         self.conv3x3_only = conv3x3_only
         self.hidden_ratio = hidden_ratio
-
-        self.model: FastflowModel
-        self.loss = FastflowLoss()
-
-    def _setup(self) -> None:
-        if self.input_size is None:
-            msg = "Fastflow needs input size to build torch model."
-            raise ValueError(msg)
 
         self.model = FastflowModel(
             input_size=self.input_size,
@@ -73,6 +69,7 @@ class Fastflow(AnomalyModule):
             conv3x3_only=self.conv3x3_only,
             hidden_ratio=self.hidden_ratio,
         )
+        self.loss = FastflowLoss()
 
     def training_step(self, batch: Batch, *args, **kwargs) -> STEP_OUTPUT:
         """Perform the training step input and return the loss.

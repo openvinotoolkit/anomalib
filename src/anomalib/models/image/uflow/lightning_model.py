@@ -54,20 +54,15 @@ class Uflow(AnomalyModule):
         """
         super().__init__(pre_processor=pre_processor)
 
+        if self.input_size is None:
+            msg = "Input size is required for UFlow model."
+            raise ValueError(msg)
+
         self.backbone = backbone
         self.flow_steps = flow_steps
         self.affine_clamp = affine_clamp
         self.affine_subnet_channels_ratio = affine_subnet_channels_ratio
         self.permute_soft = permute_soft
-
-        self.loss = UFlowLoss()
-
-        self.model: UflowModel
-
-    def _setup(self) -> None:
-        if self.input_size is None:
-            msg = "Input size is required for UFlow model."
-            raise ValueError(msg)
 
         self.model = UflowModel(
             input_size=self.input_size,
@@ -77,6 +72,7 @@ class Uflow(AnomalyModule):
             affine_subnet_channels_ratio=self.affine_subnet_channels_ratio,
             permute_soft=self.permute_soft,
         )
+        self.loss = UFlowLoss()
 
     @classmethod
     def configure_pre_processor(cls, image_size: tuple[int, int] | None = None) -> PreProcessor:

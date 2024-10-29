@@ -49,18 +49,14 @@ class ReverseDistillation(AnomalyModule):
     ) -> None:
         super().__init__(pre_processor=pre_processor)
 
+        if self.input_size is None:
+            msg = "Input size is required for Reverse Distillation model."
+            raise ValueError(msg)
+
         self.backbone = backbone
         self.pre_trained = pre_trained
         self.layers = layers
         self.anomaly_map_mode = anomaly_map_mode
-
-        self.model: ReverseDistillationModel
-        self.loss = ReverseDistillationLoss()
-
-    def _setup(self) -> None:
-        if self.input_size is None:
-            msg = "Input size is required for Reverse Distillation model."
-            raise ValueError(msg)
 
         self.model = ReverseDistillationModel(
             backbone=self.backbone,
@@ -69,6 +65,7 @@ class ReverseDistillation(AnomalyModule):
             input_size=self.input_size,
             anomaly_map_mode=self.anomaly_map_mode,
         )
+        self.loss = ReverseDistillationLoss()
 
     def configure_optimizers(self) -> optim.Adam:
         """Configure optimizers for decoder and bottleneck.
