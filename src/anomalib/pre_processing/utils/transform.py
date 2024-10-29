@@ -31,24 +31,6 @@ def get_stage_transform(stage: str, transforms: dict[str, Transform | None]) -> 
     return stage_transforms_mapping.get(stage)
 
 
-def get_datamodule_transforms(datamodule: AnomalibDataModule) -> dict[str, Transform] | None:
-    """Get transforms from datamodule if available.
-
-    Args:
-        datamodule: The datamodule to get transforms from.
-
-    Returns:
-        Dictionary of transforms if found in datamodule, None otherwise.
-    """
-    if hasattr(datamodule, "train_transform") and hasattr(datamodule, "eval_transform"):
-        return {
-            "train": datamodule.train_transform,
-            "val": datamodule.eval_transform,
-            "test": datamodule.eval_transform,
-        }
-    return None
-
-
 def get_dataloaders_transforms(dataloaders: Sequence[DataLoader]) -> dict[str, Transform]:
     """Get transforms from dataloaders.
 

@@ -16,7 +16,6 @@ from anomalib.data.dataclasses.torch.base import Batch
 
 from .utils.transform import (
     get_dataloaders_transforms,
-    get_datamodule_transforms,
     get_exportable_transform,
     set_dataloaders_transforms,
     set_datamodule_transforms,
@@ -123,17 +122,6 @@ class PreProcessor(nn.Module, Callback):
             }
             set_datamodule_transforms(datamodule, transforms)
             return
-
-        # Try to get transforms from datamodule
-        if datamodule:
-            datamodule_transforms = get_datamodule_transforms(datamodule)
-            if datamodule_transforms:
-                self.train_transform = datamodule_transforms.get("train")
-                self.val_transform = datamodule_transforms.get("val")
-                self.test_transform = datamodule_transforms.get("test")
-                self.predict_transform = self.test_transform
-                self.exportable_transform = get_exportable_transform(self.test_transform)
-                return
 
     def setup_dataloader_transforms(self, dataloaders: "EVAL_DATALOADERS | TRAIN_DATALOADERS") -> None:
         """Set up dataloader transforms."""

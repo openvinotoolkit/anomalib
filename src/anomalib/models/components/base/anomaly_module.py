@@ -198,11 +198,44 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
         """Learning type of the model."""
         raise NotImplementedError
 
-    def configure_pre_processor(self, image_size: tuple[int, int] | None = None) -> PreProcessor:  # noqa: PLR6301
+    @staticmethod
+    def configure_pre_processor(
+        image_size: tuple[int, int] | None = None,
+        **kwargs: Any,  # noqa: ANN401, ARG004
+    ) -> PreProcessor:
         """Configure the pre-processor.
 
-        The default pre-processor is resize to 256x256 and normalize to ImageNet stats. Individual models can override
-        this method to provide custom transforms and pre-processing pipelines.
+        The default pre-processor resizes images to 256x256 and normalizes using ImageNet statistics.
+        Individual models can override this method to provide custom transforms and pre-processing pipelines.
+
+        Args:
+            image_size (tuple[int, int] | None, optional): Target size for resizing images.
+                If None, defaults to (256, 256). Defaults to None.
+            **kwargs (Any): Additional keyword arguments (unused).
+
+        Returns:
+            PreProcessor: Configured pre-processor instance.
+
+        Examples:
+            Get default pre-processor with custom image size:
+
+            >>> preprocessor = AnomalyModule.configure_pre_processor(image_size=(512, 512))
+
+            Create model with custom pre-processor:
+
+            >>> from torchvision.transforms.v2 import RandomHorizontalFlip
+            >>> custom_transform = Compose([
+            ...     Resize((256, 256), antialias=True),
+            ...     CenterCrop((224, 224)),
+            ...     RandomHorizontalFlip(p=0.5),
+            ...     Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+            ... ])
+            >>> preprocessor.train_transform = custom_transform
+            >>> model = PatchCore(pre_processor=preprocessor)
+
+            Disable pre-processing:
+
+            >>> model = PatchCore(pre_processor=False)
         """
         image_size = image_size or (256, 256)
         return PreProcessor(
