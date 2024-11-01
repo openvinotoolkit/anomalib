@@ -1,11 +1,14 @@
 """PyTorch model for the SuperSimpleNet model implementation."""
 
+import math
+
 import torch
 import torch.nn.functional as F
 from torch import nn
 from torchvision.models import Wide_ResNet50_2_Weights
 
-from anomalib.models.components import TorchFXFeatureExtractor
+from anomalib.models.components import GaussianBlur2d, TorchFXFeatureExtractor
+from anomalib.models.image.supersimplenet.anomaly_generator import SSNAnomalyGenerator
 
 # Original Code
 # Copyright (c) 2024 Blaž Rolih
@@ -24,24 +27,53 @@ class SuperSimpleNet(nn.Module):
 
     """
 
-    def __init__(self):
+    def __init__(self, perlin_threshold: float):
         super().__init__()
         self.feature_extractor = FeatureExtractor(backbone="wide_resnet50_2", layers=["layer2", "layer3"])
 
         channels = self.feature_extractor.get_channels_dim()
         self.adaptor = FeatureAdaptor(channels)
         self.segdec = SegmentationDetectionModule(input_dim=channels, stop_grad=True)
+        self.anomaly_generator = SSNAnomalyGenerator(noise_mean=0, noise_std=0.015, threshold=perlin_threshold)
 
-    def forward(self, input_tensor: torch.Tensor):
+        self.anomaly_map_generator = AnomalyMapGenerator(sigma=4)
+
+    def forward(self, input_tensor: torch.Tensor, masks: torch.Tensor, labels: torch.Tensor):
+        output_size = input_tensor.shape[-2:]
+
         features = self.feature_extractor(input_tensor)
         adapted = self.adaptor(features)
 
         if self.training:
-            pass
-        else:
-            anomaly_map, anomaly_score = self.segdec(adapted)
+            masks = self.downsample_mask(masks, *features.shape[-2:])
 
-            return anomaly_map, anomaly_score
+            features, masks, labels = self.anomaly_generator(
+                adapted,
+                masks,
+                labels,
+            )
+
+            anomaly_map, anomaly_score = self.segdec(features)
+            return anomaly_map, anomaly_score, masks, labels
+
+        anomaly_map, anomaly_score = self.segdec(adapted)
+        anomaly_map = self.anomaly_map_generator(anomaly_map, output_size=output_size)
+
+        return anomaly_map, anomaly_score
+
+    @staticmethod
+    def downsample_mask(masks: torch.Tensor, feat_h: int, feat_w: int) -> torch.Tensor:
+        # best downsampling proposed by DestSeg
+        masks = F.interpolate(
+            masks.unsqueeze(1),
+            size=(feat_h, feat_w),
+            mode="bilinear",
+        )
+        return torch.where(
+            masks < 0.5,
+            torch.zeros_like(masks),
+            torch.ones_like(masks),
+        )
 
 
 def init_weights(m: nn.Module):
@@ -206,9 +238,24 @@ class SegmentationDetectionModule(nn.Module):
         return map, score
 
 
+class AnomalyMapGenerator(nn.Module):
+    def __init__(self, sigma: float):
+        super().__init__()
+        kernel_size = 2 * math.ceil(3 * sigma) + 1
+        self.blur = GaussianBlur2d(kernel_size=kernel_size, sigma=4)
+
+    def forward(self, out_map: torch.Tensor, output_size: tuple[int, int]) -> torch.Tensor:
+        # upscale & smooth
+        anomaly_map = F.interpolate(out_map, size=output_size, mode="bilinear")
+        anomaly_map = self.blur(anomaly_map)
+        return anomaly_map
+
+
 if __name__ == "__main__":
-    ssn = SuperSimpleNet()
-    ssn.eval()
-    x = torch.rand(1, 3, 256, 256)
-    p_map, p_score = ssn(x)
+    ssn = SuperSimpleNet(perlin_threshold=0.2)
+    ssn.train()
+    x = torch.rand(2, 3, 256, 256)
+    mask = torch.rand(2, 256, 256)
+    label = torch.rand(2)
+    p_map, p_score, m, l = ssn(x, mask, label)
     print(p_map.shape, p_score.shape)
