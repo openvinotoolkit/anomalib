@@ -1,4 +1,4 @@
-# SuperSimpleNet: Unifying Unsupervised and Supervised Learning for Fast and Reliable Surface Defect Detection 
+# SuperSimpleNet: Unifying Unsupervised and Supervised Learning for Fast and Reliable Surface Defect Detection
 
 This is the implementation of the [SuperSimpleNet](https://arxiv.org/pdf/2408.03143) paper.
 
@@ -17,4 +17,3 @@ TODO
 `anomalib train --model SuperSimpleNet --data MVTec --data.category <category>`
 
 ## Benchmark
-

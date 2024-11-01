@@ -7,12 +7,9 @@ from torch import nn
 
 
 class SSNAnomalyGenerator(nn.Module):
-    """Anomaly generator of the SuperSimpleNet model.
-
-    """
+    """Anomaly generator of the SuperSimpleNet model."""
 
     def __init__(
         self,
     ) -> None:
         super().__init__()
-        pass

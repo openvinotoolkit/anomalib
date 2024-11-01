@@ -12,14 +12,12 @@ from lightning.pytorch.utilities.types import STEP_OUTPUT, OptimizerLRScheduler
 
 from anomalib import LearningType
 from anomalib.data import Batch
-
 from anomalib.models import AnomalyModule
 
 
 class SuperSimpleNet(AnomalyModule):
     def __init__(self):
         super().__init__()
-        pass
 
     def training_step(self, batch: Batch, *args, **kwargs) -> STEP_OUTPUT:
         pass
