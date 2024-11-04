@@ -49,9 +49,8 @@ class Evaluator(nn.Module, Callback):
         val_metrics: AnomalibMetric | Sequence[AnomalibMetric] | None = None,
         test_metrics: AnomalibMetric | Sequence[AnomalibMetric] | None = None,
         compute_on_cpu: bool = True,
-        **kwargs,
     ) -> None:
-        super().__init__(**kwargs)
+        super().__init__()
         self.val_metrics = ModuleList(self.validate_metrics(val_metrics))
         self.test_metrics = ModuleList(self.validate_metrics(test_metrics))
 
