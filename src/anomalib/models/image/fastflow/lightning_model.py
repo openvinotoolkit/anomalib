@@ -16,6 +16,7 @@ from anomalib import LearningType
 from anomalib.data import Batch
 from anomalib.metrics import AUROC, Evaluator, F1Score
 from anomalib.models.components import AnomalyModule
+from anomalib.post_processing import PostProcessor
 
 from .loss import FastflowLoss
 from .torch_model import FastflowModel
@@ -44,9 +45,10 @@ class Fastflow(AnomalyModule):
         flow_steps: int = 8,
         conv3x3_only: bool = False,
         hidden_ratio: float = 1.0,
-        **kwargs,
+        post_processor: PostProcessor | None = None,
+        evaluator: Evaluator | bool = True,
     ) -> None:
-        super().__init__(**kwargs)
+        super().__init__(post_processor=post_processor, evaluator=evaluator)
 
         self.backbone = backbone
         self.pre_trained = pre_trained

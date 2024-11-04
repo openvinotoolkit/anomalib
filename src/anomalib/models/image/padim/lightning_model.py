@@ -14,7 +14,9 @@ from torchvision.transforms.v2 import Compose, Normalize, Resize, Transform
 
 from anomalib import LearningType
 from anomalib.data import Batch
+from anomalib.metrics import Evaluator
 from anomalib.models.components import AnomalyModule, MemoryBankMixin
+from anomalib.post_processing import PostProcessor
 from anomalib.post_processing.one_class import OneClassPostProcessor
 
 from .torch_model import PadimModel
@@ -45,9 +47,10 @@ class Padim(MemoryBankMixin, AnomalyModule):
         layers: list[str] = ["layer1", "layer2", "layer3"],  # noqa: B006
         pre_trained: bool = True,
         n_features: int | None = None,
-        **kwargs,
+        post_processor: PostProcessor | None = None,
+        evaluator: Evaluator | bool = True,
     ) -> None:
-        super().__init__(**kwargs)
+        super().__init__(post_processor=post_processor, evaluator=evaluator)
 
         self.model: PadimModel = PadimModel(
             backbone=backbone,

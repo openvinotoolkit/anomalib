@@ -14,7 +14,9 @@ from torch import optim
 
 from anomalib import LearningType
 from anomalib.data import Batch
+from anomalib.metrics import Evaluator
 from anomalib.models.components import AnomalyModule
+from anomalib.post_processing import PostProcessor
 
 from .anomaly_map import AnomalyMapGenerationMode
 from .loss import ReverseDistillationLoss
@@ -41,9 +43,10 @@ class ReverseDistillation(AnomalyModule):
         layers: Sequence[str] = ("layer1", "layer2", "layer3"),
         anomaly_map_mode: AnomalyMapGenerationMode = AnomalyMapGenerationMode.ADD,
         pre_trained: bool = True,
-        **kwargs,
+        post_processor: PostProcessor | None = None,
+        evaluator: Evaluator | bool = True,
     ) -> None:
-        super().__init__(**kwargs)
+        super().__init__(post_processor=post_processor, evaluator=evaluator)
 
         self.backbone = backbone
         self.pre_trained = pre_trained

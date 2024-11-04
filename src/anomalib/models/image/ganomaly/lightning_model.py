@@ -17,6 +17,7 @@ from anomalib import LearningType
 from anomalib.data import Batch
 from anomalib.metrics import AUROC, Evaluator, F1Score
 from anomalib.models.components import AnomalyModule
+from anomalib.post_processing import PostProcessor
 
 from .loss import DiscriminatorLoss, GeneratorLoss
 from .torch_model import GanomalyModel
@@ -65,9 +66,10 @@ class Ganomaly(AnomalyModule):
         lr: float = 0.0002,
         beta1: float = 0.5,
         beta2: float = 0.999,
-        **kwargs,
+        post_processor: PostProcessor | None = None,
+        evaluator: Evaluator | bool = True,
     ) -> None:
-        super().__init__(**kwargs)
+        super().__init__(post_processor=post_processor, evaluator=evaluator)
 
         self.n_features = n_features
         self.latent_vec_size = latent_vec_size

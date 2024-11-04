@@ -17,7 +17,9 @@ from torchvision.transforms.v2 import Compose, Normalize, Resize, Transform
 
 from anomalib import LearningType
 from anomalib.data import Batch
+from anomalib.metrics import Evaluator
 from anomalib.models.components import AnomalyModule
+from anomalib.post_processing import PostProcessor
 
 from .loss import UFlowLoss
 from .torch_model import UflowModel
@@ -45,9 +47,10 @@ class Uflow(AnomalyModule):
         affine_clamp: float = 2.0,
         affine_subnet_channels_ratio: float = 1.0,
         permute_soft: bool = False,
-        **kwargs,
+        post_processor: PostProcessor | None = None,
+        evaluator: Evaluator | bool = True,
     ) -> None:
-        super().__init__(**kwargs)
+        super().__init__(post_processor=post_processor, evaluator=evaluator)
 
         self.backbone = backbone
         self.flow_steps = flow_steps

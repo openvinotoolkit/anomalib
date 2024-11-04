@@ -16,7 +16,9 @@ from lightning.pytorch.utilities.types import STEP_OUTPUT
 
 from anomalib import LearningType
 from anomalib.data import Batch
+from anomalib.metrics import Evaluator
 from anomalib.models.components import AnomalyModule
+from anomalib.post_processing import PostProcessor
 
 from .loss import CfaLoss
 from .torch_model import CfaModel
@@ -52,9 +54,10 @@ class Cfa(AnomalyModule):
         num_nearest_neighbors: int = 3,
         num_hard_negative_features: int = 3,
         radius: float = 1e-5,
-        **kwargs,
+        post_processor: PostProcessor | None = None,
+        evaluator: Evaluator | bool = True,
     ) -> None:
-        super().__init__(**kwargs)
+        super().__init__(post_processor=post_processor, evaluator=evaluator)
         self.model: CfaModel = CfaModel(
             backbone=backbone,
             gamma_c=gamma_c,
