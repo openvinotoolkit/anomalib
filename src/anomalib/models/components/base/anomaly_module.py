@@ -55,18 +55,7 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
         self.image_metrics: AnomalibMetricCollection
         self.pixel_metrics: AnomalibMetricCollection
 
-        # Handle pre-processor
-        # True -> use default pre-processor
-        # False -> no pre-processor
-        # PreProcessor -> use the provided pre-processor
-        if isinstance(pre_processor, PreProcessor):
-            self.pre_processor = pre_processor
-        elif isinstance(pre_processor, bool):
-            self.pre_processor = self.configure_pre_processor()
-        else:
-            msg = f"Invalid pre-processor type: {type(pre_processor)}"
-            raise TypeError(msg)
-
+        self.pre_processor = self._resolve_pre_processor(pre_processor)
         self.post_processor = post_processor or self.default_post_processor()
 
         self._input_size: tuple[int, int] | None = None
@@ -92,6 +81,25 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
         in the `__init__` method because it requires some information or data that is not available at the time of
         initialization.
         """
+
+    def _resolve_pre_processor(self, pre_processor: PreProcessor | bool) -> PreProcessor:
+        """Resolve and validate which pre-processor to use..
+
+        Args:
+            pre_processor: Pre-processor configuration
+                - True -> use default pre-processor
+                - False -> no pre-processor
+                - PreProcessor -> use the provided pre-processor
+
+        Returns:
+            Configured pre-processor
+        """
+        if isinstance(pre_processor, PreProcessor):
+            return pre_processor
+        if isinstance(pre_processor, bool):
+            return self.configure_pre_processor()
+        msg = f"Invalid pre-processor type: {type(pre_processor)}"
+        raise TypeError(msg)
 
     def configure_callbacks(self) -> Sequence[Callback] | Callback:
         """Configure default callbacks for AnomalyModule."""
@@ -250,7 +258,7 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
         The effective input size is the size of the input tensor after the transform has been applied. If the transform
         is not set, or if the transform does not change the shape of the input tensor, this method will return None.
         """
-        transform = self.pre_processor.train_transform
+        transform = self.pre_processor.predict_transform
         if transform is None:
             return None
         dummy_input = torch.zeros(1, 3, 1, 1)
