@@ -6,18 +6,24 @@ on:
 
 jobs:
   pre-commit-full:
-    uses: ./.github/actions/linting/pre-commit.yaml@main  # Add @main or specific reference
-    # Runs all hooks on all files
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/linting/pre-commit
+        # Runs all hooks on all files
 
-  # Example of running specific hooks on changed files
   ruff-changed:
-    uses: ./.github/actions/linting/specific-hooks.yaml@main  # Add @main or specific reference
-    with:
-      hook_id: ruff
-      files: ${{ join(github.event.pull_request.changed_files, ' ') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/linting/ruff
+        with:
+          files: ${{ join(github.event.pull_request.changed_files, ' ') }}
 
-  # Security specific hooks
-  security-checks:
-    uses: ./.github/actions/linting/pre-commit.yaml@main  # Add @main or specific reference
-    with:
-      hooks: bandit
+  bandit-security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/security/bandit
+        with:
+          files: '.'  # Optional: can add files parameter if you want to scope it

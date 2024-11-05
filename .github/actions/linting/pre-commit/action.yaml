@@ -1,0 +1,14 @@
+name: 'Pre-commit Checks'
+description: 'Runs all pre-commit hooks'
+inputs:
+  files:
+    description: 'Files to check'
+    required: false
+    default: '.'
+runs:
+  using: 'composite'
+  steps:
+    - run: |
+        pip install pre-commit
+        pre-commit run --files ${{ inputs.files }}
+      shell: bash
