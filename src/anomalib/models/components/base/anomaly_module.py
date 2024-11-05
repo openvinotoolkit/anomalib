@@ -54,15 +54,7 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
         # set the post-processor
         self.post_processor = post_processor or self.default_post_processor()
 
-        # set the evaluator
-        self.evaluator: Evaluator | None
-        if isinstance(evaluator, Evaluator):
-            self.evaluator = evaluator
-        elif isinstance(evaluator, bool):
-            self.evaluator = self.configure_evaluator() if evaluator else None
-        else:
-            msg = f"evaluator must be of type Evaluator or bool, got {type(evaluator)}"
-            raise TypeError(msg)
+        self.evaluator = self._resolve_evaluator(evaluator)
 
         self._transform: Transform | None = None
         self._input_size: tuple[int, int] | None = None
@@ -200,6 +192,19 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
         msg = f"No default post-processor available for model {self.__name__} with learning type {self.learning_type}. \
               Please override the default_post_processor method in the model implementation."
         raise NotImplementedError(msg)
+
+    def _resolve_evaluator(self, evaluator: Evaluator | bool) -> Evaluator | None:
+        """Resolve the evaluator to be used in the model.
+
+        If the evaluator is set to True, the default evaluator will be used. If the evaluator is set to False, no
+        evaluator will be used. If the evaluator is an instance of Evaluator, it will be used as the evaluator.
+        """
+        if isinstance(evaluator, Evaluator):
+            return evaluator
+        if isinstance(evaluator, bool):
+            return self.configure_evaluator() if evaluator else None
+        msg = f"evaluator must be of type Evaluator or bool, got {type(evaluator)}"
+        raise TypeError(msg)
 
     @staticmethod
     def configure_evaluator() -> Evaluator:
