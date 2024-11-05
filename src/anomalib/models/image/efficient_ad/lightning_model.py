@@ -256,7 +256,7 @@ class EfficientAd(AnomalyModule):
             msg = "train_batch_size for EfficientAd should be 1."
             raise ValueError(msg)
 
-        if self.pre_processor.train_transform:
+        if self.pre_processor and self.pre_processor.train_transform:
             transforms = self.pre_processor.train_transform.transforms
             if transforms and any(isinstance(transform, Normalize) for transform in transforms):
                 msg = "Transforms for EfficientAd should not contain Normalize."

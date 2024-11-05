@@ -82,7 +82,7 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
         initialization.
         """
 
-    def _resolve_pre_processor(self, pre_processor: PreProcessor | bool) -> PreProcessor:
+    def _resolve_pre_processor(self, pre_processor: PreProcessor | bool) -> PreProcessor | None:
         """Resolve and validate which pre-processor to use..
 
         Args:
@@ -97,13 +97,13 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
         if isinstance(pre_processor, PreProcessor):
             return pre_processor
         if isinstance(pre_processor, bool):
-            return self.configure_pre_processor()
+            return self.configure_pre_processor() if pre_processor else None
         msg = f"Invalid pre-processor type: {type(pre_processor)}"
         raise TypeError(msg)
 
     def configure_callbacks(self) -> Sequence[Callback] | Callback:
         """Configure default callbacks for AnomalyModule."""
-        return [self.pre_processor]
+        return [self.pre_processor] if self.pre_processor else []
 
     def forward(self, batch: torch.Tensor, *args, **kwargs) -> InferenceBatch:
         """Perform the forward-pass by passing input tensor to the module.
@@ -258,7 +258,7 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
         The effective input size is the size of the input tensor after the transform has been applied. If the transform
         is not set, or if the transform does not change the shape of the input tensor, this method will return None.
         """
-        transform = self.pre_processor.predict_transform
+        transform = self.pre_processor.predict_transform if self.pre_processor else None
         if transform is None:
             return None
         dummy_input = torch.zeros(1, 3, 1, 1)
