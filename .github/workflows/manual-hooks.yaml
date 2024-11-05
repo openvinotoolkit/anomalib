@@ -14,7 +14,7 @@ on:
 
 jobs:
   run-hooks:
-    uses: ./.github/workflows/components/linting/pre-commit.yml
+    uses: ./.github/actions/linting/pre-commit.yaml
     with:
       hooks: ${{ inputs.hooks }}
       args: "--files ${{ inputs.files }}"

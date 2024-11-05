@@ -5,18 +5,18 @@ on:
 
 jobs:
   pre-commit-full:
-    uses: ./.github/workflows/components/linting/pre-commit.yml
+    uses: ./.github/actions/linting/pre-commit.yaml
     # Runs all hooks on all files
 
   # Example of running specific hooks on changed files
   ruff-changed:
-    uses: ./.github/workflows/components/linting/specific-hooks.yml
+    uses: ./.github/actions/linting/specific-hooks.yaml
     with:
       hook_id: ruff
       files: ${{ join(github.event.pull_request.changed_files, ' ') }}
 
   # Security specific hooks
   security-checks:
-    uses: ./.github/workflows/components/linting/pre-commit.yml
+    uses: ./.github/actions/linting/pre-commit.yaml
     with:
       hooks: bandit
