@@ -43,7 +43,6 @@ __all__ = [
     "Stfpm",
     "Uflow",
     "WinClip",
-    "VlmAd",
 ]
 
 if module_available("anomalib.models.image.vlm_ad"):
