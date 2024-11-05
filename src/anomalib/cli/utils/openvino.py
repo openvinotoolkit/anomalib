@@ -6,12 +6,12 @@
 import logging
 
 from jsonargparse import ArgumentParser
-from lightning_utilities.core.imports import package_available
+from lightning_utilities.core.imports import module_available
 
 logger = logging.getLogger(__name__)
 
 
-if package_available("openvino"):
+if module_available("openvino"):
     from openvino.tools.ovc.cli_parser import get_common_cli_parser
 else:
     get_common_cli_parser = None
