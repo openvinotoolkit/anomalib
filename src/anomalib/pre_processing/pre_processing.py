@@ -109,7 +109,7 @@ class PreProcessor(nn.Module, Callback):
         self.val_transform = val_transform or transform
         self.test_transform = test_transform or transform
         self.predict_transform = self.test_transform
-        self.exportable_transform = get_exportable_transform(self.test_transform)
+        self.export_transform = get_exportable_transform(self.test_transform)
 
     def setup_datamodule_transforms(self, datamodule: "AnomalibDataModule") -> None:
         """Set up datamodule transforms."""
@@ -146,7 +146,7 @@ class PreProcessor(nn.Module, Callback):
                 self.val_transform = dataloaders_transforms.get("val")
                 self.test_transform = dataloaders_transforms.get("test")
                 self.predict_transform = self.test_transform
-                self.exportable_transform = get_exportable_transform(self.test_transform)
+                self.export_transform = get_exportable_transform(self.test_transform)
 
     def setup(self, trainer: Trainer, pl_module: LightningModule, stage: str) -> None:
         """Configure transforms at the start of each stage.
@@ -173,7 +173,7 @@ class PreProcessor(nn.Module, Callback):
         Within the Lightning training/validation/testing loops, the transforms are applied
         in the `on_*_batch_start` methods.
         """
-        return self.exportable_transform(batch) if self.exportable_transform else batch
+        return self.export_transform(batch) if self.export_transform else batch
 
     def on_train_batch_start(
         self,
