@@ -1,0 +1,10 @@
+name: Test PR Trigger
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "PR number is ${{ github.event.number }}"
