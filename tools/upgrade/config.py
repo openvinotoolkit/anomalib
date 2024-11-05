@@ -169,8 +169,6 @@ class ConfigAdapter:
             excluded_keys=["name", "early_stopping", "normalization_method"],
         )
 
-        init_args.pop("kwargs")
-
         return {
             "model": {
                 "class_path": f"anomalib.models.{model_name}",
