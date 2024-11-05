@@ -12,13 +12,13 @@ On Mac and Windows ensure that the ollama service is running by launching from t
 import logging
 from pathlib import Path
 
-from lightning_utilities.core.imports import package_available
+from lightning_utilities.core.imports import module_available
 
 from anomalib.models.image.vlm_ad.utils import Prompt
 
 from .base import Backend
 
-if package_available("ollama"):
+if module_available("ollama"):
     from ollama import chat
     from ollama._client import _encode_image
 else:

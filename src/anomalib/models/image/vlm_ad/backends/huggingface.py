@@ -7,7 +7,7 @@ import logging
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from lightning_utilities.core.imports import package_available
+from lightning_utilities.core.imports import module_available
 from PIL import Image
 
 from anomalib.models.image.vlm_ad.utils import Prompt
@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     from transformers.modeling_utils import PreTrainedModel
     from transformers.processing_utils import ProcessorMixin
 
-if package_available("transformers"):
+if module_available("transformers"):
     import transformers
 else:
     transformers = None
