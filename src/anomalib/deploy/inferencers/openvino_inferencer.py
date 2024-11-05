@@ -9,7 +9,7 @@ from typing import Any
 
 import cv2
 import numpy as np
-from lightning_utilities.core.imports import package_available
+from lightning_utilities.core.imports import module_available
 from omegaconf import DictConfig
 from PIL import Image
 
@@ -94,7 +94,7 @@ class OpenVINOInferencer(Inferencer):
         task: str | None = None,
         config: dict | None = None,
     ) -> None:
-        if not package_available("openvino"):
+        if not module_available("openvino"):
             msg = "OpenVINO is not installed. Please install OpenVINO to use OpenVINOInferencer."
             raise ImportError(msg)
 

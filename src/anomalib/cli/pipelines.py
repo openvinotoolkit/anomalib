@@ -6,13 +6,13 @@
 import logging
 
 from jsonargparse import Namespace
-from lightning_utilities.core.imports import package_available
+from lightning_utilities.core.imports import module_available
 
 from anomalib.cli.utils.help_formatter import get_short_docstring
 
 logger = logging.getLogger(__name__)
 
-if package_available("anomalib.pipelines"):
+if module_available("anomalib.pipelines"):
     from anomalib.pipelines import Benchmark
     from anomalib.pipelines.components.base import Pipeline
 
