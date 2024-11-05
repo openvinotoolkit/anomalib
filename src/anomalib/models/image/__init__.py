@@ -3,6 +3,8 @@
 # Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from lightning_utilities.core.imports import module_available
+
 from .cfa import Cfa
 from .cflow import Cflow
 from .csflow import Csflow
@@ -20,7 +22,6 @@ from .reverse_distillation import ReverseDistillation
 from .rkde import Rkde
 from .stfpm import Stfpm
 from .uflow import Uflow
-from .vlm_ad import VlmAd
 from .winclip import WinClip
 
 __all__ = [
@@ -41,6 +42,11 @@ __all__ = [
     "Rkde",
     "Stfpm",
     "Uflow",
-    "VlmAd",
     "WinClip",
+    "VlmAd",
 ]
+
+if module_available("anomalib.models.image.vlm_ad"):
+    from .vlm_ad import VlmAd
+
+    __all__.append("VlmAd")
