@@ -12,8 +12,6 @@ from torch import nn
 from torch.utils.data import DataLoader
 from torchvision.transforms.v2 import Transform
 
-from anomalib.data.dataclasses.torch.base import Batch
-
 from .utils.transform import (
     get_dataloaders_transforms,
     get_exportable_transform,
@@ -179,54 +177,3 @@ class PreProcessor(nn.Module, Callback):
         in the `on_*_batch_start` methods.
         """
         return self.export_transform(batch) if self.export_transform else batch
-
-    def on_train_batch_start(
-        self,
-        trainer: Trainer,
-        pl_module: LightningModule,
-        batch: Batch,
-        batch_idx: int,
-    ) -> None:
-        """Apply transforms to the training batch."""
-        del trainer, pl_module, batch_idx  # Unused parameters
-        if self.train_transform:
-            batch.image, batch.gt_mask = self.train_transform(batch.image, batch.gt_mask)
-
-    def on_validation_batch_start(
-        self,
-        trainer: Trainer,
-        pl_module: LightningModule,
-        batch: Batch,
-        batch_idx: int,
-        dataloader_idx: int = 0,
-    ) -> None:
-        """Apply transforms to the validation batch."""
-        del trainer, pl_module, batch_idx, dataloader_idx  # Unused parameters
-        if self.val_transform:
-            batch.image, batch.gt_mask = self.val_transform(batch.image, batch.gt_mask)
-
-    def on_test_batch_start(
-        self,
-        trainer: Trainer,
-        pl_module: LightningModule,
-        batch: Batch,
-        batch_idx: int,
-        dataloader_idx: int = 0,
-    ) -> None:
-        """Apply transforms to the test batch."""
-        del trainer, pl_module, batch_idx, dataloader_idx  # Unused parameters
-        if self.test_transform:
-            batch.image, batch.gt_mask = self.test_transform(batch.image, batch.gt_mask)
-
-    def on_predict_batch_start(
-        self,
-        trainer: Trainer,
-        pl_module: LightningModule,
-        batch: Batch,
-        batch_idx: int,
-        dataloader_idx: int = 0,
-    ) -> None:
-        """Apply transforms to the predict batch, which is the same as test batch."""
-        del trainer, pl_module, batch_idx, dataloader_idx  # Unused parameters
-        if self.predict_transform:
-            batch.image, batch.gt_mask = self.predict_transform(batch.image, batch.gt_mask)
