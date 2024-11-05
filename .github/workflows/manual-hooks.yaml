@@ -3,14 +3,14 @@ on:
   workflow_dispatch:
     inputs:
       hooks:
-        description: 'Hooks to run (space separated)'
+        description: "Hooks to run (space separated)"
         required: true
         type: string
       files:
-        description: 'Files to check (space separated)'
+        description: "Files to check (space separated)"
         required: false
         type: string
-        default: '.'
+        default: "."
 
 jobs:
   run-hooks:

@@ -1,7 +1,7 @@
 name: Pull Request Checks
 on:
   pull_request:
-    branches: [ main, feature ]
+    branches: [main, feature]
 
 jobs:
   pre-commit-full:
