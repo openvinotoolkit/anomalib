@@ -10,13 +10,13 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from dotenv import load_dotenv
-from lightning_utilities.core.imports import package_available
+from lightning_utilities.core.imports import module_available
 
 from anomalib.models.image.vlm_ad.utils import Prompt
 
 from .base import Backend
 
-if package_available("openai"):
+if module_available("openai"):
     from openai import OpenAI
 else:
     OpenAI = None

@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import torch
-from lightning_utilities.core.imports import package_available
+from lightning_utilities.core.imports import module_available
 from torch import nn
 from torchmetrics import Metric
 from torchvision.transforms.v2 import Transform
@@ -245,7 +245,7 @@ class ExportMixin:
             ...     task="segmentation",
             ... )
         """
-        if not package_available("openvino"):
+        if not module_available("openvino"):
             logger.exception("Could not find OpenVINO. Please check OpenVINO installation.")
             raise ModuleNotFoundError
 
@@ -294,7 +294,7 @@ class ExportMixin:
         Returns:
             model (CompiledModel): Model in the OpenVINO format compressed with NNCF quantization.
         """
-        if not package_available("nncf"):
+        if not module_available("nncf"):
             logger.exception("Could not find NCCF. Please check NNCF installation.")
             raise ModuleNotFoundError
 
