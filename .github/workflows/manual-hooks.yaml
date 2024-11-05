@@ -1,0 +1,20 @@
+name: Manual Pre-commit Hooks
+on:
+  workflow_dispatch:
+    inputs:
+      hooks:
+        description: 'Hooks to run (space separated)'
+        required: true
+        type: string
+      files:
+        description: 'Files to check (space separated)'
+        required: false
+        type: string
+        default: '.'
+
+jobs:
+  run-hooks:
+    uses: ./.github/workflows/components/linting/pre-commit.yml
+    with:
+      hooks: ${{ inputs.hooks }}
+      args: "--files ${{ inputs.files }}"

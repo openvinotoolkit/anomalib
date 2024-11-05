@@ -1,0 +1,22 @@
+name: Pull Request Checks
+on:
+  pull_request:
+    branches: [ main, feature ]
+
+jobs:
+  pre-commit-full:
+    uses: ./.github/workflows/components/linting/pre-commit.yml
+    # Runs all hooks on all files
+
+  # Example of running specific hooks on changed files
+  ruff-changed:
+    uses: ./.github/workflows/components/linting/specific-hooks.yml
+    with:
+      hook_id: ruff
+      files: ${{ join(github.event.pull_request.changed_files, ' ') }}
+
+  # Security specific hooks
+  security-checks:
+    uses: ./.github/workflows/components/linting/pre-commit.yml
+    with:
+      hooks: bandit
