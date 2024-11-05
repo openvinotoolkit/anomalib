@@ -12,25 +12,6 @@ from anomalib.data import AnomalibDataModule
 from anomalib.data.transforms import ExportableCenterCrop
 
 
-def get_stage_transform(stage: str, transforms: dict[str, Transform | None]) -> Transform | None:
-    """Get the transform for a specific stage.
-
-    Args:
-        stage: The stage to get the transform for (fit, validate, test, predict).
-        transforms: Dictionary mapping stage names to transforms.
-
-    Returns:
-        Transform for the specified stage, or None if not found.
-    """
-    stage_transforms_mapping = {
-        "fit": transforms.get("train"),
-        "validate": transforms.get("val"),
-        "test": transforms.get("test"),
-        "predict": transforms.get("test"),  # predict uses test transform
-    }
-    return stage_transforms_mapping.get(stage)
-
-
 def get_dataloaders_transforms(dataloaders: Sequence[DataLoader]) -> dict[str, Transform]:
     """Get transforms from dataloaders.
 
@@ -84,6 +65,24 @@ def set_dataloaders_transforms(dataloaders: Sequence[DataLoader], transforms: di
                     set_dataloader_transform([loader], transform)
 
 
+def set_dataloader_transform(dataloader: DataLoader | Sequence[DataLoader], transform: Transform) -> None:
+    """Set a transform for a dataloader or list of dataloaders.
+
+    Args:
+        dataloader: The dataloader(s) to set the transform for.
+        transform: The transform to set.
+    """
+    if isinstance(dataloader, DataLoader):
+        if hasattr(dataloader.dataset, "transform"):
+            dataloader.dataset.transform = transform
+    elif isinstance(dataloader, Sequence):
+        for dl in dataloader:
+            set_dataloader_transform(dl, transform)
+    else:
+        msg = f"Unsupported dataloader type: {type(dataloader)}"
+        raise TypeError(msg)
+
+
 def set_datamodule_stage_transform(datamodule: AnomalibDataModule, transform: Transform, stage: str) -> None:
     """Set a transform for a specific stage in a AnomalibDataModule.
 
@@ -111,24 +110,6 @@ def set_datamodule_stage_transform(datamodule: AnomalibDataModule, transform: Tr
         dataset = getattr(datamodule, dataset_attr)
         if hasattr(dataset, "transform"):
             dataset.transform = transform
-
-
-def set_dataloader_transform(dataloader: DataLoader | Sequence[DataLoader], transform: Transform) -> None:
-    """Set a transform for a dataloader or list of dataloaders.
-
-    Args:
-        dataloader: The dataloader(s) to set the transform for.
-        transform: The transform to set.
-    """
-    if isinstance(dataloader, DataLoader):
-        if hasattr(dataloader.dataset, "transform"):
-            dataloader.dataset.transform = transform
-    elif isinstance(dataloader, Sequence):
-        for dl in dataloader:
-            set_dataloader_transform(dl, transform)
-    else:
-        msg = f"Unsupported dataloader type: {type(dataloader)}"
-        raise TypeError(msg)
 
 
 def get_exportable_transform(transform: Transform | None) -> Transform | None:

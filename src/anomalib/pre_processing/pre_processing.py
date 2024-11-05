@@ -15,7 +15,6 @@ from torchvision.transforms.v2 import Transform
 from .utils.transform import (
     get_dataloaders_transforms,
     get_exportable_transform,
-    get_stage_transform,
     set_dataloaders_transforms,
     set_datamodule_stage_transform,
 )
@@ -118,13 +117,12 @@ class PreProcessor(nn.Module, Callback):
                 "train": self.train_transform,
                 "val": self.val_transform,
                 "test": self.test_transform,
+                "predict": self.predict_transform,
             }
 
-            for stage in ["fit", "validate", "test", "predict"]:
-                transform = get_stage_transform(stage, transforms)
+            for stage, transform in transforms.items():
                 if transform is not None:
                     set_datamodule_stage_transform(datamodule, transform, stage)
-            return
 
     def setup_dataloader_transforms(self, dataloaders: "EVAL_DATALOADERS | TRAIN_DATALOADERS") -> None:
         """Set up dataloader transforms."""
