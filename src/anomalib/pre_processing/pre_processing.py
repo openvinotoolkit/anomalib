@@ -17,8 +17,9 @@ from anomalib.data.dataclasses.torch.base import Batch
 from .utils.transform import (
     get_dataloaders_transforms,
     get_exportable_transform,
+    get_stage_transform,
     set_dataloaders_transforms,
-    set_datamodule_transforms,
+    set_datamodule_stage_transform,
 )
 
 if TYPE_CHECKING:
@@ -120,7 +121,11 @@ class PreProcessor(nn.Module, Callback):
                 "val": self.val_transform,
                 "test": self.test_transform,
             }
-            set_datamodule_transforms(datamodule, transforms)
+
+            for stage in ["fit", "validate", "test", "predict"]:
+                transform = get_stage_transform(stage, transforms)
+                if transform is not None:
+                    set_datamodule_stage_transform(datamodule, transform, stage)
             return
 
     def setup_dataloader_transforms(self, dataloaders: "EVAL_DATALOADERS | TRAIN_DATALOADERS") -> None:

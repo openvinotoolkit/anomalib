@@ -59,19 +59,6 @@ def get_dataloaders_transforms(dataloaders: Sequence[DataLoader]) -> dict[str, T
     return transforms
 
 
-def set_datamodule_transforms(datamodule: AnomalibDataModule, transforms: dict[str, Transform | None]) -> None:
-    """Set transforms to a datamodule.
-
-    Args:
-        datamodule: The datamodule to propagate transforms to.
-        transforms: Dictionary mapping stages to their transforms.
-    """
-    for stage in ["fit", "validate", "test", "predict"]:
-        transform = get_stage_transform(stage, transforms)
-        if transform is not None:
-            set_datamodule_stage_transform(datamodule, transform, stage)
-
-
 def set_dataloaders_transforms(dataloaders: Sequence[DataLoader], transforms: dict[str, Transform | None]) -> None:
     """Set transforms to dataloaders.
 
