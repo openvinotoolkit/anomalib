@@ -74,8 +74,8 @@ class PIMO(Metric):
         masks: binary (bool or int) ground truth masks of shape (N, H, W)
 
     Args:
-        num_thresholds: number of thresholds to compute (K)
-        binclf_algorithm: algorithm to compute the binary classifier curve (see `binclf_curve_numpy.Algorithm`)
+        fpr_bounds: lower and upper bounds of the FPR integration range
+        num_thresholds: number of thresholds used to compute the PIMO curve and AUPIMO scores (K)
 
     Returns:
         PIMOResult: PIMO curves dataclass object. See `PIMOResult` for details.
@@ -85,8 +85,8 @@ class PIMO(Metric):
     higher_is_better: bool | None = None
     full_state_update: bool = False
 
+    fpr_bounds: tuple[float, float]
     num_thresholds: int
-    binclf_algorithm: str
 
     anomaly_maps: list[torch.Tensor]
     masks: list[torch.Tensor]
@@ -106,11 +106,12 @@ class PIMO(Metric):
         """Image classes (0: normal, 1: anomalous)."""
         return functional.images_classes_from_masks(self.masks)
 
-    def __init__(self, num_thresholds: int) -> None:
+    def __init__(self, fpr_bounds: tuple[float, float] = (1e-5, 1e-4), num_thresholds: int = 300) -> None:
         """Per-Image Overlap (PIMO) curve.
 
         Args:
-            num_thresholds: number of thresholds used to compute the PIMO curve (K)
+            fpr_bounds: lower and upper bounds of the FPR integration range
+            num_thresholds: number of thresholds used to compute the PIMO curve and AUPIMO scores (K)
         """
         super().__init__()
 
@@ -121,6 +122,9 @@ class PIMO(Metric):
 
         # the options below are, redundantly, validated here to avoid reaching
         # an error later in the execution
+
+        _validate.is_rate_range(fpr_bounds)
+        self.fpr_bounds = fpr_bounds
 
         _validate.is_num_thresholds_gte2(num_thresholds)
         self.num_thresholds = num_thresholds
@@ -158,9 +162,12 @@ class PIMO(Metric):
         thresholds, shared_fpr, per_image_tprs, _ = functional.pimo_curves(
             anomaly_maps,
             masks,
-            self.num_thresholds,
+            fpr_bounds=self.fpr_bounds,
+            num_thresholds=self.num_thresholds,
         )
         return PIMOResult(
+            fpr_lower_bound=self.fpr_bounds[0],
+            fpr_upper_bound=self.fpr_bounds[1],
             thresholds=thresholds,
             shared_fpr=shared_fpr,
             per_image_tprs=per_image_tprs,
@@ -190,8 +197,8 @@ class AUPIMO(PIMO):
         masks: binary (bool or int) ground truth masks of shape (N, H, W)
 
     Args:
-        num_thresholds: number of thresholds to compute (K)
         fpr_bounds: lower and upper bounds of the FPR integration range
+        num_thresholds: number of thresholds used to compute the PIMO curve and AUPIMO scores (K)
         force: whether to force the computation despite bad conditions
 
     Returns:
@@ -224,25 +231,21 @@ class AUPIMO(PIMO):
 
     def __init__(
         self,
-        num_thresholds: int = 300_000,
         fpr_bounds: tuple[float, float] = (1e-5, 1e-4),
+        num_thresholds: int = 300,
         return_average: bool = True,
         force: bool = False,
     ) -> None:
         """Area Under the Per-Image Overlap (PIMO) curve.
 
         Args:
-            num_thresholds: [passed to parent `PIMO`] number of thresholds used to compute the PIMO curve
             fpr_bounds: lower and upper bounds of the FPR integration range
+            num_thresholds: number of thresholds used to compute the PIMO curve and AUPIMO scores (K)
             return_average: if True, return the average AUPIMO score; if False, return all the individual AUPIMO scores
             force: if True, force the computation of the AUPIMO scores even in bad conditions (e.g. few points)
         """
-        super().__init__(num_thresholds=num_thresholds)
-
-        # other validations are done in PIMO.__init__()
-
-        _validate.is_rate_range(fpr_bounds)
-        self.fpr_bounds = fpr_bounds
+        # validations are done in PIMO.__init__()
+        super().__init__(fpr_bounds=fpr_bounds, num_thresholds=num_thresholds)
         self.return_average = return_average
         self.force = force
 
@@ -270,19 +273,20 @@ class AUPIMO(PIMO):
         thresholds, shared_fpr, per_image_tprs, _, aupimos, num_thresholds_auc = functional.aupimo_scores(
             anomaly_maps,
             masks,
-            self.num_thresholds,
             fpr_bounds=self.fpr_bounds,
+            num_thresholds=self.num_thresholds,
             force=force,
         )
 
         pimo_result = PIMOResult(
+            fpr_lower_bound=self.fpr_bounds[0],
+            fpr_upper_bound=self.fpr_bounds[1],
             thresholds=thresholds,
             shared_fpr=shared_fpr,
             per_image_tprs=per_image_tprs,
         )
         aupimo_result = AUPIMOResult.from_pimo_result(
             pimo_result,
-            fpr_bounds=self.fpr_bounds,
             # not `num_thresholds`!
             # `num_thresholds` is the number of thresholds used to compute the PIMO curve
             # this is the number of thresholds used to compute the AUPIMO integral
