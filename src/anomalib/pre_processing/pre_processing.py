@@ -114,7 +114,7 @@ class PreProcessor(nn.Module, Callback):
         # If PreProcessor has transforms, propagate them to datamodule
         if any([self.train_transform, self.val_transform, self.test_transform]):
             transforms = {
-                "train": self.train_transform,
+                "fit": self.train_transform,
                 "val": self.val_transform,
                 "test": self.test_transform,
                 "predict": self.predict_transform,
