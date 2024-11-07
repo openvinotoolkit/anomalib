@@ -2,10 +2,13 @@
 anomalib train -h
 
 # Train by using the default values.
-anomalib train --model Patchcore --data anomalib.data.MVTec
+anomalib train --model EfficientAd --data anomalib.data.MVTec --data.train_batch_size 1
 
 # Train by overriding arguments.
-anomalib train --model Patchcore --data anomalib.data.MVTec --data.category transistor
+anomalib train --model EfficientAd --data anomalib.data.MVTec --data.train_batch_size 1 --data.category transistor
 
 # Train by using a config file.
 anomalib train --config <path/to/config>
+
+# Continue training from a checkpoint
+anomalib train --config <path/to/config> --ckpt_path <path/to/checkpoint.ckpt>

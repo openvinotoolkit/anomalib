@@ -10,6 +10,7 @@ from anomalib.models import get_model
 from anomalib.pipelines.components import JobGenerator
 from anomalib.pipelines.components.utils import get_iterator_from_grid_dict
 from anomalib.pipelines.types import PREV_STAGE_RESULT
+from anomalib.utils.config import flatten_dict
 from anomalib.utils.logging import hide_output
 
 from .job import BenchmarkJob
@@ -39,9 +40,12 @@ class BenchmarkJobGenerator(JobGenerator):
         """Return iterator based on the arguments."""
         del previous_stage_result  # Not needed for this job
         for _container in get_iterator_from_grid_dict(args):
+            # Pass experimental configs as a flatten dictionary to the job runner.
+            flat_cfg = flatten_dict(_container)
             yield BenchmarkJob(
                 accelerator=self.accelerator,
                 seed=_container["seed"],
                 model=get_model(_container["model"]),
                 datamodule=get_datamodule(_container["data"]),
+                flat_cfg=flat_cfg,
             )
