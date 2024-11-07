@@ -12,8 +12,10 @@ from lightning.pytorch.utilities.types import STEP_OUTPUT
 
 from anomalib import LearningType
 from anomalib.data import Batch
+from anomalib.metrics import AUROC, Evaluator, F1Score
 from anomalib.models.components import AnomalyModule, MemoryBankMixin
 from anomalib.models.components.classification import FeatureScalingMethod
+from anomalib.post_processing import PostProcessor
 from anomalib.pre_processing import PreProcessor
 
 from .torch_model import DfkdeModel
@@ -48,8 +50,10 @@ class Dfkde(MemoryBankMixin, AnomalyModule):
         feature_scaling_method: FeatureScalingMethod = FeatureScalingMethod.SCALE,
         max_training_points: int = 40000,
         pre_processor: PreProcessor | bool = True,
+        post_processor: PostProcessor | None = None,
+        evaluator: Evaluator | bool = True,
     ) -> None:
-        super().__init__(pre_processor=pre_processor)
+        super().__init__(pre_processor=pre_processor, post_processor=post_processor, evaluator=evaluator)
 
         self.model = DfkdeModel(
             layers=layers,
@@ -121,3 +125,11 @@ class Dfkde(MemoryBankMixin, AnomalyModule):
             LearningType: Learning type of the model.
         """
         return LearningType.ONE_CLASS
+
+    @staticmethod
+    def configure_evaluator() -> Evaluator:
+        """Default evaluator for DFKE."""
+        image_auroc = AUROC(fields=["pred_score", "gt_label"], prefix="image_")
+        image_f1score = F1Score(fields=["pred_label", "gt_label"], prefix="image_")
+        test_metrics = [image_auroc, image_f1score]
+        return Evaluator(test_metrics=test_metrics)

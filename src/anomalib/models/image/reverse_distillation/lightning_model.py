@@ -14,7 +14,9 @@ from torch import optim
 
 from anomalib import LearningType
 from anomalib.data import Batch
+from anomalib.metrics import Evaluator
 from anomalib.models.components import AnomalyModule
+from anomalib.post_processing import PostProcessor
 from anomalib.pre_processing import PreProcessor
 
 from .anomaly_map import AnomalyMapGenerationMode
@@ -46,9 +48,10 @@ class ReverseDistillation(AnomalyModule):
         anomaly_map_mode: AnomalyMapGenerationMode = AnomalyMapGenerationMode.ADD,
         pre_trained: bool = True,
         pre_processor: PreProcessor | bool = True,
+        post_processor: PostProcessor | None = None,
+        evaluator: Evaluator | bool = True,
     ) -> None:
-        super().__init__(pre_processor=pre_processor)
-
+        super().__init__(pre_processor=pre_processor, post_processor=post_processor, evaluator=evaluator)
         if self.input_size is None:
             msg = "Input size is required for Reverse Distillation model."
             raise ValueError(msg)

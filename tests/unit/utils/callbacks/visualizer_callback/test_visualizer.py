@@ -21,7 +21,7 @@ def test_add_images(task: TaskType, dataset_path: Path) -> None:
     """Tests if tensorboard logs are generated."""
     with tempfile.TemporaryDirectory() as dir_loc:
         logger = AnomalibTensorBoardLogger(name="tensorboard_logs", save_dir=dir_loc)
-        model = DummyModule(dataset_path)
+        model = DummyModule(dataset_path, evaluator=False)
         engine = Engine(
             logger=logger,
             default_root_dir=dir_loc,

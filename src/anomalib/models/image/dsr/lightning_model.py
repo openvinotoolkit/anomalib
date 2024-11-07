@@ -18,10 +18,12 @@ from anomalib import LearningType
 from anomalib.data import Batch
 from anomalib.data.utils import DownloadInfo, download_and_extract
 from anomalib.data.utils.augmenter import Augmenter
+from anomalib.metrics import Evaluator
 from anomalib.models.components import AnomalyModule
 from anomalib.models.image.dsr.anomaly_generator import DsrAnomalyGenerator
 from anomalib.models.image.dsr.loss import DsrSecondStageLoss, DsrThirdStageLoss
 from anomalib.models.image.dsr.torch_model import DsrModel
+from anomalib.post_processing import PostProcessor
 from anomalib.pre_processing import PreProcessor
 
 __all__ = ["Dsr"]
@@ -51,8 +53,10 @@ class Dsr(AnomalyModule):
         latent_anomaly_strength: float = 0.2,
         upsampling_train_ratio: float = 0.7,
         pre_processor: PreProcessor | bool = True,
+        post_processor: PostProcessor | None = None,
+        evaluator: Evaluator | bool = True,
     ) -> None:
-        super().__init__(pre_processor=pre_processor)
+        super().__init__(pre_processor=pre_processor, post_processor=post_processor, evaluator=evaluator)
 
         self.automatic_optimization = False
         self.upsampling_train_ratio = upsampling_train_ratio

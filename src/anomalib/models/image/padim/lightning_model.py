@@ -13,8 +13,9 @@ from lightning.pytorch.utilities.types import STEP_OUTPUT
 
 from anomalib import LearningType
 from anomalib.data import Batch
+from anomalib.metrics import Evaluator
 from anomalib.models.components import AnomalyModule, MemoryBankMixin
-from anomalib.post_processing.one_class import OneClassPostProcessor
+from anomalib.post_processing import OneClassPostProcessor, PostProcessor
 from anomalib.pre_processing import PreProcessor
 
 from .torch_model import PadimModel
@@ -49,8 +50,10 @@ class Padim(MemoryBankMixin, AnomalyModule):
         pre_trained: bool = True,
         n_features: int | None = None,
         pre_processor: PreProcessor | bool = True,
+        post_processor: PostProcessor | None = None,
+        evaluator: Evaluator | bool = True,
     ) -> None:
-        super().__init__(pre_processor=pre_processor)
+        super().__init__(pre_processor=pre_processor, post_processor=post_processor, evaluator=evaluator)
 
         self.model: PadimModel = PadimModel(
             backbone=backbone,

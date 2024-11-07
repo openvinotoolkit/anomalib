@@ -15,7 +15,9 @@ from torch import optim
 
 from anomalib import LearningType
 from anomalib.data import Batch
+from anomalib.metrics import AUROC, Evaluator, F1Score
 from anomalib.models.components import AnomalyModule
+from anomalib.post_processing import PostProcessor
 from anomalib.pre_processing import PreProcessor
 
 from .loss import DiscriminatorLoss, GeneratorLoss
@@ -69,9 +71,10 @@ class Ganomaly(AnomalyModule):
         beta1: float = 0.5,
         beta2: float = 0.999,
         pre_processor: PreProcessor | bool = True,
+        post_processor: PostProcessor | None = None,
+        evaluator: Evaluator | bool = True,
     ) -> None:
-        super().__init__(pre_processor=pre_processor)
-
+        super().__init__(pre_processor=pre_processor, post_processor=post_processor, evaluator=evaluator)
         if self.input_size is None:
             msg = "GANomaly needs input size to build torch model."
             raise ValueError(msg)
@@ -262,3 +265,11 @@ class Ganomaly(AnomalyModule):
             LearningType: Learning type of the model.
         """
         return LearningType.ONE_CLASS
+
+    @staticmethod
+    def configure_evaluator() -> Evaluator:
+        """Default evaluator for GANomaly."""
+        image_auroc = AUROC(fields=["pred_score", "gt_label"], prefix="image_")
+        image_f1score = F1Score(fields=["pred_label", "gt_label"], prefix="image_")
+        test_metrics = [image_auroc, image_f1score]
+        return Evaluator(test_metrics=test_metrics)

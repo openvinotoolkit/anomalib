@@ -3,14 +3,12 @@
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-import json
 import logging
 from collections.abc import Iterable
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING, Any
 
-import numpy as np
 import torch
 from lightning.pytorch import LightningModule
 from lightning_utilities.core.imports import package_available
@@ -20,12 +18,9 @@ from torchmetrics import Metric
 from anomalib import TaskType
 from anomalib.data import AnomalibDataModule
 from anomalib.deploy.export import CompressionType, ExportType
-from anomalib.metrics import create_metric_collection
 
 if TYPE_CHECKING:
     from importlib.util import find_spec
-
-    from torch.types import Number
 
     if find_spec("openvino") is not None:
         from openvino import CompiledModel
@@ -161,7 +156,7 @@ class ExportMixin:
         input_size: tuple[int, int] | None = None,
         compression_type: CompressionType | None = None,
         datamodule: AnomalibDataModule | None = None,
-        metric: Metric | str | None = None,
+        metric: Metric | None = None,
         ov_args: dict[str, Any] | None = None,
         task: TaskType | None = None,
     ) -> Path:
@@ -179,7 +174,7 @@ class ExportMixin:
             datamodule (AnomalibDataModule | None, optional): Lightning datamodule.
                 Must be provided if ``CompressionType.INT8_PTQ`` or ``CompressionType.INT8_ACQ`` is selected.
                 Defaults to ``None``.
-            metric (Metric | str | None, optional): Metric to measure quality loss when quantizing.
+            metric (Metric | None, optional): Metric to measure quality loss when quantizing.
                 Must be provided if ``CompressionType.INT8_ACQ`` is selected and must return higher value for better
                 performance of the model.
                 Defaults to ``None``.
@@ -266,7 +261,7 @@ class ExportMixin:
         model: "CompiledModel",
         compression_type: CompressionType | None = None,
         datamodule: AnomalibDataModule | None = None,
-        metric: Metric | str | None = None,
+        metric: Metric | None = None,
         task: TaskType | None = None,
     ) -> "CompiledModel":
         """Compress OpenVINO model with NNCF.
@@ -346,7 +341,7 @@ class ExportMixin:
     def _accuracy_control_quantization_ov(
         model: "CompiledModel",
         datamodule: AnomalibDataModule | None = None,
-        metric: Metric | str | None = None,
+        metric: Metric | None = None,
         task: TaskType | None = None,
     ) -> "CompiledModel":
         """Accuracy-Control Quantization with NNCF.
@@ -355,7 +350,7 @@ class ExportMixin:
             datamodule (AnomalibDataModule | None, optional): Lightning datamodule.
                 Must be provided if ``CompressionType.INT8_PTQ`` or ``CompressionType.INT8_ACQ`` is selected.
                 Defaults to ``None``.
-            metric (Metric | str | None, optional): Metric to measure quality loss when quantizing.
+            metric (Metric | None, optional): Metric to measure quality loss when quantizing.
                 Must be provided if ``CompressionType.INT8_ACQ`` is selected and must return higher value for better
                 performance of the model.
                 Defaults to ``None``.
@@ -391,9 +386,6 @@ class ExportMixin:
         calibration_dataset = nncf.Dataset(dataloader, lambda x: x["image"])
         validation_dataset = nncf.Dataset(datamodule.test_dataloader())
 
-        if isinstance(metric, str):
-            metric = create_metric_collection([metric])[metric]
-
         # validation function to evaluate the quality loss after quantization
         def val_fn(nncf_model: "CompiledModel", validation_data: Iterable) -> float:
             for batch in validation_data:
@@ -403,50 +395,6 @@ class ExportMixin:
             return metric.compute()
 
         return nncf.quantize_with_accuracy_control(model, calibration_dataset, validation_dataset, val_fn)
-
-    def _get_metadata(
-        self,
-        task: TaskType | None = None,
-    ) -> dict[str, Any]:
-        """Get metadata for the exported model.
-
-        Args:
-            task (TaskType | None): Task type.
-                Defaults to None.
-
-        Returns:
-            dict[str, Any]: Metadata for the exported model.
-        """
-        model_metadata = {}
-        cached_metadata: dict[str, Number | torch.Tensor] = {}
-        for threshold_name in ("image_threshold", "pixel_threshold"):
-            if hasattr(self, threshold_name):
-                cached_metadata[threshold_name] = getattr(self, threshold_name).cpu().value.item()
-        if hasattr(self, "normalization_metrics") and self.normalization_metrics.state_dict() is not None:
-            for key, value in self.normalization_metrics.state_dict().items():
-                cached_metadata[key] = value.cpu()
-        # Remove undefined values by copying in a new dict
-        model_metadata = {key: val for key, val in cached_metadata.items() if not np.isinf(val).all()}
-        del cached_metadata
-        metadata = {"task": task, **model_metadata}
-
-        # Convert torch tensors to python lists or values for json serialization.
-        for key, value in metadata.items():
-            if isinstance(value, torch.Tensor):
-                metadata[key] = value.numpy().tolist()
-
-        return metadata
-
-
-def _write_metadata_to_json(metadata: dict[str, Any], export_root: Path) -> None:
-    """Write metadata to json file.
-
-    Args:
-        metadata (dict[str, Any]): Metadata to export.
-        export_root (Path): Path to the exported model.
-    """
-    with (export_root / "metadata.json").open("w", encoding="utf-8") as metadata_file:
-        json.dump(metadata, metadata_file, ensure_ascii=False, indent=4)
 
 
 def _create_export_root(export_root: str | Path, export_type: ExportType) -> Path:

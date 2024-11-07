@@ -17,7 +17,9 @@ from torchvision.transforms.v2 import Compose, Resize, Transform
 from anomalib import LearningType
 from anomalib.data import Batch
 from anomalib.data.utils import Augmenter
+from anomalib.metrics import Evaluator
 from anomalib.models.components import AnomalyModule
+from anomalib.post_processing import PostProcessor
 from anomalib.pre_processing import PreProcessor
 
 from .loss import DraemLoss
@@ -49,8 +51,10 @@ class Draem(AnomalyModule):
         anomaly_source_path: str | None = None,
         beta: float | tuple[float, float] = (0.1, 1.0),
         pre_processor: PreProcessor | bool = True,
+        post_processor: PostProcessor | None = None,
+        evaluator: Evaluator | bool = True,
     ) -> None:
-        super().__init__(pre_processor=pre_processor)
+        super().__init__(pre_processor=pre_processor, post_processor=post_processor, evaluator=evaluator)
 
         self.augmenter = Augmenter(anomaly_source_path, beta=beta)
         self.model = DraemModel(sspcab=enable_sspcab)

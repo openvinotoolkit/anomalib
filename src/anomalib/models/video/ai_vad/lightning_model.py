@@ -81,9 +81,9 @@ class AiVad(MemoryBankMixin, AnomalyModule):
         n_neighbors_pose: int = 1,
         n_neighbors_deep: int = 1,
         pre_processor: PreProcessor | bool = True,
+        **kwargs,
     ) -> None:
-        super().__init__(pre_processor=pre_processor)
-
+        super().__init__(pre_processor=pre_processor, **kwargs)
         self.model = AiVadModel(
             box_score_thresh=box_score_thresh,
             persons_only=persons_only,

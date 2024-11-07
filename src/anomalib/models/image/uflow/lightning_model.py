@@ -17,7 +17,9 @@ from torchvision.transforms.v2 import Compose, Normalize, Resize
 
 from anomalib import LearningType
 from anomalib.data import Batch
+from anomalib.metrics import Evaluator
 from anomalib.models.components import AnomalyModule
+from anomalib.post_processing import PostProcessor
 from anomalib.pre_processing import PreProcessor
 
 from .loss import UFlowLoss
@@ -29,7 +31,15 @@ __all__ = ["Uflow"]
 
 
 class Uflow(AnomalyModule):
-    """PL Lightning Module for the UFLOW algorithm."""
+    """Uflow model.
+
+    Args:
+        backbone (str): Backbone name.
+        flow_steps (int): Number of flow steps.
+        affine_clamp (float): Affine clamp.
+        affine_subnet_channels_ratio (float): Affine subnet channels ratio.
+        permute_soft (bool): Whether to use soft permutation.
+    """
 
     def __init__(
         self,
@@ -39,6 +49,8 @@ class Uflow(AnomalyModule):
         affine_subnet_channels_ratio: float = 1.0,
         permute_soft: bool = False,
         pre_processor: PreProcessor | bool = True,
+        post_processor: PostProcessor | None = None,
+        evaluator: Evaluator | bool = True,
     ) -> None:
         """Uflow model.
 
@@ -51,9 +63,14 @@ class Uflow(AnomalyModule):
             pre_processor (PreProcessor, optional): Pre-processor for the model.
                 This is used to pre-process the input data before it is passed to the model.
                 Defaults to ``None``.
+            post_processor (PostProcessor, optional): Post-processor for the model.
+                This is used to post-process the output data after it is passed to the model.
+                Defaults to ``None``.
+            evaluator (Evaluator, optional): Evaluator for the model.
+                This is used to evaluate the model.
+                Defaults to ``True``.
         """
-        super().__init__(pre_processor=pre_processor)
-
+        super().__init__(pre_processor=pre_processor, post_processor=post_processor, evaluator=evaluator)
         if self.input_size is None:
             msg = "Input size is required for UFlow model."
             raise ValueError(msg)

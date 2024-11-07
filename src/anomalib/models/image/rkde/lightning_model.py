@@ -14,8 +14,10 @@ from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torchvision.transforms.v2 import Compose, Resize, Transform
 
 from anomalib import LearningType
+from anomalib.metrics import Evaluator
 from anomalib.models.components import AnomalyModule, MemoryBankMixin
 from anomalib.models.components.classification import FeatureScalingMethod
+from anomalib.post_processing import PostProcessor
 from anomalib.pre_processing import PreProcessor
 
 from .region_extractor import RoiStage
@@ -62,8 +64,10 @@ class Rkde(MemoryBankMixin, AnomalyModule):
         feature_scaling_method: FeatureScalingMethod = FeatureScalingMethod.SCALE,
         max_training_points: int = 40000,
         pre_processor: PreProcessor | bool = True,
+        post_processor: PostProcessor | None = None,
+        evaluator: Evaluator | bool = True,
     ) -> None:
-        super().__init__(pre_processor=pre_processor)
+        super().__init__(pre_processor=pre_processor, post_processor=post_processor, evaluator=evaluator)
 
         self.model: RkdeModel = RkdeModel(
             roi_stage=roi_stage,

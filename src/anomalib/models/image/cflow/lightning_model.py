@@ -23,7 +23,9 @@ from torch.optim import Optimizer
 
 from anomalib import LearningType
 from anomalib.data import Batch
+from anomalib.metrics import Evaluator
 from anomalib.models.components import AnomalyModule
+from anomalib.post_processing import PostProcessor
 from anomalib.pre_processing import PreProcessor
 
 from .torch_model import CflowModel
@@ -58,7 +60,6 @@ class Cflow(AnomalyModule):
 
     def __init__(
         self,
-        pre_processor: PreProcessor | bool = True,
         backbone: str = "wide_resnet50_2",
         layers: Sequence[str] = ("layer2", "layer3", "layer4"),
         pre_trained: bool = True,
@@ -69,8 +70,11 @@ class Cflow(AnomalyModule):
         clamp_alpha: float = 1.9,
         permute_soft: bool = False,
         lr: float = 0.0001,
+        pre_processor: PreProcessor | bool = True,
+        post_processor: PostProcessor | None = None,
+        evaluator: Evaluator | bool = True,
     ) -> None:
-        super().__init__(pre_processor=pre_processor)
+        super().__init__(pre_processor=pre_processor, post_processor=post_processor, evaluator=evaluator)
 
         self.model: CflowModel = CflowModel(
             backbone=backbone,
