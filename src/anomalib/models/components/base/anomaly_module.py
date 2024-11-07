@@ -3,10 +3,8 @@
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-import importlib
 import logging
 from abc import ABC, abstractmethod
-from collections import OrderedDict
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -20,6 +18,8 @@ from torchvision.transforms.v2 import Compose, Normalize, Resize, Transform
 
 from anomalib import LearningType
 from anomalib.data import Batch, InferenceBatch
+from anomalib.metrics import AUROC, F1Score
+from anomalib.metrics.evaluator import Evaluator
 from anomalib.metrics.threshold import Threshold
 from anomalib.post_processing import OneClassPostProcessor, PostProcessor
 
@@ -28,7 +28,6 @@ from .export_mixin import ExportMixin
 if TYPE_CHECKING:
     from lightning.pytorch.callbacks import Callback
 
-    from anomalib.metrics import AnomalibMetricCollection
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +38,11 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
     Acts as a base class for all the Anomaly Modules in the library.
     """
 
-    def __init__(self, post_processor: PostProcessor | None = None) -> None:
+    def __init__(
+        self,
+        post_processor: PostProcessor | None = None,
+        evaluator: Evaluator | bool = True,
+    ) -> None:
         super().__init__()
         logger.info("Initializing %s model.", self.__class__.__name__)
 
@@ -48,10 +51,10 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
         self.loss: nn.Module
         self.callbacks: list[Callback]
 
-        self.image_metrics: AnomalibMetricCollection
-        self.pixel_metrics: AnomalibMetricCollection
-
+        # set the post-processor
         self.post_processor = post_processor or self.default_post_processor()
+
+        self.evaluator = self._resolve_evaluator(evaluator)
 
         self._transform: Transform | None = None
         self._input_size: tuple[int, int] | None = None
@@ -141,29 +144,6 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
         """Arguments used to override the trainer parameters so as to train the model correctly."""
         raise NotImplementedError
 
-    def _save_to_state_dict(self, destination: OrderedDict, prefix: str, keep_vars: bool) -> None:
-        if hasattr(self, "image_threshold"):
-            destination["image_threshold_class"] = (
-                f"{self.image_threshold.__class__.__module__}.{self.image_threshold.__class__.__name__}"
-            )
-        if hasattr(self, "pixel_threshold"):
-            destination["pixel_threshold_class"] = (
-                f"{self.pixel_threshold.__class__.__module__}.{self.pixel_threshold.__class__.__name__}"
-            )
-        if hasattr(self, "normalization_metrics"):
-            for metric in self.normalization_metrics:
-                metric_class = self.normalization_metrics[metric].__class__
-                destination[f"{metric}_normalization_class"] = f"{metric_class.__module__}.{metric_class.__name__}"
-
-        return super()._save_to_state_dict(destination, prefix, keep_vars)
-
-    @staticmethod
-    def _get_instance(state_dict: OrderedDict[str, Any], dict_key: str) -> Threshold:
-        """Get the threshold class from the ``state_dict``."""
-        class_path = state_dict.pop(dict_key)
-        module = importlib.import_module(".".join(class_path.split(".")[:-1]))
-        return getattr(module, class_path.split(".")[-1])()
-
     @property
     @abstractmethod
     def learning_type(self) -> LearningType:
@@ -212,6 +192,32 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
         msg = f"No default post-processor available for model {self.__name__} with learning type {self.learning_type}. \
               Please override the default_post_processor method in the model implementation."
         raise NotImplementedError(msg)
+
+    def _resolve_evaluator(self, evaluator: Evaluator | bool) -> Evaluator | None:
+        """Resolve the evaluator to be used in the model.
+
+        If the evaluator is set to True, the default evaluator will be used. If the evaluator is set to False, no
+        evaluator will be used. If the evaluator is an instance of Evaluator, it will be used as the evaluator.
+        """
+        if isinstance(evaluator, Evaluator):
+            return evaluator
+        if isinstance(evaluator, bool):
+            return self.configure_evaluator() if evaluator else None
+        msg = f"evaluator must be of type Evaluator or bool, got {type(evaluator)}"
+        raise TypeError(msg)
+
+    @staticmethod
+    def configure_evaluator() -> Evaluator:
+        """Default evaluator.
+
+        Override in subclass for model-specific evaluator behaviour.
+        """
+        image_auroc = AUROC(fields=["pred_score", "gt_label"], prefix="image_")
+        image_f1score = F1Score(fields=["pred_label", "gt_label"], prefix="image_")
+        pixel_auroc = AUROC(fields=["anomaly_map", "gt_mask"], prefix="pixel_")
+        pixel_f1score = F1Score(fields=["pred_mask", "gt_mask"], prefix="pixel_")
+        test_metrics = [image_auroc, image_f1score, pixel_auroc, pixel_f1score]
+        return Evaluator(test_metrics=test_metrics)
 
     @property
     def input_size(self) -> tuple[int, int] | None:

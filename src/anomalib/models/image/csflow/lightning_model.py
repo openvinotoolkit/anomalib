@@ -14,7 +14,9 @@ from lightning.pytorch.utilities.types import STEP_OUTPUT
 
 from anomalib import LearningType
 from anomalib.data import Batch
+from anomalib.metrics import Evaluator
 from anomalib.models.components import AnomalyModule
+from anomalib.post_processing import PostProcessor
 
 from .loss import CsFlowLoss
 from .torch_model import CsFlowModel
@@ -44,8 +46,10 @@ class Csflow(AnomalyModule):
         n_coupling_blocks: int = 4,
         clamp: int = 3,
         num_channels: int = 3,
+        post_processor: PostProcessor | None = None,
+        evaluator: Evaluator | bool = True,
     ) -> None:
-        super().__init__()
+        super().__init__(post_processor=post_processor, evaluator=evaluator)
 
         self.cross_conv_hidden_channels = cross_conv_hidden_channels
         self.n_coupling_blocks = n_coupling_blocks

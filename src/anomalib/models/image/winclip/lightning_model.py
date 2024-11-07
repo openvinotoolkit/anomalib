@@ -18,8 +18,9 @@ from torchvision.transforms.v2 import Compose, InterpolationMode, Normalize, Res
 from anomalib import LearningType
 from anomalib.data import Batch
 from anomalib.data.predict import PredictDataset
+from anomalib.metrics import Evaluator
 from anomalib.models.components import AnomalyModule
-from anomalib.post_processing import OneClassPostProcessor
+from anomalib.post_processing import OneClassPostProcessor, PostProcessor
 
 from .torch_model import WinClipModel
 
@@ -50,8 +51,10 @@ class WinClip(AnomalyModule):
         k_shot: int = 0,
         scales: tuple = (2, 3),
         few_shot_source: Path | str | None = None,
+        post_processor: PostProcessor | None = None,
+        evaluator: Evaluator | bool = True,
     ) -> None:
-        super().__init__()
+        super().__init__(post_processor=post_processor, evaluator=evaluator)
         self.model = WinClipModel(scales=scales, apply_transform=False)
         self.class_name = class_name
         self.k_shot = k_shot

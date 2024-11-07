@@ -23,7 +23,9 @@ from torch.optim import Optimizer
 
 from anomalib import LearningType
 from anomalib.data import Batch
+from anomalib.metrics import Evaluator
 from anomalib.models.components import AnomalyModule
+from anomalib.post_processing import PostProcessor
 
 from .torch_model import CflowModel
 from .utils import get_logp, positional_encoding_2d
@@ -67,8 +69,10 @@ class Cflow(AnomalyModule):
         clamp_alpha: float = 1.9,
         permute_soft: bool = False,
         lr: float = 0.0001,
+        post_processor: PostProcessor | None = None,
+        evaluator: Evaluator | bool = True,
     ) -> None:
-        super().__init__()
+        super().__init__(post_processor=post_processor, evaluator=evaluator)
 
         self.model: CflowModel = CflowModel(
             backbone=backbone,

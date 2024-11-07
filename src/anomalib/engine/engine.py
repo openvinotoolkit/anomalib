@@ -18,7 +18,6 @@ from torchmetrics import Metric
 
 from anomalib import LearningType, TaskType
 from anomalib.callbacks.checkpoint import ModelCheckpoint
-from anomalib.callbacks.metrics import _MetricsCallback
 from anomalib.callbacks.timer import TimerCallback
 from anomalib.data import AnomalibDataModule, AnomalibDataset, PredictDataset
 from anomalib.deploy import CompressionType, ExportType
@@ -116,8 +115,6 @@ class Engine:
         self,
         callbacks: list[Callback] | None = None,
         task: TaskType | str = TaskType.SEGMENTATION,
-        image_metrics: list[str] | str | dict[str, dict[str, Any]] | None = None,
-        pixel_metrics: list[str] | str | dict[str, dict[str, Any]] | None = None,
         logger: Logger | Iterable[Logger] | bool | None = None,
         default_root_dir: str | Path = "results",
         **kwargs,
@@ -137,12 +134,6 @@ class Engine:
         )
 
         self.task = TaskType(task)
-        self.image_metric_names = image_metrics if image_metrics else ["AUROC", "F1Max"]
-
-        # pixel metrics are only used for segmentation tasks.
-        self.pixel_metric_names = None
-        if self.task == TaskType.SEGMENTATION:
-            self.pixel_metric_names = pixel_metrics if pixel_metrics is not None else ["AUROC", "F1Max"]
 
         self._trainer: Trainer | None = None
 
@@ -375,7 +366,8 @@ class Engine:
             _callbacks.append(model.post_processor)
 
         # Add the metrics callback.
-        _callbacks.append(_MetricsCallback(self.task, self.image_metric_names, self.pixel_metric_names))
+        if isinstance(model.evaluator, Callback):
+            _callbacks.append(model.evaluator)
 
         # Add the image visualizer callback if it is passed by the user.
         if not any(isinstance(callback, ImageVisualizer) for callback in self._cache.args["callbacks"]):

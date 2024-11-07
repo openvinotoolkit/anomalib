@@ -14,7 +14,9 @@ from lightning.pytorch.utilities.types import STEP_OUTPUT
 
 from anomalib import LearningType
 from anomalib.data import Batch
+from anomalib.metrics import Evaluator
 from anomalib.models.components import AnomalyModule, MemoryBankMixin
+from anomalib.post_processing import PostProcessor
 
 from .torch_model import DFMModel
 
@@ -47,8 +49,10 @@ class Dfm(MemoryBankMixin, AnomalyModule):
         pooling_kernel_size: int = 4,
         pca_level: float = 0.97,
         score_type: str = "fre",
+        post_processor: PostProcessor | None = None,
+        evaluator: Evaluator | bool = True,
     ) -> None:
-        super().__init__()
+        super().__init__(post_processor=post_processor, evaluator=evaluator)
 
         self.model: DFMModel = DFMModel(
             backbone=backbone,

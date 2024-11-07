@@ -27,6 +27,8 @@ model:
     beta:
       - 0.1
       - 1.0
+    post_processor: null
+    evaluator: true
 normalization:
   normalization_method: min_max
 metrics:

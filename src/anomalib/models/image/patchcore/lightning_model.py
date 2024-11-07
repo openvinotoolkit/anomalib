@@ -16,7 +16,9 @@ from torchvision.transforms.v2 import CenterCrop, Compose, Normalize, Resize, Tr
 
 from anomalib import LearningType
 from anomalib.data import Batch
+from anomalib.metrics import Evaluator
 from anomalib.models.components import AnomalyModule, MemoryBankMixin
+from anomalib.post_processing import PostProcessor
 from anomalib.post_processing.one_class import OneClassPostProcessor
 
 from .torch_model import PatchcoreModel
@@ -47,8 +49,10 @@ class Patchcore(MemoryBankMixin, AnomalyModule):
         pre_trained: bool = True,
         coreset_sampling_ratio: float = 0.1,
         num_neighbors: int = 9,
+        post_processor: PostProcessor | None = None,
+        evaluator: Evaluator | bool = True,
     ) -> None:
-        super().__init__()
+        super().__init__(post_processor=post_processor, evaluator=evaluator)
 
         self.model: PatchcoreModel = PatchcoreModel(
             backbone=backbone,

@@ -17,7 +17,9 @@ from torchvision.transforms.v2 import Compose, Normalize, Resize, Transform
 
 from anomalib import LearningType
 from anomalib.data import Batch
+from anomalib.metrics import Evaluator
 from anomalib.models.components import AnomalyModule
+from anomalib.post_processing import PostProcessor
 
 from .loss import UFlowLoss
 from .torch_model import UflowModel
@@ -28,7 +30,15 @@ __all__ = ["Uflow"]
 
 
 class Uflow(AnomalyModule):
-    """PL Lightning Module for the UFLOW algorithm."""
+    """Uflow model.
+
+    Args:
+        backbone (str): Backbone name.
+        flow_steps (int): Number of flow steps.
+        affine_clamp (float): Affine clamp.
+        affine_subnet_channels_ratio (float): Affine subnet channels ratio.
+        permute_soft (bool): Whether to use soft permutation.
+    """
 
     def __init__(
         self,
@@ -37,17 +47,10 @@ class Uflow(AnomalyModule):
         affine_clamp: float = 2.0,
         affine_subnet_channels_ratio: float = 1.0,
         permute_soft: bool = False,
+        post_processor: PostProcessor | None = None,
+        evaluator: Evaluator | bool = True,
     ) -> None:
-        """Uflow model.
-
-        Args:
-            backbone (str): Backbone name.
-            flow_steps (int): Number of flow steps.
-            affine_clamp (float): Affine clamp.
-            affine_subnet_channels_ratio (float): Affine subnet channels ratio.
-            permute_soft (bool): Whether to use soft permutation.
-        """
-        super().__init__()
+        super().__init__(post_processor=post_processor, evaluator=evaluator)
 
         self.backbone = backbone
         self.flow_steps = flow_steps
