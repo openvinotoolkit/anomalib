@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import torch
-import torch.nn.functional as F
+import torch.nn.functional as F  # noqa: N812
 from torch import nn
 
 from anomalib.data.utils.generators.perlin import _rand_perlin_2d
@@ -19,7 +19,7 @@ class SSNAnomalyGenerator(nn.Module):
         noise_std: float,
         threshold: float,
         perlin_range: tuple[int, int] = (0, 6),
-    ):
+    ) -> None:
         super().__init__()
 
         self.noise_mean = noise_mean
@@ -43,7 +43,7 @@ class SSNAnomalyGenerator(nn.Module):
         return 1 << (num - 1).bit_length()
 
     def generate_perlin(self, batches: int, height: int, width: int) -> torch.Tensor:
-        """Generate 2d perlin noise masks with dims [b, 1, h, w]
+        """Generate 2d perlin noise masks with dims [b, 1, h, w].
 
         Args:
             batches (int): number of batches (different masks)
@@ -100,6 +100,18 @@ class SSNAnomalyGenerator(nn.Module):
         mask: torch.Tensor,
         labels: torch.Tensor,
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        """Generate anomaly on features using thresholded perlin noise and Gaussian noise.
+
+        Also update GT masks and labels with new anomaly information.
+
+        Args:
+            features: input features.
+            mask: GT masks.
+            labels: GT labels.
+
+        Returns:
+            perturbed features, updated GT masks and labels.
+        """
         b, _, h, w = features.shape
 
         # duplicate
@@ -129,7 +141,7 @@ class SSNAnomalyGenerator(nn.Module):
         # no overlap: don't apply to already anomalous regions (mask=1 -> bad)
         noise_mask = noise_mask * (1 - mask)
 
-        # [B * 2, 1, H, W]
+        # shape: [B * 2, 1, H, W]
         perlin_mask = self.generate_perlin(b * 2, h, w).to(features.device)
         # only apply where perlin mask is 1
         noise_mask = noise_mask * perlin_mask
