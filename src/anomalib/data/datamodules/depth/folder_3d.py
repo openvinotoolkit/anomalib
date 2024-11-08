@@ -8,8 +8,6 @@ This script creates a custom datamodule from a folder.
 
 from pathlib import Path
 
-from torchvision.transforms.v2 import Transform
-
 from anomalib import TaskType
 from anomalib.data.datamodules.base.image import AnomalibDataModule
 from anomalib.data.datasets.depth.folder_3d import Folder3DDataset
@@ -51,14 +49,6 @@ class Folder3D(AnomalibDataModule):
             Defaults to ``8``.
         task (TaskType, optional): Task type. Could be ``classification``, ``detection`` or ``segmentation``.
             Defaults to ``TaskType.SEGMENTATION``.
-        image_size (tuple[int, int], optional): Size to which input images should be resized.
-            Defaults to ``None``.
-        transform (Transform, optional): Transforms that should be applied to the input images.
-            Defaults to ``None``.
-        train_transform (Transform, optional): Transforms that should be applied to the input images during training.
-            Defaults to ``None``.
-        eval_transform (Transform, optional): Transforms that should be applied to the input images during evaluation.
-            Defaults to ``None``.
         test_split_mode (TestSplitMode): Setting that determines how the testing subset is obtained.
             Defaults to ``TestSplitMode.FROM_DIR``.
         test_split_ratio (float): Fraction of images from the train set that will be reserved for testing.
@@ -87,10 +77,6 @@ class Folder3D(AnomalibDataModule):
         eval_batch_size: int = 32,
         num_workers: int = 8,
         task: TaskType | str = TaskType.SEGMENTATION,
-        image_size: tuple[int, int] | None = None,
-        transform: Transform | None = None,
-        train_transform: Transform | None = None,
-        eval_transform: Transform | None = None,
         test_split_mode: TestSplitMode | str = TestSplitMode.FROM_DIR,
         test_split_ratio: float = 0.2,
         val_split_mode: ValSplitMode | str = ValSplitMode.FROM_TEST,
@@ -101,10 +87,6 @@ class Folder3D(AnomalibDataModule):
             train_batch_size=train_batch_size,
             eval_batch_size=eval_batch_size,
             num_workers=num_workers,
-            image_size=image_size,
-            transform=transform,
-            train_transform=train_transform,
-            eval_transform=eval_transform,
             test_split_mode=test_split_mode,
             test_split_ratio=test_split_ratio,
             val_split_mode=val_split_mode,
@@ -127,7 +109,6 @@ class Folder3D(AnomalibDataModule):
         self.train_data = Folder3DDataset(
             name=self.name,
             task=self.task,
-            transform=self.train_transform,
             split=Split.TRAIN,
             root=self.root,
             normal_dir=self.normal_dir,
@@ -143,7 +124,6 @@ class Folder3D(AnomalibDataModule):
         self.test_data = Folder3DDataset(
             name=self.name,
             task=self.task,
-            transform=self.eval_transform,
             split=Split.TEST,
             root=self.root,
             normal_dir=self.normal_dir,

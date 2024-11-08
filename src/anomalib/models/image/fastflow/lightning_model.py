@@ -17,6 +17,7 @@ from anomalib.data import Batch
 from anomalib.metrics import AUROC, Evaluator, F1Score
 from anomalib.models.components import AnomalyModule
 from anomalib.post_processing import PostProcessor
+from anomalib.pre_processing import PreProcessor
 
 from .loss import FastflowLoss
 from .torch_model import FastflowModel
@@ -35,7 +36,10 @@ class Fastflow(AnomalyModule):
         conv3x3_only (bool, optinoal): Use only conv3x3 in fast_flow model.
             Defaults to ``False``.
         hidden_ratio (float, optional): Ratio to calculate hidden var channels.
-            Defaults to ``1.0`.
+            Defaults to ``1.0``.
+        pre_processor (PreProcessor, optional): Pre-processor for the model.
+            This is used to pre-process the input data before it is passed to the model.
+            Defaults to ``None``.
     """
 
     def __init__(
@@ -45,24 +49,20 @@ class Fastflow(AnomalyModule):
         flow_steps: int = 8,
         conv3x3_only: bool = False,
         hidden_ratio: float = 1.0,
+        pre_processor: PreProcessor | bool = True,
         post_processor: PostProcessor | None = None,
         evaluator: Evaluator | bool = True,
     ) -> None:
-        super().__init__(post_processor=post_processor, evaluator=evaluator)
+        super().__init__(pre_processor=pre_processor, post_processor=post_processor, evaluator=evaluator)
+        if self.input_size is None:
+            msg = "Fastflow needs input size to build torch model."
+            raise ValueError(msg)
 
         self.backbone = backbone
         self.pre_trained = pre_trained
         self.flow_steps = flow_steps
         self.conv3x3_only = conv3x3_only
         self.hidden_ratio = hidden_ratio
-
-        self.model: FastflowModel
-        self.loss = FastflowLoss()
-
-    def _setup(self) -> None:
-        if self.input_size is None:
-            msg = "Fastflow needs input size to build torch model."
-            raise ValueError(msg)
 
         self.model = FastflowModel(
             input_size=self.input_size,
@@ -72,6 +72,7 @@ class Fastflow(AnomalyModule):
             conv3x3_only=self.conv3x3_only,
             hidden_ratio=self.hidden_ratio,
         )
+        self.loss = FastflowLoss()
 
     def training_step(self, batch: Batch, *args, **kwargs) -> STEP_OUTPUT:
         """Perform the training step input and return the loss.

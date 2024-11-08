@@ -28,18 +28,10 @@ References:
 import logging
 from pathlib import Path
 
-from torchvision.transforms.v2 import Transform
-
 from anomalib import TaskType
 from anomalib.data.datamodules.base.image import AnomalibDataModule
 from anomalib.data.datasets.image.mvtec import MVTecDataset
-from anomalib.data.utils import (
-    DownloadInfo,
-    Split,
-    TestSplitMode,
-    ValSplitMode,
-    download_and_extract,
-)
+from anomalib.data.utils import DownloadInfo, Split, TestSplitMode, ValSplitMode, download_and_extract
 
 logger = logging.getLogger(__name__)
 
@@ -68,14 +60,6 @@ class MVTec(AnomalibDataModule):
             Defaults to ``8``.
         task TaskType): Task type, 'classification', 'detection' or 'segmentation'
             Defaults to ``TaskType.SEGMENTATION``.
-        image_size (tuple[int, int], optional): Size to which input images should be resized.
-            Defaults to ``None``.
-        transform (Transform, optional): Transforms that should be applied to the input images.
-            Defaults to ``None``.
-        train_transform (Transform, optional): Transforms that should be applied to the input images during training.
-            Defaults to ``None``.
-        eval_transform (Transform, optional): Transforms that should be applied to the input images during evaluation.
-            Defaults to ``None``.
         test_split_mode (TestSplitMode): Setting that determines how the testing subset is obtained.
             Defaults to ``TestSplitMode.FROM_DIR``.
         test_split_ratio (float): Fraction of images from the train set that will be reserved for testing.
@@ -103,10 +87,6 @@ class MVTec(AnomalibDataModule):
 
         >>> datamodule = MVTec(category="cable")
 
-        To change the image and batch size:
-
-        >>> datamodule = MVTec(image_size=(512, 512), train_batch_size=16, eval_batch_size=8)
-
         MVTec AD dataset does not provide a validation set. If you would like
         to use a separate validation set, you can use the ``val_split_mode`` and
         ``val_split_ratio`` arguments to create a validation set.
@@ -129,10 +109,6 @@ class MVTec(AnomalibDataModule):
         eval_batch_size: int = 32,
         num_workers: int = 8,
         task: TaskType | str = TaskType.SEGMENTATION,
-        image_size: tuple[int, int] | None = None,
-        transform: Transform | None = None,
-        train_transform: Transform | None = None,
-        eval_transform: Transform | None = None,
         test_split_mode: TestSplitMode | str = TestSplitMode.FROM_DIR,
         test_split_ratio: float = 0.2,
         val_split_mode: ValSplitMode | str = ValSplitMode.SAME_AS_TEST,
@@ -142,10 +118,6 @@ class MVTec(AnomalibDataModule):
         super().__init__(
             train_batch_size=train_batch_size,
             eval_batch_size=eval_batch_size,
-            image_size=image_size,
-            transform=transform,
-            train_transform=train_transform,
-            eval_transform=eval_transform,
             num_workers=num_workers,
             test_split_mode=test_split_mode,
             test_split_ratio=test_split_ratio,
@@ -172,14 +144,12 @@ class MVTec(AnomalibDataModule):
         """
         self.train_data = MVTecDataset(
             task=self.task,
-            transform=self.train_transform,
             split=Split.TRAIN,
             root=self.root,
             category=self.category,
         )
         self.test_data = MVTecDataset(
             task=self.task,
-            transform=self.eval_transform,
             split=Split.TEST,
             root=self.root,
             category=self.category,

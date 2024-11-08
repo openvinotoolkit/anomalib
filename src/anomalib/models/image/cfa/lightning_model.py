@@ -19,6 +19,7 @@ from anomalib.data import Batch
 from anomalib.metrics import Evaluator
 from anomalib.models.components import AnomalyModule
 from anomalib.post_processing import PostProcessor
+from anomalib.pre_processing import PreProcessor
 
 from .loss import CfaLoss
 from .torch_model import CfaModel
@@ -44,6 +45,9 @@ class Cfa(AnomalyModule):
             Defaults to ``3``.
         radius (float): Radius of the hypersphere to search the soft boundary.
             Defaults to ``1e-5``.
+        pre_processor (PreProcessor, optional): Pre-processor for the model.
+            This is used to pre-process the input data before it is passed to the model.
+            Defaults to ``None``.
     """
 
     def __init__(
@@ -54,10 +58,11 @@ class Cfa(AnomalyModule):
         num_nearest_neighbors: int = 3,
         num_hard_negative_features: int = 3,
         radius: float = 1e-5,
+        pre_processor: PreProcessor | bool = True,
         post_processor: PostProcessor | None = None,
         evaluator: Evaluator | bool = True,
     ) -> None:
-        super().__init__(post_processor=post_processor, evaluator=evaluator)
+        super().__init__(pre_processor=pre_processor, post_processor=post_processor, evaluator=evaluator)
         self.model: CfaModel = CfaModel(
             backbone=backbone,
             gamma_c=gamma_c,

@@ -16,6 +16,7 @@ from anomalib.metrics import AUROC, Evaluator, F1Score
 from anomalib.models.components import AnomalyModule, MemoryBankMixin
 from anomalib.models.components.classification import FeatureScalingMethod
 from anomalib.post_processing import PostProcessor
+from anomalib.pre_processing import PreProcessor
 
 from .torch_model import DfkdeModel
 
@@ -48,10 +49,11 @@ class Dfkde(MemoryBankMixin, AnomalyModule):
         n_pca_components: int = 16,
         feature_scaling_method: FeatureScalingMethod = FeatureScalingMethod.SCALE,
         max_training_points: int = 40000,
+        pre_processor: PreProcessor | bool = True,
         post_processor: PostProcessor | None = None,
         evaluator: Evaluator | bool = True,
     ) -> None:
-        super().__init__(post_processor=post_processor, evaluator=evaluator)
+        super().__init__(pre_processor=pre_processor, post_processor=post_processor, evaluator=evaluator)
 
         self.model = DfkdeModel(
             layers=layers,

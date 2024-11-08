@@ -18,6 +18,7 @@ from anomalib.metrics import Evaluator
 from anomalib.models.components import AnomalyModule, MemoryBankMixin
 from anomalib.models.components.classification import FeatureScalingMethod
 from anomalib.post_processing import PostProcessor
+from anomalib.pre_processing import PreProcessor
 
 from .region_extractor import RoiStage
 from .torch_model import RkdeModel
@@ -47,6 +48,9 @@ class Rkde(MemoryBankMixin, AnomalyModule):
             Defaults to ``FeatureScalingMethod.SCALE``.
         max_training_points (int, optional): Maximum number of training points to fit the KDE model.
             Defaults to ``40000``.
+        pre_processor (PreProcessor, optional): Pre-processor for the model.
+            This is used to pre-process the input data before it is passed to the model.
+            Defaults to ``None``.
     """
 
     def __init__(
@@ -59,10 +63,11 @@ class Rkde(MemoryBankMixin, AnomalyModule):
         n_pca_components: int = 16,
         feature_scaling_method: FeatureScalingMethod = FeatureScalingMethod.SCALE,
         max_training_points: int = 40000,
+        pre_processor: PreProcessor | bool = True,
         post_processor: PostProcessor | None = None,
         evaluator: Evaluator | bool = True,
     ) -> None:
-        super().__init__(post_processor=post_processor, evaluator=evaluator)
+        super().__init__(pre_processor=pre_processor, post_processor=post_processor, evaluator=evaluator)
 
         self.model: RkdeModel = RkdeModel(
             roi_stage=roi_stage,

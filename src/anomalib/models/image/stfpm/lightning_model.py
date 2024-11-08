@@ -18,6 +18,7 @@ from anomalib.data import Batch
 from anomalib.metrics import Evaluator
 from anomalib.models.components import AnomalyModule
 from anomalib.post_processing import PostProcessor
+from anomalib.pre_processing import PreProcessor
 
 from .loss import STFPMLoss
 from .torch_model import STFPMModel
@@ -33,21 +34,22 @@ class Stfpm(AnomalyModule):
             Defaults to ``resnet18``.
         layers (list[str]): Layers to extract features from the backbone CNN
             Defaults to ``["layer1", "layer2", "layer3"]``.
+        pre_processor (PreProcessor, optional): Pre-processor for the model.
+            This is used to pre-process the input data before it is passed to the model.
+            Defaults to ``None``.
     """
 
     def __init__(
         self,
         backbone: str = "resnet18",
         layers: Sequence[str] = ("layer1", "layer2", "layer3"),
+        pre_processor: PreProcessor | bool = True,
         post_processor: PostProcessor | None = None,
         evaluator: Evaluator | bool = True,
     ) -> None:
-        super().__init__(post_processor=post_processor, evaluator=evaluator)
+        super().__init__(pre_processor=pre_processor, post_processor=post_processor, evaluator=evaluator)
 
-        self.model = STFPMModel(
-            backbone=backbone,
-            layers=layers,
-        )
+        self.model = STFPMModel(backbone=backbone, layers=layers)
         self.loss = STFPMLoss()
 
     def training_step(self, batch: Batch, *args, **kwargs) -> STEP_OUTPUT:

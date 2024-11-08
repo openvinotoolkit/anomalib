@@ -17,6 +17,7 @@ from anomalib.data import Batch
 from anomalib.metrics import Evaluator
 from anomalib.models.components import AnomalyModule
 from anomalib.post_processing import PostProcessor
+from anomalib.pre_processing import PreProcessor
 
 from .anomaly_map import AnomalyMapGenerationMode
 from .loss import ReverseDistillationLoss
@@ -35,6 +36,9 @@ class ReverseDistillation(AnomalyModule):
             Defaults to ``AnomalyMapGenerationMode.ADD``.
         pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.
             Defaults to ``True``.
+        pre_processor (PreProcessor, optional): Pre-processor for the model.
+            This is used to pre-process the input data before it is passed to the model.
+            Defaults to ``None``.
     """
 
     def __init__(
@@ -43,23 +47,19 @@ class ReverseDistillation(AnomalyModule):
         layers: Sequence[str] = ("layer1", "layer2", "layer3"),
         anomaly_map_mode: AnomalyMapGenerationMode = AnomalyMapGenerationMode.ADD,
         pre_trained: bool = True,
+        pre_processor: PreProcessor | bool = True,
         post_processor: PostProcessor | None = None,
         evaluator: Evaluator | bool = True,
     ) -> None:
-        super().__init__(post_processor=post_processor, evaluator=evaluator)
+        super().__init__(pre_processor=pre_processor, post_processor=post_processor, evaluator=evaluator)
+        if self.input_size is None:
+            msg = "Input size is required for Reverse Distillation model."
+            raise ValueError(msg)
 
         self.backbone = backbone
         self.pre_trained = pre_trained
         self.layers = layers
         self.anomaly_map_mode = anomaly_map_mode
-
-        self.model: ReverseDistillationModel
-        self.loss = ReverseDistillationLoss()
-
-    def _setup(self) -> None:
-        if self.input_size is None:
-            msg = "Input size is required for Reverse Distillation model."
-            raise ValueError(msg)
 
         self.model = ReverseDistillationModel(
             backbone=self.backbone,
@@ -68,6 +68,7 @@ class ReverseDistillation(AnomalyModule):
             input_size=self.input_size,
             anomaly_map_mode=self.anomaly_map_mode,
         )
+        self.loss = ReverseDistillationLoss()
 
     def configure_optimizers(self) -> optim.Adam:
         """Configure optimizers for decoder and bottleneck.

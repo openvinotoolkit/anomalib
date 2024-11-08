@@ -30,7 +30,6 @@ class TestUCSDped(_TestAnomalibVideoDatamodule):
             category="dummy",
             clip_length_in_frames=clip_length_in_frames,
             task=task_type,
-            image_size=256,
             train_batch_size=4,
             eval_batch_size=4,
             num_workers=0,

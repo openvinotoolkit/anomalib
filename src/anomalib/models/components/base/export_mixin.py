@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-from collections.abc import Callable, Iterable
+from collections.abc import Iterable
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING, Any
@@ -14,12 +14,10 @@ from lightning.pytorch import LightningModule
 from lightning_utilities.core.imports import package_available
 from torch import nn
 from torchmetrics import Metric
-from torchvision.transforms.v2 import Transform
 
 from anomalib import TaskType
 from anomalib.data import AnomalibDataModule
 from anomalib.deploy.export import CompressionType, ExportType
-from anomalib.deploy.utils import make_transform_exportable
 
 if TYPE_CHECKING:
     from importlib.util import find_spec
@@ -34,8 +32,6 @@ class ExportMixin:
     """This mixin allows exporting models to torch and ONNX/OpenVINO."""
 
     model: nn.Module
-    transform: Transform
-    configure_transforms: Callable
     device: torch.device
 
     def to_torch(
@@ -136,7 +132,7 @@ class ExportMixin:
         dynamic_axes = (
             {"input": {0: "batch_size"}, "output": {0: "batch_size"}}
             if input_size
-            else {"input": {0: "batch_size", 2: "height", 3: "weight"}, "output": {0: "batch_size"}}
+            else {"input": {0: "batch_size", 2: "height", 3: "width"}, "output": {0: "batch_size"}}
         )
         onnx_path = export_root / "model.onnx"
         # apply pass through the model to get the output names
@@ -399,11 +395,6 @@ class ExportMixin:
             return metric.compute()
 
         return nncf.quantize_with_accuracy_control(model, calibration_dataset, validation_dataset, val_fn)
-
-    @property
-    def exportable_transform(self) -> Transform:
-        """Return the exportable transform."""
-        return make_transform_exportable(self.transform)
 
 
 def _create_export_root(export_root: str | Path, export_type: ExportType) -> Path:

@@ -5,8 +5,9 @@
 
 import logging
 from abc import ABC, abstractmethod
+from collections.abc import Sequence
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import lightning.pytorch as pl
 import torch
@@ -14,7 +15,7 @@ from lightning.pytorch import Callback
 from lightning.pytorch.trainer.states import TrainerFn
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torch import nn
-from torchvision.transforms.v2 import Compose, Normalize, Resize, Transform
+from torchvision.transforms.v2 import Compose, Normalize, Resize
 
 from anomalib import LearningType
 from anomalib.data import Batch, InferenceBatch
@@ -22,12 +23,9 @@ from anomalib.metrics import AUROC, F1Score
 from anomalib.metrics.evaluator import Evaluator
 from anomalib.metrics.threshold import Threshold
 from anomalib.post_processing import OneClassPostProcessor, PostProcessor
+from anomalib.pre_processing import PreProcessor
 
 from .export_mixin import ExportMixin
-
-if TYPE_CHECKING:
-    from lightning.pytorch.callbacks import Callback
-
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +38,7 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
 
     def __init__(
         self,
+        pre_processor: PreProcessor | bool = True,
         post_processor: PostProcessor | None = None,
         evaluator: Evaluator | bool = True,
     ) -> None:
@@ -51,14 +50,11 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
         self.loss: nn.Module
         self.callbacks: list[Callback]
 
-        # set the post-processor
+        self.pre_processor = self._resolve_pre_processor(pre_processor)
         self.post_processor = post_processor or self.default_post_processor()
-
         self.evaluator = self._resolve_evaluator(evaluator)
 
-        self._transform: Transform | None = None
         self._input_size: tuple[int, int] | None = None
-
         self._is_setup = False  # flag to track if setup has been called from the trainer
 
     @property
@@ -82,6 +78,29 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
         initialization.
         """
 
+    def _resolve_pre_processor(self, pre_processor: PreProcessor | bool) -> PreProcessor | None:
+        """Resolve and validate which pre-processor to use..
+
+        Args:
+            pre_processor: Pre-processor configuration
+                - True -> use default pre-processor
+                - False -> no pre-processor
+                - PreProcessor -> use the provided pre-processor
+
+        Returns:
+            Configured pre-processor
+        """
+        if isinstance(pre_processor, PreProcessor):
+            return pre_processor
+        if isinstance(pre_processor, bool):
+            return self.configure_pre_processor() if pre_processor else None
+        msg = f"Invalid pre-processor type: {type(pre_processor)}"
+        raise TypeError(msg)
+
+    def configure_callbacks(self) -> Sequence[Callback] | Callback:
+        """Configure default callbacks for AnomalyModule."""
+        return [self.pre_processor] if self.pre_processor else []
+
     def forward(self, batch: torch.Tensor, *args, **kwargs) -> InferenceBatch:
         """Perform the forward-pass by passing input tensor to the module.
 
@@ -94,7 +113,7 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
             Tensor: Output tensor from the model.
         """
         del args, kwargs  # These variables are not used.
-        batch = self.exportable_transform(batch)
+        batch = self.pre_processor(batch) if self.pre_processor else batch
         batch = self.model(batch)
         return self.post_processor(batch) if self.post_processor else batch
 
@@ -150,36 +169,48 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
         """Learning type of the model."""
         raise NotImplementedError
 
-    @property
-    def transform(self) -> Transform:
-        """Retrieve the model-specific transform.
+    @classmethod
+    def configure_pre_processor(cls, image_size: tuple[int, int] | None = None) -> PreProcessor:
+        """Configure the pre-processor.
 
-        If a transform has been set using `set_transform`, it will be returned. Otherwise, we will use the
-        model-specific default transform, conditioned on the input size.
+        The default pre-processor resizes images to 256x256 and normalizes using ImageNet statistics.
+        Individual models can override this method to provide custom transforms and pre-processing pipelines.
+
+        Args:
+            image_size (tuple[int, int] | None, optional): Target size for resizing images.
+                If None, defaults to (256, 256). Defaults to None.
+            **kwargs (Any): Additional keyword arguments (unused).
+
+        Returns:
+            PreProcessor: Configured pre-processor instance.
+
+        Examples:
+            Get default pre-processor with custom image size:
+
+            >>> preprocessor = AnomalyModule.configure_pre_processor(image_size=(512, 512))
+
+            Create model with custom pre-processor:
+
+            >>> from torchvision.transforms.v2 import RandomHorizontalFlip
+            >>> custom_transform = Compose([
+            ...     Resize((256, 256), antialias=True),
+            ...     CenterCrop((224, 224)),
+            ...     RandomHorizontalFlip(p=0.5),
+            ...     Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+            ... ])
+            >>> preprocessor.train_transform = custom_transform
+            >>> model = PatchCore(pre_processor=preprocessor)
+
+            Disable pre-processing:
+
+            >>> model = PatchCore(pre_processor=False)
         """
-        return self._transform
-
-    def set_transform(self, transform: Transform) -> None:
-        """Update the transform linked to the model instance."""
-        self._transform = transform
-
-    def configure_transforms(self, image_size: tuple[int, int] | None = None) -> Transform:  # noqa: PLR6301
-        """Default transforms.
-
-        The default transform is resize to 256x256 and normalize to ImageNet stats. Individual models can override
-        this method to provide custom transforms.
-        """
-        logger.warning(
-            "No implementation of `configure_transforms` was provided in the Lightning model. Using default "
-            "transforms from the base class. This may not be suitable for your use case. Please override "
-            "`configure_transforms` in your model.",
-        )
         image_size = image_size or (256, 256)
-        return Compose(
-            [
+        return PreProcessor(
+            transform=Compose([
                 Resize(image_size, antialias=True),
                 Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-            ],
+            ]),
         )
 
     def default_post_processor(self) -> PostProcessor:
@@ -226,30 +257,12 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
         The effective input size is the size of the input tensor after the transform has been applied. If the transform
         is not set, or if the transform does not change the shape of the input tensor, this method will return None.
         """
-        transform = self.transform or self.configure_transforms()
+        transform = self.pre_processor.predict_transform if self.pre_processor else None
         if transform is None:
             return None
         dummy_input = torch.zeros(1, 3, 1, 1)
         output_shape = transform(dummy_input).shape[-2:]
-        if output_shape == (1, 1):
-            return None
-        return output_shape[-2:]
-
-    def on_save_checkpoint(self, checkpoint: dict[str, Any]) -> None:
-        """Called when saving the model to a checkpoint.
-
-        Saves the transform to the checkpoint.
-        """
-        checkpoint["transform"] = self.transform
-
-    def on_load_checkpoint(self, checkpoint: dict[str, Any]) -> None:
-        """Called when loading the model from a checkpoint.
-
-        Loads the transform from the checkpoint and calls setup to ensure that the torch model is built before loading
-        the state dict.
-        """
-        self._transform = checkpoint["transform"]
-        self.setup("load_checkpoint")
+        return None if output_shape == (1, 1) else output_shape[-2:]
 
     @classmethod
     def from_config(

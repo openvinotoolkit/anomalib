@@ -18,6 +18,7 @@ from anomalib.data import Batch
 from anomalib.metrics import AUROC, Evaluator, F1Score
 from anomalib.models.components import AnomalyModule
 from anomalib.post_processing import PostProcessor
+from anomalib.pre_processing import PreProcessor
 
 from .loss import DiscriminatorLoss, GeneratorLoss
 from .torch_model import GanomalyModel
@@ -51,6 +52,9 @@ class Ganomaly(AnomalyModule):
             Defaults to ``0.5``.
         beta2 (float, optional): Adam beta2.
             Defaults to ``0.999``.
+        pre_processor (PreProcessor, optional): Pre-processor for the model.
+            This is used to pre-process the input data before it is passed to the model.
+            Defaults to ``None``.
     """
 
     def __init__(
@@ -66,10 +70,14 @@ class Ganomaly(AnomalyModule):
         lr: float = 0.0002,
         beta1: float = 0.5,
         beta2: float = 0.999,
+        pre_processor: PreProcessor | bool = True,
         post_processor: PostProcessor | None = None,
         evaluator: Evaluator | bool = True,
     ) -> None:
-        super().__init__(post_processor=post_processor, evaluator=evaluator)
+        super().__init__(pre_processor=pre_processor, post_processor=post_processor, evaluator=evaluator)
+        if self.input_size is None:
+            msg = "GANomaly needs input size to build torch model."
+            raise ValueError(msg)
 
         self.n_features = n_features
         self.latent_vec_size = latent_vec_size
@@ -82,6 +90,15 @@ class Ganomaly(AnomalyModule):
         self.min_scores: torch.Tensor = torch.tensor(float("inf"), dtype=torch.float32)  # pylint: disable=not-callable
         self.max_scores: torch.Tensor = torch.tensor(float("-inf"), dtype=torch.float32)  # pylint: disable=not-callable
 
+        self.model = GanomalyModel(
+            input_size=self.input_size,
+            num_input_channels=3,
+            n_features=self.n_features,
+            latent_vec_size=self.latent_vec_size,
+            extra_layers=self.extra_layers,
+            add_final_conv_layer=self.add_final_conv_layer,
+        )
+
         self.generator_loss = GeneratorLoss(wadv, wcon, wenc)
         self.discriminator_loss = DiscriminatorLoss()
         self.automatic_optimization = False
@@ -93,20 +110,6 @@ class Ganomaly(AnomalyModule):
         self.beta2 = beta2
 
         self.model: GanomalyModel
-
-    def _setup(self) -> None:
-        if self.input_size is None:
-            msg = "GANomaly needs input size to build torch model."
-            raise ValueError(msg)
-
-        self.model = GanomalyModel(
-            input_size=self.input_size,
-            num_input_channels=3,
-            n_features=self.n_features,
-            latent_vec_size=self.latent_vec_size,
-            extra_layers=self.extra_layers,
-            add_final_conv_layer=self.add_final_conv_layer,
-        )
 
     def _reset_min_max(self) -> None:
         """Reset min_max scores."""

@@ -22,7 +22,6 @@ class TestVisa(_TestAnomalibImageDatamodule):
         _datamodule = Visa(
             root=dataset_path,
             category="dummy",
-            image_size=256,
             train_batch_size=4,
             eval_batch_size=4,
             num_workers=0,

@@ -26,6 +26,7 @@ from anomalib.data import Batch
 from anomalib.metrics import Evaluator
 from anomalib.models.components import AnomalyModule
 from anomalib.post_processing import PostProcessor
+from anomalib.pre_processing import PreProcessor
 
 from .torch_model import CflowModel
 from .utils import get_logp, positional_encoding_2d
@@ -69,10 +70,11 @@ class Cflow(AnomalyModule):
         clamp_alpha: float = 1.9,
         permute_soft: bool = False,
         lr: float = 0.0001,
+        pre_processor: PreProcessor | bool = True,
         post_processor: PostProcessor | None = None,
         evaluator: Evaluator | bool = True,
     ) -> None:
-        super().__init__(post_processor=post_processor, evaluator=evaluator)
+        super().__init__(pre_processor=pre_processor, post_processor=post_processor, evaluator=evaluator)
 
         self.model: CflowModel = CflowModel(
             backbone=backbone,
