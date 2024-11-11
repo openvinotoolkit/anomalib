@@ -1,5 +1,5 @@
 seed: 42
-accelerator: "gpu"
+accelerator: "cuda"
 default_root_dir: "results"
 
 tiling:
