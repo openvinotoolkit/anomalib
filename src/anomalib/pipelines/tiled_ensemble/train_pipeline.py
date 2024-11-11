@@ -92,9 +92,12 @@ class TrainTiledEnsemble(Pipeline):
                 ),
             )
 
-        if data_args["init_args"]["val_split_mode"] == ValSplitMode.NONE:
+        val_split_mode = data_args["init_args"].get("val_split_mode", None)
+        if val_split_mode == ValSplitMode.NONE:
             logger.warning("No validation set provided, skipping statistics calculation.")
             return runners
+        if val_split_mode is None:
+            logger.warning("Validation split mode not set in data config, dataset specific default will be used.")
 
         # 2. predict using validation data
         if accelerator == "cuda":
