@@ -9,6 +9,14 @@
 
 from .binary_classification_curve import ThresholdMethod
 from .pimo import AUPIMO, PIMO, AUPIMOResult, PIMOResult
+from .utils_benchmark import (
+    AUPIMO_BENCHMARK_DATASETS,
+    AUPIMO_BENCHMARK_MODELS,
+    aupimo_result_from_json_dict,
+    aupimo_result_to_json_dict,
+    download_aupimo_benchmark_scores,
+    get_aupimo_benchmark,
+)
 
 __all__ = [
     # constants
@@ -20,4 +28,11 @@ __all__ = [
     "PIMO",
     "AUPIMO",
     "StatsOutliersPolicy",
+    # utils_benchmark
+    "AUPIMO_BENCHMARK_DATASETS",
+    "AUPIMO_BENCHMARK_MODELS",
+    "aupimo_result_from_json_dict",
+    "aupimo_result_to_json_dict",
+    "download_aupimo_benchmark_scores",
+    "get_aupimo_benchmark",
 ]
