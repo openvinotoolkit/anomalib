@@ -22,7 +22,7 @@ def try_import(import_path: str) -> bool:
 
     warnings.warn(
         "The 'try_import' function is deprecated and will be removed in v2.0.0. "
-        "Use 'package_available' from lightning-utilities instead.",
+        "Use 'module_available' from lightning-utilities instead.",
         DeprecationWarning,
         stacklevel=2,
     )

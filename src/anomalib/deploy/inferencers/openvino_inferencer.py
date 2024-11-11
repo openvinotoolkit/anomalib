@@ -4,26 +4,17 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-from importlib.util import find_spec
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import numpy as np
+from lightning_utilities.core.imports import module_available
 from openvino.runtime.utils.data_helpers.wrappers import OVDict
 
 from anomalib.data import NumpyImageBatch
 from anomalib.data.utils import read_image
 
 logger = logging.getLogger("anomalib")
-
-
-if find_spec("openvino") is not None:
-    import openvino as ov
-
-    if TYPE_CHECKING:
-        from openvino import CompiledModel
-else:
-    logger.warning("OpenVINO is not installed. Please install OpenVINO to use OpenVINOInferencer.")
 
 
 class OpenVINOInferencer:
@@ -96,12 +87,16 @@ class OpenVINOInferencer:
         device: str | None = "AUTO",
         config: dict | None = None,
     ) -> None:
+        if not module_available("openvino"):
+            msg = "OpenVINO is not installed. Please install OpenVINO to use OpenVINOInferencer."
+            raise ImportError(msg)
+
         self.device = device
 
         self.config = config
         self.input_blob, self.output_blob, self.model = self.load_model(path)
 
-    def load_model(self, path: str | Path | tuple[bytes, bytes]) -> tuple[Any, Any, "CompiledModel"]:
+    def load_model(self, path: str | Path | tuple[bytes, bytes]) -> tuple[Any, Any, Any]:
         """Load the OpenVINO model.
 
         Args:
@@ -112,6 +107,8 @@ class OpenVINOInferencer:
             [tuple[str, str, ExecutableNetwork]]: Input and Output blob names
                 together with the Executable network.
         """
+        import openvino as ov
+
         core = ov.Core()
         # If tuple of bytes is passed
         if isinstance(path, tuple):
