@@ -8,6 +8,7 @@ from pathlib import Path
 
 import torch
 
+from anomalib import TaskType
 from anomalib.data.utils import TestSplitMode
 from anomalib.pipelines.components.base import Pipeline, Runner
 from anomalib.pipelines.components.runners import ParallelRunner, SerialRunner
@@ -48,9 +49,12 @@ class EvalTiledEnsemble(Pipeline):
         """
         runners: list[Runner] = []
 
-        if args["data"]["init_args"]["test_split_mode"] == TestSplitMode.NONE:
+        test_split_mode = args["data"]["init_args"].get("test_split_mode", None)
+        if test_split_mode == TestSplitMode.NONE:
             logger.info("Test split mode set to `none`, skipping test phase.")
             return runners
+        if test_split_mode is None:
+            logger.warning("Test split mode not set in data config, dataset specific default will be used.")
 
         seed = args["seed"]
         accelerator = args["accelerator"]
@@ -59,7 +63,12 @@ class EvalTiledEnsemble(Pipeline):
         normalization_stage = NormalizationStage(args["normalization_stage"])
         threshold_stage = ThresholdStage(args["thresholding"]["stage"])
         model_args = args["TrainModels"]["model"]
-        task = args["data"]["init_args"]["task"]
+
+        task = args["data"]["init_args"].get("task", None)
+        if task is None:
+            logger.info("Task not provided, defaulting to segmentation. Set 'task' in config data section to change.")
+            task = TaskType.SEGMENTATION
+
         metrics = args["TrainModels"]["metrics"]
 
         predict_job_generator = PredictJobGenerator(

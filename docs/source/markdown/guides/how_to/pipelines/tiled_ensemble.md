@@ -50,7 +50,7 @@ General settings at the top of the config file are used to set up the random `se
 
 ```{code-block} yaml
 seed: 42
-accelerator: "gpu"
+accelerator: "cuda"
 default_root_dir: "results"
 ```
 

@@ -50,8 +50,12 @@ class TiledEnsembleEngine(Engine):
             Path: path to new workspace root dir
         """
         model_name = args["TrainModels"]["model"]["class_path"].split(".")[-1]
-        dataset_name = args["data"]["class_path"].split(".")[-1]
-        category = args["data"]["init_args"]["category"]
+        # get dataset name if present in init_args
+        dataset_name = args["data"]["init_args"].get("name", None)
+        if dataset_name is None:
+            # if not specified, take class name
+            dataset_name = args["data"]["class_path"].split(".")[-1]
+        category = args["data"]["init_args"].get("category", "")
         root_dir = Path(args["default_root_dir"]) / model_name / dataset_name / category
         return create_versioned_dir(root_dir) if versioned_dir else root_dir / "latest"
 
