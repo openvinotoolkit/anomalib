@@ -9,7 +9,10 @@ import torch
 from torch.utils.data import DataLoader
 
 from anomalib import LearningType
+from anomalib.data import ImageBatch
+from anomalib.metrics import Evaluator, F1Score
 from anomalib.models import AnomalyModule
+from anomalib.post_processing import PostProcessor
 
 from .backends import Backend, ChatGPT, Huggingface, Ollama
 from .utils import ModelName, Prompt
@@ -52,7 +55,7 @@ class VlmAd(AnomalyModule):
     def collect_reference_images(self, dataloader: DataLoader) -> None:
         """Collect reference images for few-shot inference."""
         for batch in dataloader:
-            for img_path in batch["image_path"]:
+            for img_path in batch.image_path:
                 self.vlm_backend.add_reference_images(img_path)
                 if self.vlm_backend.num_reference_images == self.k_shot:
                     return
@@ -74,12 +77,13 @@ class VlmAd(AnomalyModule):
             ),
         )
 
-    def validation_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> dict:
+    def validation_step(self, batch: ImageBatch, *args, **kwargs) -> ImageBatch:
         """Validation step."""
         del args, kwargs  # These variables are not used.
-        responses = [(self.vlm_backend.predict(img_path, self.prompt)) for img_path in batch["image_path"]]
-        batch["explanation"] = responses
-        batch["pred_scores"] = torch.tensor([1.0 if r.startswith("Y") else 0.0 for r in responses], device=self.device)
+        assert batch.image_path is not None
+        responses = [(self.vlm_backend.predict(img_path, self.prompt)) for img_path in batch.image_path]
+        batch.explanation = responses
+        batch.pred_label = torch.tensor([1.0 if r.startswith("Y") else 0.0 for r in responses], device=self.device)
         return batch
 
     @property
@@ -97,6 +101,19 @@ class VlmAd(AnomalyModule):
         """This modes does not require any transforms."""
         if image_size is not None:
             logger.warning("Ignoring image_size argument as each backend has its own transforms.")
+
+    def default_post_processor(self) -> PostProcessor | None:  # noqa: PLR6301
+        """Post processing is not required for this model."""
+        return None
+
+    @staticmethod
+    def configure_evaluator() -> Evaluator:
+        """Default evaluator.
+
+        Override in subclass for model-specific evaluator behaviour.
+        """
+        image_f1score = F1Score(fields=["pred_label", "gt_label"], prefix="image_")
+        return Evaluator(test_metrics=image_f1score)
 
     @staticmethod
     def _export_not_supported_message() -> None:

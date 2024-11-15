@@ -213,7 +213,7 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
             ]),
         )
 
-    def default_post_processor(self) -> PostProcessor:
+    def default_post_processor(self) -> PostProcessor | None:
         """Default post processor.
 
         Override in subclass for model-specific post-processing behaviour.

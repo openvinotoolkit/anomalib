@@ -82,6 +82,11 @@ class NumpyDepthValidator:
         """Validate the depth path."""
         return validate_path(depth_path) if depth_path else None
 
+    @staticmethod
+    def validate_explanation(explanation: str | None) -> str | None:
+        """Validate the explanation."""
+        return NumpyImageValidator.validate_explanation(explanation)
+
 
 class NumpyDepthBatchValidator:
     """Validate numpy.ndarray data for batches of depth images."""
@@ -156,3 +161,8 @@ class NumpyDepthBatchValidator:
             msg = f"Depth path must be a list of strings, got {type(depth_path)}."
             raise TypeError(msg)
         return [validate_path(path) for path in depth_path]
+
+    @staticmethod
+    def validate_explanation(explanation: list[str] | None) -> list[str] | None:
+        """Validate the explanations for a batch."""
+        return NumpyImageBatchValidator.validate_explanation(explanation)
