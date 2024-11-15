@@ -34,6 +34,7 @@ dependencies = [
     "jsonargparse[signatures]>=4.27.7",
     "docstring_parser",     # CLI help-formatter
     "rich_argparse",        # CLI help-formatter
+    "lightning-utilities",
 ]
 
 [project.optional-dependencies]
@@ -56,6 +57,7 @@ core = [
     "open-clip-torch>=2.23.0,<2.26.1",
 ]
 openvino = ["openvino>=2024.0", "nncf>=2.10.0", "onnx>=1.16.0"]
+vlm = ["ollama", "openai", "python-dotenv","transformers"]
 loggers = [
     "comet-ml>=3.31.7",
     "gradio>=4",
@@ -84,7 +86,7 @@ test = [
     "coverage[toml]",
     "tox",
 ]
-full = ["anomalib[core,openvino,loggers,notebooks]"]
+full = ["anomalib[core,openvino,loggers,notebooks, vlm]"]
 dev = ["anomalib[full,docs,test]"]
 
 [project.scripts]
@@ -292,11 +294,15 @@ pythonpath = "src"
 # COVERAGE CONFIGURATION                                                      #
 [tool.coverage.report]
 exclude_lines = [
-    "except ImportError",
+    "pragma: no cover",
+    "def __repr__",
+    "raise NotImplementedError",
+    "if TYPE_CHECKING:",
+    "@abstractmethod",
+    "pass",
     "raise ImportError",
-    "except ApiException",
-    "raise ApiException",
     "raise ValueError",
+    "except ImportError:",
 ]
 
 [tool.coverage.paths]

@@ -1,12 +1,15 @@
 # Import the required modules
 from anomalib.data import MVTec
-from anomalib.models import Patchcore
 from anomalib.engine import Engine
+from anomalib.models import EfficientAd
 
 # Initialize the datamodule, model and engine
-datamodule = MVTec()
-model = Patchcore()
-engine = Engine()
+datamodule = MVTec(train_batch_size=1)
+model = EfficientAd()
+engine = Engine(max_epochs=5)
 
 # Train the model
 engine.fit(datamodule=datamodule, model=model)
+
+# Continue from a checkpoint
+engine.fit(datamodule=datamodule, model=model, ckpt_path="path/to/checkpoint.ckpt")

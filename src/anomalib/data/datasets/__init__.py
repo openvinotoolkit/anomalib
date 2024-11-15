@@ -5,7 +5,7 @@
 
 from .base import AnomalibDataset, AnomalibDepthDataset, AnomalibVideoDataset
 from .depth import Folder3DDataset, MVTec3DDataset
-from .image import BTechDataset, FolderDataset, KolektorDataset, MVTecDataset, VisaDataset
+from .image import BTechDataset, DatumaroDataset, FolderDataset, KolektorDataset, MVTecDataset, VisaDataset
 from .video import AvenueDataset, ShanghaiTechDataset, UCSDpedDataset
 
 __all__ = [
@@ -18,6 +18,7 @@ __all__ = [
     "MVTec3DDataset",
     # Image
     "BTechDataset",
+    "DatumaroDataset",
     "FolderDataset",
     "KolektorDataset",
     "MVTecDataset",

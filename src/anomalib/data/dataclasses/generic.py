@@ -343,7 +343,7 @@ class _DepthInputFields(Generic[T, PathT], _ImageInputFields[PathT], ABC):
 
 
 @dataclass
-class _OutputFields(Generic[T, MaskT], ABC):
+class _OutputFields(Generic[T, MaskT, PathT], ABC):
     """Generic dataclass that defines the standard output fields for Anomalib.
 
     This class defines the standard output fields used in Anomalib, including
@@ -390,6 +390,7 @@ class _OutputFields(Generic[T, MaskT], ABC):
     pred_score: FieldDescriptor[T | None] = FieldDescriptor(validator_name="validate_pred_score")
     pred_mask: FieldDescriptor[MaskT | None] = FieldDescriptor(validator_name="validate_pred_mask")
     pred_label: FieldDescriptor[T | None] = FieldDescriptor(validator_name="validate_pred_label")
+    explanation: FieldDescriptor[PathT | None] = FieldDescriptor(validator_name="validate_explanation")
 
     @staticmethod
     @abstractmethod
@@ -413,6 +414,12 @@ class _OutputFields(Generic[T, MaskT], ABC):
     @abstractmethod
     def validate_pred_label(pred_label: T) -> T | None:
         """Validate the predicted label."""
+        raise NotImplementedError
+
+    @staticmethod
+    @abstractmethod
+    def validate_explanation(explanation: PathT) -> PathT | None:
+        """Validate the explanation."""
         raise NotImplementedError
 
 
@@ -471,7 +478,7 @@ class UpdateMixin:
 class _GenericItem(
     UpdateMixin,
     Generic[T, ImageT, MaskT, PathT],
-    _OutputFields[T, MaskT],
+    _OutputFields[T, MaskT, PathT],
     _InputFields[T, ImageT, MaskT, PathT],
 ):
     """Generic dataclass for a single item in Anomalib datasets.
@@ -520,7 +527,7 @@ class _GenericItem(
 class _GenericBatch(
     UpdateMixin,
     Generic[T, ImageT, MaskT, PathT],
-    _OutputFields[T, MaskT],
+    _OutputFields[T, MaskT, PathT],
     _InputFields[T, ImageT, MaskT, PathT],
 ):
     """Generic dataclass for a batch of items in Anomalib datasets.

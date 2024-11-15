@@ -6,6 +6,7 @@
 from collections.abc import Sequence
 
 import numpy as np
+from anomalib.data.validators.numpy.image import NumpyImageBatchValidator, NumpyImageValidator
 from anomalib.data.validators.path import validate_batch_path, validate_path
 
 
@@ -350,6 +351,11 @@ class NumpyVideoValidator:
             raise ValueError(msg)
         return target_frame
 
+    @staticmethod
+    def validate_explanation(explanation: str | None) -> str | None:
+        """Validate the explanation string."""
+        return NumpyImageValidator.validate_explanation(explanation)
+
 
 class NumpyVideoBatchValidator:
     """Validate numpy.ndarray data for batches of videos."""
@@ -692,3 +698,8 @@ class NumpyVideoBatchValidator:
             msg = "Target frame indices must be non-negative."
             raise ValueError(msg)
         return target_frame
+
+    @staticmethod
+    def validate_explanation(explanation: list[str] | None) -> list[str] | None:
+        """Validate the explanation string."""
+        return NumpyImageBatchValidator.validate_explanation(explanation)
