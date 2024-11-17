@@ -7,6 +7,7 @@ import torch.nn.functional as F  # noqa: N812
 from torch import nn
 from torch.nn import Parameter
 
+from anomalib.data import InferenceBatch
 from anomalib.models.components import GaussianBlur2d, TorchFXFeatureExtractor
 from anomalib.models.image.supersimplenet.anomaly_generator import SSNAnomalyGenerator
 
@@ -51,16 +52,16 @@ class SuperSimpleNetModel(nn.Module):
 
     def forward(
         self,
-        input_tensor: torch.Tensor,
-        masks: torch.Tensor,
-        labels: torch.Tensor,
-    ) -> tuple[torch.Tensor, torch.Tensor] | tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+        images: torch.Tensor,
+        masks: torch.Tensor | None = None,
+        labels: torch.Tensor | None = None,
+    ) -> InferenceBatch | tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         """SuperSimpleNet forward pass.
 
         Extract and process features, adapt them, generate anomalies (train only) and predict anomaly map and score.
 
         Args:
-            input_tensor (torch.Tensor): Input images.
+            images (torch.Tensor): Input images.
             masks (torch.Tensor): GT masks.
             labels (torch.Tensor): GT labels.
 
@@ -68,9 +69,9 @@ class SuperSimpleNetModel(nn.Module):
             inference: anomaly map and score
             training: anomaly map, score and GT masks and labels
         """
-        output_size = input_tensor.shape[-2:]
+        output_size = images.shape[-2:]
 
-        features = self.feature_extractor(input_tensor)
+        features = self.feature_extractor(images)
         adapted = self.adaptor(features)
 
         if self.training:
@@ -86,9 +87,9 @@ class SuperSimpleNetModel(nn.Module):
             return anomaly_map, anomaly_score, masks, labels
 
         anomaly_map, anomaly_score = self.segdec(adapted)
-        anomaly_map = self.anomaly_map_generator(anomaly_map, output_size=output_size)
+        anomaly_map = self.anomaly_map_generator(anomaly_map, final_size=output_size)
 
-        return anomaly_map, anomaly_score
+        return InferenceBatch(anomaly_map=anomaly_map, pred_score=anomaly_score)
 
     @staticmethod
     def downsample_mask(masks: torch.Tensor, feat_h: int, feat_w: int) -> torch.Tensor:
@@ -362,13 +363,3 @@ class AnomalyMapGenerator(nn.Module):
         # upscale & smooth
         anomaly_map = F.interpolate(out_map, size=final_size, mode="bilinear")
         return self.smoothing(anomaly_map)
-
-
-if __name__ == "__main__":
-    ssn = SuperSimpleNetModel(perlin_threshold=0.2)
-    ssn.train()
-    x = torch.rand(2, 3, 256, 256)
-    mask = torch.rand(2, 256, 256)
-    label = torch.rand(2)
-    p_map, p_score, m, l = ssn(x, mask, label)
-    print(p_map.shape, p_score.shape)

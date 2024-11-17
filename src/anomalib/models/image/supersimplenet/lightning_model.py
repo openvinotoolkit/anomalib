@@ -13,7 +13,9 @@ from lightning.pytorch.utilities.types import STEP_OUTPUT, OptimizerLRScheduler
 from anomalib import LearningType
 from anomalib.data import Batch
 from anomalib.models import AnomalyModule
-from anomalib.models.image.supersimplenet.loss import SSNLoss
+
+from .loss import SSNLoss
+from .torch_model import SuperSimpleNetModel
 
 
 class SuperSimpleNet(AnomalyModule):
@@ -23,7 +25,7 @@ class SuperSimpleNet(AnomalyModule):
         perlin_threshold (float): threshold value for Perlin noise thresholding during anomaly generation.
         backbone (str): backbone name
         layers (list[str]): backbone layers utilised
-        stop_grad (bool): whether to stop gradient from class. to seg. head.
+        supervised (bool): whether the model will be trained in supervised mode. False by default (unsupervised).
     """
 
     def __init__(
@@ -31,10 +33,19 @@ class SuperSimpleNet(AnomalyModule):
         perlin_threshold: float = 0.2,
         backbone: str = "wide_resnet50_2",
         layers: list[str] = ["layer2", "layer3"],  # noqa: B006
-        stop_grad: bool = True,
+        supervised: bool = False,
     ) -> None:
         super().__init__()
-        self.model = SuperSimpleNet(
+        self.supervised = supervised
+        # stop grad in unsupervised
+        if supervised:
+            stop_grad = False
+            self.norm_clip_val = 1
+        else:
+            stop_grad = True
+            self.norm_clip_val = 0
+
+        self.model = SuperSimpleNetModel(
             perlin_threshold=perlin_threshold,
             backbone=backbone,
             layers=layers,
@@ -55,18 +66,36 @@ class SuperSimpleNet(AnomalyModule):
         """
         del args, kwargs  # These variables are not used.
 
-        anomaly_map, anomaly_score, masks, labels = self.model(batch.image)
+        anomaly_map, anomaly_score, masks, labels = self.model(
+            images=batch.image, masks=batch.gt_mask, labels=batch.gt_label
+        )
         loss = self.loss(pred_map=anomaly_map, pred_score=anomaly_score, target_mask=masks, target_label=labels)
         self.log("train_loss", loss.item(), on_epoch=True, prog_bar=True, logger=True)
         return {"loss": loss}
 
     def validation_step(self, batch: Batch, *args, **kwargs) -> STEP_OUTPUT:
-        pass
+        """Perform the validation step and return the anomaly map and anomaly score.
+
+        Args:
+            batch (dict[str, str | torch.Tensor]): Input batch
+            args: Additional arguments.
+            kwargs: Additional keyword arguments.
+
+        Returns:
+            STEP_OUTPUT | None: batch dictionary containing anomaly-maps.
+        """
+        # These variables are not used.
+        del args, kwargs
+
+        # Get anomaly maps and predicted scores from the model.
+        predictions = self.model(batch.image)
+
+        return batch.update(**predictions._asdict())
 
     @property
     def trainer_arguments(self) -> dict[str, Any]:
-        # TODO - normclip
-        pass
+        """Return SuperSimpleNet trainer arguments."""
+        return {"gradient_clip_val": self.norm_clip_val, "num_sanity_val_steps": 0}
 
     def configure_optimizers(self) -> OptimizerLRScheduler:
         pass
