@@ -141,7 +141,7 @@ class SSNAnomalyGenerator(nn.Module):
         # no overlap: don't apply to already anomalous regions (mask=1 -> bad)
         noise_mask = noise_mask * (1 - mask)
 
-        # shape: [B * 2, 1, H, W]
+        # shape of noise is [B * 2, 1, H, W]
         perlin_mask = self.generate_perlin(b * 2, h, w).to(features.device)
         # only apply where perlin mask is 1
         noise_mask = noise_mask * perlin_mask

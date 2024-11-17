@@ -20,7 +20,7 @@ from anomalib.models.image.supersimplenet.anomaly_generator import SSNAnomalyGen
 # SPDX-License-Identifier: Apache-2.0
 
 
-class SuperSimpleNet(nn.Module):
+class SuperSimpleNetModel(nn.Module):
     """SuperSimpleNet Pytorch model.
 
     It consists of feature extractor, feature adaptor, anomaly generation mechanism and segmentation-detection module.
@@ -244,7 +244,7 @@ class SegmentationDetectionModule(nn.Module):
         self.stop_grad = stop_grad
 
         # 1x1 conv - linear layer equivalent
-        self.seg = nn.Sequential(
+        self.seg_head = nn.Sequential(
             nn.Conv2d(
                 in_channels=channel_dim,
                 out_channels=1024,
@@ -262,7 +262,15 @@ class SegmentationDetectionModule(nn.Module):
             ),
         )
 
-        self.dec_block = nn.Sequential(
+        # pooling for cls. conv out and map
+        self.map_avg_pool = nn.AdaptiveAvgPool2d(output_size=(1, 1))
+        self.map_max_pool = nn.AdaptiveMaxPool2d(output_size=(1, 1))
+
+        self.dec_avg_pool = nn.AdaptiveAvgPool2d(output_size=(1, 1))
+        self.dec_max_pool = nn.AdaptiveMaxPool2d(output_size=(1, 1))
+
+        # cls. head conv block
+        self.cls_conv = nn.Sequential(
             nn.Conv2d(
                 in_channels=channel_dim + 1,
                 out_channels=128,
@@ -273,14 +281,8 @@ class SegmentationDetectionModule(nn.Module):
             nn.ReLU(inplace=True),
         )
 
-        self.map_avg_pool = nn.AdaptiveAvgPool2d(output_size=(1, 1))
-        self.map_max_pool = nn.AdaptiveMaxPool2d(output_size=(1, 1))
-
-        self.dec_avg_pool = nn.AdaptiveAvgPool2d(output_size=(1, 1))
-        self.dec_max_pool = nn.AdaptiveMaxPool2d(output_size=(1, 1))
-
-        # 128 from dec and 2 from map, * 2 due to max and avg pool
-        self.fc_score = nn.Linear(in_features=128 * 2 + 2, out_features=1)
+        # cls. head fc block: 128 from dec and 2 from map, * 2 due to max and avg pool
+        self.cls_fc = nn.Linear(in_features=128 * 2 + 2, out_features=1)
 
         self.apply(init_weights)
 
@@ -290,8 +292,8 @@ class SegmentationDetectionModule(nn.Module):
         Returns:
             seg. head parameters and class. head parameters.
         """
-        seg_params = list(self.seg.parameters())
-        dec_params = list(self.dec_block.parameters()) + list(self.fc_score.parameters())
+        seg_params = list(self.seg_head.parameters())
+        dec_params = list(self.cls_conv.parameters()) + list(self.cls_fc.parameters())
         return seg_params, dec_params
 
     def forward(self, features: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
@@ -304,14 +306,14 @@ class SegmentationDetectionModule(nn.Module):
             predicted anomaly map and score.
         """
         # get anomaly map from seg head
-        ano_map = self.seg(features)
+        ano_map = self.seg_head(features)
 
         map_dec_copy = ano_map
         if self.stop_grad:
             map_dec_copy = map_dec_copy.detach()
         # dec conv layer takes feat + map
         mask_cat = torch.cat((features, map_dec_copy), dim=1)
-        dec_out = self.dec_block(mask_cat)
+        dec_out = self.cls_conv(mask_cat)
 
         # conv block result pooling
         dec_max = self.dec_max_pool(dec_out)
@@ -330,9 +332,9 @@ class SegmentationDetectionModule(nn.Module):
         dec_cat = torch.cat((dec_max, dec_avg, map_max, map_avg), dim=1).squeeze(
             dim=(2, 3),
         )
-        score = self.fc_score(dec_cat).squeeze(dim=1)
+        ano_score = self.cls_fc(dec_cat).squeeze(dim=1)
 
-        return map, score
+        return ano_map, ano_score
 
 
 class AnomalyMapGenerator(nn.Module):
@@ -345,7 +347,7 @@ class AnomalyMapGenerator(nn.Module):
     def __init__(self, sigma: float) -> None:
         super().__init__()
         kernel_size = 2 * math.ceil(3 * sigma) + 1
-        self.blur = GaussianBlur2d(kernel_size=kernel_size, sigma=4)
+        self.smoothing = GaussianBlur2d(kernel_size=kernel_size, sigma=4)
 
     def forward(self, out_map: torch.Tensor, final_size: tuple[int, int]) -> torch.Tensor:
         """Upscale and smooth anomaly map to get final anomaly map of same size as input image.
@@ -359,11 +361,11 @@ class AnomalyMapGenerator(nn.Module):
         """
         # upscale & smooth
         anomaly_map = F.interpolate(out_map, size=final_size, mode="bilinear")
-        return self.blur(anomaly_map)
+        return self.smoothing(anomaly_map)
 
 
 if __name__ == "__main__":
-    ssn = SuperSimpleNet(perlin_threshold=0.2)
+    ssn = SuperSimpleNetModel(perlin_threshold=0.2)
     ssn.train()
     x = torch.rand(2, 3, 256, 256)
     mask = torch.rand(2, 256, 256)
