@@ -76,6 +76,7 @@ class SuperSimpleNetModel(nn.Module):
 
         if self.training:
             masks = self.downsample_mask(masks, *features.shape[-2:])
+            labels = labels.type(torch.float32)
 
             features, masks, labels = self.anomaly_generator(
                 adapted,
@@ -105,6 +106,7 @@ class SuperSimpleNetModel(nn.Module):
         Returns:
             (torch.Tensor): downsampled masks.
         """
+        masks = masks.type(torch.float32)
         # best downsampling proposed by DestSeg
         masks = F.interpolate(
             masks.unsqueeze(1),

@@ -149,13 +149,13 @@ class SSNAnomalyGenerator(nn.Module):
         # update gt mask
         mask = mask + noise_mask
         # binarize
-        mask = torch.where(mask > 0, 1, 0)
+        mask = torch.where(mask > 0, torch.ones_like(mask), torch.zeros_like(mask))
 
         # make new labels. 1 if any part of mask is 1, 0 otherwise
         new_anomalous = noise_mask.reshape(b * 2, -1).any(dim=1).type(torch.float32)
         labels = labels + new_anomalous
         # binarize
-        labels = torch.where(labels > 0, 1, 0)
+        labels = torch.where(labels > 0, torch.ones_like(labels), torch.zeros_like(labels))
 
         # apply masked noise
         perturbed = features + noise * noise_mask

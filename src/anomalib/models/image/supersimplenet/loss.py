@@ -68,7 +68,7 @@ class SSNLoss(nn.Module):
             torch.Tensor: loss value.
         """
         map_focal = self.focal_loss(pred_map, target_mask)
-        map_trunc_l1 = self.trunc_l1_loss(pred_score, target_label)
-        score_focal = self.focal_loss(pred_score, target_mask)
+        map_trunc_l1 = self.trunc_l1_loss(pred_map, target_mask)
+        score_focal = self.focal_loss(pred_score, target_label)
 
         return map_focal + map_trunc_l1 + score_focal
