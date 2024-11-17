@@ -19,6 +19,7 @@ from .patchcore import Patchcore
 from .reverse_distillation import ReverseDistillation
 from .rkde import Rkde
 from .stfpm import Stfpm
+from .supersimplenet import SuperSimpleNet
 from .uflow import Uflow
 from .winclip import WinClip
 
@@ -41,4 +42,5 @@ __all__ = [
     "Stfpm",
     "Uflow",
     "WinClip",
+    "SuperSimpleNet",
 ]
