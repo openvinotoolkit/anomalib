@@ -9,6 +9,8 @@ Paper https://arxiv.org/pdf/2408.03143
 from typing import Any
 
 from lightning.pytorch.utilities.types import STEP_OUTPUT, OptimizerLRScheduler
+from torch.optim import AdamW
+from torch.optim.lr_scheduler import MultiStepLR
 
 from anomalib import LearningType
 from anomalib.data import Batch
@@ -67,7 +69,9 @@ class SuperSimpleNet(AnomalyModule):
         del args, kwargs  # These variables are not used.
 
         anomaly_map, anomaly_score, masks, labels = self.model(
-            images=batch.image, masks=batch.gt_mask, labels=batch.gt_label
+            images=batch.image,
+            masks=batch.gt_mask,
+            labels=batch.gt_label,
         )
         loss = self.loss(pred_map=anomaly_map, pred_score=anomaly_score, target_mask=masks, target_label=labels)
         self.log("train_loss", loss.item(), on_epoch=True, prog_bar=True, logger=True)
@@ -98,7 +102,26 @@ class SuperSimpleNet(AnomalyModule):
         return {"gradient_clip_val": self.norm_clip_val, "num_sanity_val_steps": 0}
 
     def configure_optimizers(self) -> OptimizerLRScheduler:
-        pass
+        """Configure AdamW optimizer and MultiStepLR scheduler."""
+        optim = AdamW(
+            [
+                {
+                    "params": self.model.adaptor.parameters(),
+                    "lr": 0.0001,
+                },
+                {
+                    "params": self.model.segdec.parameters(),
+                    "lr": 0.0002,
+                    "weight_decay": 0.00001,
+                },
+            ],
+        )
+        sched = MultiStepLR(
+            optim,
+            milestones=[int(self.trainer.max_epochs * 0.8), int(self.trainer.max_epochs * 0.9)],
+            gamma=0.4,
+        )
+        return [optim], [sched]
 
     @property
     def learning_type(self) -> LearningType:
