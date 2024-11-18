@@ -19,10 +19,10 @@ class Evaluator(nn.Module, Callback):
     """Evaluator module for LightningModule.
 
     The Evaluator module is a PyTorch module that computes and logs metrics during
-    validation and test steps. Each AnomalyModule should have an Evaluator module as
+    validation and test steps. Each AnomalibModule should have an Evaluator module as
     a submodule to compute and log metrics during validation and test steps. An Evaluation
-    module can be passed to the AnomalyModule as a parameter during initialization. When
-    no Evaluator module is provided, the AnomalyModule will use a default Evaluator module
+    module can be passed to the AnomalibModule as a parameter during initialization. When
+    no Evaluator module is provided, the AnomalibModule will use a default Evaluator module
     that logs a default set of metrics.
 
     Args:

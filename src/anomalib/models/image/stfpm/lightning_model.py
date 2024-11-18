@@ -16,7 +16,7 @@ from torch import optim
 from anomalib import LearningType
 from anomalib.data import Batch
 from anomalib.metrics import Evaluator
-from anomalib.models.components import AnomalyModule
+from anomalib.models.components import AnomalibModule
 from anomalib.post_processing import PostProcessor
 from anomalib.pre_processing import PreProcessor
 
@@ -26,7 +26,7 @@ from .torch_model import STFPMModel
 __all__ = ["Stfpm"]
 
 
-class Stfpm(AnomalyModule):
+class Stfpm(AnomalibModule):
     """PL Lightning Module for the STFPM algorithm.
 
     Args:

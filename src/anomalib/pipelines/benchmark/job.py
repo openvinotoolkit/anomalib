@@ -17,7 +17,7 @@ from rich.table import Table
 
 from anomalib.data import AnomalibDataModule
 from anomalib.engine import Engine
-from anomalib.models import AnomalyModule
+from anomalib.models import AnomalibModule
 from anomalib.pipelines.components import Job
 from anomalib.utils.logging import hide_output
 
@@ -29,7 +29,7 @@ class BenchmarkJob(Job):
 
     Args:
         accelerator (str): The accelerator to use.
-        model (AnomalyModule): The model to use.
+        model (AnomalibModule): The model to use.
         datamodule (AnomalibDataModule): The data module to use.
         seed (int): The seed to use.
         flat_cfg (dict): The flat dictionary of configs with dotted keys.
@@ -40,7 +40,7 @@ class BenchmarkJob(Job):
     def __init__(
         self,
         accelerator: str,
-        model: AnomalyModule,
+        model: AnomalibModule,
         datamodule: AnomalibDataModule,
         seed: int,
         flat_cfg: dict,

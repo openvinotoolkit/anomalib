@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
+import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from pathlib import Path
@@ -30,8 +31,8 @@ from .export_mixin import ExportMixin
 logger = logging.getLogger(__name__)
 
 
-class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
-    """AnomalyModule to train, validate, predict and test images.
+class AnomalibModule(ExportMixin, pl.LightningModule, ABC):
+    """AnomalibModule to train, validate, predict and test images.
 
     Acts as a base class for all the Anomaly Modules in the library.
     """
@@ -98,7 +99,7 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
         raise TypeError(msg)
 
     def configure_callbacks(self) -> Sequence[Callback] | Callback:
-        """Configure default callbacks for AnomalyModule."""
+        """Configure default callbacks for AnomalibModule."""
         return [self.pre_processor] if self.pre_processor else []
 
     def forward(self, batch: torch.Tensor, *args, **kwargs) -> InferenceBatch:
@@ -187,7 +188,7 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
         Examples:
             Get default pre-processor with custom image size:
 
-            >>> preprocessor = AnomalyModule.configure_pre_processor(image_size=(512, 512))
+            >>> preprocessor = AnomalibModule.configure_pre_processor(image_size=(512, 512))
 
             Create model with custom pre-processor:
 
@@ -266,10 +267,10 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
 
     @classmethod
     def from_config(
-        cls: type["AnomalyModule"],
+        cls: type["AnomalibModule"],
         config_path: str | Path,
         **kwargs,
-    ) -> "AnomalyModule":
+    ) -> "AnomalibModule":
         """Create a model instance from the configuration.
 
         Args:
@@ -277,20 +278,20 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
             **kwargs (dict): Additional keyword arguments.
 
         Returns:
-            AnomalyModule: model instance.
+            AnomalibModule: model instance.
 
         Example:
             The following example shows how to get model from patchcore.yaml:
 
             .. code-block:: python
                 >>> model_config = "configs/model/patchcore.yaml"
-                >>> model = AnomalyModule.from_config(config_path=model_config)
+                >>> model = AnomalibModule.from_config(config_path=model_config)
 
             The following example shows overriding the configuration file with additional keyword arguments:
 
             .. code-block:: python
                 >>> override_kwargs = {"model.pre_trained": False}
-                >>> model = AnomalyModule.from_config(config_path=model_config, **override_kwargs)
+                >>> model = AnomalibModule.from_config(config_path=model_config, **override_kwargs)
         """
         from jsonargparse import ActionConfigFile, ArgumentParser
         from lightning.pytorch import Trainer
@@ -308,7 +309,7 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
             action=ActionConfigFile,
             help="Path to a configuration file in json or yaml format.",
         )
-        model_parser.add_subclass_arguments(AnomalyModule, "model", required=False, fail_untyped=False)
+        model_parser.add_subclass_arguments(AnomalibModule, "model", required=False, fail_untyped=False)
         model_parser.add_argument("--task", type=TaskType | str, default=TaskType.SEGMENTATION)
         model_parser.add_argument("--metrics.image", type=list[str] | str | None, default=["F1Score", "AUROC"])
         model_parser.add_argument("--metrics.pixel", type=list[str] | str | None, default=None, required=False)
@@ -320,8 +321,20 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
         config = model_parser.parse_args(args=args)
         instantiated_classes = model_parser.instantiate_classes(config)
         model = instantiated_classes.get("model")
-        if isinstance(model, AnomalyModule):
+        if isinstance(model, AnomalibModule):
             return model
 
-        msg = f"Model is not an instance of AnomalyModule: {model}"
+        msg = f"Model is not an instance of AnomalibModule: {model}"
         raise ValueError(msg)
+
+
+class AnomalyModule(AnomalibModule):
+    """Deprecated AnomalyModule class. Use AnomalibModule instead."""
+
+    def __init__(self, *args, **kwargs) -> None:
+        warnings.warn(
+            "AnomalyModule is deprecated and will be removed in a future release. Use AnomalibModule instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        super().__init__(*args, **kwargs)

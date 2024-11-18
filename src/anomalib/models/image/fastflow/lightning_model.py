@@ -15,7 +15,7 @@ from torch import optim
 from anomalib import LearningType
 from anomalib.data import Batch
 from anomalib.metrics import AUROC, Evaluator, F1Score
-from anomalib.models.components import AnomalyModule
+from anomalib.models.components import AnomalibModule
 from anomalib.post_processing import PostProcessor
 from anomalib.pre_processing import PreProcessor
 
@@ -23,7 +23,7 @@ from .loss import FastflowLoss
 from .torch_model import FastflowModel
 
 
-class Fastflow(AnomalyModule):
+class Fastflow(AnomalibModule):
     """PL Lightning Module for the FastFlow algorithm.
 
     Args:

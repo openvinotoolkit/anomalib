@@ -19,7 +19,7 @@ from anomalib import LearningType
 from anomalib.data import Batch
 from anomalib.data.predict import PredictDataset
 from anomalib.metrics import Evaluator
-from anomalib.models.components import AnomalyModule
+from anomalib.models.components import AnomalibModule
 from anomalib.post_processing import OneClassPostProcessor, PostProcessor
 from anomalib.pre_processing import PreProcessor
 
@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 __all__ = ["WinClip"]
 
 
-class WinClip(AnomalyModule):
+class WinClip(AnomalibModule):
     """WinCLIP Lightning model.
 
     Args:

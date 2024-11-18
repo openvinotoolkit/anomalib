@@ -30,7 +30,7 @@ try:
 
     from anomalib.data import AnomalibDataModule
     from anomalib.engine import Engine
-    from anomalib.models import AnomalyModule
+    from anomalib.models import AnomalibModule
     from anomalib.utils.config import update_config
 
 except ImportError:
@@ -166,7 +166,7 @@ class AnomalibCLI:
         self._add_default_arguments_to_parser(parser)
         self._add_trainer_arguments_to_parser(parser, add_optimizer=True, add_scheduler=True)
         parser.add_subclass_arguments(
-            AnomalyModule,
+            AnomalibModule,
             "model",
             fail_untyped=False,
             required=True,
@@ -186,7 +186,7 @@ class AnomalibCLI:
         self._add_default_arguments_to_parser(parser)
         self._add_trainer_arguments_to_parser(parser, add_optimizer=True, add_scheduler=True)
         parser.add_subclass_arguments(
-            AnomalyModule,
+            AnomalibModule,
             "model",
             fail_untyped=False,
             required=True,
@@ -205,7 +205,7 @@ class AnomalibCLI:
         self._add_default_arguments_to_parser(parser)
         self._add_trainer_arguments_to_parser(parser)
         parser.add_subclass_arguments(
-            AnomalyModule,
+            AnomalibModule,
             "model",
             fail_untyped=False,
             required=True,
@@ -228,7 +228,7 @@ class AnomalibCLI:
         self._add_default_arguments_to_parser(parser)
         self._add_trainer_arguments_to_parser(parser)
         parser.add_subclass_arguments(
-            AnomalyModule,
+            AnomalibModule,
             "model",
             fail_untyped=False,
             required=True,

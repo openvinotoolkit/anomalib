@@ -21,7 +21,7 @@ from anomalib import LearningType
 from anomalib.data import Batch
 from anomalib.data.utils import DownloadInfo, download_and_extract
 from anomalib.metrics import Evaluator
-from anomalib.models.components import AnomalyModule
+from anomalib.models.components import AnomalibModule
 from anomalib.post_processing import PostProcessor
 from anomalib.pre_processing import PreProcessor
 
@@ -42,7 +42,7 @@ WEIGHTS_DOWNLOAD_INFO = DownloadInfo(
 )
 
 
-class EfficientAd(AnomalyModule):
+class EfficientAd(AnomalibModule):
     """PL Lightning Module for the EfficientAd algorithm.
 
     Args:

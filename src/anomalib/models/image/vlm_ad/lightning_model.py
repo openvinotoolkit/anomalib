@@ -11,7 +11,7 @@ from torch.utils.data import DataLoader
 from anomalib import LearningType
 from anomalib.data import ImageBatch
 from anomalib.metrics import Evaluator, F1Score
-from anomalib.models import AnomalyModule
+from anomalib.models import AnomalibModule
 from anomalib.post_processing import PostProcessor
 
 from .backends import Backend, ChatGPT, Huggingface, Ollama
@@ -20,7 +20,7 @@ from .utils import ModelName, Prompt
 logger = logging.getLogger(__name__)
 
 
-class VlmAd(AnomalyModule):
+class VlmAd(AnomalibModule):
     """Visual anomaly model."""
 
     def __init__(
