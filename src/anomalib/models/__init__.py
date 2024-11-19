@@ -95,7 +95,11 @@ def get_available_models() -> set[str]:
         >>> get_available_models()
         ['ai_vad', 'cfa', 'cflow', 'csflow', 'dfkde', 'dfm', 'draem', 'efficient_ad', 'fastflow', ...]
     """
-    return {convert_to_snake_case(cls.__name__) for cls in AnomalibModule.__subclasses__()}
+    return {
+        convert_to_snake_case(cls.__name__)
+        for cls in AnomalibModule.__subclasses__()
+        if cls.__name__ != "AnomalyModule"
+    }
 
 
 def _get_model_class_by_name(name: str) -> type[AnomalibModule]:
