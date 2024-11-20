@@ -20,7 +20,6 @@ This model can be trained in both unsupervised and supervised setting, but Anoma
 
 ## Architecture
 
-TODO
 ![SuperSimpleNet architecture](/docs/source/images/supersimplenet/architecture.png "SuperSimpleNet architecture")
 
 ## Usage
@@ -28,11 +27,28 @@ TODO
 `anomalib train --model SuperSimpleNet --data MVTec --data.category <category>`
 
 > It is recommended to train the model for 300 epochs with batch size of 32 to achieve stable training with random anomaly generation. Training with lower parameter values will still work, but might not yield the optimal results.
-> 
+>
 > For supervised learning, refer to the [official code](https://github.com/blaz-r/SuperSimpleNet).
 
-## Benchmark
+## MVTec AD results
 
 The following results were obtained with seed 42, default params, batch size 32, and model trained for 300 epochs.
 
-TODO
+|             | **Image AUROC** | **Pixel AUPRO** |
+| ----------- | :-------------: | :-------------: |
+| Bottle      |      1.000      |      0.914      |
+| Cable       |      0.981      |      0.895      |
+| Capsule     |      0.990      |      0.926      |
+| Carpet      |      0.987      |      0.936      |
+| Grid        |      0.998      |      0.935      |
+| Hazelnut    |      0.999      |      0.946      |
+| Leather     |      1.000      |      0.972      |
+| Metal_nut   |      0.996      |      0.923      |
+| Pill        |      0.960      |      0.942      |
+| Screw       |      0.903      |      0.952      |
+| Tile        |      0.989      |      0.817      |
+| Toothbrush  |      0.917      |      0.861      |
+| Transistor  |      1.000      |      0.909      |
+| Wood        |      0.996      |      0.868      |
+| Zipper      |      0.996      |      0.944      |
+| **Average** |      0.981      |      0.916      |
