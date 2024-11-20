@@ -1,6 +1,6 @@
 # SuperSimpleNet: Unifying Unsupervised and Supervised Learning for Fast and Reliable Surface Defect Detection
 
-This is the implementation of the [SuperSimpleNet](https://arxiv.org/pdf/2408.03143) paper.
+This is the implementation of the [SuperSimpleNet](https://arxiv.org/pdf/2408.03143) paper, based on the [official code](https://github.com/blaz-r/SuperSimpleNet).
 
 Model Type: Segmentation
 
@@ -20,10 +20,19 @@ This model can be trained in both unsupervised and supervised setting, but Anoma
 
 ## Architecture
 
+TODO
 ![SuperSimpleNet architecture](/docs/source/images/supersimplenet/architecture.png "SuperSimpleNet architecture")
 
 ## Usage
 
 `anomalib train --model SuperSimpleNet --data MVTec --data.category <category>`
 
+> It is recommended to train the model for 300 epochs with batch size of 32 to achieve stable training with random anomaly generation. Training with lower parameter values will still work, but might not yield the optimal results.
+> 
+> For supervised learning, refer to the [official code](https://github.com/blaz-r/SuperSimpleNet).
+
 ## Benchmark
+
+The following results were obtained with seed 42, default params, batch size 32, and model trained for 300 epochs.
+
+TODO
