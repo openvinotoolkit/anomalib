@@ -1,14 +1,16 @@
 # SuperSimpleNet: Unifying Unsupervised and Supervised Learning for Fast and Reliable Surface Defect Detection
 
-This is the implementation of the [SuperSimpleNet](https://arxiv.org/pdf/2408.03143) paper, based on the [official code](https://github.com/blaz-r/SuperSimpleNet).
+This is an implementation of the [SuperSimpleNet](https://arxiv.org/pdf/2408.03143) paper, based on the [official code](https://github.com/blaz-r/SuperSimpleNet).
 
 Model Type: Segmentation
 
 ## Description
 
-SuperSimpleNet is a discriminative defect / anomaly detection model evolved from the SimpleNet architecture. It consists of four components:
+**SuperSimpleNet** is a simple yet strong discriminative defect / anomaly detection model evolved from the SimpleNet architecture. It consists of four components:
 feature extractor with upscaling, feature adaptor, synthetic feature-level anomaly generation module, and
-segmentation-detection module. A ResNet-like feature extractor first extracts features, which are then upscaled and
+segmentation-detection module. 
+
+A ResNet-like feature extractor first extracts features, which are then upscaled and
 average-pooled to capture neighboring context. Features are further refined for anomaly detection task in the adaptor module.
 During training, synthetic anomalies are generated at the feature level by adding Gaussian noise to regions defined by the
 binary Perlin noise mask. The perturbed features are then fed into the segmentation-detection
@@ -16,7 +18,7 @@ module, which produces the anomaly map and the anomaly score. During inference, 
 directly predicts the anomaly map and score. The predicted anomaly map is upscaled to match the input image size
 and refined with a Gaussian filter.
 
-This model can be trained in both unsupervised and supervised setting, but Anomalib currently supports only unsupervised training.
+This implementation supports both unsupervised and supervised setting, but Anomalib currently supports only unsupervised learning.
 
 ## Architecture
 
@@ -32,8 +34,7 @@ This model can be trained in both unsupervised and supervised setting, but Anoma
 
 ## MVTec AD results
 
-The following results were obtained with seed 42, default params, batch size 32, and model trained for 300 epochs.
-
+The following results were obtained using this Anomalib implementation trained for 300 epochs with seed 42, default params, and batch size 32. 
 |             | **Image AUROC** | **Pixel AUPRO** |
 | ----------- | :-------------: | :-------------: |
 | Bottle      |      1.000      |      0.914      |
@@ -52,3 +53,5 @@ The following results were obtained with seed 42, default params, batch size 32,
 | Wood        |      0.996      |      0.868      |
 | Zipper      |      0.996      |      0.944      |
 | **Average** |      0.981      |      0.916      |
+
+For other results on VisA, SensumSODF, and KSDD2, refer to the [paper](https://arxiv.org/pdf/2408.03143).
