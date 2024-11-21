@@ -40,7 +40,7 @@ __all__ = [
     "ReverseDistillation",
     "Rkde",
     "Stfpm",
+    "SuperSimpleNet",
     "Uflow",
     "WinClip",
-    "SuperSimpleNet",
 ]

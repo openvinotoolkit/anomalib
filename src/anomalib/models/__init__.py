@@ -29,6 +29,7 @@ from .image import (
     ReverseDistillation,
     Rkde,
     Stfpm,
+    SuperSimpleNet,
     Uflow,
     WinClip,
 )
@@ -56,6 +57,7 @@ __all__ = [
     "ReverseDistillation",
     "Rkde",
     "Stfpm",
+    "SuperSimpleNet",
     "Uflow",
     "AiVad",
     "WinClip",
