@@ -1,5 +1,14 @@
 """PyTorch model for the SuperSimpleNet model implementation."""
 
+# Original Code
+# Copyright (c) 2024 Blaž Rolih
+# https://github.com/blaz-r/SuperSimpleNet.
+# SPDX-License-Identifier: MIT
+#
+# Modified
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
 import math
 
 import torch
@@ -10,15 +19,6 @@ from torch.nn import Parameter
 from anomalib.data import InferenceBatch
 from anomalib.models.components import GaussianBlur2d, TorchFXFeatureExtractor
 from anomalib.models.image.supersimplenet.anomaly_generator import SSNAnomalyGenerator
-
-# Original Code
-# Copyright (c) 2024 Blaž Rolih
-# https://github.com/blaz-r/SuperSimpleNet.
-# SPDX-License-Identifier: MIT
-#
-# Modified
-# Copyright (C) 2024 Intel Corporation
-# SPDX-License-Identifier: Apache-2.0
 
 
 class SuperSimpleNetModel(nn.Module):
@@ -76,7 +76,9 @@ class SuperSimpleNetModel(nn.Module):
 
         if self.training:
             masks = self.downsample_mask(masks, *features.shape[-2:])
-            labels = labels.type(torch.float32)
+            # make linter happy :)
+            if labels is not None:
+                labels = labels.type(torch.float32)
 
             features, masks, labels = self.anomaly_generator(
                 adapted,

@@ -1,13 +1,13 @@
 """Loss function for the SuperSimpleNet model implementation."""
 
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
 from functools import partial
 
 import torch
 from torch import nn
 from torchvision.ops.focal_loss import sigmoid_focal_loss
-
-# Copyright (C) 2024 Intel Corporation
-# SPDX-License-Identifier: Apache-2.0
 
 
 class SSNLoss(nn.Module):

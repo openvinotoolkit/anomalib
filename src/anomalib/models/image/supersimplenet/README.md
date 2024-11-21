@@ -8,7 +8,7 @@ Model Type: Segmentation
 
 **SuperSimpleNet** is a simple yet strong discriminative defect / anomaly detection model evolved from the SimpleNet architecture. It consists of four components:
 feature extractor with upscaling, feature adaptor, synthetic feature-level anomaly generation module, and
-segmentation-detection module. 
+segmentation-detection module.
 
 A ResNet-like feature extractor first extracts features, which are then upscaled and
 average-pooled to capture neighboring context. Features are further refined for anomaly detection task in the adaptor module.
@@ -34,24 +34,24 @@ This implementation supports both unsupervised and supervised setting, but Anoma
 
 ## MVTec AD results
 
-The following results were obtained using this Anomalib implementation trained for 300 epochs with seed 42, default params, and batch size 32. 
-|             | **Image AUROC** | **Pixel AUPRO** |
+The following results were obtained using this Anomalib implementation trained for 300 epochs with seed 42, default params, and batch size 32.
+| | **Image AUROC** | **Pixel AUPRO** |
 | ----------- | :-------------: | :-------------: |
-| Bottle      |      1.000      |      0.914      |
-| Cable       |      0.981      |      0.895      |
-| Capsule     |      0.990      |      0.926      |
-| Carpet      |      0.987      |      0.936      |
-| Grid        |      0.998      |      0.935      |
-| Hazelnut    |      0.999      |      0.946      |
-| Leather     |      1.000      |      0.972      |
-| Metal_nut   |      0.996      |      0.923      |
-| Pill        |      0.960      |      0.942      |
-| Screw       |      0.903      |      0.952      |
-| Tile        |      0.989      |      0.817      |
-| Toothbrush  |      0.917      |      0.861      |
-| Transistor  |      1.000      |      0.909      |
-| Wood        |      0.996      |      0.868      |
-| Zipper      |      0.996      |      0.944      |
-| **Average** |      0.981      |      0.916      |
+| Bottle | 1.000 | 0.914 |
+| Cable | 0.981 | 0.895 |
+| Capsule | 0.990 | 0.926 |
+| Carpet | 0.987 | 0.936 |
+| Grid | 0.998 | 0.935 |
+| Hazelnut | 0.999 | 0.946 |
+| Leather | 1.000 | 0.972 |
+| Metal_nut | 0.996 | 0.923 |
+| Pill | 0.960 | 0.942 |
+| Screw | 0.903 | 0.952 |
+| Tile | 0.989 | 0.817 |
+| Toothbrush | 0.917 | 0.861 |
+| Transistor | 1.000 | 0.909 |
+| Wood | 0.996 | 0.868 |
+| Zipper | 0.996 | 0.944 |
+| **Average** | 0.981 | 0.916 |
 
 For other results on VisA, SensumSODF, and KSDD2, refer to the [paper](https://arxiv.org/pdf/2408.03143).
