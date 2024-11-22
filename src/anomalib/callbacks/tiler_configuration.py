@@ -9,7 +9,7 @@ import lightning.pytorch as pl
 from lightning.pytorch.callbacks import Callback
 
 from anomalib.data.utils.tiler import ImageUpscaleMode, Tiler
-from anomalib.models.components import AnomalyModule
+from anomalib.models.components import AnomalibModule
 
 __all__ = ["TilerConfigurationCallback"]
 
@@ -61,7 +61,7 @@ class TilerConfigurationCallback(Callback):
         del trainer, stage  # These variables are not used.
 
         if self.enable:
-            if isinstance(pl_module, AnomalyModule) and hasattr(pl_module.model, "tiler"):
+            if isinstance(pl_module, AnomalibModule) and hasattr(pl_module.model, "tiler"):
                 pl_module.model.tiler = Tiler(
                     tile_size=self.tile_size,
                     stride=self.stride,

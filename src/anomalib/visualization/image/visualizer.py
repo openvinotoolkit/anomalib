@@ -9,7 +9,7 @@ from typing import Any
 from lightning.pytorch import Callback, Trainer
 
 from anomalib.data import ImageBatch
-from anomalib.models import AnomalyModule
+from anomalib.models import AnomalibModule
 from anomalib.utils.path import generate_output_filename
 
 from .item_visualizer import (
@@ -138,7 +138,7 @@ class ImageVisualizer(Callback):
     def on_test_batch_end(
         self,
         trainer: Trainer,
-        pl_module: AnomalyModule,
+        pl_module: AnomalibModule,
         outputs: ImageBatch,
         batch: ImageBatch,
         batch_idx: int,
@@ -176,7 +176,7 @@ class ImageVisualizer(Callback):
     def on_predict_batch_end(
         self,
         trainer: Trainer,
-        pl_module: AnomalyModule,
+        pl_module: AnomalibModule,
         outputs: ImageBatch,
         batch: ImageBatch,
         batch_idx: int,

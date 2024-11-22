@@ -18,7 +18,7 @@ from anomalib import LearningType
 from anomalib.data import Batch
 from anomalib.data.utils import Augmenter
 from anomalib.metrics import Evaluator
-from anomalib.models.components import AnomalyModule
+from anomalib.models.components import AnomalibModule
 from anomalib.post_processing import PostProcessor
 from anomalib.pre_processing import PreProcessor
 
@@ -28,7 +28,7 @@ from .torch_model import DraemModel
 __all__ = ["Draem"]
 
 
-class Draem(AnomalyModule):
+class Draem(AnomalibModule):
     """DRÆM: A discriminatively trained reconstruction embedding for surface anomaly detection.
 
     Args:

@@ -17,7 +17,7 @@ from lightning.pytorch.utilities.types import STEP_OUTPUT
 from anomalib import LearningType
 from anomalib.data import Batch
 from anomalib.metrics import Evaluator
-from anomalib.models.components import AnomalyModule
+from anomalib.models.components import AnomalibModule
 from anomalib.post_processing import PostProcessor
 from anomalib.pre_processing import PreProcessor
 
@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 __all__ = ["Cfa"]
 
 
-class Cfa(AnomalyModule):
+class Cfa(AnomalibModule):
     """CFA: Coupled-hypersphere-based Feature Adaptation for Target-Oriented Anomaly Localization.
 
     Args:

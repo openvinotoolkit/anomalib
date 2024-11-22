@@ -15,7 +15,7 @@ from torch import optim
 from anomalib import LearningType
 from anomalib.data import Batch
 from anomalib.metrics import Evaluator
-from anomalib.models.components import AnomalyModule
+from anomalib.models.components import AnomalibModule
 from anomalib.post_processing import PostProcessor
 from anomalib.pre_processing import PreProcessor
 
@@ -24,7 +24,7 @@ from .loss import ReverseDistillationLoss
 from .torch_model import ReverseDistillationModel
 
 
-class ReverseDistillation(AnomalyModule):
+class ReverseDistillation(AnomalibModule):
     """PL Lightning Module for Reverse Distillation Algorithm.
 
     Args:

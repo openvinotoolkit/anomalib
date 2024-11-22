@@ -15,7 +15,7 @@ from anomalib import TaskType
 from anomalib.data import AnomalibDataModule, MVTec
 from anomalib.deploy import ExportType
 from anomalib.engine import Engine
-from anomalib.models import AnomalyModule, get_available_models, get_model
+from anomalib.models import AnomalibModule, get_available_models, get_model
 
 
 def models() -> set[str]:
@@ -165,7 +165,7 @@ class TestAPI:
         model_name: str,
         dataset_path: Path,
         project_path: Path,
-    ) -> tuple[AnomalyModule, AnomalibDataModule, Engine]:
+    ) -> tuple[AnomalibModule, AnomalibDataModule, Engine]:
         """Return model, dataset, and engine objects.
 
         Args:
@@ -174,7 +174,7 @@ class TestAPI:
             project_path (Path): path to the temporary project folder
 
         Returns:
-            tuple[AnomalyModule, AnomalibDataModule, Engine]: Returns the created objects for model, dataset,
+            tuple[AnomalibModule, AnomalibDataModule, Engine]: Returns the created objects for model, dataset,
                 and engine
         """
         # select task type

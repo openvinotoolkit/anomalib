@@ -14,7 +14,7 @@ from lightning.pytorch.utilities.types import STEP_OUTPUT
 from anomalib import LearningType
 from anomalib.data import Batch
 from anomalib.metrics import Evaluator
-from anomalib.models.components import AnomalyModule, MemoryBankMixin
+from anomalib.models.components import AnomalibModule, MemoryBankMixin
 from anomalib.post_processing import OneClassPostProcessor, PostProcessor
 from anomalib.pre_processing import PreProcessor
 
@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 __all__ = ["Padim"]
 
 
-class Padim(MemoryBankMixin, AnomalyModule):
+class Padim(MemoryBankMixin, AnomalibModule):
     """PaDiM: a Patch Distribution Modeling Framework for Anomaly Detection and Localization.
 
     Args:

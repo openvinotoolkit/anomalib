@@ -24,7 +24,7 @@ from torch.optim import Optimizer
 from anomalib import LearningType
 from anomalib.data import Batch
 from anomalib.metrics import Evaluator
-from anomalib.models.components import AnomalyModule
+from anomalib.models.components import AnomalibModule
 from anomalib.post_processing import PostProcessor
 from anomalib.pre_processing import PreProcessor
 
@@ -32,7 +32,7 @@ from .torch_model import CflowModel
 from .utils import get_logp, positional_encoding_2d
 
 
-class Cflow(AnomalyModule):
+class Cflow(AnomalibModule):
     """PL Lightning Module for the CFLOW algorithm.
 
     Args:

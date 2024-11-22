@@ -16,7 +16,7 @@ from torch import optim
 from anomalib import LearningType
 from anomalib.data import Batch
 from anomalib.metrics import Evaluator
-from anomalib.models.components import AnomalyModule
+from anomalib.models.components import AnomalibModule
 from anomalib.post_processing import PostProcessor
 from anomalib.pre_processing import PreProcessor
 
@@ -25,7 +25,7 @@ from .torch_model import FREModel
 logger = logging.getLogger(__name__)
 
 
-class Fre(AnomalyModule):
+class Fre(AnomalibModule):
     """FRE: Feature-reconstruction error using Tied AutoEncoder.
 
     Args:

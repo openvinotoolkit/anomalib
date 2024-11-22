@@ -14,7 +14,7 @@ from lightning.pytorch.utilities.types import STEP_OUTPUT
 
 from anomalib import LearningType
 from anomalib.data import VideoBatch
-from anomalib.models.components import AnomalyModule, MemoryBankMixin
+from anomalib.models.components import AnomalibModule, MemoryBankMixin
 from anomalib.post_processing.one_class import OneClassPostProcessor, PostProcessor
 from anomalib.pre_processing import PreProcessor
 
@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 __all__ = ["AiVad"]
 
 
-class AiVad(MemoryBankMixin, AnomalyModule):
+class AiVad(MemoryBankMixin, AnomalibModule):
     """AI-VAD: Attribute-based Representations for Accurate and Interpretable Video Anomaly Detection.
 
     Args:

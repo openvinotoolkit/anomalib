@@ -20,7 +20,7 @@ from anomalib.callbacks.checkpoint import ModelCheckpoint
 from anomalib.callbacks.timer import TimerCallback
 from anomalib.data import AnomalibDataModule, AnomalibDataset, PredictDataset
 from anomalib.deploy import CompressionType, ExportType
-from anomalib.models import AnomalyModule
+from anomalib.models import AnomalibModule
 from anomalib.utils.path import create_versioned_dir
 from anomalib.visualization import ImageVisualizer
 
@@ -64,11 +64,11 @@ class _TrainerArgumentsCache:
     def __init__(self, **kwargs) -> None:
         self._cached_args = {**kwargs}
 
-    def update(self, model: AnomalyModule) -> None:
+    def update(self, model: AnomalibModule) -> None:
         """Replace cached arguments with arguments retrieved from the model.
 
         Args:
-            model (AnomalyModule): The model used for training
+            model (AnomalibModule): The model used for training
         """
         for key, value in model.trainer_arguments.items():
             if key in self._cached_args and self._cached_args[key] != value:
@@ -77,7 +77,7 @@ class _TrainerArgumentsCache:
                 )
             self._cached_args[key] = value
 
-    def requires_update(self, model: AnomalyModule) -> bool:
+    def requires_update(self, model: AnomalibModule) -> bool:
         return any(self._cached_args.get(key, None) != value for key, value in model.trainer_arguments.items())
 
     @property
@@ -152,14 +152,14 @@ class Engine:
         return self._trainer
 
     @property
-    def model(self) -> AnomalyModule:
+    def model(self) -> AnomalibModule:
         """Property to get the model.
 
         Raises:
             UnassignedError: When the model is not assigned yet.
 
         Returns:
-            AnomalyModule: Anomaly model.
+            AnomalibModule: Anomaly model.
         """
         if not self.trainer.lightning_module:
             msg = "Trainer does not have a model assigned yet."
@@ -190,7 +190,7 @@ class Engine:
 
     def _setup_workspace(
         self,
-        model: AnomalyModule,
+        model: AnomalibModule,
         train_dataloaders: TRAIN_DATALOADERS | None = None,
         val_dataloaders: EVAL_DATALOADERS | None = None,
         test_dataloaders: EVAL_DATALOADERS | None = None,
@@ -205,7 +205,7 @@ class Engine:
         other artifacts will be saved in this directory.
 
         Args:
-            model (AnomalyModule): Input model.
+            model (AnomalibModule): Input model.
             train_dataloaders (TRAIN_DATALOADERS | None, optional): Train dataloaders.
                 Defaults to ``None``.
             val_dataloaders (EVAL_DATALOADERS | None, optional): Validation dataloaders.
@@ -255,7 +255,7 @@ class Engine:
         root_dir = Path(self._cache.args["default_root_dir"]) / model.name / dataset_name / category
         self._cache.args["default_root_dir"] = create_versioned_dir(root_dir) if versioned_dir else root_dir / "latest"
 
-    def _setup_trainer(self, model: AnomalyModule) -> None:
+    def _setup_trainer(self, model: AnomalibModule) -> None:
         """Instantiate the trainer based on the model parameters."""
         # Check if the cache requires an update
         if self._cache.requires_update(model):
@@ -291,7 +291,7 @@ class Engine:
                             )
                             data.task = self.task
 
-    def _setup_anomalib_callbacks(self, model: AnomalyModule) -> None:
+    def _setup_anomalib_callbacks(self, model: AnomalibModule) -> None:
         """Set up callbacks for the trainer."""
         _callbacks: list[Callback] = []
 
@@ -325,7 +325,7 @@ class Engine:
 
     @staticmethod
     def _should_run_validation(
-        model: AnomalyModule,
+        model: AnomalibModule,
         ckpt_path: str | Path | None,
     ) -> bool:
         """Check if we need to run validation to collect normalization statistics and thresholds.
@@ -341,7 +341,7 @@ class Engine:
         are available. If neither is available, we can't run validation.
 
         Args:
-            model (AnomalyModule): Model passed to the entrypoint.
+            model (AnomalibModule): Model passed to the entrypoint.
             dataloaders (EVAL_DATALOADERS | None): Dataloaders passed to the entrypoint.
             datamodule (AnomalibDataModule | None): Lightning datamodule passed to the entrypoint.
             ckpt_path (str | Path | None): Checkpoint path passed to the entrypoint.
@@ -357,7 +357,7 @@ class Engine:
 
     def fit(
         self,
-        model: AnomalyModule,
+        model: AnomalibModule,
         train_dataloaders: TRAIN_DATALOADERS | None = None,
         val_dataloaders: EVAL_DATALOADERS | None = None,
         datamodule: AnomalibDataModule | None = None,
@@ -366,7 +366,7 @@ class Engine:
         """Fit the model using the trainer.
 
         Args:
-            model (AnomalyModule): Model to be trained.
+            model (AnomalibModule): Model to be trained.
             train_dataloaders (TRAIN_DATALOADERS | None, optional): Train dataloaders.
                 Defaults to None.
             val_dataloaders (EVAL_DATALOADERS | None, optional): Validation dataloaders.
@@ -411,7 +411,7 @@ class Engine:
 
     def validate(
         self,
-        model: AnomalyModule | None = None,
+        model: AnomalibModule | None = None,
         dataloaders: EVAL_DATALOADERS | None = None,
         ckpt_path: str | Path | None = None,
         verbose: bool = True,
@@ -420,7 +420,7 @@ class Engine:
         """Validate the model using the trainer.
 
         Args:
-            model (AnomalyModule | None, optional): Model to be validated.
+            model (AnomalibModule | None, optional): Model to be validated.
                 Defaults to None.
             dataloaders (EVAL_DATALOADERS | None, optional): Dataloaders to be used for
                 validation.
@@ -460,7 +460,7 @@ class Engine:
 
     def test(
         self,
-        model: AnomalyModule | None = None,
+        model: AnomalibModule | None = None,
         dataloaders: EVAL_DATALOADERS | None = None,
         ckpt_path: str | Path | None = None,
         verbose: bool = True,
@@ -472,7 +472,7 @@ class Engine:
         finally tests the model.
 
         Args:
-            model (AnomalyModule | None, optional):
+            model (AnomalibModule | None, optional):
                 The model to be tested.
                 Defaults to None.
             dataloaders (EVAL_DATALOADERS | None, optional):
@@ -545,7 +545,7 @@ class Engine:
         if model:
             self._setup_trainer(model)
         elif not self.model:
-            msg = "`Engine.test()` requires an `AnomalyModule` when it hasn't been passed in a previous run."
+            msg = "`Engine.test()` requires an `AnomalibModule` when it hasn't been passed in a previous run."
             raise RuntimeError(msg)
 
         self._setup_dataset_task(dataloaders)
@@ -556,7 +556,7 @@ class Engine:
 
     def predict(
         self,
-        model: AnomalyModule | None = None,
+        model: AnomalibModule | None = None,
         dataloaders: EVAL_DATALOADERS | None = None,
         datamodule: AnomalibDataModule | None = None,
         dataset: Dataset | PredictDataset | None = None,
@@ -570,7 +570,7 @@ class Engine:
         validation dataloader is available. Finally, predicts using the model.
 
         Args:
-            model (AnomalyModule | None, optional):
+            model (AnomalibModule | None, optional):
                 Model to be used for prediction.
                 Defaults to None.
             dataloaders (EVAL_DATALOADERS | None, optional):
@@ -623,7 +623,7 @@ class Engine:
                 ```
         """
         if not (model or self.model):
-            msg = "`Engine.predict()` requires an `AnomalyModule` when it hasn't been passed in a previous run."
+            msg = "`Engine.predict()` requires an `AnomalibModule` when it hasn't been passed in a previous run."
             raise ValueError(msg)
 
         if ckpt_path:
@@ -668,7 +668,7 @@ class Engine:
 
     def train(
         self,
-        model: AnomalyModule,
+        model: AnomalibModule,
         train_dataloaders: TRAIN_DATALOADERS | None = None,
         val_dataloaders: EVAL_DATALOADERS | None = None,
         test_dataloaders: EVAL_DATALOADERS | None = None,
@@ -678,7 +678,7 @@ class Engine:
         """Fits the model and then calls test on it.
 
         Args:
-            model (AnomalyModule): Model to be trained.
+            model (AnomalibModule): Model to be trained.
             train_dataloaders (TRAIN_DATALOADERS | None, optional): Train dataloaders.
                 Defaults to None.
             val_dataloaders (EVAL_DATALOADERS | None, optional): Validation dataloaders.
@@ -731,7 +731,7 @@ class Engine:
 
     def export(
         self,
-        model: AnomalyModule,
+        model: AnomalibModule,
         export_type: ExportType | str,
         export_root: str | Path | None = None,
         input_size: tuple[int, int] | None = None,
@@ -744,7 +744,7 @@ class Engine:
         r"""Export the model in PyTorch, ONNX or OpenVINO format.
 
         Args:
-            model (AnomalyModule): Trained model.
+            model (AnomalibModule): Trained model.
             export_type (ExportType): Export type.
             export_root (str | Path | None, optional): Path to the output directory. If it is not set, the model is
                 exported to trainer.default_root_dir. Defaults to None.
@@ -832,7 +832,7 @@ class Engine:
         cls: type["Engine"],
         config_path: str | Path,
         **kwargs,
-    ) -> tuple["Engine", AnomalyModule, AnomalibDataModule]:
+    ) -> tuple["Engine", AnomalibModule, AnomalibDataModule]:
         """Create an Engine instance from a configuration file.
 
         Args:
@@ -840,7 +840,7 @@ class Engine:
             **kwargs (dict): Additional keyword arguments.
 
         Returns:
-            tuple[Engine, AnomalyModule, AnomalibDataModule]: Engine instance.
+            tuple[Engine, AnomalibModule, AnomalibDataModule]: Engine instance.
 
         Example:
             The following example shows training with full configuration file:
