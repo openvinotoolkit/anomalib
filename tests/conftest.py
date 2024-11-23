@@ -56,9 +56,9 @@ def dataset_path(project_path: Path) -> Path:
 
     # 1. Create the dummy image datasets.
     for data_format in list(ImageDataFormat):
-        # Do not generate a dummy dataset for folder datasets.
-        # We could use one of these datasets to test the folders datasets.
-        if not data_format.value.startswith("folder"):
+        # Do not generate a dummy dataset for folder or dataframe datasets.
+        # We could use one of these datasets to test the folders and dataframe datasets.
+        if not data_format.value.startswith(("folder", "dataframe")):
             dataset_generator = DummyImageDatasetGenerator(data_format=data_format, root=_dataset_path)
             dataset_generator.generate_dataset()
 

@@ -16,6 +16,13 @@ Learn more about BTech dataset.
 Learn more about custom folder dataset.
 :::
 
+:::{grid-item-card} Dataframe
+:link: ./dataframe
+:link-type: doc
+
+Learn more about custom dataframe dataset.
+:::
+
 :::{grid-item-card} Kolektor
 :link: ./kolektor
 :link-type: doc
