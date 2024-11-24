@@ -75,6 +75,11 @@ class F1AdaptiveThreshold(BinaryPrecisionRecallCurve, Threshold):
             # special case where recall is 1.0 even for the highest threshold.
             # In this case 'thresholds' will be scalar.
             self.value = thresholds
+        elif not any(1 in batch for batch in self.target):
+            # another special case where there are no anomalous image in the validation set.
+            # In this case, the adaptive threshold will take the value of the highest anomaly score observed in the
+            # normal validation images.
+            self.value = torch.max(thresholds)
         else:
             self.value = thresholds[torch.argmax(f1_score)]
         return self.value
