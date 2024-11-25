@@ -22,7 +22,6 @@ class TestKolektor(_TestAnomalibImageDatamodule):
         _datamodule = Kolektor(
             root=dataset_path / "kolektor",
             task=task_type,
-            image_size=256,
             train_batch_size=4,
             eval_batch_size=4,
         )

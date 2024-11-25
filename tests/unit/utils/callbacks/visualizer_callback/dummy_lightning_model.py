@@ -11,7 +11,7 @@ from torch import nn
 
 from anomalib import LearningType
 from anomalib.data import ImageBatch, InferenceBatch
-from anomalib.models.components import AnomalyModule
+from anomalib.models.components import AnomalibModule
 from anomalib.post_processing import PostProcessor
 
 
@@ -27,15 +27,15 @@ class DummyPostProcessor(PostProcessor):
         return batch
 
 
-class DummyModule(AnomalyModule):
+class DummyModule(AnomalibModule):
     """A dummy model which calls visualizer callback on fake images and masks.
 
     TODO(ashwinvaidya17): Remove this when the DummyModels have been refactored.
     """
 
-    def __init__(self, dataset_path: Path) -> None:
+    def __init__(self, dataset_path: Path, **kwargs) -> None:
         """Initializes the dummy model."""
-        super().__init__()
+        super().__init__(**kwargs)
         self.model = _DummyModel()
         self.task = "segmentation"
         self.mode = "full"

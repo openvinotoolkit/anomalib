@@ -17,7 +17,10 @@ from torchvision.transforms.v2 import Compose, Resize, Transform
 from anomalib import LearningType
 from anomalib.data import Batch
 from anomalib.data.utils import Augmenter
-from anomalib.models.components import AnomalyModule
+from anomalib.metrics import Evaluator
+from anomalib.models.components import AnomalibModule
+from anomalib.post_processing import PostProcessor
+from anomalib.pre_processing import PreProcessor
 
 from .loss import DraemLoss
 from .torch_model import DraemModel
@@ -25,7 +28,7 @@ from .torch_model import DraemModel
 __all__ = ["Draem"]
 
 
-class Draem(AnomalyModule):
+class Draem(AnomalibModule):
     """DRÆM: A discriminatively trained reconstruction embedding for surface anomaly detection.
 
     Args:
@@ -36,6 +39,9 @@ class Draem(AnomalyModule):
         anomaly_source_path (str | None): Path to folder that contains the anomaly source images. Random noise will
             be used if left empty.
             Defaults to ``None``.
+        pre_processor (PreProcessor, optional): Pre-processor for the model.
+            This is used to pre-process the input data before it is passed to the model.
+            Defaults to ``None``.
     """
 
     def __init__(
@@ -44,8 +50,11 @@ class Draem(AnomalyModule):
         sspcab_lambda: float = 0.1,
         anomaly_source_path: str | None = None,
         beta: float | tuple[float, float] = (0.1, 1.0),
+        pre_processor: PreProcessor | bool = True,
+        post_processor: PostProcessor | None = None,
+        evaluator: Evaluator | bool = True,
     ) -> None:
-        super().__init__()
+        super().__init__(pre_processor=pre_processor, post_processor=post_processor, evaluator=evaluator)
 
         self.augmenter = Augmenter(anomaly_source_path, beta=beta)
         self.model = DraemModel(sspcab=enable_sspcab)

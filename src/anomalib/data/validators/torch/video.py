@@ -8,6 +8,7 @@ from torchvision.tv_tensors import Mask, Video
 
 import torch
 from anomalib.data.validators.path import validate_batch_path, validate_path
+from anomalib.data.validators.torch.image import ImageBatchValidator, ImageValidator
 
 
 class VideoValidator:
@@ -487,6 +488,11 @@ class VideoValidator:
         msg = f"Last frame must be an int, float, or a torch.Tensor, got {type(last_frame)}."
         raise TypeError(msg)
 
+    @staticmethod
+    def validate_explanation(explanation: str | None) -> str | None:
+        """Validate the explanation string."""
+        return ImageValidator.validate_explanation(explanation)
+
 
 class VideoBatchValidator:
     """Validate torch.Tensor data for video batches."""
@@ -935,3 +941,8 @@ class VideoBatchValidator:
             msg = "Last frame indices must be non-negative."
             raise ValueError(msg)
         return last_frame
+
+    @staticmethod
+    def validate_explanation(explanation: list[str] | None) -> list[str] | None:
+        """Validate the explanation string."""
+        return ImageBatchValidator.validate_explanation(explanation)

@@ -309,6 +309,30 @@ class ImageValidator:
             raise ValueError(msg)
         return pred_label.to(torch.bool)
 
+    @staticmethod
+    def validate_explanation(explanation: str | None) -> str | None:
+        """Validate the explanation.
+
+        Args:
+            explanation (str | None): Input explanation.
+
+        Returns:
+            str | None: Validated explanation, or None.
+
+        Examples:
+            >>> from anomalib.dataclasses.validators import ImageValidator
+            >>> explanation = "The image has a crack on the wall."
+            >>> validated_explanation = ImageValidator.validate_explanation(explanation)
+            >>> validated_explanation == explanation
+            True
+        """
+        if explanation is None:
+            return None
+        if not isinstance(explanation, str):
+            msg = f"Explanation must be a string, got {type(explanation)}."
+            raise TypeError(msg)
+        return explanation
+
 
 class ImageBatchValidator:
     """Validate torch.Tensor data for batches of images."""
@@ -585,10 +609,16 @@ class ImageBatchValidator:
         if pred_label.ndim > 2:
             msg = f"Predicted label must be 1-dimensional or 2-dimensional, got shape {pred_label.shape}."
             raise ValueError(msg)
-        if pred_label.ndim == 2 and pred_label.shape[1] != 1:
-            msg = f"Predicted label with 2 dimensions must have shape [N, 1], got shape {pred_label.shape}."
-            raise ValueError(msg)
-
+        if pred_label.ndim == 2:
+            if pred_label.shape[0] == 1:
+                pred_label = pred_label.squeeze(0)
+            elif pred_label.shape[1] == 1:
+                pred_label = pred_label.squeeze(1)
+            else:
+                msg = (
+                    f"Predicted label with 2 dimensions must have shape [N, 1] or [1, N], got shape {pred_label.shape}."
+                )
+                raise ValueError(msg)
         return pred_label.to(torch.bool)
 
     @staticmethod
@@ -617,3 +647,30 @@ class ImageBatchValidator:
             msg = f"Image path must be a list of strings, got {type(image_path)}."
             raise TypeError(msg)
         return [str(path) for path in image_path]
+
+    @staticmethod
+    def validate_explanation(explanation: list[str] | None) -> list[str] | None:
+        """Validate the explanations for a batch.
+
+        Args:
+            explanation (list[str] | None): Input list of explanations.
+
+        Returns:
+            list[str] | None: Validated list of explanations, or None.
+
+        Raises:
+            TypeError: If the input is not a list of strings.
+
+        Examples:
+            >>> from anomalib.data.validators.torch.image import ImageBatchValidator
+            >>> explanations = ["The image has a crack on the wall.", "The image has a dent on the car."]
+            >>> validated_explanations = ImageBatchValidator.validate_explanation(explanations)
+            >>> print(validated_explanations)
+            ['The image has a crack on the wall.', 'The image has a dent on the car.']
+        """
+        if explanation is None:
+            return None
+        if not isinstance(explanation, list):
+            msg = f"Explanation must be a list of strings, got {type(explanation)}."
+            raise TypeError(msg)
+        return [str(exp) for exp in explanation]

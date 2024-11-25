@@ -15,14 +15,17 @@ from torch import optim
 
 from anomalib import LearningType
 from anomalib.data import Batch
-from anomalib.models.components import AnomalyModule
+from anomalib.metrics import Evaluator
+from anomalib.models.components import AnomalibModule
+from anomalib.post_processing import PostProcessor
+from anomalib.pre_processing import PreProcessor
 
 from .torch_model import FREModel
 
 logger = logging.getLogger(__name__)
 
 
-class Fre(AnomalyModule):
+class Fre(AnomalibModule):
     """FRE: Feature-reconstruction error using Tied AutoEncoder.
 
     Args:
@@ -39,6 +42,9 @@ class Fre(AnomalyModule):
         latent_dim (int, optional): Reduced size of feature after applying dimensionality reduction
             via shallow linear autoencoder.
             Defaults to ``220``.
+        pre_processor (PreProcessor, optional): Pre-processor for the model.
+            This is used to pre-process the input data before it is passed to the model.
+            Defaults to ``None``.
     """
 
     def __init__(
@@ -49,8 +55,11 @@ class Fre(AnomalyModule):
         pooling_kernel_size: int = 2,
         input_dim: int = 65536,
         latent_dim: int = 220,
+        pre_processor: PreProcessor | bool = True,
+        post_processor: PostProcessor | None = None,
+        evaluator: Evaluator | bool = True,
     ) -> None:
-        super().__init__()
+        super().__init__(pre_processor=pre_processor, post_processor=post_processor, evaluator=evaluator)
 
         self.model: FREModel = FREModel(
             backbone=backbone,

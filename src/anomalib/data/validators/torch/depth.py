@@ -228,6 +228,11 @@ class DepthValidator:
         """Validate the mask path."""
         return ImageValidator.validate_mask_path(mask_path)
 
+    @staticmethod
+    def validate_explanation(explanation: str | None) -> str | None:
+        """Validate the explanation."""
+        return ImageValidator.validate_explanation(explanation)
+
 
 class DepthBatchValidator:
     """Validate torch.Tensor data for batches of depth images."""
@@ -441,3 +446,8 @@ class DepthBatchValidator:
     def validate_pred_label(pred_label: torch.Tensor | None) -> torch.Tensor | None:
         """Validate the prediction label for a batch."""
         return ImageBatchValidator.validate_pred_label(pred_label)
+
+    @staticmethod
+    def validate_explanation(explanation: list[str] | None) -> list[str] | None:
+        """Validate the explanations for a batch."""
+        return ImageBatchValidator.validate_explanation(explanation)

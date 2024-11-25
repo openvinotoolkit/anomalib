@@ -12,19 +12,21 @@ from typing import Any
 
 import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
-from torchvision.transforms.v2 import CenterCrop, Compose, Normalize, Resize, Transform
+from torchvision.transforms.v2 import CenterCrop, Compose, Normalize, Resize
 
 from anomalib import LearningType
 from anomalib.data import Batch
-from anomalib.models.components import AnomalyModule, MemoryBankMixin
-from anomalib.post_processing.one_class import OneClassPostProcessor
+from anomalib.metrics import Evaluator
+from anomalib.models.components import AnomalibModule, MemoryBankMixin
+from anomalib.post_processing import OneClassPostProcessor, PostProcessor
+from anomalib.pre_processing import PreProcessor
 
 from .torch_model import PatchcoreModel
 
 logger = logging.getLogger(__name__)
 
 
-class Patchcore(MemoryBankMixin, AnomalyModule):
+class Patchcore(MemoryBankMixin, AnomalibModule):
     """PatchcoreLightning Module to train PatchCore algorithm.
 
     Args:
@@ -38,6 +40,9 @@ class Patchcore(MemoryBankMixin, AnomalyModule):
             Defaults to ``0.1``.
         num_neighbors (int, optional): Number of nearest neighbors.
             Defaults to ``9``.
+        pre_processor (PreProcessor, optional): Pre-processor for the model.
+            This is used to pre-process the input data before it is passed to the model.
+            Defaults to ``None``.
     """
 
     def __init__(
@@ -47,8 +52,11 @@ class Patchcore(MemoryBankMixin, AnomalyModule):
         pre_trained: bool = True,
         coreset_sampling_ratio: float = 0.1,
         num_neighbors: int = 9,
+        pre_processor: PreProcessor | bool = True,
+        post_processor: PostProcessor | None = None,
+        evaluator: Evaluator | bool = True,
     ) -> None:
-        super().__init__()
+        super().__init__(pre_processor=pre_processor, post_processor=post_processor, evaluator=evaluator)
 
         self.model: PatchcoreModel = PatchcoreModel(
             backbone=backbone,
@@ -58,6 +66,26 @@ class Patchcore(MemoryBankMixin, AnomalyModule):
         )
         self.coreset_sampling_ratio = coreset_sampling_ratio
         self.embeddings: list[torch.Tensor] = []
+
+    @classmethod
+    def configure_pre_processor(
+        cls,
+        image_size: tuple[int, int] | None = None,
+        center_crop_size: tuple[int, int] | None = None,
+    ) -> PreProcessor:
+        """Default transform for Padim."""
+        image_size = image_size or (256, 256)
+        if center_crop_size is None:
+            # scale center crop size proportional to image size
+            height, width = image_size
+            center_crop_size = (int(height * (224 / 256)), int(width * (224 / 256)))
+
+        transform = Compose([
+            Resize(image_size, antialias=True),
+            CenterCrop(center_crop_size),
+            Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+        ])
+        return PreProcessor(transform=transform)
 
     @staticmethod
     def configure_optimizers() -> None:
@@ -124,21 +152,6 @@ class Patchcore(MemoryBankMixin, AnomalyModule):
             LearningType: Learning type of the model.
         """
         return LearningType.ONE_CLASS
-
-    @staticmethod
-    def configure_transforms(image_size: tuple[int, int] | None = None) -> Transform:
-        """Default transform for Padim."""
-        image_size = image_size or (256, 256)
-        # scale center crop size proportional to image size
-        height, width = image_size
-        center_crop_size = (int(height * (224 / 256)), int(width * (224 / 256)))
-        return Compose(
-            [
-                Resize(image_size, antialias=True),
-                CenterCrop(center_crop_size),
-                Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-            ],
-        )
 
     @staticmethod
     def default_post_processor() -> OneClassPostProcessor:

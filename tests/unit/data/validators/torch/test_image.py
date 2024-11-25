@@ -226,7 +226,7 @@ class TestImageBatchValidator:  # noqa: PLR0904
         """Test validation of valid prediction labels."""
         labels = torch.tensor([[1], [0], [1], [1]])
         validated_labels = self.validator.validate_pred_label(labels)
-        assert torch.equal(validated_labels, torch.tensor([[True], [False], [True], [True]]))
+        assert torch.equal(validated_labels, torch.tensor([True, False, True, True]))
 
     def test_validate_pred_label_none(self) -> None:
         """Test validation of None prediction labels."""

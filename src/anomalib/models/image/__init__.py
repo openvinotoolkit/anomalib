@@ -21,6 +21,7 @@ from .rkde import Rkde
 from .stfpm import Stfpm
 from .supersimplenet import SuperSimpleNet
 from .uflow import Uflow
+from .vlm_ad import VlmAd
 from .winclip import WinClip
 
 __all__ = [
@@ -42,5 +43,6 @@ __all__ = [
     "Stfpm",
     "SuperSimpleNet",
     "Uflow",
+    "VlmAd",
     "WinClip",
 ]

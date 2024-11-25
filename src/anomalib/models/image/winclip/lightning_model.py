@@ -13,13 +13,15 @@ from typing import Any
 
 import torch
 from torch.utils.data import DataLoader
-from torchvision.transforms.v2 import Compose, InterpolationMode, Normalize, Resize, Transform
+from torchvision.transforms.v2 import Compose, InterpolationMode, Normalize, Resize
 
 from anomalib import LearningType
 from anomalib.data import Batch
 from anomalib.data.predict import PredictDataset
-from anomalib.models.components import AnomalyModule
-from anomalib.post_processing import OneClassPostProcessor
+from anomalib.metrics import Evaluator
+from anomalib.models.components import AnomalibModule
+from anomalib.post_processing import OneClassPostProcessor, PostProcessor
+from anomalib.pre_processing import PreProcessor
 
 from .torch_model import WinClipModel
 
@@ -28,7 +30,7 @@ logger = logging.getLogger(__name__)
 __all__ = ["WinClip"]
 
 
-class WinClip(AnomalyModule):
+class WinClip(AnomalibModule):
     """WinCLIP Lightning model.
 
     Args:
@@ -40,6 +42,9 @@ class WinClip(AnomalyModule):
             Defaults to ``(2, 3)``.
         few_shot_source (str | Path, optional): Path to a folder of reference images used for few-shot inference.
             Defaults to ``None``.
+        pre_processor (PreProcessor, optional): Pre-processor for the model.
+            This is used to pre-process the input data before it is passed to the model.
+            Defaults to ``None``.
     """
 
     EXCLUDE_FROM_STATE_DICT = frozenset({"model.clip"})
@@ -50,8 +55,12 @@ class WinClip(AnomalyModule):
         k_shot: int = 0,
         scales: tuple = (2, 3),
         few_shot_source: Path | str | None = None,
+        pre_processor: PreProcessor | bool = True,
+        post_processor: PostProcessor | None = None,
+        evaluator: Evaluator | bool = True,
     ) -> None:
-        super().__init__()
+        super().__init__(pre_processor=pre_processor, post_processor=post_processor, evaluator=evaluator)
+
         self.model = WinClipModel(scales=scales, apply_transform=False)
         self.class_name = class_name
         self.k_shot = k_shot
@@ -74,7 +83,10 @@ class WinClip(AnomalyModule):
         if self.k_shot:
             if self.few_shot_source:
                 logger.info("Loading reference images from %s", self.few_shot_source)
-                reference_dataset = PredictDataset(self.few_shot_source, transform=self.model.transform)
+                reference_dataset = PredictDataset(
+                    self.few_shot_source,
+                    transform=self.pre_processor.test_transform if self.pre_processor else None,
+                )
                 dataloader = DataLoader(reference_dataset, batch_size=1, shuffle=False)
             else:
                 logger.info("Collecting reference images from training dataset")
@@ -170,17 +182,17 @@ class WinClip(AnomalyModule):
             state_dict.update(restore_dict)
         return super().load_state_dict(state_dict, strict)
 
-    @staticmethod
-    def configure_transforms(image_size: tuple[int, int] | None = None) -> Transform:
-        """Configure the default transforms used by the model."""
+    @classmethod
+    def configure_pre_processor(cls, image_size: tuple[int, int] | None = None) -> PreProcessor:
+        """Configure the default pre-processor used by the model."""
         if image_size is not None:
             logger.warning("Image size is not used in WinCLIP. The input image size is determined by the model.")
-        return Compose(
-            [
-                Resize((240, 240), antialias=True, interpolation=InterpolationMode.BICUBIC),
-                Normalize(mean=(0.48145466, 0.4578275, 0.40821073), std=(0.26862954, 0.26130258, 0.27577711)),
-            ],
-        )
+
+        transform = Compose([
+            Resize((240, 240), antialias=True, interpolation=InterpolationMode.BICUBIC),
+            Normalize(mean=(0.48145466, 0.4578275, 0.40821073), std=(0.26862954, 0.26130258, 0.27577711)),
+        ])
+        return PreProcessor(val_transform=transform, test_transform=transform)
 
     @staticmethod
     def default_post_processor() -> OneClassPostProcessor:

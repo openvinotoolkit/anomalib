@@ -18,10 +18,13 @@ from anomalib import LearningType
 from anomalib.data import Batch
 from anomalib.data.utils import DownloadInfo, download_and_extract
 from anomalib.data.utils.augmenter import Augmenter
-from anomalib.models.components import AnomalyModule
+from anomalib.metrics import Evaluator
+from anomalib.models.components import AnomalibModule
 from anomalib.models.image.dsr.anomaly_generator import DsrAnomalyGenerator
 from anomalib.models.image.dsr.loss import DsrSecondStageLoss, DsrThirdStageLoss
 from anomalib.models.image.dsr.torch_model import DsrModel
+from anomalib.post_processing import PostProcessor
+from anomalib.pre_processing import PreProcessor
 
 __all__ = ["Dsr"]
 
@@ -34,16 +37,26 @@ WEIGHTS_DOWNLOAD_INFO = DownloadInfo(
 )
 
 
-class Dsr(AnomalyModule):
+class Dsr(AnomalibModule):
     """DSR: A Dual Subspace Re-Projection Network for Surface Anomaly Detection.
 
     Args:
         latent_anomaly_strength (float): Strength of the generated anomalies in the latent space. Defaults to 0.2
         upsampling_train_ratio (float): Ratio of training steps for the upsampling module. Defaults to 0.7
+        pre_processor (PreProcessor, optional): Pre-processor for the model.
+            This is used to pre-process the input data before it is passed to the model.
+            Defaults to ``None``.
     """
 
-    def __init__(self, latent_anomaly_strength: float = 0.2, upsampling_train_ratio: float = 0.7) -> None:
-        super().__init__()
+    def __init__(
+        self,
+        latent_anomaly_strength: float = 0.2,
+        upsampling_train_ratio: float = 0.7,
+        pre_processor: PreProcessor | bool = True,
+        post_processor: PostProcessor | None = None,
+        evaluator: Evaluator | bool = True,
+    ) -> None:
+        super().__init__(pre_processor=pre_processor, post_processor=post_processor, evaluator=evaluator)
 
         self.automatic_optimization = False
         self.upsampling_train_ratio = upsampling_train_ratio
@@ -195,4 +208,8 @@ class Dsr(AnomalyModule):
     def configure_transforms(image_size: tuple[int, int] | None = None) -> Transform:
         """Default transform for DSR. Normalization is not needed as the images are scaled to [0, 1] in Dataset."""
         image_size = image_size or (256, 256)
-        return Compose([Resize(image_size, antialias=True)])
+        return Compose(
+            [
+                Resize(image_size, antialias=True),
+            ],
+        )

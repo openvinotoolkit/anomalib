@@ -11,12 +11,12 @@ from dataclasses import replace
 from typing import Any
 
 from lightning.pytorch.utilities.types import STEP_OUTPUT
-from torchvision.transforms.v2 import Transform
 
 from anomalib import LearningType
 from anomalib.data import VideoBatch
-from anomalib.models.components import AnomalyModule, MemoryBankMixin
+from anomalib.models.components import AnomalibModule, MemoryBankMixin
 from anomalib.post_processing.one_class import OneClassPostProcessor, PostProcessor
+from anomalib.pre_processing import PreProcessor
 
 from .torch_model import AiVadModel
 
@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 __all__ = ["AiVad"]
 
 
-class AiVad(MemoryBankMixin, AnomalyModule):
+class AiVad(MemoryBankMixin, AnomalibModule):
     """AI-VAD: Attribute-based Representations for Accurate and Interpretable Video Anomaly Detection.
 
     Args:
@@ -59,6 +59,9 @@ class AiVad(MemoryBankMixin, AnomalyModule):
             Defaults to ``1``.
         n_neighbors_deep (int): Number of neighbors used in KNN density estimation for deep features.
             Defaults to ``1``.
+        pre_processor (PreProcessor, optional): Pre-processor for the model.
+            This is used to pre-process the input data before it is passed to the model.
+            Defaults to ``None``.
     """
 
     def __init__(
@@ -77,9 +80,10 @@ class AiVad(MemoryBankMixin, AnomalyModule):
         n_components_velocity: int = 2,
         n_neighbors_pose: int = 1,
         n_neighbors_deep: int = 1,
+        pre_processor: PreProcessor | bool = True,
+        **kwargs,
     ) -> None:
-        super().__init__()
-
+        super().__init__(pre_processor=pre_processor, **kwargs)
         self.model = AiVadModel(
             box_score_thresh=box_score_thresh,
             persons_only=persons_only,
@@ -164,11 +168,15 @@ class AiVad(MemoryBankMixin, AnomalyModule):
         """
         return LearningType.ONE_CLASS
 
-    @staticmethod
-    def configure_transforms(image_size: tuple[int, int] | None = None) -> Transform | None:
-        """AI-VAD does not need a transform, as the region- and feature-extractors apply their own transforms."""
+    @classmethod
+    def configure_pre_processor(cls, image_size: tuple[int, int] | None = None) -> PreProcessor:
+        """Configure the pre-processor for AI-VAD.
+
+        AI-VAD does not need a pre-processor or transforms, as the region- and
+        feature-extractors apply their own transforms.
+        """
         del image_size
-        return None
+        return PreProcessor()  # A pre-processor with no transforms.
 
     @staticmethod
     def default_post_processor() -> PostProcessor:

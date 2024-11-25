@@ -3,12 +3,12 @@
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-import importlib
 import logging
+import warnings
 from abc import ABC, abstractmethod
-from collections import OrderedDict
+from collections.abc import Sequence
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import lightning.pytorch as pl
 import torch
@@ -16,30 +16,33 @@ from lightning.pytorch import Callback
 from lightning.pytorch.trainer.states import TrainerFn
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torch import nn
-from torchvision.transforms.v2 import Compose, Normalize, Resize, Transform
+from torchvision.transforms.v2 import Compose, Normalize, Resize
 
 from anomalib import LearningType
 from anomalib.data import Batch, InferenceBatch
+from anomalib.metrics import AUROC, F1Score
+from anomalib.metrics.evaluator import Evaluator
 from anomalib.metrics.threshold import Threshold
 from anomalib.post_processing import OneClassPostProcessor, PostProcessor
+from anomalib.pre_processing import PreProcessor
 
 from .export_mixin import ExportMixin
-
-if TYPE_CHECKING:
-    from lightning.pytorch.callbacks import Callback
-
-    from anomalib.metrics import AnomalibMetricCollection
 
 logger = logging.getLogger(__name__)
 
 
-class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
-    """AnomalyModule to train, validate, predict and test images.
+class AnomalibModule(ExportMixin, pl.LightningModule, ABC):
+    """AnomalibModule to train, validate, predict and test images.
 
     Acts as a base class for all the Anomaly Modules in the library.
     """
 
-    def __init__(self, post_processor: PostProcessor | None = None) -> None:
+    def __init__(
+        self,
+        pre_processor: PreProcessor | bool = True,
+        post_processor: PostProcessor | None = None,
+        evaluator: Evaluator | bool = True,
+    ) -> None:
         super().__init__()
         logger.info("Initializing %s model.", self.__class__.__name__)
 
@@ -48,14 +51,11 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
         self.loss: nn.Module
         self.callbacks: list[Callback]
 
-        self.image_metrics: AnomalibMetricCollection
-        self.pixel_metrics: AnomalibMetricCollection
-
+        self.pre_processor = self._resolve_pre_processor(pre_processor)
         self.post_processor = post_processor or self.default_post_processor()
+        self.evaluator = self._resolve_evaluator(evaluator)
 
-        self._transform: Transform | None = None
         self._input_size: tuple[int, int] | None = None
-
         self._is_setup = False  # flag to track if setup has been called from the trainer
 
     @property
@@ -79,6 +79,29 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
         initialization.
         """
 
+    def _resolve_pre_processor(self, pre_processor: PreProcessor | bool) -> PreProcessor | None:
+        """Resolve and validate which pre-processor to use..
+
+        Args:
+            pre_processor: Pre-processor configuration
+                - True -> use default pre-processor
+                - False -> no pre-processor
+                - PreProcessor -> use the provided pre-processor
+
+        Returns:
+            Configured pre-processor
+        """
+        if isinstance(pre_processor, PreProcessor):
+            return pre_processor
+        if isinstance(pre_processor, bool):
+            return self.configure_pre_processor() if pre_processor else None
+        msg = f"Invalid pre-processor type: {type(pre_processor)}"
+        raise TypeError(msg)
+
+    def configure_callbacks(self) -> Sequence[Callback] | Callback:
+        """Configure default callbacks for AnomalibModule."""
+        return [self.pre_processor] if self.pre_processor else []
+
     def forward(self, batch: torch.Tensor, *args, **kwargs) -> InferenceBatch:
         """Perform the forward-pass by passing input tensor to the module.
 
@@ -91,7 +114,7 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
             Tensor: Output tensor from the model.
         """
         del args, kwargs  # These variables are not used.
-        batch = self.exportable_transform(batch)
+        batch = self.pre_processor(batch) if self.pre_processor else batch
         batch = self.model(batch)
         return self.post_processor(batch) if self.post_processor else batch
 
@@ -141,68 +164,57 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
         """Arguments used to override the trainer parameters so as to train the model correctly."""
         raise NotImplementedError
 
-    def _save_to_state_dict(self, destination: OrderedDict, prefix: str, keep_vars: bool) -> None:
-        if hasattr(self, "image_threshold"):
-            destination["image_threshold_class"] = (
-                f"{self.image_threshold.__class__.__module__}.{self.image_threshold.__class__.__name__}"
-            )
-        if hasattr(self, "pixel_threshold"):
-            destination["pixel_threshold_class"] = (
-                f"{self.pixel_threshold.__class__.__module__}.{self.pixel_threshold.__class__.__name__}"
-            )
-        if hasattr(self, "normalization_metrics"):
-            for metric in self.normalization_metrics:
-                metric_class = self.normalization_metrics[metric].__class__
-                destination[f"{metric}_normalization_class"] = f"{metric_class.__module__}.{metric_class.__name__}"
-
-        return super()._save_to_state_dict(destination, prefix, keep_vars)
-
-    @staticmethod
-    def _get_instance(state_dict: OrderedDict[str, Any], dict_key: str) -> Threshold:
-        """Get the threshold class from the ``state_dict``."""
-        class_path = state_dict.pop(dict_key)
-        module = importlib.import_module(".".join(class_path.split(".")[:-1]))
-        return getattr(module, class_path.split(".")[-1])()
-
     @property
     @abstractmethod
     def learning_type(self) -> LearningType:
         """Learning type of the model."""
         raise NotImplementedError
 
-    @property
-    def transform(self) -> Transform:
-        """Retrieve the model-specific transform.
+    @classmethod
+    def configure_pre_processor(cls, image_size: tuple[int, int] | None = None) -> PreProcessor:
+        """Configure the pre-processor.
 
-        If a transform has been set using `set_transform`, it will be returned. Otherwise, we will use the
-        model-specific default transform, conditioned on the input size.
+        The default pre-processor resizes images to 256x256 and normalizes using ImageNet statistics.
+        Individual models can override this method to provide custom transforms and pre-processing pipelines.
+
+        Args:
+            image_size (tuple[int, int] | None, optional): Target size for resizing images.
+                If None, defaults to (256, 256). Defaults to None.
+            **kwargs (Any): Additional keyword arguments (unused).
+
+        Returns:
+            PreProcessor: Configured pre-processor instance.
+
+        Examples:
+            Get default pre-processor with custom image size:
+
+            >>> preprocessor = AnomalibModule.configure_pre_processor(image_size=(512, 512))
+
+            Create model with custom pre-processor:
+
+            >>> from torchvision.transforms.v2 import RandomHorizontalFlip
+            >>> custom_transform = Compose([
+            ...     Resize((256, 256), antialias=True),
+            ...     CenterCrop((224, 224)),
+            ...     RandomHorizontalFlip(p=0.5),
+            ...     Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+            ... ])
+            >>> preprocessor.train_transform = custom_transform
+            >>> model = PatchCore(pre_processor=preprocessor)
+
+            Disable pre-processing:
+
+            >>> model = PatchCore(pre_processor=False)
         """
-        return self._transform
-
-    def set_transform(self, transform: Transform) -> None:
-        """Update the transform linked to the model instance."""
-        self._transform = transform
-
-    def configure_transforms(self, image_size: tuple[int, int] | None = None) -> Transform:  # noqa: PLR6301
-        """Default transforms.
-
-        The default transform is resize to 256x256 and normalize to ImageNet stats. Individual models can override
-        this method to provide custom transforms.
-        """
-        logger.warning(
-            "No implementation of `configure_transforms` was provided in the Lightning model. Using default "
-            "transforms from the base class. This may not be suitable for your use case. Please override "
-            "`configure_transforms` in your model.",
-        )
         image_size = image_size or (256, 256)
-        return Compose(
-            [
+        return PreProcessor(
+            transform=Compose([
                 Resize(image_size, antialias=True),
                 Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-            ],
+            ]),
         )
 
-    def default_post_processor(self) -> PostProcessor:
+    def default_post_processor(self) -> PostProcessor | None:
         """Default post processor.
 
         Override in subclass for model-specific post-processing behaviour.
@@ -213,6 +225,32 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
               Please override the default_post_processor method in the model implementation."
         raise NotImplementedError(msg)
 
+    def _resolve_evaluator(self, evaluator: Evaluator | bool) -> Evaluator | None:
+        """Resolve the evaluator to be used in the model.
+
+        If the evaluator is set to True, the default evaluator will be used. If the evaluator is set to False, no
+        evaluator will be used. If the evaluator is an instance of Evaluator, it will be used as the evaluator.
+        """
+        if isinstance(evaluator, Evaluator):
+            return evaluator
+        if isinstance(evaluator, bool):
+            return self.configure_evaluator() if evaluator else None
+        msg = f"evaluator must be of type Evaluator or bool, got {type(evaluator)}"
+        raise TypeError(msg)
+
+    @staticmethod
+    def configure_evaluator() -> Evaluator:
+        """Default evaluator.
+
+        Override in subclass for model-specific evaluator behaviour.
+        """
+        image_auroc = AUROC(fields=["pred_score", "gt_label"], prefix="image_")
+        image_f1score = F1Score(fields=["pred_label", "gt_label"], prefix="image_")
+        pixel_auroc = AUROC(fields=["anomaly_map", "gt_mask"], prefix="pixel_")
+        pixel_f1score = F1Score(fields=["pred_mask", "gt_mask"], prefix="pixel_")
+        test_metrics = [image_auroc, image_f1score, pixel_auroc, pixel_f1score]
+        return Evaluator(test_metrics=test_metrics)
+
     @property
     def input_size(self) -> tuple[int, int] | None:
         """Return the effective input size of the model.
@@ -220,37 +258,19 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
         The effective input size is the size of the input tensor after the transform has been applied. If the transform
         is not set, or if the transform does not change the shape of the input tensor, this method will return None.
         """
-        transform = self.transform or self.configure_transforms()
+        transform = self.pre_processor.predict_transform if self.pre_processor else None
         if transform is None:
             return None
         dummy_input = torch.zeros(1, 3, 1, 1)
         output_shape = transform(dummy_input).shape[-2:]
-        if output_shape == (1, 1):
-            return None
-        return output_shape[-2:]
-
-    def on_save_checkpoint(self, checkpoint: dict[str, Any]) -> None:
-        """Called when saving the model to a checkpoint.
-
-        Saves the transform to the checkpoint.
-        """
-        checkpoint["transform"] = self.transform
-
-    def on_load_checkpoint(self, checkpoint: dict[str, Any]) -> None:
-        """Called when loading the model from a checkpoint.
-
-        Loads the transform from the checkpoint and calls setup to ensure that the torch model is built before loading
-        the state dict.
-        """
-        self._transform = checkpoint["transform"]
-        self.setup("load_checkpoint")
+        return None if output_shape == (1, 1) else output_shape[-2:]
 
     @classmethod
     def from_config(
-        cls: type["AnomalyModule"],
+        cls: type["AnomalibModule"],
         config_path: str | Path,
         **kwargs,
-    ) -> "AnomalyModule":
+    ) -> "AnomalibModule":
         """Create a model instance from the configuration.
 
         Args:
@@ -258,20 +278,20 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
             **kwargs (dict): Additional keyword arguments.
 
         Returns:
-            AnomalyModule: model instance.
+            AnomalibModule: model instance.
 
         Example:
             The following example shows how to get model from patchcore.yaml:
 
             .. code-block:: python
                 >>> model_config = "configs/model/patchcore.yaml"
-                >>> model = AnomalyModule.from_config(config_path=model_config)
+                >>> model = AnomalibModule.from_config(config_path=model_config)
 
             The following example shows overriding the configuration file with additional keyword arguments:
 
             .. code-block:: python
                 >>> override_kwargs = {"model.pre_trained": False}
-                >>> model = AnomalyModule.from_config(config_path=model_config, **override_kwargs)
+                >>> model = AnomalibModule.from_config(config_path=model_config, **override_kwargs)
         """
         from jsonargparse import ActionConfigFile, ArgumentParser
         from lightning.pytorch import Trainer
@@ -289,7 +309,7 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
             action=ActionConfigFile,
             help="Path to a configuration file in json or yaml format.",
         )
-        model_parser.add_subclass_arguments(AnomalyModule, "model", required=False, fail_untyped=False)
+        model_parser.add_subclass_arguments(AnomalibModule, "model", required=False, fail_untyped=False)
         model_parser.add_argument("--task", type=TaskType | str, default=TaskType.SEGMENTATION)
         model_parser.add_argument("--metrics.image", type=list[str] | str | None, default=["F1Score", "AUROC"])
         model_parser.add_argument("--metrics.pixel", type=list[str] | str | None, default=None, required=False)
@@ -301,8 +321,20 @@ class AnomalyModule(ExportMixin, pl.LightningModule, ABC):
         config = model_parser.parse_args(args=args)
         instantiated_classes = model_parser.instantiate_classes(config)
         model = instantiated_classes.get("model")
-        if isinstance(model, AnomalyModule):
+        if isinstance(model, AnomalibModule):
             return model
 
-        msg = f"Model is not an instance of AnomalyModule: {model}"
+        msg = f"Model is not an instance of AnomalibModule: {model}"
         raise ValueError(msg)
+
+
+class AnomalyModule(AnomalibModule):
+    """Deprecated AnomalyModule class. Use AnomalibModule instead."""
+
+    def __init__(self, *args, **kwargs) -> None:
+        warnings.warn(
+            "AnomalyModule is deprecated and will be removed in a future release. Use AnomalibModule instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        super().__init__(*args, **kwargs)

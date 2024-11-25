@@ -1,0 +1,11 @@
+class_path: anomalib.data.Datumaro
+init_args:
+  root: "datasets/datumaro"
+  train_batch_size: 32
+  eval_batch_size: 32
+  num_workers: 8
+  test_split_mode: FROM_DIR
+  test_split_ratio: 0.2
+  val_split_mode: FROM_TEST
+  val_split_ratio: 0.5
+  seed: null
