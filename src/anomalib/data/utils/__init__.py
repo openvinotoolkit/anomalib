@@ -5,7 +5,7 @@
 
 from .boxes import boxes_to_anomaly_maps, boxes_to_masks, masks_to_boxes
 from .download import DownloadInfo, download_and_extract
-from .generators.perlin import generate_perlin_noise
+from .generators import generate_perlin_noise
 from .image import (
     generate_output_image_filename,
     get_image_filenames,
