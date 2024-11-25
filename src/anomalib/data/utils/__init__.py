@@ -3,10 +3,9 @@
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from .augmenter import Augmenter
 from .boxes import boxes_to_anomaly_maps, boxes_to_masks, masks_to_boxes
 from .download import DownloadInfo, download_and_extract
-from .generators import random_2d_perlin
+from .generators.perlin import generate_perlin_noise
 from .image import (
     generate_output_image_filename,
     get_image_filenames,
@@ -30,7 +29,7 @@ __all__ = [
     "generate_output_image_filename",
     "get_image_filenames",
     "get_image_height_and_width",
-    "random_2d_perlin",
+    "generate_perlin_noise",
     "read_image",
     "read_mask",
     "read_depth_image",
@@ -42,7 +41,6 @@ __all__ = [
     "TestSplitMode",
     "LabelName",
     "DirType",
-    "Augmenter",
     "masks_to_boxes",
     "boxes_to_masks",
     "boxes_to_anomaly_maps",

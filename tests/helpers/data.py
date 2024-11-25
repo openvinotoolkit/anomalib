@@ -18,7 +18,8 @@ from skimage import img_as_ubyte
 from skimage.io import imsave
 
 from anomalib.data import DataFormat
-from anomalib.data.utils import Augmenter, LabelName
+from anomalib.data.utils import LabelName
+from anomalib.data.utils.generators.perlin import PerlinAnomalyGenerator
 
 
 class DummyImageGenerator:
@@ -47,7 +48,7 @@ class DummyImageGenerator:
 
     def __init__(self, image_shape: tuple[int, int] = (256, 256), rng: np.random.Generator | None = None) -> None:
         self.image_shape = image_shape
-        self.augmenter = Augmenter()
+        self.augmenter = PerlinAnomalyGenerator()
         self.rng = rng if rng else np.random.default_rng()
 
     def generate_normal_image(self) -> tuple[np.ndarray, np.ndarray]:

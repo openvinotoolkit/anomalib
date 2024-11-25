@@ -8,7 +8,7 @@ import numpy as np
 import torch
 from torch import Tensor, nn
 
-from anomalib.data.utils.generators.perlin import _rand_perlin_2d_np
+from anomalib.data.utils.generators.perlin_utils import _rand_perlin_2d_np
 
 
 class DsrAnomalyGenerator(nn.Module):

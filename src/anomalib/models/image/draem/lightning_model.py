@@ -16,7 +16,7 @@ from torchvision.transforms.v2 import Compose, Resize, Transform
 
 from anomalib import LearningType
 from anomalib.data import Batch
-from anomalib.data.utils import Augmenter
+from anomalib.data.utils.generators.perlin import PerlinAnomalyGenerator
 from anomalib.metrics import Evaluator
 from anomalib.models.components import AnomalibModule
 from anomalib.post_processing import PostProcessor
@@ -56,7 +56,7 @@ class Draem(AnomalibModule):
     ) -> None:
         super().__init__(pre_processor=pre_processor, post_processor=post_processor, evaluator=evaluator)
 
-        self.augmenter = Augmenter(anomaly_source_path, beta=beta)
+        self.augmenter = PerlinAnomalyGenerator(anomaly_source_path=anomaly_source_path, blend_factor=beta)
         self.model = DraemModel(sspcab=enable_sspcab)
         self.loss = DraemLoss()
         self.sspcab = enable_sspcab
@@ -110,7 +110,7 @@ class Draem(AnomalibModule):
 
         input_image = batch.image
         # Apply corruption to input image
-        augmented_image, anomaly_mask = self.augmenter.augment_batch(input_image)
+        augmented_image, anomaly_mask = self.augmenter(input_image)
         # Generate model prediction
         reconstruction, prediction = self.model(augmented_image)
         # Compute loss
