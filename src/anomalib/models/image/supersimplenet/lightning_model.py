@@ -14,13 +14,16 @@ from torch.optim.lr_scheduler import MultiStepLR
 
 from anomalib import LearningType
 from anomalib.data import Batch
-from anomalib.models import AnomalyModule
+from anomalib.metrics import Evaluator
+from anomalib.models import AnomalibModule
+from anomalib.post_processing import PostProcessor
+from anomalib.pre_processing import PreProcessor
 
 from .loss import SSNLoss
 from .torch_model import SuperSimpleNetModel
 
 
-class SuperSimpleNet(AnomalyModule):
+class SuperSimpleNet(AnomalibModule):
     """PL Lightning Module for the SuperSimpleNet model.
 
     Args:
@@ -36,8 +39,11 @@ class SuperSimpleNet(AnomalyModule):
         backbone: str = "wide_resnet50_2",
         layers: list[str] = ["layer2", "layer3"],  # noqa: B006
         supervised: bool = False,
+        pre_processor: PreProcessor | bool = True,
+        post_processor: PostProcessor | None = None,
+        evaluator: Evaluator | bool = True,
     ) -> None:
-        super().__init__()
+        super().__init__(pre_processor=pre_processor, post_processor=post_processor, evaluator=evaluator)
         self.supervised = supervised
         # stop grad in unsupervised
         if supervised:
