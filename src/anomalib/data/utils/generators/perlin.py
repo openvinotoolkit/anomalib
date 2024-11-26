@@ -184,21 +184,19 @@ class PerlinAnomalyGenerator(v2.Transform):
         self.augmenters = MultiRandomChoice(
             transforms=[
                 v2.ColorJitter(contrast=(0.5, 2.0)),
-                v2.Compose([
-                    v2.Lambda(lambda x: x * torch.empty(1).uniform_(0.8, 1.2).item()),
-                    v2.Lambda(lambda x: torch.clamp(x + torch.empty(1).uniform_(-30 / 255, 30 / 255).item(), 0, 1)),
-                ]),
+                v2.RandomPhotometricDistort(
+                    brightness=(0.8, 1.2),
+                    contrast=(1.0, 1.0),  # No contrast change
+                    saturation=(1.0, 1.0),  # No saturation change
+                    hue=(0.0, 0.0),  # No hue change
+                    p=1.0,
+                ),
                 v2.RandomAdjustSharpness(sharpness_factor=2.0, p=1.0),
-                v2.Compose([
-                    v2.ColorJitter(
-                        hue=[-50 / 360, 50 / 360],
-                        saturation=[0.5, 1.5],
-                    ),
-                ]),
+                v2.ColorJitter(hue=[-50 / 360, 50 / 360], saturation=[0.5, 1.5]),
                 v2.RandomSolarize(threshold=torch.empty(1).uniform_(32 / 255, 128 / 255).item(), p=1.0),
                 v2.RandomPosterize(bits=4, p=1.0),
                 v2.RandomInvert(p=1.0),
-                v2.Lambda(v2.functional.autocontrast),
+                v2.AutoAugment(),
                 v2.RandomEqualize(p=1.0),
                 v2.RandomAffine(degrees=(-45, 45), interpolation=v2.InterpolationMode.BILINEAR, fill=0),
             ],
