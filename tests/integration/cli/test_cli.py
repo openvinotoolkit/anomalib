@@ -12,7 +12,7 @@ import pytest
 import torch
 
 from anomalib.cli import AnomalibCLI
-from anomalib.deploy import ExportType
+from anomalib.deploy import CompressionType, ExportType
 
 
 class TestCLI:
@@ -155,7 +155,16 @@ class TestCLI:
         )
         torch.cuda.empty_cache()
 
-    @pytest.mark.parametrize("export_type", [ExportType.TORCH, ExportType.ONNX, ExportType.OPENVINO])
+    @pytest.mark.parametrize(
+        ("export_type", "compression_type"),
+        [
+            (ExportType.TORCH, None),
+            (ExportType.ONNX, None),
+            (ExportType.OPENVIVO, None),
+            (ExportType.OPENVIVO, CompressionType.POT),
+            (ExportType.OPENVIVO, CompressionType.NNCF),
+        ],
+    )
     def test_export(
         self,
         project_path: Path,

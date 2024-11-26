@@ -975,6 +975,11 @@ class Engine:
         else:
             logging.error(f"Export type {export_type} is not supported yet.")
 
+        if compression_type and export_type != ExportType.OPENVINO:
+            msg = f"Compression type {compression_type} is only applicable for OpenVIVO Export Type."
+            logging.error(f"Compression type {compression_type} is only applicable for OpenVIVO Export Type.")
+            raise ValueError(msg)
+
         if exported_model_path:
             logging.info(f"Exported model to {exported_model_path}")
         return exported_model_path
