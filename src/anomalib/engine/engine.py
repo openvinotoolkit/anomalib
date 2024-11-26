@@ -915,6 +915,7 @@ class Engine:
 
         Raises:
             ValueError: If Dataset, Datamodule, and transform are not provided.
+            ValueError: If an unsupported compression type is specified for non-OpenVINO export types.
             TypeError: If path to the transform file is not a string or Path.
 
         CLI Usage:
