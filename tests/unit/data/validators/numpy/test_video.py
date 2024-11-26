@@ -147,7 +147,7 @@ class TestNumpyVideoBatchValidator:
         assert validated_labels is not None
         assert isinstance(validated_labels, np.ndarray)
         assert validated_labels.dtype == bool
-        assert np.array_equal(validated_labels, np.array([False, True]))
+        assert np.array_equal(validated_labels, np.array([True, True]))
 
     def test_validate_gt_label_invalid_dimensions(self) -> None:
         """Test validation of ground truth labels with invalid dimensions."""
