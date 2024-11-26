@@ -6,6 +6,9 @@ Tests the models using API. The weight paths from the trained models are used fo
 # Copyright (C) 2023-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+import contextlib
+import sys
+from collections.abc import Generator
 from pathlib import Path
 from unittest.mock import MagicMock
 
@@ -26,6 +29,17 @@ def models() -> set[str]:
 def export_types() -> list[ExportType]:
     """Return all available export frameworks."""
     return list(ExportType)
+
+
+@contextlib.contextmanager
+def increased_recursion_limit(limit: int = 10000) -> Generator[None, None, None]:
+    """Temporarily increase the recursion limit."""
+    old_limit = sys.getrecursionlimit()
+    try:
+        sys.setrecursionlimit(limit)
+        yield
+    finally:
+        sys.setrecursionlimit(old_limit)
 
 
 class TestAPI:
@@ -154,11 +168,14 @@ class TestAPI:
             dataset_path=dataset_path,
             project_path=project_path,
         )
-        engine.export(
-            model=model,
-            ckpt_path=f"{project_path}/{model.name}/{dataset.name}/dummy/v0/weights/lightning/model.ckpt",
-            export_type=export_type,
-        )
+
+        # Use context manager only for CSFlow
+        with increased_recursion_limit() if model_name == "csflow" else contextlib.nullcontext():
+            engine.export(
+                model=model,
+                ckpt_path=f"{project_path}/{model.name}/{dataset.name}/dummy/v0/weights/lightning/model.ckpt",
+                export_type=export_type,
+            )
 
     @staticmethod
     def _get_objects(
