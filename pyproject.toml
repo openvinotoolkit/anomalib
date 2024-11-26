@@ -46,7 +46,7 @@ core = [
     "matplotlib>=3.4.3",
     "opencv-python>=4.5.3.56",
     "pandas>=1.1.0",
-    "skimage",  # NOTE: skimage should be removed as part of dependency cleanup
+    "scikit-image",  # NOTE: skimage should be removed as part of dependency cleanup
     "tifffile",
     "timm",
     "lightning>=2.2",
