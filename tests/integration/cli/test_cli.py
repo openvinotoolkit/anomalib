@@ -160,15 +160,16 @@ class TestCLI:
         [
             (ExportType.TORCH, None),
             (ExportType.ONNX, None),
-            (ExportType.OPENVIVO, None),
-            (ExportType.OPENVIVO, CompressionType.POT),
-            (ExportType.OPENVIVO, CompressionType.NNCF),
+            (ExportType.OPENVINO, None),
+            (ExportType.OPENVINO, CompressionType.POT),
+            (ExportType.OPENVINO, CompressionType.NNCF),
         ],
     )
     def test_export(
         self,
         project_path: Path,
         export_type: ExportType,
+        compression_type: CompressionType | None,
     ) -> None:
         """Test the export method of the CLI.
 
@@ -176,17 +177,19 @@ class TestCLI:
             dataset_path (Path): Root of the synthetic/original dataset.
             project_path (Path): Path to temporary project folder.
             export_type (ExportType): Export type.
+            compression_type (CompressionType): Compression type (if any).
         """
-        AnomalibCLI(
-            args=[
-                "export",
-                "--export_type",
-                export_type,
-                *self._get_common_cli_args(None, project_path),
-                "--ckpt_path",
-                f"{project_path}/Padim/MVTec/dummy/v0/weights/lightning/model.ckpt",
-            ],
-        )
+        args = [
+            "export",
+            "--export_type",
+            export_type,
+            *self._get_common_cli_args(None, project_path),
+            "--ckpt_path",
+            f"{project_path}/Padim/MVTec/dummy/v0/weights/lightning/model.ckpt",
+        ]
+        if compression_type:
+            args += ["--compression_type", str(compression_type)]
+        AnomalibCLI(args=args)
 
     @staticmethod
     def _get_common_cli_args(dataset_path: Path | None, project_path: Path) -> list[str]:
