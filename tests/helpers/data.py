@@ -73,6 +73,8 @@ class DummyImageGenerator:
 
         # Generate perturbation.
         perturbation, mask = self.augmenter.generate_perturbation(height=self.image_shape[0], width=self.image_shape[1])
+        perturbation = perturbation.cpu().numpy()
+        mask = mask.cpu().numpy()
 
         # Superimpose perturbation on image ``img``.
         abnormal_image = (image * (1 - mask) + (beta) * perturbation + (1 - beta) * image * (mask)).astype(np.uint8)
