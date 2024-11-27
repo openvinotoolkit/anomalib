@@ -17,7 +17,7 @@ from torchvision.transforms.v2 import Compose, Resize, Transform
 from anomalib import LearningType
 from anomalib.data import Batch
 from anomalib.data.utils import DownloadInfo, download_and_extract
-from anomalib.data.utils.augmenter import Augmenter
+from anomalib.data.utils.generators.perlin import PerlinAnomalyGenerator
 from anomalib.metrics import Evaluator
 from anomalib.models.components import AnomalibModule
 from anomalib.models.image.dsr.anomaly_generator import DsrAnomalyGenerator
@@ -62,7 +62,7 @@ class Dsr(AnomalibModule):
         self.upsampling_train_ratio = upsampling_train_ratio
 
         self.quantized_anomaly_generator = DsrAnomalyGenerator()
-        self.perlin_generator = Augmenter()
+        self.perlin_generator = PerlinAnomalyGenerator()
         self.model = DsrModel(latent_anomaly_strength)
         self.second_stage_loss = DsrSecondStageLoss()
         self.third_stage_loss = DsrThirdStageLoss()
@@ -158,7 +158,7 @@ class Dsr(AnomalibModule):
             # we are training the upsampling module
             input_image = batch.image
             # Generate anomalies
-            input_image, anomaly_maps = self.perlin_generator.augment_batch(input_image)
+            input_image, anomaly_maps = self.perlin_generator(input_image)
             # Get model prediction
             model_outputs = self.model(input_image)
             # Calculate loss

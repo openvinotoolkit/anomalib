@@ -76,6 +76,15 @@ class TestNumpyVideoValidator:
         with pytest.raises(ValueError, match="Target frame index must be non-negative"):
             self.validator.validate_target_frame(-1)
 
+    def test_validate_gt_label_valid(self) -> None:
+        """Test validation of a valid ground truth label."""
+        # Test with binary label (0: normal, 1: anomaly)
+        label = 1
+        validated_label = self.validator.validate_gt_label(label)
+        assert isinstance(validated_label, np.ndarray)
+        assert validated_label.dtype == bool
+        assert validated_label.item() is True
+
 
 class TestNumpyVideoBatchValidator:
     """Test NumpyVideoBatchValidator."""
@@ -141,13 +150,20 @@ class TestNumpyVideoBatchValidator:
         """Test validation of None ground truth labels."""
         assert self.validator.validate_gt_label(None) is None
 
-    def test_validate_gt_label_invalid_type(self) -> None:
-        """Test validation of ground truth labels with invalid type."""
-        validated_labels = self.validator.validate_gt_label(["0", "1"])
-        assert validated_labels is not None
+    def test_validate_gt_label_valid_sequence(self) -> None:
+        """Test validation of ground truth labels with sequence input."""
+        # Test with binary labels (0: normal, 1: anomaly)
+        labels = [0, 1]
+        validated_labels = self.validator.validate_gt_label(labels)
         assert isinstance(validated_labels, np.ndarray)
         assert validated_labels.dtype == bool
         assert np.array_equal(validated_labels, np.array([False, True]))
+
+    def test_validate_gt_label_invalid_type(self) -> None:
+        """Test validation of ground truth labels with invalid type."""
+        # Test with a non-sequence, non-array type
+        with pytest.raises(TypeError, match="Ground truth label batch must be a numpy.ndarray"):
+            self.validator.validate_gt_label(3.14)
 
     def test_validate_gt_label_invalid_dimensions(self) -> None:
         """Test validation of ground truth labels with invalid dimensions."""
