@@ -67,18 +67,6 @@ def make_kolektor_dataset(
 ) -> DataFrame:
     """Create Kolektor samples by parsing the Kolektor data file structure.
 
-    The files are expected to follow this structure:
-    - Image files: `path/to/dataset/item/image_filename.jpg`, `path/to/dataset/kos01/Part0.jpg`
-    - Mask files: `path/to/dataset/item/mask_filename.bmp`, `path/to/dataset/kos01/Part0_label.bmp`
-
-    This function creates a DataFrame to store the parsed information in the following format:
-
-    +---+-------------------+--------+-------+---------+-----------------------+------------------------+-------------+
-    |   | path              | item   | split | label   | image_path            | mask_path              | label_index |
-    +---+-------------------+--------+-------+---------+-----------------------+------------------------+-------------+
-    | 0 | KolektorSDD       | kos01  | test  | Bad     | /path/to/image_file   | /path/to/mask_file     | 1           |
-    +---+-------------------+--------+-------+---------+-----------------------+------------------------+-------------+
-
     Args:
         root (Path): Path to the dataset.
         train_split_ratio (float, optional): Ratio for splitting good images into train/test sets.
@@ -105,64 +93,59 @@ def make_kolektor_dataset(
     """
     root = validate_path(root)
 
-    # Get list of images and masks
-    samples_list = [(str(root),) + f.parts[-2:] for f in root.glob(r"**/*") if f.suffix == ".jpg"]
-    masks_list = [(str(root),) + f.parts[-2:] for f in root.glob(r"**/*") if f.suffix == ".bmp"]
+    # Get all image files and construct mask paths
+    samples_data = []
+    for image_path in root.glob("**/*.jpg"):
+        mask_path = image_path.parent / f"{image_path.stem}_label.bmp"
+        if not mask_path.exists():
+            continue
 
-    if not samples_list:
+        # Check if mask shows defects
+        label_index = is_mask_anomalous(str(mask_path))
+        label = "Bad" if label_index == 1 else "Good"
+
+        # Determine split - all bad samples go to test
+        split_type = "test" if label == "Bad" else None
+
+        samples_data.append({
+            "path": str(root),
+            "item": image_path.parent.name,
+            "split": split_type,
+            "label": label,
+            "image_path": str(image_path),
+            "mask_path": str(mask_path),
+            "label_index": label_index,
+        })
+
+    if not samples_data:
         msg = f"Found 0 images in {root}"
         raise RuntimeError(msg)
 
-    # Create dataframes
-    samples = DataFrame(samples_list, columns=["path", "item", "image_path"])
-    masks = DataFrame(masks_list, columns=["path", "item", "image_path"])
+    # Create DataFrame
+    samples = DataFrame(samples_data)
 
-    # Modify image_path column by converting to absolute path
-    samples["image_path"] = samples.path + "/" + samples.item + "/" + samples.image_path
-    masks["image_path"] = masks.path + "/" + masks.item + "/" + masks.image_path
+    # Split good samples between train and test
+    good_samples = samples[samples.label == "Good"]
+    if not good_samples.empty:
+        train_indices, test_indices = train_test_split(
+            good_samples.index,
+            train_size=train_split_ratio,
+            random_state=42,
+        )
+        samples.loc[train_indices, "split"] = "train"
+        samples.loc[test_indices, "split"] = "test"
 
-    # Sort samples by image path
-    samples = samples.sort_values(by="image_path", ignore_index=True)
-    masks = masks.sort_values(by="image_path", ignore_index=True)
+    # Verify mask-image correspondence for anomalous samples
+    anomalous_samples = samples[samples.label_index == 1]
+    if not anomalous_samples.empty:
+        mask_matches = anomalous_samples.apply(lambda x: Path(x.image_path).stem in Path(x.mask_path).stem, axis=1)
+        if not mask_matches.all():
+            msg = """Mismatch between anomalous images and ground truth masks. Make sure the mask files
+            follow the same naming convention as the anomalous images in the dataset
+            (e.g. image: 'Part0.jpg', mask: 'Part0_label.bmp')."""
+            raise MisMatchError(msg)
 
-    # Add mask paths for sample images
-    samples["mask_path"] = masks.image_path.to_numpy()
-
-    # Use is_good func to configure the label_index
-    samples["label_index"] = samples["mask_path"].apply(is_mask_anomalous)
-    samples.label_index = samples.label_index.astype(int)
-
-    # Use label indexes to label data
-    samples.loc[(samples.label_index == 0), "label"] = "Good"
-    samples.loc[(samples.label_index == 1), "label"] = "Bad"
-
-    # Add all 'Bad' samples to test set
-    samples.loc[(samples.label == "Bad"), "split"] = "test"
-
-    # Divide 'good' images to train/test on 0.8/0.2 ratio
-    train_samples, test_samples = train_test_split(
-        samples[samples.label == "Good"],
-        train_size=train_split_ratio,
-        random_state=42,
-    )
-    samples.loc[train_samples.index, "split"] = "train"
-    samples.loc[test_samples.index, "split"] = "test"
-
-    # Reorder columns
-    samples = samples[["path", "item", "split", "label", "image_path", "mask_path", "label_index"]]
-
-    # assert that the right mask files are associated with the right test images
-    if not (
-        samples.loc[samples.label_index == 1]
-        .apply(lambda x: Path(x.image_path).stem in Path(x.mask_path).stem, axis=1)
-        .all()
-    ):
-        msg = """Mismatch between anomalous images and ground truth masks. Make sure the mask files
-        follow the same naming convention as the anomalous images in the dataset
-        (e.g. image: 'Part0.jpg', mask: 'Part0_label.bmp')."""
-        raise MisMatchError(msg)
-
-    # Get the dataframe for the required split
+    # Filter by split if specified
     if split:
         samples = samples[samples.split == split].reset_index(drop=True)
 
