@@ -6,7 +6,7 @@
 import torch
 from torchvision.transforms import RandomAffine
 
-from anomalib.data.utils import random_2d_perlin
+from anomalib.data.utils.generators.perlin import generate_perlin_noise
 from anomalib.metrics.pro import _PRO as PRO
 from anomalib.metrics.pro import connected_components_cpu, connected_components_gpu
 
@@ -50,7 +50,7 @@ def test_device_consistency() -> None:
 
     batch = torch.zeros((32, 256, 256))
     for i in range(batch.shape[0]):
-        batch[i, ...] = random_2d_perlin((256, 256), (torch.tensor(4), torch.tensor(4))) > 0.5
+        batch[i, ...] = generate_perlin_noise(256, 256, scale=(4, 4)) > 0.5
     # ground truth mask is int type
     batch = batch.type(torch.int32)
 
@@ -70,7 +70,7 @@ def test_connected_component_labeling() -> None:
     # generate batch of random binary images using perlin noise
     batch = torch.zeros((32, 1, 256, 256))
     for i in range(batch.shape[0]):
-        batch[i, ...] = random_2d_perlin((256, 256), (torch.tensor(4), torch.tensor(4))) > 0.5
+        batch[i, ...] = generate_perlin_noise(256, 256, scale=(4, 4)) > 0.5
 
     # get connected component results on both cpu and gpu
     cc_cpu = connected_components_cpu(batch.cpu())

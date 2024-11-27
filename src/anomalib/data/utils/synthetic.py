@@ -20,7 +20,8 @@ from torchvision.transforms.v2 import Compose
 
 from anomalib import TaskType
 from anomalib.data.datasets.base.image import AnomalibDataset
-from anomalib.data.utils import Augmenter, Split, read_image
+from anomalib.data.utils import Split, read_image
+from anomalib.data.utils.generators.perlin import PerlinAnomalyGenerator
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +67,7 @@ def make_synthetic_dataset(
     anomalous_samples = anomalous_samples.reset_index(drop=True)
 
     # initialize augmenter
-    augmenter = Augmenter("./datasets/dtd", p_anomalous=1.0, beta=(0.01, 0.2))
+    augmenter = PerlinAnomalyGenerator(anomaly_source_path="./datasets/dtd", probability=1.0, blend_factor=(0.01, 0.2))
 
     def augment(sample: Series) -> Series:
         """Apply synthetic anomalous augmentation to a sample from a dataframe.
@@ -83,7 +84,7 @@ def make_synthetic_dataset(
         # read and transform image
         image = read_image(sample.image_path, as_tensor=True)
         # apply anomalous perturbation
-        aug_im, mask = augmenter.augment_batch(image.unsqueeze(0))
+        aug_im, mask = augmenter(image)
         # target file name with leading zeros
         file_name = f"{str(sample.name).zfill(int(math.log10(n_anomalous)) + 1)}.png"
         # write image
