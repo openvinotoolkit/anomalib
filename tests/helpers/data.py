@@ -19,7 +19,7 @@ from skimage import img_as_ubyte
 from skimage.io import imsave
 
 from anomalib.data import DataFormat
-from anomalib.data.image.btech import make_btech_dataset
+from anomalib.data.datasets.image.btech import make_btech_dataset
 from anomalib.data.utils import Augmenter, LabelName
 
 

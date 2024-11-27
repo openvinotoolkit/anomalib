@@ -14,7 +14,7 @@ import pandas as pd
 from torchvision.transforms.v2 import Transform
 
 from anomalib import TaskType
-from anomalib.data import AnomalibDataset
+from anomalib.data.datasets.base import AnomalibDataset
 from anomalib.data.utils.label import LabelName
 
 

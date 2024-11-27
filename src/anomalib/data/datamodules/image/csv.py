@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Literal
 
 from anomalib import TaskType
-from anomalib.data import AnomalibDataModule
+from anomalib.data.datamodules.base.image import AnomalibDataModule
 from anomalib.data.datasets.image.csv import CSVDataset
 from anomalib.data.utils.split import SplitMode, resolve_split_mode
 

@@ -35,7 +35,7 @@ class BTechDataset(AnomalibDataset):
         create_validation_set: Create a validation subset in addition to the train and test subsets
 
     Examples:
-        >>> from anomalib.data.image.btech import BTechDataset
+        >>> from anomalib.data.datasets import BTechDataset
         >>> from anomalib.data.utils.transforms import get_transforms
         >>> transform = get_transforms(image_size=256)
         >>> dataset = BTechDataset(
