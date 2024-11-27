@@ -25,7 +25,6 @@ References:
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-import logging
 from collections.abc import Sequence
 from pathlib import Path
 
@@ -36,9 +35,6 @@ from anomalib import TaskType
 from anomalib.data.datasets.base import AnomalibDataset
 from anomalib.data.errors import MisMatchError
 from anomalib.data.utils import LabelName, Split, validate_path
-
-logger = logging.getLogger(__name__)
-
 
 IMG_EXTENSIONS = (".png", ".PNG")
 CATEGORIES = (
