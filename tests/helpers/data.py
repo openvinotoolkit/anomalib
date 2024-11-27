@@ -20,7 +20,8 @@ from skimage.io import imsave
 
 from anomalib.data import DataFormat
 from anomalib.data.datasets.image.btech import make_btech_dataset
-from anomalib.data.utils import Augmenter, LabelName
+from anomalib.data.utils import LabelName
+from anomalib.data.utils.generators.perlin import PerlinAnomalyGenerator
 
 
 class DummyImageGenerator:
@@ -49,7 +50,7 @@ class DummyImageGenerator:
 
     def __init__(self, image_shape: tuple[int, int] = (256, 256), rng: np.random.Generator | None = None) -> None:
         self.image_shape = image_shape
-        self.augmenter = Augmenter()
+        self.augmenter = PerlinAnomalyGenerator()
         self.rng = rng if rng else np.random.default_rng()
 
     def generate_normal_image(self) -> tuple[np.ndarray, np.ndarray]:
@@ -74,6 +75,8 @@ class DummyImageGenerator:
 
         # Generate perturbation.
         perturbation, mask = self.augmenter.generate_perturbation(height=self.image_shape[0], width=self.image_shape[1])
+        perturbation = perturbation.cpu().numpy()
+        mask = mask.cpu().numpy()
 
         # Superimpose perturbation on image ``img``.
         abnormal_image = (image * (1 - mask) + (beta) * perturbation + (1 - beta) * image * (mask)).astype(np.uint8)

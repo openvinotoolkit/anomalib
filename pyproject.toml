@@ -42,11 +42,12 @@ core = [
     "av>=10.0.0",
     "einops>=0.3.2",
     "freia>=0.2",
-    "imgaug==0.4.0",
     "kornia>=0.6.6",
     "matplotlib>=3.4.3",
     "opencv-python>=4.5.3.56",
     "pandas>=1.1.0",
+    "scikit-image",  # NOTE: skimage should be removed as part of dependency cleanup
+    "tifffile",
     "timm",
     "lightning>=2.2",
     "torch>=2",
@@ -57,12 +58,12 @@ core = [
     "open-clip-torch>=2.23.0,<2.26.1",
 ]
 openvino = ["openvino>=2024.0", "nncf>=2.10.0", "onnx>=1.16.0"]
-vlm = ["ollama", "openai", "python-dotenv","transformers"]
+vlm = ["ollama<0.4.0", "openai", "python-dotenv","transformers"]
 loggers = [
     "comet-ml>=3.31.7",
     "gradio>=4",
     "tensorboard",
-    "wandb>=0.12.17,<=0.15.9",
+    "wandb",
     "mlflow >=1.0.0",
 ]
 notebooks = ["gitpython", "ipykernel", "ipywidgets", "notebook"]
