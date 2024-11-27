@@ -13,5 +13,5 @@ init_args:
   test_split_mode: auto
   test_split_ratio: null
   val_split_mode: auto
-  val_split_ratio: null
+  val_split_ratio: 0.5
   seed: null

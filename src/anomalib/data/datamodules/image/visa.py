@@ -83,7 +83,7 @@ class Visa(AnomalibDataModule):
         test_split_mode: SplitMode | TestSplitMode | str = SplitMode.PREDEFINED,
         test_split_ratio: float = 0.2,
         val_split_mode: SplitMode | ValSplitMode | str = SplitMode.AUTO,
-        val_split_ratio: float = 0.5,
+        val_split_ratio: float | None = None,
         seed: int | None = None,
     ) -> None:
         test_split_mode = resolve_split_mode(test_split_mode)
