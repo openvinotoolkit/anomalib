@@ -133,15 +133,15 @@ class DatasetFilter:
         if samples is None:
             samples = self.samples
 
-        if isinstance(label, str) and label not in ["normal", "abnormal"]:
+        if isinstance(label, str) and label not in {"normal", "abnormal"}:
             msg = f"Invalid label: {label}. Must be 'normal' or 'abnormal'."
             raise ValueError(msg)
 
-        if isinstance(label, LabelName) and label not in [LabelName.NORMAL, LabelName.ABNORMAL]:
+        if isinstance(label, LabelName) and label not in {LabelName.NORMAL, LabelName.ABNORMAL}:
             msg = f"Invalid LabelName: {label}. Must be LabelName.NORMAL or LabelName.ABNORMAL."
             raise ValueError(msg)
 
-        label_index = LabelName.NORMAL if label in [LabelName.NORMAL, "normal"] else LabelName.ABNORMAL
+        label_index = LabelName.NORMAL if label in {LabelName.NORMAL, "normal"} else LabelName.ABNORMAL
         return samples[samples.label_index == label_index].reset_index(drop=True)
 
     def by_indices(self, indices: Sequence[int], samples: pd.DataFrame | None = None) -> pd.DataFrame:
