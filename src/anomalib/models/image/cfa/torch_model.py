@@ -20,6 +20,7 @@ from torch.utils.data import DataLoader
 from torchvision.models.feature_extraction import create_feature_extractor
 from tqdm import tqdm
 
+from anomalib.data import InferenceBatch
 from anomalib.models.components import DynamicBufferMixin
 from anomalib.models.components.feature_extractors import dryrun_find_featuremap_dims
 
@@ -47,7 +48,7 @@ def get_return_nodes(backbone: str) -> list[str]:
         raise NotImplementedError(msg)
 
     return_nodes: list[str]
-    if backbone in ("resnet18", "wide_resnet50_2"):
+    if backbone in {"resnet18", "wide_resnet50_2"}:
         return_nodes = ["layer1", "layer2", "layer3"]
     elif backbone == "vgg19_bn":
         return_nodes = ["features.25", "features.38", "features.52"]
@@ -158,7 +159,7 @@ class CfaModel(DynamicBufferMixin):
         device = next(self.feature_extractor.parameters()).device
         with torch.no_grad():
             for i, data in enumerate(tqdm(data_loader)):
-                batch = data["image"].to(device)
+                batch = data.image.to(device)
                 features = self.feature_extractor(batch)
                 features = list(features.values())
                 target_features = self.descriptor(features)
@@ -195,7 +196,7 @@ class CfaModel(DynamicBufferMixin):
         f_c = 2 * torch.matmul(target_oriented_features, (self.memory_bank.to(features.device)))
         return features + centers - f_c
 
-    def forward(self, input_tensor: torch.Tensor) -> torch.Tensor:
+    def forward(self, input_tensor: torch.Tensor) -> torch.Tensor | InferenceBatch:
         """Forward pass.
 
         Args:
@@ -219,15 +220,16 @@ class CfaModel(DynamicBufferMixin):
         target_features = self.descriptor(features)
         distance = self.compute_distance(target_features)
 
-        return (
-            distance
-            if self.training
-            else self.anomaly_map_generator(
-                distance=distance,
-                scale=target_features.shape[-2:],
-                image_size=input_tensor.shape[-2:],
-            )
-        )
+        if self.training:
+            return distance
+
+        anomaly_map = self.anomaly_map_generator(
+            distance=distance,
+            scale=target_features.shape[-2:],
+            image_size=input_tensor.shape[-2:],
+        ).squeeze()
+        pred_score = torch.amax(anomaly_map, dim=(-2, -1))
+        return InferenceBatch(pred_score=pred_score, anomaly_map=anomaly_map)
 
 
 class Descriptor(nn.Module):

@@ -12,6 +12,7 @@
 import torch
 from torch import nn
 
+from anomalib.data import InferenceBatch
 from anomalib.models.components.layers import SSPCAB
 
 
@@ -28,7 +29,7 @@ class DraemModel(nn.Module):
         self.reconstructive_subnetwork = ReconstructiveSubNetwork(sspcab=sspcab)
         self.discriminative_subnetwork = DiscriminativeSubNetwork(in_channels=6, out_channels=2)
 
-    def forward(self, batch: torch.Tensor) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
+    def forward(self, batch: torch.Tensor) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor] | InferenceBatch:
         """Compute the reconstruction and anomaly mask from an input image.
 
         Args:
@@ -43,7 +44,10 @@ class DraemModel(nn.Module):
         prediction = self.discriminative_subnetwork(concatenated_inputs)
         if self.training:
             return reconstruction, prediction
-        return torch.softmax(prediction, dim=1)[:, 1, ...]
+
+        anomaly_map = torch.softmax(prediction, dim=1)[:, 1, ...]
+        pred_score = torch.amax(anomaly_map, dim=(-2, -1))
+        return InferenceBatch(pred_score=pred_score, anomaly_map=anomaly_map)
 
 
 class ReconstructiveSubNetwork(nn.Module):

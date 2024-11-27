@@ -14,14 +14,18 @@ from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torch import optim
 
 from anomalib import LearningType
-from anomalib.models.components import AnomalyModule
+from anomalib.data import Batch
+from anomalib.metrics import Evaluator
+from anomalib.models.components import AnomalibModule
+from anomalib.post_processing import PostProcessor
+from anomalib.pre_processing import PreProcessor
 
 from .torch_model import FREModel
 
 logger = logging.getLogger(__name__)
 
 
-class Fre(AnomalyModule):
+class Fre(AnomalibModule):
     """FRE: Feature-reconstruction error using Tied AutoEncoder.
 
     Args:
@@ -38,6 +42,9 @@ class Fre(AnomalyModule):
         latent_dim (int, optional): Reduced size of feature after applying dimensionality reduction
             via shallow linear autoencoder.
             Defaults to ``220``.
+        pre_processor (PreProcessor, optional): Pre-processor for the model.
+            This is used to pre-process the input data before it is passed to the model.
+            Defaults to ``None``.
     """
 
     def __init__(
@@ -48,8 +55,11 @@ class Fre(AnomalyModule):
         pooling_kernel_size: int = 2,
         input_dim: int = 65536,
         latent_dim: int = 220,
+        pre_processor: PreProcessor | bool = True,
+        post_processor: PostProcessor | None = None,
+        evaluator: Evaluator | bool = True,
     ) -> None:
-        super().__init__()
+        super().__init__(pre_processor=pre_processor, post_processor=post_processor, evaluator=evaluator)
 
         self.model: FREModel = FREModel(
             backbone=backbone,
@@ -69,13 +79,13 @@ class Fre(AnomalyModule):
         """
         return optim.Adam(params=self.model.fre_model.parameters(), lr=1e-3)
 
-    def training_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> STEP_OUTPUT:
+    def training_step(self, batch: Batch, *args, **kwargs) -> STEP_OUTPUT:
         """Perform the training step of FRE.
 
         For each batch, features are extracted from the CNN.
 
         Args:
-            batch (dict[str, str | torch.Tensor]): Input batch
+            batch (Batch): Input batch
             args: Arguments.
             kwargs: Keyword arguments.
 
@@ -83,18 +93,18 @@ class Fre(AnomalyModule):
           Deep CNN features.
         """
         del args, kwargs  # These variables are not used.
-        features_in, features_out, _ = self.model.get_features(batch["image"])
+        features_in, features_out, _ = self.model.get_features(batch.image)
         loss = self.loss_fn(features_in, features_out)
         self.log("train_loss", loss.item(), on_epoch=True, prog_bar=True, logger=True)
         return {"loss": loss}
 
-    def validation_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> STEP_OUTPUT:
+    def validation_step(self, batch: Batch, *args, **kwargs) -> STEP_OUTPUT:
         """Perform the validation step of FRE.
 
         Similar to the training step, features are extracted from the CNN for each batch.
 
         Args:
-          batch (dict[str, str | torch.Tensor]): Input batch
+          batch (Batch): Input batch
           args: Arguments.
           kwargs: Keyword arguments.
 
@@ -103,8 +113,8 @@ class Fre(AnomalyModule):
         """
         del args, kwargs  # These variables are not used.
 
-        batch["pred_scores"], batch["anomaly_maps"] = self.model(batch["image"])
-        return batch
+        predictions = self.model(batch.image)
+        return batch.update(**predictions._asdict())
 
     @property
     def trainer_arguments(self) -> dict[str, Any]:

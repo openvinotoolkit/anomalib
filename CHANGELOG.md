@@ -8,11 +8,70 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+- Add `AUPIMO` tutorials notebooks in https://github.com/openvinotoolkit/anomalib/pull/2330 and https://github.com/openvinotoolkit/anomalib/pull/2336
+- Add `AUPIMO` metric by [jpcbertoldo](https://github.com/jpcbertoldo) in https://github.com/openvinotoolkit/anomalib/pull/1726 and refactored by [ashwinvaidya17](https://github.com/ashwinvaidya17) in https://github.com/openvinotoolkit/anomalib/pull/2329
+
 ### Changed
 
 ### Deprecated
 
 ### Fixed
+
+### New Contributors
+
+## [v1.2.0]
+
+### Added
+
+- 🚀 Add ensembling methods for tiling to Anomalib by @blaz-r in https://github.com/openvinotoolkit/anomalib/pull/1226
+- 📚 optimization/quantization added into 500 series by @paularamo in https://github.com/openvinotoolkit/anomalib/pull/2197
+- 🚀 Add PIMO by @ashwinvaidya17 in https://github.com/openvinotoolkit/anomalib/pull/2329
+- 📚 Add PIMO tutorial advanced i (fixed) by @jpcbertoldo in https://github.com/openvinotoolkit/anomalib/pull/2336
+- 🚀 Add VLM based Anomaly Model by @ashwinvaidya17 in https://github.com/openvinotoolkit/anomalib/pull/2344
+- 📚 Add PIMO tutorials/02 advanced ii by @jpcbertoldo in https://github.com/openvinotoolkit/anomalib/pull/2347
+- 📚 Add PIMO tutorials/03 advanced iii by @jpcbertoldo in https://github.com/openvinotoolkit/anomalib/pull/2348
+- 📚 Add PIMO tutorials/04 advanced iv by @jpcbertoldo in https://github.com/openvinotoolkit/anomalib/pull/2352
+- 🚀 Add datumaro annotation dataloader by @ashwinvaidya17 in https://github.com/openvinotoolkit/anomalib/pull/2377
+- 📚 Add training from a checkpoint example by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/2389
+
+### Changed
+
+- 🔨 Refactor folder3d to avoid complex-structure (C901) issue by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/2185
+- Update open-clip-torch requirement from <2.26.1,>=2.23.0 to >=2.23.0,<2.26.2 by @dependabot in https://github.com/openvinotoolkit/anomalib/pull/2189
+- Update sphinx requirement by @dependabot in https://github.com/openvinotoolkit/anomalib/pull/2235
+- Refactor Lightning's `trainer.model` to `trainer.lightning_module` by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/2255
+- Revert "Update open-clip-torch requirement from <2.26.1,>=2.23.0 to >=2.23.0,<2.26.2" by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/2270
+- Update ruff configuration by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/2269
+- Update timm requirement by @dependabot in https://github.com/openvinotoolkit/anomalib/pull/2274
+- Refactor BaseThreshold to Threshold by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/2278
+- 🔨 Lint: Update Ruff Config - Add Missing Copyright Headers by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/2281
+- Reduce rich methods by @ashwinvaidya17 in https://github.com/openvinotoolkit/anomalib/pull/2283
+- Enable Ruff Rules: PLW1514 and PLR6201 by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/2284
+- Update nncf export by @ashwinvaidya17 in https://github.com/openvinotoolkit/anomalib/pull/2286
+- Linting: Enable `PLR6301`, # could be a function, class method or static method by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/2288
+- 🐞 Update `setuptools` requirement for PEP 660 support by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/2320
+- 🔨 Update the issue templates by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/2363
+- 🐞 Defer OpenVINO import to avoid unnecessary warnings by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/2385
+- 🔨 Make single GPU benchmarking 5x more efficient by @mzweilin in https://github.com/openvinotoolkit/anomalib/pull/2390
+- 🐞 Export the flattened config in benchmark CSV. by @mzweilin in https://github.com/openvinotoolkit/anomalib/pull/2391
+- 🔨 Export experiment duration in seconds in CSV. by @mzweilin in https://github.com/openvinotoolkit/anomalib/pull/2392
+- 🐞 Fix installation package issues by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/2395
+
+### Deprecated
+
+- 🔨 Deprecate try import and replace it with Lightning's package_available by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/2373
+
+### Fixed
+
+- Add check before loading metrics data from checkpoint by @blaz-r in https://github.com/openvinotoolkit/anomalib/pull/2323
+- Fix transforms for draem, dsr and rkde by @blaz-r in https://github.com/openvinotoolkit/anomalib/pull/2324
+- Makes batch size dynamic by @Marcus1506 in https://github.com/openvinotoolkit/anomalib/pull/2339
+
+## New Contributors
+
+- @Marcus1506 made their first contribution in https://github.com/openvinotoolkit/anomalib/pull/2339
+
+**Full Changelog**: https://github.com/openvinotoolkit/anomalib/compare/v1.1.1...v1.2.0
 
 ### New Contributors
 
@@ -26,6 +85,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
+- Implement new design for metrics by @djdameln https://github.com/openvinotoolkit/anomalib/pull/2326
 - Set permissions for github workflows by @djdameln in https://github.com/openvinotoolkit/anomalib/pull/2127
 - Update timm requirement from <=1.0.3,>=0.5.4 to >=0.5.4,<=1.0.7 by @dependabot in https://github.com/openvinotoolkit/anomalib/pull/2151
 - 🚀 Use gh actions runners for pre-commit checks by @ashwinvaidya17 in https://github.com/openvinotoolkit/anomalib/pull/2160

@@ -7,6 +7,9 @@ https://www.sphinx-doc.org/en/master/usage/configuration.html
 https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 """
 
+# Copyright (C) 2022-2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
 from __future__ import annotations
 
 import sys

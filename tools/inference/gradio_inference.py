@@ -29,13 +29,12 @@ def get_parser() -> ArgumentParser:
     """
     parser = ArgumentParser()
     parser.add_argument("--weights", type=Path, required=True, help="Path to model weights")
-    parser.add_argument("--metadata", type=Path, required=False, help="Path to a JSON file containing the metadata.")
     parser.add_argument("--share", type=bool, required=False, default=False, help="Share Gradio `share_url`")
 
     return parser
 
 
-def get_inferencer(weight_path: Path, metadata: Path | None = None) -> Inferencer:
+def get_inferencer(weight_path: Path) -> Inferencer:
     """Parse args and open inferencer.
 
     Args:
@@ -53,17 +52,13 @@ def get_inferencer(weight_path: Path, metadata: Path | None = None) -> Inference
     extension = weight_path.suffix
     inferencer: Inferencer
     module = import_module("anomalib.deploy")
-    if extension in (".pt", ".pth", ".ckpt"):
+    if extension in {".pt", ".pth", ".ckpt"}:
         torch_inferencer = module.TorchInferencer
         inferencer = torch_inferencer(path=weight_path)
 
-    elif extension in (".onnx", ".bin", ".xml"):
-        if metadata is None:
-            msg = "When using OpenVINO Inferencer, the following arguments are required: --metadata"
-            raise ValueError(msg)
-
+    elif extension in {".onnx", ".bin", ".xml"}:
         openvino_inferencer = module.OpenVINOInferencer
-        inferencer = openvino_inferencer(path=weight_path, metadata=metadata)
+        inferencer = openvino_inferencer(path=weight_path)
 
     else:
         msg = (
@@ -96,7 +91,7 @@ def infer(image: np.ndarray, inferencer: Inferencer) -> tuple[np.ndarray, np.nda
 
 if __name__ == "__main__":
     args = get_parser().parse_args()
-    gradio_inferencer = get_inferencer(args.weights, args.metadata)
+    gradio_inferencer = get_inferencer(args.weights)
 
     interface = gradio.Interface(
         fn=lambda image: infer(image, gradio_inferencer),

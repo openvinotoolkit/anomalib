@@ -12,12 +12,35 @@ from omegaconf import DictConfig, ListConfig
 
 from anomalib.utils.config import to_tuple
 
-from .base import AnomalibDataModule, AnomalibDataset
-from .depth import DepthDataFormat, Folder3D, MVTec3D
-from .image import CSV, BTech, Folder, ImageDataFormat, Kolektor, MVTec, Visa
+# Dataclasses
+from .dataclasses import (
+    Batch,
+    DatasetItem,
+    DepthBatch,
+    DepthItem,
+    ImageBatch,
+    ImageItem,
+    InferenceBatch,
+    NumpyImageBatch,
+    NumpyImageItem,
+    NumpyVideoBatch,
+    NumpyVideoItem,
+    VideoBatch,
+    VideoItem,
+)
+
+# Datamodules
+from .datamodules.base import AnomalibDataModule
+from .datamodules.depth import DepthDataFormat, Folder3D, MVTec3D
+from .datamodules.image import CSV, BTech, Datumaro, Folder, ImageDataFormat, Kolektor, MVTec, Visa
+from .datamodules.video import Avenue, ShanghaiTech, UCSDped, VideoDataFormat
+
+# Datasets
+from .datasets import AnomalibDataset
+from .datasets.depth import Folder3DDataset, MVTec3DDataset
+from .datasets.image import BTechDataset, DatumaroDataset, FolderDataset, KolektorDataset, MVTecDataset, VisaDataset
+from .datasets.video import AvenueDataset, ShanghaiTechDataset, UCSDpedDataset
 from .predict import PredictDataset
-from .utils import LabelName
-from .video import Avenue, ShanghaiTech, UCSDped, VideoDataFormat
 
 logger = logging.getLogger(__name__)
 
@@ -63,7 +86,35 @@ def get_datamodule(config: DictConfig | ListConfig | dict) -> AnomalibDataModule
 
 
 __all__ = [
+    # Anomalib dataclasses
+    "DatasetItem",
+    "Batch",
+    "InferenceBatch",
+    "ImageItem",
+    "ImageBatch",
+    "VideoItem",
+    "VideoBatch",
+    "DepthItem",
+    "DepthBatch",
+    "NumpyImageItem",
+    "NumpyImageBatch",
+    "NumpyVideoItem",
+    "NumpyVideoBatch",
+    # Anomalib datasets
     "AnomalibDataset",
+    "Folder3DDataset",
+    "MVTec3DDataset",
+    "BTechDataset",
+    "DatumaroDataset",
+    "FolderDataset",
+    "KolektorDataset",
+    "MVTecDataset",
+    "VisaDataset",
+    "AvenueDataset",
+    "ShanghaiTechDataset",
+    "UCSDpedDataset",
+    "PredictDataset",
+    # Anomalib datamodules
     "AnomalibDataModule",
     "DepthDataFormat",
     "ImageDataFormat",
@@ -71,9 +122,9 @@ __all__ = [
     "get_datamodule",
     "BTech",
     "CSV",
+    "Datumaro",
     "Folder",
     "Folder3D",
-    "PredictDataset",
     "Kolektor",
     "MVTec",
     "MVTec3D",
@@ -81,5 +132,5 @@ __all__ = [
     "UCSDped",
     "ShanghaiTech",
     "Visa",
-    "LabelName",
+    "PredictDataset",
 ]

@@ -10,10 +10,13 @@ import logging
 
 import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
-from torchvision.transforms.v2 import Compose, Normalize, Resize, Transform
 
 from anomalib import LearningType
-from anomalib.models.components import AnomalyModule, MemoryBankMixin
+from anomalib.data import Batch
+from anomalib.metrics import Evaluator
+from anomalib.models.components import AnomalibModule, MemoryBankMixin
+from anomalib.post_processing import OneClassPostProcessor, PostProcessor
+from anomalib.pre_processing import PreProcessor
 
 from .torch_model import PadimModel
 
@@ -22,7 +25,7 @@ logger = logging.getLogger(__name__)
 __all__ = ["Padim"]
 
 
-class Padim(MemoryBankMixin, AnomalyModule):
+class Padim(MemoryBankMixin, AnomalibModule):
     """PaDiM: a Patch Distribution Modeling Framework for Anomaly Detection and Localization.
 
     Args:
@@ -35,6 +38,9 @@ class Padim(MemoryBankMixin, AnomalyModule):
         n_features (int, optional): Number of features to retain in the dimension reduction step.
             Default values from the paper are available for: resnet18 (100), wide_resnet50_2 (550).
             Defaults to ``None``.
+        pre_processor (PreProcessor, optional): Pre-processor for the model.
+            This is used to pre-process the input data before it is passed to the model.
+            Defaults to ``None``.
     """
 
     def __init__(
@@ -43,8 +49,11 @@ class Padim(MemoryBankMixin, AnomalyModule):
         layers: list[str] = ["layer1", "layer2", "layer3"],  # noqa: B006
         pre_trained: bool = True,
         n_features: int | None = None,
+        pre_processor: PreProcessor | bool = True,
+        post_processor: PostProcessor | None = None,
+        evaluator: Evaluator | bool = True,
     ) -> None:
-        super().__init__()
+        super().__init__(pre_processor=pre_processor, post_processor=post_processor, evaluator=evaluator)
 
         self.model: PadimModel = PadimModel(
             backbone=backbone,
@@ -61,7 +70,7 @@ class Padim(MemoryBankMixin, AnomalyModule):
         """PADIM doesn't require optimization, therefore returns no optimizers."""
         return
 
-    def training_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> None:
+    def training_step(self, batch: Batch, *args, **kwargs) -> None:
         """Perform the training step of PADIM. For each batch, hierarchical features are extracted from the CNN.
 
         Args:
@@ -74,7 +83,7 @@ class Padim(MemoryBankMixin, AnomalyModule):
         """
         del args, kwargs  # These variables are not used.
 
-        embedding = self.model(batch["image"])
+        embedding = self.model(batch.image)
         self.embeddings.append(embedding.cpu())
 
     def fit(self) -> None:
@@ -85,7 +94,7 @@ class Padim(MemoryBankMixin, AnomalyModule):
         logger.info("Fitting a Gaussian to the embedding collected from the training set.")
         self.stats = self.model.gaussian.fit(embeddings)
 
-    def validation_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> STEP_OUTPUT:
+    def validation_step(self, batch: Batch, *args, **kwargs) -> STEP_OUTPUT:
         """Perform a validation step of PADIM.
 
         Similar to the training step, hierarchical features are extracted from the CNN for each batch.
@@ -101,8 +110,8 @@ class Padim(MemoryBankMixin, AnomalyModule):
         """
         del args, kwargs  # These variables are not used.
 
-        batch["anomaly_maps"] = self.model(batch["image"])
-        return batch
+        predictions = self.model(batch.image)
+        return batch.update(**predictions._asdict())
 
     @property
     def trainer_arguments(self) -> dict[str, int | float]:
@@ -122,12 +131,7 @@ class Padim(MemoryBankMixin, AnomalyModule):
         """
         return LearningType.ONE_CLASS
 
-    def configure_transforms(self, image_size: tuple[int, int] | None = None) -> Transform:
-        """Default transform for Padim."""
-        image_size = image_size or (256, 256)
-        return Compose(
-            [
-                Resize(image_size, antialias=True),
-                Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-            ],
-        )
+    @staticmethod
+    def default_post_processor() -> OneClassPostProcessor:
+        """Return the default post-processor for PADIM."""
+        return OneClassPostProcessor()

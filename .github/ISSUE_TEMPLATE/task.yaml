@@ -1,35 +1,65 @@
-name: Tasks
-description: This is used to capture tasks being implemented/to implement such as features, maintenance, refactor, etc.
-title: "[Task]: "
-labels: ["Task"]
+name: 📋 Task
+description: A specific piece of work to be completed
+title: "📋 [TASK] "
+labels: ["task"]
+assignees: []
 body:
   - type: markdown
     attributes:
-      value: |
-        We encourage our users to submit feature requests in our [Discussion forum](https://github.com/openvinotoolkit/anomalib/discussions/categories/ideas-feature-requests). You can use this template for consistency.
-
+      value: "## 📋 Task Description"
   - type: textarea
-    id: motivation
+    id: description
     attributes:
-      label: What is the motivation for this task?
-      description: A clear and concise description of what the problem is.
-      placeholder: |
-        1. I'm always frustrated when [...]. It would be better if we could [...]
-        2. I would like to have [...] model/dataset to be supported in Anomalib.
+      label: Describe the task
+      description: Provide a clear and concise description of the task to be completed
     validations:
       required: true
   - type: textarea
-    id: solution
+    id: acceptance-criteria
     attributes:
-      label: Describe the solution you'd like
-      description: A clear and concise description of what you want to happen. Add screenshots or code-blocks if necessary.
-      placeholder: |
-        I would like to have [...] to do this we would need to [...]
-        Here is what I would like to see [...]
+      label: Acceptance Criteria
+      description: List the specific criteria that must be met for this task to be considered complete
+    validations:
+      required: true
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      options:
+        - Low
+        - Medium
+        - High
+    validations:
+      required: true
+  - type: input
+    id: epic-link
+    attributes:
+      label: Related Epic
+      description: If this task is part of an epic, provide the epic's issue number (e.g., #123)
+    validations:
+      required: false
+  - type: input
+    id: estimated-time
+    attributes:
+      label: Estimated Time
+      description: Provide an estimate of how long this task will take (e.g., 2h, 1d)
+    validations:
+      required: false
+  - type: dropdown
+    id: status
+    attributes:
+      label: Current Status
+      options:
+        - Not Started
+        - In Progress
+        - Blocked
+        - Ready for Review
     validations:
       required: true
   - type: textarea
-    id: additional-context
+    id: additional-info
     attributes:
-      label: Additional context
-      description: Add any other context or screenshots about the feature request here.
+      label: Additional Information
+      description: Any other relevant details or context for this task
+    validations:
+      required: false

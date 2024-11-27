@@ -33,7 +33,7 @@ def get_feature_extractor(backbone: str, input_size: tuple[int, int] = (256, 256
         raise ValueError(msg)
 
     feature_extractor: nn.Module
-    if backbone in ["resnet18", "wide_resnet50_2"]:
+    if backbone in {"resnet18", "wide_resnet50_2"}:
         feature_extractor = FeatureExtractor(backbone, input_size, layers=("layer1", "layer2", "layer3")).eval()
     if backbone == "mcait":
         feature_extractor = MCaitFeatureExtractor().eval()

@@ -14,16 +14,18 @@ from .generator import BenchmarkJobGenerator
 class Benchmark(Pipeline):
     """Benchmarking pipeline."""
 
-    def _setup_runners(self, args: dict) -> list[Runner]:
+    @staticmethod
+    def _setup_runners(args: dict) -> list[Runner]:
         """Setup the runners for the pipeline."""
         accelerators = args["accelerator"] if isinstance(args["accelerator"], list) else [args["accelerator"]]
         runners: list[Runner] = []
         for accelerator in accelerators:
-            if accelerator == "cpu":
-                runners.append(SerialRunner(BenchmarkJobGenerator("cpu")))
-            elif accelerator == "cuda":
-                runners.append(ParallelRunner(BenchmarkJobGenerator("cuda"), n_jobs=torch.cuda.device_count()))
-            else:
+            if accelerator not in {"cpu", "cuda"}:
                 msg = f"Unsupported accelerator: {accelerator}"
                 raise ValueError(msg)
+            device_count = torch.cuda.device_count()
+            if device_count <= 1 or accelerator == "cpu":
+                runners.append(SerialRunner(BenchmarkJobGenerator(accelerator)))
+            else:
+                runners.append(ParallelRunner(BenchmarkJobGenerator(accelerator), n_jobs=device_count))
         return runners

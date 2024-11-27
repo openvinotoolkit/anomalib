@@ -9,6 +9,7 @@ import torch
 from torch import nn
 from torch.nn import functional as F  # noqa: N812
 
+from anomalib.data import InferenceBatch
 from anomalib.models.components import PCA, DynamicBufferMixin, TimmFeatureExtractor
 
 
@@ -163,7 +164,7 @@ class DFMModel(nn.Module):
         features = features.view(batch_size, -1).detach()
         return features if self.training else (features, feature_shapes)
 
-    def forward(self, batch: torch.Tensor) -> torch.Tensor:
+    def forward(self, batch: torch.Tensor) -> torch.Tensor | InferenceBatch:
         """Compute score from input images.
 
         Args:
@@ -173,7 +174,7 @@ class DFMModel(nn.Module):
             Tensor: Scores
         """
         feature_vector, feature_shapes = self.get_features(batch)
-        score, score_map = self.score(feature_vector.view(feature_vector.shape[:2]), feature_shapes)
-        if score_map is not None:
-            score_map = F.interpolate(score_map, size=batch.shape[-2:], mode="bilinear", align_corners=False)
-        return score, score_map
+        pred_score, anomaly_map = self.score(feature_vector.view(feature_vector.shape[:2]), feature_shapes)
+        if anomaly_map is not None:
+            anomaly_map = F.interpolate(anomaly_map, size=batch.shape[-2:], mode="bilinear", align_corners=False)
+        return InferenceBatch(pred_score=pred_score, anomaly_map=anomaly_map)

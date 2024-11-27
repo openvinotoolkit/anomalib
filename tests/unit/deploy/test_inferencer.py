@@ -52,7 +52,6 @@ class _MockImageLoader:
     "task",
     [
         TaskType.CLASSIFICATION,
-        TaskType.DETECTION,
         TaskType.SEGMENTATION,
     ],
 )
@@ -91,7 +90,6 @@ def test_torch_inference(task: TaskType, ckpt_path: Callable[[str], Path]) -> No
     "task",
     [
         TaskType.CLASSIFICATION,
-        TaskType.DETECTION,
         TaskType.SEGMENTATION,
     ],
 )
@@ -118,7 +116,6 @@ def test_openvino_inference(task: TaskType, ckpt_path: Callable[[str], Path]) ->
     # Test OpenVINO inferencer
     openvino_inferencer = OpenVINOInferencer(
         exported_xml_file_path,
-        exported_xml_file_path.parent / "metadata.json",
     )
     openvino_dataloader = _MockImageLoader([256, 256], total_count=1, as_numpy=True)
     for image in openvino_dataloader():

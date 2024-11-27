@@ -18,7 +18,8 @@ class TestEngine:
     """Test Engine."""
 
     @pytest.fixture()
-    def fxt_full_config_path(self, tmp_path: Path) -> Path:
+    @staticmethod
+    def fxt_full_config_path(tmp_path: Path) -> Path:
         """Fixture full configuration examples."""
         config_str = """
         seed_everything: true
@@ -61,25 +62,7 @@ class TestEngine:
             plugins: null
             sync_batchnorm: false
             reload_dataloaders_every_n_epochs: 0
-        normalization:
-            normalization_method: MIN_MAX
         task: SEGMENTATION
-        metrics:
-            image:
-            - F1Score
-            - AUROC
-            pixel: null
-            threshold:
-                class_path: anomalib.metrics.F1AdaptiveThreshold
-                init_args:
-                    default_value: 0.5
-                    thresholds: null
-                    ignore_index: null
-                    validate_args: true
-                    compute_on_cpu: false
-                    dist_sync_on_step: false
-                    sync_on_compute: true
-                    compute_with_cache: true
         logging:
             log_graph: false
         default_root_dir: results
@@ -102,10 +85,6 @@ class TestEngine:
                 train_batch_size: 32
                 eval_batch_size: 32
                 num_workers: 8
-                image_size: null
-                transform: null
-                train_transform: null
-                eval_transform: null
                 test_split_mode: FROM_DIR
                 test_split_ratio: 0.2
                 val_split_mode: SAME_AS_TEST
@@ -118,7 +97,8 @@ class TestEngine:
             yaml.dump(config_dict, file)
         return config_file
 
-    def test_from_config(self, fxt_full_config_path: Path) -> None:
+    @staticmethod
+    def test_from_config(fxt_full_config_path: Path) -> None:
         """Test Engine.from_config."""
         with pytest.raises(FileNotFoundError):
             Engine.from_config(config_path="wrong_configs.yaml")

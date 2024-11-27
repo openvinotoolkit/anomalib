@@ -10,6 +10,7 @@ import torch
 from torch import nn
 from torch.nn import functional as F  # noqa: N812
 
+from anomalib.data import InferenceBatch
 from anomalib.models.components import TimmFeatureExtractor
 from anomalib.models.components.classification import FeatureScalingMethod, KDEClassifier
 
@@ -68,7 +69,7 @@ class DfkdeModel(nn.Module):
             layer_outputs[layer] = layer_outputs[layer].view(batch_size, -1)
         return torch.cat(list(layer_outputs.values())).detach()
 
-    def forward(self, batch: torch.Tensor) -> torch.Tensor:
+    def forward(self, batch: torch.Tensor) -> torch.Tensor | InferenceBatch:
         """Prediction by normality model.
 
         Args:
@@ -83,4 +84,5 @@ class DfkdeModel(nn.Module):
             return features
 
         # 2. apply density estimation
-        return self.classifier(features)
+        scores = self.classifier(features)
+        return InferenceBatch(pred_score=scores)

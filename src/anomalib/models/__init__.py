@@ -9,7 +9,7 @@ from importlib import import_module
 from jsonargparse import Namespace
 from omegaconf import DictConfig, OmegaConf
 
-from anomalib.models.components import AnomalyModule
+from anomalib.models.components import AnomalibModule
 from anomalib.utils.path import convert_to_snake_case
 
 from .image import (
@@ -30,6 +30,7 @@ from .image import (
     Rkde,
     Stfpm,
     Uflow,
+    VlmAd,
     WinClip,
 )
 from .video import AiVad
@@ -57,8 +58,9 @@ __all__ = [
     "Rkde",
     "Stfpm",
     "Uflow",
-    "AiVad",
+    "VlmAd",
     "WinClip",
+    "AiVad",
 ]
 
 logger = logging.getLogger(__name__)
@@ -93,10 +95,14 @@ def get_available_models() -> set[str]:
         >>> get_available_models()
         ['ai_vad', 'cfa', 'cflow', 'csflow', 'dfkde', 'dfm', 'draem', 'efficient_ad', 'fastflow', ...]
     """
-    return {convert_to_snake_case(cls.__name__) for cls in AnomalyModule.__subclasses__()}
+    return {
+        convert_to_snake_case(cls.__name__)
+        for cls in AnomalibModule.__subclasses__()
+        if cls.__name__ != "AnomalyModule"
+    }
 
 
-def _get_model_class_by_name(name: str) -> type[AnomalyModule]:
+def _get_model_class_by_name(name: str) -> type[AnomalibModule]:
     """Retrieves an anomaly model based on its name.
 
     Args:
@@ -106,13 +112,13 @@ def _get_model_class_by_name(name: str) -> type[AnomalyModule]:
         UnknownModelError: If the model is not found.
 
     Returns:
-        type[AnomalyModule]: Anomaly Model
+        type[AnomalibModule]: Anomaly Model
     """
     logger.info("Loading the model.")
-    model_class: type[AnomalyModule] | None = None
+    model_class: type[AnomalibModule] | None = None
 
     name = convert_snake_to_pascal_case(name).lower()
-    for model in AnomalyModule.__subclasses__():
+    for model in AnomalibModule.__subclasses__():
         if name == model.__name__.lower():
             model_class = model
     if model_class is None:
@@ -122,7 +128,7 @@ def _get_model_class_by_name(name: str) -> type[AnomalyModule]:
     return model_class
 
 
-def get_model(model: DictConfig | str | dict | Namespace, *args, **kwdargs) -> AnomalyModule:
+def get_model(model: DictConfig | str | dict | Namespace, *args, **kwdargs) -> AnomalibModule:
     """Get Anomaly Model.
 
     Args:
@@ -143,9 +149,9 @@ def get_model(model: DictConfig | str | dict | Namespace, *args, **kwdargs) -> A
         TypeError: If unsupported type is passed.
 
     Returns:
-        AnomalyModule: Anomaly Model
+        AnomalibModule: Anomaly Model
     """
-    _model: AnomalyModule
+    _model: AnomalibModule
     if isinstance(model, str):
         _model_class = _get_model_class_by_name(model)
         _model = _model_class(*args, **kwdargs)

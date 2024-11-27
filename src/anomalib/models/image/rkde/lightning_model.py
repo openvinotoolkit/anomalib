@@ -11,10 +11,14 @@ from typing import Any
 
 import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
+from torchvision.transforms.v2 import Compose, Resize, Transform
 
 from anomalib import LearningType
-from anomalib.models.components import AnomalyModule, MemoryBankMixin
+from anomalib.metrics import Evaluator
+from anomalib.models.components import AnomalibModule, MemoryBankMixin
 from anomalib.models.components.classification import FeatureScalingMethod
+from anomalib.post_processing import PostProcessor
+from anomalib.pre_processing import PreProcessor
 
 from .region_extractor import RoiStage
 from .torch_model import RkdeModel
@@ -22,7 +26,7 @@ from .torch_model import RkdeModel
 logger = logging.getLogger(__name__)
 
 
-class Rkde(MemoryBankMixin, AnomalyModule):
+class Rkde(MemoryBankMixin, AnomalibModule):
     """Region Based Anomaly Detection With Real-Time Training and Analysis.
 
     Args:
@@ -44,6 +48,9 @@ class Rkde(MemoryBankMixin, AnomalyModule):
             Defaults to ``FeatureScalingMethod.SCALE``.
         max_training_points (int, optional): Maximum number of training points to fit the KDE model.
             Defaults to ``40000``.
+        pre_processor (PreProcessor, optional): Pre-processor for the model.
+            This is used to pre-process the input data before it is passed to the model.
+            Defaults to ``None``.
     """
 
     def __init__(
@@ -56,8 +63,11 @@ class Rkde(MemoryBankMixin, AnomalyModule):
         n_pca_components: int = 16,
         feature_scaling_method: FeatureScalingMethod = FeatureScalingMethod.SCALE,
         max_training_points: int = 40000,
+        pre_processor: PreProcessor | bool = True,
+        post_processor: PostProcessor | None = None,
+        evaluator: Evaluator | bool = True,
     ) -> None:
-        super().__init__()
+        super().__init__(pre_processor=pre_processor, post_processor=post_processor, evaluator=evaluator)
 
         self.model: RkdeModel = RkdeModel(
             roi_stage=roi_stage,
@@ -143,3 +153,13 @@ class Rkde(MemoryBankMixin, AnomalyModule):
             LearningType: Learning type of the model.
         """
         return LearningType.ONE_CLASS
+
+    @staticmethod
+    def configure_transforms(image_size: tuple[int, int] | None = None) -> Transform:
+        """Default transform for RKDE."""
+        image_size = image_size or (240, 360)
+        return Compose(
+            [
+                Resize(image_size, antialias=True),
+            ],
+        )

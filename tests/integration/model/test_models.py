@@ -7,6 +7,7 @@ Tests the models using API. The weight paths from the trained models are used fo
 # SPDX-License-Identifier: Apache-2.0
 
 from pathlib import Path
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -14,12 +15,12 @@ from anomalib import TaskType
 from anomalib.data import AnomalibDataModule, MVTec
 from anomalib.deploy import ExportType
 from anomalib.engine import Engine
-from anomalib.models import AnomalyModule, get_available_models, get_model
+from anomalib.models import AnomalibModule, get_available_models, get_model
 
 
 def models() -> set[str]:
     """Return all available models."""
-    return get_available_models()
+    return {model for model in get_available_models() if model != "rkde"}
 
 
 def export_types() -> list[ExportType]:
@@ -159,12 +160,12 @@ class TestAPI:
             export_type=export_type,
         )
 
+    @staticmethod
     def _get_objects(
-        self,
         model_name: str,
         dataset_path: Path,
         project_path: Path,
-    ) -> tuple[AnomalyModule, AnomalibDataModule, Engine]:
+    ) -> tuple[AnomalibModule, AnomalibDataModule, Engine]:
         """Return model, dataset, and engine objects.
 
         Args:
@@ -173,30 +174,23 @@ class TestAPI:
             project_path (Path): path to the temporary project folder
 
         Returns:
-            tuple[AnomalyModule, AnomalibDataModule, Engine]: Returns the created objects for model, dataset,
+            tuple[AnomalibModule, AnomalibDataModule, Engine]: Returns the created objects for model, dataset,
                 and engine
         """
         # select task type
-        if model_name in ("rkde", "ai_vad"):
-            task_type = TaskType.DETECTION
-        elif model_name in ("ganomaly", "dfkde"):
-            task_type = TaskType.CLASSIFICATION
-        else:
-            task_type = TaskType.SEGMENTATION
+
+        task_type = TaskType.CLASSIFICATION if model_name in {"ganomaly", "dfkde"} else TaskType.SEGMENTATION
 
         # set extra model args
         # TODO(ashwinvaidya17): Fix these Edge cases
         # https://github.com/openvinotoolkit/anomalib/issues/1478
 
         extra_args = {}
-        if model_name in ("rkde", "dfkde"):
+        if model_name in {"rkde", "dfkde"}:
             extra_args["n_pca_components"] = 2
+
         if model_name == "ai_vad":
             pytest.skip("Revisit AI-VAD test")
-
-        # select dataset
-        elif model_name == "win_clip":
-            dataset = MVTec(root=dataset_path / "mvtec", category="dummy", image_size=240, task=task_type)
         else:
             # EfficientAd requires that the batch size be lesser than the number of images in the dataset.
             # This is so that the LR step size is not 0.
@@ -209,12 +203,16 @@ class TestAPI:
             )
 
         model = get_model(model_name, **extra_args)
+
+        if model_name == "vlm_ad":
+            model.vlm_backend = MagicMock()
+            model.vlm_backend.predict.return_value = "YES: Because reasons..."
+
         engine = Engine(
             logger=False,
             default_root_dir=project_path,
             max_epochs=1,
             devices=1,
-            pixel_metrics=["F1Score", "AUROC"],
             task=task_type,
             # TODO(ashwinvaidya17): Fix these Edge cases
             # https://github.com/openvinotoolkit/anomalib/issues/1478

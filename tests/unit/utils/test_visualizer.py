@@ -12,9 +12,9 @@ from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from torch.utils.data import DataLoader
 
 from anomalib import TaskType
-from anomalib.data import MVTec, PredictDataset
+from anomalib.data import ImageBatch, MVTec, PredictDataset
 from anomalib.engine import Engine
-from anomalib.models import get_model
+from anomalib.models import Padim
 from anomalib.utils.visualization.image import _ImageGrid
 
 
@@ -38,9 +38,9 @@ def test_visualize_fully_defected_masks() -> None:
 class TestVisualizer:
     """Test visualization callback for test and predict with different task types."""
 
-    @pytest.mark.parametrize("task", [TaskType.CLASSIFICATION, TaskType.SEGMENTATION, TaskType.DETECTION])
+    @staticmethod
+    @pytest.mark.parametrize("task", [TaskType.CLASSIFICATION, TaskType.SEGMENTATION])
     def test_model_visualizer_mode(
-        self,
         ckpt_path: Callable[[str], Path],
         project_path: Path,
         dataset_path: Path,
@@ -48,7 +48,7 @@ class TestVisualizer:
     ) -> None:
         """Test combination of model/visualizer/mode on only 1 epoch as a sanity check before merge."""
         _ckpt_path: Path = ckpt_path("Padim")
-        model = get_model("padim")
+        model = Padim(evaluator=False)
         engine = Engine(
             default_root_dir=project_path,
             fast_dev_run=True,
@@ -59,5 +59,5 @@ class TestVisualizer:
         engine.test(model=model, datamodule=datamodule, ckpt_path=str(_ckpt_path))
 
         dataset = PredictDataset(path=dataset_path / "mvtec" / "dummy" / "test")
-        datamodule = DataLoader(dataset)
+        datamodule = DataLoader(dataset, collate_fn=ImageBatch.collate)
         engine.predict(model=model, dataloaders=datamodule, ckpt_path=str(_ckpt_path))

@@ -12,12 +12,15 @@ from typing import Any
 import torch
 from lightning.pytorch.core.optimizer import LightningOptimizer
 from lightning.pytorch.utilities.types import STEP_OUTPUT
-from torch import Tensor
 from torch.optim.lr_scheduler import LRScheduler
-from torchvision.transforms.v2 import Compose, Normalize, Resize, Transform
+from torchvision.transforms.v2 import Compose, Normalize, Resize
 
 from anomalib import LearningType
-from anomalib.models.components import AnomalyModule
+from anomalib.data import Batch
+from anomalib.metrics import Evaluator
+from anomalib.models.components import AnomalibModule
+from anomalib.post_processing import PostProcessor
+from anomalib.pre_processing import PreProcessor
 
 from .loss import UFlowLoss
 from .torch_model import UflowModel
@@ -27,8 +30,16 @@ logger = logging.getLogger(__name__)
 __all__ = ["Uflow"]
 
 
-class Uflow(AnomalyModule):
-    """PL Lightning Module for the UFLOW algorithm."""
+class Uflow(AnomalibModule):
+    """Uflow model.
+
+    Args:
+        backbone (str): Backbone name.
+        flow_steps (int): Number of flow steps.
+        affine_clamp (float): Affine clamp.
+        affine_subnet_channels_ratio (float): Affine subnet channels ratio.
+        permute_soft (bool): Whether to use soft permutation.
+    """
 
     def __init__(
         self,
@@ -37,6 +48,9 @@ class Uflow(AnomalyModule):
         affine_clamp: float = 2.0,
         affine_subnet_channels_ratio: float = 1.0,
         permute_soft: bool = False,
+        pre_processor: PreProcessor | bool = True,
+        post_processor: PostProcessor | None = None,
+        evaluator: Evaluator | bool = True,
     ) -> None:
         """Uflow model.
 
@@ -46,23 +60,26 @@ class Uflow(AnomalyModule):
             affine_clamp (float): Affine clamp.
             affine_subnet_channels_ratio (float): Affine subnet channels ratio.
             permute_soft (bool): Whether to use soft permutation.
+            pre_processor (PreProcessor, optional): Pre-processor for the model.
+                This is used to pre-process the input data before it is passed to the model.
+                Defaults to ``None``.
+            post_processor (PostProcessor, optional): Post-processor for the model.
+                This is used to post-process the output data after it is passed to the model.
+                Defaults to ``None``.
+            evaluator (Evaluator, optional): Evaluator for the model.
+                This is used to evaluate the model.
+                Defaults to ``True``.
         """
-        super().__init__()
+        super().__init__(pre_processor=pre_processor, post_processor=post_processor, evaluator=evaluator)
+        if self.input_size is None:
+            msg = "Input size is required for UFlow model."
+            raise ValueError(msg)
 
         self.backbone = backbone
         self.flow_steps = flow_steps
         self.affine_clamp = affine_clamp
         self.affine_subnet_channels_ratio = affine_subnet_channels_ratio
         self.permute_soft = permute_soft
-
-        self.loss = UFlowLoss()
-
-        self.model: UflowModel
-
-    def _setup(self) -> None:
-        if self.input_size is None:
-            msg = "Input size is required for UFlow model."
-            raise ValueError(msg)
 
         self.model = UflowModel(
             input_size=self.input_size,
@@ -72,19 +89,18 @@ class Uflow(AnomalyModule):
             affine_subnet_channels_ratio=self.affine_subnet_channels_ratio,
             permute_soft=self.permute_soft,
         )
+        self.loss = UFlowLoss()
 
-    def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:  # noqa: ARG002 | unused arguments
-        """Training step."""
-        z, ljd = self.model(batch["image"])
-        loss = self.loss(z, ljd)
-        self.log_dict({"loss": loss}, on_step=True, on_epoch=False, prog_bar=False, logger=True)
-        return {"loss": loss}
-
-    def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:  # noqa: ARG002 | unused arguments
-        """Validation step."""
-        anomaly_maps = self.model(batch["image"])
-        batch["anomaly_maps"] = anomaly_maps
-        return batch
+    @classmethod
+    def configure_pre_processor(cls, image_size: tuple[int, int] | None = None) -> PreProcessor:
+        """Default pre-processor for UFlow."""
+        if image_size is not None:
+            logger.warning("Image size is not used in UFlow. The input image size is determined by the model.")
+        transform = Compose([
+            Resize((448, 448), antialias=True),
+            Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+        ])
+        return PreProcessor(transform=transform)
 
     def configure_optimizers(self) -> tuple[list[LightningOptimizer], list[LRScheduler]]:
         """Return optimizer and scheduler."""
@@ -104,6 +120,18 @@ class Uflow(AnomalyModule):
         )
         return [optimizer], [scheduler]
 
+    def training_step(self, batch: Batch, *args, **kwargs) -> STEP_OUTPUT:  # noqa: ARG002 | unused arguments
+        """Training step."""
+        z, ljd = self.model(batch.image)
+        loss = self.loss(z, ljd)
+        self.log_dict({"loss": loss}, on_step=True, on_epoch=False, prog_bar=False, logger=True)
+        return {"loss": loss}
+
+    def validation_step(self, batch: Batch, *args, **kwargs) -> STEP_OUTPUT:  # noqa: ARG002 | unused arguments
+        """Validation step."""
+        predictions = self.model(batch.image)
+        return batch.update(**predictions._asdict())
+
     @property
     def trainer_arguments(self) -> dict[str, Any]:
         """Return EfficientAD trainer arguments."""
@@ -117,14 +145,3 @@ class Uflow(AnomalyModule):
             LearningType: Learning type of the model.
         """
         return LearningType.ONE_CLASS
-
-    def configure_transforms(self, image_size: tuple[int, int] | None = None) -> Transform:
-        """Default transform for Padim."""
-        if image_size is not None:
-            logger.warning("Image size is not used in UFlow. The input image size is determined by the model.")
-        return Compose(
-            [
-                Resize((448, 448), antialias=True),
-                Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-            ],
-        )

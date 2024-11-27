@@ -10,7 +10,6 @@ from pathlib import Path
 
 import pytest
 
-from anomalib import TaskType
 from anomalib.models import Padim
 
 sys.path.append("tools/inference")
@@ -20,7 +19,8 @@ class TestTorchInferenceEntrypoint:
     """This tests whether the entrypoints run without errors without quantitative measure of the outputs."""
 
     @pytest.fixture()
-    def get_functions(self) -> tuple[Callable, Callable]:
+    @staticmethod
+    def get_functions() -> tuple[Callable, Callable]:
         """Get functions from torch_inference.py."""
         if find_spec("torch_inference") is not None:
             from tools.inference.torch_inference import get_parser, infer
@@ -29,8 +29,8 @@ class TestTorchInferenceEntrypoint:
             raise ImportError(msg)
         return get_parser, infer
 
+    @staticmethod
     def test_torch_inference(
-        self,
         get_functions: tuple[Callable, Callable],
         project_path: Path,
         ckpt_path: Callable[[str], Path],
@@ -42,7 +42,6 @@ class TestTorchInferenceEntrypoint:
         model = Padim.load_from_checkpoint(_ckpt_path)
         model.to_torch(
             export_root=_ckpt_path.parent.parent.parent,
-            task=TaskType.SEGMENTATION,
         )
         arguments = get_parser().parse_args(
             [

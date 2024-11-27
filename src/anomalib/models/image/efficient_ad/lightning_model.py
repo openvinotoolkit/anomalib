@@ -15,11 +15,15 @@ import tqdm
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torch.utils.data import DataLoader
 from torchvision.datasets import ImageFolder
-from torchvision.transforms.v2 import CenterCrop, Compose, Normalize, RandomGrayscale, Resize, ToTensor, Transform
+from torchvision.transforms.v2 import CenterCrop, Compose, Normalize, RandomGrayscale, Resize, ToTensor
 
 from anomalib import LearningType
+from anomalib.data import Batch
 from anomalib.data.utils import DownloadInfo, download_and_extract
-from anomalib.models.components import AnomalyModule
+from anomalib.metrics import Evaluator
+from anomalib.models.components import AnomalibModule
+from anomalib.post_processing import PostProcessor
+from anomalib.pre_processing import PreProcessor
 
 from .torch_model import EfficientAdModel, EfficientAdModelSize, reduce_tensor_elems
 
@@ -38,7 +42,7 @@ WEIGHTS_DOWNLOAD_INFO = DownloadInfo(
 )
 
 
-class EfficientAd(AnomalyModule):
+class EfficientAd(AnomalibModule):
     """PL Lightning Module for the EfficientAd algorithm.
 
     Args:
@@ -57,6 +61,9 @@ class EfficientAd(AnomalyModule):
         pad_maps (bool): relevant if padding is set to False. In this case, pad_maps = True pads the
             output anomaly maps so that their size matches the size in the padding = True case.
             Defaults to ``True``.
+        pre_processor (PreProcessor, optional): Pre-processor for the model.
+            This is used to pre-process the input data before it is passed to the model.
+            Defaults to ``None``.
     """
 
     def __init__(
@@ -68,8 +75,11 @@ class EfficientAd(AnomalyModule):
         weight_decay: float = 0.00001,
         padding: bool = False,
         pad_maps: bool = True,
+        pre_processor: PreProcessor | bool = True,
+        post_processor: PostProcessor | None = None,
+        evaluator: Evaluator | bool = True,
     ) -> None:
-        super().__init__()
+        super().__init__(pre_processor=pre_processor, post_processor=post_processor, evaluator=evaluator)
 
         self.imagenet_dir = Path(imagenet_dir)
         if not isinstance(model_size, EfficientAdModelSize):
@@ -136,7 +146,7 @@ class EfficientAd(AnomalyModule):
         chanel_sum_sqr: torch.Tensor | None = None
 
         for batch in tqdm.tqdm(dataloader, desc="Calculate teacher channel mean & std", position=0, leave=True):
-            y = self.model.teacher(batch["image"].to(self.device))
+            y = self.model.teacher(batch.image.to(self.device))
             if not arrays_defined:
                 _, num_channels, _, _ = y.shape
                 n = torch.zeros((num_channels,), dtype=torch.int64, device=y.device)
@@ -174,11 +184,9 @@ class EfficientAd(AnomalyModule):
         maps_ae = []
         logger.info("Calculate Validation Dataset Quantiles")
         for batch in tqdm.tqdm(dataloader, desc="Calculate Validation Dataset Quantiles", position=0, leave=True):
-            for img, label in zip(batch["image"], batch["label"], strict=True):
+            for img, label in zip(batch.image, batch.gt_label, strict=True):
                 if label == 0:  # only use good images of validation set!
-                    output = self.model(img.to(self.device), normalize=False)
-                    map_st = output["map_st"]
-                    map_ae = output["map_ae"]
+                    map_st, map_ae = self.model.get_maps(img.to(self.device), normalize=False)
                     maps_st.append(map_st)
                     maps_ae.append(map_ae)
 
@@ -203,6 +211,13 @@ class EfficientAd(AnomalyModule):
         qa = torch.quantile(maps_flat, q=0.9).to(self.device)
         qb = torch.quantile(maps_flat, q=0.995).to(self.device)
         return qa, qb
+
+    @classmethod
+    def configure_pre_processor(cls, image_size: tuple[int, int] | None = None) -> PreProcessor:
+        """Default transform for EfficientAd. Imagenet normalization applied in forward."""
+        image_size = image_size or (256, 256)
+        transform = Compose([Resize(image_size, antialias=True)])
+        return PreProcessor(transform=transform)
 
     def configure_optimizers(self) -> torch.optim.Optimizer:
         """Configure optimizers."""
@@ -244,23 +259,26 @@ class EfficientAd(AnomalyModule):
         if self.trainer.datamodule.train_batch_size != 1:
             msg = "train_batch_size for EfficientAd should be 1."
             raise ValueError(msg)
-        if self._transform and any(isinstance(transform, Normalize) for transform in self._transform.transforms):
-            msg = "Transforms for EfficientAd should not contain Normalize."
-            raise ValueError(msg)
+
+        if self.pre_processor and self.pre_processor.train_transform:
+            transforms = self.pre_processor.train_transform.transforms
+            if transforms and any(isinstance(transform, Normalize) for transform in transforms):
+                msg = "Transforms for EfficientAd should not contain Normalize."
+                raise ValueError(msg)
 
         sample = next(iter(self.trainer.train_dataloader))
-        image_size = sample["image"].shape[-2:]
+        image_size = sample.image.shape[-2:]
         self.prepare_pretrained_model()
         self.prepare_imagenette_data(image_size)
         if not self.model.is_set(self.model.mean_std):
             channel_mean_std = self.teacher_channel_mean_std(self.trainer.datamodule.train_dataloader())
             self.model.mean_std.update(channel_mean_std)
 
-    def training_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> dict[str, torch.Tensor]:
+    def training_step(self, batch: Batch, *args, **kwargs) -> dict[str, torch.Tensor]:
         """Perform the training step for EfficientAd returns the student, autoencoder and combined loss.
 
         Args:
-            batch (batch: dict[str, str | torch.Tensor]): Batch containing image filename, image, label and mask
+            batch (Batch): Batch containing image filename, image, label and mask
             args: Additional arguments.
             kwargs: Additional keyword arguments.
 
@@ -276,7 +294,7 @@ class EfficientAd(AnomalyModule):
             self.imagenet_iterator = iter(self.imagenet_loader)
             batch_imagenet = next(self.imagenet_iterator)[0].to(self.device)
 
-        loss_st, loss_ae, loss_stae = self.model(batch=batch["image"], batch_imagenet=batch_imagenet)
+        loss_st, loss_ae, loss_stae = self.model(batch=batch.image, batch_imagenet=batch_imagenet)
 
         loss = loss_st + loss_ae + loss_stae
         self.log("train_st", loss_st.item(), on_epoch=True, prog_bar=True, logger=True)
@@ -290,11 +308,11 @@ class EfficientAd(AnomalyModule):
         map_norm_quantiles = self.map_norm_quantiles(self.trainer.datamodule.val_dataloader())
         self.model.quantiles.update(map_norm_quantiles)
 
-    def validation_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> STEP_OUTPUT:
+    def validation_step(self, batch: Batch, *args, **kwargs) -> STEP_OUTPUT:
         """Perform the validation step of EfficientAd returns anomaly maps for the input image batch.
 
         Args:
-          batch (dict[str, str | torch.Tensor]): Input batch
+          batch (Batch): Input batch
           args: Additional arguments.
           kwargs: Additional keyword arguments.
 
@@ -303,9 +321,8 @@ class EfficientAd(AnomalyModule):
         """
         del args, kwargs  # These variables are not used.
 
-        batch["anomaly_maps"] = self.model(batch["image"])["anomaly_map"]
-
-        return batch
+        predictions = self.model(batch.image)
+        return batch.update(**predictions._asdict())
 
     @property
     def trainer_arguments(self) -> dict[str, Any]:
@@ -320,12 +337,3 @@ class EfficientAd(AnomalyModule):
             LearningType: Learning type of the model.
         """
         return LearningType.ONE_CLASS
-
-    def configure_transforms(self, image_size: tuple[int, int] | None = None) -> Transform:
-        """Default transform for EfficientAd. Imagenet normalization applied in forward."""
-        image_size = image_size or (256, 256)
-        return Compose(
-            [
-                Resize(image_size, antialias=True),
-            ],
-        )

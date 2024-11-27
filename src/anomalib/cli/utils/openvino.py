@@ -6,13 +6,12 @@
 import logging
 
 from jsonargparse import ArgumentParser
-
-from anomalib.utils.exceptions import try_import
+from lightning_utilities.core.imports import module_available
 
 logger = logging.getLogger(__name__)
 
 
-if try_import("openvino"):
+if module_available("openvino"):
     from openvino.tools.ovc.cli_parser import get_common_cli_parser
 else:
     get_common_cli_parser = None
@@ -25,7 +24,7 @@ def add_openvino_export_arguments(parser: ArgumentParser) -> None:
         ov_parser = get_common_cli_parser()
         # remove redundant keys from mo keys
         for arg in ov_parser._actions:  # noqa: SLF001
-            if arg.dest in ("help", "input_model", "output_dir"):
+            if arg.dest in {"help", "input_model", "output_dir"}:
                 continue
             group.add_argument(f"--ov_args.{arg.dest}", type=arg.type, default=arg.default, help=arg.help)
     else:

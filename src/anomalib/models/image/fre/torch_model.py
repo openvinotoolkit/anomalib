@@ -7,6 +7,7 @@ import torch
 from torch import nn
 from torch.nn import functional as F  # noqa: N812
 
+from anomalib.data import InferenceBatch
 from anomalib.models.components import TimmFeatureExtractor
 
 
@@ -96,7 +97,7 @@ class FREModel(nn.Module):
         features_out = self.fre_model(features_in)
         return features_in, features_out, feature_shapes
 
-    def forward(self, batch: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+    def forward(self, batch: torch.Tensor) -> InferenceBatch:
         """Compute score from input images.
 
         Args:
@@ -111,4 +112,4 @@ class FREModel(nn.Module):
         score = torch.sum(anomaly_map, (1, 2))  # NxHxW --> N
         anomaly_map = torch.unsqueeze(anomaly_map, 1)
         anomaly_map = F.interpolate(anomaly_map, size=batch.shape[-2:], mode="bilinear", align_corners=False)
-        return score, anomaly_map
+        return InferenceBatch(pred_score=score, anomaly_map=anomaly_map)

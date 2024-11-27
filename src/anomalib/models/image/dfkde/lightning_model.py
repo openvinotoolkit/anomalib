@@ -11,15 +11,19 @@ import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 
 from anomalib import LearningType
-from anomalib.models.components import AnomalyModule, MemoryBankMixin
+from anomalib.data import Batch
+from anomalib.metrics import AUROC, Evaluator, F1Score
+from anomalib.models.components import AnomalibModule, MemoryBankMixin
 from anomalib.models.components.classification import FeatureScalingMethod
+from anomalib.post_processing import PostProcessor
+from anomalib.pre_processing import PreProcessor
 
 from .torch_model import DfkdeModel
 
 logger = logging.getLogger(__name__)
 
 
-class Dfkde(MemoryBankMixin, AnomalyModule):
+class Dfkde(MemoryBankMixin, AnomalibModule):
     """DFKDE: Deep Feature Kernel Density Estimation.
 
     Args:
@@ -45,8 +49,11 @@ class Dfkde(MemoryBankMixin, AnomalyModule):
         n_pca_components: int = 16,
         feature_scaling_method: FeatureScalingMethod = FeatureScalingMethod.SCALE,
         max_training_points: int = 40000,
+        pre_processor: PreProcessor | bool = True,
+        post_processor: PostProcessor | None = None,
+        evaluator: Evaluator | bool = True,
     ) -> None:
-        super().__init__()
+        super().__init__(pre_processor=pre_processor, post_processor=post_processor, evaluator=evaluator)
 
         self.model = DfkdeModel(
             layers=layers,
@@ -64,11 +71,11 @@ class Dfkde(MemoryBankMixin, AnomalyModule):
         """DFKDE doesn't require optimization, therefore returns no optimizers."""
         return
 
-    def training_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> None:
+    def training_step(self, batch: Batch, *args, **kwargs) -> None:
         """Perform the training step of DFKDE. For each batch, features are extracted from the CNN.
 
         Args:
-            batch (batch: dict[str, str | torch.Tensor]): Batch containing image filename, image, label and mask
+            batch (batch: Batch): Batch containing image filename, image, label and mask
             args: Arguments.
             kwargs: Keyword arguments.
 
@@ -77,7 +84,7 @@ class Dfkde(MemoryBankMixin, AnomalyModule):
         """
         del args, kwargs  # These variables are not used.
 
-        embedding = self.model(batch["image"])
+        embedding = self.model(batch.image)
         self.embeddings.append(embedding)
 
     def fit(self) -> None:
@@ -87,13 +94,13 @@ class Dfkde(MemoryBankMixin, AnomalyModule):
         logger.info("Fitting a KDE model to the embedding collected from the training set.")
         self.model.classifier.fit(embeddings)
 
-    def validation_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> STEP_OUTPUT:
+    def validation_step(self, batch: Batch, *args, **kwargs) -> STEP_OUTPUT:
         """Perform the validation step of DFKDE.
 
         Similar to the training step, features are extracted from the CNN for each batch.
 
         Args:
-            batch (dict[str, str | torch.Tensor]): Input batch
+            batch (Batch): Input batch
             args: Arguments.
             kwargs: Keyword arguments.
 
@@ -102,8 +109,8 @@ class Dfkde(MemoryBankMixin, AnomalyModule):
         """
         del args, kwargs  # These variables are not used.
 
-        batch["pred_scores"] = self.model(batch["image"])
-        return batch
+        predictions = self.model(batch.image)
+        return batch.update(**predictions._asdict())
 
     @property
     def trainer_arguments(self) -> dict[str, Any]:
@@ -118,3 +125,11 @@ class Dfkde(MemoryBankMixin, AnomalyModule):
             LearningType: Learning type of the model.
         """
         return LearningType.ONE_CLASS
+
+    @staticmethod
+    def configure_evaluator() -> Evaluator:
+        """Default evaluator for DFKE."""
+        image_auroc = AUROC(fields=["pred_score", "gt_label"], prefix="image_")
+        image_f1score = F1Score(fields=["pred_label", "gt_label"], prefix="image_")
+        test_metrics = [image_auroc, image_f1score]
+        return Evaluator(test_metrics=test_metrics)

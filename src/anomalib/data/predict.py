@@ -3,12 +3,13 @@
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any
 
 from torch.utils.data.dataset import Dataset
 from torchvision.transforms.v2 import Transform
 
+from anomalib.data import ImageBatch, ImageItem
 from anomalib.data.utils import get_image_filenames, read_image
 
 
@@ -39,13 +40,19 @@ class PredictDataset(Dataset):
         """Get the number of images in the given path."""
         return len(self.image_filenames)
 
-    def __getitem__(self, index: int) -> dict[str, Any]:
+    def __getitem__(self, index: int) -> ImageItem:
         """Get the image based on the `index`."""
         image_filename = self.image_filenames[index]
         image = read_image(image_filename, as_tensor=True)
         if self.transform:
             image = self.transform(image)
-        pre_processed = {"image": image}
-        pre_processed["image_path"] = str(image_filename)
 
-        return pre_processed
+        return ImageItem(
+            image=image,
+            image_path=str(image_filename),
+        )
+
+    @property
+    def collate_fn(self) -> Callable:
+        """Get the collate function."""
+        return ImageBatch.collate

@@ -35,7 +35,7 @@ def add_label(
     img_height, img_width, _ = image.shape
 
     font = cv2.FONT_HERSHEY_PLAIN
-    text = label_name if confidence is None else f"{label_name} ({confidence*100:.0f}%)"
+    text = label_name if confidence is None else f"{label_name} ({confidence * 100:.0f}%)"
 
     # get font sizing
     font_scale = min(img_width, img_height) * font_scale
@@ -117,6 +117,8 @@ def superimpose_anomaly_map(
         np.ndarray: Image with anomaly map superimposed on top of it.
     """
     anomaly_map = anomaly_map_to_color_map(anomaly_map.squeeze(), normalize=normalize)
+    height, width = anomaly_map.shape[:2]
+    image = cv2.resize(image, (width, height))
     return cv2.addWeighted(anomaly_map, alpha, image, (1 - alpha), gamma)
 
 

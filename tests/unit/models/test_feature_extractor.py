@@ -1,5 +1,8 @@
 """Test feature extractors."""
 
+# Copyright (C) 2022-2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
 from tempfile import TemporaryDirectory
 
 import pytest
@@ -18,15 +21,10 @@ from anomalib.models.components.feature_extractors import (
 class TestFeatureExtractor:
     """Test the feature extractor."""
 
-    @pytest.mark.parametrize(
-        "backbone",
-        ["resnet18", "wide_resnet50_2"],
-    )
-    @pytest.mark.parametrize(
-        "pretrained",
-        [True, False],
-    )
-    def test_timm_feature_extraction(self, backbone: str, pretrained: bool) -> None:
+    @staticmethod
+    @pytest.mark.parametrize("backbone", ["resnet18", "wide_resnet50_2"])
+    @pytest.mark.parametrize("pretrained", [True, False])
+    def test_timm_feature_extraction(backbone: str, pretrained: bool) -> None:
         """Test if the feature extractor can be instantiated and if the output is as expected."""
         layers = ["layer1", "layer2", "layer3"]
         model = TimmFeatureExtractor(backbone=backbone, layers=layers, pre_trained=pretrained)
@@ -48,7 +46,8 @@ class TestFeatureExtractor:
         else:
             pass
 
-    def test_torchfx_feature_extraction(self) -> None:
+    @staticmethod
+    def test_torchfx_feature_extraction() -> None:
         """Test types of inputs for instantiating the feature extractor."""
         model = TorchFXFeatureExtractor("resnet18", ["layer1", "layer2", "layer3"])
         test_input = torch.rand((32, 3, 256, 256))
@@ -98,14 +97,8 @@ class TestFeatureExtractor:
         assert features["layer3"].shape == torch.Size((32, 256, 16, 16))
 
 
-@pytest.mark.parametrize(
-    "backbone",
-    ["resnet18", "wide_resnet50_2"],
-)
-@pytest.mark.parametrize(
-    "input_size",
-    [(256, 256), (224, 224), (128, 128)],
-)
+@pytest.mark.parametrize("backbone", ["resnet18", "wide_resnet50_2"])
+@pytest.mark.parametrize("input_size", [(256, 256), (224, 224), (128, 128)])
 def test_dryrun_find_featuremap_dims(backbone: str, input_size: tuple[int, int]) -> None:
     """Use the function and check the expected output format."""
     layers = ["layer1", "layer2", "layer3"]
