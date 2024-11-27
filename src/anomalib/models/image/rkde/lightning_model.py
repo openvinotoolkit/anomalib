@@ -14,6 +14,7 @@ from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torchvision.transforms.v2 import Compose, Resize, Transform
 
 from anomalib import LearningType
+from anomalib.data import Batch
 from anomalib.metrics import Evaluator
 from anomalib.models.components import AnomalibModule, MemoryBankMixin
 from anomalib.models.components.classification import FeatureScalingMethod
@@ -86,11 +87,11 @@ class Rkde(MemoryBankMixin, AnomalibModule):
         """RKDE doesn't require optimization, therefore returns no optimizers."""
         return
 
-    def training_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> None:
+    def training_step(self, batch: Batch, *args, **kwargs) -> None:
         """Perform a training Step of RKDE. For each batch, features are extracted from the CNN.
 
         Args:
-            batch (dict[str, str | torch.Tensor]): Batch containing image filename, image, label and mask
+            batch (Batch): Batch containing image filename, image, label and mask
             args: Additional arguments.
             kwargs: Additional keyword arguments.
 
@@ -99,7 +100,7 @@ class Rkde(MemoryBankMixin, AnomalibModule):
         """
         del args, kwargs  # These variables are not used.
 
-        features = self.model(batch["image"])
+        features = self.model(batch.image)
         self.embeddings.append(features)
 
     def fit(self) -> None:
@@ -109,13 +110,13 @@ class Rkde(MemoryBankMixin, AnomalibModule):
         logger.info("Fitting a KDE model to the embedding collected from the training set.")
         self.model.fit(embeddings)
 
-    def validation_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> STEP_OUTPUT:
+    def validation_step(self, batch: Batch, *args, **kwargs) -> STEP_OUTPUT:
         """Perform a validation Step of RKde.
 
         Similar to the training step, features are extracted from the CNN for each batch.
 
         Args:
-            batch (dict[str, str | torch.Tensor]): Batch containing image filename, image, label and mask
+            batch (Batch): Batch containing image filename, image, label and mask
             args: Additional arguments.
             kwargs: Additional keyword arguments.
 
@@ -125,10 +126,10 @@ class Rkde(MemoryBankMixin, AnomalibModule):
         del args, kwargs  # These variables are not used.
 
         # get batched model predictions
-        boxes, scores = self.model(batch["image"])
+        boxes, scores = self.model(batch.image)
 
         # convert batched predictions to list format
-        image: torch.Tensor = batch["image"]
+        image: torch.Tensor = batch.image
         batch_size = image.shape[0]
         indices = boxes[:, 0]
         batch["pred_boxes"] = [boxes[indices == i, 1:] for i in range(batch_size)]
