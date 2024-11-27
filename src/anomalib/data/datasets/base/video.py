@@ -4,8 +4,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from abc import ABC
+from collections.abc import Callable
 from enum import Enum
-from typing import TYPE_CHECKING
 
 import torch
 from pandas import DataFrame
@@ -14,13 +14,10 @@ from torchvision.transforms.v2.functional import to_dtype, to_dtype_video
 from torchvision.tv_tensors import Mask
 
 from anomalib import TaskType
-from anomalib.data.dataclasses import VideoItem
+from anomalib.data.dataclasses import VideoBatch, VideoItem
 from anomalib.data.utils.video import ClipsIndexer
 
 from .image import AnomalibDataset
-
-if TYPE_CHECKING:
-    from collections.abc import Callable
 
 
 class VideoTargetFrame(str, Enum):
@@ -172,3 +169,8 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
             item = self._select_targets(item)
 
         return item
+
+    @property
+    def collate_fn(self) -> Callable:
+        """Return the collate function for video batches."""
+        return VideoBatch.collate

@@ -17,7 +17,6 @@ Reference:
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-import logging
 from pathlib import Path
 
 import numpy as np
@@ -29,18 +28,9 @@ from torchvision.transforms.v2 import Transform
 from anomalib import TaskType
 from anomalib.data.datasets import AnomalibDataset
 from anomalib.data.errors import MisMatchError
-from anomalib.data.utils import DownloadInfo, Split, validate_path
+from anomalib.data.utils import Split, validate_path
 
 __all__ = ["KolektorDataset", "make_kolektor_dataset"]
-
-logger = logging.getLogger(__name__)
-
-DOWNLOAD_INFO = DownloadInfo(
-    name="kolektor",
-    url="https://go.vicos.si/kolektorsdd",
-    hashsum="65dc621693418585de9c4467d1340ea7958a6181816f0dc2883a1e8b61f9d4dc",
-    filename="KolektorSDD.zip",
-)
 
 
 class KolektorDataset(AnomalibDataset):

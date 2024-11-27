@@ -11,7 +11,7 @@ from pathlib import Path
 from anomalib import TaskType
 from anomalib.data.datamodules.base import AnomalibDataModule
 from anomalib.data.datasets.image.datumaro import DatumaroDataset
-from anomalib.data.utils import Split, TestSplitMode, ValSplitMode
+from anomalib.data.utils import Split, SplitMode, TestSplitMode, ValSplitMode
 
 
 class Datumaro(AnomalibDataModule):
@@ -69,9 +69,9 @@ class Datumaro(AnomalibDataModule):
         eval_batch_size: int = 32,
         num_workers: int = 8,
         task: TaskType = TaskType.CLASSIFICATION,
-        test_split_mode: TestSplitMode | str = TestSplitMode.FROM_DIR,
-        test_split_ratio: float = 0.5,
-        val_split_mode: ValSplitMode | str = ValSplitMode.FROM_TEST,
+        test_split_mode: SplitMode | TestSplitMode | str = SplitMode.AUTO,
+        test_split_ratio: float | None = None,
+        val_split_mode: SplitMode | ValSplitMode | str = SplitMode.AUTO,
         val_split_ratio: float = 0.5,
         seed: int | None = None,
     ) -> None:

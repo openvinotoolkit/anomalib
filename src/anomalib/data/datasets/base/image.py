@@ -288,6 +288,7 @@ class AnomalibDataset(Dataset, ABC):
             DatasetItem: DatasetItem instance containing image and ground truth (if available).
         """
         image_path = self.samples.iloc[index].image_path
+        mask_path = self.samples.iloc[index].get("mask_path") if "mask_path" in self.samples.columns else None
         label_index = self.samples.iloc[index].label_index
 
         image = read_image(image_path, as_tensor=True)
@@ -296,16 +297,17 @@ class AnomalibDataset(Dataset, ABC):
         if self.task == TaskType.CLASSIFICATION:
             item["image"] = self.transform(image) if self.transform else image
         elif self.task == TaskType.SEGMENTATION:
+            if mask_path is None:
+                msg = "mask_path is required for segmentation tasks but was not found in samples DataFrame"
+                raise ValueError(msg)
             # Only Anomalous (1) images have masks in anomaly datasets
             # Therefore, create empty mask for Normal (0) images.
-            mask_path = self.samples.iloc[index].mask_path
             mask = (
                 Mask(torch.zeros(image.shape[-2:])).to(torch.uint8)
                 if label_index == LabelName.NORMAL
                 else read_mask(mask_path, as_tensor=True)
             )
             item["image"], item["gt_mask"] = self.transform(image, mask) if self.transform else (image, mask)
-
         else:
             msg = f"Unknown task type: {self.task}"
             raise ValueError(msg)
