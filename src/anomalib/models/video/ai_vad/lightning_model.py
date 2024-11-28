@@ -7,7 +7,6 @@ Paper https://arxiv.org/pdf/2212.00789.pdf
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-from dataclasses import replace
 from typing import Any
 
 from lightning.pytorch.utilities.types import STEP_OUTPUT
@@ -146,13 +145,7 @@ class AiVad(MemoryBankMixin, AnomalibModule):
         del args, kwargs  # Unused arguments.
 
         predictions = self.model(batch.image)
-
-        return replace(
-            batch,
-            pred_score=predictions.pred_score,
-            anomaly_map=predictions.anomaly_map,
-            pred_mask=predictions.pred_mask,
-        )
+        return batch.update(pred_score=predictions.pred_score, anomaly_map=predictions.anomaly_map)
 
     @property
     def trainer_arguments(self) -> dict[str, Any]:
