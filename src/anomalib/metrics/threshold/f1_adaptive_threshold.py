@@ -6,6 +6,7 @@
 import logging
 
 import torch
+from torchmetrics.utilities.data import dim_zero_cat
 
 from anomalib.metrics.precision_recall_curve import BinaryPrecisionRecallCurve
 
@@ -68,6 +69,23 @@ class F1AdaptiveThreshold(BinaryPrecisionRecallCurve, Threshold):
                 "images to the validation set."
             )
             logging.warning(msg)
+
+            self.value = torch.max(dim_zero_cat(self.preds))
+
+            return self.value
+
+        if not any(0 in batch for batch in self.target):
+            msg = (
+                "The validation set does not contain any normal images. As a result, the adaptive threshold will "
+                "take the value of the lowest anomaly score observed in the anomalous validation images, which may "
+                "lead to poor predictions. For a more reliable adaptive threshold computation, please add some normal "
+                "images to the validation set."
+            )
+            logging.warning(msg)
+
+            self.value = torch.min(dim_zero_cat(self.preds))
+
+            return self.value
 
         precision, recall, thresholds = super().compute()
         f1_score = (2 * precision * recall) / (precision + recall + 1e-10)

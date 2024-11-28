@@ -18,6 +18,8 @@ from anomalib.utils.normalization import NormalizationMethod
     [
         (torch.Tensor([0, 0, 0, 1, 1]), torch.Tensor([2.3, 1.6, 2.6, 7.9, 3.3]), 3.3),  # standard case
         (torch.Tensor([1, 0, 0, 0]), torch.Tensor([4, 3, 2, 1]), 4),  # 100% recall for all thresholds
+        (torch.Tensor([1, 1, 1, 1]), torch.Tensor([4, 3, 2, 1]), 1),  # use minimum value when all images are anomalous
+        (torch.Tensor([0, 0, 0, 0]), torch.Tensor([4, 3, 2, 1]), 4),  # use maximum value when all images are normal
     ],
 )
 def test_adaptive_threshold(labels: torch.Tensor, preds: torch.Tensor, target_threshold: int | float) -> None:
