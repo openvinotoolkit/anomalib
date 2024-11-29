@@ -14,13 +14,13 @@ from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torchvision.transforms.v2 import Compose, Resize, Transform
 
 from anomalib import LearningType
+from anomalib.data import Batch, InferenceBatch
 from anomalib.metrics import Evaluator
 from anomalib.models.components import AnomalibModule, MemoryBankMixin
 from anomalib.models.components.classification import FeatureScalingMethod
 from anomalib.post_processing import PostProcessor
 from anomalib.pre_processing import PreProcessor
 
-from .region_extractor import RoiStage
 from .torch_model import RkdeModel
 
 logger = logging.getLogger(__name__)
@@ -30,8 +30,6 @@ class Rkde(MemoryBankMixin, AnomalibModule):
     """Region Based Anomaly Detection With Real-Time Training and Analysis.
 
     Args:
-        roi_stage (RoiStage, optional): Processing stage from which rois are extracted.
-            Defaults to ``RoiStage.RCNN``.
         roi_score_threshold (float, optional): Mimumum confidence score for the region proposals.
             Defaults to ``0.001``.
         min_size (int, optional): Minimum size in pixels for the region proposals.
@@ -55,7 +53,6 @@ class Rkde(MemoryBankMixin, AnomalibModule):
 
     def __init__(
         self,
-        roi_stage: RoiStage = RoiStage.RCNN,
         roi_score_threshold: float = 0.001,
         min_box_size: int = 25,
         iou_threshold: float = 0.3,
@@ -70,7 +67,6 @@ class Rkde(MemoryBankMixin, AnomalibModule):
         super().__init__(pre_processor=pre_processor, post_processor=post_processor, evaluator=evaluator)
 
         self.model: RkdeModel = RkdeModel(
-            roi_stage=roi_stage,
             roi_score_threshold=roi_score_threshold,
             min_box_size=min_box_size,
             iou_threshold=iou_threshold,
@@ -86,11 +82,11 @@ class Rkde(MemoryBankMixin, AnomalibModule):
         """RKDE doesn't require optimization, therefore returns no optimizers."""
         return
 
-    def training_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> None:
+    def training_step(self, batch: Batch, *args, **kwargs) -> None:
         """Perform a training Step of RKDE. For each batch, features are extracted from the CNN.
 
         Args:
-            batch (dict[str, str | torch.Tensor]): Batch containing image filename, image, label and mask
+            batch (Batch): Batch containing image filename, image, label and mask
             args: Additional arguments.
             kwargs: Additional keyword arguments.
 
@@ -99,7 +95,7 @@ class Rkde(MemoryBankMixin, AnomalibModule):
         """
         del args, kwargs  # These variables are not used.
 
-        features = self.model(batch["image"])
+        features = self.model(batch.image)
         self.embeddings.append(features)
 
     def fit(self) -> None:
@@ -109,13 +105,13 @@ class Rkde(MemoryBankMixin, AnomalibModule):
         logger.info("Fitting a KDE model to the embedding collected from the training set.")
         self.model.fit(embeddings)
 
-    def validation_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> STEP_OUTPUT:
+    def validation_step(self, batch: Batch, *args, **kwargs) -> STEP_OUTPUT:
         """Perform a validation Step of RKde.
 
         Similar to the training step, features are extracted from the CNN for each batch.
 
         Args:
-            batch (dict[str, str | torch.Tensor]): Batch containing image filename, image, label and mask
+            batch (Batch): Batch containing image filename, image, label and mask
             args: Additional arguments.
             kwargs: Additional keyword arguments.
 
@@ -125,15 +121,12 @@ class Rkde(MemoryBankMixin, AnomalibModule):
         del args, kwargs  # These variables are not used.
 
         # get batched model predictions
-        boxes, scores = self.model(batch["image"])
+        predictions: InferenceBatch = self.model(batch.image)
 
-        # convert batched predictions to list format
-        image: torch.Tensor = batch["image"]
-        batch_size = image.shape[0]
-        indices = boxes[:, 0]
-        batch["pred_boxes"] = [boxes[indices == i, 1:] for i in range(batch_size)]
-        batch["box_scores"] = [scores[indices == i] for i in range(batch_size)]
-
+        batch.update(
+            pred_score=predictions.pred_score,
+            anomaly_map=predictions.anomaly_map,
+        )
         return batch
 
     @property
