@@ -48,9 +48,9 @@ class AnomalibDataModule(LightningDataModule, ABC):
         train_batch_size: int,
         eval_batch_size: int,
         num_workers: int,
-        val_split_mode: SplitMode | ValSplitMode | str | None = None,
+        val_split_mode: str | SplitMode | ValSplitMode | None = None,
         val_split_ratio: float | None = None,
-        test_split_mode: SplitMode | TestSplitMode | str | None = None,
+        test_split_mode: str | SplitMode | TestSplitMode | None = None,
         test_split_ratio: float | None = None,
         seed: int | None = None,
     ) -> None:

@@ -8,6 +8,6 @@ init_args:
   train_batch_size: 32
   eval_batch_size: 32
   num_workers: 8
-  val_split_mode: auto
+  val_split_mode: AUTO
   val_split_ratio: null
   seed: null

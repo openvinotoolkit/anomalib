@@ -10,8 +10,8 @@ init_args:
   eval_batch_size: 32
   num_workers: 8
   task: segmentation
-  test_split_mode: auto
+  test_split_mode: AUTO
   test_split_ratio: null
-  val_split_mode: auto
+  val_split_mode: AUTO
   val_split_ratio: 0.5
   seed: null
