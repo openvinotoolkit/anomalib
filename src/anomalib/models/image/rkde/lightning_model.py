@@ -31,7 +31,9 @@ class Rkde(MemoryBankMixin, AnomalibModule):
     """Region Based Anomaly Detection With Real-Time Training and Analysis.
 
     Args:
-        score_threshold (float, optional): Minimum confidence score for the region proposals.
+        roi_stage (RoiStage, optional): Processing stage from which rois are extracted.
+            Defaults to ``RoiStage.RCNN``.
+        roi_score_threshold (float, optional): Minimum confidence score for the region proposals.
             Defaults to ``0.001``.
         min_box_size (int, optional): Minimum size in pixels for the region proposals.
             Defaults to ``25``.
@@ -55,7 +57,7 @@ class Rkde(MemoryBankMixin, AnomalibModule):
     def __init__(
         self,
         roi_stage: RoiStage = RoiStage.RCNN,
-        score_threshold: float = 0.001,
+        roi_score_threshold: float = 0.001,
         min_box_size: int = 25,
         iou_threshold: float = 0.3,
         max_detections_per_image: int = 100,
@@ -70,7 +72,7 @@ class Rkde(MemoryBankMixin, AnomalibModule):
 
         self.model: RkdeModel = RkdeModel(
             roi_stage=roi_stage,
-            score_threshold=score_threshold,
+            roi_score_threshold=roi_score_threshold,
             min_box_size=min_box_size,
             iou_threshold=iou_threshold,
             max_detections_per_image=max_detections_per_image,

@@ -1,8 +1,9 @@
 model:
   class_path: anomalib.models.Rkde
   init_args:
-    box_score_threshold: 0.001
-    min_box_size: 100
+    roi_stage: RCNN
+    roi_score_threshold: 0.001
+    min_box_size: 25
     iou_threshold: 0.3
     max_detections_per_image: 100
     n_pca_components: 16
