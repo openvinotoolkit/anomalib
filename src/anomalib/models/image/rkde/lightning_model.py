@@ -21,6 +21,7 @@ from anomalib.models.components.classification import FeatureScalingMethod
 from anomalib.post_processing import PostProcessor
 from anomalib.pre_processing import PreProcessor
 
+from .region_extractor import RoiStage
 from .torch_model import RkdeModel
 
 logger = logging.getLogger(__name__)
@@ -30,10 +31,10 @@ class Rkde(MemoryBankMixin, AnomalibModule):
     """Region Based Anomaly Detection With Real-Time Training and Analysis.
 
     Args:
-        box_score_threshold (float, optional): Minimum confidence score for the region proposals.
+        score_threshold (float, optional): Minimum confidence score for the region proposals.
             Defaults to ``0.001``.
         min_box_size (int, optional): Minimum size in pixels for the region proposals.
-            Defaults to ``100``.
+            Defaults to ``25``.
         iou_threshold (float, optional): Intersection-Over-Union threshold used during NMS.
             Defaults to ``0.3``.
         max_detections_per_image (int, optional): Maximum number of region proposals per image.
@@ -53,8 +54,9 @@ class Rkde(MemoryBankMixin, AnomalibModule):
 
     def __init__(
         self,
-        box_score_threshold: float = 0.001,
-        min_box_size: int = 100,
+        roi_stage: RoiStage = RoiStage.RCNN,
+        score_threshold: float = 0.001,
+        min_box_size: int = 25,
         iou_threshold: float = 0.3,
         max_detections_per_image: int = 100,
         n_pca_components: int = 16,
@@ -67,7 +69,8 @@ class Rkde(MemoryBankMixin, AnomalibModule):
         super().__init__(pre_processor=pre_processor, post_processor=post_processor, evaluator=evaluator)
 
         self.model: RkdeModel = RkdeModel(
-            box_score_threshold=box_score_threshold,
+            roi_stage=roi_stage,
+            score_threshold=score_threshold,
             min_box_size=min_box_size,
             iou_threshold=iou_threshold,
             max_detections_per_image=max_detections_per_image,

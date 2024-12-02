@@ -12,7 +12,7 @@ from anomalib.data import InferenceBatch
 from anomalib.models.components.classification import FeatureScalingMethod, KDEClassifier
 
 from .feature_extractor import FeatureExtractor
-from .region_extractor import RegionExtractor
+from .region_extractor import RegionExtractor, RoiStage
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +21,7 @@ class RkdeModel(nn.Module):
     """Torch Model for the Region-based Anomaly Detection Model.
 
     Args:
-        box_score_threshold (float, optional): Minimum confidence score for the region proposals.
+        score_threshold (float, optional): Minimum confidence score for the region proposals.
             Defaults to ``0.001``.
         min_box_size (int, optional): Minimum size in pixels for the region proposals.
             Defaults to ``100``.
@@ -42,8 +42,9 @@ class RkdeModel(nn.Module):
     def __init__(
         self,
         # roi params
-        box_score_threshold: float = 0.001,
-        min_box_size: int = 100,
+        roi_stage: RoiStage = RoiStage.RCNN,
+        score_threshold: float = 0.001,
+        min_box_size: int = 25,
         iou_threshold: float = 0.3,
         max_detections_per_image: int = 100,
         # kde params
@@ -54,7 +55,8 @@ class RkdeModel(nn.Module):
         super().__init__()
 
         self.region_extractor = RegionExtractor(
-            box_score_threshold=box_score_threshold,
+            stage=roi_stage,
+            score_threshold=score_threshold,
             min_size=min_box_size,
             iou_threshold=iou_threshold,
             max_detections_per_image=max_detections_per_image,
