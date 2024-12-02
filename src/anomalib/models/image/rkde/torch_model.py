@@ -24,7 +24,7 @@ class RkdeModel(nn.Module):
         roi_score_threshold (float, optional): Minimum confidence score for the region proposals.
             Defaults to ``0.001``.
         min_box_size (int, optional): Minimum size in pixels for the region proposals.
-            Defaults to ``100``.
+            Defaults to ``25``.
         iou_threshold (float, optional): Intersection-Over-Union threshold used during NMS.
             Defaults to ``0.3``.
         max_detections_per_image (int, optional): Maximum number of region proposals per image.
