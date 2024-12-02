@@ -58,8 +58,6 @@ class CompressionType(str, Enum):
     INT8 = "int8"
     INT8_PTQ = "int8_ptq"
     INT8_ACQ = "int8_acq"
-    POT = "pot"
-    NNCF = "nncf"
 
 
 class InferenceModel(nn.Module):

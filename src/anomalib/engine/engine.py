@@ -915,7 +915,6 @@ class Engine:
 
         Raises:
             ValueError: If Dataset, Datamodule, and transform are not provided.
-            ValueError: If an unsupported compression type is specified for non-OpenVINO export types.
             TypeError: If path to the transform file is not a string or Path.
 
         CLI Usage:
@@ -975,11 +974,6 @@ class Engine:
             )
         else:
             logging.error(f"Export type {export_type} is not supported yet.")
-
-        if compression_type and export_type != ExportType.OPENVINO:
-            msg = f"Compression type {compression_type} is only applicable for OpenVIVO Export Type."
-            logging.error(f"Compression type {compression_type} is only applicable for OpenVIVO Export Type.")
-            raise ValueError(msg)
 
         if exported_model_path:
             logging.info(f"Exported model to {exported_model_path}")
