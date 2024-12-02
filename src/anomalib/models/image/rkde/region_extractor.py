@@ -6,8 +6,6 @@ Region Extractor.
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from enum import Enum
-
 import torch
 from torch import nn
 from torchvision.models.detection import (
@@ -17,23 +15,14 @@ from torchvision.models.detection import (
 from torchvision.ops import box_area, nms
 
 
-class RoiStage(str, Enum):
-    """Processing stage from which rois are extracted."""
-
-    RCNN = "rcnn"
-    RPN = "rpn"
-
-
 class RegionExtractor(nn.Module):
     """Extracts regions from the image.
 
     Args:
-        stage (RoiStage, optional): Processing stage from which rois are extracted.
-            Defaults to ``RoiStage.RCNN``.
         score_threshold (float, optional): Minimum confidence score for the region proposals.
             Defaults to ``0.001``.
         min_size (int, optional): Minimum size in pixels for the region proposals.
-            Defaults to ``100``.
+            Defaults to ``25``.
         iou_threshold (float, optional): Intersection-Over-Union threshold used during NMS.
             Defaults to ``0.3``.
         max_detections_per_image (int, optional): Maximum number of region proposals per image.
@@ -42,27 +31,22 @@ class RegionExtractor(nn.Module):
 
     def __init__(
         self,
-        stage: RoiStage = RoiStage.RCNN,
         score_threshold: float = 0.001,
         min_size: int = 25,
         iou_threshold: float = 0.3,
         max_detections_per_image: int = 100,
     ) -> None:
         super().__init__()
-        # Affects global behaviou
-        self.stage = stage
         self.min_size = min_size
         self.iou_threshold = iou_threshold
         self.max_detections_per_image = max_detections_per_image
 
         # Affects behaviour depending on roi stage
-        rpn_top_n = max_detections_per_image if self.stage == RoiStage.RPN else 1000
-        rpn_score_thresh = score_threshold if self.stage == RoiStage.RPN else 0.0
 
         self.backbone = maskrcnn_resnet50_fpn_v2(
             weights=MaskRCNN_ResNet50_FPN_V2_Weights.DEFAULT,
-            rpn_post_nms_top_n_test=rpn_top_n,
-            rpn_score_thresh=rpn_score_thresh,
+            rpn_post_nms_top_n_test=max_detections_per_image,
+            rpn_score_thresh=0.0,
             box_score_thresh=score_threshold,
             rpn_nms_thresh=0.3,
             box_nms_thresh=1.0,  # this disables nms (we apply custom label-agnostic nms during post-processing)
@@ -88,7 +72,6 @@ class RegionExtractor(nn.Module):
             raise ValueError(msg)
 
         regions: list[dict[str, torch.Tensor]] = self.backbone(batch)
-
         return self.post_process_box_predictions(regions)
 
     def post_process_box_predictions(self, regions: list[dict[str, torch.Tensor]]) -> list[dict[str, torch.Tensor]]:
