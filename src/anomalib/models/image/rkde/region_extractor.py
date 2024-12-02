@@ -45,7 +45,7 @@ class RegionExtractor(nn.Module):
 
         self.backbone = maskrcnn_resnet50_fpn_v2(
             weights=MaskRCNN_ResNet50_FPN_V2_Weights.DEFAULT,
-            rpn_post_nms_top_n_test=max_detections_per_image,
+            rpn_post_nms_top_n_test=1000,
             rpn_score_thresh=0.0,
             box_score_thresh=score_threshold,
             rpn_nms_thresh=0.3,
