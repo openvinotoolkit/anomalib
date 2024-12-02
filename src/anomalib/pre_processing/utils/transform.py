@@ -100,7 +100,7 @@ def set_datamodule_stage_transform(datamodule: AnomalibDataModule, transform: Tr
     """
     stage_datasets = {
         "fit": "train_data",
-        "validate": "val_data",
+        "val": "val_data",
         "test": "test_data",
         "predict": "test_data",
     }

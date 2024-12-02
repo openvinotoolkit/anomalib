@@ -31,7 +31,8 @@ from pathlib import Path
 from anomalib import TaskType
 from anomalib.data.datamodules.base.image import AnomalibDataModule
 from anomalib.data.datasets.image.mvtec import MVTecDataset
-from anomalib.data.utils import DownloadInfo, Split, TestSplitMode, ValSplitMode, download_and_extract
+from anomalib.data.utils import DownloadInfo, Split, SplitMode, TestSplitMode, ValSplitMode, download_and_extract
+from anomalib.data.utils.split import resolve_split_mode
 
 logger = logging.getLogger(__name__)
 
@@ -61,13 +62,13 @@ class MVTec(AnomalibDataModule):
         task TaskType): Task type, 'classification', 'detection' or 'segmentation'
             Defaults to ``TaskType.SEGMENTATION``.
         test_split_mode (TestSplitMode): Setting that determines how the testing subset is obtained.
-            Defaults to ``TestSplitMode.FROM_DIR``.
+            Defaults to ``SplitMode.PREDEFINED``.
         test_split_ratio (float): Fraction of images from the train set that will be reserved for testing.
-            Defaults to ``0.2``.
+            Defaults to ``None``.
         val_split_mode (ValSplitMode): Setting that determines how the validation subset is obtained.
-            Defaults to ``ValSplitMode.SAME_AS_TEST``.
+            Defaults to ``SplitMode.AUTO``.
         val_split_ratio (float): Fraction of train or test images that will be reserved for validation.
-            Defaults to ``0.5``.
+            Defaults to ``None``.
         seed (int | None, optional): Seed which may be set to a fixed value for reproducibility.
             Defualts to ``None``.
 
@@ -86,6 +87,10 @@ class MVTec(AnomalibDataModule):
         To change the category of the dataset:
 
         >>> datamodule = MVTec(category="cable")
+
+        To change the image and batch size:
+
+        >>> datamodule = MVTec(image_size=(512, 512), train_batch_size=16, eval_batch_size=8)
 
         MVTec AD dataset does not provide a validation set. If you would like
         to use a separate validation set, you can use the ``val_split_mode`` and
@@ -109,12 +114,14 @@ class MVTec(AnomalibDataModule):
         eval_batch_size: int = 32,
         num_workers: int = 8,
         task: TaskType | str = TaskType.SEGMENTATION,
-        test_split_mode: TestSplitMode | str = TestSplitMode.FROM_DIR,
-        test_split_ratio: float = 0.2,
-        val_split_mode: ValSplitMode | str = ValSplitMode.SAME_AS_TEST,
-        val_split_ratio: float = 0.5,
+        test_split_mode: SplitMode | TestSplitMode | str = SplitMode.PREDEFINED,
+        test_split_ratio: float | None = None,
+        val_split_mode: SplitMode | ValSplitMode | str = SplitMode.AUTO,
+        val_split_ratio: float | None = None,
         seed: int | None = None,
     ) -> None:
+        test_split_mode = resolve_split_mode(test_split_mode)
+        val_split_mode = resolve_split_mode(val_split_mode)
         super().__init__(
             train_batch_size=train_batch_size,
             eval_batch_size=eval_batch_size,
@@ -148,12 +155,17 @@ class MVTec(AnomalibDataModule):
             root=self.root,
             category=self.category,
         )
+
         self.test_data = MVTecDataset(
             task=self.task,
             split=Split.TEST,
             root=self.root,
             category=self.category,
         )
+        # MVTec AD dataset does not provide a validation set.
+        # Auto behaviour is to clone the test set as validation set.
+        if self.val_split_mode == SplitMode.AUTO:
+            self.val_data = self.test_data.clone()
 
     def prepare_data(self) -> None:
         """Download the dataset if not available.

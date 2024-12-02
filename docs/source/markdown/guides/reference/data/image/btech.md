@@ -1,7 +1,7 @@
 #  BTech Data
 
 ```{eval-rst}
-.. automodule:: anomalib.data.image.btech
+.. automodule:: anomalib.data.datasets.image.btech
    :members:
    :show-inheritance:
 ```

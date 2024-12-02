@@ -6,6 +6,7 @@
 | MVTec    | [102_mvtec](102_mvtec.ipynb)   | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/openvinotoolkit/anomalib/blob/main/notebooks/100_datamodules/102_mvtec.ipynb)  |
 | Folder   | [103_folder](103_folder.ipynb) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/openvinotoolkit/anomalib/blob/main/notebooks/100_datamodules/103_folder.ipynb) |
 | Tiling   | [104_tiling](104_tiling.ipynb) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/openvinotoolkit/anomalib/blob/main/notebooks/100_datamodules/104_tiling.ipynb) |
+| CSV      | [105_csv](105_csv.ipynb)       | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/openvinotoolkit/anomalib/blob/main/notebooks/100_datamodules/105_csv.ipynb)    |
 
 ## Notebook Contents
 
@@ -14,26 +15,6 @@ The notebooks in this section demonstrate the mechanics of anomalib data modules
 The Torch Dataset inherits `torch.utils.data.Dataset` and implement the `__len__` and `__getitem__` methods. This implementation might therefore be utilized not just for anomalib, but also for other implementations.
 
 The DataModule implementation inherits the PyTorch Lightning `DataModule` object. The advantage of this class is that it organizes each step of data from download to creating the Torch dataloader.
-
-Overall, a data implementation has the following structure:
-
-```bash
-anomalib
-├── __init__.py
-├── data
-│   ├── __init__.py
-│   ├── btech.py
-│   │   ├── BTechDataset
-│   │   └── BTech
-│   ├── folder.py
-│   │   ├── FolderDataset
-│   │   └── Folder
-│   ├── inference.py
-│   │   ├── InferenceDataset
-│   │   mvtec.py
-│   │   ├── MVTecDataset
-└── └── └── MVTec
-```
 
 Let's deep dive into each dataset supported in anomalib and check their functionality.
 

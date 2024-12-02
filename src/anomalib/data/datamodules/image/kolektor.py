@@ -23,7 +23,7 @@ from pathlib import Path
 from anomalib import TaskType
 from anomalib.data.datamodules.base.image import AnomalibDataModule
 from anomalib.data.datasets.image.kolektor import KolektorDataset
-from anomalib.data.utils import DownloadInfo, Split, TestSplitMode, ValSplitMode, download_and_extract
+from anomalib.data.utils import DownloadInfo, Split, SplitMode, TestSplitMode, ValSplitMode, download_and_extract
 
 logger = logging.getLogger(__name__)
 
@@ -67,10 +67,10 @@ class Kolektor(AnomalibDataModule):
         eval_batch_size: int = 32,
         num_workers: int = 8,
         task: TaskType | str = TaskType.SEGMENTATION,
-        test_split_mode: TestSplitMode | str = TestSplitMode.FROM_DIR,
-        test_split_ratio: float = 0.2,
-        val_split_mode: ValSplitMode | str = ValSplitMode.SAME_AS_TEST,
-        val_split_ratio: float = 0.5,
+        test_split_mode: SplitMode | TestSplitMode | str = SplitMode.PREDEFINED,
+        test_split_ratio: float | None = None,
+        val_split_mode: SplitMode | ValSplitMode | str = SplitMode.AUTO,
+        val_split_ratio: float | None = None,
         seed: int | None = None,
     ) -> None:
         super().__init__(
@@ -98,6 +98,11 @@ class Kolektor(AnomalibDataModule):
             split=Split.TEST,
             root=self.root,
         )
+
+        # Kolektor dataset does not provide a validation set.
+        # Auto behaviour is to clone the test set as validation set.
+        if self.val_split_mode == SplitMode.AUTO:
+            self.val_data = self.test_data.clone()
 
     def prepare_data(self) -> None:
         """Download the dataset if not available.

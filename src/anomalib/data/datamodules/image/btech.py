@@ -19,7 +19,8 @@ from tqdm import tqdm
 from anomalib import TaskType
 from anomalib.data.datamodules.base.image import AnomalibDataModule
 from anomalib.data.datasets.image.btech import BTechDataset
-from anomalib.data.utils import DownloadInfo, Split, TestSplitMode, ValSplitMode, download_and_extract
+from anomalib.data.utils import DownloadInfo, Split, SplitMode, TestSplitMode, ValSplitMode, download_and_extract
+from anomalib.data.utils.split import resolve_split_mode
 
 logger = logging.getLogger(__name__)
 
@@ -103,12 +104,14 @@ class BTech(AnomalibDataModule):
         eval_batch_size: int = 32,
         num_workers: int = 8,
         task: TaskType | str = TaskType.SEGMENTATION,
-        test_split_mode: TestSplitMode | str = TestSplitMode.FROM_DIR,
-        test_split_ratio: float = 0.2,
-        val_split_mode: ValSplitMode | str = ValSplitMode.SAME_AS_TEST,
-        val_split_ratio: float = 0.5,
+        test_split_mode: SplitMode | TestSplitMode | str = SplitMode.PREDEFINED,
+        test_split_ratio: float | None = None,
+        val_split_mode: SplitMode | ValSplitMode | str = SplitMode.AUTO,
+        val_split_ratio: float | None = None,
         seed: int | None = None,
     ) -> None:
+        test_split_mode = resolve_split_mode(test_split_mode)
+        val_split_mode = resolve_split_mode(val_split_mode)
         super().__init__(
             train_batch_size=train_batch_size,
             eval_batch_size=eval_batch_size,
@@ -137,6 +140,11 @@ class BTech(AnomalibDataModule):
             root=self.root,
             category=self.category,
         )
+
+        # BTech dataset does not provide a validation set.
+        # Auto behavior is to use the test set as the validation set.
+        if self.val_split_mode == SplitMode.AUTO:
+            self.val_data = self.test_data.clone()
 
     def prepare_data(self) -> None:
         """Download the dataset if not available.

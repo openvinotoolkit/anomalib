@@ -25,7 +25,7 @@ class TestGetImageFilenames:
         """Test ``get_image_filenames`` returns the correct image filenames from an existing directory."""
         directory_path = dataset_path / "mvtec/dummy/train/good"
         image_filenames = get_image_filenames(directory_path)
-        expected_filenames = [(directory_path / f"{i:03d}.png").resolve() for i in range(5)]
+        expected_filenames = [(directory_path / f"{i:03d}.png").resolve() for i in range(8)]
         assert set(image_filenames) == set(expected_filenames)
 
     @staticmethod

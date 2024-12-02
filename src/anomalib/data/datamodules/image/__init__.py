@@ -6,6 +6,7 @@
 from enum import Enum
 
 from .btech import BTech
+from .csv import CSV
 from .datumaro import Datumaro
 from .folder import Folder
 from .kolektor import Kolektor
@@ -17,6 +18,7 @@ class ImageDataFormat(str, Enum):
     """Supported Image Dataset Types."""
 
     BTECH = "btech"
+    CSV = "csv"
     DATUMARO = "datumaro"
     FOLDER = "folder"
     FOLDER_3D = "folder_3d"
@@ -26,4 +28,4 @@ class ImageDataFormat(str, Enum):
     VISA = "visa"
 
 
-__all__ = ["BTech", "Datumaro", "Folder", "Kolektor", "MVTec", "Visa"]
+__all__ = ["BTech", "CSV", "Datumaro", "Folder", "Kolektor", "MVTec", "Visa"]

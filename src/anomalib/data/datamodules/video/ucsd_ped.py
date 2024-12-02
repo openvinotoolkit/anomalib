@@ -12,6 +12,7 @@ from anomalib.data.datamodules.base.video import AnomalibVideoDataModule
 from anomalib.data.datasets.base.video import VideoTargetFrame
 from anomalib.data.datasets.video.ucsd_ped import UCSDpedDataset
 from anomalib.data.utils import DownloadInfo, Split, ValSplitMode, download_and_extract
+from anomalib.data.utils.split import SplitMode, resolve_split_mode
 
 logger = logging.getLogger(__name__)
 
@@ -51,10 +52,11 @@ class UCSDped(AnomalibVideoDataModule):
         train_batch_size: int = 8,
         eval_batch_size: int = 8,
         num_workers: int = 8,
-        val_split_mode: ValSplitMode = ValSplitMode.SAME_AS_TEST,
-        val_split_ratio: float = 0.5,
+        val_split_mode: SplitMode | ValSplitMode = SplitMode.AUTO,
+        val_split_ratio: float | None = None,
         seed: int | None = None,
     ) -> None:
+        val_split_mode = resolve_split_mode(val_split_mode)
         super().__init__(
             train_batch_size=train_batch_size,
             eval_batch_size=eval_batch_size,
@@ -92,6 +94,11 @@ class UCSDped(AnomalibVideoDataModule):
             category=self.category,
             split=Split.TEST,
         )
+
+        # UCSD Ped dataset does not provide a validation set.
+        # Auto behaviour is to clone the test set as validation set.
+        if self.val_split_mode == SplitMode.AUTO:
+            self.val_data = self.test_data.clone()
 
     def prepare_data(self) -> None:
         """Download the dataset if not available."""

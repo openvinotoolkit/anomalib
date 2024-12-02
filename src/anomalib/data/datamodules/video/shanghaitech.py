@@ -25,6 +25,7 @@ from anomalib.data.datamodules.base.video import AnomalibVideoDataModule
 from anomalib.data.datasets.base.video import VideoTargetFrame
 from anomalib.data.datasets.video.shanghaitech import ShanghaiTechDataset
 from anomalib.data.utils import DownloadInfo, Split, ValSplitMode, download_and_extract
+from anomalib.data.utils.split import SplitMode, resolve_split_mode
 from anomalib.data.utils.video import convert_video
 
 logger = logging.getLogger(__name__)
@@ -46,6 +47,14 @@ class ShanghaiTech(AnomalibVideoDataModule):
         frames_between_clips (int, optional): Number of frames between each consecutive video clip.
         target_frame (VideoTargetFrame): Specifies the target frame in the video clip, used for ground truth retrieval
         task TaskType): Task type, 'classification', 'detection' or 'segmentation'
+        image_size (tuple[int, int], optional): Size to which input images should be resized.
+            Defaults to ``None``.
+        transform (Transform, optional): Transforms that should be applied to the input images.
+            Defaults to ``None``.
+        train_transform (Transform, optional): Transforms that should be applied to the input images during training.
+            Defaults to ``None``.
+        eval_transform (Transform, optional): Transforms that should be applied to the input images during evaluation.
+            Defaults to ``None``.
         train_batch_size (int, optional): Training batch size. Defaults to 32.
         eval_batch_size (int, optional): Test batch size. Defaults to 32.
         num_workers (int, optional): Number of workers. Defaults to 8.
@@ -65,10 +74,11 @@ class ShanghaiTech(AnomalibVideoDataModule):
         train_batch_size: int = 32,
         eval_batch_size: int = 32,
         num_workers: int = 8,
-        val_split_mode: ValSplitMode = ValSplitMode.SAME_AS_TEST,
-        val_split_ratio: float = 0.5,
+        val_split_mode: SplitMode | ValSplitMode | str = SplitMode.AUTO,
+        val_split_ratio: float | None = None,
         seed: int | None = None,
     ) -> None:
+        val_split_mode = resolve_split_mode(val_split_mode)
         super().__init__(
             train_batch_size=train_batch_size,
             eval_batch_size=eval_batch_size,
@@ -106,6 +116,11 @@ class ShanghaiTech(AnomalibVideoDataModule):
             scene=self.scene,
             split=Split.TEST,
         )
+
+        # Shanghai Tech dataset does not provide a validation set.
+        # Auto behaviour is to clone the test set as the validation set.
+        if self.val_split_mode == SplitMode.AUTO:
+            self.val_data = self.test_data.clone()
 
     def prepare_data(self) -> None:
         """Download the dataset and convert video files."""
