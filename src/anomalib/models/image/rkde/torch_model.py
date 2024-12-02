@@ -21,10 +21,10 @@ class RkdeModel(nn.Module):
     """Torch Model for the Region-based Anomaly Detection Model.
 
     Args:
-        roi_score_threshold (float, optional): Minimum confidence score for the region proposals.
+        box_score_threshold (float, optional): Minimum confidence score for the region proposals.
             Defaults to ``0.001``.
-        min_size (int, optional): Minimum size in pixels for the region proposals.
-            Defaults to ``25``.
+        min_box_size (int, optional): Minimum size in pixels for the region proposals.
+            Defaults to ``100``.
         iou_threshold (float, optional): Intersection-Over-Union threshold used during NMS.
             Defaults to ``0.3``.
         max_detections_per_image (int, optional): Maximum number of region proposals per image.
@@ -42,8 +42,8 @@ class RkdeModel(nn.Module):
     def __init__(
         self,
         # roi params
-        roi_score_threshold: float = 0.001,
-        min_box_size: int = 25,
+        box_score_threshold: float = 0.001,
+        min_box_size: int = 100,
         iou_threshold: float = 0.3,
         max_detections_per_image: int = 100,
         # kde params
@@ -54,7 +54,7 @@ class RkdeModel(nn.Module):
         super().__init__()
 
         self.region_extractor = RegionExtractor(
-            score_threshold=roi_score_threshold,
+            box_score_threshold=box_score_threshold,
             min_size=min_box_size,
             iou_threshold=iou_threshold,
             max_detections_per_image=max_detections_per_image,
@@ -93,7 +93,8 @@ class RkdeModel(nn.Module):
         self.feature_extractor.eval()
 
         # 1. apply region extraction
-        regions: list[dict[str, torch.Tensor]] = self.region_extractor(batch)
+        with torch.no_grad():
+            regions: list[dict[str, torch.Tensor]] = self.region_extractor(batch)
 
         # convert from list of [N, 4] tensors to single [N, 5] tensor where each row is [index-in-batch, x1, y1, x2, y2]
         boxes_list = [batch_item["boxes"] for batch_item in regions]
@@ -108,7 +109,8 @@ class RkdeModel(nn.Module):
             # cannot extract features when no rois are retrieved
             features = torch.empty((0, 4096)).to(batch.device)
         else:
-            features = self.feature_extractor(batch, rois.clone())
+            with torch.no_grad():
+                features = self.feature_extractor(batch, rois)
 
         if self.training:
             return features

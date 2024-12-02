@@ -19,10 +19,10 @@ class RegionExtractor(nn.Module):
     """Extracts regions from the image.
 
     Args:
-        score_threshold (float, optional): Minimum confidence score for the region proposals.
+        box_score_threshold (float, optional): Minimum confidence score for the region proposals.
             Defaults to ``0.001``.
         min_size (int, optional): Minimum size in pixels for the region proposals.
-            Defaults to ``25``.
+            Defaults to ``100``.
         iou_threshold (float, optional): Intersection-Over-Union threshold used during NMS.
             Defaults to ``0.3``.
         max_detections_per_image (int, optional): Maximum number of region proposals per image.
@@ -31,8 +31,8 @@ class RegionExtractor(nn.Module):
 
     def __init__(
         self,
-        score_threshold: float = 0.001,
-        min_size: int = 25,
+        box_score_threshold: float = 0.001,
+        min_size: int = 100,
         iou_threshold: float = 0.3,
         max_detections_per_image: int = 100,
     ) -> None:
@@ -43,11 +43,9 @@ class RegionExtractor(nn.Module):
         weights = MaskRCNN_ResNet50_FPN_V2_Weights.DEFAULT
         self.backbone = maskrcnn_resnet50_fpn_v2(
             weights=weights,
-            rpn_post_nms_top_n_test=max_detections_per_image,
-            rpn_score_thresh=score_threshold,
-            box_nms_thresh=1.0,  # this disables nms (we apply custom label-agnostic nms during post-processing)
-            box_detections_per_img=1000,  # this disables filtering top-k predictions (we apply our own after nms)
-        ).eval()
+            box_score_thresh=box_score_threshold,
+            rpn_nms_thresh=0.3,
+        )
 
     @torch.no_grad()
     def forward(self, batch: torch.Tensor) -> torch.Tensor:
@@ -95,9 +93,9 @@ class RegionExtractor(nn.Module):
             masks = masks[keep]
             scores = scores[keep]
             labels = labels[keep]
-            # non-maximum suppression
+            # # non-maximum suppression
             keep = nms(boxes, scores, self.iou_threshold)
-            # keep only top-k scoring predictions
+            # # keep only top-k scoring predictions
             keep = keep[: self.max_detections_per_image]
             processed_boxes = {
                 "boxes": boxes[keep],
