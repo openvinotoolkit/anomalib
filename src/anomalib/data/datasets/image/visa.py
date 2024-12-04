@@ -23,7 +23,6 @@ from pathlib import Path
 
 from torchvision.transforms.v2 import Transform
 
-from anomalib import TaskType
 from anomalib.data.datasets import AnomalibDataset
 from anomalib.data.datasets.image.mvtec import make_mvtec_dataset
 from anomalib.data.utils import Split
@@ -49,7 +48,6 @@ class VisaDataset(AnomalibDataset):
     """VisA dataset class.
 
     Args:
-        task (TaskType): Task type, ``classification``, ``detection`` or ``segmentation``
         root (str | Path): Path to the root of the dataset
         category (str): Sub-category of the dataset, e.g. 'candle'
         transform (Transform, optional): Transforms that should be applied to the input images.
@@ -67,7 +65,6 @@ class VisaDataset(AnomalibDataset):
 
             transform = get_transforms(image_size=256)
             dataset = VisaDataset(
-                task="classification",
                 transform=transform,
                 split="train",
                 root="./datasets/visa/visa_pytorch/",
@@ -77,42 +74,18 @@ class VisaDataset(AnomalibDataset):
             dataset[0].keys()
 
             # Output
-            dict_keys(['image_path', 'label', 'image'])
-
-        If you want to use the dataset for segmentation, you can use the same
-        code as above, with the task set to ``segmentation``. The dataset will
-        then have a ``mask`` key in the output dictionary.
-
-        .. code-block:: python
-
-            from anomalib.data.image.visa import VisaDataset
-            from anomalib.data.utils.transforms import get_transforms
-
-            transform = get_transforms(image_size=256)
-            dataset = VisaDataset(
-                task="segmentation",
-                transform=transform,
-                split="train",
-                root="./datasets/visa/visa_pytorch/",
-                category="candle",
-            )
-            dataset.setup()
-            dataset[0].keys()
-
-            # Output
-            dict_keys(['image_path', 'label', 'image', 'mask_path', 'mask'])
+            dict_keys(['image_path', 'label', 'image', 'mask'])
 
     """
 
     def __init__(
         self,
-        task: TaskType,
         root: str | Path,
         category: str,
         transform: Transform | None = None,
         split: str | Split | None = None,
     ) -> None:
-        super().__init__(task=task, transform=transform)
+        super().__init__(transform=transform)
 
         self.root_category = Path(root) / category
         self.split = split

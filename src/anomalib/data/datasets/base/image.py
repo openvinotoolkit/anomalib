@@ -20,13 +20,7 @@ from anomalib import TaskType
 from anomalib.data.dataclasses import DatasetItem, ImageBatch, ImageItem
 from anomalib.data.utils import LabelName, read_image, read_mask
 
-_EXPECTED_COLUMNS_CLASSIFICATION = ["image_path", "split"]
-_EXPECTED_COLUMNS_SEGMENTATION = [*_EXPECTED_COLUMNS_CLASSIFICATION, "mask_path"]
-_EXPECTED_COLUMNS_PERTASK = {
-    "classification": _EXPECTED_COLUMNS_CLASSIFICATION,
-    "segmentation": _EXPECTED_COLUMNS_SEGMENTATION,
-    "detection": _EXPECTED_COLUMNS_SEGMENTATION,
-}
+_EXPECTED_COLUMNS = ["image_path", "split"]
 
 logger = logging.getLogger(__name__)
 
@@ -62,9 +56,8 @@ class AnomalibDataset(Dataset, ABC):
             Defaults to ``None``.
     """
 
-    def __init__(self, task: TaskType | str, transform: Transform | None = None) -> None:
+    def __init__(self, transform: Transform | None = None) -> None:
         super().__init__()
-        self.task = TaskType(task)
         self.transform = transform
         self._samples: DataFrame | None = None
         self._category: str | None = None
@@ -122,9 +115,8 @@ class AnomalibDataset(Dataset, ABC):
             msg = f"samples must be a pandas.DataFrame, found {type(samples)}"
             raise TypeError(msg)
 
-        expected_columns = _EXPECTED_COLUMNS_PERTASK[self.task]
-        if not all(col in samples.columns for col in expected_columns):
-            msg = f"samples must have (at least) columns {expected_columns}, found {samples.columns}"
+        if not all(col in samples.columns for col in _EXPECTED_COLUMNS):
+            msg = f"samples must have (at least) columns {_EXPECTED_COLUMNS}, found {samples.columns}"
             raise ValueError(msg)
 
         if not samples["image_path"].apply(lambda p: Path(p).exists()).all():
@@ -152,6 +144,11 @@ class AnomalibDataset(Dataset, ABC):
     def has_anomalous(self) -> bool:
         """Check if the dataset contains any anomalous samples."""
         return LabelName.ABNORMAL in list(self.samples.label_index)
+
+    @property
+    def task(self) -> TaskType:
+        """Infer the task type from the dataset."""
+        return TaskType(self.samples.attrs["task"])
 
     def __getitem__(self, index: int) -> DatasetItem:
         """Get dataset item for the index ``index``.

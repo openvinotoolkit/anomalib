@@ -8,7 +8,6 @@ Note: This currently only works for annotations exported from Intel Geti™.
 
 from pathlib import Path
 
-from anomalib import TaskType
 from anomalib.data.datamodules.base import AnomalibDataModule
 from anomalib.data.datasets.image.datumaro import DatumaroDataset
 from anomalib.data.utils import Split, TestSplitMode, ValSplitMode
@@ -25,8 +24,6 @@ class Datumaro(AnomalibDataModule):
             Defaults to ``32``.
         num_workers (int): Number of workers for dataloaders.
             Defaults to ``8``.
-        task (TaskType): Task type, ``classification``, ``detection`` or ``segmentation``.
-            Defaults to ``TaskType.CLASSIFICATION``. Currently only supports classification.
         image_size (tuple[int, int], optional): Size to which input images should be resized.
             Defaults to ``None``.
         transform (Transform, optional): Transforms that should be applied to the input images.
@@ -68,16 +65,12 @@ class Datumaro(AnomalibDataModule):
         train_batch_size: int = 32,
         eval_batch_size: int = 32,
         num_workers: int = 8,
-        task: TaskType = TaskType.CLASSIFICATION,
         test_split_mode: TestSplitMode | str = TestSplitMode.FROM_DIR,
         test_split_ratio: float = 0.5,
         val_split_mode: ValSplitMode | str = ValSplitMode.FROM_TEST,
         val_split_ratio: float = 0.5,
         seed: int | None = None,
     ) -> None:
-        if task != TaskType.CLASSIFICATION:
-            msg = "Datumaro dataloader currently only supports classification task."
-            raise ValueError(msg)
         super().__init__(
             train_batch_size=train_batch_size,
             eval_batch_size=eval_batch_size,
@@ -89,16 +82,13 @@ class Datumaro(AnomalibDataModule):
             seed=seed,
         )
         self.root = root
-        self.task = task
 
     def _setup(self, _stage: str | None = None) -> None:
         self.train_data = DatumaroDataset(
-            task=self.task,
             root=self.root,
             split=Split.TRAIN,
         )
         self.test_data = DatumaroDataset(
-            task=self.task,
             root=self.root,
             split=Split.TEST,
         )

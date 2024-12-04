@@ -296,8 +296,6 @@ class AnomalibModule(ExportMixin, pl.LightningModule, ABC):
         from jsonargparse import ActionConfigFile, ArgumentParser
         from lightning.pytorch import Trainer
 
-        from anomalib import TaskType
-
         if not Path(config_path).exists():
             msg = f"Configuration file not found: {config_path}"
             raise FileNotFoundError(msg)
@@ -310,7 +308,6 @@ class AnomalibModule(ExportMixin, pl.LightningModule, ABC):
             help="Path to a configuration file in json or yaml format.",
         )
         model_parser.add_subclass_arguments(AnomalibModule, "model", required=False, fail_untyped=False)
-        model_parser.add_argument("--task", type=TaskType | str, default=TaskType.SEGMENTATION)
         model_parser.add_argument("--metrics.image", type=list[str] | str | None, default=["F1Score", "AUROC"])
         model_parser.add_argument("--metrics.pixel", type=list[str] | str | None, default=None, required=False)
         model_parser.add_argument("--metrics.threshold", type=Threshold | str, default="F1AdaptiveThreshold")

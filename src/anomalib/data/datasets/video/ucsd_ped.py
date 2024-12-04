@@ -11,7 +11,6 @@ import torch
 from pandas import DataFrame
 from torchvision.transforms.v2 import Transform
 
-from anomalib import TaskType
 from anomalib.data.datasets.base.video import AnomalibVideoDataset, VideoTargetFrame
 from anomalib.data.utils import Split, read_image, read_mask, validate_path
 from anomalib.data.utils.video import ClipsIndexer
@@ -26,7 +25,6 @@ class UCSDpedDataset(AnomalibVideoDataset):
     """UCSDped Dataset class.
 
     Args:
-        task (TaskType): Task type, 'classification', 'detection' or 'segmentation'
         root (Path | str): Path to the root of the dataset
         category (str): Sub-category of the dataset, e.g. "UCSDped1" or "UCSDped2"
         split (str | Split | None): Split of the dataset, usually Split.TRAIN or Split.TEST
@@ -39,7 +37,6 @@ class UCSDpedDataset(AnomalibVideoDataset):
 
     def __init__(
         self,
-        task: TaskType,
         root: str | Path,
         category: str,
         split: Split,
@@ -49,7 +46,6 @@ class UCSDpedDataset(AnomalibVideoDataset):
         transform: Transform | None = None,
     ) -> None:
         super().__init__(
-            task=task,
             clip_length_in_frames=clip_length_in_frames,
             frames_between_clips=frames_between_clips,
             target_frame=target_frame,

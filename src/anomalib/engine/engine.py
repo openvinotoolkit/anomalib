@@ -15,7 +15,7 @@ from lightning.pytorch.utilities.types import _EVALUATE_OUTPUT, _PREDICT_OUTPUT,
 from torch.utils.data import DataLoader, Dataset
 from torchmetrics import Metric
 
-from anomalib import LearningType, TaskType
+from anomalib import LearningType
 from anomalib.callbacks.checkpoint import ModelCheckpoint
 from anomalib.callbacks.timer import TimerCallback
 from anomalib.data import AnomalibDataModule, AnomalibDataset, PredictDataset
@@ -99,7 +99,6 @@ class Engine:
             Defaults to NormalizationMethod.MIN_MAX.
         threshold (THRESHOLD):
             Thresholding method. Defaults to "F1AdaptiveThreshold".
-        task (TaskType, optional): Task type. Defaults to TaskType.SEGMENTATION.
         image_metrics (list[str] | str | dict[str, dict[str, Any]] | None, optional): Image metrics to be used for
             evaluation. Defaults to None.
         pixel_metrics (list[str] | str | dict[str, dict[str, Any]] | None, optional): Pixel metrics to be used for
@@ -113,7 +112,6 @@ class Engine:
     def __init__(
         self,
         callbacks: list[Callback] | None = None,
-        task: TaskType | str = TaskType.SEGMENTATION,
         logger: Logger | Iterable[Logger] | bool | None = None,
         default_root_dir: str | Path = "results",
         **kwargs,
@@ -131,8 +129,6 @@ class Engine:
             default_root_dir=Path(default_root_dir),
             **kwargs,
         )
-
-        self.task = TaskType(task)
 
         self._trainer: Trainer | None = None
 
@@ -271,26 +267,6 @@ class Engine:
         if self._trainer is None:
             self._trainer = Trainer(**self._cache.args)
 
-    def _setup_dataset_task(
-        self,
-        *dataloaders: EVAL_DATALOADERS | TRAIN_DATALOADERS | AnomalibDataModule | None,
-    ) -> None:
-        """Override the dataloader task with the task passed to the Engine.
-
-        Args:
-            dataloaders (TRAIN_DATALOADERS | EVAL_DATALOADERS): Dataloaders to be used for training or evaluation.
-        """
-        for dataloader in dataloaders:
-            if dataloader is not None and isinstance(dataloader, AnomalibDataModule):
-                for attribute in ("train_data", "val_data", "test_data"):
-                    if hasattr(dataloader, attribute):
-                        data: AnomalibDataset = getattr(dataloader, attribute)
-                        if data.task != self.task:
-                            logger.info(
-                                f"Overriding task from {data.task} with {self.task} for {dataloader.__class__}",
-                            )
-                            data.task = self.task
-
     def _setup_anomalib_callbacks(self, model: AnomalibModule) -> None:
         """Set up callbacks for the trainer."""
         _callbacks: list[Callback] = []
@@ -402,7 +378,6 @@ class Engine:
             versioned_dir=True,
         )
         self._setup_trainer(model)
-        self._setup_dataset_task(train_dataloaders, val_dataloaders, datamodule)
         if model.learning_type in {LearningType.ZERO_SHOT, LearningType.FEW_SHOT}:
             # if the model is zero-shot or few-shot, we only need to run validate for normalization and thresholding
             self.trainer.validate(model, val_dataloaders, datamodule=datamodule, ckpt_path=ckpt_path)
@@ -455,7 +430,6 @@ class Engine:
             ckpt_path = Path(ckpt_path).resolve()
         if model:
             self._setup_trainer(model)
-        self._setup_dataset_task(dataloaders)
         return self.trainer.validate(model, dataloaders, ckpt_path, verbose, datamodule)
 
     def test(
@@ -468,8 +442,7 @@ class Engine:
     ) -> _EVALUATE_OUTPUT:
         """Test the model using the trainer.
 
-        Sets up the trainer and the dataset task if not already set up. Then validates the model if needed and
-        finally tests the model.
+        Then validates the model if needed and then tests the model.
 
         Args:
             model (AnomalibModule | None, optional):
@@ -548,7 +521,6 @@ class Engine:
             msg = "`Engine.test()` requires an `AnomalibModule` when it hasn't been passed in a previous run."
             raise RuntimeError(msg)
 
-        self._setup_dataset_task(dataloaders)
         if self._should_run_validation(model or self.model, ckpt_path):
             logger.info("Running validation before testing to collect normalization metrics and/or thresholds.")
             self.trainer.validate(model, dataloaders, None, verbose=False, datamodule=datamodule)
@@ -566,8 +538,7 @@ class Engine:
     ) -> _PREDICT_OUTPUT | None:
         """Predict using the model using the trainer.
 
-        Sets up the trainer and the dataset task if not already set up. Then validates the model if needed and a
-        validation dataloader is available. Finally, predicts using the model.
+        Validates the model if needed and if a validation dataloader is available. Then predicts using the model.
 
         Args:
             model (AnomalibModule | None, optional):
@@ -652,8 +623,6 @@ class Engine:
             dataloaders.append(DataLoader(dataset, collate_fn=dataset.collate_fn))
         dataloaders = dataloaders or None
 
-        self._setup_dataset_task(dataloaders, datamodule)
-
         if self._should_run_validation(model or self.model, ckpt_path):
             logger.info("Running validation before predicting to collect normalization metrics and/or thresholds.")
             self.trainer.validate(
@@ -716,12 +685,6 @@ class Engine:
             versioned_dir=True,
         )
         self._setup_trainer(model)
-        self._setup_dataset_task(
-            train_dataloaders,
-            val_dataloaders,
-            test_dataloaders,
-            datamodule,
-        )
         if model.learning_type in {LearningType.ZERO_SHOT, LearningType.FEW_SHOT}:
             # if the model is zero-shot or few-shot, we only need to run validate for normalization and thresholding
             self.trainer.validate(model, val_dataloaders, None, verbose=False, datamodule=datamodule)
@@ -814,7 +777,6 @@ class Engine:
             exported_model_path = model.to_openvino(
                 export_root=export_root,
                 input_size=input_size,
-                task=self.task,
                 compression_type=compression_type,
                 datamodule=datamodule,
                 metric=metric,

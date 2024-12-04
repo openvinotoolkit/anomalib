@@ -22,7 +22,6 @@ Reference:
 import logging
 from pathlib import Path
 
-from anomalib import TaskType
 from anomalib.data.datamodules.base.image import AnomalibDataModule
 from anomalib.data.datasets.depth.mvtec_3d import MVTec3DDataset
 from anomalib.data.utils import DownloadInfo, Split, TestSplitMode, ValSplitMode, download_and_extract
@@ -52,8 +51,6 @@ class MVTec3D(AnomalibDataModule):
             Defaults to ``32``.
         num_workers (int, optional): Number of workers.
             Defaults to ``8``.
-        task (TaskType): Task type, 'classification', 'detection' or 'segmentation'
-            Defaults to ``TaskType.SEGMENTATION``.
         test_split_mode (TestSplitMode): Setting that determines how the testing subset is obtained.
             Defaults to ``TestSplitMode.FROM_DIR``.
         test_split_ratio (float): Fraction of images from the train set that will be reserved for testing.
@@ -73,7 +70,6 @@ class MVTec3D(AnomalibDataModule):
         train_batch_size: int = 32,
         eval_batch_size: int = 32,
         num_workers: int = 8,
-        task: TaskType | str = TaskType.SEGMENTATION,
         test_split_mode: TestSplitMode | str = TestSplitMode.FROM_DIR,
         test_split_ratio: float = 0.2,
         val_split_mode: ValSplitMode | str = ValSplitMode.SAME_AS_TEST,
@@ -91,19 +87,16 @@ class MVTec3D(AnomalibDataModule):
             seed=seed,
         )
 
-        self.task = TaskType(task)
         self.root = Path(root)
         self.category = category
 
     def _setup(self, _stage: str | None = None) -> None:
         self.train_data = MVTec3DDataset(
-            task=self.task,
             split=Split.TRAIN,
             root=self.root,
             category=self.category,
         )
         self.test_data = MVTec3DDataset(
-            task=self.task,
             split=Split.TEST,
             root=self.root,
             category=self.category,

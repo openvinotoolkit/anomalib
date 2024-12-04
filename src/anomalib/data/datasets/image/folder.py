@@ -12,7 +12,6 @@ from pathlib import Path
 from pandas import DataFrame
 from torchvision.transforms.v2 import Transform
 
-from anomalib import TaskType
 from anomalib.data.datasets.base.image import AnomalibDataset
 from anomalib.data.errors import MisMatchError
 from anomalib.data.utils import DirType, LabelName, Split
@@ -26,7 +25,6 @@ class FolderDataset(AnomalibDataset):
 
     Args:
         name (str): Name of the dataset. This is used to name the datamodule, especially when logging/saving.
-        task (TaskType): Task type. (``classification``, ``detection`` or ``segmentation``).
         transform (Transform, optional): Transforms that should be applied to the input images.
             Defaults to ``None``.
         normal_dir (str | Path | Sequence): Path to the directory containing normal images.
@@ -46,10 +44,6 @@ class FolderDataset(AnomalibDataset):
         extensions (tuple[str, ...] | None, optional): Type of the image extensions to read from the directory.
             Defaults to ``None``.
 
-    Raises:
-        ValueError: When task is set to classification and `mask_dir` is provided. When `mask_dir` is
-            provided, `task` should be set to `segmentation`.
-
     Examples:
         Assume that we would like to use this ``FolderDataset`` to create a dataset from a folder for a classification
         task. We could first create the transforms,
@@ -66,7 +60,6 @@ class FolderDataset(AnomalibDataset):
                 abnormal_dir=dataset_root / "crack",
                 split="train",
                 transform=transform,
-                task=TaskType.CLASSIFICATION,
             )
 
     """
@@ -74,7 +67,6 @@ class FolderDataset(AnomalibDataset):
     def __init__(
         self,
         name: str,
-        task: TaskType,
         normal_dir: str | Path | Sequence[str | Path],
         transform: Transform | None = None,
         root: str | Path | None = None,
@@ -84,7 +76,7 @@ class FolderDataset(AnomalibDataset):
         split: str | Split | None = None,
         extensions: tuple[str, ...] | None = None,
     ) -> None:
-        super().__init__(task, transform)
+        super().__init__(transform)
 
         self._name = name
         self.split = split

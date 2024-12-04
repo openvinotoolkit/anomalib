@@ -12,7 +12,6 @@ from pathlib import Path
 import pandas as pd
 from torchvision.transforms.v2 import Transform
 
-from anomalib import TaskType
 from anomalib.data.datasets.base import AnomalibDataset
 from anomalib.data.utils import LabelName, Split
 
@@ -116,11 +115,10 @@ class DatumaroDataset(AnomalibDataset):
 
     def __init__(
         self,
-        task: TaskType,
         root: str | Path,
         transform: Transform | None = None,
         split: str | Split | None = None,
     ) -> None:
-        super().__init__(task, transform)
+        super().__init__(transform)
         self.split = split
         self.samples = make_datumaro_dataset(root, split)

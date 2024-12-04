@@ -25,7 +25,6 @@ import torch
 from pandas import DataFrame
 from torchvision.transforms.v2 import Transform
 
-from anomalib import TaskType
 from anomalib.data.datasets.base.video import AnomalibVideoDataset, VideoTargetFrame
 from anomalib.data.utils import Split, read_image, validate_path
 from anomalib.data.utils.video import ClipsIndexer
@@ -35,7 +34,6 @@ class ShanghaiTechDataset(AnomalibVideoDataset):
     """ShanghaiTech Dataset class.
 
     Args:
-        task (TaskType): Task type, 'classification', 'detection' or 'segmentation'
         split (Split): Split of the dataset, usually Split.TRAIN or Split.TEST
         root (Path | str): Path to the root of the dataset
         scene (int): Index of the dataset scene (category) in range [1, 13]
@@ -48,7 +46,6 @@ class ShanghaiTechDataset(AnomalibVideoDataset):
 
     def __init__(
         self,
-        task: TaskType,
         split: Split,
         root: Path | str = "./datasets/shanghaitech",
         scene: int = 1,
@@ -58,7 +55,6 @@ class ShanghaiTechDataset(AnomalibVideoDataset):
         transform: Transform | None = None,
     ) -> None:
         super().__init__(
-            task=task,
             clip_length_in_frames=clip_length_in_frames,
             frames_between_clips=frames_between_clips,
             target_frame=target_frame,

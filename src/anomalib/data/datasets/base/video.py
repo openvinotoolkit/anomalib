@@ -13,7 +13,6 @@ from torchvision.transforms.v2 import Transform
 from torchvision.transforms.v2.functional import to_dtype, to_dtype_video
 from torchvision.tv_tensors import Mask
 
-from anomalib import TaskType
 from anomalib.data.dataclasses import VideoBatch, VideoItem
 from anomalib.data.utils.video import ClipsIndexer
 
@@ -36,7 +35,6 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
     """Base video anomalib dataset class.
 
     Args:
-        task (str): Task type, either 'classification' or 'segmentation'
         clip_length_in_frames (int): Number of video frames in each clip.
         frames_between_clips (int): Number of frames between each consecutive video clip.
         transform (Transform, optional): Transforms that should be applied to the input clips.
@@ -47,13 +45,12 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
 
     def __init__(
         self,
-        task: TaskType,
         clip_length_in_frames: int,
         frames_between_clips: int,
         transform: Transform | None = None,
         target_frame: VideoTargetFrame = VideoTargetFrame.LAST,
     ) -> None:
-        super().__init__(task, transform)
+        super().__init__(transform)
 
         self.clip_length_in_frames = clip_length_in_frames
         self.frames_between_clips = frames_between_clips

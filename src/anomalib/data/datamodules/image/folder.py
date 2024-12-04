@@ -9,7 +9,6 @@ This script creates a custom Lightning DataModule from a folder.
 from collections.abc import Sequence
 from pathlib import Path
 
-from anomalib import TaskType
 from anomalib.data.datamodules.base.image import AnomalibDataModule
 from anomalib.data.datasets.image.folder import FolderDataset
 from anomalib.data.utils import Split, TestSplitMode, ValSplitMode
@@ -43,8 +42,6 @@ class Folder(AnomalibDataModule):
             Defaults to ``32``.
         num_workers (int, optional): Number of workers.
             Defaults to ``8``.
-        task (TaskType, optional): Task type. Could be ``classification``, ``detection`` or ``segmentation``.
-            Defaults to ``segmentation``.
         test_split_mode (TestSplitMode): Setting that determines how the testing subset is obtained.
             Defaults to ``TestSplitMode.FROM_DIR``.
         test_split_ratio (float): Fraction of images from the train set that will be reserved for testing.
@@ -90,7 +87,6 @@ class Folder(AnomalibDataModule):
                 root=dataset_root,
                 normal_dir="good",
                 abnormal_dir="crack",
-                task=TaskType.SEGMENTATION,
                 mask_dir=dataset_root / "mask" / "crack",
             )
             folder_datamodule.setup()
@@ -123,7 +119,6 @@ class Folder(AnomalibDataModule):
         train_batch_size: int = 32,
         eval_batch_size: int = 32,
         num_workers: int = 8,
-        task: TaskType | str = TaskType.SEGMENTATION,
         test_split_mode: TestSplitMode | str = TestSplitMode.FROM_DIR,
         test_split_ratio: float = 0.2,
         val_split_mode: ValSplitMode | str = ValSplitMode.FROM_TEST,
@@ -136,7 +131,6 @@ class Folder(AnomalibDataModule):
         self.abnormal_dir = abnormal_dir
         self.normal_test_dir = normal_test_dir
         self.mask_dir = mask_dir
-        self.task = TaskType(task)
         self.extensions = extensions
         test_split_mode = TestSplitMode(test_split_mode)
         val_split_mode = ValSplitMode(val_split_mode)
@@ -151,21 +145,11 @@ class Folder(AnomalibDataModule):
             seed=seed,
         )
 
-        if task == TaskType.SEGMENTATION and test_split_mode == TestSplitMode.FROM_DIR and mask_dir is None:
-            msg = (
-                f"Segmentation task requires mask directory if test_split_mode is {test_split_mode}. "
-                "You could set test_split_mode to {TestSplitMode.NONE} or provide a mask directory."
-            )
-            raise ValueError(
-                msg,
-            )
-
         self.normal_split_ratio = normal_split_ratio
 
     def _setup(self, _stage: str | None = None) -> None:
         self.train_data = FolderDataset(
             name=self.name,
-            task=self.task,
             split=Split.TRAIN,
             root=self.root,
             normal_dir=self.normal_dir,
@@ -177,7 +161,6 @@ class Folder(AnomalibDataModule):
 
         self.test_data = FolderDataset(
             name=self.name,
-            task=self.task,
             split=Split.TEST,
             root=self.root,
             normal_dir=self.normal_dir,
