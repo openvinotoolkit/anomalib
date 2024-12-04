@@ -14,7 +14,6 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from anomalib import TaskType
 from anomalib.data import AnomalibDataModule, MVTec
 from anomalib.deploy import ExportType
 from anomalib.engine import Engine
@@ -194,10 +193,6 @@ class TestAPI:
             tuple[AnomalibModule, AnomalibDataModule, Engine]: Returns the created objects for model, dataset,
                 and engine
         """
-        # select task type
-
-        task_type = TaskType.CLASSIFICATION if model_name in {"ganomaly", "dfkde"} else TaskType.SEGMENTATION
-
         # set extra model args
         # TODO(ashwinvaidya17): Fix these Edge cases
         # https://github.com/openvinotoolkit/anomalib/issues/1478
@@ -214,7 +209,6 @@ class TestAPI:
             dataset = MVTec(
                 root=dataset_path / "mvtec",
                 category="dummy",
-                task=task_type,
                 # EfficientAd requires train batch size 1
                 train_batch_size=1 if model_name == "efficient_ad" else 2,
             )
@@ -230,7 +224,6 @@ class TestAPI:
             default_root_dir=project_path,
             max_epochs=1,
             devices=1,
-            task=task_type,
             # TODO(ashwinvaidya17): Fix these Edge cases
             # https://github.com/openvinotoolkit/anomalib/issues/1478
             max_steps=70000 if model_name == "efficient_ad" else -1,
