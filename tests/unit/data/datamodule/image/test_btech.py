@@ -7,7 +7,6 @@ from pathlib import Path
 
 import pytest
 
-from anomalib import TaskType
 from anomalib.data import BTech
 from tests.unit.data.datamodule.base.image import _TestAnomalibImageDatamodule
 
@@ -17,12 +16,11 @@ class TestBTech(_TestAnomalibImageDatamodule):
 
     @pytest.fixture()
     @staticmethod
-    def datamodule(dataset_path: Path, task_type: TaskType) -> BTech:
+    def datamodule(dataset_path: Path) -> BTech:
         """Create and return a BTech datamodule."""
         _datamodule = BTech(
             root=dataset_path / "btech",
             category="dummy",
-            task=task_type,
             train_batch_size=4,
             eval_batch_size=4,
         )

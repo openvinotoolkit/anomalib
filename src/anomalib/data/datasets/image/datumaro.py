@@ -79,6 +79,9 @@ def make_datumaro_dataset(root: str | Path, split: str | Split | None = None) ->
     samples_df.loc[samples_df["label_index"] == LabelName.NORMAL, "split"] = Split.TRAIN
     samples_df.loc[samples_df["label_index"] == LabelName.ABNORMAL, "split"] = Split.TEST
 
+    # datumaro only supports classification
+    samples_df.attrs["task"] = "classification"
+
     # Get the data frame for the split.
     if split:
         samples_df = samples_df[samples_df.split == split].reset_index(drop=True)

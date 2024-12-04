@@ -7,7 +7,6 @@ from pathlib import Path
 
 import pytest
 
-from anomalib import TaskType
 from anomalib.data import Datumaro
 from tests.unit.data.datamodule.base.image import _TestAnomalibImageDatamodule
 
@@ -17,14 +16,10 @@ class TestDatumaro(_TestAnomalibImageDatamodule):
 
     @pytest.fixture()
     @staticmethod
-    def datamodule(dataset_path: Path, task_type: TaskType) -> Datumaro:
+    def datamodule(dataset_path: Path) -> Datumaro:
         """Create and return a Datumaro datamodule."""
-        if task_type != TaskType.CLASSIFICATION:
-            pytest.skip("Datumaro only supports classification tasks.")
-
         _datamodule = Datumaro(
             root=dataset_path / "datumaro",
-            task=task_type,
             train_batch_size=4,
             eval_batch_size=4,
         )

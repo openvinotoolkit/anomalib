@@ -175,6 +175,9 @@ def make_mvtec_3d_dataset(
           (e.g. image: '000.png', depth: '000.tiff')."""
         raise MisMatchError(msg)
 
+    # infer the task type
+    samples.attrs["task"] = "classification" if (samples["mask_path"] == "").all() else "segmentation"
+
     if split:
         samples = samples[samples.split == split].reset_index(drop=True)
 

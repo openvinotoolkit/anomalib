@@ -155,6 +155,9 @@ def make_avenue_dataset(root: Path, gt_dir: Path, split: Split | str | None = No
     samples.loc[samples.folder == "training_videos", "split"] = "train"
     samples.loc[samples.folder == "testing_videos", "split"] = "test"
 
+    # infer the task type
+    samples.attrs["task"] = "classification" if (samples["mask_path"] == "").all() else "segmentation"
+
     if split:
         samples = samples[samples.split == split]
         samples = samples.reset_index(drop=True)

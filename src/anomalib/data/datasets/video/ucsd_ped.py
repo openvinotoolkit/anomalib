@@ -156,6 +156,9 @@ def make_ucsd_dataset(path: Path, split: str | Split | None = None) -> DataFrame
     samples.loc[samples.folder == "Train", "split"] = "train"
     samples.loc[samples.folder == "Test", "split"] = "test"
 
+    # infer the task type
+    samples.attrs["task"] = "classification" if (samples["mask_path"] == "").all() else "segmentation"
+
     if split:
         samples = samples[samples.split == split]
         samples = samples.reset_index(drop=True)

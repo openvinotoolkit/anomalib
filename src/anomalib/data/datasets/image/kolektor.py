@@ -158,6 +158,9 @@ def make_kolektor_dataset(
         (e.g. image: 'Part0.jpg', mask: 'Part0_label.bmp')."""
         raise MisMatchError(msg)
 
+    # infer the task type
+    samples.attrs["task"] = "classification" if (samples["mask_path"] == "").all() else "segmentation"
+
     # Get the dataframe for the required split
     if split:
         samples = samples[samples.split == split].reset_index(drop=True)

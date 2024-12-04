@@ -190,6 +190,9 @@ def make_shanghaitech_dataset(root: Path, scene: int, split: Split | str | None 
 
     samples["image_path"] = samples.root + "/" + samples.image_path
 
+    # infer the task type
+    samples.attrs["task"] = "classification" if (samples["mask_path"] == "").all() else "segmentation"
+
     if split:
         samples = samples[samples.split == split]
         samples = samples.reset_index(drop=True)

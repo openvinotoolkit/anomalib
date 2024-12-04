@@ -7,7 +7,6 @@ from pathlib import Path
 
 import pytest
 
-from anomalib import TaskType
 from anomalib.data import Folder3D
 from tests.unit.data.datamodule.base.depth import _TestAnomalibDepthDatamodule
 
@@ -17,7 +16,7 @@ class TestFolder3D(_TestAnomalibDepthDatamodule):
 
     @pytest.fixture()
     @staticmethod
-    def datamodule(dataset_path: Path, task_type: TaskType) -> Folder3D:
+    def datamodule(dataset_path: Path) -> Folder3D:
         """Create and return a Folder 3D datamodule."""
         _datamodule = Folder3D(
             name="dummy",
@@ -32,7 +31,6 @@ class TestFolder3D(_TestAnomalibDepthDatamodule):
             train_batch_size=4,
             eval_batch_size=4,
             num_workers=0,
-            task=task_type,
         )
         _datamodule.prepare_data()
         _datamodule.setup()

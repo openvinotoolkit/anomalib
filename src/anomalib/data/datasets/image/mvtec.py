@@ -206,10 +206,8 @@ def make_mvtec_dataset(
         anomalous images in the dataset (e.g. image: '000.png', mask: '000.png' or '000_mask.png')."""
         raise MisMatchError(msg)
 
-    if samples["mask_path"].apply(lambda x: x == "" or x is None).all():
-        samples.attrs["task"] = "classification"
-    else:
-        samples.attrs["task"] = "segmentation"
+    # infer the task type
+    samples.attrs["task"] = "classification" if (samples["mask_path"] == "").all() else "segmentation"
 
     if split:
         samples = samples[samples.split == split].reset_index(drop=True)

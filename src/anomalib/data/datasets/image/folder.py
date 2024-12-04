@@ -255,6 +255,9 @@ def make_folder_dataset(
     samples.loc[(samples.label == DirType.NORMAL), "split"] = Split.TRAIN
     samples.loc[(samples.label == DirType.ABNORMAL) | (samples.label == DirType.NORMAL_TEST), "split"] = Split.TEST
 
+    # infer the task type
+    samples.attrs["task"] = "classification" if (samples["mask_path"] == "").all() else "segmentation"
+
     # Get the data frame for the split.
     if split:
         samples = samples[samples.split == split]

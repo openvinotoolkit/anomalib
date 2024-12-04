@@ -145,6 +145,9 @@ def make_btech_dataset(path: Path, split: str | Split | None = None) -> DataFram
     samples.loc[(samples.label != "ok"), "label_index"] = LabelName.ABNORMAL
     samples.label_index = samples.label_index.astype(int)
 
+    # infer the task type
+    samples.attrs["task"] = "classification" if (samples["mask_path"] == "").all() else "segmentation"
+
     # Get the data frame for the split.
     if split:
         samples = samples[samples.split == split]
