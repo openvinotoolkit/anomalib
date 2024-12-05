@@ -13,6 +13,7 @@ from lightning.pytorch.trainer.states import TrainerFn
 from lightning.pytorch.utilities.types import EVAL_DATALOADERS, TRAIN_DATALOADERS
 from torch.utils.data.dataloader import DataLoader
 
+from anomalib import TaskType
 from anomalib.data.utils import TestSplitMode, ValSplitMode, random_split, split_by_label
 from anomalib.data.utils.synthetic import SyntheticAnomalyDataset
 
@@ -118,6 +119,18 @@ class AnomalibDataModule(LightningDataModule, ABC):
     def category(self, category: str) -> None:
         """Set the category of the datamodule."""
         self._category = category
+
+    @property
+    def task(self) -> TaskType:
+        """Get the task type of the datamodule."""
+        if hasattr(self, "train_data"):
+            return self.train_data.task
+        if hasattr(self, "val_data"):
+            return self.val_data.task
+        if hasattr(self, "test_data"):
+            return self.test_data.task
+        msg = "This datamodule does not have any datasets. Did you call setup?"
+        raise AttributeError(msg)
 
     def _create_test_split(self) -> None:
         """Obtain the test set based on the settings in the config."""

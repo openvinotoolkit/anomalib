@@ -22,7 +22,6 @@ from shutil import move
 import cv2
 import scipy.io
 
-from anomalib import TaskType
 from anomalib.data.datamodules.base.video import AnomalibVideoDataModule
 from anomalib.data.datasets.base.video import VideoTargetFrame
 from anomalib.data.datasets.video.avenue import AvenueDataset
@@ -56,8 +55,6 @@ class Avenue(AnomalibVideoDataModule):
             Defaults to ``1``.
         target_frame (VideoTargetFrame): Specifies the target frame in the video clip, used for ground truth retrieval
             Defaults to ``VideoTargetFrame.LAST``.
-        task (TaskType): Task type, 'classification', 'detection' or 'segmentation'
-            Defaults to ``TaskType.SEGMENTATION``.
         train_batch_size (int, optional): Training batch size.
             Defaults to ``32``.
         eval_batch_size (int, optional): Test batch size.
@@ -90,8 +87,7 @@ class Avenue(AnomalibVideoDataModule):
             data["image"].shape
             # Output: torch.Size([32, 2, 3, 256, 256])
 
-        Note that the default task type is segmentation and the dataloader returns a mask in addition to the input.
-        Also, it is important to note that the dataloader returns a batch of clips, where each clip is a sequence of
+        Note that it is important to note that the dataloader returns a batch of clips, where each clip is a sequence of
         frames. The number of frames in each clip is determined by the ``clip_length_in_frames`` parameter. The
         ``frames_between_clips`` parameter determines the number of frames between each consecutive clip. The
         ``target_frame`` parameter determines which frame in the clip is used for ground truth retrieval. For example,
@@ -103,7 +99,6 @@ class Avenue(AnomalibVideoDataModule):
         .. code-block:: python
 
             datamodule = Avenue(
-                task="classification",
                 clip_length_in_frames=2,
                 frames_between_clips=1,
                 target_frame=VideoTargetFrame.LAST
@@ -126,7 +121,6 @@ class Avenue(AnomalibVideoDataModule):
         clip_length_in_frames: int = 2,
         frames_between_clips: int = 1,
         target_frame: VideoTargetFrame | str = VideoTargetFrame.LAST,
-        task: TaskType | str = TaskType.SEGMENTATION,
         train_batch_size: int = 32,
         eval_batch_size: int = 32,
         num_workers: int = 8,
@@ -143,7 +137,6 @@ class Avenue(AnomalibVideoDataModule):
             seed=seed,
         )
 
-        self.task = TaskType(task)
         self.root = Path(root)
         self.gt_dir = Path(gt_dir)
         self.clip_length_in_frames = clip_length_in_frames
@@ -152,7 +145,6 @@ class Avenue(AnomalibVideoDataModule):
 
     def _setup(self, _stage: str | None = None) -> None:
         self.train_data = AvenueDataset(
-            task=self.task,
             clip_length_in_frames=self.clip_length_in_frames,
             frames_between_clips=self.frames_between_clips,
             target_frame=self.target_frame,
@@ -162,7 +154,6 @@ class Avenue(AnomalibVideoDataModule):
         )
 
         self.test_data = AvenueDataset(
-            task=self.task,
             clip_length_in_frames=self.clip_length_in_frames,
             frames_between_clips=self.frames_between_clips,
             target_frame=self.target_frame,

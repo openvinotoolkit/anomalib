@@ -7,7 +7,6 @@ from pathlib import Path
 
 import pytest
 
-from anomalib import TaskType
 from anomalib.data import UCSDped
 from tests.unit.data.datamodule.base.video import _TestAnomalibVideoDatamodule
 
@@ -23,13 +22,12 @@ class TestUCSDped(_TestAnomalibVideoDatamodule):
 
     @pytest.fixture()
     @staticmethod
-    def datamodule(dataset_path: Path, task_type: TaskType, clip_length_in_frames: int) -> UCSDped:
+    def datamodule(dataset_path: Path, clip_length_in_frames: int) -> UCSDped:
         """Create and return a UCSDped datamodule."""
         _datamodule = UCSDped(
             root=dataset_path / "ucsdped",
             category="dummy",
             clip_length_in_frames=clip_length_in_frames,
-            task=task_type,
             train_batch_size=4,
             eval_batch_size=4,
             num_workers=0,

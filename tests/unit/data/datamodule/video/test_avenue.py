@@ -7,7 +7,6 @@ from pathlib import Path
 
 import pytest
 
-from anomalib import TaskType
 from anomalib.data import Avenue
 from tests.unit.data.datamodule.base.video import _TestAnomalibVideoDatamodule
 
@@ -23,13 +22,12 @@ class TestAvenue(_TestAnomalibVideoDatamodule):
 
     @pytest.fixture()
     @staticmethod
-    def datamodule(dataset_path: Path, task_type: TaskType, clip_length_in_frames: int) -> Avenue:
+    def datamodule(dataset_path: Path, clip_length_in_frames: int) -> Avenue:
         """Create and return a Avenue datamodule."""
         _datamodule = Avenue(
             root=dataset_path / "avenue",
             gt_dir=dataset_path / "avenue" / "ground_truth_demo",
             clip_length_in_frames=clip_length_in_frames,
-            task=task_type,
             num_workers=0,
             train_batch_size=4,
             eval_batch_size=4,

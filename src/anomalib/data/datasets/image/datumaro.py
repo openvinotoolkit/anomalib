@@ -12,7 +12,6 @@ from pathlib import Path
 import pandas as pd
 from torchvision.transforms.v2 import Transform
 
-from anomalib import TaskType
 from anomalib.data.datasets.base import AnomalibDataset
 from anomalib.data.utils import LabelName, Split
 
@@ -80,6 +79,9 @@ def make_datumaro_dataset(root: str | Path, split: str | Split | None = None) ->
     samples_df.loc[samples_df["label_index"] == LabelName.NORMAL, "split"] = Split.TRAIN
     samples_df.loc[samples_df["label_index"] == LabelName.ABNORMAL, "split"] = Split.TEST
 
+    # datumaro only supports classification
+    samples_df.attrs["task"] = "classification"
+
     # Get the data frame for the split.
     if split:
         samples_df = samples_df[samples_df.split == split].reset_index(drop=True)
@@ -116,11 +118,10 @@ class DatumaroDataset(AnomalibDataset):
 
     def __init__(
         self,
-        task: TaskType,
         root: str | Path,
         transform: Transform | None = None,
         split: str | Split | None = None,
     ) -> None:
-        super().__init__(task, transform)
+        super().__init__(transform)
         self.split = split
         self.samples = make_datumaro_dataset(root, split)

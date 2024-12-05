@@ -8,7 +8,6 @@ from pathlib import Path
 
 import pytest
 
-from anomalib import TaskType
 from anomalib.data.datasets.image.folder import FolderDataset
 from anomalib.data.utils.synthetic import SyntheticAnomalyDataset
 
@@ -18,7 +17,6 @@ def folder_dataset(dataset_path: Path) -> FolderDataset:
     """Fixture that returns a FolderDataset instance."""
     return FolderDataset(
         name="dummy",
-        task=TaskType.SEGMENTATION,
         root=dataset_path / "mvtec" / "dummy",
         normal_dir="train/good",
         abnormal_dir="test/bad",
@@ -38,7 +36,6 @@ def synthetic_dataset(folder_dataset: FolderDataset) -> SyntheticAnomalyDataset:
 def synthetic_dataset_from_samples(folder_dataset: FolderDataset) -> SyntheticAnomalyDataset:
     """Fixture that returns a SyntheticAnomalyDataset instance."""
     return SyntheticAnomalyDataset(
-        task=folder_dataset.task,
         transform=folder_dataset.transform,
         source_samples=folder_dataset.samples,
     )

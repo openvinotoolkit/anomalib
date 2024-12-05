@@ -25,7 +25,6 @@ from pathlib import Path
 from pandas import DataFrame
 from torchvision.transforms.v2 import Transform
 
-from anomalib import TaskType
 from anomalib.data.datasets.base.depth import AnomalibDepthDataset
 from anomalib.data.errors import MisMatchError
 from anomalib.data.utils import LabelName, Split, validate_path
@@ -38,7 +37,6 @@ class MVTec3DDataset(AnomalibDepthDataset):
     """MVTec 3D dataset class.
 
     Args:
-        task (TaskType): Task type, ``classification``, ``detection`` or ``segmentation``
         root (Path | str): Path to the root of the dataset
             Defaults to ``"./datasets/MVTec3D"``.
         category (str): Sub-category of the dataset, e.g. 'bagel'
@@ -51,13 +49,12 @@ class MVTec3DDataset(AnomalibDepthDataset):
 
     def __init__(
         self,
-        task: TaskType,
         root: Path | str = "./datasets/MVTec3D",
         category: str = "bagel",
         transform: Transform | None = None,
         split: str | Split | None = None,
     ) -> None:
-        super().__init__(task=task, transform=transform)
+        super().__init__(transform=transform)
 
         self.root_category = Path(root) / Path(category)
         self.split = split
@@ -177,6 +174,9 @@ def make_mvtec_3d_dataset(
           'xyz' folder follow the same naming convention as the anomalous images in the dataset
           (e.g. image: '000.png', depth: '000.tiff')."""
         raise MisMatchError(msg)
+
+    # infer the task type
+    samples.attrs["task"] = "classification" if (samples["mask_path"] == "").all() else "segmentation"
 
     if split:
         samples = samples[samples.split == split].reset_index(drop=True)

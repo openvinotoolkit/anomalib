@@ -20,7 +20,6 @@ import logging
 from pathlib import Path
 from shutil import move
 
-from anomalib import TaskType
 from anomalib.data.datamodules.base.video import AnomalibVideoDataModule
 from anomalib.data.datasets.base.video import VideoTargetFrame
 from anomalib.data.datasets.video.shanghaitech import ShanghaiTechDataset
@@ -45,7 +44,6 @@ class ShanghaiTech(AnomalibVideoDataModule):
         clip_length_in_frames (int, optional): Number of video frames in each clip.
         frames_between_clips (int, optional): Number of frames between each consecutive video clip.
         target_frame (VideoTargetFrame): Specifies the target frame in the video clip, used for ground truth retrieval
-        task TaskType): Task type, 'classification', 'detection' or 'segmentation'
         train_batch_size (int, optional): Training batch size. Defaults to 32.
         eval_batch_size (int, optional): Test batch size. Defaults to 32.
         num_workers (int, optional): Number of workers. Defaults to 8.
@@ -61,7 +59,6 @@ class ShanghaiTech(AnomalibVideoDataModule):
         clip_length_in_frames: int = 2,
         frames_between_clips: int = 1,
         target_frame: VideoTargetFrame = VideoTargetFrame.LAST,
-        task: TaskType | str = TaskType.SEGMENTATION,
         train_batch_size: int = 32,
         eval_batch_size: int = 32,
         num_workers: int = 8,
@@ -78,7 +75,6 @@ class ShanghaiTech(AnomalibVideoDataModule):
             seed=seed,
         )
 
-        self.task = TaskType(task)
         self.root = Path(root)
         self.scene = scene
 
@@ -88,7 +84,6 @@ class ShanghaiTech(AnomalibVideoDataModule):
 
     def _setup(self, _stage: str | None = None) -> None:
         self.train_data = ShanghaiTechDataset(
-            task=self.task,
             clip_length_in_frames=self.clip_length_in_frames,
             frames_between_clips=self.frames_between_clips,
             target_frame=self.target_frame,
@@ -98,7 +93,6 @@ class ShanghaiTech(AnomalibVideoDataModule):
         )
 
         self.test_data = ShanghaiTechDataset(
-            task=self.task,
             clip_length_in_frames=self.clip_length_in_frames,
             frames_between_clips=self.frames_between_clips,
             target_frame=self.target_frame,

@@ -23,13 +23,12 @@ class AnomalibDepthDataset(AnomalibDataset, ABC):
     """Base depth anomalib dataset class.
 
     Args:
-        task (str): Task type, either 'classification' or 'segmentation'
         transform (Transform, optional): Transforms that should be applied to the input images.
             Defaults to ``None``.
     """
 
-    def __init__(self, task: TaskType, transform: Transform | None = None) -> None:
-        super().__init__(task, transform)
+    def __init__(self, transform: Transform | None = None) -> None:
+        super().__init__(transform)
 
         self.transform = transform
 

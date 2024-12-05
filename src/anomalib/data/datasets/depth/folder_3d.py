@@ -11,7 +11,6 @@ from pathlib import Path
 from pandas import DataFrame, isna
 from torchvision.transforms.v2 import Transform
 
-from anomalib import TaskType
 from anomalib.data.datasets.base.depth import AnomalibDepthDataset
 from anomalib.data.errors import MisMatchError
 from anomalib.data.utils import DirType, LabelName, Split
@@ -23,7 +22,6 @@ class Folder3DDataset(AnomalibDepthDataset):
 
     Args:
         name (str): Name of the dataset.
-        task (TaskType): Task type. (``classification``, ``detection`` or ``segmentation``).
         transform (Transform): Transforms that should be applied to the input images.
         normal_dir (str | Path): Path to the directory containing normal images.
         root (str | Path | None): Root folder of the dataset.
@@ -52,16 +50,11 @@ class Folder3DDataset(AnomalibDepthDataset):
             Defaults to ``None``.
         extensions (tuple[str, ...] | None, optional): Type of the image extensions to read from the directory.
             Defaults to ``None``.
-
-    Raises:
-        ValueError: When task is set to classification and `mask_dir` is provided. When `mask_dir` is
-            provided, `task` should be set to `segmentation`.
     """
 
     def __init__(
         self,
         name: str,
-        task: TaskType,
         normal_dir: str | Path,
         root: str | Path | None = None,
         abnormal_dir: str | Path | None = None,
@@ -74,7 +67,7 @@ class Folder3DDataset(AnomalibDepthDataset):
         split: str | Split | None = None,
         extensions: tuple[str, ...] | None = None,
     ) -> None:
-        super().__init__(task, transform)
+        super().__init__(transform)
 
         self._name = name
         self.split = split
@@ -262,6 +255,9 @@ def make_folder3d_dataset(
     #   and all the abnormal samples are test.
     samples.loc[(samples.label == DirType.NORMAL), "split"] = Split.TRAIN
     samples.loc[(samples.label == DirType.ABNORMAL) | (samples.label == DirType.NORMAL_TEST), "split"] = Split.TEST
+
+    # infer the task type
+    samples.attrs["task"] = "classification" if (samples["mask_path"] == "").all() else "segmentation"
 
     # Get the data frame for the split.
     if split:
