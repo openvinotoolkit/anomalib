@@ -22,7 +22,7 @@ from anomalib.models import AnomalibModule, get_available_models, get_model
 
 def models() -> set[str]:
     """Return all available models."""
-    return {model for model in get_available_models() if model != "rkde"}
+    return get_available_models()
 
 
 def export_types() -> list[ExportType]:
@@ -157,11 +157,6 @@ class TestAPI:
             dataset_path (Path): Root to dataset from fixture.
             project_path (Path): Path to temporary project folder from fixture.
         """
-        if model_name == "rkde":
-            # TODO(ashwinvaidya17): Restore this test after fixing the issue
-            # https://github.com/openvinotoolkit/anomalib/issues/1513
-            pytest.skip(f"{model_name} fails to convert to OpenVINO")
-
         model, dataset, engine = self._get_objects(
             model_name=model_name,
             dataset_path=dataset_path,
@@ -198,7 +193,7 @@ class TestAPI:
         # https://github.com/openvinotoolkit/anomalib/issues/1478
 
         extra_args = {}
-        if model_name in {"rkde", "dfkde"}:
+        if model_name == "dfkde":
             extra_args["n_pca_components"] = 2
 
         if model_name == "ai_vad":
