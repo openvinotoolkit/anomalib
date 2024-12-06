@@ -41,7 +41,6 @@
 /src/anomalib/models/padim                                  @samet-akcay
 /src/anomalib/models/patchcore                              @djdameln
 /src/anomalib/models/reverse_distillation                   @ashwinvaidya17
-/src/anomalib/models/rkde                                   @djdameln
 /src/anomalib/models/stfpm                                  @samet-akcay
 
 /src/anomalib/post_processing                               @ashwinvaidya17 @djdameln
