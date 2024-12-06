@@ -53,12 +53,10 @@ class TimmFeatureExtractor(nn.Module):
     ) -> None:
         super().__init__()
 
-        # Extract backbone-name and weight-URI from the backbone string.
+        # Extract the backbone name and the weight file location from the backbone string.
         if "__AT__" in backbone:
-            backbone, uri = backbone.split("__AT__")
-            pretrained_cfg = timm.models.registry.get_pretrained_cfg(backbone)
-            # Override pretrained_cfg["url"] to use different pretrained weights.
-            pretrained_cfg["url"] = uri
+            backbone, location = backbone.split("__AT__")
+            pretrained_cfg = {"url": location} if location.startswith(("http://", "https://")) else {"file": location}
         else:
             pretrained_cfg = None
 
@@ -121,9 +119,13 @@ class TimmFeatureExtractor(nn.Module):
 
         """
         if self.requires_grad:
-            features = dict(zip(self.layers, self.feature_extractor(inputs), strict=True))
+            features = dict(
+                zip(self.layers, self.feature_extractor(inputs), strict=True),
+            )
         else:
             self.feature_extractor.eval()
             with torch.no_grad():
-                features = dict(zip(self.layers, self.feature_extractor(inputs), strict=True))
+                features = dict(
+                    zip(self.layers, self.feature_extractor(inputs), strict=True),
+                )
         return features
