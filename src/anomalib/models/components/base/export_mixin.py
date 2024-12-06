@@ -44,6 +44,7 @@ class ExportMixin:
     def to_torch(
         self,
         export_root: Path | str,
+        model_file_name: str,
         transform: Transform | None = None,
         task: TaskType | None = None,
     ) -> Path:
@@ -51,6 +52,7 @@ class ExportMixin:
 
         Args:
             export_root (Path): Path to the output folder.
+            model_file_name (str): Name of the exported model
             transform (Transform, optional): Input transforms used for the model. If not provided, the transform is
                 taken from the model.
                 Defaults to ``None``.
@@ -85,7 +87,7 @@ class ExportMixin:
         inference_model = InferenceModel(model=self.model, transform=transform)
         export_root = _create_export_root(export_root, ExportType.TORCH)
         metadata = self._get_metadata(task=task)
-        pt_model_path = export_root / "model.pt"
+        pt_model_path = export_root / (model_file_name + ".pt")
         torch.save(
             obj={"model": inference_model, "metadata": metadata},
             f=pt_model_path,
@@ -95,6 +97,7 @@ class ExportMixin:
     def to_onnx(
         self,
         export_root: Path | str,
+        model_file_name: str,
         input_size: tuple[int, int] | None = None,
         transform: Transform | None = None,
         task: TaskType | None = None,
@@ -103,6 +106,7 @@ class ExportMixin:
 
         Args:
             export_root (Path): Path to the root folder of the exported model.
+            model_file_name (str): Name of the exported model.
             input_size (tuple[int, int] | None, optional): Image size used as the input for onnx converter.
                 Defaults to None.
             transform (Transform, optional): Input transforms used for the model. If not provided, the transform is
@@ -147,7 +151,7 @@ class ExportMixin:
             else {"input": {0: "batch_size", 2: "height", 3: "weight"}, "output": {0: "batch_size"}}
         )
         _write_metadata_to_json(self._get_metadata(task), export_root)
-        onnx_path = export_root / "model.onnx"
+        onnx_path = export_root / (model_file_name + ".onnx")
         torch.onnx.export(
             inference_model,
             input_shape.to(self.device),
@@ -163,6 +167,7 @@ class ExportMixin:
     def to_openvino(
         self,
         export_root: Path | str,
+        model_file_name: str,
         input_size: tuple[int, int] | None = None,
         transform: Transform | None = None,
         compression_type: CompressionType | None = None,
@@ -175,6 +180,7 @@ class ExportMixin:
 
         Args:
             export_root (Path): Path to the export folder.
+            model_file_name (str): Name of the exported model
             input_size (tuple[int, int] | None, optional): Input size of the model. Used for adding metadata to the IR.
                 Defaults to None.
             transform (Transform, optional): Input transforms used for the model. If not provided, the transform is
@@ -252,9 +258,9 @@ class ExportMixin:
         import openvino as ov
 
         with TemporaryDirectory() as onnx_directory:
-            model_path = self.to_onnx(onnx_directory, input_size, transform, task)
+            model_path = self.to_onnx(onnx_directory, model_file_name, input_size, transform, task)
             export_root = _create_export_root(export_root, ExportType.OPENVINO)
-            ov_model_path = export_root / "model.xml"
+            ov_model_path = export_root / (model_file_name + ".xml")
             ov_args = {} if ov_args is None else ov_args
 
             model = ov.convert_model(model_path, **ov_args)

@@ -440,7 +440,7 @@ def save_image(filename: Path | str, image: np.ndarray | Figure, root: Path | No
     # if file_path is absolute, then root is ignored
     # so we remove the top level directory from the path
     if file_path.is_absolute() and root:
-        file_path = Path(*file_path.parts[2:])  # OS-AGNOSTIC
+        file_path = Path(*file_path.parts[-2:])  # OS-AGNOSTIC
     if root:
         file_path = root / file_path
 
