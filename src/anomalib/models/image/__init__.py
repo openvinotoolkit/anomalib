@@ -12,6 +12,7 @@ from .draem import Draem
 from .dsr import Dsr
 from .efficient_ad import EfficientAd
 from .fastflow import Fastflow
+from .fre import Fre
 from .ganomaly import Ganomaly
 from .padim import Padim
 from .patchcore import Patchcore
@@ -19,6 +20,7 @@ from .reverse_distillation import ReverseDistillation
 from .rkde import Rkde
 from .stfpm import Stfpm
 from .uflow import Uflow
+from .vlm_ad import VlmAd
 from .winclip import WinClip
 
 __all__ = [
@@ -31,6 +33,7 @@ __all__ = [
     "Dsr",
     "EfficientAd",
     "Fastflow",
+    "Fre",
     "Ganomaly",
     "Padim",
     "Patchcore",
@@ -38,5 +41,6 @@ __all__ = [
     "Rkde",
     "Stfpm",
     "Uflow",
+    "VlmAd",
     "WinClip",
 ]

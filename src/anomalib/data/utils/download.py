@@ -3,7 +3,6 @@
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 import hashlib
 import io
 import logging
@@ -230,7 +229,9 @@ def safe_extract(tar_file: TarFile, root: Path, members: list[TarInfo]) -> None:
 
     """
     for member in members:
-        tar_file.extract(member, root)
+        # check if the file already exists
+        if not (root / member.name).exists():
+            tar_file.extract(member, root, filter="data")
 
 
 def generate_hash(file_path: str | Path, algorithm: str = "sha256") -> str:
@@ -288,7 +289,7 @@ def extract(file_name: Path, root: Path) -> None:
         root (Path): Root directory where the dataset will be stored.
 
     """
-    logger.info("Extracting dataset into root folder.")
+    logger.info(f"Extracting dataset into {root} folder.")
 
     # Safely extract zip files
     if file_name.suffix == ".zip":
@@ -298,7 +299,7 @@ def extract(file_name: Path, root: Path) -> None:
                     zip_file.extract(file_info, root)
 
     # Safely extract tar files.
-    elif file_name.suffix in (".tar", ".gz", ".xz", ".tgz"):
+    elif file_name.suffix in {".tar", ".gz", ".xz", ".tgz"}:
         with tarfile.open(file_name) as tar_file:
             members = tar_file.getmembers()
             safe_members = [member for member in members if not is_file_potentially_dangerous(member.name)]

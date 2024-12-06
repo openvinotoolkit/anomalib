@@ -14,6 +14,7 @@ from lightning.pytorch.loggers import Logger
 from lightning.pytorch.trainer import Trainer
 from lightning.pytorch.utilities.types import _EVALUATE_OUTPUT, _PREDICT_OUTPUT, EVAL_DATALOADERS, TRAIN_DATALOADERS
 from torch.utils.data import DataLoader, Dataset
+from torchmetrics import Metric
 from torchvision.transforms.v2 import Transform
 
 from anomalib import LearningType, TaskType
@@ -26,12 +27,12 @@ from anomalib.callbacks.thresholding import _ThresholdCallback
 from anomalib.callbacks.timer import TimerCallback
 from anomalib.callbacks.visualizer import _VisualizationCallback
 from anomalib.data import AnomalibDataModule, AnomalibDataset, PredictDataset
-from anomalib.deploy import ExportType
+from anomalib.deploy import CompressionType, ExportType
 from anomalib.models import AnomalyModule
 from anomalib.utils.normalization import NormalizationMethod
 from anomalib.utils.path import create_versioned_dir
 from anomalib.utils.types import NORMALIZATION, THRESHOLD
-from anomalib.utils.visualization import ImageVisualizer
+from anomalib.utils.visualization import BaseVisualizer, ExplanationVisualizer, ImageVisualizer
 
 logger = logging.getLogger(__name__)
 
@@ -182,7 +183,7 @@ class Engine:
         Returns:
             AnomalyModule: Anomaly model.
         """
-        if not self.trainer.model:
+        if not self.trainer.lightning_module:
             msg = "Trainer does not have a model assigned yet."
             raise UnassignedError(msg)
         return self.trainer.lightning_module
@@ -321,7 +322,7 @@ class Engine:
             self._cache.update(model)
 
         # Setup anomalib callbacks to be used with the trainer
-        self._setup_anomalib_callbacks()
+        self._setup_anomalib_callbacks(model)
 
         # Temporarily set devices to 1 to avoid issues with multiple processes
         self._cache.args["devices"] = 1
@@ -404,7 +405,7 @@ class Engine:
                 if not getattr(dataloader.dataset, "transform", None):
                     dataloader.dataset.transform = transform
 
-    def _setup_anomalib_callbacks(self) -> None:
+    def _setup_anomalib_callbacks(self, model: AnomalyModule) -> None:
         """Set up callbacks for the trainer."""
         _callbacks: list[Callback] = []
 
@@ -431,9 +432,17 @@ class Engine:
         _callbacks.append(_ThresholdCallback(self.threshold))
         _callbacks.append(_MetricsCallback(self.task, self.image_metric_names, self.pixel_metric_names))
 
+        visualizer: BaseVisualizer
+
+        # TODO(ashwinvaidya17): temporary  # noqa: TD003 ignoring as visualizer is getting a complete overhaul
+        if model.__class__.__name__ == "VlmAd":
+            visualizer = ExplanationVisualizer()
+        else:
+            visualizer = ImageVisualizer(task=self.task, normalize=self.normalization == NormalizationMethod.NONE)
+
         _callbacks.append(
             _VisualizationCallback(
-                visualizers=ImageVisualizer(task=self.task),
+                visualizers=visualizer,
                 save=True,
                 root=self._cache.args["default_root_dir"] / "images",
             ),
@@ -473,7 +482,7 @@ class Engine:
             bool: Whether it is needed to run a validation sequence.
         """
         # validation before predict is only necessary for zero-/few-shot models
-        if model.learning_type not in [LearningType.ZERO_SHOT, LearningType.FEW_SHOT]:
+        if model.learning_type not in {LearningType.ZERO_SHOT, LearningType.FEW_SHOT}:
             return False
         # check if a checkpoint path is provided
         if ckpt_path is not None:
@@ -533,7 +542,7 @@ class Engine:
         self._setup_trainer(model)
         self._setup_dataset_task(train_dataloaders, val_dataloaders, datamodule)
         self._setup_transform(model, datamodule=datamodule, ckpt_path=ckpt_path)
-        if model.learning_type in [LearningType.ZERO_SHOT, LearningType.FEW_SHOT]:
+        if model.learning_type in {LearningType.ZERO_SHOT, LearningType.FEW_SHOT}:
             # if the model is zero-shot or few-shot, we only need to run validate for normalization and thresholding
             self.trainer.validate(model, val_dataloaders, datamodule=datamodule, ckpt_path=ckpt_path)
         else:
@@ -855,7 +864,7 @@ class Engine:
             datamodule,
         )
         self._setup_transform(model, datamodule=datamodule, ckpt_path=ckpt_path)
-        if model.learning_type in [LearningType.ZERO_SHOT, LearningType.FEW_SHOT]:
+        if model.learning_type in {LearningType.ZERO_SHOT, LearningType.FEW_SHOT}:
             # if the model is zero-shot or few-shot, we only need to run validate for normalization and thresholding
             self.trainer.validate(model, val_dataloaders, None, verbose=False, datamodule=datamodule)
         else:
@@ -869,6 +878,9 @@ class Engine:
         export_root: str | Path | None = None,
         input_size: tuple[int, int] | None = None,
         transform: Transform | None = None,
+        compression_type: CompressionType | None = None,
+        datamodule: AnomalibDataModule | None = None,
+        metric: Metric | str | None = None,
         ov_args: dict[str, Any] | None = None,
         ckpt_path: str | Path | None = None,
     ) -> Path | None:
@@ -884,6 +896,16 @@ class Engine:
             transform (Transform | None, optional): Input transform to include in the exported model. If not provided,
                 the engine will try to use the default transform from the model.
                 Defaults to ``None``.
+            compression_type (CompressionType | None, optional): Compression type for OpenVINO exporting only.
+                Defaults to ``None``.
+            datamodule (AnomalibDataModule | None, optional): Lightning datamodule.
+                Must be provided if ``CompressionType.INT8_PTQ`` or `CompressionType.INT8_ACQ`` is selected
+                (OpenVINO export only).
+                Defaults to ``None``.
+            metric (Metric | str | None, optional): Metric to measure quality loss when quantizing.
+                Must be provided if ``CompressionType.INT8_ACQ`` is selected and must return higher value for better
+                performance of the model (OpenVINO export only).
+                Defaults to ``None``.
             ov_args (dict[str, Any] | None, optional): This is optional and used only for OpenVINO's model optimizer.
                 Defaults to None.
             ckpt_path (str | Path | None): Checkpoint path. If provided, the model will be loaded from this path.
@@ -898,22 +920,22 @@ class Engine:
         CLI Usage:
             1. To export as a torch ``.pt`` file you can run the following command.
                 ```python
-                anomalib export --model Padim --export_mode torch --ckpt_path <PATH_TO_CHECKPOINT>
+                anomalib export --model Padim --export_type torch --ckpt_path <PATH_TO_CHECKPOINT>
                 ```
             2. To export as an ONNX ``.onnx`` file you can run the following command.
                 ```python
-                anomalib export --model Padim --export_mode onnx --ckpt_path <PATH_TO_CHECKPOINT> \
+                anomalib export --model Padim --export_type onnx --ckpt_path <PATH_TO_CHECKPOINT> \
                 --input_size "[256,256]"
                 ```
             3. To export as an OpenVINO ``.xml`` and ``.bin`` file you can run the following command.
                 ```python
-                anomalib export --model Padim --export_mode openvino --ckpt_path <PATH_TO_CHECKPOINT> \
-                --input_size "[256,256]"
+                anomalib export --model Padim --export_type openvino --ckpt_path <PATH_TO_CHECKPOINT> \
+                --input_size "[256,256] --compression_type FP16
                 ```
-            4. You can also overrride OpenVINO model optimizer by adding the ``--ov_args.<key>`` arguments.
+            4. You can also quantize OpenVINO model with the following.
                 ```python
-                anomalib export --model Padim --export_mode openvino --ckpt_path <PATH_TO_CHECKPOINT> \
-                --input_size "[256,256]" --ov_args.compress_to_fp16 False
+                anomalib export --model Padim --export_type openvino --ckpt_path <PATH_TO_CHECKPOINT> \
+                --input_size "[256,256]" --compression_type INT8_PTQ --data MVTec
                 ```
         """
         export_type = ExportType(export_type)
@@ -945,6 +967,9 @@ class Engine:
                 input_size=input_size,
                 transform=transform,
                 task=self.task,
+                compression_type=compression_type,
+                datamodule=datamodule,
+                metric=metric,
                 ov_args=ov_args,
             )
         else:
@@ -953,3 +978,52 @@ class Engine:
         if exported_model_path:
             logging.info(f"Exported model to {exported_model_path}")
         return exported_model_path
+
+    @classmethod
+    def from_config(
+        cls: type["Engine"],
+        config_path: str | Path,
+        **kwargs,
+    ) -> tuple["Engine", AnomalyModule, AnomalibDataModule]:
+        """Create an Engine instance from a configuration file.
+
+        Args:
+            config_path (str | Path): Path to the full configuration file.
+            **kwargs (dict): Additional keyword arguments.
+
+        Returns:
+            tuple[Engine, AnomalyModule, AnomalibDataModule]: Engine instance.
+
+        Example:
+            The following example shows training with full configuration file:
+
+            .. code-block:: python
+                >>> config_path = "anomalib_full_config.yaml"
+                >>> engine, model, datamodule = Engine.from_config(config_path=config_path)
+                >>> engine.fit(datamodule=datamodule, model=model)
+
+            The following example shows overriding the configuration file with additional keyword arguments:
+
+            .. code-block:: python
+                >>> override_kwargs = {"data.train_batch_size": 8}
+                >>> engine, model, datamodule = Engine.from_config(config_path=config_path, **override_kwargs)
+                >>> engine.fit(datamodule=datamodule, model=model)
+        """
+        from anomalib.cli.cli import AnomalibCLI
+
+        if not Path(config_path).exists():
+            msg = f"Configuration file not found: {config_path}"
+            raise FileNotFoundError(msg)
+
+        args = [
+            "fit",
+            "--config",
+            str(config_path),
+        ]
+        for key, value in kwargs.items():
+            args.extend([f"--{key}", str(value)])
+        anomalib_cli = AnomalibCLI(
+            args=args,
+            run=False,
+        )
+        return anomalib_cli.engine, anomalib_cli.model, anomalib_cli.datamodule

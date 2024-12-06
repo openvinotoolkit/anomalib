@@ -14,8 +14,9 @@ from .base import _TestAnomalibDataModule
 class _TestAnomalibImageDatamodule(_TestAnomalibDataModule):
     # 1. Test if the image datasets are correctly created.
 
+    @staticmethod
     @pytest.mark.parametrize("subset", ["train", "val", "test"])
-    def test_get_item_returns_correct_keys_and_shapes(self, datamodule: AnomalibDataModule, subset: str) -> None:
+    def test_get_item_returns_correct_keys_and_shapes(subset: str, datamodule: AnomalibDataModule) -> None:
         """Test that the datamodule __getitem__ returns image, mask, label and boxes."""
         # Get the dataloader.
         dataloader = getattr(datamodule, f"{subset}_dataloader")()
@@ -27,10 +28,11 @@ class _TestAnomalibImageDatamodule(_TestAnomalibDataModule):
         assert batch["image"].shape == (4, 3, 256, 256)
         assert batch["label"].shape == (4,)
 
-        if dataloader.dataset.task in ("detection", "segmentation"):
+        if dataloader.dataset.task in {"detection", "segmentation"}:
             assert batch["mask"].shape == (4, 256, 256)
 
-    def test_non_overlapping_splits(self, datamodule: AnomalibDataModule) -> None:
+    @staticmethod
+    def test_non_overlapping_splits(datamodule: AnomalibDataModule) -> None:
         """This test ensures that all splits are non-overlapping when split mode == from_test."""
         if datamodule.val_split_mode == "from_test":
             assert (
@@ -50,7 +52,8 @@ class _TestAnomalibImageDatamodule(_TestAnomalibDataModule):
                 == 0
             ), "Found train and test split contamination"
 
-    def test_equal_splits(self, datamodule: AnomalibDataModule) -> None:
+    @staticmethod
+    def test_equal_splits(datamodule: AnomalibDataModule) -> None:
         """This test ensures that val and test split are equal when split mode == same_as_test."""
         if datamodule.val_split_mode == "same_as_test":
             assert np.array_equal(

@@ -3,7 +3,6 @@
 # Copyright (C) 2023-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 from pathlib import Path
 
 import pytest
@@ -21,7 +20,8 @@ def predict_dataset_path(dataset_path: Path) -> Path:
 class TestPredictDataset:
     """Test PredictDataset class."""
 
-    def test_inference_dataset(self, predict_dataset_path: Path) -> None:
+    @staticmethod
+    def test_inference_dataset(predict_dataset_path: Path) -> None:
         """Test the PredictDataset class."""
         # Use the bad images from the dummy MVTec AD dataset.
         dataset = PredictDataset(path=predict_dataset_path, image_size=(256, 256))
@@ -37,7 +37,8 @@ class TestPredictDataset:
         assert sample["image"].shape == (3, 256, 256)
         assert Path(sample["image_path"]).suffix == ".png"
 
-    def test_transforms_applied(self, predict_dataset_path: Path) -> None:
+    @staticmethod
+    def test_transforms_applied(predict_dataset_path: Path) -> None:
         """Test whether the transforms are applied to the images."""
         # Create a transform that resizes the image to 512x512.
         transform = v2.Compose([v2.Resize(512)])

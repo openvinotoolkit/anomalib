@@ -3,7 +3,6 @@
 # Copyright (C) 2023-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 import logging
 import math
 from enum import Enum
@@ -320,7 +319,8 @@ class EfficientAdModel(nn.Module):
             },
         )
 
-    def is_set(self, p_dic: nn.ParameterDict) -> bool:
+    @staticmethod
+    def is_set(p_dic: nn.ParameterDict) -> bool:
         """Check if any of the parameters in the parameter dictionary is set.
 
         Args:
@@ -331,7 +331,8 @@ class EfficientAdModel(nn.Module):
         """
         return any(value.sum() != 0 for _, value in p_dic.items())
 
-    def choose_random_aug_image(self, image: torch.Tensor) -> torch.Tensor:
+    @staticmethod
+    def choose_random_aug_image(image: torch.Tensor) -> torch.Tensor:
         """Choose a random augmentation function and apply it to the input image.
 
         Args:

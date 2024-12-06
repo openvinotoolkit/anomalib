@@ -9,7 +9,6 @@
 # Copyright (C) 2023-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 from collections.abc import Callable
 from pathlib import Path
 
@@ -1094,8 +1093,8 @@ class DiscreteLatentModel(nn.Module):
         """Return ``self._vq_vae_bot``."""
         return self._vq_vae_bot
 
+    @staticmethod
     def generate_fake_anomalies_joined(
-        self,
         features: torch.Tensor,
         embeddings: torch.Tensor,
         memory_torch_original: torch.Tensor,

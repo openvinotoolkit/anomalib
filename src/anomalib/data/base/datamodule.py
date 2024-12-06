@@ -3,9 +3,9 @@
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 import logging
 from abc import ABC, abstractmethod
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from lightning.pytorch import LightningDataModule
@@ -119,6 +119,8 @@ class AnomalibDataModule(LightningDataModule, ABC):
 
         self._is_setup = False  # flag to track if setup has been called from the trainer
 
+        self.collate_fn = collate_fn
+
     @property
     def name(self) -> str:
         """Name of the datamodule."""
@@ -224,6 +226,7 @@ class AnomalibDataModule(LightningDataModule, ABC):
             shuffle=True,
             batch_size=self.train_batch_size,
             num_workers=self.num_workers,
+            collate_fn=self.collate_fn,
         )
 
     def val_dataloader(self) -> EVAL_DATALOADERS:
@@ -233,7 +236,7 @@ class AnomalibDataModule(LightningDataModule, ABC):
             shuffle=False,
             batch_size=self.eval_batch_size,
             num_workers=self.num_workers,
-            collate_fn=collate_fn,
+            collate_fn=self.collate_fn,
         )
 
     def test_dataloader(self) -> EVAL_DATALOADERS:
@@ -243,7 +246,7 @@ class AnomalibDataModule(LightningDataModule, ABC):
             shuffle=False,
             batch_size=self.eval_batch_size,
             num_workers=self.num_workers,
-            collate_fn=collate_fn,
+            collate_fn=self.collate_fn,
         )
 
     def predict_dataloader(self) -> EVAL_DATALOADERS:
@@ -270,8 +273,8 @@ class AnomalibDataModule(LightningDataModule, ABC):
         """
         if self._train_transform:
             return self._train_transform
-        if getattr(self, "trainer", None) and self.trainer.model and self.trainer.model.transform:
-            return self.trainer.model.transform
+        if getattr(self, "trainer", None) and self.trainer.lightning_module and self.trainer.lightning_module.transform:
+            return self.trainer.lightning_module.transform
         if self.image_size:
             return Resize(self.image_size, antialias=True)
         return None
@@ -284,8 +287,56 @@ class AnomalibDataModule(LightningDataModule, ABC):
         """
         if self._eval_transform:
             return self._eval_transform
-        if getattr(self, "trainer", None) and self.trainer.model and self.trainer.model.transform:
-            return self.trainer.model.transform
+        if getattr(self, "trainer", None) and self.trainer.lightning_module and self.trainer.lightning_module.transform:
+            return self.trainer.lightning_module.transform
         if self.image_size:
             return Resize(self.image_size, antialias=True)
         return None
+
+    @classmethod
+    def from_config(
+        cls: type["AnomalibDataModule"],
+        config_path: str | Path,
+        **kwargs,
+    ) -> "AnomalibDataModule":
+        """Create a datamodule instance from the configuration.
+
+        Args:
+            config_path (str | Path): Path to the data configuration file.
+            **kwargs (dict): Additional keyword arguments.
+
+        Returns:
+            AnomalibDataModule: Datamodule instance.
+
+        Example:
+            The following example shows how to get datamodule from mvtec.yaml:
+
+            .. code-block:: python
+                >>> data_config = "configs/data/mvtec.yaml"
+                >>> datamodule = AnomalibDataModule.from_config(config_path=data_config)
+
+            The following example shows overriding the configuration file with additional keyword arguments:
+
+            .. code-block:: python
+                >>> override_kwargs = {"data.train_batch_size": 8}
+                >>> datamodule = AnomalibDataModule.from_config(config_path=data_config, **override_kwargs)
+        """
+        from jsonargparse import ArgumentParser
+
+        if not Path(config_path).exists():
+            msg = f"Configuration file not found: {config_path}"
+            raise FileNotFoundError(msg)
+
+        data_parser = ArgumentParser()
+        data_parser.add_subclass_arguments(AnomalibDataModule, "data", required=False, fail_untyped=False)
+        args = ["--data", str(config_path)]
+        for key, value in kwargs.items():
+            args.extend([f"--{key}", str(value)])
+        config = data_parser.parse_args(args=args)
+        instantiated_classes = data_parser.instantiate_classes(config)
+        datamodule = instantiated_classes.get("data")
+        if isinstance(datamodule, AnomalibDataModule):
+            return datamodule
+
+        msg = f"Datamodule is not an instance of AnomalibDataModule: {datamodule}"
+        raise ValueError(msg)

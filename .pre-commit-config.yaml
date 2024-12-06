@@ -3,7 +3,7 @@ default_language_version:
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
+    rev: v4.6.0
     hooks:
       # list of supported hooks: https://pre-commit.com/hooks.html
       - id: trailing-whitespace
@@ -15,7 +15,7 @@ repos:
 
   # Ruff version.
   - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: "v0.1.5"
+    rev: "v0.6.2"
     hooks:
       # Run the linter.
       - id: ruff
@@ -27,7 +27,7 @@ repos:
 
   # python static type checking
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: "v1.7.0"
+    rev: "v1.11.2"
     hooks:
       - id: mypy
         additional_dependencies: [types-PyYAML, types-setuptools]
@@ -35,7 +35,7 @@ repos:
 
   # add bandit for security checks
   - repo: https://github.com/PyCQA/bandit
-    rev: 1.7.7
+    rev: 1.7.9
     hooks:
       - id: bandit
         args: ["-c", "pyproject.toml"]
@@ -43,7 +43,7 @@ repos:
 
   # notebooks.
   - repo: https://github.com/nbQA-dev/nbQA
-    rev: 1.7.0
+    rev: 1.8.7
     hooks:
       - id: nbqa-ruff
         # Ignore unsorted imports. This is because jupyter notebooks can import
@@ -51,11 +51,11 @@ repos:
         args: ["--ignore=D100,D407,I001"]
 
   - repo: https://github.com/pre-commit/mirrors-prettier
-    rev: v3.1.0
+    rev: v4.0.0-alpha.8
     hooks:
       - id: prettier
 
   - repo: https://github.com/igorshubovych/markdownlint-cli
-    rev: v0.37.0
+    rev: v0.41.0
     hooks:
       - id: markdownlint

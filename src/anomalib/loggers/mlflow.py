@@ -1,5 +1,9 @@
 """MLFlow logger with add image interface."""
 
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+import os
 from typing import Literal
 
 import numpy as np
@@ -7,11 +11,7 @@ from lightning.pytorch.loggers.mlflow import MLFlowLogger
 from lightning.pytorch.utilities import rank_zero_only
 from matplotlib.figure import Figure
 
-from anomalib.utils.exceptions.imports import try_import
-
 from .base import ImageLoggerBase
-
-try_import("mlflow")
 
 
 class AnomalibMLFlowLogger(ImageLoggerBase, MLFlowLogger):
@@ -69,7 +69,7 @@ class AnomalibMLFlowLogger(ImageLoggerBase, MLFlowLogger):
         self,
         experiment_name: str | None = "anomalib_logs",
         run_name: str | None = None,
-        tracking_uri: str | None = None,
+        tracking_uri: str | None = os.getenv("MLFLOW_TRACKING_URI"),
         save_dir: str | None = "./mlruns",
         log_model: Literal[True, False, "all"] | None = False,
         prefix: str | None = "",

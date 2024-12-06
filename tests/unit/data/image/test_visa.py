@@ -16,7 +16,8 @@ class TestVisa(_TestAnomalibImageDatamodule):
     """Visa Datamodule Unit Tests."""
 
     @pytest.fixture()
-    def datamodule(self, dataset_path: Path, task_type: TaskType) -> Visa:
+    @staticmethod
+    def datamodule(dataset_path: Path, task_type: TaskType) -> Visa:
         """Create and return a Avenue datamodule."""
         _datamodule = Visa(
             root=dataset_path,
@@ -31,3 +32,9 @@ class TestVisa(_TestAnomalibImageDatamodule):
         _datamodule.setup()
 
         return _datamodule
+
+    @pytest.fixture()
+    @staticmethod
+    def fxt_data_config_path() -> str:
+        """Return the path to the test data config."""
+        return "configs/data/visa.yaml"

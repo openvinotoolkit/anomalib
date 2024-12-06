@@ -16,7 +16,7 @@ For optimal results, DRAEM requires specifying the path to a folder of image dat
 
 ## Usage
 
-`python tools/train.py --model draem`
+`anomalib train --model Draem --data MVTec --data.category <category>`
 
 ## Benchmark
 

@@ -1,0 +1,1 @@
+anomalib experiment --config tools/experimental/experiment/config.yaml

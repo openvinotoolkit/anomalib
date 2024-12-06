@@ -81,7 +81,7 @@ def make_btech_dataset(path: Path, split: str | Split | None = None) -> DataFram
     path = validate_path(path)
 
     samples_list = [
-        (str(path),) + filename.parts[-3:] for filename in path.glob("**/*") if filename.suffix in (".bmp", ".png")
+        (str(path),) + filename.parts[-3:] for filename in path.glob("**/*") if filename.suffix in {".bmp", ".png"}
     ]
     if not samples_list:
         msg = f"Found 0 images in {path}"

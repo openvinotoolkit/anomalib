@@ -28,7 +28,7 @@ We welcome contributions from everyone. If you're interested in helping out, ple
 Here is a list of contributors of Anomalib:
 
 <a href="https://github.com/openvinotoolkit/anomalib/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=openvinotoolkit/anomalib" />
+  <img src="https://contrib.rocks/image?repo=openvinotoolkit/anomalib" alt="Contributors to openvinotoolkit/anomalib" />
 </a>
 
 ## 🙏 Acknowledgements

@@ -9,7 +9,6 @@
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 from enum import Enum
 
 import torch
@@ -53,7 +52,7 @@ class AnomalyMapGenerator(nn.Module):
         self.sigma = sigma
         self.kernel_size = 2 * int(4.0 * sigma + 0.5) + 1
 
-        if mode not in (AnomalyMapGenerationMode.ADD, AnomalyMapGenerationMode.MULTIPLY):
+        if mode not in {AnomalyMapGenerationMode.ADD, AnomalyMapGenerationMode.MULTIPLY}:
             msg = f"Found mode {mode}. Only multiply and add are supported."
             raise ValueError(msg)
         self.mode = mode

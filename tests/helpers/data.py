@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import json
 import shutil
 from contextlib import ContextDecorator
 from pathlib import Path
@@ -104,7 +105,8 @@ class DummyImageGenerator:
 
         return image, mask
 
-    def save_image(self, filename: Path | str, image: np.ndarray, check_contrast: bool = False) -> None:
+    @staticmethod
+    def save_image(filename: Path | str, image: np.ndarray, check_contrast: bool = False) -> None:
         """Save image to filesystem.
 
         Args:
@@ -318,6 +320,43 @@ class DummyImageDatasetGenerator(DummyDatasetGenerator):
         self.min_size = min_size
         self.image_generator = DummyImageGenerator(image_shape=image_shape, rng=self.rng)
 
+    def _generate_dummy_datumaro_dataset(self) -> None:
+        """Generates dummy Datumaro dataset in a temporary directory."""
+        # generate images
+        image_root = self.dataset_root / "images" / "default"
+        image_root.mkdir(parents=True, exist_ok=True)
+
+        file_names: list[str] = []
+
+        # Create normal images
+        for i in range(self.num_train + self.num_test):
+            label = LabelName.NORMAL
+            image_filename = image_root / f"normal_{i:03}.png"
+            file_names.append(image_filename)
+            self.image_generator.generate_image(label, image_filename)
+
+        # Create abnormal images
+        for i in range(self.num_test):
+            label = LabelName.ABNORMAL
+            image_filename = image_root / f"abnormal_{i:03}.png"
+            file_names.append(image_filename)
+            self.image_generator.generate_image(label, image_filename)
+
+        # create annotation file
+        annotation_file = self.dataset_root / "annotations" / "default.json"
+        annotation_file.parent.mkdir(parents=True, exist_ok=True)
+        annotations = {
+            "categories": {"label": {"labels": [{"name": "Normal"}, {"name": "Anomalous"}]}},
+            "items": [],
+        }
+        for file_name in file_names:
+            annotations["items"].append({
+                "annotations": [{"label_id": 1 if "abnormal" in str(file_name) else 0}],
+                "image": {"path": file_name.name},
+            })
+        with annotation_file.open("w") as f:
+            json.dump(annotations, f)
+
     def _generate_dummy_mvtec_dataset(
         self,
         normal_dir: str = "good",
@@ -503,7 +542,7 @@ class DummyVideoDatasetGenerator(DummyDatasetGenerator):
         train_path = self.dataset_root / train_dir
         train_path.mkdir(exist_ok=True, parents=True)
         for clip_idx in range(self.num_train):
-            clip_path = train_path / f"{clip_idx+1:02}.avi"
+            clip_path = train_path / f"{clip_idx + 1:02}.avi"
             frames, _ = self.video_generator.generate_video(length=32, first_label=LabelName.NORMAL, p_state_switch=0)
             fourcc = cv2.VideoWriter_fourcc("F", "M", "P", "4")
             writer = cv2.VideoWriter(str(clip_path), fourcc, 30, self.frame_shape)
@@ -517,8 +556,8 @@ class DummyVideoDatasetGenerator(DummyDatasetGenerator):
         gt_path = self.dataset_root / ground_truth_dir / "testing_label_mask"
 
         for clip_idx in range(self.num_test):
-            clip_path = test_path / f"{clip_idx+1:02}.avi"
-            mask_path = gt_path / f"{clip_idx+1}_label"
+            clip_path = test_path / f"{clip_idx + 1:02}.avi"
+            mask_path = gt_path / f"{clip_idx + 1}_label"
             mask_path.mkdir(exist_ok=True, parents=True)
             frames, masks = self.video_generator.generate_video(length=32, p_state_switch=0.2)
             fourcc = cv2.VideoWriter_fourcc("F", "M", "P", "4")

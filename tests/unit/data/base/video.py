@@ -12,8 +12,9 @@ from .base import _TestAnomalibDataModule
 
 
 class _TestAnomalibVideoDatamodule(_TestAnomalibDataModule):
+    @staticmethod
     @pytest.mark.parametrize("subset", ["train", "val", "test"])
-    def test_get_item_returns_correct_keys_and_shapes(self, datamodule: AnomalibDataModule, subset: str) -> None:
+    def test_get_item_returns_correct_keys_and_shapes(datamodule: AnomalibDataModule, subset: str) -> None:
         """Test that the datamodule __getitem__ returns image, mask, label and boxes."""
         # Get the dataloader.
         dataloader = getattr(datamodule, f"{subset}_dataloader")()
@@ -42,13 +43,14 @@ class _TestAnomalibVideoDatamodule(_TestAnomalibDataModule):
         # We don't know the shape of the original image, so we only check that it is a list of 4 images.
         assert batch["original_image"].shape[0] == 4
 
-        if subset in ("val", "test"):
+        if subset in {"val", "test"}:
             assert len(batch["label"]) == 4
             assert batch["mask"].shape == (4, 256, 256)
             assert batch["mask"].shape == (4, 256, 256)
 
+    @staticmethod
     @pytest.mark.parametrize("subset", ["train", "val", "test"])
-    def test_item_dtype(self, datamodule: AnomalibDataModule, subset: str) -> None:
+    def test_item_dtype(subset: str, datamodule: AnomalibDataModule) -> None:
         """Test that the input tensor is of float type and scaled between 0-1."""
         # Get the dataloader.
         dataloader = getattr(datamodule, f"{subset}_dataloader")()
@@ -60,8 +62,9 @@ class _TestAnomalibVideoDatamodule(_TestAnomalibDataModule):
         assert clip.min() >= 0
         assert clip.max() <= 1
 
+    @staticmethod
     @pytest.mark.parametrize("clip_length_in_frames", [1])
-    def test_single_frame_squeezed(self, datamodule: AnomalibDataModule) -> None:
+    def test_single_frame_squeezed(datamodule: AnomalibDataModule) -> None:
         """Test that the temporal dimension is squeezed when the clip lenght is 1."""
         # Get the dataloader.
         dataloader = datamodule.train_dataloader()

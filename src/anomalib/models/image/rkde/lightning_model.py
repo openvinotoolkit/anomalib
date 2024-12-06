@@ -6,12 +6,12 @@ https://ieeexplore.ieee.org/abstract/document/8999287
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 import logging
 from typing import Any
 
 import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
+from torchvision.transforms.v2 import Compose, Resize, Transform
 
 from anomalib import LearningType
 from anomalib.models.components import AnomalyModule, MemoryBankMixin
@@ -144,3 +144,13 @@ class Rkde(MemoryBankMixin, AnomalyModule):
             LearningType: Learning type of the model.
         """
         return LearningType.ONE_CLASS
+
+    @staticmethod
+    def configure_transforms(image_size: tuple[int, int] | None = None) -> Transform:
+        """Default transform for RKDE."""
+        image_size = image_size or (240, 360)
+        return Compose(
+            [
+                Resize(image_size, antialias=True),
+            ],
+        )

@@ -9,7 +9,6 @@
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 from collections.abc import Callable
 
 import torch
@@ -337,7 +336,7 @@ def get_decoder(name: str) -> ResNet:
     Returns:
         ResNet: Decoder ResNet architecture.
     """
-    if name in (
+    if name in {
         "resnet18",
         "resnet34",
         "resnet50",
@@ -347,7 +346,7 @@ def get_decoder(name: str) -> ResNet:
         "resnext101_32x8d",
         "wide_resnet50_2",
         "wide_resnet101_2",
-    ):
+    }:
         decoder = globals()[f"de_{name}"]
     else:
         msg = f"Decoder with architecture {name} not supported"
