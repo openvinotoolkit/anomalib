@@ -167,7 +167,6 @@ class ImageVisualizer(BaseVisualizer):
         batch_size = batch["image"].shape[0]
         for i in range(batch_size):
             if "image_path" in batch:
-                image = batch["image"][i]
                 if self.reverse_transform is None:
                     # Load from the files and resize.
                     height, width = batch["image"].shape[-2:]
@@ -175,6 +174,7 @@ class ImageVisualizer(BaseVisualizer):
                     image = cv2.resize(image, dsize=(width, height), interpolation=cv2.INTER_AREA)
                 else:
                     # Just de-normalize the image.
+                    image = batch["image"][i]
                     image = self.reverse_transform(image)
             elif "video_path" in batch:
                 height, width = batch["image"].shape[-2:]
