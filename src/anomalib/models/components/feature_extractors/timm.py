@@ -119,13 +119,9 @@ class TimmFeatureExtractor(nn.Module):
 
         """
         if self.requires_grad:
-            features = dict(
-                zip(self.layers, self.feature_extractor(inputs), strict=True),
-            )
+            features = dict(zip(self.layers, self.feature_extractor(inputs), strict=True))
         else:
             self.feature_extractor.eval()
             with torch.no_grad():
-                features = dict(
-                    zip(self.layers, self.feature_extractor(inputs), strict=True),
-                )
+                features = dict(zip(self.layers, self.feature_extractor(inputs), strict=True))
         return features
