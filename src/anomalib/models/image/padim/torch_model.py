@@ -82,7 +82,9 @@ class PadimModel(nn.Module):
             pre_trained=pre_trained,
         ).eval()
         self.n_features_original = sum(self.feature_extractor.out_dims)
-        self.n_features = n_features or _N_FEATURES_DEFAULTS.get(self.backbone)
+        # In case the backbone has the weight file information.
+        backbone_name = self.backbone.split("__AT__")[0]
+        self.n_features = n_features or _N_FEATURES_DEFAULTS.get(backbone_name)
         if self.n_features is None:
             msg = (
                 f"n_features must be specified for backbone {self.backbone}. "
