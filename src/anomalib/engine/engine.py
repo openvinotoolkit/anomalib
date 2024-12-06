@@ -351,8 +351,8 @@ class Engine:
                             )
                             data.task = self.task
 
-    @staticmethod
     def _setup_transform(
+        self,
         model: AnomalyModule,
         datamodule: AnomalibDataModule | None = None,
         dataloaders: EVAL_DATALOADERS | TRAIN_DATALOADERS | None = None,
@@ -404,6 +404,13 @@ class Engine:
             for dataloader in dataloaders:
                 if not getattr(dataloader.dataset, "transform", None):
                     dataloader.dataset.transform = transform
+
+        # Update reverse_transform in the image visualizer.
+        for callback in self._cache.args["callbacks"]:
+            if isinstance(callback, _VisualizationCallback):
+                for visualizer in callback.generators:
+                    if hasattr(visualizer, "configure_reverse_transform"):
+                        visualizer.configure_reverse_transform(transform)
 
     def _setup_anomalib_callbacks(self, model: AnomalyModule) -> None:
         """Set up callbacks for the trainer."""
