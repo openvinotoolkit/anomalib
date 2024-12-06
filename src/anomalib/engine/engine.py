@@ -876,6 +876,7 @@ class Engine:
         model: AnomalyModule,
         export_type: ExportType | str,
         export_root: str | Path | None = None,
+        model_file_name: str = "model",
         input_size: tuple[int, int] | None = None,
         transform: Transform | None = None,
         compression_type: CompressionType | None = None,
@@ -891,6 +892,8 @@ class Engine:
             export_type (ExportType): Export type.
             export_root (str | Path | None, optional): Path to the output directory. If it is not set, the model is
                 exported to trainer.default_root_dir. Defaults to None.
+            model_file_name (str = "model"): Name of the exported model file. If it is not set, the model is
+                is called "model". Defaults to "model".
             input_size (tuple[int, int] | None, optional): A statis input shape for the model, which is exported to ONNX
                 and OpenVINO format. Defaults to None.
             transform (Transform | None, optional): Input transform to include in the exported model. If not provided,
@@ -951,12 +954,14 @@ class Engine:
         if export_type == ExportType.TORCH:
             exported_model_path = model.to_torch(
                 export_root=export_root,
+                model_file_name=model_file_name,
                 transform=transform,
                 task=self.task,
             )
         elif export_type == ExportType.ONNX:
             exported_model_path = model.to_onnx(
                 export_root=export_root,
+                model_file_name=model_file_name,
                 input_size=input_size,
                 transform=transform,
                 task=self.task,
@@ -964,6 +969,7 @@ class Engine:
         elif export_type == ExportType.OPENVINO:
             exported_model_path = model.to_openvino(
                 export_root=export_root,
+                model_file_name=model_file_name,
                 input_size=input_size,
                 transform=transform,
                 task=self.task,
