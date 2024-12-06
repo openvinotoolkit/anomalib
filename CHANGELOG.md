@@ -14,6 +14,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 
+- Improve backbone weights loading mechanism by @mzweilin in https://github.com/openvinotoolkit/anomalib/pull/2454
+
 ### New Contributors
 
 ## [v1.2.0]
