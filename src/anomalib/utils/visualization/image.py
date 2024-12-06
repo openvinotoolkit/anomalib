@@ -123,7 +123,7 @@ class ImageVisualizer(BaseVisualizer):
         self.normalize = normalize
         # Make a reverse transform to visualize the normalized images.
         #   If None, we will load from the files instead.
-        self.reverse_transform: partial | None = None
+        self.reverse_transform: Callable | None = None
 
     def configure_reverse_transform(self, transform: Callable) -> None:
         """Convert the PyTorch normalized image (RGB, CHW, normalized) to the Anomalib format (RGB, HWC, uint8)."""
