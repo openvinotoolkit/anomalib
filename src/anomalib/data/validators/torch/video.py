@@ -600,17 +600,18 @@ class VideoBatchValidator:
         if mask is None:
             return None
         if not isinstance(mask, torch.Tensor):
-            msg = f"Masks must be a torch.Tensor, got {type(mask)}."
+            msg = f"Ground truth mask must be a torch.Tensor, got {type(mask)}."
             raise TypeError(msg)
-        if mask.ndim not in {3, 4, 5}:
-            msg = f"Masks must have shape [B, H, W], [B, T, H, W] or [B, T, 1, H, W], got shape {mask.shape}."
+        if mask.ndim not in {2, 3, 4}:
+            msg = f"Ground truth mask must have shape [H, W] or [N, H, W] or [N, 1, H, W] got shape {mask.shape}."
             raise ValueError(msg)
-        if mask.ndim == 5:
-            if mask.shape[2] != 1:
-                msg = f"Masks must have 1 channel, got {mask.shape[2]}."
+        if mask.ndim == 2:
+            mask = mask.unsqueeze(0)
+        if mask.ndim == 4:
+            if mask.shape[1] != 1:
+                msg = f"Ground truth mask must have 1 channel, got {mask.shape[1]}."
                 raise ValueError(msg)
-            mask = mask.squeeze(2)
-
+            mask = mask.squeeze(1)
         return Mask(mask, dtype=torch.bool)
 
     @staticmethod
