@@ -14,7 +14,7 @@ from jsonargparse import ActionConfigFile, ArgumentParser, Namespace
 from jsonargparse._actions import _ActionSubCommands
 from rich import traceback
 
-from anomalib import TaskType, __version__
+from anomalib import __version__
 from anomalib.cli.pipelines import PIPELINE_REGISTRY, pipeline_subcommands, run_pipeline
 from anomalib.cli.utils.help_formatter import CustomHelpFormatter, get_short_docstring
 from anomalib.cli.utils.openvino import add_openvino_export_arguments
@@ -147,10 +147,7 @@ class AnomalibCLI:
             Since ``Engine`` parameters are manually added, any change to the
             ``Engine`` class should be reflected manually.
         """
-        parser.add_argument("--task", type=TaskType | str, default=TaskType.SEGMENTATION)
         parser.add_argument("--logging.log_graph", type=bool, help="Log the model to the logger", default=False)
-        if hasattr(parser, "subcommand") and parser.subcommand not in {"export", "predict"}:
-            parser.link_arguments("task", "data.init_args.task")
         parser.add_argument(
             "--default_root_dir",
             type=Path,
@@ -319,9 +316,7 @@ class AnomalibCLI:
 
         from anomalib.callbacks import get_callbacks
 
-        engine_args = {
-            "task": self._get(self.config_init, "task"),
-        }
+        engine_args: dict[str, Any] = {}
         trainer_config = {**self._get(self.config_init, "trainer", default={}), **engine_args}
         key = "callbacks"
         if key in trainer_config:

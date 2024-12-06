@@ -17,5 +17,3 @@ model:
     n_components_velocity: 2
     n_neighbors_pose: 1
     n_neighbors_deep: 1
-
-task: detection

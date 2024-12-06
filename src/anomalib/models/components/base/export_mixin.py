@@ -47,8 +47,6 @@ class ExportMixin:
                 Defaults to ``None``.
             post_processor (nn.Module, optional): Post-processing module to apply to the model output.
                 Defaults to ``None``.
-            task (TaskType | None): Task type.
-                Defaults to ``None``.
 
         Returns:
             Path: Path to the exported pytorch model.
@@ -70,7 +68,6 @@ class ExportMixin:
 
             >>> model.to_torch(
             ...     export_root="path/to/export",
-            ...     task=datamodule.test_data.task,
             ... )
         """
         export_root = _create_export_root(export_root, ExportType.TORCH)
@@ -97,8 +94,6 @@ class ExportMixin:
                 Defaults to ``None``.
             post_processor (nn.Module, optional): Post-processing module to apply to the model output.
                 Defaults to ``None``.
-            task (TaskType | None): Task type.
-                Defaults to ``None``.
 
         Returns:
             Path: Path to the exported onnx model.
@@ -115,7 +110,6 @@ class ExportMixin:
             >>> model.to_onnx(
             ...     export_root="path/to/export",
             ...     transform=datamodule.test_data.transform,
-            ...     task=datamodule.test_data.task
             ... )
 
             Using Custom Transforms:
@@ -123,7 +117,6 @@ class ExportMixin:
 
             >>> model.to_onnx(
             ...     export_root="path/to/export",
-            ...     task="segmentation",
             ... )
         """
         export_root = _create_export_root(export_root, ExportType.ONNX)
@@ -293,7 +286,6 @@ class ExportMixin:
         elif compression_type == CompressionType.INT8_PTQ:
             model = self._post_training_quantization_ov(model, datamodule)
         elif compression_type == CompressionType.INT8_ACQ:
-            assert task is not None, "Task must be provided for OpenVINO accuracy aware compression"
             model = self._accuracy_control_quantization_ov(model, datamodule, metric, task)
         else:
             msg = f"Unrecognized compression type: {compression_type}"
@@ -366,6 +358,9 @@ class ExportMixin:
             msg = "Datamodule must be provided for OpenVINO INT8_PTQ compression"
             raise ValueError(msg)
         datamodule.setup("fit")
+
+        # if task is not provided, use the task from the datamodule
+        task = task or datamodule.task
 
         if metric is None:
             msg = "Metric must be provided for OpenVINO INT8_ACQ compression"

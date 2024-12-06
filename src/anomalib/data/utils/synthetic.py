@@ -18,9 +18,9 @@ import pandas as pd
 from pandas import DataFrame, Series
 from torchvision.transforms.v2 import Compose
 
-from anomalib import TaskType
 from anomalib.data.datasets.base.image import AnomalibDataset
-from anomalib.data.utils import Augmenter, Split, read_image
+from anomalib.data.utils import Split, read_image
+from anomalib.data.utils.generators.perlin import PerlinAnomalyGenerator
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +66,7 @@ def make_synthetic_dataset(
     anomalous_samples = anomalous_samples.reset_index(drop=True)
 
     # initialize augmenter
-    augmenter = Augmenter("./datasets/dtd", p_anomalous=1.0, beta=(0.01, 0.2))
+    augmenter = PerlinAnomalyGenerator(anomaly_source_path="./datasets/dtd", probability=1.0, blend_factor=(0.01, 0.2))
 
     def augment(sample: Series) -> Series:
         """Apply synthetic anomalous augmentation to a sample from a dataframe.
@@ -83,7 +83,7 @@ def make_synthetic_dataset(
         # read and transform image
         image = read_image(sample.image_path, as_tensor=True)
         # apply anomalous perturbation
-        aug_im, mask = augmenter.augment_batch(image.unsqueeze(0))
+        aug_im, mask = augmenter(image)
         # target file name with leading zeros
         file_name = f"{str(sample.name).zfill(int(math.log10(n_anomalous)) + 1)}.png"
         # write image
@@ -113,13 +113,12 @@ class SyntheticAnomalyDataset(AnomalibDataset):
     """Dataset which reads synthetically generated anomalous images from a temporary folder.
 
     Args:
-        task (str): Task type, either "classification" or "segmentation".
         transform (A.Compose): Transform object describing the transforms that are applied to the inputs.
         source_samples (DataFrame): Normal samples to which the anomalous augmentations will be applied.
     """
 
-    def __init__(self, task: TaskType, transform: Compose, source_samples: DataFrame) -> None:
-        super().__init__(task, transform)
+    def __init__(self, transform: Compose, source_samples: DataFrame) -> None:
+        super().__init__(transform)
 
         self.source_samples = source_samples
 
@@ -146,7 +145,7 @@ class SyntheticAnomalyDataset(AnomalibDataset):
             dataset (AnomalibDataset): Dataset consisting of only normal images that will be converrted to a synthetic
                 anomalous dataset with a 50/50 normal anomalous split.
         """
-        return cls(task=dataset.task, transform=dataset.transform, source_samples=dataset.samples)
+        return cls(transform=dataset.transform, source_samples=dataset.samples)
 
     def __copy__(self) -> "SyntheticAnomalyDataset":
         """Return a shallow copy of the dataset object and prevents cleanup when original object is deleted."""

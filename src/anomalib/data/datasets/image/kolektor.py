@@ -25,7 +25,6 @@ from pandas import DataFrame
 from sklearn.model_selection import train_test_split
 from torchvision.transforms.v2 import Transform
 
-from anomalib import TaskType
 from anomalib.data.datasets import AnomalibDataset
 from anomalib.data.errors import MisMatchError
 from anomalib.data.utils import Split, validate_path
@@ -46,12 +45,11 @@ class KolektorDataset(AnomalibDataset):
 
     def __init__(
         self,
-        task: TaskType,
         root: Path | str = "./datasets/kolektor",
         transform: Transform | None = None,
         split: str | Split | None = None,
     ) -> None:
-        super().__init__(task=task, transform=transform)
+        super().__init__(transform=transform)
 
         self.root = root
         self.split = split
@@ -159,6 +157,9 @@ def make_kolektor_dataset(
         follow the same naming convention as the anomalous images in the dataset
         (e.g. image: 'Part0.jpg', mask: 'Part0_label.bmp')."""
         raise MisMatchError(msg)
+
+    # infer the task type
+    samples.attrs["task"] = "classification" if (samples["mask_path"] == "").all() else "segmentation"
 
     # Get the dataframe for the required split
     if split:

@@ -6,12 +6,14 @@ Tests the models using API. The weight paths from the trained models are used fo
 # Copyright (C) 2023-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+import contextlib
+import sys
+from collections.abc import Generator
 from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
 
-from anomalib import TaskType
 from anomalib.data import AnomalibDataModule, MVTec
 from anomalib.deploy import ExportType
 from anomalib.engine import Engine
@@ -26,6 +28,17 @@ def models() -> set[str]:
 def export_types() -> list[ExportType]:
     """Return all available export frameworks."""
     return list(ExportType)
+
+
+@contextlib.contextmanager
+def increased_recursion_limit(limit: int = 10000) -> Generator[None, None, None]:
+    """Temporarily increase the recursion limit."""
+    old_limit = sys.getrecursionlimit()
+    try:
+        sys.setrecursionlimit(limit)
+        yield
+    finally:
+        sys.setrecursionlimit(old_limit)
 
 
 class TestAPI:
@@ -154,11 +167,14 @@ class TestAPI:
             dataset_path=dataset_path,
             project_path=project_path,
         )
-        engine.export(
-            model=model,
-            ckpt_path=f"{project_path}/{model.name}/{dataset.name}/dummy/v0/weights/lightning/model.ckpt",
-            export_type=export_type,
-        )
+
+        # Use context manager only for CSFlow
+        with increased_recursion_limit() if model_name == "csflow" else contextlib.nullcontext():
+            engine.export(
+                model=model,
+                ckpt_path=f"{project_path}/{model.name}/{dataset.name}/dummy/v0/weights/lightning/model.ckpt",
+                export_type=export_type,
+            )
 
     @staticmethod
     def _get_objects(
@@ -177,10 +193,6 @@ class TestAPI:
             tuple[AnomalibModule, AnomalibDataModule, Engine]: Returns the created objects for model, dataset,
                 and engine
         """
-        # select task type
-
-        task_type = TaskType.CLASSIFICATION if model_name in {"ganomaly", "dfkde"} else TaskType.SEGMENTATION
-
         # set extra model args
         # TODO(ashwinvaidya17): Fix these Edge cases
         # https://github.com/openvinotoolkit/anomalib/issues/1478
@@ -197,7 +209,6 @@ class TestAPI:
             dataset = MVTec(
                 root=dataset_path / "mvtec",
                 category="dummy",
-                task=task_type,
                 # EfficientAd requires train batch size 1
                 train_batch_size=1 if model_name == "efficient_ad" else 2,
             )
@@ -213,7 +224,6 @@ class TestAPI:
             default_root_dir=project_path,
             max_epochs=1,
             devices=1,
-            task=task_type,
             # TODO(ashwinvaidya17): Fix these Edge cases
             # https://github.com/openvinotoolkit/anomalib/issues/1478
             max_steps=70000 if model_name == "efficient_ad" else -1,

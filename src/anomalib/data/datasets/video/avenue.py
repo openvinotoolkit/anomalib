@@ -22,7 +22,6 @@ import torch
 from pandas import DataFrame
 from torchvision.transforms.v2 import Transform
 
-from anomalib import TaskType
 from anomalib.data.datasets.base.video import AnomalibVideoDataset, VideoTargetFrame
 from anomalib.data.utils import Split, read_mask, validate_path
 from anomalib.data.utils.video import ClipsIndexer
@@ -35,7 +34,6 @@ class AvenueDataset(AnomalibVideoDataset):
     """Avenue Dataset class.
 
     Args:
-        task (TaskType): Task type, 'classification', 'detection' or 'segmentation'
         split (Split): Split of the dataset, usually Split.TRAIN or Split.TEST
         root (Path | str): Path to the root of the dataset
             Defaults to ``./datasets/avenue``.
@@ -51,29 +49,11 @@ class AvenueDataset(AnomalibVideoDataset):
             Defaults to ``None``.
 
     Examples:
-        To create an Avenue dataset to train a classification model:
-
-        .. code-block:: python
-
-            transform = A.Compose([A.Resize(256, 256), A.pytorch.ToTensorV2()])
-            dataset = AvenueDataset(
-                task="classification",
-                transform=transform,
-                split="train",
-                root="./datasets/avenue/",
-            )
-
-            dataset.setup()
-            dataset[0].keys()
-
-            # Output: dict_keys(['image', 'video_path', 'frames', 'last_frame', 'original_image'])
-
-        If you would like to test a segmentation model, you can use the following code:
+        To create an Avenue dataset to train a model:
 
         .. code-block:: python
 
             dataset = AvenueDataset(
-                task="segmentation",
                 transform=transform,
                 split="test",
                 root="./datasets/avenue/",
@@ -85,13 +65,12 @@ class AvenueDataset(AnomalibVideoDataset):
             # Output: dict_keys(['image', 'mask', 'video_path', 'frames', 'last_frame', 'original_image', 'label'])
 
         Avenue video dataset can also be used as an image dataset if you set the clip length to 1. This means that each
-        video frame will be treated as a separate sample. This is useful for training a classification model on the
-        Avenue dataset. The following code shows how to create an image dataset for classification:
+        video frame will be treated as a separate sample. This is useful for training an image model on the
+        Avenue dataset. The following code shows how to create an image dataset:
 
         .. code-block:: python
 
             dataset = AvenueDataset(
-                task="classification",
                 transform=transform,
                 split="test",
                 root="./datasets/avenue/",
@@ -108,7 +87,6 @@ class AvenueDataset(AnomalibVideoDataset):
 
     def __init__(
         self,
-        task: TaskType,
         split: Split,
         root: Path | str = "./datasets/avenue",
         gt_dir: Path | str = "./datasets/avenue/ground_truth_demo",
@@ -118,7 +96,6 @@ class AvenueDataset(AnomalibVideoDataset):
         target_frame: VideoTargetFrame = VideoTargetFrame.LAST,
     ) -> None:
         super().__init__(
-            task=task,
             clip_length_in_frames=clip_length_in_frames,
             frames_between_clips=frames_between_clips,
             target_frame=target_frame,
@@ -177,6 +154,9 @@ def make_avenue_dataset(root: Path, gt_dir: Path, split: Split | str | None = No
 
     samples.loc[samples.folder == "training_videos", "split"] = "train"
     samples.loc[samples.folder == "testing_videos", "split"] = "test"
+
+    # infer the task type
+    samples.attrs["task"] = "classification" if (samples["mask_path"] == "").all() else "segmentation"
 
     if split:
         samples = samples[samples.split == split]

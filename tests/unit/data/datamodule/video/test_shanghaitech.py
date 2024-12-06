@@ -7,7 +7,6 @@ from pathlib import Path
 
 import pytest
 
-from anomalib import TaskType
 from anomalib.data import ShanghaiTech
 from tests.unit.data.datamodule.base.video import _TestAnomalibVideoDatamodule
 
@@ -23,7 +22,7 @@ class TestShanghaiTech(_TestAnomalibVideoDatamodule):
 
     @pytest.fixture()
     @staticmethod
-    def datamodule(dataset_path: Path, task_type: TaskType, clip_length_in_frames: int) -> ShanghaiTech:
+    def datamodule(dataset_path: Path, clip_length_in_frames: int) -> ShanghaiTech:
         """Create and return a Shanghai datamodule."""
         _datamodule = ShanghaiTech(
             root=dataset_path / "shanghaitech",
@@ -32,7 +31,6 @@ class TestShanghaiTech(_TestAnomalibVideoDatamodule):
             train_batch_size=4,
             eval_batch_size=4,
             num_workers=0,
-            task=task_type,
         )
 
         _datamodule.prepare_data()

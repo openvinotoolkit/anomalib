@@ -7,7 +7,6 @@ from pathlib import Path
 
 import pytest
 
-from anomalib import TaskType
 from anomalib.data import MVTec
 from tests.unit.data.datamodule.base.image import _TestAnomalibImageDatamodule
 
@@ -17,12 +16,11 @@ class TestMVTec(_TestAnomalibImageDatamodule):
 
     @pytest.fixture()
     @staticmethod
-    def datamodule(dataset_path: Path, task_type: TaskType) -> MVTec:
+    def datamodule(dataset_path: Path) -> MVTec:
         """Create and return a MVTec datamodule."""
         _datamodule = MVTec(
             root=dataset_path / "mvtec",
             category="dummy",
-            task=task_type,
             train_batch_size=4,
             eval_batch_size=4,
         )

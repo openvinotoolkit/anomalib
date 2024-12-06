@@ -3,12 +3,11 @@
 # Copyright (C) 2023-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-import imgaug.augmenters as iaa
-import numpy as np
 import torch
 from torch import Tensor, nn
+from torchvision.transforms import v2
 
-from anomalib.data.utils.generators.perlin import _rand_perlin_2d_np
+from anomalib.data.utils.generators.perlin import generate_perlin_noise
 
 
 class DsrAnomalyGenerator(nn.Module):
@@ -29,7 +28,8 @@ class DsrAnomalyGenerator(nn.Module):
         super().__init__()
 
         self.p_anomalous = p_anomalous
-        self.rot = iaa.Sequential([iaa.Affine(rotate=(-90, 90))])
+        # Replace imgaug with torchvision transform
+        self.rot = v2.RandomAffine(degrees=(-90, 90))
 
     def generate_anomaly(self, height: int, width: int) -> Tensor:
         """Generate an anomalous mask.
@@ -43,15 +43,20 @@ class DsrAnomalyGenerator(nn.Module):
         """
         min_perlin_scale = 0
         perlin_scale = 6
-        perlin_scalex = 2 ** (torch.randint(min_perlin_scale, perlin_scale, (1,)).numpy()[0])
-        perlin_scaley = 2 ** (torch.randint(min_perlin_scale, perlin_scale, (1,)).numpy()[0])
+        perlin_scalex = int(2 ** torch.randint(min_perlin_scale, perlin_scale, (1,)).item())
+        perlin_scaley = int(2 ** torch.randint(min_perlin_scale, perlin_scale, (1,)).item())
         threshold = 0.5
-        perlin_noise_np = _rand_perlin_2d_np((height, width), (perlin_scalex, perlin_scaley))
-        perlin_noise_np = self.rot(image=perlin_noise_np)
-        mask = np.where(perlin_noise_np > threshold, np.ones_like(perlin_noise_np), np.zeros_like(perlin_noise_np))
-        mask = np.expand_dims(mask, axis=2).astype(np.float32)
 
-        return torch.from_numpy(mask)
+        # Generate perlin noise using the new function
+        perlin_noise = generate_perlin_noise(height, width, scale=(perlin_scalex, perlin_scaley))
+
+        # Apply random rotation
+        perlin_noise = perlin_noise.unsqueeze(0)  # Add channel dimension for transform
+        perlin_noise = self.rot(perlin_noise).squeeze(0)  # Remove channel dimension
+
+        # Create binary mask
+        mask = (perlin_noise > threshold).float()
+        return mask.unsqueeze(0)  # Add channel dimension [1, H, W]
 
     def augment_batch(self, batch: Tensor) -> Tensor:
         """Generate anomalous augmentations for a batch of input images.
@@ -71,6 +76,6 @@ class DsrAnomalyGenerator(nn.Module):
                 masks_list.append(torch.zeros((1, height, width)))
             else:
                 mask = self.generate_anomaly(height, width)
-                masks_list.append(mask.permute((2, 0, 1)))
+                masks_list.append(mask)
 
         return torch.stack(masks_list).to(batch.device)
