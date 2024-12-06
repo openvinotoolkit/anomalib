@@ -3,8 +3,9 @@
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from enum import Enum
+from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -12,7 +13,9 @@ import cv2
 import matplotlib.figure
 import matplotlib.pyplot as plt
 import numpy as np
+import torch
 from skimage.segmentation import mark_boundaries
+from torchvision import transforms
 
 from anomalib import TaskType
 from anomalib.data.utils import read_image
@@ -118,6 +121,31 @@ class ImageVisualizer(BaseVisualizer):
         self.mode = mode
         self.task = task
         self.normalize = normalize
+        # Make a reverse transform to visualize the normalized images.
+        #   If None, we will load from the files instead.
+        self.reverse_transform: Callable | None = None
+
+    def configure_reverse_transform(self, transform: Callable) -> None:
+        """Convert the PyTorch normalized image (RGB, CHW, normalized) to the Anomalib format (RGB, HWC, uint8)."""
+
+        def convert(mean: np.ndarray, std: np.ndarray, image: torch.Tensor) -> np.ndarray:
+            """(Tensor, RGB, CHW, normalized) -> (ndarray, RGB, HWC, uint8)."""
+            # Tensor -> ndarray
+            image = image.detach().cpu().numpy()
+            # CHW -> HWC
+            image = image.transpose(1, 2, 0)
+            # normalized -> uint8
+            return (image * std + mean).round().astype(np.uint8)
+
+        if isinstance(transform, transforms.Compose | transforms.v2.Compose):
+            # Try to find Normalize from the end.
+            transform = transform.transforms[-1]
+
+        if isinstance(transform, transforms.Normalize | transforms.v2.Normalize):
+            # Get reverse_transform
+            mean = np.array(transform.mean) * 255
+            std = np.array(transform.std) * 255
+            self.reverse_transform = partial(convert, mean, std)
 
     def generate(self, **kwargs) -> Iterator[GeneratorResult]:
         """Generate images and return them as an iterator."""
@@ -139,9 +167,15 @@ class ImageVisualizer(BaseVisualizer):
         batch_size = batch["image"].shape[0]
         for i in range(batch_size):
             if "image_path" in batch:
-                height, width = batch["image"].shape[-2:]
-                image = (read_image(path=batch["image_path"][i]) * 255).astype(np.uint8)
-                image = cv2.resize(image, dsize=(width, height), interpolation=cv2.INTER_AREA)
+                if self.reverse_transform is None:
+                    # Load from the files and resize.
+                    height, width = batch["image"].shape[-2:]
+                    image = (read_image(path=batch["image_path"][i]) * 255).astype(np.uint8)
+                    image = cv2.resize(image, dsize=(width, height), interpolation=cv2.INTER_AREA)
+                else:
+                    # Just de-normalize the image.
+                    image = batch["image"][i]
+                    image = self.reverse_transform(image)
             elif "video_path" in batch:
                 height, width = batch["image"].shape[-2:]
                 image = batch["original_image"][i].squeeze().cpu().numpy()
