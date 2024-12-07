@@ -166,7 +166,11 @@ class TorchFXFeatureExtractor(nn.Module):
             backbone_class = backbone.class_path
             backbone_model = backbone_class(**backbone.init_args)
 
-        if isinstance(weights, WeightsEnum):  # torchvision models
+        if isinstance(weights, WeightsEnum) or weights in {
+            "IMAGENET1K_V1",
+            "IMAGENET1K_V2",
+            "DEFAULT",
+        }:  # torchvision models
             feature_extractor = create_feature_extractor(model=backbone_model, return_nodes=return_nodes)
         elif weights is not None:
             if not isinstance(weights, str):
