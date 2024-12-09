@@ -24,6 +24,7 @@ from anomalib.metrics import Evaluator
 from anomalib.models.components import AnomalibModule
 from anomalib.post_processing import PostProcessor
 from anomalib.pre_processing import PreProcessor
+from anomalib.visualization import Visualizer
 
 from .torch_model import EfficientAdModel, EfficientAdModelSize, reduce_tensor_elems
 
@@ -76,10 +77,16 @@ class EfficientAd(AnomalibModule):
         padding: bool = False,
         pad_maps: bool = True,
         pre_processor: PreProcessor | bool = True,
-        post_processor: PostProcessor | None = None,
+        post_processor: PostProcessor | bool = True,
         evaluator: Evaluator | bool = True,
+        visualizer: Visualizer | bool = True,
     ) -> None:
-        super().__init__(pre_processor=pre_processor, post_processor=post_processor, evaluator=evaluator)
+        super().__init__(
+            pre_processor=pre_processor,
+            post_processor=post_processor,
+            evaluator=evaluator,
+            visualizer=visualizer,
+        )
 
         self.imagenet_dir = Path(imagenet_dir)
         if not isinstance(model_size, EfficientAdModelSize):

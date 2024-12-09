@@ -21,6 +21,7 @@ from anomalib.metrics import Evaluator
 from anomalib.models.components import AnomalibModule
 from anomalib.post_processing import PostProcessor
 from anomalib.pre_processing import PreProcessor
+from anomalib.visualization import Visualizer
 
 from .loss import UFlowLoss
 from .torch_model import UflowModel
@@ -49,8 +50,9 @@ class Uflow(AnomalibModule):
         affine_subnet_channels_ratio: float = 1.0,
         permute_soft: bool = False,
         pre_processor: PreProcessor | bool = True,
-        post_processor: PostProcessor | None = None,
+        post_processor: PostProcessor | bool = True,
         evaluator: Evaluator | bool = True,
+        visualizer: Visualizer | bool = True,
     ) -> None:
         """Uflow model.
 
@@ -69,8 +71,16 @@ class Uflow(AnomalibModule):
             evaluator (Evaluator, optional): Evaluator for the model.
                 This is used to evaluate the model.
                 Defaults to ``True``.
+            visualizer (Visualizer, optional): Visualizer for the model.
+                This is used to visualize the model.
+                Defaults to ``True``.
         """
-        super().__init__(pre_processor=pre_processor, post_processor=post_processor, evaluator=evaluator)
+        super().__init__(
+            pre_processor=pre_processor,
+            post_processor=post_processor,
+            evaluator=evaluator,
+            visualizer=visualizer,
+        )
         if self.input_size is None:
             msg = "Input size is required for UFlow model."
             raise ValueError(msg)
