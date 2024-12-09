@@ -9,6 +9,7 @@ Paper https://arxiv.org/pdf/2212.00789.pdf
 import logging
 from typing import Any
 
+import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 
 from anomalib import LearningType
@@ -121,6 +122,9 @@ class AiVad(MemoryBankMixin, AnomalibModule):
         for features, video_path in zip(features_per_batch, batch.video_path, strict=True):
             self.model.density_estimator.update(features, video_path)
             self.total_detections += len(next(iter(features.values())))
+
+        # Return a dummy loss tensor
+        return torch.tensor(0.0, requires_grad=True, device=self.device)
 
     def fit(self) -> None:
         """Fit the density estimators to the extracted features from the training set."""
