@@ -247,8 +247,7 @@ class AnomalibModule(ExportMixin, pl.LightningModule, ABC):
         msg = f"Invalid post-processor type: {type(post_processor)}"
         raise TypeError(msg)
 
-    @classmethod
-    def configure_post_processor(cls) -> PostProcessor | None:
+    def configure_post_processor(self) -> PostProcessor | None:
         """Configure the default post-processor based on the learning type.
 
         Returns:
@@ -271,10 +270,12 @@ class AnomalibModule(ExportMixin, pl.LightningModule, ABC):
 
             >>> model = PatchCore(post_processor=False)
         """
-        if cls.learning_type == LearningType.ONE_CLASS:
+        if self.learning_type == LearningType.ONE_CLASS:
             return OneClassPostProcessor()
-        msg = f"No default post-processor available for model with learning type {cls.learning_type}. \
-              Please override the configure_post_processor method in the model implementation."
+        msg = (
+            f"No default post-processor available for model with learning type {self.learning_type}. "
+            "Please override the configure_post_processor method in the model implementation."
+        )
         raise NotImplementedError(msg)
 
     def _resolve_evaluator(self, evaluator: Evaluator | bool) -> Evaluator | None:
