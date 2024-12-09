@@ -4,12 +4,15 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from lightning.pytorch import Trainer
+# Only import types during type checking to avoid circular imports
+if TYPE_CHECKING:
+    from lightning.pytorch import Trainer
 
-from anomalib.data import ImageBatch
-from anomalib.models.components.base import AnomalibModule
+    from anomalib.data import ImageBatch
+    from anomalib.models import AnomalibModule
+
 from anomalib.utils.path import generate_output_filename
 from anomalib.visualization.base import Visualizer
 
@@ -139,10 +142,10 @@ class ImageVisualizer(Visualizer):
 
     def on_test_batch_end(
         self,
-        trainer: Trainer,
-        pl_module: AnomalibModule,
-        outputs: ImageBatch,
-        batch: ImageBatch,
+        trainer: "Trainer",
+        pl_module: "AnomalibModule",
+        outputs: "ImageBatch",
+        batch: "ImageBatch",
         batch_idx: int,
         dataloader_idx: int = 0,
     ) -> None:
@@ -177,10 +180,10 @@ class ImageVisualizer(Visualizer):
 
     def on_predict_batch_end(
         self,
-        trainer: Trainer,
-        pl_module: AnomalibModule,
-        outputs: ImageBatch,
-        batch: ImageBatch,
+        trainer: "Trainer",
+        pl_module: "AnomalibModule",
+        outputs: "ImageBatch",
+        batch: "ImageBatch",
         batch_idx: int,
         dataloader_idx: int = 0,
     ) -> None:
