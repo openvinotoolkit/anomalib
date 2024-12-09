@@ -254,10 +254,3 @@ def _show_warnings(config: DictConfig | ListConfig | Namespace) -> None:
             "Anomalib's models and visualizer are currently not compatible with video datasets with a clip length > 1. "
             "Custom changes to these modules will be needed to prevent errors and/or unpredictable behaviour.",
         )
-    if (
-        "devices" in config.trainer
-        and (config.trainer.devices is None or config.trainer.devices != 1)
-        and config.trainer.accelerator != "cpu"
-    ):
-        logger.warning("Anomalib currently does not support multi-gpu training. Setting devices to 1.")
-        config.trainer.devices = 1

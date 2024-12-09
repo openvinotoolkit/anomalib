@@ -3,6 +3,7 @@
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+import logging
 from collections.abc import Sequence
 from typing import Any
 
@@ -13,6 +14,8 @@ from torch.nn import ModuleList
 from torchmetrics import Metric
 
 from anomalib.metrics import AnomalibMetric
+
+logger = logging.getLogger(__name__)
 
 
 class Evaluator(nn.Module, Callback):
@@ -53,8 +56,15 @@ class Evaluator(nn.Module, Callback):
         super().__init__()
         self.val_metrics = ModuleList(self.validate_metrics(val_metrics))
         self.test_metrics = ModuleList(self.validate_metrics(test_metrics))
+        self.compute_on_cpu = compute_on_cpu
 
-        if compute_on_cpu:
+    def setup(self, trainer: Trainer, pl_module: LightningModule, stage: str) -> None:
+        """Move metrics to cpu if ``num_devices == 1`` and ``compute_on_cpu`` is set to ``True``."""
+        del pl_module, stage  # Unused arguments.
+        if trainer.num_devices > 1:
+            if self.compute_on_cpu:
+                logger.warning("Number of devices is greater than 1, setting compute_on_cpu to False.")
+        elif self.compute_on_cpu:
             self.metrics_to_cpu(self.val_metrics)
             self.metrics_to_cpu(self.test_metrics)
 
