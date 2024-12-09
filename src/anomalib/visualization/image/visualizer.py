@@ -6,11 +6,12 @@
 from pathlib import Path
 from typing import Any
 
-from lightning.pytorch import Callback, Trainer
+from lightning.pytorch import Trainer
 
 from anomalib.data import ImageBatch
 from anomalib.models import AnomalibModule
 from anomalib.utils.path import generate_output_filename
+from anomalib.visualization.base import Visualizer
 
 from .item_visualizer import (
     DEFAULT_FIELDS_CONFIG,
@@ -20,7 +21,7 @@ from .item_visualizer import (
 )
 
 
-class ImageVisualizer(Callback):
+class ImageVisualizer(Visualizer):
     """Image Visualizer.
 
     This class is responsible for visualizing images and their corresponding anomaly maps
@@ -127,6 +128,7 @@ class ImageVisualizer(Callback):
         text_config: dict[str, Any] | None = None,
         output_dir: str | Path | None = None,
     ) -> None:
+        super().__init__()
         self.fields = fields or ["image", "gt_mask"]
         self.overlay_fields = overlay_fields or [("image", ["anomaly_map"]), ("image", ["pred_mask"])]
         self.field_size = field_size

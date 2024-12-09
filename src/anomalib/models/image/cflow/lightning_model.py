@@ -27,6 +27,7 @@ from anomalib.metrics import Evaluator
 from anomalib.models.components import AnomalibModule
 from anomalib.post_processing import PostProcessor
 from anomalib.pre_processing import PreProcessor
+from anomalib.visualization import Visualizer
 
 from .torch_model import CflowModel
 from .utils import get_logp, positional_encoding_2d
@@ -73,8 +74,14 @@ class Cflow(AnomalibModule):
         pre_processor: PreProcessor | bool = True,
         post_processor: PostProcessor | bool = True,
         evaluator: Evaluator | bool = True,
+        visualizer: Visualizer | bool = True,
     ) -> None:
-        super().__init__(pre_processor=pre_processor, post_processor=post_processor, evaluator=evaluator)
+        super().__init__(
+            pre_processor=pre_processor,
+            post_processor=post_processor,
+            evaluator=evaluator,
+            visualizer=visualizer,
+        )
 
         self.model: CflowModel = CflowModel(
             backbone=backbone,

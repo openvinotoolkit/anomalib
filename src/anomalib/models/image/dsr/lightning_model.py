@@ -25,6 +25,7 @@ from anomalib.models.image.dsr.loss import DsrSecondStageLoss, DsrThirdStageLoss
 from anomalib.models.image.dsr.torch_model import DsrModel
 from anomalib.post_processing import PostProcessor
 from anomalib.pre_processing import PreProcessor
+from anomalib.visualization import Visualizer
 
 __all__ = ["Dsr"]
 
@@ -55,8 +56,14 @@ class Dsr(AnomalibModule):
         pre_processor: PreProcessor | bool = True,
         post_processor: PostProcessor | bool = True,
         evaluator: Evaluator | bool = True,
+        visualizer: Visualizer | bool = True,
     ) -> None:
-        super().__init__(pre_processor=pre_processor, post_processor=post_processor, evaluator=evaluator)
+        super().__init__(
+            pre_processor=pre_processor,
+            post_processor=post_processor,
+            evaluator=evaluator,
+            visualizer=visualizer,
+        )
 
         self.automatic_optimization = False
         self.upsampling_train_ratio = upsampling_train_ratio

@@ -25,6 +25,7 @@ from anomalib.metrics.evaluator import Evaluator
 from anomalib.metrics.threshold import Threshold
 from anomalib.post_processing import OneClassPostProcessor, PostProcessor
 from anomalib.pre_processing import PreProcessor
+from anomalib.visualization import ImageVisualizer, Visualizer
 
 from .export_mixin import ExportMixin
 
@@ -42,6 +43,7 @@ class AnomalibModule(ExportMixin, pl.LightningModule, ABC):
         pre_processor: PreProcessor | bool = True,
         post_processor: PostProcessor | bool = True,
         evaluator: Evaluator | bool = True,
+        visualizer: Visualizer | bool = True,
     ) -> None:
         super().__init__()
         logger.info("Initializing %s model.", self.__class__.__name__)
@@ -54,6 +56,7 @@ class AnomalibModule(ExportMixin, pl.LightningModule, ABC):
         self.pre_processor = self._resolve_pre_processor(pre_processor)
         self.post_processor = self._resolve_post_processor(post_processor)
         self.evaluator = self._resolve_evaluator(evaluator)
+        self.visualizer = self._resolve_visualizer(visualizer)
 
         self._input_size: tuple[int, int] | None = None
         self._is_setup = False
@@ -78,25 +81,6 @@ class AnomalibModule(ExportMixin, pl.LightningModule, ABC):
         in the `__init__` method because it requires some information or data that is not available at the time of
         initialization.
         """
-
-    def _resolve_pre_processor(self, pre_processor: PreProcessor | bool) -> PreProcessor | None:
-        """Resolve and validate which pre-processor to use..
-
-        Args:
-            pre_processor: Pre-processor configuration
-                - True -> use default pre-processor
-                - False -> no pre-processor
-                - PreProcessor -> use the provided pre-processor
-
-        Returns:
-            Configured pre-processor
-        """
-        if isinstance(pre_processor, PreProcessor):
-            return pre_processor
-        if isinstance(pre_processor, bool):
-            return self.configure_pre_processor() if pre_processor else None
-        msg = f"Invalid pre-processor type: {type(pre_processor)}"
-        raise TypeError(msg)
 
     def configure_callbacks(self) -> Sequence[Callback] | Callback:
         """Configure default callbacks for AnomalibModule."""
@@ -169,6 +153,25 @@ class AnomalibModule(ExportMixin, pl.LightningModule, ABC):
     def learning_type(self) -> LearningType:
         """Learning type of the model."""
         raise NotImplementedError
+
+    def _resolve_pre_processor(self, pre_processor: PreProcessor | bool) -> PreProcessor | None:
+        """Resolve and validate which pre-processor to use..
+
+        Args:
+            pre_processor: Pre-processor configuration
+                - True -> use default pre-processor
+                - False -> no pre-processor
+                - PreProcessor -> use the provided pre-processor
+
+        Returns:
+            Configured pre-processor
+        """
+        if isinstance(pre_processor, PreProcessor):
+            return pre_processor
+        if isinstance(pre_processor, bool):
+            return self.configure_pre_processor() if pre_processor else None
+        msg = f"Invalid pre-processor type: {type(pre_processor)}"
+        raise TypeError(msg)
 
     @classmethod
     def configure_pre_processor(cls, image_size: tuple[int, int] | None = None) -> PreProcessor:
@@ -288,6 +291,63 @@ class AnomalibModule(ExportMixin, pl.LightningModule, ABC):
         pixel_f1score = F1Score(fields=["pred_mask", "gt_mask"], prefix="pixel_")
         test_metrics = [image_auroc, image_f1score, pixel_auroc, pixel_f1score]
         return Evaluator(test_metrics=test_metrics)
+
+    def _resolve_visualizer(self, visualizer: Visualizer | bool) -> Visualizer | None:
+        """Resolve and validate which visualizer to use.
+
+        Args:
+            visualizer: Visualizer configuration
+                - True -> use default visualizer
+                - False -> no visualizer
+                - Visualizer -> use the provided visualizer
+
+        Returns:
+            Configured visualizer
+        """
+        if isinstance(visualizer, Visualizer):
+            return visualizer
+        if isinstance(visualizer, bool):
+            return self.configure_visualizer() if visualizer else None
+        msg = f"Visualizer must be of type Visualizer or bool, got {type(visualizer)}"
+        raise TypeError(msg)
+
+    @classmethod
+    def configure_visualizer(cls) -> ImageVisualizer:
+        """Configure the default visualizer.
+
+        By default, this method returns an ImageVisualizer instance, which is suitable for
+        visualizing image-based anomaly detection results. However, the visualizer can be
+        customized based on your needs - for example, using VideoVisualizer for video data
+        or implementing a custom visualizer for specific visualization requirements.
+
+        Returns:
+            Visualizer: Configured visualizer instance (ImageVisualizer by default).
+
+        Examples:
+            Get default ImageVisualizer:
+
+            >>> visualizer = AnomalibModule.configure_visualizer()
+
+            Create model with VideoVisualizer:
+
+            >>> from custom_module import VideoVisualizer
+            >>> video_visualizer = VideoVisualizer()
+            >>> model = PatchCore(visualizer=video_visualizer)
+
+            Create model with custom visualizer:
+
+            >>> class CustomVisualizer(Visualizer):
+            ...     def __init__(self):
+            ...         super().__init__()
+            ...         # Custom visualization logic
+            >>> custom_visualizer = CustomVisualizer()
+            >>> model = PatchCore(visualizer=custom_visualizer)
+
+            Disable visualization:
+
+            >>> model = PatchCore(visualizer=False)
+        """
+        return ImageVisualizer()
 
     @property
     def input_size(self) -> tuple[int, int] | None:

@@ -20,6 +20,7 @@ from anomalib.metrics import Evaluator
 from anomalib.models.components import AnomalibModule
 from anomalib.post_processing import PostProcessor
 from anomalib.pre_processing import PreProcessor
+from anomalib.visualization import Visualizer
 
 from .loss import CfaLoss
 from .torch_model import CfaModel
@@ -58,11 +59,18 @@ class Cfa(AnomalibModule):
         num_nearest_neighbors: int = 3,
         num_hard_negative_features: int = 3,
         radius: float = 1e-5,
+        # Anomalib's Auxiliary Components
         pre_processor: PreProcessor | bool = True,
         post_processor: PostProcessor | bool = True,
         evaluator: Evaluator | bool = True,
+        visualizer: Visualizer | bool = True,
     ) -> None:
-        super().__init__(pre_processor=pre_processor, post_processor=post_processor, evaluator=evaluator)
+        super().__init__(
+            pre_processor=pre_processor,
+            post_processor=post_processor,
+            evaluator=evaluator,
+            visualizer=visualizer,
+        )
         self.model: CfaModel = CfaModel(
             backbone=backbone,
             gamma_c=gamma_c,
