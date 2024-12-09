@@ -53,7 +53,7 @@ class Dsr(AnomalibModule):
         latent_anomaly_strength: float = 0.2,
         upsampling_train_ratio: float = 0.7,
         pre_processor: PreProcessor | bool = True,
-        post_processor: PostProcessor | None = None,
+        post_processor: PostProcessor | bool = True,
         evaluator: Evaluator | bool = True,
     ) -> None:
         super().__init__(pre_processor=pre_processor, post_processor=post_processor, evaluator=evaluator)

@@ -50,7 +50,7 @@ class Padim(MemoryBankMixin, AnomalibModule):
         pre_trained: bool = True,
         n_features: int | None = None,
         pre_processor: PreProcessor | bool = True,
-        post_processor: PostProcessor | None = None,
+        post_processor: PostProcessor | bool = True,
         evaluator: Evaluator | bool = True,
     ) -> None:
         super().__init__(pre_processor=pre_processor, post_processor=post_processor, evaluator=evaluator)
@@ -132,6 +132,6 @@ class Padim(MemoryBankMixin, AnomalibModule):
         return LearningType.ONE_CLASS
 
     @staticmethod
-    def default_post_processor() -> OneClassPostProcessor:
+    def configure_post_processor() -> OneClassPostProcessor:
         """Return the default post-processor for PADIM."""
         return OneClassPostProcessor()

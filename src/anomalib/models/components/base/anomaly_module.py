@@ -40,7 +40,7 @@ class AnomalibModule(ExportMixin, pl.LightningModule, ABC):
     def __init__(
         self,
         pre_processor: PreProcessor | bool = True,
-        post_processor: PostProcessor | None = None,
+        post_processor: PostProcessor | bool = True,
         evaluator: Evaluator | bool = True,
     ) -> None:
         super().__init__()
@@ -52,11 +52,11 @@ class AnomalibModule(ExportMixin, pl.LightningModule, ABC):
         self.callbacks: list[Callback]
 
         self.pre_processor = self._resolve_pre_processor(pre_processor)
-        self.post_processor = post_processor or self.default_post_processor()
+        self.post_processor = self._resolve_post_processor(post_processor)
         self.evaluator = self._resolve_evaluator(evaluator)
 
         self._input_size: tuple[int, int] | None = None
-        self._is_setup = False  # flag to track if setup has been called from the trainer
+        self._is_setup = False
 
     @property
     def name(self) -> str:
@@ -214,15 +214,53 @@ class AnomalibModule(ExportMixin, pl.LightningModule, ABC):
             ]),
         )
 
-    def default_post_processor(self) -> PostProcessor | None:
-        """Default post processor.
+    def _resolve_post_processor(self, post_processor: PostProcessor | bool) -> PostProcessor | None:
+        """Resolve and validate which post-processor to use.
 
-        Override in subclass for model-specific post-processing behaviour.
+        Args:
+            post_processor: Post-processor configuration
+                - True -> use default post-processor
+                - False -> no post-processor
+                - PostProcessor -> use the provided post-processor
+
+        Returns:
+            Configured post-processor
         """
-        if self.learning_type == LearningType.ONE_CLASS:
+        if isinstance(post_processor, PostProcessor):
+            return post_processor
+        if isinstance(post_processor, bool):
+            return self.configure_post_processor() if post_processor else None
+        msg = f"Invalid post-processor type: {type(post_processor)}"
+        raise TypeError(msg)
+
+    @classmethod
+    def configure_post_processor(cls) -> PostProcessor | None:
+        """Configure the default post-processor based on the learning type.
+
+        Returns:
+            PostProcessor: Configured post-processor instance.
+
+        Raises:
+            NotImplementedError: If no default post-processor is available for the model's learning type.
+
+        Examples:
+            Get default post-processor:
+
+            >>> post_processor = AnomalibModule.configure_post_processor()
+
+            Create model with custom post-processor:
+
+            >>> custom_post_processor = CustomPostProcessor()
+            >>> model = PatchCore(post_processor=custom_post_processor)
+
+            Disable post-processing:
+
+            >>> model = PatchCore(post_processor=False)
+        """
+        if cls.learning_type == LearningType.ONE_CLASS:
             return OneClassPostProcessor()
-        msg = f"No default post-processor available for model {self.__name__} with learning type {self.learning_type}. \
-              Please override the default_post_processor method in the model implementation."
+        msg = f"No default post-processor available for model with learning type {cls.learning_type}. \
+              Please override the configure_post_processor method in the model implementation."
         raise NotImplementedError(msg)
 
     def _resolve_evaluator(self, evaluator: Evaluator | bool) -> Evaluator | None:

@@ -59,7 +59,7 @@ class Cfa(AnomalibModule):
         num_hard_negative_features: int = 3,
         radius: float = 1e-5,
         pre_processor: PreProcessor | bool = True,
-        post_processor: PostProcessor | None = None,
+        post_processor: PostProcessor | bool = True,
         evaluator: Evaluator | bool = True,
     ) -> None:
         super().__init__(pre_processor=pre_processor, post_processor=post_processor, evaluator=evaluator)

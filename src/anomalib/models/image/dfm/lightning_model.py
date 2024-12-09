@@ -54,7 +54,7 @@ class Dfm(MemoryBankMixin, AnomalibModule):
         pca_level: float = 0.97,
         score_type: str = "fre",
         pre_processor: PreProcessor | bool = True,
-        post_processor: PostProcessor | None = None,
+        post_processor: PostProcessor | bool = True,
         evaluator: Evaluator | bool = True,
     ) -> None:
         super().__init__(pre_processor=pre_processor, post_processor=post_processor, evaluator=evaluator)

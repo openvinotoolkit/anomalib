@@ -56,7 +56,7 @@ class Fre(AnomalibModule):
         input_dim: int = 65536,
         latent_dim: int = 220,
         pre_processor: PreProcessor | bool = True,
-        post_processor: PostProcessor | None = None,
+        post_processor: PostProcessor | bool = True,
         evaluator: Evaluator | bool = True,
     ) -> None:
         super().__init__(pre_processor=pre_processor, post_processor=post_processor, evaluator=evaluator)

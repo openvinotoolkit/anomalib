@@ -49,7 +49,7 @@ class Uflow(AnomalibModule):
         affine_subnet_channels_ratio: float = 1.0,
         permute_soft: bool = False,
         pre_processor: PreProcessor | bool = True,
-        post_processor: PostProcessor | None = None,
+        post_processor: PostProcessor | bool = True,
         evaluator: Evaluator | bool = True,
     ) -> None:
         """Uflow model.
