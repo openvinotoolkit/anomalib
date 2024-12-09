@@ -9,7 +9,7 @@ from typing import Any
 from lightning.pytorch import Trainer
 
 from anomalib.data import ImageBatch
-from anomalib.models import AnomalibModule
+from anomalib.models.components.base import AnomalibModule
 from anomalib.utils.path import generate_output_filename
 from anomalib.visualization.base import Visualizer
 
