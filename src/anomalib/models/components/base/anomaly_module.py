@@ -83,8 +83,19 @@ class AnomalibModule(ExportMixin, pl.LightningModule, ABC):
         """
 
     def configure_callbacks(self) -> Sequence[Callback] | Callback:
-        """Configure default callbacks for AnomalibModule."""
-        return [self.pre_processor] if self.pre_processor else []
+        """Configure default callbacks for AnomalibModule.
+
+        Returns:
+            List of callbacks that includes the pre-processor, post-processor, evaluator,
+            and visualizer if they are available and inherit from Callback.
+        """
+        callbacks: list[Callback] = []
+        callbacks.extend(
+            component
+            for component in (self.pre_processor, self.post_processor, self.evaluator, self.visualizer)
+            if isinstance(component, Callback)
+        )
+        return callbacks
 
     def forward(self, batch: torch.Tensor, *args, **kwargs) -> InferenceBatch:
         """Perform the forward-pass by passing input tensor to the module.
