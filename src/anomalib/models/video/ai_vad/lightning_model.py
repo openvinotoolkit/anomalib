@@ -7,9 +7,9 @@ Paper https://arxiv.org/pdf/2212.00789.pdf
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-from dataclasses import replace
 from typing import Any
 
+import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 
 from anomalib import LearningType
@@ -124,6 +124,9 @@ class AiVad(MemoryBankMixin, AnomalibModule):
             self.model.density_estimator.update(features, video_path)
             self.total_detections += len(next(iter(features.values())))
 
+        # Return a dummy loss tensor
+        return torch.tensor(0.0, requires_grad=True, device=self.device)
+
     def fit(self) -> None:
         """Fit the density estimators to the extracted features from the training set."""
         if self.total_detections == 0:
@@ -147,13 +150,7 @@ class AiVad(MemoryBankMixin, AnomalibModule):
         del args, kwargs  # Unused arguments.
 
         predictions = self.model(batch.image)
-
-        return replace(
-            batch,
-            pred_score=predictions.pred_score,
-            anomaly_map=predictions.anomaly_map,
-            pred_mask=predictions.pred_mask,
-        )
+        return batch.update(pred_score=predictions.pred_score, anomaly_map=predictions.anomaly_map)
 
     @property
     def trainer_arguments(self) -> dict[str, Any]:

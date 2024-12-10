@@ -259,9 +259,6 @@ class Engine:
         # Setup anomalib callbacks to be used with the trainer
         self._setup_anomalib_callbacks()
 
-        # Temporarily set devices to 1 to avoid issues with multiple processes
-        self._cache.args["devices"] = 1
-
         # Instantiate the trainer if it is not already instantiated
         if self._trainer is None:
             self._trainer = Trainer(**self._cache.args)

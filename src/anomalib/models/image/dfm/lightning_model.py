@@ -100,6 +100,9 @@ class Dfm(MemoryBankMixin, AnomalibModule):
         embedding = self.model.get_features(batch.image).squeeze()
         self.embeddings.append(embedding)
 
+        # Return a dummy loss tensor
+        return torch.tensor(0.0, requires_grad=True, device=self.device)
+
     def fit(self) -> None:
         """Fit a PCA transformation and a Gaussian model to dataset."""
         logger.info("Aggregating the embedding extracted from the training set.")
