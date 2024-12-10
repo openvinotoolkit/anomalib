@@ -588,10 +588,10 @@ class VideoBatchValidator:
         Examples:
             >>> import torch
             >>> from anomalib.data.validators import VideoBatchValidator
-            >>> gt_masks = torch.rand(2, 10, 224, 224) > 0.5  # 2 videos, 10 frames each
+            >>> gt_masks = torch.rand(10, 224, 224) > 0.5  # 10 frames each
             >>> validated_masks = VideoBatchValidator.validate_gt_mask(gt_masks)
             >>> print(validated_masks.shape)
-            torch.Size([2, 10, 224, 224])
+            torch.Size([10, 224, 224])
             >>> single_frame_masks = torch.rand(4, 456, 256) > 0.5  # 4 single-frame images
             >>> validated_single_frame = VideoBatchValidator.validate_gt_mask(single_frame_masks)
             >>> print(validated_single_frame.shape)
