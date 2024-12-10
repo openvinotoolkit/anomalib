@@ -87,6 +87,9 @@ class Dfkde(MemoryBankMixin, AnomalibModule):
         embedding = self.model(batch.image)
         self.embeddings.append(embedding)
 
+        # Return a dummy loss tensor
+        return torch.tensor(0.0, requires_grad=True, device=self.device)
+
     def fit(self) -> None:
         """Fit a KDE Model to the embedding collected from the training set."""
         embeddings = torch.vstack(self.embeddings)
