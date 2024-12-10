@@ -1,0 +1,144 @@
+# Test Suite Workflow
+#
+# This reusable workflow executes comprehensive test suites with configurable
+# parameters for different test types and environments.
+#
+# Key Features:
+# - Parallel test execution
+# - Multiple test types support
+# - Coverage reporting
+# - Configurable timeouts
+# - Result aggregation
+#
+# Process Stages:
+# 1. Unit Testing:
+#    - Environment setup
+#    - Test execution
+#    - Coverage generation
+#
+# 2. Integration Testing:
+#    - Environment preparation
+#    - Test execution
+#    - Result collection
+#
+# 3. Results Processing:
+#    - Coverage reporting
+#    - Result aggregation
+#    - Artifact creation
+#
+# Required Inputs:
+# - python-version: Python version for tests (default: "3.10")
+# - test-types: Types of tests to run (default: "unit,integration")
+# - unit-test-timeout: Minutes before timeout (default: 10)
+# - integration-test-timeout: Minutes before timeout (default: 30)
+#
+# Required Secrets:
+# - codecov-token: Token for coverage reporting (optional)
+#
+# Outputs:
+# - test-results: Path to test results artifact
+#
+# Example Usage:
+# 1. Basic Test Run:
+#    jobs:
+#      test:
+#        uses: ./.github/workflows/_reusable-test-suite.yaml
+#        with:
+#          test-types: "unit,integration"
+#
+# 2. Custom Configuration:
+#    jobs:
+#      test:
+#        uses: ./.github/workflows/_reusable-test-suite.yaml
+#        with:
+#          python-version: "3.11"
+#          test-types: "unit"
+#          unit-test-timeout: 15
+#        secrets:
+#          codecov-token: ${{ secrets.CODECOV_TOKEN }}
+#
+# Note: Requires properly configured pytest environment and test structure
+
+name: Reusable Test Suite
+
+on:
+  workflow_call:
+    inputs:
+      python-version:
+        description: "Python version to use for tests"
+        type: string
+        default: "3.10"
+      test-types:
+        description: "Types of tests to run (comma-separated: unit,integration)"
+        type: string
+        default: "unit,integration"
+      unit-test-timeout:
+        description: "Timeout for unit tests (minutes)"
+        type: number
+        default: 10
+      integration-test-timeout:
+        description: "Timeout for integration tests (minutes)"
+        type: number
+        default: 30
+    secrets:
+      codecov-token:
+        required: false
+        description: "Token for Codecov upload"
+    outputs:
+      test-results:
+        description: "Path to test results artifact"
+        value: ${{ jobs.publish-results.outputs.artifact-path }}
+
+jobs:
+  unit-tests:
+    if: contains(inputs.test-types, 'unit')
+    runs-on: ubuntu-latest
+    timeout-minutes: ${{ inputs.unit-test-timeout }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run unit tests
+        uses: ./.github/actions/pytest
+        with:
+          python-version: ${{ inputs.python-version }}
+          test-type: "unit"
+          codecov-token: ${{ secrets.codecov-token }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: unit-test-results
+          path: |
+            pytest.xml
+            coverage.xml
+          retention-days: 7
+
+  integration-tests:
+    if: contains(inputs.test-types, 'integration')
+    runs-on: ubuntu-latest
+    timeout-minutes: ${{ inputs.integration-test-timeout }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run integration tests
+        uses: ./.github/actions/pytest
+        with:
+          python-version: ${{ inputs.python-version }}
+          test-type: "integration"
+          codecov-token: ${{ secrets.codecov-token }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: integration-test-results
+          path: |
+            pytest.xml
+            coverage.xml
+          retention-days: 7
+
+  publish-results:
+    needs: [unit-tests, integration-tests]
+    if: always()
+    runs-on: ubuntu-latest
+    outputs:
+      artifact-path: ${{ steps.merge-results.outputs.artifact-path }}
+    steps:
+      - name: Merge test results
+        id: merge-results
+        run: echo "artifact-path=test-results" >> $GITHUB_OUTPUT

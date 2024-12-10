@@ -1,0 +1,186 @@
+# ClamAV Scanner Action
+#
+# This composite action executes antivirus scanning using ClamAV,
+# providing malware detection and security analysis.
+#
+# Key Features:
+# - Malware detection
+# - Real-time database updates
+# - Configurable scan scope
+# - Exclusion support
+# - Performance optimization
+#
+# Process Stages:
+# 1. Environment Setup:
+#    - ClamAV installation
+#    - Database updates
+#    - Cache configuration
+#
+# 2. Scan Execution:
+#    - Target selection
+#    - Exclusion application
+#    - Threat detection
+#
+# 3. Results Processing:
+#    - Report generation
+#    - Threat analysis
+#    - Finding summary
+#
+# Required Inputs:
+# - scan_scope: Files to scan
+# - exclude_dirs: Directories to skip
+# - max_file_size: Size limit for scanning
+#
+# Outputs:
+# - scan_result: Scan exit code
+# - report_path: Results location
+# - threats_found: Number of threats
+#
+# Example Usage:
+# steps:
+#   - uses: ./.github/actions/security/clamav
+#     with:
+#       scan_scope: "changed"
+#       exclude_dirs: ".git,node_modules"
+#
+# Note: Requires sufficient disk space for virus database
+
+name: "ClamAV Security Scan"
+description: "Runs ClamAV antivirus scanner with configurable options"
+
+inputs:
+  scan_scope:
+    description: "Scope of files to scan (all/changed)"
+    required: false
+    default: "changed"
+  paths:
+    description: "Paths to scan when using all scope"
+    required: false
+    default: "."
+  exclude_dirs:
+    description: "Directories to exclude from scan"
+    required: false
+    default: ".git,node_modules,venv"
+  max_file_size:
+    description: "Maximum file size to scan in MB"
+    required: false
+    default: "100"
+  max_scan_size:
+    description: "Maximum scan data size in MB"
+    required: false
+    default: "400"
+  output_format:
+    description: "Format for scan results (json/txt)"
+    required: false
+    default: "json"
+  fail_on_findings:
+    description: "Whether to fail the action if threats are found"
+    required: false
+    default: "true"
+
+outputs:
+  scan_result:
+    description: "Exit code of the ClamAV scan"
+    value: ${{ steps.run-clamav.outputs.exit_code }}
+  report_path:
+    description: "Path to the generated report file"
+    value: ${{ steps.run-clamav.outputs.report_path }}
+  threats_found:
+    description: "Number of threats found during scan"
+    value: ${{ steps.run-clamav.outputs.threats_found }}
+
+runs:
+  using: composite
+  steps:
+    - name: Install ClamAV
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y clamav clamav-daemon
+        sudo systemctl stop clamav-freshclam
+
+    - name: Update virus definitions
+      shell: bash
+      run: sudo freshclam --quiet
+
+    - name: Get changed files
+      if: inputs.scan_scope == 'changed'
+      id: changed-files
+      uses: tj-actions/changed-files@v41
+
+    - name: Run ClamAV scan
+      id: run-clamav
+      shell: bash
+      run: |
+        REPORT_FILE="clamav-report.${{ inputs.output_format }}"
+        EXCLUDE_DIRS=$(echo "${{ inputs.exclude_dirs }}" | tr ',' ' ' | sed 's/[^ ]* */--exclude-dir=&/g')
+
+        # Convert MB to bytes for ClamAV
+        MAX_FILE_SIZE=$(( ${{ inputs.max_file_size }} * 1024 * 1024 ))
+        MAX_SCAN_SIZE=$(( ${{ inputs.max_scan_size }} * 1024 * 1024 ))
+
+        if [[ "${{ inputs.scan_scope }}" == "changed" && -n "${{ steps.changed-files.outputs.all_changed_files }}" ]]; then
+          echo "Running ClamAV on changed files"
+          FILES="${{ steps.changed-files.outputs.all_changed_files }}"
+          SCAN_CMD="clamscan"
+        else
+          echo "Running ClamAV on all files in ${{ inputs.paths }}"
+          FILES="${{ inputs.paths }}"
+          SCAN_CMD="clamscan -r"
+        fi
+
+        # Create temporary file for raw scan output
+        TEMP_OUTPUT=$(mktemp)
+
+        echo "Running scan with max file size: ${MAX_FILE_SIZE} bytes"
+        echo "Running scan with max scan size: ${MAX_SCAN_SIZE} bytes"
+
+        ${SCAN_CMD} \
+          --max-filesize=${MAX_FILE_SIZE} \
+          --max-scansize=${MAX_SCAN_SIZE} \
+          ${EXCLUDE_DIRS} \
+          ${FILES} 2>&1 | tee ${TEMP_OUTPUT}
+
+        SCAN_EXIT_CODE=${PIPESTATUS[0]}
+        echo "exit_code=${SCAN_EXIT_CODE}" >> $GITHUB_OUTPUT
+
+        # Parse scan summary
+        SCANNED_FILES=$(grep "Scanned files:" ${TEMP_OUTPUT} | awk '{print $3}')
+        INFECTED_FILES=$(grep "Infected files:" ${TEMP_OUTPUT} | awk '{print $3}')
+        START_DATE=$(grep "Start Date:" ${TEMP_OUTPUT} | cut -d: -f2- | xargs)
+        END_DATE=$(grep "End Date:" ${TEMP_OUTPUT} | cut -d: -f2- | xargs)
+
+        # Generate report in requested format
+        if [[ "${{ inputs.output_format }}" == "json" ]]; then
+          {
+            echo "{"
+            echo "  \"scan_summary\": {"
+            echo "    \"files_scanned\": ${SCANNED_FILES:-0},"
+            echo "    \"threats_found\": ${INFECTED_FILES:-0},"
+            echo "    \"start_date\": \"${START_DATE}\","
+            echo "    \"end_date\": \"${END_DATE}\""
+            echo "  },"
+            echo "  \"threats\": ["
+            # Only try to process threats if there are any
+            if [ "${INFECTED_FILES:-0}" -gt 0 ]; then
+              grep "FOUND" ${TEMP_OUTPUT} | while IFS= read -r line; do
+                FILE=$(echo "$line" | cut -d: -f1)
+                THREAT=$(echo "$line" | awk '{print $NF}')
+                echo "    {\"file\": \"${FILE}\", \"threat\": \"${THREAT}\"},"
+              done | sed '$ s/,$//'
+            fi
+            echo "  ]"
+            echo "}"
+          } > "${REPORT_FILE}"
+        else
+          cp ${TEMP_OUTPUT} "${REPORT_FILE}"
+        fi
+
+        echo "report_path=${REPORT_FILE}" >> $GITHUB_OUTPUT
+        echo "threats_found=${INFECTED_FILES:-0}" >> $GITHUB_OUTPUT
+
+        rm ${TEMP_OUTPUT}
+
+        if [[ "${{ inputs.fail_on_findings }}" == "true" && "${INFECTED_FILES:-0}" -gt 0 ]]; then
+          exit 1
+        fi

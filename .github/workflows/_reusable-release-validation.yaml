@@ -1,0 +1,174 @@
+# Release Validation Workflow
+#
+# This reusable workflow performs comprehensive validation of releases,
+# including quality checks, testing, security scanning, and artifact building.
+#
+# Key Features:
+# - Version format validation
+# - Code quality verification
+# - Test suite execution
+# - Security scanning
+# - Package building
+# - Pre-release validation
+#
+# Process Stages:
+# 1. Version Validation:
+#    - Checks version string format
+#    - Validates pre-release compatibility
+#    - Ensures version consistency
+#
+# 2. Quality Assurance:
+#    - Runs code quality checks
+#    - Performs style verification
+#    - Validates documentation
+#
+# 3. Testing:
+#    - Executes unit tests
+#    - Runs integration tests
+#    - Generates coverage reports
+#
+# 4. Security:
+#    - Performs security scans
+#    - Checks dependencies
+#    - Validates compliance
+#
+# 5. Build Process:
+#    - Creates distribution packages
+#    - Verifies package integrity
+#    - Prepares artifacts
+#
+# Required Inputs:
+# - version: Version string to validate
+# - python-version: Python version for building
+# - node-version: Node.js version for tools
+# - verify-package: Whether to verify built package
+# - dry-run: Run without creating artifacts
+# - allow-prerelease: Allow RC versions
+#
+# Required Secrets:
+# - codecov-token: Token for coverage reporting
+#
+# Outputs:
+# - version: Validated version string
+# - artifact-name: Name of built artifact
+#
+# Example Usage:
+# 1. Basic Validation:
+#    jobs:
+#      validate:
+#        uses: ./.github/workflows/_reusable-release-validation.yaml
+#        with:
+#          version: "v1.2.3"
+#          python-version: "3.10"
+#          node-version: "18.15.0"
+#        secrets:
+#          codecov-token: ${{ secrets.CODECOV_TOKEN }}
+#
+# 2. Pre-release Validation:
+#    jobs:
+#      rc-validate:
+#        uses: ./.github/workflows/_reusable-release-validation.yaml
+#        with:
+#          version: "v1.2.3-rc1"
+#          python-version: "3.10"
+#          node-version: "18.15.0"
+#          allow-prerelease: true
+#        secrets:
+#          codecov-token: ${{ secrets.CODECOV_TOKEN }}
+#
+# Note: This workflow is a critical part of the release pipeline and should
+# be completed successfully before proceeding with RC or production releases.
+
+name: Release Validation
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        required: true
+        type: string
+      python-version:
+        required: true
+        type: string
+      node-version:
+        required: true
+        type: string
+      verify-package:
+        required: false
+        type: boolean
+        default: true
+      dry-run:
+        required: false
+        type: boolean
+        default: false
+      allow-prerelease:
+        required: false
+        type: boolean
+        default: false
+    secrets:
+      codecov-token:
+        required: true
+    outputs:
+      version:
+        description: "Validated version string"
+        value: ${{ jobs.version-check.outputs.version }}
+      artifact-name:
+        description: "Name of the built artifact"
+        value: ${{ jobs.build.outputs.artifact-name }}
+
+jobs:
+  version-check:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.validate-version.outputs.version }}
+    steps:
+      - name: Validate version
+        id: validate-version
+        run: |
+          VERSION="${{ inputs.version }}"
+          if [[ ! $VERSION =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-rc[0-9]+)?$ ]]; then
+            echo "::error::Invalid version format: $VERSION"
+            exit 1
+          fi
+          if [[ $VERSION =~ -rc[0-9]+$ ]] && [[ "${{ inputs.allow-prerelease }}" != "true" ]]; then
+            echo "::error::Pre-release versions not allowed"
+            exit 1
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+  quality:
+    needs: [version-check]
+    uses: ./.github/workflows/_reusable-code-quality.yaml
+    with:
+      python-version: ${{ inputs.python-version }}
+      node-version: ${{ inputs.node-version }}
+
+  tests:
+    needs: [version-check]
+    uses: ./.github/workflows/_reusable-test-suite.yaml
+    with:
+      python-version: ${{ inputs.python-version }}
+      test-types: "unit,integration"
+      unit-test-timeout: 10
+      integration-test-timeout: 30
+    secrets:
+      codecov-token: ${{ secrets.codecov-token }}
+
+  security:
+    needs: [version-check]
+    uses: ./.github/workflows/_reusable-security-scan.yaml
+    with:
+      tools: "bandit,semgrep,trivy,clamav"
+      scan-scope: "all"
+      severity-level: "LOW"
+      fail-on-findings: true
+
+  build:
+    needs: [version-check, quality, tests, security]
+    if: |
+      !inputs.dry_run &&
+      !failure() && !cancelled()
+    uses: ./.github/workflows/_reusable-artifact-builder.yaml
+    with:
+      python-version: ${{ inputs.python-version }}
+      verify-package: ${{ inputs.verify-package }}
