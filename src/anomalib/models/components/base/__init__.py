@@ -3,7 +3,7 @@
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from .anomaly_module import AnomalibModule
+from .anomalib_module import AnomalibModule
 from .buffer_list import BufferListMixin
 from .dynamic_buffer import DynamicBufferMixin
 from .memory_bank_module import MemoryBankMixin
