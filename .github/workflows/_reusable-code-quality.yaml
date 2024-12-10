@@ -13,7 +13,6 @@
 # Process Stages:
 # 1. Environment Preparation:
 #    - Python setup
-#    - Node.js setup
 #    - Cache configuration
 #
 # 2. Quality Checks:
@@ -29,7 +28,6 @@
 #
 # Required Inputs:
 # - python-version: Python version for checks (default: "3.10")
-# - node-version: Node.js version for checks (default: "18.15.0")
 #
 # Example Usage:
 # 1. Default Configuration:
@@ -43,7 +41,6 @@
 #        uses: ./.github/workflows/_reusable-code-quality.yaml
 #        with:
 #          python-version: "3.11"
-#          node-version: "20.0.0"
 #
 # Note: Requires configured pre-commit hooks in repository
 
@@ -56,10 +53,6 @@ on:
         description: "Python version for checks"
         type: string
         default: "3.10"
-      node-version:
-        description: "Node.js version for checks"
-        type: string
-        default: "18.15.0"
 
 jobs:
   pre-commit:
@@ -72,4 +65,3 @@ jobs:
       - uses: ./.github/actions/code-quality/pre-commit
         with:
           python-version: ${{ inputs.python-version }}
-          node-version: ${{ inputs.node-version }}

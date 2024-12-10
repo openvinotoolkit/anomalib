@@ -68,7 +68,6 @@ jobs:
     with:
       version: ${{ github.event_name == 'push' && github.ref_name || inputs.version }}
       python-version: "3.10"
-      node-version: "18.15.0"
       verify-package: true
       dry-run: ${{ github.event.inputs.dry_run || false }}
       allow-prerelease: true

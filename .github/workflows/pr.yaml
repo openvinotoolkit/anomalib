@@ -52,7 +52,6 @@ jobs:
     uses: ./.github/workflows/_reusable-code-quality.yaml
     with:
       python-version: "3.10"
-      node-version: "18.15.0"
 
   # Test suite job using reusable workflow
   tests:

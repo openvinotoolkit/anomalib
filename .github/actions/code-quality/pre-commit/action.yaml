@@ -28,14 +28,13 @@
 #
 # Required Inputs:
 # - python-version: Python version to use
-# - node-version: Node.js version to use
+# - node-version: Node.js version to use (defaults to "20")
 #
 # Example Usage:
 # steps:
 #   - uses: ./.github/actions/code-quality/pre-commit
 #     with:
 #       python-version: "3.11"
-#       node-version: "20.0.0"
 #
 # Note: Requires configured pre-commit hooks in repository
 
@@ -50,7 +49,7 @@ inputs:
   node-version:
     description: "Node.js version to use"
     required: false
-    default: "18.15.0"
+    default: "20"
   skip:
     description: "Comma-separated list of hooks to skip"
     required: false
