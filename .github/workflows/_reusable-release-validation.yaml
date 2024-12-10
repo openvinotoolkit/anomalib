@@ -136,14 +136,25 @@ jobs:
     with:
       python-version: ${{ inputs.python-version }}
 
-  tests:
+  unit-tests:
     needs: [version-check]
     uses: ./.github/workflows/_reusable-test-suite.yaml
     with:
       python-version: ${{ inputs.python-version }}
-      test-types: "unit,integration"
-      unit-test-timeout: 10
-      integration-test-timeout: 30
+      test-type: "unit"
+      runner: "ubuntu-latest"
+      timeout: 10
+    secrets:
+      codecov-token: ${{ secrets.codecov-token }}
+
+  integration-tests:
+    needs: [version-check]
+    uses: ./.github/workflows/_reusable-test-suite.yaml
+    with:
+      python-version: ${{ inputs.python-version }}
+      test-type: "integration"
+      runner: "self-hosted"
+      timeout: 30
     secrets:
       codecov-token: ${{ secrets.codecov-token }}
 
@@ -157,7 +168,7 @@ jobs:
       fail-on-findings: true
 
   build:
-    needs: [version-check, quality, tests, security]
+    needs: [version-check, quality, unit-tests, integration-tests, security]
     if: |
       !inputs.dry_run &&
       !failure() && !cancelled()
