@@ -54,12 +54,25 @@ jobs:
       python-version: "3.10"
 
   # Test suite job using reusable workflow
-  tests:
+  unit-tests:
     uses: ./.github/workflows/_reusable-test-suite.yaml
     with:
-      test-types: "unit,integration"
+      test-type: "unit"
+      runner: "ubuntu-latest"
+      timeout: 10
     secrets:
       codecov-token: ${{ secrets.CODECOV_TOKEN }}
+
+  integration-tests:
+    uses: ./.github/workflows/_reusable-test-suite.yaml
+    with:
+      test-type: "integration"
+      runner: "self-hosted"
+      timeout: 30
+    secrets:
+      codecov-token: ${{ secrets.CODECOV_TOKEN }}
+
+  # NOTE: When we have e2e or other tests, we can add them here.
 
   # Security scanning job using reusable workflow
   security:

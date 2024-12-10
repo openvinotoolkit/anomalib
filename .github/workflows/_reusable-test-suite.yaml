@@ -28,9 +28,9 @@
 #
 # Required Inputs:
 # - python-version: Python version for tests (default: "3.10")
-# - test-types: Types of tests to run (default: "unit,integration")
-# - unit-test-timeout: Minutes before timeout (default: 10)
-# - integration-test-timeout: Minutes before timeout (default: 30)
+# - test-type: Type of test to run (unit/integration/e2e)
+# - runner: Runner to use for the tests
+# - timeout: Test timeout in minutes
 #
 # Required Secrets:
 # - codecov-token: Token for coverage reporting (optional)
@@ -44,7 +44,7 @@
 #      test:
 #        uses: ./.github/workflows/_reusable-test-suite.yaml
 #        with:
-#          test-types: "unit,integration"
+#          test-type: "unit"
 #
 # 2. Custom Configuration:
 #    jobs:
@@ -52,8 +52,8 @@
 #        uses: ./.github/workflows/_reusable-test-suite.yaml
 #        with:
 #          python-version: "3.11"
-#          test-types: "unit"
-#          unit-test-timeout: 15
+#          test-type: "unit"
+#          timeout: 15
 #        secrets:
 #          codecov-token: ${{ secrets.CODECOV_TOKEN }}
 #
@@ -68,18 +68,18 @@ on:
         description: "Python version to use for tests"
         type: string
         default: "3.10"
-      test-types:
-        description: "Types of tests to run (comma-separated: unit,integration)"
+      test-type:
+        description: "Type of test to run (unit/integration/e2e)"
         type: string
-        default: "unit,integration"
-      unit-test-timeout:
-        description: "Timeout for unit tests (minutes)"
+        required: true
+      runner:
+        description: "Runner to use for the tests"
+        type: string
+        default: "ubuntu-latest"
+      timeout:
+        description: "Test timeout in minutes"
         type: number
         default: 10
-      integration-test-timeout:
-        description: "Timeout for integration tests (minutes)"
-        type: number
-        default: 30
     secrets:
       codecov-token:
         required: false
@@ -87,58 +87,23 @@ on:
     outputs:
       test-results:
         description: "Path to test results artifact"
-        value: ${{ jobs.publish-results.outputs.artifact-path }}
+        value: ${{ jobs.test.outputs.artifact-path }}
 
 jobs:
-  unit-tests:
-    if: contains(inputs.test-types, 'unit')
-    runs-on: ubuntu-latest
-    timeout-minutes: ${{ inputs.unit-test-timeout }}
+  test:
+    runs-on: ${{ inputs.runner }}
+    timeout-minutes: ${{ inputs.timeout }}
     steps:
+      - name: Verify GPU availability
+        if: contains(inputs.runner, 'self-hosted')
+        shell: bash
+        run: |
+          nvidia-smi || echo "::error::No GPU found"
+
       - uses: actions/checkout@v4
-      - name: Run unit tests
+      - name: Run tests
         uses: ./.github/actions/pytest
         with:
           python-version: ${{ inputs.python-version }}
-          test-type: "unit"
+          test-type: ${{ inputs.test-type }}
           codecov-token: ${{ secrets.codecov-token }}
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: unit-test-results
-          path: |
-            pytest.xml
-            coverage.xml
-          retention-days: 7
-
-  integration-tests:
-    if: contains(inputs.test-types, 'integration')
-    runs-on: ubuntu-latest
-    timeout-minutes: ${{ inputs.integration-test-timeout }}
-    steps:
-      - uses: actions/checkout@v4
-      - name: Run integration tests
-        uses: ./.github/actions/pytest
-        with:
-          python-version: ${{ inputs.python-version }}
-          test-type: "integration"
-          codecov-token: ${{ secrets.codecov-token }}
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: integration-test-results
-          path: |
-            pytest.xml
-            coverage.xml
-          retention-days: 7
-
-  publish-results:
-    needs: [unit-tests, integration-tests]
-    if: always()
-    runs-on: ubuntu-latest
-    outputs:
-      artifact-path: ${{ steps.merge-results.outputs.artifact-path }}
-    steps:
-      - name: Merge test results
-        id: merge-results
-        run: echo "artifact-path=test-results" >> $GITHUB_OUTPUT
