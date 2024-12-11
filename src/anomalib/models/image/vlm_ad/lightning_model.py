@@ -102,7 +102,8 @@ class VlmAd(AnomalibModule):
         if image_size is not None:
             logger.warning("Ignoring image_size argument as each backend has its own transforms.")
 
-    def default_post_processor(self) -> PostProcessor | None:  # noqa: PLR6301
+    @classmethod
+    def configure_post_processor(cls) -> PostProcessor | None:
         """Post processing is not required for this model."""
         return None
 

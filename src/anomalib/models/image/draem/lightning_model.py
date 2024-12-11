@@ -21,6 +21,7 @@ from anomalib.metrics import Evaluator
 from anomalib.models.components import AnomalibModule
 from anomalib.post_processing import PostProcessor
 from anomalib.pre_processing import PreProcessor
+from anomalib.visualization import Visualizer
 
 from .loss import DraemLoss
 from .torch_model import DraemModel
@@ -51,10 +52,16 @@ class Draem(AnomalibModule):
         anomaly_source_path: str | None = None,
         beta: float | tuple[float, float] = (0.1, 1.0),
         pre_processor: PreProcessor | bool = True,
-        post_processor: PostProcessor | None = None,
+        post_processor: PostProcessor | bool = True,
         evaluator: Evaluator | bool = True,
+        visualizer: Visualizer | bool = True,
     ) -> None:
-        super().__init__(pre_processor=pre_processor, post_processor=post_processor, evaluator=evaluator)
+        super().__init__(
+            pre_processor=pre_processor,
+            post_processor=post_processor,
+            evaluator=evaluator,
+            visualizer=visualizer,
+        )
 
         self.augmenter = PerlinAnomalyGenerator(anomaly_source_path=anomaly_source_path, blend_factor=beta)
         self.model = DraemModel(sspcab=enable_sspcab)

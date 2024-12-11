@@ -8,12 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
-- Add `AUPIMO` tutorials notebooks in https://github.com/openvinotoolkit/anomalib/pull/2330 and https://github.com/openvinotoolkit/anomalib/pull/2336
-- Add `AUPIMO` metric by [jpcbertoldo](https://github.com/jpcbertoldo) in https://github.com/openvinotoolkit/anomalib/pull/1726 and refactored by [ashwinvaidya17](https://github.com/ashwinvaidya17) in https://github.com/openvinotoolkit/anomalib/pull/2329
-
 ### Removed
-
-- Remove `RKDE` in https://github.com/openvinotoolkit/anomalib/pull/2455
 
 ### Changed
 
@@ -22,6 +17,47 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Fixed
 
 ### New Contributors
+
+## v2.0.0
+
+### Added
+
+- 🚀 Add `Dataclasses` and `PostProcessor` by @djdameln in https://github.com/openvinotoolkit/anomalib/pull/2098
+- 🚀 Add dataclass validators by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/2307
+- 🚀 Add Customisable Image Visualizer by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/2334
+- 🚀 Metrics redesign by @djdameln in https://github.com/openvinotoolkit/anomalib/pull/2326
+- 🚀 Add `PreProcessor` to `AnomalyModule` by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/2358
+- 🚀 Add Multi-GPU Training Support by @ashwinvaidya17 in https://github.com/openvinotoolkit/anomalib/pull/2435
+- 🔨 Refactor: Add missing auxiliary attributes to `AnomalibModule` by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/2460
+- 🔨 Rename `AnomalyModule` to `AnomalibModule` by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/2423
+
+- 🚀 Add `AUPIMO` metric by [jpcbertoldo](https://github.com/jpcbertoldo) in https://github.com/openvinotoolkit/anomalib/pull/1726 and refactored by [ashwinvaidya17](https://github.com/ashwinvaidya17) in https://github.com/openvinotoolkit/anomalib/pull/2329
+- 📚 Add `AUPIMO` tutorials notebooks in https://github.com/openvinotoolkit/anomalib/pull/2330 and https://github.com/openvinotoolkit/anomalib/pull/2336
+
+### Removed
+
+- 🗑️ Remove RKDE by @ashwinvaidya17 in https://github.com/openvinotoolkit/anomalib/pull/2455
+- 🗑️ Remove rich methods by @ashwinvaidya17 in https://github.com/openvinotoolkit/anomalib/pull/2283
+- 🔨 Replace `imgaug` with Native PyTorch Transforms by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/2436
+- 🗑️ Remove task type by @djdameln in https://github.com/openvinotoolkit/anomalib/pull/2450
+
+### Changed
+
+- Refactor Lightning's `trainer.model` to `trainer.lightning_module` by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/2255
+- Update open-clip-torch requirement from <2.26.1,>=2.23.0 to >=2.23.0,<2.26.2 by @dependabot in https://github.com/openvinotoolkit/anomalib/pull/2189
+- Update sphinx requirement by @dependabot in https://github.com/openvinotoolkit/anomalib/pull/2235
+- Update ruff configuration by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/2269
+- Revert "Update open-clip-torch requirement from <2.26.1,>=2.23.0 to >=2.23.0,<2.26.2" by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/2270
+- 🔨 Lint: U\* 🔨 Refactor BaseThreshold to Threshold by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/2278
+- 🔨 Enable Ruff Rules: PLW1514 and PLR6201 by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/2284
+- 🔨 Update nncf export by @ashwinvaidya17 in https://github.com/openvinotoolkit/anomalib/pull/2286
+- 🔨 Linting: Enable `PLR6301`, # could be a function, class method or static method by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/2288
+- 🔨 Restructure unit tests and fix ruff issues by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/2306pdate Ruff Config - Add Missing Copyright Headers by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/2281
+- 🔨 optimization/quantization added into 500 series by @paularamo in https://github.com/openvinotoolkit/anomalib/pull/2197
+
+### Fixed
+
+- 🐞Replace package_available with module_available by @harimkang in https://github.com/openvinotoolkit/anomalib/pull/2407
 
 ## [v1.2.0]
 

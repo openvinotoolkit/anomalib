@@ -21,8 +21,9 @@ model:
       - 0.1
       - 1.0
     pre_processor: true
-    post_processor: null
+    post_processor: true
     evaluator: true
+    visualizer: true
 normalization:
   normalization_method: min_max
 metrics:
