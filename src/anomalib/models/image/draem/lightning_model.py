@@ -15,8 +15,13 @@ from torch import nn
 from torchvision.transforms.v2 import Compose, Resize, Transform
 
 from anomalib import LearningType
-from anomalib.data.utils import Augmenter
-from anomalib.models.components import AnomalyModule
+from anomalib.data import Batch
+from anomalib.data.utils.generators.perlin import PerlinAnomalyGenerator
+from anomalib.metrics import Evaluator
+from anomalib.models.components import AnomalibModule
+from anomalib.post_processing import PostProcessor
+from anomalib.pre_processing import PreProcessor
+from anomalib.visualization import Visualizer
 
 from .loss import DraemLoss
 from .torch_model import DraemModel
@@ -24,7 +29,7 @@ from .torch_model import DraemModel
 __all__ = ["Draem"]
 
 
-class Draem(AnomalyModule):
+class Draem(AnomalibModule):
     """DRÆM: A discriminatively trained reconstruction embedding for surface anomaly detection.
 
     Args:
@@ -35,6 +40,9 @@ class Draem(AnomalyModule):
         anomaly_source_path (str | None): Path to folder that contains the anomaly source images. Random noise will
             be used if left empty.
             Defaults to ``None``.
+        pre_processor (PreProcessor, optional): Pre-processor for the model.
+            This is used to pre-process the input data before it is passed to the model.
+            Defaults to ``None``.
     """
 
     def __init__(
@@ -43,10 +51,19 @@ class Draem(AnomalyModule):
         sspcab_lambda: float = 0.1,
         anomaly_source_path: str | None = None,
         beta: float | tuple[float, float] = (0.1, 1.0),
+        pre_processor: PreProcessor | bool = True,
+        post_processor: PostProcessor | bool = True,
+        evaluator: Evaluator | bool = True,
+        visualizer: Visualizer | bool = True,
     ) -> None:
-        super().__init__()
+        super().__init__(
+            pre_processor=pre_processor,
+            post_processor=post_processor,
+            evaluator=evaluator,
+            visualizer=visualizer,
+        )
 
-        self.augmenter = Augmenter(anomaly_source_path, beta=beta)
+        self.augmenter = PerlinAnomalyGenerator(anomaly_source_path=anomaly_source_path, blend_factor=beta)
         self.model = DraemModel(sspcab=enable_sspcab)
         self.loss = DraemLoss()
         self.sspcab = enable_sspcab
@@ -82,14 +99,14 @@ class Draem(AnomalyModule):
         self.model.reconstructive_subnetwork.encoder.mp4.register_forward_hook(get_activation("input"))
         self.model.reconstructive_subnetwork.encoder.block5.register_forward_hook(get_activation("output"))
 
-    def training_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> STEP_OUTPUT:
+    def training_step(self, batch: Batch, *args, **kwargs) -> STEP_OUTPUT:
         """Perform the training step of DRAEM.
 
         Feeds the original image and the simulated anomaly
         image through the network and computes the training loss.
 
         Args:
-            batch (dict[str, str | torch.Tensor]): Batch containing image filename, image, label and mask
+            batch (Batch): Batch containing image filename, image, label and mask
             args: Arguments.
             kwargs: Keyword arguments.
 
@@ -98,9 +115,9 @@ class Draem(AnomalyModule):
         """
         del args, kwargs  # These variables are not used.
 
-        input_image = batch["image"]
+        input_image = batch.image
         # Apply corruption to input image
-        augmented_image, anomaly_mask = self.augmenter.augment_batch(input_image)
+        augmented_image, anomaly_mask = self.augmenter(input_image)
         # Generate model prediction
         reconstruction, prediction = self.model(augmented_image)
         # Compute loss
@@ -115,11 +132,11 @@ class Draem(AnomalyModule):
         self.log("train_loss", loss.item(), on_epoch=True, prog_bar=True, logger=True)
         return {"loss": loss}
 
-    def validation_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> STEP_OUTPUT:
+    def validation_step(self, batch: Batch, *args, **kwargs) -> STEP_OUTPUT:
         """Perform the validation step of DRAEM. The Softmax predictions of the anomalous class are used as anomaly map.
 
         Args:
-            batch (dict[str, str | torch.Tensor]): Batch of input images
+            batch (Batch): Batch of input images
             args: Arguments.
             kwargs: Keyword arguments.
 
@@ -128,9 +145,8 @@ class Draem(AnomalyModule):
         """
         del args, kwargs  # These variables are not used.
 
-        prediction = self.model(batch["image"])
-        batch["anomaly_maps"] = prediction
-        return batch
+        prediction = self.model(batch.image)
+        return batch.update(**prediction._asdict())
 
     @property
     def trainer_arguments(self) -> dict[str, Any]:

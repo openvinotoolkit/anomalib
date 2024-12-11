@@ -12,16 +12,20 @@ from typing import Any
 
 import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT, OptimizerLRScheduler
-from torch import Tensor
 from torchvision.transforms.v2 import Compose, Resize, Transform
 
 from anomalib import LearningType
+from anomalib.data import Batch
 from anomalib.data.utils import DownloadInfo, download_and_extract
-from anomalib.data.utils.augmenter import Augmenter
-from anomalib.models.components import AnomalyModule
+from anomalib.data.utils.generators.perlin import PerlinAnomalyGenerator
+from anomalib.metrics import Evaluator
+from anomalib.models.components import AnomalibModule
 from anomalib.models.image.dsr.anomaly_generator import DsrAnomalyGenerator
 from anomalib.models.image.dsr.loss import DsrSecondStageLoss, DsrThirdStageLoss
 from anomalib.models.image.dsr.torch_model import DsrModel
+from anomalib.post_processing import PostProcessor
+from anomalib.pre_processing import PreProcessor
+from anomalib.visualization import Visualizer
 
 __all__ = ["Dsr"]
 
@@ -34,22 +38,38 @@ WEIGHTS_DOWNLOAD_INFO = DownloadInfo(
 )
 
 
-class Dsr(AnomalyModule):
+class Dsr(AnomalibModule):
     """DSR: A Dual Subspace Re-Projection Network for Surface Anomaly Detection.
 
     Args:
         latent_anomaly_strength (float): Strength of the generated anomalies in the latent space. Defaults to 0.2
         upsampling_train_ratio (float): Ratio of training steps for the upsampling module. Defaults to 0.7
+        pre_processor (PreProcessor, optional): Pre-processor for the model.
+            This is used to pre-process the input data before it is passed to the model.
+            Defaults to ``None``.
     """
 
-    def __init__(self, latent_anomaly_strength: float = 0.2, upsampling_train_ratio: float = 0.7) -> None:
-        super().__init__()
+    def __init__(
+        self,
+        latent_anomaly_strength: float = 0.2,
+        upsampling_train_ratio: float = 0.7,
+        pre_processor: PreProcessor | bool = True,
+        post_processor: PostProcessor | bool = True,
+        evaluator: Evaluator | bool = True,
+        visualizer: Visualizer | bool = True,
+    ) -> None:
+        super().__init__(
+            pre_processor=pre_processor,
+            post_processor=post_processor,
+            evaluator=evaluator,
+            visualizer=visualizer,
+        )
 
         self.automatic_optimization = False
         self.upsampling_train_ratio = upsampling_train_ratio
 
         self.quantized_anomaly_generator = DsrAnomalyGenerator()
-        self.perlin_generator = Augmenter()
+        self.perlin_generator = PerlinAnomalyGenerator()
         self.model = DsrModel(latent_anomaly_strength)
         self.second_stage_loss = DsrSecondStageLoss()
         self.third_stage_loss = DsrThirdStageLoss()
@@ -103,14 +123,14 @@ class Dsr(AnomalyModule):
         if self.current_epoch == self.second_phase:
             logger.info("Now training upsampling module.")
 
-    def training_step(self, batch: dict[str, str | Tensor]) -> STEP_OUTPUT:
+    def training_step(self, batch: Batch) -> STEP_OUTPUT:
         """Training Step of DSR.
 
         Feeds the original image and the simulated anomaly mask during first phase. During
         second phase, feeds a generated anomalous image to train the upsampling module.
 
         Args:
-            batch (dict[str, str | Tensor]): Batch containing image filename, image, label and mask
+            batch (Batch): Batch containing image filename, image, label and mask
 
         Returns:
             STEP_OUTPUT: Loss dictionary
@@ -119,7 +139,7 @@ class Dsr(AnomalyModule):
 
         if self.current_epoch < self.second_phase:
             # we are not yet training the upsampling module: we are only using the first optimizer
-            input_image = batch["image"]
+            input_image = batch.image
             # Create anomaly masks
             anomaly_mask = self.quantized_anomaly_generator.augment_batch(input_image)
             # Generate model prediction
@@ -143,9 +163,9 @@ class Dsr(AnomalyModule):
 
         else:
             # we are training the upsampling module
-            input_image = batch["image"]
+            input_image = batch.image
             # Generate anomalies
-            input_image, anomaly_maps = self.perlin_generator.augment_batch(input_image)
+            input_image, anomaly_maps = self.perlin_generator(input_image)
             # Get model prediction
             model_outputs = self.model(input_image)
             # Calculate loss
@@ -159,13 +179,13 @@ class Dsr(AnomalyModule):
         self.log("train_loss", loss.item(), on_epoch=True, prog_bar=True, logger=True)
         return {"loss": loss}
 
-    def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
+    def validation_step(self, batch: Batch, *args, **kwargs) -> STEP_OUTPUT:
         """Validation step of DSR.
 
         The Softmax predictions of the anomalous class are used as anomaly map.
 
         Args:
-            batch (dict[str, str | Tensor]): Batch of input images
+            batch (Batch): Batch of input images
             *args: unused
             **kwargs: unused
 
@@ -174,10 +194,8 @@ class Dsr(AnomalyModule):
         """
         del args, kwargs  # These variables are not used.
 
-        model_outputs = self.model(batch["image"])
-        batch["anomaly_maps"] = model_outputs["anomaly_map"]
-        batch["pred_scores"] = model_outputs["pred_score"]
-        return batch
+        predictions = self.model(batch.image)
+        return batch.update(**predictions._asdict())
 
     @property
     def trainer_arguments(self) -> dict[str, Any]:

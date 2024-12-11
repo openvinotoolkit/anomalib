@@ -32,7 +32,6 @@ configs/
     ├── padim.yaml
     ├── patchcore.yaml
     ├── reverse_distillation.yaml
-    ├── rkde.yaml
     └── stfpm.yaml
 
 ```

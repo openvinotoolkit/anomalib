@@ -224,7 +224,7 @@ def test_pimo(
         )
 
     # metric interface
-    metric = pimo.PIMO(
+    metric = pimo._PIMO(  # noqa: SLF001
         num_thresholds=7,
     )
     metric.update(anomaly_maps, masks)
@@ -306,7 +306,7 @@ def test_aupimo_values(
         assert anomaly_maps.min() <= thresh_lower_bound < thresh_upper_bound <= anomaly_maps.max()
 
     # metric interface
-    metric = pimo.AUPIMO(
+    metric = pimo._AUPIMO(  # noqa: SLF001
         num_thresholds=7,
         fpr_bounds=fpr_bounds,
         return_average=False,
@@ -317,7 +317,7 @@ def test_aupimo_values(
     do_assertions(pimo_result_from_metric, aupimo_result_from_metric)
 
     # metric interface
-    metric = pimo.AUPIMO(
+    metric = pimo._AUPIMO(  # noqa: SLF001
         num_thresholds=7,
         fpr_bounds=fpr_bounds,
         return_average=True,  # only return the average AUPIMO

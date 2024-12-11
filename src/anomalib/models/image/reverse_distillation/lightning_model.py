@@ -9,19 +9,23 @@ https://arxiv.org/abs/2201.10703v2
 from collections.abc import Sequence
 from typing import Any
 
-import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torch import optim
 
 from anomalib import LearningType
-from anomalib.models.components import AnomalyModule
+from anomalib.data import Batch
+from anomalib.metrics import Evaluator
+from anomalib.models.components import AnomalibModule
+from anomalib.post_processing import PostProcessor
+from anomalib.pre_processing import PreProcessor
+from anomalib.visualization import Visualizer
 
 from .anomaly_map import AnomalyMapGenerationMode
 from .loss import ReverseDistillationLoss
 from .torch_model import ReverseDistillationModel
 
 
-class ReverseDistillation(AnomalyModule):
+class ReverseDistillation(AnomalibModule):
     """PL Lightning Module for Reverse Distillation Algorithm.
 
     Args:
@@ -33,6 +37,9 @@ class ReverseDistillation(AnomalyModule):
             Defaults to ``AnomalyMapGenerationMode.ADD``.
         pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.
             Defaults to ``True``.
+        pre_processor (PreProcessor, optional): Pre-processor for the model.
+            This is used to pre-process the input data before it is passed to the model.
+            Defaults to ``None``.
     """
 
     def __init__(
@@ -41,21 +48,25 @@ class ReverseDistillation(AnomalyModule):
         layers: Sequence[str] = ("layer1", "layer2", "layer3"),
         anomaly_map_mode: AnomalyMapGenerationMode = AnomalyMapGenerationMode.ADD,
         pre_trained: bool = True,
+        pre_processor: PreProcessor | bool = True,
+        post_processor: PostProcessor | bool = True,
+        evaluator: Evaluator | bool = True,
+        visualizer: Visualizer | bool = True,
     ) -> None:
-        super().__init__()
+        super().__init__(
+            pre_processor=pre_processor,
+            post_processor=post_processor,
+            evaluator=evaluator,
+            visualizer=visualizer,
+        )
+        if self.input_size is None:
+            msg = "Input size is required for Reverse Distillation model."
+            raise ValueError(msg)
 
         self.backbone = backbone
         self.pre_trained = pre_trained
         self.layers = layers
         self.anomaly_map_mode = anomaly_map_mode
-
-        self.model: ReverseDistillationModel
-        self.loss = ReverseDistillationLoss()
-
-    def _setup(self) -> None:
-        if self.input_size is None:
-            msg = "Input size is required for Reverse Distillation model."
-            raise ValueError(msg)
 
         self.model = ReverseDistillationModel(
             backbone=self.backbone,
@@ -64,6 +75,7 @@ class ReverseDistillation(AnomalyModule):
             input_size=self.input_size,
             anomaly_map_mode=self.anomaly_map_mode,
         )
+        self.loss = ReverseDistillationLoss()
 
     def configure_optimizers(self) -> optim.Adam:
         """Configure optimizers for decoder and bottleneck.
@@ -77,7 +89,7 @@ class ReverseDistillation(AnomalyModule):
             betas=(0.5, 0.99),
         )
 
-    def training_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> STEP_OUTPUT:
+    def training_step(self, batch: Batch, *args, **kwargs) -> STEP_OUTPUT:
         """Perform a training step of Reverse Distillation Model.
 
         Features are extracted from three layers of the Encoder model. These are passed to the bottleneck layer
@@ -85,7 +97,7 @@ class ReverseDistillation(AnomalyModule):
         encoder and decoder features.
 
         Args:
-          batch (batch: dict[str, str | torch.Tensor]): Input batch
+          batch (batch: Batch): Input batch
           args: Additional arguments.
           kwargs: Additional keyword arguments.
 
@@ -94,18 +106,18 @@ class ReverseDistillation(AnomalyModule):
         """
         del args, kwargs  # These variables are not used.
 
-        loss = self.loss(*self.model(batch["image"]))
+        loss = self.loss(*self.model(batch.image))
         self.log("train_loss", loss.item(), on_epoch=True, prog_bar=True, logger=True)
         return {"loss": loss}
 
-    def validation_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> STEP_OUTPUT:
+    def validation_step(self, batch: Batch, *args, **kwargs) -> STEP_OUTPUT:
         """Perform a validation step of Reverse Distillation Model.
 
         Similar to the training step, encoder/decoder features are extracted from the CNN for each batch, and
         anomaly map is computed.
 
         Args:
-          batch (dict[str, str | torch.Tensor]): Input batch
+          batch (Batch): Input batch
           args: Additional arguments.
           kwargs: Additional keyword arguments.
 
@@ -115,8 +127,8 @@ class ReverseDistillation(AnomalyModule):
         """
         del args, kwargs  # These variables are not used.
 
-        batch["anomaly_maps"] = self.model(batch["image"])
-        return batch
+        predictions = self.model(batch.image)
+        return batch.update(**predictions._asdict())
 
     @property
     def trainer_arguments(self) -> dict[str, Any]:

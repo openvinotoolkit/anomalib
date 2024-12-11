@@ -3,29 +3,24 @@
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-import json
 import logging
-from collections.abc import Callable, Iterable
+from collections.abc import Iterable
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING, Any
 
-import numpy as np
 import torch
+from lightning.pytorch import LightningModule
 from lightning_utilities.core.imports import module_available
 from torch import nn
 from torchmetrics import Metric
-from torchvision.transforms.v2 import Transform
 
 from anomalib import TaskType
 from anomalib.data import AnomalibDataModule
-from anomalib.deploy.export import CompressionType, ExportType, InferenceModel
-from anomalib.metrics import create_metric_collection
+from anomalib.deploy.export import CompressionType, ExportType
 
 if TYPE_CHECKING:
     from importlib.util import find_spec
-
-    from torch.types import Number
 
     if find_spec("openvino") is not None:
         from openvino import CompiledModel
@@ -37,15 +32,11 @@ class ExportMixin:
     """This mixin allows exporting models to torch and ONNX/OpenVINO."""
 
     model: nn.Module
-    transform: Transform
-    configure_transforms: Callable
     device: torch.device
 
     def to_torch(
         self,
         export_root: Path | str,
-        transform: Transform | None = None,
-        task: TaskType | None = None,
     ) -> Path:
         """Export AnomalibModel to torch.
 
@@ -54,7 +45,7 @@ class ExportMixin:
             transform (Transform, optional): Input transforms used for the model. If not provided, the transform is
                 taken from the model.
                 Defaults to ``None``.
-            task (TaskType | None): Task type.
+            post_processor (nn.Module, optional): Post-processing module to apply to the model output.
                 Defaults to ``None``.
 
         Returns:
@@ -77,17 +68,12 @@ class ExportMixin:
 
             >>> model.to_torch(
             ...     export_root="path/to/export",
-            ...     transform=datamodule.test_data.transform,
-            ...     task=datamodule.test_data.task,
             ... )
         """
-        transform = transform or self.transform or self.configure_transforms()
-        inference_model = InferenceModel(model=self.model, transform=transform)
         export_root = _create_export_root(export_root, ExportType.TORCH)
-        metadata = self._get_metadata(task=task)
         pt_model_path = export_root / "model.pt"
         torch.save(
-            obj={"model": inference_model, "metadata": metadata},
+            obj={"model": self},
             f=pt_model_path,
         )
         return pt_model_path
@@ -96,8 +82,6 @@ class ExportMixin:
         self,
         export_root: Path | str,
         input_size: tuple[int, int] | None = None,
-        transform: Transform | None = None,
-        task: TaskType | None = None,
     ) -> Path:
         """Export model to onnx.
 
@@ -108,7 +92,7 @@ class ExportMixin:
             transform (Transform, optional): Input transforms used for the model. If not provided, the transform is
                 taken from the model.
                 Defaults to ``None``.
-            task (TaskType | None): Task type.
+            post_processor (nn.Module, optional): Post-processing module to apply to the model output.
                 Defaults to ``None``.
 
         Returns:
@@ -126,7 +110,6 @@ class ExportMixin:
             >>> model.to_onnx(
             ...     export_root="path/to/export",
             ...     transform=datamodule.test_data.transform,
-            ...     task=datamodule.test_data.task
             ... )
 
             Using Custom Transforms:
@@ -134,28 +117,28 @@ class ExportMixin:
 
             >>> model.to_onnx(
             ...     export_root="path/to/export",
-            ...     task="segmentation",
             ... )
         """
-        transform = transform or self.transform or self.configure_transforms()
-        inference_model = InferenceModel(model=self.model, transform=transform, disable_antialias=True)
         export_root = _create_export_root(export_root, ExportType.ONNX)
         input_shape = torch.zeros((1, 3, *input_size)) if input_size else torch.zeros((1, 3, 1, 1))
+        input_shape = input_shape.to(self.device)
         dynamic_axes = (
             {"input": {0: "batch_size"}, "output": {0: "batch_size"}}
             if input_size
             else {"input": {0: "batch_size", 2: "height", 3: "weight"}, "output": {0: "batch_size"}}
         )
-        _write_metadata_to_json(self._get_metadata(task), export_root)
         onnx_path = export_root / "model.onnx"
+        # apply pass through the model to get the output names
+        assert isinstance(self, LightningModule)  # mypy
+        output_names = [name for name, value in self.eval()(input_shape)._asdict().items() if value is not None]
         torch.onnx.export(
-            inference_model,
+            self,
             input_shape.to(self.device),
             str(onnx_path),
             opset_version=14,
             dynamic_axes=dynamic_axes,
             input_names=["input"],
-            output_names=["output"],
+            output_names=output_names,
         )
 
         return onnx_path
@@ -164,10 +147,9 @@ class ExportMixin:
         self,
         export_root: Path | str,
         input_size: tuple[int, int] | None = None,
-        transform: Transform | None = None,
         compression_type: CompressionType | None = None,
         datamodule: AnomalibDataModule | None = None,
-        metric: Metric | str | None = None,
+        metric: Metric | None = None,
         ov_args: dict[str, Any] | None = None,
         task: TaskType | None = None,
     ) -> Path:
@@ -185,7 +167,7 @@ class ExportMixin:
             datamodule (AnomalibDataModule | None, optional): Lightning datamodule.
                 Must be provided if ``CompressionType.INT8_PTQ`` or ``CompressionType.INT8_ACQ`` is selected.
                 Defaults to ``None``.
-            metric (Metric | str | None, optional): Metric to measure quality loss when quantizing.
+            metric (Metric | None, optional): Metric to measure quality loss when quantizing.
                 Must be provided if ``CompressionType.INT8_ACQ`` is selected and must return higher value for better
                 performance of the model.
                 Defaults to ``None``.
@@ -252,7 +234,7 @@ class ExportMixin:
         import openvino as ov
 
         with TemporaryDirectory() as onnx_directory:
-            model_path = self.to_onnx(onnx_directory, input_size, transform, task)
+            model_path = self.to_onnx(onnx_directory, input_size)
             export_root = _create_export_root(export_root, ExportType.OPENVINO)
             ov_model_path = export_root / "model.xml"
             ov_args = {} if ov_args is None else ov_args
@@ -264,7 +246,6 @@ class ExportMixin:
             # fp16 compression is enabled by default
             compress_to_fp16 = compression_type == CompressionType.FP16
             ov.save_model(model, ov_model_path, compress_to_fp16=compress_to_fp16)
-            _write_metadata_to_json(self._get_metadata(task), export_root)
 
         return ov_model_path
 
@@ -273,7 +254,7 @@ class ExportMixin:
         model: "CompiledModel",
         compression_type: CompressionType | None = None,
         datamodule: AnomalibDataModule | None = None,
-        metric: Metric | str | None = None,
+        metric: Metric | None = None,
         task: TaskType | None = None,
     ) -> "CompiledModel":
         """Compress OpenVINO model with NNCF.
@@ -352,7 +333,7 @@ class ExportMixin:
     def _accuracy_control_quantization_ov(
         model: "CompiledModel",
         datamodule: AnomalibDataModule | None = None,
-        metric: Metric | str | None = None,
+        metric: Metric | None = None,
         task: TaskType | None = None,
     ) -> "CompiledModel":
         """Accuracy-Control Quantization with NNCF.
@@ -361,7 +342,7 @@ class ExportMixin:
             datamodule (AnomalibDataModule | None, optional): Lightning datamodule.
                 Must be provided if ``CompressionType.INT8_PTQ`` or ``CompressionType.INT8_ACQ`` is selected.
                 Defaults to ``None``.
-            metric (Metric | str | None, optional): Metric to measure quality loss when quantizing.
+            metric (Metric | None, optional): Metric to measure quality loss when quantizing.
                 Must be provided if ``CompressionType.INT8_ACQ`` is selected and must return higher value for better
                 performance of the model.
                 Defaults to ``None``.
@@ -377,6 +358,9 @@ class ExportMixin:
             msg = "Datamodule must be provided for OpenVINO INT8_PTQ compression"
             raise ValueError(msg)
         datamodule.setup("fit")
+
+        # if task is not provided, use the task from the datamodule
+        task = task or datamodule.task
 
         if metric is None:
             msg = "Metric must be provided for OpenVINO INT8_ACQ compression"
@@ -397,9 +381,6 @@ class ExportMixin:
         calibration_dataset = nncf.Dataset(dataloader, lambda x: x["image"])
         validation_dataset = nncf.Dataset(datamodule.test_dataloader())
 
-        if isinstance(metric, str):
-            metric = create_metric_collection([metric])[metric]
-
         # validation function to evaluate the quality loss after quantization
         def val_fn(nncf_model: "CompiledModel", validation_data: Iterable) -> float:
             for batch in validation_data:
@@ -409,50 +390,6 @@ class ExportMixin:
             return metric.compute()
 
         return nncf.quantize_with_accuracy_control(model, calibration_dataset, validation_dataset, val_fn)
-
-    def _get_metadata(
-        self,
-        task: TaskType | None = None,
-    ) -> dict[str, Any]:
-        """Get metadata for the exported model.
-
-        Args:
-            task (TaskType | None): Task type.
-                Defaults to None.
-
-        Returns:
-            dict[str, Any]: Metadata for the exported model.
-        """
-        model_metadata = {}
-        cached_metadata: dict[str, Number | torch.Tensor] = {}
-        for threshold_name in ("image_threshold", "pixel_threshold"):
-            if hasattr(self, threshold_name):
-                cached_metadata[threshold_name] = getattr(self, threshold_name).cpu().value.item()
-        if hasattr(self, "normalization_metrics") and self.normalization_metrics.state_dict() is not None:
-            for key, value in self.normalization_metrics.state_dict().items():
-                cached_metadata[key] = value.cpu()
-        # Remove undefined values by copying in a new dict
-        model_metadata = {key: val for key, val in cached_metadata.items() if not np.isinf(val).all()}
-        del cached_metadata
-        metadata = {"task": task, **model_metadata}
-
-        # Convert torch tensors to python lists or values for json serialization.
-        for key, value in metadata.items():
-            if isinstance(value, torch.Tensor):
-                metadata[key] = value.numpy().tolist()
-
-        return metadata
-
-
-def _write_metadata_to_json(metadata: dict[str, Any], export_root: Path) -> None:
-    """Write metadata to json file.
-
-    Args:
-        metadata (dict[str, Any]): Metadata to export.
-        export_root (Path): Path to the exported model.
-    """
-    with (export_root / "metadata.json").open("w", encoding="utf-8") as metadata_file:
-        json.dump(metadata, metadata_file, ensure_ascii=False, indent=4)
 
 
 def _create_export_root(export_root: str | Path, export_type: ExportType) -> Path:

@@ -95,13 +95,6 @@ Towards Total Recall in Industrial Anomaly Detection
 Anomaly Detection via Reverse Distillation from One-Class Embedding.
 :::
 
-:::{grid-item-card} {material-regular}`model_training;1.5em` R-KDE
-:link: ./rkde
-:link-type: doc
-
-Region-Based Kernel Density Estimation (RKDE)
-:::
-
 :::{grid-item-card} {material-regular}`model_training;1.5em` STFPM
 :link: ./stfpm
 :link-type: doc
@@ -141,7 +134,6 @@ WinCLIP: Zero-/Few-Shot Anomaly Classification and Segmentation
 ./padim
 ./patchcore
 ./reverse_distillation
-./rkde
 ./stfpm
 ./uflow
 ./winclip

@@ -74,7 +74,7 @@ class PCA(DynamicBufferMixin):
         else:
             num_components = int(self.n_components)
 
-        self.num_components = torch.Tensor([num_components])
+        self.num_components = torch.tensor([num_components], device=dataset.device)
 
         self.singular_vectors = v_h.transpose(-2, -1)[:, :num_components].float()
         self.singular_values = sig[:num_components].float()
@@ -98,7 +98,7 @@ class PCA(DynamicBufferMixin):
         mean = dataset.mean(dim=0)
         dataset -= mean
         num_components = int(self.n_components)
-        self.num_components = torch.Tensor([num_components])
+        self.num_components = torch.tensor([num_components], device=dataset.device)
 
         v_h = torch.linalg.svd(dataset)[-1]
         self.singular_vectors = v_h.transpose(-2, -1)[:, :num_components]

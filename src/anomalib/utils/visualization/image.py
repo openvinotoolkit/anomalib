@@ -2,8 +2,8 @@
 
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
-
 from collections.abc import Iterator
+from dataclasses import InitVar, asdict, dataclass, fields
 from enum import Enum
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -15,8 +15,13 @@ import numpy as np
 from skimage.segmentation import mark_boundaries
 
 from anomalib import TaskType
+from anomalib.data import ImageItem, NumpyImageItem, VideoItem
 from anomalib.data.utils import read_image
-from anomalib.utils.post_processing import add_anomalous_label, add_normal_label, draw_boxes, superimpose_anomaly_map
+from anomalib.utils.post_processing import (
+    add_anomalous_label,
+    add_normal_label,
+    superimpose_anomaly_map,
+)
 
 from .base import BaseVisualizer, GeneratorResult, VisualizationStep
 
@@ -31,70 +36,67 @@ class VisualizationMode(str, Enum):
     SIMPLE = "simple"
 
 
+@dataclass
 class ImageResult:
     """Collection of data needed to visualize the predictions for an image."""
 
-    def __init__(
-        self,
-        image: np.ndarray,
-        pred_score: float,
-        pred_label: str,
-        anomaly_map: np.ndarray | None = None,
-        gt_mask: np.ndarray | None = None,
-        pred_mask: np.ndarray | None = None,
-        gt_boxes: np.ndarray | None = None,
-        pred_boxes: np.ndarray | None = None,
-        box_labels: np.ndarray | None = None,
-        normalize: bool = False,
-    ) -> None:
-        self.anomaly_map = anomaly_map
-        self.box_labels = box_labels
-        self.gt_boxes = gt_boxes
-        self.gt_mask = gt_mask
-        self.image = image
-        self.pred_score = pred_score
-        self.pred_label = pred_label
-        self.pred_boxes = pred_boxes
-        self.heat_map: np.ndarray | None = None
-        self.segmentations: np.ndarray | None = None
-        self.normal_boxes: np.ndarray | None = None
-        self.anomalous_boxes: np.ndarray | None = None
+    image: np.ndarray
+    pred_score: float
+    pred_label: str
+    anomaly_map: np.ndarray | None = None
+    gt_mask: np.ndarray | None = None
+    pred_mask: np.ndarray | None = None
+    normalize: InitVar[bool] = False
 
-        if anomaly_map is not None:
+    def __post_init__(self, normalize: bool) -> None:
+        """Format and compute additional fields."""
+        if self.image.dtype != np.uint8:
+            self.image = (self.image * 255).astype(np.uint8)
+        if self.anomaly_map is not None:
+            height, width = self.anomaly_map.squeeze().shape[:2]
+            self.image = cv2.resize(self.image.squeeze(), (width, height))
+
+        if self.anomaly_map is not None:
             self.heat_map = superimpose_anomaly_map(self.anomaly_map, self.image, normalize=normalize)
+        else:
+            self.heat_map = None
 
         if self.gt_mask is not None and self.gt_mask.max() <= 1.0:
+            if self.gt_mask.dtype == bool:
+                self.gt_mask = self.gt_mask.astype(np.uint8)
             self.gt_mask *= 255
 
-        self.pred_mask = pred_mask
-        if self.pred_mask is not None and self.pred_mask.max() <= 1.0:
-            self.pred_mask *= 255
-            self.segmentations = mark_boundaries(self.image, self.pred_mask, color=(1, 0, 0), mode="thick")
-            if self.segmentations.max() <= 1.0:
-                self.segmentations = (self.segmentations * 255).astype(np.uint8)
-
-        if self.pred_boxes is not None:
-            if self.box_labels is None:
-                msg = "Box labels must be provided when box locations are provided."
-                raise ValueError(msg)
-
-            self.normal_boxes = self.pred_boxes[~self.box_labels.astype(bool)]
-            self.anomalous_boxes = self.pred_boxes[self.box_labels.astype(bool)]
+        if self.pred_mask is not None:
+            self.pred_mask = self.pred_mask.astype(np.uint8).squeeze()
+            if self.pred_mask.max() <= 1.0:
+                self.pred_mask *= 255
+                self.segmentations = mark_boundaries(self.image, self.pred_mask, color=(1, 0, 0), mode="thick")
+                if self.segmentations.max() <= 1.0:
+                    self.segmentations = (self.segmentations * 255).astype(np.uint8)
 
     def __repr__(self) -> str:
         """Return a string representation of the object."""
         repr_str = (
             f"ImageResult(image={self.image}, pred_score={self.pred_score}, pred_label={self.pred_label}, "
             f"anomaly_map={self.anomaly_map}, gt_mask={self.gt_mask}, "
-            f"gt_boxes={self.gt_boxes}, pred_boxes={self.pred_boxes}, box_labels={self.box_labels}"
         )
         repr_str += f", pred_mask={self.pred_mask}" if self.pred_mask is not None else ""
         repr_str += f", heat_map={self.heat_map}" if self.heat_map is not None else ""
         repr_str += f", segmentations={self.segmentations}" if self.segmentations is not None else ""
-        repr_str += f", normal_boxes={self.normal_boxes}" if self.normal_boxes is not None else ""
-        repr_str += f", anomalous_boxes={self.anomalous_boxes}" if self.anomalous_boxes is not None else ""
         repr_str += ")"
         return repr_str
+
+    @classmethod
+    def from_dataset_item(cls: type["ImageResult"], item: ImageItem | NumpyImageItem) -> "ImageResult":
+        """Create an ImageResult object from a DatasetItem object.
+
+        This is a temporary solution until we refactor the visualizer to take a DatasetItem object directly as input.
+        """
+        if isinstance(item, ImageItem):
+            item = item.to_numpy()
+        item_dict = asdict(item)
+        field_names = {field.name for field in fields(cls)} & set(item_dict.keys())
+        return cls(**{key: item_dict[key] for key in field_names})
 
 
 class ImageVisualizer(BaseVisualizer):
@@ -136,40 +138,26 @@ class ImageVisualizer(BaseVisualizer):
         Returns:
             Generator that yields a display-ready visualization for each image.
         """
-        batch_size = batch["image"].shape[0]
-        for i in range(batch_size):
-            if "image_path" in batch:
-                height, width = batch["image"].shape[-2:]
-                image = (read_image(path=batch["image_path"][i]) * 255).astype(np.uint8)
-                image = cv2.resize(image, dsize=(width, height), interpolation=cv2.INTER_AREA)
-            elif "video_path" in batch:
-                height, width = batch["image"].shape[-2:]
-                image = batch["original_image"][i].squeeze().cpu().numpy()
-                image = cv2.resize(image, dsize=(width, height), interpolation=cv2.INTER_AREA)
+        for item in batch:
+            if hasattr(item, "image_path") and item.image_path is not None:
+                image = read_image(path=item.image_path, as_tensor=True)
+                # set filename
+                file_name = Path(item.image_path)
+            elif hasattr(item, "video_path") and item.video_path is not None:
+                image = item.original_image
+                # set filename
+                zero_fill = int(np.log10(item.last_frame.cpu())) + 1
+                suffix = f"{str(item.frames.int().item()).zfill(zero_fill)}.png"
+                file_name = Path(item.video_path) / suffix
             else:
-                msg = "Batch must have either 'image_path' or 'video_path' defined."
-                raise KeyError(msg)
+                msg = "Item must have image path or video path defined."
+                raise TypeError(msg)
 
-            file_name = None
-            if "image_path" in batch:
-                file_name = Path(batch["image_path"][i])
-            elif "video_path" in batch:
-                zero_fill = int(np.log10(batch["last_frame"][i])) + 1
-                suffix = f"{str(batch['frames'][i].int().item()).zfill(zero_fill)}.png"
-                file_name = Path(batch["video_path"][i]) / suffix
-
-            image_result = ImageResult(
-                image=image,
-                pred_score=batch["pred_scores"][i].cpu().numpy().item() if "pred_scores" in batch else None,
-                pred_label=batch["pred_labels"][i].cpu().numpy().item() if "pred_labels" in batch else None,
-                anomaly_map=batch["anomaly_maps"][i].cpu().numpy() if "anomaly_maps" in batch else None,
-                pred_mask=batch["pred_masks"][i].squeeze().int().cpu().numpy() if "pred_masks" in batch else None,
-                gt_mask=batch["mask"][i].squeeze().int().cpu().numpy() if "mask" in batch else None,
-                gt_boxes=batch["boxes"][i].cpu().numpy() if "boxes" in batch else None,
-                pred_boxes=batch["pred_boxes"][i].cpu().numpy() if "pred_boxes" in batch else None,
-                box_labels=batch["box_labels"][i].cpu().numpy() if "box_labels" in batch else None,
-                normalize=self.normalize,
-            )
+            item.image = image
+            if isinstance(item, VideoItem):
+                image_result = ImageResult.from_dataset_item(item.to_image())
+            else:
+                image_result = ImageResult.from_dataset_item(item)
             yield GeneratorResult(image=self.visualize_image(image_result), file_name=file_name)
 
     def visualize_image(self, image_result: ImageResult) -> np.ndarray:
@@ -202,20 +190,6 @@ class ImageVisualizer(BaseVisualizer):
             An image showing the full set of visualizations for the input image.
         """
         image_grid = _ImageGrid()
-        if self.task == TaskType.DETECTION:
-            if image_result.pred_boxes is None:
-                msg = "Image result predicted boxes are None."
-                raise ValueError(msg)
-
-            image_grid.add_image(image_result.image, "Image")
-            if image_result.gt_boxes is not None:
-                gt_image = draw_boxes(np.copy(image_result.image), image_result.gt_boxes, color=(255, 0, 0))
-                image_grid.add_image(image=gt_image, color_map="gray", title="Ground Truth")
-            else:
-                image_grid.add_image(image_result.image, "Image")
-            pred_image = draw_boxes(np.copy(image_result.image), image_result.normal_boxes, color=(0, 255, 0))
-            pred_image = draw_boxes(pred_image, image_result.anomalous_boxes, color=(255, 0, 0))
-            image_grid.add_image(pred_image, "Predictions")
         if self.task == TaskType.SEGMENTATION:
             if image_result.pred_mask is None:
                 msg = "Image result predicted mask is None."
@@ -250,16 +224,6 @@ class ImageVisualizer(BaseVisualizer):
         Returns:
             An image showing the simple visualization for the input image.
         """
-        if self.task == TaskType.DETECTION:
-            # return image with bounding boxes augmented
-            image_with_boxes = draw_boxes(
-                image=np.copy(image_result.image),
-                boxes=image_result.anomalous_boxes,
-                color=(0, 0, 255),
-            )
-            if image_result.gt_boxes is not None:
-                image_with_boxes = draw_boxes(image=image_with_boxes, boxes=image_result.gt_boxes, color=(255, 0, 0))
-            return image_with_boxes
         if self.task == TaskType.SEGMENTATION:
             visualization = mark_boundaries(
                 image_result.heat_map,

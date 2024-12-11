@@ -11,10 +11,12 @@ from typing import Any
 
 import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
-from torchvision.transforms.v2 import Transform
 
 from anomalib import LearningType
-from anomalib.models.components import AnomalyModule, MemoryBankMixin
+from anomalib.data import VideoBatch
+from anomalib.models.components import AnomalibModule, MemoryBankMixin
+from anomalib.post_processing.one_class import OneClassPostProcessor, PostProcessor
+from anomalib.pre_processing import PreProcessor
 
 from .torch_model import AiVadModel
 
@@ -23,7 +25,7 @@ logger = logging.getLogger(__name__)
 __all__ = ["AiVad"]
 
 
-class AiVad(MemoryBankMixin, AnomalyModule):
+class AiVad(MemoryBankMixin, AnomalibModule):
     """AI-VAD: Attribute-based Representations for Accurate and Interpretable Video Anomaly Detection.
 
     Args:
@@ -57,6 +59,9 @@ class AiVad(MemoryBankMixin, AnomalyModule):
             Defaults to ``1``.
         n_neighbors_deep (int): Number of neighbors used in KNN density estimation for deep features.
             Defaults to ``1``.
+        pre_processor (PreProcessor, optional): Pre-processor for the model.
+            This is used to pre-process the input data before it is passed to the model.
+            Defaults to ``None``.
     """
 
     def __init__(
@@ -75,9 +80,11 @@ class AiVad(MemoryBankMixin, AnomalyModule):
         n_components_velocity: int = 2,
         n_neighbors_pose: int = 1,
         n_neighbors_deep: int = 1,
+        pre_processor: PreProcessor | bool = True,
+        post_processor: PostProcessor | bool = True,
+        **kwargs,
     ) -> None:
-        super().__init__()
-
+        super().__init__(pre_processor=pre_processor, post_processor=post_processor, **kwargs)
         self.model = AiVadModel(
             box_score_thresh=box_score_thresh,
             persons_only=persons_only,
@@ -102,19 +109,23 @@ class AiVad(MemoryBankMixin, AnomalyModule):
         """AI-VAD training does not involve fine-tuning of NN weights, no optimizers needed."""
         return
 
-    def training_step(self, batch: dict[str, str | torch.Tensor]) -> None:
+    def training_step(self, batch: VideoBatch) -> None:
         """Training Step of AI-VAD.
 
         Extract features from the batch of clips and update the density estimators.
 
         Args:
-            batch (dict[str, str | torch.Tensor]): Batch containing image filename, image, label and mask
+            batch (Batch): Batch containing image filename, image, label and mask
         """
-        features_per_batch = self.model(batch["image"])
+        features_per_batch = self.model(batch.image)
 
-        for features, video_path in zip(features_per_batch, batch["video_path"], strict=True):
+        assert isinstance(batch.video_path, list)
+        for features, video_path in zip(features_per_batch, batch.video_path, strict=True):
             self.model.density_estimator.update(features, video_path)
             self.total_detections += len(next(iter(features.values())))
+
+        # Return a dummy loss tensor
+        return torch.tensor(0.0, requires_grad=True, device=self.device)
 
     def fit(self) -> None:
         """Fit the density estimators to the extracted features from the training set."""
@@ -123,13 +134,13 @@ class AiVad(MemoryBankMixin, AnomalyModule):
             raise ValueError(msg)
         self.model.density_estimator.fit()
 
-    def validation_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> STEP_OUTPUT:
+    def validation_step(self, batch: VideoBatch, *args, **kwargs) -> STEP_OUTPUT:
         """Perform the validation step of AI-VAD.
 
         Extract boxes and box scores..
 
         Args:
-            batch (dict[str, str | torch.Tensor]): Input batch
+            batch (Batch): Input batch
             *args: Arguments.
             **kwargs: Keyword arguments.
 
@@ -138,12 +149,8 @@ class AiVad(MemoryBankMixin, AnomalyModule):
         """
         del args, kwargs  # Unused arguments.
 
-        boxes, anomaly_scores, image_scores = self.model(batch["image"])
-        batch["pred_boxes"] = [box.int() for box in boxes]
-        batch["box_scores"] = [score.to(self.device) for score in anomaly_scores]
-        batch["pred_scores"] = torch.Tensor(image_scores).to(self.device)
-
-        return batch
+        predictions = self.model(batch.image)
+        return batch.update(pred_score=predictions.pred_score, anomaly_map=predictions.anomaly_map)
 
     @property
     def trainer_arguments(self) -> dict[str, Any]:
@@ -159,8 +166,17 @@ class AiVad(MemoryBankMixin, AnomalyModule):
         """
         return LearningType.ONE_CLASS
 
-    @staticmethod
-    def configure_transforms(image_size: tuple[int, int] | None = None) -> Transform | None:
-        """AI-VAD does not need a transform, as the region- and feature-extractors apply their own transforms."""
+    @classmethod
+    def configure_pre_processor(cls, image_size: tuple[int, int] | None = None) -> PreProcessor:
+        """Configure the pre-processor for AI-VAD.
+
+        AI-VAD does not need a pre-processor or transforms, as the region- and
+        feature-extractors apply their own transforms.
+        """
         del image_size
-        return None
+        return PreProcessor()  # A pre-processor with no transforms.
+
+    @staticmethod
+    def configure_post_processor() -> PostProcessor:
+        """Return the default post-processor for AI-VAD."""
+        return OneClassPostProcessor()

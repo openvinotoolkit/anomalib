@@ -117,6 +117,8 @@ def superimpose_anomaly_map(
         np.ndarray: Image with anomaly map superimposed on top of it.
     """
     anomaly_map = anomaly_map_to_color_map(anomaly_map.squeeze(), normalize=normalize)
+    height, width = anomaly_map.shape[:2]
+    image = cv2.resize(image, (width, height))
     return cv2.addWeighted(anomaly_map, alpha, image, (1 - alpha), gamma)
 
 
