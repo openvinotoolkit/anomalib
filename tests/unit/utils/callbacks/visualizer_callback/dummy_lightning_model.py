@@ -74,6 +74,6 @@ class DummyModule(AnomalibModule):
         return LearningType.ZERO_SHOT
 
     @staticmethod
-    def default_post_processor() -> PostProcessor:
+    def configure_post_processor() -> PostProcessor:
         """Returns a dummy post-processor."""
         return DummyPostProcessor()

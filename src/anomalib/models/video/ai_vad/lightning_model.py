@@ -81,9 +81,10 @@ class AiVad(MemoryBankMixin, AnomalibModule):
         n_neighbors_pose: int = 1,
         n_neighbors_deep: int = 1,
         pre_processor: PreProcessor | bool = True,
+        post_processor: PostProcessor | bool = True,
         **kwargs,
     ) -> None:
-        super().__init__(pre_processor=pre_processor, **kwargs)
+        super().__init__(pre_processor=pre_processor, post_processor=post_processor, **kwargs)
         self.model = AiVadModel(
             box_score_thresh=box_score_thresh,
             persons_only=persons_only,
@@ -176,6 +177,6 @@ class AiVad(MemoryBankMixin, AnomalibModule):
         return PreProcessor()  # A pre-processor with no transforms.
 
     @staticmethod
-    def default_post_processor() -> PostProcessor:
+    def configure_post_processor() -> PostProcessor:
         """Return the default post-processor for AI-VAD."""
         return OneClassPostProcessor()

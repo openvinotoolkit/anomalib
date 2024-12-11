@@ -22,7 +22,6 @@ from anomalib.data import AnomalibDataModule, AnomalibDataset, PredictDataset
 from anomalib.deploy import CompressionType, ExportType
 from anomalib.models import AnomalibModule
 from anomalib.utils.path import create_versioned_dir
-from anomalib.visualization import ImageVisualizer
 
 logger = logging.getLogger(__name__)
 
@@ -258,13 +257,13 @@ class Engine:
             self._cache.update(model)
 
         # Setup anomalib callbacks to be used with the trainer
-        self._setup_anomalib_callbacks(model)
+        self._setup_anomalib_callbacks()
 
         # Instantiate the trainer if it is not already instantiated
         if self._trainer is None:
             self._trainer = Trainer(**self._cache.args)
 
-    def _setup_anomalib_callbacks(self, model: AnomalibModule) -> None:
+    def _setup_anomalib_callbacks(self) -> None:
         """Set up callbacks for the trainer."""
         _callbacks: list[Callback] = []
 
@@ -278,18 +277,6 @@ class Engine:
                     auto_insert_metric_name=False,
                 ),
             )
-
-        # Add the post-processor callback.
-        if isinstance(model.post_processor, Callback):
-            _callbacks.append(model.post_processor)
-
-        # Add the metrics callback.
-        if isinstance(model.evaluator, Callback):
-            _callbacks.append(model.evaluator)
-
-        # Add the image visualizer callback if it is passed by the user.
-        if not any(isinstance(callback, ImageVisualizer) for callback in self._cache.args["callbacks"]):
-            _callbacks.append(ImageVisualizer())
 
         _callbacks.append(TimerCallback())
 

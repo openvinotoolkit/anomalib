@@ -4,13 +4,17 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from lightning.pytorch import Callback, Trainer
+# Only import types during type checking to avoid circular imports
+if TYPE_CHECKING:
+    from lightning.pytorch import Trainer
 
-from anomalib.data import ImageBatch
-from anomalib.models import AnomalibModule
+    from anomalib.data import ImageBatch
+    from anomalib.models import AnomalibModule
+
 from anomalib.utils.path import generate_output_filename
+from anomalib.visualization.base import Visualizer
 
 from .item_visualizer import (
     DEFAULT_FIELDS_CONFIG,
@@ -20,7 +24,7 @@ from .item_visualizer import (
 )
 
 
-class ImageVisualizer(Callback):
+class ImageVisualizer(Visualizer):
     """Image Visualizer.
 
     This class is responsible for visualizing images and their corresponding anomaly maps
@@ -127,6 +131,7 @@ class ImageVisualizer(Callback):
         text_config: dict[str, Any] | None = None,
         output_dir: str | Path | None = None,
     ) -> None:
+        super().__init__()
         self.fields = fields or ["image", "gt_mask"]
         self.overlay_fields = overlay_fields or [("image", ["anomaly_map"]), ("image", ["pred_mask"])]
         self.field_size = field_size
@@ -137,10 +142,10 @@ class ImageVisualizer(Callback):
 
     def on_test_batch_end(
         self,
-        trainer: Trainer,
-        pl_module: AnomalibModule,
-        outputs: ImageBatch,
-        batch: ImageBatch,
+        trainer: "Trainer",
+        pl_module: "AnomalibModule",
+        outputs: "ImageBatch",
+        batch: "ImageBatch",
         batch_idx: int,
         dataloader_idx: int = 0,
     ) -> None:
@@ -175,10 +180,10 @@ class ImageVisualizer(Callback):
 
     def on_predict_batch_end(
         self,
-        trainer: Trainer,
-        pl_module: AnomalibModule,
-        outputs: ImageBatch,
-        batch: ImageBatch,
+        trainer: "Trainer",
+        pl_module: "AnomalibModule",
+        outputs: "ImageBatch",
+        batch: "ImageBatch",
         batch_idx: int,
         dataloader_idx: int = 0,
     ) -> None:
