@@ -84,6 +84,8 @@ test = [
     "pytest-xdist",
     "pytest-mock",
     "pytest-sugar",
+    "pytest-timeout",
+    "pytest-json-report",
     "coverage[toml]",
     "tox",
 ]
