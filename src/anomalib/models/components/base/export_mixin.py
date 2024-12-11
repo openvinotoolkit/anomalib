@@ -125,7 +125,7 @@ class ExportMixin:
         dynamic_axes = (
             {"input": {0: "batch_size"}, "output": {0: "batch_size"}}
             if input_size
-            else {"input": {0: "batch_size", 2: "height", 3: "width"}, "output": {0: "batch_size"}}
+            else {"input": {0: "batch_size", 2: "height", 3: "weight"}, "output": {0: "batch_size"}}
         )
         onnx_path = export_root / "model.onnx"
         # apply pass through the model to get the output names
