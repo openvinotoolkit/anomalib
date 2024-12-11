@@ -130,14 +130,14 @@ runs:
         start_time=$(date +%s)
 
         # Run pytest with:
-        # - Auto parallel execution (-n auto)
+        # - Disable parallel execution for now (-n0 instead of -n auto)
         # - Duration reporting for slow tests
         # - Configurable timeout
         # - JSON report generation
         PYTHONPATH=src pytest ${{ steps.test-scope.outputs.path }} \
-          -n auto \
+          -n0 \
           --durations=10 \
-          --durations-min=1.0 \
+          --durations-min=10.0 \
           --timeout=${{ inputs.max-test-time }} \
           --json-report --json-report-file=pytest.json \
           && echo "success=true" >> $GITHUB_OUTPUT \
