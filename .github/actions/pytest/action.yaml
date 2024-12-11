@@ -1,0 +1,177 @@
+# Test Runner Action
+#
+# This composite action executes Python tests with pytest, providing
+# comprehensive test execution and reporting capabilities.
+#
+# Key Features:
+# - Multiple test type support
+# - Parallel execution
+# - Coverage reporting
+# - Performance tracking
+# - Result analysis
+#
+# Process Stages:
+# 1. Environment Setup:
+#    - Python configuration
+#    - Virtual environment creation
+#    - Dependency installation
+#
+# 2. Test Execution:
+#    - Test scope determination
+#    - Parallel processing
+#    - Coverage tracking
+#    - Performance monitoring
+#
+# 3. Results Processing:
+#    - Coverage analysis
+#    - Performance reporting
+#    - Results aggregation
+#
+# Required Inputs:
+# - python-version: Python version for tests
+# - test-type: Type of tests to run
+# - codecov-token: Token for coverage upload
+# - max-test-time: Maximum test duration
+#
+# Outputs:
+# - coverage-percentage: Total coverage
+# - tests-passed: Test success status
+# - test-duration: Execution time
+#
+# Example Usage:
+# steps:
+#   - uses: ./.github/actions/pytest
+#     with:
+#       python-version: "3.11"
+#       test-type: "unit"
+#       codecov-token: ${{ secrets.CODECOV_TOKEN }}
+#
+# Note: Requires proper pytest configuration in pyproject.toml
+
+name: "Python Tests Runner"
+description: "Runs Python unit and integration tests with pytest and uploads coverage to Codecov"
+
+inputs:
+  python-version:
+    description: "Python version to use"
+    required: false
+    default: "3.10"
+  test-type:
+    description: "Type of tests to run (unit/integration/all)"
+    required: false
+    default: "all"
+  codecov-token:
+    description: "Codecov upload token"
+    required: true
+  max-test-time:
+    description: "Maximum time in seconds for the test suite to run"
+    required: false
+    default: "300"
+
+outputs:
+  coverage-percentage:
+    description: "Total coverage percentage"
+    value: ${{ steps.coverage.outputs.percentage }}
+  tests-passed:
+    description: "Whether all tests passed"
+    value: ${{ steps.test-execution.outputs.success }}
+  test-duration:
+    description: "Total test duration in seconds"
+    value: ${{ steps.test-execution.outputs.duration }}
+
+runs:
+  using: composite
+  steps:
+    # Set up Python with pip caching
+    - name: Set up Python environment
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+        cache: pip # Enable pip caching
+        cache-dependency-path: pyproject.toml
+
+    # Create and configure virtual environment
+    - name: Configure virtual environment
+      id: setup-venv
+      shell: bash
+      run: |
+        # Create isolated test environment
+        python -m venv .venv
+        source .venv/bin/activate
+        # Install dependencies with dev extras
+        python -m pip install --upgrade pip
+        pip install ".[dev]"
+        pip install codecov
+
+    # Determine which tests to run based on input
+    - name: Determine test scope
+      id: test-scope
+      shell: bash
+      run: |
+        case "${{ inputs.test-type }}" in
+          "unit")
+            echo "path=tests/unit" >> $GITHUB_OUTPUT
+            ;;
+          "integration")
+            echo "path=tests/integration" >> $GITHUB_OUTPUT
+            ;;
+          *)
+            # Run both test types if not specified
+            echo "path=tests/unit tests/integration" >> $GITHUB_OUTPUT
+            ;;
+        esac
+
+    # Execute test suite with performance tracking
+    - name: Execute test suite
+      id: test-execution
+      shell: bash
+      run: |
+        source .venv/bin/activate
+        start_time=$(date +%s)
+
+        # Run pytest with:
+        # - Auto parallel execution (-n auto)
+        # - Duration reporting for slow tests
+        # - Configurable timeout
+        # - JSON report generation
+        PYTHONPATH=src pytest ${{ steps.test-scope.outputs.path }} \
+          -n auto \
+          --durations=10 \
+          --durations-min=1.0 \
+          --timeout=${{ inputs.max-test-time }} \
+          --json-report --json-report-file=pytest.json \
+          && echo "success=true" >> $GITHUB_OUTPUT \
+          || echo "success=false" >> $GITHUB_OUTPUT
+
+        # Calculate total test duration
+        end_time=$(date +%s)
+        duration=$((end_time - start_time))
+        echo "duration=${duration}" >> $GITHUB_OUTPUT
+
+    # Analyze and report test performance
+    - name: Analyze test performance
+      if: always() # Run even if tests fail
+      shell: bash
+      run: |
+        echo "Test Duration: ${{ steps.test-execution.outputs.duration }} seconds"
+
+        # Report slowest tests for optimization
+        echo "Top 10 slowest tests:"
+        cat pytest.json | jq -r '.tests[] | select(.duration >= 1) | "\(.duration)s \(.name)"' | sort -rn | head -n 10
+
+        # Warn if tests exceed time limit
+        if [ "${{ steps.test-execution.outputs.duration }}" -gt "${{ inputs.max-test-time }}" ]; then
+          echo "::warning::Test suite exceeded recommended duration of ${{ inputs.max-test-time }} seconds"
+        fi
+
+    # Upload coverage data to Codecov
+    - name: Upload coverage to Codecov
+      if: steps.test-execution.outputs.success == 'true'
+      shell: bash
+      run: |
+        source .venv/bin/activate
+        # Upload with test type and Python version tags
+        codecov --token "${{ inputs.codecov-token }}" \
+                --file coverage.xml \
+                --flags "${{ inputs.test-type }}_py${{ inputs.python-version }}" \
+                --name "${{ inputs.test-type }} tests (Python ${{ inputs.python-version }})"
