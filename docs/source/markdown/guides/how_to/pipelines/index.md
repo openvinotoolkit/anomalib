@@ -6,6 +6,13 @@ This section contains tutorials on how to use different pipelines of Anomalib an
 :margin: 1 1 0 0
 :gutter: 1
 
+:::{grid-item-card} {octicon}`stack` Tiled Ensemble
+:link: ./tiled_ensemble
+:link-type: doc
+
+Learn more about how to use the tiled ensemble pipelines.
+:::
+
 :::{grid-item-card} {octicon}`gear` Custom Pipeline
 :link: ./custom_pipeline
 :link-type: doc
