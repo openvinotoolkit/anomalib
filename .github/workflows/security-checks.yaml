@@ -1,0 +1,96 @@
+# Security Checks Workflow
+#
+# This workflow orchestrates comprehensive security scanning using multiple tools and
+# configurable parameters. It supports both scheduled and manual execution modes.
+#
+# Key Features:
+# - Multiple security tool integration
+# - Scheduled daily scans
+# - Manual trigger with customization
+# - Configurable severity thresholds
+# - Flexible scan scope options
+#
+# Process Stages:
+# 1. Scheduled Execution (Daily at 2 AM UTC):
+#    - Full security toolset
+#    - Complete codebase scan
+#    - LOW severity threshold
+#
+# 2. Manual Execution:
+#    - Selectable security tools
+#    - Adjustable scan scope
+#    - Customizable severity level
+#
+# Security Tools:
+# - Bandit: Python-specific security scanning
+# - ClamAV: Malware detection
+# - Semgrep: Static Application Security Testing (SAST)
+# - Trivy: Vulnerability scanning
+#
+# Required Permissions:
+# - contents: read
+# - security-events: write
+#
+# Example Usage:
+# 1. Scheduled Run:
+#    Automatically runs with full configuration
+#
+# 2. Manual Trigger:
+#    workflow_dispatch:
+#      inputs:
+#        tools: "bandit,semgrep,trivy"
+#        scan-scope: "changed"
+#        severity-level: "MEDIUM"
+#
+# Note: Results are available as workflow artifacts and in the
+# Security tab when integrated with GitHub Advanced Security.
+
+name: Security Checks
+
+on:
+  schedule:
+    # Run security checks every day at 2 AM UTC
+    - cron: "0 2 * * *"
+
+  workflow_dispatch:
+    inputs:
+      tools:
+        description: "Security tools to run"
+        required: true
+        type: choice
+        options:
+          - "bandit,semgrep,trivy" # Default set
+          - "bandit,clamav,semgrep,trivy" # Full set
+          - "bandit,semgrep" # Minimal set
+        default: "bandit,semgrep,trivy"
+      scan-scope:
+        description: "Scan scope"
+        required: true
+        type: choice
+        options:
+          - all
+          - changed
+        default: "all"
+      severity-level:
+        description: "Minimum severity level"
+        required: true
+        type: choice
+        options:
+          - LOW
+          - MEDIUM
+          - HIGH
+        default: "LOW"
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  security:
+    uses: ./.github/workflows/_reusable-security-scan.yaml
+    with:
+      # For scheduled runs, use full scan configuration
+      tools: ${{ github.event_name == 'schedule' && 'bandit,clamav,semgrep,trivy' || inputs.tools }}
+      scan-scope: ${{ github.event_name == 'schedule' && 'all' || inputs.scan-scope }}
+      severity-level: ${{ github.event_name == 'schedule' && 'LOW' || inputs.severity-level }}
+      fail-on-findings: true
