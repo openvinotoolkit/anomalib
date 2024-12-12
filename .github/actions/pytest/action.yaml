@@ -136,19 +136,19 @@ runs:
 
         # Set device-specific pytest arguments
         if [ "${{ inputs.device }}" = "cpu" ]; then
-          marker="cpu"
+          marker="-m cpu"  # Only run CPU tests
         else
-          marker="cpu,gpu"  # Run both CPU and GPU tests
+          marker="-m gpu"  # Run all tests
         fi
 
-        # Run pytest with pytest's native marker expression
+        # Run pytest
         PYTHONPATH=src pytest ${{ steps.test-scope.outputs.path }} \
           --numprocesses=0 \
           --durations=10 \
           --durations-min=1.0 \
           --timeout=${{ inputs.max-test-time }} \
           --verbosity=1 \
-          -m "$marker"
+          ${marker}
 
         test_exit_code=${PIPESTATUS[0]}
 

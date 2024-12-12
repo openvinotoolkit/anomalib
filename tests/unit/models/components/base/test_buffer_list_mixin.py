@@ -48,8 +48,8 @@ class TestBufferListMixin:
         module.tensor_list = tensor_list
         assert tensor_lists_are_equal(module.tensor_list, tensor_list)
 
-    @pytest.mark.gpu
     @staticmethod
+    @pytest.mark.gpu
     def test_buffer_list_device_placement(module: BufferListModule) -> None:
         """Test if the device of the buffer list is updated with the module.
 
