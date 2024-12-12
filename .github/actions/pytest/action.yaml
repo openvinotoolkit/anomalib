@@ -153,6 +153,9 @@ runs:
           --durations-min=1.0 \
           --timeout=${{ inputs.max-test-time }} \
           --verbosity=1 \
+          --cov=src \
+          --cov-report=xml \
+          --cov-report=term-missing \
           ${marker}
 
         test_exit_code=${PIPESTATUS[0]}
