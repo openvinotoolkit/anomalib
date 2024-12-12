@@ -136,27 +136,19 @@ runs:
 
         # Set device-specific pytest arguments
         if [ "${{ inputs.device }}" = "cpu" ]; then
-          DEVICE_ARGS="-m cpu"
+          marker="cpu"
         else
-          if python -c "import torch; print(torch.cuda.is_available())" | grep -q "True"; then
-            DEVICE_ARGS="-m 'cpu or gpu'"
-          else
-            echo "::warning::GPU requested but CUDA is not available. Running CPU tests only."
-            DEVICE_ARGS="-m cpu"
-          fi
+          marker="cpu,gpu"  # Run both CPU and GPU tests
         fi
 
-        # Run pytest with settings to show all failures
+        # Run pytest with pytest's native marker expression
         PYTHONPATH=src pytest ${{ steps.test-scope.outputs.path }} \
           --numprocesses=0 \
           --durations=10 \
           --durations-min=1.0 \
           --timeout=${{ inputs.max-test-time }} \
           --verbosity=1 \
-          --tb=short \
-          -ra \
-          --no-header \
-          ${DEVICE_ARGS} | tee pytest_output.log
+          -m "$marker"
 
         test_exit_code=${PIPESTATUS[0]}
 
