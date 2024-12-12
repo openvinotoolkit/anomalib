@@ -97,8 +97,8 @@ runs:
       uses: actions/setup-python@v5
       with:
         python-version: ${{ inputs.python-version }}
-        cache: ${{ inputs.enable-cache == 'true' && 'pip' || 'none' }}
-        cache-dependency-path: pyproject.toml
+        cache: ${{ inputs.enable-cache == 'true' && 'pip' || '' }}
+        cache-dependency-path: ${{ inputs.enable-cache == 'true' && 'pyproject.toml' || '' }}
 
     # Create and configure virtual environment
     - name: Configure virtual environment
