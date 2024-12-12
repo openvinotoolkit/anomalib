@@ -291,6 +291,10 @@ skips = ["B101"]
 addopts = ["--strict-markers", "--strict-config", "--showlocals", "-ra"]
 testpaths = "tests"
 pythonpath = "src"
+markers = [
+    "gpu: marks tests that require GPU",
+    "cpu: marks tests that can run on CPU only (default)",
+]
 
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #

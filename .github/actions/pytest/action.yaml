@@ -137,9 +137,9 @@ runs:
 
         # Set device-specific pytest arguments
         if [ "${{ inputs.device }}" = "cpu" ]; then
-          DEVICE_ARGS="--markers='not gpu'"
+          DEVICE_ARGS="-m cpu"
         else
-          DEVICE_ARGS=""
+          DEVICE_ARGS="-m 'cpu or gpu'"  # Run all tests on GPU
         fi
 
         # Run pytest
@@ -150,7 +150,7 @@ runs:
           --timeout=${{ inputs.max-test-time }} \
           --verbosity=0 \
           --durations-only \
-          $DEVICE_ARGS
+          ${DEVICE_ARGS}
 
         # Store test result and duration
         exit_code=$?
