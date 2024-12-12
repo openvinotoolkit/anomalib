@@ -48,9 +48,13 @@ class TestBufferListMixin:
         module.tensor_list = tensor_list
         assert tensor_lists_are_equal(module.tensor_list, tensor_list)
 
+    @pytest.mark.gpu
     @staticmethod
     def test_buffer_list_device_placement(module: BufferListModule) -> None:
-        """Test if the device of the buffer list is updated with the module."""
+        """Test if the device of the buffer list is updated with the module.
+
+        Note: This test will only run on a GPU-enabled device.
+        """
         module.cuda()
         assert all(tensor.is_cuda for tensor in module.tensor_list)
         module.cpu()

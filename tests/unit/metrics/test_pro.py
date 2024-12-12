@@ -70,8 +70,12 @@ def test_device_consistency() -> None:
     assert torch.isclose(pro_cpu.compute(), pro_gpu.compute().cpu())
 
 
+@pytest.mark.gpu
 def test_connected_component_labeling() -> None:
-    """Tests if the connected component labeling algorithms on cpu and gpu yield the same result."""
+    """Tests if the connected component labeling algorithms on cpu and gpu yield the same result.
+
+    Note: This test will only run on a GPU-enabled device.
+    """
     # generate batch of random binary images using perlin noise
     batch = torch.zeros((32, 1, 256, 256))
     for i in range(batch.shape[0]):
