@@ -107,3 +107,4 @@ jobs:
           python-version: ${{ inputs.python-version }}
           test-type: ${{ inputs.test-type }}
           codecov-token: ${{ secrets.codecov-token }}
+          device: ${{ contains(inputs.runner, 'self-hosted') && 'gpu' || 'cpu' }}

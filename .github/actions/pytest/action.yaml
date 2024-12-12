@@ -32,6 +32,7 @@
 # - test-type: Type of tests to run
 # - codecov-token: Token for coverage upload
 # - max-test-time: Maximum test duration
+# - device: Device to run tests on (cpu/gpu)
 #
 # Outputs:
 # - coverage-percentage: Total coverage
@@ -67,6 +68,10 @@ inputs:
     description: "Maximum time in seconds for the test suite to run"
     required: false
     default: "300"
+  device:
+    description: "Device to run tests on (cpu/gpu)"
+    required: false
+    default: "gpu"
 
 outputs:
   coverage-percentage:
@@ -125,22 +130,27 @@ runs:
     - name: Execute test suite
       id: test-execution
       shell: bash
-      continue-on-error: true # Allow the step to continue even if tests fail
+      continue-on-error: true
       run: |
         source .venv/bin/activate
         start_time=$(date +%s)
 
-        # Run pytest with:
-        # - Disable parallel execution for now (-n0 instead of -n auto)
-        # - Duration reporting for slow tests
-        # - Configurable timeout
-        # - JSON report generation
+        # Set device-specific pytest arguments
+        if [ "${{ inputs.device }}" = "cpu" ]; then
+          DEVICE_ARGS="--markers='not gpu'"
+        else
+          # For GPU runners, no need to skip GPU tests
+          DEVICE_ARGS=""
+        fi
+
+        # Run pytest
         PYTHONPATH=src pytest ${{ steps.test-scope.outputs.path }} \
-          -n0 \
+          --numprocesses=0 \
           --durations=10 \
           --durations-min=1.0 \
           --timeout=${{ inputs.max-test-time }} \
-          --json-report --json-report-file=pytest.json
+          --json-report --json-report-file=pytest.json \
+          $DEVICE_ARGS
 
         # Store test result
         echo "success=$?" >> $GITHUB_OUTPUT

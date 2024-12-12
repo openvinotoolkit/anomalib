@@ -3,6 +3,7 @@
 # Copyright (C) 2023-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+import pytest
 import torch
 from torchvision.transforms import RandomAffine
 
@@ -44,8 +45,12 @@ def test_pro() -> None:
         assert pro.compute() == target
 
 
+@pytest.mark.gpu
 def test_device_consistency() -> None:
-    """Test if the pro metric yields the same results between cpu and gpu."""
+    """Test if the pro metric yields the same results between cpu and gpu.
+
+    Note: This test will only run on a GPU-enabled device.
+    """
     transform = RandomAffine(5, None, (0.95, 1.05), 5)
 
     batch = torch.zeros((32, 256, 256))
