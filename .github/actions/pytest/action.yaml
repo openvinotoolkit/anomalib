@@ -125,6 +125,7 @@ runs:
     - name: Execute test suite
       id: test-execution
       shell: bash
+      continue-on-error: true # Allow the step to continue even if tests fail
       run: |
         source .venv/bin/activate
         start_time=$(date +%s)
@@ -137,16 +138,22 @@ runs:
         PYTHONPATH=src pytest ${{ steps.test-scope.outputs.path }} \
           -n0 \
           --durations=10 \
-          --durations-min=10.0 \
+          --durations-min=1.0 \
           --timeout=${{ inputs.max-test-time }} \
-          --json-report --json-report-file=pytest.json \
-          && echo "success=true" >> $GITHUB_OUTPUT \
-          || echo "success=false" >> $GITHUB_OUTPUT
+          --json-report --json-report-file=pytest.json
 
-        # Calculate total test duration
+        # Store test result
+        echo "success=$?" >> $GITHUB_OUTPUT
+
+        # Calculate duration
         end_time=$(date +%s)
-        duration=$((end_time - start_time))
-        echo "duration=${duration}" >> $GITHUB_OUTPUT
+        echo "duration=$((end_time - start_time))" >> $GITHUB_OUTPUT
+
+    # Fail the workflow if tests failed
+    - name: Check test results
+      if: steps.test-execution.outputs.success != '0'
+      shell: bash
+      run: exit 1
 
     # Analyze and report test performance
     - name: Analyze test performance
