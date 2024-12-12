@@ -149,22 +149,21 @@ runs:
           --durations-min=1.0 \
           --timeout=${{ inputs.max-test-time }} \
           --verbosity=0 \
-          --durations-only \
           ${DEVICE_ARGS}
 
-        # Store test result and duration
-        exit_code=$?
-        echo "success=$exit_code" >> $GITHUB_OUTPUT
+        test_exit_code=$?
+        echo "success=$test_exit_code" >> $GITHUB_OUTPUT
 
         end_time=$(date +%s)
         duration=$((end_time - start_time))
         echo "duration=$duration" >> $GITHUB_OUTPUT
 
-        exit $exit_code
+        # Exit with the test result - this will set the step status but won't stop the workflow
+        exit $test_exit_code
 
-    # Fail the workflow if tests failed
+    # Always fail the workflow if tests failed, but after all steps complete
     - name: Check test results
-      if: steps.test-execution.outputs.success != '0'
+      if: always() && steps.test-execution.outcome != 'success'
       shell: bash
       run: exit 1
 
@@ -173,10 +172,11 @@ runs:
       if: always()
       shell: bash
       run: |
-        echo "Test Duration: ${{ steps.test-execution.outputs.duration }} seconds"
+        duration="${{ steps.test-execution.outputs.duration }}"
+        echo "Test Duration: ${duration:-0} seconds"
 
         # Warn if tests exceed time limit
-        if [ "${{ steps.test-execution.outputs.duration }}" -gt "${{ inputs.max-test-time }}" ]; then
+        if [ -n "$duration" ] && [ "$duration" -gt "${{ inputs.max-test-time }}" ]; then
           echo "::warning::Test suite exceeded recommended duration of ${{ inputs.max-test-time }} seconds"
         fi
 
