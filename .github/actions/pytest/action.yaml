@@ -87,28 +87,45 @@ outputs:
 runs:
   using: composite
   steps:
-    # Set up Python with pip caching
     - name: Set up Python environment
       uses: actions/setup-python@v5
       with:
         python-version: ${{ inputs.python-version }}
-        cache: pip # Enable pip caching
-        cache-dependency-path: pyproject.toml
 
-    # Create and configure virtual environment
+    - name: Configure pip cache
+      shell: bash
+      run: |
+        CACHE_DIR="/opt/github/cache/pip"
+
+        # Ensure cache directory exists and is writable
+        sudo mkdir -p $CACHE_DIR
+        sudo chmod 777 $CACHE_DIR
+
+        # Configure pip to use the persistent cache
+        pip config set global.cache-dir $CACHE_DIR
+
+        # Display cache info
+        echo "Using pip cache directory: $(pip cache dir)"
+        echo "Current cache size: $(du -sh $CACHE_DIR 2>/dev/null || echo 'Empty')"
+
     - name: Configure virtual environment
       id: setup-venv
       shell: bash
       run: |
-        # Create isolated test environment
+        # Create and activate venv
         python -m venv .venv
         source .venv/bin/activate
-        # Install dependencies with dev extras
+
+        # Upgrade pip
         python -m pip install --upgrade pip
-        pip install ".[dev]"
+
+        # Install dependencies using the persistent cache
+        pip install --prefer-binary ".[dev]"
         pip install codecov
 
-    # Determine which tests to run based on input
+        # Show installed packages for debugging
+        pip list
+
     - name: Determine test scope
       id: test-scope
       shell: bash
