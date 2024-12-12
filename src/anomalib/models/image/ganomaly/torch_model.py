@@ -14,6 +14,7 @@ import math
 import torch
 from torch import nn
 
+from anomalib.data import InferenceBatch
 from anomalib.data.utils.image import pad_nextpow2
 
 
@@ -352,7 +353,7 @@ class GanomalyModel(nn.Module):
     def forward(
         self,
         batch: torch.Tensor,
-    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor] | torch.Tensor:
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor] | InferenceBatch:
         """Get scores for batch.
 
         Args:
@@ -365,4 +366,5 @@ class GanomalyModel(nn.Module):
         fake, latent_i, latent_o = self.generator(padded_batch)
         if self.training:
             return padded_batch, fake, latent_i, latent_o
-        return torch.mean(torch.pow((latent_i - latent_o), 2), dim=1).view(-1)  # convert nx1x1 to n
+        scores = torch.mean(torch.pow((latent_i - latent_o), 2), dim=1).view(-1)  # convert nx1x1 to n
+        return InferenceBatch(pred_score=scores)

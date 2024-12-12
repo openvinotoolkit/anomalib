@@ -24,7 +24,7 @@ class Benchmark(Pipeline):
                 msg = f"Unsupported accelerator: {accelerator}"
                 raise ValueError(msg)
             device_count = torch.cuda.device_count()
-            if device_count <= 1:
+            if device_count <= 1 or accelerator == "cpu":
                 runners.append(SerialRunner(BenchmarkJobGenerator(accelerator)))
             else:
                 runners.append(ParallelRunner(BenchmarkJobGenerator(accelerator), n_jobs=device_count))

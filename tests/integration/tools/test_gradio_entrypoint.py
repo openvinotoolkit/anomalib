@@ -47,7 +47,6 @@ class TestGradioInferenceEntrypoint:
         # export torch model
         model.to_torch(
             export_root=_ckpt_path.parent.parent.parent,
-            task=TaskType.SEGMENTATION,
         )
 
         arguments = parser().parse_args(
@@ -56,7 +55,7 @@ class TestGradioInferenceEntrypoint:
                 str(_ckpt_path.parent.parent) + "/torch/model.pt",
             ],
         )
-        assert isinstance(inferencer(arguments.weights, arguments.metadata), TorchInferencer)
+        assert isinstance(inferencer(arguments.weights), TorchInferencer)
 
     @staticmethod
     def test_openvino_inference(
@@ -79,18 +78,6 @@ class TestGradioInferenceEntrypoint:
             [
                 "--weights",
                 str(_ckpt_path.parent.parent) + "/openvino/model.bin",
-                "--metadata",
-                str(_ckpt_path.parent.parent) + "/openvino/metadata.json",
             ],
         )
-        assert isinstance(inferencer(arguments.weights, arguments.metadata), OpenVINOInferencer)
-
-        # test error is raised when metadata is not provided to openvino model
-        arguments = parser().parse_args(
-            [
-                "--weights",
-                str(_ckpt_path) + "/openvino/model.bin",
-            ],
-        )
-        with pytest.raises(ValueError):  # noqa: PT011
-            inferencer(arguments.weights, arguments.metadata)
+        assert isinstance(inferencer(arguments.weights), OpenVINOInferencer)

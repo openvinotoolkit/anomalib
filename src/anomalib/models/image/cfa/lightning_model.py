@@ -15,7 +15,12 @@ import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 
 from anomalib import LearningType
-from anomalib.models.components import AnomalyModule
+from anomalib.data import Batch
+from anomalib.metrics import Evaluator
+from anomalib.models.components import AnomalibModule
+from anomalib.post_processing import PostProcessor
+from anomalib.pre_processing import PreProcessor
+from anomalib.visualization import Visualizer
 
 from .loss import CfaLoss
 from .torch_model import CfaModel
@@ -25,7 +30,7 @@ logger = logging.getLogger(__name__)
 __all__ = ["Cfa"]
 
 
-class Cfa(AnomalyModule):
+class Cfa(AnomalibModule):
     """CFA: Coupled-hypersphere-based Feature Adaptation for Target-Oriented Anomaly Localization.
 
     Args:
@@ -41,6 +46,9 @@ class Cfa(AnomalyModule):
             Defaults to ``3``.
         radius (float): Radius of the hypersphere to search the soft boundary.
             Defaults to ``1e-5``.
+        pre_processor (PreProcessor, optional): Pre-processor for the model.
+            This is used to pre-process the input data before it is passed to the model.
+            Defaults to ``None``.
     """
 
     def __init__(
@@ -51,8 +59,18 @@ class Cfa(AnomalyModule):
         num_nearest_neighbors: int = 3,
         num_hard_negative_features: int = 3,
         radius: float = 1e-5,
+        # Anomalib's Auxiliary Components
+        pre_processor: PreProcessor | bool = True,
+        post_processor: PostProcessor | bool = True,
+        evaluator: Evaluator | bool = True,
+        visualizer: Visualizer | bool = True,
     ) -> None:
-        super().__init__()
+        super().__init__(
+            pre_processor=pre_processor,
+            post_processor=post_processor,
+            evaluator=evaluator,
+            visualizer=visualizer,
+        )
         self.model: CfaModel = CfaModel(
             backbone=backbone,
             gamma_c=gamma_c,
@@ -71,11 +89,11 @@ class Cfa(AnomalyModule):
         """Initialize the centroid for the memory bank computation."""
         self.model.initialize_centroid(data_loader=self.trainer.datamodule.train_dataloader())
 
-    def training_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> STEP_OUTPUT:
+    def training_step(self, batch: Batch, *args, **kwargs) -> STEP_OUTPUT:
         """Perform the training step for the CFA model.
 
         Args:
-            batch (dict[str, str | torch.Tensor]): Batch input.
+            batch (Batch): Batch input.
             *args: Arguments.
             **kwargs: Keyword arguments.
 
@@ -84,15 +102,15 @@ class Cfa(AnomalyModule):
         """
         del args, kwargs  # These variables are not used.
 
-        distance = self.model(batch["image"])
+        distance = self.model(batch.image)
         loss = self.loss(distance)
         return {"loss": loss}
 
-    def validation_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> STEP_OUTPUT:
+    def validation_step(self, batch: Batch, *args, **kwargs) -> STEP_OUTPUT:
         """Perform the validation step for the CFA model.
 
         Args:
-            batch (dict[str, str | torch.Tensor]): Input batch.
+            batch (Batch): Input batch.
             *args: Arguments.
             **kwargs: Keyword arguments.
 
@@ -101,8 +119,8 @@ class Cfa(AnomalyModule):
         """
         del args, kwargs  # These variables are not used.
 
-        batch["anomaly_maps"] = self.model(batch["image"])
-        return batch
+        predictions = self.model(batch.image)
+        return batch.update(**predictions._asdict())
 
     @staticmethod
     def backward(loss: torch.Tensor, *args, **kwargs) -> None:

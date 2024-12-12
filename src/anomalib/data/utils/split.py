@@ -20,7 +20,7 @@ from typing import TYPE_CHECKING
 import torch
 
 if TYPE_CHECKING:
-    from anomalib import data
+    from anomalib.data import datasets as data
 
 logger = logging.getLogger(__name__)
 

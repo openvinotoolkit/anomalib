@@ -1,0 +1,167 @@
+# ClamAV Scanner Action
+#
+# This composite action executes antivirus scanning using ClamAV,
+# providing malware detection and security analysis.
+#
+# Key Features:
+# - Malware detection
+# - Real-time database updates
+# - Configurable scan scope
+# - Exclusion support
+# - Performance optimization
+#
+# Process Stages:
+# 1. Environment Setup:
+#    - ClamAV installation
+#    - Database updates
+#    - Cache configuration
+#
+# 2. Scan Execution:
+#    - Target selection
+#    - Exclusion application
+#    - Threat detection
+#
+# 3. Results Processing:
+#    - Report generation
+#    - Threat analysis
+#    - Finding summary
+#
+# Required Inputs:
+# - scan-scope: Files to scan
+# - exclude_dirs: Directories to skip
+# - max_file_size: Size limit for scanning
+#
+# Outputs:
+# - scan_result: Scan exit code
+# - report_path: Results location
+# - threats_found: Number of threats
+#
+# Example Usage:
+# steps:
+#   - uses: ./.github/actions/security/clamav
+#     with:
+#       scan-scope: "changed"
+#       exclude_dirs: ".git,node_modules"
+#
+# Note: Requires sufficient disk space for virus database
+
+name: "ClamAV Security Scan"
+description: "Runs ClamAV antivirus scanner with configurable options"
+
+inputs:
+  scan-scope:
+    description: "Scope of files to scan (all/changed)"
+    required: false
+    default: "changed"
+  paths:
+    description: "Paths to scan when using all scope"
+    required: false
+    default: "."
+  exclude_dirs:
+    description: "Directories to exclude from scan"
+    required: false
+    default: ".git,node_modules,venv"
+  max_file_size:
+    description: "Maximum file size to scan in MB"
+    required: false
+    default: "100"
+  output-format:
+    description: "Format for scan results (json/txt)"
+    required: false
+    default: "json"
+  fail-on-findings:
+    description: "Whether to fail the action if threats are found"
+    required: false
+    default: "true"
+
+outputs:
+  scan_result:
+    description: "Exit code of the ClamAV scan"
+    value: ${{ steps.run-clamav.outputs.exit_code }}
+  report_path:
+    description: "Path to the generated report file"
+    value: ${{ steps.run-clamav.outputs.report_path }}
+  threats_found:
+    description: "Number of threats found during scan"
+    value: ${{ steps.run-clamav.outputs.threats_found }}
+
+runs:
+  using: composite
+  steps:
+    - name: Get changed files
+      if: inputs.scan-scope == 'changed'
+      id: changed-files
+      uses: tj-actions/changed-files@v41
+
+    - name: Run ClamAV scan
+      id: run-clamav
+      uses: docker://clamav/clamav:stable
+      env:
+        GITHUB_OUTPUT: /tmp/gh_output
+      with:
+        entrypoint: sh
+        args: |
+          -c "
+          # Update virus definitions
+          freshclam --quiet
+
+          # Prepare exclude dirs
+          EXCLUDE_DIRS=`echo '${{ inputs.exclude_dirs }}' | tr ',' ' ' | sed 's/[^ ]* */--exclude-dir=&/g'`
+
+          # Convert MB to bytes
+          MAX_FILE_SIZE=`expr ${{ inputs.max_file_size }} \* 1024 \* 1024`
+
+          # Create output directory
+          mkdir -p security-results/clamav
+
+          # Run scan based on scope
+          if [ '${{ inputs.scan-scope }}' = 'changed' ] && [ -n '${{ steps.changed-files.outputs.all_changed_files }}' ]; then
+            echo 'Running ClamAV on changed files'
+            FILES='${{ steps.changed-files.outputs.all_changed_files }}'
+            SCAN_CMD='clamscan'
+          else
+            echo 'Running ClamAV on all files in ${{ inputs.paths }}'
+            FILES='${{ inputs.paths }}'
+            SCAN_CMD='clamscan -r'
+          fi
+
+          # Run scan and capture output
+          $SCAN_CMD \
+            --max-filesize=$MAX_FILE_SIZE \
+            $EXCLUDE_DIRS \
+            $FILES \
+            > scan_output.txt 2>&1
+
+          SCAN_EXIT_CODE=$?
+
+          # Count infected files
+          INFECTED_FILES=`grep 'Infected files:' scan_output.txt | awk '{print $3}'`
+          if [ -z \"$INFECTED_FILES\" ]; then
+            INFECTED_FILES=0
+          fi
+
+          # Generate report
+          if [ '${{ inputs.output-format }}' = 'json' ]; then
+            echo '{
+              \"scan_summary\": {
+                \"files_scanned\": '`grep 'Scanned files:' scan_output.txt | awk '{print $3}'`',
+                \"threats_found\": '$INFECTED_FILES',
+                \"start_time\": \"'`grep 'Start time:' scan_output.txt | cut -d: -f2- | xargs`'\",
+                \"end_time\": \"'`grep 'End time:' scan_output.txt | cut -d: -f2- | xargs`'\"
+              }
+            }' > security-results/clamav/report.json
+          else
+            cp scan_output.txt security-results/clamav/report.txt
+          fi
+
+          # Write to outputs file
+          {
+            echo \"exit_code=$SCAN_EXIT_CODE\"
+            echo \"threats_found=$INFECTED_FILES\"
+            echo \"report_path=security-results/clamav/report.${{ inputs.output-format }}\"
+          } > \"$GITHUB_OUTPUT\"
+
+          if [ '${{ inputs.fail-on-findings }}' = 'true' ] && [ $INFECTED_FILES -gt 0 ]; then
+            exit 1
+          fi
+          "

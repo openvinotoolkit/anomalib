@@ -8,7 +8,7 @@ import pytest
 from anomalib import TaskType
 
 
-@pytest.fixture(params=[TaskType.CLASSIFICATION, TaskType.DETECTION, TaskType.SEGMENTATION])
+@pytest.fixture(params=[TaskType.CLASSIFICATION, TaskType.SEGMENTATION])
 def task_type(request: type[pytest.FixtureRequest]) -> str:
     """Create and return a task type."""
     return request.param

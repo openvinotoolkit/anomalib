@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING
 import torch
 from torch import nn
 
+from anomalib.data import InferenceBatch
 from anomalib.models.components import TimmFeatureExtractor
 
 from .anomaly_map import AnomalyMapGenerationMode, AnomalyMapGenerator
@@ -51,7 +52,7 @@ class ReverseDistillationModel(nn.Module):
 
         self.anomaly_map_generator = AnomalyMapGenerator(image_size=input_size, mode=anomaly_map_mode)
 
-    def forward(self, images: torch.Tensor) -> torch.Tensor | list[torch.Tensor] | tuple[list[torch.Tensor]]:
+    def forward(self, images: torch.Tensor) -> tuple[list[torch.Tensor], list[torch.Tensor]] | InferenceBatch:
         """Forward-pass images to the network.
 
         During the training mode the model extracts features from encoder and decoder networks.
@@ -61,7 +62,7 @@ class ReverseDistillationModel(nn.Module):
             images (torch.Tensor): Batch of images
 
         Returns:
-            torch.Tensor | list[torch.Tensor] | tuple[list[torch.Tensor]]: Encoder and decoder features
+            torch.Tensor | tuple[list[torch.Tensor]] | InferenceBatch: Encoder and decoder features
                 in training mode, else anomaly maps.
         """
         self.encoder.eval()
@@ -79,8 +80,8 @@ class ReverseDistillationModel(nn.Module):
                 decoder_features[i] = self.tiler.untile(features)
 
         if self.training:
-            output = encoder_features, decoder_features
-        else:
-            output = self.anomaly_map_generator(encoder_features, decoder_features)
+            return encoder_features, decoder_features
 
-        return output
+        anomaly_map = self.anomaly_map_generator(encoder_features, decoder_features)
+        pred_score = torch.amax(anomaly_map, dim=(-2, -1))
+        return InferenceBatch(pred_score=pred_score, anomaly_map=anomaly_map)

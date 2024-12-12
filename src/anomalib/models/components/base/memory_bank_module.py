@@ -19,6 +19,7 @@ class MemoryBankMixin(nn.Module):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.register_buffer("_is_fitted", torch.tensor([False]))
+        self.device: torch.device  # defined in lightning module
         self._is_fitted: torch.Tensor
 
     @abstractmethod
@@ -34,10 +35,10 @@ class MemoryBankMixin(nn.Module):
         """Ensure that the model is fitted before validation starts."""
         if not self._is_fitted:
             self.fit()
-            self._is_fitted = torch.tensor([True])
+            self._is_fitted = torch.tensor([True], device=self.device)
 
     def on_train_epoch_end(self) -> None:
         """Ensure that the model is fitted before validation starts."""
         if not self._is_fitted:
             self.fit()
-            self._is_fitted = torch.tensor([True])
+            self._is_fitted = torch.tensor([True], device=self.device)

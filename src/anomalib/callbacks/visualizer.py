@@ -16,7 +16,7 @@ from lightning.pytorch.utilities.types import STEP_OUTPUT
 from anomalib.data.utils.image import save_image, show_image
 from anomalib.loggers import AnomalibWandbLogger
 from anomalib.loggers.base import ImageLoggerBase
-from anomalib.models import AnomalyModule
+from anomalib.models import AnomalibModule
 from anomalib.utils.visualization import (
     BaseVisualizer,
     GeneratorResult,
@@ -77,7 +77,7 @@ class _VisualizationCallback(Callback):
     def on_test_batch_end(
         self,
         trainer: Trainer,
-        pl_module: AnomalyModule,
+        pl_module: AnomalibModule,
         outputs: STEP_OUTPUT | None,
         batch: Any,  # noqa: ANN401
         batch_idx: int,
@@ -114,7 +114,7 @@ class _VisualizationCallback(Callback):
                     if self.log:
                         self._add_to_logger(result, pl_module, trainer)
 
-    def on_test_end(self, trainer: Trainer, pl_module: AnomalyModule) -> None:
+    def on_test_end(self, trainer: Trainer, pl_module: AnomalibModule) -> None:
         for generator in self.generators:
             if generator.visualize_on == VisualizationStep.STAGE_END:
                 for result in generator(trainer=trainer, pl_module=pl_module):
@@ -135,7 +135,7 @@ class _VisualizationCallback(Callback):
     def on_predict_batch_end(
         self,
         trainer: Trainer,
-        pl_module: AnomalyModule,
+        pl_module: AnomalibModule,
         outputs: STEP_OUTPUT | None,
         batch: Any,  # noqa: ANN401
         batch_idx: int,
@@ -143,20 +143,20 @@ class _VisualizationCallback(Callback):
     ) -> None:
         return self.on_test_batch_end(trainer, pl_module, outputs, batch, batch_idx, dataloader_idx)
 
-    def on_predict_end(self, trainer: Trainer, pl_module: AnomalyModule) -> None:
+    def on_predict_end(self, trainer: Trainer, pl_module: AnomalibModule) -> None:
         return self.on_test_end(trainer, pl_module)
 
     @staticmethod
     def _add_to_logger(
         result: GeneratorResult,
-        module: AnomalyModule,
+        module: AnomalibModule,
         trainer: Trainer,
     ) -> None:
         """Add image to logger.
 
         Args:
             result (GeneratorResult): Output from the generators.
-            module (AnomalyModule): LightningModule from which the global step is extracted.
+            module (AnomalibModule): LightningModule from which the global step is extracted.
             trainer (Trainer): Trainer object.
         """
         # Store names of logger and the logger in a dict

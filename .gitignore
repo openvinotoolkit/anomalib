@@ -1,9 +1,8 @@
 # Project related
 datasets
+!src/anomalib/data/datasets
 pre_trained
-!anomalib/datasets
 results
-!anomalib/core/results
 
 # Test-related files and directories
 tmp*
