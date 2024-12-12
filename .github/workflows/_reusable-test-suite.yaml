@@ -83,8 +83,8 @@ on:
         default: 10
       enable-cache:
         description: "Enable pip caching"
-        type: boolean
-        default: true
+        type: string
+        default: "true"
     secrets:
       codecov-token:
         required: false
