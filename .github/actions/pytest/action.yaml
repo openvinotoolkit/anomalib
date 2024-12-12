@@ -139,7 +139,6 @@ runs:
         if [ "${{ inputs.device }}" = "cpu" ]; then
           DEVICE_ARGS="--markers='not gpu'"
         else
-          # For GPU runners, no need to skip GPU tests
           DEVICE_ARGS=""
         fi
 
@@ -149,15 +148,19 @@ runs:
           --durations=10 \
           --durations-min=1.0 \
           --timeout=${{ inputs.max-test-time }} \
-          --json-report --json-report-file=pytest.json \
+          --verbosity=0 \
+          --durations-only \
           $DEVICE_ARGS
 
-        # Store test result
-        echo "success=$?" >> $GITHUB_OUTPUT
+        # Store test result and duration
+        exit_code=$?
+        echo "success=$exit_code" >> $GITHUB_OUTPUT
 
-        # Calculate duration
         end_time=$(date +%s)
-        echo "duration=$((end_time - start_time))" >> $GITHUB_OUTPUT
+        duration=$((end_time - start_time))
+        echo "duration=$duration" >> $GITHUB_OUTPUT
+
+        exit $exit_code
 
     # Fail the workflow if tests failed
     - name: Check test results
@@ -165,16 +168,12 @@ runs:
       shell: bash
       run: exit 1
 
-    # Analyze and report test performance
-    - name: Analyze test performance
-      if: always() # Run even if tests fail
+    # Analyze test performance
+    - name: Check test duration
+      if: always()
       shell: bash
       run: |
         echo "Test Duration: ${{ steps.test-execution.outputs.duration }} seconds"
-
-        # Report slowest tests for optimization
-        echo "Top 10 slowest tests:"
-        cat pytest.json | jq -r '.tests[] | select(.duration >= 1) | "\(.duration)s \(.name)"' | sort -rn | head -n 10
 
         # Warn if tests exceed time limit
         if [ "${{ steps.test-execution.outputs.duration }}" -gt "${{ inputs.max-test-time }}" ]; then
