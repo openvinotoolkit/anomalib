@@ -126,7 +126,6 @@ runs:
             ;;
         esac
 
-    # Execute test suite with performance tracking
     - name: Execute test suite
       id: test-execution
       shell: bash
@@ -139,54 +138,79 @@ runs:
         if [ "${{ inputs.device }}" = "cpu" ]; then
           DEVICE_ARGS="-m cpu"
         else
-          DEVICE_ARGS="-m 'cpu or gpu'"  # Run all tests on GPU
+          if python -c "import torch; print(torch.cuda.is_available())" | grep -q "True"; then
+            DEVICE_ARGS="-m 'cpu or gpu'"
+          else
+            echo "::warning::GPU requested but CUDA is not available. Running CPU tests only."
+            DEVICE_ARGS="-m cpu"
+          fi
         fi
 
-        # Run pytest
+        # Run pytest with settings to show all failures
         PYTHONPATH=src pytest ${{ steps.test-scope.outputs.path }} \
           --numprocesses=0 \
           --durations=10 \
           --durations-min=1.0 \
           --timeout=${{ inputs.max-test-time }} \
-          --verbosity=0 \
-          ${DEVICE_ARGS}
+          --verbosity=1 \
+          --tb=short \
+          -ra \
+          --no-header \
+          ${DEVICE_ARGS} | tee pytest_output.log
 
-        test_exit_code=$?
-        echo "success=$test_exit_code" >> $GITHUB_OUTPUT
+        test_exit_code=${PIPESTATUS[0]}
 
+        # Calculate and store duration
         end_time=$(date +%s)
         duration=$((end_time - start_time))
         echo "duration=$duration" >> $GITHUB_OUTPUT
+        echo "success=$([[ $test_exit_code == 0 ]] && echo true || echo false)" >> $GITHUB_OUTPUT
 
-        # Exit with the test result - this will set the step status but won't stop the workflow
+        # Store test results summary
+        if [ $test_exit_code -ne 0 ]; then
+          echo "::error::Tests failed. See summary below:"
+          echo "----------------------------------------"
+          # Extract the summary section from pytest output
+          sed -n '/=* short test summary info =*/,$p' pytest_output.log || true
+          echo "----------------------------------------"
+          echo "Full test output saved to artifacts"
+        fi
+
         exit $test_exit_code
 
-    # Always fail the workflow if tests failed, but after all steps complete
+    - name: Upload test results
+      if: always() && steps.test-execution.outcome == 'failure'
+      uses: actions/upload-artifact@v3
+      with:
+        name: pytest-results-${{ inputs.test-type }}
+        path: pytest_output.log
+        retention-days: 7
+
     - name: Check test results
-      if: always() && steps.test-execution.outcome != 'success'
+      if: always() && steps.test-execution.outcome == 'failure'
       shell: bash
       run: exit 1
 
-    # Analyze test performance
     - name: Check test duration
       if: always()
       shell: bash
       run: |
         duration="${{ steps.test-execution.outputs.duration }}"
-        echo "Test Duration: ${duration:-0} seconds"
+        if [ -n "$duration" ]; then
+          echo "Test Duration: $duration seconds"
 
-        # Warn if tests exceed time limit
-        if [ -n "$duration" ] && [ "$duration" -gt "${{ inputs.max-test-time }}" ]; then
-          echo "::warning::Test suite exceeded recommended duration of ${{ inputs.max-test-time }} seconds"
+          if [ "$duration" -gt "${{ inputs.max-test-time }}" ]; then
+            echo "::warning::Test suite exceeded recommended duration of ${{ inputs.max-test-time }} seconds"
+          fi
+        else
+          echo "Test Duration: Not available"
         fi
 
-    # Upload coverage data to Codecov
     - name: Upload coverage to Codecov
-      if: steps.test-execution.outputs.success == 'true'
+      if: success()
       shell: bash
       run: |
         source .venv/bin/activate
-        # Upload with test type and Python version tags
         codecov --token "${{ inputs.codecov-token }}" \
                 --file coverage.xml \
                 --flags "${{ inputs.test-type }}_py${{ inputs.python-version }}" \
