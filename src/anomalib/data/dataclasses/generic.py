@@ -17,7 +17,9 @@ from typing import Any, ClassVar, Generic, TypeVar, get_args, get_type_hints
 
 import numpy as np
 import torch
+from torch import tensor
 from torch.utils.data import default_collate
+from torchvision.transforms.v2.functional import resize
 from torchvision.tv_tensors import Image, Mask, Video
 
 ImageT = TypeVar("ImageT", Image, Video, np.ndarray)
@@ -656,5 +658,20 @@ class BatchIterateMixin(Generic[ItemT]):
     def collate(cls: type["BatchIterateMixin"], items: list[ItemT]) -> "BatchIterateMixin":
         """Convert a list of DatasetItem objects to a Batch object."""
         keys = [key for key, value in asdict(items[0]).items() if value is not None]
+
+        # Check if all images have the same shape. If not, resize before collating
+        im_shapes = torch.vstack([tensor(item.image.shape) for item in items if item.image is not None])[..., 1:]
+        if torch.unique(im_shapes, dim=0).size(0) != 1:  # check if batch has heterogeneous shapes
+            target_shape = im_shapes[
+                torch.unravel_index(im_shapes.argmax(), im_shapes.shape)[0],
+                :,
+            ]  # shape of image with largest H or W
+            for item in items:
+                for key in keys:
+                    value = getattr(item, key)
+                    if isinstance(value, Image | Mask):
+                        setattr(item, key, resize(value, target_shape))
+
+        # collate the batch
         out_dict = {key: default_collate([getattr(item, key) for item in items]) for key in keys}
         return cls(**out_dict)
