@@ -92,7 +92,7 @@ jobs:
         uses: ./.github/actions/security/semgrep
         with:
           scan-scope: ${{ inputs.scan-scope }}
-          severity-level: ${{ inputs.severity-level }}
+          severity: ${{ inputs.severity-level }}
           fail-on-findings: ${{ inputs.fail-on-findings }}
       - uses: actions/upload-artifact@v4
         if: always()
@@ -114,7 +114,7 @@ jobs:
         uses: ./.github/actions/security/trivy
         with:
           scan_type: "fs"
-          scan_scope: ${{ inputs.scan-scope }}
+          scan-scope: ${{ inputs.scan-scope }}
           severity: ${{ inputs.severity-level }},HIGH,CRITICAL
           scanners: "vuln,secret"
           format: "sarif"
@@ -166,14 +166,22 @@ jobs:
             echo "has_findings=false" >> $GITHUB_OUTPUT
           fi
 
+      # Create directory first
+      - name: Create results directory
+        run: mkdir -p all-results
+
+      # Download artifacts with error handling
       - name: Download all results
         uses: actions/download-artifact@v4
+        continue-on-error: true # Don't fail if some tools didn't generate results
         with:
           pattern: "*-results"
           merge-multiple: true
           path: all-results
 
+      # Only upload if there are files
       - name: Upload combined results
+        if: hashFiles('all-results/**/*') != ''
         uses: actions/upload-artifact@v4
         with:
           name: security-scan-results

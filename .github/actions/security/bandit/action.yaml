@@ -27,9 +27,9 @@
 #    - Output formatting
 #
 # Required Inputs:
-# - scan_scope: Files to scan
+# - scan-scope: Files to scan
 # - severity_level: Issue severity threshold
-# - fail_on_findings: Whether to fail on issues
+# - fail-on-findings: Whether to fail on issues
 #
 # Outputs:
 # - scan_result: Scan exit code
@@ -39,7 +39,7 @@
 # steps:
 #   - uses: ./.github/actions/security/bandit
 #     with:
-#       scan_scope: "changed"
+#       scan-scope: "changed"
 #       severity_level: "MEDIUM"
 #
 # Note: Configure Bandit settings in pyproject.toml for best results
@@ -48,7 +48,7 @@ name: "Bandit Security Scan"
 description: "Runs Bandit security scanner with configurable options"
 
 inputs:
-  scan_scope:
+  scan-scope:
     description: "Scope of files to scan (all/changed)"
     required: false
     default: "changed"
@@ -68,11 +68,11 @@ inputs:
     description: "Minimum confidence level to report (all/LOW/MEDIUM/HIGH)"
     required: false
     default: "LOW"
-  output_format:
+  output-format:
     description: "Format for scan results (json/txt/html/csv)"
     required: false
     default: "json"
-  fail_on_findings:
+  fail-on-findings:
     description: "Whether to fail the action if issues are found"
     required: false
     default: "true"
@@ -100,7 +100,7 @@ runs:
         pip install bandit[toml]
 
     - name: Get changed files
-      if: inputs.scan_scope == 'changed'
+      if: inputs.scan-scope == 'changed'
       id: changed-files
       uses: tj-actions/changed-files@v41
       with:
@@ -113,9 +113,9 @@ runs:
       id: run-bandit
       shell: bash
       run: |
-        REPORT_FILE="bandit-report.${{ inputs.output_format }}"
+        REPORT_FILE="bandit-report.${{ inputs.output-format }}"
 
-        if [[ "${{ inputs.scan_scope }}" == "changed" && -n "${{ steps.changed-files.outputs.all_changed_files }}" ]]; then
+        if [[ "${{ inputs.scan-scope }}" == "changed" && -n "${{ steps.changed-files.outputs.all_changed_files }}" ]]; then
           echo "Running Bandit on changed files"
           FILES="${{ steps.changed-files.outputs.all_changed_files }}"
         else
@@ -131,12 +131,12 @@ runs:
           -c ${{ inputs.config_file }} \
           --severity-level ${SEVERITY} \
           --confidence-level ${CONFIDENCE} \
-          -f ${{ inputs.output_format }} \
+          -f ${{ inputs.output-format }} \
           -o "${REPORT_FILE}" \
           -r ${FILES} || echo "exit_code=$?" >> $GITHUB_OUTPUT
 
         echo "report_path=${REPORT_FILE}" >> $GITHUB_OUTPUT
 
-        if [[ "${{ inputs.fail_on_findings }}" == "true" && -n "$exit_code" && "$exit_code" != "0" ]]; then
+        if [[ "${{ inputs.fail-on-findings }}" == "true" && -n "$exit_code" && "$exit_code" != "0" ]]; then
           exit $exit_code
         fi

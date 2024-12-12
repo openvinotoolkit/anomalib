@@ -53,7 +53,7 @@ inputs:
     description: "Type of scan to perform (fs/config/image/repo/rootfs)"
     required: false
     default: "fs"
-  scan_scope:
+  scan-scope:
     description: "Scope of files to scan (all/changed)"
     required: false
     default: "changed"
@@ -106,7 +106,7 @@ runs:
   using: composite
   steps:
     - name: Get changed files
-      if: inputs.scan_scope == 'changed'
+      if: inputs.scan-scope == 'changed'
       id: changed-files
       uses: tj-actions/changed-files@v41
 
@@ -140,7 +140,7 @@ runs:
         echo "Output will be saved to: ${REPORT_FILE}"
 
         # Always scan the entire directory but use different paths based on scope
-        if [[ "${{ inputs.scan_scope }}" == "changed" && -n "${{ steps.changed-files.outputs.all_changed_files }}" ]]; then
+        if [[ "${{ inputs.scan-scope }}" == "changed" && -n "${{ steps.changed-files.outputs.all_changed_files }}" ]]; then
           echo "Changed files detected, scanning repository"
           SCAN_TARGET="."
         else

@@ -27,7 +27,7 @@
 #    - Output formatting
 #
 # Required Inputs:
-# - scan_scope: Files to scan
+# - scan-scope: Files to scan
 # - config: Rule configuration
 # - severity: Issue threshold
 #
@@ -39,7 +39,7 @@
 # steps:
 #   - uses: ./.github/actions/security/semgrep
 #     with:
-#       scan_scope: "changed"
+#       scan-scope: "changed"
 #       config: "p/owasp-top-ten"
 #
 # Note: Consider using custom rule sets for project-specific checks
@@ -48,7 +48,7 @@ name: "Semgrep SAST Scan"
 description: "Runs Semgrep security scanner with configurable options"
 
 inputs:
-  scan_scope:
+  scan-scope:
     description: "Scope of files to scan (all/changed)"
     required: false
     default: "changed"
@@ -68,11 +68,11 @@ inputs:
     description: "Maximum time to run semgrep in seconds"
     required: false
     default: "300"
-  output_format:
+  output-format:
     description: "Format for scan results (text/json/sarif)"
     required: false
     default: "sarif"
-  fail_on_findings:
+  fail-on-findings:
     description: "Whether to fail the action if issues are found"
     required: false
     default: "true"
@@ -100,7 +100,7 @@ runs:
         pip install semgrep
 
     - name: Get changed files
-      if: inputs.scan_scope == 'changed'
+      if: inputs.scan-scope == 'changed'
       id: changed-files
       uses: tj-actions/changed-files@v41
       with:
@@ -111,9 +111,12 @@ runs:
       id: run-semgrep
       shell: bash
       run: |
-        REPORT_FILE="semgrep-results.${{ inputs.output_format }}"
+        # Create results directory
+        mkdir -p security-results/semgrep
 
-        if [[ "${{ inputs.scan_scope }}" == "changed" && -n "${{ steps.changed-files.outputs.all_changed_files }}" ]]; then
+        REPORT_FILE="security-results/semgrep/semgrep-results.${{ inputs.output-format }}"
+
+        if [[ "${{ inputs.scan-scope }}" == "changed" && -n "${{ steps.changed-files.outputs.all_changed_files }}" ]]; then
           echo "Running Semgrep on changed files"
           FILES="${{ steps.changed-files.outputs.all_changed_files }}"
         else
@@ -125,12 +128,12 @@ runs:
           --config ${{ inputs.config }} \
           --severity ${{ inputs.severity }} \
           --timeout ${{ inputs.timeout }} \
-          --${{ inputs.output_format }} \
+          --${{ inputs.output-format }} \
           -o "${REPORT_FILE}" \
           ${FILES} || echo "exit_code=$?" >> $GITHUB_OUTPUT
 
         echo "report_path=${REPORT_FILE}" >> $GITHUB_OUTPUT
 
-        if [[ "${{ inputs.fail_on_findings }}" == "true" && -n "$exit_code" && "$exit_code" != "0" ]]; then
+        if [[ "${{ inputs.fail-on-findings }}" == "true" && -n "$exit_code" && "$exit_code" != "0" ]]; then
           exit $exit_code
         fi

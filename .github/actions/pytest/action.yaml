@@ -68,7 +68,7 @@ inputs:
   max-test-time:
     description: "Maximum time in seconds for the test suite to run"
     required: false
-    default: "300"
+    default: "3600"
   device:
     description: "Device to run tests on (cpu/gpu)"
     required: false

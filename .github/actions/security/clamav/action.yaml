@@ -27,7 +27,7 @@
 #    - Finding summary
 #
 # Required Inputs:
-# - scan_scope: Files to scan
+# - scan-scope: Files to scan
 # - exclude_dirs: Directories to skip
 # - max_file_size: Size limit for scanning
 #
@@ -40,7 +40,7 @@
 # steps:
 #   - uses: ./.github/actions/security/clamav
 #     with:
-#       scan_scope: "changed"
+#       scan-scope: "changed"
 #       exclude_dirs: ".git,node_modules"
 #
 # Note: Requires sufficient disk space for virus database
@@ -49,7 +49,7 @@ name: "ClamAV Security Scan"
 description: "Runs ClamAV antivirus scanner with configurable options"
 
 inputs:
-  scan_scope:
+  scan-scope:
     description: "Scope of files to scan (all/changed)"
     required: false
     default: "changed"
@@ -65,11 +65,11 @@ inputs:
     description: "Maximum file size to scan in MB"
     required: false
     default: "100"
-  output_format:
+  output-format:
     description: "Format for scan results (json/txt)"
     required: false
     default: "json"
-  fail_on_findings:
+  fail-on-findings:
     description: "Whether to fail the action if threats are found"
     required: false
     default: "true"
@@ -89,7 +89,7 @@ runs:
   using: composite
   steps:
     - name: Get changed files
-      if: inputs.scan_scope == 'changed'
+      if: inputs.scan-scope == 'changed'
       id: changed-files
       uses: tj-actions/changed-files@v41
 
@@ -115,7 +115,7 @@ runs:
           mkdir -p security-results/clamav
 
           # Run scan based on scope
-          if [ '${{ inputs.scan_scope }}' = 'changed' ] && [ -n '${{ steps.changed-files.outputs.all_changed_files }}' ]; then
+          if [ '${{ inputs.scan-scope }}' = 'changed' ] && [ -n '${{ steps.changed-files.outputs.all_changed_files }}' ]; then
             echo 'Running ClamAV on changed files'
             FILES='${{ steps.changed-files.outputs.all_changed_files }}'
             SCAN_CMD='clamscan'
@@ -141,7 +141,7 @@ runs:
           fi
 
           # Generate report
-          if [ '${{ inputs.output_format }}' = 'json' ]; then
+          if [ '${{ inputs.output-format }}' = 'json' ]; then
             echo '{
               \"scan_summary\": {
                 \"files_scanned\": '`grep 'Scanned files:' scan_output.txt | awk '{print $3}'`',
@@ -158,10 +158,10 @@ runs:
           {
             echo \"exit_code=$SCAN_EXIT_CODE\"
             echo \"threats_found=$INFECTED_FILES\"
-            echo \"report_path=security-results/clamav/report.${{ inputs.output_format }}\"
+            echo \"report_path=security-results/clamav/report.${{ inputs.output-format }}\"
           } > \"$GITHUB_OUTPUT\"
 
-          if [ '${{ inputs.fail_on_findings }}' = 'true' ] && [ $INFECTED_FILES -gt 0 ]; then
+          if [ '${{ inputs.fail-on-findings }}' = 'true' ] && [ $INFECTED_FILES -gt 0 ]; then
             exit 1
           fi
           "
