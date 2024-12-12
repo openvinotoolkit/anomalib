@@ -62,7 +62,6 @@ inputs:
     default: "pyproject.toml"
   severity_level:
     description: "Minimum severity level to report (all/LOW/MEDIUM/HIGH)"
-    required: false
     default: "LOW"
   confidence_level:
     description: "Minimum confidence level to report (all/LOW/MEDIUM/HIGH)"
