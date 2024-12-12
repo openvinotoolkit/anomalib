@@ -31,6 +31,7 @@
 # - test-type: Type of test to run (unit/integration/e2e)
 # - runner: Runner to use for the tests
 # - timeout: Test timeout in minutes
+# - enable-cache: Enable pip caching
 #
 # Required Secrets:
 # - codecov-token: Token for coverage reporting (optional)
@@ -80,6 +81,10 @@ on:
         description: "Test timeout in minutes"
         type: number
         default: 10
+      enable-cache:
+        description: "Enable pip caching"
+        type: boolean
+        default: true
     secrets:
       codecov-token:
         required: false
@@ -108,3 +113,4 @@ jobs:
           test-type: ${{ inputs.test-type }}
           codecov-token: ${{ secrets.codecov-token }}
           device: ${{ contains(inputs.runner, 'self-hosted') && 'gpu' || 'cpu' }}
+          enable-cache: ${{ inputs.enable-cache }}

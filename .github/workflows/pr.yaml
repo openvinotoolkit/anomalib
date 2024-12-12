@@ -58,6 +58,7 @@ jobs:
     uses: ./.github/workflows/_reusable-test-suite.yaml
     with:
       test-type: "unit"
+      enable-cache: true
       runner: "ubuntu-latest"
       timeout: 10
     secrets:
@@ -67,6 +68,7 @@ jobs:
     uses: ./.github/workflows/_reusable-test-suite.yaml
     with:
       test-type: "integration"
+      enable-cache: false
       runner: "self-hosted"
       timeout: 30
     secrets:

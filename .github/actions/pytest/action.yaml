@@ -33,6 +33,7 @@
 # - codecov-token: Token for coverage upload
 # - max-test-time: Maximum test duration
 # - device: Device to run tests on (cpu/gpu)
+# - enable-cache: Enable pip caching
 #
 # Outputs:
 # - coverage-percentage: Total coverage
@@ -72,6 +73,10 @@ inputs:
     description: "Device to run tests on (cpu/gpu)"
     required: false
     default: "gpu"
+  enable-cache:
+    description: "Enable pip caching"
+    required: false
+    default: "true"
 
 outputs:
   coverage-percentage:
@@ -87,45 +92,28 @@ outputs:
 runs:
   using: composite
   steps:
+    # Set up Python with pip caching
     - name: Set up Python environment
       uses: actions/setup-python@v5
       with:
         python-version: ${{ inputs.python-version }}
+        cache: ${{ inputs.enable-cache == 'true' }}
+        cache-dependency-path: pyproject.toml
 
-    - name: Configure pip cache
-      shell: bash
-      run: |
-        CACHE_DIR="/opt/github/cache/pip"
-
-        # Ensure cache directory exists and is writable
-        sudo mkdir -p $CACHE_DIR
-        sudo chmod 777 $CACHE_DIR
-
-        # Configure pip to use the persistent cache
-        pip config set global.cache-dir $CACHE_DIR
-
-        # Display cache info
-        echo "Using pip cache directory: $(pip cache dir)"
-        echo "Current cache size: $(du -sh $CACHE_DIR 2>/dev/null || echo 'Empty')"
-
+    # Create and configure virtual environment
     - name: Configure virtual environment
       id: setup-venv
       shell: bash
       run: |
-        # Create and activate venv
+        # Create isolated test environment
         python -m venv .venv
         source .venv/bin/activate
-
-        # Upgrade pip
+        # Install dependencies with dev extras
         python -m pip install --upgrade pip
-
-        # Install dependencies using the persistent cache
-        pip install --prefer-binary ".[dev]"
+        pip install ".[dev]"
         pip install codecov
 
-        # Show installed packages for debugging
-        pip list
-
+    # Determine which tests to run based on input
     - name: Determine test scope
       id: test-scope
       shell: bash
@@ -155,7 +143,7 @@ runs:
         if [ "${{ inputs.device }}" = "cpu" ]; then
           marker="-m cpu"  # Only run CPU tests
         else
-          marker="-m gpu"  # Run all tests
+          marker=""  # Run all tests (both CPU and GPU marked tests)
         fi
 
         # Run pytest
