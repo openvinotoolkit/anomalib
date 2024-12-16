@@ -41,7 +41,7 @@ class MVTec3DDataset(AnomalibDepthDataset):
             Defaults to ``"./datasets/MVTec3D"``.
         category (str): Sub-category of the dataset, e.g. 'bagel'
             Defaults to ``"bagel"``.
-        transform (Transform, optional): Transforms that should be applied to the input images.
+        augmentations (Transform, optional): Augmentations that should be applied to the input images.
             Defaults to ``None``.
         split (str | Split | None): Split of the dataset, usually Split.TRAIN or Split.TEST
             Defaults to ``None``.
@@ -51,10 +51,10 @@ class MVTec3DDataset(AnomalibDepthDataset):
         self,
         root: Path | str = "./datasets/MVTec3D",
         category: str = "bagel",
-        transform: Transform | None = None,
+        augmentations: Transform | None = None,
         split: str | Split | None = None,
     ) -> None:
-        super().__init__(transform=transform)
+        super().__init__(augmentations=augmentations)
 
         self.root_category = Path(root) / Path(category)
         self.split = split

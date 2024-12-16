@@ -46,10 +46,10 @@ class KolektorDataset(AnomalibDataset):
     def __init__(
         self,
         root: Path | str = "./datasets/kolektor",
-        transform: Transform | None = None,
+        augmentations: Transform | None = None,
         split: str | Split | None = None,
     ) -> None:
-        super().__init__(transform=transform)
+        super().__init__(augmentations=augmentations)
 
         self.root = root
         self.split = split

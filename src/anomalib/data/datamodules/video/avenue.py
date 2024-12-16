@@ -21,6 +21,7 @@ from shutil import move
 
 import cv2
 import scipy.io
+from torchvision.transforms.v2 import Transform
 
 from anomalib.data.datamodules.base.video import AnomalibVideoDataModule
 from anomalib.data.datasets.base.video import VideoTargetFrame
@@ -61,6 +62,14 @@ class Avenue(AnomalibVideoDataModule):
             Defaults to ``32``.
         num_workers (int, optional): Number of workers.
             Defaults to ``8``.
+        train_augmentations (Transform | None): Augmentations to apply dto the training images
+            Defaults to ``None``.
+        val_augmentations (Transform | None): Augmentations to apply to the validation images.
+            Defaults to ``None``.
+        test_augmentations (Transform | None): Augmentations to apply to the test images.
+            Defaults to ``None``.
+        augmentations (Transform | None): General augmentations to apply if stage-specific
+            augmentations are not provided.
         val_split_mode (ValSplitMode): Setting that determines how the validation subset is obtained.
             Defaults to ``ValSplitMode.FROM_TEST``.
         val_split_ratio (float): Fraction of train or test images that will be reserved for validation.
@@ -124,6 +133,10 @@ class Avenue(AnomalibVideoDataModule):
         train_batch_size: int = 32,
         eval_batch_size: int = 32,
         num_workers: int = 8,
+        train_augmentations: Transform | None = None,
+        val_augmentations: Transform | None = None,
+        test_augmentations: Transform | None = None,
+        augmentations: Transform | None = None,
         val_split_mode: ValSplitMode | str = ValSplitMode.SAME_AS_TEST,
         val_split_ratio: float = 0.5,
         seed: int | None = None,
@@ -132,6 +145,10 @@ class Avenue(AnomalibVideoDataModule):
             train_batch_size=train_batch_size,
             eval_batch_size=eval_batch_size,
             num_workers=num_workers,
+            train_augmentations=train_augmentations,
+            val_augmentations=val_augmentations,
+            test_augmentations=test_augmentations,
+            augmentations=augmentations,
             val_split_mode=val_split_mode,
             val_split_ratio=val_split_ratio,
             seed=seed,

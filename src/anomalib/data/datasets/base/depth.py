@@ -23,14 +23,14 @@ class AnomalibDepthDataset(AnomalibDataset, ABC):
     """Base depth anomalib dataset class.
 
     Args:
-        transform (Transform, optional): Transforms that should be applied to the input images.
+        augmentations (Transform, optional): Augmentations that should be applied to the input images.
             Defaults to ``None``.
     """
 
-    def __init__(self, transform: Transform | None = None) -> None:
-        super().__init__(transform)
+    def __init__(self, augmentations: Transform | None = None) -> None:
+        super().__init__(augmentations=augmentations)
 
-        self.transform = transform
+        self.augmentations = augmentations
 
     def __getitem__(self, index: int) -> DepthItem:
         """Return rgb image, depth image and mask.
@@ -52,7 +52,7 @@ class AnomalibDepthDataset(AnomalibDataset, ABC):
 
         if self.task == TaskType.CLASSIFICATION:
             item["image"], item["depth_image"] = (
-                self.transform(image, depth_image) if self.transform else (image, depth_image)
+                self.augmentations(image, depth_image) if self.augmentations else (image, depth_image)
             )
         elif self.task == TaskType.SEGMENTATION:
             # Only Anomalous (1) images have masks in anomaly datasets
@@ -63,7 +63,7 @@ class AnomalibDepthDataset(AnomalibDataset, ABC):
                 else Mask(to_tensor(Image.open(mask_path)).squeeze())
             )
             item["image"], item["depth_image"], item["mask"] = (
-                self.transform(image, depth_image, mask) if self.transform else (image, depth_image, mask)
+                self.augmentations(image, depth_image, mask) if self.augmentations else (image, depth_image, mask)
             )
             item["mask_path"] = mask_path
 
