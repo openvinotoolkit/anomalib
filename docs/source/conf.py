@@ -16,7 +16,7 @@ import sys
 from pathlib import Path
 
 # Define paths
-project_root = Path(__file__).parent.parent
+project_root = Path(__file__).parent.parent.parent
 module_path = project_root / "src"
 examples_path = project_root / "examples"
 
@@ -40,19 +40,22 @@ extensions = [
     "sphinx.ext.napoleon",
     "sphinx_autodoc_typehints",
     "sphinx_copybutton",
-    # Add these new extensions
-    "sphinx.ext.intersphinx",  # For cross-referencing
-    "sphinx.ext.autosectionlabel",  # For section references
+    "sphinx.ext.intersphinx",
+    "sphinx.ext.autosectionlabel",
 ]
 
 # MyST configuration
 myst_enable_extensions = [
     "colon_fence",
-    "linkify",  # Automatically linkify URLs
-    "substitution",  # Allow variable substitution
-    "tasklist",  # Support task lists
-    # Add your other MyST extensions here
+    "linkify",
+    "substitution",
+    "tasklist",
+    "deflist",
+    "fieldlist",
 ]
+
+# Add separate setting for eval-rst
+myst_enable_eval_rst = True
 
 # Notebook handling
 nbsphinx_allow_errors = True
@@ -61,7 +64,17 @@ nbsphinx_timeout = 300  # Timeout in seconds
 
 # Templates and patterns
 templates_path = ["_templates"]
-exclude_patterns: list[str] = ["_build", "**.ipynb_checkpoints"]
+exclude_patterns: list[str] = [
+    "_build",
+    "**.ipynb_checkpoints",
+    "**/.pytest_cache",
+    "**/.git",
+    "**/.github",
+    "**/.venv",
+    "**/*.egg-info",
+    "**/build",
+    "**/dist",
+]
 
 # Automatic exclusion of prompts from the copies
 # https://sphinx-copybutton.readthedocs.io/en/latest/use.html#automatic-exclusion-of-prompts-from-the-copies
