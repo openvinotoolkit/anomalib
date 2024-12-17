@@ -4,6 +4,30 @@ This module provides a set of generic dataclasses and mixins that can be used
 to define and validate various types of data fields used in Anomalib.
 The dataclasses are designed to be flexible and extensible, allowing for easy
 customization and validation of input and output data.
+
+The module contains several key components:
+
+- Field descriptors for validation
+- Base input field classes for images, videos and depth data
+- Output field classes for predictions
+- Mixins for updating and batch iteration
+- Generic item and batch classes
+
+Example:
+    >>> from anomalib.data.dataclasses import _InputFields
+    >>> from torchvision.tv_tensors import Image, Mask
+    >>>
+    >>> class MyInput(_InputFields[int, Image, Mask, str]):
+    ...     def validate_image(self, image):
+    ...         return image
+    ...     # Implement other validation methods
+    ...
+    >>> input_data = MyInput(
+    ...     image=torch.rand(3,224,224),
+    ...     gt_label=1,
+    ...     gt_mask=None,
+    ...     mask_path=None
+    ... )
 """
 
 # Copyright (C) 2024 Intel Corporation
@@ -37,12 +61,21 @@ class FieldDescriptor(Generic[Value]):
     validated before being set. This allows validation of the input data not
     only when it is first set, but also when it is updated.
 
-    Attributes:
-        validator_name (str | None): The name of the validator method to be
-            called when setting the value.
+    Args:
+        validator_name: Name of the validator method to call when setting value.
             Defaults to ``None``.
-        default (Value | None): The default value for the field.
-            Defaults to ``None``.
+        default: Default value for the field. Defaults to ``None``.
+
+    Example:
+        >>> class MyClass:
+        ...     field = FieldDescriptor(validator_name="validate_field")
+        ...     def validate_field(self, value):
+        ...         return value
+        ...
+        >>> obj = MyClass()
+        >>> obj.field = 42
+        >>> obj.field
+        42
     """
 
     def __init__(self, validator_name: str | None = None, default: Value | None = None) -> None:
@@ -51,15 +84,26 @@ class FieldDescriptor(Generic[Value]):
         self.default = default
 
     def __set_name__(self, owner: type[Instance], name: str) -> None:
-        """Set the name of the descriptor."""
+        """Set the name of the descriptor.
+
+        Args:
+            owner: Class that owns the descriptor
+            name: Name of the descriptor in the owner class
+        """
         self.name = name
 
     def __get__(self, instance: Instance | None, owner: type[Instance]) -> Value | None:
         """Get the value of the descriptor.
 
+        Args:
+            instance: Instance the descriptor is accessed from
+            owner: Class that owns the descriptor
+
         Returns:
-            - The default value if available and if the instance is None (method is called from class).
-            - The value of the attribute if the instance is not None (method is called from instance).
+            Default value if instance is None, otherwise the stored value
+
+        Raises:
+            AttributeError: If no default value and field is not optional
         """
         if instance is None:
             if self.default is not None or self.is_optional(owner):
@@ -71,7 +115,11 @@ class FieldDescriptor(Generic[Value]):
     def __set__(self, instance: object, value: Value) -> None:
         """Set the value of the descriptor.
 
-        First calls the validator method if available, then sets the value of the attribute.
+        First calls the validator method if available, then sets the value.
+
+        Args:
+            instance: Instance to set the value on
+            value: Value to set
         """
         if self.validator_name is not None:
             validator = getattr(instance, self.validator_name)
@@ -79,7 +127,17 @@ class FieldDescriptor(Generic[Value]):
         instance.__dict__[self.name] = value
 
     def get_types(self, owner: type[Instance]) -> tuple[type, ...]:
-        """Get the types of the descriptor."""
+        """Get the types of the descriptor.
+
+        Args:
+            owner: Class that owns the descriptor
+
+        Returns:
+            Tuple of valid types for this field
+
+        Raises:
+            TypeError: If types cannot be determined
+        """
         try:
             types = get_args(get_type_hints(owner)[self.name])
             return get_args(types[0]) if hasattr(types[0], "__args__") else (types[0],)
@@ -88,7 +146,14 @@ class FieldDescriptor(Generic[Value]):
             raise TypeError(msg) from e
 
     def is_optional(self, owner: type[Instance]) -> bool:
-        """Check if the descriptor is optional."""
+        """Check if the descriptor is optional.
+
+        Args:
+            owner: Class that owns the descriptor
+
+        Returns:
+            True if field can be None, False otherwise
+        """
         return NoneType in self.get_types(owner)
 
 
@@ -96,36 +161,28 @@ class FieldDescriptor(Generic[Value]):
 class _InputFields(Generic[T, ImageT, MaskT, PathT], ABC):
     """Generic dataclass that defines the standard input fields for Anomalib.
 
-    This abstract base class provides a structure for input data used in Anomalib,
-    a library for anomaly detection in images and videos. It defines common fields
-    used across various anomaly detection tasks and data types in Anomalib.
+    This abstract base class provides a structure for input data used in Anomalib.
+    It defines common fields used across various anomaly detection tasks and data
+    types.
 
-    Subclasses must implement the abstract validation methods to define the
-    specific validation logic for each field based on the requirements of different
-    Anomalib models and data processing pipelines.
+    Attributes:
+        image: Input image or video
+        gt_label: Ground truth label
+        gt_mask: Ground truth segmentation mask
+        mask_path: Path to mask file
 
-    Examples:
-        Assuming a concrete implementation `DummyInput`:
-
-        >>> class DummyInput(_InputFields[int, Image, Mask, str]):
-        ...     # Implement actual validation
-
-        >>> # Create an input instance
-        >>> input_item = DummyInput(
-        ...     image=torch.rand(3, 224, 224),
+    Example:
+        >>> class MyInput(_InputFields[int, Image, Mask, str]):
+        ...     def validate_image(self, image):
+        ...         return image
+        ...     # Implement other validation methods
+        ...
+        >>> input_data = MyInput(
+        ...     image=torch.rand(3,224,224),
         ...     gt_label=1,
-        ...     gt_mask=torch.rand(224, 224) > 0.5,
-        ...     mask_path="path/to/mask.png"
+        ...     gt_mask=None,
+        ...     mask_path=None
         ... )
-
-        >>> # Access fields
-        >>> image = input_item.image
-        >>> label = input_item.gt_label
-
-    Note:
-        This is an abstract base class and is not intended to be instantiated
-        directly. Concrete subclasses should implement all required validation
-        methods.
     """
 
     image: FieldDescriptor[ImageT] = FieldDescriptor(validator_name="validate_image")
@@ -136,25 +193,65 @@ class _InputFields(Generic[T, ImageT, MaskT, PathT], ABC):
     @staticmethod
     @abstractmethod
     def validate_image(image: ImageT) -> ImageT:
-        """Validate the image."""
+        """Validate the image.
+
+        Args:
+            image: Input image to validate
+
+        Returns:
+            Validated image
+
+        Raises:
+            NotImplementedError: Must be implemented by subclass
+        """
         raise NotImplementedError
 
     @staticmethod
     @abstractmethod
     def validate_gt_mask(gt_mask: MaskT) -> MaskT | None:
-        """Validate the ground truth mask."""
+        """Validate the ground truth mask.
+
+        Args:
+            gt_mask: Ground truth mask to validate
+
+        Returns:
+            Validated mask or None
+
+        Raises:
+            NotImplementedError: Must be implemented by subclass
+        """
         raise NotImplementedError
 
     @staticmethod
     @abstractmethod
     def validate_mask_path(mask_path: PathT) -> PathT | None:
-        """Validate the mask path."""
+        """Validate the mask path.
+
+        Args:
+            mask_path: Path to mask file to validate
+
+        Returns:
+            Validated path or None
+
+        Raises:
+            NotImplementedError: Must be implemented by subclass
+        """
         raise NotImplementedError
 
     @staticmethod
     @abstractmethod
     def validate_gt_label(gt_label: T) -> T | None:
-        """Validate the ground truth label."""
+        """Validate the ground truth label.
+
+        Args:
+            gt_label: Ground truth label to validate
+
+        Returns:
+            Validated label or None
+
+        Raises:
+            NotImplementedError: Must be implemented by subclass
+        """
         raise NotImplementedError
 
 
@@ -163,35 +260,17 @@ class _ImageInputFields(Generic[PathT], ABC):
     """Generic dataclass for image-specific input fields in Anomalib.
 
     This class extends standard input fields with an ``image_path`` attribute for
-    image-based anomaly detection tasks. It allows Anomalib to work efficiently
-    with disk-stored image datasets, facilitating custom data loading strategies.
+    image-based anomaly detection tasks.
 
-    The ``image_path`` field uses a ``FieldDescriptor`` with a validation method.
-    Subclasses must implement ``validate_image_path`` to ensure path validity
-    according to specific Anomalib model or dataset requirements.
+    Attributes:
+        image_path: Path to input image file
 
-    This class is designed to complement ``_InputFields`` for comprehensive
-    image-based anomaly detection input in Anomalib.
-
-    Examples:
-        Assuming a concrete implementation ``DummyImageInput``:
-        >>> class DummyImageInput(_ImageInputFields):
-        ...     def validate_image_path(self, image_path):
-        ...         return image_path  # Implement actual validation
-        ...     # Implement other required methods
-
-        >>> # Create an image input instance
-        >>> image_input = DummyImageInput(
-        ...     image_path="path/to/image.jpg"
-        ... )
-
-        >>> # Access image-specific field
-        >>> path = image_input.image_path
-
-    Note:
-        This is an abstract base class and is not intended to be instantiated
-        directly. Concrete subclasses should implement all required validation
-        methods.
+    Example:
+        >>> class MyImageInput(_ImageInputFields[str]):
+        ...     def validate_image_path(self, path):
+        ...         return path
+        ...
+        >>> input_data = MyImageInput(image_path="path/to/image.jpg")
     """
 
     image_path: FieldDescriptor[PathT | None] = FieldDescriptor(validator_name="validate_image_path")
@@ -199,7 +278,17 @@ class _ImageInputFields(Generic[PathT], ABC):
     @staticmethod
     @abstractmethod
     def validate_image_path(image_path: PathT) -> PathT | None:
-        """Validate the image path."""
+        """Validate the image path.
+
+        Args:
+            image_path: Path to validate
+
+        Returns:
+            Validated path or None
+
+        Raises:
+            NotImplementedError: Must be implemented by subclass
+        """
         raise NotImplementedError
 
 
@@ -207,45 +296,29 @@ class _ImageInputFields(Generic[PathT], ABC):
 class _VideoInputFields(Generic[T, ImageT, MaskT, PathT], ABC):
     """Generic dataclass that defines the video input fields for Anomalib.
 
-    This class extends standard input fields with attributes specific to video-based
-    anomaly detection tasks. It includes fields for original images, video paths,
-    target frames, frame sequences, and last frames.
+    This class extends standard input fields with attributes specific to
+    video-based anomaly detection tasks.
 
-    Each field uses a ``FieldDescriptor`` with a corresponding validation method.
-    Subclasses must implement these abstract validation methods to ensure data
-    consistency with Anomalib's video processing requirements.
+    Attributes:
+        original_image: Original frame from video
+        video_path: Path to input video file
+        target_frame: Frame number to process
+        frames: Sequence of video frames
+        last_frame: Last frame in sequence
 
-    This class is designed to work alongside other input field classes to provide
-    comprehensive support for video-based anomaly detection in Anomalib.
-
-    Examples:
-        Assuming a concrete implementation ``DummyVideoInput``:
-
-        >>> class DummyVideoInput(_VideoInputFields):
-        ...     def validate_original_image(self, original_image):
-        ...         return original_image  # Implement actual validation
-        ...     # Implement other required methods
-
-        >>> # Create a video input instance
-        >>> video_input = DummyVideoInput(
-        ...     original_image=torch.rand(3, 224, 224),
-        ...     video_path="path/to/video.mp4",
+    Example:
+        >>> class MyVideoInput(_VideoInputFields[int, Image, Mask, str]):
+        ...     def validate_original_image(self, image):
+        ...         return image
+        ...     # Implement other validation methods
+        ...
+        >>> input_data = MyVideoInput(
+        ...     original_image=torch.rand(3,224,224),
+        ...     video_path="video.mp4",
         ...     target_frame=10,
-        ...     frames=torch.rand(3, 224, 224),
-        ...     last_frame=torch.rand(3, 224, 224)
+        ...     frames=None,
+        ...     last_frame=None
         ... )
-
-        >>> # Access video-specific fields
-        >>> original_image = video_input.original_image
-        >>> path = video_input.video_path
-        >>> target_frame = video_input.target_frame
-        >>> frames = video_input.frames
-        >>> last_frame = video_input.last_frame
-
-    Note:
-        This is an abstract base class and is not intended to be instantiated
-        directly. Concrete subclasses should implement all required validation
-        methods.
     """
 
     original_image: FieldDescriptor[ImageT | None] = FieldDescriptor(validator_name="validate_original_image")
@@ -257,31 +330,81 @@ class _VideoInputFields(Generic[T, ImageT, MaskT, PathT], ABC):
     @staticmethod
     @abstractmethod
     def validate_original_image(original_image: ImageT) -> ImageT | None:
-        """Validate the original image."""
+        """Validate the original image.
+
+        Args:
+            original_image: Image to validate
+
+        Returns:
+            Validated image or None
+
+        Raises:
+            NotImplementedError: Must be implemented by subclass
+        """
         raise NotImplementedError
 
     @staticmethod
     @abstractmethod
     def validate_video_path(video_path: PathT) -> PathT | None:
-        """Validate the video path."""
+        """Validate the video path.
+
+        Args:
+            video_path: Path to validate
+
+        Returns:
+            Validated path or None
+
+        Raises:
+            NotImplementedError: Must be implemented by subclass
+        """
         raise NotImplementedError
 
     @staticmethod
     @abstractmethod
     def validate_target_frame(target_frame: T) -> T | None:
-        """Validate the target frame."""
+        """Validate the target frame.
+
+        Args:
+            target_frame: Frame number to validate
+
+        Returns:
+            Validated frame number or None
+
+        Raises:
+            NotImplementedError: Must be implemented by subclass
+        """
         raise NotImplementedError
 
     @staticmethod
     @abstractmethod
     def validate_frames(frames: T) -> T | None:
-        """Validate the frames."""
+        """Validate the frames.
+
+        Args:
+            frames: Frame sequence to validate
+
+        Returns:
+            Validated frames or None
+
+        Raises:
+            NotImplementedError: Must be implemented by subclass
+        """
         raise NotImplementedError
 
     @staticmethod
     @abstractmethod
     def validate_last_frame(last_frame: T) -> T | None:
-        """Validate the last frame."""
+        """Validate the last frame.
+
+        Args:
+            last_frame: Frame to validate
+
+        Returns:
+            Validated frame or None
+
+        Raises:
+            NotImplementedError: Must be implemented by subclass
+        """
         raise NotImplementedError
 
 
@@ -289,41 +412,26 @@ class _VideoInputFields(Generic[T, ImageT, MaskT, PathT], ABC):
 class _DepthInputFields(Generic[T, PathT], _ImageInputFields[PathT], ABC):
     """Generic dataclass that defines the depth input fields for Anomalib.
 
-    This class extends the standard input fields with a ``depth_map`` and
-    ``depth_path`` attribute for depth-based anomaly detection tasks. It allows
-    Anomalib to work efficiently with depth-based anomaly detection tasks,
-    facilitating custom data loading strategies.
+    This class extends standard input fields with depth-specific attributes for
+    depth-based anomaly detection tasks.
 
-    The ``depth_map`` and ``depth_path`` fields use a ``FieldDescriptor`` with
-    corresponding validation methods. Subclasses must implement these abstract
-    validation methods to ensure data consistency with Anomalib's depth processing
-    requirements.
+    Attributes:
+        depth_map: Depth map image
+        depth_path: Path to depth map file
 
-    Examples:
-        Assuming a concrete implementation ``DummyDepthInput``:
-
-        >>> class DummyDepthInput(_DepthInputFields):
-        ...     def validate_depth_map(self, depth_map):
-        ...         return depth_map  # Implement actual validation
-        ...     def validate_depth_path(self, depth_path):
-        ...         return depth_path  # Implement actual validation
-        ...     # Implement other required methods
-
-        >>> # Create a depth input instance
-        >>> depth_input = DummyDepthInput(
-        ...     image_path="path/to/image.jpg",
-        ...     depth_map=torch.rand(224, 224),
-        ...     depth_path="path/to/depth.png"
+    Example:
+        >>> class MyDepthInput(_DepthInputFields[torch.Tensor, str]):
+        ...     def validate_depth_map(self, depth):
+        ...         return depth
+        ...     def validate_depth_path(self, path):
+        ...         return path
+        ...     # Implement other validation methods
+        ...
+        >>> input_data = MyDepthInput(
+        ...     image_path="rgb.jpg",
+        ...     depth_map=torch.rand(224,224),
+        ...     depth_path="depth.png"
         ... )
-
-        >>> # Access depth-specific fields
-        >>> depth_map = depth_input.depth_map
-        >>> depth_path = depth_input.depth_path
-
-    Note:
-        This is an abstract base class and is not intended to be instantiated
-        directly. Concrete subclasses should implement all required validation
-        methods.
     """
 
     depth_map: FieldDescriptor[T | None] = FieldDescriptor(validator_name="validate_depth_map")
@@ -332,13 +440,33 @@ class _DepthInputFields(Generic[T, PathT], _ImageInputFields[PathT], ABC):
     @staticmethod
     @abstractmethod
     def validate_depth_map(depth_map: ImageT) -> ImageT | None:
-        """Validate the depth map."""
+        """Validate the depth map.
+
+        Args:
+            depth_map: Depth map to validate
+
+        Returns:
+            Validated depth map or None
+
+        Raises:
+            NotImplementedError: Must be implemented by subclass
+        """
         raise NotImplementedError
 
     @staticmethod
     @abstractmethod
     def validate_depth_path(depth_path: PathT) -> PathT | None:
-        """Validate the depth path."""
+        """Validate the depth path.
+
+        Args:
+            depth_path: Path to validate
+
+        Returns:
+            Validated path or None
+
+        Raises:
+            NotImplementedError: Must be implemented by subclass
+        """
         raise NotImplementedError
 
 
@@ -347,43 +475,28 @@ class _OutputFields(Generic[T, MaskT, PathT], ABC):
     """Generic dataclass that defines the standard output fields for Anomalib.
 
     This class defines the standard output fields used in Anomalib, including
-    anomaly maps, predicted scores, predicted masks, and predicted labels.
+    anomaly maps, predicted scores, masks, and labels.
 
-    Each field uses a ``FieldDescriptor`` with a corresponding validation method.
-    Subclasses must implement these abstract validation methods to ensure data
-    consistency with Anomalib's anomaly detection tasks.
+    Attributes:
+        anomaly_map: Predicted anomaly heatmap
+        pred_score: Predicted anomaly score
+        pred_mask: Predicted segmentation mask
+        pred_label: Predicted label
+        explanation: Path to explanation visualization
 
-    Examples:
-        Assuming a concrete implementation ``DummyOutput``:
-
-        >>> class DummyOutput(_OutputFields):
-        ...     def validate_anomaly_map(self, anomaly_map):
-        ...         return anomaly_map  # Implement actual validation
-        ...     def validate_pred_score(self, pred_score):
-        ...         return pred_score  # Implement actual validation
-        ...     def validate_pred_mask(self, pred_mask):
-        ...         return pred_mask  # Implement actual validation
-        ...     def validate_pred_label(self, pred_label):
-        ...         return pred_label  # Implement actual validation
-
-        >>> # Create an output instance with predictions
-        >>> output = DummyOutput(
-        ...     anomaly_map=torch.rand(224, 224),
+    Example:
+        >>> class MyOutput(_OutputFields[float, Mask, str]):
+        ...     def validate_anomaly_map(self, amap):
+        ...         return amap
+        ...     # Implement other validation methods
+        ...
+        >>> output = MyOutput(
+        ...     anomaly_map=torch.rand(224,224),
         ...     pred_score=0.7,
-        ...     pred_mask=torch.rand(224, 224) > 0.5,
-        ...     pred_label=1
+        ...     pred_mask=None,
+        ...     pred_label=1,
+        ...     explanation=None
         ... )
-
-        >>> # Access individual fields
-        >>> anomaly_map = output.anomaly_map
-        >>> score = output.pred_score
-        >>> mask = output.pred_mask
-        >>> label = output.pred_label
-
-    Note:
-        This is an abstract base class and is not intended to be instantiated
-        directly. Concrete subclasses should implement all required validation
-        methods.
     """
 
     anomaly_map: FieldDescriptor[MaskT | None] = FieldDescriptor(validator_name="validate_anomaly_map")
@@ -395,70 +508,118 @@ class _OutputFields(Generic[T, MaskT, PathT], ABC):
     @staticmethod
     @abstractmethod
     def validate_anomaly_map(anomaly_map: MaskT) -> MaskT | None:
-        """Validate the anomaly map."""
+        """Validate the anomaly map.
+
+        Args:
+            anomaly_map: Anomaly map to validate
+
+        Returns:
+            Validated anomaly map or None
+
+        Raises:
+            NotImplementedError: Must be implemented by subclass
+        """
         raise NotImplementedError
 
     @staticmethod
     @abstractmethod
     def validate_pred_score(pred_score: T) -> T | None:
-        """Validate the predicted score."""
+        """Validate the predicted score.
+
+        Args:
+            pred_score: Score to validate
+
+        Returns:
+            Validated score or None
+
+        Raises:
+            NotImplementedError: Must be implemented by subclass
+        """
         raise NotImplementedError
 
     @staticmethod
     @abstractmethod
     def validate_pred_mask(pred_mask: MaskT) -> MaskT | None:
-        """Validate the predicted mask."""
+        """Validate the predicted mask.
+
+        Args:
+            pred_mask: Mask to validate
+
+        Returns:
+            Validated mask or None
+
+        Raises:
+            NotImplementedError: Must be implemented by subclass
+        """
         raise NotImplementedError
 
     @staticmethod
     @abstractmethod
     def validate_pred_label(pred_label: T) -> T | None:
-        """Validate the predicted label."""
+        """Validate the predicted label.
+
+        Args:
+            pred_label: Label to validate
+
+        Returns:
+            Validated label or None
+
+        Raises:
+            NotImplementedError: Must be implemented by subclass
+        """
         raise NotImplementedError
 
     @staticmethod
     @abstractmethod
     def validate_explanation(explanation: PathT) -> PathT | None:
-        """Validate the explanation."""
+        """Validate the explanation.
+
+        Args:
+            explanation: Explanation to validate
+
+        Returns:
+            Validated explanation or None
+
+        Raises:
+            NotImplementedError: Must be implemented by subclass
+        """
         raise NotImplementedError
 
 
 @dataclass
 class UpdateMixin:
-    """Mixin class for dataclasses that allows for in-place replacement of attributes.
+    """Mixin class for dataclasses that allows for in-place replacement of attrs.
 
-    This mixin class provides a method for updating dataclass instances in place or
-    by creating a new instance. It ensures that the updated instance is reinitialized
-    by calling the ``__post_init__`` method if it exists.
+    This mixin provides methods for updating dataclass instances in place or by
+    creating a new instance.
 
-    Examples:
-        Assuming a dataclass `DummyItem` that uses UpdateMixin:
-
-        >>> item = DummyItem(image=torch.rand(3, 224, 224), label=0)
-
-        >>> # In-place update
-        >>> item.update(label=1, pred_score=0.9)
-        >>> print(item.label, item.pred_score)
-        1 0.9
-
-        >>> # Create a new instance with updates
-        >>> new_item = item.update(in_place=False, image=torch.rand(3, 224, 224))
-        >>> print(id(item) != id(new_item))
-        True
-
-        >>> # Update with multiple fields
-        >>> item.update(label=2, pred_score=0.8, anomaly_map=torch.rand(224, 224))
-
-    The `update` method can be used to modify single or multiple fields, either
-    in-place or by creating a new instance. This flexibility is particularly useful
-    in data processing pipelines and when working with model predictions in Anomalib.
+    Example:
+        >>> @dataclass
+        ... class MyItem(UpdateMixin):
+        ...     field1: int
+        ...     field2: str
+        ...
+        >>> item = MyItem(field1=1, field2="a")
+        >>> item.update(field1=2)  # In-place update
+        >>> item.field1
+        2
+        >>> new_item = item.update(in_place=False, field2="b")
+        >>> new_item.field2
+        'b'
     """
 
     def update(self, in_place: bool = True, **changes) -> Any:  # noqa: ANN401
-        """Replace fields in place and call __post_init__ to reinitialize the instance.
+        """Replace fields in place and call __post_init__ to reinitialize.
 
-        Parameters:
-        changes (dict): A dictionary of field names and their new values.
+        Args:
+            in_place: Whether to modify in place or return new instance
+            **changes: Field names and new values to update
+
+        Returns:
+            Updated instance (self if in_place=True, new instance otherwise)
+
+        Raises:
+            TypeError: If instance is not a dataclass
         """
         if not is_dataclass(self):
             msg = "replace can only be used with dataclass instances"
@@ -483,43 +644,23 @@ class _GenericItem(
 ):
     """Generic dataclass for a single item in Anomalib datasets.
 
-    This class combines input and output fields for anomaly detection tasks,
-    providing a comprehensive representation of a single data item. It inherits
-    from ``_InputFields`` for standard input data and ``_OutputFields`` for
-    prediction results.
+    This class combines input and output fields for anomaly detection tasks.
+    It inherits from ``_InputFields`` for standard input data and
+    ``_OutputFields`` for prediction results.
 
-    The class also includes the ``UpdateMixin``, allowing for easy updates of
-    field values. This is particularly useful during data processing pipelines
-    and when working with model predictions.
-
-    By using generic types, this class can accommodate various data types used
-    in different Anomalib models and datasets, ensuring flexibility and
-    reusability across the library.
-
-    Examples:
-        Assuming a concrete implementation ``DummyItem``:
-
-        >>> class DummyItem(_GenericItem):
+    Example:
+        >>> class MyItem(_GenericItem[int, Image, Mask, str]):
         ...     def validate_image(self, image):
-        ...         return image  # Implement actual validation
-        ...     # Implement other required methods
-
-        >>> # Create a generic item instance
-        >>> item = DummyItem(
-        ...     image=torch.rand(3, 224, 224),
+        ...         return image
+        ...     # Implement other validation methods
+        ...
+        >>> item = MyItem(
+        ...     image=torch.rand(3,224,224),
         ...     gt_label=0,
         ...     pred_score=0.3,
-        ...     anomaly_map=torch.rand(224, 224)
+        ...     anomaly_map=torch.rand(224,224)
         ... )
-
-        >>> # Access and update fields
-        >>> image = item.image
-        >>> item.update(pred_score=0.8, pred_label=1)
-
-    Note:
-        This is an abstract base class and is not intended to be instantiated
-        directly. Concrete subclasses should implement all required validation
-        methods.
+        >>> item.update(pred_score=0.8)
     """
 
 
@@ -533,43 +674,19 @@ class _GenericBatch(
     """Generic dataclass for a batch of items in Anomalib datasets.
 
     This class represents a batch of data items, combining both input and output
-    fields for anomaly detection tasks. It inherits from ``_InputFields`` for
-    input data and ``_OutputFields`` for prediction results, allowing it to
-    handle both training data and model outputs.
+    fields for anomaly detection tasks.
 
-    The class includes the ``UpdateMixin``, enabling easy updates of field values
-    across the entire batch. This is particularly useful for in-place modifications
-    during data processing or when updating predictions.
-
-    Examples:
-        Assuming a concrete implementation ``DummyBatch``:
-
-        >>> class DummyBatch(_GenericBatch):
+    Example:
+        >>> class MyBatch(_GenericBatch[int, Image, Mask, str]):
         ...     def validate_image(self, image):
-        ...         return image  # Implement actual validation
-        ...     # Implement other required methods
-
-        >>> # Create a batch with input data
-        >>> batch = DummyBatch(
-        ...     image=torch.rand(32, 3, 224, 224),
-        ...     gt_label=torch.randint(0, 2, (32,))
+        ...         return image
+        ...     # Implement other validation methods
+        ...
+        >>> batch = MyBatch(
+        ...     image=torch.rand(32,3,224,224),
+        ...     gt_label=torch.zeros(32),
+        ...     pred_score=torch.rand(32)
         ... )
-
-        >>> # Update the entire batch with new predictions
-        >>> batch.update(
-        ...     pred_score=torch.rand(32),
-        ...     anomaly_map=torch.rand(32, 224, 224)
-        ... )
-
-        >>> # Access individual fields
-        >>> images = batch.image
-        >>> labels = batch.gt_label
-        >>> predictions = batch.pred_score
-
-    Note:
-        This is an abstract base class and is not intended to be instantiated
-        directly. Concrete subclasses should implement all required validation
-        methods.
     """
 
 
@@ -581,55 +698,54 @@ class BatchIterateMixin(Generic[ItemT]):
     """Mixin class for iterating over batches of items in Anomalib datasets.
 
     This class provides functionality to iterate over individual items within a
-    batch, convert batches to lists of items, and determine batch sizes. It's
-    designed to work with Anomalib's batch processing pipelines.
+    batch and convert batches to lists of items.
 
-    The mixin requires subclasses to define an ``item_class`` attribute, which
-    specifies the class used for individual items in the batch. This ensures
-    type consistency when iterating or converting batches.
+    Attributes:
+        item_class: Class to use for individual items in the batch
 
-    Key features include:
-    - Iteration over batch items
-    - Conversion of batches to lists of individual items
-    - Batch size determination
-    - A class method for collating individual items into a batch
-
-    Examples:
-        Assuming a subclass `DummyBatch` with `DummyItem` as its item_class:
-
-        >>> batch = DummyBatch(images=[...], labels=[...])
+    Example:
+        >>> @dataclass
+        ... class MyBatch(BatchIterateMixin):
+        ...     item_class = MyItem
+        ...     data: torch.Tensor
+        ...
+        >>> batch = MyBatch(data=torch.rand(32,3,224,224))
         >>> for item in batch:
-        ...     process_item(item)  # Iterate over items
-
-        >>> item_list = batch.items  # Convert batch to list of items
-        >>> type(item_list[0])
-        <class 'DummyItem'>
-
-        >>> batch_size = len(batch)  # Get batch size
-
-        >>> items = [DummyItem(...) for _ in range(5)]
-        >>> new_batch = DummyBatch.collate(items)  # Collate items into a batch
-
-    This mixin enhances batch handling capabilities in Anomalib, facilitating
-    efficient data processing and model interactions.
+        ...     process_item(item)
+        >>> items = batch.items  # Convert to list of items
     """
 
     item_class: ClassVar[Callable]
 
     def __init_subclass__(cls, **kwargs) -> None:
-        """Ensure that the subclass has the required attributes."""
+        """Ensure that the subclass has the required attributes.
+
+        Args:
+            **kwargs: Additional keyword arguments
+
+        Raises:
+            AttributeError: If item_class is not defined
+        """
         super().__init_subclass__(**kwargs)
         if not (hasattr(cls, "item_class") or issubclass(cls, ABC)):
             msg = f"{cls.__name__} must have an 'item_class' attribute."
             raise AttributeError(msg)
 
     def __iter__(self) -> Iterator[ItemT]:
-        """Iterate over the batch."""
+        """Iterate over the batch.
+
+        Yields:
+            Individual items from the batch
+        """
         yield from self.items
 
     @property
     def items(self) -> list[ItemT]:
-        """Convert the batch to a list of DatasetItem objects."""
+        """Convert the batch to a list of DatasetItem objects.
+
+        Returns:
+            List of individual items from the batch
+        """
         batch_dict = asdict(self)
         return [
             self.item_class(
@@ -639,22 +755,40 @@ class BatchIterateMixin(Generic[ItemT]):
         ]
 
     def __len__(self) -> int:
-        """Get the batch size."""
+        """Get the batch size.
+
+        Returns:
+            Number of items in batch
+        """
         return self.batch_size
 
     @property
     def batch_size(self) -> int:
-        """Get the batch size."""
+        """Get the batch size.
+
+        Returns:
+            Number of items in batch
+
+        Raises:
+            AttributeError: If image attribute is not set
+        """
         try:
             image = getattr(self, "image")  # noqa: B009
             return len(image)
         except (KeyError, AttributeError) as e:
-            msg = "Cannot determine batch size because 'image' attribute has not been set."
+            msg = "Cannot determine batch size because 'image' attribute not set."
             raise AttributeError(msg) from e
 
     @classmethod
     def collate(cls: type["BatchIterateMixin"], items: list[ItemT]) -> "BatchIterateMixin":
-        """Convert a list of DatasetItem objects to a Batch object."""
+        """Convert a list of DatasetItem objects to a Batch object.
+
+        Args:
+            items: List of items to collate into a batch
+
+        Returns:
+            New batch containing the items
+        """
         keys = [key for key, value in asdict(items[0]).items() if value is not None]
         out_dict = {key: default_collate([getattr(item, key) for item in items]) for key in keys}
         return cls(**out_dict)

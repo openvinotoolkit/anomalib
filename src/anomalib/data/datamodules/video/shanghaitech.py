@@ -1,16 +1,45 @@
 """ShanghaiTech Campus Data Module.
 
-Description:
-    This module contains PyTorch Lightning DataModule for the ShanghaiTech Campus dataset.
-    If the dataset is not on the file system, the DataModule class downloads and
-    extracts the dataset and converts video files to a format that is readable by pyav.
+This module provides a PyTorch Lightning DataModule for the ShanghaiTech Campus
+dataset. If the dataset is not available locally, it will be downloaded and
+extracted automatically. The video files are also converted to a format readable
+by pyav.
+
+Example:
+    Create a ShanghaiTech datamodule::
+
+        >>> from anomalib.data import ShanghaiTech
+        >>> datamodule = ShanghaiTech(
+        ...     root="./datasets/shanghaitech",
+        ...     scene=1,
+        ...     clip_length_in_frames=2,
+        ...     frames_between_clips=1,
+        ... )
+        >>> datamodule.setup()
+        >>> i, data = next(enumerate(datamodule.train_dataloader()))
+        >>> data.keys()
+        dict_keys(['image', 'video_path', 'frames', 'label'])
+
+Notes:
+    The directory structure after preparation will be::
+
+        root/
+        ├── testing/
+        │   ├── frames/
+        │   ├── test_frame_mask/
+        │   └── test_pixel_mask/
+        └── training/
+            ├── frames/
+            ├── converted_videos/
+            └── videos/
 
 License:
     ShanghaiTech Campus Dataset is released under the BSD 2-Clause License.
 
 Reference:
-    - W. Liu and W. Luo, D. Lian and S. Gao. "Future Frame Prediction for Anomaly Detection -- A New Baseline."
-      IEEE Conference on Computer Vision and Pattern Recognition (CVPR). 2018.
+    Liu, W., Luo, W., Lian, D., & Gao, S. (2018). Future frame prediction for
+    anomaly detection--a new baseline. In Proceedings of the IEEE conference on
+    computer vision and pattern recognition (pp. 6536-6545).
 """
 
 # Copyright (C) 2023-2024 Intel Corporation
@@ -39,17 +68,31 @@ class ShanghaiTech(AnomalibVideoDataModule):
     """ShanghaiTech DataModule class.
 
     Args:
-        root (Path | str): Path to the root of the dataset
-        scene (int): Index of the dataset scene (category) in range [1, 13]
-        clip_length_in_frames (int, optional): Number of video frames in each clip.
-        frames_between_clips (int, optional): Number of frames between each consecutive video clip.
-        target_frame (VideoTargetFrame): Specifies the target frame in the video clip, used for ground truth retrieval
-        train_batch_size (int, optional): Training batch size. Defaults to 32.
-        eval_batch_size (int, optional): Test batch size. Defaults to 32.
-        num_workers (int, optional): Number of workers. Defaults to 8.
-        val_split_mode (ValSplitMode): Setting that determines how the validation subset is obtained.
-        val_split_ratio (float): Fraction of train or test images that will be reserved for validation.
-        seed (int | None, optional): Seed which may be set to a fixed value for reproducibility.
+        root (Path | str): Path to the root directory of the dataset.
+            Defaults to ``"./datasets/shanghaitech"``.
+        scene (int): Scene index in range [1, 13].
+            Defaults to ``1``.
+        clip_length_in_frames (int): Number of frames in each video clip.
+            Defaults to ``2``.
+        frames_between_clips (int): Number of frames between consecutive clips.
+            Defaults to ``1``.
+        target_frame (VideoTargetFrame): Specifies which frame in the clip should
+            be used for ground truth.
+            Defaults to ``VideoTargetFrame.LAST``.
+        train_batch_size (int): Training batch size.
+            Defaults to ``32``.
+        eval_batch_size (int): Test batch size.
+            Defaults to ``32``.
+        num_workers (int): Number of workers for data loading.
+            Defaults to ``8``.
+        val_split_mode (ValSplitMode): Setting that determines how validation
+            subset is obtained.
+            Defaults to ``ValSplitMode.SAME_AS_TEST``.
+        val_split_ratio (float): Fraction of train or test images that will be
+            reserved for validation.
+            Defaults to ``0.5``.
+        seed (int | None): Random seed for reproducibility.
+            Defaults to ``None``.
     """
 
     def __init__(
@@ -125,19 +168,25 @@ class ShanghaiTech(AnomalibVideoDataModule):
 
     @staticmethod
     def _convert_training_videos(video_folder: Path, target_folder: Path) -> None:
-        """Re-code the training videos to ensure correct reading of frames by torchvision.
+        """Re-code training videos for correct frame reading by torchvision.
 
-        The encoding of the raw video files in the ShanghaiTech dataset causes some problems when
-        reading the frames using pyav. To prevent this, we read the frames from the video files using opencv,
-        and write them to a new video file that can be parsed correctly with pyav.
+        The encoding of the raw video files in the ShanghaiTech dataset causes
+        issues when reading frames using pyav. To prevent this, frames are read
+        using opencv and written to new video files that can be parsed correctly
+        with pyav.
 
         Args:
-            video_folder (Path): Path to the folder of training videos.
-            target_folder (Path): File system location where the converted videos will be stored.
+            video_folder (Path): Path to the folder containing training videos.
+            target_folder (Path): Path where converted videos will be stored.
         """
         training_videos = sorted(video_folder.glob("*"))
         for video_idx, video_path in enumerate(training_videos):
-            logger.info("Converting training video %s (%i/%i)...", video_path.name, video_idx + 1, len(training_videos))
+            logger.info(
+                "Converting training video %s (%i/%i)...",
+                video_path.name,
+                video_idx + 1,
+                len(training_videos),
+            )
             file_name = video_path.name
             target_path = target_folder / file_name
             convert_video(video_path, target_path, codec="XVID")
