@@ -1,4 +1,29 @@
-"""Implements custom trainer for Anomalib."""
+"""Implements custom trainer for Anomalib.
+
+This module provides the core training engine for Anomalib models. The Engine class
+wraps PyTorch Lightning's Trainer with additional functionality specific to anomaly
+detection tasks.
+
+The engine handles:
+- Model training and validation
+- Metrics computation and logging
+- Checkpointing and model export
+- Distributed training support
+
+Example:
+    Create and use an engine:
+
+    >>> from anomalib.engine import Engine
+    >>> engine = Engine()
+    >>> engine.train()  # doctest: +SKIP
+    >>> engine.test()  # doctest: +SKIP
+
+    The engine can also be used with a custom configuration:
+
+    >>> from anomalib.config import Config
+    >>> config = Config(path="config.yaml")
+    >>> engine = Engine(config=config)  # doctest: +SKIP
+"""
 
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -27,28 +52,33 @@ logger = logging.getLogger(__name__)
 
 
 class UnassignedError(Exception):
-    """Unassigned error."""
+    """Raised when a required component is not assigned."""
 
 
 class _TrainerArgumentsCache:
-    """Cache arguments.
+    """Cache arguments for PyTorch Lightning Trainer.
 
-    Since the Engine class accepts PyTorch Lightning Trainer arguments, we store these arguments using this class
-    before the trainer is instantiated.
+    Since the Engine class accepts PyTorch Lightning Trainer arguments, we store
+    these arguments using this class before the trainer is instantiated.
 
     Args:
-        (**kwargs): Trainer arguments that are cached
+        **kwargs: Trainer arguments that are cached.
 
     Example:
+        >>> from omegaconf import OmegaConf
         >>> conf = OmegaConf.load("config.yaml")
-        >>> cache =  _TrainerArgumentsCache(**conf.trainer)
+        >>> cache = _TrainerArgumentsCache(**conf.trainer)
         >>> cache.args
         {
             ...
             'max_epochs': 100,
             'val_check_interval': 0
         }
-        >>> model = Padim(layers=["layer1", "layer2", "layer3"], input_size=(256, 256), backbone="resnet18")
+        >>> model = Padim(
+        ...     layers=["layer1", "layer2", "layer3"],
+        ...     input_size=(256, 256),
+        ...     backbone="resnet18",
+        ... )
         >>> cache.update(model)
         Overriding max_epochs from 100 with 1 for Padim
         Overriding val_check_interval from 0 with 1.0 for Padim
@@ -64,10 +94,10 @@ class _TrainerArgumentsCache:
         self._cached_args = {**kwargs}
 
     def update(self, model: AnomalibModule) -> None:
-        """Replace cached arguments with arguments retrieved from the model.
+        """Replace cached arguments with arguments from the model.
 
         Args:
-            model (AnomalibModule): The model used for training
+            model (AnomalibModule): The model used for training.
         """
         for key, value in model.trainer_arguments.items():
             if key in self._cached_args and self._cached_args[key] != value:
@@ -77,35 +107,52 @@ class _TrainerArgumentsCache:
             self._cached_args[key] = value
 
     def requires_update(self, model: AnomalibModule) -> bool:
+        """Check if the cache needs to be updated.
+
+        Args:
+            model (AnomalibModule): Model to check against.
+
+        Returns:
+            bool: True if cache needs update, False otherwise.
+        """
         return any(self._cached_args.get(key, None) != value for key, value in model.trainer_arguments.items())
 
     @property
     def args(self) -> dict[str, Any]:
+        """Get the cached arguments.
+
+        Returns:
+            dict[str, Any]: Dictionary of cached trainer arguments.
+        """
         return self._cached_args
 
 
 class Engine:
-    """Anomalib Engine.
+    """Anomalib Engine for training and evaluating anomaly detection models.
 
-    .. note::
-
-        Refer to PyTorch Lightning's Trainer for a list of parameters for
-        details on other Trainer parameters.
+    The Engine class wraps PyTorch Lightning's Trainer with additional
+    functionality specific to anomaly detection tasks.
 
     Args:
-        callbacks (list[Callback]): Add a callback or list of callbacks.
-        normalization (NORMALIZATION, optional): Normalization method.
-            Defaults to NormalizationMethod.MIN_MAX.
-        threshold (THRESHOLD):
-            Thresholding method. Defaults to "F1AdaptiveThreshold".
-        image_metrics (list[str] | str | dict[str, dict[str, Any]] | None, optional): Image metrics to be used for
-            evaluation. Defaults to None.
-        pixel_metrics (list[str] | str | dict[str, dict[str, Any]] | None, optional): Pixel metrics to be used for
-            evaluation. Defaults to None.
-        default_root_dir (str, optional): Default root directory for the trainer.
-            The results will be saved in this directory.
-            Defaults to ``results``.
-        **kwargs: PyTorch Lightning Trainer arguments.
+        callbacks (list[Callback] | None, optional): Add a callback or list of
+            callbacks. Defaults to None.
+        logger (Logger | Iterable[Logger] | bool | None, optional): Logger (or
+            iterable collection of loggers) to use. Defaults to None.
+        default_root_dir (str | Path, optional): Default path for saving trainer
+            outputs. Defaults to "results".
+        **kwargs: Additional arguments passed to PyTorch Lightning Trainer.
+
+    Example:
+        >>> from anomalib.engine import Engine
+        >>> engine = Engine()
+        >>> engine.train()  # doctest: +SKIP
+        >>> engine.test()  # doctest: +SKIP
+
+        With custom configuration:
+
+        >>> from anomalib.config import Config
+        >>> config = Config(path="config.yaml")
+        >>> engine = Engine(config=config)  # doctest: +SKIP
     """
 
     def __init__(
