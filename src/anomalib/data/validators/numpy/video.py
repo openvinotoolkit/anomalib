@@ -1,4 +1,8 @@
-"""Validate numpy video data."""
+"""Validate numpy video data.
+
+This module provides validators for numpy video data, ensuring that video arrays and
+their associated metadata meet the required format specifications.
+"""
 
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -11,21 +15,26 @@ from anomalib.data.validators.path import validate_batch_path, validate_path
 
 
 class NumpyVideoValidator:
-    """Validate numpy.ndarray data for videos."""
+    """Validate numpy.ndarray data for videos.
+
+    This class provides methods to validate video data stored as numpy arrays and
+    their associated metadata like labels, masks etc.
+    """
 
     @staticmethod
     def validate_image(image: np.ndarray) -> np.ndarray:
         """Validate the video array.
 
         Args:
-            image (np.ndarray): Input video array to validate.
+            image: Input video array to validate. Should be a numpy array with
+                shape ``[T, H, W, C]`` or ``[H, W, C]``.
 
         Returns:
-            np.ndarray: Validated video array as float32 with an added time dimension if not present.
+            Validated video array as float32 with shape ``[T, H, W, C]``.
 
         Raises:
-            TypeError: If the input is not a numpy array.
-            ValueError: If the array dimensions or channel count are invalid.
+            TypeError: If ``image`` is not a numpy array.
+            ValueError: If array dimensions or channel count are invalid.
 
         Example:
             >>> import numpy as np
@@ -58,14 +67,15 @@ class NumpyVideoValidator:
         """Validate the ground truth label.
 
         Args:
-            label (int | np.ndarray | None): Input label to validate.
+            label: Input label to validate. Can be an integer, numpy array or
+                None.
 
         Returns:
-            np.ndarray | None: Validated label as boolean numpy array, or None if input is None.
+            Validated label as boolean numpy array, or None if input is None.
 
         Raises:
-            TypeError: If the input is not an integer or numpy array.
-            ValueError: If the label is not a scalar.
+            TypeError: If ``label`` is not an integer or numpy array.
+            ValueError: If ``label`` is not a scalar.
 
         Example:
             >>> validator = NumpyVideoValidator()
@@ -94,14 +104,15 @@ class NumpyVideoValidator:
         """Validate the ground truth mask.
 
         Args:
-            mask (np.ndarray | None): Input mask to validate.
+            mask: Input mask to validate. Should be a numpy array with shape
+                ``[T, H, W]`` or ``[T, H, W, 1]``.
 
         Returns:
-            np.ndarray | None: Validated mask as boolean numpy array, or None if input is None.
+            Validated mask as boolean numpy array, or None if input is None.
 
         Raises:
-            TypeError: If the input is not a numpy array.
-            ValueError: If the mask dimensions or channel count are invalid.
+            TypeError: If ``mask`` is not a numpy array.
+            ValueError: If mask dimensions or channel count are invalid.
 
         Example:
             >>> import numpy as np
@@ -129,10 +140,10 @@ class NumpyVideoValidator:
         """Validate the mask path.
 
         Args:
-            mask_path (str | None): Input mask path to validate.
+            mask_path: Input mask path to validate.
 
         Returns:
-            str | None: Validated mask path, or None if input is None.
+            Validated mask path, or None if input is None.
 
         Example:
             >>> validator = NumpyVideoValidator()
@@ -148,14 +159,16 @@ class NumpyVideoValidator:
         """Validate the anomaly map.
 
         Args:
-            anomaly_map (np.ndarray | None): Input anomaly map to validate.
+            anomaly_map: Input anomaly map to validate. Should be a numpy array
+                with shape ``[T, H, W]`` or ``[T, H, W, 1]``.
 
         Returns:
-            np.ndarray | None: Validated anomaly map as float32 numpy array, or None if input is None.
+            Validated anomaly map as float32 numpy array, or None if input is
+            None.
 
         Raises:
-            TypeError: If the input is not a numpy array.
-            ValueError: If the anomaly map dimensions or channel count are invalid.
+            TypeError: If ``anomaly_map`` is not a numpy array.
+            ValueError: If anomaly map dimensions or channel count are invalid.
 
         Example:
             >>> import numpy as np
@@ -183,14 +196,16 @@ class NumpyVideoValidator:
         """Validate the prediction score.
 
         Args:
-            pred_score (np.ndarray | float | None): Input prediction score to validate.
+            pred_score: Input prediction score to validate. Can be a float, numpy
+                array or None.
 
         Returns:
-            np.ndarray | None: Validated prediction score as float32 numpy array, or None if input is None.
+            Validated prediction score as float32 numpy array, or None if input is
+            None.
 
         Raises:
-            TypeError: If the input is not a float or numpy array.
-            ValueError: If the prediction score is not a scalar.
+            TypeError: If ``pred_score`` is not a float or numpy array.
+            ValueError: If prediction score is not a scalar.
 
         Example:
             >>> validator = NumpyVideoValidator()
@@ -216,10 +231,12 @@ class NumpyVideoValidator:
         """Validate the prediction mask.
 
         Args:
-            pred_mask (np.ndarray | None): Input prediction mask to validate.
+            pred_mask: Input prediction mask to validate. Should be a numpy array
+                with shape ``[T, H, W]`` or ``[T, H, W, 1]``.
 
         Returns:
-            np.ndarray | None: Validated prediction mask as boolean numpy array, or None if input is None.
+            Validated prediction mask as boolean numpy array, or None if input is
+            None.
 
         Example:
             >>> import numpy as np
@@ -236,13 +253,16 @@ class NumpyVideoValidator:
         """Validate the prediction label.
 
         Args:
-            pred_label (np.ndarray | None): Input prediction label to validate.
+            pred_label: Input prediction label to validate. Should be a numpy
+                array or convertible to one.
 
         Returns:
-            np.ndarray | None: Validated prediction label as boolean numpy array, or None if input is None.
+            Validated prediction label as boolean numpy array, or None if input is
+            None.
 
         Raises:
-            ValueError: If the input cannot be converted to a numpy array or is not a scalar.
+            ValueError: If input cannot be converted to numpy array or is not a
+                scalar.
 
         Example:
             >>> import numpy as np
@@ -271,10 +291,10 @@ class NumpyVideoValidator:
         """Validate the video path.
 
         Args:
-            video_path (str | None): Input video path to validate.
+            video_path: Input video path to validate.
 
         Returns:
-            str | None: Validated video path, or None if input is None.
+            Validated video path, or None if input is None.
 
         Example:
             >>> validator = NumpyVideoValidator()
@@ -290,14 +310,15 @@ class NumpyVideoValidator:
         """Validate the original video.
 
         Args:
-            original_image (np.ndarray | None): Input original video to validate.
+            original_image: Input original video to validate. Should be a numpy
+                array with shape ``[T, H, W, C]`` or ``[H, W, C]``.
 
         Returns:
-            np.ndarray | None: Validated original video, or None if input is None.
+            Validated original video, or None if input is None.
 
         Raises:
-            TypeError: If the input is not a numpy array.
-            ValueError: If the original video dimensions or channel count are invalid.
+            TypeError: If ``original_image`` is not a numpy array.
+            ValueError: If original video dimensions or channel count are invalid.
 
         Example:
             >>> import numpy as np
@@ -325,14 +346,14 @@ class NumpyVideoValidator:
         """Validate the target frame index.
 
         Args:
-            target_frame (int | None): Input target frame index to validate.
+            target_frame: Input target frame index to validate.
 
         Returns:
-            int | None: Validated target frame index, or None if input is None.
+            Validated target frame index, or None if input is None.
 
         Raises:
-            TypeError: If the input is not an integer.
-            ValueError: If the target frame index is negative.
+            TypeError: If ``target_frame`` is not an integer.
+            ValueError: If target frame index is negative.
 
         Example:
             >>> validator = NumpyVideoValidator()
@@ -353,26 +374,38 @@ class NumpyVideoValidator:
 
     @staticmethod
     def validate_explanation(explanation: str | None) -> str | None:
-        """Validate the explanation string."""
+        """Validate the explanation string.
+
+        Args:
+            explanation: Input explanation string to validate.
+
+        Returns:
+            Validated explanation string, or None if input is None.
+        """
         return NumpyImageValidator.validate_explanation(explanation)
 
 
 class NumpyVideoBatchValidator:
-    """Validate numpy.ndarray data for batches of videos."""
+    """Validate numpy.ndarray data for batches of videos.
+
+    This class provides methods to validate batches of video data stored as numpy
+    arrays and their associated metadata.
+    """
 
     @staticmethod
     def validate_image(image: np.ndarray) -> np.ndarray:
         """Validate the video batch array.
 
         Args:
-            image (np.ndarray): Input video batch array to validate.
+            image: Input video batch array to validate. Should be a numpy array
+                with shape ``[N, T, H, W, C]`` or ``[N, H, W, C]``.
 
         Returns:
-            np.ndarray: Validated video batch array as float32.
+            Validated video batch array as float32.
 
         Raises:
-            TypeError: If the input is not a numpy array.
-            ValueError: If the array dimensions or channel count are invalid.
+            TypeError: If ``image`` is not a numpy array.
+            ValueError: If array dimensions or channel count are invalid.
 
         Example:
             >>> import numpy as np
@@ -398,18 +431,23 @@ class NumpyVideoBatchValidator:
         return image.astype(np.float32)
 
     @staticmethod
-    def validate_gt_label(gt_label: np.ndarray | Sequence[int] | None) -> np.ndarray | None:
+    def validate_gt_label(
+        gt_label: np.ndarray | Sequence[int] | None,
+    ) -> np.ndarray | None:
         """Validate the ground truth label batch.
 
         Args:
-            gt_label (np.ndarray | Sequence[int] | None): Input ground truth label batch to validate.
+            gt_label: Input ground truth label batch to validate. Can be a numpy
+                array, sequence of integers, or None.
 
         Returns:
-            np.ndarray | None: Validated ground truth label batch as boolean numpy array, or None if input is None.
+            Validated ground truth label batch as boolean numpy array, or None if
+            input is None.
 
         Raises:
-            TypeError: If the input is not a numpy array or sequence of integers.
-            ValueError: If the label batch shape is invalid.
+            TypeError: If ``gt_label`` is not a numpy array or sequence of
+                integers.
+            ValueError: If label batch shape is invalid.
 
         Example:
             >>> import numpy as np
@@ -436,14 +474,16 @@ class NumpyVideoBatchValidator:
         """Validate the ground truth mask batch.
 
         Args:
-            gt_mask (np.ndarray | None): Input ground truth mask batch to validate.
+            gt_mask: Input ground truth mask batch to validate. Should be a numpy
+                array with shape ``[N, T, H, W]`` or ``[N, T, H, W, 1]``.
 
         Returns:
-            np.ndarray | None: Validated ground truth mask batch as boolean numpy array, or None if input is None.
+            Validated ground truth mask batch as boolean numpy array, or None if
+            input is None.
 
         Raises:
-            TypeError: If the input is not a numpy array.
-            ValueError: If the mask batch shape is invalid.
+            TypeError: If ``gt_mask`` is not a numpy array.
+            ValueError: If mask batch shape is invalid.
 
         Example:
             >>> import numpy as np
@@ -471,10 +511,10 @@ class NumpyVideoBatchValidator:
         """Validate the mask paths for a batch.
 
         Args:
-            mask_path (Sequence[str] | None): Input mask paths to validate.
+            mask_path: Input mask paths to validate.
 
         Returns:
-            list[str] | None: Validated mask paths, or None if input is None.
+            Validated mask paths, or None if input is None.
 
         Example:
             >>> validator = NumpyVideoBatchValidator()
@@ -490,14 +530,16 @@ class NumpyVideoBatchValidator:
         """Validate the anomaly map batch.
 
         Args:
-            anomaly_map (np.ndarray | None): Input anomaly map batch to validate.
+            anomaly_map: Input anomaly map batch to validate. Should be a numpy
+                array with shape ``[N, T, H, W]`` or ``[N, T, H, W, 1]``.
 
         Returns:
-            np.ndarray | None: Validated anomaly map batch as float32 numpy array, or None if input is None.
+            Validated anomaly map batch as float32 numpy array, or None if input
+            is None.
 
         Raises:
-            TypeError: If the input is not a numpy array.
-            ValueError: If the anomaly map batch shape is invalid.
+            TypeError: If ``anomaly_map`` is not a numpy array.
+            ValueError: If anomaly map batch shape is invalid.
 
         Example:
             >>> import numpy as np
@@ -525,14 +567,16 @@ class NumpyVideoBatchValidator:
         """Validate the prediction scores for a batch.
 
         Args:
-            pred_score (np.ndarray | None): Input prediction scores to validate.
+            pred_score: Input prediction scores to validate. Should be a numpy
+                array with shape ``[N]``.
 
         Returns:
-            np.ndarray | None: Validated prediction scores as float32 numpy array, or None if input is None.
+            Validated prediction scores as float32 numpy array, or None if input
+            is None.
 
         Raises:
-            TypeError: If the input is not a numpy array.
-            ValueError: If the prediction score batch shape is invalid.
+            TypeError: If ``pred_score`` is not a numpy array.
+            ValueError: If prediction score batch shape is invalid.
 
         Example:
             >>> import numpy as np
@@ -557,10 +601,12 @@ class NumpyVideoBatchValidator:
         """Validate the prediction mask batch.
 
         Args:
-            pred_mask (np.ndarray | None): Input prediction mask batch to validate.
+            pred_mask: Input prediction mask batch to validate. Should be a numpy
+                array with shape ``[N, T, H, W]`` or ``[N, T, H, W, 1]``.
 
         Returns:
-            np.ndarray | None: Validated prediction mask batch as boolean numpy array, or None if input is None.
+            Validated prediction mask batch as boolean numpy array, or None if
+            input is None.
 
         Example:
             >>> import numpy as np
@@ -577,14 +623,16 @@ class NumpyVideoBatchValidator:
         """Validate the prediction label batch.
 
         Args:
-            pred_label (np.ndarray | None): Input prediction label batch to validate.
+            pred_label: Input prediction label batch to validate. Should be a
+                numpy array with shape ``[N]``.
 
         Returns:
-            np.ndarray | None: Validated prediction label batch as boolean numpy array, or None if input is None.
+            Validated prediction label batch as boolean numpy array, or None if
+            input is None.
 
         Raises:
-            TypeError: If the input is not a numpy array.
-            ValueError: If the prediction label batch shape is invalid.
+            TypeError: If ``pred_label`` is not a numpy array.
+            ValueError: If prediction label batch shape is invalid.
 
         Example:
             >>> import numpy as np
@@ -609,10 +657,10 @@ class NumpyVideoBatchValidator:
         """Validate the video paths for a batch.
 
         Args:
-            video_path (list[str] | None): Input video paths to validate.
+            video_path: Input video paths to validate.
 
         Returns:
-            list[str] | None: Validated video paths, or None if input is None.
+            Validated video paths, or None if input is None.
 
         Example:
             >>> validator = NumpyVideoBatchValidator()
@@ -628,14 +676,15 @@ class NumpyVideoBatchValidator:
         """Validate the original video batch.
 
         Args:
-            original_image (np.ndarray | None): Input original video batch to validate.
+            original_image: Input original video batch to validate. Should be a
+                numpy array with shape ``[N, T, H, W, C]`` or ``[N, H, W, C]``.
 
         Returns:
-            np.ndarray | None: Validated original video batch, or None if input is None.
+            Validated original video batch, or None if input is None.
 
         Raises:
-            TypeError: If the input is not a numpy array.
-            ValueError: If the original image batch shape is invalid.
+            TypeError: If ``original_image`` is not a numpy array.
+            ValueError: If original image batch shape is invalid.
 
         Example:
             >>> import numpy as np
@@ -652,8 +701,8 @@ class NumpyVideoBatchValidator:
             raise TypeError(msg)
         if original_image.ndim not in {4, 5}:
             msg = (
-                "Original image batch must have shape [N, T, H, W, C] or [N, H, W, C], "
-                f"got shape {original_image.shape}."
+                "Original image batch must have shape [N, T, H, W, C] or "
+                f"[N, H, W, C], got shape {original_image.shape}."
             )
             raise ValueError(msg)
         if original_image.shape[-1] != 3:
@@ -666,14 +715,15 @@ class NumpyVideoBatchValidator:
         """Validate the target frame indices for a batch.
 
         Args:
-            target_frame (np.ndarray | None): Input target frame indices to validate.
+            target_frame: Input target frame indices to validate. Should be a
+                numpy array with shape ``[N]``.
 
         Returns:
-            np.ndarray | None: Validated target frame indices, or None if input is None.
+            Validated target frame indices, or None if input is None.
 
         Raises:
-            TypeError: If the input is not a numpy array of integers.
-            ValueError: If the target frame indices are negative or the shape is invalid.
+            TypeError: If ``target_frame`` is not a numpy array of integers.
+            ValueError: If target frame indices are negative or shape is invalid.
 
         Example:
             >>> import numpy as np

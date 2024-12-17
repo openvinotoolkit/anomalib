@@ -1,4 +1,13 @@
-"""Validate torch depth data."""
+"""Validate torch depth data.
+
+This module provides validators for PyTorch tensors used for depth data in anomalib.
+The validators ensure that input data meets the required format specifications.
+
+The following validators are available:
+
+- ``DepthValidator``: Validates single depth image torch tensors
+- ``DepthBatchValidator``: Validates batches of depth image torch tensors
+"""
 
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -15,21 +24,26 @@ from anomalib.data.validators.torch.image import ImageBatchValidator, ImageValid
 
 
 class DepthValidator:
-    """Validate torch.Tensor data for depth images."""
+    """Validate torch.Tensor data for depth images.
+
+    This class provides static methods to validate various types of depth-related
+    data including images, masks, labels and paths.
+    """
 
     @staticmethod
     def validate_image(image: torch.Tensor) -> Image:
         """Validate the image tensor.
 
         Args:
-            image (torch.Tensor): Input image tensor.
+            image: Input image tensor with shape ``[C, H, W]``.
 
         Returns:
-            Image: Validated image as a torchvision Image object.
+            Validated image as a torchvision ``Image`` object.
 
         Raises:
-            TypeError: If the input is not a torch.Tensor.
-            ValueError: If the image tensor does not have the correct shape.
+            TypeError: If ``image`` is not a ``torch.Tensor``.
+            ValueError: If image tensor does not have shape ``[C, H, W]`` with
+                3 channels.
 
         Examples:
             >>> import torch
@@ -51,18 +65,20 @@ class DepthValidator:
         return Image(to_dtype_image(image, torch.float32, scale=True))
 
     @staticmethod
-    def validate_gt_label(label: int | torch.Tensor | None) -> torch.Tensor | None:
+    def validate_gt_label(
+        label: int | torch.Tensor | None,
+    ) -> torch.Tensor | None:
         """Validate the ground truth label.
 
         Args:
-            label (int | torch.Tensor | None): Input ground truth label.
+            label: Input ground truth label. Can be an integer, tensor or None.
 
         Returns:
-            torch.Tensor | None: Validated ground truth label as a boolean tensor, or None.
+            Validated ground truth label as a boolean tensor, or None.
 
         Raises:
-            TypeError: If the input is neither an integer nor a torch.Tensor.
-            ValueError: If the label shape or dtype is invalid.
+            TypeError: If ``label`` is neither an integer nor a ``torch.Tensor``.
+            ValueError: If label shape or dtype is invalid.
 
         Examples:
             >>> import torch
@@ -96,14 +112,14 @@ class DepthValidator:
         """Validate the ground truth mask.
 
         Args:
-            mask (torch.Tensor | None): Input ground truth mask.
+            mask: Input ground truth mask with shape ``[H, W]`` or ``[1, H, W]``.
 
         Returns:
-            Mask | None: Validated ground truth mask, or None.
+            Validated ground truth mask as a torchvision ``Mask`` object, or None.
 
         Raises:
-            TypeError: If the input is not a torch.Tensor.
-            ValueError: If the mask shape is invalid.
+            TypeError: If ``mask`` is not a ``torch.Tensor``.
+            ValueError: If mask shape is invalid.
 
         Examples:
             >>> import torch
@@ -135,10 +151,10 @@ class DepthValidator:
         """Validate the image path.
 
         Args:
-            image_path (str | None): Input image path.
+            image_path: Input image path.
 
         Returns:
-            str | None: Validated image path, or None.
+            Validated image path, or None.
 
         Examples:
             >>> from anomalib.data.validators import DepthValidator
@@ -154,14 +170,14 @@ class DepthValidator:
         """Validate the depth map.
 
         Args:
-            depth_map (torch.Tensor | None): Input depth map.
+            depth_map: Input depth map with shape ``[H, W]`` or ``[C, H, W]``.
 
         Returns:
-            torch.Tensor | None: Validated depth map, or None.
+            Validated depth map as a float32 tensor, or None.
 
         Raises:
-            TypeError: If the input is not a torch.Tensor.
-            ValueError: If the depth map shape is invalid.
+            TypeError: If ``depth_map`` is not a ``torch.Tensor``.
+            ValueError: If depth map shape is invalid.
 
         Examples:
             >>> import torch
@@ -189,10 +205,10 @@ class DepthValidator:
         """Validate the depth path.
 
         Args:
-            depth_path (str | None): Input depth path.
+            depth_path: Input depth path.
 
         Returns:
-            str | None: Validated depth path, or None.
+            Validated depth path, or None.
 
         Examples:
             >>> from anomalib.data.validators import DepthValidator
@@ -209,7 +225,9 @@ class DepthValidator:
         return ImageValidator.validate_anomaly_map(anomaly_map)
 
     @staticmethod
-    def validate_pred_score(pred_score: torch.Tensor | float | None) -> torch.Tensor | None:
+    def validate_pred_score(
+        pred_score: torch.Tensor | float | None,
+    ) -> torch.Tensor | None:
         """Validate the prediction score."""
         return ImageValidator.validate_pred_score(pred_score)
 
@@ -235,21 +253,26 @@ class DepthValidator:
 
 
 class DepthBatchValidator:
-    """Validate torch.Tensor data for batches of depth images."""
+    """Validate torch.Tensor data for batches of depth images.
+
+    This class provides static methods to validate batches of depth-related data
+    including images, masks, labels and paths.
+    """
 
     @staticmethod
     def validate_image(image: torch.Tensor) -> Image:
         """Validate the image tensor for a batch.
 
         Args:
-            image (torch.Tensor): Input image tensor.
+            image: Input image tensor with shape ``[N, C, H, W]``.
 
         Returns:
-            Image: Validated image as a torchvision Image object.
+            Validated image as a torchvision ``Image`` object.
 
         Raises:
-            TypeError: If the input is not a torch.Tensor.
-            ValueError: If the image tensor does not have the correct shape.
+            TypeError: If ``image`` is not a ``torch.Tensor``.
+            ValueError: If image tensor does not have shape ``[N, C, H, W]`` with
+                3 channels.
 
         Examples:
             >>> import torch
@@ -271,18 +294,23 @@ class DepthBatchValidator:
         return Image(to_dtype_image(image, torch.float32, scale=True))
 
     @staticmethod
-    def validate_gt_label(gt_label: torch.Tensor | Sequence[int] | None) -> torch.Tensor | None:
+    def validate_gt_label(
+        gt_label: torch.Tensor | Sequence[int] | None,
+    ) -> torch.Tensor | None:
         """Validate the ground truth label for a batch.
 
         Args:
-            gt_label (torch.Tensor | Sequence[int] | None): Input ground truth label.
+            gt_label: Input ground truth label. Can be a sequence of integers,
+                tensor or None.
 
         Returns:
-            torch.Tensor | None: Validated ground truth label as a boolean tensor, or None.
+            Validated ground truth label as a boolean tensor, or None.
 
         Raises:
-            TypeError: If the input is not a sequence of integers or a torch.Tensor.
-            ValueError: If the ground truth label does not match the expected batch size or data type.
+            TypeError: If ``gt_label`` is not a sequence of integers or a
+                ``torch.Tensor``.
+            ValueError: If ground truth label does not match expected batch size
+                or data type.
 
         Examples:
             >>> import torch
@@ -299,14 +327,16 @@ class DepthBatchValidator:
         """Validate the ground truth mask for a batch.
 
         Args:
-            gt_mask (torch.Tensor | None): Input ground truth mask.
+            gt_mask: Input ground truth mask with shape ``[N, H, W]`` or
+                ``[N, 1, H, W]``.
 
         Returns:
-            Mask | None: Validated ground truth mask as a torchvision Mask object, or None.
+            Validated ground truth mask as a torchvision ``Mask`` object, or None.
 
         Raises:
-            TypeError: If the input is not a torch.Tensor.
-            ValueError: If the ground truth mask does not have the correct shape or batch size.
+            TypeError: If ``gt_mask`` is not a ``torch.Tensor``.
+            ValueError: If ground truth mask does not have correct shape or batch
+                size.
 
         Examples:
             >>> import torch
@@ -319,23 +349,27 @@ class DepthBatchValidator:
         return ImageBatchValidator.validate_gt_mask(gt_mask)
 
     @staticmethod
-    def validate_mask_path(mask_path: Sequence[str] | None) -> list[str] | None:
+    def validate_mask_path(
+        mask_path: Sequence[str] | None,
+    ) -> list[str] | None:
         """Validate the mask paths for a batch.
 
         Args:
-            mask_path (Sequence[str] | None): Input sequence of mask paths.
+            mask_path: Input sequence of mask paths.
 
         Returns:
-            list[str] | None: Validated list of mask paths, or None.
+            Validated list of mask paths, or None.
 
         Raises:
-            TypeError: If the input is not a sequence of strings.
-            ValueError: If the number of mask paths does not match the expected batch size.
+            TypeError: If ``mask_path`` is not a sequence of strings.
+            ValueError: If number of mask paths does not match expected batch size.
 
         Examples:
             >>> from anomalib.data.validators import DepthBatchValidator
             >>> mask_paths = ["path/to/mask_1.png", "path/to/mask_2.png"]
-            >>> validated_paths = DepthBatchValidator.validate_mask_path(mask_paths)
+            >>> validated_paths = DepthBatchValidator.validate_mask_path(
+            ...     mask_paths
+            ... )
             >>> print(validated_paths)
             ['path/to/mask_1.png', 'path/to/mask_2.png']
         """
@@ -346,18 +380,20 @@ class DepthBatchValidator:
         """Validate the image paths for a batch.
 
         Args:
-            image_path (list[str] | None): Input list of image paths.
+            image_path: Input list of image paths.
 
         Returns:
-            list[str] | None: Validated list of image paths, or None.
+            Validated list of image paths, or None.
 
         Raises:
-            TypeError: If the input is not a list of strings.
+            TypeError: If ``image_path`` is not a list of strings.
 
         Examples:
             >>> from anomalib.data.validators import DepthBatchValidator
             >>> image_paths = ["path/to/image_1.jpg", "path/to/image_2.jpg"]
-            >>> validated_paths = DepthBatchValidator.validate_image_path(image_paths)
+            >>> validated_paths = DepthBatchValidator.validate_image_path(
+            ...     image_paths
+            ... )
             >>> print(validated_paths)
             ['path/to/image_1.jpg', 'path/to/image_2.jpg']
         """
@@ -368,14 +404,15 @@ class DepthBatchValidator:
         """Validate the depth map for a batch.
 
         Args:
-            depth_map (torch.Tensor | None): Input depth map.
+            depth_map: Input depth map with shape ``[N, H, W]`` or
+                ``[N, C, H, W]``.
 
         Returns:
-            torch.Tensor | None: Validated depth map, or None.
+            Validated depth map as float32 tensor, or None.
 
         Raises:
-            TypeError: If the input is not a torch.Tensor.
-            ValueError: If the depth map shape is invalid or doesn't match the batch size.
+            TypeError: If ``depth_map`` is not a ``torch.Tensor``.
+            ValueError: If depth map shape is invalid or doesn't match batch size.
 
         Examples:
             >>> import torch
@@ -393,7 +430,7 @@ class DepthBatchValidator:
         if depth_map.ndim not in {3, 4}:
             msg = f"Depth map must have shape [N, H, W] or [N, C, H, W], got shape {depth_map.shape}."
             raise ValueError(msg)
-        if depth_map.ndim == 4 and depth_map.shape[1] != 1 and depth_map.shape[1] != 3:
+        if depth_map.ndim == 4 and depth_map.shape[1] not in {1, 3}:
             msg = f"Depth map with 4 dimensions must have 1 or 3 channels, got {depth_map.shape[1]}."
             raise ValueError(msg)
         return depth_map.to(torch.float32)
@@ -403,18 +440,20 @@ class DepthBatchValidator:
         """Validate the depth paths for a batch.
 
         Args:
-            depth_path (list[str] | None): Input list of depth paths.
+            depth_path: Input list of depth paths.
 
         Returns:
-            list[str] | None: Validated list of depth paths, or None.
+            Validated list of depth paths, or None.
 
         Raises:
-            TypeError: If the input is not a list of strings.
+            TypeError: If ``depth_path`` is not a list of strings.
 
         Examples:
             >>> from anomalib.data.validators import DepthBatchValidator
             >>> depth_paths = ["path/to/depth_1.png", "path/to/depth_2.png"]
-            >>> validated_paths = DepthBatchValidator.validate_depth_path(depth_paths)
+            >>> validated_paths = DepthBatchValidator.validate_depth_path(
+            ...     depth_paths
+            ... )
             >>> print(validated_paths)
             ['path/to/depth_1.png', 'path/to/depth_2.png']
         """
@@ -426,7 +465,9 @@ class DepthBatchValidator:
         return [validate_path(path) for path in depth_path]
 
     @staticmethod
-    def validate_anomaly_map(anomaly_map: torch.Tensor | np.ndarray | None) -> Mask | None:
+    def validate_anomaly_map(
+        anomaly_map: torch.Tensor | np.ndarray | None,
+    ) -> Mask | None:
         """Validate the anomaly map for a batch."""
         return ImageBatchValidator.validate_anomaly_map(anomaly_map)
 

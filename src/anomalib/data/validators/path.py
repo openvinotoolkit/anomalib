@@ -1,4 +1,8 @@
-"""Validate IO path data."""
+"""Validate IO path data.
+
+This module provides validation functions for file paths, ensuring they are in the
+correct format and type.
+"""
 
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -11,23 +15,25 @@ def validate_path(path: str | Path) -> str:
     """Validate a single input path.
 
     Args:
-        path: The input path to validate. Can be None, a string, or a Path object.
+        path: Input path to validate. Can be a string or :class:`pathlib.Path`
+            object.
 
     Returns:
-        - None if the input is None
-        - A string representing the validated path
+        str: String representation of the validated path.
 
     Raises:
-        TypeError: If the input is not None, a string, or a Path object.
+        TypeError: If ``path`` is not a string or :class:`pathlib.Path` object.
 
     Examples:
-        >>> validate_path(None)
-        None
+        >>> from pathlib import Path
         >>> validate_path("/path/to/file.png")
         '/path/to/file.png'
-        >>> from pathlib import Path
         >>> validate_path(Path("/path/to/file.png"))
         '/path/to/file.png'
+        >>> validate_path(123)  # doctest: +IGNORE_EXCEPTION_DETAIL
+        Traceback (most recent call last):
+            ...
+        TypeError: Path must be None, a string, or Path object, got <class 'int'>.
     """
     if isinstance(path, str | Path):
         return str(path)
@@ -42,24 +48,30 @@ def validate_batch_path(
     """Validate a batch of input paths.
 
     Args:
-        paths: A sequence of paths to validate, or None.
-        batch_size: The expected number of paths. Defaults to None, in which case no batch size check is performed.
+        paths: Sequence of paths to validate. Each path can be a string or
+            :class:`pathlib.Path` object. Can be ``None``.
+        batch_size: Expected number of paths. If ``None``, no batch size check is
+            performed.
 
     Returns:
-        - None if the input is None
-        - A list of strings representing validated paths
+        list[str] | None: List of validated path strings, or ``None`` if input is
+        ``None``.
 
     Raises:
-        TypeError: If the input is not None or a sequence of strings or Path objects.
-        ValueError: If a batch_size is specified and the number of paths doesn't match it.
+        TypeError: If ``paths`` is not ``None`` or a sequence of strings or
+            :class:`pathlib.Path` objects.
+        ValueError: If ``batch_size`` is specified and number of paths doesn't
+            match it.
 
     Examples:
+        >>> from pathlib import Path
         >>> paths = ["/path/to/file1.png", Path("/path/to/file2.png")]
         >>> validate_batch_path(paths, batch_size=2)
         ['/path/to/file1.png', '/path/to/file2.png']
-        >>> validate_batch_path(paths)  # Without specifying batch_size
+        >>> validate_batch_path(paths)  # Without batch_size
         ['/path/to/file1.png', '/path/to/file2.png']
-        >>> validate_batch_path(paths, batch_size=3)
+        >>> # With incorrect batch size
+        >>> validate_batch_path(paths, batch_size=3)  # doctest: +IGNORE_EXCEPTION_DETAIL
         Traceback (most recent call last):
             ...
         ValueError: Number of paths (2) does not match the specified batch size (3).

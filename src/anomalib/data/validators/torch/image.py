@@ -1,4 +1,8 @@
-"""Validate torch image data."""
+"""Validate torch image data.
+
+This module provides validators for torch image data, including single images and batches.
+The validators ensure that tensors have the correct shape, type and format.
+"""
 
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -14,21 +18,25 @@ from anomalib.data.validators.path import validate_path
 
 
 class ImageValidator:
-    """Validate torch.Tensor data for images."""
+    """Validate torch.Tensor data for images.
+
+    This class provides static methods to validate various image-related data types.
+    """
 
     @staticmethod
     def validate_image(image: torch.Tensor) -> torch.Tensor:
         """Validate the image tensor.
 
         Args:
-            image (torch.Tensor): Input image tensor.
+            image: Input image tensor.
 
         Returns:
-            torch.Tensor: Validated image tensor.
+            Validated image tensor.
 
         Raises:
-            TypeError: If the input is not a torch.Tensor.
-            ValueError: If the image tensor does not have the correct shape.
+            TypeError: If ``image`` is not a ``torch.Tensor``.
+            ValueError: If ``image`` tensor does not have shape ``[C, H, W]``.
+            ValueError: If ``image`` does not have 3 channels.
 
         Examples:
             >>> import torch
@@ -54,14 +62,14 @@ class ImageValidator:
         """Validate the ground truth label.
 
         Args:
-            label (int | torch.Tensor | None): Input ground truth label.
+            label: Input ground truth label.
 
         Returns:
-            torch.Tensor | None: Validated ground truth label as a boolean tensor, or None.
+            Validated ground truth label as a boolean tensor, or ``None``.
 
         Raises:
-            TypeError: If the input is neither an integer nor a torch.Tensor.
-            ValueError: If the label shape or dtype is invalid.
+            TypeError: If ``label`` is neither an integer nor a ``torch.Tensor``.
+            ValueError: If label shape or dtype is invalid.
 
         Examples:
             >>> import torch
@@ -95,14 +103,14 @@ class ImageValidator:
         """Validate the ground truth mask.
 
         Args:
-            mask (torch.Tensor | None): Input ground truth mask.
+            mask: Input ground truth mask.
 
         Returns:
-            Mask | None: Validated ground truth mask, or None.
+            Validated ground truth mask, or ``None``.
 
         Raises:
-            TypeError: If the input is not a torch.Tensor.
-            ValueError: If the mask shape is invalid.
+            TypeError: If ``mask`` is not a ``torch.Tensor``.
+            ValueError: If mask shape is invalid.
 
         Examples:
             >>> import torch
@@ -134,14 +142,14 @@ class ImageValidator:
         """Validate the anomaly map.
 
         Args:
-            anomaly_map (torch.Tensor | None): Input anomaly map.
+            anomaly_map: Input anomaly map.
 
         Returns:
-            Mask | None: Validated anomaly map as a Mask, or None.
+            Validated anomaly map as a ``Mask``, or ``None``.
 
         Raises:
-            TypeError: If the input is not a torch.Tensor.
-            ValueError: If the anomaly map shape is invalid.
+            TypeError: If ``anomaly_map`` is not a ``torch.Tensor``.
+            ValueError: If anomaly map shape is invalid.
 
         Examples:
             >>> import torch
@@ -174,10 +182,10 @@ class ImageValidator:
         """Validate the image path.
 
         Args:
-            image_path (str | None): Input image path.
+            image_path: Input image path.
 
         Returns:
-            str | None: Validated image path, or None.
+            Validated image path, or ``None``.
 
         Examples:
             >>> from anomalib.dataclasses.validators import ImageValidator
@@ -193,10 +201,10 @@ class ImageValidator:
         """Validate the mask path.
 
         Args:
-            mask_path (str | None): Input mask path.
+            mask_path: Input mask path.
 
         Returns:
-            str | None: Validated mask path, or None.
+            Validated mask path, or ``None``.
 
         Examples:
             >>> from anomalib.dataclasses.validators import ImageValidator
@@ -214,14 +222,15 @@ class ImageValidator:
         """Validate the prediction score.
 
         Args:
-            pred_score (torch.Tensor | float | None): Input prediction score.
+            pred_score: Input prediction score.
 
         Returns:
-            torch.Tensor | None: Validated prediction score as a float32 tensor, or None.
+            Validated prediction score as a float32 tensor, or ``None``.
 
         Raises:
-            TypeError: If the input is neither a float, torch.Tensor, nor None.
-            ValueError: If the prediction score is not a scalar.
+            TypeError: If ``pred_score`` is neither a float, ``torch.Tensor``, nor
+                ``None``.
+            ValueError: If prediction score is not a scalar.
 
         Examples:
             >>> import torch
@@ -255,11 +264,10 @@ class ImageValidator:
         """Validate the prediction mask.
 
         Args:
-            pred_mask (torch.Tensor | None): Input prediction mask.
+            pred_mask: Input prediction mask.
 
         Returns:
-            Mask | None: Validated prediction mask, or None.
-
+            Validated prediction mask, or ``None``.
 
         Examples:
             >>> import torch
@@ -271,21 +279,23 @@ class ImageValidator:
             >>> validated_mask.shape
             torch.Size([224, 224])
         """
-        return ImageValidator.validate_gt_mask(pred_mask)  # We can reuse the gt_mask validation
+        return ImageValidator.validate_gt_mask(pred_mask)  # Reuse gt_mask validation
 
     @staticmethod
-    def validate_pred_label(pred_label: torch.Tensor | np.ndarray | float | None) -> torch.Tensor | None:
+    def validate_pred_label(
+        pred_label: torch.Tensor | np.ndarray | float | None,
+    ) -> torch.Tensor | None:
         """Validate the prediction label.
 
         Args:
-            pred_label (torch.Tensor | None): Input prediction label.
+            pred_label: Input prediction label.
 
         Returns:
-            torch.Tensor | None: Validated prediction label as a boolean tensor, or None.
+            Validated prediction label as a boolean tensor, or ``None``.
 
         Raises:
-            TypeError: If the input is not a torch.Tensor.
-            ValueError: If the prediction label is not a scalar.
+            TypeError: If ``pred_label`` is not a ``torch.Tensor``.
+            ValueError: If prediction label is not a scalar.
 
         Examples:
             >>> import torch
@@ -314,10 +324,10 @@ class ImageValidator:
         """Validate the explanation.
 
         Args:
-            explanation (str | None): Input explanation.
+            explanation: Input explanation.
 
         Returns:
-            str | None: Validated explanation, or None.
+            Validated explanation, or ``None``.
 
         Examples:
             >>> from anomalib.dataclasses.validators import ImageValidator
@@ -342,14 +352,14 @@ class ImageBatchValidator:
         """Validate the image for a batch.
 
         Args:
-            image (torch.Tensor): Input image tensor.
+            image: Input image tensor.
 
         Returns:
-            Image: Validated image as a torchvision Image object.
+            Validated image as a torchvision ``Image`` object.
 
         Raises:
-            TypeError: If the input is not a torch.Tensor.
-            ValueError: If the image tensor does not have the correct shape or number of channels.
+            TypeError: If ``image`` is not a ``torch.Tensor``.
+            ValueError: If image tensor does not have correct shape or channels.
 
         Examples:
             >>> import torch
@@ -373,18 +383,22 @@ class ImageBatchValidator:
         return Image(image, dtype=torch.float32)
 
     @staticmethod
-    def validate_gt_label(gt_label: torch.Tensor | Sequence[int] | None) -> torch.Tensor | None:
+    def validate_gt_label(
+        gt_label: torch.Tensor | Sequence[int] | None,
+    ) -> torch.Tensor | None:
         """Validate the ground truth label for a batch.
 
         Args:
-            gt_label (torch.Tensor | Sequence[int] | None): Input ground truth label.
+            gt_label: Input ground truth label.
 
         Returns:
-            torch.Tensor | None: Validated ground truth label as a boolean tensor, or None.
+            Validated ground truth label as a boolean tensor, or ``None``.
 
         Raises:
-            TypeError: If the input is not a sequence of integers or a torch.Tensor.
-            ValueError: If the ground truth label does not match the expected batch size or data type.
+            TypeError: If ``gt_label`` is not a sequence of integers or
+                ``torch.Tensor``.
+            ValueError: If ground truth label does not match expected batch size or
+                type.
 
         Examples:
             >>> import torch
@@ -414,14 +428,16 @@ class ImageBatchValidator:
         """Validate the ground truth mask for a batch.
 
         Args:
-            gt_mask (torch.Tensor | None): Input ground truth mask.
+            gt_mask: Input ground truth mask.
 
         Returns:
-            Mask | None: Validated ground truth mask as a torchvision Mask object, or None.
+            Validated ground truth mask as a torchvision ``Mask`` object, or
+            ``None``.
 
         Raises:
-            TypeError: If the input is not a torch.Tensor.
-            ValueError: If the ground truth mask does not have the correct shape or batch size.
+            TypeError: If ``gt_mask`` is not a ``torch.Tensor``.
+            ValueError: If ground truth mask does not have correct shape or batch
+                size.
 
         Examples:
             >>> import torch
@@ -453,14 +469,14 @@ class ImageBatchValidator:
         """Validate the mask paths for a batch.
 
         Args:
-            mask_path (Sequence[str] | None): Input sequence of mask paths.
+            mask_path: Input sequence of mask paths.
 
         Returns:
-            list[str] | None: Validated list of mask paths, or None.
+            Validated list of mask paths, or ``None``.
 
         Raises:
-            TypeError: If the input is not a sequence of strings.
-            ValueError: If the number of mask paths does not match the expected batch size.
+            TypeError: If ``mask_path`` is not a sequence of strings.
+            ValueError: If number of mask paths does not match expected batch size.
 
         Examples:
             >>> from anomalib.data.validators.torch.image import ImageBatchValidator
@@ -477,17 +493,20 @@ class ImageBatchValidator:
         return [str(path) for path in mask_path]
 
     @staticmethod
-    def validate_anomaly_map(anomaly_map: torch.Tensor | np.ndarray | None) -> Mask | None:
+    def validate_anomaly_map(
+        anomaly_map: torch.Tensor | np.ndarray | None,
+    ) -> Mask | None:
         """Validate the anomaly map for a batch.
 
         Args:
-            anomaly_map (torch.Tensor | np.ndarray | None): Input anomaly map.
+            anomaly_map: Input anomaly map.
 
         Returns:
-            Mask | None: Validated anomaly map as a torchvision Mask object, or None.
+            Validated anomaly map as a torchvision ``Mask`` object, or ``None``.
 
         Raises:
-            ValueError: If the anomaly map cannot be converted to a torch.Tensor or has an invalid shape.
+            ValueError: If ``anomaly_map`` cannot be converted to a
+                ``torch.Tensor`` or has invalid shape.
 
         Examples:
             >>> import torch
@@ -524,14 +543,16 @@ class ImageBatchValidator:
         """Validate the prediction scores for a batch.
 
         Args:
-            pred_score (torch.Tensor | Sequence[float] | None): Input prediction scores.
+            pred_score: Input prediction scores.
 
         Returns:
-            torch.Tensor | None: Validated prediction scores as a float32 tensor, or None.
+            Validated prediction scores as a float32 tensor, or ``None``.
 
         Raises:
-            TypeError: If the input is neither a sequence of floats, torch.Tensor, nor None.
-            ValueError: If the prediction scores are not a 1-dimensional tensor or sequence.
+            TypeError: If ``pred_score`` is neither a sequence of floats,
+                ``torch.Tensor``, nor ``None``.
+            ValueError: If prediction scores are not a 1-dimensional tensor or
+                sequence.
 
         Examples:
             >>> import torch
@@ -564,10 +585,11 @@ class ImageBatchValidator:
         """Validate the prediction mask for a batch.
 
         Args:
-            pred_mask (torch.Tensor | None): Input prediction mask.
+            pred_mask: Input prediction mask.
 
         Returns:
-            Mask | None: Validated prediction mask as a torchvision Mask object, or None.
+            Validated prediction mask as a torchvision ``Mask`` object, or
+            ``None``.
 
         Examples:
             >>> import torch
@@ -577,21 +599,21 @@ class ImageBatchValidator:
             >>> print(validated_mask.shape)
             torch.Size([4, 224, 224])
         """
-        return ImageBatchValidator.validate_gt_mask(pred_mask)  # We can reuse the gt_mask validation
+        return ImageBatchValidator.validate_gt_mask(pred_mask)  # Reuse gt_mask validation
 
     @staticmethod
     def validate_pred_label(pred_label: torch.Tensor | None) -> torch.Tensor | None:
         """Validate the prediction label for a batch.
 
         Args:
-            pred_label (torch.Tensor | None): Input prediction label.
+            pred_label: Input prediction label.
 
         Returns:
-            torch.Tensor | None: Validated prediction label as a boolean tensor, or None.
+            Validated prediction label as a boolean tensor, or ``None``.
 
         Raises:
-            TypeError: If the input is not a torch.Tensor.
-            ValueError: If the prediction label has an invalid shape.
+            TypeError: If ``pred_label`` is not a ``torch.Tensor``.
+            ValueError: If prediction label has invalid shape.
 
         Examples:
             >>> import torch
@@ -626,13 +648,13 @@ class ImageBatchValidator:
         """Validate the image paths for a batch.
 
         Args:
-            image_path (list[str] | None): Input list of image paths.
+            image_path: Input list of image paths.
 
         Returns:
-            list[str] | None: Validated list of image paths, or None.
+            Validated list of image paths, or ``None``.
 
         Raises:
-            TypeError: If the input is not a list of strings.
+            TypeError: If ``image_path`` is not a list of strings.
 
         Examples:
             >>> from anomalib.data.validators.torch.image import ImageBatchValidator
@@ -653,18 +675,23 @@ class ImageBatchValidator:
         """Validate the explanations for a batch.
 
         Args:
-            explanation (list[str] | None): Input list of explanations.
+            explanation: Input list of explanations.
 
         Returns:
-            list[str] | None: Validated list of explanations, or None.
+            Validated list of explanations, or ``None``.
 
         Raises:
-            TypeError: If the input is not a list of strings.
+            TypeError: If ``explanation`` is not a list of strings.
 
         Examples:
             >>> from anomalib.data.validators.torch.image import ImageBatchValidator
-            >>> explanations = ["The image has a crack on the wall.", "The image has a dent on the car."]
-            >>> validated_explanations = ImageBatchValidator.validate_explanation(explanations)
+            >>> explanations = [
+            ...     "The image has a crack on the wall.",
+            ...     "The image has a dent on the car."
+            ... ]
+            >>> validated_explanations = ImageBatchValidator.validate_explanation(
+            ...     explanations
+            ... )
             >>> print(validated_explanations)
             ['The image has a crack on the wall.', 'The image has a dent on the car.']
         """
