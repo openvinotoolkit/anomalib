@@ -1,7 +1,22 @@
 """Anomalib Model Checkpoint Callback.
 
-This module provides the `ModelCheckpoint` callback that extends PyTorch Lightning's `ModelCheckpoint`
-to support zero-shot and few-shot learning scenarios.
+This module provides the :class:`ModelCheckpoint` callback that extends PyTorch Lightning's
+:class:`~lightning.pytorch.callbacks.ModelCheckpoint` to support zero-shot and few-shot learning scenarios.
+
+The callback enables checkpoint saving without requiring training steps, which is particularly useful for
+zero-shot and few-shot learning models where the training process may only involve validation.
+
+Example:
+    Create and use a checkpoint callback:
+
+    >>> from anomalib.callbacks import ModelCheckpoint
+    >>> checkpoint_callback = ModelCheckpoint(
+    ...     dirpath="checkpoints",
+    ...     filename="best",
+    ...     monitor="val_loss"
+    ... )
+    >>> from lightning.pytorch import Trainer
+    >>> trainer = Trainer(callbacks=[checkpoint_callback])
 
 Note:
     This callback is particularly important for zero-shot and few-shot models where
@@ -21,55 +36,57 @@ from anomalib import LearningType
 class ModelCheckpoint(LightningCheckpoint):
     """Custom ModelCheckpoint callback for Anomalib.
 
-    This callback extends PyTorch Lightning's `ModelCheckpoint` to enable checkpoint saving
+    This callback extends PyTorch Lightning's
+    :class:`~lightning.pytorch.callbacks.ModelCheckpoint` to enable checkpoint saving
     without requiring training steps. This is particularly useful for zero-shot and few-shot
     learning models where the training process may only involve validation.
 
     The callback overrides two key methods from the parent class:
 
-    1. ``_should_save_on_train_epoch_end``: Controls whether checkpoints are saved at the end
+    1. :meth:`_should_save_on_train_epoch_end`: Controls whether checkpoints are saved at the end
        of training epochs or validation sequences. For zero-shot and few-shot models, it defaults
        to saving at validation end unless explicitly configured otherwise.
 
-    2. ``_should_skip_saving_checkpoint``: Determines if checkpoint saving should be skipped.
+    2. :meth:`_should_skip_saving_checkpoint`: Determines if checkpoint saving should be skipped.
        Modified to:
-       - Allow saving during both `FITTING` and `VALIDATING` states
+
+       - Allow saving during both ``FITTING`` and ``VALIDATING`` states
        - Permit saving even when global step hasn't changed (for zero-shot/few-shot models)
-       - Maintain standard checkpoint skipping conditions (fast_dev_run, sanity checking)
+       - Maintain standard checkpoint skipping conditions (``fast_dev_run``, sanity checking)
 
-    Examples:
-        Create and use a checkpoint callback::
+    Example:
+        Create and use a checkpoint callback:
 
-            from anomalib.callbacks import ModelCheckpoint
-
-            # Create a checkpoint callback
-            checkpoint_callback = ModelCheckpoint(
-                dirpath="checkpoints",
-                filename="best",
-                monitor="val_loss"
-            )
-
-            # Use it with Lightning Trainer
-            trainer = Trainer(callbacks=[checkpoint_callback])
+        >>> from anomalib.callbacks import ModelCheckpoint
+        >>> # Create a checkpoint callback
+        >>> checkpoint_callback = ModelCheckpoint(
+        ...     dirpath="checkpoints",
+        ...     filename="best",
+        ...     monitor="val_loss"
+        ... )
+        >>> # Use it with Lightning Trainer
+        >>> from lightning.pytorch import Trainer
+        >>> trainer = Trainer(callbacks=[checkpoint_callback])
 
     Note:
-        All arguments from PyTorch Lightning's `ModelCheckpoint` are supported.
-        See :class:`lightning.pytorch.callbacks.ModelCheckpoint` for details.
+        All arguments from PyTorch Lightning's :class:`~lightning.pytorch.callbacks.ModelCheckpoint` are supported.
+        See :class:`~lightning.pytorch.callbacks.ModelCheckpoint` for details.
     """
 
     def _should_skip_saving_checkpoint(self, trainer: Trainer) -> bool:
         """Determine if checkpoint saving should be skipped.
 
         Args:
-            trainer: PyTorch Lightning trainer instance.
+            trainer (:class:`~lightning.pytorch.Trainer`): PyTorch Lightning trainer instance.
 
         Returns:
-            bool: True if checkpoint saving should be skipped, False otherwise.
+            bool: ``True`` if checkpoint saving should be skipped, ``False`` otherwise.
 
         Note:
             The method considers the following conditions:
-            - Skips if `fast_dev_run` is enabled
-            - Skips if not in `FITTING` or `VALIDATING` state
+
+            - Skips if ``fast_dev_run`` is enabled
+            - Skips if not in ``FITTING`` or ``VALIDATING`` state
             - Skips during sanity checking
             - For non-zero/few-shot models, skips if global step hasn't changed
         """
@@ -85,14 +102,16 @@ class ModelCheckpoint(LightningCheckpoint):
         """Determine if checkpoint should be saved at training epoch end.
 
         Args:
-            trainer: PyTorch Lightning trainer instance.
+            trainer (:class:`~lightning.pytorch.Trainer`): PyTorch Lightning trainer instance.
 
         Returns:
-            bool: True if checkpoint should be saved at training epoch end, False otherwise.
+            bool: ``True`` if checkpoint should be saved at training epoch end, ``False`` otherwise.
 
         Note:
-            - Returns user-specified value if set
-            - For zero/few-shot models, defaults to False (save at validation end)
+            The method follows this decision flow:
+
+            - Returns user-specified value if ``_save_on_train_epoch_end`` is set
+            - For zero/few-shot models, defaults to ``False`` (save at validation end)
             - Otherwise, follows parent class behavior
         """
         if self._save_on_train_epoch_end is not None:

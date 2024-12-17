@@ -1,7 +1,29 @@
 """Tiler configuration callback.
 
-This module provides the `TilerConfigurationCallback` for configuring image tiling operations
-in Anomalib models.
+This module provides the :class:`TilerConfigurationCallback` for configuring image tiling operations
+in Anomalib models. Tiling allows processing large images by splitting them into smaller tiles,
+which is useful when dealing with high-resolution images that don't fit in GPU memory.
+
+The callback configures tiling parameters such as tile size, stride, and upscaling mode for
+models that support tiling operations.
+
+Example:
+    Configure tiling with custom parameters:
+
+    >>> from anomalib.callbacks import TilerConfigurationCallback
+    >>> from anomalib.data.utils.tiler import ImageUpscaleMode
+    >>> callback = TilerConfigurationCallback(
+    ...     enable=True,
+    ...     tile_size=512,
+    ...     stride=256,
+    ...     mode=ImageUpscaleMode.PADDING
+    ... )
+    >>> from lightning.pytorch import Trainer
+    >>> trainer = Trainer(callbacks=[callback])
+
+Note:
+    The model must support tiling operations for this callback to work.
+    It will raise a :exc:`ValueError` if used with a model that doesn't support tiling.
 """
 
 # Copyright (C) 2022 Intel Corporation
@@ -21,35 +43,50 @@ __all__ = ["TilerConfigurationCallback"]
 class TilerConfigurationCallback(Callback):
     """Callback for configuring image tiling operations.
 
-    This callback configures the tiling operation for models that support it. It sets up
-    parameters such as tile size, stride, and upscaling mode.
+    This callback configures the tiling operation for models that support it. Tiling is useful
+    when working with high-resolution images that need to be processed in smaller chunks.
 
     Args:
-        enable (bool): Boolean to enable tiling operation. Defaults to False.
-        tile_size (int | Sequence): Tile size. Defaults to 256.
-        stride (int | Sequence | None): Stride to move tiles on the image. Defaults to None.
-        remove_border_count (int): Number of pixels to remove from the image before
-            tiling. Defaults to 0.
-        mode (ImageUpscaleMode): Up-scaling mode when untiling overlapping tiles.
-            Defaults to "padding".
+        enable (bool): Whether to enable tiling operation. Defaults to ``False``.
+        tile_size (int | Sequence): Size of each tile. Can be a single integer for square tiles
+            or a sequence of two integers for rectangular tiles. Defaults to ``256``.
+        stride (int | Sequence | None): Stride between tiles. Can be a single integer or a sequence
+            of two integers. If ``None``, uses ``tile_size``. Defaults to ``None``.
+        remove_border_count (int): Number of pixels to remove from the image border before
+            tiling. Useful for removing artifacts at image boundaries. Defaults to ``0``.
+        mode (ImageUpscaleMode): Method to use when combining overlapping tiles.
+            Options are defined in :class:`~anomalib.data.utils.tiler.ImageUpscaleMode`.
+            Defaults to ``ImageUpscaleMode.PADDING``.
 
     Examples:
-        Configure tiling with custom parameters::
+        Create a basic tiling configuration:
 
-            from anomalib.callbacks import TilerConfigurationCallback
-            from anomalib.data.utils.tiler import ImageUpscaleMode
+        >>> callback = TilerConfigurationCallback(enable=True)
 
-            callback = TilerConfigurationCallback(
-                enable=True,
-                tile_size=512,
-                stride=256,
-                mode=ImageUpscaleMode.PADDING
-            )
-            trainer = pl.Trainer(callbacks=[callback])
+        Configure tiling with custom tile size and stride:
+
+        >>> callback = TilerConfigurationCallback(
+        ...     enable=True,
+        ...     tile_size=512,
+        ...     stride=256
+        ... )
+
+        Use rectangular tiles with custom upscale mode:
+
+        >>> from anomalib.data.utils.tiler import ImageUpscaleMode
+        >>> callback = TilerConfigurationCallback(
+        ...     enable=True,
+        ...     tile_size=(512, 256),
+        ...     mode=ImageUpscaleMode.AVERAGE
+        ... )
+
+    Raises:
+        ValueError: If used with a model that doesn't support tiling operations.
 
     Note:
-        The model must support tiling operations for this callback to work.
-        It will raise a ValueError if used with a model that doesn't support tiling.
+        - The model must have a ``tiler`` attribute to support tiling operations
+        - Smaller stride values result in more overlap between tiles but increase computation
+        - The upscale mode affects how overlapping regions are combined
     """
 
     def __init__(
@@ -70,14 +107,18 @@ class TilerConfigurationCallback(Callback):
     def setup(self, trainer: pl.Trainer, pl_module: pl.LightningModule, stage: str | None = None) -> None:
         """Set Tiler object within Anomalib Model.
 
+        This method is called by PyTorch Lightning during setup. It configures the tiling
+        parameters if tiling is enabled and the model supports it.
+
         Args:
-            trainer (pl.Trainer): PyTorch Lightning Trainer.
-            pl_module (pl.LightningModule): Anomalib Model that inherits pl LightningModule.
-            stage (str | None, optional): fit, validate, test or predict. Defaults to None.
+            trainer (pl.Trainer): PyTorch Lightning Trainer instance.
+            pl_module (pl.LightningModule): The Anomalib model being trained/tested.
+            stage (str | None, optional): Current stage - ``"fit"``, ``"validate"``,
+                ``"test"`` or ``"predict"``. Defaults to ``None``.
 
         Raises:
-            ValueError: When Anomalib Model doesn't contain ``Tiler`` object, indicating the model
-                does not support tiling operation.
+            ValueError: If tiling is enabled but the model doesn't support tiling operations
+                (i.e., doesn't have a ``tiler`` attribute).
         """
         del trainer, stage  # These variables are not used.
 

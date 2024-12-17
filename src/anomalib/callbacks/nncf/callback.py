@@ -35,22 +35,38 @@ class NNCFCallback(Callback):
 
     Args:
         config (dict): NNCF configuration dictionary that specifies the compression
-            parameters and algorithms to be applied.
+            parameters and algorithms to be applied. See the NNCF documentation for
+            details on configuration options.
         export_dir (str | None, optional): Directory path where the exported models will be saved.
-            The exports include:
-            - ONNX model file (.onnx)
-            - OpenVINO IR files (.xml and .bin)
-            If None, model export will be skipped. Defaults to None.
+            If provided, the following files will be exported:
+
+            - ONNX model file (`model_nncf.onnx`)
+            - OpenVINO IR files (`model_nncf.xml` and `model_nncf.bin`)
+
+            If ``None``, model export will be skipped. Defaults to ``None``.
 
     Examples:
-        Configure NNCF quantization::
+        Configure NNCF quantization:
 
-            nncf_config = {
-                "input_info": {"sample_size": [1, 3, 224, 224]},
-                "compression": {"algorithm": "quantization"}
-            }
-            callback = NNCFCallback(config=nncf_config, export_dir="./compressed_models")
-            trainer = pl.Trainer(callbacks=[callback])
+        >>> nncf_config = {
+        ...     "input_info": {"sample_size": [1, 3, 224, 224]},
+        ...     "compression": {"algorithm": "quantization"}
+        ... }
+        >>> callback = NNCFCallback(config=nncf_config, export_dir="./compressed_models")
+        >>> trainer = pl.Trainer(callbacks=[callback])
+
+    Note:
+        - The callback assumes that the Lightning module contains a ``model`` attribute which is the
+          PyTorch module to be compressed.
+        - The compression is initialized using the validation dataloader since it contains both normal
+          and anomalous samples, unlike the training set which only has normal samples.
+        - Model export requires OpenVINO's Model Optimizer (``mo``) to be available in the system PATH.
+
+    See Also:
+        - :class:`lightning.pytorch.Callback`: Base callback class
+        - :class:`nncf.NNCFConfig`: NNCF configuration class
+        - :func:`nncf.torch.register_default_init_args`: Register initialization arguments
+        - :func:`anomalib.callbacks.nncf.utils.wrap_nncf_model`: Wrap model for NNCF compression
     """
 
     def __init__(self, config: dict, export_dir: str | None = None) -> None:
@@ -67,7 +83,7 @@ class NNCFCallback(Callback):
         Args:
             trainer (pl.Trainer): PyTorch Lightning trainer instance
             pl_module (pl.LightningModule): The Lightning module containing the model to compress
-            stage (str | None, optional): Current stage of training. Defaults to None.
+            stage (str | None, optional): Current stage of training. Defaults to ``None``.
         """
         del stage  # `stage` variable is not used.
 
@@ -104,7 +120,7 @@ class NNCFCallback(Callback):
             pl_module (pl.LightningModule): The Lightning module being trained
             batch (Any): Current batch of data
             batch_idx (int): Index of current batch
-            unused (int, optional): Unused parameter. Defaults to 0.
+            unused (int, optional): Unused parameter. Defaults to ``0``.
         """
         del trainer, pl_module, batch, batch_idx, unused  # These variables are not used.
 
@@ -135,6 +151,12 @@ class NNCFCallback(Callback):
         Args:
             trainer (pl.Trainer): PyTorch Lightning trainer instance
             pl_module (pl.LightningModule): The trained Lightning module
+
+        Note:
+            - Requires OpenVINO's Model Optimizer (``mo``) to be available in the system PATH
+            - Creates the export directory if it doesn't exist
+            - Exports ONNX model as ``model_nncf.onnx``
+            - Converts ONNX to OpenVINO IR format using ``mo``
         """
         del trainer, pl_module  # `trainer` and `pl_module` variables are not used.
 

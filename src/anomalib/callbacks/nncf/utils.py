@@ -3,9 +3,15 @@
 This module provides utility functions and classes for working with Intel's Neural Network
 Compression Framework (NNCF). It includes functionality for model initialization, state
 management, and configuration handling.
+
+The module contains:
+
+- ``InitLoader``: A data loader class for NNCF initialization
+- Functions for wrapping PyTorch models with NNCF compression
+- Utilities for handling NNCF model states and configurations
 """
 
-# Copyright (C) 2022 Intel Corporation
+# Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
@@ -31,11 +37,30 @@ logger = logging.getLogger(name="NNCF compression")
 class InitLoader(PTInitializingDataLoader):
     """Initializing data loader for NNCF to be used with unsupervised training algorithms.
 
-    This class extends NNCF's PTInitializingDataLoader to handle unsupervised training data.
+    This class extends NNCF's ``PTInitializingDataLoader`` to handle unsupervised training data.
     It provides methods for iterating through the data and extracting inputs for model initialization.
 
     Args:
-        data_loader (DataLoader): PyTorch DataLoader containing the initialization data.
+        data_loader (DataLoader): PyTorch ``DataLoader`` containing the initialization data.
+
+    Examples:
+        Create an initialization loader from a PyTorch dataloader:
+
+        >>> from torch.utils.data import DataLoader, TensorDataset
+        >>> import torch
+        >>> dataset = TensorDataset(torch.randn(10, 3, 32, 32))
+        >>> dataloader = DataLoader(dataset)
+        >>> init_loader = InitLoader(dataloader)
+
+        Iterate through the loader:
+
+        >>> for batch in init_loader:
+        ...     assert isinstance(batch, torch.Tensor)
+        ...     assert batch.shape[1:] == (3, 32, 32)
+
+    Note:
+        The loader expects the dataloader to return dictionaries with an ``"image"`` key
+        containing the input tensor.
     """
 
     def __init__(self, data_loader: DataLoader) -> None:
@@ -47,6 +72,13 @@ class InitLoader(PTInitializingDataLoader):
 
         Returns:
             InitLoader: Self reference for iteration.
+
+        Example:
+            >>> from torch.utils.data import DataLoader, TensorDataset
+            >>> loader = InitLoader(DataLoader(TensorDataset(torch.randn(1,3,32,32))))
+            >>> iterator = iter(loader)
+            >>> isinstance(iterator, InitLoader)
+            True
         """
         self._data_loader_iter = iter(self._data_loader)
         return self
@@ -56,6 +88,13 @@ class InitLoader(PTInitializingDataLoader):
 
         Returns:
             torch.Tensor: Next image tensor from the dataloader.
+
+        Example:
+            >>> from torch.utils.data import DataLoader, TensorDataset
+            >>> loader = InitLoader(DataLoader(TensorDataset(torch.randn(1,3,32,32))))
+            >>> batch = next(iter(loader))
+            >>> isinstance(batch, torch.Tensor)
+            True
         """
         loaded_item = next(self._data_loader_iter)
         return loaded_item["image"]
@@ -65,12 +104,19 @@ class InitLoader(PTInitializingDataLoader):
         """Get input to model.
 
         Args:
-            dataloader_output (dict[str, str | torch.Tensor]): Output from the dataloader.
+            dataloader_output (dict[str, str | torch.Tensor]): Output from the dataloader
+                containing the input tensor.
 
         Returns:
             tuple[tuple, dict]: A tuple containing:
                 - A tuple with the dataloader output
                 - An empty dict for additional arguments
+
+        Example:
+            >>> output = {"image": torch.randn(1,3,32,32)}
+            >>> args, kwargs = InitLoader.get_inputs(output)
+            >>> isinstance(args, tuple) and isinstance(kwargs, dict)
+            True
         """
         return (dataloader_output,), {}
 
@@ -78,11 +124,15 @@ class InitLoader(PTInitializingDataLoader):
     def get_target(_) -> None:  # noqa: ANN001
         """Return structure for ground truth in loss criterion based on dataloader output.
 
-        This implementation is a placeholder that returns None since ground truth
+        This implementation is a placeholder that returns ``None`` since ground truth
         is not used in unsupervised training.
 
         Returns:
-            None
+            None: Always returns ``None`` as targets are not used.
+
+        Example:
+            >>> InitLoader.get_target(None) is None
+            True
         """
         return
 
@@ -107,7 +157,18 @@ def wrap_nncf_model(
             - The compressed model
 
     Warning:
-        Either dataloader or init_state_dict must be provided for proper quantizer initialization.
+        Either ``dataloader`` or ``init_state_dict`` must be provided for proper quantizer initialization.
+
+    Example:
+        >>> import torch.nn as nn
+        >>> from torch.utils.data import DataLoader, TensorDataset
+        >>> model = nn.Linear(10, 2)
+        >>> config = {"input_info": {"sample_size": [1, 10]}}
+        >>> data = torch.randn(100, 10)
+        >>> dataloader = DataLoader(TensorDataset(data))
+        >>> controller, compressed = wrap_nncf_model(model, config, dataloader, {})
+        >>> isinstance(compressed, NNCFNetwork)
+        True
     """
     nncf_config = NNCFConfig.from_dict(config)
 
@@ -148,7 +209,15 @@ def is_state_nncf(state: dict) -> bool:
         state (dict): Model state dictionary to check.
 
     Returns:
-        bool: True if the state is from an NNCF-compressed model, False otherwise.
+        bool: ``True`` if the state is from an NNCF-compressed model, ``False`` otherwise.
+
+    Example:
+        >>> state = {"meta": {"nncf_enable_compression": True}}
+        >>> is_state_nncf(state)
+        True
+        >>> state = {"meta": {}}
+        >>> is_state_nncf(state)
+        False
     """
     return bool(state.get("meta", {}).get("nncf_enable_compression", False))
 
@@ -157,7 +226,7 @@ def compose_nncf_config(nncf_config: dict, enabled_options: list[str]) -> dict:
     """Compose NNCF config by selected options.
 
     This function merges different parts of the NNCF configuration based on enabled options.
-    It supports ordered application of configuration parts through the 'order_of_parts' field.
+    It supports ordered application of configuration parts through the ``order_of_parts`` field.
 
     Args:
         nncf_config (dict): Base NNCF configuration dictionary.
@@ -167,10 +236,20 @@ def compose_nncf_config(nncf_config: dict, enabled_options: list[str]) -> dict:
         dict: Composed NNCF configuration.
 
     Raises:
-        TypeError: If 'order_of_parts' is not a list.
-        ValueError: If an enabled option is not in 'order_of_parts'.
-        KeyError: If 'base' part or any enabled option is missing from config.
+        TypeError: If ``order_of_parts`` is not a list.
+        ValueError: If an enabled option is not in ``order_of_parts``.
+        KeyError: If ``base`` part or any enabled option is missing from config.
         RuntimeError: If there's an error during config merging.
+
+    Example:
+        >>> config = {
+        ...     "base": {"epochs": 1},
+        ...     "quantization": {"epochs": 2},
+        ...     "order_of_parts": ["quantization"]
+        ... }
+        >>> result = compose_nncf_config(config, ["quantization"])
+        >>> result["epochs"]
+        2
     """
     optimisation_parts = nncf_config
     optimisation_parts_to_choose = []
@@ -224,7 +303,7 @@ def merge_dicts_and_lists_b_into_a(
     """Merge two configuration dictionaries or lists.
 
     This function provides the public interface for merging configurations.
-    It delegates to the internal _merge_dicts_and_lists_b_into_a function.
+    It delegates to the internal ``_merge_dicts_and_lists_b_into_a`` function.
 
     Args:
         a (dict[Any, Any] | list[Any]): First dictionary or list to merge.
@@ -232,6 +311,15 @@ def merge_dicts_and_lists_b_into_a(
 
     Returns:
         dict[Any, Any] | list[Any]: Merged configuration.
+
+    Example:
+        >>> a = {"x": 1, "y": [1, 2]}
+        >>> b = {"y": [3], "z": 2}
+        >>> result = merge_dicts_and_lists_b_into_a(a, b)
+        >>> result["y"]
+        [1, 2, 3]
+        >>> result["z"]
+        2
     """
     return _merge_dicts_and_lists_b_into_a(a, b, "")
 
@@ -259,6 +347,13 @@ def _merge_dicts_and_lists_b_into_a(
 
     Raises:
         TypeError: If inputs are not dictionaries or lists, or if types are incompatible.
+
+    Example:
+        >>> a = {"x": {"y": [1]}}
+        >>> b = {"x": {"y": [2]}}
+        >>> result = _merge_dicts_and_lists_b_into_a(a, b)
+        >>> result["x"]["y"]
+        [1, 2]
     """
 
     def _err_str(_a: dict | list, _b: dict | list, _key: int | str | None = None) -> str:

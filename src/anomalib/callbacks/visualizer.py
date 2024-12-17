@@ -1,7 +1,28 @@
 """Visualizer callback.
 
-This module provides the `_VisualizationCallback` for generating and managing visualizations
+This module provides the :class:`_VisualizationCallback` for generating and managing visualizations
 in Anomalib. This callback is assigned by the Anomalib Engine internally.
+
+The callback handles:
+- Generating visualizations during model testing and prediction
+- Saving visualizations to disk
+- Showing visualizations interactively
+- Logging visualizations to various logging backends
+
+Example:
+    Create visualization callback with multiple visualizers::
+
+        >>> from anomalib.utils.visualization import ImageVisualizer, MetricsVisualizer
+        >>> visualizers = [ImageVisualizer(), MetricsVisualizer()]
+        >>> visualization_callback = _VisualizationCallback(
+        ...     visualizers=visualizers,
+        ...     save=True,
+        ...     root="results/images"
+        ... )
+
+Note:
+    This callback is used internally by the Anomalib Engine and should not be
+    instantiated directly by users.
 """
 
 # Copyright (C) 2024 Intel Corporation
@@ -33,27 +54,28 @@ class _VisualizationCallback(Callback):
     Args:
         visualizers (BaseVisualizer | list[BaseVisualizer]): Visualizer objects that
             are used for computing the visualizations.
-        save (bool, optional): Save the visualizations. Defaults to False.
-        root (Path | None, optional): The path to save the visualizations. Defaults to None.
-        log (bool, optional): Log the visualizations to the loggers. Defaults to False.
-        show (bool, optional): Show the visualizations. Defaults to False.
+        save (bool, optional): Save the visualizations. Defaults to ``False``.
+        root (Path | None, optional): The path to save the visualizations. Defaults to ``None``.
+        log (bool, optional): Log the visualizations to the loggers. Defaults to ``False``.
+        show (bool, optional): Show the visualizations. Defaults to ``False``.
 
     Examples:
         Create visualization callback with multiple visualizers::
 
-            visualizers = [ImageVisualizer(), MetricsVisualizer()]
-            visualization_callback = _VisualizationCallback(
-                visualizers=visualizers,
-                save=True,
-                root="results/images"
-            )
+            >>> from anomalib.utils.visualization import ImageVisualizer, MetricsVisualizer
+            >>> visualizers = [ImageVisualizer(), MetricsVisualizer()]
+            >>> visualization_callback = _VisualizationCallback(
+            ...     visualizers=visualizers,
+            ...     save=True,
+            ...     root="results/images"
+            ... )
 
     Note:
         This callback is used internally by the Anomalib Engine and should not be
         instantiated directly by users.
 
     Raises:
-        ValueError: If `root` is None and `save` is True.
+        ValueError: If ``root`` is ``None`` and ``save`` is ``True``.
     """
 
     def __init__(
@@ -92,8 +114,19 @@ class _VisualizationCallback(Callback):
             batch_idx (int): Index of the current batch.
             dataloader_idx (int, optional): Index of the dataloader. Defaults to 0.
 
+        Example:
+            Generate visualizations for a test batch::
+
+                >>> from anomalib.utils.visualization import ImageVisualizer
+                >>> callback = _VisualizationCallback(
+                ...     visualizers=ImageVisualizer(),
+                ...     save=True,
+                ...     root="results/images"
+                ... )
+                >>> callback.on_test_batch_end(trainer, model, outputs, batch, 0)
+
         Raises:
-            ValueError: If save is True but file_name is None.
+            ValueError: If ``save`` is ``True`` but ``file_name`` is ``None``.
         """
         for generator in self.generators:
             if generator.visualize_on == VisualizationStep.BATCH:
@@ -133,8 +166,19 @@ class _VisualizationCallback(Callback):
             trainer (Trainer): PyTorch Lightning trainer instance.
             pl_module (AnomalibModule): The module that was tested.
 
+        Example:
+            Generate visualizations at the end of testing::
+
+                >>> from anomalib.utils.visualization import MetricsVisualizer
+                >>> callback = _VisualizationCallback(
+                ...     visualizers=MetricsVisualizer(),
+                ...     save=True,
+                ...     root="results/metrics"
+                ... )
+                >>> callback.on_test_end(trainer, model)
+
         Raises:
-            ValueError: If save is True but file_name is None.
+            ValueError: If ``save`` is ``True`` but ``file_name`` is ``None``.
         """
         for generator in self.generators:
             if generator.visualize_on == VisualizationStep.STAGE_END:
@@ -171,6 +215,9 @@ class _VisualizationCallback(Callback):
             batch (Any): Current batch of data.
             batch_idx (int): Index of the current batch.
             dataloader_idx (int, optional): Index of the dataloader. Defaults to 0.
+
+        Note:
+            This method calls :meth:`on_test_batch_end` internally.
         """
         return self.on_test_batch_end(trainer, pl_module, outputs, batch, batch_idx, dataloader_idx)
 
@@ -180,6 +227,9 @@ class _VisualizationCallback(Callback):
         Args:
             trainer (Trainer): PyTorch Lightning trainer instance.
             pl_module (AnomalibModule): The module that was used for prediction.
+
+        Note:
+            This method calls :meth:`on_test_end` internally.
         """
         return self.on_test_end(trainer, pl_module)
 
@@ -196,8 +246,14 @@ class _VisualizationCallback(Callback):
             module (AnomalibModule): LightningModule from which the global step is extracted.
             trainer (Trainer): Trainer object containing the loggers.
 
+        Example:
+            Add visualization to logger::
+
+                >>> result = generator.generate(...)  # Generate visualization
+                >>> _VisualizationCallback._add_to_logger(result, model, trainer)
+
         Raises:
-            ValueError: If file name is None when attempting to log.
+            ValueError: If ``file_name`` is ``None`` when attempting to log.
         """
         # Store names of logger and the logger in a dict
         available_loggers = {
