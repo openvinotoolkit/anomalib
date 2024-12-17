@@ -1,6 +1,10 @@
 """Fully Convolutional Cross-Scale-Flows for Image-based Defect Detection.
 
-https://arxiv.org/pdf/2110.02855.pdf
+Paper: https://arxiv.org/pdf/2110.02855.pdf
+
+This module provides the CS-Flow model implementation for anomaly detection.
+CS-Flow uses normalizing flows across multiple scales to model the distribution
+of normal images and detect anomalies.
 """
 
 # Copyright (C) 2022-2024 Intel Corporation
@@ -29,17 +33,41 @@ __all__ = ["Csflow"]
 
 
 class Csflow(AnomalibModule):
-    """Fully Convolutional Cross-Scale-Flows for Image-based Defect Detection.
+    """CS-Flow Lightning Model for anomaly detection.
+
+    CS-Flow uses normalizing flows across multiple scales to model the distribution
+    of normal images. During inference, it assigns anomaly scores based on the
+    likelihood of test samples under the learned distribution.
 
     Args:
-        n_coupling_blocks (int): Number of coupling blocks in the model.
+        n_coupling_blocks (int, optional): Number of coupling blocks in the model.
             Defaults to ``4``.
-        cross_conv_hidden_channels (int): Number of hidden channels in the cross convolution.
-            Defaults to ``1024``.
-        clamp (int): Clamp value for glow layer.
-            Defaults to ``3``.
-        num_channels (int): Number of channels in the model.
-            Defaults to ``3``.
+        cross_conv_hidden_channels (int, optional): Number of hidden channels in
+            the cross convolution layer. Defaults to ``1024``.
+        clamp (int, optional): Clamping value for the affine coupling layers in
+            the Glow model. Defaults to ``3``.
+        num_channels (int, optional): Number of input image channels.
+            Defaults to ``3`` for RGB images.
+        pre_processor (PreProcessor | bool, optional): Preprocessing module or
+            flag to enable default preprocessing. Defaults to ``True``.
+        post_processor (PostProcessor | bool, optional): Post-processing module or
+            flag to enable default post-processing. Defaults to ``True``.
+        evaluator (Evaluator | bool, optional): Evaluation module or flag to
+            enable default evaluation. Defaults to ``True``.
+        visualizer (Visualizer | bool, optional): Visualization module or flag to
+            enable default visualization. Defaults to ``True``.
+
+    Raises:
+        ValueError: If ``input_size`` is not provided during initialization.
+
+    Example:
+        >>> from anomalib.models.image.csflow import Csflow
+        >>> model = Csflow(
+        ...     n_coupling_blocks=4,
+        ...     cross_conv_hidden_channels=1024,
+        ...     clamp=3,
+        ...     num_channels=3
+        ... )
     """
 
     def __init__(
@@ -79,15 +107,22 @@ class Csflow(AnomalibModule):
         self.loss = CsFlowLoss()
 
     def training_step(self, batch: Batch, *args, **kwargs) -> STEP_OUTPUT:
-        """Perform the training step of CS-Flow.
+        """Perform a training step of CS-Flow model.
 
         Args:
-            batch (Batch): Input batch
-            args: Arguments.
-            kwargs: Keyword arguments.
+            batch (Batch): Input batch containing images and targets
+            *args: Additional positional arguments (unused)
+            **kwargs: Additional keyword arguments (unused)
 
         Returns:
-            Loss value
+            STEP_OUTPUT: Dictionary containing the loss value
+
+        Example:
+            >>> batch = Batch(image=torch.randn(32, 3, 256, 256))
+            >>> model = Csflow()
+            >>> output = model.training_step(batch)
+            >>> output["loss"]
+            tensor(...)
         """
         del args, kwargs  # These variables are not used.
 
@@ -97,15 +132,21 @@ class Csflow(AnomalibModule):
         return {"loss": loss}
 
     def validation_step(self, batch: Batch, *args, **kwargs) -> STEP_OUTPUT:
-        """Perform the validation step for CS Flow.
+        """Perform a validation step of CS-Flow model.
 
         Args:
-            batch (Batch): Input batch
-            args: Arguments.
-            kwargs: Keyword arguments.
+            batch (Batch): Input batch containing images and targets
+            *args: Additional positional arguments (unused)
+            **kwargs: Additional keyword arguments (unused)
 
         Returns:
-            dict[str, torch.Tensor]: Dictionary containing the anomaly map, scores, etc.
+            STEP_OUTPUT: Dictionary containing predictions including anomaly maps
+                and scores
+
+        Example:
+            >>> batch = Batch(image=torch.randn(32, 3, 256, 256))
+            >>> model = Csflow()
+            >>> predictions = model.validation_step(batch)
         """
         del args, kwargs  # These variables are not used.
 
@@ -114,14 +155,26 @@ class Csflow(AnomalibModule):
 
     @property
     def trainer_arguments(self) -> dict[str, Any]:
-        """CS-Flow-specific trainer arguments."""
+        """Get CS-Flow-specific trainer arguments.
+
+        Returns:
+            dict[str, Any]: Dictionary containing trainer arguments:
+                - gradient_clip_val: Maximum gradient norm for clipping
+                - num_sanity_val_steps: Number of validation steps to run before
+                  training
+        """
         return {"gradient_clip_val": 1, "num_sanity_val_steps": 0}
 
     def configure_optimizers(self) -> torch.optim.Optimizer:
-        """Configure optimizers.
+        """Configure the Adam optimizer for CS-Flow.
 
         Returns:
-            Optimizer: Adam optimizer
+            torch.optim.Optimizer: Configured Adam optimizer with specific
+                hyperparameters
+
+        Example:
+            >>> model = Csflow()
+            >>> optimizer = model.configure_optimizers()
         """
         return torch.optim.Adam(
             self.parameters(),
@@ -133,9 +186,9 @@ class Csflow(AnomalibModule):
 
     @property
     def learning_type(self) -> LearningType:
-        """Return the learning type of the model.
+        """Get the learning type of the model.
 
         Returns:
-            LearningType: Learning type of the model.
+            LearningType: The learning type, which is ONE_CLASS for CS-Flow
         """
         return LearningType.ONE_CLASS
