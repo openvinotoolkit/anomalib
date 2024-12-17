@@ -1,6 +1,30 @@
 """Dataloader for Datumaro format.
 
-Note: This currently only works for annotations exported from Intel Geti™.
+This module provides PyTorch Dataset implementation for loading images and
+annotations in Datumaro format. Currently only supports annotations exported from
+Intel Geti™.
+
+The dataset expects the following directory structure::
+
+    dataset/
+    ├── annotations/
+    │    └── default.json
+    └── images/
+        └── default/
+                ├── image1.jpg
+                ├── image2.jpg
+                └── ...
+
+The ``default.json`` file contains image paths and label annotations in Datumaro
+format.
+
+Example:
+    >>> from pathlib import Path
+    >>> from anomalib.data.datasets import DatumaroDataset
+    >>> dataset = DatumaroDataset(
+    ...     root=Path("./datasets/datumaro"),
+    ...     split="train"
+    ... )
 """
 
 # Copyright (C) 2024 Intel Corporation
@@ -16,39 +40,33 @@ from anomalib.data.datasets.base import AnomalibDataset
 from anomalib.data.utils import LabelName, Split
 
 
-def make_datumaro_dataset(root: str | Path, split: str | Split | None = None) -> pd.DataFrame:
-    """Make Datumaro Dataset.
-
-    Assumes the following directory structure:
-
-    dataset
-    ├── annotations
-    │    └── default.json
-    └── images
-        └── default
-                ├── image1.jpg
-                ├── image2.jpg
-                └── ...
+def make_datumaro_dataset(
+    root: str | Path,
+    split: str | Split | None = None,
+) -> pd.DataFrame:
+    """Create a DataFrame of image samples from a Datumaro dataset.
 
     Args:
         root (str | Path): Path to the dataset root directory.
-        split (str | Split | None): Split of the dataset, usually Split.TRAIN or Split.TEST.
-            Defaults to ``None``.
-
-    Examples:
-        >>> root = Path("path/to/dataset")
-        >>> samples = make_datumaro_dataset(root)
-        >>> samples.head()
-            image_path	label	label_index	split	mask_path
-        0	path/to/dataset...	Normal	0	Split.TRAIN
-        1	path/to/dataset...	Normal	0	Split.TRAIN
-        2	path/to/dataset...	Normal	0	Split.TRAIN
-        3	path/to/dataset...	Normal	0	Split.TRAIN
-        4	path/to/dataset...	Normal	0	Split.TRAIN
-
+        split (str | Split | None, optional): Dataset split to load. Usually
+            ``Split.TRAIN`` or ``Split.TEST``. Defaults to ``None``.
 
     Returns:
-        DataFrame: an output dataframe containing samples for the requested split (ie., train or test).
+        pd.DataFrame: DataFrame containing samples with columns:
+            - ``image_path``: Path to the image file
+            - ``label``: Class label name
+            - ``label_index``: Numeric label index
+            - ``split``: Dataset split
+            - ``mask_path``: Path to mask file (empty for classification)
+
+    Example:
+        >>> root = Path("./datasets/datumaro")
+        >>> samples = make_datumaro_dataset(root)
+        >>> samples.head()  # doctest: +NORMALIZE_WHITESPACE
+           image_path  label  label_index      split mask_path
+        0  path/...   Normal           0  Split.TRAIN
+        1  path/...   Normal           0  Split.TRAIN
+        2  path/...   Normal           0  Split.TRAIN
     """
     annotation_file = Path(root) / "annotations" / "default.json"
     with annotation_file.open() as f:
@@ -67,7 +85,7 @@ def make_datumaro_dataset(root: str | Path, split: str | Split | None = None) ->
             "label": label,
             "label_index": label_index,
             "split": None,
-            "mask_path": "",  # mask is provided in the annotation file and is not on disk.
+            "mask_path": "",  # mask is provided in annotation file
         })
     samples_df = pd.DataFrame(
         samples,
@@ -75,7 +93,7 @@ def make_datumaro_dataset(root: str | Path, split: str | Split | None = None) ->
         index=range(len(samples)),
     )
     # Create test/train split
-    # By default assign all "Normal" samples to train and all "Anomalous" samples to test
+    # By default assign all "Normal" samples to train and all "Anomalous" to test
     samples_df.loc[samples_df["label_index"] == LabelName.NORMAL, "split"] = Split.TRAIN
     samples_df.loc[samples_df["label_index"] == LabelName.ABNORMAL, "split"] = Split.TEST
 
@@ -90,30 +108,24 @@ def make_datumaro_dataset(root: str | Path, split: str | Split | None = None) ->
 
 
 class DatumaroDataset(AnomalibDataset):
-    """Datumaro dataset class.
+    """Dataset class for loading Datumaro format datasets.
 
     Args:
-        task (TaskType): Task type, ``classification``, ``detection`` or ``segmentation``.
         root (str | Path): Path to the dataset root directory.
-        transform (Transform, optional): Transforms that should be applied to the input images.
+        transform (Transform | None, optional): Transforms to apply to the images.
             Defaults to ``None``.
-        split (str | Split | None): Split of the dataset, usually Split.TRAIN or Split.TEST
-            Defaults to ``None``.
+        split (str | Split | None, optional): Dataset split to load. Usually
+            ``Split.TRAIN`` or ``Split.TEST``. Defaults to ``None``.
 
-
-    Examples:
-        .. code-block:: python
-
-            from anomalib.data.image.datumaro import DatumaroDataset
-            from torchvision.transforms.v2 import Resize
-
-            dataset = DatumaroDataset(root=root,
-                task="classification",
-                transform=Resize((256, 256)),
-            )
-            print(dataset[0].keys())
-            # Output: dict_keys(['dm_format_version', 'infos', 'categories', 'items'])
-
+    Example:
+        >>> from pathlib import Path
+        >>> from torchvision.transforms.v2 import Resize
+        >>> from anomalib.data.datasets import DatumaroDataset
+        >>> dataset = DatumaroDataset(
+        ...     root=Path("./datasets/datumaro"),
+        ...     transform=Resize((256, 256)),
+        ...     split="train"
+        ... )
     """
 
     def __init__(

@@ -1,6 +1,29 @@
-"""Custom Folder Dataset.
+"""Custom Folder Dataset for 3D anomaly detection.
 
-This script creates a custom dataset from a folder.
+This module provides a custom dataset class that loads RGB-D data from a folder
+structure. The dataset supports both classification and segmentation tasks.
+
+The folder structure should contain RGB images and their corresponding depth maps.
+The dataset can be configured with separate directories for:
+
+- Normal training samples
+- Normal test samples (optional)
+- Abnormal test samples (optional)
+- Mask annotations (optional, for segmentation)
+- Depth maps for each image type
+
+Example:
+    >>> from pathlib import Path
+    >>> from anomalib.data.datasets import Folder3DDataset
+    >>> dataset = Folder3DDataset(
+    ...     name="custom",
+    ...     root="datasets/custom",
+    ...     normal_dir="normal",
+    ...     abnormal_dir="abnormal",
+    ...     normal_depth_dir="normal_depth",
+    ...     abnormal_depth_dir="abnormal_depth",
+    ...     mask_dir="ground_truth"
+    ... )
 """
 
 # Copyright (C) 2024 Intel Corporation
@@ -18,38 +41,43 @@ from anomalib.data.utils.path import _prepare_files_labels, validate_and_resolve
 
 
 class Folder3DDataset(AnomalibDepthDataset):
-    """Folder dataset.
+    """Dataset class for loading RGB-D data from a custom folder structure.
 
     Args:
-        name (str): Name of the dataset.
-        transform (Transform): Transforms that should be applied to the input images.
-        normal_dir (str | Path): Path to the directory containing normal images.
-        root (str | Path | None): Root folder of the dataset.
+        name (str): Name of the dataset
+        normal_dir (str | Path): Path to directory containing normal images
+        root (str | Path | None, optional): Root directory of the dataset.
             Defaults to ``None``.
-        abnormal_dir (str | Path | None, optional): Path to the directory containing abnormal images.
+        abnormal_dir (str | Path | None, optional): Path to directory containing
+            abnormal images. Defaults to ``None``.
+        normal_test_dir (str | Path | None, optional): Path to directory
+            containing normal test images. If not provided, normal test images
+            will be split from ``normal_dir``. Defaults to ``None``.
+        mask_dir (str | Path | None, optional): Path to directory containing
+            ground truth masks. Required for segmentation. Defaults to ``None``.
+        normal_depth_dir (str | Path | None, optional): Path to directory
+            containing depth maps for normal images. Defaults to ``None``.
+        abnormal_depth_dir (str | Path | None, optional): Path to directory
+            containing depth maps for abnormal images. Defaults to ``None``.
+        normal_test_depth_dir (str | Path | None, optional): Path to directory
+            containing depth maps for normal test images. Defaults to ``None``.
+        transform (Transform | None, optional): Transforms to apply to the images.
             Defaults to ``None``.
-        normal_test_dir (str | Path | None, optional): Path to the directory containing
-            normal images for the test dataset.
-            Defaults to ``None``.
-        mask_dir (str | Path | None, optional): Path to the directory containing
-            the mask annotations.
-            Defaults to ``None``.
-        normal_depth_dir (str | Path | None, optional): Path to the directory containing
-            normal depth images for the test dataset. Normal test depth images will be a split of `normal_dir`
-            Defaults to ``None``.
-        abnormal_depth_dir (str | Path | None, optional): Path to the directory containing abnormal depth images for
-            the test dataset.
-            Defaults to ``None``.
-        normal_test_depth_dir (str | Path | None, optional): Path to the directory containing
-            normal depth images for the test dataset. Normal test images will be a split of `normal_dir` if `None`.
-            Defaults to ``None``.
-        transform (Transform, optional): Transforms that should be applied to the input images.
-            Defaults to ``None``.
-        split (str | Split | None): Fixed subset split that follows from folder structure on file system.
-            Choose from [Split.FULL, Split.TRAIN, Split.TEST]
-            Defaults to ``None``.
-        extensions (tuple[str, ...] | None, optional): Type of the image extensions to read from the directory.
-            Defaults to ``None``.
+        split (str | Split | None, optional): Dataset split to load.
+            One of ``["train", "test", "full"]``. Defaults to ``None``.
+        extensions (tuple[str, ...] | None, optional): Image file extensions to
+            include. Defaults to ``None``.
+
+    Example:
+        >>> dataset = Folder3DDataset(
+        ...     name="custom",
+        ...     root="./datasets/custom",
+        ...     normal_dir="train/good",
+        ...     abnormal_dir="test/defect",
+        ...     mask_dir="test/ground_truth",
+        ...     normal_depth_dir="train/good_depth",
+        ...     abnormal_depth_dir="test/defect_depth"
+        ... )
     """
 
     def __init__(
@@ -96,9 +124,10 @@ class Folder3DDataset(AnomalibDepthDataset):
 
     @property
     def name(self) -> str:
-        """Name of the dataset.
+        """Get dataset name.
 
-        Folder3D dataset overrides the name property to provide a custom name.
+        Returns:
+            str: Name of the dataset
         """
         return self._name
 
@@ -115,35 +144,38 @@ def make_folder3d_dataset(
     split: str | Split | None = None,
     extensions: tuple[str, ...] | None = None,
 ) -> DataFrame:
-    """Make Folder Dataset.
+    """Create a dataset by collecting files from a folder structure.
+
+    The function creates a DataFrame containing paths to RGB images, depth maps,
+    and masks (if available) along with their corresponding labels.
 
     Args:
-        normal_dir (str | Path): Path to the directory containing normal images.
-        root (str | Path | None): Path to the root directory of the dataset.
+        normal_dir (str | Path): Directory containing normal images
+        root (str | Path | None, optional): Root directory. Defaults to ``None``.
+        abnormal_dir (str | Path | None, optional): Directory containing abnormal
+            images. Defaults to ``None``.
+        normal_test_dir (str | Path | None, optional): Directory containing
+            normal test images. Defaults to ``None``.
+        mask_dir (str | Path | None, optional): Directory containing ground truth
+            masks. Defaults to ``None``.
+        normal_depth_dir (str | Path | None, optional): Directory containing
+            depth maps for normal images. Defaults to ``None``.
+        abnormal_depth_dir (str | Path | None, optional): Directory containing
+            depth maps for abnormal images. Defaults to ``None``.
+        normal_test_depth_dir (str | Path | None, optional): Directory containing
+            depth maps for normal test images. Defaults to ``None``.
+        split (str | Split | None, optional): Dataset split to return.
             Defaults to ``None``.
-        abnormal_dir (str | Path | None, optional): Path to the directory containing abnormal images.
-            Defaults to ``None``.
-        normal_test_dir (str | Path | None, optional): Path to the directory containing normal images for the test
-        dataset. Normal test images will be a split of `normal_dir` if `None`.
-            Defaults to ``None``.
-        mask_dir (str | Path | None, optional): Path to the directory containing the mask annotations.
-            Defaults to ``None``.
-        normal_depth_dir (str | Path | None, optional): Path to the directory containing
-            normal depth images for the test dataset. Normal test depth images will be a split of `normal_dir`
-            Defaults to ``None``.
-        abnormal_depth_dir (str | Path | None, optional): Path to the directory containing abnormal depth images for
-            the test dataset.
-            Defaults to ``None``.
-        normal_test_depth_dir (str | Path | None, optional): Path to the directory containing normal depth images for
-            the test dataset. Normal test images will be a split of `normal_dir` if `None`.
-            Defaults to ``None``.
-        split (str | Split | None, optional): Dataset split (ie., Split.FULL, Split.TRAIN or Split.TEST).
-            Defaults to ``None``.
-        extensions (tuple[str, ...] | None, optional): Type of the image extensions to read from the directory.
-            Defaults to ``None``.
+        extensions (tuple[str, ...] | None, optional): Image file extensions to
+            include. Defaults to ``None``.
 
     Returns:
-        DataFrame: an output dataframe containing samples for the requested split (ie., train or test)
+        DataFrame: Dataset samples with columns for paths and labels
+
+    Raises:
+        ValueError: If ``normal_dir`` is not a directory
+        FileNotFoundError: If depth maps or mask files are missing
+        MisMatchError: If depth maps don't match their RGB images
     """
     normal_dir = validate_and_resolve_path(normal_dir, root)
     abnormal_dir = validate_and_resolve_path(abnormal_dir, root) if abnormal_dir else None
