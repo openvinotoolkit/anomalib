@@ -1,4 +1,12 @@
-"""Log model graph to respective logger."""
+"""Graph logging callback for model visualization.
+
+This module provides the `GraphLogger` callback for visualizing model architectures in various logging backends.
+The callback supports `TensorBoard`, `Comet`, and `Weights & Biases` (W&B).
+
+Note:
+    For W&B logging, the graph is only populated after one backward pass. This means
+    it may not work for models that don't require training (e.g., `PaDiM`).
+"""
 
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -12,25 +20,38 @@ from anomalib.loggers import AnomalibCometLogger, AnomalibTensorBoardLogger, Ano
 class GraphLogger(Callback):
     """Log model graph to respective logger.
 
+    This callback logs the model architecture graph to the configured logger. It supports multiple
+    logging backends including `TensorBoard`, `Comet`, and `Weights & Biases` (W&B).
+
+    The callback automatically detects which logger is being used and handles the graph logging
+    appropriately for each backend.
+
     Examples:
-        Log model graph to Tensorboard
+        Log model graph to TensorBoard::
 
-        >>> from anomalib.callbacks import GraphLogger
-        >>> from anomalib.loggers import AnomalibTensorBoardLogger
-        >>> from anomalib.engine import Engine
-        ...
-        >>> logger = AnomalibTensorBoardLogger()
-        >>> callbacks = [GraphLogger()]
-        >>> engine = Engine(logger=logger, callbacks=callbacks)
+            from anomalib.callbacks import GraphLogger
+            from anomalib.loggers import AnomalibTensorBoardLogger
+            from anomalib.engine import Engine
 
-        Log model graph to Comet
+            logger = AnomalibTensorBoardLogger()
+            callbacks = [GraphLogger()]
+            engine = Engine(logger=logger, callbacks=callbacks)
 
-        >>> from anomalib.loggers import AnomalibCometLogger
-        >>> from anomalib.engine import Engine
-        ...
-        >>> logger = AnomalibCometLogger()
-        >>> callbacks = [GraphLogger()]
-        >>> engine = Engine(logger=logger, callbacks=callbacks)
+        Log model graph to Comet::
+
+            from anomalib.callbacks import GraphLogger
+            from anomalib.loggers import AnomalibCometLogger
+            from anomalib.engine import Engine
+
+            logger = AnomalibCometLogger()
+            callbacks = [GraphLogger()]
+            engine = Engine(logger=logger, callbacks=callbacks)
+
+    Notes:
+        - For `TensorBoard` and `Comet`, the graph is logged at the end of training
+        - For W&B, the graph is logged at the start of training but requires one backward pass
+          to be populated. This means it may not work for models that don't require training
+          (e.g., `PaDiM`)
     """
 
     @staticmethod

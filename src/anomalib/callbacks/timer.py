@@ -1,4 +1,8 @@
-"""Callback to measure training and testing time of a PyTorch Lightning module."""
+"""Timer callback.
+
+This module provides the `TimerCallback` for measuring training and testing time of
+Anomalib models.
+"""
 
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -13,14 +17,22 @@ logger = logging.getLogger(__name__)
 
 
 class TimerCallback(Callback):
-    """Callback that measures the training and testing time of a PyTorch Lightning module.
+    """Callback for measuring model training and testing time.
+
+    This callback tracks the time taken for training and testing, and calculates
+    throughput (frames per second) during testing.
 
     Examples:
-        >>> from anomalib.callbacks import TimerCallback
-        >>> from anomalib.engine import Engine
-        ...
-        >>> callbacks = [TimerCallback()]
-        >>> engine = Engine(callbacks=callbacks)
+        Add timer to track performance::
+
+            from anomalib.callbacks import TimerCallback
+            from anomalib.engine import Engine
+
+            callbacks = [TimerCallback()]
+            engine = Engine(callbacks=callbacks)
+
+    Note:
+        The callback automatically handles both single and multiple test dataloaders.
     """
 
     def __init__(self) -> None:
@@ -30,46 +42,32 @@ class TimerCallback(Callback):
     def on_fit_start(self, trainer: Trainer, pl_module: LightningModule) -> None:
         """Call when fit begins.
 
-        Sets the start time to the time training started.
-
         Args:
             trainer (Trainer): PyTorch Lightning trainer.
             pl_module (LightningModule): Current training module.
-
-        Returns:
-            None
         """
         del trainer, pl_module  # These variables are not used.
-
         self.start = time.time()
 
     def on_fit_end(self, trainer: Trainer, pl_module: LightningModule) -> None:
         """Call when fit ends.
 
-        Prints the time taken for training.
-
         Args:
             trainer (Trainer): PyTorch Lightning trainer.
             pl_module (LightningModule): Current training module.
-
-        Returns:
-            None
         """
         del trainer, pl_module  # Unused arguments.
         logger.info("Training took %5.2f seconds", (time.time() - self.start))
 
     def on_test_start(self, trainer: Trainer, pl_module: LightningModule) -> None:
-        """Call when the test begins.
-
-        Sets the start time to the time testing started.
-        Goes over all the test dataloaders and adds the number of images in each.
+        """Call when test begins.
 
         Args:
             trainer (Trainer): PyTorch Lightning trainer.
             pl_module (LightningModule): Current training module.
 
-        Returns:
-            None
+        Note:
+            Sets the start time and counts total number of test images across all dataloaders.
         """
         del pl_module  # Unused argument.
 
@@ -84,16 +82,14 @@ class TimerCallback(Callback):
                     self.num_images += len(dataloader.dataset)
 
     def on_test_end(self, trainer: Trainer, pl_module: LightningModule) -> None:
-        """Call when the test ends.
-
-        Prints the time taken for testing and the throughput in frames per second.
+        """Call when test ends.
 
         Args:
             trainer (Trainer): PyTorch Lightning trainer.
             pl_module (LightningModule): Current training module.
 
-        Returns:
-            None
+        Note:
+            Calculates and logs the total testing time and throughput in FPS.
         """
         del pl_module  # Unused argument.
 

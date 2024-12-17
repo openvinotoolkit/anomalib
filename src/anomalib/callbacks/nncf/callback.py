@@ -1,4 +1,13 @@
-"""Callbacks for NNCF optimization."""
+"""NNCF optimization callback.
+
+This module provides the `NNCFCallback` for optimizing neural networks using Intel's Neural Network
+Compression Framework (NNCF). The callback handles model compression techniques like quantization
+and pruning.
+
+Note:
+    The callback assumes that the Lightning module contains a 'model' attribute which is the
+    PyTorch module to be compressed.
+"""
 
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -19,15 +28,29 @@ if TYPE_CHECKING:
 
 
 class NNCFCallback(Callback):
-    """Callback for NNCF compression.
+    """Callback for NNCF model compression.
 
-    Assumes that the pl module contains a 'model' attribute, which is
-    the PyTorch module that must be compressed.
+    This callback handles the compression of PyTorch models using NNCF during training.
+    It supports various compression techniques like quantization and pruning.
 
     Args:
-        config (dict): NNCF Configuration
-        export_dir (Str): Path where the export `onnx` and the OpenVINO `xml` and `bin` IR are saved.
-                          If None model will not be exported.
+        config (dict): NNCF configuration dictionary that specifies the compression
+            parameters and algorithms to be applied.
+        export_dir (str | None, optional): Directory path where the exported models will be saved.
+            The exports include:
+            - ONNX model file (.onnx)
+            - OpenVINO IR files (.xml and .bin)
+            If None, model export will be skipped. Defaults to None.
+
+    Examples:
+        Configure NNCF quantization::
+
+            nncf_config = {
+                "input_info": {"sample_size": [1, 3, 224, 224]},
+                "compression": {"algorithm": "quantization"}
+            }
+            callback = NNCFCallback(config=nncf_config, export_dir="./compressed_models")
+            trainer = pl.Trainer(callbacks=[callback])
     """
 
     def __init__(self, config: dict, export_dir: str | None = None) -> None:
@@ -36,10 +59,15 @@ class NNCFCallback(Callback):
         self.nncf_ctrl: CompressionAlgorithmController | None = None
 
     def setup(self, trainer: pl.Trainer, pl_module: pl.LightningModule, stage: str | None = None) -> None:
-        """Call when fit or test begins.
+        """Initialize NNCF compression when training begins.
 
-        Takes the pytorch model and wraps it using the compression controller
-        so that it is ready for nncf fine-tuning.
+        This method is called when training or testing begins. It wraps the PyTorch model
+        using the NNCF compression controller to prepare it for compression during training.
+
+        Args:
+            trainer (pl.Trainer): PyTorch Lightning trainer instance
+            pl_module (pl.LightningModule): The Lightning module containing the model to compress
+            stage (str | None, optional): Current stage of training. Defaults to None.
         """
         del stage  # `stage` variable is not used.
 
@@ -66,9 +94,17 @@ class NNCFCallback(Callback):
         batch_idx: int,
         unused: int = 0,
     ) -> None:
-        """Call when the train batch begins.
+        """Prepare compression before each training batch.
 
-        Prepare compression method to continue training the model in the next step.
+        Called at the beginning of each training batch to update the compression
+        scheduler for the next step.
+
+        Args:
+            trainer (pl.Trainer): PyTorch Lightning trainer instance
+            pl_module (pl.LightningModule): The Lightning module being trained
+            batch (Any): Current batch of data
+            batch_idx (int): Index of current batch
+            unused (int, optional): Unused parameter. Defaults to 0.
         """
         del trainer, pl_module, batch, batch_idx, unused  # These variables are not used.
 
@@ -76,9 +112,14 @@ class NNCFCallback(Callback):
             self.nncf_ctrl.scheduler.step()
 
     def on_train_epoch_start(self, trainer: pl.Trainer, pl_module: pl.LightningModule) -> None:
-        """Call when the train epoch starts.
+        """Prepare compression before each training epoch.
 
-        Prepare compression method to continue training the model in the next epoch.
+        Called at the beginning of each training epoch to update the compression
+        scheduler for the next epoch.
+
+        Args:
+            trainer (pl.Trainer): PyTorch Lightning trainer instance
+            pl_module (pl.LightningModule): The Lightning module being trained
         """
         del trainer, pl_module  # `trainer` and `pl_module` variables are not used.
 
@@ -86,9 +127,14 @@ class NNCFCallback(Callback):
             self.nncf_ctrl.scheduler.epoch_step()
 
     def on_train_end(self, trainer: pl.Trainer, pl_module: pl.LightningModule) -> None:
-        """Call when the train ends.
+        """Export the compressed model when training ends.
 
-        Exports onnx model and if compression controller is not None, uses the onnx model to generate the OpenVINO IR.
+        This method handles the export of the compressed model to ONNX format and
+        optionally converts it to OpenVINO IR format if the export directory is specified.
+
+        Args:
+            trainer (pl.Trainer): PyTorch Lightning trainer instance
+            pl_module (pl.LightningModule): The trained Lightning module
         """
         del trainer, pl_module  # `trainer` and `pl_module` variables are not used.
 

@@ -1,4 +1,9 @@
-"""Utils for NNCf optimization."""
+"""Utilities for Neural Network Compression Framework (NNCF) optimization.
+
+This module provides utility functions and classes for working with Intel's Neural Network
+Compression Framework (NNCF). It includes functionality for model initialization, state
+management, and configuration handling.
+"""
 
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -24,19 +29,34 @@ logger = logging.getLogger(name="NNCF compression")
 
 
 class InitLoader(PTInitializingDataLoader):
-    """Initializing data loader for NNCF to be used with unsupervised training algorithms."""
+    """Initializing data loader for NNCF to be used with unsupervised training algorithms.
+
+    This class extends NNCF's PTInitializingDataLoader to handle unsupervised training data.
+    It provides methods for iterating through the data and extracting inputs for model initialization.
+
+    Args:
+        data_loader (DataLoader): PyTorch DataLoader containing the initialization data.
+    """
 
     def __init__(self, data_loader: DataLoader) -> None:
         super().__init__(data_loader)
         self._data_loader_iter: Iterator
 
     def __iter__(self) -> "InitLoader":
-        """Create iterator for dataloader."""
+        """Create iterator for dataloader.
+
+        Returns:
+            InitLoader: Self reference for iteration.
+        """
         self._data_loader_iter = iter(self._data_loader)
         return self
 
     def __next__(self) -> torch.Tensor:
-        """Return next item from dataloader iterator."""
+        """Return next item from dataloader iterator.
+
+        Returns:
+            torch.Tensor: Next image tensor from the dataloader.
+        """
         loaded_item = next(self._data_loader_iter)
         return loaded_item["image"]
 
@@ -44,9 +64,13 @@ class InitLoader(PTInitializingDataLoader):
     def get_inputs(dataloader_output: dict[str, str | torch.Tensor]) -> tuple[tuple, dict]:
         """Get input to model.
 
+        Args:
+            dataloader_output (dict[str, str | torch.Tensor]): Output from the dataloader.
+
         Returns:
-            (dataloader_output,), {}: tuple[tuple, dict]: The current model call to be made during
-            the initialization process
+            tuple[tuple, dict]: A tuple containing:
+                - A tuple with the dataloader output
+                - An empty dict for additional arguments
         """
         return (dataloader_output,), {}
 
@@ -54,7 +78,8 @@ class InitLoader(PTInitializingDataLoader):
     def get_target(_) -> None:  # noqa: ANN001
         """Return structure for ground truth in loss criterion based on dataloader output.
 
-        This implementation does not do anything and is a placeholder.
+        This implementation is a placeholder that returns None since ground truth
+        is not used in unsupervised training.
 
         Returns:
             None
@@ -68,13 +93,21 @@ def wrap_nncf_model(
     dataloader: DataLoader,
     init_state_dict: dict,
 ) -> tuple[CompressionAlgorithmController, NNCFNetwork]:
-    """Wrap model by NNCF.
+    """Wrap PyTorch model with NNCF compression.
 
-    :param model: Anomalib model.
-    :param config: NNCF config.
-    :param dataloader: Dataloader for initialization of NNCF model.
-    :param init_state_dict: Opti
-    :return: compression controller, compressed model
+    Args:
+        model (nn.Module): Anomalib model to be compressed.
+        config (dict): NNCF configuration dictionary.
+        dataloader (DataLoader): DataLoader for NNCF model initialization.
+        init_state_dict (dict): Initial state dictionary for model initialization.
+
+    Returns:
+        tuple[CompressionAlgorithmController, NNCFNetwork]: A tuple containing:
+            - The compression controller
+            - The compressed model
+
+    Warning:
+        Either dataloader or init_state_dict must be provided for proper quantizer initialization.
     """
     nncf_config = NNCFConfig.from_dict(config)
 
@@ -109,16 +142,35 @@ def wrap_nncf_model(
 
 
 def is_state_nncf(state: dict) -> bool:
-    """Check if state is the result of NNCF-compressed model."""
+    """Check if state is the result of NNCF-compressed model.
+
+    Args:
+        state (dict): Model state dictionary to check.
+
+    Returns:
+        bool: True if the state is from an NNCF-compressed model, False otherwise.
+    """
     return bool(state.get("meta", {}).get("nncf_enable_compression", False))
 
 
 def compose_nncf_config(nncf_config: dict, enabled_options: list[str]) -> dict:
-    """Compose NNCf config by selected options.
+    """Compose NNCF config by selected options.
 
-    :param nncf_config:
-    :param enabled_options:
-    :return: config
+    This function merges different parts of the NNCF configuration based on enabled options.
+    It supports ordered application of configuration parts through the 'order_of_parts' field.
+
+    Args:
+        nncf_config (dict): Base NNCF configuration dictionary.
+        enabled_options (list[str]): List of enabled optimization options.
+
+    Returns:
+        dict: Composed NNCF configuration.
+
+    Raises:
+        TypeError: If 'order_of_parts' is not a list.
+        ValueError: If an enabled option is not in 'order_of_parts'.
+        KeyError: If 'base' part or any enabled option is missing from config.
+        RuntimeError: If there's an error during config merging.
     """
     optimisation_parts = nncf_config
     optimisation_parts_to_choose = []
@@ -169,14 +221,17 @@ def merge_dicts_and_lists_b_into_a(
     a: dict[Any, Any] | list[Any],
     b: dict[Any, Any] | list[Any],
 ) -> dict[Any, Any] | list[Any]:
-    """Merge dict configs.
+    """Merge two configuration dictionaries or lists.
+
+    This function provides the public interface for merging configurations.
+    It delegates to the internal _merge_dicts_and_lists_b_into_a function.
 
     Args:
-        a (dict[Any, Any] | list[Any]): First dict or list.
-        b (dict[Any, Any] | list[Any]): Second dict or list.
+        a (dict[Any, Any] | list[Any]): First dictionary or list to merge.
+        b (dict[Any, Any] | list[Any]): Second dictionary or list to merge into first.
 
     Returns:
-        dict[Any, Any] | list[Any]: Merged dict or list.
+        dict[Any, Any] | list[Any]: Merged configuration.
     """
     return _merge_dicts_and_lists_b_into_a(a, b, "")
 
@@ -186,30 +241,30 @@ def _merge_dicts_and_lists_b_into_a(
     b: dict[Any, Any] | list[Any],
     cur_key: int | str | None = None,
 ) -> dict[Any, Any] | list[Any]:
-    """Merge dict configs.
+    """Recursively merge two configuration dictionaries or lists.
 
-        * works with usual dicts and lists and derived types
-        * supports merging of lists (by concatenating the lists)
-        * makes recursive merging for dict + dict case
-        * overwrites when merging scalar into scalar
-        Note that we merge b into a (whereas Config makes merge a into b),
-        since otherwise the order of list merging is counter-intuitive.
+    This function implements the following merge behavior:
+    - Works with standard dicts, lists and their derived types
+    - Merges lists by concatenation
+    - Performs recursive merging for nested dictionaries
+    - Overwrites scalar values when merging
 
     Args:
-        a (dict[Any, Any] | list[Any]): First dict or list.
-        b (dict[Any, Any] | list[Any]): Second dict or list.
-        cur_key (int | str | None, optional): key for current level of recursion. Defaults to None.
+        a (dict[Any, Any] | list[Any]): First dictionary or list to merge.
+        b (dict[Any, Any] | list[Any]): Second dictionary or list to merge into first.
+        cur_key (int | str | None, optional): Current key in recursive merge. Defaults to None.
 
     Returns:
-        dict[Any, Any] | list[Any]: Merged dict or list.
+        dict[Any, Any] | list[Any]: Merged configuration.
+
+    Raises:
+        TypeError: If inputs are not dictionaries or lists, or if types are incompatible.
     """
 
     def _err_str(_a: dict | list, _b: dict | list, _key: int | str | None = None) -> str:
         _key_str = "of whole structures" if _key is None else f"during merging for key=`{_key}`"
         return (
-            f"Error in merging parts of config: different types {_key_str},"
-            f" type(a) = {type(_a)},"
-            f" type(b) = {type(_b)}"
+            f"Error in merging parts of config: different types {_key_str}, type(a) = {type(_a)}, type(b) = {type(_b)}"
         )
 
     if not (isinstance(a, dict | list)):

@@ -1,4 +1,8 @@
-"""Tiler Callback."""
+"""Tiler configuration callback.
+
+This module provides the `TilerConfigurationCallback` for configuring image tiling operations
+in Anomalib models.
+"""
 
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -15,7 +19,38 @@ __all__ = ["TilerConfigurationCallback"]
 
 
 class TilerConfigurationCallback(Callback):
-    """Tiler Configuration Callback."""
+    """Callback for configuring image tiling operations.
+
+    This callback configures the tiling operation for models that support it. It sets up
+    parameters such as tile size, stride, and upscaling mode.
+
+    Args:
+        enable (bool): Boolean to enable tiling operation. Defaults to False.
+        tile_size (int | Sequence): Tile size. Defaults to 256.
+        stride (int | Sequence | None): Stride to move tiles on the image. Defaults to None.
+        remove_border_count (int): Number of pixels to remove from the image before
+            tiling. Defaults to 0.
+        mode (ImageUpscaleMode): Up-scaling mode when untiling overlapping tiles.
+            Defaults to "padding".
+
+    Examples:
+        Configure tiling with custom parameters::
+
+            from anomalib.callbacks import TilerConfigurationCallback
+            from anomalib.data.utils.tiler import ImageUpscaleMode
+
+            callback = TilerConfigurationCallback(
+                enable=True,
+                tile_size=512,
+                stride=256,
+                mode=ImageUpscaleMode.PADDING
+            )
+            trainer = pl.Trainer(callbacks=[callback])
+
+    Note:
+        The model must support tiling operations for this callback to work.
+        It will raise a ValueError if used with a model that doesn't support tiling.
+    """
 
     def __init__(
         self,
@@ -25,21 +60,7 @@ class TilerConfigurationCallback(Callback):
         remove_border_count: int = 0,
         mode: ImageUpscaleMode = ImageUpscaleMode.PADDING,
     ) -> None:
-        """Set tiling configuration from the command line.
-
-        Args:
-            enable (bool): Boolean to enable tiling operation.
-                Defaults to False.
-            tile_size ([int | Sequence]): Tile size.
-                Defaults to 256.
-            stride ([int | Sequence]): Stride to move tiles on the image.
-            remove_border_count (int, optional): Number of pixels to remove from the image before
-                tiling. Defaults to 0.
-            mode (str, optional): Up-scaling mode when untiling overlapping tiles.
-                Defaults to "padding".
-            tile_count (SupportsIndex, optional): Number of random tiles to sample from the image.
-                Defaults to 4.
-        """
+        """Initialize tiling configuration."""
         self.enable = enable
         self.tile_size = tile_size
         self.stride = stride
@@ -50,13 +71,13 @@ class TilerConfigurationCallback(Callback):
         """Set Tiler object within Anomalib Model.
 
         Args:
-            trainer (pl.Trainer): PyTorch Lightning Trainer
+            trainer (pl.Trainer): PyTorch Lightning Trainer.
             pl_module (pl.LightningModule): Anomalib Model that inherits pl LightningModule.
             stage (str | None, optional): fit, validate, test or predict. Defaults to None.
 
         Raises:
-            ValueError: When Anomalib Model doesn't contain ``Tiler`` object, it means the model
-                doesn not support tiling operation.
+            ValueError: When Anomalib Model doesn't contain ``Tiler`` object, indicating the model
+                does not support tiling operation.
         """
         del trainer, stage  # These variables are not used.
 
