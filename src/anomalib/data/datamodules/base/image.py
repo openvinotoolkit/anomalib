@@ -3,6 +3,7 @@
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+import copy
 import logging
 from abc import ABC, abstractmethod
 from pathlib import Path
@@ -12,6 +13,7 @@ from lightning.pytorch import LightningDataModule
 from lightning.pytorch.trainer.states import TrainerFn
 from lightning.pytorch.utilities.types import EVAL_DATALOADERS, TRAIN_DATALOADERS
 from torch.utils.data.dataloader import DataLoader
+from torchvision.transforms.v2 import Transform
 
 from anomalib import TaskType
 from anomalib.data.utils import TestSplitMode, ValSplitMode, random_split, split_by_label
@@ -32,6 +34,14 @@ class AnomalibDataModule(LightningDataModule, ABC):
         train_batch_size (int): Batch size used by the train dataloader.
         eval_batch_size (int): Batch size used by the val and test dataloaders.
         num_workers (int): Number of workers used by the train, val and test dataloaders.
+        train_augmentations (Transform | None): Augmentations to apply dto the training images
+            Defaults to ``None``.
+        val_augmentations (Transform | None): Augmentations to apply to the validation images.
+            Defaults to ``None``.
+        test_augmentations (Transform | None): Augmentations to apply to the test images.
+            Defaults to ``None``.
+        augmentations (Transform | None): General augmentations to apply if stage-specific
+            augmentations are not provided.
         val_split_mode (ValSplitMode): Determines how the validation split is obtained.
             Options: [none, same_as_test, from_test, synthetic]
         val_split_ratio (float): Fraction of the train or test images held our for validation.
@@ -49,8 +59,12 @@ class AnomalibDataModule(LightningDataModule, ABC):
         train_batch_size: int,
         eval_batch_size: int,
         num_workers: int,
-        val_split_mode: ValSplitMode | str,
-        val_split_ratio: float,
+        train_augmentations: Transform | None = None,
+        val_augmentations: Transform | None = None,
+        test_augmentations: Transform | None = None,
+        augmentations: Transform | None = None,
+        val_split_mode: ValSplitMode | str | None = None,
+        val_split_ratio: float | None = None,
         test_split_mode: TestSplitMode | str | None = None,
         test_split_ratio: float | None = None,
         seed: int | None = None,
@@ -60,10 +74,14 @@ class AnomalibDataModule(LightningDataModule, ABC):
         self.eval_batch_size = eval_batch_size
         self.num_workers = num_workers
         self.test_split_mode = TestSplitMode(test_split_mode) if test_split_mode else TestSplitMode.NONE
-        self.test_split_ratio = test_split_ratio
+        self.test_split_ratio = test_split_ratio or 0.5
         self.val_split_mode = ValSplitMode(val_split_mode)
-        self.val_split_ratio = val_split_ratio
+        self.val_split_ratio = val_split_ratio or 0.5
         self.seed = seed
+
+        self.train_augmentations = train_augmentations or augmentations
+        self.val_augmentations = val_augmentations or augmentations
+        self.test_augmentations = test_augmentations or augmentations
 
         self.train_data: AnomalibDataset
         self.val_data: AnomalibDataset
@@ -94,6 +112,13 @@ class AnomalibDataModule(LightningDataModule, ABC):
             if isinstance(stage, TrainerFn):
                 # only set the flag if the stage is a TrainerFn, which means the setup has been called from a trainer
                 self._is_setup = True
+
+        if hasattr(self, "train_data"):
+            self.train_data.augmentations = self.train_augmentations
+        if hasattr(self, "val_data"):
+            self.val_data.augmentations = self.val_augmentations
+        if hasattr(self, "test_data"):
+            self.test_data.augmentations = self.test_augmentations
 
     @abstractmethod
     def _setup(self, _stage: str | None = None) -> None:
@@ -175,7 +200,7 @@ class AnomalibDataModule(LightningDataModule, ABC):
             )
         elif self.val_split_mode == ValSplitMode.SAME_AS_TEST:
             # equal to test set
-            self.val_data = self.test_data
+            self.val_data = copy.deepcopy(self.test_data)
         elif self.val_split_mode == ValSplitMode.SYNTHETIC:
             # converted from random training sample
             self.train_data, normal_val_data = random_split(self.train_data, self.val_split_ratio, seed=self.seed)

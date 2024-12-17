@@ -3,9 +3,6 @@
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-import pytest
-import torch
-from torch.utils.data import DataLoader, TensorDataset
 from torchvision.transforms.v2 import CenterCrop, Compose, Resize, ToTensor
 
 from anomalib.data.transforms import ExportableCenterCrop
@@ -13,34 +10,7 @@ from anomalib.pre_processing.utils.transform import (
     convert_center_crop_transform,
     disable_antialiasing,
     get_exportable_transform,
-    set_dataloader_transform,
 )
-
-
-def test_set_dataloader_transform() -> None:
-    """Test the set_dataloader_transform function."""
-
-    # Test with single DataLoader
-    class TransformableDataset(TensorDataset):
-        def __init__(self, *tensors) -> None:
-            super().__init__(*tensors)
-            self.transform = None
-
-    dataset = TransformableDataset(torch.randn(10, 3, 224, 224))
-    dataloader = DataLoader(dataset)
-    transform = ToTensor()
-    set_dataloader_transform(dataloader, transform)
-    assert dataloader.dataset.transform == transform
-
-    # Test with sequence of DataLoaders
-    dataloaders = [DataLoader(TransformableDataset(torch.randn(10, 3, 224, 224))) for _ in range(3)]
-    set_dataloader_transform(dataloaders, transform)
-    for dl in dataloaders:
-        assert dl.dataset.transform == transform
-
-    # Test with unsupported type
-    with pytest.raises(TypeError):
-        set_dataloader_transform({"key": "value"}, transform)
 
 
 def test_get_exportable_transform() -> None:

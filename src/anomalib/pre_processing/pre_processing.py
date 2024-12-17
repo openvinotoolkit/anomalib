@@ -3,26 +3,16 @@
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import TYPE_CHECKING
-
 import torch
 from lightning import Callback, LightningModule, Trainer
-from lightning.pytorch.trainer.states import TrainerFn
 from torch import nn
-from torch.utils.data import DataLoader
 from torchvision.transforms.v2 import Transform
 
+from anomalib.data import Batch
+
 from .utils.transform import (
-    get_dataloaders_transforms,
     get_exportable_transform,
-    set_dataloaders_transforms,
-    set_datamodule_stage_transform,
 )
-
-if TYPE_CHECKING:
-    from lightning.pytorch.utilities.types import EVAL_DATALOADERS, TRAIN_DATALOADERS
-
-    from anomalib.data import AnomalibDataModule
 
 
 class PreProcessor(nn.Module, Callback):
@@ -109,63 +99,49 @@ class PreProcessor(nn.Module, Callback):
         self.predict_transform = self.test_transform
         self.export_transform = get_exportable_transform(self.test_transform)
 
-    def setup_datamodule_transforms(self, datamodule: "AnomalibDataModule") -> None:
-        """Set up datamodule transforms."""
-        # If PreProcessor has transforms, propagate them to datamodule
-        if any([self.train_transform, self.val_transform, self.test_transform]):
-            transforms = {
-                "fit": self.train_transform,
-                "val": self.val_transform,
-                "test": self.test_transform,
-                "predict": self.predict_transform,
-            }
+    def on_train_batch_start(self, trainer: Trainer, pl_module: LightningModule, batch: Batch, batch_idx: int) -> None:
+        """Apply transforms to the batch of tensors during training."""
+        del trainer, pl_module, batch_idx  # Unused
+        if self.train_transform:
+            batch.image, batch.gt_mask = self.train_transform(batch.image, batch.gt_mask)
 
-            for stage, transform in transforms.items():
-                if transform is not None:
-                    set_datamodule_stage_transform(datamodule, transform, stage)
+    def on_validation_batch_start(
+        self,
+        trainer: Trainer,
+        pl_module: LightningModule,
+        batch: Batch,
+        batch_idx: int,
+    ) -> None:
+        """Apply transforms to the batch of tensors during validation."""
+        del trainer, pl_module, batch_idx  # Unused
+        if self.val_transform:
+            batch.image, batch.gt_mask = self.val_transform(batch.image, batch.gt_mask)
 
-    def setup_dataloader_transforms(self, dataloaders: "EVAL_DATALOADERS | TRAIN_DATALOADERS") -> None:
-        """Set up dataloader transforms."""
-        if isinstance(dataloaders, DataLoader):
-            dataloaders = [dataloaders]
+    def on_test_batch_start(
+        self,
+        trainer: Trainer,
+        pl_module: LightningModule,
+        batch: Batch,
+        batch_idx: int,
+        dataloader_idx: int = 0,
+    ) -> None:
+        """Apply transforms to the batch of tensors during testing."""
+        del trainer, pl_module, batch_idx, dataloader_idx  # Unused
+        if self.test_transform:
+            batch.image, batch.gt_mask = self.test_transform(batch.image, batch.gt_mask)
 
-        # If PreProcessor has transforms, propagate them to dataloaders
-        if any([self.train_transform, self.val_transform, self.test_transform]):
-            transforms = {
-                "train": self.train_transform,
-                "val": self.val_transform,
-                "test": self.test_transform,
-            }
-            set_dataloaders_transforms(dataloaders, transforms)
-            return
-
-        # Try to get transforms from dataloaders
-        if dataloaders:
-            dataloaders_transforms = get_dataloaders_transforms(dataloaders)
-            if dataloaders_transforms:
-                self.train_transform = dataloaders_transforms.get("train")
-                self.val_transform = dataloaders_transforms.get("val")
-                self.test_transform = dataloaders_transforms.get("test")
-                self.predict_transform = self.test_transform
-                self.export_transform = get_exportable_transform(self.test_transform)
-
-    def setup(self, trainer: Trainer, pl_module: LightningModule, stage: str) -> None:
-        """Configure transforms at the start of each stage.
-
-        Args:
-            trainer: The Lightning trainer.
-            pl_module: The Lightning module.
-            stage: The stage (e.g., 'fit', 'validate', 'test', 'predict').
-        """
-        stage = TrainerFn(stage).value  # Ensure stage is str
-
-        if hasattr(trainer, "datamodule"):
-            self.setup_datamodule_transforms(datamodule=trainer.datamodule)
-        elif hasattr(trainer, f"{stage}_dataloaders"):
-            dataloaders = getattr(trainer, f"{stage}_dataloaders")
-            self.setup_dataloader_transforms(dataloaders=dataloaders)
-
-        super().setup(trainer, pl_module, stage)
+    def on_predict_batch_start(
+        self,
+        trainer: Trainer,
+        pl_module: LightningModule,
+        batch: Batch,
+        batch_idx: int,
+        dataloader_idx: int = 0,
+    ) -> None:
+        """Apply transforms to the batch of tensors during prediction."""
+        del trainer, pl_module, batch_idx, dataloader_idx  # Unused
+        if self.predict_transform:
+            batch.image, batch.gt_mask = self.predict_transform(batch.image, batch.gt_mask)
 
     def forward(self, batch: torch.Tensor) -> torch.Tensor:
         """Apply transforms to the batch of tensors for inference.
