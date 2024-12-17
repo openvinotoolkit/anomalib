@@ -73,14 +73,6 @@ Learn how to use anomalib for your anomaly detection tasks.
 :link-type: doc
 
 Learn how to develop and contribute to anomalib.
-:::
-
-:::{grid-item-card} {octicon}`code` AUTOAPI
-:link: api/anomalib/index
-:link-type: doc
-
-Learn how to develop and contribute to anomalib.
-:::
 
 ::::
 

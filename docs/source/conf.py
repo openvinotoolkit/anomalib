@@ -10,8 +10,6 @@ https://www.sphinx-doc.org/en/master/usage/configuration.html#project-informatio
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
-
 import sys
 from pathlib import Path
 
