@@ -33,7 +33,7 @@ Available Models:
     - :class:`WinClip`: Zero-/Few-Shot CLIP-based Detection
 """
 
-# Copyright (C) 2023 Intel Corporation
+# Copyright (C) 2023-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 from .cfa import Cfa
