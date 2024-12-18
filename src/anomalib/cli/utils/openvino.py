@@ -4,7 +4,7 @@ This module provides utilities for adding OpenVINO-specific arguments to the Ano
 It handles the integration of OpenVINO Model Optimizer parameters into the command line interface.
 """
 
-# Copyright (C) 2023 Intel Corporation
+# Copyright (C) 2023-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 import logging

@@ -4,7 +4,7 @@ This module provides custom help formatting functionality for the Anomalib CLI,
 including rich text formatting and customized help output for different verbosity levels.
 """
 
-# Copyright (C) 2023 Intel Corporation
+# Copyright (C) 2023-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 import argparse
