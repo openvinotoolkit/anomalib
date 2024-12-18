@@ -42,8 +42,8 @@ logger = logging.getLogger(__name__)
 
 DOWNLOAD_INFO = DownloadInfo(
     name="mvtec_3d",
-    url="https://www.mydrive.ch/shares/45920/dd1eb345346df066c63b5c95676b961b/"
-    "download/428824485-1643285832/mvtec_3d_anomaly_detection.tar.xz",
+    url="https://www.mydrive.ch/shares/45920/dd1eb345346df066c63b5c95676b961b/download/428824485-1643285832"
+    "/mvtec_3d_anomaly_detection.tar.xz",
     hashsum="d8bb2800fbf3ac88e798da6ae10dc819",
 )
 

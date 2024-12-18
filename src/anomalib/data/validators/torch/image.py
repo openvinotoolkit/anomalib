@@ -1,7 +1,32 @@
-"""Validate torch image data.
+"""Validate PyTorch tensor data for images.
 
-This module provides validators for torch image data, including single images and batches.
-The validators ensure that tensors have the correct shape, type and format.
+This module provides validators for image data stored as PyTorch tensors. The validators
+ensure data consistency and correctness for images and their batches.
+
+The validators check:
+    - Tensor shapes and dimensions
+    - Data types
+    - Value ranges
+    - Label formats
+    - Mask properties
+    - Path validity
+
+Example:
+    Validate a single image::
+
+        >>> from anomalib.data.validators import ImageValidator
+        >>> validator = ImageValidator()
+        >>> validator.validate_image(image)
+
+    Validate a batch of images::
+
+        >>> from anomalib.data.validators import ImageBatchValidator
+        >>> validator = ImageBatchValidator()
+        >>> validator(images=images, labels=labels, masks=masks)
+
+Note:
+    The validators are used internally by the data modules to ensure data
+    consistency before processing.
 """
 
 # Copyright (C) 2024 Intel Corporation
@@ -20,28 +45,58 @@ from anomalib.data.validators.path import validate_path
 class ImageValidator:
     """Validate torch.Tensor data for images.
 
-    This class provides static methods to validate various image-related data types.
+    This class provides validation methods for image data stored as PyTorch tensors.
+    It ensures data consistency and correctness for images and associated metadata.
+
+    The validator checks:
+        - Tensor shapes and dimensions
+        - Data types
+        - Value ranges
+        - Label formats
+        - Mask properties
+        - Path validity
+
+    Example:
+        Validate an image and associated metadata::
+
+            >>> from anomalib.data.validators import ImageValidator
+            >>> validator = ImageValidator()
+            >>> image = torch.rand(3, 224, 224)  # [C, H, W]
+            >>> validated_image = validator.validate_image(image)
+            >>> label = 1
+            >>> validated_label = validator.validate_gt_label(label)
+            >>> mask = torch.randint(0, 2, (1, 224, 224))  # [1, H, W]
+            >>> validated_mask = validator.validate_gt_mask(mask)
+
+    Note:
+        The validator is used internally by the data modules to ensure data
+        consistency before processing.
     """
 
     @staticmethod
     def validate_image(image: torch.Tensor) -> torch.Tensor:
         """Validate the image tensor.
 
+        This method validates and normalizes input image tensors. It handles:
+            - RGB images only
+            - Channel-first format [C, H, W]
+            - Type conversion to float32
+            - Value range normalization
+
         Args:
-            image: Input image tensor.
+            image (``torch.Tensor``): Input image tensor to validate.
 
         Returns:
-            Validated image tensor.
+            ``torch.Tensor``: Validated image tensor in [C, H, W] format.
 
         Raises:
-            TypeError: If ``image`` is not a ``torch.Tensor``.
-            ValueError: If ``image`` tensor does not have shape ``[C, H, W]``.
-            ValueError: If ``image`` does not have 3 channels.
+            TypeError: If ``image`` is not a torch.Tensor.
+            ValueError: If ``image`` dimensions or channels are invalid.
 
-        Examples:
+        Example:
             >>> import torch
             >>> from anomalib.data.validators import ImageValidator
-            >>> image = torch.rand(3, 256, 256)
+            >>> image = torch.rand(3, 256, 256)  # [C, H, W]
             >>> validated_image = ImageValidator.validate_image(image)
             >>> validated_image.shape
             torch.Size([3, 256, 256])
@@ -61,19 +116,26 @@ class ImageValidator:
     def validate_gt_label(label: int | torch.Tensor | None) -> torch.Tensor | None:
         """Validate the ground truth label.
 
+        This method validates and normalizes input labels. It handles:
+            - Integer and tensor inputs
+            - Type conversion to boolean
+            - Output is always boolean type
+            - None inputs return None
+
         Args:
-            label: Input ground truth label.
+            label (``int`` | ``torch.Tensor`` | ``None``): Input ground truth label.
 
         Returns:
-            Validated ground truth label as a boolean tensor, or ``None``.
+            ``torch.Tensor`` | ``None``: Validated ground truth label as a boolean
+                tensor, or None.
 
         Raises:
-            TypeError: If ``label`` is neither an integer nor a ``torch.Tensor``.
-            ValueError: If label shape or dtype is invalid.
+            TypeError: If ``label`` is neither an integer nor a torch.Tensor.
+            ValueError: If ``label`` shape or dtype is invalid.
 
-        Examples:
+        Example:
             >>> import torch
-            >>> from anomalib.dataclasses.validators import ImageValidator
+            >>> from anomalib.data.validators import ImageValidator
             >>> label_int = 1
             >>> validated_label = ImageValidator.validate_gt_label(label_int)
             >>> validated_label
@@ -102,20 +164,27 @@ class ImageValidator:
     def validate_gt_mask(mask: torch.Tensor | None) -> Mask | None:
         """Validate the ground truth mask.
 
+        This method validates and normalizes input masks. It handles:
+            - Single channel masks only
+            - [H, W] and [1, H, W] formats
+            - Type conversion to boolean
+            - None inputs return None
+
         Args:
-            mask: Input ground truth mask.
+            mask (``torch.Tensor`` | ``None``): Input ground truth mask.
 
         Returns:
-            Validated ground truth mask, or ``None``.
+            ``Mask`` | ``None``: Validated ground truth mask as a torchvision Mask
+                object, or None.
 
         Raises:
-            TypeError: If ``mask`` is not a ``torch.Tensor``.
-            ValueError: If mask shape is invalid.
+            TypeError: If ``mask`` is not a torch.Tensor.
+            ValueError: If ``mask`` dimensions or channels are invalid.
 
-        Examples:
+        Example:
             >>> import torch
-            >>> from anomalib.dataclasses.validators import ImageValidator
-            >>> mask = torch.randint(0, 2, (1, 224, 224))
+            >>> from anomalib.data.validators import ImageValidator
+            >>> mask = torch.randint(0, 2, (1, 224, 224))  # [1, H, W]
             >>> validated_mask = ImageValidator.validate_gt_mask(mask)
             >>> isinstance(validated_mask, Mask)
             True
@@ -141,20 +210,27 @@ class ImageValidator:
     def validate_anomaly_map(anomaly_map: torch.Tensor | None) -> Mask | None:
         """Validate the anomaly map.
 
+        This method validates and normalizes input anomaly maps. It handles:
+            - Single channel maps only
+            - [H, W] and [1, H, W] formats
+            - Type conversion to float32
+            - None inputs return None
+
         Args:
-            anomaly_map: Input anomaly map.
+            anomaly_map (``torch.Tensor`` | ``None``): Input anomaly map.
 
         Returns:
-            Validated anomaly map as a ``Mask``, or ``None``.
+            ``Mask`` | ``None``: Validated anomaly map as a torchvision Mask object,
+                or None.
 
         Raises:
-            TypeError: If ``anomaly_map`` is not a ``torch.Tensor``.
-            ValueError: If anomaly map shape is invalid.
+            TypeError: If ``anomaly_map`` is not a torch.Tensor.
+            ValueError: If ``anomaly_map`` dimensions or channels are invalid.
 
-        Examples:
+        Example:
             >>> import torch
-            >>> from anomalib.dataclasses.validators import ImageValidator
-            >>> anomaly_map = torch.rand(1, 224, 224)
+            >>> from anomalib.data.validators import ImageValidator
+            >>> anomaly_map = torch.rand(1, 224, 224)  # [1, H, W]
             >>> validated_map = ImageValidator.validate_anomaly_map(anomaly_map)
             >>> isinstance(validated_map, Mask)
             True
@@ -181,14 +257,16 @@ class ImageValidator:
     def validate_image_path(image_path: str | None) -> str | None:
         """Validate the image path.
 
+        This method validates input image file paths.
+
         Args:
-            image_path: Input image path.
+            image_path (``str`` | ``None``): Input image path to validate.
 
         Returns:
-            Validated image path, or ``None``.
+            ``str`` | ``None``: Validated image path, or None.
 
-        Examples:
-            >>> from anomalib.dataclasses.validators import ImageValidator
+        Example:
+            >>> from anomalib.data.validators import ImageValidator
             >>> path = "/path/to/image.jpg"
             >>> validated_path = ImageValidator.validate_image_path(path)
             >>> validated_path == path
@@ -200,14 +278,16 @@ class ImageValidator:
     def validate_mask_path(mask_path: str | None) -> str | None:
         """Validate the mask path.
 
+        This method validates input mask file paths.
+
         Args:
-            mask_path: Input mask path.
+            mask_path (``str`` | ``None``): Input mask path to validate.
 
         Returns:
-            Validated mask path, or ``None``.
+            ``str`` | ``None``: Validated mask path, or None.
 
-        Examples:
-            >>> from anomalib.dataclasses.validators import ImageValidator
+        Example:
+            >>> from anomalib.data.validators import ImageValidator
             >>> path = "/path/to/mask.png"
             >>> validated_path = ImageValidator.validate_mask_path(path)
             >>> validated_path == path
@@ -221,18 +301,24 @@ class ImageValidator:
     ) -> torch.Tensor | None:
         """Validate the prediction score.
 
+        This method validates and normalizes prediction scores. It handles:
+            - Float, numpy array and tensor inputs
+            - Type conversion to float32
+            - None inputs return None
+
         Args:
-            pred_score: Input prediction score.
+            pred_score (``torch.Tensor`` | ``np.ndarray`` | ``float`` | ``None``):
+                Input prediction score.
 
         Returns:
-            Validated prediction score as a float32 tensor, or ``None``.
+            ``torch.Tensor`` | ``None``: Validated prediction score as a float32
+                tensor, or None.
 
         Raises:
-            TypeError: If ``pred_score`` is neither a float, ``torch.Tensor``, nor
-                ``None``.
-            ValueError: If prediction score is not a scalar.
+            TypeError: If ``pred_score`` cannot be converted to a tensor.
+            ValueError: If ``pred_score`` is not a scalar.
 
-        Examples:
+        Example:
             >>> import torch
             >>> from anomalib.data.validators import ImageValidator
             >>> score = 0.8
@@ -243,9 +329,6 @@ class ImageValidator:
             >>> validated_score = ImageValidator.validate_pred_score(score_tensor)
             >>> validated_score
             tensor(0.7000)
-            >>> validated_score = ImageValidator.validate_pred_score(None)
-            >>> validated_score is None
-            True
         """
         if pred_score is None:
             return None
@@ -263,43 +346,55 @@ class ImageValidator:
     def validate_pred_mask(pred_mask: torch.Tensor | None) -> Mask | None:
         """Validate the prediction mask.
 
+        This method validates and normalizes prediction masks. It handles:
+            - Single channel masks only
+            - [H, W] and [1, H, W] formats
+            - Type conversion to boolean
+            - None inputs return None
+
         Args:
-            pred_mask: Input prediction mask.
+            pred_mask (``torch.Tensor`` | ``None``): Input prediction mask.
 
         Returns:
-            Validated prediction mask, or ``None``.
+            ``Mask`` | ``None``: Validated prediction mask as a torchvision Mask
+                object, or None.
 
-        Examples:
+        Example:
             >>> import torch
-            >>> from anomalib.dataclasses.validators import ImageValidator
-            >>> mask = torch.randint(0, 2, (1, 224, 224))
+            >>> from anomalib.data.validators import ImageValidator
+            >>> mask = torch.randint(0, 2, (1, 224, 224))  # [1, H, W]
             >>> validated_mask = ImageValidator.validate_pred_mask(mask)
             >>> isinstance(validated_mask, Mask)
             True
             >>> validated_mask.shape
             torch.Size([224, 224])
         """
-        return ImageValidator.validate_gt_mask(pred_mask)  # Reuse gt_mask validation
+        return ImageValidator.validate_gt_mask(pred_mask)  # We can reuse the gt_mask validation
 
     @staticmethod
-    def validate_pred_label(
-        pred_label: torch.Tensor | np.ndarray | float | None,
-    ) -> torch.Tensor | None:
+    def validate_pred_label(pred_label: torch.Tensor | np.ndarray | float | None) -> torch.Tensor | None:
         """Validate the prediction label.
 
+        This method validates and normalizes prediction labels. It handles:
+            - Float, numpy array and tensor inputs
+            - Type conversion to boolean
+            - None inputs return None
+
         Args:
-            pred_label: Input prediction label.
+            pred_label (``torch.Tensor`` | ``np.ndarray`` | ``float`` | ``None``):
+                Input prediction label.
 
         Returns:
-            Validated prediction label as a boolean tensor, or ``None``.
+            ``torch.Tensor`` | ``None``: Validated prediction label as a boolean
+                tensor, or None.
 
         Raises:
-            TypeError: If ``pred_label`` is not a ``torch.Tensor``.
-            ValueError: If prediction label is not a scalar.
+            TypeError: If ``pred_label`` cannot be converted to a tensor.
+            ValueError: If ``pred_label`` is not a scalar.
 
-        Examples:
+        Example:
             >>> import torch
-            >>> from anomalib.dataclasses.validators import ImageValidator
+            >>> from anomalib.data.validators import ImageValidator
             >>> label = torch.tensor(1)
             >>> validated_label = ImageValidator.validate_pred_label(label)
             >>> validated_label
@@ -321,19 +416,24 @@ class ImageValidator:
 
     @staticmethod
     def validate_explanation(explanation: str | None) -> str | None:
-        """Validate the explanation.
+        """Validate the explanation string.
+
+        This method validates explanation strings.
 
         Args:
-            explanation: Input explanation.
+            explanation (``str`` | ``None``): Input explanation string.
 
         Returns:
-            Validated explanation, or ``None``.
+            ``str`` | ``None``: Validated explanation string, or None.
 
-        Examples:
-            >>> from anomalib.dataclasses.validators import ImageValidator
+        Raises:
+            TypeError: If ``explanation`` is not a string.
+
+        Example:
+            >>> from anomalib.data.validators import ImageValidator
             >>> explanation = "The image has a crack on the wall."
-            >>> validated_explanation = ImageValidator.validate_explanation(explanation)
-            >>> validated_explanation == explanation
+            >>> validated = ImageValidator.validate_explanation(explanation)
+            >>> validated == explanation
             True
         """
         if explanation is None:
@@ -345,29 +445,65 @@ class ImageValidator:
 
 
 class ImageBatchValidator:
-    """Validate torch.Tensor data for batches of images."""
+    """Validate torch.Tensor data for batches of images.
+
+    This class provides validation methods for batches of image data stored as PyTorch tensors.
+    It ensures data consistency and correctness for images and associated metadata.
+
+    The validator checks:
+        - Tensor shapes and dimensions
+        - Data types
+        - Value ranges
+        - Label formats
+        - Mask properties
+        - Path validity
+
+    Example:
+        Validate a batch of images and associated metadata::
+
+            >>> from anomalib.data.validators import ImageBatchValidator
+            >>> validator = ImageBatchValidator()
+            >>> images = torch.rand(32, 3, 256, 256)  # [N, C, H, W]
+            >>> labels = torch.zeros(32)
+            >>> masks = torch.zeros((32, 256, 256))
+            >>> validator.validate_image(images)
+            >>> validator.validate_gt_label(labels)
+            >>> validator.validate_gt_mask(masks)
+
+    Note:
+        The validator is used internally by the data modules to ensure data
+        consistency before processing.
+    """
 
     @staticmethod
     def validate_image(image: torch.Tensor) -> Image:
         """Validate the image for a batch.
 
+        This method validates batches of images stored as PyTorch tensors. It handles:
+            - Single images and batches
+            - RGB images only
+            - Channel-first format [N, C, H, W]
+            - Type conversion to float32
+
         Args:
-            image: Input image tensor.
+            image (``torch.Tensor``): Input image tensor to validate.
 
         Returns:
-            Validated image as a torchvision ``Image`` object.
+            ``Image``: Validated image as a torchvision Image object.
 
         Raises:
-            TypeError: If ``image`` is not a ``torch.Tensor``.
-            ValueError: If image tensor does not have correct shape or channels.
+            TypeError: If ``image`` is not a torch.Tensor.
+            ValueError: If ``image`` dimensions or channels are invalid.
 
-        Examples:
-            >>> import torch
-            >>> from anomalib.data.validators.torch.image import ImageBatchValidator
-            >>> image = torch.rand(32, 3, 224, 224)
-            >>> validated_image = ImageBatchValidator.validate_image(image)
-            >>> print(validated_image.shape)
-            torch.Size([32, 3, 224, 224])
+        Example:
+            Validate RGB batch::
+
+                >>> import torch
+                >>> from anomalib.data.validators import ImageBatchValidator
+                >>> image = torch.rand(32, 3, 224, 224)  # [N, C, H, W]
+                >>> validated = ImageBatchValidator.validate_image(image)
+                >>> validated.shape
+                torch.Size([32, 3, 224, 224])
         """
         if not isinstance(image, torch.Tensor):
             msg = f"Image must be a torch.Tensor, got {type(image)}."
@@ -383,30 +519,35 @@ class ImageBatchValidator:
         return Image(image, dtype=torch.float32)
 
     @staticmethod
-    def validate_gt_label(
-        gt_label: torch.Tensor | Sequence[int] | None,
-    ) -> torch.Tensor | None:
+    def validate_gt_label(gt_label: torch.Tensor | Sequence[int] | None) -> torch.Tensor | None:
         """Validate the ground truth label for a batch.
 
+        This method validates batches of ground truth labels. It handles:
+            - Conversion to torch.Tensor if needed
+            - Type conversion to boolean
+            - Shape validation
+
         Args:
-            gt_label: Input ground truth label.
+            gt_label (``torch.Tensor`` | ``Sequence[int]`` | ``None``): Input ground truth
+                label.
 
         Returns:
-            Validated ground truth label as a boolean tensor, or ``None``.
+            ``torch.Tensor`` | ``None``: Validated ground truth label as a boolean tensor,
+                or None.
 
         Raises:
-            TypeError: If ``gt_label`` is not a sequence of integers or
-                ``torch.Tensor``.
-            ValueError: If ground truth label does not match expected batch size or
-                type.
+            TypeError: If ``gt_label`` is not a sequence of integers or torch.Tensor.
+            ValueError: If ``gt_label`` shape or data type is invalid.
 
-        Examples:
-            >>> import torch
-            >>> from anomalib.data.validators.torch.image import ImageBatchValidator
-            >>> gt_label = torch.tensor([0, 1, 1, 0])
-            >>> validated_label = ImageBatchValidator.validate_gt_label(gt_label)
-            >>> print(validated_label)
-            tensor([False,  True,  True, False])
+        Example:
+            Validate ground truth labels::
+
+                >>> import torch
+                >>> from anomalib.data.validators import ImageBatchValidator
+                >>> gt_label = torch.tensor([0, 1, 1, 0])
+                >>> validated = ImageBatchValidator.validate_gt_label(gt_label)
+                >>> validated
+                tensor([False,  True,  True, False])
         """
         if gt_label is None:
             return None
@@ -427,25 +568,31 @@ class ImageBatchValidator:
     def validate_gt_mask(gt_mask: torch.Tensor | None) -> Mask | None:
         """Validate the ground truth mask for a batch.
 
+        This method validates batches of ground truth masks. It handles:
+            - Single masks and batches
+            - Shape normalization
+            - Type conversion to boolean
+
         Args:
-            gt_mask: Input ground truth mask.
+            gt_mask (``torch.Tensor`` | ``None``): Input ground truth mask.
 
         Returns:
-            Validated ground truth mask as a torchvision ``Mask`` object, or
-            ``None``.
+            ``Mask`` | ``None``: Validated ground truth mask as a torchvision Mask object,
+                or None.
 
         Raises:
-            TypeError: If ``gt_mask`` is not a ``torch.Tensor``.
-            ValueError: If ground truth mask does not have correct shape or batch
-                size.
+            TypeError: If ``gt_mask`` is not a torch.Tensor.
+            ValueError: If ``gt_mask`` shape is invalid.
 
-        Examples:
-            >>> import torch
-            >>> from anomalib.data.validators.torch.image import ImageBatchValidator
-            >>> gt_mask = torch.randint(0, 2, (4, 224, 224))
-            >>> validated_mask = ImageBatchValidator.validate_gt_mask(gt_mask)
-            >>> print(validated_mask.shape)
-            torch.Size([4, 224, 224])
+        Example:
+            Validate ground truth masks::
+
+                >>> import torch
+                >>> from anomalib.data.validators import ImageBatchValidator
+                >>> gt_mask = torch.randint(0, 2, (4, 224, 224))
+                >>> validated = ImageBatchValidator.validate_gt_mask(gt_mask)
+                >>> validated.shape
+                torch.Size([4, 224, 224])
         """
         if gt_mask is None:
             return None
@@ -468,22 +615,25 @@ class ImageBatchValidator:
     def validate_mask_path(mask_path: Sequence[str] | None) -> list[str] | None:
         """Validate the mask paths for a batch.
 
+        This method validates batches of mask file paths.
+
         Args:
-            mask_path: Input sequence of mask paths.
+            mask_path (``Sequence[str]`` | ``None``): Input sequence of mask paths.
 
         Returns:
-            Validated list of mask paths, or ``None``.
+            ``list[str]`` | ``None``: Validated list of mask paths, or None.
 
         Raises:
             TypeError: If ``mask_path`` is not a sequence of strings.
-            ValueError: If number of mask paths does not match expected batch size.
 
-        Examples:
-            >>> from anomalib.data.validators.torch.image import ImageBatchValidator
-            >>> mask_paths = ["path/to/mask_1.png", "path/to/mask_2.png"]
-            >>> validated_paths = ImageBatchValidator.validate_mask_path(mask_paths)
-            >>> print(validated_paths)
-            ['path/to/mask_1.png', 'path/to/mask_2.png']
+        Example:
+            Validate mask paths::
+
+                >>> from anomalib.data.validators import ImageBatchValidator
+                >>> mask_paths = ["path/to/mask_1.png", "path/to/mask_2.png"]
+                >>> validated = ImageBatchValidator.validate_mask_path(mask_paths)
+                >>> validated
+                ['path/to/mask_1.png', 'path/to/mask_2.png']
         """
         if mask_path is None:
             return None
@@ -493,28 +643,32 @@ class ImageBatchValidator:
         return [str(path) for path in mask_path]
 
     @staticmethod
-    def validate_anomaly_map(
-        anomaly_map: torch.Tensor | np.ndarray | None,
-    ) -> Mask | None:
+    def validate_anomaly_map(anomaly_map: torch.Tensor | np.ndarray | None) -> Mask | None:
         """Validate the anomaly map for a batch.
 
+        This method validates batches of anomaly maps. It handles:
+            - Conversion from numpy arrays
+            - Shape normalization
+            - Type conversion to float32
+
         Args:
-            anomaly_map: Input anomaly map.
+            anomaly_map (``torch.Tensor`` | ``np.ndarray`` | ``None``): Input anomaly map.
 
         Returns:
-            Validated anomaly map as a torchvision ``Mask`` object, or ``None``.
+            ``Mask`` | ``None``: Validated anomaly map as a torchvision Mask object, or None.
 
         Raises:
-            ValueError: If ``anomaly_map`` cannot be converted to a
-                ``torch.Tensor`` or has invalid shape.
+            ValueError: If ``anomaly_map`` cannot be converted to tensor or has invalid shape.
 
-        Examples:
-            >>> import torch
-            >>> from anomalib.data.validators.torch.image import ImageBatchValidator
-            >>> anomaly_map = torch.rand(4, 224, 224)
-            >>> validated_map = ImageBatchValidator.validate_anomaly_map(anomaly_map)
-            >>> print(validated_map.shape)
-            torch.Size([4, 224, 224])
+        Example:
+            Validate anomaly maps::
+
+                >>> import torch
+                >>> from anomalib.data.validators import ImageBatchValidator
+                >>> anomaly_map = torch.rand(4, 224, 224)
+                >>> validated = ImageBatchValidator.validate_anomaly_map(anomaly_map)
+                >>> validated.shape
+                torch.Size([4, 224, 224])
         """
         if anomaly_map is None:
             return None
@@ -542,29 +696,31 @@ class ImageBatchValidator:
     ) -> torch.Tensor | None:
         """Validate the prediction scores for a batch.
 
+        This method validates batches of prediction scores. It handles:
+            - Conversion from numpy arrays and sequences
+            - Type conversion to float32
+
         Args:
-            pred_score: Input prediction scores.
+            pred_score (``torch.Tensor`` | ``Sequence[float]`` | ``None``): Input prediction
+                scores.
 
         Returns:
-            Validated prediction scores as a float32 tensor, or ``None``.
+            ``torch.Tensor`` | ``None``: Validated prediction scores as float32 tensor,
+                or None.
 
         Raises:
-            TypeError: If ``pred_score`` is neither a sequence of floats,
-                ``torch.Tensor``, nor ``None``.
-            ValueError: If prediction scores are not a 1-dimensional tensor or
-                sequence.
+            TypeError: If ``pred_score`` is not a valid input type.
+            ValueError: If ``pred_score`` cannot be converted to tensor.
 
-        Examples:
-            >>> import torch
-            >>> from anomalib.data.validators.torch.image import ImageBatchValidator
-            >>> scores = [0.8, 0.7, 0.9]
-            >>> validated_scores = ImageBatchValidator.validate_pred_score(scores)
-            >>> validated_scores
-            tensor([0.8000, 0.7000, 0.9000])
-            >>> score_tensor = torch.tensor([0.8, 0.7, 0.9])
-            >>> validated_scores = ImageBatchValidator.validate_pred_score(score_tensor)
-            >>> validated_scores
-            tensor([0.8000, 0.7000, 0.9000])
+        Example:
+            Validate prediction scores::
+
+                >>> import torch
+                >>> from anomalib.data.validators import ImageBatchValidator
+                >>> scores = [0.8, 0.7, 0.9]
+                >>> validated = ImageBatchValidator.validate_pred_score(scores)
+                >>> validated
+                tensor([0.8000, 0.7000, 0.9000])
         """
         if pred_score is None:
             return None
@@ -584,44 +740,56 @@ class ImageBatchValidator:
     def validate_pred_mask(pred_mask: torch.Tensor | None) -> Mask | None:
         """Validate the prediction mask for a batch.
 
+        This method validates batches of prediction masks using the same logic as ground
+        truth masks.
+
         Args:
-            pred_mask: Input prediction mask.
+            pred_mask (``torch.Tensor`` | ``None``): Input prediction mask.
 
         Returns:
-            Validated prediction mask as a torchvision ``Mask`` object, or
-            ``None``.
+            ``Mask`` | ``None``: Validated prediction mask as a torchvision Mask object,
+                or None.
 
-        Examples:
-            >>> import torch
-            >>> from anomalib.data.validators.torch.image import ImageBatchValidator
-            >>> pred_mask = torch.randint(0, 2, (4, 224, 224))
-            >>> validated_mask = ImageBatchValidator.validate_pred_mask(pred_mask)
-            >>> print(validated_mask.shape)
-            torch.Size([4, 224, 224])
+        Example:
+            Validate prediction masks::
+
+                >>> import torch
+                >>> from anomalib.data.validators import ImageBatchValidator
+                >>> pred_mask = torch.randint(0, 2, (4, 224, 224))
+                >>> validated = ImageBatchValidator.validate_pred_mask(pred_mask)
+                >>> validated.shape
+                torch.Size([4, 224, 224])
         """
-        return ImageBatchValidator.validate_gt_mask(pred_mask)  # Reuse gt_mask validation
+        return ImageBatchValidator.validate_gt_mask(pred_mask)  # We can reuse the gt_mask validation
 
     @staticmethod
     def validate_pred_label(pred_label: torch.Tensor | None) -> torch.Tensor | None:
         """Validate the prediction label for a batch.
 
+        This method validates batches of prediction labels. It handles:
+            - Shape normalization
+            - Type conversion to boolean
+
         Args:
-            pred_label: Input prediction label.
+            pred_label (``torch.Tensor`` | ``None``): Input prediction label.
 
         Returns:
-            Validated prediction label as a boolean tensor, or ``None``.
+            ``torch.Tensor`` | ``None``: Validated prediction label as boolean tensor,
+                or None.
 
         Raises:
-            TypeError: If ``pred_label`` is not a ``torch.Tensor``.
-            ValueError: If prediction label has invalid shape.
+            TypeError: If ``pred_label`` is not a torch.Tensor.
+            ValueError: If ``pred_label`` has invalid shape.
 
-        Examples:
-            >>> import torch
-            >>> from anomalib.data.validators.torch.image import ImageBatchValidator
-            >>> pred_label = torch.tensor([[1], [0], [1], [1]])
-            >>> validated_label = ImageBatchValidator.validate_pred_label(pred_label)
-            >>> print(validated_label)
-            tensor([ True, False,  True,  True])
+        Example:
+            Validate prediction labels::
+
+                >>> import torch
+                >>> from anomalib.data.validators import ImageBatchValidator
+                >>> pred_label = torch.tensor([[1], [0], [1], [1]])
+                >>> validated = ImageBatchValidator.validate_pred_label(pred_label)
+                >>> validated
+                tensor([ True, False,  True,  True])
         """
         if pred_label is None:
             return None
@@ -647,21 +815,25 @@ class ImageBatchValidator:
     def validate_image_path(image_path: list[str] | None) -> list[str] | None:
         """Validate the image paths for a batch.
 
+        This method validates batches of image file paths.
+
         Args:
-            image_path: Input list of image paths.
+            image_path (``list[str]`` | ``None``): Input list of image paths.
 
         Returns:
-            Validated list of image paths, or ``None``.
+            ``list[str]`` | ``None``: Validated list of image paths, or None.
 
         Raises:
             TypeError: If ``image_path`` is not a list of strings.
 
-        Examples:
-            >>> from anomalib.data.validators.torch.image import ImageBatchValidator
-            >>> image_paths = ["path/to/image_1.jpg", "path/to/image_2.jpg"]
-            >>> validated_paths = ImageBatchValidator.validate_image_path(image_paths)
-            >>> print(validated_paths)
-            ['path/to/image_1.jpg', 'path/to/image_2.jpg']
+        Example:
+            Validate image paths::
+
+                >>> from anomalib.data.validators import ImageBatchValidator
+                >>> image_paths = ["path/to/image_1.jpg", "path/to/image_2.jpg"]
+                >>> validated = ImageBatchValidator.validate_image_path(image_paths)
+                >>> validated
+                ['path/to/image_1.jpg', 'path/to/image_2.jpg']
         """
         if image_path is None:
             return None
@@ -674,26 +846,25 @@ class ImageBatchValidator:
     def validate_explanation(explanation: list[str] | None) -> list[str] | None:
         """Validate the explanations for a batch.
 
+        This method validates batches of explanation strings.
+
         Args:
-            explanation: Input list of explanations.
+            explanation (``list[str]`` | ``None``): Input list of explanations.
 
         Returns:
-            Validated list of explanations, or ``None``.
+            ``list[str]`` | ``None``: Validated list of explanations, or None.
 
         Raises:
             TypeError: If ``explanation`` is not a list of strings.
 
-        Examples:
-            >>> from anomalib.data.validators.torch.image import ImageBatchValidator
-            >>> explanations = [
-            ...     "The image has a crack on the wall.",
-            ...     "The image has a dent on the car."
-            ... ]
-            >>> validated_explanations = ImageBatchValidator.validate_explanation(
-            ...     explanations
-            ... )
-            >>> print(validated_explanations)
-            ['The image has a crack on the wall.', 'The image has a dent on the car.']
+        Example:
+            Validate explanations::
+
+                >>> from anomalib.data.validators import ImageBatchValidator
+                >>> explanations = ["Crack on wall", "Dent on car"]
+                >>> validated = ImageBatchValidator.validate_explanation(explanations)
+                >>> validated
+                ['Crack on wall', 'Dent on car']
         """
         if explanation is None:
             return None

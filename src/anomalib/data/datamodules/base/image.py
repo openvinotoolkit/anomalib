@@ -349,12 +349,7 @@ class AnomalibDataModule(LightningDataModule, ABC):
             raise FileNotFoundError(msg)
 
         data_parser = ArgumentParser()
-        data_parser.add_subclass_arguments(
-            AnomalibDataModule,
-            "data",
-            required=False,
-            fail_untyped=False,
-        )
+        data_parser.add_subclass_arguments(AnomalibDataModule, "data", required=False, fail_untyped=False)
         args = ["--data", str(config_path)]
         for key, value in kwargs.items():
             args.extend([f"--{key}", str(value)])

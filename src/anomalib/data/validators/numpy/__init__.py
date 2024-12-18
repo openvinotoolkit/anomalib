@@ -1,21 +1,29 @@
 """Anomalib Numpy data validators.
 
-This module provides validators for numpy arrays used in anomalib. The validators ensure
-that input data meets the required format specifications.
+This module provides validators for numpy array data used in Anomalib. The validators
+ensure data consistency and correctness for various data types:
 
-The following validators are available:
+- Image data: Single images and batches
+- Video data: Single videos and batches
+- Depth data: Single depth maps and batches
 
-- Image validators:
-    - ``NumpyImageValidator``: Validates single image numpy arrays
-    - ``NumpyImageBatchValidator``: Validates batches of image numpy arrays
+The validators check:
+    - Array shapes and dimensions
+    - Data types
+    - Value ranges
+    - Label formats
+    - Mask properties
 
-- Video validators:
-    - ``NumpyVideoValidator``: Validates single video frame numpy arrays
-    - ``NumpyVideoBatchValidator``: Validates batches of video frame numpy arrays
+Example:
+    Validate a numpy image batch::
 
-- Depth validators:
-    - ``NumpyDepthValidator``: Validates single depth map numpy arrays
-    - ``NumpyDepthBatchValidator``: Validates batches of depth map numpy arrays
+        >>> from anomalib.data.validators import NumpyImageBatchValidator
+        >>> validator = NumpyImageBatchValidator()
+        >>> validator(images=images, labels=labels, masks=masks)
+
+Note:
+    The validators are used internally by the data modules to ensure data
+    consistency before processing.
 """
 
 # Copyright (C) 2024 Intel Corporation

@@ -1,21 +1,32 @@
-"""Anomalib Torch data validators.
+"""Validate PyTorch tensor data.
 
-This module provides validators for PyTorch tensors used in anomalib. The validators
-ensure that input data meets the required format specifications.
+This module provides validators for data stored as PyTorch tensors. The validators
+ensure data consistency and correctness for images, videos, depth maps and their
+batches.
 
-The following validators are available:
+The validators check:
+    - Tensor shapes and dimensions
+    - Data types
+    - Value ranges
+    - Label formats
+    - Mask properties
 
-- Image validators:
-    - ``ImageValidator``: Validates single image torch tensors
-    - ``ImageBatchValidator``: Validates batches of image torch tensors
+Example:
+    Validate a single image::
 
-- Video validators:
-    - ``VideoValidator``: Validates single video frame torch tensors
-    - ``VideoBatchValidator``: Validates batches of video frame torch tensors
+        >>> from anomalib.data.validators import ImageValidator
+        >>> validator = ImageValidator()
+        >>> validator.validate_image(image)
 
-- Depth validators:
-    - ``DepthValidator``: Validates single depth map torch tensors
-    - ``DepthBatchValidator``: Validates batches of depth map torch tensors
+    Validate a batch of images::
+
+        >>> from anomalib.data.validators import ImageBatchValidator
+        >>> validator = ImageBatchValidator()
+        >>> validator(images=images, labels=labels, masks=masks)
+
+Note:
+    The validators are used internally by the data modules to ensure data
+    consistency before processing.
 """
 
 # Copyright (C) 2024 Intel Corporation
