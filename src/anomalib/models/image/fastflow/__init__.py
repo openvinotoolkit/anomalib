@@ -1,4 +1,30 @@
-"""FastFlow Algorithm Implementation."""
+"""FastFlow Algorithm Implementation.
+
+FastFlow is a fast flow-based anomaly detection model that uses normalizing flows
+to model the distribution of features extracted from a pre-trained CNN backbone.
+The model achieves competitive performance while maintaining fast inference times.
+
+Example:
+    >>> from anomalib.data import MVTec
+    >>> from anomalib.models import Fastflow
+    >>> from anomalib.engine import Engine
+
+    >>> datamodule = MVTec()
+    >>> model = Fastflow()
+    >>> engine = Engine()
+
+    >>> engine.fit(model, datamodule=datamodule)  # doctest: +SKIP
+    >>> predictions = engine.predict(model, datamodule=datamodule)  # doctest: +SKIP
+
+Paper:
+    Title: FastFlow: Unsupervised Anomaly Detection and Localization via 2D
+           Normalizing Flows
+    URL: https://arxiv.org/abs/2111.07677
+
+See Also:
+    :class:`anomalib.models.image.fastflow.torch_model.FastflowModel`:
+        PyTorch implementation of the FastFlow model architecture.
+"""
 
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
