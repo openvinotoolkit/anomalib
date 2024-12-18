@@ -1,6 +1,27 @@
 """Anomaly Detection via Reverse Distillation from One-Class Embedding.
 
-https://arxiv.org/abs/2201.10703v2
+This module implements the Reverse Distillation model for anomaly detection as described in
+`Deng et al. (2022) <https://arxiv.org/abs/2201.10703v2>`_.
+
+The model consists of:
+- A pre-trained encoder (e.g. ResNet) that extracts multi-scale features
+- A bottleneck layer that compresses features into a compact representation
+- A decoder that reconstructs features back to the original feature space
+- A scoring mechanism based on reconstruction error
+
+Example:
+    >>> from anomalib.models.image import ReverseDistillation
+    >>> model = ReverseDistillation(
+    ...     backbone="wide_resnet50_2",
+    ...     layers=["layer1", "layer2", "layer3"]
+    ... )
+    >>> model.fit(train_dataloader)
+    >>> predictions = model.predict(test_dataloader)
+
+See Also:
+    - :class:`ReverseDistillation`: Lightning implementation of the model
+    - :class:`ReverseDistillationModel`: PyTorch implementation of the model
+    - :class:`ReverseDistillationLoss`: Loss function for training
 """
 
 # Copyright (C) 2022-2024 Intel Corporation
