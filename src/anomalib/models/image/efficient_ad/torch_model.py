@@ -1,4 +1,31 @@
-"""Torch model for student, teacher and autoencoder model in EfficientAd."""
+"""PyTorch implementation of the EfficientAd model architecture.
+
+This module contains the PyTorch implementation of the student, teacher and
+autoencoder networks used in EfficientAd for fast and accurate anomaly detection.
+
+The model consists of:
+    - A pre-trained EfficientNet teacher network
+    - A lightweight student network
+    - Knowledge distillation training
+    - Anomaly detection via feature comparison
+
+Example:
+    >>> from anomalib.models.image.efficient_ad.torch_model import EfficientAdModel
+    >>> model = EfficientAdModel()
+    >>> input_tensor = torch.randn(32, 3, 256, 256)
+    >>> output = model(input_tensor)
+    >>> output["anomaly_map"].shape
+    torch.Size([32, 256, 256])
+
+Paper:
+    "EfficientAd: Accurate Visual Anomaly Detection at
+    Millisecond-Level Latencies"
+    https://arxiv.org/pdf/2303.14535.pdf
+
+See Also:
+    :class:`anomalib.models.image.efficient_ad.lightning_model.EfficientAd`:
+        Lightning implementation of the EfficientAd model.
+"""
 
 # Copyright (C) 2023-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -19,13 +46,22 @@ logger = logging.getLogger(__name__)
 
 
 def imagenet_norm_batch(x: torch.Tensor) -> torch.Tensor:
-    """Normalize batch of images with ImageNet mean and std.
+    """Normalize batch of images using ImageNet mean and standard deviation.
+
+    This function normalizes a batch of images using the standard ImageNet mean and
+    standard deviation values. The normalization is done channel-wise.
 
     Args:
-        x (torch.Tensor): Input batch.
+        x (torch.Tensor): Input batch tensor of shape ``(N, C, H, W)`` where
+            ``N`` is batch size, ``C`` is number of channels (3 for RGB),
+            ``H`` is height and ``W`` is width.
 
     Returns:
-        torch.Tensor: Normalized batch using the ImageNet mean and std.
+        torch.Tensor: Normalized batch tensor with same shape as input, where each
+            channel is normalized using ImageNet statistics:
+            - Red channel: mean=0.485, std=0.229
+            - Green channel: mean=0.456, std=0.224
+            - Blue channel: mean=0.406, std=0.225
     """
     mean = torch.tensor([0.485, 0.456, 0.406])[None, :, None, None].to(x.device)
     std = torch.tensor([0.229, 0.224, 0.225])[None, :, None, None].to(x.device)
@@ -33,21 +69,32 @@ def imagenet_norm_batch(x: torch.Tensor) -> torch.Tensor:
 
 
 def reduce_tensor_elems(tensor: torch.Tensor, m: int = 2**24) -> torch.Tensor:
-    """Reduce tensor elements.
+    """Reduce the number of elements in a tensor by random sampling.
 
-    This function flatten n-dimensional tensors,  selects m elements from it
-    and returns the selected elements as tensor. It is used to select
-    at most 2**24 for torch.quantile operation, as it is the maximum
-    supported number of elements.
-    https://github.com/pytorch/pytorch/blob/b9f81a483a7879cd3709fd26bcec5f1ee33577e6/aten/src/ATen/native/Sorting.cpp#L291.
+    This function flattens an n-dimensional tensor and randomly samples at most ``m``
+    elements from it. This is used to handle the limitation of ``torch.quantile``
+    operation which supports a maximum of 2^24 elements.
+
+    Reference:
+        https://github.com/pytorch/pytorch/blob/b9f81a483a7879cd3709fd26bcec5f1ee33577e6/aten/src/ATen/native/Sorting.cpp#L291
 
     Args:
-        tensor (torch.Tensor): input tensor from which elements are selected
-        m (int): number of maximum tensor elements.
-            Defaults to ``2**24``
+        tensor (torch.Tensor): Input tensor of any shape from which elements will be
+            sampled.
+        m (int, optional): Maximum number of elements to sample. If the flattened
+            tensor has more elements than ``m``, random sampling is performed.
+            Defaults to ``2**24``.
 
     Returns:
-            Tensor: reduced tensor
+        torch.Tensor: A flattened tensor containing at most ``m`` elements randomly
+            sampled from the input tensor.
+
+    Example:
+        >>> import torch
+        >>> tensor = torch.randn(1000, 1000)  # 1M elements
+        >>> reduced = reduce_tensor_elems(tensor, m=1000)
+        >>> reduced.shape
+        torch.Size([1000])
     """
     tensor = torch.flatten(tensor)
     if len(tensor) > m:
@@ -59,19 +106,53 @@ def reduce_tensor_elems(tensor: torch.Tensor, m: int = 2**24) -> torch.Tensor:
 
 
 class EfficientAdModelSize(str, Enum):
-    """Supported EfficientAd model sizes."""
+    """Supported EfficientAd model sizes.
+
+    The EfficientAd model comes in two sizes:
+        - ``M`` (medium): Uses a larger architecture with more parameters
+        - ``S`` (small): Uses a smaller architecture with fewer parameters
+
+    Example:
+        >>> from anomalib.models.image.efficient_ad.torch_model import (
+        ...     EfficientAdModelSize
+        ... )
+        >>> model_size = EfficientAdModelSize.S
+        >>> model_size
+        'small'
+        >>> model_size = EfficientAdModelSize.M
+        >>> model_size
+        'medium'
+    """
 
     M = "medium"
     S = "small"
 
 
 class SmallPatchDescriptionNetwork(nn.Module):
-    """Patch Description Network small.
+    """Small variant of the Patch Description Network.
+
+    This network processes input images through a series of convolutional and pooling
+    layers to extract patch-level features. It uses a smaller architecture compared
+    to the medium variant.
 
     Args:
-        out_channels (int): number of convolution output channels
-        padding (bool): use padding in convoluional layers
+        out_channels (int): Number of output channels in the final convolution layer.
+        padding (bool, optional): Whether to use padding in convolutional layers.
             Defaults to ``False``.
+
+    Example:
+        >>> import torch
+        >>> from anomalib.models.image.efficient_ad.torch_model import (
+        ...     SmallPatchDescriptionNetwork
+        ... )
+        >>> model = SmallPatchDescriptionNetwork(out_channels=384)
+        >>> input_tensor = torch.randn(32, 3, 64, 64)
+        >>> output = model(input_tensor)
+        >>> output.shape
+        torch.Size([32, 384, 13, 13])
+
+    Note:
+        The network applies ImageNet normalization to the input before processing.
     """
 
     def __init__(self, out_channels: int, padding: bool = False) -> None:
@@ -85,13 +166,15 @@ class SmallPatchDescriptionNetwork(nn.Module):
         self.avgpool2 = nn.AvgPool2d(kernel_size=2, stride=2, padding=1 * pad_mult)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Perform a forward pass through the network.
+        """Forward pass through the network.
 
         Args:
-            x (torch.Tensor): Input batch.
+            x (torch.Tensor): Input tensor of shape ``(N, 3, H, W)``.
 
         Returns:
-            torch.Tensor: Output from the network.
+            torch.Tensor: Output feature maps of shape
+                ``(N, out_channels, H', W')``, where ``H'`` and ``W'`` are
+                determined by the network architecture and padding settings.
         """
         x = imagenet_norm_batch(x)
         x = F.relu(self.conv1(x))
@@ -103,12 +186,31 @@ class SmallPatchDescriptionNetwork(nn.Module):
 
 
 class MediumPatchDescriptionNetwork(nn.Module):
-    """Patch Description Network medium.
+    """Medium-sized patch description network.
+
+    This network processes input images through a series of convolutional and
+    pooling layers to extract descriptive features from image patches.
 
     Args:
-        out_channels (int): number of convolution output channels
-        padding (bool): use padding in convoluional layers
+        out_channels (int): Number of output channels in the final convolution
+            layer.
+        padding (bool, optional): Whether to use padding in convolutional layers.
             Defaults to ``False``.
+
+    Example:
+        >>> import torch
+        >>> from anomalib.models.image.efficient_ad.torch_model import (
+        ...     MediumPatchDescriptionNetwork
+        ... )
+        >>> model = MediumPatchDescriptionNetwork(out_channels=384)
+        >>> input_tensor = torch.randn(32, 3, 64, 64)
+        >>> output = model(input_tensor)
+        >>> output.shape
+        torch.Size([32, 384, 13, 13])
+
+    Note:
+        The network applies ImageNet normalization to the input before
+        processing.
     """
 
     def __init__(self, out_channels: int, padding: bool = False) -> None:
@@ -124,13 +226,15 @@ class MediumPatchDescriptionNetwork(nn.Module):
         self.avgpool2 = nn.AvgPool2d(kernel_size=2, stride=2, padding=1 * pad_mult)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Perform a forward pass through the network.
+        """Forward pass through the network.
 
         Args:
-            x (torch.Tensor): Input batch.
+            x (torch.Tensor): Input tensor of shape ``(N, 3, H, W)``.
 
         Returns:
-            torch.Tensor: Output from the network.
+            torch.Tensor: Output feature maps of shape
+                ``(N, out_channels, H', W')``, where ``H'`` and ``W'`` are
+                determined by the network architecture and padding settings.
         """
         x = imagenet_norm_batch(x)
         x = F.relu(self.conv1(x))
@@ -144,7 +248,24 @@ class MediumPatchDescriptionNetwork(nn.Module):
 
 
 class Encoder(nn.Module):
-    """Autoencoder Encoder model."""
+    """Encoder module for the autoencoder architecture.
+
+    The encoder consists of 6 convolutional layers that progressively reduce the
+    spatial dimensions while increasing the number of channels.
+
+    Example:
+        >>> import torch
+        >>> from anomalib.models.image.efficient_ad.torch_model import Encoder
+        >>> model = Encoder()
+        >>> input_tensor = torch.randn(32, 3, 256, 256)
+        >>> output = model(input_tensor)
+        >>> output.shape
+        torch.Size([32, 64, 1, 1])
+
+    Note:
+        The encoder uses ReLU activation after each convolutional layer except
+        the last one.
+    """
 
     def __init__(self) -> None:
         super().__init__()
@@ -156,13 +277,14 @@ class Encoder(nn.Module):
         self.enconv6 = nn.Conv2d(64, 64, kernel_size=8, stride=1, padding=0)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Perform the forward pass through the network.
+        """Forward pass through the encoder network.
 
         Args:
-            x (torch.Tensor): Input batch.
+            x (torch.Tensor): Input tensor of shape ``(N, 3, H, W)``.
 
         Returns:
-            torch.Tensor: Output from the network.
+            torch.Tensor: Encoded features of shape ``(N, 64, H', W')``, where
+                ``H'`` and ``W'`` are determined by the network architecture.
         """
         x = F.relu(self.enconv1(x))
         x = F.relu(self.enconv2(x))
@@ -173,11 +295,32 @@ class Encoder(nn.Module):
 
 
 class Decoder(nn.Module):
-    """Autoencoder Decoder model.
+    """Decoder module for the autoencoder architecture.
+
+    The decoder consists of 8 convolutional layers with upsampling that
+    progressively increase spatial dimensions while maintaining or reducing
+    channel dimensions.
 
     Args:
-        out_channels (int): number of convolution output channels
-        padding (int): use padding in convoluional layers
+        out_channels (int): Number of output channels in final conv layer.
+        padding (int): Whether to use padding in convolutional layers.
+
+    Example:
+        >>> import torch
+        >>> from anomalib.models.image.efficient_ad.torch_model import Decoder
+        >>> model = Decoder(out_channels=384, padding=True)
+        >>> input_tensor = torch.randn(32, 64, 1, 1)
+        >>> image_size = (256, 256)
+        >>> output = model(input_tensor, image_size)
+        >>> output.shape
+        torch.Size([32, 384, 64, 64])
+
+    Note:
+        - Uses ReLU activation and dropout after most convolutional layers
+        - Performs bilinear upsampling between conv layers to increase spatial
+          dimensions
+        - Final output size depends on ``padding`` parameter and input
+          ``image_size``
     """
 
     def __init__(self, out_channels: int, padding: int, *args, **kwargs) -> None:
@@ -203,11 +346,14 @@ class Decoder(nn.Module):
         """Perform a forward pass through the network.
 
         Args:
-            x (torch.Tensor): Input batch.
-            image_size (tuple): size of input images.
+            x (torch.Tensor): Input tensor of shape ``(N, 64, H, W)``.
+            image_size (tuple[int, int] | torch.Size): Target output size
+                ``(H, W)``.
 
         Returns:
-            torch.Tensor: Output from the network.
+            torch.Tensor: Decoded features of shape
+                ``(N, out_channels, H', W')``, where ``H'`` and ``W'`` are
+                determined by the network architecture and padding settings.
         """
         last_upsample = (
             math.ceil(image_size[0] / 4) if self.padding else math.ceil(image_size[0] / 4) - 8,
@@ -239,9 +385,26 @@ class Decoder(nn.Module):
 class AutoEncoder(nn.Module):
     """EfficientAd Autoencoder.
 
+    The autoencoder consists of an encoder and decoder network. The encoder extracts features
+    from the input image which are then reconstructed by the decoder.
+
     Args:
-       out_channels (int): number of convolution output channels
-       padding (int): use padding in convoluional layers
+        out_channels (int): Number of convolution output channels in the decoder.
+        padding (int): Whether to use padding in convolutional layers.
+        *args: Variable length argument list passed to parent class.
+        **kwargs: Arbitrary keyword arguments passed to parent class.
+
+    Example:
+        >>> from torch import randn
+        >>> autoencoder = AutoEncoder(out_channels=384, padding=True)
+        >>> input_tensor = randn(32, 3, 256, 256)
+        >>> output = autoencoder(input_tensor, image_size=(256, 256))
+        >>> output.shape
+        torch.Size([32, 384, 256, 256])
+
+    Notes:
+        The input images are normalized using ImageNet statistics before being passed
+        through the encoder.
     """
 
     def __init__(self, out_channels: int, padding: int, *args, **kwargs) -> None:
@@ -250,14 +413,16 @@ class AutoEncoder(nn.Module):
         self.decoder = Decoder(out_channels, padding)
 
     def forward(self, x: torch.Tensor, image_size: tuple[int, int] | torch.Size) -> torch.Tensor:
-        """Perform the forward pass through the network.
+        """Forward pass through the autoencoder.
 
         Args:
-            x (torch.Tensor): Input batch.
-            image_size (tuple): size of input images.
+            x (torch.Tensor): Input tensor of shape ``(N, C, H, W)``.
+            image_size (tuple[int, int] | torch.Size): Target output size ``(H, W)``.
 
         Returns:
-            torch.Tensor: Output from the network.
+            torch.Tensor: Reconstructed features of shape ``(N, out_channels, H', W')``,
+                where ``H'`` and ``W'`` are determined by the decoder architecture and
+                padding settings.
         """
         x = imagenet_norm_batch(x)
         x = self.encoder(x)
@@ -267,14 +432,41 @@ class AutoEncoder(nn.Module):
 class EfficientAdModel(nn.Module):
     """EfficientAd model.
 
+    The EfficientAd model consists of a teacher and student network for anomaly
+    detection. The teacher network is pre-trained and frozen, while the student
+    network is trained to match the teacher's outputs.
+
     Args:
-        teacher_out_channels (int): number of convolution output channels of the pre-trained teacher model
-        model_size (str): size of student and teacher model
-        padding (bool): use padding in convoluional layers
+        teacher_out_channels (int): Number of convolution output channels of the
+            pre-trained teacher model.
+        model_size (EfficientAdModelSize): Size of student and teacher model.
+            Defaults to ``EfficientAdModelSize.S``.
+        padding (bool): Whether to use padding in convolutional layers.
             Defaults to ``False``.
-        pad_maps (bool): relevant if padding is set to False. In this case, pad_maps = True pads the
-            output anomaly maps so that their size matches the size in the padding = True case.
+        pad_maps (bool): Whether to pad output anomaly maps when ``padding=False``
+            to match size of padded case. Only relevant if ``padding=False``.
             Defaults to ``True``.
+
+    Example:
+        >>> from anomalib.models.image.efficient_ad.torch_model import (
+        ...     EfficientAdModel,
+        ...     EfficientAdModelSize
+        ... )
+        >>> model = EfficientAdModel(
+        ...     teacher_out_channels=384,
+        ...     model_size=EfficientAdModelSize.S
+        ... )
+        >>> input_tensor = torch.randn(32, 3, 256, 256)
+        >>> output = model(input_tensor)
+        >>> output.anomaly_map.shape
+        torch.Size([32, 1, 256, 256])
+
+    Notes:
+        The model uses a student-teacher architecture where:
+        - Teacher network is pre-trained and frozen
+        - Student network learns to match teacher outputs
+        - Autoencoder provides additional feature extraction
+        - Anomaly scores are computed from student-teacher differences
     """
 
     def __init__(
@@ -323,25 +515,28 @@ class EfficientAdModel(nn.Module):
 
     @staticmethod
     def is_set(p_dic: nn.ParameterDict) -> bool:
-        """Check if any of the parameters in the parameter dictionary is set.
+        """Check if any parameters in the dictionary are non-zero.
 
         Args:
-            p_dic (nn.ParameterDict): Parameter dictionary.
+            p_dic (nn.ParameterDict): Parameter dictionary to check.
 
         Returns:
-            bool: Boolean indicating whether any of the parameters in the parameter dictionary is set.
+            bool: ``True`` if any parameter is non-zero, ``False`` otherwise.
         """
         return any(value.sum() != 0 for _, value in p_dic.items())
 
     @staticmethod
     def choose_random_aug_image(image: torch.Tensor) -> torch.Tensor:
-        """Choose a random augmentation function and apply it to the input image.
+        """Apply random augmentation to input image.
+
+        Randomly selects and applies one of: brightness, contrast or saturation
+        adjustment with coefficient sampled from U(0.8, 1.2).
 
         Args:
-            image (torch.Tensor): Input image.
+            image (torch.Tensor): Input image tensor.
 
         Returns:
-            Tensor: Augmented image.
+            torch.Tensor: Augmented image tensor.
         """
         transform_functions = [
             transforms.functional.adjust_brightness,
@@ -359,15 +554,22 @@ class EfficientAdModel(nn.Module):
         batch_imagenet: torch.Tensor | None = None,
         normalize: bool = True,
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor] | InferenceBatch:
-        """Perform the forward-pass of the EfficientAd models.
+        """Forward pass through the model.
 
         Args:
-            batch (torch.Tensor): Input images.
-            batch_imagenet (torch.Tensor): ImageNet batch. Defaults to None.
-            normalize (bool): Normalize anomaly maps or not
+            batch (torch.Tensor): Input batch of images.
+            batch_imagenet (torch.Tensor | None): Optional batch of ImageNet
+                images for training. Defaults to ``None``.
+            normalize (bool): Whether to normalize anomaly maps.
+                Defaults to ``True``.
 
         Returns:
-            Tensor: Predictions
+            tuple[torch.Tensor, torch.Tensor, torch.Tensor] | InferenceBatch:
+                If training:
+                    - Loss components (student-teacher, autoencoder,
+                      student-autoencoder)
+                If inference:
+                    - Batch containing anomaly maps and scores
         """
         student_output, distance_st = self.compute_student_teacher_distance(batch)
         if self.training:
@@ -382,12 +584,12 @@ class EfficientAdModel(nn.Module):
         """Compute the student-teacher distance vectors.
 
         Args:
-            batch (torch.Tensor): Input images.
-            batch_imagenet (torch.Tensor): ImageNet batch. Defaults to None.
-            normalize (bool): Normalize anomaly maps or not
+            batch (torch.Tensor): Input batch of images.
 
         Returns:
-            Tensor: Predictions
+            tuple[torch.Tensor, torch.Tensor]:
+                - Student network output features
+                - Squared distance between normalized teacher and student features
         """
         with torch.no_grad():
             teacher_output = self.teacher(batch)
@@ -404,7 +606,24 @@ class EfficientAdModel(nn.Module):
         batch_imagenet: torch.Tensor,
         distance_st: torch.Tensor,
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-        """Compute the student-teacher loss and the autoencoder loss."""
+        """Compute training losses.
+
+        Computes three loss components:
+        - Student-teacher loss (hard examples + ImageNet penalty)
+        - Autoencoder reconstruction loss
+        - Student-autoencoder consistency loss
+
+        Args:
+            batch (torch.Tensor): Input batch of images.
+            batch_imagenet (torch.Tensor): Batch of ImageNet images.
+            distance_st (torch.Tensor): Student-teacher distances.
+
+        Returns:
+            tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+                - Student-teacher loss
+                - Autoencoder loss
+                - Student-autoencoder loss
+        """
         # Student loss
         distance_st = reduce_tensor_elems(distance_st)
         d_hard = torch.quantile(distance_st, 0.999)
@@ -438,7 +657,20 @@ class EfficientAdModel(nn.Module):
         distance_st: torch.Tensor,
         normalize: bool = True,
     ) -> tuple[torch.Tensor, torch.Tensor]:
-        """Compute the anomaly maps."""
+        """Compute anomaly maps from model outputs.
+
+        Args:
+            batch (torch.Tensor): Input batch of images.
+            student_output (torch.Tensor): Student network output features.
+            distance_st (torch.Tensor): Student-teacher distances.
+            normalize (bool): Whether to normalize maps with pre-computed
+                quantiles. Defaults to ``True``.
+
+        Returns:
+            tuple[torch.Tensor, torch.Tensor]:
+                - Student-teacher anomaly map
+                - Student-autoencoder anomaly map
+        """
         image_size = batch.shape[-2:]
         # Eval mode.
         with torch.no_grad():
@@ -463,6 +695,18 @@ class EfficientAdModel(nn.Module):
         return map_st, map_stae
 
     def get_maps(self, batch: torch.Tensor, normalize: bool = False) -> tuple[torch.Tensor, torch.Tensor]:
-        """Standalone function to compute anomaly maps."""
+        """Compute anomaly maps for a batch of images.
+
+        Convenience method that combines distance computation and map generation.
+
+        Args:
+            batch (torch.Tensor): Input batch of images.
+            normalize (bool): Whether to normalize maps. Defaults to ``False``.
+
+        Returns:
+            tuple[torch.Tensor, torch.Tensor]:
+                - Student-teacher anomaly map
+                - Student-autoencoder anomaly map
+        """
         student_output, distance_st = self.compute_student_teacher_distance(batch)
         return self.compute_maps(batch, student_output, distance_st, normalize)
