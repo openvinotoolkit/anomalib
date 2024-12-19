@@ -326,7 +326,8 @@ class _ImageGrid:
                 axis.title.set_text(image_dict["title"])
         self.figure.canvas.draw()
         # convert canvas to numpy array to prepare for visualization with opencv
-        img = np.frombuffer(self.figure.canvas.tostring_rgb(), dtype=np.uint8)
-        img = img.reshape(self.figure.canvas.get_width_height()[::-1] + (3,))
+        img = np.frombuffer(self.figure.canvas.buffer_rgba(), dtype=np.uint8)
+        img = img.reshape(self.figure.canvas.get_width_height()[::-1] + (4,))  # RGBA has 4 channels
+        img = cv2.cvtColor(img, cv2.COLOR_RGBA2RGB)
         plt.close(self.figure)
         return img
