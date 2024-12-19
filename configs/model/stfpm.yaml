@@ -7,10 +7,6 @@ model:
       - layer2
       - layer3
 
-metrics:
-  pixel:
-    - AUROC
-
 trainer:
   max_epochs: 100
   callbacks:

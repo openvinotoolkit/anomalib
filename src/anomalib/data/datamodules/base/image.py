@@ -120,7 +120,7 @@ class AnomalibDataModule(LightningDataModule, ABC):
         for subset_name in ["train", "val", "test"]:
             subset = getattr(self, f"{subset_name}_data", None)
             augmentations = getattr(self, f"{subset_name}_augmentations", None)
-            model_transform = self.get_nested_attr(self, f"trainer.model.pre_processor.{subset_name}_transform")
+            model_transform = self.get_nested_attr(self, "trainer.model.pre_processor.transform")
             if subset and augmentations:
                 self._update_subset_augmentations(subset, augmentations, model_transform)
 

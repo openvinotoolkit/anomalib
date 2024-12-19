@@ -15,10 +15,6 @@ model:
     permute_soft: false
     lr: 0.0001
 
-metrics:
-  pixel:
-    - AUROC
-
 trainer:
   max_epochs: 50
   callbacks:

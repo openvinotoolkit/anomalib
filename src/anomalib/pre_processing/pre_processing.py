@@ -77,33 +77,18 @@ class PreProcessor(nn.Module, Callback):
 
     def __init__(
         self,
-        train_transform: Transform | None = None,
-        val_transform: Transform | None = None,
-        test_transform: Transform | None = None,
         transform: Transform | None = None,
     ) -> None:
         super().__init__()
 
-        if transform and any([train_transform, val_transform, test_transform]):
-            msg = (
-                "`transforms` cannot be used together with `train_transform`, `val_transform`, `test_transform`.\n"
-                "If you want to apply the same transform to the training, validation and test data, "
-                "use only `transforms`. \n"
-                "Otherwise, specify transforms for training, validation and test individually."
-            )
-            raise ValueError(msg)
-
-        self.train_transform = train_transform or transform
-        self.val_transform = val_transform or transform
-        self.test_transform = test_transform or transform
-        self.predict_transform = self.test_transform
-        self.export_transform = get_exportable_transform(self.test_transform)
+        self.transform = transform
+        self.export_transform = get_exportable_transform(self.transform)
 
     def on_train_batch_start(self, trainer: Trainer, pl_module: LightningModule, batch: Batch, batch_idx: int) -> None:
         """Apply transforms to the batch of tensors during training."""
         del trainer, pl_module, batch_idx  # Unused
-        if self.train_transform:
-            batch.image, batch.gt_mask = self.train_transform(batch.image, batch.gt_mask)
+        if self.transform:
+            batch.image, batch.gt_mask = self.transform(batch.image, batch.gt_mask)
 
     def on_validation_batch_start(
         self,
@@ -114,8 +99,8 @@ class PreProcessor(nn.Module, Callback):
     ) -> None:
         """Apply transforms to the batch of tensors during validation."""
         del trainer, pl_module, batch_idx  # Unused
-        if self.val_transform:
-            batch.image, batch.gt_mask = self.val_transform(batch.image, batch.gt_mask)
+        if self.transform:
+            batch.image, batch.gt_mask = self.transform(batch.image, batch.gt_mask)
 
     def on_test_batch_start(
         self,
@@ -127,8 +112,8 @@ class PreProcessor(nn.Module, Callback):
     ) -> None:
         """Apply transforms to the batch of tensors during testing."""
         del trainer, pl_module, batch_idx, dataloader_idx  # Unused
-        if self.test_transform:
-            batch.image, batch.gt_mask = self.test_transform(batch.image, batch.gt_mask)
+        if self.transform:
+            batch.image, batch.gt_mask = self.transform(batch.image, batch.gt_mask)
 
     def on_predict_batch_start(
         self,
@@ -140,8 +125,8 @@ class PreProcessor(nn.Module, Callback):
     ) -> None:
         """Apply transforms to the batch of tensors during prediction."""
         del trainer, pl_module, batch_idx, dataloader_idx  # Unused
-        if self.predict_transform:
-            batch.image, batch.gt_mask = self.predict_transform(batch.image, batch.gt_mask)
+        if self.transform:
+            batch.image, batch.gt_mask = self.transform(batch.image, batch.gt_mask)
 
     def forward(self, batch: torch.Tensor) -> torch.Tensor:
         """Apply transforms to the batch of tensors for inference.

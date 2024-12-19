@@ -199,7 +199,7 @@ class WinClip(AnomalibModule):
             Resize((240, 240), antialias=True, interpolation=InterpolationMode.BICUBIC),
             Normalize(mean=(0.48145466, 0.4578275, 0.40821073), std=(0.26862954, 0.26130258, 0.27577711)),
         ])
-        return PreProcessor(val_transform=transform, test_transform=transform)
+        return PreProcessor(transform=transform)
 
     @staticmethod
     def configure_post_processor() -> OneClassPostProcessor:

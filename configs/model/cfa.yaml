@@ -8,9 +8,6 @@ model:
     num_hard_negative_features: 3
     radius: 1.0e-05
 
-metrics:
-  pixel: AUROC
-
 trainer:
   max_epochs: 30
   callbacks:
