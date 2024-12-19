@@ -1,4 +1,4 @@
-# Deployment
+# Inference
 
 ```{eval-rst}
 .. automodule:: anomalib.deploy

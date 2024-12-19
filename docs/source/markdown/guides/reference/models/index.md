@@ -8,21 +8,30 @@
 :link: ./components/index
 :link-type: doc
 
-Learn more about components to design your own anomaly detection models.
+Core building blocks and utilities for creating custom anomaly detection models, including feature extractors, anomaly scoring functions, and visualization tools.
+
++++
+[Learn more »](./components/index)
 :::
 
 :::{grid-item-card} {octicon}`file-media` Image Models
 :link: ./image/index
 :link-type: doc
 
-Learn more about image anomaly detection models.
+Collection of state-of-the-art deep learning models for detecting anomalies in images, including both reconstruction and embedding-based approaches.
+
++++
+[Learn more »](./image/index)
 :::
 
 :::{grid-item-card} {octicon}`video` Video Models
 :link: ./video/index
 :link-type: doc
 
-Learn more about video anomaly detection models.
+Advanced models designed specifically for anomaly detection in video sequences, leveraging temporal information and motion patterns.
+
++++
+[Learn more »](./video/index)
 :::
 
 ::::

@@ -1,7 +1,8 @@
 # Engine
 
 ```{eval-rst}
-.. automodule:: anomalib.engine
+.. currentmodule:: anomalib.engine.engine
+.. autoclass:: Engine
    :members:
    :show-inheritance:
 ```

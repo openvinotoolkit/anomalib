@@ -1,4 +1,9 @@
-"""UCSD Pedestrian Data Module."""
+"""UCSD Pedestrian Data Module.
+
+This module provides a PyTorch Lightning data module for the UCSD Pedestrian dataset.
+The dataset consists of surveillance videos of pedestrians, with anomalies defined as
+non-pedestrian entities like cars, bikes, etc.
+"""
 
 # Copyright (C) 2023-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -22,20 +27,35 @@ DOWNLOAD_INFO = DownloadInfo(
 
 
 class UCSDped(AnomalibVideoDataModule):
-    """UCSDped DataModule class.
+    """UCSD Pedestrian DataModule Class.
 
     Args:
-        root (Path | str): Path to the root of the dataset
-        category (str): Sub-category of the dataset, e.g. "UCSDped1" or "UCSDped2"
-        clip_length_in_frames (int, optional): Number of video frames in each clip.
-        frames_between_clips (int, optional): Number of frames between each consecutive video clip.
-        target_frame (VideoTargetFrame): Specifies the target frame in the video clip, used for ground truth retrieval
-        train_batch_size (int, optional): Training batch size. Defaults to 32.
-        eval_batch_size (int, optional): Test batch size. Defaults to 32.
-        num_workers (int, optional): Number of workers. Defaults to 8.
-        val_split_mode (ValSplitMode): Setting that determines how the validation subset is obtained.
-        val_split_ratio (float): Fraction of train or test images that will be reserved for validation.
-        seed (int | None, optional): Seed which may be set to a fixed value for reproducibility.
+        root (Path | str): Path to the root directory where the dataset will be
+            downloaded and extracted. Defaults to ``"./datasets/ucsd"``.
+        category (str): Dataset subcategory. Must be either ``"UCSDped1"`` or
+            ``"UCSDped2"``. Defaults to ``"UCSDped2"``.
+        clip_length_in_frames (int): Number of frames in each video clip.
+            Defaults to ``2``.
+        frames_between_clips (int): Number of frames between consecutive video
+            clips. Defaults to ``10``.
+        target_frame (VideoTargetFrame): Specifies which frame in the clip should
+            be used for ground truth. Defaults to ``VideoTargetFrame.LAST``.
+        train_batch_size (int): Batch size for training. Defaults to ``8``.
+        eval_batch_size (int): Batch size for validation and testing.
+            Defaults to ``8``.
+        num_workers (int): Number of workers for data loading. Defaults to ``8``.
+        val_split_mode (ValSplitMode): Determines how validation set is created.
+            Defaults to ``ValSplitMode.SAME_AS_TEST``.
+        val_split_ratio (float): Fraction of data to use for validation.
+            Must be between 0 and 1. Defaults to ``0.5``.
+        seed (int | None): Random seed for reproducibility. Defaults to ``None``.
+
+    Example:
+        >>> datamodule = UCSDped(root="./datasets/ucsd")
+        >>> datamodule.setup()  # Downloads and prepares the dataset
+        >>> train_loader = datamodule.train_dataloader()
+        >>> val_loader = datamodule.val_dataloader()
+        >>> test_loader = datamodule.test_dataloader()
     """
 
     def __init__(
@@ -69,6 +89,11 @@ class UCSDped(AnomalibVideoDataModule):
         self.target_frame = VideoTargetFrame(target_frame)
 
     def _setup(self, _stage: str | None = None) -> None:
+        """Set up train and test datasets.
+
+        Args:
+            _stage (str | None): Stage for Lightning. Can be "fit" or "test".
+        """
         self.train_data = UCSDpedDataset(
             clip_length_in_frames=self.clip_length_in_frames,
             frames_between_clips=self.frames_between_clips,
@@ -88,7 +113,11 @@ class UCSDped(AnomalibVideoDataModule):
         )
 
     def prepare_data(self) -> None:
-        """Download the dataset if not available."""
+        """Download and extract the dataset if not already available.
+
+        The method checks if the dataset directory exists. If not, it downloads
+        and extracts the dataset to the specified root directory.
+        """
         if (self.root / self.category).is_dir():
             logger.info("Found the dataset.")
         else:

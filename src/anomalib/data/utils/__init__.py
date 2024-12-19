@@ -1,4 +1,23 @@
-"""Helper utilities for data."""
+"""Helper utilities for data.
+
+This module provides various utility functions for data handling in Anomalib.
+
+The utilities are organized into several categories:
+
+- Image handling: Functions for reading, writing and processing images
+- Box handling: Functions for converting between masks and bounding boxes
+- Path handling: Functions for validating and resolving file paths
+- Dataset splitting: Functions for splitting datasets into train/val/test
+- Data generation: Functions for generating synthetic data like Perlin noise
+- Download utilities: Functions for downloading and extracting datasets
+
+Example:
+    >>> from anomalib.data.utils import read_image, generate_perlin_noise
+    >>> # Read an image
+    >>> image = read_image("path/to/image.jpg")
+    >>> # Generate Perlin noise
+    >>> noise = generate_perlin_noise(256, 256)
+"""
 
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0

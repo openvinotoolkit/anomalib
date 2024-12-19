@@ -1,6 +1,22 @@
 """Custom Folder Dataset.
 
-This script creates a custom PyTorch Dataset from a folder.
+This module provides a custom PyTorch Dataset implementation for loading images
+from a folder structure. The dataset supports both classification and
+segmentation tasks.
+
+The folder structure should contain normal images and optionally abnormal images,
+test images, and mask annotations.
+
+Example:
+    >>> from pathlib import Path
+    >>> from anomalib.data.datasets import FolderDataset
+    >>> dataset = FolderDataset(
+    ...     name="custom",
+    ...     root="datasets/custom",
+    ...     normal_dir="normal",
+    ...     abnormal_dir="abnormal",
+    ...     mask_dir="ground_truth"
+    ... )
 """
 
 # Copyright (C) 2024 Intel Corporation
@@ -19,49 +35,55 @@ from anomalib.data.utils.path import _prepare_files_labels, validate_and_resolve
 
 
 class FolderDataset(AnomalibDataset):
-    """Folder dataset.
-
-    This class is used to create a dataset from a folder. The class utilizes the Torch Dataset class.
+    """Dataset class for loading images from a custom folder structure.
 
     Args:
-        name (str): Name of the dataset. This is used to name the datamodule, especially when logging/saving.
-        transform (Transform, optional): Transforms that should be applied to the input images.
+        name (str): Name of the dataset. Used for logging/saving.
+        normal_dir (str | Path | Sequence): Path to directory containing normal
+            images.
+        transform (Transform | None, optional): Transforms to apply to the images.
             Defaults to ``None``.
-        normal_dir (str | Path | Sequence): Path to the directory containing normal images.
-        root (str | Path | None): Root folder of the dataset.
+        root (str | Path | None, optional): Root directory of the dataset.
             Defaults to ``None``.
-        abnormal_dir (str | Path | Sequence | None, optional): Path to the directory containing abnormal images.
+        abnormal_dir (str | Path | Sequence | None, optional): Path to directory
+            containing abnormal images. Defaults to ``None``.
+        normal_test_dir (str | Path | Sequence | None, optional): Path to
+            directory containing normal test images. If not provided, normal test
+            images will be split from ``normal_dir``. Defaults to ``None``.
+        mask_dir (str | Path | Sequence | None, optional): Path to directory
+            containing ground truth masks. Required for segmentation.
             Defaults to ``None``.
-        normal_test_dir (str | Path | Sequence | None, optional): Path to the directory containing
-            normal images for the test dataset.
+        split (str | Split | None, optional): Dataset split to load.
+            Choose from ``Split.FULL``, ``Split.TRAIN``, ``Split.TEST``.
             Defaults to ``None``.
-        mask_dir (str | Path | Sequence | None, optional): Path to the directory containing
-            the mask annotations.
-            Defaults to ``None``.
-        split (str | Split | None): Fixed subset split that follows from folder structure on file system.
-            Choose from [Split.FULL, Split.TRAIN, Split.TEST]
-            Defaults to ``None``.
-        extensions (tuple[str, ...] | None, optional): Type of the image extensions to read from the directory.
-            Defaults to ``None``.
+        extensions (tuple[str, ...] | None, optional): Image file extensions to
+            include. Defaults to ``None``.
 
     Examples:
-        Assume that we would like to use this ``FolderDataset`` to create a dataset from a folder for a classification
-        task. We could first create the transforms,
+        Create a classification dataset:
 
         >>> from anomalib.data.utils import InputNormalizationMethod, get_transforms
-        >>> transform = get_transforms(image_size=256, normalization=InputNormalizationMethod.NONE)
+        >>> transform = get_transforms(
+        ...     image_size=256,
+        ...     normalization=InputNormalizationMethod.NONE
+        ... )
+        >>> dataset = FolderDataset(
+        ...     name="custom",
+        ...     normal_dir="datasets/custom/good",
+        ...     abnormal_dir="datasets/custom/defect",
+        ...     split="train",
+        ...     transform=transform
+        ... )
 
-        We could then create the dataset as follows,
+        Create a segmentation dataset:
 
-        .. code-block:: python
-
-            folder_dataset_classification_train = FolderDataset(
-                normal_dir=dataset_root / "good",
-                abnormal_dir=dataset_root / "crack",
-                split="train",
-                transform=transform,
-            )
-
+        >>> dataset = FolderDataset(
+        ...     name="custom",
+        ...     normal_dir="datasets/custom/good",
+        ...     abnormal_dir="datasets/custom/defect",
+        ...     mask_dir="datasets/custom/ground_truth",
+        ...     split="test"
+        ... )
     """
 
     def __init__(
@@ -99,9 +121,10 @@ class FolderDataset(AnomalibDataset):
 
     @property
     def name(self) -> str:
-        """Name of the dataset.
+        """Get dataset name.
 
-        Folder dataset overrides the name property to provide a custom name.
+        Returns:
+            str: Name of the dataset
         """
         return self._name
 
@@ -115,64 +138,62 @@ def make_folder_dataset(
     split: str | Split | None = None,
     extensions: tuple[str, ...] | None = None,
 ) -> DataFrame:
-    """Make Folder Dataset.
+    """Create a dataset from a folder structure.
 
     Args:
-        normal_dir (str | Path | Sequence): Path to the directory containing normal images.
-        root (str | Path | None): Path to the root directory of the dataset.
+        normal_dir (str | Path | Sequence): Path to directory containing normal
+            images.
+        root (str | Path | None, optional): Root directory of the dataset.
             Defaults to ``None``.
-        abnormal_dir (str | Path | Sequence | None, optional): Path to the directory containing abnormal images.
+        abnormal_dir (str | Path | Sequence | None, optional): Path to directory
+            containing abnormal images. Defaults to ``None``.
+        normal_test_dir (str | Path | Sequence | None, optional): Path to
+            directory containing normal test images. If not provided, normal test
+            images will be split from ``normal_dir``. Defaults to ``None``.
+        mask_dir (str | Path | Sequence | None, optional): Path to directory
+            containing ground truth masks. Required for segmentation.
             Defaults to ``None``.
-        normal_test_dir (str | Path | Sequence | None, optional): Path to the directory containing normal images for
-            the test dataset. Normal test images will be a split of `normal_dir` if `None`.
+        split (str | Split | None, optional): Dataset split to load.
+            Choose from ``Split.FULL``, ``Split.TRAIN``, ``Split.TEST``.
             Defaults to ``None``.
-        mask_dir (str | Path | Sequence | None, optional): Path to the directory containing the mask annotations.
-            Defaults to ``None``.
-        split (str | Split | None, optional): Dataset split (ie., Split.FULL, Split.TRAIN or Split.TEST).
-            Defaults to ``None``.
-        extensions (tuple[str, ...] | None, optional): Type of the image extensions to read from the directory.
-            Defaults to ``None``.
+        extensions (tuple[str, ...] | None, optional): Image file extensions to
+            include. Defaults to ``None``.
 
     Returns:
-        DataFrame: an output dataframe containing samples for the requested split (ie., train or test).
+        DataFrame: Dataset samples with columns for image paths, labels, splits
+            and mask paths (for segmentation).
 
     Examples:
-        Assume that we would like to use this ``make_folder_dataset`` to create a dataset from a folder.
-        We could then create the dataset as follows,
+        Create a classification dataset:
 
-        .. code-block:: python
-
-            folder_df = make_folder_dataset(
-                normal_dir=dataset_root / "good",
-                abnormal_dir=dataset_root / "crack",
-                split="train",
-            )
-            folder_df.head()
-
-        .. code-block:: bash
-
-                      image_path           label  label_index mask_path        split
-            0  ./toy/good/00.jpg  DirType.NORMAL            0            Split.TRAIN
-            1  ./toy/good/01.jpg  DirType.NORMAL            0            Split.TRAIN
-            2  ./toy/good/02.jpg  DirType.NORMAL            0            Split.TRAIN
-            3  ./toy/good/03.jpg  DirType.NORMAL            0            Split.TRAIN
-            4  ./toy/good/04.jpg  DirType.NORMAL            0            Split.TRAIN
+        >>> folder_df = make_folder_dataset(
+        ...     normal_dir="datasets/custom/good",
+        ...     abnormal_dir="datasets/custom/defect",
+        ...     split="train"
+        ... )
+        >>> folder_df.head()
+                  image_path           label  label_index mask_path    split
+        0  ./good/00.png     DirType.NORMAL            0            Split.TRAIN
+        1  ./good/01.png     DirType.NORMAL            0            Split.TRAIN
+        2  ./good/02.png     DirType.NORMAL            0            Split.TRAIN
+        3  ./good/03.png     DirType.NORMAL            0            Split.TRAIN
+        4  ./good/04.png     DirType.NORMAL            0            Split.TRAIN
     """
 
     def _resolve_path_and_convert_to_list(path: str | Path | Sequence[str | Path] | None) -> list[Path]:
         """Convert path to list of paths.
 
         Args:
-            path (str | Path | Sequence | None): Path to replace with Sequence[str | Path].
+            path (str | Path | Sequence | None): Path to convert.
+
+        Returns:
+            list[Path]: List of resolved paths.
 
         Examples:
             >>> _resolve_path_and_convert_to_list("dir")
             [Path("path/to/dir")]
             >>> _resolve_path_and_convert_to_list(["dir1", "dir2"])
             [Path("path/to/dir1"), Path("path/to/dir2")]
-
-        Returns:
-            list[Path]: The result of path replaced by Sequence[str | Path].
         """
         if isinstance(path, Sequence) and not isinstance(path, str):
             return [validate_and_resolve_path(dir_path, root) for dir_path in path]
@@ -232,15 +253,17 @@ def make_folder_dataset(
             .apply(lambda x: Path(x.image_path).stem in Path(x.mask_path).stem, axis=1)
             .all()
         ):
-            msg = """Mismatch between anomalous images and mask images. Make sure the mask files "
-                     "folder follow the same naming convention as the anomalous images in the dataset "
-                     "(e.g. image: '000.png', mask: '000.png')."""
+            msg = """Mismatch between anomalous images and mask images. Make sure
+                the mask files folder follow the same naming convention as the
+                anomalous images in the dataset (e.g. image: '000.png',
+                mask: '000.png')."""
             raise MisMatchError(msg)
 
     else:
         samples["mask_path"] = ""
 
-    # remove all the rows with temporal image samples that have already been assigned
+    # remove all the rows with temporal image samples that have already been
+    # assigned
     samples = samples.loc[
         (samples.label == DirType.NORMAL) | (samples.label == DirType.ABNORMAL) | (samples.label == DirType.NORMAL_TEST)
     ]
@@ -253,7 +276,10 @@ def make_folder_dataset(
     # By default, all the normal samples are assigned as train.
     #   and all the abnormal samples are test.
     samples.loc[(samples.label == DirType.NORMAL), "split"] = Split.TRAIN
-    samples.loc[(samples.label == DirType.ABNORMAL) | (samples.label == DirType.NORMAL_TEST), "split"] = Split.TEST
+    samples.loc[
+        (samples.label == DirType.ABNORMAL) | (samples.label == DirType.NORMAL_TEST),
+        "split",
+    ] = Split.TEST
 
     # infer the task type
     samples.attrs["task"] = "classification" if (samples["mask_path"] == "").all() else "segmentation"

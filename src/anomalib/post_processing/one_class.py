@@ -1,4 +1,19 @@
-"""Post-processing module for anomaly detection models."""
+"""Post-processing module for one-class anomaly detection results.
+
+This module provides post-processing functionality for one-class anomaly detection
+outputs through the :class:`OneClassPostProcessor` class.
+
+The post-processor handles:
+    - Normalizing image and pixel-level anomaly scores
+    - Computing adaptive thresholds for anomaly classification
+    - Applying sensitivity adjustments to thresholds
+    - Formatting results for downstream use
+
+Example:
+    >>> from anomalib.post_processing import OneClassPostProcessor
+    >>> post_processor = OneClassPostProcessor(image_sensitivity=0.5)
+    >>> predictions = post_processor(anomaly_maps=anomaly_maps)
+"""
 
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -13,7 +28,28 @@ from .base import PostProcessor
 
 
 class OneClassPostProcessor(PostProcessor):
-    """Default post-processor for one-class anomaly detection."""
+    """Post-processor for one-class anomaly detection.
+
+    This class handles post-processing of anomaly detection results by:
+        - Normalizing image and pixel-level anomaly scores
+        - Computing adaptive thresholds for anomaly classification
+        - Applying sensitivity adjustments to thresholds
+        - Formatting results for downstream use
+
+    Args:
+        image_sensitivity (float | None, optional): Sensitivity value for image-level
+            predictions. Higher values make the model more sensitive to anomalies.
+            Defaults to None.
+        pixel_sensitivity (float | None, optional): Sensitivity value for pixel-level
+            predictions. Higher values make the model more sensitive to anomalies.
+            Defaults to None.
+        **kwargs: Additional keyword arguments passed to parent class.
+
+    Example:
+        >>> from anomalib.post_processing import OneClassPostProcessor
+        >>> post_processor = OneClassPostProcessor(image_sensitivity=0.5)
+        >>> predictions = post_processor(anomaly_maps=anomaly_maps)
+    """
 
     def __init__(
         self,
@@ -39,7 +75,15 @@ class OneClassPostProcessor(PostProcessor):
         *args,
         **kwargs,
     ) -> None:
-        """Update the normalization and thresholding metrics using the batch output."""
+        """Update normalization and thresholding metrics using batch output.
+
+        Args:
+            trainer (Trainer): PyTorch Lightning trainer instance.
+            pl_module (LightningModule): PyTorch Lightning module instance.
+            outputs (Batch): Batch containing model predictions and ground truth.
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+        """
         del trainer, pl_module, args, kwargs  # Unused arguments.
         if outputs.pred_score is not None:
             self._image_threshold.update(outputs.pred_score, outputs.gt_label)
@@ -51,7 +95,12 @@ class OneClassPostProcessor(PostProcessor):
             self._pixel_normalization_stats.update(outputs.anomaly_map)
 
     def on_validation_epoch_end(self, trainer: Trainer, pl_module: LightningModule) -> None:
-        """Compute the final threshold and normalization values."""
+        """Compute final threshold and normalization values.
+
+        Args:
+            trainer (Trainer): PyTorch Lightning trainer instance.
+            pl_module (LightningModule): PyTorch Lightning module instance.
+        """
         del trainer, pl_module
         if self._image_threshold.update_called:
             self._image_threshold.compute()
@@ -70,7 +119,15 @@ class OneClassPostProcessor(PostProcessor):
         *args,
         **kwargs,
     ) -> None:
-        """Apply the post-processing steps to the current batch of predictions."""
+        """Apply post-processing steps to current batch of predictions.
+
+        Args:
+            trainer (Trainer): PyTorch Lightning trainer instance.
+            pl_module (LightningModule): PyTorch Lightning module instance.
+            outputs (Batch): Batch containing model predictions.
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+        """
         del trainer, pl_module, args, kwargs
         self.post_process_batch(outputs)
 
@@ -82,12 +139,31 @@ class OneClassPostProcessor(PostProcessor):
         *args,
         **kwargs,
     ) -> None:
-        """Normalize the predicted scores and anomaly maps."""
+        """Normalize predicted scores and anomaly maps.
+
+        Args:
+            trainer (Trainer): PyTorch Lightning trainer instance.
+            pl_module (LightningModule): PyTorch Lightning module instance.
+            outputs (Batch): Batch containing model predictions.
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+        """
         del trainer, pl_module, args, kwargs
         self.post_process_batch(outputs)
 
     def forward(self, predictions: InferenceBatch) -> InferenceBatch:
-        """Funcional forward method for post-processing."""
+        """Post-process model predictions.
+
+        Args:
+            predictions (InferenceBatch): Batch containing model predictions.
+
+        Returns:
+            InferenceBatch: Post-processed batch with normalized scores and
+                thresholded predictions.
+
+        Raises:
+            ValueError: If neither `pred_score` nor `anomaly_map` is provided.
+        """
         if predictions.pred_score is None and predictions.anomaly_map is None:
             msg = "At least one of pred_score or anomaly_map must be provided."
             raise ValueError(msg)
@@ -104,14 +180,24 @@ class OneClassPostProcessor(PostProcessor):
         )
 
     def post_process_batch(self, batch: Batch) -> None:
-        """Normalize the predicted scores and anomaly maps."""
+        """Post-process a batch of predictions.
+
+        Applies normalization and thresholding to the batch predictions.
+
+        Args:
+            batch (Batch): Batch containing model predictions.
+        """
         # apply normalization
         self.normalize_batch(batch)
         # apply threshold
         self.threshold_batch(batch)
 
     def threshold_batch(self, batch: Batch) -> None:
-        """Apply thresholding to the batch predictions."""
+        """Apply thresholding to batch predictions.
+
+        Args:
+            batch (Batch): Batch containing model predictions.
+        """
         batch.pred_label = (
             batch.pred_label
             if batch.pred_label is not None
@@ -124,7 +210,11 @@ class OneClassPostProcessor(PostProcessor):
         )
 
     def normalize_batch(self, batch: Batch) -> None:
-        """Normalize the predicted scores and anomaly maps."""
+        """Normalize predicted scores and anomaly maps.
+
+        Args:
+            batch (Batch): Batch containing model predictions.
+        """
         # normalize pixel-level predictions
         batch.anomaly_map = self._normalize(batch.anomaly_map, self.pixel_min, self.pixel_max, self.raw_pixel_threshold)
         # normalize image-level predictions
@@ -132,7 +222,15 @@ class OneClassPostProcessor(PostProcessor):
 
     @staticmethod
     def _threshold(preds: torch.Tensor | None, threshold: float) -> torch.Tensor | None:
-        """Apply thresholding to a single tensor."""
+        """Apply thresholding to a single tensor.
+
+        Args:
+            preds (torch.Tensor | None): Predictions to threshold.
+            threshold (float): Threshold value.
+
+        Returns:
+            torch.Tensor | None: Thresholded predictions or None if input is None.
+        """
         if preds is None:
             return None
         return preds > threshold
@@ -144,7 +242,17 @@ class OneClassPostProcessor(PostProcessor):
         norm_max: float,
         threshold: float,
     ) -> torch.Tensor | None:
-        """Normalize a tensor using the min, max, and threshold values."""
+        """Normalize a tensor using min, max, and threshold values.
+
+        Args:
+            preds (torch.Tensor | None): Predictions to normalize.
+            norm_min (float): Minimum value for normalization.
+            norm_max (float): Maximum value for normalization.
+            threshold (float): Threshold value.
+
+        Returns:
+            torch.Tensor | None: Normalized predictions or None if input is None.
+        """
         if preds is None:
             return None
         preds = ((preds - threshold) / (norm_max - norm_min)) + 0.5
@@ -153,44 +261,76 @@ class OneClassPostProcessor(PostProcessor):
 
     @property
     def raw_image_threshold(self) -> float:
-        """Get the image-level threshold."""
+        """Get the raw image-level threshold.
+
+        Returns:
+            float: Raw image-level threshold value.
+        """
         return self._image_threshold.value
 
     @property
     def raw_pixel_threshold(self) -> float:
-        """Get the pixel-level threshold."""
+        """Get the raw pixel-level threshold.
+
+        Returns:
+            float: Raw pixel-level threshold value.
+        """
         return self._pixel_threshold.value
 
     @property
     def normalized_image_threshold(self) -> float:
-        """Get the image-level threshold."""
+        """Get the normalized image-level threshold.
+
+        Returns:
+            float: Normalized image-level threshold value, adjusted by sensitivity.
+        """
         if self.image_sensitivity is not None:
             return 1 - self.image_sensitivity
         return 0.5
 
     @property
     def normalized_pixel_threshold(self) -> float:
-        """Get the pixel-level threshold."""
+        """Get the normalized pixel-level threshold.
+
+        Returns:
+            float: Normalized pixel-level threshold value, adjusted by sensitivity.
+        """
         if self.pixel_sensitivity is not None:
             return 1 - self.pixel_sensitivity
         return 0.5
 
     @property
     def image_min(self) -> float:
-        """Get the minimum value for normalization."""
+        """Get the minimum value for image-level normalization.
+
+        Returns:
+            float: Minimum image-level value.
+        """
         return self._image_normalization_stats.min
 
     @property
     def image_max(self) -> float:
-        """Get the maximum value for normalization."""
+        """Get the maximum value for image-level normalization.
+
+        Returns:
+            float: Maximum image-level value.
+        """
         return self._image_normalization_stats.max
 
     @property
     def pixel_min(self) -> float:
-        """Get the minimum value for normalization."""
+        """Get the minimum value for pixel-level normalization.
+
+        Returns:
+            float: Minimum pixel-level value.
+        """
         return self._pixel_normalization_stats.min
 
     @property
     def pixel_max(self) -> float:
-        """Get the maximum value for normalization."""
+        """Get the maximum value for pixel-level normalization.
+
+        Returns:
+            float: Maximum pixel-level value.
+        """
         return self._pixel_normalization_stats.max
