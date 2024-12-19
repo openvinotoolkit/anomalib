@@ -123,13 +123,13 @@ class AnomalibDataModule(LightningDataModule, ABC):
             subset = getattr(self, f"{subset_name}_data", None)
             augmentations = getattr(self, f"{subset_name}_augmentations", None)
             model_transform = get_nested_attr(self, "trainer.model.pre_processor.transform")
-            if subset and augmentations:
+            if subset and model_transform:
                 self._update_subset_augmentations(subset, augmentations, model_transform)
 
+    @staticmethod
     def _update_subset_augmentations(
-        self,
         dataset: AnomalibDataset,
-        augmentations: Transform,
+        augmentations: Transform | None,
         model_transform: Transform,
     ) -> None:
         """Update the augmentations of the dataset.
@@ -147,7 +147,7 @@ class AnomalibDataModule(LightningDataModule, ABC):
 
         if model_resizes:
             model_resize = model_resizes[0]
-            for aug_resize in self.get_resize_transforms(augmentations):  # warn user if resizes inconsistent
+            for aug_resize in get_transforms_of_type(augmentations, Resize):  # warn user if resizes inconsistent
                 if model_resize.size != aug_resize.size:
                     msg = f"Conflicting resize shapes found between augmentations and model transforms. You are using \
                         a Resize transform in your input data augmentations. Please be aware that the model also \
