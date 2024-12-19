@@ -1,4 +1,41 @@
-"""Base Anomaly Module for Training Task."""
+"""Base Anomaly Module for Training Task.
+
+This module provides the foundational class for all anomaly detection models in
+anomalib. The ``AnomalibModule`` class extends PyTorch Lightning's
+``LightningModule`` and provides common functionality for training, validation,
+testing and inference of anomaly detection models.
+
+The class handles:
+- Model initialization and setup
+- Pre-processing of input data
+- Post-processing of model outputs
+- Evaluation metrics computation
+- Visualization of results
+- Model export capabilities
+
+Example:
+    Create a custom anomaly detection model:
+
+    >>> from anomalib.models.components.base import AnomalibModule
+    >>> class MyModel(AnomalibModule):
+    ...     def __init__(self):
+    ...         super().__init__()
+    ...         self.model = torch.nn.Linear(10, 1)
+    ...
+    ...     def training_step(self, batch, batch_idx):
+    ...         return self.model(batch)
+
+    Create model with custom components:
+
+    >>> from anomalib.pre_processing import PreProcessor
+    >>> from anomalib.post_processing import PostProcessor
+    >>> model = MyModel(
+    ...     pre_processor=PreProcessor(),
+    ...     post_processor=PostProcessor(),
+    ...     evaluator=True,
+    ...     visualizer=True
+    ... )
+"""
 
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -32,9 +69,56 @@ logger = logging.getLogger(__name__)
 
 
 class AnomalibModule(ExportMixin, pl.LightningModule, ABC):
-    """AnomalibModule to train, validate, predict and test images.
+    """Base class for all anomaly detection modules in anomalib.
 
-    Acts as a base class for all the Anomaly Modules in the library.
+    This class provides the core functionality for training, validation, testing
+    and inference of anomaly detection models. It handles data pre-processing,
+    post-processing, evaluation and visualization.
+
+    Args:
+        pre_processor (PreProcessor | bool, optional): Pre-processor instance or
+            flag to use default. Defaults to ``True``.
+        post_processor (PostProcessor | bool, optional): Post-processor instance
+            or flag to use default. Defaults to ``True``.
+        evaluator (Evaluator | bool, optional): Evaluator instance or flag to use
+            default. Defaults to ``True``.
+        visualizer (Visualizer | bool, optional): Visualizer instance or flag to
+            use default. Defaults to ``True``.
+
+    Attributes:
+        model (nn.Module): PyTorch model to be trained
+        loss (nn.Module): Loss function for training
+        callbacks (list[Callback]): List of callbacks
+        pre_processor (PreProcessor | None): Component for pre-processing inputs
+        post_processor (PostProcessor | None): Component for post-processing
+            outputs
+        evaluator (Evaluator | None): Component for computing metrics
+        visualizer (Visualizer | None): Component for visualization
+
+    Example:
+        Create a model with default components:
+
+        >>> model = AnomalibModule()
+
+        Create a model with custom components:
+
+        >>> from anomalib.pre_processing import PreProcessor
+        >>> from anomalib.post_processing import PostProcessor
+        >>> model = AnomalibModule(
+        ...     pre_processor=PreProcessor(),
+        ...     post_processor=PostProcessor(),
+        ...     evaluator=True,
+        ...     visualizer=True
+        ... )
+
+        Disable certain components:
+
+        >>> model = AnomalibModule(
+        ...     pre_processor=False,
+        ...     post_processor=False,
+        ...     evaluator=False,
+        ...     visualizer=False
+        ... )
     """
 
     def __init__(
@@ -62,31 +146,52 @@ class AnomalibModule(ExportMixin, pl.LightningModule, ABC):
 
     @property
     def name(self) -> str:
-        """Name of the model."""
+        """Get name of the model.
+
+        Returns:
+            str: Name of the model class
+        """
         return self.__class__.__name__
 
     def setup(self, stage: str | None = None) -> None:
-        """Calls the _setup method to build the model if the model is not already built."""
+        """Set up the model if not already done.
+
+        This method ensures the model is built by calling ``_setup()`` if needed.
+
+        Args:
+            stage (str | None, optional): Current stage of training.
+                Defaults to ``None``.
+        """
         if getattr(self, "model", None) is None or not self._is_setup:
             self._setup()
             if isinstance(stage, TrainerFn):
-                # only set the flag if the stage is a TrainerFn, which means the setup has been called from a trainer
+                # only set the flag if the stage is a TrainerFn, which means the
+                # setup has been called from a trainer
                 self._is_setup = True
 
     def _setup(self) -> None:
-        """The _setup method is used to build the torch model dynamically or adjust something about them.
+        """Set up the model architecture.
 
-        The model implementer may override this method to build the model. This is useful when the model cannot be set
-        in the `__init__` method because it requires some information or data that is not available at the time of
-        initialization.
+        This method should be overridden by subclasses to build their model
+        architecture. It is called by ``setup()`` when the model needs to be
+        initialized.
+
+        This is useful when the model cannot be fully initialized in ``__init__``
+        because it requires data-dependent parameters.
         """
 
     def configure_callbacks(self) -> Sequence[Callback] | Callback:
-        """Configure default callbacks for AnomalibModule.
+        """Configure callbacks for the model.
 
         Returns:
-            List of callbacks that includes the pre-processor, post-processor, evaluator,
-            and visualizer if they are available and inherit from Callback.
+            Sequence[Callback] | Callback: List of callbacks including components
+                that inherit from ``Callback``
+
+        Example:
+            >>> model = AnomalibModule()
+            >>> callbacks = model.configure_callbacks()
+            >>> isinstance(callbacks, (Sequence, Callback))
+            True
         """
         callbacks: list[Callback] = []
         callbacks.extend(
@@ -97,15 +202,27 @@ class AnomalibModule(ExportMixin, pl.LightningModule, ABC):
         return callbacks
 
     def forward(self, batch: torch.Tensor, *args, **kwargs) -> InferenceBatch:
-        """Perform the forward-pass by passing input tensor to the module.
+        """Perform forward pass through the model pipeline.
+
+        The input batch is passed through:
+        1. Pre-processor (if configured)
+        2. Model
+        3. Post-processor (if configured)
 
         Args:
-            batch (dict[str, str | torch.Tensor]): Input batch.
-            *args: Arguments.
-            **kwargs: Keyword arguments.
+            batch (torch.Tensor): Input batch
+            *args: Additional positional arguments (unused)
+            **kwargs: Additional keyword arguments (unused)
 
         Returns:
-            Tensor: Output tensor from the model.
+            InferenceBatch: Processed batch with model predictions
+
+        Example:
+            >>> model = AnomalibModule()
+            >>> batch = torch.randn(1, 3, 256, 256)
+            >>> output = model(batch)
+            >>> isinstance(output, InferenceBatch)
+            True
         """
         del args, kwargs  # These variables are not used.
         batch = self.pre_processor(batch) if self.pre_processor else batch
@@ -118,35 +235,38 @@ class AnomalibModule(ExportMixin, pl.LightningModule, ABC):
         batch_idx: int,
         dataloader_idx: int = 0,
     ) -> STEP_OUTPUT:
-        """Step function called during :meth:`~lightning.pytorch.trainer.Trainer.predict`.
+        """Perform prediction step.
 
-        By default, it calls :meth:`~lightning.pytorch.core.lightning.LightningModule.forward`.
-        Override to add any processing logic.
+        This method is called during the predict stage of training. By default,
+        it calls the validation step.
 
         Args:
-            batch (Any): Current batch
-            batch_idx (int): Index of current batch
-            dataloader_idx (int): Index of the current dataloader
+            batch (Batch): Input batch
+            batch_idx (int): Index of the batch
+            dataloader_idx (int, optional): Index of the dataloader.
+                Defaults to ``0``.
 
-        Return:
-            Predicted output
+        Returns:
+            STEP_OUTPUT: Model predictions
         """
         del dataloader_idx  # These variables are not used.
 
         return self.validation_step(batch, batch_idx)
 
     def test_step(self, batch: Batch, batch_idx: int, *args, **kwargs) -> STEP_OUTPUT:
-        """Calls validation_step for anomaly map/score calculation.
+        """Perform test step.
+
+        This method is called during the test stage of training. By default,
+        it calls the predict step.
 
         Args:
-          batch (Batch): Input batch
-          batch_idx (int): Batch index
-          args: Arguments.
-          kwargs: Keyword arguments.
+            batch (Batch): Input batch
+            batch_idx (int): Index of the batch
+            *args: Additional positional arguments (unused)
+            **kwargs: Additional keyword arguments (unused)
 
         Returns:
-          Dictionary containing images, features, true labels and masks.
-          These are required in `validation_epoch_end` for feature concatenation.
+            STEP_OUTPUT: Model predictions
         """
         del args, kwargs  # These variables are not used.
 
@@ -155,26 +275,43 @@ class AnomalibModule(ExportMixin, pl.LightningModule, ABC):
     @property
     @abstractmethod
     def trainer_arguments(self) -> dict[str, Any]:
-        """Arguments used to override the trainer parameters so as to train the model correctly."""
+        """Get trainer arguments specific to this model.
+
+        Returns:
+            dict[str, Any]: Dictionary of trainer arguments
+
+        Raises:
+            NotImplementedError: If not implemented by subclass
+        """
         raise NotImplementedError
 
     @property
     @abstractmethod
     def learning_type(self) -> LearningType:
-        """Learning type of the model."""
+        """Get learning type of the model.
+
+        Returns:
+            LearningType: Type of learning (e.g. one-class, supervised)
+
+        Raises:
+            NotImplementedError: If not implemented by subclass
+        """
         raise NotImplementedError
 
     def _resolve_pre_processor(self, pre_processor: PreProcessor | bool) -> PreProcessor | None:
-        """Resolve and validate which pre-processor to use..
+        """Resolve and validate the pre-processor configuration.
 
         Args:
-            pre_processor: Pre-processor configuration
-                - True -> use default pre-processor
-                - False -> no pre-processor
-                - PreProcessor -> use the provided pre-processor
+            pre_processor (PreProcessor | bool): Pre-processor configuration
+                - ``True`` -> use default pre-processor
+                - ``False`` -> no pre-processor
+                - ``PreProcessor`` -> use provided pre-processor
 
         Returns:
-            Configured pre-processor
+            PreProcessor | None: Configured pre-processor
+
+        Raises:
+            TypeError: If pre_processor is invalid type
         """
         if isinstance(pre_processor, PreProcessor):
             return pre_processor
@@ -185,39 +322,22 @@ class AnomalibModule(ExportMixin, pl.LightningModule, ABC):
 
     @classmethod
     def configure_pre_processor(cls, image_size: tuple[int, int] | None = None) -> PreProcessor:
-        """Configure the pre-processor.
+        """Configure the default pre-processor.
 
-        The default pre-processor resizes images to 256x256 and normalizes using ImageNet statistics.
-        Individual models can override this method to provide custom transforms and pre-processing pipelines.
+        The default pre-processor resizes images and normalizes using ImageNet
+        statistics.
 
         Args:
-            image_size (tuple[int, int] | None, optional): Target size for resizing images.
-                If None, defaults to (256, 256). Defaults to None.
-            **kwargs (Any): Additional keyword arguments (unused).
+            image_size (tuple[int, int] | None, optional): Target size for
+                resizing. Defaults to ``(256, 256)``.
 
         Returns:
-            PreProcessor: Configured pre-processor instance.
+            PreProcessor: Configured pre-processor
 
-        Examples:
-            Get default pre-processor with custom image size:
-
-            >>> preprocessor = AnomalibModule.configure_pre_processor(image_size=(512, 512))
-
-            Create model with custom pre-processor:
-
-            >>> from torchvision.transforms.v2 import RandomHorizontalFlip
-            >>> custom_transform = Compose([
-            ...     Resize((256, 256), antialias=True),
-            ...     CenterCrop((224, 224)),
-            ...     RandomHorizontalFlip(p=0.5),
-            ...     Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-            ... ])
-            >>> preprocessor.train_transform = custom_transform
-            >>> model = PatchCore(pre_processor=preprocessor)
-
-            Disable pre-processing:
-
-            >>> model = PatchCore(pre_processor=False)
+        Example:
+            >>> preprocessor = AnomalibModule.configure_pre_processor((512, 512))
+            >>> isinstance(preprocessor, PreProcessor)
+            True
         """
         image_size = image_size or (256, 256)
         return PreProcessor(
@@ -228,16 +348,19 @@ class AnomalibModule(ExportMixin, pl.LightningModule, ABC):
         )
 
     def _resolve_post_processor(self, post_processor: PostProcessor | bool) -> PostProcessor | None:
-        """Resolve and validate which post-processor to use.
+        """Resolve and validate the post-processor configuration.
 
         Args:
-            post_processor: Post-processor configuration
-                - True -> use default post-processor
-                - False -> no post-processor
-                - PostProcessor -> use the provided post-processor
+            post_processor (PostProcessor | bool): Post-processor configuration
+                - ``True`` -> use default post-processor
+                - ``False`` -> no post-processor
+                - ``PostProcessor`` -> use provided post-processor
 
         Returns:
-            Configured post-processor
+            PostProcessor | None: Configured post-processor
+
+        Raises:
+            TypeError: If post_processor is invalid type
         """
         if isinstance(post_processor, PostProcessor):
             return post_processor
@@ -247,41 +370,43 @@ class AnomalibModule(ExportMixin, pl.LightningModule, ABC):
         raise TypeError(msg)
 
     def configure_post_processor(self) -> PostProcessor | None:
-        """Configure the default post-processor based on the learning type.
+        """Configure the default post-processor.
 
         Returns:
-            PostProcessor: Configured post-processor instance.
+            PostProcessor | None: Configured post-processor based on learning type
 
         Raises:
-            NotImplementedError: If no default post-processor is available for the model's learning type.
+            NotImplementedError: If no default post-processor exists for the
+                model's learning type
 
-        Examples:
-            Get default post-processor:
-
-            >>> post_processor = AnomalibModule.configure_post_processor()
-
-            Create model with custom post-processor:
-
-            >>> custom_post_processor = CustomPostProcessor()
-            >>> model = PatchCore(post_processor=custom_post_processor)
-
-            Disable post-processing:
-
-            >>> model = PatchCore(post_processor=False)
+        Example:
+            >>> model = AnomalibModule()
+            >>> post_processor = model.configure_post_processor()
+            >>> isinstance(post_processor, PostProcessor)
+            True
         """
         if self.learning_type == LearningType.ONE_CLASS:
             return OneClassPostProcessor()
         msg = (
-            f"No default post-processor available for model with learning type {self.learning_type}. "
-            "Please override the configure_post_processor method in the model implementation."
+            f"No default post-processor available for model with learning type "
+            f"{self.learning_type}. Please override configure_post_processor."
         )
         raise NotImplementedError(msg)
 
     def _resolve_evaluator(self, evaluator: Evaluator | bool) -> Evaluator | None:
-        """Resolve the evaluator to be used in the model.
+        """Resolve and validate the evaluator configuration.
 
-        If the evaluator is set to True, the default evaluator will be used. If the evaluator is set to False, no
-        evaluator will be used. If the evaluator is an instance of Evaluator, it will be used as the evaluator.
+        Args:
+            evaluator (Evaluator | bool): Evaluator configuration
+                - ``True`` -> use default evaluator
+                - ``False`` -> no evaluator
+                - ``Evaluator`` -> use provided evaluator
+
+        Returns:
+            Evaluator | None: Configured evaluator
+
+        Raises:
+            TypeError: If evaluator is invalid type
         """
         if isinstance(evaluator, Evaluator):
             return evaluator
@@ -292,9 +417,18 @@ class AnomalibModule(ExportMixin, pl.LightningModule, ABC):
 
     @staticmethod
     def configure_evaluator() -> Evaluator:
-        """Default evaluator.
+        """Configure the default evaluator.
 
-        Override in subclass for model-specific evaluator behaviour.
+        The default evaluator includes metrics for both image-level and
+        pixel-level evaluation.
+
+        Returns:
+            Evaluator: Configured evaluator with default metrics
+
+        Example:
+            >>> evaluator = AnomalibModule.configure_evaluator()
+            >>> isinstance(evaluator, Evaluator)
+            True
         """
         image_auroc = AUROC(fields=["pred_score", "gt_label"], prefix="image_")
         image_f1score = F1Score(fields=["pred_label", "gt_label"], prefix="image_")
@@ -304,16 +438,19 @@ class AnomalibModule(ExportMixin, pl.LightningModule, ABC):
         return Evaluator(test_metrics=test_metrics)
 
     def _resolve_visualizer(self, visualizer: Visualizer | bool) -> Visualizer | None:
-        """Resolve and validate which visualizer to use.
+        """Resolve and validate the visualizer configuration.
 
         Args:
-            visualizer: Visualizer configuration
-                - True -> use default visualizer
-                - False -> no visualizer
-                - Visualizer -> use the provided visualizer
+            visualizer (Visualizer | bool): Visualizer configuration
+                - ``True`` -> use default visualizer
+                - ``False`` -> no visualizer
+                - ``Visualizer`` -> use provided visualizer
 
         Returns:
-            Configured visualizer
+            Visualizer | None: Configured visualizer
+
+        Raises:
+            TypeError: If visualizer is invalid type
         """
         if isinstance(visualizer, Visualizer):
             return visualizer
@@ -326,46 +463,28 @@ class AnomalibModule(ExportMixin, pl.LightningModule, ABC):
     def configure_visualizer(cls) -> ImageVisualizer:
         """Configure the default visualizer.
 
-        By default, this method returns an ImageVisualizer instance, which is suitable for
-        visualizing image-based anomaly detection results. However, the visualizer can be
-        customized based on your needs - for example, using VideoVisualizer for video data
-        or implementing a custom visualizer for specific visualization requirements.
-
         Returns:
-            Visualizer: Configured visualizer instance (ImageVisualizer by default).
+            ImageVisualizer: Default image visualizer instance
 
-        Examples:
-            Get default ImageVisualizer:
-
+        Example:
             >>> visualizer = AnomalibModule.configure_visualizer()
-
-            Create model with VideoVisualizer:
-
-            >>> from custom_module import VideoVisualizer
-            >>> video_visualizer = VideoVisualizer()
-            >>> model = PatchCore(visualizer=video_visualizer)
-
-            Create model with custom visualizer:
-
-            >>> class CustomVisualizer(Visualizer):
-            ...     def __init__(self):
-            ...         super().__init__()
-            ...         # Custom visualization logic
-            >>> custom_visualizer = CustomVisualizer()
-            >>> model = PatchCore(visualizer=custom_visualizer)
-
-            Disable visualization:
-
-            >>> model = PatchCore(visualizer=False)
+            >>> isinstance(visualizer, ImageVisualizer)
+            True
         """
         return ImageVisualizer()
 
     @property
     def input_size(self) -> tuple[int, int] | None:
-        """Return the effective input size of the model.
+        """Get the effective input size of the model.
 
-        The effective input size is the size of the input tensor after the transform has been applied. If the transform
-        is not set, or if the transform does not change the shape of the input tensor, this method will return None.
+        Returns:
+            tuple[int, int] | None: Height and width of model input after
+                pre-processing, or ``None`` if size cannot be determined
+
+        Example:
+            >>> model = AnomalibModule()
+            >>> model.input_size  # Returns size after pre-processing
+            (256, 256)
         """
         transform = self.pre_processor.transform if self.pre_processor else None
         if transform is None:
@@ -380,27 +499,29 @@ class AnomalibModule(ExportMixin, pl.LightningModule, ABC):
         config_path: str | Path,
         **kwargs,
     ) -> "AnomalibModule":
-        """Create a model instance from the configuration.
+        """Create a model instance from a configuration file.
 
         Args:
-            config_path (str | Path): Path to the model configuration file.
-            **kwargs (dict): Additional keyword arguments.
+            config_path (str | Path): Path to the model configuration file
+            **kwargs: Additional arguments to override config values
 
         Returns:
-            AnomalibModule: model instance.
+            AnomalibModule: Instantiated model
+
+        Raises:
+            FileNotFoundError: If config file does not exist
+            ValueError: If instantiated model is not AnomalibModule
 
         Example:
-            The following example shows how to get model from patchcore.yaml:
+            >>> model = AnomalibModule.from_config("configs/model/patchcore.yaml")
+            >>> isinstance(model, AnomalibModule)
+            True
 
-            .. code-block:: python
-                >>> model_config = "configs/model/patchcore.yaml"
-                >>> model = AnomalibModule.from_config(config_path=model_config)
-
-            The following example shows overriding the configuration file with additional keyword arguments:
-
-            .. code-block:: python
-                >>> override_kwargs = {"model.pre_trained": False}
-                >>> model = AnomalibModule.from_config(config_path=model_config, **override_kwargs)
+            Override config values:
+            >>> model = AnomalibModule.from_config(
+            ...     "configs/model/patchcore.yaml",
+            ...     model__backbone="resnet18"
+            ... )
         """
         from jsonargparse import ActionConfigFile, ArgumentParser
         from lightning.pytorch import Trainer

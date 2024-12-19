@@ -1,6 +1,31 @@
 """PaDiM: a Patch Distribution Modeling Framework for Anomaly Detection and Localization.
 
-Paper https://arxiv.org/abs/2011.08785
+This model implements the PaDiM algorithm for anomaly detection and localization.
+PaDiM models the distribution of patch embeddings at each spatial location using
+multivariate Gaussian distributions.
+
+The model extracts features from multiple layers of pretrained CNN backbones to
+capture both semantic and low-level visual information. During inference, it
+computes Mahalanobis distances between test patch embeddings and their
+corresponding reference distributions.
+
+Paper: https://arxiv.org/abs/2011.08785
+
+Example:
+    >>> from anomalib.models.image.padim import Padim
+    >>> model = Padim(
+    ...     backbone="resnet18",
+    ...     layers=["layer1", "layer2", "layer3"],
+    ...     pre_trained=True
+    ... )
+    >>> model.fit()
+    >>> prediction = model(image)
+
+See Also:
+    - :class:`anomalib.models.image.padim.torch_model.PadimModel`:
+        PyTorch implementation of the PaDiM model architecture
+    - :class:`anomalib.models.image.padim.anomaly_map.AnomalyMapGenerator`:
+        Anomaly map generation for PaDiM using Mahalanobis distance
 """
 
 # Copyright (C) 2022-2024 Intel Corporation
@@ -27,21 +52,41 @@ __all__ = ["Padim"]
 
 
 class Padim(MemoryBankMixin, AnomalibModule):
-    """PaDiM: a Patch Distribution Modeling Framework for Anomaly Detection and Localization.
+    """PaDiM: a Patch Distribution Modeling Framework for Anomaly Detection.
 
     Args:
-        backbone (str): Backbone CNN network
-            Defaults to ``resnet18``.
-        layers (list[str]): Layers to extract features from the backbone CNN
-            Defaults to ``["layer1", "layer2", "layer3"]``.
-        pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.
+        backbone (str): Name of the backbone CNN network. Available options are
+            ``resnet18``, ``wide_resnet50_2`` etc. Defaults to ``resnet18``.
+        layers (list[str]): List of layer names to extract features from the
+            backbone CNN. Defaults to ``["layer1", "layer2", "layer3"]``.
+        pre_trained (bool, optional): Use pre-trained backbone weights.
             Defaults to ``True``.
-        n_features (int, optional): Number of features to retain in the dimension reduction step.
-            Default values from the paper are available for: resnet18 (100), wide_resnet50_2 (550).
-            Defaults to ``None``.
-        pre_processor (PreProcessor, optional): Pre-processor for the model.
-            This is used to pre-process the input data before it is passed to the model.
-            Defaults to ``None``.
+        n_features (int | None, optional): Number of features to retain after
+            dimension reduction. Default values from paper: ``resnet18=100``,
+            ``wide_resnet50_2=550``. Defaults to ``None``.
+        pre_processor (PreProcessor | bool, optional): Preprocessor to apply on
+            input data. Defaults to ``True``.
+        post_processor (PostProcessor | bool, optional): Post processor to apply
+            on model outputs. Defaults to ``True``.
+        evaluator (Evaluator | bool, optional): Evaluator for computing metrics.
+            Defaults to ``True``.
+        visualizer (Visualizer | bool, optional): Visualizer for generating
+            result images. Defaults to ``True``.
+
+    Example:
+        >>> from anomalib.models.image.padim import Padim
+        >>> model = Padim(
+        ...     backbone="resnet18",
+        ...     layers=["layer1", "layer2", "layer3"],
+        ...     pre_trained=True
+        ... )
+        >>> model.fit()
+        >>> prediction = model(image)
+
+    Note:
+        The model does not require training in the traditional sense. It fits
+        Gaussian distributions to the extracted features during the training
+        phase.
     """
 
     def __init__(
@@ -78,15 +123,17 @@ class Padim(MemoryBankMixin, AnomalibModule):
         return
 
     def training_step(self, batch: Batch, *args, **kwargs) -> None:
-        """Perform the training step of PADIM. For each batch, hierarchical features are extracted from the CNN.
+        """Perform the training step of PADIM.
+
+        For each batch, hierarchical features are extracted from the CNN.
 
         Args:
-            batch (dict[str, str | torch.Tensor]): Batch containing image filename, image, label and mask
-            args: Additional arguments.
-            kwargs: Additional keyword arguments.
+            batch (Batch): Input batch containing image and metadata
+            args: Additional arguments (unused)
+            kwargs: Additional keyword arguments (unused)
 
         Returns:
-            Hierarchical feature map
+            torch.Tensor: Dummy loss tensor for Lightning compatibility
         """
         del args, kwargs  # These variables are not used.
 
@@ -107,16 +154,17 @@ class Padim(MemoryBankMixin, AnomalibModule):
     def validation_step(self, batch: Batch, *args, **kwargs) -> STEP_OUTPUT:
         """Perform a validation step of PADIM.
 
-        Similar to the training step, hierarchical features are extracted from the CNN for each batch.
+        Similar to the training step, hierarchical features are extracted from
+        the CNN for each batch.
 
         Args:
-            batch (dict[str, str | torch.Tensor]): Input batch
-            args: Additional arguments.
-            kwargs: Additional keyword arguments.
+            batch (Batch): Input batch containing image and metadata
+            args: Additional arguments (unused)
+            kwargs: Additional keyword arguments (unused)
 
         Returns:
-            Dictionary containing images, features, true labels and masks.
-            These are required in `validation_epoch_end` for feature concatenation.
+            STEP_OUTPUT: Dictionary containing images, features, true labels
+            and masks required for validation
         """
         del args, kwargs  # These variables are not used.
 
@@ -128,7 +176,11 @@ class Padim(MemoryBankMixin, AnomalibModule):
         """Return PADIM trainer arguments.
 
         Since the model does not require training, we limit the max_epochs to 1.
-        Since we need to run training epoch before validation, we also set the sanity steps to 0
+        Since we need to run training epoch before validation, we also set the
+        sanity steps to 0.
+
+        Returns:
+            dict[str, int | float]: Dictionary of trainer arguments
         """
         return {"max_epochs": 1, "val_check_interval": 1.0, "num_sanity_val_steps": 0}
 
@@ -137,11 +189,15 @@ class Padim(MemoryBankMixin, AnomalibModule):
         """Return the learning type of the model.
 
         Returns:
-            LearningType: Learning type of the model.
+            LearningType: Learning type (ONE_CLASS for PaDiM)
         """
         return LearningType.ONE_CLASS
 
     @staticmethod
     def configure_post_processor() -> OneClassPostProcessor:
-        """Return the default post-processor for PADIM."""
+        """Return the default post-processor for PADIM.
+
+        Returns:
+            OneClassPostProcessor: Default post-processor
+        """
         return OneClassPostProcessor()

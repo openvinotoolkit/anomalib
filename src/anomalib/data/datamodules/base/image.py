@@ -1,4 +1,26 @@
-"""Anomalib datamodule base class."""
+"""Base Anomalib data module.
+
+This module provides the base data module class used across Anomalib. It handles
+dataset splitting, validation set creation, and dataloader configuration.
+
+The module contains:
+    - :class:`AnomalibDataModule`: Base class for all Anomalib data modules
+
+Example:
+    Create a datamodule from a config file::
+
+        >>> from anomalib.data import AnomalibDataModule
+        >>> data_config = "configs/data/mvtec.yaml"
+        >>> datamodule = AnomalibDataModule.from_config(config_path=data_config)
+
+    Override config with additional arguments::
+
+        >>> override_kwargs = {"data.train_batch_size": 8}
+        >>> datamodule = AnomalibDataModule.from_config(
+        ...     config_path=data_config,
+        ...     **override_kwargs
+        ... )
+"""
 
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -32,6 +54,9 @@ logger = logging.getLogger(__name__)
 class AnomalibDataModule(LightningDataModule, ABC):
     """Base Anomalib data module.
 
+    This class extends PyTorch Lightning's ``LightningDataModule`` to provide
+    common functionality for anomaly detection datasets.
+
     Args:
         train_batch_size (int): Batch size used by the train dataloader.
         eval_batch_size (int): Batch size used by the val and test dataloaders.
@@ -44,15 +69,22 @@ class AnomalibDataModule(LightningDataModule, ABC):
             Defaults to ``None``.
         augmentations (Transform | None): General augmentations to apply if stage-specific
             augmentations are not provided.
-        val_split_mode (ValSplitMode): Determines how the validation split is obtained.
-            Options: [none, same_as_test, from_test, synthetic]
-        val_split_ratio (float): Fraction of the train or test images held our for validation.
-        test_split_mode (Optional[TestSplitMode], optional): Determines how the test split is obtained.
-            Options: [none, from_dir, synthetic].
+        val_split_mode (ValSplitMode | str): Method to obtain validation set.
+            Options:
+                - ``none``: No validation set
+                - ``same_as_test``: Use test set as validation
+                - ``from_test``: Sample from test set
+                - ``synthetic``: Generate synthetic anomalies
+        val_split_ratio (float): Fraction of data to use for validation
+        test_split_mode (TestSplitMode | str | None): Method to obtain test set.
+            Options:
+                - ``none``: No test split
+                - ``from_dir``: Use separate test directory
+                - ``synthetic``: Generate synthetic anomalies
             Defaults to ``None``.
-        test_split_ratio (float): Fraction of the train images held out for testing.
+        test_split_ratio (float | None): Fraction of data to use for testing.
             Defaults to ``None``.
-        seed (int | None, optional): Seed used during random subset splitting.
+        seed (int | None): Random seed for reproducible splitting.
             Defaults to ``None``.
     """
 
@@ -92,18 +124,25 @@ class AnomalibDataModule(LightningDataModule, ABC):
         self._samples: DataFrame | None = None
         self._category: str = ""
 
-        self._is_setup = False  # flag to track if setup has been called from the trainer
+        self._is_setup = False  # flag to track if setup has been called
 
     @property
     def name(self) -> str:
-        """Name of the datamodule."""
+        """Name of the datamodule.
+
+        Returns:
+            str: Class name of the datamodule
+        """
         return self.__class__.__name__
 
     def setup(self, stage: str | None = None) -> None:
         """Set up train, validation and test data.
 
+        This method handles the data splitting logic based on the configured
+        modes.
+
         Args:
-            stage: str | None:  Train/Val/Test stages.
+            stage (str | None): Current stage (fit/validate/test/predict).
                 Defaults to ``None``.
         """
         has_subset = any(hasattr(self, subset) for subset in ["train_data", "val_data", "test_data"])
@@ -112,7 +151,7 @@ class AnomalibDataModule(LightningDataModule, ABC):
             self._create_test_split()
             self._create_val_split()
             if isinstance(stage, TrainerFn):
-                # only set the flag if the stage is a TrainerFn, which means the setup has been called from a trainer
+                # only set flag if called from trainer
                 self._is_setup = True
 
         self._update_augmentations()
@@ -186,30 +225,50 @@ class AnomalibDataModule(LightningDataModule, ABC):
     def _setup(self, _stage: str | None = None) -> None:
         """Set up the datasets and perform dynamic subset splitting.
 
-        This method may be overridden in subclass for custom splitting behaviour.
+        This method should be implemented by subclasses to define dataset-specific
+        setup logic.
 
         Note:
-            The stage argument is not used here. This is because, for a given instance of an AnomalibDataModule
-            subclass, all three subsets are created at the first call of setup(). This is to accommodate the subset
-            splitting behaviour of anomaly tasks, where the validation set is usually extracted from the test set, and
-            the test set must therefore be created as early as the `fit` stage.
+            The ``stage`` argument is not used since all subsets are created on
+            first call to accommodate validation set extraction from test set.
 
+        Args:
+            _stage (str | None): Current stage (unused).
+                Defaults to ``None``.
+
+        Raises:
+            NotImplementedError: When not implemented by subclass
         """
         raise NotImplementedError
 
     @property
     def category(self) -> str:
-        """Get the category of the datamodule."""
+        """Get dataset category name.
+
+        Returns:
+            str: Name of the current category
+        """
         return self._category
 
     @category.setter
     def category(self, category: str) -> None:
-        """Set the category of the datamodule."""
+        """Set dataset category name.
+
+        Args:
+            category (str): Category name to set
+        """
         self._category = category
 
     @property
     def task(self) -> TaskType:
-        """Get the task type of the datamodule."""
+        """Get the task type.
+
+        Returns:
+            TaskType: Type of anomaly task (classification/segmentation)
+
+        Raises:
+            AttributeError: If no datasets have been set up yet
+        """
         if hasattr(self, "train_data"):
             return self.train_data.task
         if hasattr(self, "val_data"):
@@ -220,19 +279,26 @@ class AnomalibDataModule(LightningDataModule, ABC):
         raise AttributeError(msg)
 
     def _create_test_split(self) -> None:
-        """Obtain the test set based on the settings in the config."""
+        """Create the test split based on configured mode.
+
+        This handles splitting normal/anomalous samples and optionally creating
+        synthetic anomalies.
+        """
         if self.test_data.has_normal:
-            # split the test data into normal and anomalous so these can be processed separately
+            # split test data into normal and anomalous
             normal_test_data, self.test_data = split_by_label(self.test_data)
         elif self.test_split_mode != TestSplitMode.NONE:
-            # when the user did not provide any normal images for testing, we sample some from the training set,
-            # except when the user explicitly requested no test splitting.
+            # sample normal images from training set if none provided
             logger.info(
-                "No normal test images found. Sampling from training set using a split ratio of %0.2f",
+                "No normal test images found. Sampling from training set using ratio of %0.2f",
                 self.test_split_ratio,
             )
             if self.test_split_ratio is not None:
-                self.train_data, normal_test_data = random_split(self.train_data, self.test_split_ratio, seed=self.seed)
+                self.train_data, normal_test_data = random_split(
+                    self.train_data,
+                    self.test_split_ratio,
+                    seed=self.seed,
+                )
 
         if self.test_split_mode == TestSplitMode.FROM_DIR:
             self.test_data += normal_test_data
@@ -243,9 +309,13 @@ class AnomalibDataModule(LightningDataModule, ABC):
             raise ValueError(msg)
 
     def _create_val_split(self) -> None:
-        """Obtain the validation set based on the settings in the config."""
+        """Create validation split based on configured mode.
+
+        This handles sampling from train/test sets and optionally creating
+        synthetic anomalies.
+        """
         if self.val_split_mode == ValSplitMode.FROM_TRAIN:
-            # randomly sampled from train set
+            # randomly sample from train set
             self.train_data, self.val_data = random_split(
                 self.train_data,
                 self.val_split_ratio,
@@ -253,7 +323,7 @@ class AnomalibDataModule(LightningDataModule, ABC):
                 seed=self.seed,
             )
         elif self.val_split_mode == ValSplitMode.FROM_TEST:
-            # randomly sampled from test set
+            # randomly sample from test set
             self.test_data, self.val_data = random_split(
                 self.test_data,
                 self.val_split_ratio,
@@ -264,15 +334,23 @@ class AnomalibDataModule(LightningDataModule, ABC):
             # equal to test set
             self.val_data = copy.deepcopy(self.test_data)
         elif self.val_split_mode == ValSplitMode.SYNTHETIC:
-            # converted from random training sample
-            self.train_data, normal_val_data = random_split(self.train_data, self.val_split_ratio, seed=self.seed)
+            # create synthetic anomalies from training samples
+            self.train_data, normal_val_data = random_split(
+                self.train_data,
+                self.val_split_ratio,
+                seed=self.seed,
+            )
             self.val_data = SyntheticAnomalyDataset.from_dataset(normal_val_data)
         elif self.val_split_mode != ValSplitMode.NONE:
             msg = f"Unknown validation split mode: {self.val_split_mode}"
             raise ValueError(msg)
 
     def train_dataloader(self) -> TRAIN_DATALOADERS:
-        """Get train dataloader."""
+        """Get training dataloader.
+
+        Returns:
+            DataLoader: Training dataloader
+        """
         return DataLoader(
             dataset=self.train_data,
             shuffle=True,
@@ -282,7 +360,11 @@ class AnomalibDataModule(LightningDataModule, ABC):
         )
 
     def val_dataloader(self) -> EVAL_DATALOADERS:
-        """Get validation dataloader."""
+        """Get validation dataloader.
+
+        Returns:
+            DataLoader: Validation dataloader
+        """
         return DataLoader(
             dataset=self.val_data,
             shuffle=False,
@@ -292,7 +374,11 @@ class AnomalibDataModule(LightningDataModule, ABC):
         )
 
     def test_dataloader(self) -> EVAL_DATALOADERS:
-        """Get test dataloader."""
+        """Get test dataloader.
+
+        Returns:
+            DataLoader: Test dataloader
+        """
         return DataLoader(
             dataset=self.test_data,
             shuffle=False,
@@ -302,7 +388,13 @@ class AnomalibDataModule(LightningDataModule, ABC):
         )
 
     def predict_dataloader(self) -> EVAL_DATALOADERS:
-        """Use the test dataloader for inference unless overridden."""
+        """Get prediction dataloader.
+
+        By default uses the test dataloader.
+
+        Returns:
+            DataLoader: Prediction dataloader
+        """
         return self.test_dataloader()
 
     @classmethod
@@ -311,27 +403,31 @@ class AnomalibDataModule(LightningDataModule, ABC):
         config_path: str | Path,
         **kwargs,
     ) -> "AnomalibDataModule":
-        """Create a datamodule instance from the configuration.
+        """Create datamodule instance from config file.
 
         Args:
-            config_path (str | Path): Path to the data configuration file.
-            **kwargs (dict): Additional keyword arguments.
+            config_path (str | Path): Path to config file
+            **kwargs: Additional args to override config
 
         Returns:
-            AnomalibDataModule: Datamodule instance.
+            AnomalibDataModule: Instantiated datamodule
+
+        Raises:
+            FileNotFoundError: If config file not found
+            ValueError: If instantiated object is not AnomalibDataModule
 
         Example:
-            The following example shows how to get datamodule from mvtec.yaml:
+            Load from config file::
 
-            .. code-block:: python
-                >>> data_config = "configs/data/mvtec.yaml"
-                >>> datamodule = AnomalibDataModule.from_config(config_path=data_config)
+                >>> config_path = "configs/data/mvtec.yaml"
+                >>> datamodule = AnomalibDataModule.from_config(config_path)
 
-            The following example shows overriding the configuration file with additional keyword arguments:
+            Override config values::
 
-            .. code-block:: python
-                >>> override_kwargs = {"data.train_batch_size": 8}
-                >>> datamodule = AnomalibDataModule.from_config(config_path=data_config, **override_kwargs)
+                >>> datamodule = AnomalibDataModule.from_config(
+                ...     config_path,
+                ...     data_train_batch_size=8
+                ... )
         """
         from jsonargparse import ArgumentParser
 

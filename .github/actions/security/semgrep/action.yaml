@@ -111,6 +111,22 @@ runs:
       id: run-semgrep
       shell: bash
       run: |
+        # Map standard severity levels to Semgrep's levels
+        case "${{ inputs.severity }}" in
+          "LOW")
+            SEMGREP_SEVERITY="INFO"
+            ;;
+          "MEDIUM")
+            SEMGREP_SEVERITY="WARNING"
+            ;;
+          "HIGH"|"CRITICAL")
+            SEMGREP_SEVERITY="ERROR"
+            ;;
+          *)
+            SEMGREP_SEVERITY="WARNING"
+            ;;
+        esac
+
         # Create results directory
         mkdir -p security-results/semgrep
 
@@ -126,7 +142,7 @@ runs:
 
         semgrep \
           --config ${{ inputs.config }} \
-          --severity ${{ inputs.severity }} \
+          --severity $SEMGREP_SEVERITY \
           --timeout ${{ inputs.timeout }} \
           --${{ inputs.output-format }} \
           -o "${REPORT_FILE}" \

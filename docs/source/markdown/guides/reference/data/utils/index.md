@@ -1,6 +1,6 @@
 # Data Utils
 
-::::{grid} 1 2 2 2
+::::{grid} 1 3 3 3
 :margin: 1 1 0 0
 :gutter: 1
 
@@ -9,13 +9,6 @@
 :link-type: doc
 
 Learn more about anomalib API and CLI.
-:::
-
-:::{grid-item-card} {octicon}`question` Data Transforms
-:link: transforms
-:link-type: doc
-
-Learn how to use anomalib for your anomaly detection tasks.
 :::
 
 :::{grid-item-card} {octicon}`telescope` Tiling

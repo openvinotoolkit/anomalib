@@ -1,6 +1,24 @@
-"""Feature Extractor.
+"""Feature extractor using timm models.
 
-This script extracts features from a CNN network
+This module provides a feature extractor implementation that leverages the timm
+library to extract intermediate features from various CNN architectures.
+
+Example:
+    >>> import torch
+    >>> from anomalib.models.components.feature_extractors import (
+    ...     TimmFeatureExtractor
+    ... )
+    >>> # Initialize feature extractor
+    >>> extractor = TimmFeatureExtractor(
+    ...     backbone="resnet18",
+    ...     layers=["layer1", "layer2", "layer3"]
+    ... )
+    >>> # Extract features from input
+    >>> inputs = torch.randn(32, 3, 256, 256)
+    >>> features = extractor(inputs)
+    >>> # Access features by layer name
+    >>> print(features["layer1"].shape)
+    torch.Size([32, 64, 64, 64])
 """
 
 # Copyright (C) 2022-2024 Intel Corporation
@@ -17,31 +35,44 @@ logger = logging.getLogger(__name__)
 
 
 class TimmFeatureExtractor(nn.Module):
-    """Extract features from a CNN.
+    """Extract intermediate features from timm models.
 
     Args:
-        backbone (nn.Module): The backbone to which the feature extraction hooks are attached.
-        layers (Iterable[str]): List of layer names of the backbone to which the hooks are attached.
-        pre_trained (bool): Whether to use a pre-trained backbone. Defaults to True.
-        requires_grad (bool): Whether to require gradients for the backbone. Defaults to False.
-            Models like ``stfpm`` use the feature extractor model as a trainable network. In such cases gradient
-            computation is required.
+        backbone (str): Name of the timm model architecture to use as backbone.
+            Can include custom weights URI in format ``name__AT__uri``.
+        layers (Sequence[str]): Names of layers from which to extract features.
+        pre_trained (bool, optional): Whether to use pre-trained weights.
+            Defaults to ``True``.
+        requires_grad (bool, optional): Whether to compute gradients for the
+            backbone. Required for training models like STFPM. Defaults to
+            ``False``.
+
+    Attributes:
+        backbone (str): Name of the backbone model.
+        layers (list[str]): Layer names for feature extraction.
+        idx (list[int]): Indices mapping layer names to model outputs.
+        requires_grad (bool): Whether gradients are computed.
+        feature_extractor (nn.Module): The underlying timm model.
+        out_dims (list[int]): Output dimensions for each extracted layer.
 
     Example:
-        .. code-block:: python
-
-            import torch
-            from anomalib.models.components.feature_extractors import TimmFeatureExtractor
-
-            model = TimmFeatureExtractor(model="resnet18", layers=['layer1', 'layer2', 'layer3'])
-            input = torch.rand((32, 3, 256, 256))
-            features = model(input)
-
-            print([layer for layer in features.keys()])
-            # Output: ['layer1', 'layer2', 'layer3']
-
-            print([feature.shape for feature in features.values()]()
-            # Output: [torch.Size([32, 64, 64, 64]), torch.Size([32, 128, 32, 32]), torch.Size([32, 256, 16, 16])]
+        >>> import torch
+        >>> from anomalib.models.components.feature_extractors import (
+        ...     TimmFeatureExtractor
+        ... )
+        >>> # Create extractor
+        >>> model = TimmFeatureExtractor(
+        ...     backbone="resnet18",
+        ...     layers=["layer1", "layer2"]
+        ... )
+        >>> # Extract features
+        >>> inputs = torch.randn(1, 3, 224, 224)
+        >>> features = model(inputs)
+        >>> # Print shapes
+        >>> for name, feat in features.items():
+        ...     print(f"{name}: {feat.shape}")
+        layer1: torch.Size([1, 64, 56, 56])
+        layer2: torch.Size([1, 128, 28, 28])
     """
 
     def __init__(
@@ -78,10 +109,14 @@ class TimmFeatureExtractor(nn.Module):
         self._features = {layer: torch.empty(0) for layer in self.layers}
 
     def _map_layer_to_idx(self) -> list[int]:
-        """Map set of layer names to indices of model.
+        """Map layer names to their indices in the model's output.
 
         Returns:
-            list[int]: Feature map extracted from the CNN.
+            list[int]: Indices corresponding to the requested layer names.
+
+        Note:
+            If a requested layer is not found in the model, it is removed from
+            ``self.layers`` and a warning is logged.
         """
         idx = []
         model = timm.create_model(
@@ -90,7 +125,8 @@ class TimmFeatureExtractor(nn.Module):
             features_only=True,
             exportable=True,
         )
-        # model.feature_info.info returns list of dicts containing info, inside which "module" contains layer name
+        # model.feature_info.info returns list of dicts containing info,
+        # inside which "module" contains layer name
         layer_names = [info["module"] for info in model.feature_info.info]
         for layer in self.layers:
             try:
@@ -104,21 +140,29 @@ class TimmFeatureExtractor(nn.Module):
         return idx
 
     def forward(self, inputs: torch.Tensor) -> dict[str, torch.Tensor]:
-        """Forward-pass input tensor into the CNN.
+        """Extract features from the input tensor.
 
         Args:
-            inputs (torch.Tensor): Input tensor
+            inputs (torch.Tensor): Input tensor of shape
+                ``(batch_size, channels, height, width)``.
 
         Returns:
-            Feature map extracted from the CNN
+            dict[str, torch.Tensor]: Dictionary mapping layer names to their
+            feature tensors.
 
         Example:
-            .. code-block:: python
-
-                model = TimmFeatureExtractor(model="resnet50", layers=['layer3'])
-                input = torch.rand((32, 3, 256, 256))
-                features = model.forward(input)
-
+            >>> import torch
+            >>> from anomalib.models.components.feature_extractors import (
+            ...     TimmFeatureExtractor
+            ... )
+            >>> model = TimmFeatureExtractor(
+            ...     backbone="resnet18",
+            ...     layers=["layer1"]
+            ... )
+            >>> inputs = torch.randn(1, 3, 224, 224)
+            >>> features = model(inputs)
+            >>> features["layer1"].shape
+            torch.Size([1, 64, 56, 56])
         """
         if self.requires_grad:
             features = dict(zip(self.layers, self.feature_extractor(inputs), strict=True))

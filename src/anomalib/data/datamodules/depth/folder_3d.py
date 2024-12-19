@@ -1,6 +1,18 @@
-"""Custom Folder Datamodule.
+"""Custom Folder Datamodule for 3D data.
 
-This script creates a custom datamodule from a folder.
+This module provides a custom datamodule for handling 3D data organized in folders.
+The datamodule supports RGB and depth image pairs for anomaly detection tasks.
+
+Example:
+    Create a folder 3D datamodule::
+
+        >>> from anomalib.data import Folder3D
+        >>> datamodule = Folder3D(
+        ...     name="my_dataset",
+        ...     root="path/to/dataset",
+        ...     normal_dir="normal",
+        ...     abnormal_dir="abnormal"
+        ... )
 """
 
 # Copyright (C) 2022-2024 Intel Corporation
@@ -16,37 +28,35 @@ from anomalib.data.utils import Split, TestSplitMode, ValSplitMode
 
 
 class Folder3D(AnomalibDataModule):
-    """Folder DataModule.
+    """Folder DataModule for 3D data.
+
+    This class extends :class:`AnomalibDataModule` to handle datasets containing
+    RGB and depth image pairs organized in folders.
 
     Args:
-        name (str): Name of the dataset. This is used to name the datamodule, especially when logging/saving.
-        normal_dir (str | Path): Name of the directory containing normal images.
-        root (str | Path | None): Path to the root folder containing normal and abnormal dirs.
-            Defaults to ``None``.
-        abnormal_dir (str | Path | None): Name of the directory containing abnormal images.
-            Defaults to ``abnormal``.
-        normal_test_dir (str | Path | None, optional): Path to the directory containing normal images for the test
-            dataset.
-            Defaults to ``None``.
-        mask_dir (str | Path | None, optional): Path to the directory containing the mask annotations.
-            Defaults to ``None``.
-        normal_depth_dir (str | Path | None, optional): Path to the directory containing
-            normal depth images for the test dataset. Normal test depth images will be a split of `normal_dir`
-        abnormal_depth_dir (str | Path | None, optional): Path to the directory containing
-            abnormal depth images for the test dataset.
-        normal_test_depth_dir (str | Path | None, optional): Path to the directory containing
-            normal depth images for the test dataset. Normal test images will be a split of `normal_dir`
-            if `None`. Defaults to None.
-        normal_split_ratio (float, optional): Ratio to split normal training images and add to the
-            test set in case test set doesn't contain any normal images.
-            Defaults to 0.2.
-        extensions (tuple[str, ...] | None, optional): Type of the image extensions to read from the
-            directory. Defaults to None.
+        name (str): Name of the dataset used for logging and saving.
+        normal_dir (str | Path): Directory containing normal RGB images.
+        root (str | Path): Root folder containing normal and abnormal dirs.
+        abnormal_dir (str | Path | None, optional): Directory containing abnormal
+            RGB images. Defaults to ``None``.
+        normal_test_dir (str | Path | None, optional): Directory containing normal
+            RGB images for testing. Defaults to ``None``.
+        mask_dir (str | Path | None, optional): Directory containing mask
+            annotations. Defaults to ``None``.
+        normal_depth_dir (str | Path | None, optional): Directory containing
+            normal depth images. Defaults to ``None``.
+        abnormal_depth_dir (str | Path | None, optional): Directory containing
+            abnormal depth images. Defaults to ``None``.
+        normal_test_depth_dir (str | Path | None, optional): Directory containing
+            normal depth images for testing. If ``None``, uses split from
+            ``normal_dir``. Defaults to ``None``.
+        extensions (tuple[str, ...] | None, optional): Image file extensions to
+            read. Defaults to ``None``.
         train_batch_size (int, optional): Training batch size.
             Defaults to ``32``.
-        eval_batch_size (int, optional): Test batch size.
+        eval_batch_size (int, optional): Evaluation batch size.
             Defaults to ``32``.
-        num_workers (int, optional): Number of workers.
+        num_workers (int, optional): Number of workers for data loading.
             Defaults to ``8``.
         train_augmentations (Transform | None): Augmentations to apply dto the training images
             Defaults to ``None``.
@@ -56,15 +66,15 @@ class Folder3D(AnomalibDataModule):
             Defaults to ``None``.
         augmentations (Transform | None): General augmentations to apply if stage-specific
             augmentations are not provided.
-        test_split_mode (TestSplitMode): Setting that determines how the testing subset is obtained.
-            Defaults to ``TestSplitMode.FROM_DIR``.
-        test_split_ratio (float): Fraction of images from the train set that will be reserved for testing.
+        test_split_mode (TestSplitMode | str, optional): Method to create test
+            set. Defaults to ``TestSplitMode.FROM_DIR``.
+        test_split_ratio (float, optional): Fraction of data for testing.
             Defaults to ``0.2``.
-        val_split_mode (ValSplitMode): Setting that determines how the validation subset is obtained.
-            Defaults to ``ValSplitMode.FROM_TEST``.
-        val_split_ratio (float): Fraction of train or test images that will be reserved for validation.
+        val_split_mode (ValSplitMode | str, optional): Method to create validation
+            set. Defaults to ``ValSplitMode.FROM_TEST``.
+        val_split_ratio (float, optional): Fraction of data for validation.
             Defaults to ``0.5``.
-        seed (int | None, optional): Seed used during random subset splitting.
+        seed (int | None, optional): Random seed for splitting.
             Defaults to ``None``.
     """
 
@@ -119,6 +129,12 @@ class Folder3D(AnomalibDataModule):
         self.extensions = extensions
 
     def _setup(self, _stage: str | None = None) -> None:
+        """Set up train and test datasets.
+
+        Args:
+            _stage (str | None, optional): Stage of setup. Not used.
+                Defaults to ``None``.
+        """
         self.train_data = Folder3DDataset(
             name=self.name,
             split=Split.TRAIN,
@@ -149,8 +165,9 @@ class Folder3D(AnomalibDataModule):
 
     @property
     def name(self) -> str:
-        """Name of the datamodule.
+        """Get name of the datamodule.
 
-        Folder3D datamodule overrides the name property to provide a custom name.
+        Returns:
+            str: Name of the datamodule.
         """
         return self._name

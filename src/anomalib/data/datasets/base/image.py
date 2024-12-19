@@ -1,4 +1,30 @@
-"""Anomalib dataset base class."""
+"""Anomalib dataset base class.
+
+This module provides the base dataset class for Anomalib datasets. The dataset is based on a
+dataframe that contains the information needed by the dataloader to load each dataset item
+into memory.
+
+The samples dataframe must be set from the subclass using the setter of the ``samples``
+property.
+
+The DataFrame must include at least the following columns:
+    - ``split`` (str): The subset to which the dataset item is assigned (e.g., 'train',
+      'test').
+    - ``image_path`` (str): Path to the file system location where the image is stored.
+    - ``label_index`` (int): Index of the anomaly label, typically 0 for 'normal' and 1 for
+      'anomalous'.
+    - ``mask_path`` (str, optional): Path to the ground truth masks (for anomalous images
+      only). Required if task is 'segmentation'.
+
+Example DataFrame:
+    >>> df = pd.DataFrame({
+    ...     'image_path': ['path/to/image.png'],
+    ...     'label': ['anomalous'],
+    ...     'label_index': [1],
+    ...     'mask_path': ['path/to/mask.png'],
+    ...     'split': ['train']
+    ... })
+"""
 
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -26,26 +52,23 @@ logger = logging.getLogger(__name__)
 
 
 class AnomalibDataset(Dataset, ABC):
-    """Anomalib dataset.
+    """Base class for Anomalib datasets.
 
-    The dataset is based on a dataframe that contains the information needed by the dataloader to load each of
-    the dataset items into memory.
+    The dataset is designed to work with image-based anomaly detection tasks. It supports
+    both classification and segmentation tasks.
 
-    The samples dataframe must be set from the subclass using the setter of the `samples` property.
+    Args:
+        transform (Transform | None, optional): Transforms to be applied to the input images.
+            Defaults to ``None``.
 
-    The DataFrame must, at least, include the following columns:
-        - `split` (str): The subset to which the dataset item is assigned (e.g., 'train', 'test').
-        - `image_path` (str): Path to the file system location where the image is stored.
-        - `label_index` (int): Index of the anomaly label, typically 0 for 'normal' and 1 for 'anomalous'.
-        - `mask_path` (str, optional): Path to the ground truth masks (for the anomalous images only).
-        Required if task is 'segmentation'.
-
-    Example DataFrame:
-        +---+-------------------+-----------+-------------+------------------+-------+
-        |   | image_path        | label     | label_index | mask_path        | split |
-        +---+-------------------+-----------+-------------+------------------+-------+
-        | 0 | path/to/image.png | anomalous | 1           | path/to/mask.png | train |
-        +---+-------------------+-----------+-------------+------------------+-------+
+    Example:
+        >>> from torchvision.transforms.v2 import Resize
+        >>> dataset = AnomalibDataset(transform=Resize((256, 256)))
+        >>> len(dataset)  # Get dataset length
+        100
+        >>> item = dataset[0]  # Get first item
+        >>> item.image.shape
+        torch.Size([3, 256, 256])
 
     Note:
         The example above is illustrative and may need to be adjusted based on the specific dataset structure.
@@ -64,7 +87,17 @@ class AnomalibDataset(Dataset, ABC):
 
     @property
     def name(self) -> str:
-        """Name of the dataset."""
+        """Get the name of the dataset.
+
+        Returns:
+            str: Name of the dataset derived from the class name, with 'Dataset' suffix
+                removed if present.
+
+        Example:
+            >>> dataset = AnomalibDataset()
+            >>> dataset.name
+            'Anomalib'
+        """
         class_name = self.__class__.__name__
 
         # Remove the `_dataset` suffix from the class name
@@ -74,16 +107,35 @@ class AnomalibDataset(Dataset, ABC):
         return class_name
 
     def __len__(self) -> int:
-        """Get length of the dataset."""
+        """Get length of the dataset.
+
+        Returns:
+            int: Number of samples in the dataset.
+
+        Raises:
+            RuntimeError: If samples DataFrame is not set.
+        """
         return len(self.samples)
 
     def subsample(self, indices: Sequence[int], inplace: bool = False) -> "AnomalibDataset":
-        """Subsamples the dataset at the provided indices.
+        """Create a subset of the dataset using the provided indices.
 
         Args:
             indices (Sequence[int]): Indices at which the dataset is to be subsampled.
-            inplace (bool): When true, the subsampling will be performed on the instance itself.
-                Defaults to ``False``.
+            inplace (bool, optional): When true, modify the instance itself. Defaults to
+                ``False``.
+
+        Returns:
+            AnomalibDataset: Subsampled dataset.
+
+        Raises:
+            ValueError: If duplicate indices are provided.
+
+        Example:
+            >>> dataset = AnomalibDataset()
+            >>> subset = dataset.subsample([0, 1, 2])
+            >>> len(subset)
+            3
         """
         if len(set(indices)) != len(indices):
             msg = "No duplicates allowed in indices."
@@ -94,21 +146,41 @@ class AnomalibDataset(Dataset, ABC):
 
     @property
     def samples(self) -> DataFrame:
-        """Get the samples dataframe."""
+        """Get the samples DataFrame.
+
+        Returns:
+            DataFrame: DataFrame containing dataset samples.
+
+        Raises:
+            RuntimeError: If samples DataFrame has not been set.
+        """
         if self._samples is None:
             msg = (
-                "Dataset does not have a samples dataframe. Ensure that a dataframe has been assigned to "
-                "`dataset.samples`."
+                "Dataset does not have a samples dataframe. Ensure that a dataframe has "
+                "been assigned to `dataset.samples`."
             )
             raise RuntimeError(msg)
         return self._samples
 
     @samples.setter
     def samples(self, samples: DataFrame) -> None:
-        """Overwrite the samples with a new dataframe.
+        """Set the samples DataFrame.
 
         Args:
-            samples (DataFrame): DataFrame with new samples.
+            samples (DataFrame): DataFrame containing dataset samples.
+
+        Raises:
+            TypeError: If samples is not a pandas DataFrame.
+            ValueError: If required columns are missing.
+            FileNotFoundError: If any image paths do not exist.
+
+        Example:
+            >>> df = pd.DataFrame({
+            ...     'image_path': ['image.png'],
+            ...     'split': ['train']
+            ... })
+            >>> dataset = AnomalibDataset()
+            >>> dataset.samples = df
         """
         # validate the passed samples by checking the
         if not isinstance(samples, DataFrame):
@@ -127,37 +199,69 @@ class AnomalibDataset(Dataset, ABC):
 
     @property
     def category(self) -> str | None:
-        """Get the category of the dataset."""
+        """Get the category of the dataset.
+
+        Returns:
+            str | None: Dataset category if set, else None.
+        """
         return self._category
 
     @category.setter
     def category(self, category: str) -> None:
-        """Set the category of the dataset."""
+        """Set the category of the dataset.
+
+        Args:
+            category (str): Category to assign to the dataset.
+        """
         self._category = category
 
     @property
     def has_normal(self) -> bool:
-        """Check if the dataset contains any normal samples."""
+        """Check if the dataset contains normal samples.
+
+        Returns:
+            bool: True if dataset contains normal samples, False otherwise.
+        """
         return LabelName.NORMAL in list(self.samples.label_index)
 
     @property
     def has_anomalous(self) -> bool:
-        """Check if the dataset contains any anomalous samples."""
+        """Check if the dataset contains anomalous samples.
+
+        Returns:
+            bool: True if dataset contains anomalous samples, False otherwise.
+        """
         return LabelName.ABNORMAL in list(self.samples.label_index)
 
     @property
     def task(self) -> TaskType:
-        """Infer the task type from the dataset."""
+        """Get the task type from the dataset.
+
+        Returns:
+            TaskType: Type of task (classification or segmentation).
+
+        Raises:
+            ValueError: If task type is unknown.
+        """
         return TaskType(self.samples.attrs["task"])
 
     def __getitem__(self, index: int) -> DatasetItem:
-        """Get dataset item for the index ``index``.
+        """Get dataset item for the given index.
 
         Args:
             index (int): Index to get the item.
 
         Returns:
-            DatasetItem: DatasetItem instance containing image and ground truth (if available).
+            DatasetItem: Dataset item containing image and ground truth (if available).
+
+        Raises:
+            ValueError: If task type is unknown.
+
+        Example:
+            >>> dataset = AnomalibDataset()
+            >>> item = dataset[0]
+            >>> isinstance(item.image, torch.Tensor)
+            True
         """
         image_path = self.samples.iloc[index].image_path
         mask_path = self.samples.iloc[index].mask_path
@@ -198,6 +302,14 @@ class AnomalibDataset(Dataset, ABC):
 
         Returns:
             AnomalibDataset: Concatenated dataset.
+
+        Raises:
+            TypeError: If datasets are not of the same type.
+
+        Example:
+            >>> dataset1 = AnomalibDataset()
+            >>> dataset2 = AnomalibDataset()
+            >>> combined = dataset1 + dataset2
         """
         if not isinstance(other_dataset, self.__class__):
             msg = "Cannot concatenate datasets that are not of the same type."
@@ -208,9 +320,13 @@ class AnomalibDataset(Dataset, ABC):
 
     @property
     def collate_fn(self) -> Callable:
-        """Get the collate function for the items returned by this dataset.
+        """Get the collate function for batching dataset items.
 
-        By default, the dataset is an image dataset, so we will return the ImageBatch's collate function.
-        Other dataset types should override this property.
+        Returns:
+            Callable: Collate function from ImageBatch.
+
+        Note:
+            By default, this returns ImageBatch's collate function. Override this property
+            for other dataset types.
         """
         return ImageBatch.collate
