@@ -6,6 +6,7 @@
 from pathlib import Path
 
 import pytest
+from torchvision.transforms.v2 import Resize
 
 from anomalib.data import Folder
 from tests.unit.data.datamodule.base.image import _TestAnomalibImageDatamodule
@@ -35,6 +36,7 @@ class TestFolder(_TestAnomalibImageDatamodule):
             train_batch_size=4,
             eval_batch_size=4,
             num_workers=0,
+            augmentations=Resize((256, 256)),
         )
         _datamodule.setup()
 

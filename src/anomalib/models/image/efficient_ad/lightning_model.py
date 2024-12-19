@@ -19,6 +19,7 @@ from torchvision.transforms.v2 import CenterCrop, Compose, Normalize, RandomGray
 
 from anomalib import LearningType
 from anomalib.data import Batch
+from anomalib.data.transforms.utils import get_transforms_of_type
 from anomalib.data.utils import DownloadInfo, download_and_extract
 from anomalib.metrics import Evaluator
 from anomalib.models.components import AnomalibModule
@@ -267,11 +268,9 @@ class EfficientAd(AnomalibModule):
             msg = "train_batch_size for EfficientAd should be 1."
             raise ValueError(msg)
 
-        if self.pre_processor and self.pre_processor.train_transform:
-            transforms = self.pre_processor.train_transform.transforms
-            if transforms and any(isinstance(transform, Normalize) for transform in transforms):
-                msg = "Transforms for EfficientAd should not contain Normalize."
-                raise ValueError(msg)
+        if self.pre_processor and get_transforms_of_type(self.pre_processor.transform, Normalize):
+            msg = "Transforms for EfficientAd should not contain Normalize."
+            raise ValueError(msg)
 
         sample = next(iter(self.trainer.train_dataloader))
         image_size = sample.image.shape[-2:]

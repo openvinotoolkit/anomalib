@@ -8,10 +8,6 @@ model:
     padding: false
     pad_maps: true
 
-metrics:
-  pixel:
-    - AUROC
-
 trainer:
   max_epochs: 1000
   max_steps: 70000
