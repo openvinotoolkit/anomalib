@@ -1,7 +1,23 @@
-"""Custom PrecisionRecallCurve.
+"""Custom implementation of Precision-Recall Curve metric.
 
-The one in torchmetrics adds a sigmoid operation on top of the thresholds.
+This module provides a custom implementation of the binary precision-recall curve
+metric that does not apply sigmoid normalization to prediction thresholds, unlike
+the standard torchmetrics implementation.
+
 See: https://github.com/Lightning-AI/torchmetrics/issues/1526
+
+Example:
+    >>> import torch
+    >>> from anomalib.metrics import BinaryPrecisionRecallCurve
+    >>> # Create sample predictions and targets
+    >>> preds = torch.tensor([0.1, 0.4, 0.35, 0.8])
+    >>> target = torch.tensor([0, 0, 1, 1])
+    >>> # Initialize metric
+    >>> pr_curve = BinaryPrecisionRecallCurve()
+    >>> # Update metric state
+    >>> pr_curve.update(preds, target)
+    >>> # Compute precision, recall and thresholds
+    >>> precision, recall, thresholds = pr_curve.compute()
 """
 
 # Copyright (C) 2024 Intel Corporation
@@ -16,7 +32,20 @@ from torchmetrics.functional.classification.precision_recall_curve import (
 
 
 class BinaryPrecisionRecallCurve(_BinaryPrecisionRecallCurve):
-    """Binary precision-recall curve with without threshold prediction normalization."""
+    """Binary precision-recall curve without threshold prediction normalization.
+
+    This class extends the torchmetrics ``BinaryPrecisionRecallCurve`` class but
+    removes the sigmoid normalization step applied to prediction thresholds.
+
+    Example:
+        >>> import torch
+        >>> from anomalib.metrics import BinaryPrecisionRecallCurve
+        >>> metric = BinaryPrecisionRecallCurve()
+        >>> preds = torch.tensor([0.1, 0.4, 0.35, 0.8])
+        >>> target = torch.tensor([0, 0, 1, 1])
+        >>> metric.update(preds, target)
+        >>> precision, recall, thresholds = metric.compute()
+    """
 
     @staticmethod
     def _binary_precision_recall_curve_format(
@@ -25,7 +54,25 @@ class BinaryPrecisionRecallCurve(_BinaryPrecisionRecallCurve):
         thresholds: int | list[float] | Tensor | None = None,
         ignore_index: int | None = None,
     ) -> tuple[Tensor, Tensor, Tensor | None]:
-        """Similar to torchmetrics' ``_binary_precision_recall_curve_format`` except it does not apply sigmoid."""
+        """Format predictions and targets for binary precision-recall curve.
+
+        Similar to torchmetrics' ``_binary_precision_recall_curve_format`` but
+        without sigmoid normalization of predictions.
+
+        Args:
+            preds (Tensor): Predicted scores or probabilities
+            target (Tensor): Ground truth binary labels
+            thresholds (int | list[float] | Tensor | None, optional): Thresholds
+                used for computing curve points. Defaults to ``None``.
+            ignore_index (int | None, optional): Label to ignore in evaluation.
+                Defaults to ``None``.
+
+        Returns:
+            tuple[Tensor, Tensor, Tensor | None]: Tuple containing:
+                - Flattened predictions
+                - Flattened targets
+                - Adjusted thresholds
+        """
         preds = preds.flatten()
         target = target.flatten()
         if ignore_index is not None:
@@ -39,11 +86,12 @@ class BinaryPrecisionRecallCurve(_BinaryPrecisionRecallCurve):
     def update(self, preds: Tensor, target: Tensor) -> None:
         """Update metric state with new predictions and targets.
 
-        Unlike the base class, this accepts raw predictions and targets.
+        Unlike the base class, this method accepts raw predictions without
+        applying sigmoid normalization.
 
         Args:
-            preds (Tensor): Predicted probabilities
-            target (Tensor): Ground truth labels
+            preds (Tensor): Raw predicted scores or probabilities
+            target (Tensor): Ground truth binary labels (0 or 1)
         """
         preds, target, _ = BinaryPrecisionRecallCurve._binary_precision_recall_curve_format(
             preds,

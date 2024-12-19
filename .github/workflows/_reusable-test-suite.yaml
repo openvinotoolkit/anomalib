@@ -1,0 +1,116 @@
+# Test Suite Workflow
+#
+# This reusable workflow executes comprehensive test suites with configurable
+# parameters for different test types and environments.
+#
+# Key Features:
+# - Parallel test execution
+# - Multiple test types support
+# - Coverage reporting
+# - Configurable timeouts
+# - Result aggregation
+#
+# Process Stages:
+# 1. Unit Testing:
+#    - Environment setup
+#    - Test execution
+#    - Coverage generation
+#
+# 2. Integration Testing:
+#    - Environment preparation
+#    - Test execution
+#    - Result collection
+#
+# 3. Results Processing:
+#    - Coverage reporting
+#    - Result aggregation
+#    - Artifact creation
+#
+# Required Inputs:
+# - python-version: Python version for tests (default: "3.10")
+# - test-type: Type of test to run (unit/integration/e2e)
+# - runner: Runner to use for the tests
+# - timeout: Test timeout in minutes
+# - enable-cache: Enable pip caching
+#
+# Required Secrets:
+# - codecov-token: Token for coverage reporting (optional)
+#
+# Outputs:
+# - test-results: Path to test results artifact
+#
+# Example Usage:
+# 1. Basic Test Run:
+#    jobs:
+#      test:
+#        uses: ./.github/workflows/_reusable-test-suite.yaml
+#        with:
+#          test-type: "unit"
+#
+# 2. Custom Configuration:
+#    jobs:
+#      test:
+#        uses: ./.github/workflows/_reusable-test-suite.yaml
+#        with:
+#          python-version: "3.11"
+#          test-type: "unit"
+#          timeout: 15
+#        secrets:
+#          codecov-token: ${{ secrets.CODECOV_TOKEN }}
+#
+# Note: Requires properly configured pytest environment and test structure
+
+name: Reusable Test Suite
+
+on:
+  workflow_call:
+    inputs:
+      python-version:
+        description: "Python version to use for tests"
+        type: string
+        default: "3.10"
+      test-type:
+        description: "Type of test to run (unit/integration/e2e)"
+        type: string
+        required: true
+      runner:
+        description: "Runner to use for the tests"
+        type: string
+        default: "ubuntu-latest"
+      timeout:
+        description: "Test timeout in minutes"
+        type: number
+        default: 10
+      enable-cache:
+        description: "Enable pip caching"
+        type: string
+        default: "true"
+    secrets:
+      codecov-token:
+        required: false
+        description: "Token for Codecov upload"
+    outputs:
+      test-results:
+        description: "Path to test results artifact"
+        value: ${{ jobs.test.outputs.artifact-path }}
+
+jobs:
+  test:
+    runs-on: ${{ inputs.runner }}
+    timeout-minutes: ${{ inputs.timeout }}
+    steps:
+      - name: Verify GPU availability
+        if: contains(inputs.runner, 'self-hosted')
+        shell: bash
+        run: |
+          nvidia-smi || echo "::error::No GPU found"
+
+      - uses: actions/checkout@v4
+      - name: Run tests
+        uses: ./.github/actions/pytest
+        with:
+          python-version: ${{ inputs.python-version }}
+          test-type: ${{ inputs.test-type }}
+          codecov-token: ${{ secrets.codecov-token }}
+          device: ${{ contains(inputs.runner, 'self-hosted') && 'gpu' || 'cpu' }}
+          enable-cache: ${{ inputs.enable-cache }}

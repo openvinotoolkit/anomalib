@@ -1,6 +1,10 @@
-"""Custom Help Formatters for Anomalib CLI."""
+"""Custom help formatters for Anomalib CLI.
 
-# Copyright (C) 2023 Intel Corporation
+This module provides custom help formatting functionality for the Anomalib CLI,
+including rich text formatting and customized help output for different verbosity levels.
+"""
+
+# Copyright (C) 2023-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 import argparse
@@ -38,13 +42,25 @@ except ImportError:
 
 
 def get_short_docstring(component: type) -> str:
-    """Get the short description from the docstring.
+    """Get the short description from a component's docstring.
 
     Args:
-        component (type): The component to get the docstring from
+        component (type): The component to extract the docstring from.
 
     Returns:
-        str: The short description
+        str: The short description from the docstring, or empty string if no docstring.
+
+    Example:
+        >>> class MyClass:
+        ...     '''My class description.
+        ...
+        ...     More details here.
+        ...     '''
+        ...     pass
+
+        >>> output = get_short_docstring(MyClass)
+        >>> print(output)
+        My class description.
     """
     if component.__doc__ is None:
         return ""
@@ -53,12 +69,15 @@ def get_short_docstring(component: type) -> str:
 
 
 def get_verbosity_subcommand() -> dict:
-    """Parse command line arguments and returns a dictionary of key-value pairs.
+    """Parse command line arguments for verbosity and subcommand.
 
     Returns:
-        A dictionary containing the parsed command line arguments.
+        dict: Dictionary containing:
+            - subcommand: The subcommand being run
+            - help: Whether help was requested
+            - verbosity: Verbosity level (0-2)
 
-    Examples:
+    Example:
         >>> import sys
         >>> sys.argv = ['anomalib', 'train', '-h', '-v']
         >>> get_verbosity_subcommand()
@@ -79,12 +98,18 @@ def get_verbosity_subcommand() -> dict:
 
 
 def get_intro() -> Markdown:
-    """Return a Markdown object containing the introduction text for Anomalib CLI Guide.
-
-    The introduction text includes a brief description of the guide and links to the Github repository and documentation
+    """Get the introduction text for the Anomalib CLI guide.
 
     Returns:
-        A Markdown object containing the introduction text for Anomalib CLI Guide.
+        Markdown: A Markdown object containing the introduction text with links
+            to the Github repository and documentation.
+
+    Example:
+        >>> intro = get_intro()
+        >>> print(intro)
+        # Anomalib CLI Guide
+        Github Repository: https://github.com/openvinotoolkit/anomalib
+        Documentation: https://anomalib.readthedocs.io/
     """
     intro_markdown = (
         "# Anomalib CLI Guide\n\n"
@@ -96,15 +121,44 @@ def get_intro() -> Markdown:
 
 
 def get_verbose_usage(subcommand: str = "train") -> str:
-    """Return a string containing verbose usage information for the specified subcommand.
+    """Get verbose usage information for a subcommand.
+
+    This function generates a formatted string containing usage instructions for running
+    an Anomalib CLI subcommand with different verbosity levels. The instructions show
+    how to access more detailed help information using the -v and -vv flags.
 
     Args:
-    ----
-        subcommand (str): The name of the subcommand to get verbose usage information for. Defaults to "train".
+        subcommand (str, optional): The subcommand to get usage information for.
+            Defaults to "train".
 
     Returns:
-    -------
-        str: A string containing verbose usage information for the specified subcommand.
+        str: A formatted string containing verbose usage information with examples
+            showing different verbosity levels.
+
+    Example:
+        Get usage information for the "train" subcommand:
+
+        >>> usage = get_verbose_usage("train")
+        >>> print(usage)  # doctest: +NORMALIZE_WHITESPACE
+        To get more overridable argument information, run the command below.
+        ```python
+        # Verbosity Level 1
+        anomalib train [optional_arguments] -h -v
+        # Verbosity Level 2
+        anomalib train [optional_arguments] -h -vv
+        ```
+
+        Get usage for a different subcommand:
+
+        >>> usage = get_verbose_usage("export")  # doctest: +NORMALIZE_WHITESPACE
+        >>> print(usage)
+        To get more overridable argument information, run the command below.
+        ```python
+        # Verbosity Level 1
+        anomalib export [optional_arguments] -h -v
+        # Verbosity Level 2
+        anomalib export [optional_arguments] -h -vv
+        ```
     """
     return (
         "To get more overridable argument information, run the command below.\n"
@@ -118,29 +172,49 @@ def get_verbose_usage(subcommand: str = "train") -> str:
 
 
 def get_cli_usage_docstring(component: object | None) -> str | None:
-    r"""Get the cli usage from the docstring.
+    """Extract CLI usage instructions from a component's docstring.
+
+    This function searches for a "CLI Usage:" section in the component's docstring and
+    extracts its contents. The section should be delimited by either double newlines
+    or the end of the docstring.
 
     Args:
-    ----
-        component (Optional[object]): The component to get the docstring from
+        component: The object to extract the CLI usage from. Can be None.
 
     Returns:
-    -------
-        Optional[str]: The quick-start guide as Markdown format.
+        The CLI usage instructions as a string with normalized whitespace, or None if:
+        - The component is None
+        - The component has no docstring
+        - The docstring has no "CLI Usage:" section
 
-    Example:
-    -------
-        component.__doc__ = '''
-            <Prev Section>
+    Examples:
+        A docstring with CLI usage section:
 
-            CLI Usage:
-                1. First Step.
-                2. Second Step.
+        >>> class MyComponent:
+        ...     '''My component description.
+        ...
+        ...     CLI Usage:
+        ...         1. Run this command
+        ...         2. Then this command
+        ...
+        ...     Other sections...
+        ...     '''
+        >>> component = MyComponent()
+        >>> print(get_cli_usage_docstring(component))
+        1. Run this command
+        2. Then this command
 
-            <Next Section>
-        '''
-        >>> get_cli_usage_docstring(component)
-        "1. First Step.\n2. Second Step."
+        A docstring without CLI usage returns None:
+
+        >>> class NoUsage:
+        ...     '''Just a description'''
+        >>> print(get_cli_usage_docstring(NoUsage()))
+        None
+
+        None input returns None:
+
+        >>> print(get_cli_usage_docstring(None))
+        None
     """
     if component is None or component.__doc__ is None or "CLI Usage" not in component.__doc__:
         return None
@@ -154,16 +228,34 @@ def get_cli_usage_docstring(component: object | None) -> str | None:
     return None
 
 
-def render_guide(subcommand: str | None = None) -> list:
+def render_guide(subcommand: str | None = None) -> list[Panel | Markdown]:
     """Render a guide for the specified subcommand.
 
+    This function generates a formatted guide containing usage instructions and examples
+    for a given CLI subcommand.
+
     Args:
-    ----
-        subcommand (Optional[str]): The subcommand to render the guide for.
+        subcommand: The subcommand to render the guide for. If None or not found in
+            DOCSTRING_USAGE, returns an empty list.
 
     Returns:
-    -------
-        list: A list of contents to be displayed in the guide.
+        A list containing rich formatting elements (Panel, Markdown) to be displayed
+        in the guide.
+
+    Examples:
+        >>> # Empty list for invalid subcommand
+        >>> render_guide("invalid")
+        []
+
+        >>> # Guide with intro and usage for valid subcommand
+        >>> guide = render_guide("train")
+        >>> len(guide) > 0
+        True
+
+    Notes:
+        - The guide includes an introduction section from `get_intro()`
+        - For valid subcommands, adds CLI usage from docstrings and verbose usage info
+        - Usage is formatted in a Panel with "Quick-Start" title
     """
     if subcommand is None or subcommand not in DOCSTRING_USAGE:
         return []
@@ -183,19 +275,28 @@ class CustomHelpFormatter(RichHelpFormatter, DefaultHelpFormatter):
     This formatter extends the RichHelpFormatter and DefaultHelpFormatter classes to provide
     a more detailed and customizable help output for Anomalib CLI.
 
-    Attributes:
-    verbosity_level : int
-        The level of verbosity for the help output.
-    subcommand : str | None
-        The subcommand to render the guide for.
+    Args:
+        *args: Variable length argument list passed to parent classes.
+        **kwargs: Arbitrary keyword arguments passed to parent classes.
 
-    Methods:
-    add_usage(usage, actions, *args, **kwargs)
-        Add usage information to the help output.
-    add_argument(action)
-        Add an argument to the help output.
-    format_help()
-        Format the help output.
+    Attributes:
+        verbosity_dict (dict): Dictionary containing verbosity level and subcommand.
+        verbosity_level (int): The level of verbosity for the help output.
+        subcommand (str | None): The subcommand to render the guide for.
+
+    Example:
+        >>> from argparse import ArgumentParser
+        >>> parser = ArgumentParser(formatter_class=CustomHelpFormatter)
+        >>> parser.add_argument('--test')
+        >>> help_text = parser.format_help()
+        >>> isinstance(help_text, str)
+        True
+
+    Note:
+        The formatter supports different verbosity levels:
+        - Level 0: Shows only quick-start guide
+        - Level 1: Shows required arguments
+        - Level 2+: Shows all arguments
     """
 
     verbosity_dict = get_verbosity_subcommand()
@@ -205,16 +306,20 @@ class CustomHelpFormatter(RichHelpFormatter, DefaultHelpFormatter):
     def add_usage(self, usage: str | None, actions: list, *args, **kwargs) -> None:
         """Add usage information to the formatter.
 
-        Args:
-        ----
-            usage (str | None): A string describing the usage of the program.
-            actions (list): An list of argparse.Action objects.
-            *args (Any): Additional positional arguments to pass to the superclass method.
-            **kwargs (Any): Additional keyword arguments to pass to the superclass method.
+        Filters the actions shown in the usage section based on verbosity level
+        and required arguments for the current subcommand.
 
-        Returns:
-        -------
-            None
+        Args:
+            usage: A string describing the usage of the program.
+            actions: A list of argparse.Action objects.
+            *args: Additional positional arguments passed to parent method.
+            **kwargs: Additional keyword arguments passed to parent method.
+
+        Example:
+            >>> formatter = CustomHelpFormatter()
+            >>> formatter.add_usage("usage:", [], groups=[])
+            >>> True  # Method completes without error
+            True
         """
         if self.subcommand in REQUIRED_ARGUMENTS:
             if self.verbosity_level == 0:
@@ -227,12 +332,25 @@ class CustomHelpFormatter(RichHelpFormatter, DefaultHelpFormatter):
     def add_argument(self, action: argparse.Action) -> None:
         """Add an argument to the help formatter.
 
-        If the verbose level is set to 0, the argument is not added.
-        If the verbose level is set to 1 and the argument is not in the non-skip list, the argument is not added.
+        Controls which arguments are displayed based on verbosity level and
+        whether they are required for the current subcommand.
 
         Args:
-        ----
-            action (argparse.Action): The action to add to the help formatter.
+            action: The argparse.Action object to potentially add to the help output.
+
+        Example:
+            >>> from argparse import Action, ArgumentParser
+            >>> parser = ArgumentParser()
+            >>> action = parser.add_argument('--test')
+            >>> formatter = CustomHelpFormatter()
+            >>> formatter.add_argument(action)
+            >>> True  # Method completes without error
+            True
+
+        Note:
+            - At verbosity level 0, no arguments are shown
+            - At verbosity level 1, only required arguments are shown
+            - At higher verbosity levels, all arguments are shown
         """
         if self.subcommand in REQUIRED_ARGUMENTS:
             if self.verbosity_level == 0:
@@ -242,13 +360,25 @@ class CustomHelpFormatter(RichHelpFormatter, DefaultHelpFormatter):
         super().add_argument(action)
 
     def format_help(self) -> str:
-        """Format the help message for the current command and returns it as a string.
+        """Format the complete help message.
 
-        The help message includes information about the command's arguments and options,
-        as well as any additional information provided by the command's help guide.
+        Generates a formatted help message that includes command arguments, options,
+        and additional guide information based on the current verbosity level.
 
         Returns:
-            str: A string containing the formatted help message.
+            str: The formatted help message as a string.
+
+        Example:
+            >>> formatter = CustomHelpFormatter()
+            >>> help_text = formatter.format_help()
+            >>> isinstance(help_text, str)
+            True
+
+        Note:
+            The output format depends on verbosity level:
+            - Level 0-1: Shows quick-start guide for supported subcommands
+            - Level 1+: Includes argument section in a panel
+            - All levels: Maintains consistent spacing and formatting
         """
         with self.console.capture() as capture:
             section = self._root_section

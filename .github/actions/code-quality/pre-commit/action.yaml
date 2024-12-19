@@ -1,0 +1,116 @@
+# Pre-commit Quality Action
+#
+# This composite action executes pre-commit hooks for code quality checks
+# with configurable Python and Node.js environments.
+#
+# Key Features:
+# - Pre-commit hook execution
+# - Environment configuration
+# - Cache management
+# - Multi-language support
+# - Dependency handling
+#
+# Process Stages:
+# 1. Environment Setup:
+#    - Python installation
+#    - Node.js installation
+#    - Cache configuration
+#
+# 2. Dependency Management:
+#    - Pre-commit installation
+#    - Hook installation
+#    - Cache restoration
+#
+# 3. Quality Checks:
+#    - Hook execution
+#    - Error reporting
+#    - Result caching
+#
+# Required Inputs:
+# - python-version: Python version to use
+# - node-version: Node.js version to use (defaults to "20")
+#
+# Example Usage:
+# steps:
+#   - uses: ./.github/actions/code-quality/pre-commit
+#     with:
+#       python-version: "3.11"
+#
+# Note: Requires configured pre-commit hooks in repository
+
+name: "Pre-commit Quality Checks"
+description: "Runs pre-commit hooks for code quality checks"
+
+inputs:
+  python-version:
+    description: "Python version to use"
+    required: false
+    default: "3.10"
+  node-version:
+    description: "Node.js version to use"
+    required: false
+    default: "20"
+  skip:
+    description: "Comma-separated list of hooks to skip"
+    required: false
+    default: ""
+  cache:
+    description: "Whether to use caching"
+    required: false
+    default: "true"
+
+outputs:
+  cache-hit:
+    description: "Whether the cache was hit"
+    value: ${{ steps.pre-commit-cache.outputs.cache-hit }}
+
+runs:
+  using: composite
+  steps:
+    # Set up Python environment with caching
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+        cache: pip # Enable pip caching
+        cache-dependency-path: .pre-commit-config.yaml
+
+    # Set up Node.js for JavaScript-related hooks
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+
+    # Install pre-commit with latest pip
+    - name: Install pre-commit
+      shell: bash
+      run: |
+        python -m pip install --upgrade pip
+        pip install pre-commit
+
+    # Cache pre-commit hooks to speed up subsequent runs
+    - name: Cache pre-commit hooks
+      if: inputs.cache == 'true'
+      id: pre-commit-cache
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pre-commit
+        # Cache key includes Python and Node versions to ensure correct environment
+        key: pre-commit-${{ runner.os }}-py${{ inputs.python-version }}-node${{ inputs.node-version }}-${{ hashFiles('.pre-commit-config.yaml') }}
+        restore-keys: |
+          pre-commit-${{ runner.os }}-py${{ inputs.python-version }}-node${{ inputs.node-version }}-
+          pre-commit-${{ runner.os }}-py${{ inputs.python-version }}-
+
+    # Execute pre-commit checks with optional hook skipping
+    - name: Run pre-commit checks
+      shell: bash
+      env:
+        SKIP: ${{ inputs.skip }}
+      run: |
+        if [ -n "$SKIP" ]; then
+          # Run specific hooks if skip parameter is provided
+          pre-commit run --all-files --hook-stage="$SKIP"
+        else
+          # Run all hooks if no skip parameter
+          pre-commit run --all-files
+        fi
