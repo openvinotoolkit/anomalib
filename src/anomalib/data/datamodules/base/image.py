@@ -7,22 +7,22 @@ import copy
 import logging
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from lightning.pytorch import LightningDataModule
 from lightning.pytorch.trainer.states import TrainerFn
 from lightning.pytorch.utilities.types import EVAL_DATALOADERS, TRAIN_DATALOADERS
 from torch.utils.data.dataloader import DataLoader
-from torchvision.transforms.v2 import Transform
+from torchvision.transforms.v2 import Compose, Resize, Transform
 
 from anomalib import TaskType
+from anomalib.data.datasets.base.image import AnomalibDataset
 from anomalib.data.utils import TestSplitMode, ValSplitMode, random_split, split_by_label
 from anomalib.data.utils.synthetic import SyntheticAnomalyDataset
 
 if TYPE_CHECKING:
     from pandas import DataFrame
 
-    from anomalib.data.datasets.base.image import AnomalibDataset
 
 logger = logging.getLogger(__name__)
 
@@ -113,12 +113,106 @@ class AnomalibDataModule(LightningDataModule, ABC):
                 # only set the flag if the stage is a TrainerFn, which means the setup has been called from a trainer
                 self._is_setup = True
 
-        if hasattr(self, "train_data"):
-            self.train_data.augmentations = self.train_augmentations
-        if hasattr(self, "val_data"):
-            self.val_data.augmentations = self.val_augmentations
-        if hasattr(self, "test_data"):
-            self.test_data.augmentations = self.test_augmentations
+        self._update_augmentations()
+
+    def _update_augmentations(self) -> None:
+        """Update the augmentations for each subset."""
+        for subset_name in ["train", "val", "test"]:
+            subset = getattr(self, f"{subset_name}_data", None)
+            augmentations = getattr(self, f"{subset_name}_augmentations", None)
+            model_transform = self.get_nested_attr(self, f"trainer.model.pre_processor.{subset_name}_transform")
+            if subset and augmentations:
+                self._update_subset_augmentations(subset, augmentations, model_transform)
+
+    def _update_subset_augmentations(
+        self,
+        dataset: AnomalibDataset,
+        augmentations: Transform,
+        model_transform: Transform,
+    ) -> None:
+        """Update the augmentations of the dataset.
+
+        This method passes the user-specified augmentations to a dataset subset. If the model transforms contain
+        a Resize transform, it will be appended to the augmentations. This will ensure that resizing takes place
+        before collating, which reduces the usage of shared memory by the Dataloader workers.
+
+        Args:
+            dataset (AnomalibDataset): Dataset to update.
+            augmentations (Transform): Augmentations to apply to the dataset.
+            model_transform (Transform): Transform object from the model PreProcessor.
+        """
+        model_resizes = self.get_resize_transforms(model_transform)
+
+        if model_resizes:
+            model_resize = model_resizes[0]
+            for aug_resize in self.get_resize_transforms(augmentations):  # warn user if resizes inconsistent
+                if model_resize.size != aug_resize.size:
+                    msg = f"Conflicting resize shapes found between augmentations and model transforms. You are using \
+                        a Resize transform in your input data augmentations. Please be aware that the model also \
+                        applies a Resize transform with a different output size. The final effective input size as \
+                        seen by the model will be determined by the model transforms, not the augmentations. To change \
+                        the effective input size, please change the model transforms in the PreProcessor module. \
+                        Augmentations: {aug_resize.size}, Model transforms: {model_transform.size}"
+                    logger.warning(msg)
+                if model_resize.interpolation != aug_resize.interpolation:
+                    msg = f"Conflicting interpolation method found between augmentations and model transforms. You are \
+                        using a Resize transform in your input data augmentations. Please be aware that the model also \
+                        applies a Resize transform with a different interpolation method. Using multiple interpolation \
+                        methods can lead to unexpected behaviour, so it is recommended to use the same interpolation \
+                        method between augmentations and model transforms. Augmentations: {aug_resize.interpolation}, \
+                        Model transforms: {model_resize.interpolation}"
+                    logger.warning(msg)
+                if model_resize.antialias != aug_resize.antialias:
+                    msg = f"Conflicting antialiasing setting found between augmentations and model transforms. You are \
+                        using a Resize transform in your input data augmentations. Please be aware that the model also \
+                        applies a Resize transform with a different antialising setting. Using conflicting \
+                        antialiasing settings can lead to unexpected behaviour, so it is recommended to use the same \
+                        antialiasing setting between augmentations and model transforms. Augmentations: \
+                        antialias={aug_resize.antialias}, Model transforms: antialias={model_resize.antialias}"
+
+            # append model resize to augmentations
+            if isinstance(augmentations, Compose):
+                augmentations = Compose([*augmentations.transforms, model_resize])
+            elif isinstance(augmentations, Transform):
+                augmentations = Compose([augmentations, model_resize])
+            elif augmentations is None:
+                augmentations = model_resize
+
+        dataset.augmentations = augmentations
+
+    @staticmethod
+    def get_resize_transforms(transform: Transform | None) -> list[Resize]:
+        """Get a list of all the resize transforms present in the provided Transform.
+
+        Args:
+            transform (Transform): Torchvision Transform instance.
+
+        Returns:
+            List[Resize]: List of Resize transform instances.
+        """
+        if isinstance(transform, Resize):
+            return [transform]
+        if isinstance(transform, Compose):
+            return [transform for transform in transform.transforms if isinstance(transform, Resize)]
+        return []
+
+    @staticmethod
+    def get_nested_attr(obj: Any, attr_path: str, default: Any | None = None) -> Any:  # noqa: ANN401
+        """Safely retrieves a nested attribute from an object.
+
+        Args:
+            obj: The object to retrieve the attribute from.
+            attr_path: A dot-separated string representing the attribute path.
+            default: The default value to return if any attribute in the path is missing.
+
+        Returns:
+            The value of the nested attribute, or `default` if any attribute in the path is missing.
+        """
+        for attr in attr_path.split("."):
+            obj = getattr(obj, attr, default)
+            if obj is default:
+                return default
+        return obj
 
     @abstractmethod
     def _setup(self, _stage: str | None = None) -> None:
