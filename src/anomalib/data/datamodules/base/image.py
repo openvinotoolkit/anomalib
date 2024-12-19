@@ -17,6 +17,7 @@ from torchvision.transforms.v2 import Compose, Resize, Transform
 
 from anomalib import TaskType
 from anomalib.data.datasets.base.image import AnomalibDataset
+from anomalib.data.transforms.utils import get_transforms_of_type
 from anomalib.data.utils import TestSplitMode, ValSplitMode, random_split, split_by_label
 from anomalib.data.utils.synthetic import SyntheticAnomalyDataset
 from anomalib.utils.attrs import get_nested_attr
@@ -142,7 +143,7 @@ class AnomalibDataModule(LightningDataModule, ABC):
             augmentations (Transform): Augmentations to apply to the dataset.
             model_transform (Transform): Transform object from the model PreProcessor.
         """
-        model_resizes = self.get_resize_transforms(model_transform)
+        model_resizes = get_transforms_of_type(model_transform, Resize)
 
         if model_resizes:
             model_resize = model_resizes[0]
@@ -180,22 +181,6 @@ class AnomalibDataModule(LightningDataModule, ABC):
                 augmentations = model_resize
 
         dataset.augmentations = augmentations
-
-    @staticmethod
-    def get_resize_transforms(transform: Transform | None) -> list[Resize]:
-        """Get a list of all the resize transforms present in the provided Transform.
-
-        Args:
-            transform (Transform): Torchvision Transform instance.
-
-        Returns:
-            List[Resize]: List of Resize transform instances.
-        """
-        if isinstance(transform, Resize):
-            return [transform]
-        if isinstance(transform, Compose):
-            return [transform for transform in transform.transforms if isinstance(transform, Resize)]
-        return []
 
     @abstractmethod
     def _setup(self, _stage: str | None = None) -> None:
