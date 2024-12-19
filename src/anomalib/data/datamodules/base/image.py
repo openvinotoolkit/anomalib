@@ -7,7 +7,7 @@ import copy
 import logging
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from lightning.pytorch import LightningDataModule
 from lightning.pytorch.trainer.states import TrainerFn
@@ -19,6 +19,7 @@ from anomalib import TaskType
 from anomalib.data.datasets.base.image import AnomalibDataset
 from anomalib.data.utils import TestSplitMode, ValSplitMode, random_split, split_by_label
 from anomalib.data.utils.synthetic import SyntheticAnomalyDataset
+from anomalib.utils.attrs import get_nested_attr
 
 if TYPE_CHECKING:
     from pandas import DataFrame
@@ -120,7 +121,7 @@ class AnomalibDataModule(LightningDataModule, ABC):
         for subset_name in ["train", "val", "test"]:
             subset = getattr(self, f"{subset_name}_data", None)
             augmentations = getattr(self, f"{subset_name}_augmentations", None)
-            model_transform = self.get_nested_attr(self, "trainer.model.pre_processor.transform")
+            model_transform = get_nested_attr(self, "trainer.model.pre_processor.transform")
             if subset and augmentations:
                 self._update_subset_augmentations(subset, augmentations, model_transform)
 
@@ -195,24 +196,6 @@ class AnomalibDataModule(LightningDataModule, ABC):
         if isinstance(transform, Compose):
             return [transform for transform in transform.transforms if isinstance(transform, Resize)]
         return []
-
-    @staticmethod
-    def get_nested_attr(obj: Any, attr_path: str, default: Any | None = None) -> Any:  # noqa: ANN401
-        """Safely retrieves a nested attribute from an object.
-
-        Args:
-            obj: The object to retrieve the attribute from.
-            attr_path: A dot-separated string representing the attribute path.
-            default: The default value to return if any attribute in the path is missing.
-
-        Returns:
-            The value of the nested attribute, or `default` if any attribute in the path is missing.
-        """
-        for attr in attr_path.split("."):
-            obj = getattr(obj, attr, default)
-            if obj is default:
-                return default
-        return obj
 
     @abstractmethod
     def _setup(self, _stage: str | None = None) -> None:
