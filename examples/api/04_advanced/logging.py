@@ -11,7 +11,7 @@ from pathlib import Path
 
 from anomalib.data import MVTec
 from anomalib.engine import Engine
-from anomalib.loggers import AnomalibCometLogger, AnomalibMLFlowLogger, AnomalibTensorBoardLogger, AnomalibWandbLogger
+from anomalib.loggers import AnomalibMLFlowLogger, AnomalibTensorBoardLogger, AnomalibWandbLogger
 from anomalib.models import Patchcore
 
 # 1. Basic TensorBoard Logging
