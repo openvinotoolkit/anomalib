@@ -26,13 +26,22 @@ class DepthItem(
     _DepthInputFields[torch.Tensor, str],
     DatasetItem[Image],
 ):
-    """Dataclass for individual depth items in Anomalib datasets using PyTorch tensors.
+    """Dataclass for individual depth items in Anomalib datasets using PyTorch.
 
-    This class represents a single depth item in Anomalib datasets using PyTorch tensors.
-    It combines the functionality of ToNumpyMixin, _DepthInputFields, and DatasetItem
-    to handle depth data, including depth maps, labels, and metadata.
+    This class represents a single depth item in Anomalib datasets using PyTorch
+    tensors. It combines the functionality of ``ToNumpyMixin``,
+    ``_DepthInputFields``, and ``DatasetItem`` to handle depth data, including
+    depth maps, labels, and metadata.
+
+    Args:
+        image (torch.Tensor): Image tensor of shape ``(C, H, W)``.
+        gt_label (torch.Tensor): Ground truth label tensor.
+        depth_map (torch.Tensor): Depth map tensor of shape ``(H, W)``.
+        image_path (str): Path to the source image file.
+        depth_path (str): Path to the depth map file.
 
     Examples:
+        >>> import torch
         >>> item = DepthItem(
         ...     image=torch.rand(3, 224, 224),
         ...     gt_label=torch.tensor(1),
@@ -40,7 +49,6 @@ class DepthItem(
         ...     image_path="path/to/image.jpg",
         ...     depth_path="path/to/depth.png"
         ... )
-
         >>> print(item.image.shape, item.depth_map.shape)
         torch.Size([3, 224, 224]) torch.Size([224, 224])
     """
@@ -55,13 +63,22 @@ class DepthBatch(
     _DepthInputFields[torch.Tensor, list[str]],
     Batch[Image],
 ):
-    """Dataclass for batches of depth items in Anomalib datasets using PyTorch tensors.
+    """Dataclass for batches of depth items in Anomalib datasets using PyTorch.
 
-    This class represents a batch of depth items in Anomalib datasets using PyTorch tensors.
-    It combines the functionality of BatchIterateMixin, _DepthInputFields, and Batch
-    to handle batches of depth data, including depth maps, labels, and metadata.
+    This class represents a batch of depth items in Anomalib datasets using
+    PyTorch tensors. It combines the functionality of ``BatchIterateMixin``,
+    ``_DepthInputFields``, and ``Batch`` to handle batches of depth data,
+    including depth maps, labels, and metadata.
+
+    Args:
+        image (torch.Tensor): Batch of images of shape ``(B, C, H, W)``.
+        gt_label (torch.Tensor): Batch of ground truth labels of shape ``(B,)``.
+        depth_map (torch.Tensor): Batch of depth maps of shape ``(B, H, W)``.
+        image_path (list[str]): List of paths to the source image files.
+        depth_path (list[str]): List of paths to the depth map files.
 
     Examples:
+        >>> import torch
         >>> batch = DepthBatch(
         ...     image=torch.rand(32, 3, 224, 224),
         ...     gt_label=torch.randint(0, 2, (32,)),
@@ -69,10 +86,8 @@ class DepthBatch(
         ...     image_path=["path/to/image_{}.jpg".format(i) for i in range(32)],
         ...     depth_path=["path/to/depth_{}.png".format(i) for i in range(32)]
         ... )
-
         >>> print(batch.image.shape, batch.depth_map.shape)
         torch.Size([32, 3, 224, 224]) torch.Size([32, 224, 224])
-
         >>> for item in batch:
         ...     print(item.image.shape, item.depth_map.shape)
         torch.Size([3, 224, 224]) torch.Size([224, 224])

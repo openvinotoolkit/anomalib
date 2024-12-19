@@ -1,4 +1,35 @@
-"""PyTorch model for the PaDiM model implementation."""
+"""PyTorch model for the PaDiM model implementation.
+
+This module implements the PaDiM model architecture using PyTorch. PaDiM models the
+distribution of patch embeddings at each spatial location using multivariate
+Gaussian distributions.
+
+The model extracts features from multiple layers of pretrained CNN backbones to
+capture both semantic and low-level visual information. During inference, it
+computes Mahalanobis distances between test patch embeddings and their
+corresponding reference distributions.
+
+Example:
+    >>> from anomalib.models.image.padim.torch_model import PadimModel
+    >>> model = PadimModel(
+    ...     backbone="resnet18",
+    ...     layers=["layer1", "layer2", "layer3"],
+    ...     pre_trained=True,
+    ...     n_features=100
+    ... )
+    >>> input_tensor = torch.randn(32, 3, 224, 224)
+    >>> output = model(input_tensor)
+
+Paper: https://arxiv.org/abs/2011.08785
+
+See Also:
+    - :class:`anomalib.models.image.padim.lightning_model.Padim`:
+        Lightning implementation of the PaDiM model
+    - :class:`anomalib.models.image.padim.anomaly_map.AnomalyMapGenerator`:
+        Anomaly map generation for PaDiM using Mahalanobis distance
+    - :class:`anomalib.models.components.MultiVariateGaussian`:
+        Multivariate Gaussian distribution modeling
+"""
 
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -33,11 +64,22 @@ def _deduce_dims(
 ) -> tuple[int, int]:
     """Run a dry run to deduce the dimensions of the extracted features.
 
-    Important: `layers` is assumed to be ordered and the first (layers[0])
-                is assumed to be the layer with largest resolution.
+    This function performs a forward pass to determine the dimensions of features
+    extracted from the specified layers of the backbone network.
+
+    Args:
+        feature_extractor (TimmFeatureExtractor): Feature extraction model
+        input_size (tuple[int, int]): Input image dimensions (height, width)
+        layers (list[str]): Names of layers to extract features from
+
+    Important:
+        ``layers`` is assumed to be ordered and the first (``layers[0]``)
+        is assumed to be the layer with largest resolution.
 
     Returns:
-        tuple[int, int]: Dimensions of the extracted features: (n_dims_original, n_patches)
+        tuple[int, int]: Dimensions of extracted features:
+            - n_dims_original: Total number of feature dimensions
+            - n_patches: Number of spatial patches
     """
     dimensions_mapping = dryrun_find_featuremap_dims(feature_extractor, input_size, layers)
 
@@ -56,13 +98,13 @@ class PadimModel(nn.Module):
 
     Args:
         layers (list[str]): Layers used for feature extraction
-        backbone (str, optional): Pre-trained model backbone. Defaults to "resnet18".
-            Defaults to ``resnet18``.
-        pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.
-            Defaults to ``True``.
-        n_features (int, optional): Number of features to retain in the dimension reduction step.
-            Default values from the paper are available for: resnet18 (100), wide_resnet50_2 (550).
-            Defaults to ``None``.
+        backbone (str, optional): Pre-trained model backbone. Defaults to
+            ``resnet18``.
+        pre_trained (bool, optional): Boolean to check whether to use a
+            pre_trained backbone. Defaults to ``True``.
+        n_features (int, optional): Number of features to retain in the dimension
+            reduction step. Default values from the paper are available for:
+            resnet18 (100), wide_resnet50_2 (550). Defaults to ``None``.
     """
 
     def __init__(
@@ -110,18 +152,19 @@ class PadimModel(nn.Module):
         """Forward-pass image-batch (N, C, H, W) into model to extract features.
 
         Args:
-            input_tensor: Image-batch (N, C, H, W)
+            input_tensor (torch.Tensor): Image batch with shape (N, C, H, W)
 
         Returns:
-            If training, returns the embeddings.
-            If inference, returns the prediction score and the anomaly map.
+            torch.Tensor | InferenceBatch: If training, returns the embeddings.
+                If inference, returns ``InferenceBatch`` containing prediction
+                scores and anomaly maps.
 
         Example:
+            >>> model = PadimModel()
             >>> x = torch.randn(32, 3, 224, 224)
-            >>> features = self.extract_features(input_tensor)
+            >>> features = model.extract_features(x)
             >>> features.keys()
             dict_keys(['layer1', 'layer2', 'layer3'])
-
             >>> [v.shape for v in features.values()]
             [torch.Size([32, 64, 56, 56]),
             torch.Size([32, 128, 28, 28]),
@@ -153,11 +196,17 @@ class PadimModel(nn.Module):
     def generate_embedding(self, features: dict[str, torch.Tensor]) -> torch.Tensor:
         """Generate embedding from hierarchical feature map.
 
+        This method combines features from multiple layers of the backbone network
+        to create a rich embedding that captures both low-level and high-level
+        image features.
+
         Args:
-            features (dict[str, torch.Tensor]): Hierarchical feature map from a CNN (ResNet18 or WideResnet)
+            features (dict[str, torch.Tensor]): Dictionary mapping layer names to
+                their feature tensors extracted from the backbone CNN.
 
         Returns:
-            Embedding vector
+            torch.Tensor: Embedding tensor combining features from all specified
+                layers, with dimensions reduced according to ``n_features``.
         """
         embeddings = features[self.layers[0]]
         for layer in self.layers[1:]:

@@ -1,6 +1,28 @@
 """WinCLIP: Zero-/Few-Shot Anomaly Classification and Segmentation.
 
-Paper https://arxiv.org/abs/2303.14814
+This module implements the WinCLIP model for zero-shot and few-shot anomaly
+detection using CLIP embeddings and a sliding window approach.
+
+The model can perform both anomaly classification and segmentation tasks by
+comparing image regions with normal reference examples through CLIP embeddings.
+
+Example:
+    >>> from anomalib.data import MVTec
+    >>> from anomalib.engine import Engine
+    >>> from anomalib.models.image import WinClip
+
+    >>> datamodule = MVTec(root="./datasets/MVTec")  # doctest: +SKIP
+    >>> model = WinClip()  # doctest: +SKIP
+
+    >>> Engine.test(model=model, datamodule=datamodule)  # doctest: +SKIP
+
+Paper:
+    WinCLIP: Zero-/Few-Shot Anomaly Classification and Segmentation
+    https://arxiv.org/abs/2303.14814
+
+See Also:
+    - :class:`WinClip`: Main model class for WinCLIP-based anomaly detection
+    - :class:`WinClipModel`: PyTorch implementation of the WinCLIP model
 """
 
 # Copyright (C) 2024 Intel Corporation
@@ -34,18 +56,49 @@ __all__ = ["WinClip"]
 class WinClip(AnomalibModule):
     """WinCLIP Lightning model.
 
+    This model implements the WinCLIP algorithm for zero-/few-shot anomaly detection using CLIP
+    embeddings and a sliding window approach. The model can perform both anomaly classification
+    and segmentation by comparing image regions with normal reference examples.
+
     Args:
-        class_name (str, optional): The name of the object class used in the prompt ensemble.
-            Defaults to ``None``.
-        k_shot (int): The number of reference images for few-shot inference.
-            Defaults to ``0``.
-        scales (tuple[int], optional): The scales of the sliding windows used for multiscale anomaly detection.
-            Defaults to ``(2, 3)``.
-        few_shot_source (str | Path, optional): Path to a folder of reference images used for few-shot inference.
-            Defaults to ``None``.
-        pre_processor (PreProcessor, optional): Pre-processor for the model.
-            This is used to pre-process the input data before it is passed to the model.
-            Defaults to ``None``.
+        class_name (str | None, optional): Name of the object class used in the prompt
+            ensemble. If not provided, will try to infer from the datamodule or use "object"
+            as default. Defaults to ``None``.
+        k_shot (int, optional): Number of reference images to use for few-shot inference.
+            If 0, uses zero-shot approach. Defaults to ``0``.
+        scales (tuple[int], optional): Scales of sliding windows used for multiscale anomaly
+            detection. Defaults to ``(2, 3)``.
+        few_shot_source (str | Path | None, optional): Path to folder containing reference
+            images for few-shot inference. If not provided, reference images are sampled from
+            training data. Defaults to ``None``.
+        pre_processor (PreProcessor | bool, optional): Pre-processor instance or flag to use
+            default. Used to pre-process input data before model inference. Defaults to
+            ``True``.
+        post_processor (PostProcessor | bool, optional): Post-processor instance or flag to
+            use default. Used to post-process model predictions. Defaults to ``True``.
+        evaluator (Evaluator | bool, optional): Evaluator instance or flag to use default.
+            Used to compute metrics. Defaults to ``True``.
+        visualizer (Visualizer | bool, optional): Visualizer instance or flag to use default.
+            Used to create visualizations. Defaults to ``True``.
+
+    Example:
+        >>> from anomalib.models.image import WinClip
+        >>> # Zero-shot approach
+        >>> model = WinClip()  # doctest: +SKIP
+        >>> # Few-shot with 5 reference images
+        >>> model = WinClip(k_shot=5)  # doctest: +SKIP
+        >>> # Custom class name
+        >>> model = WinClip(class_name="transistor")  # doctest: +SKIP
+
+    Notes:
+        - The model automatically excludes CLIP backbone parameters from checkpoints to
+          reduce size
+        - Input image size is fixed at 240x240 and cannot be modified
+        - Uses a custom normalization transform specific to CLIP
+
+    See Also:
+        - :class:`WinClipModel`: PyTorch implementation of the core model
+        - :class:`OneClassPostProcessor`: Default post-processor used by WinCLIP
     """
 
     EXCLUDE_FROM_STATE_DICT = frozenset({"model.clip"})
@@ -74,13 +127,15 @@ class WinClip(AnomalibModule):
         self.few_shot_source = Path(few_shot_source) if few_shot_source else None
 
     def _setup(self) -> None:
-        """Setup WinCLIP.
+        """Setup WinCLIP model.
 
-        - Set the class name used in the prompt ensemble.
-        - Collect text embeddings for zero-shot inference.
-        - Collect reference images for few-shot inference.
+        This method:
+        - Sets the class name used in the prompt ensemble
+        - Collects text embeddings for zero-shot inference
+        - Collects reference images for few-shot inference if ``k_shot > 0``
 
-        We need to pass the device because this hook is called before the model is moved to the device.
+        Note:
+            This hook is called before the model is moved to the target device.
         """
         # get class name
         self.class_name = self._get_class_name()
@@ -105,12 +160,15 @@ class WinClip(AnomalibModule):
         self.model.setup(self.class_name, ref_images)
 
     def _get_class_name(self) -> str:
-        """Set the class name used in the prompt ensemble.
+        """Get the class name used in the prompt ensemble.
 
-        - When a class name is provided by the user, it is used.
-        - When the user did not provide a class name, the category name from the datamodule is used, if available.
-        - When the user did not provide a class name and the datamodule does not have a category name, the default
-            class name "object" is used.
+        The class name is determined in the following order:
+        1. Use class name provided in initialization
+        2. Use category name from datamodule if available
+        3. Use default value "object"
+
+        Returns:
+            str: Class name to use in prompts
         """
         if self.class_name is not None:
             logger.info("Using class name from init args: %s", self.class_name)
@@ -124,11 +182,14 @@ class WinClip(AnomalibModule):
     def collect_reference_images(self, dataloader: DataLoader) -> torch.Tensor:
         """Collect reference images for few-shot inference.
 
-        The reference images are collected by iterating the training dataset until the required number of images are
-        collected.
+        Iterates through the training dataset until the required number of reference images
+        (specified by ``k_shot``) are collected.
+
+        Args:
+            dataloader (DataLoader): DataLoader to collect reference images from
 
         Returns:
-            ref_images (Tensor): A tensor containing the reference images.
+            torch.Tensor: Tensor containing the collected reference images
         """
         ref_images = torch.Tensor()
         for batch in dataloader:
@@ -140,34 +201,56 @@ class WinClip(AnomalibModule):
 
     @staticmethod
     def configure_optimizers() -> None:
-        """WinCLIP doesn't require optimization, therefore returns no optimizers."""
+        """Configure optimizers.
+
+        WinCLIP doesn't require optimization, therefore returns no optimizers.
+        """
         return
 
     def validation_step(self, batch: Batch, *args, **kwargs) -> dict:
-        """Validation Step of WinCLIP."""
+        """Validation Step of WinCLIP.
+
+        Args:
+            batch (Batch): Input batch
+            *args: Variable length argument list
+            **kwargs: Arbitrary keyword arguments
+
+        Returns:
+            dict: Dictionary containing the batch updated with predictions
+        """
         del args, kwargs  # These variables are not used.
         predictions = self.model(batch.image)
         return batch.update(**predictions._asdict())
 
     @property
     def trainer_arguments(self) -> dict[str, int | float]:
-        """Set model-specific trainer arguments."""
+        """Get model-specific trainer arguments.
+
+        Returns:
+            dict[str, int | float]: Empty dictionary as WinCLIP needs no special arguments
+        """
         return {}
 
     @property
     def learning_type(self) -> LearningType:
-        """The learning type of the model.
+        """Get the learning type of the model.
 
-        WinCLIP is a zero-/few-shot model, depending on the user configuration. Therefore, the learning type is
-        set to ``LearningType.FEW_SHOT`` when ``k_shot`` is greater than zero and ``LearningType.ZERO_SHOT`` otherwise.
+        Returns:
+            LearningType: ``LearningType.FEW_SHOT`` if ``k_shot > 0``, else
+                ``LearningType.ZERO_SHOT``
         """
         return LearningType.FEW_SHOT if self.k_shot else LearningType.ZERO_SHOT
 
     def state_dict(self, **kwargs) -> OrderedDict[str, Any]:
-        """Return the state dict of the model.
+        """Get the state dict of the model.
 
-        Before returning the state dict, we remove the parameters of the frozen backbone to reduce the size of the
-        checkpoint.
+        Removes parameters of the frozen backbone to reduce checkpoint size.
+
+        Args:
+            **kwargs: Additional arguments to pass to parent's state_dict
+
+        Returns:
+            OrderedDict[str, Any]: State dict with backbone parameters removed
         """
         state_dict = super().state_dict(**kwargs)
         for pattern in self.EXCLUDE_FROM_STATE_DICT:
@@ -179,8 +262,16 @@ class WinClip(AnomalibModule):
     def load_state_dict(self, state_dict: OrderedDict[str, Any], strict: bool = True) -> Any:  # noqa: ANN401
         """Load the state dict of the model.
 
-        Before loading the state dict, we restore the parameters of the frozen backbone to ensure that the model
-        is loaded correctly. We also restore the auxiliary objects like threshold classes and normalization metrics.
+        Restores backbone parameters before loading to ensure correct model initialization.
+
+        Args:
+            state_dict (OrderedDict[str, Any]): State dict to load
+            strict (bool, optional): Whether to strictly enforce that the keys in
+                ``state_dict`` match the keys returned by this module's
+                ``state_dict()`` function. Defaults to ``True``.
+
+        Returns:
+            Any: Return value from parent's load_state_dict
         """
         # restore the parameters of the excluded modules, if any
         full_dict = super().state_dict()
@@ -191,7 +282,15 @@ class WinClip(AnomalibModule):
 
     @classmethod
     def configure_pre_processor(cls, image_size: tuple[int, int] | None = None) -> PreProcessor:
-        """Configure the default pre-processor used by the model."""
+        """Configure the default pre-processor used by the model.
+
+        Args:
+            image_size (tuple[int, int] | None, optional): Not used as WinCLIP has fixed
+                input size. Defaults to ``None``.
+
+        Returns:
+            PreProcessor: Configured pre-processor with CLIP-specific transforms
+        """
         if image_size is not None:
             logger.warning("Image size is not used in WinCLIP. The input image size is determined by the model.")
 
@@ -203,5 +302,9 @@ class WinClip(AnomalibModule):
 
     @staticmethod
     def configure_post_processor() -> OneClassPostProcessor:
-        """Return the default post-processor for WinCLIP."""
+        """Configure the default post-processor for WinCLIP.
+
+        Returns:
+            OneClassPostProcessor: Default post-processor instance
+        """
         return OneClassPostProcessor()

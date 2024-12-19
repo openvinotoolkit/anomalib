@@ -1,4 +1,37 @@
-"""Torch Dataset Implementations of Anomalib Datasets."""
+"""PyTorch Dataset implementations for anomaly detection.
+
+This module provides dataset implementations for various anomaly detection tasks:
+
+Base Classes:
+    - ``AnomalibDataset``: Base class for all Anomalib datasets
+    - ``AnomalibDepthDataset``: Base class for 3D/depth datasets
+    - ``AnomalibVideoDataset``: Base class for video datasets
+
+Depth Datasets:
+    - ``Folder3DDataset``: Custom RGB-D dataset from folder structure
+    - ``MVTec3DDataset``: MVTec 3D AD dataset with industrial objects
+
+Image Datasets:
+    - ``BTechDataset``: BTech dataset containing industrial objects
+    - ``DatumaroDataset``: Dataset in Datumaro format (Intel Geti™ export)
+    - ``FolderDataset``: Custom dataset from folder structure
+    - ``KolektorDataset``: Kolektor surface defect dataset
+    - ``MVTecDataset``: MVTec AD dataset with industrial objects
+    - ``VisaDataset``: Visual Inspection of Surface Anomalies dataset
+
+Video Datasets:
+    - ``AvenueDataset``: CUHK Avenue dataset for abnormal event detection
+    - ``ShanghaiTechDataset``: ShanghaiTech Campus surveillance dataset
+    - ``UCSDpedDataset``: UCSD Pedestrian dataset for anomaly detection
+
+Example:
+    >>> from anomalib.data.datasets import MVTecDataset
+    >>> dataset = MVTecDataset(
+    ...     root="./datasets/MVTec",
+    ...     category="bottle",
+    ...     split="train"
+    ... )
+"""
 
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0

@@ -1,4 +1,21 @@
-"""Base Torch Video Dataset."""
+"""Base Torch Video Dataset.
+
+This module implements the base video dataset class for anomaly detection tasks that
+use video data. The dataset is designed to work with video clips and supports both
+classification and segmentation tasks.
+
+Example:
+    >>> from anomalib.data.datasets import AnomalibVideoDataset
+    >>> dataset = AnomalibVideoDataset(
+    ...     clip_length_in_frames=8,
+    ...     frames_between_clips=1,
+    ...     transform=None,
+    ...     target_frame="last"
+    ... )
+    >>> item = dataset[0]
+    >>> item.image.shape
+    torch.Size([C, H, W])
+"""
 
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -22,7 +39,14 @@ from .image import AnomalibDataset
 class VideoTargetFrame(str, Enum):
     """Target frame for a video-clip.
 
-    Used in multi-frame models to determine which frame's ground truth information will be used.
+    Used in multi-frame models to determine which frame's ground truth information
+    will be used.
+
+    Args:
+        FIRST: Use the first frame in the clip as target
+        LAST: Use the last frame in the clip as target
+        MID: Use the middle frame in the clip as target
+        ALL: Use all frames in the clip as target
     """
 
     FIRST = "first"
@@ -34,13 +58,30 @@ class VideoTargetFrame(str, Enum):
 class AnomalibVideoDataset(AnomalibDataset, ABC):
     """Base video anomalib dataset class.
 
+    This class extends ``AnomalibDataset`` to handle video data for anomaly
+    detection tasks. It supports both classification and segmentation tasks.
+
     Args:
         clip_length_in_frames (int): Number of video frames in each clip.
-        frames_between_clips (int): Number of frames between each consecutive video clip.
-        transform (Transform, optional): Transforms that should be applied to the input clips.
-            Defaults to ``None``.
-        target_frame (VideoTargetFrame): Specifies the target frame in the video clip, used for ground truth retrieval.
+        frames_between_clips (int): Number of frames between each consecutive
+            video clip.
+        transform (Transform | None, optional): Transforms to be applied to the
+            input clips. Defaults to ``None``.
+        target_frame (VideoTargetFrame, optional): Specifies the target frame in
+            the video clip, used for ground truth retrieval.
             Defaults to ``VideoTargetFrame.LAST``.
+
+    Example:
+        >>> from torchvision.transforms.v2 import Resize
+        >>> dataset = AnomalibVideoDataset(
+        ...     clip_length_in_frames=8,
+        ...     frames_between_clips=1,
+        ...     transform=Resize((256, 256)),
+        ...     target_frame="last"
+        ... )
+        >>> item = dataset[0]
+        >>> item.image.shape
+        torch.Size([C, H, W])
     """
 
     def __init__(
@@ -62,7 +103,14 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
         self.target_frame = target_frame
 
     def __len__(self) -> int:
-        """Get length of the dataset."""
+        """Get length of the dataset.
+
+        Returns:
+            int: Number of clips in the dataset.
+
+        Raises:
+            TypeError: If ``self.indexer`` is not an instance of ``ClipsIndexer``.
+        """
         if not isinstance(self.indexer, ClipsIndexer):
             msg = "self.indexer must be an instance of ClipsIndexer."
             raise TypeError(msg)
@@ -70,7 +118,11 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
 
     @property
     def samples(self) -> DataFrame:
-        """Get the samples dataframe."""
+        """Get the samples dataframe.
+
+        Returns:
+            DataFrame: DataFrame containing dataset samples.
+        """
         return super().samples
 
     @samples.setter
@@ -89,7 +141,10 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
     def _setup_clips(self) -> None:
         """Compute the video and frame indices of the subvideos.
 
-        Should be called after each change to self._samples
+        Should be called after each change to ``self._samples``.
+
+        Raises:
+            TypeError: If ``self.indexer_cls`` is not callable.
         """
         if not callable(self.indexer_cls):
             msg = "self.indexer_cls must be callable."
@@ -105,13 +160,13 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
         """Select the target frame from the clip.
 
         Args:
-            item (DatasetItem): Item containing the clip information.
+            item (VideoItem): Item containing the clip information.
+
+        Returns:
+            VideoItem: Selected item from the clip.
 
         Raises:
             ValueError: If the target frame is not one of the supported options.
-
-        Returns:
-            DatasetItem: Selected item from the clip.
         """
         if self.target_frame == VideoTargetFrame.FIRST:
             idx = 0
@@ -134,13 +189,17 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
         return item
 
     def __getitem__(self, index: int) -> VideoItem:
-        """Get the dataset item for the index ``index``.
+        """Get the dataset item for the index.
 
         Args:
             index (int): Index of the item to be returned.
 
         Returns:
-            DatasetItem: Dictionary containing the mask, clip and file system information.
+            VideoItem: Dataset item containing the mask, clip and file system
+                information.
+
+        Raises:
+            TypeError: If ``self.indexer`` is not an instance of ``ClipsIndexer``.
         """
         if not isinstance(self.indexer, ClipsIndexer):
             msg = "self.indexer must be an instance of ClipsIndexer."
@@ -169,5 +228,9 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
 
     @property
     def collate_fn(self) -> Callable:
-        """Return the collate function for video batches."""
+        """Return the collate function for video batches.
+
+        Returns:
+            Callable: Collate function for creating video batches.
+        """
         return VideoBatch.collate

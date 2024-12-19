@@ -68,7 +68,7 @@ loggers = [
 ]
 notebooks = ["gitpython", "ipykernel", "ipywidgets", "notebook"]
 docs = [
-    "myst-parser",
+    "myst-parser[linkify]",
     "nbsphinx",
     "pandoc",
     "sphinx",

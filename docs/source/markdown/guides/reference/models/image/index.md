@@ -67,6 +67,13 @@ EfficientAD: Accurate Visual Anomaly Detection at Millisecond-Level Latencies
 FastFlow: Unsupervised Anomaly Detection and Localization via 2D Normalizing Flows
 :::
 
+:::{grid-item-card} {material-regular}`model_training;1.5em` FRE
+:link: ./fre
+:link-type: doc
+
+FRE: A Fast Method For Anomaly Detection And Segmentation
+:::
+
 :::{grid-item-card} {material-regular}`model_training;1.5em` GANomaly
 :link: ./ganomaly
 :link-type: doc
@@ -109,6 +116,13 @@ Student-Teacher Feature Pyramid Matching for Unsupervised Anomaly Detection
 U-Flow: A U-shaped Normalizing Flow for Anomaly Detection with Unsupervised Threshold
 :::
 
+:::{grid-item-card} {material-regular}`model_training;1.5em` VLM-AD
+:link: ./vlm_ad
+:link-type: doc
+
+VLM-AD: Vision-Language Model for Anomaly Detection
+:::
+
 :::{grid-item-card} {material-regular}`model_training;1.5em` WinCLIP
 :link: ./winclip
 :link-type: doc
@@ -130,6 +144,7 @@ WinCLIP: Zero-/Few-Shot Anomaly Classification and Segmentation
 ./dsr
 ./efficient_ad
 ./fastflow
+./fre
 ./ganomaly
 ./padim
 ./patchcore

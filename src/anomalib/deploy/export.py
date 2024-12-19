@@ -1,4 +1,23 @@
-"""Utilities for optimization and OpenVINO conversion."""
+"""Utilities for optimization and OpenVINO conversion.
+
+This module provides functionality for exporting and optimizing anomaly detection
+models to different formats like ONNX, OpenVINO IR and PyTorch.
+
+Example:
+    Export a model to ONNX format:
+
+    >>> from anomalib.deploy import ExportType
+    >>> export_type = ExportType.ONNX
+    >>> export_type
+    'onnx'
+
+    Export with OpenVINO compression:
+
+    >>> from anomalib.deploy import CompressionType
+    >>> compression = CompressionType.INT8_PTQ
+    >>> compression
+    'int8_ptq'
+"""
 
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -12,14 +31,18 @@ logger = logging.getLogger("anomalib")
 class ExportType(str, Enum):
     """Model export type.
 
-    Examples:
+    Supported export formats for anomaly detection models.
+
+    Attributes:
+        ONNX: Export model to ONNX format
+        OPENVINO: Export model to OpenVINO IR format
+        TORCH: Export model to PyTorch format
+
+    Example:
         >>> from anomalib.deploy import ExportType
-        >>> ExportType.ONNX
+        >>> export_type = ExportType.ONNX
+        >>> export_type
         'onnx'
-        >>> ExportType.OPENVINO
-        'openvino'
-        >>> ExportType.TORCH
-        'torch'
     """
 
     ONNX = "onnx"
@@ -31,20 +54,22 @@ class CompressionType(str, Enum):
     """Model compression type when exporting to OpenVINO.
 
     Attributes:
-        FP16 (str): Weight compression (FP16). All weights are converted to FP16.
-        INT8 (str): Weight compression (INT8). All weights are quantized to INT8,
-            but are dequantized to floating point before inference.
-        INT8_PTQ (str): Full integer post-training quantization (INT8).
-            All weights and operations are quantized to INT8. Inference is done
-            in INT8 precision.
-        INT8_ACQ (str): Accuracy-control quantization (INT8). Weights and
+        FP16: Weight compression to FP16 precision. All weights are converted
+            to FP16.
+        INT8: Weight compression to INT8 precision. All weights are quantized
+            to INT8, but are dequantized to floating point before inference.
+        INT8_PTQ: Full integer post-training quantization to INT8 precision.
+            All weights and operations are quantized to INT8. Inference is
+            performed in INT8 precision.
+        INT8_ACQ: Accuracy-control quantization to INT8 precision. Weights and
             operations are quantized to INT8, except those that would degrade
-            quality of the model more than is acceptable. Inference is done in
-            a mixed precision.
+            model quality beyond an acceptable threshold. Inference uses mixed
+            precision.
 
-    Examples:
+    Example:
         >>> from anomalib.deploy import CompressionType
-        >>> CompressionType.INT8_PTQ
+        >>> compression = CompressionType.INT8_PTQ
+        >>> compression
         'int8_ptq'
     """
 

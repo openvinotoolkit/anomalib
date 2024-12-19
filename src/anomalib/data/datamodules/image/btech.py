@@ -1,9 +1,38 @@
 """BTech Data Module.
 
-This script contains PyTorch Lightning DataModule for the BTech dataset.
+This module provides a PyTorch Lightning DataModule for the BTech dataset. If the
+dataset is not available locally, it will be downloaded and extracted
+automatically.
 
-If the dataset is not on the file system, the script downloads and
-extracts the dataset and create PyTorch data objects.
+Example:
+    Create a BTech datamodule::
+
+        >>> from anomalib.data import BTech
+        >>> datamodule = BTech(
+        ...     root="./datasets/BTech",
+        ...     category="01"
+        ... )
+
+Notes:
+    The dataset will be automatically downloaded and converted to the required
+    format when first used. The directory structure after preparation will be::
+
+        datasets/
+        └── BTech/
+            ├── 01/
+            ├── 02/
+            └── 03/
+
+License:
+    BTech dataset is released under the Creative Commons
+    Attribution-NonCommercial-ShareAlike 4.0 International License
+    (CC BY-NC-SA 4.0).
+    https://creativecommons.org/licenses/by-nc-sa/4.0/
+
+Reference:
+    Mishra, Pankaj, et al. "BTAD—A Large Scale Dataset and Benchmark for
+    Real-World Industrial Anomaly Detection." Pattern Recognition 136 (2024):
+    109542.
 """
 
 # Copyright (C) 2022-2024 Intel Corporation
@@ -33,63 +62,70 @@ class BTech(AnomalibDataModule):
     """BTech Lightning Data Module.
 
     Args:
-        root (Path | str): Path to the BTech dataset.
+        root (Path | str): Path to the root of the dataset.
             Defaults to ``"./datasets/BTech"``.
-        category (str): Name of the BTech category.
+        category (str): Category of the BTech dataset (e.g. ``"01"``, ``"02"``,
+            or ``"03"``).
             Defaults to ``"01"``.
         train_batch_size (int, optional): Training batch size.
             Defaults to ``32``.
-        eval_batch_size (int, optional): Eval batch size.
+        eval_batch_size (int, optional): Test batch size.
             Defaults to ``32``.
         num_workers (int, optional): Number of workers.
             Defaults to ``8``.
-        test_split_mode (TestSplitMode, optional): Setting that determines how the testing subset is obtained.
+        test_split_mode (TestSplitMode): Setting that determines how the testing
+            subset is obtained.
             Defaults to ``TestSplitMode.FROM_DIR``.
-        test_split_ratio (float, optional): Fraction of images from the train set that will be reserved for testing.
+        test_split_ratio (float): Fraction of images from the train set that will
+            be reserved for testing.
             Defaults to ``0.2``.
-        val_split_mode (ValSplitMode, optional): Setting that determines how the validation subset is obtained.
+        val_split_mode (ValSplitMode): Setting that determines how the validation
+            subset is obtained.
             Defaults to ``ValSplitMode.SAME_AS_TEST``.
-        val_split_ratio (float, optional): Fraction of train or test images that will be reserved for validation.
+        val_split_ratio (float): Fraction of train or test images that will be
+            reserved for validation.
             Defaults to ``0.5``.
-        seed (int | None, optional): Seed which may be set to a fixed value for reproducibility.
+        seed (int | None, optional): Seed which may be set to a fixed value for
+            reproducibility.
             Defaults to ``None``.
 
-    Examples:
-        To create the BTech datamodule, we need to instantiate the class, and call the ``setup`` method.
+    Example:
+        To create the BTech datamodule, instantiate the class and call
+        ``setup``::
 
-        >>> from anomalib.data import BTech
-        >>> datamodule = BTech(
-        ...     root="./datasets/BTech",
-        ...     category="01",
-        ...     train_batch_size=32,
-        ...     eval_batch_size=32,
-        ...     num_workers=8,
-        ... )
-        >>> datamodule.setup()
+            >>> from anomalib.data import BTech
+            >>> datamodule = BTech(
+            ...     root="./datasets/BTech",
+            ...     category="01",
+            ...     train_batch_size=32,
+            ...     eval_batch_size=32,
+            ...     num_workers=8,
+            ... )
+            >>> datamodule.setup()
 
-        To get the train dataloader and the first batch of data:
+        Get the train dataloader and first batch::
 
-        >>> i, data = next(enumerate(datamodule.train_dataloader()))
-        >>> data.keys()
-        dict_keys(['image'])
-        >>> data["image"].shape
-        torch.Size([32, 3, 256, 256])
+            >>> i, data = next(enumerate(datamodule.train_dataloader()))
+            >>> data.keys()
+            dict_keys(['image'])
+            >>> data["image"].shape
+            torch.Size([32, 3, 256, 256])
 
-        To access the validation dataloader and the first batch of data:
+        Access the validation dataloader and first batch::
 
-        >>> i, data = next(enumerate(datamodule.val_dataloader()))
-        >>> data.keys()
-        dict_keys(['image_path', 'label', 'mask_path', 'image', 'mask'])
-        >>> data["image"].shape, data["mask"].shape
-        (torch.Size([32, 3, 256, 256]), torch.Size([32, 256, 256]))
+            >>> i, data = next(enumerate(datamodule.val_dataloader()))
+            >>> data.keys()
+            dict_keys(['image_path', 'label', 'mask_path', 'image', 'mask'])
+            >>> data["image"].shape, data["mask"].shape
+            (torch.Size([32, 3, 256, 256]), torch.Size([32, 256, 256]))
 
-        Similarly, to access the test dataloader and the first batch of data:
+        Access the test dataloader and first batch::
 
-        >>> i, data = next(enumerate(datamodule.test_dataloader()))
-        >>> data.keys()
-        dict_keys(['image_path', 'label', 'mask_path', 'image', 'mask'])
-        >>> data["image"].shape, data["mask"].shape
-        (torch.Size([32, 3, 256, 256]), torch.Size([32, 256, 256]))
+            >>> i, data = next(enumerate(datamodule.test_dataloader()))
+            >>> data.keys()
+            dict_keys(['image_path', 'label', 'mask_path', 'image', 'mask'])
+            >>> data["image"].shape, data["mask"].shape
+            (torch.Size([32, 3, 256, 256]), torch.Size([32, 256, 256]))
     """
 
     def __init__(
@@ -134,34 +170,26 @@ class BTech(AnomalibDataModule):
     def prepare_data(self) -> None:
         """Download the dataset if not available.
 
-        This method checks if the specified dataset is available in the file system.
-        If not, it downloads and extracts the dataset into the appropriate directory.
+        This method checks if the specified dataset is available in the file
+        system. If not, it downloads and extracts the dataset into the
+        appropriate directory.
 
         Example:
             Assume the dataset is not available on the file system.
-            Here's how the directory structure looks before and after calling the
-            `prepare_data` method:
+            Here's how the directory structure looks before and after calling
+            ``prepare_data``::
 
-            Before:
-
-            .. code-block:: bash
-
+                # Before
                 $ tree datasets
                 datasets
                 ├── dataset1
                 └── dataset2
 
-            Calling the method:
+                # Calling prepare_data
+                >>> datamodule = BTech(root="./datasets/BTech", category="01")
+                >>> datamodule.prepare_data()
 
-            .. code-block:: python
-
-                >> datamodule = BTech(root="./datasets/BTech", category="01")
-                >> datamodule.prepare_data()
-
-            After:
-
-            .. code-block:: bash
-
+                # After
                 $ tree datasets
                 datasets
                 ├── dataset1
@@ -178,9 +206,12 @@ class BTech(AnomalibDataModule):
 
             # rename folder and convert images
             logger.info("Renaming the dataset directory")
-            shutil.move(src=str(self.root.parent / "BTech_Dataset_transformed"), dst=str(self.root))
-            logger.info("Convert the bmp formats to png to have consistent image extensions")
-            for filename in tqdm(self.root.glob("**/*.bmp"), desc="Converting bmp to png"):
+            shutil.move(
+                src=str(self.root.parent / "BTech_Dataset_transformed"),
+                dst=str(self.root),
+            )
+            logger.info("Convert the bmp formats to png for consistent extensions")
+            for filename in tqdm(self.root.glob("**/*.bmp"), desc="Converting"):
                 image = cv2.imread(str(filename))
                 cv2.imwrite(str(filename.with_suffix(".png")), image)
                 filename.unlink()

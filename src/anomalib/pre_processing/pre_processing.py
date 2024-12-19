@@ -1,4 +1,23 @@
-"""Anomalib pre-processing module."""
+"""Pre-processing module for anomaly detection pipelines.
+
+This module provides functionality for pre-processing data before model training
+and inference through the :class:`PreProcessor` class.
+
+The pre-processor handles:
+    - Applying transforms to data during different pipeline stages
+    - Managing stage-specific transforms (train/val/test)
+    - Integrating with both PyTorch and Lightning workflows
+
+Example:
+    >>> from anomalib.pre_processing import PreProcessor
+    >>> from torchvision.transforms.v2 import Resize
+    >>> pre_processor = PreProcessor(transform=Resize(size=(256, 256)))
+    >>> transformed_batch = pre_processor(batch)
+
+The pre-processor is implemented as both a :class:`torch.nn.Module` and
+:class:`lightning.pytorch.Callback` to support both inference and training
+workflows.
+"""
 
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -33,44 +52,56 @@ class PreProcessor(nn.Module, Callback):
     training, validation, testing, and prediction.
 
     Args:
-        train_transform (Transform | None): Transform to apply during training.
-        val_transform (Transform | None): Transform to apply during validation.
-        test_transform (Transform | None): Transform to apply during testing.
-        transform (Transform | None): General transform to apply if stage-specific
-            transforms are not provided.
+        train_transform (Transform | None, optional): Transform to apply during
+            training. Defaults to None.
+        val_transform (Transform | None, optional): Transform to apply during
+            validation. Defaults to None.
+        test_transform (Transform | None, optional): Transform to apply during
+            testing. Defaults to None.
+        transform (Transform | None, optional): General transform to apply if
+            stage-specific transforms are not provided. Defaults to None.
 
     Raises:
-        ValueError: If both `transform` and any of the stage-specific transforms
+        ValueError: If both ``transform`` and any of the stage-specific transforms
             are provided simultaneously.
 
     Notes:
-        If only `transform` is provided, it will be used for all stages (train, val, test).
+        If only ``transform`` is provided, it will be used for all stages (train,
+        val, test).
 
         Priority of transforms:
-        1. Explicitly set PreProcessor transforms (highest priority)
-        2. Datamodule transforms (if PreProcessor has no transforms)
-        3. Dataloader transforms (if neither PreProcessor nor datamodule have transforms)
-        4. Default transforms (lowest priority)
+            1. Explicitly set ``PreProcessor`` transforms (highest priority)
+            2. Datamodule transforms (if ``PreProcessor`` has no transforms)
+            3. Dataloader transforms (if neither ``PreProcessor`` nor datamodule
+               have transforms)
+            4. Default transforms (lowest priority)
 
-    Examples:
+    Example:
         >>> from torchvision.transforms.v2 import Compose, Resize, ToTensor
         >>> from anomalib.pre_processing import PreProcessor
-
         >>> # Define transforms
-        >>> train_transform = Compose([Resize((224, 224)), ToTensor()])
-        >>> val_transform = Compose([Resize((256, 256)), CenterCrop((224, 224)), ToTensor()])
-
+        >>> train_transform = Compose([
+        ...     Resize((224, 224)),
+        ...     ToTensor()
+        ... ])
+        >>> val_transform = Compose([
+        ...     Resize((256, 256)),
+        ...     CenterCrop((224, 224)),
+        ...     ToTensor()
+        ... ])
         >>> # Create PreProcessor with stage-specific transforms
         >>> pre_processor = PreProcessor(
         ...     train_transform=train_transform,
         ...     val_transform=val_transform
         ... )
-
         >>> # Create PreProcessor with a single transform for all stages
-        >>> common_transform = Compose([Resize((224, 224)), ToTensor()])
+        >>> common_transform = Compose([
+        ...     Resize((224, 224)),
+        ...     ToTensor()
+        ... ])
         >>> pre_processor_common = PreProcessor(transform=common_transform)
 
-        >>> # Use in a Lightning module
+    Integration with Lightning:
         >>> class MyModel(LightningModule):
         ...     def __init__(self):
         ...         super().__init__()
@@ -80,7 +111,7 @@ class PreProcessor(nn.Module, Callback):
         ...         return [self.pre_processor]
         ...
         ...     def training_step(self, batch, batch_idx):
-        ...         # The pre_processor will automatically apply the correct transform
+        ...         # Pre-processor automatically applies correct transform
         ...         processed_batch = self.pre_processor(batch)
         ...         # Rest of the training step
     """
@@ -110,7 +141,12 @@ class PreProcessor(nn.Module, Callback):
         self.export_transform = get_exportable_transform(self.test_transform)
 
     def setup_datamodule_transforms(self, datamodule: "AnomalibDataModule") -> None:
-        """Set up datamodule transforms."""
+        """Set up datamodule transforms.
+
+        Args:
+            datamodule (AnomalibDataModule): The datamodule to configure
+                transforms for.
+        """
         # If PreProcessor has transforms, propagate them to datamodule
         if any([self.train_transform, self.val_transform, self.test_transform]):
             transforms = {
@@ -125,7 +161,12 @@ class PreProcessor(nn.Module, Callback):
                     set_datamodule_stage_transform(datamodule, transform, stage)
 
     def setup_dataloader_transforms(self, dataloaders: "EVAL_DATALOADERS | TRAIN_DATALOADERS") -> None:
-        """Set up dataloader transforms."""
+        """Set up dataloader transforms.
+
+        Args:
+            dataloaders (EVAL_DATALOADERS | TRAIN_DATALOADERS): The dataloaders
+                to configure transforms for.
+        """
         if isinstance(dataloaders, DataLoader):
             dataloaders = [dataloaders]
 
@@ -153,9 +194,9 @@ class PreProcessor(nn.Module, Callback):
         """Configure transforms at the start of each stage.
 
         Args:
-            trainer: The Lightning trainer.
-            pl_module: The Lightning module.
-            stage: The stage (e.g., 'fit', 'validate', 'test', 'predict').
+            trainer (Trainer): The Lightning trainer.
+            pl_module (LightningModule): The Lightning module.
+            stage (str): The stage (e.g., 'fit', 'validate', 'test', 'predict').
         """
         stage = TrainerFn(stage).value  # Ensure stage is str
 
@@ -171,7 +212,13 @@ class PreProcessor(nn.Module, Callback):
         """Apply transforms to the batch of tensors for inference.
 
         This forward-pass is only used after the model is exported.
-        Within the Lightning training/validation/testing loops, the transforms are applied
-        in the `on_*_batch_start` methods.
+        Within the Lightning training/validation/testing loops, the transforms are
+        applied in the ``on_*_batch_start`` methods.
+
+        Args:
+            batch (torch.Tensor): Input batch to transform.
+
+        Returns:
+            torch.Tensor: Transformed batch.
         """
         return self.export_transform(batch) if self.export_transform else batch

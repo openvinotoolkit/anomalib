@@ -1,4 +1,34 @@
-"""Job from which all the jobs inherit from."""
+"""Base job class that defines the interface for pipeline jobs.
+
+This module provides the base :class:`Job` class that all pipeline jobs inherit from. Jobs
+are atomic units of work that can be executed independently, either serially or in
+parallel.
+
+Example:
+    >>> from anomalib.pipelines.components.base import Job
+    >>> class MyJob(Job):
+    ...     name = "my_job"
+    ...     def run(self, task_id=None):
+    ...         # Implement job logic
+    ...         pass
+    ...     @staticmethod
+    ...     def collect(results):
+    ...         # Combine results from multiple runs
+    ...         pass
+    ...     @staticmethod
+    ...     def save(results):
+    ...         # Save final results
+    ...         pass
+
+The base job interface defines three key methods that subclasses must implement:
+
+- :meth:`run`: Execute the core job logic
+- :meth:`collect`: Gather and combine results from multiple job runs
+- :meth:`save`: Save or export the final collected results
+
+Jobs can be used as building blocks in pipelines for tasks like training,
+inference, or benchmarking.
+"""
 
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0

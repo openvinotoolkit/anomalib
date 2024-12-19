@@ -1,4 +1,51 @@
-"""Evaluator module for LightningModule."""
+"""Evaluator module for LightningModule.
+
+The Evaluator module computes and logs metrics during validation and test steps.
+Each ``AnomalibModule`` should have an Evaluator module as a submodule to compute
+and log metrics. An Evaluator module can be passed to the ``AnomalibModule`` as a
+parameter during initialization. When no Evaluator module is provided, the
+``AnomalibModule`` will use a default Evaluator module that logs a default set of
+metrics.
+
+Args:
+    val_metrics (Sequence[AnomalibMetric] | AnomalibMetric | None, optional):
+        Validation metrics. Defaults to ``None``.
+    test_metrics (Sequence[AnomalibMetric] | AnomalibMetric | None, optional):
+        Test metrics. Defaults to ``None``.
+    compute_on_cpu (bool, optional): Whether to compute metrics on CPU.
+        Defaults to ``True``.
+
+Example:
+    >>> from anomalib.metrics import F1Score, AUROC
+    >>> from anomalib.data import ImageBatch
+    >>> import torch
+    >>>
+    >>> # Initialize metrics with fields to use from batch
+    >>> f1_score = F1Score(fields=["pred_label", "gt_label"])
+    >>> auroc = AUROC(fields=["pred_score", "gt_label"])
+    >>>
+    >>> # Create evaluator with test metrics
+    >>> evaluator = Evaluator(test_metrics=[f1_score, auroc])
+    >>>
+    >>> # Create sample batch
+    >>> batch = ImageBatch(
+    ...     image=torch.rand(4, 3, 256, 256),
+    ...     pred_label=torch.tensor([0, 0, 1, 1]),
+    ...     gt_label=torch.tensor([0, 0, 1, 1]),
+    ...     pred_score=torch.tensor([0.1, 0.2, 0.8, 0.9])
+    ... )
+    >>>
+    >>> # Update metrics with batch
+    >>> evaluator.on_test_batch_end(None, None, None, batch, 0)
+    >>>
+    >>> # Compute and log metrics at end of epoch
+    >>> evaluator.on_test_epoch_end(None, None)
+
+Note:
+    The evaluator will automatically move metrics to CPU for computation if
+    ``compute_on_cpu=True`` and only one device is used. For multi-GPU training,
+    ``compute_on_cpu`` is automatically set to ``False``.
+"""
 
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0

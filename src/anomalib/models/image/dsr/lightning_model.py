@@ -1,6 +1,33 @@
 """DSR - A Dual Subspace Re-Projection Network for Surface Anomaly Detection.
 
-Paper https://link.springer.com/chapter/10.1007/978-3-031-19821-2_31
+This module implements the DSR model for surface anomaly detection. DSR uses a dual
+subspace re-projection approach to detect anomalies by comparing input images with
+their reconstructions in two different subspaces.
+
+The model consists of three training phases:
+1. A discrete model pre-training phase (using pre-trained weights)
+2. Training of the main reconstruction and anomaly detection modules
+3. Training of the upsampling module
+
+Paper: https://link.springer.com/chapter/10.1007/978-3-031-19821-2_31
+
+Example:
+    >>> from anomalib.models.image import Dsr
+    >>> model = Dsr(
+    ...     latent_anomaly_strength=0.2,
+    ...     upsampling_train_ratio=0.7
+    ... )
+
+The model can be used with any of the supported datasets and task modes in
+anomalib.
+
+Notes:
+    The model requires pre-trained weights for the discrete model which are
+    downloaded automatically during training.
+
+See Also:
+    :class:`anomalib.models.image.dsr.torch_model.DsrModel`:
+        PyTorch implementation of the DSR model architecture.
 """
 
 # Copyright (C) 2023-2024 Intel Corporation
@@ -33,7 +60,8 @@ logger = logging.getLogger(__name__)
 
 WEIGHTS_DOWNLOAD_INFO = DownloadInfo(
     name="vq_model_pretrained_128_4096.pckl",
-    url="https://github.com/openvinotoolkit/anomalib/releases/download/dsr_pretrained_weights/dsr_vq_model_pretrained.zip",
+    url="https://github.com/openvinotoolkit/anomalib/releases/download/"
+    "dsr_pretrained_weights/dsr_vq_model_pretrained.zip",
     hashsum="52fe7504ec8e9df70b4382f287ab26269dcfe000cd7a7e146a52c6f146f34afb",
 )
 
@@ -41,12 +69,33 @@ WEIGHTS_DOWNLOAD_INFO = DownloadInfo(
 class Dsr(AnomalibModule):
     """DSR: A Dual Subspace Re-Projection Network for Surface Anomaly Detection.
 
+    The model uses a dual subspace approach with three training phases:
+    1. Pre-trained discrete model (loaded from weights)
+    2. Training of reconstruction and anomaly detection modules
+    3. Training of the upsampling module for final anomaly map generation
+
     Args:
-        latent_anomaly_strength (float): Strength of the generated anomalies in the latent space. Defaults to 0.2
-        upsampling_train_ratio (float): Ratio of training steps for the upsampling module. Defaults to 0.7
-        pre_processor (PreProcessor, optional): Pre-processor for the model.
-            This is used to pre-process the input data before it is passed to the model.
-            Defaults to ``None``.
+        latent_anomaly_strength (float, optional): Strength of the generated
+            anomalies in the latent space. Defaults to ``0.2``.
+        upsampling_train_ratio (float, optional): Ratio of training steps for
+            the upsampling module. Defaults to ``0.7``.
+        pre_processor (PreProcessor | bool, optional): Pre-processor instance or
+            flag to use default. Defaults to ``True``.
+        post_processor (PostProcessor | bool, optional): Post-processor instance
+            or flag to use default. Defaults to ``True``.
+        evaluator (Evaluator | bool, optional): Evaluator instance or flag to
+            use default. Defaults to ``True``.
+        visualizer (Visualizer | bool, optional): Visualizer instance or flag to
+            use default. Defaults to ``True``.
+
+    Example:
+        >>> from anomalib.models.image import Dsr
+        >>> model = Dsr(
+        ...     latent_anomaly_strength=0.2,
+        ...     upsampling_train_ratio=0.7
+        ... )
+        >>> model.trainer_arguments
+        {'num_sanity_val_steps': 0}
     """
 
     def __init__(
@@ -78,7 +127,17 @@ class Dsr(AnomalibModule):
 
     @staticmethod
     def prepare_pretrained_model() -> Path:
-        """Download pre-trained models if they don't exist."""
+        """Download pre-trained models if they don't exist.
+
+        Returns:
+            Path: Path to the downloaded pre-trained model weights.
+
+        Example:
+            >>> model = Dsr()
+            >>> weights_path = model.prepare_pretrained_model()
+            >>> weights_path.name
+            'vq_model_pretrained_128_4096.pckl'
+        """
         pretrained_models_dir = Path("./pre_trained/")
         if not (pretrained_models_dir / "vq_model_pretrained_128_4096.pckl").is_file():
             download_and_extract(pretrained_models_dir, WEIGHTS_DOWNLOAD_INFO)
@@ -92,7 +151,16 @@ class Dsr(AnomalibModule):
         Does not train the discrete model (phase 1)
 
         Returns:
-            dict[str, torch.optim.Optimizer | torch.optim.lr_scheduler.LRScheduler]: Dictionary of optimizers
+            dict[str, torch.optim.Optimizer | torch.optim.lr_scheduler.LRScheduler]:
+                Dictionary containing optimizers and schedulers.
+
+        Example:
+            >>> model = Dsr()
+            >>> optimizers = model.configure_optimizers()
+            >>> isinstance(optimizers, tuple)
+            True
+            >>> len(optimizers)
+            2
         """
         num_steps = max(
             self.trainer.max_steps // len(self.trainer.datamodule.train_dataloader()),
@@ -126,19 +194,34 @@ class Dsr(AnomalibModule):
     def training_step(self, batch: Batch) -> STEP_OUTPUT:
         """Training Step of DSR.
 
-        Feeds the original image and the simulated anomaly mask during first phase. During
-        second phase, feeds a generated anomalous image to train the upsampling module.
+        During the first phase, feeds the original image and simulated anomaly
+        mask. During second phase, feeds a generated anomalous image to train
+        the upsampling module.
 
         Args:
-            batch (Batch): Batch containing image filename, image, label and mask
+            batch (Batch): Input batch containing image, label and mask
 
         Returns:
-            STEP_OUTPUT: Loss dictionary
+            STEP_OUTPUT: Dictionary containing the loss value
+
+        Example:
+            >>> from anomalib.data import Batch
+            >>> model = Dsr()
+            >>> batch = Batch(
+            ...     image=torch.randn(8, 3, 256, 256),
+            ...     label=torch.zeros(8)
+            ... )
+            >>> output = model.training_step(batch)
+            >>> isinstance(output, dict)
+            True
+            >>> "loss" in output
+            True
         """
         ph1_opt, ph2_opt = self.optimizers()
 
         if self.current_epoch < self.second_phase:
-            # we are not yet training the upsampling module: we are only using the first optimizer
+            # we are not yet training the upsampling module: we are only using
+            # the first optimizer
             input_image = batch.image
             # Create anomaly masks
             anomaly_mask = self.quantized_anomaly_generator.augment_batch(input_image)
@@ -185,12 +268,23 @@ class Dsr(AnomalibModule):
         The Softmax predictions of the anomalous class are used as anomaly map.
 
         Args:
-            batch (Batch): Batch of input images
-            *args: unused
-            **kwargs: unused
+            batch (Batch): Input batch containing image, label and mask
+            *args: Additional positional arguments (unused)
+            **kwargs: Additional keyword arguments (unused)
 
         Returns:
-            STEP_OUTPUT: Dictionary to which predicted anomaly maps have been added.
+            STEP_OUTPUT: Dictionary containing predictions and batch information
+
+        Example:
+            >>> from anomalib.data import Batch
+            >>> model = Dsr()
+            >>> batch = Batch(
+            ...     image=torch.randn(8, 3, 256, 256),
+            ...     label=torch.zeros(8)
+            ... )
+            >>> output = model.validation_step(batch)
+            >>> isinstance(output, Batch)
+            True
         """
         del args, kwargs  # These variables are not used.
 
@@ -199,7 +293,16 @@ class Dsr(AnomalibModule):
 
     @property
     def trainer_arguments(self) -> dict[str, Any]:
-        """Required trainer arguments."""
+        """Required trainer arguments.
+
+        Returns:
+            dict[str, Any]: Dictionary of trainer arguments
+
+        Example:
+            >>> model = Dsr()
+            >>> model.trainer_arguments
+            {'num_sanity_val_steps': 0}
+        """
         return {"num_sanity_val_steps": 0}
 
     @property
@@ -208,12 +311,33 @@ class Dsr(AnomalibModule):
 
         Returns:
             LearningType: Learning type of the model.
+
+        Example:
+            >>> model = Dsr()
+            >>> model.learning_type
+            <LearningType.ONE_CLASS: 'one_class'>
         """
         return LearningType.ONE_CLASS
 
     @staticmethod
     def configure_transforms(image_size: tuple[int, int] | None = None) -> Transform:
-        """Default transform for DSR. Normalization is not needed as the images are scaled to [0, 1] in Dataset."""
+        """Configure default transforms for DSR.
+
+        Normalization is not needed as the images are scaled to [0, 1] in Dataset.
+
+        Args:
+            image_size (tuple[int, int] | None, optional): Input image size.
+                Defaults to ``(256, 256)``.
+
+        Returns:
+            Transform: Composed transforms
+
+        Example:
+            >>> model = Dsr()
+            >>> transforms = model.configure_transforms((512, 512))
+            >>> isinstance(transforms, Transform)
+            True
+        """
         image_size = image_size or (256, 256)
         return Compose(
             [

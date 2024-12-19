@@ -1,4 +1,27 @@
-"""Benchmarking."""
+"""Benchmarking pipeline for evaluating anomaly detection models.
+
+This module provides functionality for running benchmarking experiments that evaluate
+and compare multiple anomaly detection models. The benchmarking pipeline supports
+running experiments in parallel across multiple GPUs when available.
+
+Example:
+    >>> from anomalib.pipelines import Benchmark
+    >>> from anomalib.data import MVTec
+    >>> from anomalib.models import Padim, Patchcore
+
+    >>> # Initialize benchmark with models and datasets
+    >>> benchmark = Benchmark(
+    ...     models=[Padim(), Patchcore()],
+    ...     datasets=[MVTec(category="bottle"), MVTec(category="cable")]
+    ... )
+
+    >>> # Run benchmark
+    >>> results = benchmark.run()
+
+The pipeline handles setting up appropriate runners based on available hardware,
+using parallel execution when multiple GPUs are available and serial execution
+otherwise.
+"""
 
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -12,11 +35,51 @@ from .generator import BenchmarkJobGenerator
 
 
 class Benchmark(Pipeline):
-    """Benchmarking pipeline."""
+    """Benchmarking pipeline for evaluating anomaly detection models.
+
+    This pipeline handles running benchmarking experiments that evaluate and compare
+    multiple anomaly detection models. It supports both serial and parallel execution
+    depending on available hardware.
+
+    Example:
+        >>> from anomalib.pipelines import Benchmark
+        >>> from anomalib.data import MVTec
+        >>> from anomalib.models import Padim, Patchcore
+
+        >>> # Initialize benchmark with models and datasets
+        >>> benchmark = Benchmark(
+        ...     models=[Padim(), Patchcore()],
+        ...     datasets=[MVTec(category="bottle"), MVTec(category="cable")]
+        ... )
+
+        >>> # Run benchmark
+        >>> results = benchmark.run()
+    """
 
     @staticmethod
     def _setup_runners(args: dict) -> list[Runner]:
-        """Setup the runners for the pipeline."""
+        """Set up the appropriate runners for benchmark execution.
+
+        This method configures either serial or parallel runners based on the
+        specified accelerator(s) and available hardware. For CUDA devices, parallel
+        execution is used when multiple GPUs are available.
+
+        Args:
+            args (dict): Dictionary containing configuration arguments. Must include
+                an ``"accelerator"`` key specifying either a single accelerator or
+                list of accelerators to use.
+
+        Returns:
+            list[Runner]: List of configured runner instances.
+
+        Raises:
+            ValueError: If an unsupported accelerator type is specified. Only
+                ``"cpu"`` and ``"cuda"`` are supported.
+
+        Example:
+            >>> args = {"accelerator": "cuda"}
+            >>> runners = Benchmark._setup_runners(args)
+        """
         accelerators = args["accelerator"] if isinstance(args["accelerator"], list) else [args["accelerator"]]
         runners: list[Runner] = []
         for accelerator in accelerators:

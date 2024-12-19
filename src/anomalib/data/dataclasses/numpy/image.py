@@ -1,4 +1,26 @@
-"""Numpy-based image dataclasses for Anomalib."""
+"""Numpy-based image dataclasses for Anomalib.
+
+This module provides numpy-based implementations of image-specific dataclasses used in
+Anomalib. These classes are designed to work with image data represented as numpy arrays
+for anomaly detection tasks.
+
+The module contains two main classes:
+    - :class:`NumpyImageItem`: For single image data items
+    - :class:`NumpyImageBatch`: For batched image data items
+
+Example:
+    Create and use a numpy image item::
+
+        >>> from anomalib.data.dataclasses.numpy import NumpyImageItem
+        >>> import numpy as np
+        >>> item = NumpyImageItem(
+        ...     data=np.random.rand(224, 224, 3),
+        ...     label=0,
+        ...     image_path="path/to/image.jpg"
+        ... )
+        >>> item.data.shape
+        (224, 224, 3)
+"""
 
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -18,25 +40,26 @@ class NumpyImageItem(
 ):
     """Dataclass for a single image item in Anomalib datasets using numpy arrays.
 
-    This class combines _ImageInputFields and NumpyItem for image-based anomaly detection.
-    It includes image-specific fields and validation methods to ensure proper formatting
-    for Anomalib's image-based models.
+    This class combines :class:`_ImageInputFields` and :class:`NumpyItem` for
+    image-based anomaly detection. It includes image-specific fields and validation
+    methods to ensure proper formatting for Anomalib's image-based models.
 
-    Examples:
+    The class uses the following type parameters:
+        - Image: :class:`numpy.ndarray` with shape ``(H, W, C)``
+        - Label: :class:`numpy.ndarray`
+        - Mask: :class:`numpy.ndarray` with shape ``(H, W)``
+        - Path: :class:`str`
+
+    Example:
+        >>> import numpy as np
+        >>> from anomalib.data.dataclasses.numpy import NumpyImageItem
         >>> item = NumpyImageItem(
-        ...     image=np.random.rand(224, 224, 3),
-        ...     gt_label=np.array(1),
-        ...     gt_mask=np.random.rand(224, 224) > 0.5,
-        ...     anomaly_map=np.random.rand(224, 224),
-        ...     pred_score=np.array(0.7),
-        ...     pred_label=np.array(1),
+        ...     data=np.random.rand(224, 224, 3),
+        ...     label=0,
         ...     image_path="path/to/image.jpg"
         ... )
-
-        >>> # Access fields
-        >>> image = item.image
-        >>> label = item.gt_label
-        >>> path = item.image_path
+        >>> item.data.shape
+        (224, 224, 3)
     """
 
 
@@ -49,29 +72,29 @@ class NumpyImageBatch(
 ):
     """Dataclass for a batch of image items in Anomalib datasets using numpy arrays.
 
-    This class combines BatchIterateMixin, _ImageInputFields, and NumpyBatch for batches
-    of image data. It supports batch operations and iteration over individual NumpyImageItems.
-    It ensures proper formatting for Anomalib's image-based models.
+    This class combines :class:`BatchIterateMixin`, :class:`_ImageInputFields`, and
+    :class:`NumpyBatch` for batches of image data. It supports batch operations and
+    iteration over individual :class:`NumpyImageItem` instances.
 
-    Examples:
+    The class uses the following type parameters:
+        - Image: :class:`numpy.ndarray` with shape ``(B, H, W, C)``
+        - Label: :class:`numpy.ndarray` with shape ``(B,)``
+        - Mask: :class:`numpy.ndarray` with shape ``(B, H, W)``
+        - Path: :class:`list` of :class:`str`
+
+    Where ``B`` represents the batch dimension that is prepended to all tensor-like
+    fields.
+
+    Example:
+        >>> import numpy as np
+        >>> from anomalib.data.dataclasses.numpy import NumpyImageBatch
         >>> batch = NumpyImageBatch(
-        ...     image=np.random.rand(32, 224, 224, 3),
-        ...     gt_label=np.random.randint(0, 2, (32,)),
-        ...     gt_mask=np.random.rand(32, 224, 224) > 0.5,
-        ...     anomaly_map=np.random.rand(32, 224, 224),
-        ...     pred_score=np.random.rand(32),
-        ...     pred_label=np.random.randint(0, 2, (32,)),
-        ...     image_path=["path/to/image_{}.jpg".format(i) for i in range(32)]
+        ...     data=np.random.rand(32, 224, 224, 3),
+        ...     label=np.zeros(32),
+        ...     image_path=[f"path/to/image_{i}.jpg" for i in range(32)]
         ... )
-
-        >>> # Access batch fields
-        >>> images = batch.image
-        >>> labels = batch.gt_label
-        >>> paths = batch.image_path
-
-        >>> # Iterate over items in the batch
-        >>> for item in batch:
-        ...     process_item(item)
+        >>> batch.data.shape
+        (32, 224, 224, 3)
     """
 
     item_class = NumpyImageItem

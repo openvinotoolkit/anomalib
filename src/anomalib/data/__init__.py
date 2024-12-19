@@ -1,4 +1,28 @@
-"""Anomalib Datasets."""
+"""Anomalib Datasets.
+
+This module provides datasets and data modules for anomaly detection tasks.
+
+The module contains:
+    - Data classes for representing different types of data (images, videos, etc.)
+    - Dataset classes for loading and processing data
+    - Data modules for use with PyTorch Lightning
+    - Helper functions for data loading and validation
+
+Example:
+    >>> from anomalib.data import get_datamodule
+    >>> from omegaconf import DictConfig
+    >>> config = DictConfig({
+    ...     "data": {
+    ...         "class_path": "MVTec",
+    ...         "init_args": {
+    ...             "root": "./datasets/MVTec",
+    ...             "category": "bottle",
+    ...             "image_size": (256, 256)
+    ...         }
+    ...     }
+    ... })
+    >>> datamodule = get_datamodule(config)
+"""
 
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -51,17 +75,34 @@ DataFormat = Enum(  # type: ignore[misc]
 )
 
 
-class UnknownDatamoduleError(ModuleNotFoundError): ...
+class UnknownDatamoduleError(ModuleNotFoundError):
+    """Raised when a datamodule cannot be found."""
 
 
 def get_datamodule(config: DictConfig | ListConfig | dict) -> AnomalibDataModule:
-    """Get Anomaly Datamodule.
+    """Get Anomaly Datamodule from config.
 
     Args:
-        config (DictConfig | ListConfig | dict): Configuration of the anomaly model.
+        config: Configuration for the anomaly model. Can be either:
+            - DictConfig from OmegaConf
+            - ListConfig from OmegaConf
+            - Python dictionary
 
     Returns:
-        PyTorch Lightning DataModule
+        PyTorch Lightning DataModule configured according to the input.
+
+    Raises:
+        UnknownDatamoduleError: If the specified datamodule cannot be found.
+
+    Example:
+        >>> from omegaconf import DictConfig
+        >>> config = DictConfig({
+        ...     "data": {
+        ...         "class_path": "MVTec",
+        ...         "init_args": {"root": "./datasets/MVTec"}
+        ...     }
+        ... })
+        >>> datamodule = get_datamodule(config)
     """
     logger.info("Loading the datamodule")
 

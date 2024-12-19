@@ -1,4 +1,8 @@
-"""Anomalib CLI."""
+"""Anomalib Command Line Interface.
+
+This module provides the `AnomalibCLI` class for configuring and running Anomalib from the command line.
+The CLI supports configuration via both command line arguments and configuration files (.yaml or .json).
+"""
 
 # Copyright (C) 2023-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -38,16 +42,30 @@ except ImportError:
 
 
 class AnomalibCLI:
-    """Implementation of a fully configurable CLI tool for anomalib.
+    """Implementation of a fully configurable CLI tool for Anomalib.
 
-    The advantage of this tool is its flexibility to configure the pipeline
-    from both the CLI and a configuration file (.yaml or .json). It is even
-    possible to use both the CLI and a configuration file simultaneously.
-    For more details, the reader could refer to PyTorch Lightning CLI
-    documentation.
+    This class provides a flexible command-line interface that can be configured through
+    both CLI arguments and configuration files. It supports various subcommands for
+    training, testing, and exporting models.
 
-    ``save_config_kwargs`` is set to ``overwrite=True`` so that the
-    ``SaveConfigCallback`` overwrites the config if it already exists.
+    Args:
+        args (Sequence[str] | None): Command line arguments. Defaults to None.
+        run (bool): Whether to run the subcommand immediately. Defaults to True.
+
+    Examples:
+        Run from command line:
+
+        >>> import sys
+        >>> sys.argv = ["anomalib", "train", "--model", "Padim", "--data", "MVTec"]
+
+        Run programmatically:
+
+        >>> from anomalib.cli import AnomalibCLI
+        >>> cli = AnomalibCLI(["train", "--model", "Padim", "--data", "MVTec"], run=False)
+
+    Note:
+        The CLI supports both YAML and JSON configuration files. Configuration can be
+        provided via both files and command line arguments simultaneously.
     """
 
     def __init__(self, args: Sequence[str] | None = None, run: bool = True) -> None:

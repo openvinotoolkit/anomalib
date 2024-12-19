@@ -1,4 +1,23 @@
-"""Typing aliases for Anomalib."""
+"""Type aliases for anomaly detection.
+
+This module provides type aliases used throughout the anomalib library. The aliases
+include:
+    - ``NORMALIZATION``: Type for normalization methods and configurations
+    - ``THRESHOLD``: Type for threshold values and configurations
+
+Example:
+    >>> from anomalib.utils.types import NORMALIZATION, THRESHOLD
+    >>> from anomalib.utils.normalization import NormalizationMethod
+    >>> # Use min-max normalization
+    >>> norm: NORMALIZATION = NormalizationMethod.MIN_MAX
+    >>> print(norm)
+    min_max
+    >>> # Use threshold configuration
+    >>> thresh: THRESHOLD = {"method": "adaptive", "delta": 0.1}
+
+The module ensures consistent typing across the codebase and provides helpful type
+hints for configuration objects.
+"""
 
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0

@@ -1,4 +1,18 @@
-"""Base Video Data Module."""
+"""Base Video Data Module.
+
+This module provides the base data module class for video datasets in Anomalib.
+It extends :class:`AnomalibDataModule` with video-specific functionality.
+
+The module contains:
+    - :class:`AnomalibVideoDataModule`: Base class for all video data modules
+
+Example:
+    Create a video datamodule from a config file::
+
+        >>> from anomalib.data import AnomalibVideoDataModule
+        >>> data_config = "configs/data/ucsd_ped.yaml"
+        >>> datamodule = AnomalibVideoDataModule.from_config(config_path=data_config)
+"""
 
 # Copyright (C) 2023-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -9,17 +23,33 @@ from .image import AnomalibDataModule
 
 
 class AnomalibVideoDataModule(AnomalibDataModule):
-    """Base class for video data modules."""
+    """Base class for video data modules.
+
+    This class extends :class:`AnomalibDataModule` to handle video datasets.
+    Unlike image datasets, video datasets do not support dynamic test split
+    assignment or synthetic anomaly generation.
+    """
 
     def _create_test_split(self) -> None:
-        """Video datamodules do not support dynamic assignment of the test split."""
+        """Video datamodules do not support dynamic assignment of test split.
+
+        Video datasets typically come with predefined train/test splits due to
+        temporal dependencies between frames.
+        """
 
     def _setup(self, _stage: str | None = None) -> None:
-        """Set up the datasets and perform dynamic subset splitting.
+        """Set up video datasets and perform validation split.
 
-        This method may be overridden in subclass for custom splitting behaviour.
+        This method initializes the train and test datasets and creates the
+        validation split if specified. It ensures that both train and test
+        datasets are properly defined and configured.
 
-        Video datamodules are not compatible with synthetic anomaly generation.
+        Args:
+            _stage: Current stage of training. Defaults to ``None``.
+
+        Raises:
+            ValueError: If ``train_data`` or ``test_data`` is ``None``.
+            ValueError: If ``val_split_mode`` is set to ``SYNTHETIC``.
         """
         if self.train_data is None:
             msg = "self.train_data cannot be None."

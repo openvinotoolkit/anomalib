@@ -1,6 +1,33 @@
 """GANomaly: Semi-Supervised Anomaly Detection via Adversarial Training.
 
-https://arxiv.org/abs/1805.06725
+GANomaly is an anomaly detection model that uses a conditional GAN architecture to
+learn the normal data distribution. The model consists of a generator network that
+learns to reconstruct normal images, and a discriminator that helps ensure the
+reconstructions are realistic.
+
+Example:
+    >>> from anomalib.data import MVTec
+    >>> from anomalib.models import Ganomaly
+    >>> from anomalib.engine import Engine
+
+    >>> datamodule = MVTec()
+    >>> model = Ganomaly()
+    >>> engine = Engine()
+
+    >>> engine.fit(model, datamodule=datamodule)  # doctest: +SKIP
+    >>> predictions = engine.predict(model, datamodule=datamodule)  # doctest: +SKIP
+
+Paper:
+    Title: GANomaly: Semi-Supervised Anomaly Detection via Adversarial Training
+    URL: https://arxiv.org/abs/1805.06725
+
+See Also:
+    :class:`anomalib.models.image.ganomaly.torch_model.GanomalyModel`:
+        PyTorch implementation of the GANomaly model architecture.
+    :class:`anomalib.models.image.ganomaly.loss.GeneratorLoss`:
+        Loss function for the generator network.
+    :class:`anomalib.models.image.ganomaly.loss.DiscriminatorLoss`:
+        Loss function for the discriminator network.
 """
 
 # Copyright (C) 2022-2024 Intel Corporation
@@ -30,32 +57,63 @@ logger = logging.getLogger(__name__)
 class Ganomaly(AnomalibModule):
     """PL Lightning Module for the GANomaly Algorithm.
 
+    The GANomaly model consists of a generator and discriminator network. The
+    generator learns to reconstruct normal images while the discriminator helps
+    ensure the reconstructions are realistic. Anomalies are detected by measuring
+    the reconstruction error and latent space differences.
+
     Args:
-        batch_size (int): Batch size.
+        batch_size (int): Number of samples in each batch.
             Defaults to ``32``.
-        n_features (int): Number of features layers in the CNNs.
+        n_features (int): Number of feature channels in CNN layers.
             Defaults to ``64``.
-        latent_vec_size (int): Size of autoencoder latent vector.
+        latent_vec_size (int): Dimension of the latent space vectors.
             Defaults to ``100``.
-        extra_layers (int, optional): Number of extra layers for encoder/decoder.
+        extra_layers (int, optional): Number of extra layers in encoder/decoder.
             Defaults to ``0``.
         add_final_conv_layer (bool, optional): Add convolution layer at the end.
             Defaults to ``True``.
-        wadv (int, optional): Weight for adversarial loss.
+        wadv (int, optional): Weight for adversarial loss component.
             Defaults to ``1``.
-        wcon (int, optional): Image regeneration weight.
+        wcon (int, optional): Weight for image reconstruction loss component.
             Defaults to ``50``.
-        wenc (int, optional): Latent vector encoder weight.
+        wenc (int, optional): Weight for latent vector encoding loss component.
             Defaults to ``1``.
-        lr (float, optional): Learning rate.
+        lr (float, optional): Learning rate for optimizers.
             Defaults to ``0.0002``.
-        beta1 (float, optional): Adam beta1.
+        beta1 (float, optional): Beta1 parameter for Adam optimizers.
             Defaults to ``0.5``.
-        beta2 (float, optional): Adam beta2.
+        beta2 (float, optional): Beta2 parameter for Adam optimizers.
             Defaults to ``0.999``.
-        pre_processor (PreProcessor, optional): Pre-processor for the model.
-            This is used to pre-process the input data before it is passed to the model.
-            Defaults to ``None``.
+        pre_processor (PreProcessor | bool, optional): Pre-processor to transform
+            inputs before passing to model.
+            Defaults to ``True``.
+        post_processor (PostProcessor | bool, optional): Post-processor to generate
+            predictions from model outputs.
+            Defaults to ``True``.
+        evaluator (Evaluator | bool, optional): Evaluator to compute metrics.
+            Defaults to ``True``.
+        visualizer (Visualizer | bool, optional): Visualizer to display results.
+            Defaults to ``True``.
+
+    Example:
+        >>> from anomalib.models import Ganomaly
+        >>> model = Ganomaly(
+        ...     batch_size=32,
+        ...     n_features=64,
+        ...     latent_vec_size=100,
+        ...     wadv=1,
+        ...     wcon=50,
+        ...     wenc=1,
+        ... )
+
+    See Also:
+        :class:`anomalib.models.image.ganomaly.torch_model.GanomalyModel`:
+            PyTorch implementation of the GANomaly model architecture.
+        :class:`anomalib.models.image.ganomaly.loss.GeneratorLoss`:
+            Loss function for the generator network.
+        :class:`anomalib.models.image.ganomaly.loss.DiscriminatorLoss`:
+            Loss function for the discriminator network.
     """
 
     def __init__(

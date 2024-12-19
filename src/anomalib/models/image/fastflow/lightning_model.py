@@ -1,6 +1,35 @@
 """FastFlow Lightning Model Implementation.
 
-https://arxiv.org/abs/2111.07677
+This module provides a PyTorch Lightning implementation of the FastFlow model for anomaly
+detection. FastFlow is a fast flow-based model that uses normalizing flows to model the
+distribution of features extracted from a pre-trained CNN backbone.
+
+The model achieves competitive performance while maintaining fast inference times by
+leveraging normalizing flows to transform feature distributions into a simpler form that
+can be efficiently modeled.
+
+Example:
+    >>> from anomalib.data import MVTec
+    >>> from anomalib.models import Fastflow
+    >>> from anomalib.engine import Engine
+
+    >>> datamodule = MVTec()
+    >>> model = Fastflow()
+    >>> engine = Engine()
+
+    >>> engine.fit(model, datamodule=datamodule)  # doctest: +SKIP
+    >>> predictions = engine.predict(model, datamodule=datamodule)  # doctest: +SKIP
+
+Paper:
+    Title: FastFlow: Unsupervised Anomaly Detection and Localization via 2D
+           Normalizing Flows
+    URL: https://arxiv.org/abs/2111.07677
+
+See Also:
+    :class:`anomalib.models.image.fastflow.torch_model.FastflowModel`:
+        PyTorch implementation of the FastFlow model architecture.
+    :class:`anomalib.models.image.fastflow.loss.FastflowLoss`:
+        Loss function used to train the FastFlow model.
 """
 
 # Copyright (C) 2022-2024 Intel Corporation
@@ -27,20 +56,45 @@ from .torch_model import FastflowModel
 class Fastflow(AnomalibModule):
     """PL Lightning Module for the FastFlow algorithm.
 
+    The FastFlow model uses normalizing flows to transform feature distributions from a
+    pre-trained CNN backbone into a simpler form that can be efficiently modeled for
+    anomaly detection.
+
     Args:
-        backbone (str): Backbone CNN network
-            Defaults to ``resnet18``.
-        pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.
+        backbone (str): Backbone CNN network architecture. Available options are
+            ``"resnet18"``, ``"wide_resnet50_2"``, etc.
+            Defaults to ``"resnet18"``.
+        pre_trained (bool, optional): Whether to use pre-trained backbone weights.
             Defaults to ``True``.
-        flow_steps (int, optional): Flow steps.
+        flow_steps (int, optional): Number of steps in the normalizing flow.
             Defaults to ``8``.
-        conv3x3_only (bool, optinoal): Use only conv3x3 in fast_flow model.
+        conv3x3_only (bool, optional): Whether to use only 3x3 convolutions in the
+            FastFlow model.
             Defaults to ``False``.
-        hidden_ratio (float, optional): Ratio to calculate hidden var channels.
+        hidden_ratio (float, optional): Ratio used to calculate hidden variable
+            channels.
             Defaults to ``1.0``.
-        pre_processor (PreProcessor, optional): Pre-processor for the model.
-            This is used to pre-process the input data before it is passed to the model.
-            Defaults to ``None``.
+        pre_processor (PreProcessor | bool, optional): Pre-processor to use for
+            input data.
+            Defaults to ``True``.
+        post_processor (PostProcessor | bool, optional): Post-processor to use for
+            model outputs.
+            Defaults to ``True``.
+        evaluator (Evaluator | bool, optional): Evaluator to compute metrics.
+            Defaults to ``True``.
+        visualizer (Visualizer | bool, optional): Visualizer for model outputs.
+            Defaults to ``True``.
+
+    Raises:
+        ValueError: If ``input_size`` is not provided during initialization.
+
+    Example:
+        >>> from anomalib.models import Fastflow
+        >>> model = Fastflow(
+        ...     backbone="resnet18",
+        ...     pre_trained=True,
+        ...     flow_steps=8
+        ... )
     """
 
     def __init__(
