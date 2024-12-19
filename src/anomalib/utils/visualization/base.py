@@ -32,9 +32,19 @@ class VisualizationStep(str, Enum):
 
 
 class BaseVisualizer(ABC):
-    """Base visualization generator."""
+    """Base visualization generator.
+
+    Deprecated: This class will be removed in v2.0.0 release.
+    """
 
     def __init__(self, visualize_on: VisualizationStep) -> None:
+        import warnings
+
+        warnings.warn(
+            "BaseVisualizer is deprecated and will be removed in v2.0.0 release.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         self.visualize_on = visualize_on
 
     @abstractmethod
