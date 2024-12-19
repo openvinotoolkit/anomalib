@@ -84,7 +84,13 @@ class PreProcessor(nn.Module, Callback):
         self.transform = transform
         self.export_transform = get_exportable_transform(self.transform)
 
-    def on_train_batch_start(self, trainer: Trainer, pl_module: LightningModule, batch: Batch, batch_idx: int) -> None:
+    def on_train_batch_start(
+        self,
+        trainer: Trainer,
+        pl_module: LightningModule,
+        batch: Batch,
+        batch_idx: int,
+    ) -> None:
         """Apply transforms to the batch of tensors during training."""
         del trainer, pl_module, batch_idx  # Unused
         if self.transform:
