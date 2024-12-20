@@ -1,35 +1,50 @@
-"""Per-Image Overlap curve (PIMO, pronounced pee-mo) and its area under the curve (AUPIMO).
+"""Per-Image Overlap curve (PIMO) and its area under the curve (AUPIMO).
 
-# PIMO
+This module provides metrics for evaluating anomaly detection performance using
+Per-Image Overlap (PIMO) curves and their area under the curve (AUPIMO).
 
-PIMO is a curve of True Positive Rate (TPR) values on each image across multiple anomaly score thresholds.
-The anomaly score thresholds are indexed by a (shared) valued of False Positive Rate (FPR) measure on the normal images.
+PIMO Curves
+----------
+PIMO curves plot True Positive Rate (TPR) values for each image across multiple
+anomaly score thresholds. The thresholds are indexed by a shared False Positive
+Rate (FPR) measure computed on normal images.
 
-Each *anomalous* image has its own curve such that the X-axis is shared by all of them.
+Each anomalous image has its own curve with:
 
-At a given threshold:
-    X-axis: Shared FPR (may vary)
-        1. Log of the Average of per-image FPR on normal images.
-        SEE NOTE BELOW.
-    Y-axis: per-image TP Rate (TPR), or "Overlap" between the ground truth and the predicted masks.
+- X-axis: Shared FPR (logarithmic average of per-image FPR on normal images)
+- Y-axis: Per-image TPR ("Overlap" between ground truth and predicted masks)
 
-*** Note about other shared FPR alternatives ***
-The shared FPR metric can be made harder by using the cross-image max (or high-percentile) FPRs instead of the mean.
-Rationale: this will further punish models that have exceptional FPs in normal images.
-So far there is only one shared FPR metric implemented but others will be added in the future.
+Note on Shared FPR
+----------------
+The shared FPR metric can be made stricter by using cross-image max or high
+percentile FPRs instead of mean. This further penalizes models with exceptional
+false positives in normal images. Currently only mean FPR is implemented.
 
-# AUPIMO
+AUPIMO Score
+-----------
+AUPIMO is the area under each PIMO curve within bounded FPR integration range.
+The score is normalized to [0,1].
 
-`AUPIMO` is the area under each `PIMO` curve with bounded integration range in terms of shared FPR.
+Implementation Notes
+------------------
+This module implements PyTorch interfaces to the numpy implementation in
+``pimo_numpy.py``. Tensors are converted to numpy arrays for computation and
+validation, then converted back to tensors and wrapped in dataclass objects.
 
-# Disclaimer
+Example:
+    >>> import torch
+    >>> from anomalib.metrics.pimo import PIMO
+    >>> metric = PIMO(num_thresholds=10)
+    >>> anomaly_maps = torch.rand(5, 32, 32)  # 5 images
+    >>> masks = torch.randint(0, 2, (5, 32, 32))  # Binary masks
+    >>> metric.update(anomaly_maps, masks)
+    >>> result = metric.compute()
+    >>> result.num_images
+    5
 
-This module implements torch interfaces to access the numpy code in `pimo_numpy.py`.
-Tensors are converted to numpy arrays and then passed and validated in the numpy code.
-The results are converted back to tensors and eventually wrapped in an dataclass object.
-
-Validations will preferably happen in ndarray so the numpy code can be reused without torch,
-so often times the Tensor arguments will be converted to ndarray and then validated.
+See Also:
+    - :class:`PIMOResult`: Container for PIMO curve data
+    - :class:`AUPIMOResult`: Container for AUPIMO score data
 """
 
 # Original Code
@@ -44,41 +59,44 @@ import logging
 import torch
 from torchmetrics import Metric
 
+from anomalib.metrics.base import AnomalibMetric
+
 from . import _validate, functional
 from .dataclasses import AUPIMOResult, PIMOResult
 
 logger = logging.getLogger(__name__)
 
 
-class PIMO(Metric):
-    """Per-IMage Overlap (PIMO, pronounced pee-mo) curves.
+class _PIMO(Metric):
+    """Per-Image Overlap (PIMO) curve metric.
 
-    This torchmetrics interface is a wrapper around the functional interface, which is a wrapper around the numpy code.
-    The tensors are converted to numpy arrays and then passed and validated in the numpy code.
-    The results are converted back to tensors and wrapped in an dataclass object.
-
-    PIMO is a curve of True Positive Rate (TPR) values on each image across multiple anomaly score thresholds.
-    The anomaly score thresholds are indexed by a (cross-image shared) value of False Positive Rate (FPR) measure on
-    the normal images.
-
-    Details: `anomalib.metrics.per_image.pimo`.
-
-    Notation:
-        N: number of images
-        H: image height
-        W: image width
-        K: number of thresholds
-
-    Attributes:
-        anomaly_maps: floating point anomaly score maps of shape (N, H, W)
-        masks: binary (bool or int) ground truth masks of shape (N, H, W)
+    This metric computes PIMO curves which plot True Positive Rate (TPR) values
+    for each image across multiple anomaly score thresholds. The thresholds are
+    indexed by a shared False Positive Rate (FPR) measure on normal images.
 
     Args:
-        num_thresholds: number of thresholds to compute (K)
-        binclf_algorithm: algorithm to compute the binary classifier curve (see `binclf_curve_numpy.Algorithm`)
+        num_thresholds: Number of thresholds to compute (K). Must be >= 2.
 
-    Returns:
-        PIMOResult: PIMO curves dataclass object. See `PIMOResult` for details.
+    Attributes:
+        anomaly_maps: List of anomaly score maps, each of shape ``(N, H, W)``
+        masks: List of binary ground truth masks, each of shape ``(N, H, W)``
+        is_differentiable: Whether metric is differentiable
+        higher_is_better: Whether higher values are better
+        full_state_update: Whether to update full state
+
+    Example:
+        >>> import torch
+        >>> metric = _PIMO(num_thresholds=10)
+        >>> anomaly_maps = torch.rand(5, 32, 32)  # 5 images
+        >>> masks = torch.randint(0, 2, (5, 32, 32))  # Binary masks
+        >>> metric.update(anomaly_maps, masks)
+        >>> result = metric.compute()
+        >>> result.num_images
+        5
+
+    Note:
+        This metric stores all predictions and targets in memory, which may
+        require significant memory for large datasets.
     """
 
     is_differentiable: bool = False
@@ -93,35 +111,47 @@ class PIMO(Metric):
 
     @property
     def _is_empty(self) -> bool:
-        """Return True if the metric has not been updated yet."""
+        """Check if metric has been updated.
+
+        Returns:
+            bool: True if no updates have been made yet.
+        """
         return len(self.anomaly_maps) == 0
 
     @property
     def num_images(self) -> int:
-        """Number of images."""
+        """Get total number of images.
+
+        Returns:
+            int: Total number of images across all batches.
+        """
         return sum(am.shape[0] for am in self.anomaly_maps)
 
     @property
     def image_classes(self) -> torch.Tensor:
-        """Image classes (0: normal, 1: anomalous)."""
+        """Get image classes (0: normal, 1: anomalous).
+
+        Returns:
+            torch.Tensor: Binary tensor of image classes.
+        """
         return functional.images_classes_from_masks(self.masks)
 
     def __init__(self, num_thresholds: int) -> None:
-        """Per-Image Overlap (PIMO) curve.
+        """Initialize PIMO metric.
 
         Args:
-            num_thresholds: number of thresholds used to compute the PIMO curve (K)
+            num_thresholds: Number of thresholds for curve computation (K).
+                Must be >= 2.
         """
         super().__init__()
 
         logger.warning(
-            f"Metric `{self.__class__.__name__}` will save all targets and predictions in buffer."
-            " For large datasets this may lead to large memory footprint.",
+            f"Metric `{self.__class__.__name__}` will save all targets and "
+            "predictions in buffer. For large datasets this may lead to large "
+            "memory footprint.",
         )
 
-        # the options below are, redundantly, validated here to avoid reaching
-        # an error later in the execution
-
+        # Validate options early to avoid later errors
         _validate.is_num_thresholds_gte2(num_thresholds)
         self.num_thresholds = num_thresholds
 
@@ -129,11 +159,15 @@ class PIMO(Metric):
         self.add_state("masks", default=[], dist_reduce_fx="cat")
 
     def update(self, anomaly_maps: torch.Tensor, masks: torch.Tensor) -> None:
-        """Update lists of anomaly maps and masks.
+        """Update metric state with new predictions and targets.
 
         Args:
-            anomaly_maps (torch.Tensor): predictions of the model (ndim == 2, float)
-            masks (torch.Tensor): ground truth masks (ndim == 2, binary)
+            anomaly_maps: Model predictions as float tensors of shape
+                ``(N, H, W)``
+            masks: Ground truth binary masks of shape ``(N, H, W)``
+
+        Raises:
+            ValueError: If inputs have invalid shapes or types
         """
         _validate.is_anomaly_maps(anomaly_maps)
         _validate.is_masks(masks)
@@ -142,12 +176,13 @@ class PIMO(Metric):
         self.masks.append(masks)
 
     def compute(self) -> PIMOResult:
-        """Compute the PIMO curves.
-
-        Call the functional interface `pimo_curves()`, which is a wrapper around the numpy code.
+        """Compute PIMO curves from accumulated data.
 
         Returns:
-            PIMOResult: PIMO curves dataclass object. See `PIMOResult` for details.
+            PIMOResult: Container with curve data and metadata.
+
+        Raises:
+            RuntimeError: If no data has been added via update()
         """
         if self._is_empty:
             msg = "No anomaly maps and masks have been added yet. Please call `update()` first."
@@ -167,35 +202,38 @@ class PIMO(Metric):
         )
 
 
-class AUPIMO(PIMO):
+class PIMO(AnomalibMetric, _PIMO):  # type: ignore[misc]
+    """Wrapper adding AnomalibMetric functionality to PIMO metric."""
+
+    default_fields = ("anomaly_map", "gt_mask")
+
+
+class _AUPIMO(_PIMO):
     """Area Under the Per-Image Overlap (PIMO) curve.
 
-    This torchmetrics interface is a wrapper around the functional interface, which is a wrapper around the numpy code.
-    The tensors are converted to numpy arrays and then passed and validated in the numpy code.
-    The results are converted back to tensors and wrapped in an dataclass object.
-
-    Scores are computed from the integration of the PIMO curves within the given FPR bounds, then normalized to [0, 1].
-    It can be thought of as the average TPR of the PIMO curves within the given FPR bounds.
-
-    Details: `anomalib.metrics.per_image.pimo`.
-
-    Notation:
-        N: number of images
-        H: image height
-        W: image width
-        K: number of thresholds
-
-    Attributes:
-        anomaly_maps: floating point anomaly score maps of shape (N, H, W)
-        masks: binary (bool or int) ground truth masks of shape (N, H, W)
+    This metric computes both PIMO curves and their area under the curve
+    (AUPIMO). AUPIMO scores are computed by integrating PIMO curves within
+    specified FPR bounds and normalizing to [0,1].
 
     Args:
-        num_thresholds: number of thresholds to compute (K)
-        fpr_bounds: lower and upper bounds of the FPR integration range
-        force: whether to force the computation despite bad conditions
+        num_thresholds: Number of thresholds for curve computation. Default:
+            300,000
+        fpr_bounds: Lower and upper FPR integration bounds as ``(min, max)``.
+            Default: ``(1e-5, 1e-4)``
+        return_average: If True, return mean AUPIMO score across anomalous
+            images. If False, return individual scores. Default: True
+        force: If True, compute scores even in suboptimal conditions.
+            Default: False
 
-    Returns:
-        tuple[PIMOResult, AUPIMOResult]: PIMO and AUPIMO results dataclass objects. See `PIMOResult` and `AUPIMOResult`.
+    Example:
+        >>> import torch
+        >>> metric = _AUPIMO(num_thresholds=10)
+        >>> anomaly_maps = torch.rand(5, 32, 32)  # 5 images
+        >>> masks = torch.randint(0, 2, (5, 32, 32))  # Binary masks
+        >>> metric.update(anomaly_maps, masks)
+        >>> pimo_result, aupimo_result = metric.compute()
+        >>> aupimo_result.num_images
+        5
     """
 
     fpr_bounds: tuple[float, float]
@@ -204,21 +242,25 @@ class AUPIMO(PIMO):
 
     @staticmethod
     def normalizing_factor(fpr_bounds: tuple[float, float]) -> float:
-        """Constant that normalizes the AUPIMO integral to 0-1 range.
+        """Get normalization factor for AUPIMO integral.
 
-        It is the maximum possible value from the integral in AUPIMO's definition.
-        It corresponds to assuming a constant function T_i: thresh --> 1.
+        The factor normalizes the integral to [0,1] range. It represents the
+        maximum possible integral value, assuming a constant TPR of 1.
 
         Args:
-            fpr_bounds: lower and upper bounds of the FPR integration range.
+            fpr_bounds: FPR integration bounds as ``(min, max)``
 
         Returns:
-            float: the normalization factor (>0).
+            float: Normalization factor (>0)
         """
         return functional.aupimo_normalizing_factor(fpr_bounds)
 
     def __repr__(self) -> str:
-        """Show the metric name and its integration bounds."""
+        """Get string representation with integration bounds.
+
+        Returns:
+            str: Metric name and FPR bounds
+        """
         lower, upper = self.fpr_bounds
         return f"{self.__class__.__name__}([{lower:.2g}, {upper:.2g}])"
 
@@ -229,17 +271,15 @@ class AUPIMO(PIMO):
         return_average: bool = True,
         force: bool = False,
     ) -> None:
-        """Area Under the Per-Image Overlap (PIMO) curve.
+        """Initialize AUPIMO metric.
 
         Args:
-            num_thresholds: [passed to parent `PIMO`] number of thresholds used to compute the PIMO curve
-            fpr_bounds: lower and upper bounds of the FPR integration range
-            return_average: if True, return the average AUPIMO score; if False, return all the individual AUPIMO scores
-            force: if True, force the computation of the AUPIMO scores even in bad conditions (e.g. few points)
+            num_thresholds: Number of thresholds for curve computation
+            fpr_bounds: FPR integration bounds as ``(min, max)``
+            return_average: If True, return mean score across anomalous images
+            force: If True, compute scores even in suboptimal conditions
         """
         super().__init__(num_thresholds=num_thresholds)
-
-        # other validations are done in PIMO.__init__()
 
         _validate.is_rate_range(fpr_bounds)
         self.fpr_bounds = fpr_bounds
@@ -247,16 +287,18 @@ class AUPIMO(PIMO):
         self.force = force
 
     def compute(self, force: bool | None = None) -> tuple[PIMOResult, AUPIMOResult]:  # type: ignore[override]
-        """Compute the PIMO curves and their Area Under the curve (AUPIMO) scores.
-
-        Call the functional interface `aupimo_scores()`, which is a wrapper around the numpy code.
+        """Compute PIMO curves and AUPIMO scores.
 
         Args:
-            force: if given (not None), override the `force` attribute.
+            force: If provided, override instance ``force`` setting
 
         Returns:
-            tuple[PIMOResult, AUPIMOResult]: PIMO curves and AUPIMO scores dataclass objects.
-                See `PIMOResult` and `AUPIMOResult` for details.
+            tuple: Contains:
+                - PIMOResult: PIMO curve data
+                - AUPIMOResult: AUPIMO score data
+
+        Raises:
+            RuntimeError: If no data has been added via update()
         """
         if self._is_empty:
             msg = "No anomaly maps and masks have been added yet. Please call `update()` first."
@@ -294,3 +336,9 @@ class AUPIMO(PIMO):
             is_nan = torch.isnan(aupimo_result.aupimos)
             return aupimo_result.aupimos[~is_nan].mean()
         return pimo_result, aupimo_result
+
+
+class AUPIMO(AnomalibMetric, _AUPIMO):  # type: ignore[misc]
+    """Wrapper adding AnomalibMetric functionality to AUPIMO metric."""
+
+    default_fields = ("anomaly_map", "gt_mask")

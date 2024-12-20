@@ -1,4 +1,8 @@
-"""Subcommand for pipelines."""
+"""Anomalib pipeline subcommands.
+
+This module provides functionality for managing and running Anomalib pipelines through
+the CLI. It includes support for benchmarking and other pipeline operations.
+"""
 
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -22,14 +26,39 @@ else:
 
 
 def pipeline_subcommands() -> dict[str, dict[str, str]]:
-    """Return subcommands for pipelines."""
+    """Get available pipeline subcommands.
+
+    Returns:
+        dict[str, dict[str, str]]: Dictionary mapping subcommand names to their descriptions.
+
+    Example:
+        Pipeline subcommands are available only if the pipelines are installed::
+
+        >>> pipeline_subcommands()
+        {
+            'benchmark': {
+                'description': 'Run benchmarking pipeline for model evaluation'
+            }
+        }
+    """
     if PIPELINE_REGISTRY is not None:
         return {name: {"description": get_short_docstring(pipeline)} for name, pipeline in PIPELINE_REGISTRY.items()}
     return {}
 
 
 def run_pipeline(args: Namespace) -> None:
-    """Run pipeline."""
+    """Run a pipeline with the provided arguments.
+
+    Args:
+        args (Namespace): Arguments for the pipeline, including the subcommand
+            and configuration.
+
+    Raises:
+        ValueError: If pipelines are not available in the current installation.
+
+    Note:
+        This feature is experimental and may change or be removed in future versions.
+    """
     logger.warning("This feature is experimental. It may change or be removed in the future.")
     if PIPELINE_REGISTRY is not None:
         subcommand = args.subcommand

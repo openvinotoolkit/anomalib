@@ -1,4 +1,26 @@
-"""Base visualization generator."""
+"""Base visualization generator for anomaly detection.
+
+This module provides the base visualization interface and common functionality used
+across different visualization types. The key components include:
+
+    - ``GeneratorResult``: Dataclass for standardized visualization outputs
+    - ``VisualizationStep``: Enum for controlling when visualizations are generated
+    - ``BaseVisualizer``: Abstract base class defining the visualization interface
+
+Example:
+    >>> from anomalib.utils.visualization import BaseVisualizer
+    >>> # Create custom visualizer
+    >>> class CustomVisualizer(BaseVisualizer):
+    ...     def generate(self, **kwargs):
+    ...         # Generate visualization
+    ...         yield GeneratorResult(image=img)
+    >>> # Use visualizer
+    >>> vis = CustomVisualizer(visualize_on="batch")
+    >>> results = vis.generate(image=input_img)
+
+The module ensures consistent visualization behavior and output formats across
+different visualization implementations.
+"""
 
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -32,9 +54,19 @@ class VisualizationStep(str, Enum):
 
 
 class BaseVisualizer(ABC):
-    """Base visualization generator."""
+    """Base visualization generator.
+
+    Deprecated: This class will be removed in v2.0.0 release.
+    """
 
     def __init__(self, visualize_on: VisualizationStep) -> None:
+        import warnings
+
+        warnings.warn(
+            "BaseVisualizer is deprecated and will be removed in v2.0.0 release.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         self.visualize_on = visualize_on
 
     @abstractmethod

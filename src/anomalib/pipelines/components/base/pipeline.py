@@ -1,4 +1,27 @@
-"""Base class for pipeline."""
+"""Base class for building pipelines in anomalib.
+
+This module provides the abstract base class for creating pipelines that can execute
+jobs in a configurable way. Pipelines handle setting up runners, parsing configs,
+and orchestrating job execution.
+
+Example:
+    >>> from anomalib.pipelines.components.base import Pipeline
+    >>> class MyPipeline(Pipeline):
+    ...     def _setup_runners(self, args: dict) -> list[Runner]:
+    ...         # Configure and return list of runners
+    ...         pass
+    ...     def run(self, args: Namespace | None = None):
+    ...         # Execute pipeline logic
+    ...         pass
+
+The base pipeline interface defines key methods that subclasses must implement:
+
+- :meth:`_setup_runners`: Configure the runners that will execute pipeline jobs
+- :meth:`run`: Execute the core pipeline logic
+
+Pipelines can be used to implement workflows like training, inference, or
+benchmarking by composing jobs and runners in a modular way.
+"""
 
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0

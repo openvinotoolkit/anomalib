@@ -1,0 +1,141 @@
+# Bandit Scanner Action
+#
+# This composite action executes Python security scanning using Bandit,
+# providing configurable security analysis capabilities.
+#
+# Key Features:
+# - Python code scanning
+# - Severity configuration
+# - Flexible scan scope
+# - Multiple report formats
+# - Custom rule support
+#
+# Process Stages:
+# 1. Environment Setup:
+#    - Python installation
+#    - Bandit configuration
+#    - Cache preparation
+#
+# 2. Scan Execution:
+#    - Target determination
+#    - Rule application
+#    - Security analysis
+#
+# 3. Results Processing:
+#    - Report generation
+#    - Finding analysis
+#    - Output formatting
+#
+# Required Inputs:
+# - scan-scope: Files to scan
+# - severity_level: Issue severity threshold
+# - fail-on-findings: Whether to fail on issues
+#
+# Outputs:
+# - scan_result: Scan exit code
+# - report_path: Results location
+#
+# Example Usage:
+# steps:
+#   - uses: ./.github/actions/security/bandit
+#     with:
+#       scan-scope: "changed"
+#       severity_level: "MEDIUM"
+#
+# Note: Configure Bandit settings in pyproject.toml for best results
+
+name: "Bandit Security Scan"
+description: "Runs Bandit security scanner with configurable options"
+
+inputs:
+  scan-scope:
+    description: "Scope of files to scan (all/changed)"
+    required: false
+    default: "changed"
+  paths:
+    description: "Paths to scan when using all scope"
+    required: false
+    default: "./src"
+  config_file:
+    description: "Path to pyproject.toml or custom bandit config"
+    required: false
+    default: "pyproject.toml"
+  severity_level:
+    description: "Minimum severity level to report (all/LOW/MEDIUM/HIGH)"
+    default: "LOW"
+  confidence_level:
+    description: "Minimum confidence level to report (all/LOW/MEDIUM/HIGH)"
+    required: false
+    default: "LOW"
+  output-format:
+    description: "Format for scan results (json/txt/html/csv)"
+    required: false
+    default: "json"
+  fail-on-findings:
+    description: "Whether to fail the action if issues are found"
+    required: false
+    default: "true"
+
+outputs:
+  scan_result:
+    description: "Exit code of the Bandit scan"
+    value: ${{ steps.run-bandit.outputs.exit_code }}
+  report_path:
+    description: "Path to the generated report file"
+    value: ${{ steps.run-bandit.outputs.report_path }}
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.10"
+
+    - name: Install Bandit
+      shell: bash
+      run: |
+        python -m pip install --upgrade pip
+        pip install bandit[toml]
+
+    - name: Get changed files
+      if: inputs.scan-scope == 'changed'
+      id: changed-files
+      uses: tj-actions/changed-files@v41
+      with:
+        files: |
+          **/*.py
+          **/*.pyx
+          **/*.pyi
+
+    - name: Run Bandit scan
+      id: run-bandit
+      shell: bash
+      run: |
+        REPORT_FILE="bandit-report.${{ inputs.output-format }}"
+
+        if [[ "${{ inputs.scan-scope }}" == "changed" && -n "${{ steps.changed-files.outputs.all_changed_files }}" ]]; then
+          echo "Running Bandit on changed files"
+          FILES="${{ steps.changed-files.outputs.all_changed_files }}"
+        else
+          echo "Running Bandit on all files in ${{ inputs.paths }}"
+          FILES="${{ inputs.paths }}"
+        fi
+
+        # Convert severity and confidence to lowercase
+        SEVERITY=$(echo "${{ inputs.severity_level }}" | tr '[:upper:]' '[:lower:]')
+        CONFIDENCE=$(echo "${{ inputs.confidence_level }}" | tr '[:upper:]' '[:lower:]')
+
+        bandit \
+          -c ${{ inputs.config_file }} \
+          --severity-level ${SEVERITY} \
+          --confidence-level ${CONFIDENCE} \
+          -f ${{ inputs.output-format }} \
+          -o "${REPORT_FILE}" \
+          -r ${FILES} || echo "exit_code=$?" >> $GITHUB_OUTPUT
+
+        echo "report_path=${REPORT_FILE}" >> $GITHUB_OUTPUT
+
+        if [[ "${{ inputs.fail-on-findings }}" == "true" && -n "$exit_code" && "$exit_code" != "0" ]]; then
+          exit $exit_code
+        fi

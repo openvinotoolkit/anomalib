@@ -4,5 +4,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from .center_crop import ExportableCenterCrop
+from .multi_random_choice import MultiRandomChoice
 
-__all__ = ["ExportableCenterCrop"]
+__all__ = ["ExportableCenterCrop", "MultiRandomChoice"]

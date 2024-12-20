@@ -8,7 +8,6 @@ from pathlib import Path
 import pytest
 import yaml
 
-from anomalib import TaskType
 from anomalib.data import MVTec
 from anomalib.engine import Engine
 from anomalib.models import Padim
@@ -62,25 +61,6 @@ class TestEngine:
             plugins: null
             sync_batchnorm: false
             reload_dataloaders_every_n_epochs: 0
-        normalization:
-            normalization_method: MIN_MAX
-        task: SEGMENTATION
-        metrics:
-            image:
-            - F1Score
-            - AUROC
-            pixel: null
-            threshold:
-                class_path: anomalib.metrics.F1AdaptiveThreshold
-                init_args:
-                    default_value: 0.5
-                    thresholds: null
-                    ignore_index: null
-                    validate_args: true
-                    compute_on_cpu: false
-                    dist_sync_on_step: false
-                    sync_on_compute: true
-                    compute_with_cache: true
         logging:
             log_graph: false
         default_root_dir: results
@@ -103,10 +83,6 @@ class TestEngine:
                 train_batch_size: 32
                 eval_batch_size: 32
                 num_workers: 8
-                image_size: null
-                transform: null
-                train_transform: null
-                eval_transform: null
                 test_split_mode: FROM_DIR
                 test_split_ratio: 0.2
                 val_split_mode: SAME_AS_TEST
@@ -128,7 +104,6 @@ class TestEngine:
         engine, model, datamodule = Engine.from_config(config_path=fxt_full_config_path)
         assert engine is not None
         assert isinstance(engine, Engine)
-        assert engine.task == TaskType.SEGMENTATION
         assert model is not None
         assert isinstance(model, Padim)
         assert datamodule is not None
@@ -136,13 +111,11 @@ class TestEngine:
         assert datamodule.train_batch_size == 32
         assert datamodule.num_workers == 8
 
-        # Override task & batch_size & num_workers
+        # Override batch_size & num_workers
         override_kwargs = {
-            "task": "CLASSIFICATION",
             "data.train_batch_size": 1,
             "data.num_workers": 1,
         }
         engine, model, datamodule = Engine.from_config(config_path=fxt_full_config_path, **override_kwargs)
-        assert engine.task == TaskType.CLASSIFICATION
         assert datamodule.train_batch_size == 1
         assert datamodule.num_workers == 1

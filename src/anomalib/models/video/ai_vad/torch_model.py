@@ -1,6 +1,31 @@
 """PyTorch model for AI-VAD model implementation.
 
-Paper https://arxiv.org/pdf/2212.00789.pdf
+This module implements the AI-VAD model as described in the paper
+"AI-VAD: Attribute-based Representations for Accurate and Interpretable Video
+Anomaly Detection."
+
+Example:
+    >>> from anomalib.models.video import AiVad
+    >>> from anomalib.data import Avenue
+    >>> from anomalib.data.utils import VideoTargetFrame
+    >>> from anomalib.engine import Engine
+
+    >>> # Initialize model and datamodule
+    >>> datamodule = Avenue(
+    ...     clip_length_in_frames=2,
+    ...     frames_between_clips=1,
+    ...     target_frame=VideoTargetFrame.LAST
+    ... )
+    >>> model = AiVad()
+
+    >>> # Train using the engine
+    >>> engine = Engine()
+    >>> engine.fit(model=model, datamodule=datamodule)
+
+Reference:
+    Tal Reiss, Yedid Hoshen. "AI-VAD: Attribute-based Representations for Accurate and
+    Interpretable Video Anomaly Detection." arXiv preprint arXiv:2212.00789 (2022).
+    https://arxiv.org/pdf/2212.00789.pdf
 """
 
 # Copyright (C) 2023-2024 Intel Corporation
@@ -8,6 +33,8 @@ Paper https://arxiv.org/pdf/2212.00789.pdf
 
 import torch
 from torch import nn
+
+from anomalib.data import InferenceBatch
 
 from .density import CombinedDensityEstimator
 from .features import FeatureExtractor
@@ -18,37 +45,55 @@ from .regions import RegionExtractor
 class AiVadModel(nn.Module):
     """AI-VAD model.
 
+    The model consists of several stages:
+    1. Flow extraction between consecutive frames
+    2. Region extraction using object detection and foreground detection
+    3. Feature extraction including velocity, pose and deep features
+    4. Density estimation for anomaly detection
+
     Args:
-        box_score_thresh (float): Confidence threshold for region extraction stage.
-            Defaults to ``0.8``.
-        persons_only (bool): When enabled, only regions labeled as person are included.
-            Defaults to ``False``.
-        min_bbox_area (int): Minimum bounding box area. Regions with a surface area lower than this value are excluded.
-            Defaults to ``100``.
-        max_bbox_overlap (float): Maximum allowed overlap between bounding boxes.
-            Defaults to ``0.65``.
-        enable_foreground_detections (bool): Add additional foreground detections based on pixel difference between
-            consecutive frames.
+        box_score_thresh (float, optional): Confidence threshold for region extraction
+            stage. Defaults to ``0.8``.
+        persons_only (bool, optional): When enabled, only regions labeled as person are
+            included. Defaults to ``False``.
+        min_bbox_area (int, optional): Minimum bounding box area. Regions with a surface
+            area lower than this value are excluded. Defaults to ``100``.
+        max_bbox_overlap (float, optional): Maximum allowed overlap between bounding
+            boxes. Defaults to ``0.65``.
+        enable_foreground_detections (bool, optional): Add additional foreground
+            detections based on pixel difference between consecutive frames.
             Defaults to ``True``.
-        foreground_kernel_size (int): Gaussian kernel size used in foreground detection.
-            Defaults to ``3``.
-        foreground_binary_threshold (int): Value between 0 and 255 which acts as binary threshold in foreground
-            detection.
-            Defaults to ``18``.
-        n_velocity_bins (int): Number of discrete bins used for velocity histogram features.
-            Defaults to ``8``.
-        use_velocity_features (bool): Flag indicating if velocity features should be used.
-            Defaults to ``True``.
-        use_pose_features (bool): Flag indicating if pose features should be used.
-            Defaults to ``True``.
-        use_deep_features (bool): Flag indicating if deep features should be used.
-            Defaults to ``True``.
-        n_components_velocity (int): Number of components used by GMM density estimation for velocity features.
-            Defaults to ``5``.
-        n_neighbors_pose (int): Number of neighbors used in KNN density estimation for pose features.
-            Defaults to ``1``.
-        n_neighbors_deep (int): Number of neighbors used in KNN density estimation for deep features.
-            Defaults to ``1``.
+        foreground_kernel_size (int, optional): Gaussian kernel size used in foreground
+            detection. Defaults to ``3``.
+        foreground_binary_threshold (int, optional): Value between 0 and 255 which acts
+            as binary threshold in foreground detection. Defaults to ``18``.
+        n_velocity_bins (int, optional): Number of discrete bins used for velocity
+            histogram features. Defaults to ``8``.
+        use_velocity_features (bool, optional): Flag indicating if velocity features
+            should be used. Defaults to ``True``.
+        use_pose_features (bool, optional): Flag indicating if pose features should be
+            used. Defaults to ``True``.
+        use_deep_features (bool, optional): Flag indicating if deep features should be
+            used. Defaults to ``True``.
+        n_components_velocity (int, optional): Number of components used by GMM density
+            estimation for velocity features. Defaults to ``5``.
+        n_neighbors_pose (int, optional): Number of neighbors used in KNN density
+            estimation for pose features. Defaults to ``1``.
+        n_neighbors_deep (int, optional): Number of neighbors used in KNN density
+            estimation for deep features. Defaults to ``1``.
+
+    Raises:
+        ValueError: If none of the feature types (velocity, pose, deep) are enabled.
+
+    Example:
+        >>> from anomalib.models.video.ai_vad.torch_model import AiVadModel
+        >>> model = AiVadModel()
+        >>> batch = torch.randn(32, 2, 3, 256, 256)  # (N, L, C, H, W)
+        >>> output = model(batch)
+        >>> output.pred_score.shape
+        torch.Size([32])
+        >>> output.anomaly_map.shape
+        torch.Size([32, 256, 256])
     """
 
     def __init__(
@@ -105,16 +150,34 @@ class AiVadModel(nn.Module):
             n_neighbors_deep=n_neighbors_deep,
         )
 
-    def forward(self, batch: torch.Tensor) -> tuple[list[torch.Tensor], list[torch.Tensor], list[torch.Tensor]]:
+    def forward(self, batch: torch.Tensor) -> InferenceBatch:
         """Forward pass through AI-VAD model.
 
+        The forward pass consists of the following steps:
+        1. Extract first and last frame from input clip
+        2. Extract optical flow between frames and detect regions of interest
+        3. Extract features (velocity, pose, deep) for each region
+        4. Estimate density and compute anomaly scores
+
         Args:
-            batch (torch.Tensor): Input image of shape (N, L, C, H, W)
+            batch (torch.Tensor): Input tensor of shape ``(N, L, C, H, W)`` where:
+                - ``N``: Batch size
+                - ``L``: Sequence length
+                - ``C``: Number of channels
+                - ``H``: Height
+                - ``W``: Width
 
         Returns:
-            list[torch.Tensor]: List of bbox locations for each image.
-            list[torch.Tensor]: List of per-bbox anomaly scores for each image.
-            list[torch.Tensor]: List of per-image anomaly scores.
+            InferenceBatch: Batch containing:
+                - ``pred_score``: Per-image anomaly scores of shape ``(N,)``
+                - ``anomaly_map``: Per-pixel anomaly scores of shape ``(N, H, W)``
+
+        Example:
+            >>> batch = torch.randn(32, 2, 3, 256, 256)
+            >>> model = AiVadModel()
+            >>> output = model(batch)
+            >>> output.pred_score.shape, output.anomaly_map.shape
+            (torch.Size([32]), torch.Size([32, 256, 256]))
         """
         self.flow_extractor.eval()
         self.region_extractor.eval()
@@ -143,5 +206,14 @@ class AiVadModel(nn.Module):
             box_scores.append(box)
             image_scores.append(image)
 
-        box_locations = [batch_item["boxes"] for batch_item in regions]
-        return box_locations, box_scores, image_scores
+        anomaly_map = torch.stack(
+            [
+                torch.amax(region["masks"] * scores.view(-1, 1, 1, 1), dim=0)
+                for region, scores in zip(regions, box_scores, strict=False)
+            ],
+        )
+
+        return InferenceBatch(
+            pred_score=torch.stack(image_scores),
+            anomaly_map=anomaly_map,
+        )

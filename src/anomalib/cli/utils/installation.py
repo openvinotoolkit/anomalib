@@ -1,4 +1,8 @@
-"""Anomalib installation util functions."""
+"""Anomalib installation utilities.
+
+This module provides utilities for managing Anomalib package installation,
+including dependency resolution and hardware-specific package selection.
+"""
 
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -25,20 +29,32 @@ AVAILABLE_TORCH_VERSIONS = {
 
 
 def get_requirements(module: str = "anomalib") -> dict[str, list[Requirement]]:
-    """Get requirements of module from importlib.metadata.
+    """Get package requirements from importlib.metadata.
 
-    This function returns list of required packages from importlib_metadata.
+    Args:
+        module (str): Name of the module to get requirements for. Defaults to "anomalib".
+
+    Returns:
+        dict[str, list[Requirement]]: Dictionary mapping requirement groups to their
+            package requirements.
 
     Example:
-        >>> get_requirements("anomalib")
+        ```python
+        get_requirements("anomalib")
+        # Returns:
         {
             "base": ["jsonargparse==4.27.1", ...],
             "core": ["torch==2.1.1", ...],
             ...
         }
+        ```
 
-    Returns:
-        dict[str, list[Requirement]]: List of required packages for each optional-extras.
+    Test:
+        >>> result = get_requirements("anomalib")
+        >>> isinstance(result, dict)
+        True
+        >>> all(isinstance(v, list) for v in result.values())
+        True
     """
     requirement_list: list[str] | None = requires(module)
     extra_requirement: dict[str, list[Requirement]] = {}
@@ -62,26 +78,37 @@ def parse_requirements(
     requirements: list[Requirement],
     skip_torch: bool = False,
 ) -> tuple[str | None, list[str]]:
-    """Parse requirements and returns torch and other requirements.
+    """Parse requirements into torch and other requirements.
 
     Args:
-        requirements (list[Requirement]): List of requirements.
+        requirements (list[Requirement]): List of requirements to parse.
         skip_torch (bool): Whether to skip torch requirement. Defaults to False.
 
-    Raises:
-        ValueError: If torch requirement is not found.
-
-    Examples:
-        >>> requirements = [
-        ...     Requirement.parse("torch==1.13.0"),
-        ...     Requirement.parse("onnx>=1.8.1"),
-        ... ]
-        >>> parse_requirements(requirements=requirements)
-        (Requirement.parse("torch==1.13.0"),
-        Requirement.parse("onnx>=1.8.1"))
-
     Returns:
-        tuple[str, list[str], list[str]]: Tuple of torch and other requirements.
+        tuple[str | None, list[str]]: Tuple containing:
+            - Torch requirement string or None if skipped
+            - List of other requirement strings
+
+    Raises:
+        ValueError: If torch requirement is not found and skip_torch is False.
+
+    Example:
+        ```python
+        requirements = [
+            Requirement.parse("torch==1.13.0"),
+            Requirement.parse("onnx>=1.8.1"),
+        ]
+        parse_requirements(requirements)
+        # Returns: ('torch==1.13.0', ['onnx>=1.8.1'])
+        ```
+
+    Test:
+        >>> reqs = [Requirement.parse("torch==1.13.0"), Requirement.parse("onnx>=1.8.1")]
+        >>> torch_req, other_reqs = parse_requirements(reqs)
+        >>> torch_req == "torch==1.13.0"
+        True
+        >>> other_reqs == ["onnx>=1.8.1"]
+        True
     """
     torch_requirement: str | None = None
     other_requirements: list[str] = []
@@ -115,17 +142,27 @@ def parse_requirements(
 def get_cuda_version() -> str | None:
     """Get CUDA version installed on the system.
 
-    Examples:
-        >>> # Assume that CUDA version is 11.2
-        >>> get_cuda_version()
-        "11.2"
-
-        >>> # Assume that CUDA is not installed on the system
-        >>> get_cuda_version()
-        None
-
     Returns:
-        str | None: CUDA version installed on the system.
+        str | None: CUDA version string (e.g., "11.8") or None if not found.
+
+    Example:
+        ```python
+        # System with CUDA 11.8 installed
+        get_cuda_version()
+        # Returns: "11.8"
+
+        # System without CUDA
+        get_cuda_version()
+        # Returns: None
+        ```
+
+    Test:
+        >>> version = get_cuda_version()
+        >>> version is None or isinstance(version, str)
+        True
+        >>> if version is not None:
+        ...     version.count('.') == 1 and all(part.isdigit() for part in version.split('.'))
+        ...     True
     """
     # 1. Check CUDA_HOME Environment variable
     cuda_home = os.environ.get("CUDA_HOME", "/usr/local/cuda")
@@ -157,30 +194,20 @@ def get_cuda_version() -> str | None:
 
 
 def update_cuda_version_with_available_torch_cuda_build(cuda_version: str, torch_version: str) -> str:
-    """Update the installed CUDA version with the highest supported CUDA version by PyTorch.
+    """Update CUDA version to match PyTorch's supported versions.
 
     Args:
         cuda_version (str): The installed CUDA version.
         torch_version (str): The PyTorch version.
 
-    Raises:
-        Warning: If the installed CUDA version is not supported by PyTorch.
-
-    Examples:
-        >>> update_cuda_version_with_available_torch_cuda_builds("11.1", "1.13.0")
-        "11.6"
-
-        >>> update_cuda_version_with_available_torch_cuda_builds("11.7", "1.13.0")
-        "11.7"
-
-        >>> update_cuda_version_with_available_torch_cuda_builds("11.8", "1.13.0")
-        "11.7"
-
-        >>> update_cuda_version_with_available_torch_cuda_builds("12.1", "2.0.1")
-        "11.8"
-
     Returns:
-        str: The updated CUDA version.
+        str: The updated CUDA version that's compatible with PyTorch.
+
+    Example:
+        ```python
+        update_cuda_version_with_available_torch_cuda_build("12.1", "2.0.1")
+        # Returns: "11.8"  # PyTorch 2.0.1 only supports up to CUDA 11.8
+        ```
     """
     max_supported_cuda = max(AVAILABLE_TORCH_VERSIONS[torch_version]["cuda"])
     min_supported_cuda = min(AVAILABLE_TORCH_VERSIONS[torch_version]["cuda"])
@@ -204,63 +231,58 @@ def get_cuda_suffix(cuda_version: str) -> str:
     """Get CUDA suffix for PyTorch versions.
 
     Args:
-        cuda_version (str): CUDA version installed on the system.
-
-    Note:
-        The CUDA version of PyTorch is not always the same as the CUDA version
-            that is installed on the system. For example, the latest PyTorch
-            version (1.10.0) supports CUDA 11.3, but the latest CUDA version
-            that is available for download is 11.2. Therefore, we need to use
-            the latest available CUDA version for PyTorch instead of the CUDA
-            version that is installed on the system. Therefore, this function
-            shoudl be regularly updated to reflect the latest available CUDA.
-
-    Examples:
-        >>> get_cuda_suffix(cuda_version="11.2")
-        "cu112"
-
-        >>> get_cuda_suffix(cuda_version="11.8")
-        "cu118"
+        cuda_version (str): CUDA version string (e.g., "11.8").
 
     Returns:
-        str: CUDA suffix for PyTorch or mmX version.
+        str: CUDA suffix for PyTorch (e.g., "cu118").
+
+    Example:
+        ```python
+        get_cuda_suffix("11.8")
+        # Returns: "cu118"
+        ```
+
+    Test:
+        >>> get_cuda_suffix("11.8")
+        'cu118'
+        >>> get_cuda_suffix("12.1")
+        'cu121'
     """
     return f"cu{cuda_version.replace('.', '')}"
 
 
 def get_hardware_suffix(with_available_torch_build: bool = False, torch_version: str | None = None) -> str:
-    """Get hardware suffix for PyTorch or mmX versions.
+    """Get hardware suffix for PyTorch package names.
 
     Args:
-        with_available_torch_build (bool): Whether to use the latest available
-            PyTorch build or not. If True, the latest available PyTorch build
-            will be used. If False, the installed PyTorch build will be used.
-            Defaults to False.
-        torch_version (str | None): PyTorch version. This is only used when the
-            ``with_available_torch_build`` is True.
-
-    Examples:
-        >>> # Assume that CUDA version is 11.2
-        >>> get_hardware_suffix()
-        "cu112"
-
-        >>> # Assume that CUDA is not installed on the system
-        >>> get_hardware_suffix()
-        "cpu"
-
-        Assume that that installed CUDA version is 12.1.
-        However, the latest available CUDA version for PyTorch v2.0 is 11.8.
-        Therefore, we use 11.8 instead of 12.1. This is because PyTorch does not
-        support CUDA 12.1 yet. In this case, we could correct the CUDA version
-        by setting `with_available_torch_build` to True.
-
-        >>> cuda_version = get_cuda_version()
-        "12.1"
-        >>> get_hardware_suffix(with_available_torch_build=True, torch_version="2.0.1")
-        "cu118"
+        with_available_torch_build (bool): Whether to use available PyTorch builds
+            to determine the suffix. Defaults to False.
+        torch_version (str | None): PyTorch version to check against. Required if
+            with_available_torch_build is True.
 
     Returns:
-        str: Hardware suffix for PyTorch or mmX version.
+        str: Hardware suffix (e.g., "cu118" or "cpu").
+
+    Raises:
+        ValueError: If torch_version is not provided when with_available_torch_build is True.
+
+    Example:
+        ```python
+        # System with CUDA 11.8
+        get_hardware_suffix()
+        # Returns: "cu118"
+
+        # System without CUDA
+        get_hardware_suffix()
+        # Returns: "cpu"
+        ```
+
+    Test:
+        >>> suffix = get_hardware_suffix()
+        >>> isinstance(suffix, str)
+        True
+        >>> suffix in {'cpu'} or suffix.startswith('cu')
+        True
     """
     cuda_version = get_cuda_version()
     if cuda_version:
@@ -277,26 +299,38 @@ def get_hardware_suffix(with_available_torch_build: bool = False, torch_version:
 
 
 def get_torch_install_args(requirement: str | Requirement) -> list[str]:
-    """Get the install arguments for Torch requirement.
-
-    This function will return the install arguments for the Torch requirement
-    and its corresponding torchvision requirement.
+    """Get pip install arguments for PyTorch packages.
 
     Args:
-        requirement (str | Requirement): The torch requirement.
+        requirement (str | Requirement): The torch requirement specification.
+
+    Returns:
+        list[str]: List of pip install arguments.
 
     Raises:
         RuntimeError: If the OS is not supported.
 
     Example:
-        >>> from pkg_resources import Requirement
-        >>> requriment = "torch>=1.13.0"
-        >>> get_torch_install_args(requirement)
-        ['--extra-index-url', 'https://download.pytorch.org/whl/cpu',
-        'torch>=1.13.0', 'torchvision==0.14.0']
+        ```python
+        requirement = "torch>=2.0.0"
+        get_torch_install_args(requirement)
+        # Returns:
+        [
+            '--extra-index-url',
+            'https://download.pytorch.org/whl/cu118',
+            'torch>=2.0.0',
+            'torchvision==0.15.1'
+        ]
+        ```
 
-    Returns:
-        list[str]: The install arguments.
+    Test:
+        >>> args = get_torch_install_args("torch>=2.0.0")
+        >>> isinstance(args, list)
+        True
+        >>> all(isinstance(arg, str) for arg in args)
+        True
+        >>> any('torch' in arg for arg in args)
+        True
     """
     if isinstance(requirement, str):
         requirement = Requirement.parse(requirement)
