@@ -34,4 +34,4 @@ class TestMVTec3D(_TestAnomalibDepthDatamodule):
     @staticmethod
     def fxt_data_config_path() -> str:
         """Return the path to the test data config."""
-        return "configs/data/mvtec_3d.yaml"
+        return "examples/configs/data/mvtec_3d.yaml"

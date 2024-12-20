@@ -34,4 +34,4 @@ class TestBTech(_TestAnomalibImageDatamodule):
     @staticmethod
     def fxt_data_config_path() -> str:
         """Return the path to the test data config."""
-        return "configs/data/btech.yaml"
+        return "examples/configs/data/btech.yaml"
