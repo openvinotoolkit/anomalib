@@ -57,9 +57,10 @@ predictions = engine.predict(
 
 # Process results
 print("\nProcessing Results...")
-for prediction in predictions:
-    image_path = prediction.image_path
-    anomaly_score = prediction.pred_score
+if predictions is not None:
+    for prediction in predictions:
+        image_path = prediction.image_path
+        anomaly_score = prediction.pred_score
     is_anomalous = prediction.pred_label > 0.5
 
     print(f"Image: {image_path}")

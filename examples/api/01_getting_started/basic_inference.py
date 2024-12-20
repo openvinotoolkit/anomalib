@@ -33,8 +33,9 @@ predictions = engine.predict(
 )
 
 # 5. Access the results
-for prediction in predictions:
-    image_path = prediction.image_path
-    anomaly_map = prediction.anomaly_map  # Pixel-level anomaly heatmap
-    pred_label = prediction.pred_label  # Image-level label (0: normal, 1: anomalous)
-    pred_score = prediction.pred_score  # Image-level anomaly score
+if predictions is not None:
+    for prediction in predictions:
+        image_path = prediction.image_path
+        anomaly_map = prediction.anomaly_map  # Pixel-level anomaly heatmap
+        pred_label = prediction.pred_label  # Image-level label (0: normal, 1: anomalous)
+        pred_score = prediction.pred_score  # Image-level anomaly score
