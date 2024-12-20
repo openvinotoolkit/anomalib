@@ -50,7 +50,6 @@ from typing import Any
 import lightning.pytorch as pl
 import torch
 from lightning.pytorch import Callback
-from lightning.pytorch.trainer.states import TrainerFn
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torch import nn
 from torchvision.transforms.v2 import Compose, Normalize, Resize
@@ -143,7 +142,6 @@ class AnomalibModule(ExportMixin, pl.LightningModule, ABC):
         self.visualizer = self._resolve_visualizer(visualizer)
 
         self._input_size: tuple[int, int] | None = None
-        self._is_setup = False
 
     @property
     def name(self) -> str:
@@ -153,33 +151,6 @@ class AnomalibModule(ExportMixin, pl.LightningModule, ABC):
             str: Name of the model class
         """
         return self.__class__.__name__
-
-    def setup(self, stage: str | None = None) -> None:
-        """Set up the model if not already done.
-
-        This method ensures the model is built by calling ``_setup()`` if needed.
-
-        Args:
-            stage (str | None, optional): Current stage of training.
-                Defaults to ``None``.
-        """
-        if getattr(self, "model", None) is None or not self._is_setup:
-            self._setup()
-            if isinstance(stage, TrainerFn):
-                # only set the flag if the stage is a TrainerFn, which means the
-                # setup has been called from a trainer
-                self._is_setup = True
-
-    def _setup(self) -> None:
-        """Set up the model architecture.
-
-        This method should be overridden by subclasses to build their model
-        architecture. It is called by ``setup()`` when the model needs to be
-        initialized.
-
-        This is useful when the model cannot be fully initialized in ``__init__``
-        because it requires data-dependent parameters.
-        """
 
     def configure_callbacks(self) -> Sequence[Callback] | Callback:
         """Configure callbacks for the model.
