@@ -109,7 +109,7 @@ class AnomalibDataModule(LightningDataModule, ABC):
         self.num_workers = num_workers
         self.test_split_mode = TestSplitMode(test_split_mode) if test_split_mode else TestSplitMode.NONE
         self.test_split_ratio = test_split_ratio or 0.5
-        self.val_split_mode = ValSplitMode(val_split_mode)
+        self.val_split_mode = ValSplitMode(val_split_mode) if val_split_mode else ValSplitMode.NONE
         self.val_split_ratio = val_split_ratio or 0.5
         self.seed = seed
 
@@ -210,9 +210,12 @@ class AnomalibDataModule(LightningDataModule, ABC):
                         antialiasing settings can lead to unexpected behaviour, so it is recommended to use the same \
                         antialiasing setting between augmentations and model transforms. Augmentations: \
                         antialias={aug_resize.antialias}, Model transforms: antialias={model_resize.antialias}"
+                    logger.warning(msg)
 
             # append model resize to augmentations
-            if isinstance(augmentations, Compose):
+            if isinstance(augmentations, Resize):
+                augmentations = model_resize
+            elif isinstance(augmentations, Compose):
                 augmentations = Compose([*augmentations.transforms, model_resize])
             elif isinstance(augmentations, Transform):
                 augmentations = Compose([augmentations, model_resize])
