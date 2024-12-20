@@ -7,10 +7,6 @@ model:
     affine_subnet_channels_ratio: 1.0
     backbone: mcait # official: mcait, other extractors tested: resnet18, wide_resnet50_2. Could use others...
 
-metrics:
-  pixel:
-    - AUROC
-
 # PL Trainer Args. Don't add extra parameter here.
 trainer:
   max_epochs: 200

@@ -61,7 +61,7 @@ class Folder3DDataset(AnomalibDepthDataset):
             containing depth maps for abnormal images. Defaults to ``None``.
         normal_test_depth_dir (str | Path | None, optional): Path to directory
             containing depth maps for normal test images. Defaults to ``None``.
-        transform (Transform | None, optional): Transforms to apply to the images.
+        augmentations (Transform, optional): Augmentations that should be applied to the input images.
             Defaults to ``None``.
         split (str | Split | None, optional): Dataset split to load.
             One of ``["train", "test", "full"]``. Defaults to ``None``.
@@ -91,11 +91,11 @@ class Folder3DDataset(AnomalibDepthDataset):
         normal_depth_dir: str | Path | None = None,
         abnormal_depth_dir: str | Path | None = None,
         normal_test_depth_dir: str | Path | None = None,
-        transform: Transform | None = None,
+        augmentations: Transform | None = None,
         split: str | Split | None = None,
         extensions: tuple[str, ...] | None = None,
     ) -> None:
-        super().__init__(transform)
+        super().__init__(augmentations=augmentations)
 
         self._name = name
         self.split = split

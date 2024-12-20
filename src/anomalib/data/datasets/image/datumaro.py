@@ -131,9 +131,9 @@ class DatumaroDataset(AnomalibDataset):
     def __init__(
         self,
         root: str | Path,
-        transform: Transform | None = None,
+        augmentations: Transform | None = None,
         split: str | Split | None = None,
     ) -> None:
-        super().__init__(transform)
+        super().__init__(augmentations=augmentations)
         self.split = split
         self.samples = make_datumaro_dataset(root, split)

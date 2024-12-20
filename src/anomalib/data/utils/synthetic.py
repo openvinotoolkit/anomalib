@@ -32,7 +32,7 @@ from tempfile import mkdtemp
 import cv2
 import pandas as pd
 from pandas import DataFrame, Series
-from torchvision.transforms.v2 import Compose
+from torchvision.transforms.v2 import Transform
 
 from anomalib.data.datasets.base.image import AnomalibDataset
 from anomalib.data.utils import Split, read_image
@@ -155,7 +155,7 @@ class SyntheticAnomalyDataset(AnomalibDataset):
     object is deleted.
 
     Args:
-        transform: Transform object describing the transforms applied to inputs.
+        augmentations (Transform | None): Transform object describing the input data augmentations.
         source_samples: DataFrame containing normal samples used as source for
             synthetic anomalies.
 
@@ -169,8 +169,8 @@ class SyntheticAnomalyDataset(AnomalibDataset):
         100
     """
 
-    def __init__(self, transform: Compose, source_samples: DataFrame) -> None:
-        super().__init__(transform)
+    def __init__(self, augmentations: Transform | None, source_samples: DataFrame) -> None:
+        super().__init__(augmentations=augmentations)
 
         self.source_samples = source_samples
 
@@ -212,7 +212,7 @@ class SyntheticAnomalyDataset(AnomalibDataset):
             >>> normal_dataset = Dataset(...)
             >>> synthetic = SyntheticAnomalyDataset.from_dataset(normal_dataset)
         """
-        return cls(transform=dataset.transform, source_samples=dataset.samples)
+        return cls(augmentations=dataset.augmentations, source_samples=dataset.samples)
 
     def __copy__(self) -> "SyntheticAnomalyDataset":
         """Return shallow copy and prevent cleanup of original.

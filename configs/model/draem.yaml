@@ -6,10 +6,6 @@ model:
     sspcab_lambda: 0.1
     anomaly_source_path: null
 
-metrics:
-  pixel:
-    - AUROC
-
 trainer:
   max_epochs: 700
   callbacks:

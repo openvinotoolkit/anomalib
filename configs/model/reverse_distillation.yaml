@@ -9,10 +9,6 @@ model:
     anomaly_map_mode: ADD
     pre_trained: true
 
-metrics:
-  pixel:
-    - AUROC
-
 trainer:
   callbacks:
     - class_path: lightning.pytorch.callbacks.EarlyStopping

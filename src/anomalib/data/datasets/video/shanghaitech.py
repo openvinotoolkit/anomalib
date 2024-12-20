@@ -91,8 +91,8 @@ class ShanghaiTechDataset(AnomalibVideoDataset):
             consecutive video clip. Defaults to ``1``.
         target_frame (VideoTargetFrame): Specifies which frame in the clip to use
             for ground truth retrieval. Defaults to ``VideoTargetFrame.LAST``.
-        transform (Transform | None, optional): Transforms to apply to the input
-            images. Defaults to ``None``.
+        augmentations (Transform, optional): Augmentations that should be applied to the input images.
+            Defaults to ``None``.
 
     Example:
         >>> from anomalib.data.datasets import ShanghaiTechDataset
@@ -112,13 +112,13 @@ class ShanghaiTechDataset(AnomalibVideoDataset):
         clip_length_in_frames: int = 2,
         frames_between_clips: int = 1,
         target_frame: VideoTargetFrame = VideoTargetFrame.LAST,
-        transform: Transform | None = None,
+        augmentations: Transform | None = None,
     ) -> None:
         super().__init__(
             clip_length_in_frames=clip_length_in_frames,
             frames_between_clips=frames_between_clips,
             target_frame=target_frame,
-            transform=transform,
+            augmentations=augmentations,
         )
 
         self.root = Path(root)
