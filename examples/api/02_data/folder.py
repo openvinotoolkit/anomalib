@@ -43,13 +43,3 @@ datamodule = Folder(
     eval_batch_size=32,
     num_workers=8,
 )
-
-# 3. Using Task-Specific Settings
-# Configure for specific anomaly detection tasks
-datamodule = Folder(
-    name="my_dataset",
-    root=Path("./datasets/my_dataset"),
-    normal_dir="good",
-    abnormal_dir="defect",
-    train_batch_size=32,
-)

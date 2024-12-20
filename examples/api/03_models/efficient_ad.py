@@ -19,8 +19,8 @@ model = EfficientAd()
 # Configure model parameters
 model = EfficientAd(
     teacher_out_channels=384,  # Number of teacher output channels
-    student_out_channels=384,  # Number of student output channels
-    padding_same=True,  # Use same padding in convolutions
+    model_size="m",
+    lr=1e-4,
 )
 
 # 3. Training Pipeline

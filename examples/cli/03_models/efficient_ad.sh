@@ -19,8 +19,8 @@ echo -e "\nTraining with custom model settings..."
 anomalib train \
     --model efficient_ad \
     --model.teacher_out_channels 384 \
-    --model.student_out_channels 384 \
-    --model.padding_same true
+    --model.model_size m \
+    --model.lr 1e-4
 
 # 3. Advanced Training Pipeline
 # Train with custom training settings

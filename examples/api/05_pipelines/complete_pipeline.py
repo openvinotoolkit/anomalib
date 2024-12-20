@@ -38,22 +38,8 @@ engine = Engine(
 # Train the model
 engine.fit(model=model, datamodule=datamodule)
 
-# 2. Export Phase
-# --------------
-print("\nStarting Export Phase...")
 
-# Export to ONNX format
-export_root = Path("exported_models")
-export_root.mkdir(exist_ok=True)
-
-export_to_onnx(
-    model=model,
-    export_root=export_root,
-    input_size=(256, 256),  # Adjust based on your needs
-    export_type=ExportType.TORCH,  # or OPENVINO
-)
-
-# 3. Inference Phase
+# 2. Inference Phase
 # ----------------
 print("\nStarting Inference Phase...")
 
@@ -63,7 +49,7 @@ test_data = PredictDataset(
     image_size=(256, 256),
 )
 
-# Run inference
+# Run inference on Lightning model.
 predictions = engine.predict(
     model=model,
     dataset=test_data,
@@ -79,3 +65,17 @@ for prediction in predictions:
     print(f"Image: {image_path}")
     print(f"Anomaly Score: {anomaly_score:.3f}")
     print(f"Is Anomalous: {is_anomalous}\n")
+
+# 3. Export Phase
+# --------------
+print("\nStarting Export Phase...")
+
+# Export to OPENVINO format
+engine.export(
+    model=model,
+    export_root=Path("exported_models"),
+    input_size=(256, 256),  # Adjust based on your needs
+    export_type=ExportType.OPENVINO,  # or OPENVINO
+)
+
+# Exported model can be used for inference to accelerate the inference speed.

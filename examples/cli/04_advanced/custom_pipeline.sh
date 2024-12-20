@@ -23,9 +23,6 @@ anomalib train \
         {name: Normalize, mean: [0.485, 0.456, 0.406], std: [0.229, 0.224, 0.225]}
     ]" \
     --metrics "[auroc, f1_score]" \
-    --visualization.mode full \
-    --visualization.save_images true \
-    --visualization.output_path results/visualizations
 
 # 2. Advanced Training Configuration
 # Configure training behavior and optimization
@@ -59,8 +56,6 @@ anomalib predict \
     --weights exported_models/model.onnx \
     --input path/to/test/images \
     --output results/predictions \
-    --visualization.mode full \
-    --visualization.save_images true
 
 # 4. Hyperparameter Search
 # Run multiple training configurations
@@ -74,8 +69,6 @@ for backbone in "resnet18" "wide_resnet50_2"; do
             --data MVTec \
             --model.backbone "$backbone" \
             --model.layers "${layers[@]}" \
-            --trainer.default_root_dir "results/search/${backbone}_${layer_combo}" \
-            --visualization.mode full \
-            --visualization.save_images true
+            --trainer.default_root_dir "results/search/${backbone}_${layer_combo}"
     done
 done

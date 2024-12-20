@@ -38,7 +38,6 @@ echo -e "\nRunning complete training pipeline..."
 anomalib train \
     --model efficient_ad \
     --model.teacher_out_channels 384 \
-    --model.student_out_channels 384 \
     --data.category bottle \
     --data.train_batch_size 32 \
     --data.eval_batch_size 32 \
