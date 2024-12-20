@@ -8,7 +8,7 @@
 
 [Key Features](#key-features) •
 [Docs](https://anomalib.readthedocs.io/en/latest/) •
-[Notebooks](notebooks) •
+[Notebooks](examples/notebooks) •
 [License](LICENSE)
 
 [![python](https://img.shields.io/badge/python-3.10%2B-green)]()

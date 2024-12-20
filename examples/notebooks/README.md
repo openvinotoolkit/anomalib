@@ -21,9 +21,9 @@ To install Python, Git and other required tools, [OpenVINO Notebooks](https://gi
 
 ## 0. Training and Inference
 
-| Notebook        | GitHub                                                               | Colab                                                                                                                                                                                                                               |
-| --------------- | -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Getting Started | [001_getting_started](000_getting_started/001_getting_started.ipynb) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/openvinotoolkit/anomalib/blob/main/examples/examples/notebooks/000_getting_started/001_getting_started.ipynb) |
+| Notebook        | GitHub                                                               | Colab                                                                                                                                                                                                                      |
+| --------------- | -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Getting Started | [001_getting_started](000_getting_started/001_getting_started.ipynb) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/openvinotoolkit/anomalib/blob/main/examples/notebooks/000_getting_started/001_getting_started.ipynb) |
 
 ## 1. Data Modules
 
@@ -41,23 +41,23 @@ To install Python, Git and other required tools, [OpenVINO Notebooks](https://gi
 
 ## 3. OpenVINO Optimization
 
-| Notebook     | GitHub                                                      | Colab |
-| ------------ | ----------------------------------------------------------- | ----- |
-| Quantization | [401_NNCF](/examples/notebooks/400_openvino/401_nncf.ipynb) |       |
+| Notebook     | GitHub                                  | Colab |
+| ------------ | --------------------------------------- | ----- |
+| Quantization | [401_NNCF](400_openvino/401_nncf.ipynb) |       |
 
 ## 4. Use cases
 
-| Notebook               | GitHub                                                                                                                 | Colab |
-| ---------------------- | ---------------------------------------------------------------------------------------------------------------------- | ----- |
-| Dobot Dataset Creation | [501a_training](/examples/notebooks/500_use_cases/501_dobot/501a_training_a_model_with_cubes_from_a_robotic_arm.ipynb) |       |
-| Training               | [501b_training](/examples/notebooks/500_use_cases/501_dobot/501b_inference_with_a_robotic_arm.ipynb)                   |       |
+| Notebook               | GitHub                                                                                             | Colab |
+| ---------------------- | -------------------------------------------------------------------------------------------------- | ----- |
+| Dobot Dataset Creation | [501a_training](500_use_cases/501_dobot/501a_training_a_model_with_cubes_from_a_robotic_arm.ipynb) |       |
+| Training               | [501b_training](500_use_cases/501_dobot/501b_inference_with_a_robotic_arm.ipynb)                   |       |
 
 ## 7. Metrics
 
-| Notebook                                        | GitHub                                                                                     | Colab                                                                                                                                                                                                                   |
-| ----------------------------------------------- | ------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| AUPIMO basics                                   | [701a_aupimo](/examples/notebooks/700_metrics/701a_aupimo.ipynb)                           | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/openvinotoolkit/anomalib/blob/main/examples/notebooks/700_metrics/701a_aupimo.ipynb)              |
-| AUPIMO representative samples and visualization | [701b_aupimo_advanced_i](/examples/notebooks/700_metrics/701b_aupimo_advanced_i.ipynb)     | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/openvinotoolkit/anomalib/blob/main/examples/notebooks/700_metrics/701b_aupimo_advanced_i.ipynb)   |
-| PIMO curve and integration bounds               | [701c_aupimo_advanced_ii](/examples/notebooks/700_metrics/701c_aupimo_advanced_ii.ipynb)   | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/openvinotoolkit/anomalib/blob/main/examples/notebooks/700_metrics/701c_aupimo_advanced_ii.ipynb)  |
-| (AU)PIMO of a random model                      | [701d_aupimo_advanced_iii](/examples/notebooks/700_metrics/701d_aupimo_advanced_iii.ipynb) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/openvinotoolkit/anomalib/blob/main/examples/notebooks/700_metrics/701d_aupimo_advanced_iii.ipynb) |
-| AUPIMO load/save, statistical comparison        | [701e_aupimo_advanced_iv](/examples/notebooks/700_metrics/701e_aupimo_advanced_iv.ipynb)   | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/openvinotoolkit/anomalib/blob/main/examples/notebooks/700_metrics/701e_aupimo_advanced_iv.ipynb)  |
+| Notebook                                        | GitHub                                                                 | Colab                                                                                                                                                                                                                   |
+| ----------------------------------------------- | ---------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| AUPIMO basics                                   | [701a_aupimo](700_metrics/701a_aupimo.ipynb)                           | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/openvinotoolkit/anomalib/blob/main/examples/notebooks/700_metrics/701a_aupimo.ipynb)              |
+| AUPIMO representative samples and visualization | [701b_aupimo_advanced_i](700_metrics/701b_aupimo_advanced_i.ipynb)     | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/openvinotoolkit/anomalib/blob/main/examples/notebooks/700_metrics/701b_aupimo_advanced_i.ipynb)   |
+| PIMO curve and integration bounds               | [701c_aupimo_advanced_ii](700_metrics/701c_aupimo_advanced_ii.ipynb)   | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/openvinotoolkit/anomalib/blob/main/examples/notebooks/700_metrics/701c_aupimo_advanced_ii.ipynb)  |
+| (AU)PIMO of a random model                      | [701d_aupimo_advanced_iii](700_metrics/701d_aupimo_advanced_iii.ipynb) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/openvinotoolkit/anomalib/blob/main/examples/notebooks/700_metrics/701d_aupimo_advanced_iii.ipynb) |
+| AUPIMO load/save, statistical comparison        | [701e_aupimo_advanced_iv](700_metrics/701e_aupimo_advanced_iv.ipynb)   | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/openvinotoolkit/anomalib/blob/main/examples/notebooks/700_metrics/701e_aupimo_advanced_iv.ipynb)  |
