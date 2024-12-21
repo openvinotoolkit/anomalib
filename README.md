@@ -27,11 +27,15 @@
 
 > 🌟 **Announcing v2.0.0 Beta Release!** 🌟
 >
-> We're excited to announce the beta release of Anomalib v2.0.0! This version introduces significant improvements and breaking changes to enhance your anomaly detection workflows. We invite you to try it out and share your feedback:
+> We're excited to announce the beta release of Anomalib v2.0.0! This version introduces significant improvements and customization options to enhance your anomaly detection workflows. Please be aware that there are several API changes between `v1.2.0` and `v2.0.0`, so please be careful when updating your existing pipelines. We invite you to try it out and share your feedback:
 >
-> - 💥 Breaking changes for better usability and performance
-> - ⚡ Enhanced API and functionality
-> - 🤝 We value your input! Please test and share feedback via [GitHub Issues](https://github.com/openvinotoolkit/anomalib/issues) or our [Discord](https://discord.com/channels/1230798452577800237)
+> - Multi-GPU support
+> - New dataclasses for model in- and outputs (docs guide: coming soon)
+> - Configurable modules for pre- and post-processing operations via `Preprocessor` and `Postprocessor` (docs guide: coming soon)
+> - Configurable module for evaluation metrics via `Evaluator` (docs guide: coming soon)
+> - Configurable module for visualization via `Visualizer` (docs guide: coming soon)
+>
+> We value your input! Please test and share feedback via [GitHub Issues](https://github.com/openvinotoolkit/anomalib/issues) or our [Discussions](https://github.com/openvinotoolkit/anomalib/discussions)
 >
 > Install beta: `pip install anomalib==2.0.0-beta.1`
 
