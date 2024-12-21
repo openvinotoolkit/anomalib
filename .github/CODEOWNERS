@@ -15,12 +15,12 @@
 /docs                                                       @samet-akcay
 
 # Notebooks
-/notebooks/000_getting_started                              @samet-akcay
-/notebooks/100_datamodules                                  @djdameln
-/notebooks/200_models                                       @samet-akcay
-/notebooks/300_benchmarking                                 @ashwinvaidya17
-/notebooks/400_openvino                                     @samet-akcay
-/notebooks/README.md                                        @samet-akcay
+/examples/notebooks/000_getting_started                              @samet-akcay
+/examples/notebooks/100_datamodules                                  @djdameln
+/examples/notebooks/200_models                                       @samet-akcay
+/examples/notebooks/300_benchmarking                                 @ashwinvaidya17
+/examples/notebooks/400_openvino                                     @samet-akcay
+/examples/notebooks/README.md                                        @samet-akcay
 
 # Requirements
 /requirements/                                              @samet-akcay @ashwinvaidya17 @djdameln

@@ -11,13 +11,18 @@ The module supports both zero-shot and few-shot learning approaches:
 
 Example:
     >>> from anomalib.models.image import VlmAd
+    >>> from anomalib.data import MVTec
+    >>> from anomalib.engine import Engine
+
     >>> model = VlmAd(  # doctest: +SKIP
     ...     model="gpt-4-vision-preview",
     ...     api_key="YOUR_API_KEY",
     ...     k_shot=3
     ... )
-    >>> model.fit(["normal1.jpg", "normal2.jpg"])  # doctest: +SKIP
-    >>> prediction = model.predict("test.jpg")  # doctest: +SKIP
+    >>> datamodule = MVTec()
+
+    >>> engine = Engine()
+    >>> predictions = engine.predict(model=model, datamodule=datamodule)  # doctest: +SKIP
 
 See Also:
     - :class:`VlmAd`: Main model class for VLM-based anomaly detection

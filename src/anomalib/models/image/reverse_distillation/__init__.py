@@ -11,10 +11,20 @@ The model consists of:
 - A scoring mechanism based on reconstruction error
 
 Example:
-    >>> from anomalib.models.image import ReverseDistillation
+    >>> from anomalib.models import ReverseDistillation
+    >>> from anomalib.data import MVTec
+    >>> from anomalib.engine import Engine
+
+    >>> # Initialize model and data
+    >>> datamodule = MVTec()
     >>> model = ReverseDistillation()
-    >>> model.fit(train_dataloader)
-    >>> predictions = model.predict(test_dataloader)
+
+    >>> # Train using the Engine
+    >>> engine = Engine()
+    >>> engine.fit(model=model, datamodule=datamodule)
+
+    >>> # Get predictions
+    >>> predictions = engine.predict(model=model, datamodule=datamodule)
 
 See Also:
     - :class:`anomalib.models.image.reverse_distillation.lightning_model.ReverseDistillation`:

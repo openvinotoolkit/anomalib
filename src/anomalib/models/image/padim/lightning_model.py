@@ -12,14 +12,24 @@ corresponding reference distributions.
 Paper: https://arxiv.org/abs/2011.08785
 
 Example:
+    >>> from anomalib.data import MVTec
     >>> from anomalib.models.image.padim import Padim
+    >>> from anomalib.engine import Engine
+
+    >>> # Initialize model and data
+    >>> datamodule = MVTec()
     >>> model = Padim(
     ...     backbone="resnet18",
     ...     layers=["layer1", "layer2", "layer3"],
     ...     pre_trained=True
     ... )
-    >>> model.fit()
-    >>> prediction = model(image)
+
+    >>> # Train using the Engine
+    >>> engine = Engine()
+    >>> engine.fit(model=model, datamodule=datamodule)
+
+    >>> # Get predictions
+    >>> predictions = engine.predict(model=model, datamodule=datamodule)
 
 See Also:
     - :class:`anomalib.models.image.padim.torch_model.PadimModel`:
@@ -74,14 +84,21 @@ class Padim(MemoryBankMixin, AnomalibModule):
             result images. Defaults to ``True``.
 
     Example:
-        >>> from anomalib.models.image.padim import Padim
+        >>> from anomalib.models import Padim
+        >>> from anomalib.data import MVTec
+        >>> from anomalib.engine import Engine
+
+        >>> # Initialize model and data
+        >>> datamodule = MVTec()
         >>> model = Padim(
         ...     backbone="resnet18",
         ...     layers=["layer1", "layer2", "layer3"],
         ...     pre_trained=True
         ... )
-        >>> model.fit()
-        >>> prediction = model(image)
+
+        >>> engine = Engine()
+        >>> engine.train(model=model, datamodule=datamodule)
+        >>> predictions = engine.predict(model=model, datamodule=datamodule)
 
     Note:
         The model does not require training in the traditional sense. It fits

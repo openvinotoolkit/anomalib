@@ -42,4 +42,4 @@ class TestShanghaiTech(_TestAnomalibVideoDatamodule):
     @staticmethod
     def fxt_data_config_path() -> str:
         """Return the path to the test data config."""
-        return "configs/data/shanghaitech.yaml"
+        return "examples/configs/data/shanghaitech.yaml"

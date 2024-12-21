@@ -5,12 +5,19 @@ anomaly detection.
 
 Example:
     >>> from anomalib.models.image import Padim, Patchcore
-    >>> # Initialize a model
+    >>> from anomalib.data import MVTec  # doctest: +SKIP
+    >>> from anomalib.engine import Engine  # doctest: +SKIP
+
+    >>> # Initialize model and data
+    >>> datamodule = MVTec()  # doctest: +SKIP
     >>> model = Padim()  # doctest: +SKIP
-    >>> # Train on normal images
-    >>> model.fit(["normal1.jpg", "normal2.jpg"])  # doctest: +SKIP
+    >>> # Train using the Engine
+
+    >>> engine = Engine()  # doctest: +SKIP
+    >>> engine.fit(model=model, datamodule=datamodule)  # doctest: +SKIP
+
     >>> # Get predictions
-    >>> predictions = model.predict("test.jpg")  # doctest: +SKIP
+    >>> predictions = engine.predict(model=model, datamodule=datamodule)  # doctest: +SKIP
 
 Available Models:
     - :class:`Cfa`: Contrastive Feature Aggregation

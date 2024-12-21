@@ -4,10 +4,20 @@ This module implements anomaly detection using the WinCLIP model, which leverage
 CLIP embeddings and a sliding window approach to detect anomalies in images.
 
 Example:
-    >>> from anomalib.models.image import WinClip
-    >>> model = WinClip()  # doctest: +SKIP
-    >>> model.fit(["normal1.jpg", "normal2.jpg"])  # doctest: +SKIP
-    >>> prediction = model.predict("test.jpg")  # doctest: +SKIP
+    >>> from anomalib.models import WinClip
+    >>> from anomalib.data import Visa
+    >>> from anomalib.engine import Engine
+
+    >>> # Initialize model and data
+    >>> datamodule = Visa()
+    >>> model = WinClip()
+
+    >>> # Validate using the Engine
+    >>> engine = Engine()
+    >>> engine.validate(model=model, datamodule=datamodule)
+
+    >>> # Get predictions
+    >>> predictions = engine.predict(model=model, datamodule=datamodule)
 
 See Also:
     - :class:`WinClip`: Main model class for WinCLIP-based anomaly detection

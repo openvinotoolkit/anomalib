@@ -6,12 +6,19 @@ in images by comparing them with reference normal images.
 
 Example:
     >>> from anomalib.models.image import VlmAd
-    >>> model = VlmAd(  # doctest: +SKIP
+    >>> from anomalib.data import MVTec
+    >>> from anomalib.engine import Engine
+
+    >>> # Initialize model and data
+    >>> datamodule = MVTec()
+    >>> model = VlmAd(
     ...     backend="chatgpt",
     ...     model_name="gpt-4-vision-preview"
     ... )
-    >>> model.fit(["normal1.jpg", "normal2.jpg"])  # doctest: +SKIP
-    >>> prediction = model.predict("test.jpg")  # doctest: +SKIP
+
+    >>> # Predict using the Engine
+    >>> engine = Engine()
+    >>> engine.predict(model=model, datamodule=datamodule)  # doctest: +SKIP
 
 See Also:
     - :class:`VlmAd`: Main model class for VLM-based anomaly detection
