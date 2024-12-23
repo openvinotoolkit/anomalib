@@ -32,8 +32,17 @@ Learn more about anomalib Engine.
 :::
 
 :::{grid-item-card} {octicon}`meter` Metrics
+:link: ./metrics/index
+:link-type: doc
 
 Learn more about anomalib metrics
+:::
+
+:::{grid-item-card} {octicon}`graph` Visualization
+:link: ./visualization/index
+:link-type: doc
+
+Learn more about anomalib visualization
 :::
 
 :::{grid-item-card} {octicon}`graph` Loggers
