@@ -1,6 +1,37 @@
 """SuperSimpleNet: Unifying Unsupervised and Supervised Learning for Fast and Reliable Surface Defect Detection.
 
-Paper https://arxiv.org/pdf/2408.03143
+This module implements the SuperSimpleNet model for surface defect / anomaly detection.
+SuperSimpleNet is a simple yet strong discriminative model consisting of a pretrained feature extractor with upscaling,
+feature adaptor, train-time synthetic feature-level anomaly generation module, and segmentation-detection module.
+
+Using the adapted features, the model predicts an anomaly map via the segmentation head
+and an anomaly score using the classification head.
+It delivers strong performance while maintaining fast inference.
+
+Example:
+    >>> from anomalib.data import MVTec
+    >>> from anomalib.models import SuperSimpleNet
+    >>> from anomalib.engine import Engine
+
+    >>> datamodule = MVTec()
+    >>> model = SuperSimpleNet()
+    >>> engine = Engine()
+
+    >>> engine.fit(model, datamodule=datamodule)  # doctest: +SKIP
+    >>> predictions = engine.predict(model, datamodule=datamodule)  # doctest: +SKIP
+
+
+Paper:
+    Title: SuperSimpleNet: Unifying Unsupervised and Supervised Learning for Fast and Reliable Surface Defect Detection.
+    URL: https://arxiv.org/pdf/2408.03143
+
+Notes:
+    This implementation supports both unsupervised and supervised setting,
+    but Anomalib currently supports only unsupervised learning.
+
+See Also:
+    :class:`anomalib.models.image.supersimplenet.torch_model.SuperSimpleNetModel`:
+        PyTorch implementation of the SuperSimpleNet model.
 """
 
 # Copyright (C) 2024 Intel Corporation

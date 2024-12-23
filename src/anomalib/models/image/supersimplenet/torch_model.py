@@ -1,4 +1,9 @@
-"""PyTorch model for the SuperSimpleNet model implementation."""
+"""PyTorch model for the SuperSimpleNet model implementation.
+
+See Also:
+    :class:`anomalib.models.image.supersimplenet.lightning_model.SuperSimpleNet`:
+        SuperSimpleNet Lightning model.
+"""
 
 # Original Code
 # Copyright (c) 2024 Blaž Rolih
