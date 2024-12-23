@@ -86,9 +86,7 @@ items = [
     )
     for i in range(32)
 ]
-batch = ImageBatch.from_items(items)
 
-# 3. Using the collate function (useful in DataLoader)
 batch = ImageBatch.collate(items)
 ```
 
@@ -101,7 +99,7 @@ Batches provide several useful properties:
 print(batch.batch_size)    # 32
 
 # Get device information
-print(batch.device)        # cuda:0 or cpu
+print(batch.image.device)        # cuda:0 or cpu
 
 # Get shape information
 print(batch.image.shape)   # torch.Size([32, 3, 224, 224])
@@ -115,16 +113,12 @@ Batches can be iterated to access individual items:
 # Simple iteration
 for item in batch:
     print(item.image.shape)    # torch.Size([3, 224, 224])
-    process_single_image(item)
+    # Process the input
 
 # Enumerate for index access
-for idx, item in enumerate(batch):
+for idx, _item in enumerate(batch):
     print(f"Processing item {idx}")
-    process_single_image(item)
-
-# Get specific items
-first_item = batch[0]
-subset = batch[5:10]    # Get items 5 through 9
+    # Process the input
 ```
 
 ### Batch Operations
@@ -132,20 +126,11 @@ subset = batch[5:10]    # Get items 5 through 9
 Batches support various operations:
 
 ```{code-block} python
-# Convert entire batch to different device
-gpu_batch = batch.to("cuda")
-
 # Update batch fields
 batch.update(pred_scores=torch.rand(32))
 
 # Split batch into items
 items = batch.items
-
-# Get subset of batch
-subset = batch.subset([0, 2, 4])  # Get items at indices 0, 2, and 4
-
-# Concatenate batches
-combined_batch = ImageBatch.concatenate([batch1, batch2])
 ```
 
 ### Batch Validation
@@ -158,10 +143,10 @@ Batches automatically validate:
 - Data type compatibility
 
 ```{code-block} python
-# This will raise a ValidationError due to mismatched batch sizes
+# This will raise a ValidationError due to float labels (gt_label must be int or boolean)
 invalid_batch = ImageBatch(
     image=torch.rand(32, 3, 224, 224),
-    gt_label=torch.randint(0, 2, (30,))  # Only 30 labels for 32 images
+    gt_label=torch.randint(0.0, 1.0, (32,))  # float labels
 )
 ```
 
@@ -198,18 +183,16 @@ from anomalib.data.dataclasses.torch import VideoItem, VideoBatch
 
 # Single video item
 item = VideoItem(
-    image=torch.rand(3, 224, 224),          # Current frame
-    frames=torch.rand(16, 3, 224, 224),     # Sequence of frames
-    video_path="video.mp4",
-    target_frame=10                         # Frame number
+    image=torch.rand(10, 3, 224, 224),  # 10 frames
+    gt_label=torch.tensor(0),
+    video_path="path/to/video.mp4",
 )
 
 # Batch of video items
 batch = VideoBatch(
-    image=torch.rand(32, 3, 224, 224),           # Current frames
-    frames=torch.rand(32, 16, 3, 224, 224),      # Sequences
-    video_path=[f"video_{i}.mp4" for i in range(32)],
-    target_frame=torch.arange(32)
+    image=torch.rand(32, 10, 3, 224, 224),  # 32 videos, 10 frames
+    gt_label=torch.randint(0, 2, (32,)),
+    video_path=["video_{}.mp4".format(i) for i in range(32)],
 )
 ```
 
@@ -225,7 +208,7 @@ item = DepthItem(
     image=torch.rand(3, 224, 224),          # RGB image
     depth_map=torch.rand(224, 224),         # Depth map
     image_path="rgb.jpg",
-    depth_path="depth.png"
+    depth_path="depth.png",
 )
 
 # Batch of depth items
@@ -233,7 +216,7 @@ batch = DepthBatch(
     image=torch.rand(32, 3, 224, 224),           # RGB images
     depth_map=torch.rand(32, 224, 224),          # Depth maps
     image_path=[f"rgb_{i}.jpg" for i in range(32)],
-    depth_path=[f"depth_{i}.png" for i in range(32)]
+    depth_path=[f"depth_{i}.png" for i in range(32)],
 )
 ```
 
@@ -246,11 +229,9 @@ All dataclasses support conversion between PyTorch and NumPy:
 ```{code-block} python
 # Items
 numpy_item = torch_item.to_numpy()
-torch_item = numpy_item.to_torch()
 
 # Batches
 numpy_batch = torch_batch.to_numpy()
-torch_batch = numpy_batch.to_torch()
 ```
 
 ### 2. Validation
