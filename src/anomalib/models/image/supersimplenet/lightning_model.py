@@ -11,6 +11,7 @@ from typing import Any
 from lightning.pytorch.utilities.types import STEP_OUTPUT, OptimizerLRScheduler
 from torch.optim import AdamW
 from torch.optim.lr_scheduler import MultiStepLR
+from torchvision.transforms.v2 import Compose, Normalize, Resize
 
 from anomalib import LearningType
 from anomalib.data import Batch
@@ -18,6 +19,7 @@ from anomalib.metrics import Evaluator
 from anomalib.models import AnomalibModule
 from anomalib.post_processing import PostProcessor
 from anomalib.pre_processing import PreProcessor
+from anomalib.visualization import Visualizer
 
 from .loss import SSNLoss
 from .torch_model import SuperSimpleNetModel
@@ -31,6 +33,14 @@ class SuperSimpleNet(AnomalibModule):
         backbone (str): backbone name
         layers (list[str]): backbone layers utilised
         supervised (bool): whether the model will be trained in supervised mode. False by default (unsupervised).
+        pre_processor (PreProcessor | bool, optional): Pre-processor instance or
+            flag to use default. Defaults to ``True``.
+        post_processor (PostProcessor | bool, optional): Post-processor instance
+            or flag to use default. Defaults to ``True``.
+        evaluator (Evaluator | bool, optional): Evaluator instance or flag to use
+            default. Defaults to ``True``.
+        visualizer (Visualizer | bool, optional): Visualizer instance or flag to
+            use default. Defaults to ``True``.
     """
 
     def __init__(
@@ -40,10 +50,16 @@ class SuperSimpleNet(AnomalibModule):
         layers: list[str] = ["layer2", "layer3"],  # noqa: B006
         supervised: bool = False,
         pre_processor: PreProcessor | bool = True,
-        post_processor: PostProcessor | None = None,
+        post_processor: PostProcessor | bool = True,
         evaluator: Evaluator | bool = True,
+        visualizer: Visualizer | bool = True,
     ) -> None:
-        super().__init__(pre_processor=pre_processor, post_processor=post_processor, evaluator=evaluator)
+        super().__init__(
+            pre_processor=pre_processor,
+            post_processor=post_processor,
+            evaluator=evaluator,
+            visualizer=visualizer,
+        )
         self.supervised = supervised
         # stop grad in unsupervised
         if supervised:
@@ -137,3 +153,24 @@ class SuperSimpleNet(AnomalibModule):
             LearningType: Learning type of the model.
         """
         return LearningType.ONE_CLASS
+
+    @classmethod
+    def configure_pre_processor(cls, image_size: tuple[int, int] | None = None) -> PreProcessor:
+        """Configure the default pre-processor for SuperSimpleNet.
+
+        Pre-processor resizes images and normalizes using ImageNet statistics.
+
+        Args:
+            image_size (tuple[int, int] | None, optional): Target size for
+                resizing. Defaults to ``(256, 256)``.
+
+        Returns:
+            PreProcessor: Configured SuperSimpleNet pre-processor
+        """
+        image_size = image_size or (256, 256)
+        return PreProcessor(
+            transform=Compose([
+                Resize(image_size, antialias=True),
+                Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+            ]),
+        )
