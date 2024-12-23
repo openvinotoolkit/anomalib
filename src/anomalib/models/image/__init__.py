@@ -28,6 +28,7 @@ Available Models:
     - :class:`Patchcore`: Patch Core
     - :class:`ReverseDistillation`: Reverse Knowledge Distillation
     - :class:`Stfpm`: Student-Teacher Feature Pyramid Matching
+    - :class:`SuperSimpleNet`: SuperSimpleNet
     - :class:`Uflow`: Unsupervised Flow
     - :class:`VlmAd`: Vision Language Model Anomaly Detection
     - :class:`WinClip`: Zero-/Few-Shot CLIP-based Detection

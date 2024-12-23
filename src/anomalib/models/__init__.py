@@ -33,6 +33,7 @@ Image Models:
     - PatchCore (:class:`anomalib.models.image.Patchcore`)
     - Reverse Distillation (:class:`anomalib.models.image.ReverseDistillation`)
     - STFPM (:class:`anomalib.models.image.Stfpm`)
+    - SuperSimpleNet (:class:`anomalib.models.image.SuperSimpleNet`)
     - UFlow (:class:`anomalib.models.image.Uflow`)
     - VLM-AD (:class:`anomalib.models.image.VlmAd`)
     - WinCLIP (:class:`anomalib.models.image.WinClip`)
