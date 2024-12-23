@@ -7,7 +7,7 @@ import torch
 import torch.nn.functional as F  # noqa: N812
 from torch import nn
 
-from anomalib.data.utils.generators.perlin import _rand_perlin_2d
+from anomalib.data.utils.generators import generate_perlin_noise
 
 
 class SSNAnomalyGenerator(nn.Module):
@@ -18,7 +18,6 @@ class SSNAnomalyGenerator(nn.Module):
         noise_mean: float,
         noise_std: float,
         threshold: float,
-        perlin_range: tuple[int, int] = (0, 6),
     ) -> None:
         super().__init__()
 
@@ -26,9 +25,6 @@ class SSNAnomalyGenerator(nn.Module):
         self.noise_std = noise_std
 
         self.threshold = threshold
-
-        self.min_perlin_scale = perlin_range[0]
-        self.max_perlin_scale = perlin_range[1]
 
     @staticmethod
     def next_power_2(num: int) -> int:
@@ -55,29 +51,12 @@ class SSNAnomalyGenerator(nn.Module):
         """
         perlin = []
         for _ in range(batches):
-            # get scale of perlin in x and y direction
-            perlin_scalex = 2 ** (
-                torch.randint(
-                    self.min_perlin_scale,
-                    self.max_perlin_scale,
-                    (1,),
-                ).item()
-            )
-            perlin_scaley = 2 ** (
-                torch.randint(
-                    self.min_perlin_scale,
-                    self.max_perlin_scale,
-                    (1,),
-                ).item()
-            )
-
             perlin_height = self.next_power_2(height)
             perlin_width = self.next_power_2(width)
 
-            perlin_noise = _rand_perlin_2d(
-                (perlin_height, perlin_width),
-                (perlin_scalex, perlin_scaley),
-            )
+            # keep power of 2 here for reproduction purpose, although this function supports power2 internally
+            perlin_noise = generate_perlin_noise(height=perlin_height, width=perlin_width)
+
             # original is power of 2 scale, so fit to our size
             perlin_noise = F.interpolate(
                 perlin_noise.reshape(1, 1, perlin_height, perlin_width),
