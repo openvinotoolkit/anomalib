@@ -1,15 +1,55 @@
 """CUHK Avenue Data Module.
 
-Description:
-    This module provides a PyTorch Lightning DataModule for the CUHK Avenue dataset.
-    If the dataset is not already present on the file system, the DataModule class will download and
-    extract the dataset, converting the .mat mask files to .png format.
+This module provides a PyTorch Lightning DataModule for the CUHK Avenue dataset. If
+the dataset is not already present on the file system, the DataModule class will
+download and extract the dataset, converting the ``.mat`` mask files to ``.png``
+format.
+
+Example:
+    Create an Avenue datamodule::
+
+        >>> from anomalib.data import Avenue
+        >>> datamodule = Avenue(
+        ...     root="./datasets/avenue",
+        ...     clip_length_in_frames=2,
+        ...     frames_between_clips=1,
+        ... )
+        >>> datamodule.setup()
+        >>> i, data = next(enumerate(datamodule.train_dataloader()))
+        >>> data.keys()
+        dict_keys(['image', 'video_path', 'frames', 'last_frame', 'original_image'])
+
+Notes:
+    The directory structure after preparation will be::
+
+        root/
+        ├── ground_truth_demo/
+        │   ├── ground_truth_show.m
+        │   ├── Readme.txt
+        │   ├── testing_label_mask/
+        │   └── testing_videos/
+        ├── testing_videos/
+        │   ├── ...
+        │   └── 21.avi
+        ├── testing_vol/
+        │   ├── ...
+        │   └── vol21.mat
+        ├── training_videos/
+        │   ├── ...
+        │   └── 16.avi
+        └── training_vol/
+            ├── ...
+            └── vol16.mat
+
+License:
+    The CUHK Avenue dataset is released for academic research only. For licensing
+    details, see the original dataset website.
 
 Reference:
-    - Lu, Cewu, Jianping Shi, and Jiaya Jia. "Abnormal event detection at 150 fps in Matlab."
-      In Proceedings of the IEEE International Conference on Computer Vision, 2013.
+    Lu, Cewu, Jianping Shi, and Jiaya Jia. "Abnormal event detection at 150 fps
+    in Matlab." In Proceedings of the IEEE International Conference on Computer
+    Vision, 2013.
 """
-
 
 # Copyright (C) 2023-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -22,7 +62,6 @@ from shutil import move
 import cv2
 import scipy.io
 
-from anomalib import TaskType
 from anomalib.data.datamodules.base.video import AnomalibVideoDataModule
 from anomalib.data.datasets.base.video import VideoTargetFrame
 from anomalib.data.datasets.video.avenue import AvenueDataset
@@ -46,77 +85,47 @@ class Avenue(AnomalibVideoDataModule):
     """Avenue DataModule class.
 
     Args:
-        root (Path | str): Path to the root  of the dataset
-            Defaults to ``./datasets/avenue``.
-        gt_dir (Path | str): Path to the ground truth files
-            Defaults to ``./datasets/avenue/ground_truth_demo``.
-        clip_length_in_frames (int, optional): Number of video frames in each clip.
+        root (Path | str): Path to the root of the dataset.
+            Defaults to ``"./datasets/avenue"``.
+        gt_dir (Path | str): Path to the ground truth files.
+            Defaults to ``"./datasets/avenue/ground_truth_demo"``.
+        clip_length_in_frames (int): Number of video frames in each clip.
             Defaults to ``2``.
-        frames_between_clips (int, optional): Number of frames between each consecutive video clip.
+        frames_between_clips (int): Number of frames between consecutive clips.
             Defaults to ``1``.
-        target_frame (VideoTargetFrame): Specifies the target frame in the video clip, used for ground truth retrieval
-            Defaults to ``VideoTargetFrame.LAST``.
-        task (TaskType): Task type, 'classification', 'detection' or 'segmentation'
-            Defaults to ``TaskType.SEGMENTATION``.
-        train_batch_size (int, optional): Training batch size.
+        target_frame (VideoTargetFrame | str): Target frame in clip for ground
+            truth. Defaults to ``VideoTargetFrame.LAST``.
+        train_batch_size (int): Training batch size.
             Defaults to ``32``.
-        eval_batch_size (int, optional): Test batch size.
+        eval_batch_size (int): Test batch size.
             Defaults to ``32``.
-        num_workers (int, optional): Number of workers.
+        num_workers (int): Number of workers.
             Defaults to ``8``.
-        val_split_mode (ValSplitMode): Setting that determines how the validation subset is obtained.
-            Defaults to ``ValSplitMode.FROM_TEST``.
-        val_split_ratio (float): Fraction of train or test images that will be reserved for validation.
+        val_split_mode (ValSplitMode | str): How validation subset is obtained.
+            Defaults to ``ValSplitMode.SAME_AS_TEST``.
+        val_split_ratio (float): Fraction of data reserved for validation.
             Defaults to ``0.5``.
-        seed (int | None, optional): Seed which may be set to a fixed value for reproducibility.
+        seed (int | None): Seed for reproducibility.
             Defaults to ``None``.
 
-    Examples:
-        To create a DataModule for Avenue dataset with default parameters:
+    Example:
+        Create a dataloader for classification::
 
-        .. code-block:: python
+            >>> datamodule = Avenue(
+            ...     clip_length_in_frames=2,
+            ...     frames_between_clips=1,
+            ...     target_frame=VideoTargetFrame.LAST
+            ... )
+            >>> datamodule.setup()
+            >>> i, data = next(enumerate(datamodule.train_dataloader()))
+            >>> data["image"].shape
+            torch.Size([32, 2, 3, 256, 256])
 
-            datamodule = Avenue()
-            datamodule.setup()
-
-            i, data = next(enumerate(datamodule.train_dataloader()))
-            data.keys()
-            # Output: dict_keys(['image', 'video_path', 'frames', 'last_frame', 'original_image'])
-
-            i, data = next(enumerate(datamodule.test_dataloader()))
-            data.keys()
-            # Output: dict_keys(['image', 'mask', 'video_path', 'frames', 'last_frame', 'original_image', 'label'])
-
-            data["image"].shape
-            # Output: torch.Size([32, 2, 3, 256, 256])
-
-        Note that the default task type is segmentation and the dataloader returns a mask in addition to the input.
-        Also, it is important to note that the dataloader returns a batch of clips, where each clip is a sequence of
-        frames. The number of frames in each clip is determined by the ``clip_length_in_frames`` parameter. The
-        ``frames_between_clips`` parameter determines the number of frames between each consecutive clip. The
-        ``target_frame`` parameter determines which frame in the clip is used for ground truth retrieval. For example,
-        if ``clip_length_in_frames=2``, ``frames_between_clips=1`` and ``target_frame=VideoTargetFrame.LAST``, then the
-        dataloader will return a batch of clips where each clip contains two consecutive frames from the video. The
-        second frame in each clip will be used as the ground truth for the first frame in the clip. The following code
-        shows how to create a dataloader for classification:
-
-        .. code-block:: python
-
-            datamodule = Avenue(
-                task="classification",
-                clip_length_in_frames=2,
-                frames_between_clips=1,
-                target_frame=VideoTargetFrame.LAST
-            )
-            datamodule.setup()
-
-            i, data = next(enumerate(datamodule.train_dataloader()))
-            data.keys()
-            # Output: dict_keys(['image', 'video_path', 'frames', 'last_frame', 'original_image'])
-
-            data["image"].shape
-            # Output: torch.Size([32, 2, 3, 256, 256])
-
+    Notes:
+        The dataloader returns batches of clips, where each clip contains
+        ``clip_length_in_frames`` consecutive frames. ``frames_between_clips``
+        determines frame spacing between clips. ``target_frame`` specifies which
+        frame provides ground truth.
     """
 
     def __init__(
@@ -126,7 +135,6 @@ class Avenue(AnomalibVideoDataModule):
         clip_length_in_frames: int = 2,
         frames_between_clips: int = 1,
         target_frame: VideoTargetFrame | str = VideoTargetFrame.LAST,
-        task: TaskType | str = TaskType.SEGMENTATION,
         train_batch_size: int = 32,
         eval_batch_size: int = 32,
         num_workers: int = 8,
@@ -143,7 +151,6 @@ class Avenue(AnomalibVideoDataModule):
             seed=seed,
         )
 
-        self.task = TaskType(task)
         self.root = Path(root)
         self.gt_dir = Path(gt_dir)
         self.clip_length_in_frames = clip_length_in_frames
@@ -152,7 +159,6 @@ class Avenue(AnomalibVideoDataModule):
 
     def _setup(self, _stage: str | None = None) -> None:
         self.train_data = AvenueDataset(
-            task=self.task,
             clip_length_in_frames=self.clip_length_in_frames,
             frames_between_clips=self.frames_between_clips,
             target_frame=self.target_frame,
@@ -162,7 +168,6 @@ class Avenue(AnomalibVideoDataModule):
         )
 
         self.test_data = AvenueDataset(
-            task=self.task,
             clip_length_in_frames=self.clip_length_in_frames,
             frames_between_clips=self.frames_between_clips,
             target_frame=self.target_frame,
@@ -174,54 +179,35 @@ class Avenue(AnomalibVideoDataModule):
     def prepare_data(self) -> None:
         """Download the dataset if not available.
 
-        This method checks if the specified dataset is available in the file system.
-        If not, it downloads and extracts the dataset into the appropriate directory.
+        This method checks if the specified dataset is available in the file
+        system. If not, it downloads and extracts the dataset into the appropriate
+        directory.
 
         Example:
-            Assume the dataset is not available on the file system.
-            Here's how the directory structure looks before and after calling the
-            `prepare_data` method:
+            Assume the dataset is not available on the file system::
 
-            Before:
+                >>> datamodule = Avenue()
+                >>> datamodule.prepare_data()
 
-            .. code-block:: bash
+            The directory structure after preparation will be::
 
-                $ tree datasets
-                datasets
-                ├── dataset1
-                └── dataset2
-
-            Calling the method:
-
-            .. code-block:: python
-
-                >> datamodule = Avenue()
-                >> datamodule.prepare_data()
-
-            After:
-
-            .. code-block:: bash
-
-                $ tree datasets
-                datasets
-                ├── dataset1
-                ├── dataset2
-                └── avenue
-                    ├── ground_truth_demo
+                datasets/
+                └── avenue/
+                    ├── ground_truth_demo/
                     │   ├── ground_truth_show.m
                     │   ├── Readme.txt
-                    │   ├── testing_label_mask
-                    │   └── testing_videos
-                    ├── testing_videos
+                    │   ├── testing_label_mask/
+                    │   └── testing_videos/
+                    ├── testing_videos/
                     │   ├── ...
                     │   └── 21.avi
-                    ├── testing_vol
+                    ├── testing_vol/
                     │   ├── ...
                     │   └── vol21.mat
-                    ├── training_videos
+                    ├── training_videos/
                     │   ├── ...
                     │   └── 16.avi
-                    └── training_vol
+                    └── training_vol/
                         ├── ...
                         └── vol16.mat
         """
@@ -244,10 +230,11 @@ class Avenue(AnomalibVideoDataModule):
 
     @staticmethod
     def _convert_masks(gt_dir: Path) -> None:
-        """Convert mask files to .png.
+        """Convert mask files from ``.mat`` to ``.png`` format.
 
-        The masks in the Avenue datasets are provided as matlab (.mat) files. To speed up data loading, we convert the
-        masks into a sepaarte .png file for every video frame in the dataset.
+        The masks in the Avenue datasets are provided as matlab (``.mat``) files.
+        To speed up data loading, we convert the masks into a separate ``.png``
+        file for every video frame in the dataset.
 
         Args:
             gt_dir (Path): Ground truth folder of the dataset.

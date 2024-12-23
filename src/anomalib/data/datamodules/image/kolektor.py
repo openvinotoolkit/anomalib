@@ -1,17 +1,20 @@
 """Kolektor Surface-Defect Data Module.
 
 Description:
-    This script provides a PyTorch DataModule for the Kolektor
-    Surface-Defect dataset. The dataset can be accessed at `Kolektor Surface-Defect Dataset <https://www.vicos.si/resources/kolektorsdd/>`_.
+    This script provides a PyTorch DataModule for the Kolektor Surface-Defect
+    dataset. The dataset can be accessed at `Kolektor Surface-Defect Dataset
+    <https://www.vicos.si/resources/kolektorsdd/>`_.
 
 License:
-    The Kolektor Surface-Defect dataset is released under the Creative Commons Attribution-NonCommercial-ShareAlike
-    4.0 International License (CC BY-NC-SA 4.0). For more details, visit
-    `Creative Commons License <https://creativecommons.org/licenses/by-nc-sa/4.0/>`_.
+    The Kolektor Surface-Defect dataset is released under the Creative Commons
+    Attribution-NonCommercial-ShareAlike 4.0 International License
+    (CC BY-NC-SA 4.0). For more details, visit `Creative Commons License
+    <https://creativecommons.org/licenses/by-nc-sa/4.0/>`_.
 
 Reference:
-    Tabernik, Domen, Samo Šela, Jure Skvarč, and Danijel Skočaj. "Segmentation-based deep-learning approach
-    for surface-defect detection." Journal of Intelligent Manufacturing 31, no. 3 (2020): 759-776.
+    Tabernik, Domen, Samo Šela, Jure Skvarč, and Danijel Skočaj.
+    "Segmentation-based deep-learning approach for surface-defect detection."
+    Journal of Intelligent Manufacturing 31, no. 3 (2020): 759-776.
 """
 
 # Copyright (C) 2023-2024 Intel Corporation
@@ -20,7 +23,6 @@ Reference:
 import logging
 from pathlib import Path
 
-from anomalib import TaskType
 from anomalib.data.datamodules.base.image import AnomalibDataModule
 from anomalib.data.datasets.image.kolektor import KolektorDataset
 from anomalib.data.utils import DownloadInfo, Split, TestSplitMode, ValSplitMode, download_and_extract
@@ -36,28 +38,45 @@ DOWNLOAD_INFO = DownloadInfo(
 
 
 class Kolektor(AnomalibDataModule):
-    """Kolektor Datamodule.
+    """Kolektor Surface-Defect DataModule.
 
     Args:
-        root (Path | str): Path to the root of the dataset
+        root (Path | str): Path to the root of the dataset.
+            Defaults to ``"./datasets/kolektor"``.
         train_batch_size (int, optional): Training batch size.
             Defaults to ``32``.
         eval_batch_size (int, optional): Test batch size.
             Defaults to ``32``.
         num_workers (int, optional): Number of workers.
             Defaults to ``8``.
-        task TaskType): Task type, 'classification', 'detection' or 'segmentation'
-            Defaults to ``TaskType.SEGMENTATION``.
-        test_split_mode (TestSplitMode): Setting that determines how the testing subset is obtained.
-            Defaults to ``TestSplitMode.FROM_DIR``
-        test_split_ratio (float): Fraction of images from the train set that will be reserved for testing.
-            Defaults to ``0.2``
-        val_split_mode (ValSplitMode): Setting that determines how the validation subset is obtained.
-            Defaults to ``ValSplitMode.SAME_AS_TEST``
-        val_split_ratio (float): Fraction of train or test images that will be reserved for validation.
-            Defaults to ``0.5``
-        seed (int | None, optional): Seed which may be set to a fixed value for reproducibility.
+        test_split_mode (TestSplitMode): Setting that determines how the testing
+            subset is obtained.
+            Defaults to ``TestSplitMode.FROM_DIR``.
+        test_split_ratio (float): Fraction of images from the train set that will
+            be reserved for testing.
+            Defaults to ``0.2``.
+        val_split_mode (ValSplitMode): Setting that determines how the validation
+            subset is obtained.
+            Defaults to ``ValSplitMode.SAME_AS_TEST``.
+        val_split_ratio (float): Fraction of train or test images that will be
+            reserved for validation.
+            Defaults to ``0.5``.
+        seed (int | None, optional): Seed which may be set to a fixed value for
+            reproducibility.
             Defaults to ``None``.
+
+    Example:
+        >>> from anomalib.data import Kolektor
+        >>> datamodule = Kolektor(
+        ...     root="./datasets/kolektor",
+        ...     train_batch_size=32,
+        ...     eval_batch_size=32,
+        ...     num_workers=8,
+        ... )
+        >>> datamodule.setup()
+        >>> i, data = next(enumerate(datamodule.train_dataloader()))
+        >>> data.keys()
+        dict_keys(['image', 'label', 'mask', 'image_path', 'mask_path'])
     """
 
     def __init__(
@@ -66,7 +85,6 @@ class Kolektor(AnomalibDataModule):
         train_batch_size: int = 32,
         eval_batch_size: int = 32,
         num_workers: int = 8,
-        task: TaskType | str = TaskType.SEGMENTATION,
         test_split_mode: TestSplitMode | str = TestSplitMode.FROM_DIR,
         test_split_ratio: float = 0.2,
         val_split_mode: ValSplitMode | str = ValSplitMode.SAME_AS_TEST,
@@ -84,17 +102,14 @@ class Kolektor(AnomalibDataModule):
             seed=seed,
         )
 
-        self.task = TaskType(task)
         self.root = Path(root)
 
     def _setup(self, _stage: str | None = None) -> None:
         self.train_data = KolektorDataset(
-            task=self.task,
             split=Split.TRAIN,
             root=self.root,
         )
         self.test_data = KolektorDataset(
-            task=self.task,
             split=Split.TEST,
             root=self.root,
         )
@@ -102,17 +117,16 @@ class Kolektor(AnomalibDataModule):
     def prepare_data(self) -> None:
         """Download the dataset if not available.
 
-        This method checks if the specified dataset is available in the file system.
-        If not, it downloads and extracts the dataset into the appropriate directory.
+        This method checks if the specified dataset is available in the file
+        system. If not, it downloads and extracts the dataset into the
+        appropriate directory.
 
         Example:
             Assume the dataset is not available on the file system.
-            Here's how the directory structure looks before and after calling the
-            `prepare_data` method:
+            Here's how the directory structure looks before and after calling
+            the ``prepare_data`` method:
 
-            Before:
-
-            .. code-block:: bash
+            Before::
 
                 $ tree datasets
                 datasets
@@ -121,14 +135,10 @@ class Kolektor(AnomalibDataModule):
 
             Calling the method:
 
-            .. code-block:: python
+            >>> datamodule = Kolektor(root="./datasets/kolektor")
+            >>> datamodule.prepare_data()
 
-                >> datamodule = Kolektor(root="./datasets/kolektor")
-                >> datamodule.prepare_data()
-
-            After:
-
-            .. code-block:: bash
+            After::
 
                 $ tree datasets
                 datasets

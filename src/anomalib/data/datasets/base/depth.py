@@ -1,4 +1,8 @@
-"""Base Depth Dataset."""
+"""Base Depth Dataset.
+
+This module implements the base depth dataset class for anomaly detection tasks that
+use RGB-D (RGB + Depth) data.
+"""
 
 # Copyright (C) 2023-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -22,25 +26,48 @@ from .image import AnomalibDataset
 class AnomalibDepthDataset(AnomalibDataset, ABC):
     """Base depth anomalib dataset class.
 
+    This class extends ``AnomalibDataset`` to handle RGB-D data for anomaly
+    detection tasks. It supports both classification and segmentation tasks.
+
     Args:
-        task (str): Task type, either 'classification' or 'segmentation'
-        transform (Transform, optional): Transforms that should be applied to the input images.
+        transform (Transform | None, optional): Transforms to be applied to the
+            input images and depth maps. If ``None``, no transforms are applied.
             Defaults to ``None``.
+
+    Example:
+        >>> from anomalib.data.datasets import AnomalibDepthDataset
+        >>> dataset = AnomalibDepthDataset(transform=None)
+        >>> item = dataset[0]
+        >>> item.image.shape
+        torch.Size([3, H, W])
+        >>> item.depth_map.shape
+        torch.Size([1, H, W])
     """
 
-    def __init__(self, task: TaskType, transform: Transform | None = None) -> None:
-        super().__init__(task, transform)
+    def __init__(self, transform: Transform | None = None) -> None:
+        super().__init__(transform)
 
         self.transform = transform
 
     def __getitem__(self, index: int) -> DepthItem:
-        """Return rgb image, depth image and mask.
+        """Get dataset item for the given index.
 
         Args:
-            index (int): Index of the item to be returned.
+            index (int): Index of the item to retrieve.
 
         Returns:
-            dict[str, str | torch.Tensor]: Dictionary containing the image, depth image and mask.
+            DepthItem: Dataset item containing the following fields:
+                - image (Tensor): RGB image
+                - depth_map (Tensor): Depth map
+                - gt_mask (Tensor | None): Ground truth mask for segmentation
+                - gt_label (int): Ground truth label (0: normal, 1: anomalous)
+                - image_path (str): Path to the RGB image
+                - depth_path (str): Path to the depth map
+                - mask_path (str | None): Path to the ground truth mask
+
+        Raises:
+            ValueError: If the task type is neither classification nor
+                segmentation.
         """
         image_path = self.samples.iloc[index].image_path
         mask_path = self.samples.iloc[index].mask_path
@@ -84,5 +111,9 @@ class AnomalibDepthDataset(AnomalibDataset, ABC):
 
     @property
     def collate_fn(self) -> Callable:
-        """Return the collate function for depth batches."""
+        """Get the collate function for creating depth batches.
+
+        Returns:
+            Callable: Collate function that creates ``DepthBatch`` objects.
+        """
         return DepthBatch.collate

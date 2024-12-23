@@ -3,6 +3,23 @@
 This module provides PyTorch-based implementations of the generic dataclasses
 used in Anomalib for image data. These classes are designed to work with PyTorch
 tensors for efficient data handling and processing in anomaly detection tasks.
+
+The module contains two main classes:
+    - :class:`ImageItem`: For single image data items
+    - :class:`ImageBatch`: For batched image data items
+
+Example:
+    Create and use a torch image item::
+
+        >>> from anomalib.data.dataclasses.torch import ImageItem
+        >>> import torch
+        >>> item = ImageItem(
+        ...     image=torch.rand(3, 224, 224),
+        ...     gt_label=torch.tensor(0),
+        ...     image_path="path/to/image.jpg"
+        ... )
+        >>> item.image.shape
+        torch.Size([3, 224, 224])
 """
 
 # Copyright (C) 2024 Intel Corporation
@@ -25,36 +42,33 @@ class ImageItem(
     _ImageInputFields[str],
     DatasetItem[Image],
 ):
-    """Dataclass for individual image items in Anomalib datasets using PyTorch tensors.
+    """Dataclass for individual image items in Anomalib datasets using PyTorch.
 
-    This class combines the functionality of ToNumpyMixin, _ImageInputFields, and
-    DatasetItem to represent single image data points in Anomalib. It includes
-    image-specific fields and provides methods for data validation and conversion
-    to numpy format.
+    This class combines :class:`_ImageInputFields` and :class:`DatasetItem` for
+    image-based anomaly detection. It includes image-specific fields and validation
+    methods to ensure proper formatting for Anomalib's image-based models.
 
-    The class is designed to work with PyTorch tensors and includes fields for
-    the image data, ground truth labels and masks, anomaly maps, and related metadata.
+    The class uses the following type parameters:
+        - Image: :class:`torch.Tensor` with shape ``(C, H, W)``
+        - Label: :class:`torch.Tensor`
+        - Mask: :class:`torch.Tensor` with shape ``(H, W)``
+        - Path: :class:`str`
 
-    Attributes:
-        Inherited from _ImageInputFields and DatasetItem.
-
-    Methods:
-        Inherited from ToNumpyMixin, including to_numpy() for conversion to numpy format.
-
-    Examples:
+    Example:
+        >>> import torch
+        >>> from anomalib.data.dataclasses.torch import ImageItem
         >>> item = ImageItem(
         ...     image=torch.rand(3, 224, 224),
-        ...     gt_label=torch.tensor(1),
-        ...     gt_mask=torch.rand(224, 224) > 0.5,
+        ...     gt_label=torch.tensor(0),
         ...     image_path="path/to/image.jpg"
         ... )
-
-        >>> print(item.image.shape)
+        >>> item.image.shape
         torch.Size([3, 224, 224])
 
+        Convert to numpy format:
         >>> numpy_item = item.to_numpy()
-        >>> print(type(numpy_item))
-        <class 'anomalib.dataclasses.numpy.NumpyImageItem'>
+        >>> type(numpy_item).__name__
+        'NumpyImageItem'
     """
 
     numpy_class = NumpyImageItem
@@ -68,34 +82,39 @@ class ImageBatch(
     _ImageInputFields[list[str]],
     Batch[Image],
 ):
-    """Dataclass for batches of image items in Anomalib datasets using PyTorch tensors.
+    """Dataclass for batches of image items in Anomalib datasets using PyTorch.
 
-    This class combines the functionality of ``ToNumpyMixin``, ``BatchIterateMixin``,
-    ``_ImageInputFields``, and ``Batch`` to represent collections of image data points in Anomalib.
-    It includes image-specific fields and provides methods for batch operations,
-    iteration over individual items, and conversion to numpy format.
+    This class combines :class:`_ImageInputFields` and :class:`Batch` for batches
+    of image data. It includes image-specific fields and methods for batch
+    operations and iteration.
 
-    The class is designed to work with PyTorch tensors and includes fields for
-    batches of image data, ground truth labels and masks, anomaly maps, and related metadata.
+    The class uses the following type parameters:
+        - Image: :class:`torch.Tensor` with shape ``(B, C, H, W)``
+        - Label: :class:`torch.Tensor` with shape ``(B,)``
+        - Mask: :class:`torch.Tensor` with shape ``(B, H, W)``
+        - Path: :class:`list` of :class:`str`
 
-    Examples:
+    Where ``B`` represents the batch dimension.
+
+    Example:
+        >>> import torch
+        >>> from anomalib.data.dataclasses.torch import ImageBatch
         >>> batch = ImageBatch(
         ...     image=torch.rand(32, 3, 224, 224),
         ...     gt_label=torch.randint(0, 2, (32,)),
-        ...     gt_mask=torch.rand(32, 224, 224) > 0.5,
-        ...     image_path=["path/to/image_{}.jpg".format(i) for i in range(32)]
+        ...     image_path=[f"path/to/image_{i}.jpg" for i in range(32)]
         ... )
-
-        >>> print(batch.image.shape)
+        >>> batch.image.shape
         torch.Size([32, 3, 224, 224])
 
+        Iterate over batch:
         >>> for item in batch:
-        ...     print(item.image.shape)
-        torch.Size([3, 224, 224])
+        ...     assert item.image.shape == torch.Size([3, 224, 224])
 
+        Convert to numpy format:
         >>> numpy_batch = batch.to_numpy()
-        >>> print(type(numpy_batch))
-        <class 'anomalib.dataclasses.numpy.NumpyImageBatch'>
+        >>> type(numpy_batch).__name__
+        'NumpyImageBatch'
     """
 
     item_class = ImageItem

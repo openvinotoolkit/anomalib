@@ -1,0 +1,109 @@
+# Production Release Process Workflow
+#
+# This reusable workflow manages the production release process, including
+# validation, preparation, and publication steps.
+#
+# Key Features:
+# - Release readiness validation
+# - RC approval verification
+# - Production deployment
+# - Artifact management
+# - Release publication
+#
+# Process Stages:
+# 1. Release Validation:
+#    - RC approval verification
+#    - Version compatibility check
+#    - Release readiness assessment
+#
+# 2. Release Preparation:
+#    - Artifact collection
+#    - Production bundle creation
+#    - Documentation updates
+#
+# 3. Publication:
+#    - Production PyPI deployment
+#    - GitHub release creation
+#    - Documentation publishing
+#
+# Required Inputs:
+# - version: Release version
+# - artifact-name: Name of validated artifact
+#
+# Required Secrets:
+# - pypi-token: Production PyPI token
+#
+# Example Usage:
+# 1. Production Release:
+#    jobs:
+#      release:
+#        uses: ./.github/workflows/_reusable-production-release-process.yaml
+#        with:
+#          version: "v1.2.3"
+#          artifact-name: "dist-123456789"
+#        secrets:
+#          pypi-token: ${{ secrets.PYPI_TOKEN }}
+#
+# Note: Should only be triggered after successful RC process completion
+
+name: Production Release Process
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        required: true
+        type: string
+      artifact-name:
+        required: true
+        type: string
+    secrets:
+      pypi-token:
+        required: true
+
+jobs:
+  validate-release-readiness:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check for approved RC
+        run: |
+          VERSION="${{ inputs.version }}"
+          ARTIFACTS_JSON=$(curl -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/artifacts")
+
+          RC_APPROVAL=$(echo "$ARTIFACTS_JSON" | jq -r --arg ver "${VERSION%-*}" \
+            '.artifacts[] | select(.name | startswith("rc-approval-v" + $ver))')
+
+          if [ -z "$RC_APPROVAL" ]; then
+            echo "::error::No approved RC found for version $VERSION"
+            exit 1
+          fi
+
+  prepare-release:
+    needs: [validate-release-readiness]
+    environment:
+      name: production
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.artifact-name }}
+          path: dist
+
+      - name: Upload for production release
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-release-artifacts
+          path: dist/
+          retention-days: 1
+
+  publish:
+    needs: [prepare-release]
+    uses: ./.github/workflows/_reusable-release-publisher.yaml
+    with:
+      version: ${{ inputs.version }}
+      artifact-name: production-release-artifacts
+      is-prerelease: false
+    secrets:
+      pypi-token: ${{ secrets.pypi-token }}

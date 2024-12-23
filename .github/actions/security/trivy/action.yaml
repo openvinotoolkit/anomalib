@@ -1,0 +1,183 @@
+# Trivy Scanner Action
+#
+# This composite action executes comprehensive security scanning using Trivy,
+# supporting multiple targets and vulnerability detection methods.
+#
+# Key Features:
+# - Multi-target scanning
+# - Vulnerability detection
+# - Secret scanning
+# - SBOM generation
+# - IaC analysis
+#
+# Process Stages:
+# 1. Environment Setup:
+#    - Trivy installation
+#    - Database updates
+#    - Cache configuration
+#
+# 2. Scan Execution:
+#    - Target analysis
+#    - Vulnerability detection
+#    - Configuration checks
+#
+# 3. Results Processing:
+#    - Report generation
+#    - SBOM creation
+#    - Finding analysis
+#
+# Required Inputs:
+# - scan_type: Type of scan
+# - scan_target: Target to analyze
+# - severity: Issue threshold
+#
+# Outputs:
+# - scan_result: Scan exit code
+# - report_path: Results location
+#
+# Example Usage:
+# steps:
+#   - uses: ./.github/actions/security/trivy
+#     with:
+#       scan_type: "fs"
+#       scan_target: "./src"
+#       severity: "HIGH,CRITICAL"
+#
+# Note: Requires appropriate permissions for scanning
+
+name: "Trivy Security Scanner"
+description: "Comprehensive security scanner for vulnerabilities, IaC issues, and secrets"
+
+inputs:
+  scan_type:
+    description: "Type of scan to perform (fs/config/image/repo/rootfs)"
+    required: false
+    default: "fs"
+  scan-scope:
+    description: "Scope of files to scan (all/changed)"
+    required: false
+    default: "changed"
+  scan_target:
+    description: "Target to scan (path, image name, or repo URL)"
+    required: false
+    default: "."
+  severity:
+    description: "Minimum severity level (UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL)"
+    required: false
+    default: "MEDIUM,HIGH,CRITICAL"
+  ignore_unfixed:
+    description: "Ignore unpatched/unfixed vulnerabilities"
+    required: false
+    default: "true"
+  scanners:
+    description: "Scanners to enable (vuln,secret,config)"
+    required: false
+    default: "vuln"
+  misconfig_scanners:
+    description: "Misconfig scanners to enable (azure-arm,cloudformation,dockerfile,helm,kubernetes,terraform,terraformplan)"
+    required: false
+    default: "azure-arm,cloudformation,dockerfile,helm,kubernetes,terraform,terraformplan"
+  format:
+    description: "Output format (table,json,sarif,template)"
+    required: false
+    default: "sarif"
+  timeout:
+    description: "Timeout duration (e.g., 5m, 10m)"
+    required: false
+    default: "10m"
+  generate_sbom:
+    description: "Generate Software Bill of Materials (SBOM)"
+    required: false
+    default: "false"
+  sbom_format:
+    description: "SBOM output format (cyclonedx, spdx, spdx-json)"
+    required: false
+    default: "cyclonedx"
+
+outputs:
+  scan_result:
+    description: "Exit code of the Trivy scan"
+    value: ${{ steps.run-trivy.outputs.exit_code }}
+  report_path:
+    description: "Path to the generated report file"
+    value: ${{ steps.run-trivy.outputs.report_path }}
+
+runs:
+  using: composite
+  steps:
+    - name: Get changed files
+      if: inputs.scan-scope == 'changed'
+      id: changed-files
+      uses: tj-actions/changed-files@v41
+
+    - name: Cache Trivy vulnerability database
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/trivy
+        key: trivy-db-${{ runner.os }}-${{ hashFiles('**/trivy-db/**') }}
+        restore-keys: |
+          trivy-db-${{ runner.os }}-
+
+    - name: Install Trivy
+      shell: bash
+      run: |
+        curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin v0.48.0
+        # Download DB in advance with retry mechanism
+        for i in {1..3}; do
+          echo "Attempt $i to download vulnerability database..."
+          trivy --cache-dir ~/.cache/trivy image --download-db-only && break || sleep 10
+        done
+
+    - name: Run Trivy scan
+      id: run-trivy
+      shell: bash
+      run: |
+        # Create output directory
+        mkdir -p reports
+        REPORT_FILE="reports/trivy-${{ inputs.scan_type }}-${{ inputs.scanners }}.sarif"
+
+        echo "Running Trivy with scan type: ${{ inputs.scan_type }}"
+        echo "Output will be saved to: ${REPORT_FILE}"
+
+        # Always scan the entire directory but use different paths based on scope
+        if [[ "${{ inputs.scan-scope }}" == "changed" && -n "${{ steps.changed-files.outputs.all_changed_files }}" ]]; then
+          echo "Changed files detected, scanning repository"
+          SCAN_TARGET="."
+        else
+          echo "Scanning target: ${{ inputs.scan_target }}"
+          SCAN_TARGET="${{ inputs.scan_target }}"
+        fi
+
+        # Build the base command
+        CMD="trivy --cache-dir ~/.cache/trivy ${{ inputs.scan_type }} --severity ${{ inputs.severity }} --format ${{ inputs.format }} --output ${REPORT_FILE} --timeout ${{ inputs.timeout }}"
+
+        # Add scanner-specific flags based on scan type
+        if [[ "${{ inputs.scan_type }}" == "config" ]]; then
+          # For config scans, use all default misconfig scanners or specified ones
+          CMD="$CMD --misconfig-scanners ${{ inputs.misconfig_scanners }}"
+        elif [[ "${{ inputs.scan_type }}" == "fs" ]]; then
+          # For filesystem scans, use --scanners
+          CMD="$CMD --scanners ${{ inputs.scanners }} --ignore-unfixed=${{ inputs.ignore_unfixed }}"
+        fi
+
+        # Add the scan target and execute
+        CMD="$CMD ${SCAN_TARGET}"
+        echo "Executing command: $CMD"
+        eval $CMD || echo "::warning::Trivy scan completed with findings"
+
+        if [ -f "${REPORT_FILE}" ]; then
+          echo "report_path=${REPORT_FILE}" >> $GITHUB_OUTPUT
+          echo "Scan report generated at ${REPORT_FILE}"
+        else
+          echo "::error::Report file was not generated"
+          exit 1
+        fi
+
+        # Generate SBOM if requested
+        if [[ "${{ inputs.generate_sbom }}" == "true" ]]; then
+          echo "Generating SBOM in ${{ inputs.sbom_format }} format"
+          trivy fs \
+            --format ${{ inputs.sbom_format }} \
+            --output "sbom.${{ inputs.sbom_format }}" \
+            ${SCAN_TARGET}
+        fi

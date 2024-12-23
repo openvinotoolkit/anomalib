@@ -14,7 +14,6 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from anomalib import TaskType
 from anomalib.data import AnomalibDataModule, MVTec
 from anomalib.deploy import ExportType
 from anomalib.engine import Engine
@@ -23,7 +22,7 @@ from anomalib.models import AnomalibModule, get_available_models, get_model
 
 def models() -> set[str]:
     """Return all available models."""
-    return {model for model in get_available_models() if model != "rkde"}
+    return get_available_models()
 
 
 def export_types() -> list[ExportType]:
@@ -158,11 +157,6 @@ class TestAPI:
             dataset_path (Path): Root to dataset from fixture.
             project_path (Path): Path to temporary project folder from fixture.
         """
-        if model_name == "rkde":
-            # TODO(ashwinvaidya17): Restore this test after fixing the issue
-            # https://github.com/openvinotoolkit/anomalib/issues/1513
-            pytest.skip(f"{model_name} fails to convert to OpenVINO")
-
         model, dataset, engine = self._get_objects(
             model_name=model_name,
             dataset_path=dataset_path,
@@ -194,16 +188,12 @@ class TestAPI:
             tuple[AnomalibModule, AnomalibDataModule, Engine]: Returns the created objects for model, dataset,
                 and engine
         """
-        # select task type
-
-        task_type = TaskType.CLASSIFICATION if model_name in {"ganomaly", "dfkde"} else TaskType.SEGMENTATION
-
         # set extra model args
         # TODO(ashwinvaidya17): Fix these Edge cases
         # https://github.com/openvinotoolkit/anomalib/issues/1478
 
         extra_args = {}
-        if model_name in {"rkde", "dfkde"}:
+        if model_name == "dfkde":
             extra_args["n_pca_components"] = 2
 
         if model_name == "ai_vad":
@@ -214,7 +204,6 @@ class TestAPI:
             dataset = MVTec(
                 root=dataset_path / "mvtec",
                 category="dummy",
-                task=task_type,
                 # EfficientAd requires train batch size 1
                 train_batch_size=1 if model_name == "efficient_ad" else 2,
             )
@@ -230,7 +219,6 @@ class TestAPI:
             default_root_dir=project_path,
             max_epochs=1,
             devices=1,
-            task=task_type,
             # TODO(ashwinvaidya17): Fix these Edge cases
             # https://github.com/openvinotoolkit/anomalib/issues/1478
             max_steps=70000 if model_name == "efficient_ad" else -1,

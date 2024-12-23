@@ -1,13 +1,41 @@
 """CUHK Avenue Dataset.
 
-Description:
-    This script contains PyTorch Dataset for the CUHK Avenue dataset.
-    If the dataset is not already present on the file system, the DataModule class will download and
-    extract the dataset, converting the .mat mask files to .png format.
+This module provides PyTorch Dataset implementation for the CUHK Avenue dataset
+for abnormal event detection. The dataset contains surveillance videos with both
+normal and abnormal events.
+
+If the dataset is not already present on the file system, the DataModule class
+will download and extract the dataset, converting the .mat mask files to .png
+format.
+
+Example:
+    Create a dataset for training:
+
+    >>> from anomalib.data.datasets import AvenueDataset
+    >>> dataset = AvenueDataset(
+    ...     root="./datasets/avenue",
+    ...     split="train"
+    ... )
+    >>> dataset.setup()
+    >>> dataset[0].keys()
+    dict_keys(['image', 'mask', 'video_path', 'frames', 'last_frame',
+    'original_image', 'label'])
+
+    Create an image dataset by setting ``clip_length_in_frames=1``:
+
+    >>> dataset = AvenueDataset(
+    ...     root="./datasets/avenue",
+    ...     split="test",
+    ...     clip_length_in_frames=1
+    ... )
+    >>> dataset.setup()
+    >>> dataset[0]["image"].shape
+    torch.Size([3, 256, 256])
 
 Reference:
-    - Lu, Cewu, Jianping Shi, and Jiaya Jia. "Abnormal event detection at 150 fps in Matlab."
-      In Proceedings of the IEEE International Conference on Computer Vision, 2013.
+    Lu, Cewu, Jianping Shi, and Jiaya Jia. "Abnormal event detection at 150 fps
+    in Matlab." In Proceedings of the IEEE International Conference on Computer
+    Vision, 2013.
 """
 
 # Copyright (C) 2024 Intel Corporation
@@ -22,7 +50,6 @@ import torch
 from pandas import DataFrame
 from torchvision.transforms.v2 import Transform
 
-from anomalib import TaskType
 from anomalib.data.datasets.base.video import AnomalibVideoDataset, VideoTargetFrame
 from anomalib.data.utils import Split, read_mask, validate_path
 from anomalib.data.utils.video import ClipsIndexer
@@ -32,83 +59,40 @@ if TYPE_CHECKING:
 
 
 class AvenueDataset(AnomalibVideoDataset):
-    """Avenue Dataset class.
+    """CUHK Avenue dataset class.
 
     Args:
-        task (TaskType): Task type, 'classification', 'detection' or 'segmentation'
-        split (Split): Split of the dataset, usually Split.TRAIN or Split.TEST
-        root (Path | str): Path to the root of the dataset
-            Defaults to ``./datasets/avenue``.
-        gt_dir (Path | str): Path to the ground truth files
-            Defaults to ``./datasets/avenue/ground_truth_demo``.
-        clip_length_in_frames (int, optional): Number of video frames in each clip.
-            Defaults to ``2``.
-        frames_between_clips (int, optional): Number of frames between each consecutive video clip.
-            Defaults to ``1``.
-        target_frame (VideoTargetFrame): Specifies the target frame in the video clip, used for ground truth retrieval.
-            Defaults to ``VideoTargetFrame.LAST``.
-        transform (Transform, optional): Transforms that should be applied to the input images.
-            Defaults to ``None``.
+        split (Split): Dataset split - usually ``Split.TRAIN`` or ``Split.TEST``
+        root (Path | str, optional): Path to the root directory containing the
+            dataset. Defaults to ``"./datasets/avenue"``.
+        gt_dir (Path | str, optional): Path to the ground truth directory.
+            Defaults to ``"./datasets/avenue/ground_truth_demo"``.
+        clip_length_in_frames (int, optional): Number of frames in each video
+            clip. Defaults to ``2``.
+        frames_between_clips (int, optional): Number of frames between
+            consecutive video clips. Defaults to ``1``.
+        target_frame (VideoTargetFrame, optional): Target frame in the video
+            clip for ground truth retrieval. Defaults to
+            ``VideoTargetFrame.LAST``.
+        transform (Transform | None, optional): Transforms to apply to the input
+            images. Defaults to ``None``.
 
-    Examples:
-        To create an Avenue dataset to train a classification model:
+    Example:
+        Create a dataset for testing:
 
-        .. code-block:: python
-
-            transform = A.Compose([A.Resize(256, 256), A.pytorch.ToTensorV2()])
-            dataset = AvenueDataset(
-                task="classification",
-                transform=transform,
-                split="train",
-                root="./datasets/avenue/",
-            )
-
-            dataset.setup()
-            dataset[0].keys()
-
-            # Output: dict_keys(['image', 'video_path', 'frames', 'last_frame', 'original_image'])
-
-        If you would like to test a segmentation model, you can use the following code:
-
-        .. code-block:: python
-
-            dataset = AvenueDataset(
-                task="segmentation",
-                transform=transform,
-                split="test",
-                root="./datasets/avenue/",
-            )
-
-            dataset.setup()
-            dataset[0].keys()
-
-            # Output: dict_keys(['image', 'mask', 'video_path', 'frames', 'last_frame', 'original_image', 'label'])
-
-        Avenue video dataset can also be used as an image dataset if you set the clip length to 1. This means that each
-        video frame will be treated as a separate sample. This is useful for training a classification model on the
-        Avenue dataset. The following code shows how to create an image dataset for classification:
-
-        .. code-block:: python
-
-            dataset = AvenueDataset(
-                task="classification",
-                transform=transform,
-                split="test",
-                root="./datasets/avenue/",
-                clip_length_in_frames=1,
-            )
-
-            dataset.setup()
-            dataset[0].keys()
-            # Output: dict_keys(['image', 'video_path', 'frames', 'last_frame', 'original_image', 'label'])
-
-            dataset[0]["image"].shape
-            # Output: torch.Size([3, 256, 256])
+        >>> dataset = AvenueDataset(
+        ...     root="./datasets/avenue",
+        ...     split="test",
+        ...     transform=transform
+        ... )
+        >>> dataset.setup()
+        >>> dataset[0].keys()
+        dict_keys(['image', 'mask', 'video_path', 'frames', 'last_frame',
+        'original_image', 'label'])
     """
 
     def __init__(
         self,
-        task: TaskType,
         split: Split,
         root: Path | str = "./datasets/avenue",
         gt_dir: Path | str = "./datasets/avenue/ground_truth_demo",
@@ -118,7 +102,6 @@ class AvenueDataset(AnomalibVideoDataset):
         target_frame: VideoTargetFrame = VideoTargetFrame.LAST,
     ) -> None:
         super().__init__(
-            task=task,
             clip_length_in_frames=clip_length_in_frames,
             frames_between_clips=frames_between_clips,
             target_frame=target_frame,
@@ -132,33 +115,36 @@ class AvenueDataset(AnomalibVideoDataset):
         self.samples = make_avenue_dataset(self.root, self.gt_dir, self.split)
 
 
-def make_avenue_dataset(root: Path, gt_dir: Path, split: Split | str | None = None) -> DataFrame:
+def make_avenue_dataset(
+    root: Path,
+    gt_dir: Path,
+    split: Split | str | None = None,
+) -> DataFrame:
     """Create CUHK Avenue dataset by parsing the file structure.
 
     The files are expected to follow the structure:
-        - path/to/dataset/[training_videos|testing_videos]/video_filename.avi
-        - path/to/ground_truth/mask_filename.mat
+        path/to/dataset/[training_videos|testing_videos]/video_filename.avi
+        path/to/ground_truth/mask_filename.mat
 
     Args:
-        root (Path): Path to dataset
-        gt_dir (Path): Path to the ground truth
-        split (Split | str | None = None, optional): Dataset split (ie., either train or test).
+        root (Path): Path to dataset root directory
+        gt_dir (Path): Path to ground truth directory
+        split (Split | str | None, optional): Dataset split (train/test).
             Defaults to ``None``.
 
     Example:
-        The following example shows how to get testing samples from Avenue dataset:
+        Get testing samples from Avenue dataset:
 
-        >>> root = Path('./avenue')
-        >>> gt_dir = Path('./avenue/masks')
-        >>> samples = make_avenue_dataset(path, gt_dir, split='test')
+        >>> root = Path("./avenue")
+        >>> gt_dir = Path("./avenue/masks")
+        >>> samples = make_avenue_dataset(root, gt_dir, split="test")
         >>> samples.head()
-           root     folder         image_path                      mask_path                   split
-        0  ./avenue testing_videos ./avenue/training_videos/01.avi ./avenue/masks/01_label.mat test
-        1  ./avenue testing_videos ./avenue/training_videos/02.avi ./avenue/masks/01_label.mat test
-        ...
+           root     folder    image_path    mask_path   split
+        0  ./avenue testing  01.avi        01_label.mat test
+        1  ./avenue testing  02.avi        02_label.mat test
 
     Returns:
-        DataFrame: an output dataframe containing samples for the requested split (ie., train or test)
+        DataFrame: Dataframe containing samples for the requested split
     """
     root = validate_path(root)
 
@@ -178,6 +164,9 @@ def make_avenue_dataset(root: Path, gt_dir: Path, split: Split | str | None = No
     samples.loc[samples.folder == "training_videos", "split"] = "train"
     samples.loc[samples.folder == "testing_videos", "split"] = "test"
 
+    # infer the task type
+    samples.attrs["task"] = "classification" if (samples["mask_path"] == "").all() else "segmentation"
+
     if split:
         samples = samples[samples.split == split]
         samples = samples.reset_index(drop=True)
@@ -186,17 +175,28 @@ def make_avenue_dataset(root: Path, gt_dir: Path, split: Split | str | None = No
 
 
 class AvenueClipsIndexer(ClipsIndexer):
-    """Clips class for Avenue dataset."""
+    """Clips indexer class for Avenue dataset.
+
+    This class handles retrieving video clips and corresponding masks from the
+    Avenue dataset.
+    """
 
     def get_mask(self, idx: int) -> np.ndarray | None:
-        """Retrieve the masks from the file system."""
+        """Retrieve masks from the file system.
+
+        Args:
+            idx (int): Index of the clip
+
+        Returns:
+            np.ndarray | None: Array of masks if available, else None
+        """
         video_idx, frames_idx = self.get_clip_location(idx)
         matfile = self.mask_paths[video_idx]
         if matfile == "":  # no gt masks available for this clip
             return None
         frames = self.clips[video_idx][frames_idx]
 
-        # read masks from .png files if available, othwerise from mat files.
+        # read masks from .png files if available, otherwise from mat files
         mask_folder = Path(matfile).with_suffix("")
         if mask_folder.exists():
             mask_frames = sorted(mask_folder.glob("*"))

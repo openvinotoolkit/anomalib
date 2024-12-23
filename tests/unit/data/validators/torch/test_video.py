@@ -174,10 +174,10 @@ class TestVideoBatchValidator:
 
     def test_validate_gt_mask_valid(self) -> None:
         """Test validation of valid ground truth masks."""
-        masks = torch.randint(0, 2, (2, 10, 224, 224))
+        masks = torch.randint(0, 2, (10, 1, 224, 224))
         validated_masks = self.validator.validate_gt_mask(masks)
         assert isinstance(validated_masks, Mask)
-        assert validated_masks.shape == (2, 10, 224, 224)
+        assert validated_masks.shape == (10, 224, 224)
         assert validated_masks.dtype == torch.bool
 
     def test_validate_gt_mask_none(self) -> None:
@@ -186,13 +186,13 @@ class TestVideoBatchValidator:
 
     def test_validate_gt_mask_invalid_type(self) -> None:
         """Test validation of ground truth masks with invalid type."""
-        with pytest.raises(TypeError, match="Masks must be a torch.Tensor"):
+        with pytest.raises(TypeError, match="Ground truth mask must be a torch.Tensor"):
             self.validator.validate_gt_mask([torch.zeros(10, 224, 224)])
 
     def test_validate_gt_mask_invalid_shape(self) -> None:
         """Test validation of ground truth masks with invalid shape."""
-        with pytest.raises(ValueError, match="Masks must have 1 channel, got 2."):
-            self.validator.validate_gt_mask(torch.zeros(2, 10, 2, 224, 224))
+        with pytest.raises(ValueError, match="Ground truth mask must have 1 channel, got 2."):
+            self.validator.validate_gt_mask(torch.zeros(10, 2, 224, 224))
 
     def test_validate_anomaly_map_valid(self) -> None:
         """Test validation of a valid anomaly map batch."""

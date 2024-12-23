@@ -8,7 +8,6 @@ from pathlib import Path
 import pytest
 import yaml
 
-from anomalib import TaskType
 from anomalib.data import MVTec
 from anomalib.engine import Engine
 from anomalib.models import Padim
@@ -62,7 +61,6 @@ class TestEngine:
             plugins: null
             sync_batchnorm: false
             reload_dataloaders_every_n_epochs: 0
-        task: SEGMENTATION
         logging:
             log_graph: false
         default_root_dir: results
@@ -106,7 +104,6 @@ class TestEngine:
         engine, model, datamodule = Engine.from_config(config_path=fxt_full_config_path)
         assert engine is not None
         assert isinstance(engine, Engine)
-        assert engine.task == TaskType.SEGMENTATION
         assert model is not None
         assert isinstance(model, Padim)
         assert datamodule is not None
@@ -114,13 +111,11 @@ class TestEngine:
         assert datamodule.train_batch_size == 32
         assert datamodule.num_workers == 8
 
-        # Override task & batch_size & num_workers
+        # Override batch_size & num_workers
         override_kwargs = {
-            "task": "CLASSIFICATION",
             "data.train_batch_size": 1,
             "data.num_workers": 1,
         }
         engine, model, datamodule = Engine.from_config(config_path=fxt_full_config_path, **override_kwargs)
-        assert engine.task == TaskType.CLASSIFICATION
         assert datamodule.train_batch_size == 1
         assert datamodule.num_workers == 1

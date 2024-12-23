@@ -1,19 +1,23 @@
 """Visual Anomaly (VisA) Dataset.
 
-Description:
-    This script contains PyTorch Dataset for the Visual Anomal
-    (VisA) dataset. If the dataset is not on the file system, the script
-    downloads and extracts the dataset and create PyTorch data objects.
+This module provides PyTorch Dataset implementation for the Visual Anomaly (VisA)
+dataset. The dataset will be downloaded and extracted automatically if not found
+locally.
+
+The dataset contains 12 categories of industrial objects with both normal and
+anomalous samples. Each category includes RGB images and pixel-level ground truth
+masks for anomaly segmentation.
 
 License:
     The VisA dataset is released under the Creative Commons
     Attribution-NonCommercial-ShareAlike 4.0 International License
-    (CC BY-NC-SA 4.0)(https://creativecommons.org/licenses/by-nc-sa/4.0/).
+    (CC BY-NC-SA 4.0) https://creativecommons.org/licenses/by-nc-sa/4.0/
 
 Reference:
-    - Zou, Y., Jeong, J., Pemula, L., Zhang, D., & Dabeer, O. (2022). SPot-the-Difference
-      Self-supervised Pre-training for Anomaly Detection and Segmentation. In European
-      Conference on Computer Vision (pp. 392-408). Springer, Cham.
+    Zou, Y., Jeong, J., Pemula, L., Zhang, D., & Dabeer, O. (2022).
+    SPot-the-Difference Self-supervised Pre-training for Anomaly Detection and
+    Segmentation. In European Conference on Computer Vision (pp. 392-408).
+    Springer, Cham.
 """
 
 # Copyright (C) 2024 Intel Corporation
@@ -23,7 +27,6 @@ from pathlib import Path
 
 from torchvision.transforms.v2 import Transform
 
-from anomalib import TaskType
 from anomalib.data.datasets import AnomalibDataset
 from anomalib.data.datasets.image.mvtec import make_mvtec_dataset
 from anomalib.data.utils import Split
@@ -48,72 +51,43 @@ CATEGORIES = (
 class VisaDataset(AnomalibDataset):
     """VisA dataset class.
 
+    Dataset class for loading and processing Visual Anomaly (VisA) dataset images.
+    Supports both classification and segmentation tasks.
+
     Args:
-        task (TaskType): Task type, ``classification``, ``detection`` or ``segmentation``
-        root (str | Path): Path to the root of the dataset
-        category (str): Sub-category of the dataset, e.g. 'candle'
-        transform (Transform, optional): Transforms that should be applied to the input images.
+        root (str | Path): Path to root directory containing the dataset.
+        category (str): Category name, must be one of ``CATEGORIES``.
+        transform (Transform | None, optional): Transforms to apply to the images.
             Defaults to ``None``.
-        split (str | Split | None): Split of the dataset, usually Split.TRAIN or Split.TEST
-            Defaults to ``None``.
+        split (str | Split | None, optional): Dataset split - usually
+            ``Split.TRAIN`` or ``Split.TEST``. Defaults to ``None``.
 
-    Examples:
-        To create a Visa dataset for classification:
-
-        .. code-block:: python
-
-            from anomalib.data.image.visa import VisaDataset
-            from anomalib.data.utils.transforms import get_transforms
-
-            transform = get_transforms(image_size=256)
-            dataset = VisaDataset(
-                task="classification",
-                transform=transform,
-                split="train",
-                root="./datasets/visa/visa_pytorch/",
-                category="candle",
-            )
-            dataset.setup()
-            dataset[0].keys()
-
-            # Output
-            dict_keys(['image_path', 'label', 'image'])
-
-        If you want to use the dataset for segmentation, you can use the same
-        code as above, with the task set to ``segmentation``. The dataset will
-        then have a ``mask`` key in the output dictionary.
-
-        .. code-block:: python
-
-            from anomalib.data.image.visa import VisaDataset
-            from anomalib.data.utils.transforms import get_transforms
-
-            transform = get_transforms(image_size=256)
-            dataset = VisaDataset(
-                task="segmentation",
-                transform=transform,
-                split="train",
-                root="./datasets/visa/visa_pytorch/",
-                category="candle",
-            )
-            dataset.setup()
-            dataset[0].keys()
-
-            # Output
-            dict_keys(['image_path', 'label', 'image', 'mask_path', 'mask'])
-
+    Example:
+        >>> from pathlib import Path
+        >>> from anomalib.data.datasets import VisaDataset
+        >>> dataset = VisaDataset(
+        ...     root=Path("./datasets/visa"),
+        ...     category="candle",
+        ...     split="train"
+        ... )
+        >>> item = dataset[0]
+        >>> item.keys()
+        dict_keys(['image_path', 'label', 'image', 'mask'])
     """
 
     def __init__(
         self,
-        task: TaskType,
         root: str | Path,
         category: str,
         transform: Transform | None = None,
         split: str | Split | None = None,
     ) -> None:
-        super().__init__(task=task, transform=transform)
+        super().__init__(transform=transform)
 
         self.root_category = Path(root) / category
         self.split = split
-        self.samples = make_mvtec_dataset(self.root_category, split=self.split, extensions=EXTENSIONS)
+        self.samples = make_mvtec_dataset(
+            self.root_category,
+            split=self.split,
+            extensions=EXTENSIONS,
+        )

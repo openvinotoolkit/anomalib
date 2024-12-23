@@ -1,4 +1,32 @@
-"""PyTorch model for CFlow model implementation."""
+"""PyTorch model for the CFLOW anomaly detection model.
+
+This module provides the PyTorch implementation of the CFLOW model for anomaly
+detection. The model uses conditional normalizing flows to model the distribution
+of normal data in the feature space.
+
+The model consists of:
+    - A CNN backbone encoder to extract features
+    - Multiple decoders using normalizing flows to model feature distributions
+    - Positional encoding to capture spatial information
+
+Example:
+    >>> import torch
+    >>> from anomalib.models.image.cflow.torch_model import CflowModel
+    >>> # Initialize the model
+    >>> model = CflowModel(
+    ...     backbone="resnet18",
+    ...     layers=["layer1", "layer2", "layer3"],
+    ...     fiber_batch_size=64,
+    ...     decoder="freia-cflow",
+    ...     condition_vector=128,
+    ...     coupling_blocks=8,
+    ...     clamp_alpha=1.9,
+    ...     permute_soft=False
+    ... )
+    >>> # Forward pass
+    >>> x = torch.randn(32, 3, 256, 256)
+    >>> predictions = model(x)
+"""
 
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -20,22 +48,31 @@ class CflowModel(nn.Module):
     """CFLOW: Conditional Normalizing Flows.
 
     Args:
-        backbone (str): Backbone CNN architecture.
-        layers (Sequence[str]): Layers to extract features from.
-        pre_trained (bool): Whether to use pre-trained weights.
-            Defaults to ``True``.
-        fiber_batch_size (int): Fiber batch size.
-            Defaults to ``64``.
-        decoder (str): Decoder architecture.
+        backbone (str): Name of the backbone CNN network to use as feature
+            extractor.
+        layers (Sequence[str]): Names of layers from which to extract features.
+        pre_trained (bool, optional): Whether to use pre-trained weights for the
+            backbone. Defaults to ``True``.
+        fiber_batch_size (int, optional): Batch size for processing feature
+            fibers. Defaults to ``64``.
+        decoder (str, optional): Type of decoder architecture to use.
             Defaults to ``"freia-cflow"``.
-        condition_vector (int): Condition vector size.
-            Defaults to ``128``.
-        coupling_blocks (int): Number of coupling blocks.
-            Defaults to ``8``.
-        clamp_alpha (float): Clamping value for the alpha parameter.
-            Defaults to ``1.9``.
-        permute_soft (bool): Whether to use soft permutation.
-            Defaults to ``False``.
+        condition_vector (int, optional): Size of the condition vector for the
+            normalizing flows. Defaults to ``128``.
+        coupling_blocks (int, optional): Number of coupling blocks in the
+            normalizing flows. Defaults to ``8``.
+        clamp_alpha (float, optional): Clamping value for the alpha parameter in
+            the flows. Defaults to ``1.9``.
+        permute_soft (bool, optional): Whether to use soft permutation in the
+            flows. Defaults to ``False``.
+
+    Example:
+        >>> model = CflowModel(
+        ...     backbone="resnet18",
+        ...     layers=["layer1", "layer2", "layer3"]
+        ... )
+        >>> x = torch.randn(32, 3, 256, 256)
+        >>> predictions = model(x)
     """
 
     def __init__(
@@ -84,14 +121,25 @@ class CflowModel(nn.Module):
         self.anomaly_map_generator = AnomalyMapGenerator(pool_layers=self.pool_layers)
 
     def forward(self, images: torch.Tensor) -> InferenceBatch:
-        """Forward-pass images into the network to extract encoder features and compute probability.
+        """Forward pass through the model.
+
+        The method extracts features using the encoder, processes them through
+        normalizing flows, and generates anomaly predictions.
 
         Args:
-          images: Batch of images.
+            images (torch.Tensor): Input images of shape
+                ``(batch_size, channels, height, width)``.
 
         Returns:
-          Predicted anomaly maps.
+            InferenceBatch: Batch containing predicted anomaly scores and maps.
+                The anomaly maps have shape ``(batch_size, 1, height, width)``.
 
+        Example:
+            >>> x = torch.randn(32, 3, 256, 256)
+            >>> model = CflowModel(backbone="resnet18", layers=["layer1"])
+            >>> predictions = model(x)
+            >>> predictions.anomaly_map.shape
+            torch.Size([32, 1, 256, 256])
         """
         self.encoder.eval()
         self.decoders.eval()

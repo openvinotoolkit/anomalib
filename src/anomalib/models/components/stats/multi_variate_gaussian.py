@@ -1,4 +1,20 @@
-"""Multi Variate Gaussian Distribution."""
+"""Multi Variate Gaussian Distribution.
+
+This module implements parametric density estimation using a multivariate Gaussian
+distribution. It estimates the mean and covariance matrix from input features.
+
+Example:
+    >>> import torch
+    >>> from anomalib.models.components.stats import MultiVariateGaussian
+    >>> # Create distribution estimator
+    >>> mvg = MultiVariateGaussian()
+    >>> # Fit distribution to features
+    >>> features = torch.randn(100, 64, 32, 32)  # B x C x H x W
+    >>> mean, inv_cov = mvg.fit(features)
+    >>> # Access distribution parameters
+    >>> print(mean.shape)      # [64, 1024]
+    >>> print(inv_cov.shape)   # [1024, 64, 64]
+"""
 
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -12,9 +28,24 @@ from anomalib.models.components.base import DynamicBufferMixin
 
 
 class MultiVariateGaussian(DynamicBufferMixin, nn.Module):
-    """Multi Variate Gaussian Distribution."""
+    """Multi Variate Gaussian Distribution.
+
+    Estimates a multivariate Gaussian distribution by computing the mean and
+    covariance matrix from input feature embeddings. The distribution parameters
+    are stored as buffers.
+
+    Example:
+        >>> import torch
+        >>> from anomalib.models.components.stats import MultiVariateGaussian
+        >>> mvg = MultiVariateGaussian()
+        >>> features = torch.randn(100, 64, 32, 32)  # B x C x H x W
+        >>> mean, inv_cov = mvg.fit(features)
+        >>> print(mean.shape)      # [64, 1024]
+        >>> print(inv_cov.shape)   # [1024, 64, 64]
+    """
 
     def __init__(self) -> None:
+        """Initialize empty buffers for mean and inverse covariance."""
         super().__init__()
 
         self.register_buffer("mean", torch.empty(0))
@@ -31,33 +62,27 @@ class MultiVariateGaussian(DynamicBufferMixin, nn.Module):
         ddof: int | None = None,
         aweights: torch.Tensor | None = None,
     ) -> torch.Tensor:
-        """Estimates covariance matrix like numpy.cov.
+        """Estimate covariance matrix similar to numpy.cov.
 
         Args:
-            observations (torch.Tensor): A 1-D or 2-D array containing multiple variables and observations.
-                 Each row of `m` represents a variable, and each column a single
-                 observation of all those variables. Also see `rowvar` below.
-            rowvar (bool): If `rowvar` is True (default), then each row represents a
-                variable, with observations in the columns. Otherwise, the relationship
-                is transposed: each column represents a variable, while the rows
-                contain observations. Defaults to False.
-            bias (bool): Default normalization (False) is by ``(N - 1)``, where ``N`` is the
-                number of observations given (unbiased estimate). If `bias` is True,
-                then normalization is by ``N``. These values can be overridden by using
-                the keyword ``ddof`` in numpy versions >= 1.5. Defaults to False
-            ddof (int | None): If not ``None`` the default value implied by `bias` is overridden.
-                Note that ``ddof=1`` will return the unbiased estimate, even if both
-                `fweights` and `aweights` are specified, and ``ddof=0`` will return
-                the simple average. See the notes for the details. The default value
-                is ``None``.
-            aweights (torch.Tensor): 1-D array of observation vector weights. These relative weights are
-                typically large for observations considered "important" and smaller for
-                observations considered less "important". If ``ddof=0`` the array of
-                weights can be used to assign probabilities to observation vectors. (Default value = None)
-
+            observations: A 1-D or 2-D tensor containing multiple variables and
+                observations. Each row represents a variable, and each column a
+                single observation of all variables if ``rowvar=True``. The
+                relationship is transposed if ``rowvar=False``.
+            rowvar: If ``True``, each row represents a variable. If ``False``,
+                each column represents a variable. Defaults to ``False``.
+            bias: If ``False`` (default), normalize by ``(N-1)`` for unbiased
+                estimate. If ``True``, normalize by ``N``. Can be overridden by
+                ``ddof``.
+            ddof: Delta degrees of freedom. If not ``None``, overrides ``bias``.
+                ``ddof=1`` gives unbiased estimate, ``ddof=0`` gives simple
+                average.
+            aweights: Optional 1-D tensor of observation weights. Larger weights
+                indicate more "important" observations. If ``ddof=0``, weights
+                are treated as observation probabilities.
 
         Returns:
-          The covariance matrix of the variables.
+            Covariance matrix of the variables.
         """
         # ensure at least 2D
         if observations.dim() == 1:
@@ -75,7 +100,7 @@ class MultiVariateGaussian(DynamicBufferMixin, nn.Module):
 
         if weights is not None:
             if not torch.is_tensor(weights):
-                weights = torch.tensor(weights, dtype=torch.float)  # pylint: disable=not-callable
+                weights = torch.tensor(weights, dtype=torch.float)
             weights_sum = torch.sum(weights)
             avg = torch.sum(observations * (weights / weights_sum)[:, None], 0)
         else:
@@ -101,13 +126,20 @@ class MultiVariateGaussian(DynamicBufferMixin, nn.Module):
         return covariance.squeeze()
 
     def forward(self, embedding: torch.Tensor) -> list[torch.Tensor]:
-        """Calculate multivariate Gaussian distribution.
+        """Calculate multivariate Gaussian distribution parameters.
+
+        Computes the mean and inverse covariance matrix from input feature
+        embeddings. A small regularization term (0.01) is added to the diagonal
+        of the covariance matrix for numerical stability.
 
         Args:
-          embedding (torch.Tensor): CNN features whose dimensionality is reduced via either random sampling or PCA.
+            embedding: Input tensor of shape ``(B, C, H, W)`` containing CNN
+                feature embeddings.
 
         Returns:
-          mean and inverse covariance of the multi-variate gaussian distribution that fits the features.
+            List containing:
+                - Mean tensor of shape ``(C, H*W)``
+                - Inverse covariance tensor of shape ``(H*W, C, C)``
         """
         device = embedding.device
 
@@ -125,12 +157,16 @@ class MultiVariateGaussian(DynamicBufferMixin, nn.Module):
         return [self.mean, self.inv_covariance]
 
     def fit(self, embedding: torch.Tensor) -> list[torch.Tensor]:
-        """Fit multi-variate gaussian distribution to the input embedding.
+        """Fit multivariate Gaussian distribution to input embeddings.
+
+        Convenience method that calls ``forward()`` to compute distribution
+        parameters.
 
         Args:
-            embedding (torch.Tensor): Embedding vector extracted from CNN.
+            embedding: Input tensor of shape ``(B, C, H, W)`` containing CNN
+                feature embeddings.
 
         Returns:
-            Mean and the covariance of the embedding.
+            List containing the mean and inverse covariance tensors.
         """
         return self.forward(embedding)

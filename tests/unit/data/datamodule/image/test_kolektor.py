@@ -7,7 +7,6 @@ from pathlib import Path
 
 import pytest
 
-from anomalib import TaskType
 from anomalib.data import Kolektor
 from tests.unit.data.datamodule.base.image import _TestAnomalibImageDatamodule
 
@@ -17,11 +16,10 @@ class TestKolektor(_TestAnomalibImageDatamodule):
 
     @pytest.fixture()
     @staticmethod
-    def datamodule(dataset_path: Path, task_type: TaskType) -> Kolektor:
+    def datamodule(dataset_path: Path) -> Kolektor:
         """Create and return a BTech datamodule."""
         _datamodule = Kolektor(
             root=dataset_path / "kolektor",
-            task=task_type,
             train_batch_size=4,
             eval_batch_size=4,
         )

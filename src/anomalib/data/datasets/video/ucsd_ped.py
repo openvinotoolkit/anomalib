@@ -1,4 +1,62 @@
-"""UCSD Pedestrian Dataset."""
+"""UCSD Pedestrian Dataset.
+
+This module provides PyTorch Dataset implementation for the UCSD Pedestrian
+dataset for abnormal event detection. The dataset contains surveillance videos
+with both normal and abnormal events.
+
+The dataset expects the following directory structure::
+
+    root/
+    ├── UCSDped1/
+    │   ├── Train/
+    │   │   ├── Train001/
+    │   │   │   ├── 001.tif
+    │   │   │   └── ...
+    │   │   └── ...
+    │   └── Test/
+    │       ├── Test001/
+    │       │   ├── 001.tif
+    │       │   └── ...
+    │       ├── Test001_gt/
+    │       │   ├── 001.bmp
+    │       │   └── ...
+    │       └── ...
+    └── UCSDped2/
+        ├── Train/
+        └── Test/
+
+Example:
+    Create a dataset for training:
+
+    >>> from anomalib.data.datasets import UCSDpedDataset
+    >>> from anomalib.data.utils import Split
+    >>> dataset = UCSDpedDataset(
+    ...     root="./datasets/ucsdped",
+    ...     category="UCSDped1",
+    ...     split=Split.TRAIN
+    ... )
+    >>> dataset[0].keys()
+    dict_keys(['image', 'video_path', 'frames', 'last_frame', 'original_image'])
+
+    Create a test dataset:
+
+    >>> dataset = UCSDpedDataset(
+    ...     root="./datasets/ucsdped",
+    ...     category="UCSDped1",
+    ...     split=Split.TEST
+    ... )
+    >>> dataset[0].keys()
+    dict_keys(['image', 'mask', 'video_path', 'frames', 'last_frame',
+    'original_image', 'label'])
+
+License:
+    UCSD Pedestrian Dataset is released under the BSD 2-Clause License.
+
+Reference:
+    Mahadevan, V., Li, W., Bhalodia, V., & Vasconcelos, N. (2010). Anomaly
+    detection in crowded scenes. In IEEE Conference on Computer Vision and
+    Pattern Recognition (CVPR), 2010.
+"""
 
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -11,7 +69,6 @@ import torch
 from pandas import DataFrame
 from torchvision.transforms.v2 import Transform
 
-from anomalib import TaskType
 from anomalib.data.datasets.base.video import AnomalibVideoDataset, VideoTargetFrame
 from anomalib.data.utils import Split, read_image, read_mask, validate_path
 from anomalib.data.utils.video import ClipsIndexer
@@ -26,20 +83,35 @@ class UCSDpedDataset(AnomalibVideoDataset):
     """UCSDped Dataset class.
 
     Args:
-        task (TaskType): Task type, 'classification', 'detection' or 'segmentation'
-        root (Path | str): Path to the root of the dataset
-        category (str): Sub-category of the dataset, e.g. "UCSDped1" or "UCSDped2"
-        split (str | Split | None): Split of the dataset, usually Split.TRAIN or Split.TEST
+        root (Path | str): Path to the root of the dataset.
+        category (str): Sub-category of the dataset, must be one of ``CATEGORIES``.
+        split (str | Split | None): Dataset split - usually ``Split.TRAIN`` or
+            ``Split.TEST``.
         clip_length_in_frames (int, optional): Number of video frames in each clip.
-        frames_between_clips (int, optional): Number of frames between each consecutive video clip.
-        target_frame (VideoTargetFrame): Specifies the target frame in the video clip, used for ground truth retrieval.
-        transform (Transform, optional): Transforms that should be applied to the input images.
+            Defaults to ``2``.
+        frames_between_clips (int, optional): Number of frames between each
+            consecutive video clip. Defaults to ``10``.
+        target_frame (VideoTargetFrame): Specifies the target frame in the video
+            clip, used for ground truth retrieval. Defaults to
+            ``VideoTargetFrame.LAST``.
+        transform (Transform | None, optional): Transforms to apply to the images.
             Defaults to ``None``.
+
+    Example:
+        >>> from pathlib import Path
+        >>> from anomalib.data.datasets import UCSDpedDataset
+        >>> dataset = UCSDpedDataset(
+        ...     root=Path("./datasets/ucsdped"),
+        ...     category="UCSDped1",
+        ...     split="train"
+        ... )
+        >>> dataset[0].keys()
+        dict_keys(['image', 'video_path', 'frames', 'last_frame',
+        'original_image'])
     """
 
     def __init__(
         self,
-        task: TaskType,
         root: str | Path,
         category: str,
         split: Split,
@@ -49,7 +121,6 @@ class UCSDpedDataset(AnomalibVideoDataset):
         transform: Transform | None = None,
     ) -> None:
         super().__init__(
-            task=task,
             clip_length_in_frames=clip_length_in_frames,
             frames_between_clips=frames_between_clips,
             target_frame=target_frame,
@@ -66,7 +137,14 @@ class UCSDpedClipsIndexer(ClipsIndexer):
     """Clips class for UCSDped dataset."""
 
     def get_mask(self, idx: int) -> np.ndarray | None:
-        """Retrieve the masks from the file system."""
+        """Retrieve the masks from the file system.
+
+        Args:
+            idx (int): Index of the clip.
+
+        Returns:
+            np.ndarray | None: Stack of mask frames if available, None otherwise.
+        """
         video_idx, frames_idx = self.get_clip_location(idx)
         mask_folder = self.mask_paths[video_idx]
         if mask_folder == "":  # no gt masks available for this clip
@@ -91,13 +169,18 @@ class UCSDpedClipsIndexer(ClipsIndexer):
         """Get a subclip from a list of videos.
 
         Args:
-            idx (int): index of the subclip. Must be between 0 and num_clips().
+            idx (int): Index of the subclip. Must be between 0 and num_clips().
 
         Returns:
-            video (torch.Tensor)
-            audio (torch.Tensor)
-            info (dict)
-            video_idx (int): index of the video in `video_paths`
+            tuple[torch.Tensor, torch.Tensor, dict[str, Any], int]: Tuple
+            containing:
+                - video frames tensor
+                - empty audio tensor
+                - empty info dict
+                - video index
+
+        Raises:
+            IndexError: If ``idx`` is out of range.
         """
         if idx >= self.num_clips():
             msg = f"Index {idx} out of range ({self.num_clips()} number of clips)"
@@ -117,16 +200,19 @@ class UCSDpedClipsIndexer(ClipsIndexer):
 def make_ucsd_dataset(path: Path, split: str | Split | None = None) -> DataFrame:
     """Create UCSD Pedestrian dataset by parsing the file structure.
 
-    The files are expected to follow the structure:
+    The files are expected to follow the structure::
+
         path/to/dataset/category/split/video_id/image_filename.tif
         path/to/dataset/category/split/video_id_gt/mask_filename.bmp
 
     Args:
-        path (Path): Path to dataset
-        split (str | Split | None, optional): Dataset split (ie., either train or test). Defaults to None.
+        path (Path): Path to dataset.
+        split (str | Split | None, optional): Dataset split (ie., either train or
+            test). Defaults to ``None``.
 
     Example:
-        The following example shows how to get testing samples from UCSDped2 category:
+        The following example shows how to get testing samples from UCSDped2
+        category:
 
         >>> root = Path('./UCSDped')
         >>> category = 'UCSDped2'
@@ -136,13 +222,11 @@ def make_ucsd_dataset(path: Path, split: str | Split | None = None) -> DataFrame
 
         >>> samples = make_ucsd_dataset(path, split='test')
         >>> samples.head()
-           root             folder image_path                    mask_path                         split
-        0  UCSDped/UCSDped2 Test   UCSDped/UCSDped2/Test/Test001 UCSDped/UCSDped2/Test/Test001_gt  test
-        1  UCSDped/UCSDped2 Test   UCSDped/UCSDped2/Test/Test002 UCSDped/UCSDped2/Test/Test002_gt  test
-        ...
+           root             folder image_path                    mask_path
+        0  UCSDped/UCSDped2 Test   UCSDped/UCSDped2/Test/Test001 UCSDped/...
 
     Returns:
-        DataFrame: an output dataframe containing samples for the requested split (ie., train or test)
+        DataFrame: Output dataframe containing samples for the requested split.
     """
     path = validate_path(path)
     folders = [filename for filename in sorted(path.glob("*/*")) if filename.is_dir()]
@@ -159,6 +243,9 @@ def make_ucsd_dataset(path: Path, split: str | Split | None = None) -> DataFrame
 
     samples.loc[samples.folder == "Train", "split"] = "train"
     samples.loc[samples.folder == "Test", "split"] = "test"
+
+    # infer the task type
+    samples.attrs["task"] = "classification" if (samples["mask_path"] == "").all() else "segmentation"
 
     if split:
         samples = samples[samples.split == split]

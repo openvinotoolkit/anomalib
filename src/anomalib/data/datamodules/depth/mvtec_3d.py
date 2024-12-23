@@ -1,19 +1,30 @@
-"""MVTec 3D-AD Datamodule (CC BY-NC-SA 4.0).
+"""MVTec 3D-AD Datamodule.
 
-Description:
-    This script contains PyTorch Dataset, Dataloader and PyTorch Lightning DataModule for the MVTec 3D-AD dataset.
-    If the dataset is not on the file system, the script downloads and extracts the dataset and create PyTorch data
-    objects.
+This module provides a PyTorch Lightning DataModule for the MVTec 3D-AD dataset.
+The dataset contains RGB and depth image pairs for anomaly detection tasks.
+
+Example:
+    Create a MVTec3D datamodule::
+
+        >>> from anomalib.data import MVTec3D
+        >>> datamodule = MVTec3D(
+        ...     root="./datasets/MVTec3D",
+        ...     category="bagel"
+        ... )
 
 License:
-    MVTec 3D-AD dataset is released under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International
-        License (CC BY-NC-SA 4.0)(https://creativecommons.org/licenses/by-nc-sa/4.0/).
+    MVTec 3D-AD dataset is released under the Creative Commons
+    Attribution-NonCommercial-ShareAlike 4.0 International License
+    (CC BY-NC-SA 4.0).
+    https://creativecommons.org/licenses/by-nc-sa/4.0/
 
 Reference:
-    - Paul Bergmann, Xin Jin, David Sattlegger, Carsten Steger: The MVTec 3D-AD Dataset for Unsupervised 3D Anomaly
-        Detection and Localization in: Proceedings of the 17th International Joint Conference on Computer Vision,
-        Imaging and Computer Graphics Theory and Applications - Volume 5: VISAPP, 202-213, 2022, DOI: 10.5220/
-        0010865000003124.
+    Paul Bergmann, Xin Jin, David Sattlegger, Carsten Steger:
+    The MVTec 3D-AD Dataset for Unsupervised 3D Anomaly Detection and
+    Localization. In: Proceedings of the 17th International Joint Conference
+    on Computer Vision, Imaging and Computer Graphics Theory and Applications
+    - Volume 5: VISAPP, 202-213, 2022.
+    DOI: 10.5220/0010865000003124
 """
 
 # Copyright (C) 2022-2024 Intel Corporation
@@ -22,7 +33,6 @@ Reference:
 import logging
 from pathlib import Path
 
-from anomalib import TaskType
 from anomalib.data.datamodules.base.image import AnomalibDataModule
 from anomalib.data.datasets.depth.mvtec_3d import MVTec3DDataset
 from anomalib.data.utils import DownloadInfo, Split, TestSplitMode, ValSplitMode, download_and_extract
@@ -39,30 +49,28 @@ DOWNLOAD_INFO = DownloadInfo(
 
 
 class MVTec3D(AnomalibDataModule):
-    """MVTec Datamodule.
+    """MVTec 3D-AD Datamodule.
 
     Args:
-        root (Path | str): Path to the root of the dataset
+        root (Path | str): Path to the root of the dataset.
             Defaults to ``"./datasets/MVTec3D"``.
-        category (str): Category of the MVTec dataset (e.g. "bottle" or "cable").
-            Defaults to ``bagel``.
+        category (str): Category of the MVTec3D dataset (e.g. ``"bottle"`` or
+            ``"cable"``). Defaults to ``"bagel"``.
         train_batch_size (int, optional): Training batch size.
             Defaults to ``32``.
         eval_batch_size (int, optional): Test batch size.
             Defaults to ``32``.
-        num_workers (int, optional): Number of workers.
+        num_workers (int, optional): Number of workers for data loading.
             Defaults to ``8``.
-        task (TaskType): Task type, 'classification', 'detection' or 'segmentation'
-            Defaults to ``TaskType.SEGMENTATION``.
-        test_split_mode (TestSplitMode): Setting that determines how the testing subset is obtained.
+        test_split_mode (TestSplitMode | str): Method to create test set.
             Defaults to ``TestSplitMode.FROM_DIR``.
-        test_split_ratio (float): Fraction of images from the train set that will be reserved for testing.
+        test_split_ratio (float): Fraction of data to use for testing.
             Defaults to ``0.2``.
-        val_split_mode (ValSplitMode): Setting that determines how the validation subset is obtained.
+        val_split_mode (ValSplitMode | str): Method to create validation set.
             Defaults to ``ValSplitMode.SAME_AS_TEST``.
-        val_split_ratio (float): Fraction of train or test images that will be reserved for validation.
+        val_split_ratio (float): Fraction of data to use for validation.
             Defaults to ``0.5``.
-        seed (int | None, optional): Seed which may be set to a fixed value for reproducibility.
+        seed (int | None, optional): Random seed for reproducibility.
             Defaults to ``None``.
     """
 
@@ -73,7 +81,6 @@ class MVTec3D(AnomalibDataModule):
         train_batch_size: int = 32,
         eval_batch_size: int = 32,
         num_workers: int = 8,
-        task: TaskType | str = TaskType.SEGMENTATION,
         test_split_mode: TestSplitMode | str = TestSplitMode.FROM_DIR,
         test_split_ratio: float = 0.2,
         val_split_mode: ValSplitMode | str = ValSplitMode.SAME_AS_TEST,
@@ -91,19 +98,22 @@ class MVTec3D(AnomalibDataModule):
             seed=seed,
         )
 
-        self.task = TaskType(task)
         self.root = Path(root)
         self.category = category
 
     def _setup(self, _stage: str | None = None) -> None:
+        """Set up the datasets.
+
+        Args:
+            _stage (str | None, optional): Stage of setup. Not used.
+                Defaults to ``None``.
+        """
         self.train_data = MVTec3DDataset(
-            task=self.task,
             split=Split.TRAIN,
             root=self.root,
             category=self.category,
         )
         self.test_data = MVTec3DDataset(
-            task=self.task,
             split=Split.TEST,
             root=self.root,
             category=self.category,

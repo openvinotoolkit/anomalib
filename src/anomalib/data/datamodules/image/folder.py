@@ -1,6 +1,32 @@
 """Custom Folder Data Module.
 
-This script creates a custom Lightning DataModule from a folder.
+This script creates a custom Lightning DataModule from a folder containing normal
+and abnormal images.
+
+Example:
+    Create a folder datamodule::
+
+        >>> from anomalib.data import Folder
+        >>> datamodule = Folder(
+        ...     name="custom_folder",
+        ...     root="./datasets/custom",
+        ...     normal_dir="good",
+        ...     abnormal_dir="defect"
+        ... )
+
+Notes:
+    The directory structure should be organized as follows::
+
+        root/
+        ├── normal_dir/
+        │   ├── image1.png
+        │   └── image2.png
+        ├── abnormal_dir/
+        │   ├── image3.png
+        │   └── image4.png
+        └── mask_dir/
+            ├── mask3.png
+            └── mask4.png
 """
 
 # Copyright (C) 2022-2024 Intel Corporation
@@ -9,7 +35,6 @@ This script creates a custom Lightning DataModule from a folder.
 from collections.abc import Sequence
 from pathlib import Path
 
-from anomalib import TaskType
 from anomalib.data.datamodules.base.image import AnomalibDataModule
 from anomalib.data.datasets.image.folder import FolderDataset
 from anomalib.data.utils import Split, TestSplitMode, ValSplitMode
@@ -19,95 +44,62 @@ class Folder(AnomalibDataModule):
     """Folder DataModule.
 
     Args:
-        name (str): Name of the dataset. This is used to name the datamodule, especially when logging/saving.
-        normal_dir (str | Path | Sequence): Name of the directory containing normal images.
-        root (str | Path | None): Path to the root folder containing normal and abnormal dirs.
-            Defaults to ``None``.
-        abnormal_dir (str | Path | None | Sequence): Name of the directory containing abnormal images.
-            Defaults to ``None``.
-        normal_test_dir (str | Path | Sequence | None, optional): Path to the directory containing
-            normal images for the test dataset.
-            Defaults to ``None``.
-        mask_dir (str | Path | Sequence | None, optional): Path to the directory containing
-            the mask annotations.
-            Defaults to ``None``.
-        normal_split_ratio (float, optional): Ratio to split normal training images and add to the
-            test set in case test set doesn't contain any normal images.
-            Defaults to 0.2.
-        extensions (tuple[str, ...] | None, optional): Type of the image extensions to read from the
-            directory.
-            Defaults to ``None``.
-        train_batch_size (int, optional): Training batch size.
-            Defaults to ``32``.
-        eval_batch_size (int, optional): Validation, test and predict batch size.
-            Defaults to ``32``.
-        num_workers (int, optional): Number of workers.
-            Defaults to ``8``.
-        task (TaskType, optional): Task type. Could be ``classification``, ``detection`` or ``segmentation``.
-            Defaults to ``segmentation``.
-        test_split_mode (TestSplitMode): Setting that determines how the testing subset is obtained.
-            Defaults to ``TestSplitMode.FROM_DIR``.
-        test_split_ratio (float): Fraction of images from the train set that will be reserved for testing.
+        name (str): Name of the dataset. Used for logging/saving.
+        normal_dir (str | Path | Sequence): Directory containing normal images.
+        root (str | Path | None): Root folder containing normal and abnormal
+            directories. Defaults to ``None``.
+        abnormal_dir (str | Path | None | Sequence): Directory containing
+            abnormal images. Defaults to ``None``.
+        normal_test_dir (str | Path | Sequence | None): Directory containing
+            normal test images. Defaults to ``None``.
+        mask_dir (str | Path | Sequence | None): Directory containing mask
+            annotations. Defaults to ``None``.
+        normal_split_ratio (float): Ratio to split normal training images for
+            test set when no normal test images exist.
             Defaults to ``0.2``.
-        val_split_mode (ValSplitMode): Setting that determines how the validation subset is obtained.
+        extensions (tuple[str, ...] | None): Image extensions to include.
+            Defaults to ``None``.
+        train_batch_size (int): Training batch size.
+            Defaults to ``32``.
+        eval_batch_size (int): Validation/test batch size.
+            Defaults to ``32``.
+        num_workers (int): Number of workers for data loading.
+            Defaults to ``8``.
+        test_split_mode (TestSplitMode): Method to obtain test subset.
+            Defaults to ``TestSplitMode.FROM_DIR``.
+        test_split_ratio (float): Fraction of train images for testing.
+            Defaults to ``0.2``.
+        val_split_mode (ValSplitMode): Method to obtain validation subset.
             Defaults to ``ValSplitMode.FROM_TEST``.
-        val_split_ratio (float): Fraction of train or test images that will be reserved for validation.
+        val_split_ratio (float): Fraction of images for validation.
             Defaults to ``0.5``.
-        seed (int | None, optional): Seed used during random subset splitting.
+        seed (int | None): Random seed for splitting.
             Defaults to ``None``.
 
-    Examples:
-        The following code demonstrates how to use the ``Folder`` datamodule. Assume that the dataset is structured
-        as follows:
+    Example:
+        Create and setup a folder datamodule::
 
-        .. code-block:: bash
+            >>> from anomalib.data import Folder
+            >>> datamodule = Folder(
+            ...     name="custom",
+            ...     root="./datasets/custom",
+            ...     normal_dir="good",
+            ...     abnormal_dir="defect",
+            ...     mask_dir="mask"
+            ... )
+            >>> datamodule.setup()
 
-            $ tree sample_dataset
-            sample_dataset
-            ├── colour
-            │   ├── 00.jpg
-            │   ├── ...
-            │   └── x.jpg
-            ├── crack
-            │   ├── 00.jpg
-            │   ├── ...
-            │   └── y.jpg
-            ├── good
-            │   ├── ...
-            │   └── z.jpg
-            ├── LICENSE
-            └── mask
-                ├── colour
-                │   ├── ...
-                │   └── x.jpg
-                └── crack
-                    ├── ...
-                    └── y.jpg
+        Get a batch from train dataloader::
 
-        .. code-block:: python
+            >>> batch = next(iter(datamodule.train_dataloader()))
+            >>> batch.keys()
+            dict_keys(['image', 'label', 'mask', 'image_path', 'mask_path'])
 
-            folder_datamodule = Folder(
-                root=dataset_root,
-                normal_dir="good",
-                abnormal_dir="crack",
-                task=TaskType.SEGMENTATION,
-                mask_dir=dataset_root / "mask" / "crack",
-            )
-            folder_datamodule.setup()
+        Get a batch from test dataloader::
 
-        To access the training images,
-
-        .. code-block:: python
-
-            >> i, data = next(enumerate(folder_datamodule.train_dataloader()))
-            >> print(data.keys(), data["image"].shape)
-
-        To access the test images,
-
-        .. code-block:: python
-
-            >> i, data = next(enumerate(folder_datamodule.test_dataloader()))
-            >> print(data.keys(), data["image"].shape)
+            >>> batch = next(iter(datamodule.test_dataloader()))
+            >>> batch.keys()
+            dict_keys(['image', 'label', 'mask', 'image_path', 'mask_path'])
     """
 
     def __init__(
@@ -123,7 +115,6 @@ class Folder(AnomalibDataModule):
         train_batch_size: int = 32,
         eval_batch_size: int = 32,
         num_workers: int = 8,
-        task: TaskType | str = TaskType.SEGMENTATION,
         test_split_mode: TestSplitMode | str = TestSplitMode.FROM_DIR,
         test_split_ratio: float = 0.2,
         val_split_mode: ValSplitMode | str = ValSplitMode.FROM_TEST,
@@ -136,7 +127,6 @@ class Folder(AnomalibDataModule):
         self.abnormal_dir = abnormal_dir
         self.normal_test_dir = normal_test_dir
         self.mask_dir = mask_dir
-        self.task = TaskType(task)
         self.extensions = extensions
         test_split_mode = TestSplitMode(test_split_mode)
         val_split_mode = ValSplitMode(val_split_mode)
@@ -151,21 +141,11 @@ class Folder(AnomalibDataModule):
             seed=seed,
         )
 
-        if task == TaskType.SEGMENTATION and test_split_mode == TestSplitMode.FROM_DIR and mask_dir is None:
-            msg = (
-                f"Segmentation task requires mask directory if test_split_mode is {test_split_mode}. "
-                "You could set test_split_mode to {TestSplitMode.NONE} or provide a mask directory."
-            )
-            raise ValueError(
-                msg,
-            )
-
         self.normal_split_ratio = normal_split_ratio
 
     def _setup(self, _stage: str | None = None) -> None:
         self.train_data = FolderDataset(
             name=self.name,
-            task=self.task,
             split=Split.TRAIN,
             root=self.root,
             normal_dir=self.normal_dir,
@@ -177,7 +157,6 @@ class Folder(AnomalibDataModule):
 
         self.test_data = FolderDataset(
             name=self.name,
-            task=self.task,
             split=Split.TEST,
             root=self.root,
             normal_dir=self.normal_dir,
@@ -189,8 +168,9 @@ class Folder(AnomalibDataModule):
 
     @property
     def name(self) -> str:
-        """Name of the datamodule.
+        """Get name of the datamodule.
 
-        Folder datamodule overrides the name property to provide a custom name.
+        Returns:
+            Name of the datamodule.
         """
         return self._name

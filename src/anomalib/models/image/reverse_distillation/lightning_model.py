@@ -1,6 +1,27 @@
 """Anomaly Detection via Reverse Distillation from One-Class Embedding.
 
-https://arxiv.org/abs/2201.10703v2
+This module implements the Reverse Distillation model for anomaly detection as described in
+`Deng et al. (2022) <https://arxiv.org/abs/2201.10703v2>`_.
+
+The model consists of:
+- A pre-trained encoder (e.g. ResNet) that extracts multi-scale features
+- A bottleneck layer that compresses features into a compact representation
+- A decoder that reconstructs features back to the original feature space
+- A scoring mechanism based on reconstruction error
+
+Example:
+    >>> from anomalib.models.image import ReverseDistillation
+    >>> model = ReverseDistillation(
+    ...     backbone="wide_resnet50_2",
+    ...     layers=["layer1", "layer2", "layer3"]
+    ... )
+    >>> model.fit(train_dataloader)
+    >>> predictions = model.predict(test_dataloader)
+
+See Also:
+    - :class:`ReverseDistillation`: Lightning implementation of the model
+    - :class:`ReverseDistillationModel`: PyTorch implementation of the model
+    - :class:`ReverseDistillationLoss`: Loss function for training
 """
 
 # Copyright (C) 2022-2024 Intel Corporation
@@ -18,6 +39,7 @@ from anomalib.metrics import Evaluator
 from anomalib.models.components import AnomalibModule
 from anomalib.post_processing import PostProcessor
 from anomalib.pre_processing import PreProcessor
+from anomalib.visualization import Visualizer
 
 from .anomaly_map import AnomalyMapGenerationMode
 from .loss import ReverseDistillationLoss
@@ -48,10 +70,16 @@ class ReverseDistillation(AnomalibModule):
         anomaly_map_mode: AnomalyMapGenerationMode = AnomalyMapGenerationMode.ADD,
         pre_trained: bool = True,
         pre_processor: PreProcessor | bool = True,
-        post_processor: PostProcessor | None = None,
+        post_processor: PostProcessor | bool = True,
         evaluator: Evaluator | bool = True,
+        visualizer: Visualizer | bool = True,
     ) -> None:
-        super().__init__(pre_processor=pre_processor, post_processor=post_processor, evaluator=evaluator)
+        super().__init__(
+            pre_processor=pre_processor,
+            post_processor=post_processor,
+            evaluator=evaluator,
+            visualizer=visualizer,
+        )
         if self.input_size is None:
             msg = "Input size is required for Reverse Distillation model."
             raise ValueError(msg)

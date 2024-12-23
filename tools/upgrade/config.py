@@ -249,10 +249,6 @@ class ConfigAdapter:
         """Create checkpoint path directory in v1 config."""
         return {"ckpt_path": None}
 
-    def add_task_config(self) -> dict[str, str]:
-        """Create task field in v1 config."""
-        return {"task": self.old_config["dataset"]["task"]}
-
     def upgrade_trainer_config(self) -> dict[str, Any]:
         """Upgrade Trainer config to v1 format."""
         # Get the signature of the Trainer class's __init__ method
@@ -290,7 +286,6 @@ class ConfigAdapter:
         new_config.update(self.upgrade_visualization_config())
         new_config.update(self.upgrade_logging_config())
         new_config.update(self.add_seed_config())
-        new_config.update(self.add_task_config())
         new_config.update(self.add_results_dir_config())
         new_config.update(self.add_ckpt_path_config())
         new_config.update(self.upgrade_trainer_config())

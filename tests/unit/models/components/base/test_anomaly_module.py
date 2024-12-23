@@ -47,7 +47,6 @@ class TestAnomalibModule:
             "padim",
             "patchcore",
             "reverse_distillation",
-            "rkde",
             "stfpm",
             "uflow",
         ],

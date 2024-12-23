@@ -1,4 +1,29 @@
-"""Implements custom trainer for Anomalib."""
+"""Implements custom trainer for Anomalib.
+
+This module provides the core training engine for Anomalib models. The Engine class
+wraps PyTorch Lightning's Trainer with additional functionality specific to anomaly
+detection tasks.
+
+The engine handles:
+- Model training and validation
+- Metrics computation and logging
+- Checkpointing and model export
+- Distributed training support
+
+Example:
+    Create and use an engine:
+
+    >>> from anomalib.engine import Engine
+    >>> engine = Engine()
+    >>> engine.train()  # doctest: +SKIP
+    >>> engine.test()  # doctest: +SKIP
+
+    The engine can also be used with a custom configuration:
+
+    >>> from anomalib.config import Config
+    >>> config = Config(path="config.yaml")
+    >>> engine = Engine(config=config)  # doctest: +SKIP
+"""
 
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -15,41 +40,45 @@ from lightning.pytorch.utilities.types import _EVALUATE_OUTPUT, _PREDICT_OUTPUT,
 from torch.utils.data import DataLoader, Dataset
 from torchmetrics import Metric
 
-from anomalib import LearningType, TaskType
+from anomalib import LearningType
 from anomalib.callbacks.checkpoint import ModelCheckpoint
 from anomalib.callbacks.timer import TimerCallback
 from anomalib.data import AnomalibDataModule, AnomalibDataset, PredictDataset
 from anomalib.deploy import CompressionType, ExportType
 from anomalib.models import AnomalibModule
 from anomalib.utils.path import create_versioned_dir
-from anomalib.visualization import ImageVisualizer
 
 logger = logging.getLogger(__name__)
 
 
 class UnassignedError(Exception):
-    """Unassigned error."""
+    """Raised when a required component is not assigned."""
 
 
 class _TrainerArgumentsCache:
-    """Cache arguments.
+    """Cache arguments for PyTorch Lightning Trainer.
 
-    Since the Engine class accepts PyTorch Lightning Trainer arguments, we store these arguments using this class
-    before the trainer is instantiated.
+    Since the Engine class accepts PyTorch Lightning Trainer arguments, we store
+    these arguments using this class before the trainer is instantiated.
 
     Args:
-        (**kwargs): Trainer arguments that are cached
+        **kwargs: Trainer arguments that are cached.
 
     Example:
+        >>> from omegaconf import OmegaConf
         >>> conf = OmegaConf.load("config.yaml")
-        >>> cache =  _TrainerArgumentsCache(**conf.trainer)
+        >>> cache = _TrainerArgumentsCache(**conf.trainer)
         >>> cache.args
         {
             ...
             'max_epochs': 100,
             'val_check_interval': 0
         }
-        >>> model = Padim(layers=["layer1", "layer2", "layer3"], input_size=(256, 256), backbone="resnet18")
+        >>> model = Padim(
+        ...     layers=["layer1", "layer2", "layer3"],
+        ...     input_size=(256, 256),
+        ...     backbone="resnet18",
+        ... )
         >>> cache.update(model)
         Overriding max_epochs from 100 with 1 for Padim
         Overriding val_check_interval from 0 with 1.0 for Padim
@@ -65,10 +94,10 @@ class _TrainerArgumentsCache:
         self._cached_args = {**kwargs}
 
     def update(self, model: AnomalibModule) -> None:
-        """Replace cached arguments with arguments retrieved from the model.
+        """Replace cached arguments with arguments from the model.
 
         Args:
-            model (AnomalibModule): The model used for training
+            model (AnomalibModule): The model used for training.
         """
         for key, value in model.trainer_arguments.items():
             if key in self._cached_args and self._cached_args[key] != value:
@@ -78,42 +107,57 @@ class _TrainerArgumentsCache:
             self._cached_args[key] = value
 
     def requires_update(self, model: AnomalibModule) -> bool:
+        """Check if the cache needs to be updated.
+
+        Args:
+            model (AnomalibModule): Model to check against.
+
+        Returns:
+            bool: True if cache needs update, False otherwise.
+        """
         return any(self._cached_args.get(key, None) != value for key, value in model.trainer_arguments.items())
 
     @property
     def args(self) -> dict[str, Any]:
+        """Get the cached arguments.
+
+        Returns:
+            dict[str, Any]: Dictionary of cached trainer arguments.
+        """
         return self._cached_args
 
 
 class Engine:
-    """Anomalib Engine.
+    """Anomalib Engine for training and evaluating anomaly detection models.
 
-    .. note::
-
-        Refer to PyTorch Lightning's Trainer for a list of parameters for
-        details on other Trainer parameters.
+    The Engine class wraps PyTorch Lightning's Trainer with additional
+    functionality specific to anomaly detection tasks.
 
     Args:
-        callbacks (list[Callback]): Add a callback or list of callbacks.
-        normalization (NORMALIZATION, optional): Normalization method.
-            Defaults to NormalizationMethod.MIN_MAX.
-        threshold (THRESHOLD):
-            Thresholding method. Defaults to "F1AdaptiveThreshold".
-        task (TaskType, optional): Task type. Defaults to TaskType.SEGMENTATION.
-        image_metrics (list[str] | str | dict[str, dict[str, Any]] | None, optional): Image metrics to be used for
-            evaluation. Defaults to None.
-        pixel_metrics (list[str] | str | dict[str, dict[str, Any]] | None, optional): Pixel metrics to be used for
-            evaluation. Defaults to None.
-        default_root_dir (str, optional): Default root directory for the trainer.
-            The results will be saved in this directory.
-            Defaults to ``results``.
-        **kwargs: PyTorch Lightning Trainer arguments.
+        callbacks (list[Callback] | None, optional): Add a callback or list of
+            callbacks. Defaults to None.
+        logger (Logger | Iterable[Logger] | bool | None, optional): Logger (or
+            iterable collection of loggers) to use. Defaults to None.
+        default_root_dir (str | Path, optional): Default path for saving trainer
+            outputs. Defaults to "results".
+        **kwargs: Additional arguments passed to PyTorch Lightning Trainer.
+
+    Example:
+        >>> from anomalib.engine import Engine
+        >>> engine = Engine()
+        >>> engine.train()  # doctest: +SKIP
+        >>> engine.test()  # doctest: +SKIP
+
+        With custom configuration:
+
+        >>> from anomalib.config import Config
+        >>> config = Config(path="config.yaml")
+        >>> engine = Engine(config=config)  # doctest: +SKIP
     """
 
     def __init__(
         self,
         callbacks: list[Callback] | None = None,
-        task: TaskType | str = TaskType.SEGMENTATION,
         logger: Logger | Iterable[Logger] | bool | None = None,
         default_root_dir: str | Path = "results",
         **kwargs,
@@ -131,8 +175,6 @@ class Engine:
             default_root_dir=Path(default_root_dir),
             **kwargs,
         )
-
-        self.task = TaskType(task)
 
         self._trainer: Trainer | None = None
 
@@ -262,36 +304,13 @@ class Engine:
             self._cache.update(model)
 
         # Setup anomalib callbacks to be used with the trainer
-        self._setup_anomalib_callbacks(model)
-
-        # Temporarily set devices to 1 to avoid issues with multiple processes
-        self._cache.args["devices"] = 1
+        self._setup_anomalib_callbacks()
 
         # Instantiate the trainer if it is not already instantiated
         if self._trainer is None:
             self._trainer = Trainer(**self._cache.args)
 
-    def _setup_dataset_task(
-        self,
-        *dataloaders: EVAL_DATALOADERS | TRAIN_DATALOADERS | AnomalibDataModule | None,
-    ) -> None:
-        """Override the dataloader task with the task passed to the Engine.
-
-        Args:
-            dataloaders (TRAIN_DATALOADERS | EVAL_DATALOADERS): Dataloaders to be used for training or evaluation.
-        """
-        for dataloader in dataloaders:
-            if dataloader is not None and isinstance(dataloader, AnomalibDataModule):
-                for attribute in ("train_data", "val_data", "test_data"):
-                    if hasattr(dataloader, attribute):
-                        data: AnomalibDataset = getattr(dataloader, attribute)
-                        if data.task != self.task:
-                            logger.info(
-                                f"Overriding task from {data.task} with {self.task} for {dataloader.__class__}",
-                            )
-                            data.task = self.task
-
-    def _setup_anomalib_callbacks(self, model: AnomalibModule) -> None:
+    def _setup_anomalib_callbacks(self) -> None:
         """Set up callbacks for the trainer."""
         _callbacks: list[Callback] = []
 
@@ -305,18 +324,6 @@ class Engine:
                     auto_insert_metric_name=False,
                 ),
             )
-
-        # Add the post-processor callback.
-        if isinstance(model.post_processor, Callback):
-            _callbacks.append(model.post_processor)
-
-        # Add the metrics callback.
-        if isinstance(model.evaluator, Callback):
-            _callbacks.append(model.evaluator)
-
-        # Add the image visualizer callback if it is passed by the user.
-        if not any(isinstance(callback, ImageVisualizer) for callback in self._cache.args["callbacks"]):
-            _callbacks.append(ImageVisualizer())
 
         _callbacks.append(TimerCallback())
 
@@ -402,7 +409,6 @@ class Engine:
             versioned_dir=True,
         )
         self._setup_trainer(model)
-        self._setup_dataset_task(train_dataloaders, val_dataloaders, datamodule)
         if model.learning_type in {LearningType.ZERO_SHOT, LearningType.FEW_SHOT}:
             # if the model is zero-shot or few-shot, we only need to run validate for normalization and thresholding
             self.trainer.validate(model, val_dataloaders, datamodule=datamodule, ckpt_path=ckpt_path)
@@ -455,7 +461,6 @@ class Engine:
             ckpt_path = Path(ckpt_path).resolve()
         if model:
             self._setup_trainer(model)
-        self._setup_dataset_task(dataloaders)
         return self.trainer.validate(model, dataloaders, ckpt_path, verbose, datamodule)
 
     def test(
@@ -468,8 +473,7 @@ class Engine:
     ) -> _EVALUATE_OUTPUT:
         """Test the model using the trainer.
 
-        Sets up the trainer and the dataset task if not already set up. Then validates the model if needed and
-        finally tests the model.
+        Then validates the model if needed and then tests the model.
 
         Args:
             model (AnomalibModule | None, optional):
@@ -548,7 +552,6 @@ class Engine:
             msg = "`Engine.test()` requires an `AnomalibModule` when it hasn't been passed in a previous run."
             raise RuntimeError(msg)
 
-        self._setup_dataset_task(dataloaders)
         if self._should_run_validation(model or self.model, ckpt_path):
             logger.info("Running validation before testing to collect normalization metrics and/or thresholds.")
             self.trainer.validate(model, dataloaders, None, verbose=False, datamodule=datamodule)
@@ -566,8 +569,7 @@ class Engine:
     ) -> _PREDICT_OUTPUT | None:
         """Predict using the model using the trainer.
 
-        Sets up the trainer and the dataset task if not already set up. Then validates the model if needed and a
-        validation dataloader is available. Finally, predicts using the model.
+        Validates the model if needed and if a validation dataloader is available. Then predicts using the model.
 
         Args:
             model (AnomalibModule | None, optional):
@@ -652,8 +654,6 @@ class Engine:
             dataloaders.append(DataLoader(dataset, collate_fn=dataset.collate_fn))
         dataloaders = dataloaders or None
 
-        self._setup_dataset_task(dataloaders, datamodule)
-
         if self._should_run_validation(model or self.model, ckpt_path):
             logger.info("Running validation before predicting to collect normalization metrics and/or thresholds.")
             self.trainer.validate(
@@ -716,12 +716,6 @@ class Engine:
             versioned_dir=True,
         )
         self._setup_trainer(model)
-        self._setup_dataset_task(
-            train_dataloaders,
-            val_dataloaders,
-            test_dataloaders,
-            datamodule,
-        )
         if model.learning_type in {LearningType.ZERO_SHOT, LearningType.FEW_SHOT}:
             # if the model is zero-shot or few-shot, we only need to run validate for normalization and thresholding
             self.trainer.validate(model, val_dataloaders, None, verbose=False, datamodule=datamodule)
@@ -814,7 +808,6 @@ class Engine:
             exported_model_path = model.to_openvino(
                 export_root=export_root,
                 input_size=input_size,
-                task=self.task,
                 compression_type=compression_type,
                 datamodule=datamodule,
                 metric=metric,

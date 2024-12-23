@@ -1,4 +1,29 @@
-"""Visual Anomaly Model for Zero/Few-Shot Anomaly Classification."""
+"""Vision Language Model (VLM) based Anomaly Detection.
+
+This module implements anomaly detection using Vision Language Models (VLMs) like
+GPT-4V, LLaVA, etc. The models use natural language prompting to detect anomalies
+in images by comparing them with reference normal images.
+
+The module supports both zero-shot and few-shot learning approaches:
+
+- Zero-shot: No reference images needed
+- Few-shot: Uses ``k`` reference normal images for better context
+
+Example:
+    >>> from anomalib.models.image import VlmAd
+    >>> model = VlmAd(  # doctest: +SKIP
+    ...     model="gpt-4-vision-preview",
+    ...     api_key="YOUR_API_KEY",
+    ...     k_shot=3
+    ... )
+    >>> model.fit(["normal1.jpg", "normal2.jpg"])  # doctest: +SKIP
+    >>> prediction = model.predict("test.jpg")  # doctest: +SKIP
+
+See Also:
+    - :class:`VlmAd`: Main model class for VLM-based anomaly detection
+    - :mod:`.backends`: Different VLM backend implementations
+    - :mod:`.utils`: Utility functions for prompting and responses
+"""
 
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -21,7 +46,41 @@ logger = logging.getLogger(__name__)
 
 
 class VlmAd(AnomalibModule):
-    """Visual anomaly model."""
+    """Vision Language Model (VLM) based anomaly detection model.
+
+    This model uses VLMs like GPT-4V, LLaVA, etc. to detect anomalies in images by
+    comparing them with reference normal images through natural language prompting.
+
+    Args:
+        model (ModelName | str): Name of the VLM model to use. Can be one of:
+            - ``ModelName.LLAMA_OLLAMA``
+            - ``ModelName.GPT_4O_MINI``
+            - ``ModelName.VICUNA_7B_HF``
+            - ``ModelName.VICUNA_13B_HF``
+            - ``ModelName.MISTRAL_7B_HF``
+            Defaults to ``ModelName.LLAMA_OLLAMA``.
+        api_key (str | None, optional): API key for models that require
+            authentication. Defaults to None.
+        k_shot (int, optional): Number of reference normal images to use for
+            few-shot learning. If 0, uses zero-shot approach. Defaults to 0.
+
+    Example:
+        >>> from anomalib.models.image import VlmAd
+        >>> # Zero-shot approach
+        >>> model = VlmAd(  # doctest: +SKIP
+        ...     model="gpt-4-vision-preview",
+        ...     api_key="YOUR_API_KEY"
+        ... )
+        >>> # Few-shot approach with 3 reference images
+        >>> model = VlmAd(  # doctest: +SKIP
+        ...     model="gpt-4-vision-preview",
+        ...     api_key="YOUR_API_KEY",
+        ...     k_shot=3
+        ... )
+
+    Raises:
+        ValueError: If an unsupported VLM model is specified.
+    """
 
     def __init__(
         self,
@@ -53,7 +112,12 @@ class VlmAd(AnomalibModule):
             self.collect_reference_images(dataloader)
 
     def collect_reference_images(self, dataloader: DataLoader) -> None:
-        """Collect reference images for few-shot inference."""
+        """Collect reference images for few-shot inference.
+
+        Args:
+            dataloader (DataLoader): DataLoader containing normal images for
+                reference.
+        """
         for batch in dataloader:
             for img_path in batch.image_path:
                 self.vlm_backend.add_reference_images(img_path)
@@ -62,7 +126,11 @@ class VlmAd(AnomalibModule):
 
     @property
     def prompt(self) -> Prompt:
-        """Get the prompt."""
+        """Get the prompt for VLM interaction.
+
+        Returns:
+            Prompt: Object containing prompts for prediction and few-shot learning.
+        """
         return Prompt(
             predict=(
                 "You are given an image. It is either normal or anomalous."
@@ -78,7 +146,16 @@ class VlmAd(AnomalibModule):
         )
 
     def validation_step(self, batch: ImageBatch, *args, **kwargs) -> ImageBatch:
-        """Validation step."""
+        """Perform validation step.
+
+        Args:
+            batch (ImageBatch): Batch of images to validate.
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+
+        Returns:
+            ImageBatch: Batch with predictions and explanations added.
+        """
         del args, kwargs  # These variables are not used.
         assert batch.image_path is not None
         responses = [(self.vlm_backend.predict(img_path, self.prompt)) for img_path in batch.image_path]
@@ -88,29 +165,48 @@ class VlmAd(AnomalibModule):
 
     @property
     def learning_type(self) -> LearningType:
-        """The learning type of the model."""
+        """Get the learning type of the model.
+
+        Returns:
+            LearningType: ZERO_SHOT if k_shot=0, else FEW_SHOT.
+        """
         return LearningType.ZERO_SHOT if self.k_shot == 0 else LearningType.FEW_SHOT
 
     @property
     def trainer_arguments(self) -> dict[str, int | float]:
-        """Doesn't need training."""
+        """Get trainer arguments.
+
+        Returns:
+            dict[str, int | float]: Empty dict as no training is needed.
+        """
         return {}
 
     @staticmethod
     def configure_transforms(image_size: tuple[int, int] | None = None) -> None:
-        """This modes does not require any transforms."""
+        """Configure image transforms.
+
+        Args:
+            image_size (tuple[int, int] | None, optional): Ignored as each backend
+                has its own transforms. Defaults to None.
+        """
         if image_size is not None:
             logger.warning("Ignoring image_size argument as each backend has its own transforms.")
 
-    def default_post_processor(self) -> PostProcessor | None:  # noqa: PLR6301
-        """Post processing is not required for this model."""
+    @classmethod
+    def configure_post_processor(cls) -> PostProcessor | None:
+        """Configure post processor.
+
+        Returns:
+            PostProcessor | None: None as post processing is not required.
+        """
         return None
 
     @staticmethod
     def configure_evaluator() -> Evaluator:
-        """Default evaluator.
+        """Configure default evaluator.
 
-        Override in subclass for model-specific evaluator behaviour.
+        Returns:
+            Evaluator: Evaluator configured with F1Score metric.
         """
         image_f1score = F1Score(fields=["pred_label", "gt_label"], prefix="image_")
         return Evaluator(test_metrics=image_f1score)

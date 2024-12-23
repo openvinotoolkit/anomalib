@@ -1,4 +1,38 @@
-"""Mixin for exporting models to disk."""
+"""Mixin for exporting anomaly detection models to disk.
+
+This mixin provides functionality to export models to various formats:
+- PyTorch (.pt)
+- ONNX (.onnx)
+- OpenVINO IR (.xml/.bin)
+
+The mixin supports different compression types for OpenVINO exports:
+- FP16 compression
+- INT8 quantization
+- Post-training quantization (PTQ)
+- Accuracy-aware quantization (ACQ)
+
+Example:
+    Export a trained model to different formats:
+
+    >>> from anomalib.models import Patchcore
+    >>> from anomalib.data import Visa
+    >>> from anomalib.deploy.export import CompressionType
+    ...
+    >>> # Initialize and train model
+    >>> model = Patchcore()
+    >>> datamodule = Visa()
+    >>> # Export to PyTorch format
+    >>> model.to_torch("./exports")
+    >>> # Export to ONNX
+    >>> model.to_onnx("./exports", input_size=(224, 224))
+    >>> # Export to OpenVINO with INT8 quantization
+    >>> model.to_openvino(
+    ...     "./exports",
+    ...     input_size=(224, 224),
+    ...     compression_type=CompressionType.INT8_PTQ,
+    ...     datamodule=datamodule
+    ... )
+"""
 
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -29,7 +63,16 @@ logger = logging.getLogger(__name__)
 
 
 class ExportMixin:
-    """This mixin allows exporting models to torch and ONNX/OpenVINO."""
+    """Mixin class that enables exporting models to various formats.
+
+    This mixin provides methods to export models to PyTorch (.pt), ONNX (.onnx),
+    and OpenVINO IR (.xml/.bin) formats. For OpenVINO exports, it supports
+    different compression types including FP16, INT8, PTQ and ACQ.
+
+    The mixin requires the host class to have:
+        - A ``model`` attribute of type ``nn.Module``
+        - A ``device`` attribute of type ``torch.device``
+    """
 
     model: nn.Module
     device: torch.device
@@ -38,40 +81,22 @@ class ExportMixin:
         self,
         export_root: Path | str,
     ) -> Path:
-        """Export AnomalibModel to torch.
+        """Export model to PyTorch format.
 
         Args:
-            export_root (Path): Path to the output folder.
-            transform (Transform, optional): Input transforms used for the model. If not provided, the transform is
-                taken from the model.
-                Defaults to ``None``.
-            post_processor (nn.Module, optional): Post-processing module to apply to the model output.
-                Defaults to ``None``.
-            task (TaskType | None): Task type.
-                Defaults to ``None``.
+            export_root (Path | str): Path to the output folder
 
         Returns:
-            Path: Path to the exported pytorch model.
+            Path: Path to the exported PyTorch model (.pt file)
 
         Examples:
-            Assume that we have a model to train and we want to export it to torch format.
+            Export a trained model to PyTorch format:
 
-            >>> from anomalib.data import Visa
             >>> from anomalib.models import Patchcore
-            >>> from anomalib.engine import Engine
-            ...
-            >>> datamodule = Visa()
             >>> model = Patchcore()
-            >>> engine = Engine()
-            ...
-            >>> engine.fit(model, datamodule)
-
-            Now that we have a model trained, we can export it to torch format.
-
-            >>> model.to_torch(
-            ...     export_root="path/to/export",
-            ...     task=datamodule.test_data.task,
-            ... )
+            >>> # Train model...
+            >>> model.to_torch("./exports")
+            PosixPath('./exports/weights/torch/model.pt')
         """
         export_root = _create_export_root(export_root, ExportType.TORCH)
         pt_model_path = export_root / "model.pt"
@@ -86,45 +111,29 @@ class ExportMixin:
         export_root: Path | str,
         input_size: tuple[int, int] | None = None,
     ) -> Path:
-        """Export model to onnx.
+        """Export model to ONNX format.
 
         Args:
-            export_root (Path): Path to the root folder of the exported model.
-            input_size (tuple[int, int] | None, optional): Image size used as the input for onnx converter.
-                Defaults to None.
-            transform (Transform, optional): Input transforms used for the model. If not provided, the transform is
-                taken from the model.
-                Defaults to ``None``.
-            post_processor (nn.Module, optional): Post-processing module to apply to the model output.
-                Defaults to ``None``.
-            task (TaskType | None): Task type.
-                Defaults to ``None``.
+            export_root (Path | str): Path to the output folder
+            input_size (tuple[int, int] | None): Input image dimensions (height, width).
+                If ``None``, uses dynamic input shape. Defaults to ``None``
 
         Returns:
-            Path: Path to the exported onnx model.
+            Path: Path to the exported ONNX model (.onnx file)
 
         Examples:
-            Export the Lightning Model to ONNX:
+            Export model with fixed input size:
 
             >>> from anomalib.models import Patchcore
-            >>> from anomalib.data import Visa
-            ...
-            >>> datamodule = Visa()
             >>> model = Patchcore()
-            ...
-            >>> model.to_onnx(
-            ...     export_root="path/to/export",
-            ...     transform=datamodule.test_data.transform,
-            ...     task=datamodule.test_data.task
-            ... )
+            >>> # Train model...
+            >>> model.to_onnx("./exports", input_size=(224, 224))
+            PosixPath('./exports/weights/onnx/model.onnx')
 
-            Using Custom Transforms:
-            This example shows how to use a custom ``Compose`` object for the ``transform`` argument.
+            Export model with dynamic input size:
 
-            >>> model.to_onnx(
-            ...     export_root="path/to/export",
-            ...     task="segmentation",
-            ... )
+            >>> model.to_onnx("./exports")
+            PosixPath('./exports/weights/onnx/model.onnx')
         """
         export_root = _create_export_root(export_root, ExportType.ONNX)
         input_shape = torch.zeros((1, 3, *input_size)) if input_size else torch.zeros((1, 3, 1, 1))
@@ -132,7 +141,7 @@ class ExportMixin:
         dynamic_axes = (
             {"input": {0: "batch_size"}, "output": {0: "batch_size"}}
             if input_size
-            else {"input": {0: "batch_size", 2: "height", 3: "width"}, "output": {0: "batch_size"}}
+            else {"input": {0: "batch_size", 2: "height", 3: "weight"}, "output": {0: "batch_size"}}
         )
         onnx_path = export_root / "model.onnx"
         # apply pass through the model to get the output names
@@ -140,7 +149,7 @@ class ExportMixin:
         output_names = [name for name, value in self.eval()(input_shape)._asdict().items() if value is not None]
         torch.onnx.export(
             self,
-            input_shape.to(self.device),
+            (input_shape.to(self.device),),
             str(onnx_path),
             opset_version=14,
             dynamic_axes=dynamic_axes,
@@ -160,78 +169,46 @@ class ExportMixin:
         ov_args: dict[str, Any] | None = None,
         task: TaskType | None = None,
     ) -> Path:
-        """Convert onnx model to OpenVINO IR.
+        """Export model to OpenVINO IR format.
 
         Args:
-            export_root (Path): Path to the export folder.
-            input_size (tuple[int, int] | None, optional): Input size of the model. Used for adding metadata to the IR.
-                Defaults to None.
-            transform (Transform, optional): Input transforms used for the model. If not provided, the transform is
-                taken from the model.
-                Defaults to ``None``.
-            compression_type (CompressionType, optional): Compression type for better inference performance.
-                Defaults to ``None``.
-            datamodule (AnomalibDataModule | None, optional): Lightning datamodule.
-                Must be provided if ``CompressionType.INT8_PTQ`` or ``CompressionType.INT8_ACQ`` is selected.
-                Defaults to ``None``.
-            metric (Metric | None, optional): Metric to measure quality loss when quantizing.
-                Must be provided if ``CompressionType.INT8_ACQ`` is selected and must return higher value for better
-                performance of the model.
-                Defaults to ``None``.
-            ov_args (dict | None): Model optimizer arguments for OpenVINO model conversion.
-                Defaults to ``None``.
-            task (TaskType | None): Task type.
-                Defaults to ``None``.
+            export_root (Path | str): Path to the output folder
+            input_size (tuple[int, int] | None): Input image dimensions (height, width).
+                If ``None``, uses dynamic input shape. Defaults to ``None``
+            compression_type (CompressionType | None): Type of compression to apply.
+                Options: ``FP16``, ``INT8``, ``INT8_PTQ``, ``INT8_ACQ``.
+                Defaults to ``None``
+            datamodule (AnomalibDataModule | None): DataModule for quantization.
+                Required for ``INT8_PTQ`` and ``INT8_ACQ``. Defaults to ``None``
+            metric (Metric | None): Metric for accuracy-aware quantization.
+                Required for ``INT8_ACQ``. Defaults to ``None``
+            ov_args (dict[str, Any] | None): OpenVINO model optimizer arguments.
+                Defaults to ``None``
+            task (TaskType | None): Task type (classification/segmentation).
+                Defaults to ``None``
 
         Returns:
-            Path: Path to the exported onnx model.
+            Path: Path to the exported OpenVINO model (.xml file)
 
         Raises:
-            ModuleNotFoundError: If OpenVINO is not installed.
-
-        Returns:
-            Path: Path to the exported OpenVINO IR.
+            ModuleNotFoundError: If OpenVINO is not installed
+            ValueError: If required arguments for quantization are missing
 
         Examples:
-            Export the Lightning Model to OpenVINO IR:
-            This example demonstrates how to export the Lightning Model to OpenVINO IR.
+            Export model with FP16 compression:
 
-            >>> from anomalib.models import Patchcore
-            >>> from anomalib.data import Visa
-            ...
-            >>> datamodule = Visa()
-            >>> model = Patchcore()
-            ...
             >>> model.to_openvino(
-            ...     export_root="path/to/export",
-            ...     transform=datamodule.test_data.transform,
-            ...     task=datamodule.test_data.task
+            ...     "./exports",
+            ...     input_size=(224, 224),
+            ...     compression_type=CompressionType.FP16
             ... )
 
-            Export and Quantize the Model (OpenVINO IR):
-            This example demonstrates how to export and quantize the model to OpenVINO IR.
+            Export with INT8 post-training quantization:
 
-            >>> from anomalib.models import Patchcore
-            >>> from anomalib.data import Visa
-            >>> datamodule = Visa()
-            >>> model = Patchcore()
             >>> model.to_openvino(
-            ...     export_root="path/to/export",
+            ...     "./exports",
             ...     compression_type=CompressionType.INT8_PTQ,
-            ...     datamodule=datamodule,
-            ...     task=datamodule.test_data.task
-            ... )
-
-            Using Custom Transforms:
-            This example shows how to use a custom ``Transform`` object for the ``transform`` argument.
-
-            >>> from torchvision.transforms.v2 import Resize
-            >>> transform = Resize(224, 224)
-            ...
-            >>> model.to_openvino(
-            ...     export_root="path/to/export",
-            ...     transform=transform,
-            ...     task="segmentation",
+            ...     datamodule=datamodule
             ... )
         """
         if not module_available("openvino"):
@@ -264,23 +241,25 @@ class ExportMixin:
         metric: Metric | None = None,
         task: TaskType | None = None,
     ) -> "CompiledModel":
-        """Compress OpenVINO model with NNCF.
+        """Compress OpenVINO model using NNCF.
 
-            model (CompiledModel): Model already exported to OpenVINO format.
-            compression_type (CompressionType, optional): Compression type for better inference performance.
-                Defaults to ``None``.
-            datamodule (AnomalibDataModule | None, optional): Lightning datamodule.
-                Must be provided if ``CompressionType.INT8_PTQ`` or ``CompressionType.INT8_ACQ`` is selected.
-                Defaults to ``None``.
-            metric (Metric | str | None, optional): Metric to measure quality loss when quantizing.
-                Must be provided if ``CompressionType.INT8_ACQ`` is selected and must return higher value for better
-                performance of the model.
-                Defaults to ``None``.
-            task (TaskType | None): Task type.
-                Defaults to ``None``.
+        Args:
+            model (CompiledModel): OpenVINO model to compress
+            compression_type (CompressionType | None): Type of compression to apply.
+                Defaults to ``None``
+            datamodule (AnomalibDataModule | None): DataModule for quantization.
+                Required for ``INT8_PTQ`` and ``INT8_ACQ``. Defaults to ``None``
+            metric (Metric | None): Metric for accuracy-aware quantization.
+                Required for ``INT8_ACQ``. Defaults to ``None``
+            task (TaskType | None): Task type (classification/segmentation).
+                Defaults to ``None``
 
         Returns:
-            model (CompiledModel): Model in the OpenVINO format compressed with NNCF quantization.
+            CompiledModel: Compressed OpenVINO model
+
+        Raises:
+            ModuleNotFoundError: If NNCF is not installed
+            ValueError: If compression type is not recognized
         """
         if not module_available("nncf"):
             logger.exception("Could not find NCCF. Please check NNCF installation.")
@@ -293,7 +272,6 @@ class ExportMixin:
         elif compression_type == CompressionType.INT8_PTQ:
             model = self._post_training_quantization_ov(model, datamodule)
         elif compression_type == CompressionType.INT8_ACQ:
-            assert task is not None, "Task must be provided for OpenVINO accuracy aware compression"
             model = self._accuracy_control_quantization_ov(model, datamodule, metric, task)
         else:
             msg = f"Unrecognized compression type: {compression_type}"
@@ -306,15 +284,18 @@ class ExportMixin:
         model: "CompiledModel",
         datamodule: AnomalibDataModule | None = None,
     ) -> "CompiledModel":
-        """Post-Training Quantization model with NNCF.
+        """Apply post-training quantization to OpenVINO model.
 
-            model (CompiledModel): Model already exported to OpenVINO format.
-            datamodule (AnomalibDataModule | None, optional): Lightning datamodule.
-                Must be provided if ``CompressionType.INT8_PTQ`` or ``CompressionType.INT8_ACQ`` is selected.
-                Defaults to ``None``.
+        Args:
+            model (CompiledModel): OpenVINO model to quantize
+            datamodule (AnomalibDataModule | None): DataModule for calibration.
+                Must contain at least 300 images. Defaults to ``None``
 
         Returns:
-            model (CompiledModel): Quantized model.
+            CompiledModel: Quantized OpenVINO model
+
+        Raises:
+            ValueError: If datamodule is not provided
         """
         import nncf
 
@@ -344,21 +325,24 @@ class ExportMixin:
         metric: Metric | None = None,
         task: TaskType | None = None,
     ) -> "CompiledModel":
-        """Accuracy-Control Quantization with NNCF.
+        """Apply accuracy-aware quantization to OpenVINO model.
 
-            model (CompiledModel): Model already exported to OpenVINO format.
-            datamodule (AnomalibDataModule | None, optional): Lightning datamodule.
-                Must be provided if ``CompressionType.INT8_PTQ`` or ``CompressionType.INT8_ACQ`` is selected.
-                Defaults to ``None``.
-            metric (Metric | None, optional): Metric to measure quality loss when quantizing.
-                Must be provided if ``CompressionType.INT8_ACQ`` is selected and must return higher value for better
-                performance of the model.
-                Defaults to ``None``.
-            task (TaskType | None): Task type.
-                Defaults to ``None``.
+        Args:
+            model (CompiledModel): OpenVINO model to quantize
+            datamodule (AnomalibDataModule | None): DataModule for calibration
+                and validation. Must contain at least 300 images.
+                Defaults to ``None``
+            metric (Metric | None): Metric to measure accuracy during quantization.
+                Higher values should indicate better performance.
+                Defaults to ``None``
+            task (TaskType | None): Task type (classification/segmentation).
+                Defaults to ``None``
 
         Returns:
-            model (CompiledModel): Quantized model.
+            CompiledModel: Quantized OpenVINO model
+
+        Raises:
+            ValueError: If datamodule or metric is not provided
         """
         import nncf
 
@@ -366,6 +350,9 @@ class ExportMixin:
             msg = "Datamodule must be provided for OpenVINO INT8_PTQ compression"
             raise ValueError(msg)
         datamodule.setup("fit")
+
+        # if task is not provided, use the task from the datamodule
+        task = task or datamodule.task
 
         if metric is None:
             msg = "Metric must be provided for OpenVINO INT8_ACQ compression"
@@ -398,14 +385,14 @@ class ExportMixin:
 
 
 def _create_export_root(export_root: str | Path, export_type: ExportType) -> Path:
-    """Create export directory.
+    """Create directory structure for model export.
 
     Args:
-        export_root (str | Path): Path to the root folder of the exported model.
-        export_type (ExportType): Mode to export the model. Torch, ONNX or OpenVINO.
+        export_root (str | Path): Root directory for exports
+        export_type (ExportType): Type of export (torch/onnx/openvino)
 
     Returns:
-        Path: Path to the export directory.
+        Path: Created directory path
     """
     export_root = Path(export_root) / "weights" / export_type.value
     export_root.mkdir(parents=True, exist_ok=True)

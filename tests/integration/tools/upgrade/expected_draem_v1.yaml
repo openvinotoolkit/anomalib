@@ -6,7 +6,6 @@ data:
     train_batch_size: 72
     eval_batch_size: 32
     num_workers: 8
-    task: segmentation
     test_split_mode: from_dir
     test_split_ratio: 0.2
     val_split_mode: same_as_test
@@ -22,8 +21,9 @@ model:
       - 0.1
       - 1.0
     pre_processor: true
-    post_processor: null
+    post_processor: true
     evaluator: true
+    visualizer: true
 normalization:
   normalization_method: min_max
 metrics:
@@ -45,7 +45,6 @@ visualization:
 logging:
   log_graph: false
 seed_everything: true
-task: segmentation
 results_dir:
   path: ./results
   unique: false

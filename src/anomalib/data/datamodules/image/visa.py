@@ -1,19 +1,41 @@
 """Visual Anomaly (VisA) Data Module.
 
-Description:
-    This script contains PyTorch Lightning DataModule for the Visual Anomal
-    (VisA) dataset. If the dataset is not on the file system, the script
-    downloads and extracts the dataset and create PyTorch data objects.
+This module provides a PyTorch Lightning DataModule for the Visual Anomaly (VisA)
+dataset. If the dataset is not available locally, it will be downloaded and
+extracted automatically.
+
+Example:
+    Create a VisA datamodule::
+
+        >>> from anomalib.data import Visa
+        >>> datamodule = Visa(
+        ...     root="./datasets/visa",
+        ...     category="capsules"
+        ... )
+
+Notes:
+    The dataset will be automatically downloaded and converted to the required
+    format when first used. The directory structure after preparation will be::
+
+        datasets/
+        └── visa/
+            ├── visa_pytorch/
+            │   ├── candle/
+            │   ├── capsules/
+            │   └── ...
+            └── VisA_20220922.tar
 
 License:
     The VisA dataset is released under the Creative Commons
     Attribution-NonCommercial-ShareAlike 4.0 International License
-    (CC BY-NC-SA 4.0)(https://creativecommons.org/licenses/by-nc-sa/4.0/).
+    (CC BY-NC-SA 4.0).
+    https://creativecommons.org/licenses/by-nc-sa/4.0/
 
 Reference:
-    - Zou, Y., Jeong, J., Pemula, L., Zhang, D., & Dabeer, O. (2022). SPot-the-Difference
-      Self-supervised Pre-training for Anomaly Detection and Segmentation. In European
-      Conference on Computer Vision (pp. 392-408). Springer, Cham.
+    Zou, Y., Jeong, J., Pemula, L., Zhang, D., & Dabeer, O. (2022).
+    SPot-the-Difference Self-supervised Pre-training for Anomaly Detection
+    and Segmentation. In European Conference on Computer Vision (pp. 392-408).
+    Springer, Cham.
 """
 
 # Copyright (C) 2022-2024 Intel Corporation
@@ -29,7 +51,6 @@ from pathlib import Path
 
 import cv2
 
-from anomalib import TaskType
 from anomalib.data.datamodules.base.image import AnomalibDataModule
 from anomalib.data.datasets.image.visa import VisaDataset
 from anomalib.data.utils import DownloadInfo, Split, TestSplitMode, ValSplitMode, download_and_extract
@@ -47,27 +68,25 @@ class Visa(AnomalibDataModule):
     """VisA Datamodule.
 
     Args:
-        root (Path | str): Path to the root of the dataset
+        root (Path | str): Path to the root of the dataset.
             Defaults to ``"./datasets/visa"``.
-        category (str): Category of the Visa dataset such as ``candle``.
-            Defaults to ``"candle"``.
+        category (str): Category of the VisA dataset (e.g. ``"candle"``).
+            Defaults to ``"capsules"``.
         train_batch_size (int, optional): Training batch size.
             Defaults to ``32``.
         eval_batch_size (int, optional): Test batch size.
             Defaults to ``32``.
-        num_workers (int, optional): Number of workers.
+        num_workers (int, optional): Number of workers for data loading.
             Defaults to ``8``.
-        task (TaskType): Task type, 'classification', 'detection' or 'segmentation'
-            Defaults to ``TaskType.SEGMENTATION``.
-        test_split_mode (TestSplitMode): Setting that determines how the testing subset is obtained.
+        test_split_mode (TestSplitMode | str): Method to create test set.
             Defaults to ``TestSplitMode.FROM_DIR``.
-        test_split_ratio (float): Fraction of images from the train set that will be reserved for testing.
+        test_split_ratio (float): Fraction of data to use for testing.
             Defaults to ``0.2``.
-        val_split_mode (ValSplitMode): Setting that determines how the validation subset is obtained.
+        val_split_mode (ValSplitMode | str): Method to create validation set.
             Defaults to ``ValSplitMode.SAME_AS_TEST``.
-        val_split_ratio (float): Fraction of train or test images that will be reserved for validation.
-            Defatuls to ``0.5``.
-        seed (int | None, optional): Seed which may be set to a fixed value for reproducibility.
+        val_split_ratio (float): Fraction of data to use for validation.
+            Defaults to ``0.5``.
+        seed (int | None, optional): Random seed for reproducibility.
             Defaults to ``None``.
     """
 
@@ -78,7 +97,6 @@ class Visa(AnomalibDataModule):
         train_batch_size: int = 32,
         eval_batch_size: int = 32,
         num_workers: int = 8,
-        task: TaskType | str = TaskType.SEGMENTATION,
         test_split_mode: TestSplitMode | str = TestSplitMode.FROM_DIR,
         test_split_ratio: float = 0.2,
         val_split_mode: ValSplitMode | str = ValSplitMode.SAME_AS_TEST,
@@ -96,81 +114,49 @@ class Visa(AnomalibDataModule):
             seed=seed,
         )
 
-        self.task = TaskType(task)
         self.root = Path(root)
         self.split_root = self.root / "visa_pytorch"
         self.category = category
 
     def _setup(self, _stage: str | None = None) -> None:
         self.train_data = VisaDataset(
-            task=self.task,
             split=Split.TRAIN,
             root=self.split_root,
             category=self.category,
         )
         self.test_data = VisaDataset(
-            task=self.task,
             split=Split.TEST,
             root=self.split_root,
             category=self.category,
         )
 
     def prepare_data(self) -> None:
-        """Download the dataset if not available.
+        """Download and prepare the dataset if not available.
 
-        This method checks if the specified dataset is available in the file system.
-        If not, it downloads and extracts the dataset into the appropriate directory.
+        This method checks if the dataset exists and is properly formatted.
+        If not, it downloads and prepares the data in the following steps:
 
-        Example:
-            Assume the dataset is not available on the file system.
-            Here's how the directory structure looks before and after calling the
-            `prepare_data` method:
+        1. If the processed dataset exists (``visa_pytorch/{category}``), do
+           nothing
+        2. If the raw dataset exists but isn't processed, apply the train/test
+           split
+        3. If the dataset doesn't exist, download, extract, and process it
 
-            Before:
+        The final directory structure will be::
 
-            .. code-block:: bash
-
-                $ tree datasets
-                datasets
-                ├── dataset1
-                └── dataset2
-
-            Calling the method:
-
-            .. code-block:: python
-
-                >> datamodule = Visa()
-                >> datamodule.prepare_data()
-
-            After:
-
-            .. code-block:: bash
-
-                $ tree datasets
-                datasets
-                ├── dataset1
-                ├── dataset2
-                └── visa
-                    ├── candle
-                    ├── ...
-                    ├── pipe_fryum
-                    │   ├── Data
-                    │   └── image_anno.csv
-                    ├── split_csv
-                    │   ├── 1cls.csv
-                    │   ├── 2cls_fewshot.csv
-                    │   └── 2cls_highshot.csv
-                    ├── VisA_20220922.tar
-                    └── visa_pytorch
-                        ├── candle
-                        ├── ...
-                        ├── pcb4
-                        └── pipe_fryum
-
-            ``prepare_data`` ensures that the dataset is converted to MVTec
-            format. ``visa_pytorch`` is the directory that contains the dataset
-            in the MVTec format. ``visa`` is the directory that contains the
-            original dataset.
+            datasets/
+            └── visa/
+                ├── visa_pytorch/
+                │   ├── candle/
+                │   │   ├── train/
+                │   │   │   └── good/
+                │   │   ├── test/
+                │   │   │   ├── good/
+                │   │   │   └── bad/
+                │   │   └── ground_truth/
+                │   │       └── bad/
+                │   └── ...
+                └── VisA_20220922.tar
         """
         if (self.split_root / self.category).is_dir():
             # dataset is available, and split has been applied
@@ -188,7 +174,7 @@ class Visa(AnomalibDataModule):
     def apply_cls1_split(self) -> None:
         """Apply the 1-class subset splitting using the fixed split in the csv file.
 
-        adapted from https://github.com/amazon-science/spot-diff
+        Adapted from https://github.com/amazon-science/spot-diff.
         """
         logger.info("preparing data")
         categories = [

@@ -1,4 +1,20 @@
-"""Regions extraction module of AI-VAD model implementation."""
+"""Regions extraction module of AI-VAD model implementation.
+
+This module implements the region extraction stage of the AI-VAD model. It extracts
+regions of interest from video frames using object detection and foreground
+detection.
+
+Example:
+    >>> from anomalib.models.video.ai_vad.regions import RegionExtractor
+    >>> import torch
+    >>> extractor = RegionExtractor()
+    >>> frames = torch.randn(32, 2, 3, 256, 256)  # (N, L, C, H, W)
+    >>> regions = extractor(frames)
+
+The module provides the following components:
+    - :class:`RegionExtractor`: Main class that handles region extraction using
+      object detection and foreground detection
+"""
 
 # Copyright (C) 2023-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -17,23 +33,35 @@ PERSON_LABEL = 1
 class RegionExtractor(nn.Module):
     """Region extractor for AI-VAD.
 
+    This class extracts regions of interest from video frames using object detection and
+    foreground detection. It uses a Mask R-CNN model for object detection and can
+    optionally detect foreground regions based on frame differences.
+
     Args:
-        box_score_thresh (float): Confidence threshold for bounding box predictions.
-            Defaults to ``0.8``.
-        persons_only (bool): When enabled, only regions labeled as person are included.
-            Defaults to ``False``.
-        min_bbox_area (int): Minimum bounding box area. Regions with a surface area lower than this value are excluded.
-            Defaults to ``100``.
-        max_bbox_overlap (float): Maximum allowed overlap between bounding boxes.
-            Defaults to ``0.65``.
-        enable_foreground_detections (bool): Add additional foreground detections based on pixel difference between
-            consecutive frames.
+        box_score_thresh (float, optional): Confidence threshold for bounding box
+            predictions. Defaults to ``0.8``.
+        persons_only (bool, optional): When enabled, only regions labeled as person are
+            included. Defaults to ``False``.
+        min_bbox_area (int, optional): Minimum bounding box area. Regions with a surface
+            area lower than this value are excluded. Defaults to ``100``.
+        max_bbox_overlap (float, optional): Maximum allowed overlap between bounding
+            boxes. Defaults to ``0.65``.
+        enable_foreground_detections (bool, optional): Add additional foreground
+            detections based on pixel difference between consecutive frames.
             Defaults to ``True``.
-        foreground_kernel_size (int): Gaussian kernel size used in foreground detection.
-            Defaults to ``3``.
-        foreground_binary_threshold (int): Value between 0 and 255 which acts as binary threshold in foreground
-            detection.
-            Defaults to ``18``.
+        foreground_kernel_size (int, optional): Gaussian kernel size used in foreground
+            detection. Defaults to ``3``.
+        foreground_binary_threshold (int, optional): Value between 0 and 255 which acts
+            as binary threshold in foreground detection. Defaults to ``18``.
+
+    Example:
+        >>> import torch
+        >>> from anomalib.models.video.ai_vad.regions import RegionExtractor
+        >>> extractor = RegionExtractor()
+        >>> first_frame = torch.randn(2, 3, 256, 256)  # (N, C, H, W)
+        >>> last_frame = torch.randn(2, 3, 256, 256)  # (N, C, H, W)
+        >>> regions = extractor(first_frame, last_frame)
+        >>> # Returns list of dicts with keys: boxes, labels, scores, masks
     """
 
     def __init__(
@@ -61,13 +89,24 @@ class RegionExtractor(nn.Module):
     def forward(self, first_frame: torch.Tensor, last_frame: torch.Tensor) -> list[dict]:
         """Perform forward-pass through region extractor.
 
+        The forward pass consists of:
+        1. Object detection on the last frame using Mask R-CNN
+        2. Optional foreground detection by comparing first and last frames
+        3. Post-processing to filter and refine detections
+
         Args:
-            first_frame (torch.Tensor): Batch of input images of shape (N, C, H, W)
+            first_frame (torch.Tensor): Batch of input images of shape ``(N, C, H, W)``
                 forming the first frames in the clip.
-            last_frame (torch.Tensor): Batch of input images of shape (N, C, H, W) forming the last frame in the clip.
+            last_frame (torch.Tensor): Batch of input images of shape ``(N, C, H, W)``
+                forming the last frame in the clip.
 
         Returns:
-            list[dict]: List of Mask RCNN predictions for each image in the batch.
+            list[dict]: List of Mask R-CNN predictions for each image in the batch. Each
+                dict contains:
+                - boxes (torch.Tensor): Detected bounding boxes
+                - labels (torch.Tensor): Class labels for each detection
+                - scores (torch.Tensor): Confidence scores for each detection
+                - masks (torch.Tensor): Instance segmentation masks
         """
         with torch.no_grad():
             regions = self.backbone(last_frame)
@@ -93,21 +132,30 @@ class RegionExtractor(nn.Module):
     ) -> list[dict[str, torch.Tensor]]:
         """Add any foreground regions that were not detected by the region extractor.
 
-        This method adds regions that likely belong to the foreground of the video scene, but were not detected by the
-        region extractor module. The foreground pixels are determined by taking the pixel difference between two
-        consecutive video frames and applying a binary threshold. The final detections consist of all connected
-        components in the foreground that do not fall in one of the bounding boxes predicted by the region extractor.
+        This method adds regions that likely belong to the foreground of the video
+        scene, but were not detected by the region extractor module. The foreground
+        pixels are determined by taking the pixel difference between two consecutive
+        video frames and applying a binary threshold. The final detections consist of
+        all connected components in the foreground that do not fall in one of the
+        bounding boxes predicted by the region extractor.
 
         Args:
-            regions (list[dict[str, torch.Tensor]]): Region detections for a batch of images, generated by the region
-                extraction module.
-            first_frame (torch.Tensor): video frame at time t-1
-            last_frame (torch.Tensor): Video frame time t
-            kernel_size (int): Kernel size for Gaussian smoothing applied to input frames
-            binary_threshold (int): Binary threshold used in foreground detection, should be in range [0, 255]
+            regions (list[dict[str, torch.Tensor]]): Region detections for a batch of
+                images, generated by the region extraction module.
+            first_frame (torch.Tensor): Video frame at time t-1
+            last_frame (torch.Tensor): Video frame at time t
+            kernel_size (int): Kernel size for Gaussian smoothing applied to input
+                frames
+            binary_threshold (int): Binary threshold used in foreground detection,
+                should be in range ``[0, 255]``
 
         Returns:
-            list[dict[str, torch.Tensor]]: region detections with foreground regions appended
+            list[dict[str, torch.Tensor]]: Region detections with foreground regions
+                appended. Each dict contains:
+                - boxes (torch.Tensor): Updated bounding boxes
+                - labels (torch.Tensor): Updated class labels
+                - scores (torch.Tensor): Updated confidence scores
+                - masks (torch.Tensor): Updated instance masks
         """
         # apply gaussian blur to first and last frame
         first_frame = gaussian_blur(first_frame, [kernel_size, kernel_size])
@@ -157,14 +205,16 @@ class RegionExtractor(nn.Module):
     def post_process_bbox_detections(self, regions: list[dict[str, torch.Tensor]]) -> list[dict[str, torch.Tensor]]:
         """Post-process the region detections.
 
-        The region detections are filtered based on class label, bbox area and overlap with other regions.
+        The region detections are filtered based on class label, bbox area and overlap
+        with other regions.
 
         Args:
-            regions (list[dict[str, torch.Tensor]]): Region detections for a batch of images, generated by the region
-                extraction module.
+            regions (list[dict[str, torch.Tensor]]): Region detections for a batch of
+                images, generated by the region extraction module.
 
         Returns:
-            list[dict[str, torch.Tensor]]: Filtered regions
+            list[dict[str, torch.Tensor]]: Filtered regions containing only valid
+                detections based on the filtering criteria.
         """
         filtered_regions_list = []
         for img_regions in regions:
@@ -175,13 +225,15 @@ class RegionExtractor(nn.Module):
         return filtered_regions_list
 
     def _keep_only_persons(self, regions: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
-        """Remove all region detections that are not labeled as a person by the region extractor.
+        """Remove all region detections that are not labeled as a person.
 
         Args:
-            regions (dict[str, torch.Tensor]): Region detections for a single image in the batch.
+            regions (dict[str, torch.Tensor]): Region detections for a single image in
+                the batch.
 
         Returns:
-            dict[str, torch.Tensor]: Region detections from which non-person objects have been removed.
+            dict[str, torch.Tensor]: Region detections from which non-person objects
+                have been removed.
         """
         keep = torch.where(regions["labels"] == PERSON_LABEL)
         return self.subsample_regions(regions, keep)
@@ -190,11 +242,14 @@ class RegionExtractor(nn.Module):
         """Remove all regions with a surface area smaller than the specified value.
 
         Args:
-            regions (dict[str, torch.Tensor]): Region detections for a single image in the batch.
-            min_area (int): Minimum bounding box area. Regions with a surface area lower than this value are excluded.
+            regions (dict[str, torch.Tensor]): Region detections for a single image in
+                the batch.
+            min_area (int): Minimum bounding box area. Regions with a surface area
+                lower than this value are excluded.
 
         Returns:
-            dict[str, torch.Tensor]: Region detections from which small regions have been removed.
+            dict[str, torch.Tensor]: Region detections from which small regions have
+                been removed.
         """
         areas = box_area(regions["boxes"])
         keep = torch.where(areas > min_area)
@@ -203,16 +258,20 @@ class RegionExtractor(nn.Module):
     def _delete_overlapping_boxes(self, regions: dict[str, torch.Tensor], threshold: float) -> dict[str, torch.Tensor]:
         """Delete overlapping bounding boxes.
 
-        For each bounding box, the overlap with all other bounding boxes relative to their own surface area is computed.
-        When the relative overlap with any other box is higher than the specified threshold, the box is removed. when
-        both boxes have a relative overlap higher than the threshold, only the smaller box is removed.
+        For each bounding box, the overlap with all other bounding boxes relative to
+        their own surface area is computed. When the relative overlap with any other
+        box is higher than the specified threshold, the box is removed. When both boxes
+        have a relative overlap higher than the threshold, only the smaller box is
+        removed.
 
         Args:
-            regions (dict[str, torch.Tensor]): Region detections for a single image in the batch.
+            regions (dict[str, torch.Tensor]): Region detections for a single image in
+                the batch.
             threshold (float): Maximum allowed overlap between bounding boxes.
 
         Returns:
-            dict[str, torch.Tensor]: Region detections from which overlapping regions have been removed.
+            dict[str, torch.Tensor]: Region detections from which overlapping regions
+                have been removed.
         """
         # sort boxes by area
         areas = box_area(regions["boxes"])
@@ -240,11 +299,13 @@ class RegionExtractor(nn.Module):
         """Subsample the items in a region dictionary based on a Tensor of indices.
 
         Args:
-            regions (dict[str, torch.Tensor]): Region detections for a single image in the batch.
+            regions (dict[str, torch.Tensor]): Region detections for a single image in
+                the batch.
             indices (torch.Tensor): Indices of region detections that should be kept.
 
         Returns:
-            dict[str, torch.Tensor]: Subsampled region detections.
+            dict[str, torch.Tensor]: Subsampled region detections containing only the
+                specified indices.
         """
         new_regions_dict = {}
         for key, value in regions.items():

@@ -68,7 +68,7 @@ loggers = [
 ]
 notebooks = ["gitpython", "ipykernel", "ipywidgets", "notebook"]
 docs = [
-    "myst-parser",
+    "myst-parser[linkify]",
     "nbsphinx",
     "pandoc",
     "sphinx",
@@ -84,6 +84,8 @@ test = [
     "pytest-xdist",
     "pytest-mock",
     "pytest-sugar",
+    "pytest-timeout",
+    "pytest-json-report",
     "coverage[toml]",
     "tox",
 ]
@@ -289,6 +291,10 @@ skips = ["B101"]
 addopts = ["--strict-markers", "--strict-config", "--showlocals", "-ra"]
 testpaths = "tests"
 pythonpath = "src"
+markers = [
+    "gpu: marks tests that require GPU",
+    "cpu: marks tests that can run on CPU only (default)",
+]
 
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
