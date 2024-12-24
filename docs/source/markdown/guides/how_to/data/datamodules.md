@@ -20,8 +20,8 @@ DataModules encapsulate all the steps needed to process data:
 A typical Anomalib DataModule follows this structure:
 
 ```python
-from pytorch_lightning import LightningDataModule
-from anomalib.data import AnomalibDataset
+from lightning.pytorch import LightningDataModule
+from anomalib.data.datasets.base.image import AnomalibDataset
 from torch.utils.data import DataLoader
 
 class AnomalibDataModule(LightningDataModule):
@@ -108,7 +108,6 @@ from anomalib.data import MVTec
 datamodule = MVTec(
     root="./datasets/MVTec",
     category="bottle",
-    image_size=(256, 256),
     train_batch_size=32,
     eval_batch_size=32,
     num_workers=8
@@ -132,16 +131,14 @@ for batch in train_loader:
 from anomalib.data import Avenue
 
 datamodule = Avenue(
-    root="./datasets/Avenue",
-    frame_size=(256, 256),
-    train_batch_size=8,
-    clip_length=16
+    clip_length_in_frames=2,
+    frames_between_clips=1,
+    target_frame="last",
 )
-
-# Access video batches
-for batch in datamodule.train_dataloader():
-    print(batch.frames.shape)     # torch.Size([8, 16, 3, 256, 256])
-    print(batch.target_frame)     # Frame indices
+datamodule.setup()
+i, data = next(enumerate(datamodule.train_dataloader()))
+data["image"].shape
+# torch.Size([32, 2, 3, 256, 256])
 ```
 
 ### 3. Depth DataModule
@@ -152,14 +149,15 @@ from anomalib.data import MVTec3D
 datamodule = MVTec3D(
     root="./datasets/MVTec3D",
     category="bagel",
-    image_size=(256, 256),
-    train_batch_size=32
+    train_batch_size=32,
 )
 
 # Access RGB-D batches
-for batch in datamodule.train_dataloader():
-    print(batch.image.shape)      # RGB images
-    print(batch.depth_map.shape)  # Depth maps
+i, data = next(enumerate(datamodule.train_dataloader()))
+data["image"].shape
+# torch.Size([32, 3, 256, 256])
+data["depth_map"].shape
+# torch.Size([32, 1, 256, 256])
 ```
 
 ## Creating Custom DataModules
@@ -176,7 +174,6 @@ class CustomDataModule(LightningDataModule):
         self,
         root: str,
         category: str,
-        image_size: tuple[int, int] = (256, 256),
         train_batch_size: int = 32,
         **kwargs
     ):
