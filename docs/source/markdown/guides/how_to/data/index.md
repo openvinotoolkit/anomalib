@@ -28,15 +28,17 @@ Learn how to use Anomalib's Datamodules for different modalities and batch proce
 :::
 
 :::{grid-item-card} {octicon}`database` Train on Custom Data
-:link: ./custom_data
-:link-type: doc
+
+<!-- :link: ./custom_data
+:link-type: doc -->
 
 Learn more about how to use `Folder` dataset to train anomalib models on your custom data.
 :::
 
 :::{grid-item-card} {octicon}`versions` Using Data Transforms
-:link: ./transforms
-:link-type: doc
+
+<!-- :link: ./transforms
+:link-type: doc -->
 
 Learn how to apply custom data transforms to the input images.
 :::
