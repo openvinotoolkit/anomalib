@@ -23,6 +23,8 @@ jobs:
     steps:
       - name: CHECKOUT REPOSITORY
         uses: actions/checkout@v4
+        with:
+          lfs: true
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
