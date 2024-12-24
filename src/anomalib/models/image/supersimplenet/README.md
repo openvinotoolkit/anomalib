@@ -7,7 +7,7 @@ Model Type: Segmentation
 ## Description
 
 **SuperSimpleNet** is a simple yet strong discriminative defect / anomaly detection model evolved from the SimpleNet architecture. It consists of four components:
-feature extractor with upscaling, feature adaptor, synthetic feature-level anomaly generation module, and
+feature extractor with upscaling, feature adaptor, feature-level synthetic anomaly generation module, and
 segmentation-detection module.
 
 A ResNet-like feature extractor first extracts features, which are then upscaled and

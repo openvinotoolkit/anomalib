@@ -2,7 +2,7 @@
 
 This module implements the SuperSimpleNet model for surface defect / anomaly detection.
 SuperSimpleNet is a simple yet strong discriminative model consisting of a pretrained feature extractor with upscaling,
-feature adaptor, train-time synthetic feature-level anomaly generation module, and segmentation-detection module.
+feature adaptor, train-time feature-level synthetic anomaly generation module, and segmentation-detection module.
 
 Using the adapted features, the model predicts an anomaly map via the segmentation head
 and an anomaly score using the classification head.

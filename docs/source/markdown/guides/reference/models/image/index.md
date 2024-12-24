@@ -109,6 +109,13 @@ Anomaly Detection via Reverse Distillation from One-Class Embedding.
 Student-Teacher Feature Pyramid Matching for Unsupervised Anomaly Detection
 :::
 
+:::{grid-item-card} {material-regular}`model_training;1.5em` SuperSimpleNet
+:link: ./supersimplenet
+:link-type: doc
+
+SuperSimpleNet: Unifying Unsupervised and Supervised Learning for Fast and Reliable Surface Defect Detection
+:::
+
 :::{grid-item-card} {material-regular}`model_training;1.5em` U-Flow
 :link: ./uflow
 :link-type: doc
