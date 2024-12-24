@@ -37,20 +37,6 @@ The dataset consists of three main components:
 
 3. **Task Type**: Classification or Segmentation
 
-### Basic Usage
-
-```python
-from torchvision.transforms.v2 import Resize
-from anomalib.data.datasets import AnomalibDataset
-
-# Create dataset with transforms
-dataset = AnomalibDataset(transform=Resize((256, 256)))
-
-# Access items
-item = dataset[0]
-print(item.image.shape)  # torch.Size([3, 256, 256])
-```
-
 ## Dataset Types
 
 Anomalib supports different types of datasets based on modality:
@@ -84,10 +70,10 @@ For video anomaly detection:
 from anomalib.data.datasets import Avenue
 
 # Create video dataset
-dataset = Avenue(
-    root="./datasets/Avenue",
-    split="train",
-    task="detection"
+dataset = AvenueDataset(
+    root="./datasets/avenue",
+    split="test",
+    transform=transform
 )
 
 # Access an item
@@ -101,13 +87,13 @@ print(item.target_frame)        # Frame number
 For RGB-D or depth-only data:
 
 ```python
-from anomalib.data.datasets import MVTec3D
+from anomalib.data.datasets import MVTec3DDataset
 
 # Create depth dataset
-dataset = MVTec3D(
+dataset = MVTec3DDataset(
     root="./datasets/MVTec3D",
     category="bagel",
-    split="train"
+    split="train",
 )
 
 # Access an item
