@@ -36,6 +36,13 @@ from typing import Any
 from PIL import Image
 
 from anomalib.data import ImageItem
+from anomalib.utils.path import convert_to_title_case
+from anomalib.visualization.image.functional import (
+    add_text_to_image,
+    create_image_grid,
+    get_visualize_function,
+    overlay_images,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -297,3 +304,54 @@ def visualize_image_item(
           * ``'fill'``: Fills the mask area with a specified color and
             transparency
     """
+    fields_config = {**DEFAULT_FIELDS_CONFIG, **(fields_config or {})}
+    overlay_fields_config = {**DEFAULT_OVERLAY_FIELDS_CONFIG, **(overlay_fields_config or {})}
+    text_config = {**DEFAULT_TEXT_CONFIG, **(text_config or {})}
+    add_text = text_config.pop("enable", True)
+
+    all_fields = set(fields or [])
+    all_fields.update(field for base, overlays in (overlay_fields or []) for field in [base, *overlays])
+
+    field_images = {}
+    output_images = []
+
+    for field in all_fields:
+        image: Image.Image | None = None
+        if field == "image":
+            # NOTE: use get_visualize_function(field) when input transforms are introduced in models.
+            image = Image.open(item.image_path).convert("RGB")
+        else:
+            field_value = getattr(item, field, None)
+            if field_value is not None:
+                image = get_visualize_function(field)(field_value, **fields_config.get(field, {}))
+            else:
+                logger.warning(f"Field '{field}' is None in ImageItem. Skipping visualization.")
+        if image:
+            field_images[field] = image.resize(field_size)
+
+    for field in fields or []:
+        if field in field_images:
+            output_image = field_images[field].copy()
+            if add_text:
+                output_image = add_text_to_image(output_image, convert_to_title_case(field), **text_config)
+            output_images.append(output_image)
+
+    for base, overlays in overlay_fields or []:
+        if base in field_images:
+            base_image = field_images[base].copy()
+            valid_overlays = [o for o in overlays if o in field_images]
+            for overlay in valid_overlays:
+                overlay_config = overlay_fields_config.get(overlay, {})
+                overlay_value = getattr(item, overlay, None)
+                if overlay_value is not None:
+                    overlay_image = get_visualize_function(overlay)(overlay_value, **overlay_config)
+                    base_image = overlay_images(base_image, overlay_image, alpha=overlay_config.get("alpha", 0.5))
+                else:
+                    logger.warning(f"Field '{overlay}' is None in ImageItem. Skipping visualization.")
+
+            if valid_overlays and add_text:
+                title = f"{convert_to_title_case(base)} + {'+'.join(convert_to_title_case(o) for o in valid_overlays)}"
+                base_image = add_text_to_image(base_image, title, **text_config)
+            output_images.append(base_image)
+
+    return create_image_grid(output_images, nrow=len(output_images)) if output_images else None

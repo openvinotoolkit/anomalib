@@ -67,17 +67,24 @@ from anomalib.visualization.image.item_visualizer import visualize_image_item
 from anomalib.data import ImageItem
 from PIL import Image
 import torch
+from torchvision.io import read_image
 
 # Create sample data
-image = Image.new('RGB', (256, 256))
-pred_mask = torch.zeros((256, 256))
-pred_mask[100:150, 100:150] = 1
+image_path = "./datasets/MVTec/bottle/test/broken_large/000.png"
+mask_path = "./datasets/MVTec/bottle/ground_truth/broken_large/000_mask.png"
+image = read_image(image_path)
+mask = read_image(mask_path)
 
 # Create an ImageItem
-item = ImageItem(image=image, pred_mask=pred_mask)
+item = ImageItem(
+    image_path=image_path,
+    mask_path=mask_path,
+    image=image,
+    gt_mask=mask,
+)
 
 # Generate visualization
-vis_result = visualize_image_item(item)
+vis_result = visualize_image_item(item, fields=["image", "gt_mask"])
 ```
 
 ## Visualization Components
@@ -109,8 +116,9 @@ vis = visualize_anomaly_map(
 Visualize ground truth and predicted masks:
 
 ```python
-from anomalib.visualization import visualize_mask, visualize_gt_mask, visualize_pred_mask
 import torch
+
+from anomalib.visualization.image.functional import visualize_gt_mask, visualize_pred_mask
 
 # Create sample mask
 mask = torch.zeros((256, 256))
@@ -129,7 +137,7 @@ pred_vis = visualize_pred_mask(
     mask,
     mode="fill",              # Fill mask regions
     color=(255, 0, 0),        # Red color
-    alpha=0.5                 # Opacity
+    alpha=0.5,                # Opacity
 )
 ```
 

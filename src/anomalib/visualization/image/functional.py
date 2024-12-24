@@ -37,7 +37,7 @@ from typing import Any, Literal
 
 import torch
 import torch.nn.functional as F  # noqa: N812
-from PIL import Image, ImageDraw, ImageEnhance, ImageFont
+from PIL import Image, ImageDraw, ImageEnhance, ImageFilter, ImageFont
 from torchvision.transforms.functional import to_pil_image
 
 logger = logging.getLogger(__name__)
@@ -554,6 +554,46 @@ def visualize_mask(
         - ``"contour"`` mode uses edge detection to find mask boundaries
         - ``"fill"`` mode creates a semi-transparent overlay using the specified color
     """
+    # Convert torch.Tensor to PIL Image if necessary
+    if isinstance(mask, torch.Tensor):
+        if mask.dtype == torch.bool:
+            mask = mask.to(torch.uint8) * 255
+        mask = to_pil_image(mask)
+
+    if not isinstance(mask, Image.Image):
+        msg = "Mask must be a PIL Image or PyTorch tensor"
+        raise TypeError(msg)
+
+    # Ensure mask is in binary mode
+    mask = mask.convert("L")
+    if mode in {"binary", "L", "1"}:
+        return mask
+
+    # Create a background image
+    background = Image.new("RGBA", mask.size, background_color)
+
+    match mode:
+        case "contour":
+            # Find edges of the mask
+            edges = mask.filter(ImageFilter.FIND_EDGES)
+
+            # Create a colored version of the edges
+            colored_edges = Image.new("RGBA", mask.size, (*color, 255))
+            colored_edges.putalpha(edges)
+
+            # Composite the colored edges onto the background
+            return Image.alpha_composite(background, colored_edges)
+
+        case "fill":
+            # Create a solid color image for the overlay
+            overlay = Image.new("RGBA", mask.size, (*color, int(255 * alpha)))
+
+            # Use the mask to blend the overlay with the background
+            return Image.composite(overlay, background, mask)
+
+        case _:
+            msg = f"Invalid mode: {mode}. Allowed modes are 'contour', 'binary', or 'fill'."
+            raise ValueError(msg)
 
 
 def visualize_gt_mask(
