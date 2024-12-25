@@ -34,7 +34,7 @@ This implementation supports both unsupervised and supervised setting, but Anoma
 
 ## MVTec AD results
 
-The following results were obtained using this Anomalib implementation trained for 300 epochs with seed 42, default params, and batch size 32.
+The following results were obtained using this Anomalib implementation trained for 300 epochs with seed 0, default params, and batch size 32.
 | | **Image AUROC** | **Pixel AUPRO** |
 | ----------- | :-------------: | :-------------: |
 | Bottle | 1.000 | 0.903 |
