@@ -206,10 +206,10 @@ class TorchInferencer(Inferencer):
         Returns:
             Tensor: pre-processed image.
         """
-        if len(image) == 3:
-            image = image.unsqueeze(0)
-
-        return image.to(self.device)
+        if image.ndim == 3: 
+            image = np.expand_dims(image, axis=0) # Add batch dimension 
+        image_tensor = torch.from_numpy(image) # Convert to PyTorch tensor 
+        return image_tensor.to(self.device) # Move to the specified device
 
     def forward(self, image: torch.Tensor) -> torch.Tensor:
         """Forward-Pass input tensor to the model.
