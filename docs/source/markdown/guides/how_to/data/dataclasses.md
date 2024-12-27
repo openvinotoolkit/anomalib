@@ -8,11 +8,17 @@ This guide explains how to use the dataclasses in Anomalib, from basic usage to 
 
 ## Basic Concepts
 
-Anomalib uses dataclasses to represent and validate data throughout the pipeline. The dataclasses are designed to be:
+Anomalib uses dataclasses to represent and validate data throughout the pipeline. Anomalib's dataclasses are based on python's
+native dataclasses, but are extended with several useful features to facilitate input validation and easy conversion.
+Dataclasses are used by the `AnomalibDataset` and `AnomalibDatamodule` to represent input data and ground truth annotations,
+and by the `AnomalibModule` to store the model predictions. For basic users, knowing how to access and update the fields
+of Anomalib's dataclasses is sufficient to cover most use-cases.
+
+The dataclasses are designed to be:
 
 - **Type-safe**: All fields are validated to ensure correct types and shapes
 - **Modality-specific**: Specialized classes for images, videos, and depth data
-- **Framework-agnostic**: Support for both PyTorch and NumPy backends
+- **Framework-specific**: Support for both PyTorch and NumPy backends
 - **Batch-aware**: Handle both single items and batches of data
 
 The dataclass system is built around two main concepts:
@@ -20,9 +26,12 @@ The dataclass system is built around two main concepts:
 1. **Item**: Single data instance (e.g., one image)
 2. **Batch**: Collection of items with batch processing capabilities
 
-## Core Components
+The Item and Batch classes are defined separately for the different data modalities in the libary. For example, when
+working with image data, the relevant classes are `ImageItem` and `ImageBatch`.
 
-The dataclass system consists of several key components:
+## Input- and Output fields
+
+All dataclasses are equipped with the following standard data fields:
 
 1. **Input Fields**: Base fields for anomaly detection data
 
@@ -38,119 +47,184 @@ The dataclass system consists of several key components:
    - `pred_label`: Predicted label
    - `explanation`: Path to explanation visualization
 
-## Working with Items
+Out of these standard fields, only `image` is mandatory. All other fields are optional. In addition to the standard fields,
+Anomalib's dataclasses may contain additional modality-specific input and output fields, depending on the modality of the
+data (Image, Video, Depth).
 
-Here's a simple example using the image dataclass with PyTorch:
+## Basic Usage
+
+### Creating a dataclass instance
+
+To create a new dataclass instance, simply pass the data to the constructor using the keyword arguments. For example, we could use the following code to create a new instance of an `ImageItem` from a randomly generated image and an all-negative (no anomalous pixels) ground truth mask.
 
 ```{code-block} python
-from anomalib.data.dataclasses.torch import ImageItem
 import torch
+from anomalib.data import ImageItem
 
-# Create a single image item
 item = ImageItem(
-    image=torch.rand(3, 224, 224),      # RGB image
-    gt_label=torch.tensor(0),           # Normal (0) or anomalous (1)
-    image_path="path/to/image.jpg"      # Path to source image
+    image=torch.rand((3, 224, 224)),
+    image_path="path/to/my/image.png"
+    gt_label=0,
+    gt_mask=torch.zeros((224, 224)),
 )
-
-# Access the data
-print(item.image.shape)         # torch.Size([3, 224, 224])
-print(item.gt_label.item())     # 0
 ```
 
-## Working with Batches
-
-Anomalib provides powerful batch classes for efficient data processing. A batch is a collection of items with additional functionality for batch operations.
-
-### Creating Batches
-
-There are several ways to create batches:
+After creating the instance, you can directly access any of the provided fields of the dataclass
 
 ```{code-block} python
-from anomalib.data.dataclasses.torch import ImageBatch, ImageItem
+print(item.image_path)   # "path/to/my/image.png"
+print(item.image.shape)  # torch.Size([3, 224, 224])
+```
+
+Similarly, we could create a batch of images, by directly defining an image tensor with a leading batch dimension. Let's create a random batch consisting of 8 images.
+
+```{code-block} python
 import torch
+from anomalib.data import ImageItem
 
-# 1. Direct creation with tensors
 batch = ImageBatch(
-    image=torch.rand(32, 3, 224, 224),          # Batch of 32 images
-    gt_label=torch.randint(0, 2, (32,)),        # Batch of labels
-    image_path=[f"image_{i}.jpg" for i in range(32)]
+    image=torch.rand((8, 3, 224, 224)),
+    gt_label=[0, ] * 8,
+    gt_mask=torch.zeros((8, 224, 224)),
+)
+```
+
+Again, we can inspect the fields of the batch instance by accessing them directly. In addition, the `Batch` class provides
+a useful `batch_size` property to quickly retrieve the number of items in the batch.
+
+```{code-block} python
+print(batch.image.shape)  # torch.Size([8, 3, 224, 224])
+print(batch.batch_size)   # 8
+```
+
+> **Note:**
+> The above examples are for illustrative purposes. In general, most use-cases don't require instantiating dataclasses explicitly,
+> as Anomalib's modules create and return the dataclass instances.
+
+### Validation and formatting
+
+The dataclass performs some validation checks to assert that the provided values have the expected shape and format, and
+automatically converts the values to the correct datatype where possible. This ensures that all instances of the dataclass
+will always use the same shapes and data types to represent the input- and output fields!
+
+```{code-block} python
+item = ImageItem(
+    image=torch.rand((8, 3, 224, 224))
+)
+# raises ValueError because provided value has one dimension too many (batch cannot be converted to single item).
+
+batch = ImageBatch(
+    image=torch.rand((3, 224, 224)),
+    gt_label = [1],
+)
+print(batch.image.shape)  # torch.Size([1, 3, 224, 224])  <-- leading batch dimension added automatically
+print(batch.gt_label)     # tensor([True])                 <-- positive label converted to boolean tensor
+```
+
+### Updating a dataclass instance
+
+To update a field of a dataclass instance, simply overwrite its value. The dataclass will automatically run the validation
+checks before assigning the updated value to the instance!
+
+```{code-block} python
+item = ImageItem(
+    image=torch.rand((3, 224, 224)),
+    gt_label=tensor(False),
 )
 
-# 2. From a list of items
-items = [
-    ImageItem(
-        image=torch.rand(3, 224, 224),
-        gt_label=torch.tensor(0),
-        image_path=f"image_{i}.jpg"
-    )
-    for i in range(32)
-]
+# overwrite an existing field
+item.gt_label = tensor(True)
+print(item.gt_label)  # tensor(True)
 
-batch = ImageBatch.collate(items)
+# assign a previously unassigned field
+item.image_path = "path/to/my/image.png"
+print(item.image_path)  # "path/to/my/image.png"
+
+# input validation and auto formatting still works
+item.pred_score = 0.45
+print(item.pred_score)  # tensor(0.4500)
 ```
 
-### Batch Properties
-
-Batches provide several useful properties:
+As an alternative method of updating dataclass fields, Anomalib's dataclasses are equipped with the `update` method. By default,
+the `update` method updates the dataclass instance inplace, meaning that the original instance will be modified.
 
 ```{code-block} python
-# Get batch size
-print(batch.batch_size)    # 32
-
-# Get device information
-print(batch.image.device)        # cuda:0 or cpu
-
-# Get shape information
-print(batch.image.shape)   # torch.Size([32, 3, 224, 224])
+item = ImageItem(
+    image=torch.rand((3, 224, 224)),
+    pred_score=0.33,
+)
+item.update(pred_score=0.87)  # this is equivalent to item.pred_score=0.87
+print(item.pred_score)        # 0.87
 ```
 
-### Iterating Over Batches
-
-Batches can be iterated to access individual items:
+If you want to keep the original item, you can pass `inplace=False`, and use the new instance returned by `update`.
 
 ```{code-block} python
-# Simple iteration
+item = ImageItem(
+    image=torch.rand((3, 224, 224)),
+    pred_score=0.33,
+)
+new_item = item.update(pred_score=0.87, inplace=False)  # the original item will remain unmodified
+print(item.pred_score)      # 0.33
+print(new_item.pred_score)  # 0.87
+```
+
+The `update` method can be useful in situations where you want to update multiple fields at once, for example from a dictionary
+of predictions returned by your model. This can be achieved by specifying each field as a keyword argument, or by passing an
+entire dictionary using the `**` notation:
+
+```{code-block} python
+item.update(
+    pred_score=0.87,
+    pred_label=True,
+)
+
+# the following would have the same effect as the statement above
+predictions = {
+    "pred_score": 0.87,
+    "pred_label": True,
+}
+item.update(**predictions)
+```
+
+### Converting between items and batch
+
+It is very easy to switch between `Item` and `Batch` instances. To separate a `Batch` instance into a list of `Item`s, simply
+use the `items` property:
+
+```{code-block} python
+batch = ImageBatch(
+    image=torch.rand((4, 3, 360, 240))
+)
+items = batch.items  # list of Item instances
+```
+
+Conversely, `Batch` has a `collate` method that can be invoked to create a new `Batch` instance from a list of `Item`s.
+
+```{code-block} python
+new_batch = ImageBatch.collate(items)  # construct a new batch from a list of Items
+```
+
+It is also possible to directly iterate over the `Item`s in a batch, without explicitly calling the `items` property:
+
+```{code-block} python
 for item in batch:
-    print(item.image.shape)    # torch.Size([3, 224, 224])
-    # Process the input
-
-# Enumerate for index access
-for idx, _item in enumerate(batch):
-    print(f"Processing item {idx}")
-    # Process the input
+    # use item
 ```
 
-### Batch Operations
+### Converting Between Frameworks
 
-Batches support various operations:
+All dataclasses support conversion between PyTorch and NumPy:
 
 ```{code-block} python
-# Update batch fields
-batch.update(pred_scores=torch.rand(32))
+# Items
+numpy_item = torch_item.to_numpy()
 
-# Split batch into items
-items = batch.items
+# Batches
+numpy_batch = torch_batch.to_numpy()
 ```
 
-### Batch Validation
-
-Batches automatically validate:
-
-- Consistent batch size across all fields
-- Compatible tensor shapes
-- Device consistency
-- Data type compatibility
-
-```{code-block} python
-# This will raise a ValidationError due to float labels (gt_label must be int or boolean)
-invalid_batch = ImageBatch(
-    image=torch.rand(32, 3, 224, 224),
-    gt_label=torch.randint(0.0, 1.0, (32,))  # float labels
-)
-```
-
-## Different Modalities
+## Supported Modalities
 
 ### 1. Image Data
 
@@ -220,53 +294,14 @@ batch = DepthBatch(
 )
 ```
 
-## Advanced Features
-
-### 1. Converting Between Frameworks
-
-All dataclasses support conversion between PyTorch and NumPy:
-
-```{code-block} python
-# Items
-numpy_item = torch_item.to_numpy()
-
-# Batches
-numpy_batch = torch_batch.to_numpy()
-```
-
-### 2. Validation
-
-Dataclasses automatically validate inputs:
-
-- Correct tensor shapes and dimensions
-- Compatible data types
-- File path existence (optional)
-- Batch size consistency
-- Device consistency within batches
-
-### 3. Updating Fields
-
-In-place or copy updates are supported for both items and batches:
-
-```{code-block} python
-# Items
-item.update(pred_score=0.8)
-new_item = item.update(in_place=False, pred_label=1)
-
-# Batches
-batch.update(pred_scores=torch.rand(32))
-new_batch = batch.update(in_place=False, pred_labels=torch.randint(0, 2, (32,)))
-```
-
 ## Best Practices
 
 1. **Type Hints**: Always use appropriate type hints when subclassing
 2. **Validation**: Implement custom validators for special requirements
 3. **Batch Size**: Keep batch dimensions consistent across all fields
-4. **Memory**: Use appropriate data types (uint8 for images, float32 for features)
-5. **Paths**: Use relative paths when possible for portability
-6. **Batch Processing**: Use batch operations when possible for better performance
-7. **Device Management**: Keep tensors on the same device within a batch
+4. **Paths**: Use relative paths when possible for portability
+5. **Batch Processing**: Use batch operations when possible for better performance
+6. **Device Management**: Keep tensors on the same device within a batch
 
 ## Common Pitfalls
 
