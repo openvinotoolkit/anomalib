@@ -7,6 +7,8 @@ pipeline.
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+import copy
+
 from torchvision.transforms.v2 import CenterCrop, Compose, Resize, Transform
 
 from anomalib.data.transforms import ExportableCenterCrop
@@ -45,6 +47,7 @@ def get_exportable_transform(transform: Transform | None) -> Transform | None:
     """
     if transform is None:
         return None
+    transform = copy.deepcopy(transform)
     transform = disable_antialiasing(transform)
     return convert_center_crop_transform(transform)
 
