@@ -31,7 +31,7 @@ Learn more about image and video models.
 Learn more about anomalib Engine.
 :::
 
-:::{grid-item-card} {octicon}`meter` Metrics
+:::{grid-item-card} {octicon}`meter` Evaluation
 :link: ./metrics/index
 :link-type: doc
 
@@ -79,6 +79,8 @@ Learn more about anomalib hpo, sweep and benchmarking pipelines
 :hidden:
 
 ./data/index
+./evaluation/index
 ./models/index
 ./pipelines/index
+./visualization/index
 ```
