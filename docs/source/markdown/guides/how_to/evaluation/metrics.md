@@ -63,7 +63,7 @@ print(pixel_auroc.compute())  # tensor(0.96)
 
 Anomalib's `metrics` module provides Anomalib versions of various performance metrics commonly used in anomaly detection, such as `AUROC`, `AUPRO` and `F1Score`. In addition, any subclass of `Metric` can easily be converted into an `AnomalibMetric`, as shown below:
 
-```{code-block} python
+```python
 from torchmetrics import Accuracy  # metric that we want to convert
 
 # option 1: Define the new class explicitly
