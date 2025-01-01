@@ -81,7 +81,7 @@ print(accuracy.compute())  # tensor(0.76)
 
 Note that we still have access to all the constructor arguments of the original metric. For example, we can configure the Accuracy metric created above to compute either the micro average or the macro average:
 
-```{code-block} python
+```python
 from torchmetrics import Accuracy
 from anomalib.metrics import create_anomalib_metric
 
