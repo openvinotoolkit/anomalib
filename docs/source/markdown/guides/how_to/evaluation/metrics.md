@@ -41,7 +41,7 @@ This may look like a trivial difference, but directly passing the batch to the u
 
 For example, we can use Anomalib's metric class to compute both image- and pixel-level AUROC. Note how we don't need to pass the image- and pixel-level predictions explicitly when iterating over the batches.
 
-```{code-block} python
+```python
 from anomalib.metrics import AUROC
 
 # prefix is optional, but useful to distinguish between two metrics of the same type
