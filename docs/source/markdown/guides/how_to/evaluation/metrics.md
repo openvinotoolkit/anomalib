@@ -21,7 +21,7 @@ The main difference between standard `TorchMetrics` classes and `AnomalibMetric`
 
 Consider the following example which computes the image-level Area Under the ROC curve (AUROC) given a set of batch predictions. The example shows both the classical `TorchMetrics` approach, and the new `AnomalibMetric` approach to illustrate the difference between the two.
 
-```{code-block} python
+```python
 # standard torch metric
 from torchmetrics import AUROC
 auroc = AUROC()
