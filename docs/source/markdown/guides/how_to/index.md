@@ -32,10 +32,10 @@ Learn more about anomalib Engine.
 :::
 
 :::{grid-item-card} {octicon}`meter` Evaluation
-:link: ./metrics/index
+:link: ./evaluation/index
 :link-type: doc
 
-Learn more about anomalib metrics
+Learn more about model evaluation.
 :::
 
 :::{grid-item-card} {octicon}`graph` Visualization

@@ -2,7 +2,7 @@
 :orphan:
 ```
 
-# Understanding Anomalib Datasets
+# Datasets
 
 This guide explains how datasets work in Anomalib, from the base implementation to specific dataset types and how to create your own dataset.
 

@@ -2,7 +2,7 @@
 :orphan:
 ```
 
-# Working with Anomalib DataModules
+# Datamodules
 
 This guide explains how Lightning DataModules work in Anomalib and how they integrate with {doc}`datasets <./datasets>` and {doc}`dataclasses <./dataclasses>`.
 
