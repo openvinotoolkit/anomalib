@@ -2,7 +2,7 @@
 :orphan:
 ```
 
-# Working with Anomalib Dataclasses
+# Dataclasses
 
 This guide explains how to use the dataclasses in Anomalib, from basic usage to advanced use cases across different modalities.
 
