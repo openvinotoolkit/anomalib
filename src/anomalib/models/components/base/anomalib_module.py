@@ -300,7 +300,11 @@ class AnomalibModule(ExportMixin, pl.LightningModule, ABC):
         raise NotImplementedError
 
     @staticmethod
-    def _resolve_component(component: nn.Module | None, component_type: type, default_callable: Callable) -> nn.Module | None:
+    def _resolve_component(
+        component: nn.Module | None,
+        component_type: type,
+        default_callable: Callable,
+    ) -> nn.Module | None:
         """Resolve and validate the subcomponent configuration.
 
         This method resolves the configuration for various subcomponents like
