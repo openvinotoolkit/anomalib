@@ -163,43 +163,7 @@ Note that this is not desirable, as the user has no control over the interpolati
 
 ## Common pitfalls
 
-### 1. Omitting required model-specific transforms
-
-In many cases we only want to change a specific part of the model-specific transforms, such as the input size. We need to be careful that we don't omit any other model-specific transforms that the model may need
-
-```python
-from anomalib.models import Padim
-from anomalib.pre_processing import PreProcessor
-from torchvision.transforms.v2 import Compose, Normalize, Resize
-
-# Wrong: only specify the new resize, without considering any other
-# model-specific transforms that may be needed by the model.
-transform = Resize(size=(240, 240))
-pre_processor = PreProcessor(transform=transform)
-model = Padim(pre_processor=pre_processor)
-
-# Better: inspect the default transforms before specifying custom
-# transforms, and include the transforms that we don't want to modify.
-print(Padim.configure_pre_processor().transform)
-# Compose(
-#       Resize(size=[256, 256], interpolation=InterpolationMode.BILINEAR, antialias=False)
-#       Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225], inplace=False)
-# )
-
-transform = Compose(
-    Resize(size=(240, 240)),
-    Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225], inplace=False),
-)
-pre_processor = PreProcessor(transform=transform)
-model = Padim(pre_processor=pre_processor)
-
-# Best: use the image_size argument in `configure_pre_processor` to directly
-# obtain a PreProcessor instance with the right input size transform.
-pre_processor = Padim.configure_pre_processor(image_size=(240, 240))
-model = Padim(pre_processor=pre_processor)
-```
-
-### 2. Passing a model-specific transforms as augmentation
+### 1. Passing a model-specific transforms as augmentation
 
 Anomalib expects un-normalized images from the dataset, so that any Normalize transforms present in the model-specific transforms get applied correctly. Adding a Normalize transform to the augmentations will lead to unexpected behaviour as the model-specific transform will apply an additional normalization operation.
 
@@ -262,7 +226,7 @@ engine = Engine()
 engine.fit(model, datamodule=datamodule)
 ```
 
-### 3. Passing an augmentation as model-specific transform
+### 2. Passing an augmentation as model-specific transform
 
 Passing an augmentation transform to the `PreProcessor` can have unwanted effects. The augmentation will be included in the model graph, so during inference we will apply random horizontal flips. Since the PreProcessor defines a single transform for all stages, the random flips will also be applied during validation and testing.
 
