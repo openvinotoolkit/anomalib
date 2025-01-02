@@ -116,7 +116,7 @@ from anomalib.pre_processing import PreProcessor
 
 transform = Resize((112, 112))
 pre_processor = PreProcessor(transform=transform)
-model = MyModel(PreProcessor=pre_processor)
+model = MyModel(pre_processor=pre_processor)
 
 model.to_onnx("model.onnx")  # the resize transform is included in the ONNX model
 ```
