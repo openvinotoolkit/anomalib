@@ -42,8 +42,8 @@ pre_processor = Padim.configure_pre_processor()
 print(pre_processor.transform)
 
 # Compose(
-#     Resize(size=[256, 256], interpolation=InterpolationMode.BILINEAR, antialias=False)
-#     Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225], inplace=False)
+#       Resize(size=[256, 256], interpolation=InterpolationMode.BILINEAR, antialias=True)
+#       Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225], inplace=False)
 # )
 ```
 
@@ -60,10 +60,10 @@ from anomalib.models import Padim
 from anomalib.pre_processing import PreProcessor
 from torchvision.transforms.v2 import Compose, Normalize, Resize
 
-transform = Compose(
+transform = Compose([
     Resize(size=(512, 512)),
     Normalize(mean=[0.48145466, 0.4578275, 0.40821073], std=[0.26862954, 0.26130258, 0.27577711]),  # CLIP stats
-)
+])
 
 pre_processor = PreProcessor(transform=transform)
 model = Padim(pre_processor=pre_processor)
@@ -79,7 +79,7 @@ model = Padim(pre_processor=pre_processor)
 
 print(model.pre_processor.transform)
 # Compose(
-#       Resize(size=[240, 360], interpolation=InterpolationMode.BILINEAR, antialias=False)
+#       Resize(size=[240, 360], interpolation=InterpolationMode.BILINEAR, antialias=True)
 #       Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225], inplace=False)
 # )
 ```
@@ -94,7 +94,7 @@ pre_processor = WinClip.configure_pre_processor(image_size=(240, 360))
 
 print(pre_processor.transform)
 # Compose(
-#       Resize(size=[240, 240], interpolation=InterpolationMode.BICUBIC, antialias=False)
+#       Resize(size=[240, 240], interpolation=InterpolationMode.BICUBIC, antialias=True)
 #       Normalize(mean=[0.48145466, 0.4578275, 0.40821073], std=[0.26862954, 0.26130258, 0.27577711], inplace=False)
 # )
 ```

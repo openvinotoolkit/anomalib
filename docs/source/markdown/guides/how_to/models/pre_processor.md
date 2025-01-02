@@ -49,18 +49,16 @@ The newly created pre-processor is fully compatible with Anomalib. It can be use
 ```python
 from anomalib.models import FastFlow
 
-model = FastFlow(pre_processor=pre_processor)
+model = Fastflow(pre_processor=pre_processor)
 ```
 
-The pre-processor which we created earlier is now attached to the Fastflow model. Let's print the pre_processor stored in the model to confirm that the model contains our pre_processor:
+The pre-processor which we created earlier is now attached to the Fastflow model. Let's print the transform stored in the pre-processor to confirm that the model contains our transform:
 
 ```python
-print(model.pre_processor)
-# PreProcessor(
-#   (transform): Compose(
-#         Resize(size=[300, 300], interpolation=InterpolationMode.BILINEAR, antialias=False)
-#         Normalize(mean=[0.43, 0.48, 0.45], std=[0.23, 0.22, 0.25], inplace=False),
-#   )
+print(model.pre_processor.transform)
+# Compose(
+#       Resize(size=[300, 300], interpolation=InterpolationMode.BILINEAR, antialias=True)
+#       Normalize(mean=[0.43, 0.48, 0.45], std=[0.23, 0.22, 0.25], inplace=False)
 # )
 ```
 
@@ -81,17 +79,17 @@ In addition to applying the transforms in the callback hooks, the pre-processor 
 from anomalib.pre_processing import PreProcessor
 from anomalib.pre_processing.utils.transform import get_exportable_transform
 
-transform = Compose(
-      Resize(size=[256, 256])
-      CenterCrop(size=[224, 224])
-      Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-)
+transform = Compose([
+      Resize(size=(256, 256)),
+      CenterCrop(size=(224, 224)),
+      Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+])
 pre_processor = PreProcessor(transform=transform)
 
-print(pre_processor.train_transform)
+print(pre_processor.transform)
 # Compose(
 #       Resize(size=[256, 256], interpolation=InterpolationMode.BILINEAR, antialias=True)
-#       CenterCrop(size=[224, 224])
+#       CenterCrop(size=(224, 224))
 #       Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225], inplace=False)
 # )
 print(pre_processor.export_transform)
@@ -136,6 +134,10 @@ model = Padim()
 print(model.pre_processor)
 # PreProcessor(
 #   (transform): Compose(
+#         Resize(size=[256, 256], interpolation=InterpolationMode.BILINEAR, antialias=True)
+#         Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225], inplace=False)
+#   )
+#   (export_transform): Compose(
 #         Resize(size=[256, 256], interpolation=InterpolationMode.BILINEAR, antialias=False)
 #         Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225], inplace=False)
 #   )
@@ -150,6 +152,10 @@ Internally, the default pre-processor is configured with the `configure_pre_proc
 print(Padim.configure_pre_processor())
 # PreProcessor(
 #   (transform): Compose(
+#         Resize(size=[256, 256], interpolation=InterpolationMode.BILINEAR, antialias=True)
+#         Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225], inplace=False)
+#   )
+#   (export_transform): Compose(
 #         Resize(size=[256, 256], interpolation=InterpolationMode.BILINEAR, antialias=False)
 #         Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225], inplace=False)
 #   )
@@ -161,21 +167,19 @@ It's the same pre-processor as earlier! The `configure_pre_processor` method can
 ```python
 from anomalib.models import Patchcore
 
-print(Patchcore.configure_pre_processor())
-# PreProcessor(
-#   (transform): Compose(
-#         Resize(size=[256, 256], interpolation=InterpolationMode.BILINEAR, antialias=False)
-#         CenterCrop(size=[224, 224])
-#         Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225], inplace=False)
-#   )
+print(Patchcore.configure_pre_processor().transform)
+# Compose(
+#       Resize(size=[256, 256], interpolation=InterpolationMode.BILINEAR, antialias=True)
+#       CenterCrop(size=(224, 224))
+#       Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225], inplace=False)
 # )
 
 from torchvision.transforms.v2 import Compose, CenterCrop, Normalize, Resize
 
 # replace the Normalize transform, but replicate the other transforms
 transform = Compose([
-    Resize(size=[256, 256], interpolation=InterpolationMode.BILINEAR, antialias=False),
-    CenterCrop(size=[224, 224]),
+    Resize(size=[256, 256], interpolation=InterpolationMode.BILINEAR, antialias=True),
+    CenterCrop(size=(224, 224)),
     Normalize([0.48145466, 0.4578275, 0.40821073], std=[0.26862954, 0.26130258, 0.27577711]),  # CLIP stats
 ])
 pre_processor = PreProcessor(transform=transform)
@@ -189,7 +193,7 @@ pre_processor = Padim.configure_pre_processor(image_size=(200, 200))
 
 print(pre_processor.transform)
 # Compose(
-#       Resize(size=[200, 200], interpolation=InterpolationMode.BILINEAR, antialias=False)
+#       Resize(size=[200, 200], interpolation=InterpolationMode.BILINEAR, antialias=True)
 #       Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225], inplace=False)
 # )
 
@@ -297,12 +301,12 @@ model = Padim(pre_processor=pre_processor)
 # transforms, and include the transforms that we don't want to modify.
 print(Padim.configure_pre_processor().transform)
 # Compose(
-#       Resize(size=[256, 256], interpolation=InterpolationMode.BILINEAR, antialias=False)
+#       Resize(size=[256, 256], interpolation=InterpolationMode.BILINEAR, antialias=True)
 #       Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225], inplace=False)
 # )
 
 transform = Compose(
-    Resize(size=(240, 240)),
+    Resize(size=(240, 240), interpolation=InterpolationMode.BILINEAR, antialias=True),
     Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225], inplace=False),
 )
 pre_processor = PreProcessor(transform=transform)
