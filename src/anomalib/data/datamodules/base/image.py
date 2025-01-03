@@ -39,7 +39,7 @@ from torchvision.transforms.v2 import Compose, Resize, Transform
 
 from anomalib import TaskType
 from anomalib.data.datasets.base.image import AnomalibDataset
-from anomalib.data.transforms.utils import get_transforms_of_type
+from anomalib.data.transforms.utils import extract_transforms_by_type
 from anomalib.data.utils import TestSplitMode, ValSplitMode, random_split, split_by_label
 from anomalib.data.utils.synthetic import SyntheticAnomalyDataset
 from anomalib.utils.attrs import get_nested_attr
@@ -182,11 +182,11 @@ class AnomalibDataModule(LightningDataModule, ABC):
             augmentations (Transform): Augmentations to apply to the dataset.
             model_transform (Transform): Transform object from the model PreProcessor.
         """
-        model_resizes = get_transforms_of_type(model_transform, Resize)
+        model_resizes = extract_transforms_by_type(model_transform, Resize)
 
         if model_resizes:
             model_resize = model_resizes[0]
-            for aug_resize in get_transforms_of_type(augmentations, Resize):  # warn user if resizes inconsistent
+            for aug_resize in extract_transforms_by_type(augmentations, Resize):  # warn user if resizes inconsistent
                 if model_resize.size != aug_resize.size:
                     msg = f"Conflicting resize shapes found between augmentations and model transforms. You are using \
                         a Resize transform in your input data augmentations. Please be aware that the model also \
