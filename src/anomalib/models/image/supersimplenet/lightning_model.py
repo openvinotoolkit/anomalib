@@ -10,11 +10,11 @@ It delivers strong performance while maintaining fast inference.
 
 Example:
     >>> from anomalib.data import MVTec
-    >>> from anomalib.models import SuperSimpleNet
+    >>> from anomalib.models import Supersimplenet
     >>> from anomalib.engine import Engine
 
     >>> datamodule = MVTec()
-    >>> model = SuperSimpleNet()
+    >>> model = Supersimplenet()
     >>> engine = Engine()
 
     >>> engine.fit(model, datamodule=datamodule)  # doctest: +SKIP
@@ -30,7 +30,7 @@ Notes:
     but Anomalib currently supports only unsupervised learning.
 
 See Also:
-    :class:`anomalib.models.image.supersimplenet.torch_model.SuperSimpleNetModel`:
+    :class:`anomalib.models.image.supersimplenet.torch_model.SupersimplenetModel`:
         PyTorch implementation of the SuperSimpleNet model.
 """
 
@@ -53,10 +53,10 @@ from anomalib.pre_processing import PreProcessor
 from anomalib.visualization import Visualizer
 
 from .loss import SSNLoss
-from .torch_model import SuperSimpleNetModel
+from .torch_model import SupersimplenetModel
 
 
-class SuperSimpleNet(AnomalibModule):
+class Supersimplenet(AnomalibModule):
     """PL Lightning Module for the SuperSimpleNet model.
 
     Args:
@@ -100,7 +100,7 @@ class SuperSimpleNet(AnomalibModule):
             stop_grad = True
             self.norm_clip_val = 0
 
-        self.model = SuperSimpleNetModel(
+        self.model = SupersimplenetModel(
             perlin_threshold=perlin_threshold,
             backbone=backbone,
             layers=layers,

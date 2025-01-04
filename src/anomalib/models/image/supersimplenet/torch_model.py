@@ -1,7 +1,7 @@
 """PyTorch model for the SuperSimpleNet model implementation.
 
 See Also:
-    :class:`anomalib.models.image.supersimplenet.lightning_model.SuperSimpleNet`:
+    :class:`anomalib.models.image.supersimplenet.lightning_model.Supersimplenet`:
         SuperSimpleNet Lightning model.
 """
 
@@ -26,7 +26,7 @@ from anomalib.models.components import GaussianBlur2d, TorchFXFeatureExtractor
 from anomalib.models.image.supersimplenet.anomaly_generator import SSNAnomalyGenerator
 
 
-class SuperSimpleNetModel(nn.Module):
+class SupersimplenetModel(nn.Module):
     """SuperSimpleNet Pytorch model.
 
     It consists of feature extractor, feature adaptor, anomaly generation mechanism and segmentation-detection module.

@@ -52,7 +52,7 @@ from .padim import Padim
 from .patchcore import Patchcore
 from .reverse_distillation import ReverseDistillation
 from .stfpm import Stfpm
-from .supersimplenet import SuperSimpleNet
+from .supersimplenet import Supersimplenet
 from .uflow import Uflow
 from .vlm_ad import VlmAd
 from .winclip import WinClip
@@ -73,7 +73,7 @@ __all__ = [
     "Patchcore",
     "ReverseDistillation",
     "Stfpm",
-    "SuperSimpleNet",
+    "Supersimplenet",
     "Uflow",
     "VlmAd",
     "WinClip",
