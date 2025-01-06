@@ -12,6 +12,8 @@ import logging
 from pathlib import Path
 from shutil import move
 
+from torchvision.transforms.v2 import Transform
+
 from anomalib.data.datamodules.base.video import AnomalibVideoDataModule
 from anomalib.data.datasets.base.video import VideoTargetFrame
 from anomalib.data.datasets.video.ucsd_ped import UCSDpedDataset
@@ -44,6 +46,14 @@ class UCSDped(AnomalibVideoDataModule):
         eval_batch_size (int): Batch size for validation and testing.
             Defaults to ``8``.
         num_workers (int): Number of workers for data loading. Defaults to ``8``.
+        train_augmentations (Transform | None): Augmentations to apply dto the training images
+            Defaults to ``None``.
+        val_augmentations (Transform | None): Augmentations to apply to the validation images.
+            Defaults to ``None``.
+        test_augmentations (Transform | None): Augmentations to apply to the test images.
+            Defaults to ``None``.
+        augmentations (Transform | None): General augmentations to apply if stage-specific
+            augmentations are not provided.
         val_split_mode (ValSplitMode): Determines how validation set is created.
             Defaults to ``ValSplitMode.SAME_AS_TEST``.
         val_split_ratio (float): Fraction of data to use for validation.
@@ -68,6 +78,10 @@ class UCSDped(AnomalibVideoDataModule):
         train_batch_size: int = 8,
         eval_batch_size: int = 8,
         num_workers: int = 8,
+        train_augmentations: Transform | None = None,
+        val_augmentations: Transform | None = None,
+        test_augmentations: Transform | None = None,
+        augmentations: Transform | None = None,
         val_split_mode: ValSplitMode = ValSplitMode.SAME_AS_TEST,
         val_split_ratio: float = 0.5,
         seed: int | None = None,
@@ -76,6 +90,10 @@ class UCSDped(AnomalibVideoDataModule):
             train_batch_size=train_batch_size,
             eval_batch_size=eval_batch_size,
             num_workers=num_workers,
+            train_augmentations=train_augmentations,
+            val_augmentations=val_augmentations,
+            test_augmentations=test_augmentations,
+            augmentations=augmentations,
             val_split_mode=val_split_mode,
             val_split_ratio=val_split_ratio,
             seed=seed,

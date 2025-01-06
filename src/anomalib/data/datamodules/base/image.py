@@ -25,6 +25,7 @@ Example:
 # Copyright (C) 2022-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+import copy
 import logging
 from abc import ABC, abstractmethod
 from pathlib import Path
@@ -34,15 +35,18 @@ from lightning.pytorch import LightningDataModule
 from lightning.pytorch.trainer.states import TrainerFn
 from lightning.pytorch.utilities.types import EVAL_DATALOADERS, TRAIN_DATALOADERS
 from torch.utils.data.dataloader import DataLoader
+from torchvision.transforms.v2 import Compose, Resize, Transform
 
 from anomalib import TaskType
+from anomalib.data.datasets.base.image import AnomalibDataset
+from anomalib.data.transforms.utils import extract_transforms_by_type
 from anomalib.data.utils import TestSplitMode, ValSplitMode, random_split, split_by_label
 from anomalib.data.utils.synthetic import SyntheticAnomalyDataset
+from anomalib.utils.attrs import get_nested_attr
 
 if TYPE_CHECKING:
     from pandas import DataFrame
 
-    from anomalib.data.datasets.base.image import AnomalibDataset
 
 logger = logging.getLogger(__name__)
 
@@ -54,9 +58,17 @@ class AnomalibDataModule(LightningDataModule, ABC):
     common functionality for anomaly detection datasets.
 
     Args:
-        train_batch_size (int): Batch size for training dataloader
-        eval_batch_size (int): Batch size for validation/test dataloaders
-        num_workers (int): Number of workers for all dataloaders
+        train_batch_size (int): Batch size used by the train dataloader.
+        eval_batch_size (int): Batch size used by the val and test dataloaders.
+        num_workers (int): Number of workers used by the train, val and test dataloaders.
+        train_augmentations (Transform | None): Augmentations to apply dto the training images
+            Defaults to ``None``.
+        val_augmentations (Transform | None): Augmentations to apply to the validation images.
+            Defaults to ``None``.
+        test_augmentations (Transform | None): Augmentations to apply to the test images.
+            Defaults to ``None``.
+        augmentations (Transform | None): General augmentations to apply if stage-specific
+            augmentations are not provided.
         val_split_mode (ValSplitMode | str): Method to obtain validation set.
             Options:
                 - ``none``: No validation set
@@ -81,8 +93,12 @@ class AnomalibDataModule(LightningDataModule, ABC):
         train_batch_size: int,
         eval_batch_size: int,
         num_workers: int,
-        val_split_mode: ValSplitMode | str,
-        val_split_ratio: float,
+        train_augmentations: Transform | None = None,
+        val_augmentations: Transform | None = None,
+        test_augmentations: Transform | None = None,
+        augmentations: Transform | None = None,
+        val_split_mode: ValSplitMode | str | None = None,
+        val_split_ratio: float | None = None,
         test_split_mode: TestSplitMode | str | None = None,
         test_split_ratio: float | None = None,
         seed: int | None = None,
@@ -92,10 +108,14 @@ class AnomalibDataModule(LightningDataModule, ABC):
         self.eval_batch_size = eval_batch_size
         self.num_workers = num_workers
         self.test_split_mode = TestSplitMode(test_split_mode) if test_split_mode else TestSplitMode.NONE
-        self.test_split_ratio = test_split_ratio
-        self.val_split_mode = ValSplitMode(val_split_mode)
-        self.val_split_ratio = val_split_ratio
+        self.test_split_ratio = test_split_ratio or 0.5
+        self.val_split_mode = ValSplitMode(val_split_mode) if val_split_mode else ValSplitMode.NONE
+        self.val_split_ratio = val_split_ratio or 0.5
         self.seed = seed
+
+        self.train_augmentations = train_augmentations or augmentations
+        self.val_augmentations = val_augmentations or augmentations
+        self.test_augmentations = test_augmentations or augmentations
 
         self.train_data: AnomalibDataset
         self.val_data: AnomalibDataset
@@ -133,6 +153,76 @@ class AnomalibDataModule(LightningDataModule, ABC):
             if isinstance(stage, TrainerFn):
                 # only set flag if called from trainer
                 self._is_setup = True
+
+        self._update_augmentations()
+
+    def _update_augmentations(self) -> None:
+        """Update the augmentations for each subset."""
+        for subset_name in ["train", "val", "test"]:
+            subset = getattr(self, f"{subset_name}_data", None)
+            augmentations = getattr(self, f"{subset_name}_augmentations", None)
+            model_transform = get_nested_attr(self, "trainer.model.pre_processor.transform")
+            if subset and model_transform:
+                self._update_subset_augmentations(subset, augmentations, model_transform)
+
+    @staticmethod
+    def _update_subset_augmentations(
+        dataset: AnomalibDataset,
+        augmentations: Transform | None,
+        model_transform: Transform,
+    ) -> None:
+        """Update the augmentations of the dataset.
+
+        This method passes the user-specified augmentations to a dataset subset. If the model transforms contain
+        a Resize transform, it will be appended to the augmentations. This will ensure that resizing takes place
+        before collating, which reduces the usage of shared memory by the Dataloader workers.
+
+        Args:
+            dataset (AnomalibDataset): Dataset to update.
+            augmentations (Transform): Augmentations to apply to the dataset.
+            model_transform (Transform): Transform object from the model PreProcessor.
+        """
+        model_resizes = extract_transforms_by_type(model_transform, Resize)
+
+        if model_resizes:
+            model_resize = model_resizes[0]
+            for aug_resize in extract_transforms_by_type(augmentations, Resize):  # warn user if resizes inconsistent
+                if model_resize.size != aug_resize.size:
+                    msg = f"Conflicting resize shapes found between augmentations and model transforms. You are using \
+                        a Resize transform in your input data augmentations. Please be aware that the model also \
+                        applies a Resize transform with a different output size. The final effective input size as \
+                        seen by the model will be determined by the model transforms, not the augmentations. To change \
+                        the effective input size, please change the model transforms in the PreProcessor module. \
+                        Augmentations: {aug_resize.size}, Model transforms: {model_transform.size}"
+                    logger.warning(msg)
+                if model_resize.interpolation != aug_resize.interpolation:
+                    msg = f"Conflicting interpolation method found between augmentations and model transforms. You are \
+                        using a Resize transform in your input data augmentations. Please be aware that the model also \
+                        applies a Resize transform with a different interpolation method. Using multiple interpolation \
+                        methods can lead to unexpected behaviour, so it is recommended to use the same interpolation \
+                        method between augmentations and model transforms. Augmentations: {aug_resize.interpolation}, \
+                        Model transforms: {model_resize.interpolation}"
+                    logger.warning(msg)
+                if model_resize.antialias != aug_resize.antialias:
+                    msg = f"Conflicting antialiasing setting found between augmentations and model transforms. You are \
+                        using a Resize transform in your input data augmentations. Please be aware that the model also \
+                        applies a Resize transform with a different antialising setting. Using conflicting \
+                        antialiasing settings can lead to unexpected behaviour, so it is recommended to use the same \
+                        antialiasing setting between augmentations and model transforms. Augmentations: \
+                        antialias={aug_resize.antialias}, Model transforms: antialias={model_resize.antialias}"
+                    logger.warning(msg)
+
+            # append model resize to augmentations
+            if isinstance(augmentations, Resize):
+                augmentations = model_resize
+            elif isinstance(augmentations, Compose):
+                augmentations = Compose([*augmentations.transforms, model_resize])
+            elif isinstance(augmentations, Transform):
+                augmentations = Compose([augmentations, model_resize])
+            elif augmentations is None:
+                augmentations = model_resize
+
+        dataset.augmentations = augmentations
 
     @abstractmethod
     def _setup(self, _stage: str | None = None) -> None:
@@ -244,8 +334,8 @@ class AnomalibDataModule(LightningDataModule, ABC):
                 seed=self.seed,
             )
         elif self.val_split_mode == ValSplitMode.SAME_AS_TEST:
-            # use test set as validation
-            self.val_data = self.test_data
+            # equal to test set
+            self.val_data = copy.deepcopy(self.test_data)
         elif self.val_split_mode == ValSplitMode.SYNTHETIC:
             # create synthetic anomalies from training samples
             self.train_data, normal_val_data = random_split(

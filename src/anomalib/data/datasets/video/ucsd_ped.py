@@ -94,7 +94,7 @@ class UCSDpedDataset(AnomalibVideoDataset):
         target_frame (VideoTargetFrame): Specifies the target frame in the video
             clip, used for ground truth retrieval. Defaults to
             ``VideoTargetFrame.LAST``.
-        transform (Transform | None, optional): Transforms to apply to the images.
+        augmentations (Transform, optional): Augmentations that should be applied to the input images.
             Defaults to ``None``.
 
     Example:
@@ -118,13 +118,13 @@ class UCSDpedDataset(AnomalibVideoDataset):
         clip_length_in_frames: int = 2,
         frames_between_clips: int = 10,
         target_frame: VideoTargetFrame = VideoTargetFrame.LAST,
-        transform: Transform | None = None,
+        augmentations: Transform | None = None,
     ) -> None:
         super().__init__(
             clip_length_in_frames=clip_length_in_frames,
             frames_between_clips=frames_between_clips,
             target_frame=target_frame,
-            transform=transform,
+            augmentations=augmentations,
         )
 
         self.root_category = Path(root) / category

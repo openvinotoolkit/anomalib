@@ -125,8 +125,9 @@ class WinClip(AnomalibModule):
         self.class_name = class_name
         self.k_shot = k_shot
         self.few_shot_source = Path(few_shot_source) if few_shot_source else None
+        self.is_setup = False
 
-    def _setup(self) -> None:
+    def setup(self, stage: str) -> None:
         """Setup WinCLIP model.
 
         This method:
@@ -137,6 +138,10 @@ class WinClip(AnomalibModule):
         Note:
             This hook is called before the model is moved to the target device.
         """
+        del stage
+        if self.is_setup:
+            return
+
         # get class name
         self.class_name = self._get_class_name()
         ref_images = None
@@ -158,6 +163,7 @@ class WinClip(AnomalibModule):
 
         # call setup to initialize the model
         self.model.setup(self.class_name, ref_images)
+        self.is_setup = True
 
     def _get_class_name(self) -> str:
         """Get the class name used in the prompt ensemble.
@@ -298,7 +304,7 @@ class WinClip(AnomalibModule):
             Resize((240, 240), antialias=True, interpolation=InterpolationMode.BICUBIC),
             Normalize(mean=(0.48145466, 0.4578275, 0.40821073), std=(0.26862954, 0.26130258, 0.27577711)),
         ])
-        return PreProcessor(val_transform=transform, test_transform=transform)
+        return PreProcessor(transform=transform)
 
     @staticmethod
     def configure_post_processor() -> OneClassPostProcessor:

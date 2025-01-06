@@ -23,6 +23,8 @@ Reference:
 import logging
 from pathlib import Path
 
+from torchvision.transforms.v2 import Transform
+
 from anomalib.data.datamodules.base.image import AnomalibDataModule
 from anomalib.data.datasets.image.kolektor import KolektorDataset
 from anomalib.data.utils import DownloadInfo, Split, TestSplitMode, ValSplitMode, download_and_extract
@@ -49,6 +51,14 @@ class Kolektor(AnomalibDataModule):
             Defaults to ``32``.
         num_workers (int, optional): Number of workers.
             Defaults to ``8``.
+        train_augmentations (Transform | None): Augmentations to apply dto the training images
+            Defaults to ``None``.
+        val_augmentations (Transform | None): Augmentations to apply to the validation images.
+            Defaults to ``None``.
+        test_augmentations (Transform | None): Augmentations to apply to the test images.
+            Defaults to ``None``.
+        augmentations (Transform | None): General augmentations to apply if stage-specific
+            augmentations are not provided.
         test_split_mode (TestSplitMode): Setting that determines how the testing
             subset is obtained.
             Defaults to ``TestSplitMode.FROM_DIR``.
@@ -63,7 +73,6 @@ class Kolektor(AnomalibDataModule):
             Defaults to ``0.5``.
         seed (int | None, optional): Seed which may be set to a fixed value for
             reproducibility.
-            Defaults to ``None``.
 
     Example:
         >>> from anomalib.data import Kolektor
@@ -85,6 +94,10 @@ class Kolektor(AnomalibDataModule):
         train_batch_size: int = 32,
         eval_batch_size: int = 32,
         num_workers: int = 8,
+        train_augmentations: Transform | None = None,
+        val_augmentations: Transform | None = None,
+        test_augmentations: Transform | None = None,
+        augmentations: Transform | None = None,
         test_split_mode: TestSplitMode | str = TestSplitMode.FROM_DIR,
         test_split_ratio: float = 0.2,
         val_split_mode: ValSplitMode | str = ValSplitMode.SAME_AS_TEST,
@@ -95,6 +108,10 @@ class Kolektor(AnomalibDataModule):
             train_batch_size=train_batch_size,
             eval_batch_size=eval_batch_size,
             num_workers=num_workers,
+            train_augmentations=train_augmentations,
+            val_augmentations=val_augmentations,
+            test_augmentations=test_augmentations,
+            augmentations=augmentations,
             test_split_mode=test_split_mode,
             test_split_ratio=test_split_ratio,
             val_split_mode=val_split_mode,

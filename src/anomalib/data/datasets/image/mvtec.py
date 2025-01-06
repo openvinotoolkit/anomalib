@@ -68,7 +68,7 @@ class MVTecDataset(AnomalibDataset):
             Defaults to ``"./datasets/MVTec"``.
         category (str): Category name, must be one of ``CATEGORIES``.
             Defaults to ``"bottle"``.
-        transform (Transform | None, optional): Transforms to apply to the images.
+        augmentations (Transform, optional): Augmentations that should be applied to the input images.
             Defaults to ``None``.
         split (str | Split | None, optional): Dataset split - usually
             ``Split.TRAIN`` or ``Split.TEST``. Defaults to ``None``.
@@ -106,10 +106,10 @@ class MVTecDataset(AnomalibDataset):
         self,
         root: Path | str = "./datasets/MVTec",
         category: str = "bottle",
-        transform: Transform | None = None,
+        augmentations: Transform | None = None,
         split: str | Split | None = None,
     ) -> None:
-        super().__init__(transform=transform)
+        super().__init__(augmentations=augmentations)
 
         self.root_category = Path(root) / Path(category)
         self.category = category

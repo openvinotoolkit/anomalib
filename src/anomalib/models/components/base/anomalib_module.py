@@ -43,14 +43,13 @@ Example:
 import logging
 import warnings
 from abc import ABC, abstractmethod
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import Any
 
 import lightning.pytorch as pl
 import torch
 from lightning.pytorch import Callback
-from lightning.pytorch.trainer.states import TrainerFn
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torch import nn
 from torchvision.transforms.v2 import Compose, Normalize, Resize
@@ -59,7 +58,6 @@ from anomalib import LearningType
 from anomalib.data import Batch, InferenceBatch
 from anomalib.metrics import AUROC, F1Score
 from anomalib.metrics.evaluator import Evaluator
-from anomalib.metrics.threshold import Threshold
 from anomalib.post_processing import OneClassPostProcessor, PostProcessor
 from anomalib.pre_processing import PreProcessor
 from anomalib.visualization import ImageVisualizer, Visualizer
@@ -137,13 +135,12 @@ class AnomalibModule(ExportMixin, pl.LightningModule, ABC):
         self.loss: nn.Module
         self.callbacks: list[Callback]
 
-        self.pre_processor = self._resolve_pre_processor(pre_processor)
-        self.post_processor = self._resolve_post_processor(post_processor)
-        self.evaluator = self._resolve_evaluator(evaluator)
-        self.visualizer = self._resolve_visualizer(visualizer)
+        self.pre_processor = self._resolve_component(pre_processor, PreProcessor, self.configure_pre_processor)
+        self.post_processor = self._resolve_component(post_processor, PostProcessor, self.configure_post_processor)
+        self.evaluator = self._resolve_component(evaluator, Evaluator, self.configure_evaluator)
+        self.visualizer = self._resolve_component(visualizer, Visualizer, self.configure_visualizer)
 
         self._input_size: tuple[int, int] | None = None
-        self._is_setup = False
 
     @property
     def name(self) -> str:
@@ -153,33 +150,6 @@ class AnomalibModule(ExportMixin, pl.LightningModule, ABC):
             str: Name of the model class
         """
         return self.__class__.__name__
-
-    def setup(self, stage: str | None = None) -> None:
-        """Set up the model if not already done.
-
-        This method ensures the model is built by calling ``_setup()`` if needed.
-
-        Args:
-            stage (str | None, optional): Current stage of training.
-                Defaults to ``None``.
-        """
-        if getattr(self, "model", None) is None or not self._is_setup:
-            self._setup()
-            if isinstance(stage, TrainerFn):
-                # only set the flag if the stage is a TrainerFn, which means the
-                # setup has been called from a trainer
-                self._is_setup = True
-
-    def _setup(self) -> None:
-        """Set up the model architecture.
-
-        This method should be overridden by subclasses to build their model
-        architecture. It is called by ``setup()`` when the model needs to be
-        initialized.
-
-        This is useful when the model cannot be fully initialized in ``__init__``
-        because it requires data-dependent parameters.
-        """
 
     def configure_callbacks(self) -> Sequence[Callback] | Callback:
         """Configure callbacks for the model.
@@ -299,34 +269,46 @@ class AnomalibModule(ExportMixin, pl.LightningModule, ABC):
         """
         raise NotImplementedError
 
-    def _resolve_pre_processor(self, pre_processor: PreProcessor | bool) -> PreProcessor | None:
-        """Resolve and validate the pre-processor configuration.
+    @staticmethod
+    def _resolve_component(
+        component: nn.Module | None,
+        component_type: type,
+        default_callable: Callable,
+    ) -> nn.Module | None:
+        """Resolve and validate the subcomponent configuration.
+
+        This method resolves the configuration for various subcomponents like
+        pre-processor, post-processor, evaluator and visualizer. It validates
+        the configuration and returns the configured component. If the component
+        is a boolean, it uses the default callable to create the component. If
+        the component is already an instance of the component type, it returns
+        the component as is.
 
         Args:
-            pre_processor (PreProcessor | bool): Pre-processor configuration
-                - ``True`` -> use default pre-processor
-                - ``False`` -> no pre-processor
-                - ``PreProcessor`` -> use provided pre-processor
+            component (object): Component configuration
+            component_type (Type): Type of the component
+            default_callable (Callable): Callable to create default component
 
         Returns:
-            PreProcessor | None: Configured pre-processor
+            Component | None: Configured component
 
         Raises:
-            TypeError: If pre_processor is invalid type
+            TypeError: If component is invalid type
         """
-        if isinstance(pre_processor, PreProcessor):
-            return pre_processor
-        if isinstance(pre_processor, bool):
-            return self.configure_pre_processor() if pre_processor else None
-        msg = f"Invalid pre-processor type: {type(pre_processor)}"
+        if isinstance(component, component_type):
+            return component
+        if isinstance(component, bool):
+            return default_callable() if component else None
+        msg = f"Passed object should be {component_type} or bool, got: {type(component)}"
         raise TypeError(msg)
 
-    @classmethod
-    def configure_pre_processor(cls, image_size: tuple[int, int] | None = None) -> PreProcessor:
+    @staticmethod
+    def configure_pre_processor(image_size: tuple[int, int] | None = None) -> PreProcessor:
         """Configure the default pre-processor.
 
         The default pre-processor resizes images and normalizes using ImageNet
-        statistics.
+        statistics. Override this method to provide a custom pre-processor for
+        the model.
 
         Args:
             image_size (tuple[int, int] | None, optional): Target size for
@@ -348,30 +330,11 @@ class AnomalibModule(ExportMixin, pl.LightningModule, ABC):
             ]),
         )
 
-    def _resolve_post_processor(self, post_processor: PostProcessor | bool) -> PostProcessor | None:
-        """Resolve and validate the post-processor configuration.
-
-        Args:
-            post_processor (PostProcessor | bool): Post-processor configuration
-                - ``True`` -> use default post-processor
-                - ``False`` -> no post-processor
-                - ``PostProcessor`` -> use provided post-processor
-
-        Returns:
-            PostProcessor | None: Configured post-processor
-
-        Raises:
-            TypeError: If post_processor is invalid type
-        """
-        if isinstance(post_processor, PostProcessor):
-            return post_processor
-        if isinstance(post_processor, bool):
-            return self.configure_post_processor() if post_processor else None
-        msg = f"Invalid post-processor type: {type(post_processor)}"
-        raise TypeError(msg)
-
     def configure_post_processor(self) -> PostProcessor | None:
         """Configure the default post-processor.
+
+        The default post-processor is based on the model's learning type. Override
+        this method to provide a custom post-processor for the model.
 
         Returns:
             PostProcessor | None: Configured post-processor based on learning type
@@ -394,34 +357,12 @@ class AnomalibModule(ExportMixin, pl.LightningModule, ABC):
         )
         raise NotImplementedError(msg)
 
-    def _resolve_evaluator(self, evaluator: Evaluator | bool) -> Evaluator | None:
-        """Resolve and validate the evaluator configuration.
-
-        Args:
-            evaluator (Evaluator | bool): Evaluator configuration
-                - ``True`` -> use default evaluator
-                - ``False`` -> no evaluator
-                - ``Evaluator`` -> use provided evaluator
-
-        Returns:
-            Evaluator | None: Configured evaluator
-
-        Raises:
-            TypeError: If evaluator is invalid type
-        """
-        if isinstance(evaluator, Evaluator):
-            return evaluator
-        if isinstance(evaluator, bool):
-            return self.configure_evaluator() if evaluator else None
-        msg = f"evaluator must be of type Evaluator or bool, got {type(evaluator)}"
-        raise TypeError(msg)
-
     @staticmethod
     def configure_evaluator() -> Evaluator:
         """Configure the default evaluator.
 
         The default evaluator includes metrics for both image-level and
-        pixel-level evaluation.
+        pixel-level evaluation. Override this method to provide custom metrics for the model.
 
         Returns:
             Evaluator: Configured evaluator with default metrics
@@ -438,31 +379,11 @@ class AnomalibModule(ExportMixin, pl.LightningModule, ABC):
         test_metrics = [image_auroc, image_f1score, pixel_auroc, pixel_f1score]
         return Evaluator(test_metrics=test_metrics)
 
-    def _resolve_visualizer(self, visualizer: Visualizer | bool) -> Visualizer | None:
-        """Resolve and validate the visualizer configuration.
-
-        Args:
-            visualizer (Visualizer | bool): Visualizer configuration
-                - ``True`` -> use default visualizer
-                - ``False`` -> no visualizer
-                - ``Visualizer`` -> use provided visualizer
-
-        Returns:
-            Visualizer | None: Configured visualizer
-
-        Raises:
-            TypeError: If visualizer is invalid type
-        """
-        if isinstance(visualizer, Visualizer):
-            return visualizer
-        if isinstance(visualizer, bool):
-            return self.configure_visualizer() if visualizer else None
-        msg = f"Visualizer must be of type Visualizer or bool, got {type(visualizer)}"
-        raise TypeError(msg)
-
     @classmethod
     def configure_visualizer(cls) -> ImageVisualizer:
         """Configure the default visualizer.
+
+        Override this method to provide a custom visualizer for the model.
 
         Returns:
             ImageVisualizer: Default image visualizer instance
@@ -487,7 +408,7 @@ class AnomalibModule(ExportMixin, pl.LightningModule, ABC):
             >>> model.input_size  # Returns size after pre-processing
             (256, 256)
         """
-        transform = self.pre_processor.predict_transform if self.pre_processor else None
+        transform = self.pre_processor.transform if self.pre_processor else None
         if transform is None:
             return None
         dummy_input = torch.zeros(1, 3, 1, 1)
@@ -539,9 +460,6 @@ class AnomalibModule(ExportMixin, pl.LightningModule, ABC):
             help="Path to a configuration file in json or yaml format.",
         )
         model_parser.add_subclass_arguments(AnomalibModule, "model", required=False, fail_untyped=False)
-        model_parser.add_argument("--metrics.image", type=list[str] | str | None, default=["F1Score", "AUROC"])
-        model_parser.add_argument("--metrics.pixel", type=list[str] | str | None, default=None, required=False)
-        model_parser.add_argument("--metrics.threshold", type=Threshold | str, default="F1AdaptiveThreshold")
         model_parser.add_class_arguments(Trainer, "trainer", fail_untyped=False, instantiate=False, sub_configs=True)
         args = ["--config", str(config_path)]
         for key, value in kwargs.items():
