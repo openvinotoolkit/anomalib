@@ -90,7 +90,7 @@ class FolderDataset(AnomalibDataset):
         self,
         name: str,
         normal_dir: str | Path | Sequence[str | Path],
-        transform: Transform | None = None,
+        augmentations: Transform | None = None,
         root: str | Path | None = None,
         abnormal_dir: str | Path | Sequence[str | Path] | None = None,
         normal_test_dir: str | Path | Sequence[str | Path] | None = None,
@@ -98,7 +98,7 @@ class FolderDataset(AnomalibDataset):
         split: str | Split | None = None,
         extensions: tuple[str, ...] | None = None,
     ) -> None:
-        super().__init__(transform)
+        super().__init__(augmentations=augmentations)
 
         self._name = name
         self.split = split

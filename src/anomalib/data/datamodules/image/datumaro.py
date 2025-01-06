@@ -40,6 +40,8 @@ Notes:
 
 from pathlib import Path
 
+from torchvision.transforms.v2 import Transform
+
 from anomalib.data.datamodules.base import AnomalibDataModule
 from anomalib.data.datasets.image.datumaro import DatumaroDataset
 from anomalib.data.utils import Split, TestSplitMode, ValSplitMode
@@ -56,6 +58,16 @@ class Datumaro(AnomalibDataModule):
             Defaults to ``32``.
         num_workers (int, optional): Number of workers.
             Defaults to ``8``.
+        train_augmentations (Transform | None): Augmentations to apply dto the training images
+            Defaults to ``None``.
+        val_augmentations (Transform | None): Augmentations to apply to the validation images.
+            Defaults to ``None``.
+        test_augmentations (Transform | None): Augmentations to apply to the test images.
+            Defaults to ``None``.
+        augmentations (Transform | None): General augmentations to apply if stage-specific
+            augmentations are not provided.
+        image_size (tuple[int, int], optional): Size to which input images should be resized.
+            Defaults to ``None``.
         test_split_mode (TestSplitMode): Setting that determines how the testing
             subset is obtained.
             Defaults to ``TestSplitMode.FROM_DIR``.
@@ -92,6 +104,10 @@ class Datumaro(AnomalibDataModule):
         train_batch_size: int = 32,
         eval_batch_size: int = 32,
         num_workers: int = 8,
+        train_augmentations: Transform | None = None,
+        val_augmentations: Transform | None = None,
+        test_augmentations: Transform | None = None,
+        augmentations: Transform | None = None,
         test_split_mode: TestSplitMode | str = TestSplitMode.FROM_DIR,
         test_split_ratio: float = 0.5,
         val_split_mode: ValSplitMode | str = ValSplitMode.FROM_TEST,
@@ -102,6 +118,10 @@ class Datumaro(AnomalibDataModule):
             train_batch_size=train_batch_size,
             eval_batch_size=eval_batch_size,
             num_workers=num_workers,
+            train_augmentations=train_augmentations,
+            val_augmentations=val_augmentations,
+            test_augmentations=test_augmentations,
+            augmentations=augmentations,
             val_split_mode=val_split_mode,
             val_split_ratio=val_split_ratio,
             test_split_mode=test_split_mode,

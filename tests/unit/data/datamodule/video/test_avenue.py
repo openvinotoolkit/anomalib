@@ -6,6 +6,7 @@
 from pathlib import Path
 
 import pytest
+from torchvision.transforms.v2 import Resize
 
 from anomalib.data import Avenue
 from tests.unit.data.datamodule.base.video import _TestAnomalibVideoDatamodule
@@ -31,6 +32,7 @@ class TestAvenue(_TestAnomalibVideoDatamodule):
             num_workers=0,
             train_batch_size=4,
             eval_batch_size=4,
+            augmentations=Resize((256, 256)),
         )
 
         _datamodule.prepare_data()

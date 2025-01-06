@@ -65,8 +65,8 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
         clip_length_in_frames (int): Number of video frames in each clip.
         frames_between_clips (int): Number of frames between each consecutive
             video clip.
-        transform (Transform | None, optional): Transforms to be applied to the
-            input clips. Defaults to ``None``.
+        augmentations (Transform, optional): Augmentations that should be applied to the input clips.
+            Defaults to ``None``.
         target_frame (VideoTargetFrame, optional): Specifies the target frame in
             the video clip, used for ground truth retrieval.
             Defaults to ``VideoTargetFrame.LAST``.
@@ -88,14 +88,14 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
         self,
         clip_length_in_frames: int,
         frames_between_clips: int,
-        transform: Transform | None = None,
+        augmentations: Transform | None = None,
         target_frame: VideoTargetFrame = VideoTargetFrame.LAST,
     ) -> None:
-        super().__init__(transform)
+        super().__init__(augmentations=augmentations)
 
         self.clip_length_in_frames = clip_length_in_frames
         self.frames_between_clips = frames_between_clips
-        self.transform = transform
+        self.augmentations = augmentations
 
         self.indexer: ClipsIndexer | None = None
         self.indexer_cls: Callable | None = None
@@ -211,11 +211,11 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
 
         # apply transforms
         if item.gt_mask is not None:
-            if self.transform:
-                item.image, item.gt_mask = self.transform(item.image, Mask(item.gt_mask))
+            if self.augmentations:
+                item.image, item.gt_mask = self.augmentations(item.image, Mask(item.gt_mask))
             item.gt_label = torch.Tensor([1 in frame for frame in item.gt_mask]).int().squeeze(0)
-        elif self.transform:
-            item.image = self.transform(item.image)
+        elif self.augmentations:
+            item.image = self.augmentations(item.image)
 
         # squeeze temporal dimensions in case clip length is 1
         item.image = item.image.squeeze(0)

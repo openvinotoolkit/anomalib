@@ -71,13 +71,17 @@ class AnomalibDataset(Dataset, ABC):
         torch.Size([3, 256, 256])
 
     Note:
-        This is an abstract base class. Subclasses must implement the required methods and
-        set the samples DataFrame.
+        The example above is illustrative and may need to be adjusted based on the specific dataset structure.
+
+    Args:
+        task (str): Task type, either 'classification' or 'segmentation'
+        augmentations (Transform, optional): Augmentations that should be applied to the input images.
+            Defaults to ``None``.
     """
 
-    def __init__(self, transform: Transform | None = None) -> None:
+    def __init__(self, augmentations: Transform | None = None) -> None:
         super().__init__()
-        self.transform = transform
+        self.augmentations = augmentations
         self._samples: DataFrame | None = None
         self._category: str | None = None
 
@@ -267,7 +271,7 @@ class AnomalibDataset(Dataset, ABC):
         item = {"image_path": image_path, "gt_label": label_index}
 
         if self.task == TaskType.CLASSIFICATION:
-            item["image"] = self.transform(image) if self.transform else image
+            item["image"] = self.augmentations(image) if self.augmentations else image
         elif self.task == TaskType.SEGMENTATION:
             # Only Anomalous (1) images have masks in anomaly datasets
             # Therefore, create empty mask for Normal (0) images.
@@ -276,7 +280,7 @@ class AnomalibDataset(Dataset, ABC):
                 if label_index == LabelName.NORMAL
                 else read_mask(mask_path, as_tensor=True)
             )
-            item["image"], item["gt_mask"] = self.transform(image, mask) if self.transform else (image, mask)
+            item["image"], item["gt_mask"] = self.augmentations(image, mask) if self.augmentations else (image, mask)
 
         else:
             msg = f"Unknown task type: {self.task}"

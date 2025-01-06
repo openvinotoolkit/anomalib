@@ -6,6 +6,10 @@ data:
     train_batch_size: 72
     eval_batch_size: 32
     num_workers: 8
+    train_augmentations: null
+    val_augmentations: null
+    test_augmentations: null
+    augmentations: null
     test_split_mode: from_dir
     test_split_ratio: 0.2
     val_split_mode: same_as_test

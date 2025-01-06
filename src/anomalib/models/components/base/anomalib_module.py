@@ -58,7 +58,6 @@ from anomalib import LearningType
 from anomalib.data import Batch, InferenceBatch
 from anomalib.metrics import AUROC, F1Score
 from anomalib.metrics.evaluator import Evaluator
-from anomalib.metrics.threshold import Threshold
 from anomalib.post_processing import OneClassPostProcessor, PostProcessor
 from anomalib.pre_processing import PreProcessor
 from anomalib.visualization import ImageVisualizer, Visualizer
@@ -409,7 +408,7 @@ class AnomalibModule(ExportMixin, pl.LightningModule, ABC):
             >>> model.input_size  # Returns size after pre-processing
             (256, 256)
         """
-        transform = self.pre_processor.predict_transform if self.pre_processor else None
+        transform = self.pre_processor.transform if self.pre_processor else None
         if transform is None:
             return None
         dummy_input = torch.zeros(1, 3, 1, 1)
@@ -461,9 +460,6 @@ class AnomalibModule(ExportMixin, pl.LightningModule, ABC):
             help="Path to a configuration file in json or yaml format.",
         )
         model_parser.add_subclass_arguments(AnomalibModule, "model", required=False, fail_untyped=False)
-        model_parser.add_argument("--metrics.image", type=list[str] | str | None, default=["F1Score", "AUROC"])
-        model_parser.add_argument("--metrics.pixel", type=list[str] | str | None, default=None, required=False)
-        model_parser.add_argument("--metrics.threshold", type=Threshold | str, default="F1AdaptiveThreshold")
         model_parser.add_class_arguments(Trainer, "trainer", fail_untyped=False, instantiate=False, sub_configs=True)
         args = ["--config", str(config_path)]
         for key, value in kwargs.items():
