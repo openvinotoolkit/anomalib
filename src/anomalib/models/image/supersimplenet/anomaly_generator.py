@@ -70,13 +70,13 @@ class AnomalyGenerator(nn.Module):
                 mode="bilinear",
             )
             # binarize
-            perlin_thr = torch.where(perlin_noise > self.threshold, 1, 0)
+            thresholded_perlin = torch.where(perlin_noise > self.threshold, 1, 0)
 
             # 50% of anomaly
             if torch.rand(1).item() > 0.5:
-                perlin_thr = torch.zeros_like(perlin_thr)
+                thresholded_perlin = torch.zeros_like(thresholded_perlin)
 
-            perlin.append(perlin_thr)
+            perlin.append(thresholded_perlin)
         return torch.cat(perlin)
 
     def forward(

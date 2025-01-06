@@ -180,6 +180,8 @@ class Supersimplenet(AnomalibModule):
     def learning_type(self) -> LearningType:
         """Return the learning type of the model.
 
+        This is subject to change in the future when support for supervised training is introduced.
+
         Returns:
             LearningType: Learning type of the model.
         """
