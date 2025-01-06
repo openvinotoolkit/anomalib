@@ -32,9 +32,9 @@
 > We're excited to announce the beta release of Anomalib v2.0.0! This version introduces significant improvements and customization options to enhance your anomaly detection workflows. Please be aware that there are several API changes between `v1.2.0` and `v2.0.0`, so please be careful when updating your existing pipelines. We invite you to try it out and share your feedback:
 >
 > - Multi-GPU support
-> - New dataclasses for model in- and outputs (docs guide: coming soon)
-> - Configurable modules for pre- and post-processing operations via `Preprocessor` and `Postprocessor` (docs guide: coming soon)
-> - Configurable module for evaluation metrics via `Evaluator` (docs guide: coming soon)
+> - New [dataclasses](https://anomalib.readthedocs.io/en/latest/markdown/guides/how_to/data/dataclasses.html) for model in- and outputs (docs guide: coming soon)
+> - Configurable modules for pre- and post-processing operations via [`Preprocessor`](https://anomalib.readthedocs.io/en/latest/markdown/guides/how_to/models/pre_processor.html) and [`Postprocessor`](https://anomalib.readthedocs.io/en/latest/markdown/guides/how_to/models/post_processor.html) (docs guide: coming soon)
+> - Configurable module for evaluation metrics via [`Evaluator`](https://anomalib.readthedocs.io/en/latest/markdown/guides/how_to/evaluation/evaluator.html) (docs guide: coming soon)
 > - Configurable module for visualization via `Visualizer` (docs guide: coming soon)
 >
 > We value your input! Please test and share feedback via [GitHub Issues](https://github.com/openvinotoolkit/anomalib/issues) or our [Discussions](https://github.com/openvinotoolkit/anomalib/discussions)
