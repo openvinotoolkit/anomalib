@@ -17,7 +17,7 @@ from tests.helpers.data import DummyImageDatasetGenerator, DummyVideoDatasetGene
 
 
 def _dataset_names() -> list[str]:
-    return [str(path.stem) for path in Path("configs/data").glob("*.yaml")]
+    return [str(path.stem) for path in Path("examples/configs/data").glob("*.yaml")]
 
 
 @pytest.fixture(scope="session")

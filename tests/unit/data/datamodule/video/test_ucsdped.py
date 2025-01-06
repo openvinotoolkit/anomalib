@@ -43,4 +43,4 @@ class TestUCSDped(_TestAnomalibVideoDatamodule):
     @staticmethod
     def fxt_data_config_path() -> str:
         """Return the path to the test data config."""
-        return "configs/data/ucsd_ped.yaml"
+        return "examples/configs/data/ucsd_ped.yaml"

@@ -43,7 +43,7 @@ class TestFolder3D(_TestAnomalibDepthDatamodule):
     @staticmethod
     def fxt_data_config_path() -> str:
         """Return the path to the test data config."""
-        return "configs/data/folder_3d.yaml"
+        return "examples/configs/data/folder_3d.yaml"
 
     @staticmethod
     def test_datamodule_from_config(fxt_data_config_path: str) -> None:

@@ -14,7 +14,7 @@ from anomalib.models.components.base import AnomalibModule
 @pytest.fixture(scope="class")
 def model_config_folder_path() -> str:
     """Fixture that returns model config folder path."""
-    return "configs/model"
+    return "examples/configs/model"
 
 
 class TestAnomalibModule:

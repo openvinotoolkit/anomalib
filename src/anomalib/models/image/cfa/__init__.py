@@ -11,13 +11,20 @@ anomaly-sensitive representations.
 Paper: https://arxiv.org/abs/2206.04325
 
 Example:
+    >>> from anomalib.data import MVTec
     >>> from anomalib.models.image import Cfa
-    >>> # Initialize the model
+    >>> from anomalib.engine import Engine
+
+    >>> # Initialize model and data
+    >>> datamodule = MVTec()
     >>> model = Cfa()
-    >>> # Train on normal samples
-    >>> model.fit(normal_samples)
-    >>> # Get anomaly predictions
-    >>> predictions = model.predict(test_samples)
+
+    >>> # Train using the Engine
+    >>> engine = Engine()
+    >>> engine.fit(model=model, datamodule=datamodule)
+
+    >>> # Get predictions
+    >>> predictions = engine.predict(model=model, datamodule=datamodule)
 """
 
 # Copyright (C) 2022-2024 Intel Corporation

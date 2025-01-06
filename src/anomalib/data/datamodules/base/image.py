@@ -10,7 +10,7 @@ Example:
     Create a datamodule from a config file::
 
         >>> from anomalib.data import AnomalibDataModule
-        >>> data_config = "configs/data/mvtec.yaml"
+        >>> data_config = "examples/configs/data/mvtec.yaml"
         >>> datamodule = AnomalibDataModule.from_config(config_path=data_config)
 
     Override config with additional arguments::
@@ -422,7 +422,7 @@ class AnomalibDataModule(LightningDataModule, ABC):
         Example:
             Load from config file::
 
-                >>> config_path = "configs/data/mvtec.yaml"
+                >>> config_path = "examples/configs/data/mvtec.yaml"
                 >>> datamodule = AnomalibDataModule.from_config(config_path)
 
             Override config values::

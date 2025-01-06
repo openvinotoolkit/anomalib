@@ -17,8 +17,9 @@ The installer can be installed using the following commands:
 :::{tab-item} API
 :sync: label-1
 
-```{literalinclude} /snippets/install/pypi.txt
+```{literalinclude} ../../../../examples/cli/00_installation/pip_install.sh
 :language: bash
+:lines: 15
 ```
 
 :::
@@ -26,8 +27,9 @@ The installer can be installed using the following commands:
 :::{tab-item} Source
 :sync: label-2
 
-```{literalinclude} /snippets/install/source.txt
+```{literalinclude} ../../../../examples/cli/00_installation/source_install.sh
 :language: bash
+:lines: 10-34
 ```
 
 :::
@@ -42,23 +44,21 @@ The next section demonstrates how to install the full package using the CLI inst
 :::::{dropdown} Installing the Full Package
 After installing anomalib, you can install the full package using the following commands:
 
-```{literalinclude} /snippets/install/anomalib_help.txt
+```{literalinclude} ../../../../examples/cli/00_installation/anomalib_install.sh
 :language: bash
+:lines: 17-36
 ```
 
 As can be seen above, the only available sub-command is `install` at the moment.
 The `install` sub-command has options to install either the full package or the
 specific components of the package.
 
-```{literalinclude} /snippets/install/anomalib_install_help.txt
-:language: bash
-```
-
 By default the `install` sub-command installs the full package. If you want to
 install only the specific components of the package, you can use the `--option` flag.
 
-```{literalinclude} /snippets/install/anomalib_install.txt
+```{literalinclude} ../../../../examples/cli/00_installation/anomalib_install.sh
 :language: bash
+:lines: 39-68
 ```
 
 After following these steps, your environment will be ready to use anomalib!
@@ -74,15 +74,16 @@ interfaces, and might be easier for those who would like to use anomalib off-the
 
 :::{tab-item} API
 
-```{literalinclude} /snippets/train/api/default.txt
+```{literalinclude} ../../../../examples/api/01_getting_started/basic_training.py
 :language: python
+:lines: 10-34
 ```
 
 :::
 
 :::{tab-item} CLI
 
-```{literalinclude} /snippets/train/cli/default.txt
+```{literalinclude} ../../../../examples/cli/01_getting_started/basic_training.sh
 :language: bash
 ```
 
@@ -102,7 +103,7 @@ Anomalib includes multiple inferencing scripts, including Torch, Lightning, Grad
 :::{tab-item} API
 :sync: label-1
 
-```{literalinclude} /snippets/inference/api/lightning.txt
+```{literalinclude} ../../../../examples/api/01_getting_started/basic_inference.py
 :language: python
 ```
 
@@ -111,7 +112,7 @@ Anomalib includes multiple inferencing scripts, including Torch, Lightning, Grad
 :::{tab-item} CLI
 :sync: label-2
 
-```{literalinclude} /snippets/inference/cli/lightning.txt
+```{literalinclude} ../../../../examples/cli/01_getting_started/basic_inference.sh
 :language: bash
 ```
 
@@ -128,7 +129,7 @@ Anomalib includes multiple inferencing scripts, including Torch, Lightning, Grad
 :sync: label-1
 
 ```{code-block} python
-Python code here.
+
 ```
 
 :::
@@ -137,7 +138,7 @@ Python code here.
 :sync: label-2
 
 ```{code-block} bash
-CLI command here.
+
 ```
 
 :::
@@ -153,7 +154,7 @@ CLI command here.
 :sync: label-1
 
 ```{code-block} python
-Python code here.
+
 ```
 
 :::
@@ -162,7 +163,7 @@ Python code here.
 :sync: label-2
 
 ```{code-block} bash
-CLI command here.
+
 ```
 
 :::
@@ -178,7 +179,7 @@ CLI command here.
 :sync: label-1
 
 ```{code-block} python
-Python code here.
+
 ```
 
 :::
@@ -187,7 +188,7 @@ Python code here.
 :sync: label-2
 
 ```{code-block} bash
-CLI command here.
+
 ```
 
 :::
@@ -230,7 +231,7 @@ Anomalib is integrated with various libraries for experiment tracking such as co
 To run a training experiment with experiment tracking, you will need the following configuration file:
 
 ```{code-block} yaml
-# Place the experiment management config here.
+
 ```
 
 By using the configuration file above, you can run the experiment with the following command:
@@ -272,7 +273,7 @@ anomalib benchmark --config tools/benchmarking/benchmark_params.yaml
 :::{tab-item} API
 
 ```{code-block} python
-# To be enabled in v1.1
+
 ```
 
 :::

@@ -50,6 +50,8 @@ myst_enable_extensions = [
     "tasklist",
     "deflist",
     "fieldlist",
+    "amsmath",
+    "dollarmath",
 ]
 
 # Add separate setting for eval-rst

@@ -10,7 +10,7 @@ Example:
     Create a video datamodule from a config file::
 
         >>> from anomalib.data import AnomalibVideoDataModule
-        >>> data_config = "configs/data/ucsd_ped.yaml"
+        >>> data_config = "examples/configs/data/ucsd_ped.yaml"
         >>> datamodule = AnomalibVideoDataModule.from_config(config_path=data_config)
 """
 

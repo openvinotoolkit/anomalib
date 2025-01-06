@@ -435,13 +435,13 @@ class AnomalibModule(ExportMixin, pl.LightningModule, ABC):
             ValueError: If instantiated model is not AnomalibModule
 
         Example:
-            >>> model = AnomalibModule.from_config("configs/model/patchcore.yaml")
+            >>> model = AnomalibModule.from_config("examples/configs/model/patchcore.yaml")
             >>> isinstance(model, AnomalibModule)
             True
 
             Override config values:
             >>> model = AnomalibModule.from_config(
-            ...     "configs/model/patchcore.yaml",
+            ...     "examples/configs/model/patchcore.yaml",
             ...     model__backbone="resnet18"
             ... )
         """
