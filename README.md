@@ -118,7 +118,7 @@ pip install -e .[full]
 
 Anomalib supports both API and CLI-based training approaches:
 
-## 💻 Python API
+## 🔌 Python API
 
 ```python
 from anomalib.data import MVTec
@@ -151,7 +151,7 @@ anomalib train --config path/to/config.yaml
 
 Anomalib provides multiple inference options including Torch, Lightning, Gradio, and OpenVINO. Here's how to get started:
 
-## 💻 Python API
+## 🔌 Python API
 
 ```python
 # Load model and make predictions
