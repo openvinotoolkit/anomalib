@@ -156,7 +156,7 @@ class Supersimplenet(AnomalibModule):
 
     def configure_optimizers(self) -> OptimizerLRScheduler:
         """Configure AdamW optimizer and MultiStepLR scheduler."""
-        optim = AdamW(
+        optimizer = AdamW(
             [
                 {
                     "params": self.model.adaptor.parameters(),
@@ -169,12 +169,12 @@ class Supersimplenet(AnomalibModule):
                 },
             ],
         )
-        sched = MultiStepLR(
-            optim,
+        scheduler = MultiStepLR(
+            optimizer,
             milestones=[int(self.trainer.max_epochs * 0.8), int(self.trainer.max_epochs * 0.9)],
             gamma=0.4,
         )
-        return [optim], [sched]
+        return [optimizer], [scheduler]
 
     @property
     def learning_type(self) -> LearningType:

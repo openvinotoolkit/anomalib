@@ -10,8 +10,14 @@ from torch import nn
 from anomalib.data.utils.generators import generate_perlin_noise
 
 
-class SSNAnomalyGenerator(nn.Module):
-    """Anomaly generator of the SuperSimpleNet model."""
+class AnomalyGenerator(nn.Module):
+    """Anomaly generator for the SuperSimpleNet model.
+
+    Args:
+        noise_mean (float): Mean of the Gaussian noise distribution.
+        noise_std (float): Standard deviation of the Gaussian noise distribution.
+        threshold (float): Threshold used to binarize Perlin noise.
+    """
 
     def __init__(
         self,
@@ -84,9 +90,9 @@ class SSNAnomalyGenerator(nn.Module):
         Also update GT masks and labels with new anomaly information.
 
         Args:
-            features: input features.
-            mask: GT masks.
-            labels: GT labels.
+            features (torch.Tensor): input features.
+            mask (torch.Tensor): GT masks.
+            labels (torch.Tensor): GT labels.
 
         Returns:
             perturbed features, updated GT masks and labels.

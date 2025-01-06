@@ -23,7 +23,7 @@ from torch.nn import Parameter
 
 from anomalib.data import InferenceBatch
 from anomalib.models.components import GaussianBlur2d, TorchFXFeatureExtractor
-from anomalib.models.image.supersimplenet.anomaly_generator import SSNAnomalyGenerator
+from anomalib.models.image.supersimplenet.anomaly_generator import AnomalyGenerator
 
 
 class SupersimplenetModel(nn.Module):
@@ -49,9 +49,9 @@ class SupersimplenetModel(nn.Module):
         self.feature_extractor = FeatureExtractor(backbone=backbone, layers=layers)
 
         channels = self.feature_extractor.get_channels_dim()
-        self.adaptor = FeatureAdaptor(channels)
+        self.adaptor = FeatureAdapter(channels)
         self.segdec = SegmentationDetectionModule(channel_dim=channels, stop_grad=stop_grad)
-        self.anomaly_generator = SSNAnomalyGenerator(noise_mean=0, noise_std=0.015, threshold=perlin_threshold)
+        self.anomaly_generator = AnomalyGenerator(noise_mean=0, noise_std=0.015, threshold=perlin_threshold)
 
         self.anomaly_map_generator = AnomalyMapGenerator(sigma=4)
 
@@ -127,16 +127,16 @@ class SupersimplenetModel(nn.Module):
         )
 
 
-def init_weights(m: nn.Module) -> None:
+def init_weights(module: nn.Module) -> None:
     """Init weight of the model.
 
     Args:
-        m (nn.Module): torch module.
+        module (nn.Module): torch module.
     """
-    if isinstance(m, nn.Linear | nn.Conv2d):
-        nn.init.xavier_normal_(m.weight)
-    elif isinstance(m, nn.BatchNorm1d | nn.BatchNorm2d):
-        nn.init.constant_(m.weight, 1)
+    if isinstance(module, nn.Linear | nn.Conv2d):
+        nn.init.xavier_normal_(module.weight)
+    elif isinstance(module, nn.BatchNorm1d | nn.BatchNorm2d):
+        nn.init.constant_(module.weight, 1)
 
 
 class FeatureExtractor(nn.Module):
@@ -207,8 +207,8 @@ class FeatureExtractor(nn.Module):
         return sum(feature.shape[1] for feature in features.values())
 
 
-class FeatureAdaptor(nn.Module):
-    """Feature adaptor used to adapt raw features for the task of anomaly detection.
+class FeatureAdapter(nn.Module):
+    """Feature adapter used to adapt raw features for the task of anomaly detection.
 
     Args:
         channel_dim (int): channel dimension of features.
