@@ -38,7 +38,7 @@ See Also:
         Anomaly map generation for PatchCore using nearest neighbor search
 """
 
-# Copyright (C) 2022-2024 Intel Corporation
+# Copyright (C) 2022-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 import logging

@@ -32,7 +32,7 @@ See Also:
         Loss function used to train the FastFlow model.
 """
 
-# Copyright (C) 2022-2024 Intel Corporation
+# Copyright (C) 2022-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 from typing import Any

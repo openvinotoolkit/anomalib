@@ -13,7 +13,7 @@ their corresponding reference distributions to detect anomalies.
 Paper: https://arxiv.org/abs/2011.08785
 """
 
-# Copyright (C) 2022-2024 Intel Corporation
+# Copyright (C) 2022-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 from .lightning_model import Padim

@@ -10,7 +10,7 @@ discriminatively trained reconstruction embedding approach to detect anomalies b
 comparing input images with their reconstructions.
 """
 
-# Copyright (C) 2022-2024 Intel Corporation
+# Copyright (C) 2022-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 from collections.abc import Callable

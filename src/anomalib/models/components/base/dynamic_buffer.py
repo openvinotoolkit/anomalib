@@ -23,7 +23,7 @@ Example:
     tensor([1., 1., 1., 1., 1.])
 """
 
-# Copyright (C) 2022-2024 Intel Corporation
+# Copyright (C) 2022-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 from abc import ABC

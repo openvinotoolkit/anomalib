@@ -73,7 +73,7 @@ Raises:
 # Copyright (c) https://github.com/vislearn/FrEIA
 # SPDX-License-Identifier: MIT
 
-# Copyright (C) 2022-2024 Intel Corporation
+# Copyright (C) 2022-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 import logging

@@ -23,7 +23,7 @@ The module is organized into submodules for different types of utilities:
     - ``visualization``: Classes for visualizing detection results
 """
 
-# Copyright (C) 2022-2024 Intel Corporation
+# Copyright (C) 2022-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 from .attrs import get_nested_attr

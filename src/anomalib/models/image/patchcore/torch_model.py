@@ -30,7 +30,7 @@ See Also:
         Coreset subsampling using k-center-greedy approach
 """
 
-# Copyright (C) 2022-2024 Intel Corporation
+# Copyright (C) 2022-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 from collections.abc import Sequence

@@ -4,7 +4,7 @@ This module provides utility functions for converting between different bounding
 formats and handling bounding box operations.
 """
 
-# Copyright (C) 2022-2024 Intel Corporation
+# Copyright (C) 2022-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 import torch

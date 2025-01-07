@@ -20,7 +20,7 @@ Example:
     >>> mask = generator.generate(256, 256)
 """
 
-# Copyright (C) 2022-2024 Intel Corporation
+# Copyright (C) 2022-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 from .perlin import PerlinAnomalyGenerator, generate_perlin_noise

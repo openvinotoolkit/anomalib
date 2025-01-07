@@ -16,7 +16,7 @@ Example:
     >>> print(labels.unique())  # Should show [0, 1] for background and one component
 """
 
-# Copyright (C) 2022-2024 Intel Corporation
+# Copyright (C) 2022-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 import cv2

@@ -17,7 +17,7 @@ Example:
     >>> logger.add_image(image_array, name="test_image")  # doctest: +SKIP
 """
 
-# Copyright (C) 2022-2024 Intel Corporation
+# Copyright (C) 2022-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 from abc import abstractmethod

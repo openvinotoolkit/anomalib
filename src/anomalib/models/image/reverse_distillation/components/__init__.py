@@ -24,7 +24,7 @@ See Also:
         Decoder network implementation
 """
 
-# Copyright (C) 2022-2024 Intel Corporation
+# Copyright (C) 2022-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 from .bottleneck import get_bottleneck_layer

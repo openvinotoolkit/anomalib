@@ -17,7 +17,7 @@ Example:
     >>> selected_idx = sampler.select_coreset(features, n=10)
 """
 
-# Copyright (C) 2022-2024 Intel Corporation
+# Copyright (C) 2022-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 from .k_center_greedy import KCenterGreedy

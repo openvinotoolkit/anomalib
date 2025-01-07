@@ -1,6 +1,6 @@
 """Tests for Torch and OpenVINO inferencers."""
 
-# Copyright (C) 2022-2024 Intel Corporation
+# Copyright (C) 2022-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 from collections.abc import Callable, Iterable

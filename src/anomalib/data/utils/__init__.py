@@ -19,7 +19,7 @@ Example:
     >>> noise = generate_perlin_noise(256, 256)
 """
 
-# Copyright (C) 2022-2024 Intel Corporation
+# Copyright (C) 2022-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 from .boxes import boxes_to_anomaly_maps, boxes_to_masks, masks_to_boxes

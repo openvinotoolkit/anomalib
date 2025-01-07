@@ -34,7 +34,7 @@ Example:
     >>> # Use components in anomaly detection models
 """
 
-# Copyright (C) 2022-2024 Intel Corporation
+# Copyright (C) 2022-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 from .base import AnomalibModule, BufferListMixin, DynamicBufferMixin, MemoryBankMixin

@@ -4,7 +4,7 @@ This module provides utility functions for generating ROC-style plots and other
 visualization helpers used by metrics in Anomalib.
 """
 
-# Copyright (C) 2022-2024 Intel Corporation
+# Copyright (C) 2022-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 import torch

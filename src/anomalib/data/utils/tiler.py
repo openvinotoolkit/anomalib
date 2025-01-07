@@ -24,7 +24,7 @@ Example:
     torch.Size([1, 3, 512, 512])
 """
 
-# Copyright (C) 2022-2024 Intel Corporation
+# Copyright (C) 2022-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 from collections.abc import Sequence

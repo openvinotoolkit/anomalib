@@ -26,7 +26,7 @@ See Also:
     - :func:`compute_layer_map`: Function to compute per-layer anomaly scores
 """
 
-# Copyright (C) 2022-2024 Intel Corporation
+# Copyright (C) 2022-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 import torch

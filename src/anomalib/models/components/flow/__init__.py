@@ -17,7 +17,7 @@ Example:
     >>> y, logdet = flow(x)
 """
 
-# Copyright (C) 2022-2024 Intel Corporation
+# Copyright (C) 2022-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 from .all_in_one_block import AllInOneBlock

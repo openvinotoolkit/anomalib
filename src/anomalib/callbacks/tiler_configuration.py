@@ -26,7 +26,7 @@ Note:
     It will raise a :exc:`ValueError` if used with a model that doesn't support tiling.
 """
 
-# Copyright (C) 2022-2024 Intel Corporation
+# Copyright (C) 2022-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 from collections.abc import Sequence

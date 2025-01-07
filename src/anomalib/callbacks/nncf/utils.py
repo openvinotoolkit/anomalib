@@ -11,7 +11,7 @@ The module contains:
 - Utilities for handling NNCF model states and configurations
 """
 
-# Copyright (C) 2022-2024 Intel Corporation
+# Copyright (C) 2022-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 import logging

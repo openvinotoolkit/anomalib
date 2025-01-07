@@ -7,7 +7,7 @@ CS-Flow uses normalizing flows across multiple scales to model the distribution
 of normal images and detect anomalies.
 """
 
-# Copyright (C) 2022-2024 Intel Corporation
+# Copyright (C) 2022-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 import logging

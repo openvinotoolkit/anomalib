@@ -16,7 +16,7 @@ Example:
     >>> labels = connected_components_cpu(mask)
 """
 
-# Copyright (C) 2022-2024 Intel Corporation
+# Copyright (C) 2022-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 from .connected_components import connected_components_cpu, connected_components_gpu
