@@ -23,6 +23,21 @@ from anomalib.utils.logging import hide_output
 
 logger = logging.getLogger(__name__)
 
+# Import external loggers
+try:
+    from anomalib.loggers import (
+        AnomalibCometLogger,
+        AnomalibMLFlowLogger,
+        AnomalibTensorBoardLogger,
+        AnomalibWandbLogger,
+    )
+
+    LOGGERS_AVAILABLE = True
+    logger.info("Successfully imported logger modules.")
+except ImportError:
+    LOGGERS_AVAILABLE = False
+    logger.warning("To use external loggers, install required packages using `anomalib install -v`")
+
 
 class BenchmarkJob(Job):
     """Benchmarking job.
@@ -69,6 +84,7 @@ class BenchmarkJob(Job):
                 accelerator=self.accelerator,
                 devices=devices,
                 default_root_dir=temp_dir,
+                logger=self._initialize_loggers(self.flat_cfg or {}) if LOGGERS_AVAILABLE else None,
             )
             fit_start_time = time.time()
             engine.fit(self.model, self.datamodule)
@@ -89,7 +105,48 @@ class BenchmarkJob(Job):
             **test_results[0],
         }
         logger.info(f"Completed with result {output}")
+
+        # Logging metrics to External Loggers
+        trainer = engine.trainer()
+        for logger_instance in trainer.loggers:
+            if isinstance(logger_instance, AnomalibCometLogger | AnomalibWandbLogger | AnomalibMLFlowLogger):
+                logger_instance.log_metrics(test_results[0])
+                logger.debug(f"Successfully logged metrics to {logger_instance.__class__.__name__}")
         return output
+
+    @staticmethod
+    def _initialize_loggers(logger_configs: dict[str, dict[str, Any]]) -> list[Any]:
+        """Initialize configured external loggers.
+
+        Args:
+            logger_configs: Dictionary mapping logger names to their configurations.
+
+        Returns:
+            Dictionary of initialized loggers.
+        """
+        logger_mapping = {
+            "tensorboard": AnomalibTensorBoardLogger,
+            "comet": AnomalibCometLogger,
+            "wandb": AnomalibWandbLogger,
+            "mlflow": AnomalibMLFlowLogger,
+        }
+
+        active_loggers = []
+        default_configs = {
+            "tensorboard": {"save_dir": "logs/benchmarks"},
+            "comet": {"project_name": "anomalib"},
+            "wandb": {"project": "anomalib"},
+            "mlflow": {"experiment_name": "anomalib"},
+        }
+
+        for logger_name, logger_class in logger_mapping.items():
+            # Use provided config or fall back to defaults
+            config = logger_configs.get(logger_name, default_configs.get(logger_name, {}))
+            logger_instance = logger_class(**config)
+            active_loggers.append(logger_instance)
+            logger.info(f"Successfully initialized {logger_name} logger")
+
+        return active_loggers
 
     @staticmethod
     def collect(results: list[dict[str, Any]]) -> pd.DataFrame:
