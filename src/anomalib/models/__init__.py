@@ -33,6 +33,7 @@ Image Models:
     - PatchCore (:class:`anomalib.models.image.Patchcore`)
     - Reverse Distillation (:class:`anomalib.models.image.ReverseDistillation`)
     - STFPM (:class:`anomalib.models.image.Stfpm`)
+    - SuperSimpleNet (:class:`anomalib.models.image.Supersimplenet`)
     - UFlow (:class:`anomalib.models.image.Uflow`)
     - VLM-AD (:class:`anomalib.models.image.VlmAd`)
     - WinCLIP (:class:`anomalib.models.image.WinClip`)
@@ -69,6 +70,7 @@ from .image import (
     Patchcore,
     ReverseDistillation,
     Stfpm,
+    Supersimplenet,
     Uflow,
     VlmAd,
     WinClip,
@@ -96,6 +98,7 @@ __all__ = [
     "Patchcore",
     "ReverseDistillation",
     "Stfpm",
+    "Supersimplenet",
     "Uflow",
     "VlmAd",
     "WinClip",

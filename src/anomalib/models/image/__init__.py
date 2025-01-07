@@ -35,6 +35,7 @@ Available Models:
     - :class:`Patchcore`: Patch Core
     - :class:`ReverseDistillation`: Reverse Knowledge Distillation
     - :class:`Stfpm`: Student-Teacher Feature Pyramid Matching
+    - :class:`SuperSimpleNet`: SuperSimpleNet
     - :class:`Uflow`: Unsupervised Flow
     - :class:`VlmAd`: Vision Language Model Anomaly Detection
     - :class:`WinClip`: Zero-/Few-Shot CLIP-based Detection
@@ -58,6 +59,7 @@ from .padim import Padim
 from .patchcore import Patchcore
 from .reverse_distillation import ReverseDistillation
 from .stfpm import Stfpm
+from .supersimplenet import Supersimplenet
 from .uflow import Uflow
 from .vlm_ad import VlmAd
 from .winclip import WinClip
@@ -78,6 +80,7 @@ __all__ = [
     "Patchcore",
     "ReverseDistillation",
     "Stfpm",
+    "Supersimplenet",
     "Uflow",
     "VlmAd",
     "WinClip",
