@@ -39,8 +39,8 @@ class SSNLoss(nn.Module):
         # push anomalous towards positive numbers
         fake_loss = torch.clip(-anomalous_scores + self.th, min=0)
 
-        true_loss = true_loss.mean() if len(true_loss) else torch.Tensor(0)
-        fake_loss = fake_loss.mean() if len(fake_loss) else torch.Tensor(0)
+        true_loss = true_loss.mean() if len(true_loss) else torch.tensor(0, device=pred.device)
+        fake_loss = fake_loss.mean() if len(fake_loss) else torch.tensor(0, device=pred.device)
 
         return true_loss + fake_loss
 
