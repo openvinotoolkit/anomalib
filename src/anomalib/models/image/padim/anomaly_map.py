@@ -1,6 +1,34 @@
-"""Anomaly Map Generator for the PaDiM model implementation."""
+"""Anomaly Map Generator for the PaDiM model implementation.
 
-# Copyright (C) 2022-2024 Intel Corporation
+This module generates anomaly heatmaps for the PaDiM model by computing Mahalanobis
+distances between test patch embeddings and reference distributions.
+
+The anomaly map generation process involves:
+1. Computing Mahalanobis distances between embeddings and reference statistics
+2. Upsampling the distance map to match input image size
+3. Applying Gaussian smoothing to obtain the final anomaly map
+
+Example:
+    >>> from anomalib.models.image.padim.anomaly_map import AnomalyMapGenerator
+    >>> generator = AnomalyMapGenerator(sigma=4)
+    >>> embedding = torch.randn(32, 1024, 28, 28)
+    >>> mean = torch.randn(1024, 784)  # 784 = 28*28
+    >>> inv_covariance = torch.randn(784, 1024, 1024)
+    >>> anomaly_map = generator(
+    ...     embedding=embedding,
+    ...     mean=mean,
+    ...     inv_covariance=inv_covariance,
+    ...     image_size=(224, 224)
+    ... )
+
+See Also:
+    - :class:`anomalib.models.image.padim.lightning_model.Padim`:
+        Lightning implementation of the PaDiM model
+    - :class:`anomalib.models.components.GaussianBlur2d`:
+        Gaussian blur module used for smoothing anomaly maps
+"""
+
+# Copyright (C) 2022-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 import torch
@@ -13,10 +41,24 @@ from anomalib.models.components import GaussianBlur2d
 class AnomalyMapGenerator(nn.Module):
     """Generate Anomaly Heatmap.
 
+    This class implements anomaly map generation for the PaDiM model by computing
+    Mahalanobis distances and applying post-processing steps.
+
     Args:
-        image_size (ListConfig, tuple): Size of the input image. The anomaly map is upsampled to this dimension.
-        sigma (int, optional): Standard deviation for Gaussian Kernel.
-            Defaults to ``4``.
+        sigma (int, optional): Standard deviation for Gaussian smoothing kernel.
+            Higher values produce smoother anomaly maps. Defaults to ``4``.
+
+    Example:
+        >>> generator = AnomalyMapGenerator(sigma=4)
+        >>> embedding = torch.randn(32, 1024, 28, 28)
+        >>> mean = torch.randn(1024, 784)
+        >>> inv_covariance = torch.randn(784, 1024, 1024)
+        >>> anomaly_map = generator.compute_anomaly_map(
+        ...     embedding=embedding,
+        ...     mean=mean,
+        ...     inv_covariance=inv_covariance,
+        ...     image_size=(224, 224)
+        ... )
     """
 
     def __init__(self, sigma: int = 4) -> None:
@@ -26,16 +68,20 @@ class AnomalyMapGenerator(nn.Module):
 
     @staticmethod
     def compute_distance(embedding: torch.Tensor, stats: list[torch.Tensor]) -> torch.Tensor:
-        """Compute anomaly score to the patch in position(i,j) of a test image.
+        """Compute anomaly score for each patch position using Mahalanobis distance.
 
-        Ref: Equation (2), Section III-C of the paper.
+        Implements Equation (2) from Section III-C of the PaDiM paper to compute
+        the distance between patch embeddings and their reference distributions.
 
         Args:
-            embedding (torch.Tensor): Embedding Vector
-            stats (list[torch.Tensor]): Mean and Covariance Matrix of the multivariate Gaussian distribution
+            embedding (torch.Tensor): Feature embeddings from the CNN backbone,
+                shape ``(batch_size, n_features, height, width)``
+            stats (list[torch.Tensor]): List containing mean and inverse covariance
+                tensors for the multivariate Gaussian distributions
 
         Returns:
-            Anomaly score of a test image via mahalanobis distance.
+            torch.Tensor: Anomaly scores computed via Mahalanobis distance,
+                shape ``(batch_size, 1, height, width)``
         """
         batch, channel, height, width = embedding.shape
         embedding = embedding.reshape(batch, channel, height * width)
@@ -53,11 +99,13 @@ class AnomalyMapGenerator(nn.Module):
         """Up sample anomaly score to match the input image size.
 
         Args:
-            distance (torch.Tensor): Anomaly score computed via the mahalanobis distance.
-            image_size (tuple[int, int] | torch.Size): Size to which the anomaly map should be upsampled.
+            distance (torch.Tensor): Anomaly scores, shape
+                ``(batch_size, 1, height, width)``
+            image_size (tuple[int, int] | torch.Size): Target size for upsampling,
+                usually the original input image size
 
         Returns:
-            Resized distance matrix matching the input image size
+            torch.Tensor: Upsampled anomaly scores matching the input image size
         """
         return F.interpolate(
             distance,
@@ -67,13 +115,14 @@ class AnomalyMapGenerator(nn.Module):
         )
 
     def smooth_anomaly_map(self, anomaly_map: torch.Tensor) -> torch.Tensor:
-        """Apply gaussian smoothing to the anomaly map.
+        """Apply Gaussian smoothing to the anomaly map.
 
         Args:
-            anomaly_map (torch.Tensor): Anomaly score for the test image(s).
+            anomaly_map (torch.Tensor): Raw anomaly scores,
+                shape ``(batch_size, 1, height, width)``
 
         Returns:
-            Filtered anomaly scores
+            torch.Tensor: Smoothed anomaly scores with reduced noise
         """
         return self.blur(anomaly_map)
 
@@ -84,19 +133,20 @@ class AnomalyMapGenerator(nn.Module):
         inv_covariance: torch.Tensor,
         image_size: tuple[int, int] | torch.Size | None = None,
     ) -> torch.Tensor:
-        """Compute anomaly score.
+        """Compute anomaly map from feature embeddings and distribution parameters.
 
-        Scores are calculated based on embedding vector, mean and inv_covariance of the multivariate gaussian
-        distribution.
+        This method combines distance computation, upsampling, and smoothing to
+        generate the final anomaly map.
 
         Args:
-            embedding (torch.Tensor): Embedding vector extracted from the test set.
-            mean (torch.Tensor): Mean of the multivariate gaussian distribution
-            inv_covariance (torch.Tensor): Inverse Covariance matrix of the multivariate gaussian distribution.
-            image_size (tuple[int, int] | torch.Size, optional): Size to which the anomaly map should be upsampled.
+            embedding (torch.Tensor): Feature embeddings from the CNN backbone
+            mean (torch.Tensor): Mean of the multivariate Gaussian distribution
+            inv_covariance (torch.Tensor): Inverse covariance matrix
+            image_size (tuple[int, int] | torch.Size | None, optional): Target
+                size for upsampling. If ``None``, no upsampling is performed.
 
         Returns:
-            Output anomaly score.
+            torch.Tensor: Final anomaly map after all processing steps
         """
         score_map = self.compute_distance(
             embedding=embedding,
@@ -107,19 +157,29 @@ class AnomalyMapGenerator(nn.Module):
         return self.smooth_anomaly_map(score_map)
 
     def forward(self, **kwargs) -> torch.Tensor:
-        """Return anomaly_map.
+        """Generate anomaly map from the provided embeddings and statistics.
 
-        Expects `embedding`, `mean` and `covariance` keywords to be passed explicitly.
+        Expects ``embedding``, ``mean`` and ``inv_covariance`` keywords to be
+        passed explicitly.
 
         Example:
-            >>> anomaly_map_generator = AnomalyMapGenerator(image_size=input_size)
-            >>> output = anomaly_map_generator(embedding=embedding, mean=mean, covariance=covariance)
+            >>> generator = AnomalyMapGenerator(sigma=4)
+            >>> anomaly_map = generator(
+            ...     embedding=embedding,
+            ...     mean=mean,
+            ...     inv_covariance=inv_covariance,
+            ...     image_size=(224, 224)
+            ... )
+
+        Args:
+            **kwargs: Keyword arguments containing ``embedding``, ``mean``,
+                ``inv_covariance`` and optionally ``image_size``
 
         Raises:
-            ValueError: `embedding`. `mean` or `covariance` keys are not found
+            ValueError: If required keys are not found in ``kwargs``
 
         Returns:
-            torch.Tensor: anomaly map
+            torch.Tensor: Generated anomaly map
         """
         if not ("embedding" in kwargs and "mean" in kwargs and "inv_covariance" in kwargs):
             msg = f"Expected keys `embedding`, `mean` and `covariance`. Found {kwargs.keys()}"

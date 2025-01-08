@@ -1,9 +1,25 @@
 """Dataset that generates synthetic anomalies.
 
-This dataset can be used when there is a lack of real anomalous data.
+This module provides functionality to generate synthetic anomalies when real
+anomalous data is scarce or unavailable. It includes:
+
+- A dataset class that generates synthetic anomalies from normal images
+- Functions to convert normal samples into synthetic anomalous samples
+- Perlin noise-based anomaly generation
+- Temporary file management for synthetic data
+
+Example:
+    >>> from anomalib.data.utils.synthetic import SyntheticAnomalyDataset
+    >>> # Create synthetic dataset from normal samples
+    >>> synthetic_dataset = SyntheticAnomalyDataset(
+    ...     transform=transforms,
+    ...     source_samples=normal_samples
+    ... )
+    >>> len(synthetic_dataset)  # 50/50 normal/anomalous split
+    200
 """
 
-# Copyright (C) 2022-2024 Intel Corporation
+# Copyright (C) 2022-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
@@ -16,11 +32,11 @@ from tempfile import mkdtemp
 import cv2
 import pandas as pd
 from pandas import DataFrame, Series
-from torchvision.transforms.v2 import Compose
+from torchvision.transforms.v2 import Transform
 
-from anomalib import TaskType
-from anomalib.data.base.dataset import AnomalibDataset
-from anomalib.data.utils import Augmenter, Split, read_image
+from anomalib.data.datasets.base.image import AnomalibDataset
+from anomalib.data.utils import Split, read_image
+from anomalib.data.utils.generators.perlin import PerlinAnomalyGenerator
 
 logger = logging.getLogger(__name__)
 
@@ -34,16 +50,36 @@ def make_synthetic_dataset(
     mask_dir: Path,
     anomalous_ratio: float = 0.5,
 ) -> DataFrame:
-    """Convert a set of normal samples into a mixed set of normal and synthetic anomalous samples.
+    """Convert normal samples into a mixed set with synthetic anomalies.
 
-    The synthetic images will be saved to the file system in the specified root directory under <root>/images.
-    For the synthetic anomalous images, the masks will be saved under <root>/ground_truth.
+    The function generates synthetic anomalous images and their corresponding
+    masks by applying Perlin noise-based perturbations to normal images.
 
     Args:
-        source_samples (DataFrame): Normal images that will be used as source for the synthetic anomalous images.
-        image_dir (Path): Directory to which the synthetic anomalous image files will be written.
-        mask_dir (Path): Directory to which the ground truth anomaly masks will be written.
-        anomalous_ratio (float): Fraction of source samples that will be converted into anomalous samples.
+        source_samples: DataFrame containing normal images used as source for
+            synthetic anomalies. Must contain columns: ``image_path``,
+            ``label``, ``label_index``, ``mask_path``, and ``split``.
+        image_dir: Directory where synthetic anomalous images will be saved.
+        mask_dir: Directory where ground truth anomaly masks will be saved.
+        anomalous_ratio: Fraction of source samples to convert to anomalous
+            samples. Defaults to ``0.5``.
+
+    Returns:
+        DataFrame containing both normal and synthetic anomalous samples.
+
+    Raises:
+        ValueError: If source samples contain any anomalous images.
+        NotADirectoryError: If ``image_dir`` or ``mask_dir`` is not a directory.
+
+    Example:
+        >>> df = make_synthetic_dataset(
+        ...     source_samples=normal_df,
+        ...     image_dir=Path("./synthetic/images"),
+        ...     mask_dir=Path("./synthetic/masks"),
+        ...     anomalous_ratio=0.3
+        ... )
+        >>> len(df[df.label == "abnormal"])  # 30% are anomalous
+        30
     """
     if 1 in source_samples.label_index.to_numpy():
         msg = "All source images must be normal."
@@ -66,24 +102,25 @@ def make_synthetic_dataset(
     anomalous_samples = anomalous_samples.reset_index(drop=True)
 
     # initialize augmenter
-    augmenter = Augmenter("./datasets/dtd", p_anomalous=1.0, beta=(0.01, 0.2))
+    augmenter = PerlinAnomalyGenerator(
+        anomaly_source_path="./datasets/dtd",
+        probability=1.0,
+        blend_factor=(0.01, 0.2),
+    )
 
     def augment(sample: Series) -> Series:
-        """Apply synthetic anomalous augmentation to a sample from a dataframe.
-
-        Reads an image, applies the augmentations, writes the augmented image and corresponding mask to the file system,
-        and returns a new Series object with the updates labels and file locations.
+        """Apply synthetic anomalous augmentation to a sample.
 
         Args:
-            sample (Series): DataFrame row containing info about the image that will be augmented.
+            sample: DataFrame row containing image information.
 
         Returns:
-            Series: DataFrame row with updated information about the augmented image.
+            Series containing updated information about the augmented image.
         """
         # read and transform image
         image = read_image(sample.image_path, as_tensor=True)
         # apply anomalous perturbation
-        aug_im, mask = augmenter.augment_batch(image.unsqueeze(0))
+        aug_im, mask = augmenter(image)
         # target file name with leading zeros
         file_name = f"{str(sample.name).zfill(int(math.log10(n_anomalous)) + 1)}.png"
         # write image
@@ -110,20 +147,34 @@ def make_synthetic_dataset(
 
 
 class SyntheticAnomalyDataset(AnomalibDataset):
-    """Dataset which reads synthetically generated anomalous images from a temporary folder.
+    """Dataset for generating and managing synthetic anomalies.
+
+    The dataset creates synthetic anomalous images by applying Perlin
+    noise-based perturbations to normal images. The synthetic images are
+    stored in a temporary directory that is cleaned up when the dataset
+    object is deleted.
 
     Args:
-        task (str): Task type, either "classification" or "segmentation".
-        transform (A.Compose): Transform object describing the transforms that are applied to the inputs.
-        source_samples (DataFrame): Normal samples to which the anomalous augmentations will be applied.
+        augmentations (Transform | None): Transform object describing the input data augmentations.
+        source_samples: DataFrame containing normal samples used as source for
+            synthetic anomalies.
+
+    Example:
+        >>> transform = Compose([...])
+        >>> dataset = SyntheticAnomalyDataset(
+        ...     transform=transform,
+        ...     source_samples=normal_df
+        ... )
+        >>> len(dataset)  # 50/50 normal/anomalous split
+        100
     """
 
-    def __init__(self, task: TaskType, transform: Compose, source_samples: DataFrame) -> None:
-        super().__init__(task, transform)
+    def __init__(self, augmentations: Transform | None, source_samples: DataFrame) -> None:
+        super().__init__(augmentations=augmentations)
 
         self.source_samples = source_samples
 
-        # Files will be written to a temporary directory in the workdir, which is cleaned up after code execution
+        # Files will be written to a temporary directory in the workdir
         root = Path(ROOT)
         root.mkdir(parents=True, exist_ok=True)
 
@@ -135,21 +186,40 @@ class SyntheticAnomalyDataset(AnomalibDataset):
         self.im_dir.mkdir()
         self.mask_dir.mkdir()
 
-        self._cleanup = True  # flag that determines if temp dir is cleaned up when instance is deleted
-        self.samples = make_synthetic_dataset(self.source_samples, self.im_dir, self.mask_dir, 0.5)
+        self._cleanup = True  # flag that determines if temp dir is cleaned up
+        self.samples = make_synthetic_dataset(
+            self.source_samples,
+            self.im_dir,
+            self.mask_dir,
+            0.5,
+        )
 
     @classmethod
-    def from_dataset(cls: type["SyntheticAnomalyDataset"], dataset: AnomalibDataset) -> "SyntheticAnomalyDataset":
-        """Create a synthetic anomaly dataset from an existing dataset of normal images.
+    def from_dataset(
+        cls: type["SyntheticAnomalyDataset"],
+        dataset: AnomalibDataset,
+    ) -> "SyntheticAnomalyDataset":
+        """Create synthetic dataset from existing dataset of normal images.
 
         Args:
-            dataset (AnomalibDataset): Dataset consisting of only normal images that will be converrted to a synthetic
-                anomalous dataset with a 50/50 normal anomalous split.
+            dataset: Dataset containing only normal images to convert into a
+                synthetic dataset with 50/50 normal/anomalous split.
+
+        Returns:
+            New synthetic anomaly dataset.
+
+        Example:
+            >>> normal_dataset = Dataset(...)
+            >>> synthetic = SyntheticAnomalyDataset.from_dataset(normal_dataset)
         """
-        return cls(task=dataset.task, transform=dataset.transform, source_samples=dataset.samples)
+        return cls(augmentations=dataset.augmentations, source_samples=dataset.samples)
 
     def __copy__(self) -> "SyntheticAnomalyDataset":
-        """Return a shallow copy of the dataset object and prevents cleanup when original object is deleted."""
+        """Return shallow copy and prevent cleanup of original.
+
+        Returns:
+            Shallow copy of the dataset object.
+        """
         cls = self.__class__
         new = cls.__new__(cls)
         new.__dict__.update(self.__dict__)
@@ -157,7 +227,14 @@ class SyntheticAnomalyDataset(AnomalibDataset):
         return new
 
     def __deepcopy__(self, _memo: dict) -> "SyntheticAnomalyDataset":
-        """Return a deep copy of the dataset object and prevents cleanup when original object is deleted."""
+        """Return deep copy and prevent cleanup of original.
+
+        Args:
+            _memo: Memo dictionary used by deepcopy.
+
+        Returns:
+            Deep copy of the dataset object.
+        """
         cls = self.__class__
         new = cls.__new__(cls)
         for key, value in self.__dict__.items():
@@ -166,6 +243,6 @@ class SyntheticAnomalyDataset(AnomalibDataset):
         return new
 
     def __del__(self) -> None:
-        """Make sure the temporary directory is cleaned up when the dataset object is deleted."""
+        """Clean up temporary directory when dataset object is deleted."""
         if self._cleanup:
             shutil.rmtree(self.root)

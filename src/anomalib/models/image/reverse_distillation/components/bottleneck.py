@@ -1,4 +1,28 @@
-"""Torch model defining the bottleneck layer."""
+"""PyTorch model defining the bottleneck layer for Reverse Distillation.
+
+This module implements the bottleneck layer used in the Reverse Distillation model
+architecture. The bottleneck layer compresses features into a lower dimensional
+space while preserving important information for anomaly detection.
+
+The module contains:
+- Bottleneck layer implementation using convolutional blocks
+- Helper functions for creating 3x3 and 1x1 convolutions
+- One-Class Bottleneck Embedding (OCBE) module for feature compression
+
+Example:
+    >>> from anomalib.models.image.reverse_distillation.components.bottleneck import (
+    ...     get_bottleneck_layer
+    ... )
+    >>> bottleneck = get_bottleneck_layer()
+    >>> features = torch.randn(32, 512, 28, 28)
+    >>> compressed = bottleneck(features)
+
+See Also:
+    - :class:`anomalib.models.image.reverse_distillation.torch_model.ReverseDistillationModel`:
+        Main model implementation using this bottleneck layer
+    - :class:`anomalib.models.image.reverse_distillation.components.OCBE`:
+        One-Class Bottleneck Embedding module
+"""
 
 # Original Code
 # Copyright (c) 2022 hq-deng
@@ -6,7 +30,7 @@
 # SPDX-License-Identifier: MIT
 #
 # Modified
-# Copyright (C) 2022-2024 Intel Corporation
+# Copyright (C) 2022-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 from collections.abc import Callable
@@ -38,13 +62,51 @@ def conv1x1(in_planes: int, out_planes: int, stride: int = 1) -> nn.Conv2d:
 class OCBE(nn.Module):
     """One-Class Bottleneck Embedding module.
 
+    This module implements a bottleneck layer that compresses multi-scale features into a
+    compact representation. It consists of:
+
+    1. Multiple convolutional layers to process features at different scales
+    2. Feature fusion through concatenation
+    3. Final bottleneck compression through residual blocks
+
+    The module takes features from multiple scales of an encoder network and outputs a
+    compressed bottleneck representation.
+
     Args:
-        block (Bottleneck): Expansion value is extracted from this block.
-        layers (int): Numbers of OCE layers to create after multiscale feature fusion.
-        groups (int, optional): Number of blocked connections from input channels to output channels.
-            Defaults to 1.
-        width_per_group (int, optional): Number of layers in each intermediate convolution layer. Defaults to 64.
-        norm_layer (Callable[..., nn.Module] | None, optional): Batch norm layer to use. Defaults to None.
+        block (Bottleneck | BasicBlock): Block type that determines expansion factor.
+            Can be either ``Bottleneck`` or ``BasicBlock``.
+        layers (int): Number of OCE layers to create after multi-scale feature fusion.
+        groups (int, optional): Number of blocked connections from input channels to
+            output channels. Defaults to ``1``.
+        width_per_group (int, optional): Number of channels in each intermediate
+            convolution layer. Defaults to ``64``.
+        norm_layer (Callable[..., nn.Module] | None, optional): Normalization layer to
+            use. If ``None``, uses ``BatchNorm2d``. Defaults to ``None``.
+
+    Example:
+        >>> import torch
+        >>> from torchvision.models.resnet import Bottleneck
+        >>> from anomalib.models.image.reverse_distillation.components import OCBE
+        >>> model = OCBE(block=Bottleneck, layers=3)
+        >>> # Create 3 feature maps of different scales
+        >>> f1 = torch.randn(1, 256, 28, 28)  # First scale
+        >>> f2 = torch.randn(1, 512, 14, 14)  # Second scale
+        >>> f3 = torch.randn(1, 1024, 7, 7)   # Third scale
+        >>> features = [f1, f2, f3]
+        >>> output = model(features)
+        >>> output.shape
+        torch.Size([1, 2048, 4, 4])
+
+    Notes:
+        - The module expects exactly 3 input feature maps at different scales
+        - Features are processed through conv layers before fusion
+        - Final output dimensions depend on the input feature dimensions and stride
+        - Initialization uses Kaiming normal for conv layers and constant for norms
+
+    See Also:
+        - :func:`get_bottleneck_layer`: Factory function to create OCBE instances
+        - :class:`torchvision.models.resnet.Bottleneck`: ResNet bottleneck block
+        - :class:`torchvision.models.resnet.BasicBlock`: ResNet basic block
     """
 
     def __init__(
@@ -136,13 +198,24 @@ class OCBE(nn.Module):
         return nn.Sequential(*layers)
 
     def forward(self, features: list[torch.Tensor]) -> torch.Tensor:
-        """Forward-pass of Bottleneck layer.
+        """Forward pass of the bottleneck layer.
+
+        Processes multi-scale features through convolution layers, fuses them via
+        concatenation, and applies final bottleneck compression.
 
         Args:
-            features (list[torch.Tensor]): List of features extracted from the encoder.
+            features (list[torch.Tensor]): List of 3 feature tensors from different
+                scales of the encoder network. Expected shapes:
+                - features[0]: ``(B, C1, H1, W1)``
+                - features[1]: ``(B, C2, H2, W2)``
+                - features[2]: ``(B, C3, H3, W3)``
+                where B is batch size, Ci are channel dimensions, and Hi, Wi are
+                spatial dimensions.
 
         Returns:
-            Tensor: Output of the bottleneck layer
+            torch.Tensor: Compressed bottleneck representation with shape
+                ``(B, C_out, H_out, W_out)``, where dimensions depend on the input
+                feature shapes and stride values.
         """
         # Always assumes that features has length of 3
         feature0 = self.relu(self.bn2(self.conv2(self.relu(self.bn1(self.conv1(features[0]))))))

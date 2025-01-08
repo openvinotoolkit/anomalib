@@ -1,6 +1,19 @@
-"""Gaussian blurring via pytorch."""
+"""Gaussian blurring implementation using PyTorch.
 
-# Copyright (C) 2022-2024 Intel Corporation
+This module provides a 2D Gaussian blur filter implementation that pre-computes
+the Gaussian kernel during initialization for efficiency.
+
+Example:
+    >>> import torch
+    >>> from anomalib.models.components.filters import GaussianBlur2d
+    >>> # Create a Gaussian blur filter
+    >>> blur = GaussianBlur2d(sigma=1.0, channels=3)
+    >>> # Apply blur to input tensor
+    >>> input_tensor = torch.randn(1, 3, 256, 256)
+    >>> blurred = blur(input_tensor)
+"""
+
+# Copyright (C) 2022-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 import torch
@@ -14,21 +27,53 @@ from torch.nn import functional as F  # noqa: N812
 def compute_kernel_size(sigma_val: float) -> int:
     """Compute kernel size from sigma value.
 
+    The kernel size is calculated as 2 * (4 * sigma + 0.5) + 1 to ensure it
+    captures the significant part of the Gaussian distribution.
+
     Args:
-        sigma_val (float): Sigma value.
+        sigma_val (float): Standard deviation value for the Gaussian kernel.
 
     Returns:
-        int: Kernel size.
+        int: Computed kernel size (always odd).
+
+    Example:
+        >>> compute_kernel_size(1.0)
+        9
+        >>> compute_kernel_size(2.0)
+        17
     """
     return 2 * int(4.0 * sigma_val + 0.5) + 1
 
 
 class GaussianBlur2d(nn.Module):
-    """Compute GaussianBlur in 2d.
+    """2D Gaussian blur filter with pre-computed kernel.
 
-    Makes use of kornia functions, but most notably the kernel is not computed
-    during the forward pass, and does not depend on the input size. As a caveat,
-    the number of channels that are expected have to be provided during initialization.
+    Unlike some implementations, this class pre-computes the Gaussian kernel
+    during initialization rather than computing it during the forward pass.
+    This approach is more efficient but requires specifying the number of
+    input channels upfront.
+
+    Args:
+        sigma (float | tuple[float, float]): Standard deviation(s) for the
+            Gaussian kernel. If a single float is provided, it's used for both
+            dimensions.
+        channels (int): Number of input channels. Defaults to 1.
+        kernel_size (int | tuple[int, int] | None): Size of the Gaussian
+            kernel. If ``None``, computed from sigma. Defaults to ``None``.
+        normalize (bool): Whether to normalize the kernel so its elements sum
+            to 1. Defaults to ``True``.
+        border_type (str): Padding mode for border handling. Options are
+            'reflect', 'replicate', etc. Defaults to "reflect".
+        padding (str): Padding strategy. Either 'same' or 'valid'.
+            Defaults to "same".
+
+    Example:
+        >>> import torch
+        >>> blur = GaussianBlur2d(sigma=1.0, channels=3)
+        >>> x = torch.randn(1, 3, 64, 64)
+        >>> output = blur(x)
+        >>> output.shape
+        torch.Size([1, 3, 64, 64])
     """
 
     def __init__(
@@ -40,17 +85,6 @@ class GaussianBlur2d(nn.Module):
         border_type: str = "reflect",
         padding: str = "same",
     ) -> None:
-        """Initialize model, setup kernel etc..
-
-        Args:
-            sigma (float | tuple[float, float]): standard deviation to use for constructing the Gaussian kernel.
-            channels (int): channels of the input. Defaults to 1.
-            kernel_size (int | tuple[int, int] | None): size of the Gaussian kernel to use. Defaults to None.
-            normalize (bool, optional): Whether to normalize the kernel or not (i.e. all elements sum to 1).
-                Defaults to True.
-            border_type (str, optional): Border type to use for padding of the input. Defaults to "reflect".
-            padding (str, optional): Type of padding to apply. Defaults to "same".
-        """
         super().__init__()
         sigma = sigma if isinstance(sigma, tuple) else (sigma, sigma)
         self.channels = channels
@@ -74,13 +108,22 @@ class GaussianBlur2d(nn.Module):
         self.padding_shape = _compute_padding([self.height, self.width])
 
     def forward(self, input_tensor: torch.Tensor) -> torch.Tensor:
-        """Blur the input with the computed Gaussian.
+        """Apply Gaussian blur to input tensor.
 
         Args:
-            input_tensor (torch.Tensor): Input tensor to be blurred.
+            input_tensor (torch.Tensor): Input tensor of shape
+                ``(B, C, H, W)``.
 
         Returns:
-            Tensor: Blurred output tensor.
+            torch.Tensor: Blurred output tensor. If padding is 'same',
+                output shape matches input. If 'valid', output is smaller.
+
+        Example:
+            >>> blur = GaussianBlur2d(sigma=1.0, channels=1)
+            >>> x = torch.ones(1, 1, 5, 5)
+            >>> output = blur(x)
+            >>> output.shape
+            torch.Size([1, 1, 5, 5])
         """
         batch, channel, height, width = input_tensor.size()
 

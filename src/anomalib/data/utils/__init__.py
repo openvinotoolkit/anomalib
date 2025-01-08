@@ -1,12 +1,30 @@
-"""Helper utilities for data."""
+"""Helper utilities for data.
 
-# Copyright (C) 2022-2024 Intel Corporation
+This module provides various utility functions for data handling in Anomalib.
+
+The utilities are organized into several categories:
+
+- Image handling: Functions for reading, writing and processing images
+- Box handling: Functions for converting between masks and bounding boxes
+- Path handling: Functions for validating and resolving file paths
+- Dataset splitting: Functions for splitting datasets into train/val/test
+- Data generation: Functions for generating synthetic data like Perlin noise
+- Download utilities: Functions for downloading and extracting datasets
+
+Example:
+    >>> from anomalib.data.utils import read_image, generate_perlin_noise
+    >>> # Read an image
+    >>> image = read_image("path/to/image.jpg")
+    >>> # Generate Perlin noise
+    >>> noise = generate_perlin_noise(256, 256)
+"""
+
+# Copyright (C) 2022-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from .augmenter import Augmenter
 from .boxes import boxes_to_anomaly_maps, boxes_to_masks, masks_to_boxes
 from .download import DownloadInfo, download_and_extract
-from .generators import random_2d_perlin
+from .generators import generate_perlin_noise
 from .image import (
     generate_output_image_filename,
     get_image_filenames,
@@ -30,7 +48,7 @@ __all__ = [
     "generate_output_image_filename",
     "get_image_filenames",
     "get_image_height_and_width",
-    "random_2d_perlin",
+    "generate_perlin_noise",
     "read_image",
     "read_mask",
     "read_depth_image",
@@ -42,7 +60,6 @@ __all__ = [
     "TestSplitMode",
     "LabelName",
     "DirType",
-    "Augmenter",
     "masks_to_boxes",
     "boxes_to_masks",
     "boxes_to_anomaly_maps",

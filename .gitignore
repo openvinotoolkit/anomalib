@@ -1,16 +1,15 @@
 # Project related
 datasets
+!src/anomalib/data/datasets
 pre_trained
-!anomalib/datasets
 results
-!anomalib/core/results
 
 # Test-related files and directories
 tmp*
 
 # Jupyter Notebooks
-notebooks/500_use_cases/501_dobot/
-!notebooks/500_use_cases/501_dobot/*.ipynb
+examples/notebooks/500_use_cases/501_dobot/
+!examples/notebooks/500_use_cases/501_dobot/*.ipynb
 
 # VENV
 .python-version

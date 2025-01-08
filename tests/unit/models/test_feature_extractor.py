@@ -1,6 +1,6 @@
 """Test feature extractors."""
 
-# Copyright (C) 2022-2024 Intel Corporation
+# Copyright (C) 2022-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 from tempfile import TemporaryDirectory

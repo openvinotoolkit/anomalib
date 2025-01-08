@@ -34,4 +34,5 @@ Learn the criteria for reviewing code.
 ./sdd
 ./contributing
 ./code_review_checklist
+./release_guidelines
 ```

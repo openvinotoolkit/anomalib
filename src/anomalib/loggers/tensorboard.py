@@ -1,6 +1,26 @@
-"""Tensorboard logger with add image interface."""
+"""TensorBoard logger with image logging capabilities.
 
-# Copyright (C) 2022-2024 Intel Corporation
+This module provides a TensorBoard logger implementation that adds an interface for
+logging images. It extends both the base image logger and PyTorch Lightning's
+TensorBoard logger.
+
+Example:
+    >>> from anomalib.loggers import AnomalibTensorBoardLogger
+    >>> from anomalib.engine import Engine
+    >>> tensorboard_logger = AnomalibTensorBoardLogger("logs")
+    >>> engine = Engine(logger=tensorboard_logger)  # doctest: +SKIP
+
+    Log an image:
+    >>> import numpy as np
+    >>> image = np.random.rand(32, 32, 3)  # doctest: +SKIP
+    >>> tensorboard_logger.add_image(
+    ...     image=image,
+    ...     name="test_image",
+    ...     global_step=0
+    ... )  # doctest: +SKIP
+"""
+
+# Copyright (C) 2022-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 from pathlib import Path
@@ -18,48 +38,43 @@ from .base import ImageLoggerBase
 
 
 class AnomalibTensorBoardLogger(ImageLoggerBase, TensorBoardLogger):
-    """Logger for tensorboard.
+    """Logger for TensorBoard with image logging capabilities.
 
-    Adds interface for `add_image` in the logger rather than calling the experiment object.
-
-    .. note::
-        Same as the Tensorboard Logger provided by PyTorch Lightning and the doc string is reproduced below.
-
-    Logs are saved to
-    ``os.path.join(save_dir, name, version)``. This is the default logger in Lightning, it comes
-    preinstalled.
-
-    Example:
-        >>> from anomalib.engine import Engine
-        >>> from anomalib.loggers import AnomalibTensorBoardLogger
-        ...
-        >>> logger = AnomalibTensorBoardLogger("tb_logs", name="my_model")
-        >>> engine =  Engine(logger=logger)
+    This logger extends PyTorch Lightning's TensorBoardLogger with an interface
+    for logging images. It inherits from both :class:`ImageLoggerBase` and
+    :class:`TensorBoardLogger`.
 
     Args:
-        save_dir (str): Save directory
-        name (str | None): Experiment name. Defaults to ``'default'``.
-            If it is the empty string then no per-experiment subdirectory is used.
-            Default: ``'default'``.
-        version (int | str | None): Experiment version. If version is not
-            specified the logger inspects the save directory for existing
-            versions, then automatically assigns the next available version.
-            If it is a string then it is used as the run-specific subdirectory
-            name, otherwise ``'version_${version}'`` is used.
-            Defaults to ``None``
-        log_graph (bool): Adds the computational graph to tensorboard. This
-            requires that the user has defined the `self.example_input_array`
-            attribute in their model.
-            Defaults to ``False``.
-        default_hp_metric (bool): Enables a placeholder metric with key
-            ``hp_metric`` when ``log_hyperparams`` is called without a metric
-            (otherwise calls to log_hyperparams without a metric are ignored).
+        save_dir: Directory path where logs will be saved. The final path will be
+            ``os.path.join(save_dir, name, version)``.
+        name: Name of the experiment. If it is an empty string, no
+            per-experiment subdirectory is used. Defaults to ``"default"``.
+        version: Version of the experiment. If not specified, the logger checks
+            the save directory for existing versions and assigns the next
+            available one. If a string is provided, it is used as the
+            run-specific subdirectory name. Otherwise ``"version_${version}"`` is
+            used. Defaults to ``None``.
+        log_graph: If ``True``, adds the computational graph to TensorBoard. This
+            requires that the model has defined the ``example_input_array``
+            attribute. Defaults to ``False``.
+        default_hp_metric: If ``True``, enables a placeholder metric with key
+            ``hp_metric`` when ``log_hyperparams`` is called without a metric.
             Defaults to ``True``.
-        prefix (str): A string to put at the beginning of metric keys.
-            Defaults to ``''``.
-        **kwargs: Additional arguments like `comment`, `filename_suffix`, etc.
-            used by :class:`SummaryWriter` can be passed as keyword arguments in
-            this logger.
+        prefix: String to prepend to metric keys. Defaults to ``""``.
+        **kwargs: Additional arguments like ``comment``, ``filename_suffix``,
+            etc. used by :class:`SummaryWriter`.
+
+    Example:
+        >>> from anomalib.loggers import AnomalibTensorBoardLogger
+        >>> from anomalib.engine import Engine
+        >>> logger = AnomalibTensorBoardLogger(
+        ...     save_dir="logs",
+        ...     name="my_experiment"
+        ... )  # doctest: +SKIP
+        >>> engine = Engine(logger=logger)  # doctest: +SKIP
+
+    See Also:
+        - `TensorBoard Documentation <https://www.tensorflow.org/tensorboard>`_
     """
 
     def __init__(
@@ -85,13 +100,18 @@ class AnomalibTensorBoardLogger(ImageLoggerBase, TensorBoardLogger):
 
     @rank_zero_only
     def add_image(self, image: np.ndarray | Figure, name: str | None = None, **kwargs) -> None:
-        """Interface to add image to tensorboard logger.
+        """Log images to TensorBoard.
 
         Args:
-            image (np.ndarray | Figure): Image to log
-            name (str | None): The tag of the image
-                Defaults to ``None``.
-            kwargs: Accepts only `global_step` (int). The step at which to log the image.
+            image: Image to log, can be either a numpy array or matplotlib
+                Figure.
+            name: Name/title of the image. Defaults to ``None``.
+            **kwargs: Must contain ``global_step`` (int) indicating the step at
+                which to log the image. Additional keyword arguments are passed
+                to the TensorBoard logging method.
+
+        Raises:
+            ValueError: If ``global_step`` is not provided in ``kwargs``.
         """
         if "global_step" not in kwargs:
             msg = "`global_step` is required for tensorboard logger"

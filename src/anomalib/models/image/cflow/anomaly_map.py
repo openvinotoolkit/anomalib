@@ -1,6 +1,27 @@
-"""Anomaly Map Generator for CFlow model implementation."""
+"""Anomaly Map Generator for CFlow model implementation.
 
-# Copyright (C) 2022-2024 Intel Corporation
+This module provides the anomaly map generation functionality for the CFlow model.
+The generator takes feature distributions from multiple layers and combines them
+into a single anomaly heatmap.
+
+Example:
+    >>> from anomalib.models.image.cflow.anomaly_map import AnomalyMapGenerator
+    >>> import torch
+    >>> # Initialize generator
+    >>> pool_layers = ["layer1", "layer2", "layer3"]
+    >>> generator = AnomalyMapGenerator(pool_layers=pool_layers)
+    >>> # Generate anomaly map
+    >>> distribution = [torch.randn(32, 64) for _ in range(3)]
+    >>> height = [32, 16, 8]
+    >>> width = [32, 16, 8]
+    >>> anomaly_map = generator(
+    ...     distribution=distribution,
+    ...     height=height,
+    ...     width=width
+    ... )
+"""
+
+# Copyright (C) 2022-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 from collections.abc import Sequence
@@ -12,7 +33,27 @@ from torch.nn import functional as F  # noqa: N812
 
 
 class AnomalyMapGenerator(nn.Module):
-    """Generate Anomaly Heatmap."""
+    """Generate anomaly heatmap from layer-wise feature distributions.
+
+    The generator combines likelihood estimations from multiple feature layers into
+    a single anomaly heatmap by upsampling and aggregating the scores.
+
+    Args:
+        pool_layers (Sequence[str]): Names of pooling layers from which to extract
+            features.
+
+    Example:
+        >>> pool_layers = ["layer1", "layer2", "layer3"]
+        >>> generator = AnomalyMapGenerator(pool_layers=pool_layers)
+        >>> distribution = [torch.randn(32, 64) for _ in range(3)]
+        >>> height = [32, 16, 8]
+        >>> width = [32, 16, 8]
+        >>> anomaly_map = generator(
+        ...     distribution=distribution,
+        ...     height=height,
+        ...     width=width
+        ... )
+    """
 
     def __init__(
         self,
@@ -29,17 +70,22 @@ class AnomalyMapGenerator(nn.Module):
         width: list[int],
         image_size: tuple[int, int] | torch.Size | None,
     ) -> torch.Tensor:
-        """Compute the layer map based on likelihood estimation.
+        """Compute anomaly map from layer-wise likelihood distributions.
+
+        The method normalizes likelihood scores from each layer, upsamples them to
+        a common size, and combines them into a final anomaly map.
 
         Args:
-            distribution (list[torch.Tensor]): List of likelihoods for each layer.
-            height (list[int]): List of heights of the feature maps.
-            width (list[int]): List of widths of the feature maps.
-            image_size (tuple[int, int] | torch.Size | None): Size of the input image.
+            distribution (list[torch.Tensor]): List of likelihood distributions for
+                each layer.
+            height (list[int]): List of feature map heights for each layer.
+            width (list[int]): List of feature map widths for each layer.
+            image_size (tuple[int, int] | torch.Size | None): Target size for the
+                output anomaly map. If None, keeps the original size.
 
         Returns:
-          Final Anomaly Map
-
+            torch.Tensor: Anomaly map tensor where higher values indicate higher
+                likelihood of anomaly.
         """
         layer_maps: list[torch.Tensor] = []
         for layer_idx in range(len(self.pool_layers)):
@@ -65,20 +111,36 @@ class AnomalyMapGenerator(nn.Module):
         return score_map.max() - score_map
 
     def forward(self, **kwargs: list[torch.Tensor] | list[int] | list[list]) -> torch.Tensor:
-        """Return anomaly_map.
+        """Generate anomaly map from input feature distributions.
 
-        Expects `distribution`, `height` and 'width' keywords to be passed explicitly
+        The method expects keyword arguments containing the feature distributions
+        and corresponding spatial dimensions.
+
+        Args:
+            **kwargs: Keyword arguments containing:
+                - distribution (list[torch.Tensor]): Feature distributions
+                - height (list[int]): Feature map heights
+                - width (list[int]): Feature map widths
+                - image_size (tuple[int, int] | torch.Size | None, optional):
+                    Target output size
 
         Example:
-            >>> anomaly_map_generator = AnomalyMapGenerator(image_size=tuple(hparams.model.input_size),
-            >>>        pool_layers=pool_layers)
-            >>> output = self.anomaly_map_generator(distribution=dist, height=height, width=width)
+            >>> generator = AnomalyMapGenerator(pool_layers=["layer1", "layer2"])
+            >>> distribution = [torch.randn(32, 64) for _ in range(2)]
+            >>> height = [32, 16]
+            >>> width = [32, 16]
+            >>> anomaly_map = generator(
+            ...     distribution=distribution,
+            ...     height=height,
+            ...     width=width
+            ... )
 
         Raises:
-            ValueError: `distribution`, `height` and 'width' keys are not found
+            KeyError: If required arguments `distribution`, `height` or `width`
+                are missing.
 
         Returns:
-            torch.Tensor: anomaly map
+            torch.Tensor: Generated anomaly map.
         """
         if not ("distribution" in kwargs and "height" in kwargs and "width" in kwargs):
             msg = f"Expected keys `distribution`, `height` and `width`. Found {kwargs.keys()}"

@@ -201,7 +201,7 @@ and depth data.
 
 Anomalib provides a collection of anomaly models within the image and video
 domains. The models are implemented sub-classing PyTorch Lightning's
-`LightningModule` class, which is called `AnomalyModule`, which provides a set
+`LightningModule` class, which is called `AnomalibModule`, which provides a set
 of APIs for defining the model architecture, loss function, and optimization
 algorithm. The models are designed to be modular and extensible, allowing users
 to easily modify the model architecture and training workflow based on their

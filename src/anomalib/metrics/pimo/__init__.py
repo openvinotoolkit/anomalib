@@ -1,4 +1,22 @@
-"""Per-Image Metrics."""
+"""Per-Image Metrics for anomaly detection.
+
+This module provides metrics for evaluating anomaly detection performance on a
+per-image basis. The metrics include:
+
+- ``PIMO``: Per-Image Metric Optimization for anomaly detection
+- ``AUPIMO``: Area Under PIMO curve
+- ``ThresholdMethod``: Methods for determining optimal thresholds
+- ``PIMOResult``: Container for PIMO metric results
+- ``AUPIMOResult``: Container for AUPIMO metric results
+
+The implementation is based on the original work from:
+https://github.com/jpcbertoldo/aupimo
+
+Example:
+    >>> from anomalib.metrics.pimo import PIMO, AUPIMO
+    >>> pimo = PIMO()  # doctest: +SKIP
+    >>> aupimo = AUPIMO()  # doctest: +SKIP
+"""
 
 # Original Code
 # https://github.com/jpcbertoldo/aupimo

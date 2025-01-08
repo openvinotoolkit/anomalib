@@ -67,6 +67,13 @@ EfficientAD: Accurate Visual Anomaly Detection at Millisecond-Level Latencies
 FastFlow: Unsupervised Anomaly Detection and Localization via 2D Normalizing Flows
 :::
 
+:::{grid-item-card} {material-regular}`model_training;1.5em` FRE
+:link: ./fre
+:link-type: doc
+
+FRE: A Fast Method For Anomaly Detection And Segmentation
+:::
+
 :::{grid-item-card} {material-regular}`model_training;1.5em` GANomaly
 :link: ./ganomaly
 :link-type: doc
@@ -95,13 +102,6 @@ Towards Total Recall in Industrial Anomaly Detection
 Anomaly Detection via Reverse Distillation from One-Class Embedding.
 :::
 
-:::{grid-item-card} {material-regular}`model_training;1.5em` R-KDE
-:link: ./rkde
-:link-type: doc
-
-Region-Based Kernel Density Estimation (RKDE)
-:::
-
 :::{grid-item-card} {material-regular}`model_training;1.5em` STFPM
 :link: ./stfpm
 :link-type: doc
@@ -109,11 +109,25 @@ Region-Based Kernel Density Estimation (RKDE)
 Student-Teacher Feature Pyramid Matching for Unsupervised Anomaly Detection
 :::
 
+:::{grid-item-card} {material-regular}`model_training;1.5em` SuperSimpleNet
+:link: ./supersimplenet
+:link-type: doc
+
+SuperSimpleNet: Unifying Unsupervised and Supervised Learning for Fast and Reliable Surface Defect Detection
+:::
+
 :::{grid-item-card} {material-regular}`model_training;1.5em` U-Flow
 :link: ./uflow
 :link-type: doc
 
 U-Flow: A U-shaped Normalizing Flow for Anomaly Detection with Unsupervised Threshold
+:::
+
+:::{grid-item-card} {material-regular}`model_training;1.5em` VLM-AD
+:link: ./vlm_ad
+:link-type: doc
+
+VLM-AD: Vision-Language Model for Anomaly Detection
 :::
 
 :::{grid-item-card} {material-regular}`model_training;1.5em` WinCLIP
@@ -137,11 +151,11 @@ WinCLIP: Zero-/Few-Shot Anomaly Classification and Segmentation
 ./dsr
 ./efficient_ad
 ./fastflow
+./fre
 ./ganomaly
 ./padim
 ./patchcore
 ./reverse_distillation
-./rkde
 ./stfpm
 ./uflow
 ./winclip

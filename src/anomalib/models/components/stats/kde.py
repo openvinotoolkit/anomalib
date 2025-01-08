@@ -1,6 +1,20 @@
-"""Gaussian Kernel Density Estimation."""
+"""Gaussian Kernel Density Estimation.
 
-# Copyright (C) 2022-2024 Intel Corporation
+This module implements non-parametric density estimation using Gaussian kernels.
+The bandwidth is selected automatically using Scott's rule.
+
+Example:
+    >>> import torch
+    >>> from anomalib.models.components.stats import GaussianKDE
+    >>> # Create density estimator
+    >>> kde = GaussianKDE()
+    >>> # Fit and evaluate density
+    >>> features = torch.randn(100, 10)  # 100 samples, 10 dimensions
+    >>> kde.fit(features)
+    >>> density = kde.predict(features)
+"""
+
+# Copyright (C) 2022-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 import math
@@ -13,8 +27,25 @@ from anomalib.models.components.base import DynamicBufferMixin
 class GaussianKDE(DynamicBufferMixin):
     """Gaussian Kernel Density Estimation.
 
+    Estimates probability density using a Gaussian kernel function. The bandwidth
+    is selected automatically using Scott's rule.
+
     Args:
-        dataset (Tensor | None, optional): Dataset on which to fit the KDE model. Defaults to None.
+        dataset (torch.Tensor | None, optional): Dataset on which to fit the KDE
+            model. If provided, the model will be fitted immediately.
+            Defaults to ``None``.
+
+    Example:
+        >>> import torch
+        >>> from anomalib.models.components.stats import GaussianKDE
+        >>> features = torch.randn(100, 10)  # 100 samples, 10 dimensions
+        >>> # Initialize and fit in one step
+        >>> kde = GaussianKDE(dataset=features)
+        >>> # Or fit later
+        >>> kde = GaussianKDE()
+        >>> kde.fit(features)
+        >>> # Get density estimates
+        >>> density = kde(features)
     """
 
     def __init__(self, dataset: torch.Tensor | None = None) -> None:
@@ -32,12 +63,22 @@ class GaussianKDE(DynamicBufferMixin):
         self.norm = torch.Tensor()
 
     def forward(self, features: torch.Tensor) -> torch.Tensor:
-        """Get the KDE estimates from the feature map.
+        """Compute KDE estimates for the input features.
 
         Args:
-          features (torch.Tensor): Feature map extracted from the CNN
+            features (torch.Tensor): Feature tensor of shape ``(N, D)`` where
+                ``N`` is the number of samples and ``D`` is the dimension.
 
-        Returns: KDE Estimates
+        Returns:
+            torch.Tensor: Density estimates for each input sample, shape ``(N,)``.
+
+        Example:
+            >>> kde = GaussianKDE()
+            >>> features = torch.randn(100, 10)
+            >>> kde.fit(features)
+            >>> estimates = kde(features)
+            >>> estimates.shape
+            torch.Size([100])
         """
         features = torch.matmul(features, self.bw_transform)
 
@@ -50,13 +91,19 @@ class GaussianKDE(DynamicBufferMixin):
         return estimate
 
     def fit(self, dataset: torch.Tensor) -> None:
-        """Fit a KDE model to the input dataset.
+        """Fit the KDE model to the input dataset.
+
+        Computes the bandwidth matrix using Scott's rule and transforms the data
+        accordingly.
 
         Args:
-          dataset (torch.Tensor): Input dataset.
+            dataset (torch.Tensor): Input dataset of shape ``(N, D)`` where ``N``
+                is the number of samples and ``D`` is the dimension.
 
-        Returns:
-            None
+        Example:
+            >>> kde = GaussianKDE()
+            >>> features = torch.randn(100, 10)
+            >>> kde.fit(features)
         """
         num_samples, dimension = dataset.shape
 
@@ -83,10 +130,17 @@ class GaussianKDE(DynamicBufferMixin):
         """Calculate the unbiased covariance matrix.
 
         Args:
-            tensor (torch.Tensor): Input tensor from which covariance matrix is computed.
+            tensor (torch.Tensor): Input tensor of shape ``(D, N)`` where ``D``
+                is the dimension and ``N`` is the number of samples.
 
         Returns:
-            Output covariance matrix.
+            torch.Tensor: Covariance matrix of shape ``(D, D)``.
+
+        Example:
+            >>> x = torch.randn(5, 100)  # 5 dimensions, 100 samples
+            >>> cov_matrix = GaussianKDE.cov(x)
+            >>> cov_matrix.shape
+            torch.Size([5, 5])
         """
         mean = torch.mean(tensor, dim=1)
         tensor -= mean[:, None]

@@ -1,11 +1,46 @@
-"""Torch models defining encoder, decoder, Generator and Discriminator.
+"""Torch models defining encoder, decoder, generator and discriminator networks.
 
-Code adapted from https://github.com/samet-akcay/ganomaly.
+The GANomaly model consists of several key components:
+
+1. Encoder: Compresses input images into latent vectors
+2. Decoder: Reconstructs images from latent vectors
+3. Generator: Combines encoder-decoder-encoder for image generation
+4. Discriminator: Distinguishes real from generated images
+
+The architecture follows an encoder-decoder-encoder pattern where:
+- First encoder compresses input image to latent space
+- Decoder reconstructs the image from latent vector
+- Second encoder re-encodes reconstructed image
+- Anomaly score is based on difference between latent vectors
+
+Example:
+    >>> from anomalib.models.image.ganomaly.torch_model import GanomalyModel
+    >>> model = GanomalyModel(
+    ...     input_size=(256, 256),
+    ...     num_input_channels=3,
+    ...     n_features=64,
+    ...     latent_vec_size=100,
+    ...     extra_layers=0,
+    ...     add_final_conv_layer=True
+    ... )
+    >>> input_tensor = torch.randn(32, 3, 256, 256)
+    >>> output = model(input_tensor)
+
+Code adapted from:
+    Title: GANomaly - PyTorch Implementation
+    Authors: Samet Akcay
+    URL: https://github.com/samet-akcay/ganomaly
+    License: MIT
+
+See Also:
+    - :class:`anomalib.models.image.ganomaly.lightning_model.Ganomaly`:
+        Lightning implementation of the GANomaly model
+    - :class:`anomalib.models.image.ganomaly.loss.GeneratorLoss`:
+        Loss function for the generator network
+    - :class:`anomalib.models.image.ganomaly.loss.DiscriminatorLoss`:
+        Loss function for the discriminator network
 """
 
-# Copyright (c) 2018-2022 Samet Akcay, Durham University, UK
-# SPDX-License-Identifier: MIT
-#
 # Copyright (C) 2020-2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
@@ -14,21 +49,35 @@ import math
 import torch
 from torch import nn
 
+from anomalib.data import InferenceBatch
 from anomalib.data.utils.image import pad_nextpow2
 
 
 class Encoder(nn.Module):
     """Encoder Network.
 
+    Compresses input images into latent vectors through a series of convolution
+    layers.
+
     Args:
-        input_size (tuple[int, int]): Size of input image
-        latent_vec_size (int): Size of latent vector z
-        num_input_channels (int): Number of input channels in the image
-        n_features (int): Number of features per convolution layer
-        extra_layers (int): Number of extra layers since the network uses only a single encoder layer by default.
+        input_size (tuple[int, int]): Size of input image (height, width)
+        latent_vec_size (int): Size of output latent vector
+        num_input_channels (int): Number of input image channels
+        n_features (int): Number of feature maps in convolution layers
+        extra_layers (int, optional): Number of extra intermediate layers.
             Defaults to ``0``.
-        add_final_conv_layer (bool): Add a final convolution layer in the encoder.
-            Defaults to ``True``.
+        add_final_conv_layer (bool, optional): Whether to add final convolution
+            layer. Defaults to ``True``.
+
+    Example:
+        >>> encoder = Encoder(
+        ...     input_size=(256, 256),
+        ...     latent_vec_size=100,
+        ...     num_input_channels=3,
+        ...     n_features=64
+        ... )
+        >>> input_tensor = torch.randn(32, 3, 256, 256)
+        >>> latent = encoder(input_tensor)
     """
 
     def __init__(
@@ -87,7 +136,15 @@ class Encoder(nn.Module):
             )
 
     def forward(self, input_tensor: torch.Tensor) -> torch.Tensor:
-        """Return latent vectors."""
+        """Forward pass through encoder network.
+
+        Args:
+            input_tensor (torch.Tensor): Input tensor of shape
+                ``(batch_size, channels, height, width)``
+
+        Returns:
+            torch.Tensor: Latent vector tensor
+        """
         output = self.input_layers(input_tensor)
         output = self.extra_layers(output)
         output = self.pyramid_features(output)
@@ -100,13 +157,25 @@ class Encoder(nn.Module):
 class Decoder(nn.Module):
     """Decoder Network.
 
+    Reconstructs images from latent vectors through transposed convolutions.
+
     Args:
-        input_size (tuple[int, int]): Size of input image
-        latent_vec_size (int): Size of latent vector z
-        num_input_channels (int): Number of input channels in the image
-        n_features (int): Number of features per convolution layer
-        extra_layers (int): Number of extra layers since the network uses only a single encoder layer by default.
+        input_size (tuple[int, int]): Size of output image (height, width)
+        latent_vec_size (int): Size of input latent vector
+        num_input_channels (int): Number of output image channels
+        n_features (int): Number of feature maps in convolution layers
+        extra_layers (int, optional): Number of extra intermediate layers.
             Defaults to ``0``.
+
+    Example:
+        >>> decoder = Decoder(
+        ...     input_size=(256, 256),
+        ...     latent_vec_size=100,
+        ...     num_input_channels=3,
+        ...     n_features=64
+        ... )
+        >>> latent = torch.randn(32, 100, 1, 1)
+        >>> reconstruction = decoder(latent)
     """
 
     def __init__(
@@ -194,7 +263,14 @@ class Decoder(nn.Module):
         self.final_layers.add_module(f"final-{num_input_channels}-tanh", nn.Tanh())
 
     def forward(self, input_tensor: torch.Tensor) -> torch.Tensor:
-        """Return generated image."""
+        """Forward pass through decoder network.
+
+        Args:
+            input_tensor (torch.Tensor): Input latent tensor
+
+        Returns:
+            torch.Tensor: Reconstructed image tensor
+        """
         output = self.latent_input(input_tensor)
         output = self.inverse_pyramid(output)
         output = self.extra_layers(output)
@@ -202,16 +278,25 @@ class Decoder(nn.Module):
 
 
 class Discriminator(nn.Module):
-    """Discriminator.
+    """Discriminator Network.
 
-        Made of only one encoder layer which takes x and x_hat to produce a score.
+    Classifies images as real or generated using a modified encoder architecture.
 
     Args:
-        input_size (tuple[int, int]): Input image size.
-        num_input_channels (int): Number of image channels.
-        n_features (int): Number of feature maps in each convolution layer.
-        extra_layers (int, optional): Add extra intermediate layers.
+        input_size (tuple[int, int]): Input image size (height, width)
+        num_input_channels (int): Number of input image channels
+        n_features (int): Number of feature maps in convolution layers
+        extra_layers (int, optional): Number of extra intermediate layers.
             Defaults to ``0``.
+
+    Example:
+        >>> discriminator = Discriminator(
+        ...     input_size=(256, 256),
+        ...     num_input_channels=3,
+        ...     n_features=64
+        ... )
+        >>> input_tensor = torch.randn(32, 3, 256, 256)
+        >>> prediction, features = discriminator(input_tensor)
     """
 
     def __init__(
@@ -235,7 +320,16 @@ class Discriminator(nn.Module):
         self.classifier.add_module("Sigmoid", nn.Sigmoid())
 
     def forward(self, input_tensor: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-        """Return class of object and features."""
+        """Forward pass through discriminator network.
+
+        Args:
+            input_tensor (torch.Tensor): Input image tensor
+
+        Returns:
+            tuple[torch.Tensor, torch.Tensor]: Tuple containing:
+                - Classification scores (real/fake)
+                - Intermediate features
+        """
         features = self.features(input_tensor)
         classifier = self.classifier(features)
         classifier = classifier.view(-1, 1).squeeze(1)
@@ -243,19 +337,30 @@ class Discriminator(nn.Module):
 
 
 class Generator(nn.Module):
-    """Generator model.
+    """Generator Network.
 
-    Made of an encoder-decoder-encoder architecture.
+    Combines encoder-decoder-encoder architecture for image generation and
+    reconstruction.
 
     Args:
-        input_size (tuple[int, int]): Size of input data.
-        latent_vec_size (int): Dimension of latent vector produced between the first encoder-decoder.
-        num_input_channels (int): Number of channels in input image.
-        n_features (int): Number of feature maps in each convolution layer.
-        extra_layers (int, optional): Extra intermediate layers in the encoder/decoder.
+        input_size (tuple[int, int]): Input/output image size (height, width)
+        latent_vec_size (int): Size of latent vector between encoder-decoder
+        num_input_channels (int): Number of input/output image channels
+        n_features (int): Number of feature maps in convolution layers
+        extra_layers (int, optional): Number of extra intermediate layers.
             Defaults to ``0``.
-        add_final_conv_layer (bool, optional): Add a final convolution layer in the decoder.
+        add_final_conv_layer (bool, optional): Add final convolution to encoders.
             Defaults to ``True``.
+
+    Example:
+        >>> generator = Generator(
+        ...     input_size=(256, 256),
+        ...     latent_vec_size=100,
+        ...     num_input_channels=3,
+        ...     n_features=64
+        ... )
+        >>> input_tensor = torch.randn(32, 3, 256, 256)
+        >>> gen_img, latent_i, latent_o = generator(input_tensor)
     """
 
     def __init__(
@@ -287,7 +392,17 @@ class Generator(nn.Module):
         )
 
     def forward(self, input_tensor: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-        """Return generated image and the latent vectors."""
+        """Forward pass through generator network.
+
+        Args:
+            input_tensor (torch.Tensor): Input image tensor
+
+        Returns:
+            tuple[torch.Tensor, torch.Tensor, torch.Tensor]: Tuple containing:
+                - Generated image
+                - First encoder's latent vector
+                - Second encoder's latent vector
+        """
         latent_i = self.encoder1(input_tensor)
         gen_image = self.decoder(latent_i)
         latent_o = self.encoder2(gen_image)
@@ -295,17 +410,35 @@ class Generator(nn.Module):
 
 
 class GanomalyModel(nn.Module):
-    """Ganomaly Model.
+    """GANomaly model for anomaly detection.
+
+    Complete model combining Generator and Discriminator networks.
 
     Args:
-        input_size (tuple[int, int]): Input dimension.
-        num_input_channels (int): Number of input channels.
-        n_features (int): Number of features layers in the CNNs.
-        latent_vec_size (int): Size of autoencoder latent vector.
-        extra_layers (int, optional): Number of extra layers for encoder/decoder.
+        input_size (tuple[int, int]): Input image size (height, width)
+        num_input_channels (int): Number of input image channels
+        n_features (int): Number of feature maps in convolution layers
+        latent_vec_size (int): Size of latent vector between encoder-decoder
+        extra_layers (int, optional): Number of extra intermediate layers.
             Defaults to ``0``.
-        add_final_conv_layer (bool, optional): Add convolution layer at the end.
+        add_final_conv_layer (bool, optional): Add final convolution to encoders.
             Defaults to ``True``.
+
+    Example:
+        >>> model = GanomalyModel(
+        ...     input_size=(256, 256),
+        ...     num_input_channels=3,
+        ...     n_features=64,
+        ...     latent_vec_size=100
+        ... )
+        >>> input_tensor = torch.randn(32, 3, 256, 256)
+        >>> output = model(input_tensor)
+
+    References:
+        - Title: GANomaly: Semi-Supervised Anomaly Detection via Adversarial
+                Training
+        - Authors: Samet Akcay, Amir Atapour-Abarghouei, Toby P. Breckon
+        - URL: https://arxiv.org/abs/1805.06725
     """
 
     def __init__(
@@ -340,7 +473,7 @@ class GanomalyModel(nn.Module):
         """Initialize DCGAN weights.
 
         Args:
-            module (nn.Module): [description]
+            module (nn.Module): Neural network module to initialize
         """
         classname = module.__class__.__name__
         if classname.find("Conv") != -1:
@@ -352,17 +485,26 @@ class GanomalyModel(nn.Module):
     def forward(
         self,
         batch: torch.Tensor,
-    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor] | torch.Tensor:
-        """Get scores for batch.
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor] | InferenceBatch:
+        """Forward pass through GANomaly model.
 
         Args:
-            batch (torch.Tensor): Images
+            batch (torch.Tensor): Batch of input images
 
         Returns:
-            Tensor: Regeneration scores.
+            tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor] |
+            InferenceBatch:
+                If training:
+                    - Padded input batch
+                    - Generated images
+                    - First encoder's latent vectors
+                    - Second encoder's latent vectors
+                If inference:
+                    - Batch containing anomaly scores
         """
         padded_batch = pad_nextpow2(batch)
         fake, latent_i, latent_o = self.generator(padded_batch)
         if self.training:
             return padded_batch, fake, latent_i, latent_o
-        return torch.mean(torch.pow((latent_i - latent_o), 2), dim=1).view(-1)  # convert nx1x1 to n
+        scores = torch.mean(torch.pow((latent_i - latent_o), 2), dim=1).view(-1)  # convert nx1x1 to n
+        return InferenceBatch(pred_score=scores)

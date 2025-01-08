@@ -1,6 +1,27 @@
-"""Image Utils."""
+"""Image utilities for reading, writing and processing images.
 
-# Copyright (C) 2022-2024 Intel Corporation
+This module provides various utility functions for handling images in Anomalib:
+
+- Reading images in various formats (RGB, grayscale, depth)
+- Writing images to disk
+- Converting between different image formats
+- Processing images (padding, resizing etc.)
+- Handling image filenames and paths
+
+Example:
+    >>> from anomalib.data.utils import read_image
+    >>> # Read image as numpy array
+    >>> image = read_image("image.jpg")
+    >>> print(type(image))
+    <class 'numpy.ndarray'>
+
+    >>> # Read image as tensor
+    >>> image = read_image("image.jpg", as_tensor=True)
+    >>> print(type(image))
+    <class 'torch.Tensor'>
+"""
+
+# Copyright (C) 2022-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
@@ -25,25 +46,22 @@ logger = logging.getLogger(__name__)
 
 
 def is_image_file(filename: str | Path) -> bool:
-    """Check if the filename is an image file.
+    """Check if the filename has a valid image extension.
 
     Args:
-        filename (str | Path): Filename to check.
+        filename (str | Path): Path to file to check
 
     Returns:
-        bool: True if the filename is an image file.
+        bool: ``True`` if filename has valid image extension
 
     Examples:
-        >>> is_image_file("000.png")
+        >>> is_image_file("image.jpg")
         True
 
-        >>> is_image_file("002.JPEG")
+        >>> is_image_file("image.png")
         True
 
-        >>> is_image_file("009.tiff")
-        True
-
-        >>> is_image_file("002.avi")
+        >>> is_image_file("image.txt")
         False
     """
     filename = Path(filename)
@@ -51,39 +69,31 @@ def is_image_file(filename: str | Path) -> bool:
 
 
 def get_image_filename(filename: str | Path) -> Path:
-    """Get image filename.
+    """Get validated image filename.
 
     Args:
-        filename (str | Path): Filename to check.
+        filename (str | Path): Path to image file
 
     Returns:
-        Path: Image filename.
+        Path: Validated path to image file
+
+    Raises:
+        FileNotFoundError: If file does not exist
+        ValueError: If file is not an image
 
     Examples:
-        Assume that we have the following files in the directory:
+        >>> get_image_filename("image.jpg")
+        PosixPath('image.jpg')
 
-        .. code-block:: bash
-
-            $ ls
-            000.png  001.jpg  002.JPEG  003.tiff  004.png  005.txt
-
-        >>> get_image_filename("000.png")
-        PosixPath('000.png')
-
-        >>> get_image_filename("001.jpg")
-        PosixPath('001.jpg')
-
-        >>> get_image_filename("009.tiff")
+        >>> get_image_filename("missing.jpg")
         Traceback (most recent call last):
-        File "<string>", line 1, in <module>
-        File "<string>", line 18, in get_image_filename
-        FileNotFoundError: File not found: 009.tiff
+            ...
+        FileNotFoundError: File not found: missing.jpg
 
-        >>> get_image_filename("005.txt")
+        >>> get_image_filename("text.txt")
         Traceback (most recent call last):
-        File "<string>", line 1, in <module>
-        File "<string>", line 18, in get_image_filename
-        ValueError: ``filename`` is not an image file. 005.txt
+            ...
+        ValueError: ``filename`` is not an image file: text.txt
     """
     filename = Path(filename)
 
@@ -98,31 +108,25 @@ def get_image_filename(filename: str | Path) -> Path:
 
 
 def get_image_filenames_from_dir(path: str | Path) -> list[Path]:
-    """Get image filenames from directory.
+    """Get list of image filenames from directory.
 
     Args:
-        path (str | Path): Path to image directory.
-
-    Raises:
-        ValueError: When ``path`` is not a directory.
+        path (str | Path): Path to directory containing images
 
     Returns:
-        list[Path]: Image filenames.
+        list[Path]: List of paths to image files
+
+    Raises:
+        ValueError: If path is not a directory or no images found
 
     Examples:
-        Assume that we have the following files in the directory:
-        $ ls
-        000.png  001.jpg  002.JPEG  003.tiff  004.png  005.png
+        >>> get_image_filenames_from_dir("images/")
+        [PosixPath('images/001.jpg'), PosixPath('images/002.png')]
 
-        >>> get_image_filenames_from_dir(".")
-        [PosixPath('000.png'), PosixPath('001.jpg'), PosixPath('002.JPEG'),
-        PosixPath('003.tiff'), PosixPath('004.png'), PosixPath('005.png')]
-
-        >>> get_image_filenames_from_dir("009.tiff")
+        >>> get_image_filenames_from_dir("empty/")
         Traceback (most recent call last):
-        File "<string>", line 1, in <module>
-        File "<string>", line 18, in get_image_filenames_from_dir
-        ValueError: ``path`` is not a directory: 009.tiff
+            ...
+        ValueError: Found 0 images in empty/
     """
     path = Path(path)
     if not path.is_dir():
@@ -139,50 +143,26 @@ def get_image_filenames_from_dir(path: str | Path) -> list[Path]:
 
 
 def get_image_filenames(path: str | Path, base_dir: str | Path | None = None) -> list[Path]:
-    """Get image filenames.
+    """Get list of image filenames from path.
 
     Args:
-        path (str | Path): Path to image or image-folder.
-        base_dir (Path): Base directory to restrict file access.
+        path (str | Path): Path to image file or directory
+        base_dir (str | Path | None): Base directory to restrict file access
 
     Returns:
-        list[Path]: List of image filenames.
+        list[Path]: List of paths to image files
 
     Examples:
-        Assume that we have the following files in the directory:
+        >>> get_image_filenames("image.jpg")
+        [PosixPath('image.jpg')]
 
-        .. code-block:: bash
+        >>> get_image_filenames("images/")
+        [PosixPath('images/001.jpg'), PosixPath('images/002.png')]
 
-            $ tree images
-            images
-            ├── bad
-            │   ├── 003.png
-            │   └── 004.jpg
-            └── good
-                ├── 000.png
-                └── 001.tiff
-
-        We can get the image filenames with various ways:
-
-        >>> get_image_filenames("images/bad/003.png")
-        PosixPath('/home/sakcay/Projects/anomalib/images/bad/003.png')]
-
-        It is possible to recursively get the image filenames from a directory:
-
-        >>> get_image_filenames("images")
-        [PosixPath('/home/sakcay/Projects/anomalib/images/bad/003.png'),
-        PosixPath('/home/sakcay/Projects/anomalib/images/bad/004.jpg'),
-        PosixPath('/home/sakcay/Projects/anomalib/images/good/001.tiff'),
-        PosixPath('/home/sakcay/Projects/anomalib/images/good/000.png')]
-
-        If we want to restrict the file access to a specific directory,
-        we can use ``base_dir`` argument.
-
-        >>> get_image_filenames("images", base_dir="images/bad")
+        >>> get_image_filenames("images/", base_dir="allowed/")
         Traceback (most recent call last):
-        File "<string>", line 1, in <module>
-        File "<string>", line 18, in get_image_filenames
-        ValueError: Access denied: Path is outside the allowed directory.
+            ...
+        ValueError: Access denied: Path is outside the allowed directory
     """
     path = validate_path(path, base_dir)
     image_filenames: list[Path] = []
@@ -199,24 +179,23 @@ def get_image_filenames(path: str | Path, base_dir: str | Path | None = None) ->
 
 
 def duplicate_filename(path: str | Path) -> Path:
-    """Check and duplicate filename.
-
-    This function checks the path and adds a suffix if it already exists on the file system.
+    """Add numeric suffix to filename if it already exists.
 
     Args:
-        path (str | Path): Input Path
-
-    Examples:
-        >>> path = Path("datasets/MVTec/bottle/test/broken_large/000.png")
-        >>> path.exists()
-        True
-
-        If we pass this to ``duplicate_filename`` function we would get the following:
-        >>> duplicate_filename(path)
-        PosixPath('datasets/MVTec/bottle/test/broken_large/000_1.png')
+        path (str | Path): Path to file
 
     Returns:
-        Path: Duplicated output path.
+        Path: Path with numeric suffix if original exists
+
+    Examples:
+        >>> duplicate_filename("image.jpg")  # File doesn't exist
+        PosixPath('image.jpg')
+
+        >>> duplicate_filename("exists.jpg")  # File exists
+        PosixPath('exists_1.jpg')
+
+        >>> duplicate_filename("exists.jpg")  # Both exist
+        PosixPath('exists_2.jpg')
     """
     path = Path(path)
 
@@ -234,54 +213,36 @@ def duplicate_filename(path: str | Path) -> Path:
 
 
 def generate_output_image_filename(input_path: str | Path, output_path: str | Path) -> Path:
-    """Generate an output filename to save the inference image.
-
-    This function generates an output filaname by checking the input and output filenames. Input path is
-    the input to infer, and output path is the path to save the output predictions specified by the user.
-
-    The function expects ``input_path`` to always be a file, not a directory. ``output_path`` could be a
-    filename or directory. If it is a filename, the function checks if the specified filename exists on
-    the file system. If yes, the function calls ``duplicate_filename`` to duplicate the filename to avoid
-    overwriting the existing file. If ``output_path`` is a directory, this function adds the parent and
-    filenames of ``input_path`` to ``output_path``.
+    """Generate output filename for inference image.
 
     Args:
-        input_path (str | Path): Path to the input image to infer.
-        output_path (str | Path): Path to output to save the predictions.
-            Could be a filename or a directory.
-
-    Examples:
-        >>> input_path = Path("datasets/MVTec/bottle/test/broken_large/000.png")
-        >>> output_path = Path("datasets/MVTec/bottle/test/broken_large/000.png")
-        >>> generate_output_image_filename(input_path, output_path)
-        PosixPath('datasets/MVTec/bottle/test/broken_large/000_1.png')
-
-        >>> input_path = Path("datasets/MVTec/bottle/test/broken_large/000.png")
-        >>> output_path = Path("results/images")
-        >>> generate_output_image_filename(input_path, output_path)
-        PosixPath('results/images/broken_large/000.png')
-
-    Raises:
-        ValueError: When the ``input_path`` is not a file.
+        input_path (str | Path): Path to input image
+        output_path (str | Path): Path to save output (file or directory)
 
     Returns:
-        Path: The output filename to save the output predictions from the inferencer.
+        Path: Generated output filename
+
+    Raises:
+        ValueError: If input_path is not a file
+
+    Examples:
+        >>> generate_output_image_filename("input.jpg", "output.jpg")
+        PosixPath('output.jpg')  # or output_1.jpg if exists
+
+        >>> generate_output_image_filename("dir/input.jpg", "outdir")
+        PosixPath('outdir/dir/input.jpg')
     """
     input_path = validate_path(input_path)
     output_path = validate_path(output_path, should_exist=False)
 
-    # Input validation: Check if input_path is a valid directory or file
-    if input_path.is_file() is False:
-        msg = "input_path is expected to be a file to generate a proper output filename."
+    if not input_path.is_file():
+        msg = "input_path is expected to be a file"
         raise ValueError(msg)
 
-    # If the output is a directory, then add parent directory name
-    # and filename to the path. This is to ensure we do not overwrite
-    # images and organize based on the categories.
     if output_path.is_dir():
         output_image_filename = output_path / input_path.parent.name / input_path.name
     elif output_path.is_file() and output_path.exists():
-        msg = f"{output_path} already exists. Renaming the file to avoid overwriting."
+        msg = f"{output_path} already exists. Renaming to avoid overwriting."
         logger.warning(msg)
         output_image_filename = duplicate_filename(output_path)
     else:
@@ -293,32 +254,28 @@ def generate_output_image_filename(input_path: str | Path, output_path: str | Pa
 
 
 def get_image_height_and_width(image_size: int | Sequence[int]) -> tuple[int, int]:
-    """Get image height and width from ``image_size`` variable.
+    """Get height and width from image size parameter.
 
     Args:
-        image_size (int | Sequence[int] | None, optional): Input image size.
-
-    Raises:
-        ValueError: Image size not None, int or Sequence of values.
-
-    Examples:
-        >>> get_image_height_and_width(image_size=256)
-        (256, 256)
-
-        >>> get_image_height_and_width(image_size=(256, 256))
-        (256, 256)
-
-        >>> get_image_height_and_width(image_size=(256, 256, 3))
-        (256, 256)
-
-        >>> get_image_height_and_width(image_size=256.)
-        Traceback (most recent call last):
-        File "<string>", line 1, in <module>
-        File "<string>", line 18, in get_image_height_and_width
-        ValueError: ``image_size`` could be either int or tuple[int, int]
+        image_size (int | Sequence[int]): Single int for square, or (H,W) sequence
 
     Returns:
-        tuple[int | None, int | None]: A tuple containing image height and width values.
+        tuple[int, int]: Image height and width
+
+    Raises:
+        TypeError: If image_size is not int or sequence of ints
+
+    Examples:
+        >>> get_image_height_and_width(256)
+        (256, 256)
+
+        >>> get_image_height_and_width((480, 640))
+        (480, 640)
+
+        >>> get_image_height_and_width(256.0)
+        Traceback (most recent call last):
+            ...
+        TypeError: ``image_size`` could be either int or tuple[int, int]
     """
     if isinstance(image_size, int):
         height_and_width = (image_size, image_size)
@@ -332,41 +289,44 @@ def get_image_height_and_width(image_size: int | Sequence[int]) -> tuple[int, in
 
 
 def read_image(path: str | Path, as_tensor: bool = False) -> torch.Tensor | np.ndarray:
-    """Read image from disk in RGB format.
+    """Read RGB image from disk.
 
     Args:
-        path (str, Path): path to the image file
-        as_tensor (bool, optional): If True, returns the image as a tensor. Defaults to False.
-
-    Example:
-        >>> image = read_image("test_image.jpg")
-        >>> type(image)
-        <class 'numpy.ndarray'>
-        >>>
-        >>> image = read_image("test_image.jpg", as_tensor=True)
-        >>> type(image)
-        <class 'torch.Tensor'>
+        path (str | Path): Path to image file
+        as_tensor (bool): If ``True``, return torch.Tensor. Defaults to ``False``
 
     Returns:
-        image as numpy array
+        torch.Tensor | np.ndarray: Image as tensor or array, normalized to [0,1]
+
+    Examples:
+        >>> image = read_image("image.jpg")
+        >>> type(image)
+        <class 'numpy.ndarray'>
+
+        >>> image = read_image("image.jpg", as_tensor=True)
+        >>> type(image)
+        <class 'torch.Tensor'>
     """
     image = Image.open(path).convert("RGB")
     return to_dtype(to_image(image), torch.float32, scale=True) if as_tensor else np.array(image) / 255.0
 
 
 def read_mask(path: str | Path, as_tensor: bool = False) -> torch.Tensor | np.ndarray:
-    """Read mask from disk.
+    """Read grayscale mask from disk.
 
     Args:
-        path (str, Path): path to the mask file
-        as_tensor (bool, optional): If True, returns the mask as a tensor. Defaults to False.
+        path (str | Path): Path to mask file
+        as_tensor (bool): If ``True``, return torch.Tensor. Defaults to ``False``
 
-    Example:
-        >>> mask = read_mask("test_mask.png")
+    Returns:
+        torch.Tensor | np.ndarray: Mask as tensor or array
+
+    Examples:
+        >>> mask = read_mask("mask.png")
         >>> type(mask)
         <class 'numpy.ndarray'>
-        >>>
-        >>> mask = read_mask("test_mask.png", as_tensor=True)
+
+        >>> mask = read_mask("mask.png", as_tensor=True)
         >>> type(mask)
         <class 'torch.Tensor'>
     """
@@ -375,34 +335,40 @@ def read_mask(path: str | Path, as_tensor: bool = False) -> torch.Tensor | np.nd
 
 
 def read_depth_image(path: str | Path) -> np.ndarray:
-    """Read tiff depth image from disk.
+    """Read depth image from TIFF file.
 
     Args:
-        path (str, Path): path to the image file
-
-    Example:
-        >>> image = read_depth_image("test_image.tiff")
+        path (str | Path): Path to TIFF depth image
 
     Returns:
-        image as numpy array
+        np.ndarray: Depth image array
+
+    Examples:
+        >>> depth = read_depth_image("depth.tiff")
+        >>> type(depth)
+        <class 'numpy.ndarray'>
     """
     path = path if isinstance(path, str) else str(path)
     return tiff.imread(path)
 
 
 def pad_nextpow2(batch: torch.Tensor) -> torch.Tensor:
-    """Compute required padding from input size and return padded images.
+    """Pad images to next power of 2 size.
 
-    Finds the largest dimension and computes a square image of dimensions that are of the power of 2.
-    In case the image dimension is odd, it returns the image with an extra padding on one side.
+    Finds largest dimension and pads to square power-of-2 size. Handles odd sizes.
 
     Args:
-        batch (torch.Tensor): Input images
+        batch (torch.Tensor): Batch of images to pad
 
     Returns:
-        batch: Padded batch
+        torch.Tensor: Padded image batch
+
+    Examples:
+        >>> x = torch.randn(1, 3, 127, 128)
+        >>> padded = pad_nextpow2(x)
+        >>> padded.shape
+        torch.Size([1, 3, 128, 128])
     """
-    # find the largest dimension
     l_dim = 2 ** math.ceil(math.log(max(*batch.shape[-2:]), 2))
     padding_w = [math.ceil((l_dim - batch.shape[-2]) / 2), math.floor((l_dim - batch.shape[-2]) / 2)]
     padding_h = [math.ceil((l_dim - batch.shape[-1]) / 2), math.floor((l_dim - batch.shape[-1]) / 2)]
@@ -410,11 +376,15 @@ def pad_nextpow2(batch: torch.Tensor) -> torch.Tensor:
 
 
 def show_image(image: np.ndarray | Figure, title: str = "Image") -> None:
-    """Show an image on the screen.
+    """Display image in window.
 
     Args:
-        image (np.ndarray | Figure): Image that will be shown in the window.
-        title (str, optional): Title that will be given to that window. Defaults to "Image".
+        image (np.ndarray | Figure): Image or matplotlib figure to display
+        title (str): Window title. Defaults to "Image"
+
+    Examples:
+        >>> img = read_image("image.jpg")
+        >>> show_image(img, title="My Image")
     """
     if isinstance(image, Figure):
         image = figure_to_array(image)
@@ -425,13 +395,18 @@ def show_image(image: np.ndarray | Figure, title: str = "Image") -> None:
 
 
 def save_image(filename: Path | str, image: np.ndarray | Figure, root: Path | None = None) -> None:
-    """Save an image to the file system.
+    """Save image to disk.
 
     Args:
-        filename (Path | str): Path or filename to which the image will be saved.
-        image (np.ndarray | Figure): Image that will be saved to the file system.
-        root (Path, optional): Root directory to save the image. If provided, the top level directory of an absolute
-            filename will be overwritten. Defaults to None.
+        filename (Path | str): Output filename
+        image (np.ndarray | Figure): Image or matplotlib figure to save
+        root (Path | None): Optional root dir to save under. Defaults to None
+
+    Examples:
+        >>> img = read_image("input.jpg")
+        >>> save_image("output.jpg", img)
+
+        >>> save_image("subdir/output.jpg", img, root=Path("results"))
     """
     if isinstance(image, Figure):
         image = figure_to_array(image)
@@ -453,13 +428,21 @@ def save_image(filename: Path | str, image: np.ndarray | Figure, root: Path | No
 
 
 def figure_to_array(fig: Figure) -> np.ndarray:
-    """Convert a matplotlib figure to a numpy array.
+    """Convert matplotlib figure to numpy array.
 
     Args:
-        fig (Figure): Matplotlib figure.
+        fig (Figure): Matplotlib figure to convert
 
     Returns:
-        np.ndarray: Numpy array containing the image.
+        np.ndarray: RGB image array
+
+    Examples:
+        >>> import matplotlib.pyplot as plt
+        >>> fig = plt.figure()
+        >>> plt.plot([1, 2, 3])
+        >>> img = figure_to_array(fig)
+        >>> type(img)
+        <class 'numpy.ndarray'>
     """
     fig.canvas.draw()
     # convert figure to np.ndarray for saving via visualizer
