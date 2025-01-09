@@ -40,7 +40,7 @@
 >
 > We value your input! Please test and share feedback via [GitHub Issues](https://github.com/openvinotoolkit/anomalib/issues) or our [Discussions](https://github.com/openvinotoolkit/anomalib/discussions)
 >
-> Install beta: `pip install anomalib==2.0.0-beta.1`
+> Install beta: `pip install anomalib==2.0.0b2`
 
 # 👋 Introduction
 
@@ -72,16 +72,16 @@ pip install anomalib
 pip install anomalib[full]
 ```
 
-## 🌟 Beta Version (v2.0.0-beta.1)
+## 🌟 Beta Version (v2.0.0b2)
 
 Try our latest beta release with new features and improvements:
 
 ```bash
 # Basic beta installation
-pip install anomalib==2.0.0-beta.1
+pip install anomalib==2.0.0b2
 
 # Full beta installation with all dependencies
-pip install anomalib[full]==2.0.0-beta.1
+pip install anomalib[full]==2.0.0b2
 ```
 
 ### 🛠️ Installation Options

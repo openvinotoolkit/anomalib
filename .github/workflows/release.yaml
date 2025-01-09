@@ -50,7 +50,7 @@ on:
     tags:
       - "v*.*.*"
       - "v*.*.*-rc*"
-      - "v*.*.*-beta*"
+      - "v*.*.*b*"
   workflow_dispatch:
     inputs:
       version:
@@ -87,7 +87,7 @@ jobs:
 
   production-release-process:
     needs: [validation]
-    if: ${{ !contains(needs.validation.outputs.version, '-rc') && !contains(needs.validation.outputs.version, '-beta') }}
+    if: ${{ !contains(needs.validation.outputs.version, '-rc') && !contains(needs.validation.outputs.version, 'b') }}
     uses: ./.github/workflows/_reusable-production-release-process.yaml
     with:
       version: ${{ needs.validation.outputs.version }}
@@ -97,7 +97,7 @@ jobs:
 
   beta-release-process:
     needs: [validation]
-    if: contains(needs.validation.outputs.version, '-beta')
+    if: contains(needs.validation.outputs.version, 'b')
     uses: ./.github/workflows/_reusable-production-release-process.yaml
     with:
       version: ${{ needs.validation.outputs.version }}

@@ -74,7 +74,7 @@ jobs:
 
           if [[ "${{ inputs.version }}" =~ -rc ]]; then
             echo "Release candidate ${{ inputs.version }} processed successfully"
-          elif [[ "${{ inputs.version }}" =~ -beta ]]; then
+          elif [[ "${{ inputs.version }}" =~ b[0-9]+ ]]; then
             echo "Beta release ${{ inputs.version }} processed successfully"
           else
             echo "Production release ${{ inputs.version }} completed successfully"
