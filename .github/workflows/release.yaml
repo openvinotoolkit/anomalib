@@ -50,6 +50,7 @@ on:
     tags:
       - "v*.*.*"
       - "v*.*.*-rc*"
+      - "v*.*.*b*"
   workflow_dispatch:
     inputs:
       version:
@@ -86,7 +87,17 @@ jobs:
 
   production-release-process:
     needs: [validation]
-    if: ${{ !contains(needs.validation.outputs.version, '-rc') }}
+    if: ${{ !contains(needs.validation.outputs.version, '-rc') && !contains(needs.validation.outputs.version, 'b') }}
+    uses: ./.github/workflows/_reusable-production-release-process.yaml
+    with:
+      version: ${{ needs.validation.outputs.version }}
+      artifact-name: ${{ needs.validation.outputs.artifact-name }}
+    secrets:
+      pypi-token: ${{ secrets.PYPI_TOKEN }}
+
+  beta-release-process:
+    needs: [validation]
+    if: contains(needs.validation.outputs.version, 'b')
     uses: ./.github/workflows/_reusable-production-release-process.yaml
     with:
       version: ${{ needs.validation.outputs.version }}
@@ -95,10 +106,17 @@ jobs:
       pypi-token: ${{ secrets.PYPI_TOKEN }}
 
   status:
-    needs: [validation, rc-release-process, production-release-process]
+    needs:
+      [
+        validation,
+        rc-release-process,
+        production-release-process,
+        beta-release-process,
+      ]
     if: always() && !inputs.dry_run
     uses: ./.github/workflows/_reusable-release-status.yaml
     with:
       version: ${{ needs.validation.outputs.version }}
       rc-status: ${{ needs.rc-release-process.result }}
       prod-status: ${{ needs.production-release-process.result }}
+      beta-status: ${{ needs.beta-release-process.result }}
