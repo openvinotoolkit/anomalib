@@ -57,6 +57,9 @@ on:
       prod-status:
         required: true
         type: string
+      beta-status:
+        required: true
+        type: string
 
 jobs:
   check-status:
@@ -64,13 +67,15 @@ jobs:
     steps:
       - name: Verify workflow status
         run: |
-          if [[ "${{ inputs.rc-status }}" == "failure" || "${{ inputs.prod-status }}" == "failure" ]]; then
+          if [[ "${{ inputs.rc-status }}" == "failure" || "${{ inputs.prod-status }}" == "failure" || "${{ inputs.beta-status }}" == "failure" ]]; then
             echo "::error::Release workflow failed"
             exit 1
           fi
 
           if [[ "${{ inputs.version }}" =~ -rc ]]; then
             echo "Release candidate ${{ inputs.version }} processed successfully"
+          elif [[ "${{ inputs.version }}" =~ -beta ]]; then
+            echo "Beta release ${{ inputs.version }} processed successfully"
           else
             echo "Production release ${{ inputs.version }} completed successfully"
           fi
