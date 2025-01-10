@@ -142,7 +142,6 @@ def make_synthetic_dataset(
         return Series(out)
 
     anomalous_samples = anomalous_samples.apply(augment, axis=1)
-    print(anomalous_samples.attrs["task"])
 
     return pd.concat([normal_samples, anomalous_samples], ignore_index=True)
 
