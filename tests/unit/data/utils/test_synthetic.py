@@ -7,9 +7,9 @@ from copy import copy
 from pathlib import Path
 
 import pytest
+from torchvision.transforms.v2 import Resize
 
-from anomalib import TaskType
-from anomalib.data.image.folder import FolderDataset
+from anomalib.data.datasets.image.folder import FolderDataset
 from anomalib.data.utils.synthetic import SyntheticAnomalyDataset
 
 
@@ -18,13 +18,13 @@ def folder_dataset(dataset_path: Path) -> FolderDataset:
     """Fixture that returns a FolderDataset instance."""
     return FolderDataset(
         name="dummy",
-        task=TaskType.SEGMENTATION,
         root=dataset_path / "mvtec" / "dummy",
         normal_dir="train/good",
         abnormal_dir="test/bad",
         normal_test_dir="test/good",
         mask_dir="ground_truth/bad",
         split="train",
+        augmentations=Resize((256, 256)),
     )
 
 
@@ -38,8 +38,7 @@ def synthetic_dataset(folder_dataset: FolderDataset) -> SyntheticAnomalyDataset:
 def synthetic_dataset_from_samples(folder_dataset: FolderDataset) -> SyntheticAnomalyDataset:
     """Fixture that returns a SyntheticAnomalyDataset instance."""
     return SyntheticAnomalyDataset(
-        task=folder_dataset.task,
-        transform=folder_dataset.transform,
+        augmentations=folder_dataset.augmentations,
         source_samples=folder_dataset.samples,
     )
 

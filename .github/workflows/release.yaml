@@ -1,0 +1,122 @@
+# Release Workflow
+#
+# This workflow manages the complete release process for both production
+# and release candidate versions.
+#
+# Key Features:
+# - Version validation
+# - Comprehensive testing
+# - Security scanning
+# - RC and production releases
+# - Manual and automated triggers
+#
+# Process Stages:
+# 1. Release Validation:
+#    - Version format check
+#    - Code quality verification
+#    - Test suite execution
+#    - Security assessment
+#
+# 2. RC Process:
+#    - Test PyPI deployment
+#    - Validation steps
+#    - Approval collection
+#
+# 3. Production Release:
+#    - Production PyPI deployment
+#    - GitHub release creation
+#    - Documentation updates
+#
+# Required Secrets:
+# - CODECOV_TOKEN: Coverage reporting
+# - TEST_PYPI_TOKEN: RC deployments
+# - PYPI_TOKEN: Production deployments
+#
+# Example Usage:
+# 1. Automated (Tag Push):
+#    - Production: Push tag v1.2.3
+#    - RC: Push tag v1.2.3-rc1
+#
+# 2. Manual Trigger:
+#    - With version input
+#    - Optional dry-run mode
+#
+# Note: Supports both automated tag-based and manual releases
+
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+      - "v*.*.*-rc*"
+      - "v*.*.*b*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release (e.g., v1.2.3 or v1.2.3-rc1)"
+        required: true
+        type: string
+      dry_run:
+        description: "Perform a dry run without creating a release"
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  validation:
+    uses: ./.github/workflows/_reusable-release-validation.yaml
+    with:
+      version: ${{ github.event_name == 'push' && github.ref_name || inputs.version }}
+      python-version: "3.10"
+      verify-package: true
+      dry-run: ${{ github.event.inputs.dry_run || false }}
+      allow-prerelease: true
+    secrets:
+      codecov-token: ${{ secrets.CODECOV_TOKEN }}
+
+  rc-release-process:
+    needs: [validation]
+    if: contains(needs.validation.outputs.version, '-rc')
+    uses: ./.github/workflows/_reusable-rc-release-process.yaml
+    with:
+      version: ${{ needs.validation.outputs.version }}
+      artifact-name: ${{ needs.validation.outputs.artifact-name }}
+    secrets:
+      test-pypi-token: ${{ secrets.TEST_PYPI_TOKEN }}
+
+  production-release-process:
+    needs: [validation]
+    if: ${{ !contains(needs.validation.outputs.version, '-rc') && !contains(needs.validation.outputs.version, 'b') }}
+    uses: ./.github/workflows/_reusable-production-release-process.yaml
+    with:
+      version: ${{ needs.validation.outputs.version }}
+      artifact-name: ${{ needs.validation.outputs.artifact-name }}
+    secrets:
+      pypi-token: ${{ secrets.PYPI_TOKEN }}
+
+  beta-release-process:
+    needs: [validation]
+    if: contains(needs.validation.outputs.version, 'b')
+    uses: ./.github/workflows/_reusable-production-release-process.yaml
+    with:
+      version: ${{ needs.validation.outputs.version }}
+      artifact-name: ${{ needs.validation.outputs.artifact-name }}
+    secrets:
+      pypi-token: ${{ secrets.PYPI_TOKEN }}
+
+  status:
+    needs:
+      [
+        validation,
+        rc-release-process,
+        production-release-process,
+        beta-release-process,
+      ]
+    if: always() && !inputs.dry_run
+    uses: ./.github/workflows/_reusable-release-status.yaml
+    with:
+      version: ${{ needs.validation.outputs.version }}
+      rc-status: ${{ needs.rc-release-process.result }}
+      prod-status: ${{ needs.production-release-process.result }}
+      beta-status: ${{ needs.beta-release-process.result }}

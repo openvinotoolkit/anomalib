@@ -7,7 +7,7 @@ pairs of anomaly and ground truth maps.
 The PRO curve can also be integrated up to a constant integration limit.
 """
 
-# Copyright (C) 2022-2024 Intel Corporation
+# Copyright (C) 2022-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 # Original code was taken from https://github.com/eliahuhorwitz/3D-ADS/blob/main/utils/au_pro_util.py

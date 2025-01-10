@@ -1,4 +1,19 @@
-"""U-Flow torch model."""
+"""U-Flow PyTorch Implementation.
+
+This module provides the PyTorch implementation of the U-Flow model for anomaly detection.
+U-Flow combines normalizing flows with a U-Net style architecture to learn the distribution
+of normal images and detect anomalies.
+
+The model consists of several key components:
+    - Feature extraction using a pre-trained backbone
+    - Normalizing flow blocks arranged in a U-Net structure
+    - Anomaly map generation for localization
+
+The implementation includes classes for:
+    - Affine coupling subnet construction
+    - Main U-Flow model architecture
+    - Anomaly map generation
+"""
 
 # Copyright (C) 2023-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -8,6 +23,7 @@ from FrEIA import framework as ff
 from FrEIA import modules as fm
 from torch import nn
 
+from anomalib.data import InferenceBatch
 from anomalib.models.components.flow import AllInOneBlock
 
 from .anomaly_map import AnomalyMapGenerator
@@ -17,11 +33,28 @@ from .feature_extraction import get_feature_extractor
 class AffineCouplingSubnet:
     """Class for building the Affine Coupling subnet.
 
-    It is passed as an argument to the `AllInOneBlock` module.
+    This class creates a subnet used within the affine coupling layers of the normalizing
+    flow. The subnet is passed as an argument to the ``AllInOneBlock`` module and
+    determines how features are transformed within the coupling layer.
 
     Args:
-        kernel_size (int): Kernel size.
-        subnet_channels_ratio (float): Subnet channels ratio.
+        kernel_size (int): Size of convolutional kernels used in subnet layers.
+        subnet_channels_ratio (float): Ratio determining the number of intermediate
+            channels in the subnet relative to input channels.
+
+    Example:
+        >>> subnet = AffineCouplingSubnet(kernel_size=3, subnet_channels_ratio=1.0)
+        >>> layer = subnet(in_channels=64, out_channels=128)
+        >>> layer
+        Sequential(
+          (0): Conv2d(64, 64, kernel_size=(3, 3), padding=same)
+          (1): ReLU()
+          (2): Conv2d(64, 128, kernel_size=(3, 3), padding=same)
+        )
+
+    See Also:
+        - :class:`AllInOneBlock`: Flow block using this subnet
+        - :class:`UflowModel`: Main model incorporating these subnets
     """
 
     def __init__(self, kernel_size: int, subnet_channels_ratio: float) -> None:
@@ -29,14 +62,21 @@ class AffineCouplingSubnet:
         self.subnet_channels_ratio = subnet_channels_ratio
 
     def __call__(self, in_channels: int, out_channels: int) -> nn.Sequential:
-        """Return AffineCouplingSubnet network.
+        """Create and return the affine coupling subnet.
+
+        The subnet consists of two convolutional layers with a ReLU activation in
+        between. The intermediate channel dimension is determined by
+        ``subnet_channels_ratio``.
 
         Args:
-            in_channels (int): Input channels.
-            out_channels (int): Output channels.
+            in_channels (int): Number of input channels to the subnet.
+            out_channels (int): Number of output channels from the subnet.
 
         Returns:
-            nn.Sequential: Affine Coupling subnet.
+            nn.Sequential: Sequential container of the subnet layers including:
+                - Conv2d layer mapping input to intermediate channels
+                - ReLU activation
+                - Conv2d layer mapping intermediate to output channels
         """
         mid_channels = int(in_channels * self.subnet_channels_ratio)
         return nn.Sequential(
@@ -47,15 +87,44 @@ class AffineCouplingSubnet:
 
 
 class UflowModel(nn.Module):
-    """U-Flow model.
+    """PyTorch implementation of the U-Flow model architecture.
+
+    This class implements the U-Flow model for anomaly detection.
+    The model consists of:
+
+    - A U-shaped normalizing flow architecture for density estimation
+    - Multi-scale feature extraction using pre-trained backbones
+    - Unsupervised threshold estimation based on the learned density
+    - Anomaly detection by comparing likelihoods to the threshold
 
     Args:
-        input_size (tuple[int, int]): Input image size.
-        flow_steps (int): Number of flow steps.
-        backbone (str): Backbone name.
-        affine_clamp (float): Affine clamp.
-        affine_subnet_channels_ratio (float): Affine subnet channels ratio.
-        permute_soft (bool): Whether to use soft permutation.
+        input_size (tuple[int, int]): Input image dimensions as ``(height, width)``.
+            Defaults to ``(448, 448)``.
+        flow_steps (int): Number of normalizing flow steps in each flow stage.
+            Defaults to ``4``.
+        backbone (str): Name of the backbone feature extractor. Must be one of
+            ``["mcait", "resnet18", "wide_resnet50_2"]``. Defaults to ``"mcait"``.
+        affine_clamp (float): Clamping value for affine coupling layers. Defaults
+            to ``2.0``.
+        affine_subnet_channels_ratio (float): Channel ratio for affine coupling
+            subnet. Defaults to ``1.0``.
+        permute_soft (bool): Whether to use soft permutation. Defaults to
+            ``False``.
+
+    Example:
+        >>> import torch
+        >>> from anomalib.models.image.uflow.torch_model import UflowModel
+        >>> model = UflowModel(
+        ...     input_size=(256, 256),
+        ...     backbone="resnet18"
+        ... )
+        >>> image = torch.randn(1, 3, 256, 256)
+        >>> output = model(image)  # Returns anomaly map during inference
+
+    See Also:
+        - :class:`Uflow`: Lightning implementation using this model
+        - :class:`UFlowLoss`: Loss function for training
+        - :class:`AnomalyMapGenerator`: Anomaly map generation from features
     """
 
     def __init__(
@@ -79,21 +148,28 @@ class UflowModel(nn.Module):
         self.anomaly_map_generator = AnomalyMapGenerator(input_size)
 
     def build_flow(self, flow_steps: int) -> ff.GraphINN:
-        """Build the flow model.
+        """Build the U-shaped normalizing flow architecture.
 
-        First we start with the input nodes, which have to match the feature extractor output.
-        Then, we build the U-Shaped flow. Starting from the bottom (the coarsest scale), the flow is built as follows:
-            1. Pass the input through a Flow Stage (`build_flow_stage`).
-            2. Split the output of the flow stage into two parts, one that goes directly to the output,
-            3. and the other is up-sampled, and will be concatenated with the output of the next flow stage (next scale)
-            4. Repeat steps 1-3 for the next scale.
-        Finally, we build the Flow graph using the input nodes, the flow stages, and the output nodes.
+        The flow is built in a U-shaped structure, processing features from coarse
+        to fine scales:
+
+        1. Start with input nodes matching feature extractor outputs
+        2. For each scale (coarse to fine):
+            - Pass through flow stage (sequence of coupling layers)
+            - Split output into two parts
+            - Send one part to output
+            - Upsample other part and concatenate with next scale
+        3. Build final flow graph combining all nodes
 
         Args:
-            flow_steps (int): Number of flow steps.
+            flow_steps (int): Number of coupling layers in each flow stage.
 
         Returns:
-            ff.GraphINN: Flow model.
+            ff.GraphINN: Constructed normalizing flow graph.
+
+        See Also:
+            - :meth:`build_flow_stage`: Builds individual flow stages
+            - :class:`AllInOneBlock`: Individual coupling layer blocks
         """
         input_nodes = []
         for channel, s_factor in zip(
@@ -137,17 +213,24 @@ class UflowModel(nn.Module):
         return ff.GraphINN(input_nodes + nodes + output_nodes[::-1])
 
     def build_flow_stage(self, in_node: ff.Node, flow_steps: int, condition_node: ff.Node = None) -> list[ff.Node]:
-        """Build a flow stage, which is a sequence of flow steps.
+        """Build a single flow stage consisting of multiple coupling layers.
 
-        Each flow stage is essentially a sequence of `flow_steps` Glow blocks (`AllInOneBlock`).
+        Each flow stage is a sequence of ``flow_steps`` Glow-style coupling blocks
+        (``AllInOneBlock``). The blocks alternate between 3x3 and 1x1 convolutions
+        in their coupling subnets.
 
         Args:
-            in_node (ff.Node): Input node.
-            flow_steps (int): Number of flow steps.
-            condition_node (ff.Node): Condition node.
+            in_node (ff.Node): Input node to the flow stage.
+            flow_steps (int): Number of coupling layers to use.
+            condition_node (ff.Node, optional): Optional conditioning node.
+                Defaults to ``None``.
 
         Returns:
-            List[ff.Node]: List of flow steps.
+            list[ff.Node]: List of constructed coupling layer nodes.
+
+        See Also:
+            - :class:`AllInOneBlock`: Individual coupling layer implementation
+            - :class:`AffineCouplingSubnet`: Subnet used in coupling layers
         """
         flow_size = in_node.output_dims[0][-1]
         nodes = []
@@ -171,17 +254,42 @@ class UflowModel(nn.Module):
             in_node = nodes[-1]
         return nodes
 
-    def forward(self, image: torch.Tensor) -> torch.Tensor:
-        """Return anomaly map."""
+    def forward(self, image: torch.Tensor) -> torch.Tensor | InferenceBatch:
+        """Process input image through the model.
+
+        During training, returns latent variables and log-Jacobian determinant.
+        During inference, returns anomaly scores and anomaly map.
+
+        Args:
+            image (torch.Tensor): Input image tensor of shape
+                ``(batch_size, channels, height, width)``.
+
+        Returns:
+            torch.Tensor | InferenceBatch: During training, returns tuple of
+                ``(latent_vars, log_jacobian)``. During inference, returns
+                ``InferenceBatch`` with anomaly scores and map.
+        """
         features = self.feature_extractor(image)
         z, ljd = self.encode(features)
 
         if self.training:
             return z, ljd
-        return self.anomaly_map_generator(z)
+
+        anomaly_map = self.anomaly_map_generator(z)
+        pred_score = torch.amax(anomaly_map, dim=(-2, -1))
+        return InferenceBatch(pred_score=pred_score, anomaly_map=anomaly_map)
 
     def encode(self, features: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-        """Return"""
+        """Encode input features to latent space using normalizing flow.
+
+        Args:
+            features (torch.Tensor): Input features from feature extractor.
+
+        Returns:
+            tuple[torch.Tensor, torch.Tensor]: Tuple containing:
+                - Latent variables from flow transformation
+                - Log-Jacobian determinant of the transformation
+        """
         z, ljd = self.flow(features, rev=False)
         if len(self.feature_extractor.scales) == 1:
             z = [z]

@@ -1,6 +1,36 @@
-"""Implementation of AUROC metric based on TorchMetrics."""
+"""Area Under the Precision-Recall Curve (AUPR) metric.
 
-# Copyright (C) 2022-2024 Intel Corporation
+This module provides the ``AUPR`` class which computes the area under the
+precision-recall curve for evaluating anomaly detection performance.
+
+The AUPR score summarizes the trade-off between precision and recall across
+different thresholds. It is particularly useful for imbalanced datasets where
+anomalies are rare.
+
+Example:
+    >>> from anomalib.metrics import AUPR
+    >>> import torch
+    >>> # Create sample data
+    >>> labels = torch.tensor([0, 0, 1, 1])  # Binary labels
+    >>> scores = torch.tensor([0.1, 0.2, 0.8, 0.9])  # Anomaly scores
+    >>> # Initialize and compute AUPR
+    >>> metric = AUPR()
+    >>> aupr_score = metric(scores, labels)
+    >>> aupr_score
+    tensor(1.0)
+
+The metric can also be updated incrementally with batches:
+
+    >>> for batch_scores, batch_labels in dataloader:
+    ...     metric.update(batch_scores, batch_labels)
+    >>> final_score = metric.compute()
+
+Note:
+    The AUPR score ranges from 0 to 1, with 1 indicating perfect ranking of
+    anomalies above normal samples.
+"""
+
+# Copyright (C) 2022-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 import torch
@@ -9,10 +39,11 @@ from torchmetrics.classification import BinaryPrecisionRecallCurve
 from torchmetrics.utilities.compute import auc
 from torchmetrics.utilities.data import dim_zero_cat
 
+from .base import AnomalibMetric
 from .plotting_utils import plot_figure
 
 
-class AUPR(BinaryPrecisionRecallCurve):
+class _AUPR(BinaryPrecisionRecallCurve):
     """Area under the PR curve.
 
     This metric computes the area under the precision-recall curve.
@@ -106,3 +137,7 @@ class AUPR(BinaryPrecisionRecallCurve):
         )
 
         return fig, title
+
+
+class AUPR(AnomalibMetric, _AUPR):  # type: ignore[misc]
+    """Wrapper to add AnomalibMetric functionality to AUPR metric."""

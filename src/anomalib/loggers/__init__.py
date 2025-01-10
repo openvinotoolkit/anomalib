@@ -1,16 +1,35 @@
-"""Load PyTorch Lightning Loggers."""
+"""Logging configuration and PyTorch Lightning logger integrations.
 
-# Copyright (C) 2022-2024 Intel Corporation
+This module provides logging utilities and integrations with various logging frameworks
+for use with anomaly detection models. The main components are:
+
+- Console logging configuration via ``configure_logger()``
+- Integration with logging frameworks:
+    - Comet ML via :class:`AnomalibCometLogger`
+    - MLflow via :class:`AnomalibMLFlowLogger`
+    - TensorBoard via :class:`AnomalibTensorBoardLogger`
+    - Weights & Biases via :class:`AnomalibWandbLogger`
+
+Example:
+    Configure console logging:
+
+    >>> from anomalib.loggers import configure_logger
+    >>> configure_logger(level="INFO")
+
+    Use a specific logger:
+
+    >>> from anomalib.loggers import AnomalibTensorBoardLogger
+    >>> logger = AnomalibTensorBoardLogger(log_dir="logs")
+"""
+
+# Copyright (C) 2022-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
 
 from rich.logging import RichHandler
 
-__all__ = [
-    "configure_logger",
-    "get_experiment_logger",
-]
+__all__ = ["configure_logger"]
 
 try:
     from .comet import AnomalibCometLogger  # noqa: F401
@@ -31,13 +50,23 @@ except ImportError:
 
 
 def configure_logger(level: int | str = logging.INFO) -> None:
-    """Get console logger by name.
+    """Configure console logging with consistent formatting.
+
+    This function sets up console logging with a standardized format and rich
+    tracebacks. It configures both the root logger and PyTorch Lightning logger
+    to use the same formatting.
 
     Args:
-        level (int | str, optional): Logger Level. Defaults to logging.INFO.
+        level (int | str): Logging level to use. Can be either a string name like
+            ``"INFO"`` or an integer constant like ``logging.INFO``. Defaults to
+            ``logging.INFO``.
 
-    Returns:
-        Logger: The expected logger.
+    Example:
+        >>> from anomalib.loggers import configure_logger
+        >>> configure_logger(level="DEBUG")  # doctest: +SKIP
+        >>> logger = logging.getLogger("my_logger")
+        >>> logger.info("Test message")  # doctest: +SKIP
+        2024-01-01 12:00:00 - my_logger - INFO - Test message
     """
     if isinstance(level, str):
         level = logging.getLevelName(level)

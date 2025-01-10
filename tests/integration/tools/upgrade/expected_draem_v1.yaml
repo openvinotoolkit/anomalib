@@ -3,16 +3,13 @@ data:
   init_args:
     root: ./datasets/MVTec
     category: bottle
-    image_size:
-      - 256
-      - 256
     train_batch_size: 72
     eval_batch_size: 32
     num_workers: 8
-    task: segmentation
-    transform: null
-    train_transform: null
-    eval_transform: null
+    train_augmentations: null
+    val_augmentations: null
+    test_augmentations: null
+    augmentations: null
     test_split_mode: from_dir
     test_split_ratio: 0.2
     val_split_mode: same_as_test
@@ -27,6 +24,10 @@ model:
     beta:
       - 0.1
       - 1.0
+    pre_processor: true
+    post_processor: true
+    evaluator: true
+    visualizer: true
 normalization:
   normalization_method: min_max
 metrics:
@@ -48,7 +49,6 @@ visualization:
 logging:
   log_graph: false
 seed_everything: true
-task: segmentation
 results_dir:
   path: ./results
   unique: false

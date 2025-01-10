@@ -1,5 +1,14 @@
-"""PyTorch model for CS-Flow implementation."""
+"""PyTorch model for CS-Flow implementation.
 
+This module contains the PyTorch implementation of CS-Flow model for anomaly detection.
+The model uses cross-scale coupling layers to learn the distribution of normal images
+and detect anomalies based on the likelihood of test images under this distribution.
+
+The implementation is based on the paper:
+    CS-Flow: Learning Cross-Scale Semantic Flow for Unsupervised Anomaly Detection
+    Marco Rudolph, Tom Wehrbein, Bodo Rosenhahn, Bastian Wandt
+    https://arxiv.org/abs/2110.02855
+"""
 
 # Original Code
 # Copyright (c) 2021 marco-rudolph
@@ -7,7 +16,7 @@
 # SPDX-License-Identifier: MIT
 #
 # Modified
-# Copyright (C) 2022-2024 Intel Corporation
+# Copyright (C) 2022-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 from math import exp
@@ -20,27 +29,41 @@ from torch import nn
 from torch.nn import functional as F  # noqa: N812
 from torchvision.models.efficientnet import EfficientNet_B5_Weights
 
+from anomalib.data import InferenceBatch
 from anomalib.models.components.feature_extractors import TorchFXFeatureExtractor
 
 from .anomaly_map import AnomalyMapGenerator, AnomalyMapMode
 
 
 class CrossConvolutions(nn.Module):
-    """Cross convolution for the three scales.
+    """Cross convolution module for processing features at three scales.
+
+    This module applies convolutions across three different scales of features,
+    with connections between scales via up/downsampling operations.
 
     Args:
         in_channels (int): Number of input channels.
-        channels (int): Number of output channels in the hidden convolution and the upscaling layers.
-        channels_hidden (int, optional): Number of input channels in the hidden convolution layers.
+        channels (int): Number of output channels in convolution layers.
+        channels_hidden (int, optional): Number of channels in hidden layers.
             Defaults to ``512``.
-        kernel_size (int, optional): Kernel size of the convolution layers.
+        kernel_size (int, optional): Size of convolution kernels.
             Defaults to ``3``.
-        leaky_slope (float, optional): Slope of the leaky ReLU activation.
+        leaky_slope (float, optional): Negative slope for leaky ReLU.
             Defaults to ``0.1``.
         batch_norm (bool, optional): Whether to use batch normalization.
             Defaults to ``False``.
-        use_gamma (bool, optional): Whether to use gamma parameters for the cross convolutions.
+        use_gamma (bool, optional): Whether to use learnable gamma parameters.
             Defaults to ``True``.
+
+    Example:
+        >>> cross_conv = CrossConvolutions(64, 128)
+        >>> scale0 = torch.randn(1, 64, 32, 32)
+        >>> scale1 = torch.randn(1, 64, 16, 16)
+        >>> scale2 = torch.randn(1, 64, 8, 8)
+        >>> out0, out1, out2 = cross_conv(scale0, scale1, scale2)
+        >>> out0.shape, out1.shape, out2.shape
+        (torch.Size([1, 128, 32, 32]), torch.Size([1, 128, 16, 16]),
+         torch.Size([1, 128, 8, 8]))
     """
 
     def __init__(
@@ -160,14 +183,21 @@ class CrossConvolutions(nn.Module):
         self.leaky_relu = nn.LeakyReLU(self.leaky_slope)
 
     def forward(self, scale0: int, scale1: int, scale2: int) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-        """Apply the cross convolution to the three scales.
+        """Apply cross-scale convolutions to input features.
 
-        This block is represented in figure 4 of the paper.
+        Processes features at three scales with cross-connections between scales via
+        up/downsampling operations. This implements the architecture shown in Figure 4
+        of the CS-Flow paper.
+
+        Args:
+            scale0 (torch.Tensor): Features at original scale.
+            scale1 (torch.Tensor): Features at 1/2 scale.
+            scale2 (torch.Tensor): Features at 1/4 scale.
 
         Returns:
-            tuple[torch.Tensor, torch.Tensor, torch.Tensor]: Tensors indicating scale and transform parameters
-                as a single tensor for each scale. The scale parameters are the first part across channel dimension
-                and the transform parameters are the second.
+            tuple[torch.Tensor, torch.Tensor, torch.Tensor]: Processed features at three
+                scales. Each tensor contains scale and transform parameters concatenated
+                along the channel dimension.
         """
         # Increase the number of channels to hidden channel length via convolutions and apply leaky ReLU.
         out0 = self.conv_scale0_0(scale0)
@@ -205,11 +235,23 @@ class CrossConvolutions(nn.Module):
 
 
 class ParallelPermute(InvertibleModule):
-    """Permutes input vector in a random but fixed way.
+    """Permutes input vectors in a random but fixed way.
+
+    This module applies a fixed random permutation to the channels of each input
+    tensor. The permutation is deterministic for a given seed.
 
     Args:
-        dim (list[tuple[int]]): Dimension of the input vector.
-        seed (float | None=None): Seed for the random permutation.
+        dims_in (list[tuple[int]]): List of input tensor dimensions.
+        seed (int | None, optional): Random seed for permutation.
+            Defaults to ``None``.
+
+    Example:
+        >>> permute = ParallelPermute([(3, 32, 32), (3, 16, 16)], seed=42)
+        >>> x1 = torch.randn(1, 3, 32, 32)
+        >>> x2 = torch.randn(1, 3, 16, 16)
+        >>> y1, y2 = permute([x1, x2])[0]
+        >>> y1.shape, y2.shape
+        (torch.Size([1, 3, 32, 32]), torch.Size([1, 3, 16, 16]))
     """
 
     def __init__(self, dims_in: list[tuple[int]], seed: int | None = None) -> None:
@@ -228,13 +270,13 @@ class ParallelPermute(InvertibleModule):
             self.perm_inv.append(perm_inv)
 
     def get_random_perm(self, index: int) -> tuple[torch.Tensor, torch.Tensor]:
-        """Return a random permutation of the channels for each input.
+        """Generate random permutation and its inverse for given input index.
 
         Args:
-            index (int): index of the input
+            index (int): Index of input tensor.
 
         Returns:
-            tuple[torch.Tensor, torch.Tensor]: permutation and inverse permutation
+            tuple[torch.Tensor, torch.Tensor]: Permutation and inverse permutation tensors.
         """
         perm = np.random.default_rng(self.seed).permutation(self.in_channels[index])
         perm_inv = np.zeros_like(perm)
@@ -252,17 +294,17 @@ class ParallelPermute(InvertibleModule):
         rev: bool = False,
         jac: bool = True,
     ) -> tuple[list[torch.Tensor], float]:
-        """Apply the permutation to the input.
+        """Apply permutation or inverse permutation to inputs.
 
         Args:
-            input_tensor: list of input tensors
-            rev: if True, applies the inverse permutation
+            input_tensor (list[torch.Tensor]): List of input tensors.
+            rev (bool, optional): If ``True``, applies inverse permutation.
                 Defaults to ``False``.
-            jac: (unused) if True, computes the log determinant of the Jacobian
+            jac (bool, optional): Unused. Required for interface compatibility.
                 Defaults to ``True``.
 
         Returns:
-            tuple[torch.Tensor, torch.Tensor]: output tensor and log determinant of the Jacobian
+            tuple[list[torch.Tensor], float]: Permuted tensors and log determinant (0).
         """
         del jac  # Unused argument.
 
@@ -273,18 +315,39 @@ class ParallelPermute(InvertibleModule):
 
     @staticmethod
     def output_dims(input_dims: list[tuple[int]]) -> list[tuple[int]]:
-        """Return the output dimensions of the module."""
+        """Return output dimensions of the module.
+
+        Args:
+            input_dims (list[tuple[int]]): List of input dimensions.
+
+        Returns:
+            list[tuple[int]]: List of output dimensions (same as input).
+        """
         return input_dims
 
 
 class ParallelGlowCouplingLayer(InvertibleModule):
-    """Coupling block that follows the GLOW design but is applied to all the scales in parallel.
+    """Coupling block following GLOW design applied to multiple scales in parallel.
+
+    This module implements an invertible coupling layer that processes multiple scales
+    simultaneously, following the GLOW architecture design.
 
     Args:
-        dims_in (list[tuple[int]]): list of dimensions of the input tensors
-        subnet_args (dict): arguments of the subnet
-        clamp (float): clamp value for the output of the subnet
+        dims_in (list[tuple[int]]): List of input tensor dimensions.
+        subnet_args (dict): Arguments for subnet construction.
+        clamp (float, optional): Clamp value for outputs.
             Defaults to ``5.0``.
+
+    Example:
+        >>> coupling = ParallelGlowCouplingLayer(
+        ...     [(6, 32, 32), (6, 16, 16)],
+        ...     {"channels_hidden": 64}
+        ... )
+        >>> x1 = torch.randn(1, 6, 32, 32)
+        >>> x2 = torch.randn(1, 6, 16, 16)
+        >>> y1, y2 = coupling([x1, x2])[0]
+        >>> y1.shape, y2.shape
+        (torch.Size([1, 6, 32, 32]), torch.Size([1, 6, 16, 16]))
     """
 
     def __init__(self, dims_in: list[tuple[int]], subnet_args: dict, clamp: float = 5.0) -> None:
@@ -304,13 +367,27 @@ class ParallelGlowCouplingLayer(InvertibleModule):
         self.cross_convolution2 = CrossConvolutions(self.split_len2, self.split_len1 * 2, **subnet_args)
 
     def exp(self, input_tensor: torch.Tensor) -> torch.Tensor:
-        """Exponentiates the input and, optionally, clamps it to avoid numerical issues."""
+        """Exponentiates input with optional clamping.
+
+        Args:
+            input_tensor (torch.Tensor): Input tensor.
+
+        Returns:
+            torch.Tensor: Exponentiated tensor, optionally clamped.
+        """
         if self.clamp > 0:
             return torch.exp(self.log_e(input_tensor))
         return torch.exp(input_tensor)
 
     def log_e(self, input_tensor: torch.Tensor) -> torch.Tensor:
-        """Return log of input. And optionally clamped to avoid numerical issues."""
+        """Compute log with optional clamping.
+
+        Args:
+            input_tensor (torch.Tensor): Input tensor.
+
+        Returns:
+            torch.Tensor: Log of input, optionally clamped.
+        """
         if self.clamp > 0:
             return self.clamp * 0.636 * torch.atan(input_tensor / self.clamp)
         return input_tensor
@@ -321,7 +398,19 @@ class ParallelGlowCouplingLayer(InvertibleModule):
         rev: bool = False,
         jac: bool = True,
     ) -> tuple[list[torch.Tensor], torch.Tensor]:
-        """Apply GLOW coupling for the three scales."""
+        """Apply GLOW coupling transformation to inputs at multiple scales.
+
+        Args:
+            input_tensor (list[torch.Tensor]): List of input tensors at different scales.
+            rev (bool, optional): If ``True``, applies inverse transformation.
+                Defaults to ``False``.
+            jac (bool, optional): Unused. Required for interface compatibility.
+                Defaults to ``True``.
+
+        Returns:
+            tuple[list[torch.Tensor], torch.Tensor]: Transformed tensors and log
+                determinant of Jacobian.
+        """
         del jac  # Unused argument.
 
         # Even channel split. The two splits are used by cross-scale convolution to compute scale and transform
@@ -405,18 +494,40 @@ class ParallelGlowCouplingLayer(InvertibleModule):
 
     @staticmethod
     def output_dims(input_dims: list[tuple[int]]) -> list[tuple[int]]:
-        """Output dimensions of the module."""
+        """Return output dimensions of the module.
+
+        Args:
+            input_dims (list[tuple[int]]): List of input dimensions.
+
+        Returns:
+            list[tuple[int]]: List of output dimensions (same as input).
+        """
         return input_dims
 
 
 class CrossScaleFlow(nn.Module):
     """Cross scale coupling layer.
 
+    This module implements the cross-scale flow architecture that couples features
+    across multiple scales.
+
     Args:
-        input_dims (tuple[int, int, int]): Input dimensions of the module.
-        n_coupling_blocks (int): Number of coupling blocks.
-        clamp (float): Clamp value for the inputs.
-        corss_conv_hidden_channels (int): Number of hidden channels in the cross convolution.
+        input_dims (tuple[int, int, int]): Input dimensions (C, H, W).
+        n_coupling_blocks (int): Number of coupling blocks to use.
+        clamp (float): Clamping value for coupling layers.
+        cross_conv_hidden_channels (int): Hidden channels in cross convolutions.
+
+    Example:
+        >>> flow = CrossScaleFlow((3, 256, 256), 4, 3.0, 64)
+        >>> x = [
+        ...     torch.randn(1, 304, 8, 8),
+        ...     torch.randn(1, 304, 4, 4),
+        ...     torch.randn(1, 304, 2, 2)
+        ... ]
+        >>> z, jac = flow(x)
+        >>> [zi.shape for zi in z]
+        [torch.Size([1, 304, 8, 8]), torch.Size([1, 304, 4, 4]),
+         torch.Size([1, 304, 2, 2])]
     """
 
     def __init__(
@@ -435,6 +546,11 @@ class CrossScaleFlow(nn.Module):
         self.graph = self._create_graph()
 
     def _create_graph(self) -> GraphINN:
+        """Create the invertible neural network graph.
+
+        Returns:
+            GraphINN: Constructed invertible neural network.
+        """
         nodes: list[Node] = []
         # 304 is the number of features extracted from EfficientNet-B5 feature extractor
         input_nodes = [
@@ -480,25 +596,35 @@ class CrossScaleFlow(nn.Module):
         return GraphINN(nodes)
 
     def forward(self, inputs: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-        """Forward pass.
+        """Forward pass through the flow model.
 
         Args:
             inputs (torch.Tensor): Input tensor.
 
         Returns:
-            tuple[torch.Tensor, torch.Tensor]: Output tensor and log determinant of Jacobian.
+            tuple[torch.Tensor, torch.Tensor]: Output tensor and log determinant
+                of Jacobian.
         """
         return self.graph(inputs)
 
 
 class MultiScaleFeatureExtractor(nn.Module):
-    """Multi-scale feature extractor.
+    """Multi-scale feature extractor using EfficientNet-B5.
 
-    Uses 36th layer of EfficientNet-B5 to extract features.
+    This module extracts features at multiple scales using the 36th layer of
+    EfficientNet-B5.
 
     Args:
-        n_scales (int): Number of scales for input image.
-        input_size (tuple[int, int]): Size of input image.
+        n_scales (int): Number of scales to extract features at.
+        input_size (tuple[int, int]): Input image size (H, W).
+
+    Example:
+        >>> extractor = MultiScaleFeatureExtractor(3, (256, 256))
+        >>> x = torch.randn(1, 3, 256, 256)
+        >>> features = extractor(x)
+        >>> [f.shape for f in features]
+        [torch.Size([1, 304, 8, 8]), torch.Size([1, 304, 4, 4]),
+         torch.Size([1, 304, 2, 2])]
     """
 
     def __init__(self, n_scales: int, input_size: tuple[int, int]) -> None:
@@ -513,13 +639,13 @@ class MultiScaleFeatureExtractor(nn.Module):
         )
 
     def forward(self, input_tensor: torch.Tensor) -> list[torch.Tensor]:
-        """Extract features at three scales.
+        """Extract features at multiple scales.
 
         Args:
             input_tensor (torch.Tensor): Input images.
 
         Returns:
-            list[torch.Tensor]: List of tensors containing features at three scales.
+            list[torch.Tensor]: List of feature tensors at different scales.
         """
         output = []
         for scale in range(self.n_scales):
@@ -538,17 +664,27 @@ class MultiScaleFeatureExtractor(nn.Module):
 
 
 class CsFlowModel(nn.Module):
-    """CS Flow Module.
+    """CS-Flow model for anomaly detection.
+
+    This module implements the complete CS-Flow model that learns the distribution
+    of normal images using cross-scale coupling layers.
 
     Args:
-        input_size (tuple[int, int]): Input image size.
-        cross_conv_hidden_channels (int): Number of hidden channels in the cross convolution.
-        n_coupling_blocks (int): Number of coupling blocks.
+        input_size (tuple[int, int]): Input image size (H, W).
+        cross_conv_hidden_channels (int): Hidden channels in cross convolutions.
+        n_coupling_blocks (int, optional): Number of coupling blocks.
             Defaults to ``4``.
-        clamp (float): Clamp value for the coupling blocks.
+        clamp (int, optional): Clamping value for coupling layers.
             Defaults to ``3``.
-        num_channels (int): Number of channels in the input image.
+        num_channels (int, optional): Number of input image channels.
             Defaults to ``3``.
+
+    Example:
+        >>> model = CsFlowModel((256, 256), 64)
+        >>> x = torch.randn(1, 3, 256, 256)
+        >>> output = model(x)
+        >>> isinstance(output, InferenceBatch)
+        True
     """
 
     def __init__(
@@ -572,7 +708,7 @@ class CsFlowModel(nn.Module):
         )
         self.anomaly_map_generator = AnomalyMapGenerator(input_dims=self.input_dims, mode=AnomalyMapMode.ALL)
 
-    def forward(self, images: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+    def forward(self, images: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor] | InferenceBatch:
         """Forward method of the model.
 
         Args:
@@ -585,13 +721,12 @@ class CsFlowModel(nn.Module):
         """
         features = self.feature_extractor(images)
         if self.training:
-            output = self.graph(features)
-        else:
-            z_dist, _ = self.graph(features)  # Ignore Jacobians
-            anomaly_scores = self._compute_anomaly_scores(z_dist)
-            anomaly_maps = self.anomaly_map_generator(z_dist)
-            output = {"anomaly_map": anomaly_maps, "pred_score": anomaly_scores}
-        return output
+            return self.graph(features)
+
+        z_dist, _ = self.graph(features)  # Ignore Jacobians
+        anomaly_scores = self._compute_anomaly_scores(z_dist)
+        anomaly_maps = self.anomaly_map_generator(z_dist)
+        return InferenceBatch(pred_score=anomaly_scores, anomaly_map=anomaly_maps)
 
     @staticmethod
     def _compute_anomaly_scores(z_dists: torch.Tensor) -> torch.Tensor:

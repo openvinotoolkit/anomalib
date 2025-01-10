@@ -1,0 +1,81 @@
+# Release Status Workflow
+#
+# This reusable workflow validates and reports the status of release processes,
+# handling both RC and production releases.
+#
+# Key Features:
+# - Status verification
+# - Error detection
+# - Release type handling
+# - Status reporting
+# - Process validation
+#
+# Process Stages:
+# 1. Status Collection:
+#    - RC status check
+#    - Production status check
+#    - Process completion verification
+#
+# 2. Validation:
+#    - Error detection
+#    - Status analysis
+#    - Release type determination
+#
+# 3. Reporting:
+#    - Status summary
+#    - Error reporting
+#    - Success confirmation
+#
+# Required Inputs:
+# - version: Release version
+# - rc-status: RC process status
+# - prod-status: Production process status
+#
+# Example Usage:
+# 1. Status Check:
+#    jobs:
+#      status:
+#        uses: ./.github/workflows/_reusable-release-status.yaml
+#        with:
+#          version: "v1.2.3"
+#          rc-status: "success"
+#          prod-status: "success"
+#
+# Note: Should be used as final step in release workflows
+
+name: Release Status Check
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        required: true
+        type: string
+      rc-status:
+        required: true
+        type: string
+      prod-status:
+        required: true
+        type: string
+      beta-status:
+        required: true
+        type: string
+
+jobs:
+  check-status:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify workflow status
+        run: |
+          if [[ "${{ inputs.rc-status }}" == "failure" || "${{ inputs.prod-status }}" == "failure" || "${{ inputs.beta-status }}" == "failure" ]]; then
+            echo "::error::Release workflow failed"
+            exit 1
+          fi
+
+          if [[ "${{ inputs.version }}" =~ -rc ]]; then
+            echo "Release candidate ${{ inputs.version }} processed successfully"
+          elif [[ "${{ inputs.version }}" =~ b[0-9]+ ]]; then
+            echo "Beta release ${{ inputs.version }} processed successfully"
+          else
+            echo "Production release ${{ inputs.version }} completed successfully"
+          fi

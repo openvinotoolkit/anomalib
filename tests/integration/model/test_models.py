@@ -6,16 +6,18 @@ Tests the models using API. The weight paths from the trained models are used fo
 # Copyright (C) 2023-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+import contextlib
+import sys
+from collections.abc import Generator
 from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
 
-from anomalib import TaskType
 from anomalib.data import AnomalibDataModule, MVTec
 from anomalib.deploy import ExportType
 from anomalib.engine import Engine
-from anomalib.models import AnomalyModule, get_available_models, get_model
+from anomalib.models import AnomalibModule, get_available_models, get_model
 
 
 def models() -> set[str]:
@@ -26,6 +28,17 @@ def models() -> set[str]:
 def export_types() -> list[ExportType]:
     """Return all available export frameworks."""
     return list(ExportType)
+
+
+@contextlib.contextmanager
+def increased_recursion_limit(limit: int = 10000) -> Generator[None, None, None]:
+    """Temporarily increase the recursion limit."""
+    old_limit = sys.getrecursionlimit()
+    try:
+        sys.setrecursionlimit(limit)
+        yield
+    finally:
+        sys.setrecursionlimit(old_limit)
 
 
 class TestAPI:
@@ -144,28 +157,26 @@ class TestAPI:
             dataset_path (Path): Root to dataset from fixture.
             project_path (Path): Path to temporary project folder from fixture.
         """
-        if model_name == "rkde":
-            # TODO(ashwinvaidya17): Restore this test after fixing the issue
-            # https://github.com/openvinotoolkit/anomalib/issues/1513
-            pytest.skip(f"{model_name} fails to convert to OpenVINO")
-
         model, dataset, engine = self._get_objects(
             model_name=model_name,
             dataset_path=dataset_path,
             project_path=project_path,
         )
-        engine.export(
-            model=model,
-            ckpt_path=f"{project_path}/{model.name}/{dataset.name}/dummy/v0/weights/lightning/model.ckpt",
-            export_type=export_type,
-        )
+
+        # Use context manager only for CSFlow
+        with increased_recursion_limit() if model_name == "csflow" else contextlib.nullcontext():
+            engine.export(
+                model=model,
+                ckpt_path=f"{project_path}/{model.name}/{dataset.name}/dummy/v0/weights/lightning/model.ckpt",
+                export_type=export_type,
+            )
 
     @staticmethod
     def _get_objects(
         model_name: str,
         dataset_path: Path,
         project_path: Path,
-    ) -> tuple[AnomalyModule, AnomalibDataModule, Engine]:
+    ) -> tuple[AnomalibModule, AnomalibDataModule, Engine]:
         """Return model, dataset, and engine objects.
 
         Args:
@@ -174,37 +185,25 @@ class TestAPI:
             project_path (Path): path to the temporary project folder
 
         Returns:
-            tuple[AnomalyModule, AnomalibDataModule, Engine]: Returns the created objects for model, dataset,
+            tuple[AnomalibModule, AnomalibDataModule, Engine]: Returns the created objects for model, dataset,
                 and engine
         """
-        # select task type
-        if model_name in {"rkde", "ai_vad"}:
-            task_type = TaskType.DETECTION
-        elif model_name in {"ganomaly", "dfkde", "vlm_ad"}:
-            task_type = TaskType.CLASSIFICATION
-        else:
-            task_type = TaskType.SEGMENTATION
-
         # set extra model args
         # TODO(ashwinvaidya17): Fix these Edge cases
         # https://github.com/openvinotoolkit/anomalib/issues/1478
 
         extra_args = {}
-        if model_name in {"rkde", "dfkde"}:
+        if model_name == "dfkde":
             extra_args["n_pca_components"] = 2
+
         if model_name == "ai_vad":
             pytest.skip("Revisit AI-VAD test")
-
-        # select dataset
-        elif model_name == "win_clip":
-            dataset = MVTec(root=dataset_path / "mvtec", category="dummy", image_size=240, task=task_type)
         else:
             # EfficientAd requires that the batch size be lesser than the number of images in the dataset.
             # This is so that the LR step size is not 0.
             dataset = MVTec(
                 root=dataset_path / "mvtec",
                 category="dummy",
-                task=task_type,
                 # EfficientAd requires train batch size 1
                 train_batch_size=1 if model_name == "efficient_ad" else 2,
             )
@@ -220,8 +219,6 @@ class TestAPI:
             default_root_dir=project_path,
             max_epochs=1,
             devices=1,
-            pixel_metrics=["F1Score", "AUROC"],
-            task=task_type,
             # TODO(ashwinvaidya17): Fix these Edge cases
             # https://github.com/openvinotoolkit/anomalib/issues/1478
             max_steps=70000 if model_name == "efficient_ad" else -1,

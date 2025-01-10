@@ -1,6 +1,10 @@
-"""Helper functions to generate ROC-style plots of various metrics."""
+"""Helper functions to generate ROC-style plots of various metrics.
 
-# Copyright (C) 2022-2024 Intel Corporation
+This module provides utility functions for generating ROC-style plots and other
+visualization helpers used by metrics in Anomalib.
+"""
+
+# Copyright (C) 2022-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 import torch
@@ -21,27 +25,45 @@ def plot_figure(
     title: str,
     sample_points: int = 1000,
 ) -> tuple[Figure, Axis]:
-    """Generate a simple, ROC-style plot, where x_vals is plotted against y_vals.
+    """Generate a ROC-style plot with x values plotted against y values.
 
-    Note that a subsampling is applied if > sample_points are present in x/y, as matplotlib plotting draws
-    every single plot which takes very long, especially for high-resolution segmentations.
+    The function creates a matplotlib figure with a single axis showing the curve
+    defined by ``x_vals`` and ``y_vals``. If the number of points exceeds
+    ``sample_points``, the data is subsampled to improve plotting performance.
 
     Args:
-        x_vals (torch.Tensor): x values to plot
-        y_vals (torch.Tensor): y values to plot
-        auc (torch.Tensor): normalized area under the curve spanned by x_vals, y_vals
-        xlim (tuple[float, float]): displayed range for x-axis
-        ylim (tuple[float, float]): displayed range for y-axis
-        xlabel (str): label of x axis
-        ylabel (str): label of y axis
-        loc (str): string-based legend location, for details see
+        x_vals (torch.Tensor): Values to plot on x-axis.
+        y_vals (torch.Tensor): Values to plot on y-axis.
+        auc (torch.Tensor): Area under curve value to display in legend.
+        xlim (tuple[float, float]): Display range for x-axis as ``(min, max)``.
+        ylim (tuple[float, float]): Display range for y-axis as ``(min, max)``.
+        xlabel (str): Label for x-axis.
+        ylabel (str): Label for y-axis.
+        loc (str): Legend location. See matplotlib documentation for valid values:
             https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.legend.html
-        title (str): title of the plot
-        sample_points (int): number of sampling points to subsample x_vals/y_vals with
-            Defaults to ``1000``.
+        title (str): Title of the plot.
+        sample_points (int, optional): Maximum number of points to plot. Data will
+            be subsampled if it exceeds this value. Defaults to ``1000``.
 
     Returns:
-        tuple[Figure, Axis]: Figure and the contained Axis
+        tuple[Figure, Axis]: Tuple containing the figure and its main axis.
+
+    Example:
+        >>> import torch
+        >>> x = torch.linspace(0, 1, 100)
+        >>> y = x ** 2
+        >>> auc = torch.tensor(0.5)
+        >>> fig, ax = plot_figure(
+        ...     x_vals=x,
+        ...     y_vals=y,
+        ...     auc=auc,
+        ...     xlim=(0, 1),
+        ...     ylim=(0, 1),
+        ...     xlabel="False Positive Rate",
+        ...     ylabel="True Positive Rate",
+        ...     loc="lower right",
+        ...     title="ROC Curve",
+        ... )
     """
     fig, axis = plt.subplots()
 

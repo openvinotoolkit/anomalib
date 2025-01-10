@@ -1,4 +1,31 @@
-"""Base runner."""
+"""Base runner class for executing pipeline jobs.
+
+This module provides the abstract base class for runners that execute pipeline jobs.
+Runners handle the mechanics of job execution, whether serial or parallel.
+
+Example:
+    >>> from anomalib.pipelines.components.base import Runner
+    >>> from anomalib.pipelines.components.base import JobGenerator
+    >>> class MyRunner(Runner):
+    ...     def run(self, args: dict, prev_stage_results=None):
+    ...         # Implement runner logic
+    ...         pass
+
+    >>> # Create and use runner
+    >>> generator = JobGenerator()
+    >>> runner = MyRunner(generator)
+    >>> results = runner.run({"param": "value"})
+
+The base runner interface defines the core :meth:`run` method that subclasses must
+implement to execute jobs. Runners work with job generators to create and execute
+pipeline jobs.
+
+Runners can implement different execution strategies like:
+
+- Serial execution of jobs one after another
+- Parallel execution across multiple processes
+- Distributed execution across machines
+"""
 
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0

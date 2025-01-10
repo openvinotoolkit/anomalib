@@ -1,14 +1,32 @@
-"""Dataset Split Utils.
+"""Dataset splitting utilities.
 
-This module contains function in regards to splitting normal images in training set,
-and creating validation sets from test sets.
+This module provides functions for splitting datasets in anomaly detection tasks:
 
-These function are useful
-    - when the test set does not contain any normal images.
-    - when the dataset doesn't have a validation set.
+- Splitting normal images into training and validation sets
+- Creating validation sets from test sets
+- Label-aware splitting to maintain class distributions
+- Random splitting with optional seed for reproducibility
+
+These utilities are particularly useful when:
+
+- The test set lacks normal images
+- The dataset needs a validation set
+- Class balance needs to be maintained during splits
+
+Example:
+    >>> from anomalib.data.utils.split import random_split
+    >>> # Split dataset with 80/20 ratio
+    >>> train_set, val_set = random_split(dataset, split_ratio=0.2)
+    >>> len(train_set), len(val_set)
+    (800, 200)
+
+    >>> # Label-aware split preserving class distributions
+    >>> splits = random_split(dataset, [0.7, 0.2, 0.1], label_aware=True)
+    >>> len(splits)
+    3
 """
 
-# Copyright (C) 2022-2024 Intel Corporation
+# Copyright (C) 2022-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
@@ -20,13 +38,19 @@ from typing import TYPE_CHECKING
 import torch
 
 if TYPE_CHECKING:
-    from anomalib import data
+    from anomalib.data import datasets as data
 
 logger = logging.getLogger(__name__)
 
 
 class Split(str, Enum):
-    """Split of a subset."""
+    """Dataset split type.
+
+    Attributes:
+        TRAIN: Training split
+        VAL: Validation split
+        TEST: Test split
+    """
 
     TRAIN = "train"
     VAL = "val"
@@ -34,7 +58,13 @@ class Split(str, Enum):
 
 
 class TestSplitMode(str, Enum):
-    """Splitting mode used to obtain subset."""
+    """Mode used to obtain test split.
+
+    Attributes:
+        NONE: No test split
+        FROM_DIR: Test split from directory
+        SYNTHETIC: Synthetic test split
+    """
 
     NONE = "none"
     FROM_DIR = "from_dir"
@@ -42,7 +72,15 @@ class TestSplitMode(str, Enum):
 
 
 class ValSplitMode(str, Enum):
-    """Splitting mode used to obtain validation subset."""
+    """Mode used to obtain validation split.
+
+    Attributes:
+        NONE: No validation split
+        SAME_AS_TEST: Use same split as test
+        FROM_TRAIN: Split from training set
+        FROM_TEST: Split from test set
+        SYNTHETIC: Synthetic validation split
+    """
 
     NONE = "none"
     SAME_AS_TEST = "same_as_test"
@@ -51,14 +89,21 @@ class ValSplitMode(str, Enum):
     SYNTHETIC = "synthetic"
 
 
-def concatenate_datasets(datasets: Sequence["data.AnomalibDataset"]) -> "data.AnomalibDataset":
-    """Concatenate multiple datasets into a single dataset object.
+def concatenate_datasets(
+    datasets: Sequence["data.AnomalibDataset"],
+) -> "data.AnomalibDataset":
+    """Concatenate multiple datasets into a single dataset.
 
     Args:
-        datasets (Sequence[AnomalibDataset]): Sequence of at least two datasets.
+        datasets: Sequence of at least two datasets to concatenate
 
     Returns:
-        AnomalibDataset: Dataset that contains the combined samples of all input datasets.
+        Combined dataset containing samples from all input datasets
+
+    Example:
+        >>> combined = concatenate_datasets([dataset1, dataset2])
+        >>> len(combined) == len(dataset1) + len(dataset2)
+        True
     """
     concat_dataset = datasets[0]
     for dataset in datasets[1:]:
@@ -72,16 +117,26 @@ def random_split(
     label_aware: bool = False,
     seed: int | None = None,
 ) -> list["data.AnomalibDataset"]:
-    """Perform a random split of a dataset.
+    """Randomly split a dataset into multiple subsets.
 
     Args:
-        dataset (AnomalibDataset): Source dataset
-        split_ratio (Union[float, Sequence[float]]): Fractions of the splits that will be produced. The values in the
-            sequence must sum to 1. If a single value is passed, the ratio will be converted to
-            [1-split_ratio, split_ratio].
-        label_aware (bool): When True, the relative occurrence of the different class labels of the source dataset will
-            be maintained in each of the subsets.
-        seed (int | None, optional): Seed that can be passed if results need to be reproducible
+        dataset: Source dataset to split
+        split_ratio: Split ratios that must sum to 1. If single float ``x`` is
+            provided, splits into ``[1-x, x]``
+        label_aware: If ``True``, maintains class label distributions in splits
+        seed: Random seed for reproducibility
+
+    Returns:
+        List of dataset splits based on provided ratios
+
+    Example:
+        >>> splits = random_split(dataset, [0.7, 0.3], seed=42)
+        >>> len(splits)
+        2
+        >>> # Label-aware splitting
+        >>> splits = random_split(dataset, 0.2, label_aware=True)
+        >>> len(splits)
+        2
     """
     if isinstance(split_ratio, float):
         split_ratio = [1 - split_ratio, split_ratio]
@@ -128,8 +183,24 @@ def random_split(
     return [concatenate_datasets(subset) for subset in subsets]
 
 
-def split_by_label(dataset: "data.AnomalibDataset") -> tuple["data.AnomalibDataset", "data.AnomalibDataset"]:
-    """Split the dataset into the normal and anomalous subsets."""
+def split_by_label(
+    dataset: "data.AnomalibDataset",
+) -> tuple["data.AnomalibDataset", "data.AnomalibDataset"]:
+    """Split dataset into normal and anomalous subsets.
+
+    Args:
+        dataset: Dataset to split by label
+
+    Returns:
+        Tuple containing:
+            - Dataset with only normal samples (label 0)
+            - Dataset with only anomalous samples (label 1)
+
+    Example:
+        >>> normal, anomalous = split_by_label(dataset)
+        >>> len(normal) + len(anomalous) == len(dataset)
+        True
+    """
     samples = dataset.samples
     normal_indices = samples[samples.label_index == 0].index
     anomalous_indices = samples[samples.label_index == 1].index
