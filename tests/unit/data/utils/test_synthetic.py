@@ -40,6 +40,7 @@ def synthetic_dataset_from_samples(folder_dataset: FolderDataset) -> SyntheticAn
     return SyntheticAnomalyDataset(
         augmentations=folder_dataset.augmentations,
         source_samples=folder_dataset.samples,
+        dataset_name=folder_dataset.name,
     )
 
 
