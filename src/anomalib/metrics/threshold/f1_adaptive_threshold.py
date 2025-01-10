@@ -95,11 +95,3 @@ class F1AdaptiveThreshold(BinaryPrecisionRecallCurve, Threshold):
         # account for special case where recall is 1.0 even for the highest threshold.
         # In this case 'thresholds' will be scalar.
         return thresholds if thresholds.dim() == 0 else thresholds[torch.argmax(f1_score)]
-
-    def __repr__(self) -> str:
-        """Return string representation including current threshold value.
-
-        Returns:
-            str: String in format "ClassName(value=X.XX)"
-        """
-        return f"{super().__repr__()} (value={self.value:.2f})"
