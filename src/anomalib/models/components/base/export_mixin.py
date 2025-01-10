@@ -80,7 +80,7 @@ class ExportMixin:
     def to_torch(
         self,
         export_root: Path | str,
-        model_file_name: str,
+        model_file_name: str = "model",
     ) -> Path:
         """Export model to PyTorch format.
 
@@ -111,7 +111,7 @@ class ExportMixin:
     def to_onnx(
         self,
         export_root: Path | str,
-        model_file_name: str,
+        model_file_name: str = "model",
         input_size: tuple[int, int] | None = None,
     ) -> Path:
         """Export model to ONNX format.
@@ -166,7 +166,7 @@ class ExportMixin:
     def to_openvino(
         self,
         export_root: Path | str,
-        model_file_name: str,
+        model_file_name: str = "model",
         input_size: tuple[int, int] | None = None,
         compression_type: CompressionType | None = None,
         datamodule: AnomalibDataModule | None = None,
