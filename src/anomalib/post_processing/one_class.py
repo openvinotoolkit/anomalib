@@ -22,7 +22,8 @@ import torch
 from lightning import LightningModule, Trainer
 
 from anomalib.data import Batch, InferenceBatch
-from anomalib.metrics import F1AdaptiveThreshold, MinMax
+from anomalib.metrics import F1AdaptiveThreshold
+from anomalib.metrics.min_max import Max, Min
 
 from .base import PostProcessor
 
@@ -64,10 +65,12 @@ class OneClassPostProcessor(PostProcessor):
         self.pixel_sensitivity = pixel_sensitivity
 
         # initialize threshold and normalization metrics
-        self._image_threshold = F1AdaptiveThreshold()
-        self._pixel_threshold = F1AdaptiveThreshold()
-        self._image_normalization_stats = MinMax()
-        self._pixel_normalization_stats = MinMax()
+        self._image_threshold = F1AdaptiveThreshold(fields=["pred_score", "gt_label"], strict=False)
+        self._pixel_threshold = F1AdaptiveThreshold(fields=["anomaly_map", "gt_mask"], strict=False)
+        self._image_min = Min(fields=["pred_score"], strict=False)
+        self._image_max = Max(fields=["pred_score"], strict=False)
+        self._pixel_min = Min(fields=["anomaly_map"], strict=False)
+        self._pixel_max = Max(fields=["anomaly_map"], strict=False)
 
         # register buffers to persist threshold and normalization values
         self.register_buffer("image_threshold", torch.tensor(0))
@@ -102,14 +105,12 @@ class OneClassPostProcessor(PostProcessor):
             **kwargs: Arbitrary keyword arguments.
         """
         del trainer, pl_module, args, kwargs  # Unused arguments.
-        if outputs.pred_score is not None:
-            self._image_threshold.update(outputs.pred_score, outputs.gt_label)
-        if outputs.anomaly_map is not None:
-            self._pixel_threshold.update(outputs.anomaly_map, outputs.gt_mask)
-        if outputs.pred_score is not None:
-            self._image_normalization_stats.update(outputs.pred_score)
-        if outputs.anomaly_map is not None:
-            self._pixel_normalization_stats.update(outputs.anomaly_map)
+        self._image_threshold.update(outputs)
+        self._pixel_threshold.update(outputs)
+        self._image_min.update(outputs)
+        self._image_max.update(outputs)
+        self._pixel_min.update(outputs)
+        self._pixel_max.update(outputs)
 
     def on_validation_epoch_end(self, trainer: Trainer, pl_module: LightningModule) -> None:
         """Compute final threshold and normalization values.
@@ -119,14 +120,12 @@ class OneClassPostProcessor(PostProcessor):
             pl_module (LightningModule): PyTorch Lightning module instance.
         """
         del trainer, pl_module
-        if self._image_threshold.update_called:
-            self.image_threshold = self._image_threshold.compute()
-        if self._pixel_threshold.update_called:
-            self.pixel_threshold = self._pixel_threshold.compute()
-        if self._image_normalization_stats.update_called:
-            self.image_min, self.image_max = self._image_normalization_stats.compute()
-        if self._pixel_normalization_stats.update_called:
-            self.pixel_min, self.pixel_max = self._pixel_normalization_stats.compute()
+        self.image_threshold = self._image_threshold.compute()
+        self.pixel_threshold = self._pixel_threshold.compute()
+        self.image_min = self._image_min.compute()
+        self.image_max = self._image_max.compute()
+        self.pixel_min = self._pixel_min.compute()
+        self.pixel_max = self._pixel_max.compute()
 
     def on_test_batch_end(
         self,

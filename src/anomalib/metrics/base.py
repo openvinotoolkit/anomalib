@@ -47,6 +47,7 @@ Example:
 
 from collections.abc import Sequence
 
+import torch
 from torchmetrics import Metric, MetricCollection
 
 from anomalib.data import Batch
@@ -67,6 +68,7 @@ class AnomalibMetric:
         fields (Sequence[str] | None): Names of fields to extract from batch.
             If None, uses class's ``default_fields``. Required if no defaults.
         prefix (str): Prefix added to metric name. Defaults to "".
+        strict (bool): Whether to raise an error if batch is missing fields.
         **kwargs: Additional arguments passed to parent metric class.
 
     Raises:
@@ -97,6 +99,7 @@ class AnomalibMetric:
         self,
         fields: Sequence[str] | None = None,
         prefix: str = "",
+        strict: bool = True,
         **kwargs,
     ) -> None:
         fields = fields or getattr(self, "default_fields", None)
@@ -109,6 +112,7 @@ class AnomalibMetric:
             raise ValueError(msg)
         self.fields = fields
         self.name = prefix + self.__class__.__name__
+        self.strict = strict
         super().__init__(**kwargs)
 
     def __init_subclass__(cls, **kwargs) -> None:
@@ -131,11 +135,29 @@ class AnomalibMetric:
             ValueError: If batch is missing any required fields.
         """
         for key in self.fields:
-            if getattr(batch, key, None) is None:
+            if not hasattr(batch, key):
                 msg = f"Batch object is missing required field: {key}"
                 raise ValueError(msg)
+            if getattr(batch, key, None) is None:
+                if self.strict:
+                    msg = f"Field {key} in batch object is None"
+                    raise ValueError(msg)
+                self._update_count -= 1  # type: ignore[attr-defined]
+                return
         values = [getattr(batch, key) for key in self.fields]
         super().update(*values, *args, **kwargs)  # type: ignore[misc]
+
+    def compute(self) -> torch.Tensor:
+        """Compute the metric value.
+
+        If the metric has not been updated, and metric is not in strict mode, return None.
+
+        Returns:
+            torch.Tensor: Computed metric value or None.
+        """
+        if self._update_count == 0 and not self.strict:  # type: ignore[attr-defined]
+            return None
+        return super().compute()  # type: ignore[misc]
 
 
 def create_anomalib_metric(metric_cls: type) -> type:
