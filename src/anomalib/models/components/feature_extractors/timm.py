@@ -25,13 +25,74 @@ Example:
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 
 import timm
 import torch
+from timm.models._registry import _model_pretrained_cfgs as model_pretrained_cfgs
+from timm.models._registry import generate_default_cfgs
+from timm.models.resnet import _cfg as resnet_cfg_fn
 from torch import nn
 
 logger = logging.getLogger(__name__)
+
+
+def register_model_with_adv_trained_weights_tags(
+    model_name: str,
+    epsilons: Sequence[float],
+    lp: str,
+    cfg_fn: Callable,
+) -> None:
+    """Register adversarially trained model weights with a URL."""
+    origin_url = "https://huggingface.co/madrylab/robust-imagenet-models"
+    paper_ids = "arXiv:2007.08489"
+
+    cfgs = {}
+    for eps in epsilons:
+        url = f"https://huggingface.co/mzweilin/robust-imagenet-models/resolve/main/{model_name}_{lp}_eps{eps}.pth"
+        tag = f"adv_{lp}_{eps}"
+        model_and_tag = f"{model_name}.{tag}"
+        cfgs[model_and_tag] = cfg_fn(
+            url=url,
+            origin_url=origin_url,
+            paper_ids=paper_ids,
+        )
+
+    default_cfgs = generate_default_cfgs(cfgs)
+
+    for model_and_tag in cfgs:
+        tag = model_and_tag[len(model_name) + 1 :]  # Remove "[MODEL NAME]."
+        model_pretrained_cfgs[model_and_tag] = default_cfgs[model_name].cfgs[tag]
+        logger.info(f"Register model weights in timm: {model_and_tag}")
+
+
+def register_in_bulk() -> None:
+    """Register adversarially trained model weights in timm."""
+    l2_epsilons = [0, 0.01, 0.03, 0.05, 0.1, 0.25, 0.5, 1, 3, 5]
+    model_names_l2 = ["resnet18", "resnet50", "wide_resnet50_2", "wideresnet50_4"]
+    cfg_fn = resnet_cfg_fn
+    for model_name in model_names_l2:
+        register_model_with_adv_trained_weights_tags(
+            model_name=model_name,
+            epsilons=l2_epsilons,
+            lp="l2",
+            cfg_fn=cfg_fn,
+        )
+
+    linf_epsilons = [0, 0.5, 1, 2, 4, 8]
+    model_names_linf = ["resnet18", "resnet50", "wide_resnet50_2"]
+    cfg_fn = resnet_cfg_fn
+    for model_name in model_names_linf:
+        register_model_with_adv_trained_weights_tags(
+            model_name=model_name,
+            epsilons=linf_epsilons,
+            lp="linf",
+            cfg_fn=cfg_fn,
+        )
+
+
+# We will only register model weights only once even if we import the module repeatedly, because it is a singleton.
+register_in_bulk()
 
 
 class TimmFeatureExtractor(nn.Module):
