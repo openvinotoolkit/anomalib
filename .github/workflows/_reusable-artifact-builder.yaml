@@ -97,7 +97,7 @@ jobs:
           path: dist/
           retention-days: 5
       - name: Cache pip dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ~/.cache/pip
@@ -106,7 +106,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-
       - name: Cache build artifacts
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             dist/
