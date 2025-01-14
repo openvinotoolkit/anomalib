@@ -166,11 +166,15 @@ class AnomalibMetric:
                     return
                 # otherwise, raise an error
                 if not hasattr(batch, key):
-                    msg = f"Cannot update metric of type {type(self)}. Batch object \
-                        is missing required field: {key}"
+                    msg = (
+                        f"Cannot update metric of type {type(self)}. Passed dataclass instance "
+                        f"is missing required field: {key}"
+                    )
                 else:
-                    msg = f"Cannot update metric of type {type(self)}. Passed item \
-                        does not have a value for field with name {key}."
+                    msg = (
+                        f"Cannot update metric of type {type(self)}. Passed dataclass instance "
+                        f"does not have a value for field with name {key}."
+                    )
                 raise ValueError(msg)
 
         values = [getattr(batch, key) for key in self.fields]
