@@ -40,6 +40,26 @@ Example:
         >>> from anomalib.metrics import create_anomalib_metric
         >>> F1Score = create_anomalib_metric(BinaryF1Score)
         >>> f1_score = F1Score(fields=["pred_label", "gt_label"])
+
+    Strict mode vs non-strict mode::
+
+        >>> F1Score = create_anomalib_metric(BinaryF1Score)
+        >>>
+        >>> # create metric in strict mode (default), and non-strict mode
+        >>> f1_score_strict = F1Score(fields=["pred_label", "gt_label"], strict=True)
+        >>> f1_score_nonstrict = F1Score(fields=["pred_label", "gt_label"], strict=False)
+        >>>
+        >>> # create a batch in which 'pred_label' field is None
+        >>> batch = ImageBatch(
+        ...     image=torch.rand(4, 3, 256, 256),
+        ...     gt_label=torch.tensor([0, 0, 1, 1])
+        ... )
+        >>>
+        >>> f1_score_strict.update(batch)  # ValueError
+        >>> f1_score_strict.compute()  # UserWarning, tensor(0.)
+        >>>
+        >>> f1_score_nonstrict.update(batch)  # No error
+        >>> f1_score_nonstrict.compute()  # None
 """
 
 # Copyright (C) 2024 Intel Corporation
@@ -47,6 +67,7 @@ Example:
 
 from collections.abc import Sequence
 
+import torch
 from torchmetrics import Metric, MetricCollection
 
 from anomalib.data import Batch
@@ -67,6 +88,7 @@ class AnomalibMetric:
         fields (Sequence[str] | None): Names of fields to extract from batch.
             If None, uses class's ``default_fields``. Required if no defaults.
         prefix (str): Prefix added to metric name. Defaults to "".
+        strict (bool): Whether to raise an error if batch is missing fields.
         **kwargs: Additional arguments passed to parent metric class.
 
     Raises:
@@ -97,6 +119,7 @@ class AnomalibMetric:
         self,
         fields: Sequence[str] | None = None,
         prefix: str = "",
+        strict: bool = True,
         **kwargs,
     ) -> None:
         fields = fields or getattr(self, "default_fields", None)
@@ -109,6 +132,8 @@ class AnomalibMetric:
             raise ValueError(msg)
         self.fields = fields
         self.name = prefix + self.__class__.__name__
+        self.strict = strict
+        self.__update_count = 0  # keeps track of the update calls of the wrapper class
         super().__init__(**kwargs)
 
     def __init_subclass__(cls, **kwargs) -> None:
@@ -130,12 +155,47 @@ class AnomalibMetric:
         Raises:
             ValueError: If batch is missing any required fields.
         """
+        self.__update_count += 1
         for key in self.fields:
             if getattr(batch, key, None) is None:
-                msg = f"Batch object is missing required field: {key}"
+                # We cannot update the metric if the batch is missing required fields,
+                # so we need to decrement the update count of the super class.
+                self._update_count -= 1  # type: ignore[attr-defined]
+                if not self.strict:
+                    # If not in strict mode, skip updating the metric but don't raise an error
+                    return
+                # otherwise, raise an error
+                if not hasattr(batch, key):
+                    msg = (
+                        f"Cannot update metric of type {type(self)}. Passed dataclass instance "
+                        f"is missing required field: {key}"
+                    )
+                else:
+                    msg = (
+                        f"Cannot update metric of type {type(self)}. Passed dataclass instance "
+                        f"does not have a value for field with name {key}."
+                    )
                 raise ValueError(msg)
+
         values = [getattr(batch, key) for key in self.fields]
         super().update(*values, *args, **kwargs)  # type: ignore[misc]
+
+    def compute(self) -> torch.Tensor:
+        """Compute the metric value.
+
+        If the metric has not been updated, and metric is not in strict mode, return None.
+
+        Returns:
+            torch.Tensor: Computed metric value or None.
+        """
+        if self._update_count == 0 and not self.strict:  # type: ignore[attr-defined]
+            return None
+        return super().compute()  # type: ignore[misc]
+
+    @property
+    def update_called(self) -> bool:
+        """Check if the update method has been called."""
+        return self._update_count > 0 if self.strict else self.__update_count > 0  # type: ignore[attr-defined]
 
 
 def create_anomalib_metric(metric_cls: type) -> type:
