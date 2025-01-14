@@ -62,6 +62,8 @@ def register_model_with_adv_trained_weights_tags(
 
     for model_and_tag in cfgs:
         tag = model_and_tag[len(model_name) + 1 :]  # Remove "[MODEL NAME]."
+        if model_and_tag in model_pretrained_cfgs:
+            logger.warning(f"Overriding model weights registration in timm: {model_and_tag}")
         model_pretrained_cfgs[model_and_tag] = default_cfgs[model_name].cfgs[tag]
         logger.info(f"Register model weights in timm: {model_and_tag}")
 
