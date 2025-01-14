@@ -186,8 +186,8 @@ class OneClassPostProcessor(PostProcessor):
         pred_score = predictions.pred_score or torch.amax(predictions.anomaly_map, dim=(-2, -1))
         pred_score = self._normalize(pred_score, self.image_min, self.image_max, self.image_threshold)
         anomaly_map = self._normalize(predictions.anomaly_map, self.pixel_min, self.pixel_max, self.pixel_threshold)
-        pred_label = self._threshold(pred_score, self.normalized_image_threshold)
-        pred_mask = self._threshold(anomaly_map, self.normalized_pixel_threshold)
+        pred_label = self._apply_threshold(pred_score, self.normalized_image_threshold)
+        pred_mask = self._apply_threshold(anomaly_map, self.normalized_pixel_threshold)
         return InferenceBatch(
             pred_label=pred_label,
             pred_score=pred_score,
@@ -217,12 +217,12 @@ class OneClassPostProcessor(PostProcessor):
         batch.pred_label = (
             batch.pred_label
             if batch.pred_label is not None
-            else self._threshold(batch.pred_score, self.normalized_image_threshold)
+            else self._apply_threshold(batch.pred_score, self.normalized_image_threshold)
         )
         batch.pred_mask = (
             batch.pred_mask
             if batch.pred_mask is not None
-            else self._threshold(batch.anomaly_map, self.normalized_pixel_threshold)
+            else self._apply_threshold(batch.anomaly_map, self.normalized_pixel_threshold)
         )
 
     def normalize_batch(self, batch: Batch) -> None:
@@ -237,7 +237,7 @@ class OneClassPostProcessor(PostProcessor):
         batch.pred_score = self._normalize(batch.pred_score, self.image_min, self.image_max, self.image_threshold)
 
     @staticmethod
-    def _threshold(preds: torch.Tensor | None, threshold: float) -> torch.Tensor | None:
+    def _apply_threshold(preds: torch.Tensor | None, threshold: float) -> torch.Tensor | None:
         """Apply thresholding to a single tensor.
 
         Args:
@@ -247,16 +247,16 @@ class OneClassPostProcessor(PostProcessor):
         Returns:
             torch.Tensor | None: Thresholded predictions or None if input is None.
         """
-        if preds is None:
-            return None
+        if preds is None or threshold is None:
+            return preds
         return preds > threshold
 
     @staticmethod
     def _normalize(
         preds: torch.Tensor | None,
-        norm_min: float,
-        norm_max: float,
-        threshold: float,
+        norm_min: float | None,
+        norm_max: float | None,
+        threshold: float | None,
     ) -> torch.Tensor | None:
         """Normalize a tensor using min, max, and threshold values.
 
@@ -269,8 +269,8 @@ class OneClassPostProcessor(PostProcessor):
         Returns:
             torch.Tensor | None: Normalized predictions or None if input is None.
         """
-        if preds is None:
-            return None
+        if preds is None or norm_min is None or norm_max is None or threshold is None:
+            return preds
         preds = ((preds - threshold) / (norm_max - norm_min)) + 0.5
         return preds.clamp(min=0, max=1)
 
