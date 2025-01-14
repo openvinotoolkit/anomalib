@@ -96,7 +96,7 @@ class _MinMax(Metric):
             tuple[torch.Tensor, torch.Tensor]: Tuple containing the (min, max)
                 values tracked across all batches
         """
-        return self.min, self.max
+        return torch.stack([self.min, self.max])
 
 
 class _Min(Metric):

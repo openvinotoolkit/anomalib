@@ -22,8 +22,7 @@ import torch
 from lightning import LightningModule, Trainer
 
 from anomalib.data import Batch, InferenceBatch
-from anomalib.metrics import F1AdaptiveThreshold
-from anomalib.metrics.min_max import Max, Min
+from anomalib.metrics import F1AdaptiveThreshold, MinMax
 
 from .base import PostProcessor
 
@@ -67,10 +66,8 @@ class OneClassPostProcessor(PostProcessor):
         # initialize threshold and normalization metrics
         self._image_threshold = F1AdaptiveThreshold(fields=["pred_score", "gt_label"], strict=False)
         self._pixel_threshold = F1AdaptiveThreshold(fields=["anomaly_map", "gt_mask"], strict=False)
-        self._image_min = Min(fields=["pred_score"], strict=False)
-        self._image_max = Max(fields=["pred_score"], strict=False)
-        self._pixel_min = Min(fields=["anomaly_map"], strict=False)
-        self._pixel_max = Max(fields=["anomaly_map"], strict=False)
+        self._image_min_max = MinMax(fields=["pred_score"], strict=False)
+        self._pixel_min_max = MinMax(fields=["anomaly_map"], strict=False)
 
         # register buffers to persist threshold and normalization values
         self.register_buffer("image_threshold", torch.tensor(0))
@@ -107,10 +104,8 @@ class OneClassPostProcessor(PostProcessor):
         del trainer, pl_module, args, kwargs  # Unused arguments.
         self._image_threshold.update(outputs)
         self._pixel_threshold.update(outputs)
-        self._image_min.update(outputs)
-        self._image_max.update(outputs)
-        self._pixel_min.update(outputs)
-        self._pixel_max.update(outputs)
+        self._image_min_max.update(outputs)
+        self._pixel_min_max.update(outputs)
 
     def on_validation_epoch_end(self, trainer: Trainer, pl_module: LightningModule) -> None:
         """Compute final threshold and normalization values.
@@ -122,10 +117,8 @@ class OneClassPostProcessor(PostProcessor):
         del trainer, pl_module
         self.image_threshold = self._image_threshold.compute()
         self.pixel_threshold = self._pixel_threshold.compute()
-        self.image_min = self._image_min.compute()
-        self.image_max = self._image_max.compute()
-        self.pixel_min = self._pixel_min.compute()
-        self.pixel_max = self._pixel_max.compute()
+        image_min_max = self._image_min_max.compute()
+        self.image_min, self.image_max = image_min_max if image_min_max is not None else (None, None)
 
     def on_test_batch_end(
         self,
