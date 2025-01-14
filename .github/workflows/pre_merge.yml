@@ -83,6 +83,6 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
-      - uses: AlexanderDokuchaev/md-dead-link-check@v0.9
+      - uses: AlexanderDokuchaev/md-dead-link-check@v1.0
         with:
           config: pyproject.toml
