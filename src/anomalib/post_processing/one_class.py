@@ -230,7 +230,10 @@ class OneClassPostProcessor(PostProcessor):
         batch.pred_score = self._normalize(batch.pred_score, self.image_min, self.image_max, self.image_threshold)
 
     @staticmethod
-    def _apply_threshold(preds: torch.Tensor | None, threshold: float) -> torch.Tensor | None:
+    def _apply_threshold(
+        preds: torch.Tensor | None,
+        threshold: torch.Tensor | None,
+    ) -> torch.Tensor | None:
         """Apply thresholding to a single tensor.
 
         Args:
@@ -247,9 +250,9 @@ class OneClassPostProcessor(PostProcessor):
     @staticmethod
     def _normalize(
         preds: torch.Tensor | None,
-        norm_min: float | None,
-        norm_max: float | None,
-        threshold: float | None,
+        norm_min: torch.Tensor | None,
+        norm_max: torch.Tensor | None,
+        threshold: torch.Tensor | None,
     ) -> torch.Tensor | None:
         """Normalize a tensor using min, max, and threshold values.
 
@@ -275,8 +278,8 @@ class OneClassPostProcessor(PostProcessor):
             float: Normalized image-level threshold value, adjusted by sensitivity.
         """
         if self.image_sensitivity is not None:
-            return 1 - self.image_sensitivity
-        return 0.5
+            return torch.tensor(1.0) - self.image_sensitivity
+        return torch.tensor(0.5)
 
     @property
     def normalized_pixel_threshold(self) -> float:
@@ -286,5 +289,5 @@ class OneClassPostProcessor(PostProcessor):
             float: Normalized pixel-level threshold value, adjusted by sensitivity.
         """
         if self.pixel_sensitivity is not None:
-            return 1 - self.pixel_sensitivity
-        return 0.5
+            return torch.tensor(1.0) - self.pixel_sensitivity
+        return torch.tensor(0.5)
