@@ -1,6 +1,36 @@
-"""PyTorch model for the PatchCore model implementation."""
+"""PyTorch model for the PatchCore model implementation.
 
-# Copyright (C) 2022-2024 Intel Corporation
+This module implements the PatchCore model architecture using PyTorch. PatchCore
+uses a memory bank of patch features extracted from a pretrained CNN backbone to
+detect anomalies.
+
+The model stores representative patch features from normal training images and
+detects anomalies by comparing test image patches against this memory bank using
+nearest neighbor search.
+
+Example:
+    >>> from anomalib.models.image.patchcore.torch_model import PatchcoreModel
+    >>> model = PatchcoreModel(
+    ...     backbone="wide_resnet50_2",
+    ...     layers=["layer2", "layer3"],
+    ...     pre_trained=True,
+    ...     num_neighbors=9
+    ... )
+    >>> input_tensor = torch.randn(32, 3, 224, 224)
+    >>> output = model(input_tensor)
+
+Paper: https://arxiv.org/abs/2106.08265
+
+See Also:
+    - :class:`anomalib.models.image.patchcore.lightning_model.Patchcore`:
+        Lightning implementation of the PatchCore model
+    - :class:`anomalib.models.image.patchcore.anomaly_map.AnomalyMapGenerator`:
+        Anomaly map generation for PatchCore using nearest neighbor search
+    - :class:`anomalib.models.components.KCenterGreedy`:
+        Coreset subsampling using k-center-greedy approach
+"""
+
+# Copyright (C) 2022-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 from collections.abc import Sequence
@@ -10,6 +40,7 @@ import torch
 from torch import nn
 from torch.nn import functional as F  # noqa: N812
 
+from anomalib.data import InferenceBatch
 from anomalib.models.components import DynamicBufferMixin, KCenterGreedy, TimmFeatureExtractor
 
 from .anomaly_map import AnomalyMapGenerator
@@ -19,16 +50,56 @@ if TYPE_CHECKING:
 
 
 class PatchcoreModel(DynamicBufferMixin, nn.Module):
-    """Patchcore Module.
+    """PatchCore PyTorch model for anomaly detection.
+
+    This model implements the PatchCore algorithm which uses a memory bank of patch
+    features for anomaly detection. Features are extracted from a pretrained CNN
+    backbone and stored in a memory bank. Anomalies are detected by comparing test
+    image patches with the stored features using nearest neighbor search.
+
+    The model works in two phases:
+    1. Training: Extract and store patch features from normal training images
+    2. Inference: Compare test image patches against stored features to detect
+       anomalies
 
     Args:
-        layers (list[str]): Layers used for feature extraction
-        backbone (str, optional): Pre-trained model backbone.
-            Defaults to ``resnet18``.
-        pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.
+        layers (Sequence[str]): Names of layers to extract features from.
+        backbone (str, optional): Name of the backbone CNN network.
+            Defaults to ``"wide_resnet50_2"``.
+        pre_trained (bool, optional): Whether to use pre-trained backbone weights.
             Defaults to ``True``.
-        num_neighbors (int, optional): Number of nearest neighbors.
+        num_neighbors (int, optional): Number of nearest neighbors to use.
             Defaults to ``9``.
+
+    Example:
+        >>> from anomalib.models.image.patchcore.torch_model import PatchcoreModel
+        >>> model = PatchcoreModel(
+        ...     backbone="wide_resnet50_2",
+        ...     layers=["layer2", "layer3"],
+        ...     pre_trained=True,
+        ...     num_neighbors=9
+        ... )
+        >>> input_tensor = torch.randn(32, 3, 224, 224)
+        >>> output = model(input_tensor)
+
+    Attributes:
+        tiler (Tiler | None): Optional tiler for processing large images.
+        feature_extractor (TimmFeatureExtractor): CNN feature extractor.
+        feature_pooler (torch.nn.AvgPool2d): Average pooling layer.
+        anomaly_map_generator (AnomalyMapGenerator): Generates anomaly heatmaps.
+        memory_bank (torch.Tensor): Storage for patch features from training.
+
+    Notes:
+        The model requires no optimization/backpropagation as it uses a pretrained
+        backbone and nearest neighbor search.
+
+    See Also:
+        - :class:`anomalib.models.image.patchcore.lightning_model.Patchcore`:
+            Lightning implementation of the PatchCore model
+        - :class:`anomalib.models.image.patchcore.anomaly_map.AnomalyMapGenerator`:
+            Anomaly map generation for PatchCore
+        - :class:`anomalib.models.components.KCenterGreedy`:
+            Coreset subsampling using k-center-greedy approach
     """
 
     def __init__(
@@ -56,19 +127,30 @@ class PatchcoreModel(DynamicBufferMixin, nn.Module):
         self.register_buffer("memory_bank", torch.Tensor())
         self.memory_bank: torch.Tensor
 
-    def forward(self, input_tensor: torch.Tensor) -> torch.Tensor | dict[str, torch.Tensor]:
-        """Return Embedding during training, or a tuple of anomaly map and anomaly score during testing.
+    def forward(self, input_tensor: torch.Tensor) -> torch.Tensor | InferenceBatch:
+        """Process input tensor through the model.
 
-        Steps performed:
-        1. Get features from a CNN.
-        2. Generate embedding based on the features.
-        3. Compute anomaly map in test mode.
+        During training, returns embeddings extracted from the input. During
+        inference, returns anomaly maps and scores computed by comparing input
+        embeddings against the memory bank.
 
         Args:
-            input_tensor (torch.Tensor): Input tensor
+            input_tensor (torch.Tensor): Input images of shape
+                ``(batch_size, channels, height, width)``.
 
         Returns:
-            Tensor | dict[str, torch.Tensor]: Embedding for training, anomaly map and anomaly score for testing.
+            torch.Tensor | InferenceBatch: During training, returns embeddings.
+                During inference, returns ``InferenceBatch`` containing anomaly
+                maps and scores.
+
+        Example:
+            >>> model = PatchcoreModel(layers=["layer1"])
+            >>> input_tensor = torch.randn(32, 3, 224, 224)
+            >>> output = model(input_tensor)
+            >>> if model.training:
+            ...     assert isinstance(output, torch.Tensor)
+            ... else:
+            ...     assert isinstance(output, InferenceBatch)
         """
         output_size = input_tensor.shape[-2:]
         if self.tiler:
@@ -87,33 +169,43 @@ class PatchcoreModel(DynamicBufferMixin, nn.Module):
         embedding = self.reshape_embedding(embedding)
 
         if self.training:
-            output = embedding
-        else:
-            # apply nearest neighbor search
-            patch_scores, locations = self.nearest_neighbors(embedding=embedding, n_neighbors=1)
-            # reshape to batch dimension
-            patch_scores = patch_scores.reshape((batch_size, -1))
-            locations = locations.reshape((batch_size, -1))
-            # compute anomaly score
-            pred_score = self.compute_anomaly_score(patch_scores, locations, embedding)
-            # reshape to w, h
-            patch_scores = patch_scores.reshape((batch_size, 1, width, height))
-            # get anomaly map
-            anomaly_map = self.anomaly_map_generator(patch_scores, output_size)
+            return embedding
+        # apply nearest neighbor search
+        patch_scores, locations = self.nearest_neighbors(embedding=embedding, n_neighbors=1)
+        # reshape to batch dimension
+        patch_scores = patch_scores.reshape((batch_size, -1))
+        locations = locations.reshape((batch_size, -1))
+        # compute anomaly score
+        pred_score = self.compute_anomaly_score(patch_scores, locations, embedding)
+        # reshape to w, h
+        patch_scores = patch_scores.reshape((batch_size, 1, width, height))
+        # get anomaly map
+        anomaly_map = self.anomaly_map_generator(patch_scores, output_size)
 
-            output = {"anomaly_map": anomaly_map, "pred_score": pred_score}
-
-        return output
+        return InferenceBatch(pred_score=pred_score, anomaly_map=anomaly_map)
 
     def generate_embedding(self, features: dict[str, torch.Tensor]) -> torch.Tensor:
-        """Generate embedding from hierarchical feature map.
+        """Generate embedding by concatenating multi-scale feature maps.
+
+        Combines feature maps from different CNN layers by upsampling them to a
+        common size and concatenating along the channel dimension.
 
         Args:
-            features: Hierarchical feature map from a CNN (ResNet18 or WideResnet)
-            features: dict[str:Tensor]:
+            features (dict[str, torch.Tensor]): Dictionary mapping layer names to
+                feature tensors extracted from the backbone CNN.
 
         Returns:
-            Embedding vector
+            torch.Tensor: Concatenated feature embedding of shape
+                ``(batch_size, num_features, height, width)``.
+
+        Example:
+            >>> features = {
+            ...     "layer1": torch.randn(32, 64, 56, 56),
+            ...     "layer2": torch.randn(32, 128, 28, 28)
+            ... }
+            >>> embedding = model.generate_embedding(features)
+            >>> embedding.shape
+            torch.Size([32, 192, 56, 56])
         """
         embeddings = features[self.layers[0]]
         for layer in self.layers[1:]:
@@ -125,26 +217,43 @@ class PatchcoreModel(DynamicBufferMixin, nn.Module):
 
     @staticmethod
     def reshape_embedding(embedding: torch.Tensor) -> torch.Tensor:
-        """Reshape Embedding.
+        """Reshape embedding tensor for patch-wise processing.
 
-        Reshapes Embedding to the following format:
-            - [Batch, Embedding, Patch, Patch] to [Batch*Patch*Patch, Embedding]
+        Converts a 4D embedding tensor into a 2D matrix where each row represents
+        a patch embedding vector.
 
         Args:
-            embedding (torch.Tensor): Embedding tensor extracted from CNN features.
+            embedding (torch.Tensor): Input embedding tensor of shape
+                ``(batch_size, embedding_dim, height, width)``.
 
         Returns:
-            Tensor: Reshaped embedding tensor.
+            torch.Tensor: Reshaped embedding tensor of shape
+                ``(batch_size * height * width, embedding_dim)``.
+
+        Example:
+            >>> embedding = torch.randn(32, 512, 7, 7)
+            >>> reshaped = PatchcoreModel.reshape_embedding(embedding)
+            >>> reshaped.shape
+            torch.Size([1568, 512])
         """
         embedding_size = embedding.size(1)
         return embedding.permute(0, 2, 3, 1).reshape(-1, embedding_size)
 
     def subsample_embedding(self, embedding: torch.Tensor, sampling_ratio: float) -> None:
-        """Subsample embedding based on coreset sampling and store to memory.
+        """Subsample embeddings using coreset selection.
+
+        Uses k-center-greedy coreset subsampling to select a representative
+        subset of patch embeddings to store in the memory bank.
 
         Args:
-            embedding (np.ndarray): Embedding tensor from the CNN
-            sampling_ratio (float): Coreset sampling ratio
+            embedding (torch.Tensor): Embedding tensor to subsample from.
+            sampling_ratio (float): Fraction of embeddings to keep, in range (0,1].
+
+        Example:
+            >>> embedding = torch.randn(1000, 512)
+            >>> model.subsample_embedding(embedding, sampling_ratio=0.1)
+            >>> model.memory_bank.shape
+            torch.Size([100, 512])
         """
         # Coreset Subsampling
         sampler = KCenterGreedy(embedding=embedding, sampling_ratio=sampling_ratio)
@@ -153,17 +262,30 @@ class PatchcoreModel(DynamicBufferMixin, nn.Module):
 
     @staticmethod
     def euclidean_dist(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
-        """Calculate pair-wise distance between row vectors in x and those in y.
+        """Compute pairwise Euclidean distances between two sets of vectors.
 
-        Replaces torch cdist with p=2, as cdist is not properly exported to onnx and openvino format.
-        Resulting matrix is indexed by x vectors in rows and y vectors in columns.
+        Implements an efficient matrix computation of Euclidean distances between
+        all pairs of vectors in ``x`` and ``y`` without using ``torch.cdist()``.
 
         Args:
-            x: input tensor 1
-            y: input tensor 2
+            x (torch.Tensor): First tensor of shape ``(n, d)``.
+            y (torch.Tensor): Second tensor of shape ``(m, d)``.
 
         Returns:
-            Matrix of distances between row vectors in x and y.
+            torch.Tensor: Distance matrix of shape ``(n, m)`` where element
+                ``(i,j)`` is the distance between row ``i`` of ``x`` and row
+                ``j`` of ``y``.
+
+        Example:
+            >>> x = torch.randn(100, 512)
+            >>> y = torch.randn(50, 512)
+            >>> distances = PatchcoreModel.euclidean_dist(x, y)
+            >>> distances.shape
+            torch.Size([100, 50])
+
+        Note:
+            This implementation avoids using ``torch.cdist()`` for better
+            compatibility with ONNX export and OpenVINO conversion.
         """
         x_norm = x.pow(2).sum(dim=-1, keepdim=True)  # |x|
         y_norm = y.pow(2).sum(dim=-1, keepdim=True)  # |y|
@@ -172,15 +294,28 @@ class PatchcoreModel(DynamicBufferMixin, nn.Module):
         return res.clamp_min_(0).sqrt_()
 
     def nearest_neighbors(self, embedding: torch.Tensor, n_neighbors: int) -> tuple[torch.Tensor, torch.Tensor]:
-        """Nearest Neighbours using brute force method and euclidean norm.
+        """Find nearest neighbors in memory bank for input embeddings.
+
+        Uses brute force search with Euclidean distance to find the closest
+        matches in the memory bank for each input embedding.
 
         Args:
-            embedding (torch.Tensor): Features to compare the distance with the memory bank.
-            n_neighbors (int): Number of neighbors to look at
+            embedding (torch.Tensor): Query embeddings to find neighbors for.
+            n_neighbors (int): Number of nearest neighbors to return.
 
         Returns:
-            Tensor: Patch scores.
-            Tensor: Locations of the nearest neighbor(s).
+            tuple[torch.Tensor, torch.Tensor]: Tuple containing:
+                - Distances to nearest neighbors (shape: ``(n, k)``)
+                - Indices of nearest neighbors (shape: ``(n, k)``)
+                where ``n`` is number of query embeddings and ``k`` is
+                ``n_neighbors``.
+
+        Example:
+            >>> embedding = torch.randn(100, 512)
+            >>> # Assuming memory_bank is already populated
+            >>> scores, locations = model.nearest_neighbors(embedding, n_neighbors=5)
+            >>> scores.shape, locations.shape
+            (torch.Size([100, 5]), torch.Size([100, 5]))
         """
         distances = self.euclidean_dist(embedding, self.memory_bank)
         if n_neighbors == 1:
@@ -196,15 +331,32 @@ class PatchcoreModel(DynamicBufferMixin, nn.Module):
         locations: torch.Tensor,
         embedding: torch.Tensor,
     ) -> torch.Tensor:
-        """Compute Image-Level Anomaly Score.
+        """Compute image-level anomaly scores.
+
+        Implements the paper's weighted scoring mechanism that considers both
+        the distance to nearest neighbors and the local neighborhood structure
+        in the memory bank.
 
         Args:
-            patch_scores (torch.Tensor): Patch-level anomaly scores
-            locations: Memory bank locations of the nearest neighbor for each patch location
-            embedding: The feature embeddings that generated the patch scores
+            patch_scores (torch.Tensor): Patch-level anomaly scores.
+            locations (torch.Tensor): Memory bank indices of nearest neighbors.
+            embedding (torch.Tensor): Input embeddings that generated the scores.
 
         Returns:
-            Tensor: Image-level anomaly scores
+            torch.Tensor: Image-level anomaly scores.
+
+        Example:
+            >>> patch_scores = torch.randn(32, 49)  # 7x7 patches
+            >>> locations = torch.randint(0, 1000, (32, 49))
+            >>> embedding = torch.randn(32 * 49, 512)
+            >>> scores = model.compute_anomaly_score(patch_scores, locations,
+            ...                                     embedding)
+            >>> scores.shape
+            torch.Size([32])
+
+        Note:
+            When ``num_neighbors=1``, returns the maximum patch score directly.
+            Otherwise, computes weighted scores using neighborhood information.
         """
         # Don't need to compute weights if num_neighbors is 1
         if self.num_neighbors == 1:

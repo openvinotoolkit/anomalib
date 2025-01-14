@@ -17,7 +17,7 @@ from tests.helpers.data import DummyImageDatasetGenerator, DummyVideoDatasetGene
 
 
 def _dataset_names() -> list[str]:
-    return [str(path.stem) for path in Path("configs/data").glob("*.yaml")]
+    return [str(path.stem) for path in Path("examples/configs/data").glob("*.yaml")]
 
 
 @pytest.fixture(scope="session")
@@ -101,3 +101,10 @@ def ckpt_path(project_path: Path, dataset_path: Path) -> Callable[[str], Path]:
         return _ckpt_path
 
     return checkpoint
+
+
+def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
+    """Automatically mark tests as 'cpu' unless they're marked as 'gpu'."""
+    for item in items:
+        if not any(marker.name == "gpu" for marker in item.iter_markers()):
+            item.add_marker(pytest.mark.cpu)

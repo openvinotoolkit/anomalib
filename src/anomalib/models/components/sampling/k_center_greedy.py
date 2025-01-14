@@ -1,10 +1,12 @@
 """k-Center Greedy Method.
 
 Returns points that minimizes the maximum distance of any point to a center.
-- https://arxiv.org/abs/1708.00489
+
+Reference:
+    - https://arxiv.org/abs/1708.00489
 """
 
-# Copyright (C) 2022-2024 Intel Corporation
+# Copyright (C) 2022-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 import torch
@@ -15,16 +17,28 @@ from anomalib.models.components.dimensionality_reduction import SparseRandomProj
 
 
 class KCenterGreedy:
-    """Implements k-center-greedy method.
+    """k-center-greedy method for coreset selection.
+
+    This class implements the k-center-greedy method to select a coreset from an
+    embedding space. The method aims to minimize the maximum distance between any
+    point and its nearest center.
 
     Args:
-        embedding (torch.Tensor): Embedding vector extracted from a CNN
-        sampling_ratio (float): Ratio to choose coreset size from the embedding size.
+        embedding (torch.Tensor): Embedding tensor extracted from a CNN.
+        sampling_ratio (float): Ratio to determine coreset size from embedding size.
+
+    Attributes:
+        embedding (torch.Tensor): Input embedding tensor.
+        coreset_size (int): Size of the coreset to be selected.
+        model (SparseRandomProjection): Dimensionality reduction model.
+        features (torch.Tensor): Transformed features after dimensionality reduction.
+        min_distances (torch.Tensor): Minimum distances to cluster centers.
+        n_observations (int): Number of observations in the embedding.
 
     Example:
-        >>> embedding.shape
-        torch.Size([219520, 1536])
-        >>> sampler = KCenterGreedy(embedding=embedding)
+        >>> import torch
+        >>> embedding = torch.randn(219520, 1536)
+        >>> sampler = KCenterGreedy(embedding=embedding, sampling_ratio=0.001)
         >>> sampled_idxs = sampler.select_coreset_idxs()
         >>> coreset = embedding[sampled_idxs]
         >>> coreset.shape
@@ -41,14 +55,14 @@ class KCenterGreedy:
         self.n_observations = self.embedding.shape[0]
 
     def reset_distances(self) -> None:
-        """Reset minimum distances."""
+        """Reset minimum distances to None."""
         self.min_distances = None
 
     def update_distances(self, cluster_centers: list[int]) -> None:
-        """Update min distances given cluster centers.
+        """Update minimum distances given cluster centers.
 
         Args:
-            cluster_centers (list[int]): indices of cluster centers
+            cluster_centers (list[int]): Indices of cluster centers.
         """
         if cluster_centers:
             centers = self.features[cluster_centers]
@@ -61,12 +75,13 @@ class KCenterGreedy:
                 self.min_distances = torch.minimum(self.min_distances, distance)
 
     def get_new_idx(self) -> int:
-        """Get index value of a sample.
-
-        Based on minimum distance of the cluster
+        """Get index of the next sample based on maximum minimum distance.
 
         Returns:
-            int: Sample index
+            int: Index of the selected sample.
+
+        Raises:
+            TypeError: If `self.min_distances` is not a torch.Tensor.
         """
         if isinstance(self.min_distances, torch.Tensor):
             idx = int(torch.argmax(self.min_distances).item())
@@ -77,13 +92,18 @@ class KCenterGreedy:
         return idx
 
     def select_coreset_idxs(self, selected_idxs: list[int] | None = None) -> list[int]:
-        """Greedily form a coreset to minimize the maximum distance of a cluster.
+        """Greedily form a coreset to minimize maximum distance to cluster centers.
 
         Args:
-            selected_idxs: index of samples already selected. Defaults to an empty set.
+            selected_idxs (list[int] | None, optional): Indices of pre-selected
+                samples. Defaults to None.
 
         Returns:
-          indices of samples selected to minimize distance to cluster centers
+            list[int]: Indices of samples selected to minimize distance to cluster
+                centers.
+
+        Raises:
+            ValueError: If a newly selected index is already in `selected_idxs`.
         """
         if selected_idxs is None:
             selected_idxs = []
@@ -113,15 +133,16 @@ class KCenterGreedy:
         """Select coreset from the embedding.
 
         Args:
-            selected_idxs: index of samples already selected. Defaults to an empty set.
+            selected_idxs (list[int] | None, optional): Indices of pre-selected
+                samples. Defaults to None.
 
         Returns:
-            Tensor: Output coreset
+            torch.Tensor: Selected coreset.
 
         Example:
-            >>> embedding.shape
-            torch.Size([219520, 1536])
-            >>> sampler = KCenterGreedy(...)
+            >>> import torch
+            >>> embedding = torch.randn(219520, 1536)
+            >>> sampler = KCenterGreedy(embedding=embedding, sampling_ratio=0.001)
             >>> coreset = sampler.sample_coreset()
             >>> coreset.shape
             torch.Size([219, 1536])

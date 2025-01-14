@@ -1,7 +1,7 @@
 # CLI
 
 ```{eval-rst}
-.. automodule:: anomalib.cli
+.. automodule:: anomalib.cli.cli
    :members:
    :show-inheritance:
 ```

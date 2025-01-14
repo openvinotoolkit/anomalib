@@ -1,4 +1,4 @@
-"""Test AnomalyModule module."""
+"""Test AnomalibModule module."""
 
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -6,29 +6,30 @@
 from pathlib import Path
 
 import pytest
+from torch import nn
 
-from anomalib.models.components.base import AnomalyModule
+from anomalib.models.components.base import AnomalibModule
 
 
 @pytest.fixture(scope="class")
 def model_config_folder_path() -> str:
     """Fixture that returns model config folder path."""
-    return "configs/model"
+    return "examples/configs/model"
 
 
-class TestAnomalyModule:
-    """Test AnomalyModule."""
+class TestAnomalibModule:
+    """Test AnomalibModule."""
 
     @pytest.fixture(autouse=True)
     def setup(self, model_config_folder_path: str) -> None:
-        """Setup test AnomalyModule."""
+        """Setup test AnomalibModule."""
         self.model_config_folder_path = model_config_folder_path
 
     @staticmethod
     def test_from_config_with_wrong_config_path() -> None:
-        """Test AnomalyModule.from_config with wrong model name."""
+        """Test AnomalibModule.from_config with wrong model name."""
         with pytest.raises(FileNotFoundError):
-            AnomalyModule.from_config(config_path="wrong_configs.yaml")
+            AnomalibModule.from_config(config_path="wrong_configs.yaml")
 
     @pytest.mark.parametrize(
         "model_name",
@@ -47,14 +48,70 @@ class TestAnomalyModule:
             "padim",
             "patchcore",
             "reverse_distillation",
-            "rkde",
             "stfpm",
             "uflow",
         ],
     )
     def test_from_config(self, model_name: str) -> None:
-        """Test AnomalyModule.from_config."""
+        """Test AnomalibModule.from_config."""
         config_path = Path(self.model_config_folder_path) / f"{model_name}.yaml"
-        model = AnomalyModule.from_config(config_path=config_path)
+        model = AnomalibModule.from_config(config_path=config_path)
         assert model is not None
-        assert isinstance(model, AnomalyModule)
+        assert isinstance(model, AnomalibModule)
+
+
+class TestResolveComponents:
+    """Test AnomalibModule._resolve_component."""
+
+    class DummyComponent(nn.Module):
+        """Dummy component class."""
+
+        def __init__(self, value: int) -> None:
+            self.value = value
+
+    @classmethod
+    def dummy_configure_component(cls) -> DummyComponent:
+        """Dummy configure component method, simulates configure_<component> methods in module."""
+        return cls.DummyComponent(value=1)
+
+    def test_component_passed(self) -> None:
+        """Test that the component is returned as is if it is an instance of the component type."""
+        component = self.DummyComponent(value=0)
+        resolved = AnomalibModule._resolve_component(  # noqa: SLF001
+            component=component,
+            component_type=self.DummyComponent,
+            default_callable=self.dummy_configure_component,
+        )
+        assert isinstance(resolved, self.DummyComponent)
+        assert resolved.value == 0
+
+    def test_component_true(self) -> None:
+        """Test that the default_callable is called if component is True."""
+        component = True
+        resolved = AnomalibModule._resolve_component(  # noqa: SLF001
+            component=component,
+            component_type=self.DummyComponent,
+            default_callable=self.dummy_configure_component,
+        )
+        assert isinstance(resolved, self.DummyComponent)
+        assert resolved.value == 1
+
+    def test_component_false(self) -> None:
+        """Test that None is returned if component is False."""
+        component = False
+        resolved = AnomalibModule._resolve_component(  # noqa: SLF001
+            component=component,
+            component_type=self.DummyComponent,
+            default_callable=self.dummy_configure_component,
+        )
+        assert resolved is None
+
+    def test_raises_type_error(self) -> None:
+        """Test that a TypeError is raised if the component is not of the correct type."""
+        component = 1
+        with pytest.raises(TypeError):
+            AnomalibModule._resolve_component(  # noqa: SLF001
+                component=component,
+                component_type=self.DummyComponent,
+                default_callable=self.dummy_configure_component,
+            )

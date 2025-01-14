@@ -1,6 +1,30 @@
-"""Anomalib Datasets."""
+"""Anomalib Datasets.
 
-# Copyright (C) 2022-2024 Intel Corporation
+This module provides datasets and data modules for anomaly detection tasks.
+
+The module contains:
+    - Data classes for representing different types of data (images, videos, etc.)
+    - Dataset classes for loading and processing data
+    - Data modules for use with PyTorch Lightning
+    - Helper functions for data loading and validation
+
+Example:
+    >>> from anomalib.data import get_datamodule
+    >>> from omegaconf import DictConfig
+    >>> config = DictConfig({
+    ...     "data": {
+    ...         "class_path": "MVTec",
+    ...         "init_args": {
+    ...             "root": "./datasets/MVTec",
+    ...             "category": "bottle",
+    ...             "image_size": (256, 256)
+    ...         }
+    ...     }
+    ... })
+    >>> datamodule = get_datamodule(config)
+"""
+
+# Copyright (C) 2022-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 import importlib
@@ -12,12 +36,35 @@ from omegaconf import DictConfig, ListConfig
 
 from anomalib.utils.config import to_tuple
 
-from .base import AnomalibDataModule, AnomalibDataset
-from .depth import DepthDataFormat, Folder3D, MVTec3D
-from .image import BTech, Datumaro, Folder, ImageDataFormat, Kolektor, MVTec, Visa
+# Dataclasses
+from .dataclasses import (
+    Batch,
+    DatasetItem,
+    DepthBatch,
+    DepthItem,
+    ImageBatch,
+    ImageItem,
+    InferenceBatch,
+    NumpyImageBatch,
+    NumpyImageItem,
+    NumpyVideoBatch,
+    NumpyVideoItem,
+    VideoBatch,
+    VideoItem,
+)
+
+# Datamodules
+from .datamodules.base import AnomalibDataModule
+from .datamodules.depth import DepthDataFormat, Folder3D, MVTec3D
+from .datamodules.image import BTech, Datumaro, Folder, ImageDataFormat, Kolektor, MVTec, Visa
+from .datamodules.video import Avenue, ShanghaiTech, UCSDped, VideoDataFormat
+
+# Datasets
+from .datasets import AnomalibDataset
+from .datasets.depth import Folder3DDataset, MVTec3DDataset
+from .datasets.image import BTechDataset, DatumaroDataset, FolderDataset, KolektorDataset, MVTecDataset, VisaDataset
+from .datasets.video import AvenueDataset, ShanghaiTechDataset, UCSDpedDataset
 from .predict import PredictDataset
-from .utils import LabelName
-from .video import Avenue, ShanghaiTech, UCSDped, VideoDataFormat
 
 logger = logging.getLogger(__name__)
 
@@ -28,17 +75,34 @@ DataFormat = Enum(  # type: ignore[misc]
 )
 
 
-class UnknownDatamoduleError(ModuleNotFoundError): ...
+class UnknownDatamoduleError(ModuleNotFoundError):
+    """Raised when a datamodule cannot be found."""
 
 
 def get_datamodule(config: DictConfig | ListConfig | dict) -> AnomalibDataModule:
-    """Get Anomaly Datamodule.
+    """Get Anomaly Datamodule from config.
 
     Args:
-        config (DictConfig | ListConfig | dict): Configuration of the anomaly model.
+        config: Configuration for the anomaly model. Can be either:
+            - DictConfig from OmegaConf
+            - ListConfig from OmegaConf
+            - Python dictionary
 
     Returns:
-        PyTorch Lightning DataModule
+        PyTorch Lightning DataModule configured according to the input.
+
+    Raises:
+        UnknownDatamoduleError: If the specified datamodule cannot be found.
+
+    Example:
+        >>> from omegaconf import DictConfig
+        >>> config = DictConfig({
+        ...     "data": {
+        ...         "class_path": "MVTec",
+        ...         "init_args": {"root": "./datasets/MVTec"}
+        ...     }
+        ... })
+        >>> datamodule = get_datamodule(config)
     """
     logger.info("Loading the datamodule")
 
@@ -63,7 +127,35 @@ def get_datamodule(config: DictConfig | ListConfig | dict) -> AnomalibDataModule
 
 
 __all__ = [
+    # Anomalib dataclasses
+    "DatasetItem",
+    "Batch",
+    "InferenceBatch",
+    "ImageItem",
+    "ImageBatch",
+    "VideoItem",
+    "VideoBatch",
+    "DepthItem",
+    "DepthBatch",
+    "NumpyImageItem",
+    "NumpyImageBatch",
+    "NumpyVideoItem",
+    "NumpyVideoBatch",
+    # Anomalib datasets
     "AnomalibDataset",
+    "Folder3DDataset",
+    "MVTec3DDataset",
+    "BTechDataset",
+    "DatumaroDataset",
+    "FolderDataset",
+    "KolektorDataset",
+    "MVTecDataset",
+    "VisaDataset",
+    "AvenueDataset",
+    "ShanghaiTechDataset",
+    "UCSDpedDataset",
+    "PredictDataset",
+    # Anomalib datamodules
     "AnomalibDataModule",
     "DepthDataFormat",
     "ImageDataFormat",
@@ -73,7 +165,6 @@ __all__ = [
     "Datumaro",
     "Folder",
     "Folder3D",
-    "PredictDataset",
     "Kolektor",
     "MVTec",
     "MVTec3D",
@@ -82,4 +173,5 @@ __all__ = [
     "ShanghaiTech",
     "Visa",
     "LabelName",
+    "PredictDataset",
 ]

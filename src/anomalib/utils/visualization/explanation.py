@@ -1,6 +1,31 @@
-"""Explanation visualization generator.
+"""Explanation visualization generator for model interpretability.
 
-Note: This is a temporary visualizer, and will be replaced with the new visualizer in the future.
+This module provides utilities for visualizing model explanations and
+interpretability results. The key components include:
+
+    - Text-based explanations rendered on images
+    - Label visualization for model decisions
+    - Combined visualization with original image and explanation
+
+Example:
+    >>> from anomalib.utils.visualization import ExplanationVisualizer
+    >>> # Create visualizer
+    >>> visualizer = ExplanationVisualizer()
+    >>> # Generate visualization
+    >>> results = visualizer.generate(
+    ...     outputs={
+    ...         "image": images,
+    ...         "explanation": explanations,
+    ...         "image_path": paths
+    ...     }
+    ... )
+
+Note:
+    This is a temporary visualizer that will be replaced with an enhanced
+    version in a future release.
+
+The module ensures consistent visualization of model explanations across
+different interpretability approaches.
 """
 
 # Copyright (C) 2024 Intel Corporation

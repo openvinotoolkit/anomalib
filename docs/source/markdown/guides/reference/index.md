@@ -2,86 +2,138 @@
 
 This section contains the API and CLI reference for anomalib.
 
-::::{grid} 1 2 2 3
-:margin: 1 1 0 0
-:gutter: 1
+## Core Components
+
+::::{grid} 2 2 2 3
+:gutter: 2
+:padding: 1
 
 :::{grid-item-card} {octicon}`database` Data
 :link: ./data/index
 :link-type: doc
 
-Learn more about anomalib datamodules.
+Core component for data handling and datasets.
 :::
 
 :::{grid-item-card} {octicon}`dependabot` Models
 :link: ./models/index
 :link-type: doc
 
-Learn more about image and video models.
+Anomaly detection model implementations.
 :::
 
 :::{grid-item-card} {octicon}`gear` Engine
 :link: ./engine/index
 :link-type: doc
 
-Learn more about anomalib Engine.
+Core training and inference engine.
+:::
+::::
+
+## Processing & Analysis
+
+::::{grid} 2 2 2 3
+:gutter: 2
+:padding: 1
+
+:::{grid-item-card} {octicon}`filter` Pre-processing
+:link: ./pre_processing/index
+:link-type: doc
+
+Data preparation and augmentation.
+:::
+
+:::{grid-item-card} {octicon}`filter` Post-processing
+:link: ./post_processing/index
+:link-type: doc
+
+Anomaly map processing and thresholding.
 :::
 
 :::{grid-item-card} {octicon}`meter` Metrics
 :link: ./metrics/index
 :link-type: doc
 
-Learn more about anomalib metrics
+Performance evaluation metrics.
 :::
+::::
+
+## Framework Components
+
+::::{grid} 2 2 2 3
+:gutter: 2
+:padding: 1
 
 :::{grid-item-card} {octicon}`graph` Loggers
 :link: ./loggers/index
 :link-type: doc
 
-Learn more about anomalib loggers
+Experiment logging and tracking.
 :::
 
 :::{grid-item-card} {octicon}`gear` Callbacks
 :link: ./callbacks/index
 :link-type: doc
 
-Learn more about anomalib callbacks
-:::
-
-:::{grid-item-card} {octicon}`code-square` CLI
-:link: ./cli/index
-:link-type: doc
-
-Learn more about anomalib CLI
-:::
-
-:::{grid-item-card} {octicon}`cpu` Deployment
-:link: ./deploy/index
-:link-type: doc
-
-Learn more about anomalib CLI
+Training callbacks and hooks.
 :::
 
 :::{grid-item-card} {octicon}`workflow` Pipelines
 :link: ./pipelines/index
 :link-type: doc
 
-Learn more about anomalib hpo, sweep and benchmarking pipelines
+Training and optimization pipelines.
 :::
 
+:::{grid-item-card} {octicon}`image` Visualization
+:link: ./visualization/index
+:link-type: doc
+
+Result visualization tools.
+:::
+
+:::{grid-item-card} {octicon}`tools` Utils
+:link: ./utils/index
+:link-type: doc
+
+Utility functions and helpers.
+:::
+
+:::{grid-item-card} {octicon}`terminal` CLI
+:link: ./cli/index
+:link-type: doc
+
+Command line interface tools.
+:::
+::::
+
+::::{grid} 1
+:gutter: 2
+:padding: 1
+
+:::{grid-item-card} {octicon}`cpu` Inference
+:link: ./deploy/index
+:link-type: doc
+
+Model inference and optimization.
+:::
 ::::
 
 ```{toctree}
-:caption: Data
+:caption: Reference
 :hidden:
 
 ./data/index
 ./models/index
 ./engine/index
+./pre_processing/index
+./post_processing/index
 ./metrics/index
 ./loggers/index
 ./callbacks/index
+./pipelines/index
+./visualization/index
+./utils/index
 ./cli/index
 ./deploy/index
-./pipelines/index
 ```

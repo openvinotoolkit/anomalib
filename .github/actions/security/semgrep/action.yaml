@@ -1,0 +1,155 @@
+# Semgrep Scanner Action
+#
+# This composite action executes static analysis security testing using Semgrep,
+# providing comprehensive code analysis capabilities.
+#
+# Key Features:
+# - Multi-language support
+# - Custom rule sets
+# - Incremental scanning
+# - SARIF reporting
+# - Performance optimization
+#
+# Process Stages:
+# 1. Environment Setup:
+#    - Python installation
+#    - Semgrep configuration
+#    - Rule preparation
+#
+# 2. Scan Execution:
+#    - Target selection
+#    - Rule application
+#    - Code analysis
+#
+# 3. Results Processing:
+#    - Report generation
+#    - Finding analysis
+#    - Output formatting
+#
+# Required Inputs:
+# - scan-scope: Files to scan
+# - config: Rule configuration
+# - severity: Issue threshold
+#
+# Outputs:
+# - scan_result: Scan exit code
+# - report_path: Results location
+#
+# Example Usage:
+# steps:
+#   - uses: ./.github/actions/security/semgrep
+#     with:
+#       scan-scope: "changed"
+#       config: "p/owasp-top-ten"
+#
+# Note: Consider using custom rule sets for project-specific checks
+
+name: "Semgrep SAST Scan"
+description: "Runs Semgrep security scanner with configurable options"
+
+inputs:
+  scan-scope:
+    description: "Scope of files to scan (all/changed)"
+    required: false
+    default: "changed"
+  paths:
+    description: "Paths to scan when using all scope"
+    required: false
+    default: "."
+  config:
+    description: "Semgrep rules or config to use"
+    required: false
+    default: "p/default"
+  severity:
+    description: "Minimum severity level to report (ERROR/WARNING/INFO)"
+    required: false
+    default: "WARNING"
+  timeout:
+    description: "Maximum time to run semgrep in seconds"
+    required: false
+    default: "300"
+  output-format:
+    description: "Format for scan results (text/json/sarif)"
+    required: false
+    default: "sarif"
+  fail-on-findings:
+    description: "Whether to fail the action if issues are found"
+    required: false
+    default: "true"
+
+outputs:
+  scan_result:
+    description: "Exit code of the Semgrep scan"
+    value: ${{ steps.run-semgrep.outputs.exit_code }}
+  report_path:
+    description: "Path to the generated report file"
+    value: ${{ steps.run-semgrep.outputs.report_path }}
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.10"
+
+    - name: Install Semgrep
+      shell: bash
+      run: |
+        python -m pip install --upgrade pip
+        pip install semgrep
+
+    - name: Get changed files
+      if: inputs.scan-scope == 'changed'
+      id: changed-files
+      uses: tj-actions/changed-files@v41
+      with:
+        files: |
+          **/*.*
+
+    - name: Run Semgrep scan
+      id: run-semgrep
+      shell: bash
+      run: |
+        # Map standard severity levels to Semgrep's levels
+        case "${{ inputs.severity }}" in
+          "LOW")
+            SEMGREP_SEVERITY="INFO"
+            ;;
+          "MEDIUM")
+            SEMGREP_SEVERITY="WARNING"
+            ;;
+          "HIGH"|"CRITICAL")
+            SEMGREP_SEVERITY="ERROR"
+            ;;
+          *)
+            SEMGREP_SEVERITY="WARNING"
+            ;;
+        esac
+
+        # Create results directory
+        mkdir -p security-results/semgrep
+
+        REPORT_FILE="security-results/semgrep/semgrep-results.${{ inputs.output-format }}"
+
+        if [[ "${{ inputs.scan-scope }}" == "changed" && -n "${{ steps.changed-files.outputs.all_changed_files }}" ]]; then
+          echo "Running Semgrep on changed files"
+          FILES="${{ steps.changed-files.outputs.all_changed_files }}"
+        else
+          echo "Running Semgrep on all files in ${{ inputs.paths }}"
+          FILES="${{ inputs.paths }}"
+        fi
+
+        semgrep \
+          --config ${{ inputs.config }} \
+          --severity $SEMGREP_SEVERITY \
+          --timeout ${{ inputs.timeout }} \
+          --${{ inputs.output-format }} \
+          -o "${REPORT_FILE}" \
+          ${FILES} || echo "exit_code=$?" >> $GITHUB_OUTPUT
+
+        echo "report_path=${REPORT_FILE}" >> $GITHUB_OUTPUT
+
+        if [[ "${{ inputs.fail-on-findings }}" == "true" && -n "$exit_code" && "$exit_code" != "0" ]]; then
+          exit $exit_code
+        fi

@@ -1,18 +1,41 @@
-# Migrating from 0.\* to 1.0
+# Migration Guide
 
-## Overview
+::::{grid} 1 2 2 2
+:gutter: 2
+:padding: 1
+
+:::{grid-item-card} {octicon}`versions` v0.\* to v1.0
+:link: migrating-from-0-to-1-0
+:link-type: ref
+
+Learn how to migrate from v0.\* to v1.0, including changes to configuration, CLI, and API.
+:::
+
+:::{grid-item-card} {octicon}`versions` v1.0 to v2.0
+:link: migrating-from-1-0-to-2-0
+:link-type: ref
+
+Learn how to migrate from v1.0 to v2.0.
+:::
+::::
+
+(migrating-from-0-to-1-0)=
+
+## Migrating from 0.\* to 1.0
+
+### Overview
 
 The 1.0 release of the Anomaly Detection Library (AnomalyLib) introduces several
 changes to the library. This guide provides an overview of the changes and how
 to migrate from 0.\* to 1.0.
 
-## Installation
+### Installation
 
 For installation instructions, refer to the [installation guide](anomalib.md).
 
-## Changes to the CLI
+### Changes to the CLI
 
-### Upgrading the Configuration
+#### Upgrading the Configuration
 
 There are several changes to the configuration of Anomalib. The configuration
 file has been updated to include new parameters and remove deprecated parameters.
@@ -33,9 +56,9 @@ This script will ensure that the configuration file is updated to the 1.0 format
 In the following sections, we will discuss the changes to the configuration file
 in more detail.
 
-### Changes to the Configuration File
+#### Changes to the Configuration File
 
-#### Data
+##### Data
 
 The `data` section of the configuration file has been updated such that the args
 can be directly used to instantiate the data object. Below are the differences
@@ -91,7 +114,7 @@ Here is the summary of the changes to the configuration file:
   removed in the new configuration. v1.0.0 does not support tiling. This feature
   will be added back in a future release.
 
-#### Model
+##### Model
 
 Similar to data configuration, the `model` section of the configuration file has
 been updated such that the args can be directly used to instantiate the model object.
@@ -130,7 +153,7 @@ Here is the summary of the changes to the configuration file:
 - Normalization Method: The `normalization_method` key is removed from the `model`
   section and moved to a separate `normalization` section in the new configuration.
 
-#### Metrics
+##### Metrics
 
 The `metrics` section of the configuration file has been updated such that the
 args can be directly used to instantiate the metrics object. Below are the differences
@@ -162,3 +185,11 @@ Here is the summary of the changes to the configuration file:
   loaded configuration system.
 - Threshold Method: The `method` key is removed from the `threshold` section and
   moved to a separate `class_path` section in the new configuration.
+
+(migrating-from-1-0-to-2-0)=
+
+## Migrating from 1.0 to 2.0
+
+### Overview
+
+The 2.0 release of Anomalib introduces several changes to the library. This guide will be updated with migration instructions when v2.0 is released.

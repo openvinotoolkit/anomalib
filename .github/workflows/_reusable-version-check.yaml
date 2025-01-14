@@ -1,0 +1,104 @@
+# Version Check Workflow
+#
+# This reusable workflow validates version strings and determines their release type,
+# supporting both explicit version inputs and git tags.
+#
+# Key Features:
+# - Semantic version validation
+# - Pre-release version support
+# - Git tag compatibility
+# - Version format enforcement
+# - Configurable pre-release rules
+#
+# Process Stages:
+# 1. Version Extraction:
+#    - Input parsing
+#    - Git tag reading
+#    - Format validation
+#
+# 2. Version Analysis:
+#    - Semantic version parsing
+#    - Pre-release detection
+#    - Format compliance check
+#
+# 3. Validation Rules:
+#    - Version prefix check
+#    - Component validation
+#    - Pre-release acceptance
+#
+# Required Inputs:
+# - version: Version string to validate (optional)
+# - allow-prerelease: Allow pre-release versions (default: true)
+#
+# Outputs:
+# - version: Validated version string
+# - is_prerelease: Whether version is a pre-release
+#
+# Example Usage:
+# 1. Basic Version Check:
+#    jobs:
+#      validate:
+#        uses: ./.github/workflows/_reusable-version-check.yaml
+#        with:
+#          version: "v1.2.3"
+#
+# 2. Pre-release Check:
+#    jobs:
+#      validate:
+#        uses: ./.github/workflows/_reusable-version-check.yaml
+#        with:
+#          version: "v1.2.3-rc1"
+#          allow-prerelease: true
+#
+# Note: Version must follow format vX.Y.Z or vX.Y.Z-rcN
+
+name: Reusable Version Check
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: "Version to validate"
+        required: false
+        type: string
+      allow-prerelease:
+        description: "Allow pre-release versions"
+        type: boolean
+        default: true
+    outputs:
+      version:
+        description: "Validated version"
+        value: ${{ jobs.validate.outputs.version }}
+      is_prerelease:
+        description: "Whether version is a pre-release"
+        value: ${{ jobs.validate.outputs.is_prerelease }}
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.get-version.outputs.version }}
+      is_prerelease: ${{ steps.check-prerelease.outputs.is_prerelease }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate version
+        id: get-version
+        run: |
+          VERSION="${{ inputs.version || github.ref_name }}"
+          if ! [[ $VERSION =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-rc[0-9]+)?$ ]]; then
+            echo "::error::Invalid version format. Must be vX.Y.Z or vX.Y.Z-rcN"
+            exit 1
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+      - name: Check pre-release
+        id: check-prerelease
+        run: |
+          if [[ "${{ steps.get-version.outputs.version }}" =~ -rc[0-9]+$ ]]; then
+            if [[ "${{ inputs.allow-prerelease }}" != "true" ]]; then
+              echo "::error::Pre-release versions are not allowed"
+              exit 1
+            fi
+            echo "is_prerelease=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_prerelease=false" >> $GITHUB_OUTPUT
+          fi
