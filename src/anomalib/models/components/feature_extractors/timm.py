@@ -29,9 +29,6 @@ from collections.abc import Callable, Sequence
 
 import timm
 import torch
-from timm.models._registry import _model_pretrained_cfgs as model_pretrained_cfgs
-from timm.models._registry import generate_default_cfgs
-from timm.models.resnet import _cfg as resnet_cfg_fn
 from torch import nn
 
 logger = logging.getLogger(__name__)
@@ -44,6 +41,9 @@ def register_model_with_adv_trained_weights_tags(
     cfg_fn: Callable,
 ) -> None:
     """Register adversarially trained model weights with a URL."""
+    from timm.models._registry import _model_pretrained_cfgs as model_pretrained_cfgs
+    from timm.models._registry import generate_default_cfgs
+
     origin_url = "https://huggingface.co/madrylab/robust-imagenet-models"
     paper_ids = "arXiv:2007.08489"
 
@@ -70,6 +70,8 @@ def register_model_with_adv_trained_weights_tags(
 
 def register_in_bulk() -> None:
     """Register adversarially trained model weights in timm."""
+    from timm.models.resnet import _cfg as resnet_cfg_fn
+
     l2_epsilons = [0, 0.01, 0.03, 0.05, 0.1, 0.25, 0.5, 1, 3, 5]
     linf_epsilons = [0, 0.5, 1, 2, 4, 8]
     model_names = ["resnet18", "resnet50", "wide_resnet50_2"]
@@ -89,8 +91,18 @@ def register_in_bulk() -> None:
         )
 
 
+def try_register_in_bulk() -> None:
+    """Catch the error in case we cannot register new weights in timm due to changes of internal APIs."""
+    try:
+        register_in_bulk()
+    except ImportError as e:
+        logger.warning(
+            f"Adversarially trained backbones are not available. An error occured when registering weights: {e}",
+        )
+
+
 # We will register model weights only once even if we import the module repeatedly, because it is a singleton.
-register_in_bulk()
+try_register_in_bulk()
 
 
 class TimmFeatureExtractor(nn.Module):
