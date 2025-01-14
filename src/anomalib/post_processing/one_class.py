@@ -273,8 +273,7 @@ class OneClassPostProcessor(PostProcessor):
         if preds is None:
             return None
         preds = ((preds - threshold) / (norm_max - norm_min)) + 0.5
-        preds = torch.minimum(preds, torch.tensor(1))
-        return torch.maximum(preds, torch.tensor(0))
+        return preds.clamp(min=0, max=1)
 
     @property
     def normalized_image_threshold(self) -> float:
