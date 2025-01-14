@@ -69,20 +69,16 @@ def register_model_with_adv_trained_weights_tags(
 def register_in_bulk() -> None:
     """Register adversarially trained model weights in timm."""
     l2_epsilons = [0, 0.01, 0.03, 0.05, 0.1, 0.25, 0.5, 1, 3, 5]
-    model_names_l2 = ["resnet18", "resnet50", "wide_resnet50_2", "wideresnet50_4"]
+    linf_epsilons = [0, 0.5, 1, 2, 4, 8]
+    model_names = ["resnet18", "resnet50", "wide_resnet50_2"]
     cfg_fn = resnet_cfg_fn
-    for model_name in model_names_l2:
+    for model_name in model_names:
         register_model_with_adv_trained_weights_tags(
             model_name=model_name,
             epsilons=l2_epsilons,
             lp="l2",
             cfg_fn=cfg_fn,
         )
-
-    linf_epsilons = [0, 0.5, 1, 2, 4, 8]
-    model_names_linf = ["resnet18", "resnet50", "wide_resnet50_2"]
-    cfg_fn = resnet_cfg_fn
-    for model_name in model_names_linf:
         register_model_with_adv_trained_weights_tags(
             model_name=model_name,
             epsilons=linf_epsilons,
@@ -91,7 +87,7 @@ def register_in_bulk() -> None:
         )
 
 
-# We will only register model weights only once even if we import the module repeatedly, because it is a singleton.
+# We will register model weights only once even if we import the module repeatedly, because it is a singleton.
 register_in_bulk()
 
 
