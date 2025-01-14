@@ -113,6 +113,7 @@ class AnomalibMetric:
         self.fields = fields
         self.name = prefix + self.__class__.__name__
         self.strict = strict
+        self.__update_count = 0  # keeps track of the update calls of the wrapper class
         super().__init__(**kwargs)
 
     def __init_subclass__(cls, **kwargs) -> None:
@@ -134,14 +135,17 @@ class AnomalibMetric:
         Raises:
             ValueError: If batch is missing any required fields.
         """
+        self.__update_count += 1
         for key in self.fields:
             if not hasattr(batch, key):
                 msg = f"Batch object is missing required field: {key}"
                 raise ValueError(msg)
             if getattr(batch, key, None) is None:
                 if self.strict:
-                    msg = f"Field {key} in batch object is None"
+                    msg = f"Cannot update metric of type {type(self)}. Field {key} in batch object is None"
                     raise ValueError(msg)
+                # we need to decrement the update count of the super class
+                # if we are not actually updating the metric states.
                 self._update_count -= 1  # type: ignore[attr-defined]
                 return
         values = [getattr(batch, key) for key in self.fields]
@@ -158,6 +162,11 @@ class AnomalibMetric:
         if self._update_count == 0 and not self.strict:  # type: ignore[attr-defined]
             return None
         return super().compute()  # type: ignore[misc]
+
+    @property
+    def update_called(self) -> bool:
+        """Check if the update method has been called."""
+        return self.__update_count > 0
 
 
 def create_anomalib_metric(metric_cls: type) -> type:
