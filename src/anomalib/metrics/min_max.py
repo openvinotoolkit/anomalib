@@ -50,10 +50,10 @@ class _MinMax(Metric):
         max (torch.Tensor): Running maximum value seen across all batches
 
     Example:
-        >>> from anomalib.metrics import MinMax
+        >>> from anomalib.metrics.min_max import _MinMax
         >>> import torch
         >>> # Create metric
-        >>> minmax = MinMax()
+        >>> minmax = _MinMax()
         >>> # Update with batches
         >>> batch1 = torch.tensor([0.1, 0.2, 0.3])
         >>> batch2 = torch.tensor([0.2, 0.4, 0.5])
