@@ -69,8 +69,8 @@ class _MinMax(Metric):
 
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
-        self.add_state("min", torch.tensor(float("inf")), persistent=True, dist_reduce_fx="min")
-        self.add_state("max", torch.tensor(float("-inf")), persistent=True, dist_reduce_fx="max")
+        self.add_state("min", torch.tensor(float("inf")), dist_reduce_fx="min")
+        self.add_state("max", torch.tensor(float("-inf")), dist_reduce_fx="max")
 
         self.min = torch.tensor(float("inf"))
         self.max = torch.tensor(float("-inf"))
