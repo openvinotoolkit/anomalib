@@ -125,7 +125,11 @@ class PadimModel(nn.Module):
             pre_trained=pre_trained,
         ).eval()
         self.n_features_original = sum(self.feature_extractor.out_dims)
-        self.n_features = n_features or _N_FEATURES_DEFAULTS.get(self.backbone)
+
+        # The backbone tag may include weights, e.g. resnet18.adv_l2_0.1
+        backbone_name = self.backbone.split(".")[0]
+        self.n_features = n_features or _N_FEATURES_DEFAULTS.get(backbone_name)
+
         if self.n_features is None:
             msg = (
                 f"n_features must be specified for backbone {self.backbone}. "
