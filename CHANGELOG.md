@@ -8,7 +8,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+- Add adversarially trained backbone models by @mzweilin in https://github.com/openvinotoolkit/anomalib/pull/2509
+
 ### Removed
+
+- Remove the `__AT__` token in backbone names in favor of the timm style names in https://github.com/openvinotoolkit/anomalib/pull/2509
 
 ### Changed
 
