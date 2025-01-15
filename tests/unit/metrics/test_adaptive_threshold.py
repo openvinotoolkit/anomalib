@@ -18,7 +18,7 @@ from anomalib.metrics import F1AdaptiveThreshold
 )
 def test_adaptive_threshold(labels: torch.Tensor, preds: torch.Tensor, target_threshold: int | float) -> None:
     """Test if the adaptive threshold computation returns the desired value."""
-    adaptive_threshold = F1AdaptiveThreshold(default_value=0.5)
+    adaptive_threshold = F1AdaptiveThreshold()
     adaptive_threshold.update(preds, labels)
     threshold_value = adaptive_threshold.compute()
 

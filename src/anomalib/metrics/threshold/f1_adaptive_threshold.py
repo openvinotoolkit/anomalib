@@ -46,14 +46,6 @@ class F1AdaptiveThreshold(BinaryPrecisionRecallCurve, Threshold):
     This class computes and stores the optimal threshold for converting anomaly
     scores to binary predictions by maximizing the F1 score on validation data.
 
-    Args:
-        default_value: Initial threshold value used before computation.
-            Defaults to ``0.5``.
-        **kwargs: Additional arguments passed to parent classes.
-
-    Attributes:
-        value (torch.Tensor): Current threshold value.
-
     Example:
         >>> from anomalib.metrics import F1AdaptiveThreshold
         >>> import torch
@@ -67,12 +59,6 @@ class F1AdaptiveThreshold(BinaryPrecisionRecallCurve, Threshold):
         >>> print(f"Optimal threshold: {optimal_value:.4f}")
         Optimal threshold: 0.5000
     """
-
-    def __init__(self, default_value: float = 0.5, **kwargs) -> None:
-        super().__init__(**kwargs)
-
-        self.add_state("value", default=torch.tensor(default_value), persistent=True)
-        self.value = torch.tensor(default_value)
 
     def compute(self) -> torch.Tensor:
         """Compute optimal threshold by maximizing F1 score.
@@ -105,18 +91,7 @@ class F1AdaptiveThreshold(BinaryPrecisionRecallCurve, Threshold):
 
         precision, recall, thresholds = super().compute()
         f1_score = (2 * precision * recall) / (precision + recall + 1e-10)
-        if thresholds.dim() == 0:
-            # special case where recall is 1.0 even for the highest threshold.
-            # In this case 'thresholds' will be scalar.
-            self.value = thresholds
-        else:
-            self.value = thresholds[torch.argmax(f1_score)]
-        return self.value
 
-    def __repr__(self) -> str:
-        """Return string representation including current threshold value.
-
-        Returns:
-            str: String in format "ClassName(value=X.XX)"
-        """
-        return f"{super().__repr__()} (value={self.value:.2f})"
+        # account for special case where recall is 1.0 even for the highest threshold.
+        # In this case 'thresholds' will be scalar.
+        return thresholds if thresholds.dim() == 0 else thresholds[torch.argmax(f1_score)]
