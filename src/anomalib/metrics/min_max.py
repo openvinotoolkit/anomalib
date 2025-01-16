@@ -67,8 +67,8 @@ class MinMax(Metric):
 
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
-        self.add_state("min", torch.tensor(float("inf")), persistent=True)
-        self.add_state("max", torch.tensor(float("-inf")), persistent=True)
+        self.add_state("min", torch.tensor(float("inf")), persistent=True, dist_reduce_fx="min")
+        self.add_state("max", torch.tensor(float("-inf")), persistent=True, dist_reduce_fx="max")
 
         self.min = torch.tensor(float("inf"))
         self.max = torch.tensor(float("-inf"))
@@ -84,8 +84,8 @@ class MinMax(Metric):
         """
         del args, kwargs  # These variables are not used.
 
-        self.max = torch.max(self.max, torch.max(predictions))
         self.min = torch.min(self.min, torch.min(predictions))
+        self.max = torch.max(self.min, torch.max(predictions))
 
     def compute(self) -> tuple[torch.Tensor, torch.Tensor]:
         """Compute final minimum and maximum values.
