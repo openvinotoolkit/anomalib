@@ -318,7 +318,7 @@ def generate_output_filename(
     # Find the position of the dataset name in the path
     try:
         dataset_index = next(i for i, part in enumerate(input_path.parts) if part.lower() == dataset_name.lower())
-    except ValueError:
+    except StopIteration:
         msg = f"Dataset name '{dataset_name}' not found in the input path."
         raise ValueError(msg) from None
 
