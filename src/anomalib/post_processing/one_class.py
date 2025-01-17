@@ -102,9 +102,9 @@ class OneClassPostProcessor(PostProcessor):
             **kwargs: Arbitrary keyword arguments.
         """
         del trainer, pl_module, args, kwargs  # Unused arguments.
-        if outputs.pred_score is not None:
+        if outputs.pred_score is not None and outputs.gt_label is not None:
             self._image_threshold.update(outputs.pred_score, outputs.gt_label)
-        if outputs.anomaly_map is not None:
+        if outputs.anomaly_map is not None and outputs.gt_mask is not None:
             self._pixel_threshold.update(outputs.anomaly_map, outputs.gt_mask)
         if outputs.pred_score is not None:
             self._image_normalization_stats.update(outputs.pred_score)
