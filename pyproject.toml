@@ -191,7 +191,6 @@ lint.ignore = [
     # End of disable rules
 
     # flake8-annotations
-    "ANN101", # Missing-type-self
     "ANN002", # Missing type annotation for *args
     "ANN003", # Missing type annotation for **kwargs
 
