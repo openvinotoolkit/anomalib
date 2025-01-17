@@ -33,7 +33,6 @@ from abc import ABC, abstractmethod
 import torch
 from torch import Tensor, nn
 
-from anomalib.metrics.min_max import MinMax
 from anomalib.models.components.base import DynamicBufferMixin
 from anomalib.models.components.cluster.gmm import GaussianMixture
 
@@ -296,10 +295,14 @@ class GroupedKNNEstimator(DynamicBufferMixin, BaseDensityEstimator):
         self.n_neighbors = n_neighbors
         self.feature_collection: dict[str, list[torch.Tensor]] = {}
         self.group_index: dict[str, int] = {}
-        self.normalization_statistics = MinMax()
 
         self.register_buffer("memory_bank", Tensor())
-        self.memory_bank: torch.Tensor = Tensor()
+        self.register_buffer("min", torch.tensor(torch.inf))
+        self.register_buffer("max", torch.tensor(-torch.inf))
+
+        self.memory_bank: torch.Tensor
+        self.min: torch.Tensor
+        self.max: torch.Tensor
 
     def update(self, features: torch.Tensor, group: str | None = None) -> None:
         """Update the internal feature bank while keeping track of the group.
@@ -428,9 +431,8 @@ class GroupedKNNEstimator(DynamicBufferMixin, BaseDensityEstimator):
         """
         for group, features in grouped_features.items():
             distances = self.predict(features, group, normalize=False)
-            self.normalization_statistics.update(distances)
-
-        self.normalization_statistics.compute()
+            self.min = torch.min(self.min, torch.min(distances))
+            self.max = torch.max(self.min, torch.max(distances))
 
     def _normalize(self, distances: torch.Tensor) -> torch.Tensor:
         """Normalize distance predictions.
@@ -441,9 +443,7 @@ class GroupedKNNEstimator(DynamicBufferMixin, BaseDensityEstimator):
         Returns:
             torch.Tensor: Normalized distances.
         """
-        return (distances - self.normalization_statistics.min) / (
-            self.normalization_statistics.max - self.normalization_statistics.min
-        )
+        return (distances - self.min) / (self.max - self.min)
 
 
 class GMMEstimator(BaseDensityEstimator):
@@ -474,7 +474,11 @@ class GMMEstimator(BaseDensityEstimator):
         self.gmm = GaussianMixture(n_components=n_components)
         self.memory_bank: list[torch.Tensor] | torch.Tensor = []
 
-        self.normalization_statistics = MinMax()
+        self.register_buffer("min", torch.tensor(torch.inf))
+        self.register_buffer("max", torch.tensor(-torch.inf))
+
+        self.min: torch.Tensor
+        self.max: torch.Tensor
 
     def update(self, features: torch.Tensor, group: str | None = None) -> None:
         """Update the feature bank with new features.
@@ -528,8 +532,8 @@ class GMMEstimator(BaseDensityEstimator):
         statistics used for score normalization during inference.
         """
         training_scores = self.predict(self.memory_bank, normalize=False)
-        self.normalization_statistics.update(training_scores)
-        self.normalization_statistics.compute()
+        self.min = torch.min(self.min, torch.min(training_scores))
+        self.max = torch.max(self.min, torch.max(training_scores))
 
     def _normalize(self, density: torch.Tensor) -> torch.Tensor:
         """Normalize anomaly scores using min-max statistics.
@@ -540,6 +544,4 @@ class GMMEstimator(BaseDensityEstimator):
         Returns:
             torch.Tensor: Normalized anomaly scores of shape ``(N,)``.
         """
-        return (density - self.normalization_statistics.min) / (
-            self.normalization_statistics.max - self.normalization_statistics.min
-        )
+        return (density - self.min) / (self.max - self.min)

@@ -33,6 +33,7 @@ import logging
 
 import torch
 
+from anomalib.metrics import AnomalibMetric
 from anomalib.metrics.precision_recall_curve import BinaryPrecisionRecallCurve
 
 from .base import Threshold
@@ -40,7 +41,7 @@ from .base import Threshold
 logger = logging.getLogger(__name__)
 
 
-class F1AdaptiveThreshold(BinaryPrecisionRecallCurve, Threshold):
+class _F1AdaptiveThreshold(BinaryPrecisionRecallCurve, Threshold):
     """Adaptive threshold that maximizes F1 score.
 
     This class computes and stores the optimal threshold for converting anomaly
@@ -95,3 +96,7 @@ class F1AdaptiveThreshold(BinaryPrecisionRecallCurve, Threshold):
         # account for special case where recall is 1.0 even for the highest threshold.
         # In this case 'thresholds' will be scalar.
         return thresholds if thresholds.dim() == 0 else thresholds[torch.argmax(f1_score)]
+
+
+class F1AdaptiveThreshold(AnomalibMetric, _F1AdaptiveThreshold):  # type: ignore[misc]
+    """Wrapper to add AnomalibMetric functionality to F1AdaptiveThreshold metric."""
