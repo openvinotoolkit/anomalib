@@ -80,11 +80,13 @@ class ExportMixin:
     def to_torch(
         self,
         export_root: Path | str,
+        model_file_name: str = "model",
     ) -> Path:
         """Export model to PyTorch format.
 
         Args:
             export_root (Path | str): Path to the output folder
+            model_file_name (str): Name of the exported model
 
         Returns:
             Path: Path to the exported PyTorch model (.pt file)
@@ -99,7 +101,7 @@ class ExportMixin:
             PosixPath('./exports/weights/torch/model.pt')
         """
         export_root = _create_export_root(export_root, ExportType.TORCH)
-        pt_model_path = export_root / "model.pt"
+        pt_model_path = export_root / (model_file_name + ".pt")
         torch.save(
             obj={"model": self},
             f=pt_model_path,
@@ -109,12 +111,14 @@ class ExportMixin:
     def to_onnx(
         self,
         export_root: Path | str,
+        model_file_name: str = "model",
         input_size: tuple[int, int] | None = None,
     ) -> Path:
         """Export model to ONNX format.
 
         Args:
             export_root (Path | str): Path to the output folder
+            model_file_name (str): Name of the exported model.
             input_size (tuple[int, int] | None): Input image dimensions (height, width).
                 If ``None``, uses dynamic input shape. Defaults to ``None``
 
@@ -143,7 +147,7 @@ class ExportMixin:
             if input_size
             else {"input": {0: "batch_size", 2: "height", 3: "weight"}, "output": {0: "batch_size"}}
         )
-        onnx_path = export_root / "model.onnx"
+        onnx_path = export_root / (model_file_name + ".onnx")
         # apply pass through the model to get the output names
         assert isinstance(self, LightningModule)  # mypy
         output_names = [name for name, value in self.eval()(input_shape)._asdict().items() if value is not None]
@@ -162,6 +166,7 @@ class ExportMixin:
     def to_openvino(
         self,
         export_root: Path | str,
+        model_file_name: str = "model",
         input_size: tuple[int, int] | None = None,
         compression_type: CompressionType | None = None,
         datamodule: AnomalibDataModule | None = None,
@@ -173,6 +178,7 @@ class ExportMixin:
 
         Args:
             export_root (Path | str): Path to the output folder
+            model_file_name (str): Name of the exported model
             input_size (tuple[int, int] | None): Input image dimensions (height, width).
                 If ``None``, uses dynamic input shape. Defaults to ``None``
             compression_type (CompressionType | None): Type of compression to apply.
@@ -218,9 +224,9 @@ class ExportMixin:
         import openvino as ov
 
         with TemporaryDirectory() as onnx_directory:
-            model_path = self.to_onnx(onnx_directory, input_size)
+            model_path = self.to_onnx(onnx_directory, model_file_name, input_size)
             export_root = _create_export_root(export_root, ExportType.OPENVINO)
-            ov_model_path = export_root / "model.xml"
+            ov_model_path = export_root / (model_file_name + ".xml")
             ov_args = {} if ov_args is None else ov_args
 
             model = ov.convert_model(model_path, **ov_args)
