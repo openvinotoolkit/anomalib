@@ -298,12 +298,10 @@ def generate_output_filename(
         >>> generate_output_filename(path, "/output", "MyDataset", "class_A")
         PosixPath('/output/image_001.jpg')
 
-        Dataset not found raises error:
+        Dataset not found returns the output path:
 
         >>> generate_output_filename("/wrong/path/image.png", "/out", "Missing")
-        Traceback (most recent call last):
-            ...
-        ValueError: Dataset name 'Missing' not found in the input path.
+        PosixPath('/out/wrong/path/image.png')
 
     Note:
         - Directory structure after ``dataset_name`` (or ``category`` if provided) is
@@ -315,12 +313,12 @@ def generate_output_filename(
     input_path = Path(input_path)
     output_path = Path(output_path)
 
-    # Find the position of the dataset name in the path
-    try:
+    # Check if the dataset name is in the input path. If not, just use the output path
+    if dataset_name.lower() not in [x.lower() for x in input_path.parts]:
+        dataset_index = len(input_path.parts)
+    else:
+        # Find the position of the dataset name in the path
         dataset_index = next(i for i, part in enumerate(input_path.parts) if part.lower() == dataset_name.lower())
-    except ValueError:
-        msg = f"Dataset name '{dataset_name}' not found in the input path."
-        raise ValueError(msg) from None
 
     # Determine the start index for preserving subdirectories
     start_index = dataset_index + 1
